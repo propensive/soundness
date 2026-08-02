@@ -30,140 +30,108 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import stratiform.*
+import turbulence.*
+import vacuous.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+import LiraError.Reason
+
+// One row of a Tree metadata blob: a path mapped to the blob holding its content.
+case class TreeEntry(path: TreePath, blob: Data)
+
+object LiraTree:
+  val empty: LiraTree = LiraTree(List())
+
+  // Establishes the §9.2 invariants: rows sorted in ascending bytewise UTF-8 path order, paths
+  // unique. Accepts entries in any order; sorting here is what makes tree serialization a pure
+  // function of the mapping.
+  def of(entries: List[TreeEntry]): LiraTree raises LiraError =
+    val sorted = entries.stdlib.sortWith: (a, b) => TreePath.compare(a.path, b.path) < 0
+
+    sorted.zip(sorted.drop(1)).foreach: (a, b) =>
+      if a.path == b.path
+      then abort(LiraError(Reason.InvalidTree(t"the path ${a.path.text} appears twice")))
+
+    LiraTree(List.from(sorted))
+
+  // Parses and checks a Tree metadata blob: a TEL document under the `lira-tree` schema, whose
+  // pragma carries that schema's signature.
+  def decode(data: Data): LiraTree raises LiraError =
+    given Tel.Validator.Registry = LiraValidators.registry
+
+    import Tels.Decoder.validate
+
+    val document =
+      import errorDiagnostics.emptyDiagnostics
+
+      mitigate:
+        case TelError(reason, _) =>
+          LiraError(Reason.InvalidTree(t"the document is invalid: $reason"))
+
+      . protect:
+          val tel = data.read[Tel]
+          tel.validate(using LiraSchemas.tree, LiraValidators.registry)
+          tel
+
+    val compounds = document.childCompounds.readable.filter(_.keyword == t"entry").toVector
+
+    val entries = compounds.map: compound =>
+      val atoms = compound.atoms.readable.collect:
+        case Tel.Atom.Inline(text, _)  => text
+        case Tel.Atom.Source(text)     => text
+        case Tel.Atom.Literal(_, text) => text
+
+      if atoms.length != 2
+      then abort(LiraError(Reason.InvalidTree(t"an entry does not have exactly two atoms")))
+
+      val path = TreePath(atoms(0))
+
+      val hash =
+        import errorDiagnostics.emptyDiagnostics
+
+        mitigate:
+          case Base256Error(_) => LiraError(Reason.InvalidTree(t"a blob hash is malformed"))
+
+        . protect(Base256.decodeStrict(atoms(1)))
+
+      TreeEntry(path, hash)
+
+    var index = 1
+
+    while index < entries.length do
+      val order = TreePath.compare(entries(index - 1).path, entries(index).path)
+
+      val detail =
+        if order == 0 then t"the path ${entries(index).path.text} appears twice"
+        else t"rows are not in ascending path order"
+
+      if order >= 0 then abort(LiraError(Reason.InvalidTree(detail)))
+      index += 1
+
+    LiraTree(List.from(entries))
+
+// A section's mapping from paths to blobs (§9.2), with rows in ascending bytewise path order.
+case class LiraTree private(entries: List[TreeEntry]):
+  lazy val index: scala.collection.immutable.Map[Text, TreeEntry] =
+    scala.collection.immutable.Map.from:
+      entries.stdlib.map: entry => (entry.path.text, entry)
+
+  def get(path: TreePath): Optional[TreeEntry] = index.get(path.text).getOrElse(Unset)
+
+  // The canonical serialization: the pragma line carrying the `lira-tree` schema signature, one
+  // `entry` row per mapping in tree order, hard-space separated, LF line endings. Deterministic
+  // by construction, so a tree blob's hash is a pure function of the mapping.
+  def encode: Data =
+    val rows = entries.stdlib.map: entry =>
+      s"entry ${entry.path.text}  ${LiraHash.text(entry.blob)}"
+
+    val body = rows.mkString("\n")
+    val text = Text(s"tel 1.0 ${LiraSchemas.treeSignature}\n\n$body\n")
+    charEncoders.utf8Encoder.encoded(text)

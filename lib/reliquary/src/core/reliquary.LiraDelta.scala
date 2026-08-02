@@ -30,140 +30,120 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import stratiform.*
+import turbulence.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+import LiraError.Reason
+
+// One replaced replaceable atom in a lineage step: the same key under an old and a new value.
+// (The TEL keywords are `old` and `new`; `new` is not a legal Scala field name.)
+case class Replacement(old: Data, next: Data)
+
+object LiraDelta:
+
+  // The atom-level change record of one lineage step (§12.3): the atoms added, and the
+  // replaceable atoms replaced. Deltas make staleness computable (§13.4) and allow a verifier
+  // holding consecutive releases to check a lineage step exactly.
+  def compute(previous: List[Atomization], next: List[Atomization]): LiraDelta =
+    def flat(atomizations: List[Atomization]): scala.List[Atom] =
+      atomizations.stdlib.flatMap(_.atoms.stdlib)
+
+    val before = flat(previous)
+    val after = flat(next)
+    val beforeHashes = before.map { atom => LiraHash.text(atom.valueHash) }.toSet
+
+    val added = after
+      . filter: atom => !beforeHashes.contains(LiraHash.text(atom.valueHash))
+      . map(_.valueHash)
+      . sortWith: (a, b) => Blob.compare(a, b) < 0
+
+    val beforeReplaceable = before.filter(_.atomClass == AtomClass.Replaceable)
+
+    val afterReplaceable =
+      scala.collection.immutable.Map.from:
+        after.filter(_.atomClass == AtomClass.Replaceable).map: atom => (atom.key, atom)
+
+    val replaced = beforeReplaceable
+      . flatMap: atom =>
+          afterReplaceable.get(atom.key) match
+            case scala.Some(successor)
+              if Blob.compare(successor.valueHash, atom.valueHash) != 0 =>
+              scala.List(Replacement(atom.valueHash, successor.valueHash))
+
+            case _ => scala.Nil
+
+      . sortWith: (a, b) => Blob.compare(a.old, b.old) < 0
+
+    LiraDelta(List.from(added), List.from(replaced))
+
+  def decode(data: Data): LiraDelta raises LiraError =
+    import Tels.Decoder.validate
+
+    val document =
+      import errorDiagnostics.emptyDiagnostics
+
+      mitigate:
+        case TelError(reason, _) =>
+          LiraError(Reason.InvalidManifest(t"the delta blob is invalid: $reason"))
+
+      . protect:
+          val tel = data.read[Tel]
+          tel.validate(using LiraSchemas.delta, LiraValidators.registry)
+          tel
+
+    def bad(detail: Text): LiraError =
+      import errorDiagnostics.emptyDiagnostics
+      LiraError(Reason.InvalidManifest(t"the delta blob is invalid: $detail"))
+
+    def hash(text: Text): Data =
+      import errorDiagnostics.emptyDiagnostics
+
+      mitigate:
+        case Base256Error(_) => bad(t"a hash is malformed")
+
+      . protect(Base256.decodeStrict(text))
+
+    def texts(compound: Tel.Compound): scala.collection.immutable.Vector[Text] =
+      compound.atoms.readable.collect:
+        case Tel.Atom.Inline(text, _)  => text
+        case Tel.Atom.Source(text)     => text
+        case Tel.Atom.Literal(_, text) => text
+
+      . toVector
+
+    val compounds = document.childCompounds.readable
+
+    val added = compounds.filter(_.keyword == t"add").toVector.map: compound =>
+      val atoms = texts(compound)
+      if atoms.length != 1 then abort(bad(t"an add row does not have exactly one atom"))
+      hash(atoms(0))
+
+    val replaced = compounds.filter(_.keyword == t"replace").toVector.map: compound =>
+      val atoms = texts(compound)
+      if atoms.length != 2 then abort(bad(t"a replace row does not have exactly two atoms"))
+      Replacement(hash(atoms(0)), hash(atoms(1)))
+
+    LiraDelta(List.from(added), List.from(replaced))
+
+case class LiraDelta(add: List[Data], replace: List[Replacement]):
+
+  // Canonical serialization: `add` rows in ascending hash order, then `replace` rows in
+  // ascending old-hash order, under the pinned `lira-delta` schema signature.
+  def encode: Data =
+    val addRows = add.stdlib.map: hash => s"add ${LiraHash.text(hash)}"
+
+    val replaceRows = replace.stdlib.map: replacement =>
+      s"replace ${LiraHash.text(replacement.old)}  ${LiraHash.text(replacement.next)}"
+
+    val rows = addRows ++ replaceRows
+    val header = s"tel 1.0 ${LiraSchemas.deltaSignature}"
+    val body = rows.mkString("\n")
+    val text = Text(if rows.isEmpty then s"$header\n" else s"$header\n\n$body\n")
+    charEncoders.utf8Encoder.encoded(text)

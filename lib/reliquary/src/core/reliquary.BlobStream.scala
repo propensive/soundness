@@ -30,140 +30,80 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import rudiments.*
+import stratiform.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+import LiraError.Reason
+
+// The decompressed payload of a `.lira` file (§8.2): a sequence of `uvarint(length) ++ bytes`
+// records in ascending bytewise order of their blob hashes, with no duplicates. Hashes are never
+// stored: a reader recomputes them while scanning, and that recomputation is the integrity
+// check. Writing is deterministic: any permutation of the same blobs serializes identically.
+object BlobStream:
+
+  def write(blobs: List[Data]): Data =
+    val distinct = scala.collection.mutable.LinkedHashMap[Text, Blob]()
+
+    blobs.each: data =>
+      val hash = LiraHash(LiraHash.Domain.Blob, data)
+      distinct.getOrElseUpdate(LiraHash.text(hash), Blob(hash, data))
+
+    val sorted = distinct.values.toList.sortWith: (a, b) => Blob.compare(a.hash, b.hash) < 0
+    val lengths = sorted.map: blob => Varint.encode(blob.data.length.toLong)
+    val total = sorted.zip(lengths).map { (blob, length) => blob.data.length + length.length }.sum
+    val buffer = Array[Byte](total)
+    var offset = 0
+
+    sorted.zip(lengths).foreach: (blob, length) =>
+      System.arraycopy(Array.unsafeJvm(length), 0, buffer.raw, offset, length.length)
+      offset += length.length
+      System.arraycopy(Array.unsafeJvm(blob.data), 0, buffer.raw, offset, blob.data.length)
+      offset += blob.data.length
+
+    Array.freeze(buffer)
+
+  def read(data: Data): Blobstore raises LiraError =
+    val blobs = scala.collection.mutable.ListBuffer[Blob]()
+    var previous: Data | Null = null
+    var offset = 0
+
+    while offset < data.length do
+      val decoded =
+        import errorDiagnostics.emptyDiagnostics
+
+        mitigate:
+          case _: VarintError =>
+            LiraError(Reason.InvalidBlobStream(t"a record length is malformed"))
+
+        . protect(Varint.decode(data, offset))
+
+      val length = decoded.value
+
+      if length > Int.MaxValue.toLong || decoded.next + length.toInt > data.length
+      then abort(LiraError(Reason.InvalidBlobStream(t"a record overruns the end of the stream")))
+
+      val content = Array[Byte](length.toInt)
+      System.arraycopy(Array.unsafeJvm(data), decoded.next, content.raw, 0, length.toInt)
+      val bytes = Array.freeze(content)
+      val hash = LiraHash(LiraHash.Domain.Blob, bytes)
+
+      if previous != null then
+        val order = Blob.compare(previous.nn, hash)
+
+        if order == 0
+        then abort(LiraError(Reason.InvalidBlobStream(t"two records have equal hashes")))
+
+        if order > 0
+        then abort(LiraError(Reason.InvalidBlobStream(t"records are not in ascending hash order")))
+
+      blobs += Blob(hash, bytes)
+      previous = hash
+      offset = decoded.next + length.toInt
+
+    Blobstore(List.from(blobs))

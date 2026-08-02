@@ -1,0 +1,81 @@
+tel 1.0
+
+# The `lira` manifest schema (LIRA specification §14, with the agreed amendments: `jvm | sjsir |
+# nir` universes, optional numeric-only `version`, per-universe and `build`-pinned dependencies,
+# and per-section `derivative` hashes). This document is the canonical mirror of the hand-encoded
+# `LiraSchemas.lira`; reliquary's test suite asserts the two are structurally identical and pins
+# this document's schema signature.
+
+name lira
+
+record Tool
+  field name Identifier
+  field version String
+  field flag Identifier optional repeatable
+
+record Api
+  field discipline DisciplineId
+  field atoms Hash
+
+record Dependency
+  field module ModuleName
+  field api Hash
+  field version Semver optional
+  field build Hash optional
+  field universe Identifier optional repeatable
+  field uses Hash optional
+  field spans Hash optional repeatable
+
+record Section
+  select Universe
+  field against Hash optional repeatable
+  field tree Hash
+  field delete String optional repeatable
+  field derivative Hash optional
+
+record Payload
+  field compression Identifier
+  field length Natural
+  field hash Hash
+
+record Signature
+  field signer String
+  field algorithm Identifier
+  field key Hash
+  field value String
+
+scalar Hash
+  validate base-256-hash
+
+scalar ModuleName
+  validate module-name
+
+scalar Namespace
+  validate namespace
+
+scalar Semver
+  validate semver
+
+scalar Natural
+  validate natural
+
+scalar DisciplineId
+  validate discipline-id
+
+select Universe
+  variant jvm Flag
+  variant sjsir Flag
+  variant nir Flag
+
+document
+  field module ModuleName
+  field version Semver optional
+  field lineage Hash repeatable
+  field toolchain Tool repeatable
+  field owns Namespace optional repeatable
+  field api Api repeatable
+  field dependency Dependency optional repeatable
+  field delta Hash optional
+  field section Section repeatable
+  field payload Payload
+  field signature Signature optional repeatable

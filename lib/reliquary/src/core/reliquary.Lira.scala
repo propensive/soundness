@@ -30,140 +30,118 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import stratiform.*
+import turbulence.*
+import vacuous.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+import LiraError.Reason
+
+object Lira:
+  // The interpreter directive's payload, as the parser stores it (without the `#!`). The full
+  // first line of every `.lira` file is byte-fixed (§5.1, L115).
+  val directive: Text = t"/usr/bin/env lira"
+
+  private val directiveBytes: Data =
+    charEncoders.utf8Encoder.encoded(t"#!/usr/bin/env lira\n")
+
+  private val separatorBytes: Data = charEncoders.utf8Encoder.encoded(t"\n##\n")
+
+  // Locates the document separator: the first line that is exactly `##`. §5.2 fixes the byte
+  // layout so this split needs no TEL parsing — which is essential, since everything after the
+  // separator is binary.
+  private def separatorIndex(data: Data): Optional[Int] =
+    var index = 0
+
+    while index + separatorBytes.length <= data.length do
+      var offset = 0
+
+      while offset < separatorBytes.length && data(index + offset) == separatorBytes(offset) do
+        offset += 1
+
+      if offset == separatorBytes.length then return index
+      index += 1
+
+    Unset
+
+  private def slice(data: Data, from: Int, until: Int): Data =
+    val buffer = Array[Byte](until - from)
+    System.arraycopy(Array.unsafeJvm(data), from, buffer.raw, 0, until - from)
+    Array.freeze(buffer)
+
+  def read(data: Data): Lira raises LiraError =
+    // Step 0 (§16): the directive is checked byte-for-byte before anything is parsed (L115).
+    if data.length < directiveBytes.length then abort(LiraError(Reason.BadDirective))
+
+    var index = 0
+
+    while index < directiveBytes.length do
+      if data(index) != directiveBytes(index) then abort(LiraError(Reason.BadDirective))
+      index += 1
+
+    val separator = separatorIndex(data) match
+      case position: Int => position
+
+      case _ =>
+        abort(LiraError(Reason.InvalidManifest(t"the document separator is missing")))
+
+    val manifestData = slice(data, 0, separator + 1)
+    val compressed = slice(data, separator + separatorBytes.length, data.length)
+
+    val document =
+      import errorDiagnostics.emptyDiagnostics
+
+      mitigate:
+        case TelError(reason, _) => LiraError(Reason.InvalidManifest(t"$reason"))
+
+      . protect(manifestData.utf8.load[Tel])
+
+    // L116: the pragma must not specify a sigil; the separator is therefore always `##`.
+    document.metadata.pragma.let: pragma =>
+      if pragma.sigil.present then abort(LiraError(Reason.SigilSpecified))
+
+    val tel = document.root
+
+    import Tels.Decoder.validate
+
+    import errorDiagnostics.emptyDiagnostics
+
+    mitigate:
+      case TelError(reason, _) => LiraError(Reason.InvalidManifest(t"$reason"))
+
+    . protect(tel.validate(using LiraSchemas.lira, LiraValidators.registry))
+
+    Lira(LiraManifest.decode(tel), tel, compressed)
+
+  // Assembles a complete `.lira` file: the blob stream is built from `blobs` (deduplicated and
+  // sorted), compressed, and described by a payload record that replaces whatever `manifest`
+  // carried. Byte-deterministic for fixed inputs and toolchain (§17).
+  def assemble(manifest: LiraManifest, blobs: List[Data]): Data =
+    val stream = BlobStream.write(blobs)
+    val compressed = LiraPayload.compress(stream)
+
+    val payload =
+      LiraManifest.Payload(t"brotli", stream.length.toLong, LiraPayload.hash(stream))
+
+    val text = manifest.copy(payload = payload).render
+    val manifestData = charEncoders.utf8Encoder.encoded(text)
+    val buffer = Array[Byte](manifestData.length + 3 + compressed.length)
+    System.arraycopy(Array.unsafeJvm(manifestData), 0, buffer.raw, 0, manifestData.length)
+    buffer(manifestData.length) = '#'.toByte
+    buffer(manifestData.length + 1) = '#'.toByte
+    buffer(manifestData.length + 2) = '\n'.toByte
+
+    System.arraycopy
+      ( Array.unsafeJvm(compressed), 0, buffer.raw, manifestData.length + 3, compressed.length )
+
+    Array.freeze(buffer)
+
+// A read `.lira` file: the typed manifest, the parsed TEL document it projects (the semantic
+// model that signing and reserialization operate on), and the still-compressed payload.
+case class Lira(manifest: LiraManifest, tel: Tel, compressed: Data)

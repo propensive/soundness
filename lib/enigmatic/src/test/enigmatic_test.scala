@@ -712,6 +712,61 @@ object Tests extends Suite(m"Enigmatic tests"):
           case _                                                       => false
       . assert(identity)
 
+      test(m"An ML-DSA signature verifies against the matching public key"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"ML-DSA works at each parameter set"):
+        val level44 = PrivateKey.generate[MlDsa[44]]()
+        val level65 = PrivateKey.generate[MlDsa[65]]()
+        val level87 = PrivateKey.generate[MlDsa[87]]()
+
+        List
+         (level44.public.verify(pangram, level44.sign(pangram)),
+          level65.public.verify(pangram, level65.sign(pangram)),
+          level87.public.verify(pangram, level87.sign(pangram)))
+      . assert(_ == List(true, true, true))
+
+      test(m"An ML-DSA signature fails against a different key"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+        val other = PrivateKey.generate[MlDsa[65]]()
+        other.public.verify(pangram, key.sign(pangram))
+      . assert(!_)
+
+      test(m"An ML-DSA signature fails over different content"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+        key.public.verify(t"a different message", key.sign(pangram))
+      . assert(!_)
+
+      test(m"A tampered ML-DSA signature fails to verify"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+        val bytes = key.sign(pangram).bytes.mutable(using Unsafe)
+        bytes(0) = (bytes(0) ^ 1).toByte
+        key.public.verify(pangram, Signature(Array.unsafeFrozen(bytes)))
+      . assert(!_)
+
+      // The JDK offers no route from an ML-DSA private key back to its public key, so enigmatic
+      // embeds the public key at generation, at `OneAsymmetricKey`'s reserved `[1]` position;
+      // this checks the re-encoded key still parses and carries exactly that element.
+      test(m"An ML-DSA private key carries its public key at RFC 5958's [1] position"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+
+        key.pem(Divulgence).as[Der].as[Asn1] match
+          case Asn1.Sequence(elements) => elements.collect:
+            case tagged: Asn1.Tagged => tagged.tag
+
+          case _ => Nil
+      . assert(_ == List(1))
+
+      test(m"An ML-DSA public key is a well-formed SubjectPublicKeyInfo"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+
+        Der(key.public.bytes).as[Asn1] match
+          case Asn1.Sequence(List(Asn1.Sequence(_), _: Asn1.BitString)) => true
+          case _                                                       => false
+      . assert(identity)
+
     suite(m"X.509 certificates"):
       import java.io as ji
       import java.security as js, js.cert as jsc

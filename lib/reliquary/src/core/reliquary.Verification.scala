@@ -30,140 +30,78 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import contingency.*
+import vacuous.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+// Verification is re-execution of the construction, bottom-up (§16). `install` performs the
+// language-blind steps every consumer runs: payload decompression and hashing (1), blob-stream
+// integrity and reference resolution (2), tree and overlay rules (3), and the snapshot/lineage
+// check (5). Re-atomization (4), lineage-step grading (6) and signatures (7) are layered on
+// separately: the first two need disciplines and the predecessor, the last needs key material.
+object Verification:
+
+  case class Report
+    ( blobstore:     Blobstore,
+      atomizations:  List[Atomization],
+      materialized:  List[(Text, LiraTree)],
+      advisories:    List[LiraAdvisory] )
+
+  def install(lira: Lira): Report raises LiraError =
+    val manifest = lira.manifest
+
+    // Steps 1–2: decompress within the declared length, verify the payload hash, and re-derive
+    // every blob identity while checking stream order (L102–L105).
+    val stream =
+      LiraPayload.decompress(lira.compressed, manifest.payload.length, manifest.payload.hash)
+
+    val store = BlobStream.read(stream)
+    val referenced = scala.collection.mutable.Set[Text]()
+
+    def resolve(hash: Data): Data raises LiraError =
+      referenced += LiraHash.text(hash)
+      store.resolve(hash)
+
+    // Step 4's input: the declared atom listings must at least resolve and parse; comparing
+    // them against re-atomized content is the publish-time extension.
+    val atomizations = List.from:
+      manifest.api.stdlib.map: api => AtomsBlob.decode(resolve(api.atoms))
+
+    manifest.delta.let: hash => LiraDelta.decode(resolve(hash))
+
+    manifest.dependency.stdlib.foreach: dependency => dependency.uses.let(resolve(_))
+
+    // Step 3: tree path rules (L106) on every section; every tree blob and content blob must
+    // resolve (L104); overlays of known universes materialize against the root under the
+    // minimality rules (L107). Unknown universes stay opaque (§9.4).
+    val trees = manifest.section.stdlib.map: section =>
+      (section, LiraTree.decode(resolve(section.tree)))
+
+    for
+      pair  <- trees
+      entry <- pair(1).entries.stdlib
+    do resolve(entry.blob)
+
+    val materialized =
+      if trees.isEmpty then scala.Nil
+      else
+        val (rootSection, rootTree) = trees.head
+        val known = trees.tail.filter: pair => pair(0).known.present
+
+        val results = known.map: pair =>
+          (pair(0).universe, Overlay.materialize(rootTree, pair(0).delete, pair(1)))
+
+        (rootSection.universe, rootTree) :: results.toList
+
+    // Step 5: the snapshot recomputed from the atom listings must equal the last lineage entry.
+    Lineage.check(manifest.lineage, Snapshot(atomizations))
+
+    val unreferenced = store.unreferenced(Set.from(referenced))
+
+    val advisories =
+      if unreferenced.stdlib.isEmpty then List()
+      else List(LiraAdvisory.UnreferencedBlobs(unreferenced))
+
+    Report(store, atomizations, List.from(materialized), advisories)

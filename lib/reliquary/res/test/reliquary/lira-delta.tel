@@ -1,0 +1,17 @@
+tel 1.0
+
+# The Delta metadata-blob schema (LIRA specification §12.3): the atoms added, and the replaceable
+# atoms replaced, by one lineage step. Mirror of the hand-encoded `LiraSchemas.delta`.
+
+name lira-delta
+
+record Replacement
+  field old Hash
+  field new Hash
+
+scalar Hash
+  validate base-256-hash
+
+document
+  field add Hash optional repeatable
+  field replace Replacement optional repeatable

@@ -1,0 +1,19 @@
+tel 1.0
+
+# The Tree metadata-blob schema (LIRA specification §9.2): rows mapping paths to blob hashes for
+# one section. Mirror of the hand-encoded `LiraSchemas.tree`.
+
+name lira-tree
+
+record Entry
+  field path TreePath
+  field blob Hash
+
+scalar Hash
+  validate base-256-hash
+
+scalar TreePath
+  validate tree-path
+
+document
+  field entry Entry optional repeatable

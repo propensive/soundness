@@ -182,6 +182,96 @@ object JavaStdlibCrypto extends Crypto:
 
       case _ => panic(m"the EC private key was not a PrivateKeyInfo")
 
+  // ML-DSA (FIPS 204), provided by the JDK from 24 (JEP 497). The parameterized algorithm names
+  // pin the parameter set, so a key generated at one strength cannot be used at another. ML-DSA
+  // signs the message directly, so no digest participates in the transformation name.
+  def mlDsa(level: Int): Crypto.SignatureScheme = new Crypto.SignatureScheme:
+    private val name: String = level match
+      case 44 => "ML-DSA-44"
+      case 65 => "ML-DSA-65"
+      case 87 => "ML-DSA-87"
+      case _  => panic(m"there is no ML-DSA parameter set of strength $level")
+
+    private def instance(): js.Signature = mlDsaAvailable(js.Signature.getInstance(name).nn)
+    private def keyFactory(): js.KeyFactory = mlDsaAvailable(js.KeyFactory.getInstance(name).nn)
+
+    def sign(data: Data, privateKey: Data): Data =
+      val sig = instance()
+      val spec = jss.PKCS8EncodedKeySpec(Array.unsafeJvm(mlDsaStrip(privateKey)))
+      sig.initSign(keyFactory().generatePrivate(spec))
+      sig.update(Array.unsafeJvm(data))
+
+      sig.sign().nn.immutable(using Unsafe)
+
+    def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
+      val sig = instance()
+      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey))))
+      sig.update(Array.unsafeJvm(data))
+
+      sig.verify(Array.unsafeJvm(signature0))
+
+    def generateKeyPair(bits: Int): Data =
+      val generator = mlDsaAvailable(js.KeyPairGenerator.getInstance(name).nn)
+      val pair = generator.generateKeyPair().nn
+
+      val privateKey = pair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
+      val publicKey = pair.getPublic.nn.getEncoded.nn.immutable(using Unsafe)
+
+      mlDsaEmbed(privateKey, publicKey)
+
+    def privateToPublic(privateKey: Data): Data = mlDsaExtract(privateKey)
+
+  // The JDK grew ML-DSA at 24; on earlier releases `getInstance` is the single point of failure,
+  // so it is the one place the version requirement is reported.
+  private def mlDsaAvailable[value](operation: => value): value =
+    try operation catch case error: js.NoSuchAlgorithmException =>
+      panic(m"the JDK does not provide ML-DSA; JDK 24 or later is required")
+
+  // An ML-DSA private key offers no JCA route back to its public key, so — as with EC — the
+  // public key is embedded at generation. RFC 5958's `OneAsymmetricKey` reserves `[1]` at the
+  // top level of the `PrivateKeyInfo` sequence for exactly this, though it is written here in
+  // explicit form (the ASN.1 layer cannot round-trip implicit tags without a schema) and the
+  // version integer is left untouched. The embedded element never reaches the JDK: `mlDsaStrip`
+  // reduces the key to its canonical three-element `PrivateKeyInfo` before any JCA call.
+  private def mlDsaEmbed(privateKey: Data, publicKey: Data): Data =
+    val bits = decode(publicKey) match
+      case Asn1.Sequence(List(_, bits: Asn1.BitString)) => bits
+      case _                                            => panic(m"the ML-DSA public key was bad")
+
+    decode(privateKey) match
+      case Asn1.Sequence(List(version, algorithm, octets: Asn1.OctetString)) =>
+        val info: Asn1 = Asn1.Sequence(List(version, algorithm, octets, Asn1.Tagged(1, true, bits)))
+        info.in[Der].data
+
+      case _ =>
+        panic(m"the ML-DSA private key was not a PrivateKeyInfo")
+
+  private def mlDsaStrip(privateKey: Data): Data =
+    decode(privateKey) match
+      case Asn1.Sequence(version :: algorithm :: (octets: Asn1.OctetString) :: _) =>
+        val info: Asn1 = Asn1.Sequence(List(version, algorithm, octets))
+        info.in[Der].data
+
+      case _ =>
+        panic(m"the ML-DSA private key was not a PrivateKeyInfo")
+
+  private def mlDsaExtract(privateKey: Data): Data =
+    decode(privateKey) match
+      case Asn1.Sequence(_ :: algorithm :: _ :: rest) =>
+        val bits = rest.collectFirst:
+          case Asn1.Tagged(1, _, bits: Asn1.BitString) => bits
+
+        bits match
+          case Some(bits) =>
+            val info: Asn1 = Asn1.Sequence(List(algorithm, bits))
+            info.in[Der].data
+
+          case None =>
+            panic(m"the ML-DSA private key carried no public key")
+
+      case _ =>
+        panic(m"the ML-DSA private key was not a PrivateKeyInfo")
+
   // Key material this module generated itself; a failure to parse it back is a defect, not an
   // input error.
   private def decode(data: Data): Asn1 = unsafely(Der(data).as[Asn1])

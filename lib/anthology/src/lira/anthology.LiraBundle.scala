@@ -30,140 +30,60 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import java.nio.file as jnf
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+
+import anticipation.*
+import contingency.*
+import gossamer.*
+import reliquary.*
+
+// Reads compilation outputs into `LiraAssembler` section inputs. Each universe's section
+// carries its IR alongside the TASTy interface files: the shared interface is stored once by
+// the root section's tree, and byte-divergent files (a fresh compiler run pickles a fresh UUID)
+// surface as minimal overlays — while the atoms, which are semantic, stay identical (L108).
+object LiraBundle:
+
+  def jvm(compilation: Compilation[Universe.Classfile])
+  :   LiraAssembler.SectionInput raises LiraError =
+
+    section(t"jvm", compilation.out.encode, scala.List(".class", ".tasty"))
+
+  def sjsir(compilation: Compilation[Universe.Sjsir])
+  :   LiraAssembler.SectionInput raises LiraError =
+
+    section(t"sjsir", compilation.out.encode, scala.List(".sjsir", ".tasty"))
+
+  def nir(compilation: Compilation[Universe.Nir])
+  :   LiraAssembler.SectionInput raises LiraError =
+
+    section(t"nir", compilation.out.encode, scala.List(".nir", ".tasty"))
+
+  // The toolchain record for a compilation (§14): the compiler version and the
+  // universe-selecting flags of its emission.
+  def tool[universe <: Universe](version: Text)(using emission: Universe.Emission[universe])
+  :   LiraManifest.Tool =
+
+    LiraManifest.Tool(t"scala", version, emission.flags)
+
+  private def section(universe: Text, out: Text, suffixes: scala.List[String])
+  :   LiraAssembler.SectionInput raises LiraError =
+
+    val root = jnf.Paths.get(out.s).nn
+
+    def wanted(path: jnf.Path): Boolean =
+      suffixes.exists: suffix => path.toString.endsWith(suffix)
+
+    val content = jnf.Files.walk(root).nn.iterator.nn.asScala.to(scala.List)
+      . filter(wanted)
+      . map: path =>
+          val relative = Text(root.relativize(path).nn.toString)
+          val data = Array.unsafeFrozen(jnf.Files.readAllBytes(path).nn)
+          (TreePath(relative), data)
+
+      . sortBy(_(0).text.s)
+
+    LiraAssembler.SectionInput(universe, List.from(content))

@@ -1,0 +1,16 @@
+tel 1.0
+
+# The Uses metadata-blob schema (LIRA specification §13.4): the atom value hashes of one
+# dependency that a module actually uses. Mirror of the hand-encoded `LiraSchemas.uses`.
+
+name lira-uses
+
+scalar Hash
+  validate base-256-hash
+
+scalar ModuleName
+  validate module-name
+
+document
+  field module ModuleName
+  field atom Hash optional repeatable
