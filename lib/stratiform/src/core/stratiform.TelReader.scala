@@ -143,6 +143,10 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // deeper — the step before a nested record's field loop.
   update def finishLine(): Unit = parser.directFinishLine()(using errorTactic)
 
+  // As `finishLine`, but returning the entry line's atoms (all presentation
+  // forms) for the derived record parser's §19.2 positional pre-pass.
+  update def lineAtoms(): Array[Tel.Atom]^{} = parser.directFinishLineAtoms()(using errorTactic)
+
   // Skips the entry entirely: unknown keywords, and duplicate occurrences
   // of a non-repeatable field (the AST's first-match-wins semantics).
   update def skipEntry(indent: Int): Unit = parser.directSkipEntry(indent)(using errorTactic)

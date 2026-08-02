@@ -32,86 +32,100 @@
                                                                                                   */
 package stratiform
 
-import anticipation.*
-import contextual.*
-import prepositional.*
 import proscenium.compat.*
-import rudiments.*
-import vacuous.*
 
-// Encodes any value with an `Encodable in Tel` instance to its `Tel` form.
-// Mirrors jacinta's `.json`, xylophone's `.xml`, ypsiloid's `.yaml`, etc.
-extension [entity: Encodable in Tel](value: entity) def tel: Tel = value.encode
+import anticipation.*
+import contingency.*
 
-// `tel"…"` extension on StringContext routes through contextual's
-// interpolation framework; the actual macro lives in `stratiform.internal`.
-// Mirrors `extension (inline context: StringContext) def j` from
-// `lib/jacinta/src/core/jacinta_core.scala:230`.
-extension (inline context: StringContext)
-  transparent inline def tel: Interpolation = interpolation[Tel](context)
+// The schema-free §19.2/§20.2 atom phase shared by both derivation engines
+// (issue #1694). A derived product codec approximates the schema's member
+// classification from Scala types (`Tel.Nature`) and runs the same positional
+// assignment `Tel.Type.assign` performs against a real schema: atoms fill
+// members in declaration order, skipping only non-required members that
+// cannot take the atom.
+private[stratiform] object Positional:
 
-// Collection/optic helpers used by the `Tel2` codec and optic givens. They are pure functions of
-// their arguments, so they live at package level rather than as members of the `Tel2` trait —
-// referencing a trait member would make the codec/optic lambdas capture `Tel2.this`, which the
-// pure `Encodable`/`Optic` SAMs reject under capture checking.
+  // One field of a derived product, as the atom phase sees it. `required`
+  // is false for `Optional` fields and fields with a declared default,
+  // matching §20's effective-polarity model.
+  case class Profile
+    ( keyword:    Text,
+      nature:     Tel.Nature,
+      repeatable: Boolean,
+      required:   Boolean )
 
-// The empty document — an `Optional`'s `Unset` encoding. It contributes no compound to a struct
-// body (the same shape an empty collection produces), so the product encoder omits the field and
-// both the text and binary formats decode it back to `Unset` via the field's `absent()` path.
-private[stratiform] def emptyDocument: Tel =
-  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
-      Array.of(Tel.Block(Array.empty, Unset, Array.empty, 0))))
+  def text(atom: Tel.Atom): Text = atom match
+    case Tel.Atom.Inline(value, _)  => value
+    case Tel.Atom.Source(value)     => value
+    case Tel.Atom.Literal(_, value) => value
 
-// Encodes a collection by flattening each element's compound(s) into one document's children.
-private[stratiform] def collectionDocument[value]
-    (values: Iterable[value])(using encodable: value is Encodable in Tel)
-:   Tel =
+  // §20.2 step 3 over a compound line's atoms (all three presentation
+  // forms): returns, per member, the atoms assigned to it, in order. Errors
+  // raise-and-continue through the ambient tactic, mirroring
+  // `Tel.Type.assignAtoms`: an unassignable atom is dropped and later atoms
+  // still assign.
+  def assign(atoms: Array[Tel.Atom]^{}, profiles: Array[Profile]^{})
+    ( using Tactic[TelError] )
+  :   Array[List[Tel.Atom]]^{} =
 
-  val compounds: Array[Tel.Compound]^{} = Array.from:
-    values.flatMap: element =>
-      encodable.encoded(element).subtree match
-        case compound: Tel.Compound => List(compound).stdlib
+    val assigned = new scala.Array[List[Tel.Atom]](profiles.length)
+    var slot = 0
 
-        case document: Tel.Document =>
-          document.children.flatMap(_.compounds).toSeq
+    while slot < profiles.length do
+      assigned(slot) = Nil
+      slot += 1
 
-  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
-      Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))
+    var position = 0
+    var index = 0
 
-// As `collectionDocument`, but embedding each element in its §22.2 canonical child form
-// (`constructed`), so nested records keep their inline runs under `Tel.canonical`.
-private[stratiform] def constructedDocument[value]
-    (values: Iterable[value])(using encodable: value is Tel.Encodable)
-:   Tel =
+    while index < atoms.length do
+      val value = text(atoms(index))
 
-  val compounds: Array[Tel.Compound]^{} = Array.from:
-    values.flatMap: element =>
-      encodable.constructed(element).subtree match
-        case compound: Tel.Compound => List(compound).stdlib
+      // Step 3a: advance past non-required members that cannot take this
+      // atom — Struct-natured ones, and Flag-natured ones whose keyword the
+      // atom's text does not match. A Scalar member is never skipped; a
+      // required member is never skipped.
+      var scanning = true
 
-        case document: Tel.Document =>
-          document.children.flatMap(_.compounds).toSeq
+      while scanning && position < profiles.length do
+        val profile = profiles(position)
 
-  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
-      Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))
+        val skippable =
+          !profile.required
+          && (profile.nature == Tel.Nature.Struct
+              || (profile.nature == Tel.Nature.Flag && value != profile.keyword))
 
-// Re-keys a replacement compound to the original child's keyword (so a positional optic update
-// preserves field identity).
-private[stratiform] def rewrap(original: Tel.Compound, replacement: Tel): Tel.Compound =
-  replacement.subtree match
-    case compound: Tel.Compound =>
-      compound.copy(keyword = original.keyword)
+        if skippable then position += 1 else scanning = false
 
-    case document: Tel.Document =>
-      original.copy(atoms = Array.empty[Tel.Atom], remark = Unset, children = document.children)
+      if position >= profiles.length then
+        // Step 3b: more atoms than assignable member positions (E302).
+        // Recovery drops the whole excess run, reported once.
+        raise(TelError(TelError.Reason.TooManyAtoms))
+        index = atoms.length
+      else
+        val profile = profiles(position)
 
-// Rebuilds a node with replaced children, preserving its document/compound shape.
-private[stratiform] def rebuild(origin: Tel, children: Array[Tel.Block]^{}): Tel = origin.subtree match
-  case document: Tel.Document => Tel.make(document.copy(children = children))
-  case compound: Tel.Compound => Tel.make(compound.copy(children = children))
+        profile.nature match
+          case Tel.Nature.Struct =>
+            // Step 3c: an atom at a required member only fillable by a
+            // keyword child (E303). The atom is dropped.
+            raise(TelError(TelError.Reason.AtomAtNonAssignablePos))
 
-// Wraps a value as a compound under the given keyword (used to key map entries' key/value children).
-private[stratiform] def reKey(tel: Tel, keyword: Text): Tel.Compound = tel.subtree match
-  case c: Tel.Compound => c.copy(keyword = keyword)
-  case d: Tel.Document => Tel.Compound(keyword, Array.empty, Unset, d.children)
+          case Tel.Nature.Flag =>
+            if value == profile.keyword then
+              assigned(position) = assigned(position) :+ atoms(index)
+              if !profile.repeatable then position += 1
+            else
+              // Step 3d: a required Flag member's atom must match its
+              // keyword (E305). The atom is dropped.
+              raise(TelError(TelError.Reason.AtomFlagKeywordMismatch))
 
+          case Tel.Nature.Scalar =>
+            assigned(position) = assigned(position) :+ atoms(index)
+            // Step 3e: a repeatable member holds its position and consumes
+            // every remaining atom.
+            if !profile.repeatable then position += 1
+
+        index += 1
+
+    assigned.asInstanceOf[Array[List[Tel.Atom]]^{}]

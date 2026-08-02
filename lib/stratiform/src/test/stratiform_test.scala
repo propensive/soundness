@@ -303,6 +303,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         shape.encode.as[Tests.Shape2]
       . assert(_ == Tests.Shape2.Dot)
 
+      test(m"decoding a sum from an empty node raises Absent, not a crash"):
+        capture[TelError](t"\n".read[Tel].as[Tests.Shape2]).reason
+      . assert(_ == TelError.Reason.Absent)
+
       val tree =
         Tests.Tree(t"root", List(Tests.Tree(t"a", Nil),
             Tests.Tree(t"b", List(Tests.Tree(t"c", Nil)))))
@@ -414,6 +418,26 @@ object Tests extends Suite(m"Stratiform Tests"):
         val doc = t"x 1\nnote hello\n"
         (doc.read[Tests.OptField in Tel], parity[Tests.OptField](doc))
       . assert(_ == (Tests.OptField(1, t"hello"), true))
+
+      test(m"A source atom supplies a scalar field, equally on both paths"):
+        val doc = t"name\n    Alice\n    Smith\nage 30\n"
+        (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
+      . assert(_ == (Tests.Person(t"Alice\nSmith", 30), true))
+
+      test(m"A literal atom supplies a scalar field, equally on both paths"):
+        val doc = t"name\n      ---\nAlice  Smith\n      ---\nage 30\n"
+        (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
+      . assert(_ == (Tests.Person(t"Alice  Smith", 30), true))
+
+      test(m"A source atom supplies a numeric field, equally on both paths"):
+        val doc = t"name Amy\nage\n    30\n"
+        (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
+      . assert(_ == (Tests.Person(t"Amy", 30), true))
+
+      test(m"A source atom gives an Optional field substance, equally on both paths"):
+        val doc = t"x 1\nnote\n    hello there\n"
+        (doc.read[Tests.OptField in Tel], parity[Tests.OptField](doc))
+      . assert(_ == (Tests.OptField(1, t"hello there"), true))
 
       test(m"Unknown keywords are skipped, including their child subtrees"):
         t"name Amy\nextra one two\n  deep 1\n  deeper\n    x 9\nage 50\n"
@@ -870,6 +894,273 @@ object Tests extends Suite(m"Stratiform Tests"):
         val doc = t"unknown\n".read[Tel]
         capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == TelError.Reason.UnknownKeyword)
+
+      test(m"scalar compound with two atoms raises E302"):
+        val doc = t"name Alice Bob\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == TelError.Reason.TooManyAtoms)
+
+      test(m"scalar compound with a child raises E301"):
+        val doc = t"name Alice\n  extra x\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == TelError.Reason.NonStructCompound)
+
+      test(m"flag compound with an atom raises E311"):
+        val doc = t"active foo\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
+      . assert(_ == TelError.Reason.FlagWithContent)
+
+      // Two repeatable scalar members, for the §20.2 step 4c contiguity rule.
+      val contiguitySchema = Tels(
+        name     = t"doc",
+        document = Tels.Struct(
+          members = Array.of(
+            Tels.Field
+             ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
+               t"a", Tels.Scalar(Array.of(t"string")), Unset ),
+            Tels.Field
+             ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
+               t"b", Tels.Scalar(Array.of(t"string")), Unset )),
+          validators = Array.empty),
+        layers   = Array.empty,
+        sigil    = Unset,
+        records  = Array.empty,
+        scalars  = Array.empty,
+        selects  = Array.empty)
+
+      test(m"non-contiguous member children raise E309"):
+        val doc = t"a x\na y\nb z\na w\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, contiguitySchema)).reason
+      . assert(_ == TelError.Reason.MembersNonContiguous)
+
+      test(m"contiguous runs of repeatable members do not raise E309"):
+        val doc = t"a x\na y\nb z\n".read[Tel]
+        Tel.Type.assign(doc, contiguitySchema) match
+          case Tel.Element.Node(_, _, children) => children.readable.length
+          case _                                => -1
+      . assert(_ == 3)
+
+      // A repeatable all-Flag SelectRef: its variants share a member index,
+      // so they interleave freely without E309.
+      val repeatableStatusSchema = Tels(
+        name     = t"status",
+        document = Tels.Struct(
+          members = Array.of(Tels.SelectRef
+           ( required   = Tels.Polarity.Implicit,
+             repeatable = Tels.Polarity.Loose,
+             reference  = t"Status" )),
+          validators = Array.empty),
+        layers   = Array.empty,
+        sigil    = Unset,
+        records  = Array.empty,
+        scalars  = Array.empty,
+        selects  = Array.of(Tels.SelectDefinition(
+          name     = t"Status",
+          variants = Array.of(
+            Tels.Variant(t"active",   Tels.Flag),
+            Tels.Variant(t"archived", Tels.Flag)),
+          validators = Array.empty)))
+
+      test(m"interleaved variants of one SelectRef do not raise E309"):
+        val doc = t"active\narchived\nactive\n".read[Tel]
+        Tel.Type.assign(doc, repeatableStatusSchema) match
+          case Tel.Element.Node(_, _, children) => children.readable.length
+          case _                                => -1
+      . assert(_ == 3)
+
+      test(m"non-repeatable member filled twice raises E308"):
+        val doc = t"name Alice\nname Bob\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == TelError.Reason.NonRepeatableTooMany)
+
+      test(m"repeatable member filled three times is accepted"):
+        val doc = t"a x\na y\na z\nb w\n".read[Tel]
+        Tel.Type.assign(doc, contiguitySchema) match
+          case Tel.Element.Node(_, _, children) => children.readable.length
+          case _                                => -1
+      . assert(_ == 4)
+
+      test(m"absent required SelectRef raises E307"):
+        val doc = t"\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
+      . assert(_ == TelError.Reason.RequiredMemberAbsent)
+
+      // A self-referential schema describing arbitrarily deep nesting, for
+      // the §20.2 recursion-depth limit.
+      val treeSchema = Tels(
+        name     = t"tree",
+        document = Tels.Struct(
+          members = Array.of(Tels.Field
+           ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+             t"node", Tels.Reference(t"Node"), Unset )),
+          validators = Array.empty),
+        layers   = Array.empty,
+        sigil    = Unset,
+        records  = Array.of(Tels.RecordDefinition(
+          t"Node",
+          Array.of(Tels.Field
+           ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+             t"node", Tels.Reference(t"Node"), Unset )),
+          Array.empty)),
+        scalars  = Array.empty,
+        selects  = Array.empty)
+
+      def deepDocument(levels: Int): Tel =
+        val sb = new java.lang.StringBuilder
+        var n = 0
+
+        while n < levels do
+          var s = 0
+
+          while s < n*2 do
+            sb.append(' ')
+            s += 1
+
+          sb.append("node\n")
+          n += 1
+
+        sb.toString.tt.read[Tel]
+
+      test(m"nesting beyond 256 levels fail-stops type assignment"):
+        capture[TelError](Tel.Type.assign(deepDocument(300), treeSchema)).reason
+      . assert(_ == TelError.Reason.NestingLimitExceeded)
+
+      test(m"nesting within the depth limit assigns"):
+        Tel.Type.assign(deepDocument(10), treeSchema) match
+          case Tel.Element.Node(_, _, children) => children.readable.length
+          case _                                => -1
+      . assert(_ == 1)
+
+    suite(m"Atom phase (§20.2 step 3)"):
+      // Wraps the record under test as the single root member `item`: the
+      // document root never carries atoms (§20.2), so the atom phase is
+      // exercised one level down.
+      def itemSchema
+        ( members: Array[Tels.Member],
+          selects: Array[Tels.SelectDefinition] = Array.empty )
+      :   Tels =
+
+        Tels(
+          name     = t"test",
+          document = Tels.Struct(
+            members = Array.of(Tels.Field
+             ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+               t"item", Tels.Reference(t"Item"), Unset )),
+            validators = Array.empty),
+          layers   = Array.empty,
+          sigil    = Unset,
+          records  = Array.of(Tels.RecordDefinition(t"Item", members, Array.empty)),
+          scalars  = Array.empty,
+          selects  = selects)
+
+      // Projects the `item` node's children to (keywordIndex, text) pairs,
+      // with flags carrying empty text.
+      def project(root: Tel.Element) = root match
+        case Tel.Element.Node(_, _, children) if children.readable.length == 1 =>
+          children.readable(0) match
+            case Tel.Element.Node(_, _, inner) =>
+              inner.readable.collect:
+                case Tel.Element.Value(idx, _, text) => (idx, text)
+                case Tel.Element.Node(idx, _, _)     => (idx.or(-1), t"")
+              .toList
+
+            case _ => Nil
+
+        case _ => Nil
+
+      test(m"atom skips optional flag and fills scalar (worked example)"):
+        val schema = itemSchema(Array.of(
+          Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset),
+          Tels.Field(Tels.Polarity.Loose, Tels.Polarity.Implicit, t"b", Tels.Flag, Unset),
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"c", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        project(Tel.Type.assign(t"item a xyz\n".read[Tel], schema))
+      . assert(_ == List((0, t""), (2, t"xyz")))
+
+      test(m"repeatable scalar consumes every remaining atom"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"label", Tels.Scalar(Array.of(t"string")), Unset ),
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
+             t"values", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        project(Tel.Type.assign(t"item lbl 1 2 3\n".read[Tel], schema))
+      . assert(_ == List((0, t"lbl"), (1, t"1"), (1, t"2"), (1, t"3")))
+
+      test(m"optional scalar is never skipped (§20.8)"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+             t"first", Tels.Scalar(Array.of(t"string")), Unset ),
+          Tels.Field
+           ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+             t"second", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        project(Tel.Type.assign(t"item hello\n".read[Tel], schema))
+      . assert(_ == List((0, t"hello")))
+
+      test(m"source atom participates in positional assignment"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"body", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        project(Tel.Type.assign(t"item\n    payload\n".read[Tel], schema))
+      . assert(_ == List((0, t"payload")))
+
+      test(m"excess atoms raise E302"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"only", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        capture[TelError](Tel.Type.assign(t"item x y\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.TooManyAtoms)
+
+      test(m"atom at required struct-typed member raises E303"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"address", Tels.Struct(Array.empty, Array.empty), Unset )))
+
+        capture[TelError](Tel.Type.assign(t"item x\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.AtomAtNonAssignablePos)
+
+      test(m"unmatched variant at required SelectRef raises E304"):
+        val schema = itemSchema(
+          Array.of(Tels.SelectRef
+           ( required   = Tels.Polarity.Implicit,
+             repeatable = Tels.Polarity.Implicit,
+             reference  = t"Status" )),
+          selects = Array.of(Tels.SelectDefinition(
+            name     = t"Status",
+            variants = Array.of(
+              Tels.Variant(t"active",   Tels.Flag),
+              Tels.Variant(t"archived", Tels.Flag)),
+            validators = Array.empty)))
+
+        capture[TelError](Tel.Type.assign(t"item pending\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.AtomVariantUnmatched)
+
+      test(m"mismatched atom at required flag raises E305"):
+        val schema = itemSchema(Array.of(
+          Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset)))
+
+        capture[TelError](Tel.Type.assign(t"item xyz\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.AtomFlagKeywordMismatch)
+
+      test(m"atom plus child for a non-repeatable member raises E308"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"only", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        capture[TelError](Tel.Type.assign(t"item x\n  only y\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.NonRepeatableTooMany)
 
     suite(m"Schema default-field"):
       // Like `personSchema`, but the required `name` field carries a default,
@@ -2558,6 +2849,8 @@ object Tests extends Suite(m"Stratiform Tests"):
     RecordsTests()
     VerifyTests()
     AccrualTests()
+    PositionalTests()
+    EquivalenceTests()
 
     suite(m"BinTEL direct parsing (BintelInlinable)"):
       given (Tests.Person is Bintel.Parsable) = BintelInlinable.parsable[Tests.Person]

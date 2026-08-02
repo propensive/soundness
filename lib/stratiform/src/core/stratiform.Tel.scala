@@ -112,17 +112,35 @@ object Tel extends Tel2:
       tel.as[topic]
       tel.asInstanceOf[Tel of topic from topic]
 
+  // How a value of a codec's type occupies a compound line's atom positions,
+  // approximating §20.2's member classification from Scala types alone
+  // (issue #1694): `Scalar` is atom-assignable and never skipped, `Flag`
+  // (Boolean) is atom-assignable when the atom text equals the keyword, and
+  // `Struct` (a nested record, sum, or map) can only be filled by a keyword
+  // child. The schema-less approximation diverges from §20.2 in documented
+  // ways: an all-singleton enum decodes through its text codec and so is
+  // `Scalar`, not Flag-shaped, and non-singleton sums are `Struct` even
+  // where a schema's all-Flag select would be atom-assignable.
+  enum Nature:
+    case Scalar, Flag, Struct
+
   object Encodable:
     // The shape is an explicit, nameable thunk (not by-name) so the instance's
     // capture set can name it: an honest result rather than a laundered-pure one.
     // Mirrors jacinta's `Json.Encodable.apply` (see rep/DECISIONS.md).
-    def apply[value](shape0: () => Morphology)(lambda: (value -> Tel)^)
+    def apply[value]
+      ( shape0:    () => Morphology,
+        nature0:   Tel.Nature = Tel.Nature.Struct,
+        optional0: Boolean = false )
+      ( lambda: (value -> Tel)^ )
     :   ((value is Tel.Encodable)^{shape0, lambda}) =
 
       new Tel.Encodable:
         type Self = value
         def encoded(value: value): Tel = lambda(value)
         def shape(): Morphology = shape0()
+        override def nature: Tel.Nature = nature0
+        override def optional: Boolean = optional0
 
   // A TEL encoder/decoder that also carries the format-neutral `Morphology` of exactly
   // what it reads/writes, so a fused `Encodable & Schematic` / `Decodable &
@@ -134,15 +152,49 @@ object Tel extends Tel2:
     type Form = Tel
     def shape(): Morphology
 
+    // The §20.2 member classification of this encoder's type — see
+    // `Tel.Nature`. Conservatively `Struct` unless overridden.
+    def nature: Tel.Nature = Tel.Nature.Struct
+
+    // True when a field of this type may be legitimately absent (an
+    // `Optional` wrapper), mirroring `Decodable.optional`.
+    def optional: Boolean = false
+
+    // The §22.2 canonical child form of a value — for derived products, the
+    // compound carrying its leading inline atom run (`Mutation.construct`);
+    // identical to `encoded` unless overridden. This is the embedding form
+    // a canonicalizing parent uses for its nested values.
+    def constructed(value: Self): Tel = encoded(value)
+
+    // The §22.2 canonical presentation rooted as a document (the root
+    // carries no atoms, §20.2): for derived products, the member fields as
+    // top-level children whose own nested records carry inline runs.
+    // Identical to `constructed` unless overridden.
+    def canonicalized(value: Self): Tel = constructed(value)
+
+  // The §22.2 canonical presentation of a value: `.encode` keeps the fully
+  // keyword-child wire form (which typed navigation and the optics rely on);
+  // this opt-in rendering puts leading scalar and flag fields of each nested
+  // record in atom position per §22.2 `construct`. Both forms decode to the
+  // same value (§19.1).
+  def canonical[value](value: value)(using encodable: value is Tel.Encodable): Tel =
+    encodable.canonicalized(value)
+
   object Decodable:
     // Explicit shape thunk, as in `Tel.Encodable.apply`.
-    def apply[value](shape0: () => Morphology)(decoder: (value is distillate.Decodable in Tel)^)
+    def apply[value]
+      ( shape0:    () => Morphology,
+        nature0:   Tel.Nature = Tel.Nature.Struct,
+        optional0: Boolean = false )
+      ( decoder: (value is distillate.Decodable in Tel)^ )
     :   ((value is Tel.Decodable)^{shape0, decoder}) =
 
       new Tel.Decodable:
         type Self = value
         def decoded(tel: Tel): value = decoder.decoded(tel)
         def shape(): Morphology = shape0()
+        override def nature: Tel.Nature = nature0
+        override def optional: Boolean = optional0
 
   trait Decodable extends distillate.Decodable:
     type Form = Tel
@@ -152,6 +204,23 @@ object Tel extends Tel2:
     // decoder gathers all same-keyword sibling compounds for such a field and hands
     // them here as a Document; other fields read a single matching compound.
     def repeatable: Boolean = false
+
+    // The §20.2 member classification of this decoder's type — see
+    // `Tel.Nature`. Drives the derived product decoder's positional atom
+    // pre-pass. Conservatively `Struct` (never atom-assignable) unless
+    // overridden.
+    def nature: Tel.Nature = Tel.Nature.Struct
+
+    // True when a field of this type may be legitimately absent (an
+    // `Optional` wrapper): with a declared default, this makes the field
+    // non-required for the §20.2 step 3a skip rule.
+    def optional: Boolean = false
+
+    // What a field of this type yields when no child compound carries its
+    // keyword — the AST counterpart of `Parsing.absent`. The default
+    // replicates the derivation's historical fallback: decode an empty node
+    // (primitives raise `Absent` from it).
+    def absent()(using Tactic[TelError]): Self = decoded(Tel.empty)
 
   // The shared substance of `Tel.Parsable` and `Tel.Field`, mirroring
   // jacinta's `Json.Parsing`. The two subtraits add nothing: they exist so
@@ -179,6 +248,26 @@ object Tel extends Tel2:
     // occurrence by the derived product parser — the direct counterpart of
     // `Tel.Decodable.repeatable`.
     def repeatable: Boolean = false
+
+    // The §20.2 member classification of this parser's type — see
+    // `Tel.Nature`. Drives the derived product parser's positional atom
+    // pre-pass. Conservatively `Struct` unless overridden.
+    def nature: Tel.Nature = Tel.Nature.Struct
+
+    // True when a field of this type may be legitimately absent (an
+    // `Optional` wrapper), mirroring `Tel.Decodable.optional`.
+    def optional: Boolean = false
+
+    // Parse one positionally-assigned atom as this field's value. Only
+    // meaningful for `Scalar`-natured instances; the default reports the
+    // §20.2 step 3c mismatch.
+    def parseAtom(text: Text)(using Tactic[TelError]): Self =
+      abort(TelError(TelError.Reason.AtomAtNonAssignablePos))
+
+    // The value of a `Flag`-natured field made present by a bare atom
+    // matching its keyword.
+    def parseFlag()(using Tactic[TelError]): Self =
+      abort(TelError(TelError.Reason.AtomAtNonAssignablePos))
 
     def parse(reader: TelReader^, indent: Int): Self
 
@@ -249,13 +338,20 @@ object Tel extends Tel2:
           type Self = value
           def shape(): Morphology = decodable.shape()
           override def repeatable: Boolean = true
+          override def nature: Tel.Nature = decodable.nature
+          override def optional: Boolean = decodable.optional
 
           def parse(reader: TelReader^, indent: Int): value =
             decodable.decoded(reader.value(indent))
 
           override def parse(reader: TelReader^): value = decodable.decoded(reader.document())
-          override def absent()(using Tactic[TelError]): value = decodable.decoded(Tel.empty)
+          override def absent()(using Tactic[TelError]): value = decodable.absent()
           def parseElement(reader: TelReader^, indent: Int): Any = reader.value(indent)
+
+          // A positional atom becomes a synthetic one-atom compound, exactly
+          // the element form `gathered` re-assembles into its document.
+          def parseAtomElement(text: Text)(using Tactic[TelError]): Any =
+            Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
           def gathered(elements: List[Any]): value =
             val compounds = Array.from:
@@ -268,12 +364,20 @@ object Tel extends Tel2:
         new Tel.Parsable:
           type Self = value
           def shape(): Morphology = decodable.shape()
+          override def nature: Tel.Nature = decodable.nature
+          override def optional: Boolean = decodable.optional
 
           def parse(reader: TelReader^, indent: Int): value =
             decodable.decoded(reader.value(indent))
 
           override def parse(reader: TelReader^): value = decodable.decoded(reader.document())
-          override def absent()(using Tactic[TelError]): value = decodable.decoded(Tel.empty)
+          override def absent()(using Tactic[TelError]): value = decodable.absent()
+
+          // The AST bridge for a positional atom: decode a synthetic
+          // one-atom compound, as the derived decoder hands one over.
+          override def parseAtom(text: Text)(using Tactic[TelError]): value =
+            decodable.decoded:
+              Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
     // The one-line opt-in to direct parsing for a structural type:
     // `given MyType is Tel.Parsable = Tel.Parsable.derived` — a
@@ -288,10 +392,14 @@ object Tel extends Tel2:
     // through packed-`Long` literal comparisons, and whose record is built by
     // a direct constructor call — no `Array[Any]` buffer, no `Mirror`, no
     // per-field boxing. Semantics (wire keywords, gathering, first-match-wins
-    // duplicates, defaults, absents, error foci) mirror `derived` exactly;
-    // the generated instance's `shape()` is `Morphology.Any`. Requires a
-    // top-level or object-nested case class with a single parameter list —
-    // sums, method-local classes and other shapes use `derived`.
+    // duplicates, defaults, absents, error foci) mirror `derived` exactly,
+    // EXCEPT that a staged record parser does not yet run the §19.2
+    // positional atom pre-pass (#1694): a record entry's own inline atoms
+    // are discarded, as all paths did before the fix. Use `derived` for
+    // documents that put field values in atom position. The generated
+    // instance's `shape()` is `Morphology.Any`. Requires a top-level or
+    // object-nested case class with a single parameter list — sums,
+    // method-local classes and other shapes use `derived`.
     inline def staged[value]: value is Tel.Parsable =
       ${ stratiform.internal.stagedParsable[value]('{ adversaria.relabelling[value, Tel] }) }
 
@@ -304,7 +412,11 @@ object Tel extends Tel2:
         override def parse(reader: TelReader^): value = field0.parse(reader)
         def shape(): Morphology = field0.shape()
         override def repeatable: Boolean = field0.repeatable
+        override def nature: Tel.Nature = field0.nature
+        override def optional: Boolean = field0.optional
         override def absent()(using Tactic[TelError]): value = field0.absent()
+        override def parseAtom(text: Text)(using Tactic[TelError]): value = field0.parseAtom(text)
+        override def parseFlag()(using Tactic[TelError]): value = field0.parseFlag()
 
     // The element-wise hooks of a repeatable (collection) parser. The
     // derived product parser gathers each same-keyword occurrence through
@@ -316,6 +428,12 @@ object Tel extends Tel2:
     private[stratiform] trait Gathering:
       self: Tel.Parsing^ =>
       def parseElement(reader: TelReader^, indent: Int): Any
+
+      // One element built from a positionally-assigned atom: §19.2 lets a
+      // repeatable member's occurrences split between inline atoms on the
+      // parent line and later same-keyword children.
+      def parseAtomElement(text: Text)(using Tactic[TelError]): Any
+
       def gathered(elements: List[Any]): Self
 
     // The synthetic document the AST derivation hands to a repeatable
@@ -340,8 +458,12 @@ object Tel extends Tel2:
           type Self = collection[element]
           def shape(): Morphology = Morphology.Arr(field.shape())
           override def repeatable: Boolean = true
+          override def nature: Tel.Nature = field.nature
+          override def optional: Boolean = true
 
           def parseElement(reader: TelReader^, indent: Int): Any = field.parse(reader, indent)
+
+          def parseAtomElement(text: Text)(using Tactic[TelError]): Any = field.parseAtom(text)
 
           def gathered(elements: List[Any]): collection[element] =
             val builder = factory.newBuilder
@@ -383,14 +505,25 @@ object Tel extends Tel2:
         new Tel.Parsable:
           type Self = value
           def shape(): Morphology = Morphology.Opt(field.shape())
+          override def nature: Tel.Nature = field.nature
+          override def optional: Boolean = true
 
           def parse(reader: TelReader^, indent: Int): value =
-            if reader.hasSubstance then field.parse(reader, indent)
+            // A bare entry means `Unset` for most types, but a Flag-natured
+            // inner reads it as flag presence (`Optional[Boolean]` of
+            // `true`) — the AST `optionalDecodable`'s test exactly.
+            if reader.hasSubstance || field.nature == Tel.Nature.Flag
+            then field.parse(reader, indent)
             else
               reader.skipEntry(indent)
               Unset
 
           override def absent()(using Tactic[TelError]): value = Unset
+
+          override def parseAtom(text: Text)(using Tactic[TelError]): value =
+            field.parseAtom(text)
+
+          override def parseFlag()(using Tactic[TelError]): value = field.parseFlag()
 
     // Sentinel for the derived product parser's value buffer: a slot still
     // `AbsentSlot` after the entry loop had no matching keyword
@@ -501,6 +634,22 @@ object Tel extends Tel2:
         private lazy val fields: Array[(String, Tel.Parsing, Any)]^{} = fields0()
         private lazy val keys: Array[String]^{} = fields.map(_(0))
 
+        // Per-field positional profiles for the §19.2 atom pre-pass,
+        // computed from the same table as the keyword dispatch. A Flag
+        // field is never required: its absence parses `false`, so the skip
+        // rule may pass over it — which the canonical encoder relies on
+        // when it elides a false flag from a run.
+        private lazy val profiles: Array[Positional.Profile]^{} =
+          fields.map: (key, parsing, fallback) =>
+            val actual = unwrap(parsing)
+
+            Positional.Profile
+              ( Text(key),
+                actual.nature,
+                actual.repeatable,
+                required = actual.nature != Tel.Nature.Flag
+                           && !(actual.optional || fallback.asInstanceOf[Optional[Any]].present) )
+
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
             fields.map { (key, parser, _) => (Text(key), parser.shape()) }.to[List]
@@ -521,18 +670,23 @@ object Tel extends Tel2:
           -1
 
         // The value of a record field is its children, one level deeper than
-        // its own entry line.
+        // its own entry line — after the entry line's own atoms fill fields
+        // positionally (§19.2).
         def parse(reader: TelReader^, indent: Int): derivation =
-          reader.finishLine()
-          parseFields(reader, indent + 1)
+          parseFields(reader, indent + 1, reader.lineAtoms())
 
-        // A whole document's fields sit at indent zero.
-        override def parse(reader: TelReader^): derivation = parseFields(reader, 0)
+        // A whole document's fields sit at indent zero; the root carries no
+        // atoms (§20.2).
+        override def parse(reader: TelReader^): derivation =
+          parseFields(reader, 0, Array.empty)
 
-        private def parseFields(reader: TelReader^, indent: Int): derivation =
+        private def parseFields(reader: TelReader^, indent: Int, atoms: Array[Tel.Atom]^{})
+        :   derivation =
+
           val entries = fields
           val count = entries.length
           val values = new scala.Array[Any](count)
+          val atomFilled = new scala.Array[Boolean](count)
           var index = 0
 
           while index < count do
@@ -542,6 +696,43 @@ object Tel extends Tel2:
           // With the inert default `Foci`, per-field `focus` wrapping would
           // observably do nothing, so the hot loop skips it.
           val focused = foci.active
+
+          // §19.2 positional pre-pass (issue #1694): the entry line's atoms
+          // fill fields in declaration order before the keyword loop, so a
+          // repeatable field's later same-keyword children append after them
+          // (§18.3 step 4 — atoms precede children).
+          if atoms.length > 0 then
+            val assigned = Positional.assign(atoms, profiles)(using tactic)
+            var slot = 0
+
+            while slot < assigned.length do
+              val slotAtoms = assigned(slot).stdlib
+
+              if slotAtoms.nonEmpty then
+                val parsing = unwrap(entries(slot)(1))
+
+                inline def positioned[result](inline block: => result): result =
+                  if focused then focus(descend(prior, Text(keys(slot))))(block) else block
+
+                parsing match
+                  case gathering: Gathering if parsing.repeatable =>
+                    val buffer = scala.collection.mutable.ListBuffer.empty[Any]
+
+                    slotAtoms.foreach: atom =>
+                      buffer += positioned(gathering.parseAtomElement(Positional.text(atom)))
+
+                    values(slot) = buffer
+
+                  case _ =>
+                    atomFilled(slot) = true
+
+                    values(slot) =
+                      if parsing.nature == Tel.Nature.Flag
+                      then positioned(parsing.parseFlag())
+                      else positioned(parsing.parseAtom(Positional.text(slotAtoms.head)))
+
+              slot += 1
+
           var next: Optional[Text] = reader.keyword(indent)
 
           while next.present do
@@ -572,9 +763,14 @@ object Tel extends Tel2:
 
                 case _ =>
                   // A non-repeatable field keeps its first occurrence — the
-                  // AST's `field()` semantics — and skips the rest.
-                  if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot)
-                  then reader.skipEntry(indent)
+                  // AST's `field()` semantics — and skips the rest. When the
+                  // first fill came from a positional atom, the duplicate is
+                  // §20.2 step 5c's E308 (the atom wins).
+                  if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot) then
+                    if atomFilled(found)
+                    then raise(TelError(TelError.Reason.NonRepeatableTooMany))(using tactic)
+
+                    reader.skipEntry(indent)
                   else values(found) =
                     if focused
                     then focus(descend(prior, Text(keys(found)))):
@@ -642,7 +838,11 @@ object Tel extends Tel2:
       override def parse(reader: TelReader^): value = source.parse(reader)
       def shape(): Morphology = source.shape()
       override def repeatable: Boolean = source.repeatable
+      override def nature: Tel.Nature = source.nature
+      override def optional: Boolean = source.optional
       override def absent()(using Tactic[TelError]): value = source.absent()
+      override def parseAtom(text: Text)(using Tactic[TelError]): value = source.parseAtom(text)
+      override def parseFlag()(using Tactic[TelError]): value = source.parseFlag()
 
     def apply[value](parsing: (value is Tel.Parsing)^)
     :   ((value is Tel.Field)^{parsing}) =
@@ -659,6 +859,14 @@ object Tel extends Tel2:
   trait Field extends Parsing
 
   // Type assignment algorithm per §20.2 of the TEL specification.
+  //
+  // Document-conformance violations (E301-E311) go through `recoverNode` and
+  // so record-and-continue under an accrual boundary, per §19.5; schema
+  // errors (E210/E218) abort, because a malformed schema offers no document-
+  // level recovery. Out of scope here: §20.1 schema-validity checking (E2xx
+  // beyond reference resolution), tabulation-aware column assignment, and
+  // diagnostic spans — a TelError raised during assignment carries no
+  // position.
   object Type:
     import TelError.Reason
     import Tels.*
@@ -674,9 +882,15 @@ object Tel extends Tel2:
 
       raise(TelError(reason)) yet continuation
 
+    // §20.2 RECOMMENDED defence against pathologically deep documents: type
+    // assignment fail-stops beyond this many levels of compound nesting. It
+    // carries no E-code because it is a property of the implementation, not
+    // of the document.
+    private val nestingLimit = 256
+
     def assign(tel: Tel, schema: Tels): Tel.Element raises TelError tracks Tel.Focus =
       val compounds: Array[Tel.Compound]^{} = tel.subtree.children.bind(_.compounds)
-      val rootChildren = assignChildren(compounds, schema.document, schema)
+      val rootChildren = assignChildren(compounds, schema.document, schema, 1)
 
       val rootElements =
         applyConstraints(schema.document, Array.empty[Tel.Element], rootChildren, schema)
@@ -737,18 +951,22 @@ object Tel extends Tel2:
         case other => other
 
     private case class KeywordEntry
-      ( memberIndex: Int,
-        entryType:   Type,
-        member:      Member,
-        variant:     Optional[Variant] = Unset )
+      ( flatIndex: Int,
+        ordinal:   Int,
+        entryType: Type,
+        member:    Member,
+        variant:   Optional[Variant] = Unset )
 
-    // Builds a map from keyword Text → KeywordEntry where `memberIndex`
+    // Builds a map from keyword Text → KeywordEntry where `flatIndex`
     // is the **flat keyword index** per BinTEL §5: each Field
     // contributes 1 entry, each SelectRef contributes 1 entry per
     // variant in the referenced SelectDefinition. The flat index
     // identifies the unique keyword position in the parent's flat-
     // keyword sequence — used as the `keywordIndex` of every
-    // Tel.Element produced from this parent.
+    // Tel.Element produced from this parent. `ordinal` is the member
+    // index in `parent.members`: all variants of one SelectRef share
+    // it, which is what lets them interleave under the §20.2 step 4c
+    // contiguity rule.
     private def keywordMap(parent: Struct, schema: Tels)
     :   Map[Text, KeywordEntry] raises TelError =
 
@@ -759,7 +977,7 @@ object Tel extends Tel2:
       while idx < parent.members.length do
         parent.members(idx) match
           case f: Tels.Field =>
-            builder(f.keyword) = KeywordEntry(flatIdx, f.fieldType, f)
+            builder(f.keyword) = KeywordEntry(flatIdx, idx, f.fieldType, f)
             flatIdx += 1
 
           case s: SelectRef =>
@@ -772,7 +990,7 @@ object Tel extends Tel2:
               val variant = selectDef.variants(v)
 
               builder(variant.keyword) =
-                KeywordEntry(flatIdx + v, variant.variantType, s, Optional(variant))
+                KeywordEntry(flatIdx + v, idx, variant.variantType, s, Optional(variant))
 
               v += 1
 
@@ -803,6 +1021,43 @@ object Tel extends Tel2:
 
         case _: Exclude => false
 
+    private def selectDefinitionOf(select: SelectRef, schema: Tels)
+    :   SelectDefinition raises TelError =
+
+      schema.selects.find(_.name == select.reference).getOrElse:
+        abort(TelError(Reason.UnresolvedReference))
+
+    // Effective polarity per §20: `required` unless declared `Loose`.
+    private def requiredOf(member: Member): Boolean = member match
+      case f: Tels.Field => f.required != Polarity.Loose
+      case s: SelectRef  => s.required != Polarity.Loose
+      case _: Exclude    => false
+
+    private def repeatableOf(member: Member): Boolean = member match
+      case f: Tels.Field => f.repeatable == Polarity.Loose
+      case s: SelectRef  => s.repeatable == Polarity.Loose
+      case _: Exclude    => false
+
+    // Flag-shaped per §20.2 step 3a: a Field resolving to Flag, or a
+    // SelectRef all of whose variants resolve to Flag.
+    private def flagShaped(member: Member, schema: Tels): Boolean raises TelError =
+      member match
+        case f: Tels.Field =>
+          resolveType(f.fieldType, schema) match
+            case Flag => true
+            case _    => false
+
+        case s: SelectRef => atomAssignable(s, schema)
+        case _: Exclude   => false
+
+    private def keywordMatches(member: Member, text: Text, schema: Tels)
+    :   Boolean raises TelError =
+
+      member match
+        case f: Tels.Field => f.keyword == text
+        case s: SelectRef  => selectDefinitionOf(s, schema).variants.exists(_.keyword == text)
+        case _: Exclude    => false
+
     // Track both the member position (`pos` in parent.members) and the
     // running flat keyword index (`flatPos`) — Tel.Element.keywordIndex
     // uses flat positions per BinTEL §5.
@@ -810,7 +1065,7 @@ object Tel extends Tel2:
       ( atoms:  Array[Tel.Atom]^{},
        parent: Struct,
        schema: Tels )
-    :   Array[Tel.Element]^{} raises TelError =
+    :   Array[Tel.Element]^{} raises TelError tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var pos = 0
@@ -832,12 +1087,39 @@ object Tel extends Tel2:
           case Tel.Atom.Source(t)     => t
           case Tel.Atom.Literal(_, t) => t
 
-        var consumed = false
+        // §20.2 step 3a: advance past non-required members that cannot take
+        // this atom — those that are not atom-assignable, or are Flag-shaped
+        // with a keyword the atom's text does not match. A Scalar member is
+        // never skipped; a required member is never skipped.
+        var scanning = true
 
-        while !consumed && pos < parent.members.length do
-          if !atomAssignable(parent.members(pos), schema) then
-            flatPos += flatWidthOf(parent.members(pos))
+        while scanning && pos < parent.members.length do
+          val member = parent.members(pos)
+
+          val skippable = member match
+            case _: Exclude => true
+
+            case _ =>
+              !requiredOf(member)
+              && (!atomAssignable(member, schema)
+                  || (flagShaped(member, schema) && !keywordMatches(member, atomText, schema)))
+
+          if skippable then
+            flatPos += flatWidthOf(member)
             pos += 1
+          else scanning = false
+
+        if pos >= parent.members.length then
+          // §20.2 step 3b: more atoms than assignable member positions.
+          // Recovery drops the whole excess run, reported once.
+          recoverNode(Reason.TooManyAtoms)(())
+          i = atoms.length
+        else
+          if !atomAssignable(parent.members(pos), schema) then
+            // §20.2 step 3c: an atom arrived at a required member that can
+            // only be filled by compound children. Recovery drops the atom;
+            // the member may still be filled by a child.
+            recoverNode(Reason.AtomAtNonAssignablePos)(())
           else
             parent.members(pos) match
               case f: Tels.Field =>
@@ -849,23 +1131,22 @@ object Tel extends Tel2:
                       flatPos += 1
                       pos += 1
 
-                    consumed = true
-
                   case Flag =>
                     if atomText == f.keyword then
                       results += Tel.Element.Node(flatPos, Flag, Array.empty)
-                      flatPos += 1
-                      pos += 1
-                      consumed = true
-                    else
-                      flatPos += 1
-                      pos += 1
 
-                  case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
+                      if f.repeatable != Polarity.Loose then
+                        flatPos += 1
+                        pos += 1
+                    else
+                      // §20.2 step 3d: a required Flag member's atom must
+                      // match its keyword. Recovery drops the atom.
+                      recoverNode(Reason.AtomFlagKeywordMismatch)(())
+
+                  case _ => () // unreachable behind `atomAssignable`
 
               case s: SelectRef =>
-                val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
-                  abort(TelError(Reason.UnresolvedReference))
+                val selectDef = selectDefinitionOf(s, schema)
 
                 selectDef.variants.readable.zipWithIndex.find(_._1.keyword == atomText) match
                   case Some((_, variantOffset)) =>
@@ -875,29 +1156,28 @@ object Tel extends Tel2:
                       flatPos += selectDef.variants.length
                       pos += 1
 
-                    consumed = true
-
                   case None =>
-                    flatPos += selectDef.variants.length
-                    pos += 1
+                    // §20.2 step 3d: no variant keyword matches the atom at a
+                    // required all-Flag SelectRef. Recovery drops the atom.
+                    recoverNode(Reason.AtomVariantUnmatched)(())
 
-              case _ =>
-                flatPos += flatWidthOf(parent.members(pos))
-                pos += 1
+              case _: Exclude => () // consumed by the skip scan
 
-        if !consumed then abort(TelError(Reason.AtomFlagKeywordMismatch))
-        i += 1
+          i += 1
 
       Array.from(results)
 
     private def assignChildren
       ( compounds: Array[Tel.Compound]^{},
        parent:    Struct,
-       schema:    Tels )
+       schema:    Tels,
+       depth:     Int )
     :   Array[Tel.Element]^{} raises TelError tracks Tel.Focus =
 
       val km = keywordMap(parent, schema)
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      var currentMember = -1
+      val seenMembers = scala.collection.mutable.HashSet.empty[Int]
       var i = 0
 
       while i < compounds.length do
@@ -906,8 +1186,23 @@ object Tel extends Tel2:
         // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
         // emit no element, so remaining siblings are still validated.
         km.get(compound.keyword) match
-          case Some(entry) => results += assignCompound(compound, entry, schema)
-          case None        => recoverNode(Reason.UnknownKeyword)(())
+          case Some(entry) =>
+            // §20.2 step 4c: all children of one member must form a single
+            // contiguous run; variants of one SelectRef share an ordinal and
+            // so interleave freely. Returning to an earlier member's run is
+            // E309, reported once per returned-to run; the child is still
+            // assigned.
+            if entry.ordinal != currentMember then
+              if currentMember >= 0 then seenMembers += currentMember
+
+              if seenMembers.contains(entry.ordinal)
+              then recoverNode(Reason.MembersNonContiguous)(())
+
+              currentMember = entry.ordinal
+
+            results += assignCompound(compound, entry, schema, depth)
+
+          case None => recoverNode(Reason.UnknownKeyword)(())
 
         i += 1
 
@@ -933,26 +1228,48 @@ object Tel extends Tel2:
             case Some(sd) => sd.variants.length
             case None     => 0
 
+      def indexOf(element: Tel.Element): Int = element match
+        case Tel.Element.Node(idx, _, _)  => idx.or(-1)
+        case Tel.Element.Value(idx, _, _) => idx
+
       var memberIdx = 0
       var flatStart = 0
 
       while memberIdx < parent.members.length do
-        val width = flatWidth(parent.members(memberIdx))
+        val member = parent.members(memberIdx)
+        val width = flatWidth(member)
 
-        parent.members(memberIdx) match
-          case f: Tels.Field if f.required != Polarity.Loose =>
-            val filled = results.exists:
-              case Tel.Element.Node(idx, _, _)  => idx == Optional(flatStart)
-              case Tel.Element.Value(idx, _, _) => idx == flatStart
+        // §20.2 step 5a: atoms and compound children assigned to the member
+        // count against the same budget. A member's elements all carry flat
+        // keyword indexes within its flat range.
+        val fillCount = results.count: element =>
+          val idx = indexOf(element)
+          idx >= flatStart && idx < flatStart + width
 
-            if !filled then resolveType(f.fieldType, schema) match
+        member match
+          case f: Tels.Field =>
+            if requiredOf(f) && fillCount == 0 then resolveType(f.fieldType, schema) match
               case s: Scalar => f.default match
                 case t: Text => results += Tel.Element.Value(flatStart, s, t)
                 case _       => recoverNode(Reason.RequiredMemberAbsent)(())
 
               case _ => recoverNode(Reason.RequiredMemberAbsent)(())
 
-          case _ => ()
+            // §20.2 step 5c; recovery reports the document invalid but
+            // retains every occurrence.
+            if !repeatableOf(f) && fillCount > 1
+            then recoverNode(Reason.NonRepeatableTooMany)(())
+
+          case s: SelectRef =>
+            // §20.2 step 5b: defaults exist only on Scalar Fields, so an
+            // absent required SelectRef is always E307.
+            if requiredOf(s) && fillCount == 0
+            then recoverNode(Reason.RequiredMemberAbsent)(())
+
+            if !repeatableOf(s) && fillCount > 1
+            then recoverNode(Reason.NonRepeatableTooMany)(())
+
+          case _: Exclude => ()
 
         flatStart += width
         memberIdx += 1
@@ -962,8 +1279,11 @@ object Tel extends Tel2:
     private def assignCompound
       ( compound: Tel.Compound,
        entry:    KeywordEntry,
-       schema:   Tels )
+       schema:   Tels,
+       depth:    Int )
     :   Tel.Element raises TelError tracks Tel.Focus =
+
+      if depth > nestingLimit then abort(TelError(Reason.NestingLimitExceeded))
 
       val resolved = resolveType(entry.entryType, schema)
 
@@ -971,11 +1291,20 @@ object Tel extends Tel2:
         case s: Struct =>
           val atomElements = assignAtoms(compound.atoms, s, schema)
           val childCompounds: Array[Tel.Compound]^{} = compound.children.bind(_.compounds)
-          val childElements = assignChildren(childCompounds, s, schema)
+          val childElements = assignChildren(childCompounds, s, schema, depth + 1)
           val allElements = applyConstraints(s, atomElements, childElements, schema)
-          Tel.Element.Node(entry.memberIndex, s, allElements)
+          Tel.Element.Node(entry.flatIndex, s, allElements)
 
         case s: Scalar =>
+          // §20.2 step 1: a Scalar-typed compound is a leaf with at most one
+          // atom (of any presentation form) and no compound children. Extra
+          // atoms are E302 and children are E301; recovery keeps the first
+          // atom and ignores the children.
+          if compound.atoms.length > 1 then recoverNode(Reason.TooManyAtoms)(())
+
+          if compound.children.exists(_.compounds.nonEmpty)
+          then recoverNode(Reason.NonStructCompound)(())
+
           val text = compound.atoms.headOption.map:
             case Tel.Atom.Inline(t, _)  => t
             case Tel.Atom.Source(t)     => t
@@ -983,17 +1312,17 @@ object Tel extends Tel2:
 
           .getOrElse(t"")
 
-          Tel.Element.Value(entry.memberIndex, s, text)
+          Tel.Element.Value(entry.flatIndex, s, text)
 
         case Flag =>
           if compound.atoms.nonEmpty || compound.children.nonEmpty then
             recoverNode(Reason.FlagWithContent)(())
 
-          Tel.Element.Node(entry.memberIndex, Flag, Array.empty)
+          Tel.Element.Node(entry.flatIndex, Flag, Array.empty)
 
         case _: Reference =>
           recoverNode(Reason.UnresolvedReference):
-            Tel.Element.Node(entry.memberIndex, Flag, Array.empty)
+            Tel.Element.Node(entry.flatIndex, Flag, Array.empty)
 
   // Validator infrastructure per §21 of the TEL specification.
   object Validator:
@@ -1494,6 +1823,7 @@ object Tel extends Tel2:
     new Tel.Parsable:
       type Self = value
       def shape(): Morphology = shape0
+      override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): value =
         reader.atom().lay(reader.fault(TelError.Reason.Absent) yet sentinel): atom =>
@@ -1502,6 +1832,10 @@ object Tel extends Tel2:
 
       override def absent()(using Tactic[TelError]): value =
         raise(TelError(TelError.Reason.Absent)) yet sentinel
+
+      override def parseAtom(text: Text)(using Tactic[TelError]): value =
+        convert(text).or:
+          raise(TelError(TelError.Reason.NotScalar(text, expected))) yet sentinel
 
   given textParsable: Text is Tel.Parsable =
     primitiveParsable(Morphology.Str, t"Text", t""): atom => atom
@@ -1525,6 +1859,7 @@ object Tel extends Tel2:
     new Tel.Parsable:
       type Self = Int
       def shape(): Morphology = Morphology.Whole
+      override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): Int =
         reader.int().lay(Parsable.scalarFault(reader, t"Int", 0))(identity)
@@ -1532,16 +1867,25 @@ object Tel extends Tel2:
       override def absent()(using Tactic[TelError]): Int =
         raise(TelError(TelError.Reason.Absent)) yet 0
 
+      override def parseAtom(text: Text)(using Tactic[TelError]): Int =
+        val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
+        parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Int"))) yet 0)
+
   given longParsable: Long is Tel.Parsable =
     new Tel.Parsable:
       type Self = Long
       def shape(): Morphology = Morphology.Whole
+      override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): Long =
         reader.long().lay(Parsable.scalarFault(reader, t"Long", 0L))(identity)
 
       override def absent()(using Tactic[TelError]): Long =
         raise(TelError(TelError.Reason.Absent)) yet 0L
+
+      override def parseAtom(text: Text)(using Tactic[TelError]): Long =
+        val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
+        parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Long"))) yet 0L)
 
   given doubleParsable: Double is Tel.Parsable =
     primitiveParsable(Morphology.Real, t"Double", 0.0): atom =>
@@ -1551,12 +1895,23 @@ object Tel extends Tel2:
     new Tel.Parsable:
       type Self = Boolean
       def shape(): Morphology = Morphology.Bool
+      override def nature: Tel.Nature = Tel.Nature.Flag
 
       def parse(reader: TelReader^, indent: Int): Boolean =
-        reader.boolean().lay(Parsable.scalarFault(reader, t"Boolean", false))(identity)
+        // Flag semantics (§20): a present entry with no atom is the bare
+        // flag form, meaning `true`; a present-but-unparseable atom is
+        // still `NotScalar`, exactly as on the AST path.
+        reader.boolean().lay(
+          if reader.primaryPresent then Parsable.scalarFault(reader, t"Boolean", false) else true
+        )(identity)
 
-      override def absent()(using Tactic[TelError]): Boolean =
-        raise(TelError(TelError.Reason.Absent)) yet false
+      override def absent()(using Tactic[TelError]): Boolean = false
+
+      override def parseAtom(text: Text)(using Tactic[TelError]): Boolean =
+        if text == t"true" then true else if text == t"false" then false
+        else raise(TelError(TelError.Reason.NotScalar(text, t"Boolean"))) yet false
+
+      override def parseFlag()(using Tactic[TelError]): Boolean = true
 
   // `Tel` reads itself directly through the AST bridge — the direct
   // counterpart of `telDecodable`.
@@ -1605,9 +1960,11 @@ object Tel extends Tel2:
     new Tel.Parsable:
       type Self = value
       def shape(): Morphology = Morphology.Str
+      override def nature: Tel.Nature = Tel.Nature.Scalar
       def parse(reader: TelReader^, indent: Int): value = codec.decoded(reader.atom().or(t""))
       override def parse(reader: TelReader^): value = codec.decoded(t"")
       override def absent()(using Tactic[TelError]): value = codec.decoded(t"")
+      override def parseAtom(text: Text)(using Tactic[TelError]): value = codec.decoded(text)
 
   // `source.read[List[Tel]]` / `read[Chain[Tel]]` for a multi-document source
   // (§6.1). `List[Tel]` parses every document eagerly; `Chain[Tel]` parses
@@ -4743,12 +5100,78 @@ object Tel extends Tel2:
       val extraAtom: Optional[Tel.Atom] =
         if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
 
+      // §14/§15 append the source/literal atom to the atom sequence: when the
+      // line itself carried no inline atom, it is the entry's first atom and
+      // supplies the primary.
+      if !directPrimaryPresent then extraAtom match
+        case Tel.Atom.Source(text)     => capturePrimaryFromText(text.s)
+        case Tel.Atom.Literal(_, text) => capturePrimaryFromText(text.s)
+        case _                         => ()
+
       // Mirror `directCompound`: children are parsed (and here discarded) only
       // when no source/literal atom and no tabulation intervened; otherwise a
       // following deeper line is over-indented and fails with the same reason.
       if !tabulated && extraAtom.absent then parseChildren(indent)
       else if !head.eof && !head.separator && !head.blank && head.indentLevels > indent
       then errorAt(directOverIndentReason, head.startLine, 1)
+
+    // Parses an optional `-` and one to eighteen digits — exactly the
+    // spellings `parseArenaLong` accepts — or Unset.
+    private def parsedTextLong(text: String): Optional[Long] =
+      val negative = text.startsWith("-")
+      val start = if negative then 1 else 0
+      val digits = text.length - start
+
+      if digits < 1 || digits > 18 then Unset else
+        var index = start
+        var accumulator = 0L
+        var ok = true
+
+        while ok && index < text.length do
+          val ch = text.charAt(index)
+
+          if ch < '0' || ch > '9' then ok = false else
+            accumulator = accumulator*10 + (ch - '0')
+            index += 1
+
+        if ok then Optional(if negative then -accumulator else accumulator) else Unset
+
+    // Capture the primary slot from a source/literal atom's text, mirroring
+    // `parseCompoundLineRest`'s per-mode capture of the first inline atom.
+    private update def capturePrimaryFromText(value: String): Unit =
+      directPrimaryPresent = true
+      directPrimaryOk = false
+      directPrimaryText = null
+
+      directPrimaryMode match
+        case PrimaryLong =>
+          parsedTextLong(value) match
+            case parsed: Long =>
+              directPrimaryLongVal = parsed
+              directPrimaryOk = true
+
+            case _ => directPrimaryText = value
+
+        case PrimaryInt =>
+          parsedTextLong(value) match
+            case parsed: Long
+                 if parsed >= Int.MinValue && parsed <= Int.MaxValue =>
+              directPrimaryLongVal = parsed
+              directPrimaryOk = true
+
+            case _ => directPrimaryText = value
+
+        case PrimaryBoolean =>
+          if value == "true" then
+            directPrimaryBoolVal = true
+            directPrimaryOk = true
+          else if value == "false" then
+            directPrimaryBoolVal = false
+            directPrimaryOk = true
+          else directPrimaryText = value
+
+        case _ =>
+          directPrimaryText = value
 
     // The leaf fast path, entered with the cursor right after the keyword:
     // handles the dominant data shapes — a bare `keyword` line, and
@@ -4898,9 +5321,10 @@ object Tel extends Tel2:
                     directPrimaryText = sliceText(atomStart)
                     finish()
 
-    // The entry's primary atom as text — the first inline atom's, or Unset when
-    // the line carries none (a source/literal atom never supplies it), mirroring
-    // `Tel#primaryAtom`. Backs the `Text`/text-codec primitive readers.
+    // The entry's primary atom as text — the first atom's, of any presentation
+    // form (a source/literal atom supplies it when the line itself carries no
+    // inline atom), mirroring `Tel#primaryAtom`. Backs the `Text`/text-codec
+    // primitive readers.
     private[stratiform] update def directAtomText()(using Tactic[TelError]): Optional[Text] =
       consumeDirectEntry(PrimaryText)
       val captured = directPrimaryText
@@ -4958,6 +5382,47 @@ object Tel extends Tel2:
         head.indentLevels > indent
       then errorAt(directOverIndentReason, head.startLine, 1)
 
+    // As `directFinishLine`, but capturing the entry line's atoms — including
+    // the source/literal continuation, which §14/§15 append to the atom
+    // sequence — for the derived record parser's §19.2 positional pre-pass.
+    private[stratiform] update def directFinishLineAtoms()(using Tactic[TelError])
+    :   Array[Tel.Atom]^{} =
+
+      val spaces = directEntrySpaces
+      val indent = directEntryIndent
+      val tabulated = directTabulation.present
+
+      // A record entry is usually a bare `keyword` line: nothing to scan.
+      val bare = inHold:
+        if more && (peek == LF || peek == CR) then
+          consumeLineEnding()
+          compoundLineRemark = Unset
+          true
+        else false
+
+      val atomsStart = atomScratchIx
+      if !bare then parseCompoundLineRest(directEntryLine)
+      prevContentLeadingSpaces = spaces
+      prevLineWasBoundary = false
+      fillHead()
+
+      val extraAtom: Optional[Tel.Atom] =
+        if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
+
+      extraAtom match
+        case atom: Tel.Atom => pushAtom(atom)
+        case _              => ()
+
+      val atoms = takeAtoms(atomScratchIx - atomsStart)
+
+      // As in `directFinishLine`: after a source/literal atom or on a
+      // tabulated row, a deeper line is over-indented.
+      if (tabulated || extraAtom.present) && !head.eof && !head.separator && !head.blank &&
+        head.indentLevels > indent
+      then errorAt(directOverIndentReason, head.startLine, 1)
+
+      atoms
+
     // Skip the whole entry — line remainder, continuation and subtree —
     // discarding it. Used for unknown keywords and duplicate non-repeatable
     // fields (where the AST's `field()` keeps the first match).
@@ -4974,10 +5439,10 @@ object Tel extends Tel2:
     private[stratiform] update def directDocument()(using Tactic[TelError]): Tel =
       Tel.make(Tel.Document(Unset, Unset, lineEndings, parseChildren(-1)))
 
-    // Peek whether the current entry has substance — an inline atom on its
-    // line, or a child compound beneath it — the exact test the AST's
-    // `optionalDecodable` performs (a source/literal atom is not an inline
-    // atom and contributes none). The entry is parsed in full under a mark
+    // Peek whether the current entry has substance — an atom of any
+    // presentation form (§14/§15 append source/literal atoms to the atom
+    // sequence), or a child compound beneath it — the exact test the AST's
+    // `optionalDecodable` performs. The entry is parsed in full under a mark
     // and then rewound, restoring every piece of parser state the parse
     // touched, so the caller can still consume the entry either way.
     private[stratiform] update def directEntrySubstance()(using Tactic[TelError]): Boolean = inHold:
@@ -5000,14 +5465,8 @@ object Tel extends Tel2:
 
       val compound = directCompound(directEntryIndent)
 
-      var hasInlineAtom = false
-      var index = 0
-
-      while index < compound.atoms.length do
-        if compound.atoms(index).isInstanceOf[Tel.Atom.Inline] then hasInlineAtom = true
-        index += 1
-
-      val substance = hasInlineAtom || compound.children.exists(_.compounds.length > 0)
+      val substance =
+        compound.atoms.length > 0 || compound.children.exists(_.compounds.length > 0)
 
       syncTo()
       cursor.cue(mk)
@@ -5082,15 +5541,29 @@ extends scala.Dynamic, Documentary, Topical, Original:
     case c: Tel.Compound  => c.keyword
     case _: Tel.Document  => t""
 
-  // Flat list of inline atom texts attached to this node. For the document
-  // root this is always empty since the root has no atoms.
+  // Flat list of atom texts attached to this node, in atom order: inline
+  // atoms first, then the source or literal atom if one follows the line
+  // (§14/§15 append it to the same atom sequence). For the document root
+  // this is always empty since the root has no atoms.
   def atomTexts: Array[Text]^{} = subtree match
-    case c: Tel.Compound => Array.frozen(c.atoms.readable.collect { case Tel.Atom.Inline(text, _) => text })
+    case c: Tel.Compound =>
+      Array.frozen:
+        c.atoms.readable.map:
+          case Tel.Atom.Inline(text, _)  => text
+          case Tel.Atom.Source(text)     => text
+          case Tel.Atom.Literal(_, text) => text
+
     case _: Tel.Document => Array.empty
 
-  // First inline atom text or empty string if none. Used by primitive
-  // Decodable instances which interpret a compound's first atom as its
-  // scalar value.
+  // The node's atoms in presentation order (all three forms); empty for the
+  // document root.
+  private[stratiform] def atoms: Array[Tel.Atom]^{} = subtree match
+    case c: Tel.Compound => c.atoms
+    case _: Tel.Document => Array.empty
+
+  // First atom text (of any presentation form) or empty string if none.
+  // Used by primitive Decodable instances which interpret a compound's
+  // first atom as its scalar value.
   def primaryAtom: Text =
     if atomTexts.isEmpty then t"" else atomTexts(0)
 

@@ -66,6 +66,14 @@ import wisteria.*
 // list contains one Compound per field, keyed by the field's label.
 // Decoding inverts these mappings.
 
+// A present entry with a keyword and no children — the node form under which
+// a bare compound line reaches a scalar or flag decoder. The keywordless
+// empty `Tel` (the historical absent-field fallback, and `Tel.empty`) is
+// excluded, so absence keeps raising `Absent`.
+private[stratiform] def bareCompound(tel: Tel): Boolean = tel.subtree match
+  case c: Tel.Compound => c.keyword != t"" && tel.childCompounds.nil
+  case _               => false
+
 // Register a decode error and continue with `sentinel` instead of aborting, so
 // that sibling fields of a product can each accrue their own error under a
 // `validate[Tel.Focus]` boundary. A field with no atom (the empty `Tel` handed
@@ -147,13 +155,14 @@ trait Tel2 extends Tel3:
 
   inline given decodable: [value] => value is Tel.Decodable = summonFrom:
     case given (`value` is Decodable in Text) =>
-      Tel.Decodable(() => Morphology.Str)(provide[Tactic[TelError]](_.primaryAtom.as[value]))
+      Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar):
+        provide[Tactic[TelError]](_.primaryAtom.as[value])
 
     case given Reflection[`value`] => DecodableDerivation.derived
 
   inline given encodable: [value] => value is Tel.Encodable = summonFrom:
     case given (`value` is Encodable in Text) =>
-      Tel.Encodable(() => Morphology.Str): v => Tel.scalar(v.encode)
+      Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): v => Tel.scalar(v.encode)
 
     case given Reflection[`value`] => EncodableDerivation.derived
 
@@ -263,6 +272,24 @@ trait Tel2 extends Tel3:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Decodable =
 
+      // `@name[Tel]` / bare `@name` renames and the per-field positional
+      // profiles are per-derivation constants, hoisted out of the decode
+      // call (lazily, so recursive types tie their knot).
+      lazy val renames: Map[Text, Text] = relabelling[derivation, Tel]
+
+      lazy val profiles: Array[Positional.Profile]^{} =
+        contexts[derivation]():
+          [field] => context =>
+            // A Flag field is never required: its absence decodes `false`,
+            // so the skip rule may pass over it — which the canonical
+            // encoder relies on when it elides a false flag from a run.
+            Positional.Profile
+              ( renames.at(label).or(Tel.camelToKebab(label.s)),
+                context.nature,
+                context.repeatable,
+                required = context.nature != Tel.Nature.Flag
+                           && !(context.optional || default[Optional[field]].present) )
+
       // The object `Morphology` is built from the field decoders' own shapes (a single
       // inlined `contexts` traversal — kept here, not factored out, so it does not
       // perturb the `build` traversal), keeping a fused `Decodable & Schematic`
@@ -277,13 +304,22 @@ trait Tel2 extends Tel3:
         telVal =>
           provide[Foci[Tel.Focus]]:
             provide[Tactic[TelError]]:
-              // `@name[Tel]` / bare `@name` renames: field name -> keyword, used
-              // verbatim; an unannotated field falls back to its camel→kebab form.
-              val renames: Map[Text, Text] = relabelling[derivation, Tel]
+              // §19.2 positional pre-pass (issue #1694): the compound's own
+              // atoms fill fields in declaration order, per the schema-free
+              // §20.2 step 3. The dominant wire form has no atoms and skips
+              // the pass entirely.
+              val atoms = telVal.atoms
+
+              val assigned: Array[List[Tel.Atom]]^{} =
+                if atoms.length == 0 then Array.empty else Positional.assign(atoms, profiles)
 
               build[derivation]: [field] =>
                 ctx =>
                   val keyword: Text = renames.at(label).or(Tel.camelToKebab(label.s))
+
+                  val positional: scala.collection.immutable.List[Tel.Atom] =
+                    if assigned.length == 0 then scala.collection.immutable.Nil
+                    else assigned(index).stdlib
 
                   // Tag every error registered while decoding this field with its
                   // keyword path, so that under a `validate[Tel.Focus]` boundary the
@@ -295,10 +331,29 @@ trait Tel2 extends Tel3:
                   }):
                     // A `List`/`Set` field (`ctx.repeatable`) is encoded as repeated
                     // keyword compounds, so gather them all into a Document for the
-                    // collection decoder. Every other field — scalar, nested product,
-                    // `Optional`, `Map` (a single `entries` compound) — reads one match.
+                    // collection decoder — positionally-assigned atoms first, since
+                    // atoms precede children (§18.3 step 4). Every other field —
+                    // scalar, nested product, `Optional`, `Map` (a single `entries`
+                    // compound) — reads one match.
                     if ctx.repeatable then
-                      val compounds = telVal.childCompounds.filter(_.keyword == keyword)
+                      val compounds =
+                        if positional.isEmpty
+                        then telVal.childCompounds.filter(_.keyword == keyword)
+                        else
+                          val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
+
+                          // A flag's atom is its keyword, meaning presence: it
+                          // becomes a bare compound, not an atom-bearing one.
+                          positional.foreach: atom =>
+                            buffer +=
+                              ( if ctx.nature == Tel.Nature.Flag
+                                then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
+                                else Tel.Compound(keyword, Array.of(atom), Unset, Array.empty) )
+
+                          telVal.childCompounds.each: compound =>
+                            if compound.keyword == keyword then buffer += compound
+
+                          Array.from(buffer)
 
                       ctx.decoded:
                         Tel.make
@@ -308,8 +363,23 @@ trait Tel2 extends Tel3:
                     else
                       val match0 = telVal.field(keyword)
 
-                      if match0.absent then default.or(ctx.decoded(Tel.empty))
-                      else ctx.decoded(match0.vouch)
+                      if positional.isEmpty then
+                        if match0.absent then default.or(ctx.absent())
+                        else ctx.decoded(match0.vouch)
+                      else
+                        // §20.2 step 5c: an inline atom plus a same-keyword
+                        // child fills a non-repeatable member twice (E308).
+                        // The atom wins — atoms precede children.
+                        if match0.present
+                        then raise(TelError(TelError.Reason.NonRepeatableTooMany))
+
+                        ctx.decoded:
+                          Tel.make:
+                            // A flag's atom is its keyword, meaning presence:
+                            // it becomes a bare compound.
+                            if ctx.nature == Tel.Nature.Flag
+                            then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
+                            else Tel.Compound(keyword, Array.of(positional.head), Unset, Array.empty)
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Decodable =
       // A sum is a document whose single child compound is the chosen variant, keyed by
@@ -332,7 +402,13 @@ trait Tel2 extends Tel3:
           provide[Foci[Tel.Focus]]:
             provide[Tactic[TelError]]:
               provide[Tactic[VariantError]]:
-                val variant: Tel = Tel.make(telVal.childCompounds.head)
+                val compounds = telVal.childCompounds
+
+                // A sum position with no child compound carries no variant to
+                // dispatch on: a decode-layer absence, not a crash.
+                if compounds.nil then abort(TelError(TelError.Reason.Absent))
+
+                val variant: Tel = Tel.make(compounds.head)
                 val variantKeyword: Text = labels.at(variant.keyword).or(variant.keyword)
 
                 delegate(variantKeyword): [variant <: derivation] =>
@@ -342,26 +418,45 @@ trait Tel2 extends Tel3:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Encodable =
 
-      Tel.Encodable({ () =>
-        val fields: List[(Text, Morphology)] =
-          contexts[derivation](): [field] => context => (label, context.shape())
-          . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
+      // `@name[Tel]` / bare `@name` renames: field name -> keyword, used
+      // verbatim; an unannotated field falls back to its camel→kebab form.
+      lazy val renames: Map[Text, Text] = relabelling[derivation, Tel]
 
-        Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
-      }):
-        value =>
+      new Tel.Encodable:
+        type Self = derivation
+
+        def shape(): Morphology =
+          val fields: List[(Text, Morphology)] =
+            contexts[derivation](): [field] => context => (label, context.shape())
+            . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
+
+          Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+
+        def encoded(value: derivation): Tel =
           val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
-
-          // `@name[Tel]` / bare `@name` renames: field name -> keyword, used
-          // verbatim; an unannotated field falls back to its camel→kebab form.
-          val renames: Map[Text, Text] = relabelling[derivation, Tel]
 
           fields(value): [field] =>
             fieldValue =>
               val encoded = contextual.encode(fieldValue)
               val keyword = renames.at(label).or(Tel.camelToKebab(label.s))
 
-              encoded.subtree match
+              // Flag encoding (§20): `true` is the bare keyword and a plain
+              // `false` flag is omitted, since decoding reads absence as
+              // false. An `Optional[Boolean]`'s `false` stays explicit, so
+              // Unset / true / false remain distinguishable (omitted / bare
+              // keyword / `keyword false`); its Unset encodes an empty
+              // document and emits nothing below.
+              if contextual.nature == Tel.Nature.Flag then
+                encoded.subtree match
+                  case c: Tel.Compound =>
+                    if encoded.primaryAtom == t"true"
+                    then compounds += Tel.Compound(keyword, Array.empty, Unset, Array.empty)
+                    else if encoded.primaryAtom == t"false" && !contextual.optional
+                    then ()
+                    else compounds += c.copy(keyword = keyword)
+
+                  case _ => ()
+              else encoded.subtree match
                 case c: Tel.Compound =>
                   compounds += c.copy(keyword = keyword)
 
@@ -375,6 +470,106 @@ trait Tel2 extends Tel3:
 
           Tel.compound(t"", Array.empty, Array.from(compounds))
 
+        // The §22.2 member description of a value, in field order — the
+        // input to `Mutation.construct` for the canonical forms below.
+        private def membersOf(value: derivation)
+        :   scala.collection.immutable.List[Mutation.Member] =
+
+          val members = scala.collection.mutable.ListBuffer.empty[Mutation.Member]
+          val elidedFlags = scala.collection.mutable.HashSet.empty[Text]
+
+          fields(value): [field] =>
+            fieldValue =>
+              val keyword: Text = renames.at(label).or(Tel.camelToKebab(label.s))
+
+              contextual.nature match
+                case Tel.Nature.Flag =>
+                  val encoded = contextual.encode(fieldValue)
+
+                  encoded.subtree match
+                    case c: Tel.Compound =>
+                      if encoded.primaryAtom == t"true"
+                      then members += Mutation.Member.Flag(keyword)
+                      else if encoded.primaryAtom == t"false" && !contextual.optional
+                      then elidedFlags += keyword
+                      else members += Mutation.Member.Child(c.copy(keyword = keyword))
+
+                    case _ => elidedFlags += keyword
+
+                case Tel.Nature.Scalar =>
+                  val encoded = contextual.encode(fieldValue)
+
+                  encoded.subtree match
+                    case c: Tel.Compound =>
+                      val text = encoded.primaryAtom
+
+                      // A value colliding with a preceding elided flag's
+                      // keyword would set that flag on re-decode; the child
+                      // form sidesteps the collision.
+                      if elidedFlags.contains(text)
+                      then members += Mutation.Member.Child:
+                        Tel.Compound(keyword, c.atoms, Unset, Array.empty)
+                      else members += Mutation.Member.Value(keyword, List(text))
+
+                    case d: Tel.Document =>
+                      // A repeatable scalar field: all occurrences inline or
+                      // none (§22.2). A single occurrence still terminates
+                      // the run — a repeatable member holds its atom
+                      // position and would consume any atom that followed —
+                      // so it takes the child form. An empty collection (or
+                      // Unset Optional) contributes nothing but breaks the
+                      // run, exactly like an absent Scalar member.
+                      val children = d.children.bind(_.compounds)
+
+                      if children.length == 0 then members += Mutation.Member.Break
+                      else if children.length == 1
+                      then members += Mutation.Member.Child(children(0).copy(keyword = keyword))
+                      else
+                        var collision = false
+                        val texts = scala.collection.mutable.ListBuffer.empty[Text]
+
+                        children.each: child =>
+                          val text =
+                            if child.atoms.length == 0 then t""
+                            else Positional.text(child.atoms(0))
+
+                          if elidedFlags.contains(text) then collision = true
+                          texts += text
+
+                        if collision then children.each: child =>
+                          members += Mutation.Member.Child(child.copy(keyword = keyword))
+                        else members += Mutation.Member.Value(keyword, List.of(texts.toList))
+
+                case Tel.Nature.Struct =>
+                  val encoded = contextual.constructed(fieldValue)
+
+                  encoded.subtree match
+                    case c: Tel.Compound =>
+                      members += Mutation.Member.Child(c.copy(keyword = keyword))
+
+                    case d: Tel.Document =>
+                      val children = d.children.bind(_.compounds)
+
+                      if children.length == 0 then members += Mutation.Member.Break
+                      else children.each: child =>
+                        members += Mutation.Member.Child(child.copy(keyword = keyword))
+
+          members.toList
+
+        // The canonical child form: this record's compound with its §22.2
+        // leading inline run, for embedding under a keyword.
+        override def constructed(value: derivation): Tel =
+          Tel.make(Mutation.construct(t"", List.of(membersOf(value)), '#'))
+
+        // The canonical document form: the root carries no atoms (§20.2),
+        // so a leading `Break` suppresses the root's own run while nested
+        // records keep theirs.
+        override def canonicalized(value: derivation): Tel =
+          val compound =
+            Mutation.construct(t"", List.of(Mutation.Member.Break :: membersOf(value)), '#')
+
+          Tel.make(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, compound.children))
+
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Encodable =
       // A sum encodes as a document whose single child compound is the chosen variant,
       // keyed by the variant's (kebab-cased) name with the variant's fields as its own
@@ -383,8 +578,11 @@ trait Tel2 extends Tel3:
       // round-trips identically to the same document parsed from text. The codec-carried
       // shape stays permissive (`Any`); the precise select schema comes from the standalone
       // `Schematic` / `Tels.tels`.
-      Tel.Encodable(() => Morphology.Any):
-        value =>
+      new Tel.Encodable:
+        type Self = derivation
+        def shape(): Morphology = Morphology.Any
+
+        def encoded(value: derivation): Tel =
           variant(value): [variant <: derivation] =>
             v =>
               val keyword: Text = Tel.camelToKebab(label.s)
@@ -396,58 +594,90 @@ trait Tel2 extends Tel3:
                 case other =>
                   Tel.make(other)
 
+        // The canonical child form: the chosen variant in its own §22.2
+        // construct form, so a record variant carries its inline run.
+        override def constructed(value: derivation): Tel =
+          variant(value): [variant <: derivation] =>
+            v =>
+              val keyword: Text = Tel.camelToKebab(label.s)
+
+              contextual.constructed(v).subtree match
+                case compound: Tel.Compound =>
+                  Tel.compound(t"", Array.empty, Array.of(compound.copy(keyword = keyword)))
+
+                case other =>
+                  Tel.make(other)
+
   // Primitive instances: Text/Int/Long/Double/Boolean as Compound + inline
   // atom. These mirror jacinta.Json's primitive decoders but go through
   // the atom text rather than a JSON AST.
 
+  // A present, keyword-bearing compound with no atom is the empty string
+  // (§18.3/§20.2 step 1: a Scalar's value is its atom of any form, or the
+  // empty string if it has none); a keywordless empty node — the historical
+  // absent-field fallback — still raises `Absent`.
   given textDecodable: (tactic: Tactic[TelError]) => ((Text is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Str): tel => primitiveFault(tel, t"Text", t""): atom => atom
+    Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
+      if tel.atomTexts.isEmpty && bareCompound(tel) then t""
+      else primitiveFault(tel, t"Text", t""): atom => atom
 
   given stringDecodable: (tactic: Tactic[TelError]) => ((String is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Str): tel => primitiveFault(tel, t"String", ""): atom => atom.s
+    Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
+      if tel.atomTexts.isEmpty && bareCompound(tel) then ""
+      else primitiveFault(tel, t"String", ""): atom => atom.s
 
   given intDecodable: (tactic: Tactic[TelError]) => ((Int is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Whole): tel =>
+    Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Int", 0): atom =>
         try atom.s.toInt catch case _: NumberFormatException => Unset
 
   given longDecodable: (tactic: Tactic[TelError]) => ((Long is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Whole): tel =>
+    Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Long", 0L): atom =>
         try atom.s.toLong catch case _: NumberFormatException => Unset
 
   given doubleDecodable: (tactic: Tactic[TelError]) => ((Double is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Real): tel =>
+    Tel.Decodable(() => Morphology.Real, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Double", 0.0): atom =>
         try atom.s.toDouble catch case _: NumberFormatException => Unset
 
+  // Flag semantics (§20): a present, keyword-bearing compound with no atom
+  // is the bare flag form, meaning `true`; an absent field decodes `false`
+  // via `absent()`. The explicit `true`/`false` atom forms stay readable.
   given booleanDecodable: (tactic: Tactic[TelError]) => ((Boolean is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Bool): tel =>
-      primitiveFault(tel, t"Boolean", false): atom =>
-        atom.s match
-          case "true"  => true
-          case "false" => false
-          case _       => Unset
+    new Tel.Decodable:
+      type Self = Boolean
+      def shape(): Morphology = Morphology.Bool
+      override def nature: Tel.Nature = Tel.Nature.Flag
+      override def absent()(using Tactic[TelError]): Boolean = false
+
+      def decoded(tel: Tel): Boolean =
+        if tel.atomTexts.isEmpty && bareCompound(tel) then true
+        else primitiveFault(tel, t"Boolean", false): atom =>
+          atom.s match
+            case "true"  => true
+            case "false" => false
+            case _       => Unset
 
   given telDecodable: Tel is Tel.Decodable = Tel.Decodable(() => Morphology.Any)(identity(_))
 
   given textEncodable: Text is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Str): text => Tel.scalar(text)
+    Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): text => Tel.scalar(text)
 
   given stringEncodable: String is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Str): s => Tel.scalar(Text(s))
+    Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): s => Tel.scalar(Text(s))
 
   given intEncodable: Int is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Whole): i => Tel.scalar(Text(i.toString))
+    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): i => Tel.scalar(Text(i.toString))
 
   given longEncodable: Long is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Whole): l => Tel.scalar(Text(l.toString))
+    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): l => Tel.scalar(Text(l.toString))
 
   given doubleEncodable: Double is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Real): d => Tel.scalar(Text(d.toString))
+    Tel.Encodable(() => Morphology.Real, Tel.Nature.Scalar): d => Tel.scalar(Text(d.toString))
 
   given booleanEncodable: Boolean is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Bool): b => Tel.scalar(Text(b.toString))
+    Tel.Encodable(() => Morphology.Bool, Tel.Nature.Flag): b => Tel.scalar(Text(b.toString))
 
   given telEncodable: Tel is Tel.Encodable = Tel.Encodable(() => Morphology.Any)(identity(_))
 
@@ -459,15 +689,36 @@ trait Tel2 extends Tel3:
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Tel.Encodable )
   =>  value is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Opt(encodable.shape())): opt =>
-      opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(_.encode)
+    new Tel.Encodable:
+      type Self = value
+      def shape(): Morphology = Morphology.Opt(encodable.shape())
+      override def nature: Tel.Nature = encodable.nature
+      override def optional: Boolean = true
+
+      def encoded(opt: value): Tel =
+        opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(encodable.encoded(_))
+
+      override def constructed(opt: value): Tel =
+        opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(encodable.constructed(_))
 
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  Tactic[TelError]
-  =>  ( decodable: -> (inner is Tel.Decodable) )
+  =>  ( decodable0: -> (inner is Tel.Decodable) )
   =>  value is Tel.Decodable =
-    Tel.Decodable(() => Morphology.Opt(decodable.shape())): telVal =>
-      if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset else decodable.decoded(telVal)
+    new Tel.Decodable:
+      type Self = value
+      def shape(): Morphology = Morphology.Opt(decodable0.shape())
+      override def nature: Tel.Nature = decodable0.nature
+      override def optional: Boolean = true
+      override def absent()(using Tactic[TelError]): value = Unset
+
+      def decoded(telVal: Tel): value =
+        // A bare entry means `Unset` for most types, but a Flag-natured
+        // inner reads it as flag presence (`Optional[Boolean]` of `true`).
+        if telVal.childCompounds.nil && telVal.atomTexts.nil
+           && decodable0.nature != Tel.Nature.Flag
+        then Unset
+        else decodable0.decoded(telVal)
 
   // Collection support (aligned with `#1291`) — a `List`/`Set` encodes to a
   // Document-rooted Tel whose children are the elements' compounds; the product
@@ -480,18 +731,41 @@ trait Tel2 extends Tel3:
   // Re-keys an encoded value's compound (or wraps a document) under `keyword`.
   given listEncodable: [list <: List, element] => (encodable: -> (element is Tel.Encodable))
   =>  list[element] is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
-      collectionDocument(values.stdlib)(using encodable)
+    new Tel.Encodable:
+      type Self = list[element]
+      def shape(): Morphology = Morphology.Arr(encodable.shape())
+      override def nature: Tel.Nature = encodable.nature
+      override def optional: Boolean = true
+      def encoded(values: list[element]): Tel = collectionDocument(values.stdlib)(using encodable)
+
+      override def constructed(values: list[element]): Tel =
+        constructedDocument(values.stdlib)(using encodable)
 
   given setEncodable: [set <: Set, element] => (encodable: -> (element is Tel.Encodable))
   =>  set[element] is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
-      collectionDocument(values.stdlib)(using encodable)
+    new Tel.Encodable:
+      type Self = set[element]
+      def shape(): Morphology = Morphology.Arr(encodable.shape())
+      override def nature: Tel.Nature = encodable.nature
+      override def optional: Boolean = true
+      def encoded(values: set[element]): Tel = collectionDocument(values.stdlib)(using encodable)
+
+      override def constructed(values: set[element]): Tel =
+        constructedDocument(values.stdlib)(using encodable)
 
   given seriesEncodable: [sequence <: Sequence, element] => (encodable: -> (element is Tel.Encodable))
   =>  sequence[element] is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
-      collectionDocument(values.stdlib)(using encodable)
+    new Tel.Encodable:
+      type Self = sequence[element]
+      def shape(): Morphology = Morphology.Arr(encodable.shape())
+      override def nature: Tel.Nature = encodable.nature
+      override def optional: Boolean = true
+
+      def encoded(values: sequence[element]): Tel =
+        collectionDocument(values.stdlib)(using encodable)
+
+      override def constructed(values: sequence[element]): Tel =
+        constructedDocument(values.stdlib)(using encodable)
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
@@ -502,6 +776,8 @@ trait Tel2 extends Tel3:
       type Self = collection[element]
       def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
+      override def nature: Tel.Nature = element0.nature
+      override def optional: Boolean = true
 
       def decoded(telVal: Tel): collection[element] =
         val builder = factory.newBuilder
@@ -528,6 +804,8 @@ trait Tel2 extends Tel3:
       type Self = list[element]
       def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
+      override def nature: Tel.Nature = element0.nature
+      override def optional: Boolean = true
 
       def decoded(telVal: Tel): list[element] =
         val builder = scala.collection.immutable.List.newBuilder[element]
@@ -550,6 +828,8 @@ trait Tel2 extends Tel3:
       type Self = set[element]
       def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
+      override def nature: Tel.Nature = element0.nature
+      override def optional: Boolean = true
 
       def decoded(telVal: Tel): set[element] =
         val builder = scala.collection.immutable.Set.newBuilder[element]
@@ -572,6 +852,8 @@ trait Tel2 extends Tel3:
       type Self = sequence[element]
       def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
+      override def nature: Tel.Nature = element0.nature
+      override def optional: Boolean = true
 
       def decoded(telVal: Tel): sequence[element] =
         val builder = Vector.newBuilder[element]
@@ -601,22 +883,34 @@ trait Tel2 extends Tel3:
 
       Tel.compound(t"", Array.empty, entries)
 
-  given mapDecodable: [key: Tel.Decodable, value: Tel.Decodable] => Tactic[TelError]
-  =>  Map[key, value] is Tel.Decodable =
-    Tel.Decodable(() => Morphology.Dict(key.shape(), value.shape())): telVal =>
+  given mapDecodable: [key, value]
+  =>  ( keyCodec:   key is Tel.Decodable,
+        valueCodec: value is Tel.Decodable,
+        tactic:     Tactic[TelError] )
+  =>  ((Map[key, value] is Tel.Decodable)^{tactic}) =
+    Tel.Decodable(() => Morphology.Dict(keyCodec.shape(), valueCodec.shape())): telVal =>
       var accumulator = Map.empty[key, value]
 
       for entry <- telVal.fields(t"entries") do
-        val k = key.decoded(entry.field(t"key").or(Tel.empty))
-        val v = value.decoded(entry.field(t"value").or(Tel.empty))
+        // A missing `key`/`value` child routes through `absent()` rather
+        // than decoding an empty node, so flag-natured values report their
+        // absent form (`false`) instead of misreading emptiness.
+        val k = entry.field(t"key").lay(keyCodec.absent())(keyCodec.decoded(_))
+        val v = entry.field(t"value").lay(valueCodec.absent())(valueCodec.decoded(_))
         accumulator = accumulator.updated(k, v)
 
       accumulator
 
   // Helpers used by encoders to construct Tel values.
 
+  // The §22.3 atom-form escalation (inline -> source -> literal) keeps every
+  // encoded value reparseable — a multi-line or space-edged Text can never be
+  // an inline atom. The default `#` sigil is assumed, matching the documents
+  // the encoder produces (it never emits a pragma overriding it). An empty
+  // text stays an empty inline atom: presentationally it serializes as no
+  // atom, but the value level distinguishes present-empty from absent.
   def scalar(text: Text): Tel =
-    Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
+    Tel.make(Tel.Compound(t"", Array.of(Mutation.chooseAtomForm(text, '#')), Unset, Array.empty))
 
   def compound
     ( keyword: Text, atoms: Array[Tel.Atom]^{}, compounds: Array[Tel.Compound]^{} )

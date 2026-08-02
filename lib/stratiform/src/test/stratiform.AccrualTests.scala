@@ -113,6 +113,53 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     scalars  = Array.empty,
     selects  = Array.empty)
 
+  // An optional `item` record member (one required scalar) beside a required
+  // `name` scalar: an atom-phase defect inside `item` must accrue alongside
+  // the missing-member defect at the root rather than aborting.
+  private val atomAccrualSchema: Tels = Tels(
+    name     = t"atoms",
+    document = Tels.Struct(
+      members = Array.of(
+        Tels.Field
+         ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+           t"item", Tels.Reference(t"Item"), Unset ),
+        Tels.Field
+         ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+           t"name", Tels.Scalar(Array.of(t"string")), Unset )),
+      validators = Array.empty),
+    layers   = Array.empty,
+    sigil    = Unset,
+    records  = Array.of(Tels.RecordDefinition(
+      t"Item",
+      Array.of(Tels.Field
+       ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+         t"only", Tels.Scalar(Array.of(t"string")), Unset )),
+      Array.empty)),
+    scalars  = Array.empty,
+    selects  = Array.empty)
+
+  // Like `atomAccrualSchema`, but `Item` carries a single required Flag: a
+  // mismatched atom is E305 and the flag then also reports absent (E307).
+  private val flagAccrualSchema: Tels = Tels(
+    name     = t"flags",
+    document = Tels.Struct(
+      members = Array.of(
+        Tels.Field
+         ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+           t"item", Tels.Reference(t"Item"), Unset ),
+        Tels.Field
+         ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+           t"name", Tels.Scalar(Array.of(t"string")), Unset )),
+      validators = Array.empty),
+    layers   = Array.empty,
+    sigil    = Unset,
+    records  = Array.of(Tels.RecordDefinition(
+      t"Item",
+      Array.of(Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset)),
+      Array.empty)),
+    scalars  = Array.empty,
+    selects  = Array.empty)
+
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):
       test(m"Fully-valid record: no errors accrued"):
@@ -204,6 +251,25 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         validateAssign(doc, optionalFieldSchema).items.all:
           case (_, err) => err.reason == TelError.Reason.UnknownKeyword
       . assert(identity)
+
+    suite(m"Type-assignment accrual (atom phase and constraints)"):
+      test(m"An excess atom and a missing member accrue together"):
+        val doc = t"item x y\n".read[Tel]
+        validateAssign(doc, atomAccrualSchema).items.map(_(1).reason).to[Set]
+      . assert(_ == Set(TelError.Reason.TooManyAtoms, TelError.Reason.RequiredMemberAbsent))
+
+      test(m"A mismatched flag atom accrues E305 and the flag reports absent"):
+        val doc = t"item xyz\nname n\n".read[Tel]
+        validateAssign(doc, flagAccrualSchema).items.map(_(1).reason).to[Set]
+      . assert: reasons =>
+          reasons == Set
+           ( TelError.Reason.AtomFlagKeywordMismatch,
+             TelError.Reason.RequiredMemberAbsent )
+
+      test(m"A duplicated non-repeatable member accrues a single E308"):
+        val doc = t"name Alice\nname Bob\nemail e\n".read[Tel]
+        validateAssign(doc, twoRequiredSchema).items.map(_(1).reason).to[Set]
+      . assert(_ == Set(TelError.Reason.NonRepeatableTooMany))
 
     suite(m"Parser-recovery accrual (E1xx)"):
       test(m"Two trailing-space lines accrue two errors"):
