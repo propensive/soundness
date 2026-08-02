@@ -206,6 +206,27 @@ object Tests extends Suite(m"Degustation Tests"):
       && before.keySet.filter(_ != inlineKey).forall { key => before(key) == grown(key) }
     . assert(identity)
 
+    test(m"an import inside an inline body is transparent"):
+      val plain: Text =
+        t"""|package lexical
+            |
+            |inline def compute(a: Int): Int =
+            |  val b = a + 1
+            |  b*2
+            |""".s.stripMargin.tt
+
+      val imported: Text =
+        t"""|package lexical
+            |
+            |inline def compute(a: Int): Int =
+            |  import scala.math.*
+            |  val b = a + 1
+            |  b*2
+            |""".s.stripMargin.tt
+
+      listing(plain).toMap == listing(imported).toMap
+    . assert(identity)
+
     test(m"an inline body references what it splices"):
       val source: Text =
         t"""|package refs
