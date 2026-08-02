@@ -1507,17 +1507,17 @@ object exegesis extends Library:
   object core extends Component(obligatory.json, ethereal.core, exoskeleton.completions):
     override def scalaJs = false // LSP server; depends on JVM-only `ethereal`/`exoskeleton`
     override def scalacOptions = Task:
-      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"), "48")
+      settings.maxInlines(settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")), "48")
 
   object demo extends Internal(core):
     override def scalacOptions = Task:
-      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
-        "-Yimports:java.lang,proscenium"), "48")
+      settings.maxInlines(settings.sep(super.scalacOptions() ++ Seq("-Yno-predef",
+        "-Yimports:java.lang,proscenium")), "48")
     override def mainClass: Task.Simple[Option[String]] = Some("exegesis.DemoLspServer")
 
   object test extends Tests(core):
     override def scalacOptions = Task:
-      settings.maxInlines(super.scalacOptions(), "48")
+      settings.maxInlines(settings.sep(super.scalacOptions()), "48")
 
 object exoskeleton extends Library:
   object args extends Component(escapade.core, profanity.core, ambience.core, quantitative.units):

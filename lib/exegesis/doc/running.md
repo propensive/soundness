@@ -1,28 +1,38 @@
 ### Running the server
 
-An `LspServer` is runnable on its own: defining the server is enough to run it. Every `LspServer` carries its
-own `main` method, so a server object is a valid application entry point with no additional ceremony—there is no
-need to write a `@main` method, and no need to wire up `cli`, `execute` and `supervise` by hand.
+A server is one call to `Lsp.listen`, which registers the server's feature handlers and then serves Language
+Server Protocol messages from standard input to standard output, exactly as an editor expects. The call runs
+until its input is exhausted, so a server object wraps it in a small `main` using the resident-daemon idiom:
 
-A minimal server needs only a `name` and its `capabilities`, plus whichever handler hooks it chooses to
-override:
 ```scala
-object MyServer extends LspServer():
-  def name: Text = t"my-server"
+import soundness.*
 
-  def capabilities: Lsp.ServerCapabilities =
-    Lsp.ServerCapabilities(hoverProvider = true)
+import backstops.stackTraceBackstop
+import executives.completions
+import interpreters.posixInterpreter
+import probates.awaitProbate
+import strategies.throwUnsafely
+import threading.virtualThreading
 
-  override def hover(uri: Text, position: Lsp.Position): Optional[Lsp.Hover] =
-    Lsp.Hover(Lsp.MarkupContent(value = t"Hello from my server."))
+object MyServer:
+  import Lsp.*
+
+  def main(args: Array[Text]): Unit = cli:
+    execute:
+      supervise:
+        Lsp.listen(t"my-server"):
+          hover:
+            Hover(MarkupContent(value = t"Hello from my server."))
+
+      Exit.Ok
 ```
 
-That object can be launched directly: its inherited `main` reads Language Server Protocol messages from standard
-input and writes responses to standard output, exactly as an editor expects.
+There is no capabilities record to write: registering `hover` is what advertises `hoverProvider` to the
+editor, and so on for every feature.
 
 #### Fast startup as a daemon
 
-The inherited `main` runs the server through [Ethereal](https://github.com/propensive/ethereal), so it starts
+The `cli` entry point runs the server through [Ethereal](https://github.com/propensive/ethereal), so it starts
 as a resident daemon: the first invocation launches a background JVM, and subsequent invocations connect to the
 already-running process. This avoids paying the JVM's startup cost—and losing the just-in-time compiler's
 accumulated optimizations—on every launch, which matters for a language server that an editor may start and
@@ -40,17 +50,8 @@ standard output and signals to it.
 
 By default the launcher bundles every dependency into a single fat JAR. With
 [Burdock](https://github.com/propensive/burdock), the server can instead be distributed as a thin launcher whose
-dependencies are fetched and cached on demand.
-
-To opt in, add a `burdock` dependency to the server's module and override `main` to wrap the inherited entry
-point in `externalize`:
-```scala
-object MyServer extends LspServer():
-  def name: Text = t"my-server"
-  def capabilities: Lsp.ServerCapabilities = Lsp.ServerCapabilities(hoverProvider = true)
-
-  override def main(args: IArray[Text]): Unit = externalize(super.main(args))
-```
+dependencies are fetched and cached on demand. To opt in, add a `burdock` dependency to the server's module and
+wrap the entry point's body in `externalize`.
 
 `externalize` runs at compile time in the server's own module: it hashes each dependency JAR on the classpath,
 caches it locally by hash, and records the hash list in the compiled artifact. At runtime it simply runs the
@@ -59,6 +60,6 @@ externalized (referenced by URL and hash) rather than inlined, yielding a thin l
 
 #### Demo
 
-The `exegesis.demo` module contains `DemoLspServer`, a small example server demonstrating a fixed hover message,
-a fixed completion list and a diagnostic published when a document is opened. It is an ordinary
-`object DemoLspServer extends LspServer()`, so it too carries its own `main` and needs no separate entry point.
+The `exegesis.demo` module contains `DemoLspServer`, a small example server demonstrating a hover showing the
+word under the cursor, a fixed completion list, a command, and a diagnostic published when a document is opened.
+Its registrations are the complete definition of the server's behaviour — and of its advertised capabilities.

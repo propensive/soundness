@@ -34,32 +34,47 @@ package exegesis
 
 import soundness.*
 
-// A minimal example Language Server, demonstrating a few features: a fixed hover message, a fixed
-// completion list, and a diagnostic published whenever a document is opened.
-object DemoLspServer extends LspServer():
-  def name: Text = t"Exegesis Demo"
-  override def version: Optional[Text] = t"0.1.0"
+import backstops.stackTraceBackstop
+import executives.completions
+import interpreters.posixInterpreter
+import probates.awaitProbate
+import strategies.throwUnsafely
+import threading.virtualThreading
 
-  def capabilities: Lsp.ServerCapabilities =
-    Lsp.ServerCapabilities
-      ( textDocumentSync   = Lsp.TextDocumentSyncKind.Full,
-        hoverProvider      = true,
-        completionProvider = Lsp.CompletionOptions() )
+// A minimal example Language Server, demonstrating a few features: a hover message showing the
+// word under the cursor, a fixed completion list, a command, and a diagnostic published whenever
+// a document is opened. The server's capabilities are derived from these registrations. `main` is
+// a plain (non-inline) method, so the object's static `main([Ljava/lang/String;)V` forwarder is a
+// valid JVM entry point, running as an Ethereal resident daemon over the stdio transport.
+object DemoLspServer:
+  import Lsp.*
 
-  override def hover(uri: Text, position: Lsp.Position): Optional[Lsp.Hover] =
-    Lsp.Hover(Lsp.MarkupContent(value = t"Hello from the Exegesis LSP demo server."))
+  def main(args: Array[Text]): Unit = cli:
+    execute:
+      supervise:
+        Lsp.listen(t"Exegesis Demo", t"0.1.0"):
+          opened:
+            client.publishDiagnostics
+              ( document.uri,
+                List
+                  ( Diagnostic
+                      ( range    = document.fullRange,
+                        severity = DiagnosticSeverity.Warning,
+                        message  = t"This is a demo diagnostic from the Exegesis LSP server." ) ) )
 
-  override def complete(uri: Text, position: Lsp.Position): Lsp.CompletionList =
-    Lsp.CompletionList
-      ( items = List
-          ( Lsp.CompletionItem(label = t"exegesis", kind = Lsp.CompletionItemKind.Keyword),
-            Lsp.CompletionItem(label = t"soundness", kind = Lsp.CompletionItemKind.Keyword) ) )
+          hover:
+            document.word(position).let: word =>
+              Hover(MarkupContent(value = t"**$word** — ${document.uri}"))
 
-  override def onOpen(document: Lsp.TextDocumentItem)(using LspClient): Unit =
-    summon[LspClient].publishDiagnostics
-      ( document.uri,
-        List
-          ( Lsp.Diagnostic
-              ( range    = Lsp.Range(Lsp.Position(0, 0), Lsp.Position(0, 1)),
-                severity = Lsp.DiagnosticSeverity.Warning,
-                message  = t"This is a demo diagnostic from the Exegesis LSP server." ) ) )
+          complete():
+            CompletionList
+              ( items = List
+                  ( CompletionItem(label = t"exegesis", kind = CompletionItemKind.Keyword),
+                    CompletionItem(label = t"soundness", kind = CompletionItemKind.Keyword) ) )
+
+          command(t"demo.reverse"):
+            arguments.let(_.prim).let: argument =>
+              val text: Text = argument.as[Text]
+              Text(StringBuilder(text.s).reverse.toString).in[Json]
+
+      Exit.Ok

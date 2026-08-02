@@ -30,133 +30,102 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
-
-import scala.annotation.*
-import scala.collection.mutable as scm
-import scala.quoted.*
+package exegesis
 
 import anticipation.*
 import contingency.*
-import eucalyptus.*
-import gesticulate.*
-import gossamer.*
-import hieroglyph.*
-import inimitable.*
 import jacinta.*
-import parasite.*
+import obligatory.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
-import telekinesis.*
-import turbulence.*
-import urticose.*
 import vacuous.*
-import zephyrine.*
 
-import httpBackends.virtualMachine
+// The JSON-RPC dispatch is generated split across one dispatcher per `Lsp` sub-interface, rather
+// than as a single `serve[Lsp]`: `JsonRpc.serve` inlines a schema-carrying codec for every method
+// it covers, so one dispatcher for the whole protocol would overflow the JVM per-class
+// constant-pool limit. Each sub-dispatcher is expanded in its own object, so it compiles into its
+// own small class; `apply` routes an incoming request to the one whose interface declares its
+// method (a JSON-RPC response, which carries no method, is handled by any dispatcher, so the
+// first suffices).
+object LspDispatch:
+  private object lifecycleRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspLifecycle](server))
 
-object JsonRpc:
-  private val promises: scm.HashMap[Text | Int, Promise[Json]] = scm.HashMap()
+  // Materialized here because the `JsonRpc.serve` macro's `Expr.summon` cannot
+  // expand jacinta's inline `encodable` given for the opaque `List` alias.
+  private given documentSymbolList: (List[Lsp.DocumentSymbol] is Encodable in Json) =
+    scala.compiletime.summonInline[List[Lsp.DocumentSymbol] is Encodable in Json]
 
-  inline def serve[interface](interface: interface): Json => Optional[Json] =
-    ${obligatory.internal.dispatcher[interface]('interface)}
+  private given selectionRangeList: (List[Lsp.SelectionRange] is Encodable in Json) =
+    scala.compiletime.summonInline[List[Lsp.SelectionRange] is Encodable in Json]
 
-  // The JSON-RPC method names an interface declares (its `@rpc` members). Used to route a
-  // request across several `serve` dispatchers when a single interface's dispatcher would be too
-  // large to compile into one class. A covariant `List` rather than a `Set`: under capture
-  // checking, the opaque `Text` in an invariant position freshens against the expansion site.
-  inline def methods[interface]: List[Text] = ${obligatory.internal.methodNames[interface]}
+  private object languageRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspLanguage](server))
 
-  case class Request(jsonrpc: Text, method: Text, params: Json, id: Optional[Json])
-  case class Response(jsonrpc: Text, result: Json, id: Optional[Json])
-  case class Failure(code: Int, message: Text, data: Optional[Json] = Unset)
+  private object navigationRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspNavigation](server))
 
-  // A specification-correct error response: the fault is carried in the `error` member (not
-  // `result`), and `id` echoes the failing request's id — as an explicit JSON `null`, as the
-  // specification requires, when the request was unparseable and its id unknowable.
-  def failure(code: Int, message: Text, id: Optional[Json] = Unset): Json =
-    Map
-     ( t"jsonrpc" -> t"2.0".in[Json],
-       t"error"   -> Failure(code, message).in[Json],
-       t"id"      -> id.or(Json.ast(Json.Ast(Json.JsonNull))) )
-    . in[Json]
+  private object editingRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspEditing](server))
 
-  def notification(target: JsonRpc, method: Text, payload: Json): Promise[Unit] =
+  private object advancedRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspAdvanced](server))
 
-    target.put(Request("2.0", method, payload, Unset).in[Json])
-    Promise[Unit]().tap(_.offer(()))
+  private object workspaceRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspWorkspace](server))
 
-  def request(target: JsonRpc, method: Text, payload: Json): Promise[Json] =
-    val uuid = Uuid().text
-    val promise: Promise[Json] = Promise()
-    promises(uuid) = promise
+  private object resolveRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspResolve](server))
 
-    target.put(Request("2.0", method, payload, uuid.in[Json]).in[Json])
-    promise
+  def apply(server: Lsp): Json => Optional[Json] =
+    import dynamicJsonAccess.enabled
+    import strategies.throwUnsafely
 
-  def receive(id: Text, result: Json): Unit = promises.at(id).let(_.offer(result))
+    // Each expansion is bound to a bare local, and the routing is an if-chain over locals
+    // rather than a list of tuples: an expected type at the expansion site freshens the opaque
+    // `Text` inside the result, and function values in an invariant container hit boxed-capture
+    // mismatches under capture checking.
+    val lifecycleMethods = JsonRpc.methods[LspLifecycle]
+    val languageMethods = JsonRpc.methods[LspLanguage]
+    val navigationMethods = JsonRpc.methods[LspNavigation]
+    val editingMethods = JsonRpc.methods[LspEditing]
+    val advancedMethods = JsonRpc.methods[LspAdvanced]
+    val workspaceMethods = JsonRpc.methods[LspWorkspace]
+    val resolveMethods = JsonRpc.methods[LspResolve]
 
+    val lifecycle = lifecycleRoute(server)
+    val language = languageRoute(server)
+    val navigation = navigationRoute(server)
+    val editing = editingRoute(server)
+    val advanced = advancedRoute(server)
+    val workspace = workspaceRoute(server)
+    val resolve = resolveRoute(server)
 
-  def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Probate, Online)
-  :   Promise[Json] =
+    json =>
+      val method: Optional[Text] = try json.method.as[Text] catch case _: Exception => Unset
 
-    val uuid = Uuid().text
-    val promise: Promise[Json] = Promise()
-    promises(uuid) = promise
-    import charEncoders.utf8Encoder
-    import formatting.compactJsonFormatting
-    import logging.silentLogging
-
-    val request = Request("2.0", method, payload, uuid.in[Json]).in[Json]
-
-    async:
-      recover:
-        case MediaTypeError(_, _)   => promise.cancel()
-        case ConnectError(_)        => promise.cancel()
-        case ParseError(_, _, _)    => promise.cancel()
-        case HttpError(_, _)        => promise.cancel()
-        case AsyncError(_)          => promise.cancel()
-
-      . protect:
-          promise.fulfill(target.submit(Http.Post)(request).receive[Json])
-
-    promise
-
-
-  def notification(target: HttpUrl, method: Text, payload: Json)
-    ( using Monitor, Probate, Online )
-  :   Promise[Unit] =
-
-    import charEncoders.utf8Encoder
-    import formatting.compactJsonFormatting
-    import logging.silentLogging
-
-    val request = Request("2.0", method, payload, Unset).in[Json]
-
-    recover:
-      case MediaTypeError(_, _) => ()
-      case ConnectError(_)      => ()
-      case HttpError(_, _)      => ()
-
-    . protect:
-        target.submit(Http.Post)(request).receive[Text]
-        ()
-
-    Promise[Unit]().tap(_.offer(()))
-
-trait JsonRpc extends Original:
-  private val channel: Relay[Json] = Relay()
-
-  inline def client: Origin = ${obligatory.internal.client[Origin]('this)}
-
-  def put(json: Json): Unit =
-    channel.put(json)
-
-  // Each accessor drains the shared queue through a fresh single-owner view
-  // (the audited bridge); use one or the other per instance, as before.
-  def outgoing: Chain[Json] = Chain.from(channel.stream.records)
-
-  def stream: Chain[Sse] =
-    Chain.from(channel.stream.records).map: json =>
-      Sse(data = List(json.encode))
+      // A message with no method is a response, which any dispatcher handles; an unknown
+      // method is dropped.
+      method.lay(lifecycle(json)): method =>
+        if lifecycleMethods.has(method) then lifecycle(json)
+        else if languageMethods.has(method) then language(json)
+        else if navigationMethods.has(method) then navigation(json)
+        else if editingMethods.has(method) then editing(json)
+        else if advancedMethods.has(method) then advanced(json)
+        else if workspaceMethods.has(method) then workspace(json)
+        else if resolveMethods.has(method) then resolve(json)
+        else Unset
