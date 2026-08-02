@@ -50,7 +50,7 @@ import urticose.*
 import vacuous.*
 
 object internal:
-  def methodNames[interface: Type]: Macro[Set[Text]] =
+  def methodNames[interface: Type]: Macro[List[Text]] =
     import quotes.reflect.*
 
     val rpcType = TypeRepr.of[rpc].typeSymbol
@@ -59,9 +59,12 @@ object internal:
       val annotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
       annotations.exists(_.tpe.typeSymbol == rpcType)
 
-    . map: method => Expr(method.name.tt)
+    . map: method => Expr(method.name)
 
-    '{Set(${Varargs(names)}*)}
+    // The names are quoted as plain strings and converted at runtime: quoting `Text` values
+    // directly gives the expansion a result type whose opaque `Text` freshens against a
+    // capture-checked expansion site.
+    '{List(${Varargs(names)}*).map(_.tt)}
 
   def dispatcher[interface: Type](target: Expr[interface]): Macro[Json => Optional[Json]] =
     import quotes.reflect.*

@@ -30,6 +30,70 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package exegesis
 
-export exegesis.{Lsp, LspClient, LspDispatch, LspError, LspRegistry}
+import soundness.*
+
+import strategies.throwUnsafely
+
+// The handles lent to a handler — the document, the workspace and the client reached through
+// it — are capabilities scoped to one dispatch; capture checking prevents any of them (or the
+// registry lent to the registration block) being retained beyond its scope.
+object CaptureTests extends Suite(m"Handle confinement tests"):
+  import Lsp.*
+
+  def run(): Unit =
+    test(m"the document cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(using registry: LspRegistry^): Unit =
+          var stash: () => Text = () => t""
+
+          hover:
+            stash = () => document.text
+            Unset
+
+          ()
+    . assert(_.nonEmpty)
+
+    test(m"the client cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(using registry: LspRegistry^): Unit =
+          var stash: () => Unit = () => ()
+
+          opened:
+            stash = () => client.logMessage(t"late")
+
+          ()
+    . assert(_.nonEmpty)
+
+    test(m"the workspace handle cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(using registry: LspRegistry^): Unit =
+          var stash: () => List[Text] = () => Nil
+
+          opened:
+            stash = () => workspace.documents
+
+          ()
+    . assert(_.nonEmpty)
+
+    test(m"the registry cannot escape the registration block"):
+      demilitarize:
+        def attempt()(using Stdio, Monitor, Probate): LspRegistry =
+          var stash: Optional[LspRegistry] = Unset
+          Lsp.listen(t"escape"):
+            stash = summon[LspRegistry]
+          stash.vouch
+    . assert(_.nonEmpty)
+
+    // A pure snapshot taken from a handle may escape by design: only the handle is confined.
+    test(m"a pure text snapshot may leave the handler"):
+      demilitarize:
+        def attempt(using registry: LspRegistry^): Unit =
+          var stash: Text = t""
+
+          opened:
+            stash = document.text
+
+          ()
+    . assert(_.isEmpty)

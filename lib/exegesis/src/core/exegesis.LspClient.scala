@@ -32,6 +32,8 @@
                                                                                                   */
 package exegesis
 
+import scala.caps
+
 import anticipation.*
 import beneficence.*
 import jacinta.*
@@ -43,7 +45,12 @@ import vacuous.*
 // `JsonRpc` `client` macro. Only notifications are exposed (no requests), since a request handler
 // runs on the same thread that reads the client's responses, and a synchronous round-trip from
 // within a handler would deadlock.
-trait LspClient extends Findable:
+//
+// An `LspClient` is a *shared* capability: notifications are deliberately multi-producer (the
+// outgoing channel is a multi-producer rim by design, so publishing diagnostics from a task
+// spawned in a handler is legitimate), but scoping still confines it to the serving scope that
+// minted it — a client handle cannot be stashed for use after the session ends.
+trait LspClient extends Findable, caps.SharedCapability:
   import Lsp.*
 
   @rpc

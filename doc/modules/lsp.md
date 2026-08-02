@@ -3,10 +3,11 @@
 ### About
 
 A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) server
-is a class extending `LspServer`: it declares which features it provides, overrides a
-handler for each one, and serves over standard input and output. The protocol underneath —
-JSON-RPC messages, their length-prefixed framing, and the bookkeeping of open documents —
-is handled, so the code that remains is the language logic.
+is one call to `Lsp.listen`: its block registers a handler for each feature the server
+provides, and the server then serves over standard input and output. The protocol
+underneath — JSON-RPC messages, their length-prefixed framing, the bookkeeping of open
+documents, and the capabilities announced to the editor — is handled, so the code that
+remains is the language logic.
 
 The protocol's vocabulary is modelled as ordinary types. A `Position` is a line and a
 character, a `Range` is two positions, a `Diagnostic` is a range with a severity and a
@@ -24,88 +25,109 @@ JSON and tracking document versions, work that has nothing to do with the langua
 served.
 
 Soundness does that work once. Each message type is a Scala type with a derived JSON codec,
-each request is dispatched to a method whose parameters and result are those types, and the
-open documents are tracked for the server. What is left to write is the part that is
-specific to a language — what a hover shows, what completions to offer, which diagnostics to
-report. Everything comes from the `soundness` package:
+each request is dispatched to the matching registered handler, and the open documents are
+tracked — with incremental edits applied — for the server. What is left to write is the
+part that is specific to a language: what a hover shows, what completions to offer, which
+diagnostics to report. Everything comes from the `soundness` package, and the LSP
+vocabulary itself — handler registration, the ambient document, the protocol types — from
+`Lsp`, imported inside the server's own object:
 
 ```scala
 import soundness.*
+
+object DemoServer:
+  import Lsp.*
 ```
 
 ### Defining a server
 
-A server extends `LspServer` and gives its name, an optional version, and the capabilities
-it advertises to the editor. The capabilities declare which features the server actually
-implements, so an editor asks only for what the server can answer:
+A server registers its features in the block given to `Lsp.listen`. There is no
+capabilities record to maintain: each capability is advertised to the editor exactly when
+its handler was registered, so the declaration can never disagree with the implementation.
+Options a capability needs beyond mere presence — completion trigger characters, a
+semantic-tokens legend — are parameters of the registration.
+
+Inside a handler, the current document is ambient: `document` is a live view of the
+document the request concerns, with its text, line access, position/offset conversion and
+the word under a position; `workspace` reaches the other open documents and what the
+editor reported at initialization; and request payloads such as `position` are ambient
+too, so no URIs or parameters are threaded by hand.
 
 ```scala
-object DemoServer extends LspServer():
-  def name: Text = t"Demo"
-  override def version: Optional[Text] = t"0.1.0"
+Lsp.listen(t"Demo", t"0.1.0"):
+  hover:
+    document.word(position).let: word =>
+      Hover(MarkupContent(value = t"**$word**"))
 
-  def capabilities: Lsp.ServerCapabilities =
-    Lsp.ServerCapabilities
-      ( textDocumentSync   = Lsp.TextDocumentSyncKind.Full,
-        hoverProvider      = true,
-        completionProvider = Lsp.CompletionOptions() )
-```
-
-### Responding to requests
-
-Each language feature is a method on `LspServer` with a default that does nothing;
-overriding one provides that feature. A hover handler receives the document's URI and a
-position, and returns the content to show — or `Unset` for nowhere worth hovering:
-
-```scala
-  override def hover(uri: Text, position: Lsp.Position): Optional[Lsp.Hover] =
-    Lsp.Hover(Lsp.MarkupContent(value = t"the symbol under the cursor"))
-
-  override def complete(uri: Text, position: Lsp.Position): Lsp.CompletionList =
-    Lsp.CompletionList
+  complete():
+    CompletionList
       ( items = List
-          ( Lsp.CompletionItem(label = t"alpha", kind = Lsp.CompletionItemKind.Keyword),
-            Lsp.CompletionItem(label = t"beta",  kind = Lsp.CompletionItemKind.Keyword) ) )
+          ( CompletionItem(label = t"alpha", kind = CompletionItemKind.Keyword),
+            CompletionItem(label = t"beta",  kind = CompletionItemKind.Keyword) ) )
 ```
 
-Handlers for going to a definition, finding references, listing a document's symbols,
-formatting, renaming, code actions and signature help follow the same shape: typed
-parameters in, a typed result out.
+Registrations exist for the full protocol surface: definitions, references, document
+symbols, formatting, renaming, code actions, signature help, folding, semantic tokens,
+call and type hierarchies, workspace symbols, file operations and the `*/resolve` family
+all follow the same shape — payloads ambient, a typed result out.
 
 ### Documents and diagnostics
 
-The server keeps each open document as the editor reports it, through notifications the
-server can observe by overriding `onOpen`, `onChange`, `onSave` and `onClose`. These
-carry an `LspClient`, the channel back to the editor, which is how the server pushes
-diagnostics — errors and warnings — for a document rather than waiting to be asked:
+The server tracks each open document as the editor reports it, applying incremental
+changes at the protocol's UTF-16 offsets. The lifecycle can be observed by registering
+`opened`, `changed`, `saved` and `closed` handlers, each of which sees the document's
+current state. From any handler, `client` is the channel back to the editor, which is how
+a server pushes diagnostics — errors and warnings — rather than waiting to be asked:
 
 ```scala
-  override def onOpen(document: Lsp.TextDocumentItem)(using LspClient): Unit =
-    summon[LspClient].publishDiagnostics
+  opened:
+    client.publishDiagnostics
       ( document.uri,
         List
-          ( Lsp.Diagnostic
-              ( range    = Lsp.Range(Lsp.Position(0, 0), Lsp.Position(0, 1)),
-                severity = Lsp.DiagnosticSeverity.Warning,
-                message  = t"a diagnostic for the first character" ) ) )
+          ( Diagnostic
+              ( range    = document.fullRange,
+                severity = DiagnosticSeverity.Warning,
+                message  = t"a diagnostic for the whole document" ) ) )
 ```
 
-`LspClient` also carries `showMessage` and `logMessage`, for notices shown to the user and
+`client` also carries `showMessage` and `logMessage`, for notices shown to the user and
 lines written to the editor's log.
+
+### Reporting errors
+
+A handler that cannot answer raises a typed fault, and continues:
+
+```scala
+  command(t"demo.run"):
+    raise(LspError(LspError.Reason.RequestFailed, t"nothing to run"))
+    Unset
+```
+
+A raised fault pre-empts the handler's result: for a request it becomes a JSON-RPC error
+response with the reason's wire code and the request's own id; for a notification, which
+may not be answered, it is reported through `window/logMessage`. Requests for documents
+that are not open, and commands that were never registered, are answered the same way.
 
 ### Running the server
 
-The server object is a complete application: defining it is enough to run it. Every
-`LspServer` carries its own `main`, so there is no entry point to write — no `@main`
-method, and no command-line plumbing to wire up by hand. The `DemoServer` defined above is
-already runnable; launching it runs the inherited `main`, which reads Language Server
-Protocol messages from standard input and writes responses to standard output, exactly as
-an editor expects. An editor configured to launch the object as its language server
-exchanges JSON-RPC with it over the pipe, and each request arrives at the matching handler.
+`Lsp.listen` serves standard input until it is exhausted, so a server object supplies a
+small `main` in the resident-daemon idiom:
+
+```scala
+  def main(args: Array[Text]): Unit = cli:
+    execute:
+      supervise:
+        Lsp.listen(t"Demo", t"0.1.0"):
+          ...
+      Exit.Ok
+```
+
+An editor configured to launch the object as its language server exchanges JSON-RPC with
+it over the pipe, and each request arrives at the matching handler.
 
 ### Fast startup
 
-The inherited `main` runs the server as a resident [daemon](daemons.md): the first
+The `cli` entry point runs the server as a resident [daemon](daemons.md): the first
 invocation launches a background JVM, and every later one connects to the process already
 running. An editor starts and restarts a language server often, so avoiding the JVM's
 startup cost — and keeping the just-in-time compiler's accumulated optimizations — on each
@@ -120,15 +142,9 @@ java -Dbuild.executable=demo-server -jar demo-server.jar
 ### A thin launcher
 
 By default the launcher bundles every dependency into one fat JAR. Adding a dependency on
-Soundness's on-demand dependency loader and overriding `main` to wrap the inherited entry
-point in `externalize` distributes the server as a thin launcher instead, whose
-dependencies are fetched and cached the first time they are needed:
-
-```scala
-override def main(args: IArray[Text]): Unit = externalize(super.main(args))
-```
-
-`externalize` hashes each dependency as the server's own module compiles and records the
-list in the compiled artifact. When that artifact is later repackaged, each dependency
-published somewhere is referenced by URL and hash rather than inlined, so the launcher stays
-small.
+Soundness's on-demand dependency loader and wrapping the entry point's body in
+`externalize` distributes the server as a thin launcher instead, whose dependencies are
+fetched and cached the first time they are needed. `externalize` hashes each dependency as
+the server's own module compiles and records the list in the compiled artifact; when that
+artifact is later repackaged, each dependency published somewhere is referenced by URL and
+hash rather than inlined, so the launcher stays small.
