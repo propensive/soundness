@@ -93,6 +93,26 @@ a server pushes diagnostics — errors and warnings — rather than waiting to b
 `client` also carries `showMessage` and `logMessage`, for notices shown to the user and
 lines written to the editor's log.
 
+### Observing the traffic
+
+A server's standard output is reserved for the wire protocol, so it cannot print a record
+of what it is exchanging. `Lsp.listen` takes an optional observer instead, which sees each
+message as the JSON body it was carried as — inbound before it is parsed, so a message
+that fails to decode is observed too, and outbound before it is framed:
+
+```scala
+  val observer = new Lsp.Observer:
+    def received(message: Text): Unit = log.put(t"recv $message")
+    def sent(message: Text): Unit = log.put(t"send $message")
+
+  Lsp.listen(t"Demo", t"0.1.0", observer):
+    ...
+```
+
+What the observer does with a message is the server's own concern: a debugging aid that
+streams it to a second process, a trace file, or nothing at all. Omitting the parameter
+observes nothing.
+
 ### Reporting errors
 
 A handler that cannot answer raises a typed fault, and continues:

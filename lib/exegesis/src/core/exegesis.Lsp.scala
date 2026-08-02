@@ -1297,6 +1297,21 @@ object Lsp:
     import strategies.throwUnsafely
     try json.as[JsonRpc.Request].id catch case _: Exception => Unset
 
+  // An observer of the raw traffic crossing the transport, for a server that exposes a log of the
+  // messages it exchanges. Each message is reported as the text that was read from — or framed
+  // onto — the wire, before parsing, so a malformed message is observed too. Both methods are
+  // abstract: a concrete default would oblige every implementation to write `override`, which
+  // costs more than the one-line no-op it saves.
+  object Observer:
+    // The default: a server that does not expose its traffic pays nothing for the hook.
+    object Silent extends Observer:
+      def received(message: Text): Unit = ()
+      def sent(message: Text): Unit = ()
+
+  trait Observer:
+    def received(message: Text): Unit
+    def sent(message: Text): Unit
+
   // Establishes a Language Server over the stdio transport. The block registers the server's
   // feature handlers on the lent registry; once it returns, the registry is consumed and frozen,
   // the server's capabilities are derived from what was registered, and the loop serves
@@ -1304,8 +1319,9 @@ object Lsp:
   // asynchronous writer drains the outgoing channel (request responses and server-initiated
   // notifications alike) and frames each message onto standard output, so writes never
   // interleave. Everything stateful — registry, session, dispatcher — is local to this call:
-  // nothing capability-carrying is ever stored in an application-lifetime object.
-  def listen(name: Text, version: Optional[Text] = Unset)
+  // nothing capability-carrying is ever stored in an application-lifetime object. `observer`, if
+  // given, sees every message in both directions as it crosses the transport.
+  def listen(name: Text, version: Optional[Text] = Unset, observer: Observer^ = Observer.Silent)
     ( register: (registry: LspRegistry^) ?=> Unit )
     ( using Stdio^, Monitor, Probate )
   :   Unit =
@@ -1324,17 +1340,24 @@ object Lsp:
     // take a capability-typed splice.
     val dispatch: Json => Optional[Json] = LspDispatch(caps.unsafe.unsafeAssumePure(session))
 
-    // The writer drains the channel and frames each message onto stdout.
+    // The writer drains the channel and frames each message onto stdout. The observer sees the
+    // encoded body, not the framing, so both directions read alike in a log.
     val writer: Task[Unit] = async:
       session.outgoing.stdlib.iterator.each: json =>
-        val payload: Data = json.encode.in[Data]
+        val body: Text = json.encode
+        observer.sent(body)
+        val payload: Data = body.in[Data]
         summon[Stdio].write(t"Content-Length: ${payload.length}\r\n\r\n".in[Data])
         summon[Stdio].write(payload)
         summon[Stdio].out.flush()
 
     summon[Stdio].in.source[Data].toProgression.stdlib.iterator.frames[ContentLength].each:
       frame =>
-        safely(frame.utf8.as[Json]).lay(session.put(JsonRpc.failure(-32700, t"Parse error"))):
+        // Observed before parsing, so a message that fails to decode is logged as it arrived.
+        val message: Text = frame.utf8
+        observer.received(message)
+
+        safely(message.as[Json]).lay(session.put(JsonRpc.failure(-32700, t"Parse error"))):
           json =>
             val response: Optional[Json] =
               try dispatch(json) catch

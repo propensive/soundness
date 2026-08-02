@@ -30,6 +30,26 @@ object MyServer:
 There is no capabilities record to write: registering `hover` is what advertises `hoverProvider` to the
 editor, and so on for every feature.
 
+#### Observing the traffic
+
+`Lsp.listen` takes an optional `Lsp.Observer`, which sees every message crossing the transport — inbound before
+it is parsed, outbound before it is framed — as the JSON body, without the `Content-Length` header. This is how
+a server exposes a log of its own traffic, which it cannot simply print: standard output is reserved for the
+wire protocol.
+
+```scala
+  val observer = new Lsp.Observer:
+    def received(message: Text): Unit = log.put(t"recv $message")
+    def sent(message: Text): Unit = log.put(t"send $message")
+
+  Lsp.listen(t"my-server", t"1.0", observer):
+    hover:
+      Hover(MarkupContent(value = t"Hello from my server."))
+```
+
+A message that fails to parse is observed too, since the observer runs before decoding. Omitting the parameter
+observes nothing, at no cost.
+
 #### Fast startup as a daemon
 
 The `cli` entry point runs the server through [Ethereal](https://github.com/propensive/ethereal), so it starts
