@@ -8,7 +8,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run all tests: `make test`
 - Watch mode for development: `mill -w soundness.all`
 - Run single test: `mill module.test.run` (e.g., `mill abacist.test.run`)
+- Compile every benchmark module: `mill benches.compile` (see "Benchmarks" below)
 - Run the full CI test suite from a clean build and sign the result: `make attest` (see "CI workflow" below)
+
+## Benchmarks
+
+- Each library's benchmarks live in `lib/<name>/src/bench` and are declared as `object bench
+  extends Benchmarks(…)` in `build.mill`; the cross-format corpus is the top-level `bench` module
+  over `src/bench`, run with `make bench`.
+- **Benchmarks must keep compiling.** They are *not* in `soundness.all`, the `test` aggregate, or
+  `make attest`, so a library change that breaks one is otherwise invisible — that is exactly how
+  all 11 of them came to rot behind the opaque-collections migration. The `benches` aggregate
+  module exists to make them visible: `make build` runs `mill benches.compile`, so run `make
+  build` (not just `mill soundness.all`) after any change to a collection API, a core type's
+  surface, or a `Benchmarks(…)` module's dependencies.
+- A new benchmark module needs no registration: `benches` collects every `Benchmarks` child of
+  every library automatically. A `bench` object with no `src/bench` directory compiles vacuously
+  and proves nothing — `zeppelin.bench` is currently in that state.
+- Benchmarks compare Soundness against third-party rivals, so a bench file mixes two worlds. Keep
+  the rival side written as that library's own users would write it: mirror records declared with
+  the stdlib `List`/`Nil` (derivation macros in circe, Jsoniter and borer cannot see through
+  opaque `proscenium` types), rival monads using their own `flatMap` rather than Soundness's
+  `bind`, and conversions crossing back over the greppable `.stdlib` bridge at the boundary.
 
 ## Code Style
 

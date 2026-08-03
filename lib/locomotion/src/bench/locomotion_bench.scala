@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import distillate.*
 import prepositional.*
+import proscenium.*
 
 // The benchmark message schema. These types live at the top level of the package
 // (rather than nested in the `Benchmarks` object) so Wisteria derivation resolves

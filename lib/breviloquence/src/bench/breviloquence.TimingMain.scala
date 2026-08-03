@@ -34,6 +34,7 @@ package breviloquence
 
 import contingency.*, strategies.throwUnsafely
 import gossamer.t
+import proscenium.*
 
 object TimingMain:
   def time(label: String, payload: Array[Byte]^{}, iterations: Int)

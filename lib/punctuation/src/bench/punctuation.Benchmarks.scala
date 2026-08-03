@@ -43,6 +43,7 @@ import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import probably.*
 import proscenium.*
+import proscenium.compat.*
 import quantitative.*
 import sedentary.*
 import symbolism.*

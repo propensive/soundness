@@ -47,6 +47,7 @@ import locomotion.*
 import prepositional.*
 import probably.*
 import proscenium.*
+import proscenium.compat.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
@@ -88,12 +89,16 @@ derives io.circe.derivation.ConfiguredDecoder
 case class JsoniterCustomer(id: Long, name: String, email: String, region: String)
 derives io.circe.derivation.ConfiguredDecoder
 
+// These two carry stdlib `List`s rather than the `proscenium.List` the rest of the file uses:
+// neither circe's `ConfiguredDecoder` derivation nor Jsoniter's `JsonCodecMaker` can see
+// through the opaque type, and a user of either library would declare them this way.
 case class JsoniterOrder
-  ( reference: String, customer: JsoniterCustomer, items: List[JsoniterLineItem],
+  ( reference: String, customer: JsoniterCustomer,
+    items: scala.collection.immutable.List[JsoniterLineItem],
     payment: JsoniterPayment, priority: Boolean, discount: Double )
 derives io.circe.derivation.ConfiguredDecoder
 
-case class JsoniterOrders(orders: List[JsoniterOrder])
+case class JsoniterOrders(orders: scala.collection.immutable.List[JsoniterOrder])
 derives io.circe.derivation.ConfiguredDecoder
 
 // The circe derivation reads this at each `derives` site above.
@@ -222,7 +227,10 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
   :   com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[JsoniterOrders] =
     com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
       ( com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
-          . withDiscriminatorFieldName(Some("kind"))
+          // `scala.Some`, not the `Some` from the proscenium prelude: `CodecMakerConfig` is
+          // read at expansion time, and only the stdlib one has a `FromExpr` the macro can
+          // extract the value through.
+          . withDiscriminatorFieldName(scala.Some("kind"))
           // The corpus writes the discriminator last, as Jacinta does.
           . withRequireDiscriminatorFirst(false) )
 
@@ -252,7 +260,8 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
                   order.customer.region.s ),
               order.items.map { item =>
                 JsoniterLineItem
-                  (item.sku.s, item.description.s, item.quantity, item.price, item.taxed) },
+                  (item.sku.s, item.description.s, item.quantity, item.price, item.taxed)
+              }.stdlib,
               order.payment match
                 case Payment.Card(number, expiry, secure) =>
                   JsoniterPayment.Card(number.s, expiry.s, secure)
@@ -260,7 +269,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
                 case Payment.Transfer(iban, reference) =>
                   JsoniterPayment.Transfer(iban.s, reference),
               order.priority,
-              order.discount ) } )
+              order.discount ) }.stdlib )
 
   def run(): Unit =
     println(s"Corpus sizes (bytes): JSON=${jsonText.s.length} TEL=${telText.s.length} "
