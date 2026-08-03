@@ -124,10 +124,11 @@ stream.memoize                          // drain into one immutable value
 stream.sweep((storage, start, n) => …)  // drain, seeing each raw window
 ```
 
-`sweep` — and `fold`, its accumulating counterpart — expose the raw window rather than boxed
-elements, so a byte-level reduction runs over the array with no per-element cost. `take` and
-`drop` bound a stream without draining it, releasing the remainder of the upstream unread. These
-three are reached through `import zephyrine.{take, drop, fold}`.
+`sweep` — and `gather`, its accumulating counterpart — expose the raw window rather than boxed
+elements, so a byte-level reduction runs over the array with no per-element cost. `truncate` and
+`discard` bound a stream without draining it, releasing the remainder of the upstream unread; they
+count bytes or records, not collection elements, which is why they do not borrow the names `take`
+and `drop`.
 
 Where a pipeline ends in a *push* chain rather than a value, `pump` is the single point at which
 data crosses from the pull side to the push side:
