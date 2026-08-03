@@ -29,6 +29,7 @@ build:
 	./mill groupCheck.validate
 	python3 etc/check-given-uniqueness.py
 	./mill soundness.all
+	./mill benches.compile
 
 dev:
 	./mill -w soundness.all

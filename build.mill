@@ -663,6 +663,19 @@ object bench extends BaseScalaModule:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
 
+// The compile-only aggregate over every benchmark module: each library's `bench` plus the
+// cross-module `bench` corpus above. Benchmarks are not part of `soundness.all`, the `test`
+// aggregate or `make attest`, so nothing else notices when a library change stops them
+// compiling — which is how they came to rot behind the opaque-collections migration. `make
+// build` compiles this so that cannot happen silently again. It has no sources of its own;
+// depending on the modules is what compiles them.
+object benches extends Toolchain:
+  def scalaVersion = settings.scalaVersion
+  def scalacOptions = settings.scalaOptions
+  def sources = Task.Sources()
+  def moduleDeps: Seq[JavaModule] =
+    bench +: allLibraries.flatMap(_.moduleDirectChildren).collect { case b: Benchmarks => b }
+
 // The keyword-corpus analysis tool (`make keywords`): derives and checks the pattern data in
 // `prophesy.ScalaKeywords` by tokenizing the Soundness (and proscala) sources with harlequin.
 // A development-time tool, outside `lib/`, never published.
