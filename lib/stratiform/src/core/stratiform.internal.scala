@@ -594,7 +594,9 @@ object internal:
         keys:        Expr[Array[String]^{}],
         instances:   Expr[Array[Tel.Field | Null]^{}],
         repeatables: Expr[Array[Boolean]^{}],
-        fallbacks:   Expr[Array[Any]^{}] )
+        fallbacks:   Expr[Array[Any]^{}],
+        table:       Expr[AnyRef],
+        lineAtoms:   Option[Expr[Array[Tel.Atom]^{}]] )
     :   Expr[value] =
 
       val owner = Symbol.spliceOwner
@@ -605,6 +607,12 @@ object internal:
 
       val seens = List.range(0, arity).map: index =>
         Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+
+      // Whether a field's slot was filled by a positionally-assigned atom
+      // rather than a keyword child — a later same-keyword child then fills
+      // a non-repeatable member twice (§20.2 step 5c).
+      val atomFilleds = List.range(0, arity).map: index =>
+        Symbol.newVal(owner, "atom"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
       // Occurrence buffers for the fields that may gather (repeatable
       // instances), allocated lazily on the first occurrence.
@@ -617,6 +625,9 @@ object internal:
 
       val seenDefs = List.range(0, arity).map: index =>
         ValDef(seens(index), Some(Literal(BooleanConstant(false))))
+
+      val atomFilledDefs = List.range(0, arity).map: index =>
+        ValDef(atomFilleds(index), Some(Literal(BooleanConstant(false))))
 
       val bufferDefs = List.range(0, arity).flatMap: index =>
         buffers(index).map: symbol => ValDef(symbol, Some('{ null }.asTerm))
@@ -633,7 +644,13 @@ object internal:
         def firstWins(read: Term): Term =
           If
             ( Ref(seens(index)),
-              '{ $reader.skipEntry($indent) }.asTerm,
+              Block
+                ( List
+                    ( If
+                        ( Ref(atomFilleds(index)),
+                          '{ Tel.Parsable.duplicateFill()(using $tactic) }.asTerm,
+                          unit ) ),
+                  '{ $reader.skipEntry($indent) }.asTerm ),
               Block
                 ( List
                     ( Assign(Ref(slots(index)), read),
@@ -660,9 +677,7 @@ object internal:
               case BooleanK =>
                 firstWins:
                   '{
-                    Tel.Parsable.focusing($foci, $keyText):
-                      $reader.boolean()
-                      . lay(Tel.Parsable.scalarFault($reader, t"Boolean", false))(identity)
+                    Tel.Parsable.focusing($foci, $keyText)(Tel.Parsable.flagEntry($reader))
                   }.asTerm
 
               case TextK =>
@@ -720,6 +735,121 @@ object internal:
         CaseDef(Literal(IntConstant(index)), None, rhs)
 
       val fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipEntry($indent) }.asTerm)
+
+      // The §19.2 atom phase over the entry line's own atoms, run before the
+      // keyword loop so a repeatable field's atoms precede its same-keyword
+      // children (§18.3 step 4). Generated only for the entry form — the
+      // document root carries no atoms (§20.2) — and guarded at runtime, so
+      // the dominant atomless shape pays a single length test.
+      val prepass: List[Statement] = lineAtoms.toList.map: atoms =>
+        val assignment =
+          Symbol.newVal(owner, "positional", TypeRepr.of[AnyRef], Flags.EmptyFlags, Symbol.noSymbol)
+
+        val assignmentExpr = Ref(assignment).asExprOf[AnyRef]
+
+        val deliveries: List[Statement] = List.range(0, arity).map: index =>
+          val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+          val count: Expr[Int] = '{ Tel.Parsable.positionalCount($assignmentExpr, ${Expr(index)}) }
+
+          val first: Expr[Text] =
+            '{ Tel.Parsable.positionalText($assignmentExpr, ${Expr(index)}, 0) }
+
+          // A slot filled from an atom is `seen`, so the keyword loop's
+          // first-wins step skips a later same-keyword child (and reports
+          // the duplicate fill).
+          def fill(value: Term): Term =
+            Block
+              ( List
+                  ( Assign(Ref(slots(index)), value),
+                    Assign(Ref(seens(index)), Literal(BooleanConstant(true))),
+                    Assign(Ref(atomFilleds(index)), Literal(BooleanConstant(true))) ),
+                unit )
+
+          val deliver: Term = fieldTypes(index).asType match
+            case '[fieldType] =>
+              kinds(index) match
+                case IntK =>
+                  fill:
+                    '{
+                      Tel.Parsable.focusing($foci, $keyText):
+                        Tel.Parsable.atomInt($first)(using $tactic)
+                    }.asTerm
+
+                case LongK =>
+                  fill:
+                    '{
+                      Tel.Parsable.focusing($foci, $keyText):
+                        Tel.Parsable.atomLong($first)(using $tactic)
+                    }.asTerm
+
+                // A Flag-natured field's assigned atom is its keyword, and
+                // means presence.
+                case BooleanK => fill(Literal(BooleanConstant(true)))
+
+                case TextK => fill(first.asTerm)
+
+                case StringK => fill('{ $first.s }.asTerm)
+
+                case InstanceK =>
+                  val bufferRef = Ref(buffers(index).get)
+
+                  val bufferExpr =
+                    bufferRef.asExprOf[scala.collection.mutable.ListBuffer[Any] | Null]
+
+                  val ensure: Term =
+                    If
+                      ( '{ $bufferExpr == null }.asTerm,
+                        Assign
+                          ( bufferRef,
+                            '{ scala.collection.mutable.ListBuffer.empty[Any] }.asTerm ),
+                        unit )
+
+                  // §19.2: a repeatable member takes every atom assigned to
+                  // it, each becoming one gathered occurrence.
+                  val gather: Term =
+                    '{
+                      var occurrence = 0
+
+                      while occurrence < $count do
+                        $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
+                          ( Tel.Parsable.focusing($foci, $keyText):
+                              Tel.Parsable.parseAtomElement
+                                ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
+                                  Tel.Parsable.positionalText
+                                    ( $assignmentExpr, ${Expr(index)}, occurrence ) )
+                                ( using $tactic ) )
+
+                        occurrence += 1
+                    }.asTerm
+
+                  val single: Term =
+                    fill:
+                      '{
+                        val instance =
+                          $instances(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
+
+                        Tel.Parsable.focusing($foci, $keyText):
+                          if instance.nature == Tel.Nature.Flag
+                          then instance.parseFlag()(using $tactic)
+                          else instance.parseAtom($first)(using $tactic)
+                      }.asTerm
+
+                  If
+                    ( '{ $repeatables(${Expr(index)}) }.asTerm,
+                      Block(List(ensure), gather),
+                      single )
+
+          If('{ $count > 0 }.asTerm, deliver, unit)
+
+        If
+          ( '{ $atoms.length > 0 }.asTerm,
+            Block
+              ( ValDef
+                  ( assignment,
+                    Some('{ Tel.Parsable.positionalAssign($table, $atoms)(using $tactic) }.asTerm) )
+                :: deliveries,
+                unit ),
+            unit )
 
       // The keyword loop. With literal keywords, each step compares the
       // packed word against the wire keywords as immediate constants,
@@ -782,8 +912,8 @@ object internal:
               case TextK    => '{ Tel.Parsable.missing[Text](t"")(using $tactic) }.asExprOf[fieldType]
               case StringK  => '{ Tel.Parsable.missing[String]("")(using $tactic) }.asExprOf[fieldType]
 
-              case BooleanK =>
-                '{ Tel.Parsable.missing[Boolean](false)(using $tactic) }.asExprOf[fieldType]
+              // A Flag field's absence is `false`, not an error (§20).
+              case BooleanK => '{ false }.asExprOf[fieldType]
 
             val resolveAbsent: Term =
               Assign
@@ -835,7 +965,9 @@ object internal:
 
         Apply(applied, slots.map { slot => Ref(slot) })
 
-      Block(slotDefs ::: seenDefs ::: bufferDefs ::: loop ::: absents, construct)
+      Block
+        ( slotDefs ::: seenDefs ::: atomFilledDefs ::: bufferDefs ::: prepass ::: loop ::: absents,
+          construct )
       . asExprOf[value]
 
     def summonOrAbort[required: Type](role: String): Expr[required] =
@@ -847,6 +979,14 @@ object internal:
     val nameExprs = fieldNames.map { name => Expr(name) }
     val instanceExprs = List.range(0, arity).map(summonField)
     val fallbackExprs = List.range(0, arity).map(declaredDefault)
+
+    // A primitive field's §20.2 nature is fixed by its type here; an
+    // instance-backed field's is read from the instance when the positional
+    // table is built, so its entry is only a placeholder.
+    val natureExprs: List[Expr[Tel.Nature]] = kinds.map:
+      case BooleanK  => '{ Tel.Nature.Flag }
+      case InstanceK => '{ Tel.Nature.Struct }
+      case _         => '{ Tel.Nature.Scalar }
 
     '{
       // Sealed per the codec-thunk pattern, like the derived instances: the
@@ -867,22 +1007,32 @@ object internal:
 
         lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
 
+        lazy val natures: Array[Tel.Nature]^{} = Array.of[Tel.Nature](${Varargs(natureExprs)}*)
+
+        // The §19.2 profile table: one per generated instance, built on
+        // first use so recursive self-references stay deferred, like the
+        // instance array it reads.
+        lazy val table: AnyRef =
+          Tel.Parsable.positionalTable(keys, natures, instances, fallbacks)
+
         new Tel.Parsable:
           type Self = value
           def shape(): Morphology = Morphology.Any
 
           def parse(reader: TelReader^, indent: Int): value =
-            reader.finishLine()
+            val atoms = reader.lineAtoms()
             ${
               body
                 ( '{reader}, '{indent + 1}, '{foci}, '{tactic}, '{keys}, '{instances},
-                  '{repeatables}, '{fallbacks} )
+                  '{repeatables}, '{fallbacks}, '{table}, Some('{atoms}) )
             }
 
+          // The document root carries no atoms (§20.2), so the whole-input
+          // form generates no positional pre-pass at all.
           override def parse(reader: TelReader^): value =
             ${
               body
                 ( '{reader}, '{0}, '{foci}, '{tactic}, '{keys}, '{instances},
-                  '{repeatables}, '{fallbacks} )
+                  '{repeatables}, '{fallbacks}, '{table}, None )
             }
     }

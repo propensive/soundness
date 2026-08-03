@@ -391,15 +391,12 @@ object Tel extends Tel2:
     // parser whose field values live in typed locals, whose keywords dispatch
     // through packed-`Long` literal comparisons, and whose record is built by
     // a direct constructor call — no `Array[Any]` buffer, no `Mirror`, no
-    // per-field boxing. Semantics (wire keywords, gathering, first-match-wins
-    // duplicates, defaults, absents, error foci) mirror `derived` exactly,
-    // EXCEPT that a staged record parser does not yet run the §19.2
-    // positional atom pre-pass (#1694): a record entry's own inline atoms
-    // are discarded, as all paths did before the fix. Use `derived` for
-    // documents that put field values in atom position. The generated
-    // instance's `shape()` is `Morphology.Any`. Requires a top-level or
-    // object-nested case class with a single parameter list — sums,
-    // method-local classes and other shapes use `derived`.
+    // per-field boxing. Semantics (wire keywords, §19.2 positional atom
+    // assignment, gathering, first-match-wins duplicates, defaults, absents,
+    // error foci) mirror `derived` exactly; the generated instance's
+    // `shape()` is `Morphology.Any`. Requires a top-level or object-nested
+    // case class with a single parameter list — sums, method-local classes
+    // and other shapes use `derived`.
     inline def staged[value]: value is Tel.Parsable =
       ${ stratiform.internal.stagedParsable[value]('{ adversaria.relabelling[value, Tel] }) }
 
@@ -564,6 +561,15 @@ object Tel extends Tel2:
     def missing[value](sentinel: value)(using Tactic[TelError]): value =
       raise(TelError(TelError.Reason.Absent)) yet sentinel
 
+    // A staged `Boolean` field's entry read, mirroring `booleanParsable`:
+    // flag semantics (§20) make a present entry with no atom the bare flag
+    // form, meaning `true`, while a present-but-unparseable atom is still
+    // `NotScalar`.
+    def flagEntry(reader: TelReader^): Boolean =
+      reader.boolean().lay:
+        if reader.primaryPresent then scalarFault(reader, t"Boolean", false) else true
+      . apply(identity)
+
     // A present entry whose atom was missing or unparseable: the byte-parsed
     // primitives' fault split — a missing atom is `Absent`, a
     // present-but-unparseable one `NotScalar` with the offending atom's text.
@@ -606,9 +612,109 @@ object Tel extends Tel2:
       (unwrap(parsing): @unchecked) match
         case gathering: Gathering => gathering.parseElement(reader, indent)
 
+    // One element of a repeatable field built from a positionally-assigned
+    // atom (§19.2): occurrences may split between inline atoms and later
+    // same-keyword children.
+    def parseAtomElement(parsing: Tel.Parsing, text: Text)(using Tactic[TelError]): Any =
+      (unwrap(parsing): @unchecked) match
+        case gathering: Gathering => gathering.parseAtomElement(text)
+
     def gathered[value](parsing: Tel.Parsing, elements: List[Any]): value =
       (unwrap(parsing): @unchecked) match
         case gathering: Gathering => gathering.gathered(elements).asInstanceOf[value]
+
+    // ── §19.2 positional assignment support for staged parsers ──
+    //
+    // Staged parsers are generated into user modules, so the atom phase is
+    // reached through public support points carrying neutral references, as
+    // the reader and field instances are. `positionalTable` is built once
+    // per generated instance (a lazy val); `positionalAssign` runs the atom
+    // phase for one entry line, and the two accessors read its per-field
+    // result by index — so generated code needs no collection API.
+
+    def positionalTable
+      ( keys:      Array[String]^{},
+        natures:   Array[Tel.Nature]^{},
+        instances: Array[Tel.Field | Null]^{},
+        fallbacks: Array[Any]^{} )
+    :   AnyRef =
+
+      val count = keys.length
+      val profiles = new scala.Array[Positional.Profile](count)
+      var index = 0
+
+      while index < count do
+        val instance = instances(index)
+
+        // A primitive field's nature is fixed by its type at expansion; an
+        // instance-backed field's comes from the instance itself.
+        val nature = if instance == null then natures(index) else instance.nature
+        val repeatable = instance != null && instance.repeatable
+        val optional = instance != null && instance.optional
+
+        // As in the derived engines: a Flag field is never required (its
+        // absence reads `false`), so the skip rule may pass over it.
+        profiles(index) =
+          Positional.Profile
+            ( Text(keys(index)),
+              nature,
+              repeatable,
+              required =
+                nature != Tel.Nature.Flag
+                && !(optional || fallbacks(index).asInstanceOf[Optional[Any]].present) )
+
+        index += 1
+
+      // The table and assignment travel as neutral carriers: both are fresh,
+      // self-contained arrays of pure data, so the rim cast is honest — the
+      // same discipline as `takeAtoms` and `Field.Adapter`.
+      profiles.asInstanceOf[AnyRef]
+
+    def positionalAssign(table: AnyRef, atoms: Array[Tel.Atom]^{})(using Tactic[TelError])
+    :   AnyRef =
+
+      val profiles = table.asInstanceOf[scala.Array[Positional.Profile]]
+      val assigned = Positional.assign(atoms, profiles.asInstanceOf[Array[Positional.Profile]^{}])
+      val result = new scala.Array[scala.Array[Text]](profiles.length)
+      var index = 0
+
+      while index < profiles.length do
+        val texts = assigned.readable(index).stdlib
+        val slot = new scala.Array[Text](texts.length)
+        var occurrence = 0
+        var rest = texts
+
+        while rest.nonEmpty do
+          slot(occurrence) = Positional.text(rest.head)
+          occurrence += 1
+          rest = rest.tail
+
+        result(index) = slot
+        index += 1
+
+      result.asInstanceOf[AnyRef]
+
+    def positionalCount(assignment: AnyRef, index: Int): Int =
+      assignment.asInstanceOf[scala.Array[scala.Array[Text]]](index).length
+
+    def positionalText(assignment: AnyRef, index: Int, occurrence: Int): Text =
+      assignment.asInstanceOf[scala.Array[scala.Array[Text]]](index)(occurrence)
+
+    // §20.2 step 5c from a staged parser: a non-repeatable field filled by a
+    // positional atom, then again by a same-keyword child.
+    def duplicateFill()(using Tactic[TelError]): Unit =
+      raise(TelError(TelError.Reason.NonRepeatableTooMany))
+
+    // The byte-parsed primitives' `parseAtom` semantics, for a staged
+    // parser's positionally-assigned atom: an unparseable value is
+    // `NotScalar` with the offending text, as on both other paths.
+    def atomInt(text: Text)(using Tactic[TelError]): Int =
+      val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
+      parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Int"))) yet 0)
+
+    def atomLong(text: Text)(using Tactic[TelError]): Long =
+      val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
+      parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Long"))) yet 0L)
 
     // Field instances travel wrapped in the `Field.Adapter`; the engine
     // looks through it for repeatability and element hooks.
