@@ -35,7 +35,7 @@ package soundness
 export
   turbulence
   . { Aggregable, deduplicate,
-      defer, delineate, discard, Document, Documentary, Eof, Err, In, inputStream,
+      defer, delineate, Document, Documentary, drop, Eof, Err, In, inputStream,
       Io, Line, LineSeparation, load, Loadable, more, Out, read, Relay, shred, source,
       Confluence, Divergence, Readable, Sink, Stdio, Streamable, StreamError,
       StreamOutputStream, strict, take, Writable, writeTo, flow }

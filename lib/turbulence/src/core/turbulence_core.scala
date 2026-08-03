@@ -314,7 +314,7 @@ extension (obj: Chain.type)
 
 
 extension (stream: Chain[Data])
-  def discard(bytes: Bytes): Chain[Data] =
+  def drop(bytes: Bytes): Chain[Data] =
     def recur(stream: Chain[Data], count: Bytes): Chain[Data] = stream.flow(Chain()):
       if next.bytes < count
       then recur(more, count - next.bytes)
