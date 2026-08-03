@@ -32,10 +32,17 @@
                                                                                                   */
 package exegesis
 
+import scala.collection.mutable as scm
+
+import java.io as ji
+import java.util.concurrent as juc
+
 import soundness.*
 
 import charEncoders.utf8Encoder
+import probates.awaitProbate
 import strategies.throwUnsafely
+import threading.virtualThreading
 
 // Kept as a top-level object (its own class) rather than nested in `Tests` so the LSP codecs the
 // dispatcher inlines do not add to the `Tests` class, which would otherwise exceed the JVM
@@ -94,6 +101,48 @@ object TestServer:
 
   // Dispatch plus the session's fault-aware conclusion, as `Lsp.listen` performs it.
   def roundtrip(json: Json): Optional[Json] = session.conclude(json, dispatch(json))
+
+// Drives `Lsp.listen` end-to-end over an in-memory transport, capturing what an `Lsp.Observer`
+// sees. Top-level for the same reason as `TestServer`: `listen` inlines the LSP codecs, which
+// would otherwise count against the `Tests` class's size.
+object TrafficFixture:
+  import Lsp.*
+
+  val request: Text =
+    t"""{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"capabilities":{}}}"""
+
+  // Every message the observer saw, as (direction, body) pairs in the order they were observed.
+  lazy val observed: List[(Text, Text)] =
+    val log: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
+
+    // Released once the response has been observed. The reader loop cancels the writer when
+    // standard input runs dry, so an input that ended with the request could interrupt the
+    // writer before it drained the response; instead the stream stays open until `sent` fires.
+    val answered: juc.CountDownLatch = juc.CountDownLatch(1)
+
+    val observer = new Observer:
+      def received(message: Text): Unit = log.synchronized(log.append((t"recv", message)))
+
+      def sent(message: Text): Unit =
+        log.synchronized(log.append((t"send", message)))
+        answered.countDown()
+
+    val framed: Text = t"Content-Length: ${request.in[Data].readable.length}\r\n\r\n"+request
+
+    val in: ji.InputStream = new ji.ByteArrayInputStream(framed.s.getBytes("UTF-8").nn):
+      override def read(array: scala.Array[Byte] | Null, offset: Int, length: Int): Int =
+        val count = super.read(array, offset, length)
+        if count == -1 then answered.await(10, juc.TimeUnit.SECONDS)
+        count
+
+    val out: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream()
+    given Stdio = Stdio(ji.PrintStream(out, true), null, in, termcapDefinitions.basicTermcap)
+
+    supervise:
+      Lsp.listen(t"Test", t"1.0", observer):
+        hover(Hover(MarkupContent(value = document.text)))
+
+    List.from(log.synchronized(log.toList))
 
 object Tests extends Suite(m"Exegesis Tests"):
   import Lsp.*
@@ -294,5 +343,20 @@ object Tests extends Suite(m"Exegesis Tests"):
         TestServer.roundtrip(request)
         TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
       . assert(_ == t"window/logMessage")
+
+    suite(m"Traffic observation"):
+      val traffic: List[(Text, Text)] = TrafficFixture.observed
+
+      test(m"the observer sees one message in each direction"):
+        traffic.stdlib.map(_._1).mkString(",")
+      . assert(_ == "recv,send")
+
+      test(m"an inbound message is observed as its body, without the framing"):
+        traffic.stdlib.head._2
+      . assert(_ == TrafficFixture.request)
+
+      test(m"an outbound message is observed as the response to the request"):
+        traffic.stdlib.last._2.as[Json].as[JsonRpc.Response].id.vouch.as[Int]
+      . assert(_ == 0)
 
     CaptureTests()
