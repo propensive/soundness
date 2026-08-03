@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export delicious.{Markup, Placeholder, PlaceholderKind, SemanticMessage, Style}
+export delicious.{Markup, Placeholder, PlaceholderKind, Rendition, SemanticMessage}

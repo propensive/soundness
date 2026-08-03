@@ -388,17 +388,17 @@ private[probably] object AnsiRenderer:
 
   private def describeFailure(info: Optional[Verdict.Detail]): Text = info.lay(t"Test failed"):
     case Verdict.Detail.Throws(err) =>
-      Format.truncate(t"Threw ${err.component}.${err.className}: ${err.message.text}")
+      Format.abbreviate(t"Threw ${err.component}.${err.className}: ${err.message.text}")
 
     case Verdict.Detail.CheckThrows(err) =>
-      Format.truncate(t"Check threw ${err.component}.${err.className}: ${err.message.text}")
+      Format.abbreviate(t"Check threw ${err.component}.${err.className}: ${err.message.text}")
 
     case Verdict.Detail.Compare(expected, observed, _) =>
       val observed2 = observed.sub(t"\n", t" ")
-      Format.truncate(t"Expected: ${expected.sub(t"\n", t" ")}; observed: $observed2")
+      Format.abbreviate(t"Expected: ${expected.sub(t"\n", t" ")}; observed: $observed2")
 
     case Verdict.Detail.Message(text) =>
-      Format.truncate(text)
+      Format.abbreviate(text)
 
     case Verdict.Detail.Captures(_) =>
       t"Test failed"
@@ -512,8 +512,8 @@ private[probably] object AnsiRenderer:
 
         val message =
           if active.nil
-          then Format.truncate(t"Fatal error: $errorClass: $cause")
-          else Format.truncate(t"Fatal error in $activeNames: $errorClass: $cause")
+          then Format.abbreviate(t"Fatal error: $errorClass: $cause")
+          else Format.abbreviate(t"Fatal error in $activeNames: $errorClass: $cause")
 
         GithubActions.error(message = message, title = t"Fatal error")
         GithubActions.group(t"Fatal error stack trace")

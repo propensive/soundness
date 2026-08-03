@@ -149,7 +149,7 @@ object Installer:
               val stream = file.stream
 
               if prefixSize > 0.b
-              then file.write(stream.take(prefixSize) #::: stream.discard(fileSize - jarSize))
+              then file.write(stream.take(prefixSize) #::: stream.drop(fileSize - jarSize))
               else file.write(stream)
 
             file.executable() = true

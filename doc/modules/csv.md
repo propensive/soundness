@@ -48,8 +48,6 @@ the rows one at a time, parsed by the same reader, so a quoted cell spanning chu
 boundaries is handled exactly as it is in a materialized sheet:
 
 ```scala
-import caesura.rows
-
 source.rows.map(_[Text](t"name").or(t"?")).to(List)
 ```
 
@@ -163,11 +161,9 @@ t"z,9,note".read[Stat in Dsv]           // Stat(t"z", 9, t"note")
 t"a,1\nb,2".read[List[Stat] in Dsv]     // both records
 ```
 
-A stream yields records the same way, through `caesura.rowsOf`:
+A stream yields records the same way, through `rowsOf`:
 
 ```scala
-import caesura.rowsOf
-
 source.rowsOf[Stat].map(_.count).to(List)
 ```
 

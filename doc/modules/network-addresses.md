@@ -117,8 +117,6 @@ The machine's own network interfaces enumerate as typed values, each reporting w
 loopback, and each addressable by name:
 
 ```scala
-import urticose.NetworkInterface
-
 NetworkInterface.all()
 NetworkInterface.all().exists(_.loopback)
 ```

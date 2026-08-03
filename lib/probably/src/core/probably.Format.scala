@@ -78,7 +78,7 @@ private[probably] object Format:
 
   val sparkBlocks: List[Text] = List(t"▁", t"▂", t"▃", t"▄", t"▅", t"▆", t"▇", t"█")
 
-  def truncate(text: Text, max: Int = 800): Text =
+  def abbreviate(text: Text, max: Int = 800): Text =
     if text.length <= max then text else t"${text.keep(max)}…"
 
   def statusWord(status: Report.Status): Text = status match
