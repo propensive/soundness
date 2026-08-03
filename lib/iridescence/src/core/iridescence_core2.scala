@@ -47,11 +47,11 @@ type Cmyk8 = (Cyan[8], Magenta[8], Yellow[8], Key[8])
 // `Chroma` and `Rgb32` pack their channels in exactly the layouts `Rgb` and
 // `(Red[10], Green[12], Blue[10])` respectively, so these conversions just retype the bits.
 extension (chroma: anticipation.Chroma)
-  def pixel: Pixel[Rgb] = Pixel.make(chroma.underlying&0xffffff)
+  def packed: Pixel[Rgb] = Pixel.make(chroma.underlying&0xffffff)
 
 extension (rgb32: Rgb32)
-  @targetName("rgb32Pixel")
-  def pixel: Pixel[(Red[10], Green[12], Blue[10])] =
+  @targetName("rgb32Packed")
+  def packed: Pixel[(Red[10], Green[12], Blue[10])] =
     Pixel.make(rgb32.red.toLong << 22 | rgb32.green.toLong << 10 | rgb32.blue.toLong)
 
 extension (pixel: Pixel[(Red[10], Green[12], Blue[10])])

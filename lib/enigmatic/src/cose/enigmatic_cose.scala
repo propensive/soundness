@@ -38,9 +38,10 @@ import contingency.*
 import prepositional.*
 import turbulence.*
 
-// `bytes.verify[Cose](pubkey)` desugars to `(bytes.verify[Cose]).apply(pubkey)`.
-// The wrapper lets the user name the scheme as a type argument while still
-// allowing the key type to be inferred from the value argument.
+// `bytes.authenticate[Cose](pubkey)` desugars to
+// `(bytes.authenticate[Cose]).apply(pubkey)`. The wrapper lets the user name the
+// scheme as a type argument while still allowing the key type to be inferred from
+// the value argument. (`verify` in the umbrella is jacinta's schema check.)
 final class CoseVerify[source](val source: source):
   inline def apply[K]
     ( key: K )
@@ -53,4 +54,4 @@ final class CoseVerify[source](val source: source):
     Cose.parse(bytes).verifyWith(key)
 
 extension [source](source: source)
-  inline def verify[scheme <: Cose]: CoseVerify[source] = new CoseVerify[source](source)
+  inline def authenticate[scheme <: Cose]: CoseVerify[source] = new CoseVerify[source](source)

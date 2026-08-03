@@ -355,20 +355,20 @@ object Tests extends Suite(m"Iridescence tests"):
       . assert(_ == (1023, 2048, 512))
 
       test(m"a Chroma converts to an Rgb pixel"):
-        val pixel = rgb"#abcdef".pixel
+        val pixel = rgb"#abcdef".packed
         (pixel.red, pixel.green, pixel.blue)
       . assert(_ == (0xab, 0xcd, 0xef))
 
       test(m"an Rgb pixel converts back to the same Chroma"):
-        rgb"#abcdef".pixel.chroma
+        rgb"#abcdef".packed.chroma
       . assert(_ == rgb"#abcdef")
 
       test(m"a 10/12/10 pixel rounds to Chroma exactly as Rgb32"):
-        Rgb32(600, 3000, 200).pixel.chroma
+        Rgb32(600, 3000, 200).packed.chroma
       . assert(_ == Chroma((600*255 + 511)/1023, (3000*255 + 2047)/4095, (200*255 + 511)/1023))
 
       test(m"an Rgb32 round-trips through Pixel"):
-        Rgb32(600, 3000, 200).pixel.rgb32
+        Rgb32(600, 3000, 200).packed.rgb32
       . assert(_ == Rgb32(600, 3000, 200))
 
       test(m"a colour packs into an RGBA pixel with full alpha"):

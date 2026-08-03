@@ -431,9 +431,9 @@ object Tests extends Suite(m"Enigmatic tests"):
       val key: SymmetricKey[HmacCipher[Sha2[256]]] = SymmetricKey(keyBytes)
       val payload: Data = pangram.in[Data]
 
-      test(m"Cose(payload, key) round-trips through verify[Cose](key)"):
+      test(m"Cose(payload, key) round-trips through authenticate[Cose](key)"):
         val cose = Cose(payload, key)
-        cose.bytes.verify[Cose](key)
+        cose.bytes.authenticate[Cose](key)
       . assert(identity)
 
       test(m"Cose envelope is tagged with CBOR tag 17 (Mac0)"):
@@ -445,7 +445,7 @@ object Tests extends Suite(m"Enigmatic tests"):
         val wire = Cose(payload, key).bytes
         val wrongKey: SymmetricKey[HmacCipher[Sha2[256]]] =
           SymmetricKey(t"this-is-a-different-key-bytes!!!".in[Data])
-        wire.verify[Cose](wrongKey)
+        wire.authenticate[Cose](wrongKey)
       . assert(!_)
 
       test(m"Verification fails after tampering the wire bytes"):
@@ -455,7 +455,7 @@ object Tests extends Suite(m"Enigmatic tests"):
         // Flip a bit in the MAC tag near the end of the envelope.
         val index = wire.length - 5
         tampered(index) = (tampered(index) ^ 0xFF.toByte).toByte
-        Array.freeze(tampered).verify[Cose](key)
+        Array.freeze(tampered).authenticate[Cose](key)
       . assert(!_)
 
     suite(m"OpenSSL provider (libcrypto via xenophile FFM)"):

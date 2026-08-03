@@ -37,7 +37,7 @@ package soundness
 export
   iridescence
   . { Alpha, Blendable, Blue, Brightness, Cielab, Cmy, Cmyk, Cmyk8, Color, Colorimetry, Cyan, dark,
-      Daub, Green, Grey, Hsl, Hsv, Key, light, Magenta, Mixing, Palette, Perceptual, Pixel, pixel,
+      Daub, Green, Grey, Hsl, Hsv, Key, light, Magenta, Mixing, packed, Palette, Perceptual, Pixel,
       PixelOpaque, Red, rgb, Rgb, Rgba, Rgb12, Rgb12Opaque, Rgb32, rgb32, Rgb32Opaque, Solarized,
       Spectrum, Srgb, Theme, Tonal, WebColors, Xyz, Yellow }
 

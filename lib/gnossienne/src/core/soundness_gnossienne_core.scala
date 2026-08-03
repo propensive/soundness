@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export gnossienne.{index, ref, Reference, ReferenceError, Resolvable}
+export gnossienne.{primary, ref, Reference, ReferenceError, Resolvable}

@@ -51,7 +51,7 @@ class Form
   // `Canvas^`: a terminal-backed canvas retains its terminal (live size thunks), and the
   // form legitimately holds it for its whole run.
   ( root:         Canvas^,
-    mode:         Mode,
+    mode:         Occupancy,
     pane:         Pane,
     wake:         () => Unit   = () => (),
     throttle:     Long         = 0,
@@ -147,8 +147,8 @@ class Form
     val frame = liveFrame
 
     val height = mode match
-      case Mode.Fullscreen => root.height
-      case Mode.Inline     => frame.measure(Axis.Rank).min
+      case Occupancy.Fullscreen => root.height
+      case Occupancy.Inline     => frame.measure(Axis.Rank).min
 
     root match
       case inline: InlineRoot => inline.reframe(root.width, height)
@@ -180,19 +180,19 @@ class Form
 
     if leaves.length != rects.length then
       mode match
-        case Mode.Fullscreen => root.clear()
-        case Mode.Inline     => ()
+        case Occupancy.Fullscreen => root.clear()
+        case Occupancy.Inline     => ()
 
       rects = Sequence()
 
     val updated = solve()
 
     mode match
-      case Mode.Inline =>
+      case Occupancy.Inline =>
         rects = updated
         (0 until rects.length).each(paint(_))
 
-      case Mode.Fullscreen =>
+      case Occupancy.Fullscreen =>
         val dirty = dirtyCells(rects, updated, changed)
         rects = updated
         dirty.each(paint(_))

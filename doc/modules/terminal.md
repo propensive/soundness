@@ -86,7 +86,7 @@ interactive: terminal ?=>
   val sidebar = border(BorderStyle.rounded)(menu(pages, pages.head, maxWidth = 20))
   val body = border(BorderStyle.heavy)(editor(LineEditor()))
 
-  form(Mode.Inline)(file(sidebar, body))
+  form(Occupancy.Inline)(file(sidebar, body))
 ```
 
 Sizes solve as fractions with minima and maxima, and focus moves between widgets with Tab.

@@ -52,7 +52,7 @@ def demo(): Unit = cli:
   execute:
     supervise:
       interactive: terminal ?=>
-        form(Mode.Inline)(demoLayout)
+        form(Occupancy.Inline)(demoLayout)
         Exit.Ok
 
 // rank(title, file(sidebar, rank(heading, compose, activity)), status), with the

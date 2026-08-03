@@ -112,7 +112,7 @@ private[probably] object Documenting:
     else if verdicts.all(_.typed[Verdict.AspireFail]) then Status.AspireFail
     else Status.Mixed
 
-  private def cellStatus(cell: Cell): Status =
+  private def cellStatus(cell: Tally): Status =
     verdictStatus(List.of(cell.runs.stdlib.flatMap(_.verdict.option)))
 
   // Measurement entries group by their immediate suite, one `Group` per suite and kind, in
@@ -148,7 +148,7 @@ private[probably] object Documenting:
 
   // The first (usually only) run of a cell: measurements record one run per cell, and a
   // duplicated declaration keeps its first measurement, as it always has.
-  private def run(cell: Cell): Optional[Run] = cell.runs match
+  private def run(cell: Tally): Optional[Run] = cell.runs match
     case run :: _ => run
     case Nil      => Unset
 
@@ -163,7 +163,7 @@ private[probably] object Documenting:
     case Metric.Dimension.Count    => Datum.Num(value.toLong)
     case Metric.Dimension.Fraction => Datum.Percent(value)
 
-  private def cellDatum(entry: Entry, cell: Cell): Datum =
+  private def cellDatum(entry: Entry, cell: Tally): Datum =
     entry.headline.lay(Datum.Mark(cellStatus(cell))): headline =>
       run(cell).lay(Datum.Gap): run0 => metric(run0, headline).lay(Datum.Blank)(datum(headline, _))
 

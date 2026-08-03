@@ -32,9 +32,9 @@
                                                                                                   */
 package ultimatum
 
-// The two rendering modes for an interactive layout. `Fullscreen` takes over the
-// terminal via the alternate screen buffer and fills its fixed height;
+// How much of the terminal an interactive layout occupies. `Fullscreen` takes over
+// the terminal via the alternate screen buffer and fills its fixed height;
 // `Inline` renders a variable-height block at the cursor (sized to its content),
 // without the alternate buffer, leaving the terminal's scrollback intact.
-enum Mode:
+enum Occupancy:
   case Inline, Fullscreen

@@ -271,7 +271,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
            Keypress.CharKey('y'), Keypress.CharKey('o'),
            Keypress.Escape )
 
-        Form(root, Mode.Fullscreen, rank(editor(), editor())).run(events.iterator)
+        Form(root, Occupancy.Fullscreen, rank(editor(), editor())).run(events.iterator)
         root.render
       . assert(_ == t"hi        \n          \nyo        \n          ")
 
@@ -282,7 +282,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalCanvas(10, 4), Rect(0, 0, 10, 4))
         val events = List.fill(21)(Keypress.CharKey('a')) ++ List(Keypress.Escape)
-        Form(root, Mode.Fullscreen, rank(editor(), editor())).run(events.iterator)
+        Form(root, Occupancy.Fullscreen, rank(editor(), editor())).run(events.iterator)
         root.render
       . assert(_ == t"aaaaaaaaaa\naaaaaaaaaa\na         \n          ")
 
@@ -304,7 +304,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
             root.resize(10, 2)
             TerminalInfo.WindowSize(2, 10)
 
-        Form(root, Mode.Fullscreen, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
+        Form(root, Occupancy.Fullscreen, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
         root.render
       . assert(_ == t"A         \nB         \n          \n          ")
 
@@ -757,7 +757,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
             remaining = remaining.tail
             head()
 
-        Form(root, Mode.Inline, rank(panel()(Out.print(t"abcdef")))).run(events)
+        Form(root, Occupancy.Inline, rank(panel()(Out.print(t"abcdef")))).run(events)
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_.contains(t"\e[2;1H\e[0J"))
 
@@ -775,7 +775,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
           Keypress.CharKey('x'),
           Keypress.Escape)
 
-        Form(root, Mode.Inline, rank(editor()), debounce = 50).run(events.iterator)
+        Form(root, Occupancy.Inline, rank(editor()), debounce = 50).run(events.iterator)
         String(bytes.toByteArray.nn, "UTF-8").tt.cut(t"\e[2K").length - 1
       . assert(_ == 1)
 
@@ -868,7 +868,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
             liveRows = 2
             TerminalInfo.WindowSize(2, 10)
 
-        Form(root, Mode.Fullscreen, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B"))))
+        Form(root, Occupancy.Fullscreen, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B"))))
         . run(resize)
 
         root.render
@@ -936,7 +936,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
             panes.append(panel()(Out.print(t"B")))
             TerminalInfo.Redraw
 
-        Form(root, Mode.Fullscreen, rank(panes)).run(events)
+        Form(root, Occupancy.Fullscreen, rank(panes)).run(events)
         root.render
       . assert(_ == t"A         \nB         ")
 
@@ -979,7 +979,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalCanvas(12, 3), Rect(0, 0, 12, 3))
         val pane = rank(menu(List(t"alpha", t"beta"), t"alpha"), editor())
-        Form(root, Mode.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
+        Form(root, Occupancy.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
         root.render
       . assert(_ == t" · alpha    \n   beta     \n            ")
 

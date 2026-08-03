@@ -49,7 +49,7 @@ object Raster:
     // Routed through `build` (whose writes are already exclusive) rather than the inline
     // layout `apply`, whose expanded closure write the separation checker rejects here.
     build(width, height, Descriptor.of[Rgb]): index =>
-      Pixel.value(iridescence.pixel(pixel(index%width, index/width)))
+      Pixel.value(iridescence.packed(pixel(index%width, index/width)))
     . asInstanceOf[Raster by Rgb]
 
   @targetName("applyLayout")

@@ -153,7 +153,7 @@ def border
 // terminal via the alternate screen buffer (restored on exit) and fills its
 // height; in `Inline` mode it renders a variable-height block at the cursor
 // without the alternate buffer, leaving scrollback intact.
-def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
+def form(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   ( using terminal: Terminal,
           monitor:   Monitor,
           probate:   Probate,
@@ -166,7 +166,7 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
   val wake = () => terminal.events.put(TerminalInfo.Redraw)
 
   mode match
-    case Mode.Fullscreen =>
+    case Occupancy.Fullscreen =>
       // The feature body and its terminal argument are the same single-owner session.
       scala.caps.unsafe.unsafeAssumeSeparate:
        profanity.terminalFeatures.alternateScreenFeature:
@@ -180,7 +180,7 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
 
         try Form(root, mode, pane, wake).run(terminal.eventIterator()) finally root.finish()
 
-    case Mode.Inline =>
+    case Occupancy.Inline =>
       // A deferred resize repaint is woken by posting a `Redraw` after the remaining
       // window (plus a small margin so it lands past it).
       val scheduleWake = (delay: Long) =>
