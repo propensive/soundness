@@ -41,7 +41,7 @@ export
       Prefixes, Principal, Quantifiable, Quantity, Quecto, Quetta, Radix, Rankine, Ratio,
       Redesignation,
       Ronna, Ronto, Seconds, Tebi, Temperature, TemperatureScale, Tera, Time, Units, Yobi, Yocto,
-      Yotta, Zebi, Zepto, Zetta, Rankines }
+      Yotta, Zebi, Zepto, Zetta }
 
 package temperatureScales:
   export quantitative.temperatureScales.{celsiusScale, fahrenheitScale, kelvinScale, rankineScale}

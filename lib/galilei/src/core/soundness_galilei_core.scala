@@ -40,7 +40,7 @@ export
       DirectoryOpenable, Dos, Drive, Entry,
       entry, executable, Explorable, existent, Fifo, file, File, FileOpenable,
       FilesystemAttribute, FilesystemBackend,
-      Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile, javaPath, Linux, Local,
+      Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, Linux, Local,
       MacOs, modified, MoveAtomically, moveInto, moveTo, OpenFlag,
       OverwritePreexisting, p, Platform, Posix, readable, size, Socket, Stat,
       Scratch, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder,

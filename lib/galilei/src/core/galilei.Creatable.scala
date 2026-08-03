@@ -113,7 +113,7 @@ object Creation:
 
       // The newborn directory has a caller-chosen, visible name, so unlike a `Scratch`
       // scope it participates in the access register like any open directory.
-      val real: Text = value.javaPath.toRealPath().nn.toString.tt
+      val real: Text = value.nioPath.toRealPath().nn.toString.tt
       val atoms: Set[Mode] = Set(aperture.Read, aperture.Write)
 
       if !AccessRegister.acquire(real, atoms) then

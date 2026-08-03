@@ -72,7 +72,7 @@ object Platform:
   =>  (((Path on plane) is Readable to result)^{readable, tactic}) =
     path =>
       val bytes: Data = path.protect(Operation.Read):
-        Array.unsafeFrozen(jnf.Files.readAllBytes(path.javaPath).nn)
+        Array.unsafeFrozen(jnf.Files.readAllBytes(path.nioPath).nn)
 
       readable.read(bytes)
 
@@ -85,7 +85,7 @@ object Platform:
   =>  (((Path on plane) is Writable by Data)^{tactic}) =
     (path, stream) =>
       val bytes: Data = summon[Data is Aggregable by Data].accept(stream)
-      path.protect(Operation.Write)(jnf.Files.write(path.javaPath, Array.unsafeJvm(bytes)))
+      path.protect(Operation.Write)(jnf.Files.write(path.nioPath, Array.unsafeJvm(bytes)))
 
   // The `Openable` instance for the `File` form. Placed here (rather than in `File`'s
   // companion) so that it is anchored by the *path* type: `path.open[File](...)` resolves with
