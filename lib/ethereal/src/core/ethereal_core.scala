@@ -177,9 +177,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
             val runnerBytes: Data =
               // Each branch opens and fully reads its own file handle.
-              if localRunner.exists() then
+              if localRunner.existent() then
                 scala.caps.unsafe.unsafeAssumeSeparate(localRunner.open[File]()(file.read[Data]))
-              else if cacheRunner.exists() then
+              else if cacheRunner.existent() then
                 scala.caps.unsafe.unsafeAssumeSeparate(cacheRunner.open[File]()(file.read[Data]))
               else
                 mitigate:
@@ -199,7 +199,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     import filesystemOptions.overwritePreexisting.disabled
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
-                    if !cacheDir.exists() then cacheDir.create[Directory](CreateFlag.Parents)
+                    if !cacheDir.existent() then cacheDir.create[Directory](CreateFlag.Parents)
                     cacheRunner.open[File](Write, OpenFlag.Create)(file.write(Chain(bytes)))
                     bytes
 
@@ -269,7 +269,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
   def ownsState: Boolean =
     val recorded: Optional[Text] =
-      if pidFile.exists() then safely(pidFile.read[Text].trim)
+      if pidFile.existent() then safely(pidFile.read[Text].trim)
       else Unset
 
     recorded.let(_ == Process().pid.value.show).or(false)

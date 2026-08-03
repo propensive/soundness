@@ -558,7 +558,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == (4321, List(t"$containersService/Create", t"$tasksService/Create",
           t"$tasksService/Delete", t"$containersService/Delete")))
 
-      test(m"a Run-mode open starts the task and awaits its exit"):
+      test(m"a Launch-mode open starts the task and awaits its exit"):
         supervise:
           val (clientSide, serverSide) = pair()
           val calls = scala.collection.mutable.ArrayBuffer[Text]()
@@ -573,7 +573,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
             given containerd: (Containerd^) = Containerd(endpoint, t"example")
             val spec = Container(t"web", image = t"img:1")
 
-            val (pid, exit) = spec.open[Workload](Read & embarcadero.Run & Signal): workload ?=>
+            val (pid, exit) = spec.open[Workload](Read & embarcadero.Launch & Signal): workload ?=>
               (workload.pid, workload.await().exitStatus)
 
             (pid, exit, calls.synchronized(calls.to(List)))
@@ -598,7 +598,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
             val outcome =
               try
-                spec.open[Workload](Read & embarcadero.Run) { workload ?=> throw java.lang.IllegalStateException() }
+                spec.open[Workload](Read & embarcadero.Launch) { workload ?=> throw java.lang.IllegalStateException() }
                 t"returned"
               catch case _: java.lang.IllegalStateException => t"escaped"
 

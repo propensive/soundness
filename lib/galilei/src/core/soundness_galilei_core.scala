@@ -34,13 +34,13 @@ package soundness
 
 export
   galilei
-  . { accessed, append, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
+  . { accessed, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
       created, CreateFlag, CreateNonexistentParents, Creation, D, delete,
       DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, DirectoryHandle,
       DirectoryOpenable, Dos, Drive, Entry,
-      entry, executable, exists, Explorable, Fifo, file, File, FileOpenable,
+      entry, executable, Explorable, existent, Fifo, file, File, FileOpenable,
       FilesystemAttribute, FilesystemBackend,
-      Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile, javaPath, Linux, Local,
+      Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, Linux, Local,
       MacOs, modified, MoveAtomically, moveInto, moveTo, OpenFlag,
       OverwritePreexisting, p, Platform, Posix, readable, size, Socket, Stat,
       Scratch, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder,

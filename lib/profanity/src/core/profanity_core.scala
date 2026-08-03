@@ -125,6 +125,6 @@ package terminalFeatures:
   given backgroundColorFeature: TerminalFeature = TerminalFeature(t"\e]11;?\e\\", t"")
   given terminalSizeFeature: TerminalFeature = TerminalFeature(Terminal.reportSize, t"")
 
-type UnixSignal = Signal
+type UnixSignal = Interrupt
 
-val UnixSignal = Signal
+val UnixSignal = Interrupt

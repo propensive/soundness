@@ -44,7 +44,7 @@ import proscenium.compat.*
 // navigation: the prototypes in `/enigmatic/openssl.h` are parsed by `CHeaderDialect` at compile
 // time, and each fully-applied navigation's `invoke` materializes as a Panama downcall on the JVM
 // and a direct C call on Scala Native — this one source serves both platforms, with buffers
-// passed through the platform-twinned `ForeignBuffer` and opaque handles as `Pointer`s.
+// passed through the platform-twinned `ForeignBuffer` and opaque handles as `Address`s.
 //
 // Native today: `random` (RAND_bytes), `hmac` (one-shot HMAC), and `aes` (the EVP cipher API,
 // for PKCS#7 and no-padding; ISO-10126 is a JCE-only scheme and is not offered). `rsa` delegates
@@ -87,7 +87,7 @@ object OpensslCrypto extends Crypto:
         Foreign["library", Native].HMAC
           ( md, keyBuffer.pointer, key.length, dataBuffer.pointer, data.length.toLong,
             output.pointer, outputLength.pointer )
-        . invoke[Pointer]
+        . invoke[Address]
 
         output.data(outputLength.int)
 
@@ -109,12 +109,12 @@ object OpensslCrypto extends Crypto:
 
   def ecdsa(digest: Text): Crypto.SignatureScheme = JavaStdlibCrypto.ecdsa(digest)
 
-  private def digest(algorithm: Text): Pointer = algorithm match
-    case t"HmacSHA256" => Foreign["library", Native].EVP_sha256().invoke[Pointer]
-    case t"HmacSHA384" => Foreign["library", Native].EVP_sha384().invoke[Pointer]
-    case t"HmacSHA512" => Foreign["library", Native].EVP_sha512().invoke[Pointer]
-    case t"HmacSHA1"   => Foreign["library", Native].EVP_sha1().invoke[Pointer]
-    case t"HmacMD5"    => Foreign["library", Native].EVP_md5().invoke[Pointer]
+  private def digest(algorithm: Text): Address = algorithm match
+    case t"HmacSHA256" => Foreign["library", Native].EVP_sha256().invoke[Address]
+    case t"HmacSHA384" => Foreign["library", Native].EVP_sha384().invoke[Address]
+    case t"HmacSHA512" => Foreign["library", Native].EVP_sha512().invoke[Address]
+    case t"HmacSHA1"   => Foreign["library", Native].EVP_sha1().invoke[Address]
+    case t"HmacMD5"    => Foreign["library", Native].EVP_md5().invoke[Address]
     case other         => panic(m"unsupported HMAC algorithm: $other")
 
   // Maps a JCE-style cipher name (`AES`, `CBC`, key length) to OpenSSL's name, e.g.
@@ -124,37 +124,37 @@ object OpensslCrypto extends Crypto:
     case t"AES" => t"aes-${keyLength*8}-${mode.lower}"
     case other  => panic(m"unsupported OpenSSL cipher: $other")
 
-  private def cipher(name: Text): Pointer =
-    val result = Foreign["library", Native].EVP_get_cipherbyname(name).invoke[Pointer]
+  private def cipher(name: Text): Address =
+    val result = Foreign["library", Native].EVP_get_cipherbyname(name).invoke[Address]
     if result.isNull then panic(m"unknown OpenSSL cipher: $name") else result
 
-  private def newContext(): Pointer =
-    Foreign["library", Native].EVP_CIPHER_CTX_new().invoke[Pointer]
+  private def newContext(): Address =
+    Foreign["library", Native].EVP_CIPHER_CTX_new().invoke[Address]
 
-  private def freeContext(context: Pointer): Unit =
+  private def freeContext(context: Address): Unit =
     Foreign["library", Native].EVP_CIPHER_CTX_free(context).invoke[Unit]
 
   // Initialises `context` for one direction of one transformation: cipher selection, key and
   // (optional) IV, and padding. The two EVP directions are distinct C entry points, so each
   // branch is its own static navigation.
   private def initialise
-    ( context: Pointer, transformation: Text, key: Data, iv: Optional[Data], encrypting: Boolean )
+    ( context: Address, transformation: Text, key: Data, iv: Optional[Data], encrypting: Boolean )
   :   Unit =
 
     val parts = transformation.cut(t"/").stdlib
     val cipher0 = cipher(opensslCipher(parts(0), parts(1), key.length))
     val keyBuffer = ForeignBuffer(key)
     val ivBuffer = iv.let(ForeignBuffer(_))
-    val ivPointer = ivBuffer.lay(Pointer.Null)(_.pointer)
+    val ivPointer = ivBuffer.lay(Address.Null)(_.pointer)
 
     try
       if encrypting then
         Foreign["library", Native]
-        . EVP_EncryptInit_ex(context, cipher0, Pointer.Null, keyBuffer.pointer, ivPointer)
+        . EVP_EncryptInit_ex(context, cipher0, Address.Null, keyBuffer.pointer, ivPointer)
         . invoke[Int]
       else
         Foreign["library", Native]
-        . EVP_DecryptInit_ex(context, cipher0, Pointer.Null, keyBuffer.pointer, ivPointer)
+        . EVP_DecryptInit_ex(context, cipher0, Address.Null, keyBuffer.pointer, ivPointer)
         . invoke[Int]
 
       if parts(2) == t"NoPadding" then
@@ -166,7 +166,7 @@ object OpensslCrypto extends Crypto:
 
   // One EVP update step: feeds `chunk` through `context` into a fresh output buffer (sized for
   // the worst case of one extra block) and returns the bytes produced.
-  private def update(context: Pointer, chunk: Data, block: Int, encrypting: Boolean): Data =
+  private def update(context: Address, chunk: Data, block: Int, encrypting: Boolean): Data =
     val output = ForeignBuffer(chunk.length + block)
     val length = ForeignBuffer(4)
     val input = ForeignBuffer(chunk)
@@ -189,7 +189,7 @@ object OpensslCrypto extends Crypto:
       input.free()
 
   // The final EVP step: flushes the last block (applying or checking padding) and returns it.
-  private def finish(context: Pointer, block: Int, encrypting: Boolean): Data =
+  private def finish(context: Address, block: Int, encrypting: Boolean): Data =
     val output = ForeignBuffer(block)
     val length = ForeignBuffer(4)
 

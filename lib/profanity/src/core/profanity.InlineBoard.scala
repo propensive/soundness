@@ -30,48 +30,68 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package profanity
 
-import hypotenuse.*
-import symbolism.*
+import anticipation.*
+import denominative.*
+import escapade.*
+import gossamer.*
+import turbulence.*
 
-class Metric(val name: String, val symbol: String, val exponent: Int, val base: 2 | 10):
-  def apply[units <: Measure](unit: MetricUnit[units]): Quantity[units] =
-    unit.value*Quantity(base**exponent)
+object InlineBoard:
+  def apply(terminal: Terminal): InlineBoard =
+    new InlineBoard(terminal.knownColumns, terminal.knownRows)(using terminal.stdio)
 
-object NoPrefix extends Metric("", "", 0, 10)
+// A `Board` that renders a widget "inline" at the terminal's current cursor
+// position, using relative cursor motion. Local coordinates are interpreted
+// relative to the line where rendering began (local row 0) and absolute column 0,
+// so a standalone widget redraws in place — exactly as profanity's widgets did
+// with hand-written escape codes — while being driven through the same move/put
+// `Board` API as a panel's `Extent`. The surface tracks its own cursor so that
+// each `move` can be expressed as relative vertical motion plus an absolute
+// column, which is what keeps the widget anchored to the prompt rather than the
+// top-left of the screen.
+class InlineBoard(val width: Int, val height: Int)(using Stdio) extends Board:
+  @scala.caps.unsafe.untrackedCaptures
+  private var row: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
+  private var column: Int = 0
 
-object Deka extends Metric("deka", "da", 1, 10)
-object Hecto extends Metric("hecto", "h", 2, 10)
-object Kilo extends Metric("kilo", "k", 3, 10)
-object Mega extends Metric("mega", "M", 6, 10)
-object Giga extends Metric("giga", "G", 9, 10)
-object Tera extends Metric("tera", "T", 12, 10)
-object Peta extends Metric("peta", "P", 15, 10)
-object Exa extends Metric("exa", "E", 18, 10)
-object Zetta extends Metric("zetta", "Z", 21, 10)
-object Yotta extends Metric("yotta", "Y", 24, 10)
-object Ronna extends Metric("ronna", "R", 27, 10)
-object Quetta extends Metric("quetta", "Q", 30, 10)
+  def move(column2: Ordinal, row2: Ordinal): Unit =
+    val targetRow = row2.n0
+    val targetColumn = column2.n0
 
-object Deci extends Metric("deci", "d", -1, 10)
-object Centi extends Metric("centi", "c", -2, 10)
-object Milli extends Metric("milli", "m", -3, 10)
-object Micro extends Metric("micro", "µ", -6, 10)
-object Nano extends Metric("nano", "n", -9, 10)
-object Pico extends Metric("pico", "p", -12, 10)
-object Femto extends Metric("femto", "f", -15, 10)
-object Atto extends Metric("atto", "a", -18, 10)
-object Zepto extends Metric("zepto", "z", -21, 10)
-object Yocto extends Metric("yocto", "y", -24, 10)
-object Ronto extends Metric("ronto", "r", -27, 10)
-object Quecto extends Metric("quecto", "q", -30, 10)
+    if targetRow < row then Out.print(csi.cuu(row - targetRow))
+    else if targetRow > row then Out.print(csi.cud(targetRow - row))
 
-object Kibi extends Metric("kibi", "Ki", 10, 2)
-object Mebi extends Metric("mebi", "Mi", 20, 2)
-object Gibi extends Metric("gibi", "Gi", 30, 2)
-object Tebi extends Metric("tebi", "Ti", 40, 2)
-object Pebi extends Metric("pebi", "Pi", 50, 2)
-object Exbi extends Metric("exbi", "Ei", 60, 2)
-object Zebi extends Metric("zebi", "Zi", 70, 2)
-object Yobi extends Metric("yobi", "Yi", 80, 2)
+    Out.print(csi.cha(targetColumn + 1))
+    row = targetRow
+    column = targetColumn
+
+  def put(text: Text): Unit =
+    val string = text.s
+    var i = 0
+
+    while i < string.length do
+      val char = string.charAt(i)
+
+      if char == '\n' then
+        Out.print(t"\r\n")
+        row += 1
+        column = 0
+      else
+        Out.print(t"$char")
+        column += 1
+
+        if column >= width then
+          column = 0
+          row += 1
+
+      i += 1
+
+  def put(text: Teletype): Unit = put(text.plain)
+  def clear(): Unit = Out.print(csi.ed(0))
+  def clearLine(): Unit = Out.print(csi.el(0))
+  def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
+  def showCaret(column2: Ordinal, row2: Ordinal): Unit = move(column2, row2)
+  def flush(): Unit = ()

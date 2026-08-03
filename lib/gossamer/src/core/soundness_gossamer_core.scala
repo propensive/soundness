@@ -35,12 +35,13 @@ package soundness
 export
   gossamer
   . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank, BoundsError,
-      broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, contains,
-      count, cut, Cuttable, Decimalizer, Dictionary, ends, erase, extract, fill, fit, from,
+      broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, chomp,
+      contains, count, cut, Cuttable, Decimalizer, Dictionary, ends, erase, extract, fill, fit,
+      from,
       fuzzy, Grapheme, init, join, Joinable, kebab, keep, length, Lexicon, lines, lower,
       Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
       RangeError, reversibleTextual, Rtl, search, offsetOf, SimpleTExtractor, skip, slices, snake, snip,
-      spaced, starts, strip, sub, subscripts, superscripts, sysData, t, tail, text, textDecodable,
+      spaced, starts, sub, subscripts, superscripts, sysData, t, tail, text, textDecodable,
       TextBuilder,
       Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,
       urlEncode, utf16, utf8, pinpoint, words, Writing, WritingBuilder, a, justify, punch }

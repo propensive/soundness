@@ -34,10 +34,10 @@ package soundness
 
 export
   profanity
-  . { Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
-      Keypress, LineEditor, Question, SelectMenu, Signal, SignalResponse, stdio, Canvas,
-      Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalCanvas,
-      InlineCanvas, UnixSignal, WindowsSignal }
+  . { Board, Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
+      Keypress, LineEditor, Question, SelectMenu, Interrupt, SignalResponse, stdio,
+      Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalBoard,
+      InlineBoard, UnixSignal, WindowsSignal }
 
 package keyboards:
   export profanity.keyboards.{numericKeyboard, rawKeyboard, standardKeyboard}

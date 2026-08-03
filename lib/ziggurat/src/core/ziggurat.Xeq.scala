@@ -188,7 +188,7 @@ object Xeq:
     val dataPath: Path on Linux = staging/DataName
 
     val dataPayload: Optional[Payload] =
-      if dataPath.exists() then
+      if dataPath.existent() then
         val bytes: Data = dataPath.read[Data]
         Payload(DataName, bytes, gzip = false)
       else

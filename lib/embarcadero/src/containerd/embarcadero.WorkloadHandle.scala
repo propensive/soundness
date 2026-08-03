@@ -46,10 +46,10 @@ import parasite.*
 import rudiments.*
 
 // Grants particular to container workloads, in the deliberately-open `Grant` hierarchy:
-// `Run` means the task is started when opened, and confers awaiting its exit; `Signal`
+// `Launch` means the task is started when opened, and confers awaiting its exit; `Signal`
 // confers sending signals to it.
 object WorkloadGrant:
-  trait Run extends Grant
+  trait Launch extends Grant
   trait Signal extends Grant
 
 object WorkloadHandle:
@@ -64,7 +64,7 @@ object WorkloadHandle:
 
       handle.containerd.task(handle.containerId).state
 
-  extension (handle: (WorkloadHandle & Granting[WorkloadGrant.Run])^)
+  extension (handle: (WorkloadHandle & Granting[WorkloadGrant.Launch])^)
     // `await`, not `wait`: the latter would clash with `Object#wait`.
     def await()
     ( using Monitor^ )
@@ -116,7 +116,7 @@ extends Openable:
 
     try
       val response = containerd.createTask(created.id, flags)
-      val started = mode.atoms.has(Run)
+      val started = mode.atoms.has(Launch)
       val pid = if started then containerd.startTask(created.id) else response.pid
 
       try block(using new WorkloadHandle(containerd, created.id, pid) with Granting[grants] {})

@@ -48,10 +48,10 @@ import vacuous.*
 // the changed cells; inline re-sizes the grid to the measured block height each
 // frame and re-presents the whole block at the cursor.
 class Form
-  // `Canvas^`: a terminal-backed canvas retains its terminal (live size thunks), and the
+  // `Board^`: a terminal-backed canvas retains its terminal (live size thunks), and the
   // form legitimately holds it for its whole run.
-  ( root:         Canvas^,
-    mode:         Mode,
+  ( root:         Board^,
+    mode:         Occupancy,
     pane:         Pane,
     wake:         () => Unit   = () => (),
     throttle:     Long         = 0,
@@ -147,8 +147,8 @@ class Form
     val frame = liveFrame
 
     val height = mode match
-      case Mode.Fullscreen => root.height
-      case Mode.Inline     => frame.measure(Axis.Rank).min
+      case Occupancy.Fullscreen => root.height
+      case Occupancy.Inline     => frame.measure(Axis.Rank).min
 
     root match
       case inline: InlineRoot => inline.reframe(root.width, height)
@@ -180,19 +180,19 @@ class Form
 
     if leaves.length != rects.length then
       mode match
-        case Mode.Fullscreen => root.clear()
-        case Mode.Inline     => ()
+        case Occupancy.Fullscreen => root.clear()
+        case Occupancy.Inline     => ()
 
       rects = Sequence()
 
     val updated = solve()
 
     mode match
-      case Mode.Inline =>
+      case Occupancy.Inline =>
         rects = updated
         (0 until rects.length).each(paint(_))
 
-      case Mode.Fullscreen =>
+      case Occupancy.Fullscreen =>
         val dirty = dirtyCells(rects, updated, changed)
         rects = updated
         dirty.each(paint(_))
@@ -288,7 +288,7 @@ class Form
       // resize NOW — so a keypress landing mid-resize coalesces instead of
       // presenting against stale geometry. Without a debounce (no wake scheduling),
       // suppression could stall, so the resize is only marked by `WindowSize`.
-      case Signal.Winch =>
+      case Interrupt.Winch =>
         anchor = Unset
         resizeGrace = false
 
@@ -320,7 +320,7 @@ class Form
         else scheduleWake(resizeDelay)
 
       // Other signals are never widget input.
-      case _: Signal =>
+      case _: Interrupt =>
         ()
 
       case event =>

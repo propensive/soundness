@@ -56,7 +56,7 @@ extension (inline context: StringContext)
   transparent inline def p(): Path = ${galilei.internal.path('context)}
 
 extension [target: Substantiable](value: target)
-  def exists(): Boolean = target.existence(value)
+  def existent(): Boolean = target.existence(value)
 
 // The contextual file handle within an `open` block, in the manner of facsimile's `pdf`.
 // Transparent inline so the handle's precise (grant-refined, capturing) type is preserved: a
@@ -86,22 +86,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using Tactic[IoError]^ )
   :   Unit =
     val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
-    protect(Operation.Write)(jnf.Files.write(javaPath, Array.unsafeJvm(bytes)))
-
-  // Append `content` to the file in its entirety as a single, direct operation, creating the file
-  // if it does not exist — the eager counterpart of `Eof(path).open(Write)(file.write(content))`.
-  def append[content](content: content)
-    ( using streamable: (content is Streamable by Data over Credit)^ )
-    ( using Tactic[IoError]^ )
-  :   Unit =
-    val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
-
-    protect(Operation.Write):
-      jnf.Files.write
-        ( javaPath,
-          Array.unsafeJvm(bytes),
-          jnf.StandardOpenOption.CREATE,
-          jnf.StandardOpenOption.APPEND )
+    protect(Operation.Write)(jnf.Files.write(nioPath, Array.unsafeJvm(bytes)))
 
   // Inline, so the thunk never crosses a checked context-function boundary (which would
   // hide the `block` parameter); the body is checked at each expansion site instead.
@@ -122,8 +107,10 @@ extension [plane: Filesystem](path: Path on plane)
       case _: jnf.FileSystemException        => abort(IoError(path, operation, IsDirectory))
       case other                             => abort(IoError(path, operation, Unsupported))
 
-  def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
-  def javaFile: ji.File = javaPath.toFile.nn
+  // Internal only: the public `java.nio` interop lives in `galilei.jvm`, whose `javaPath` and
+  // `javaFile` are the ones users reach for. This one exists because `core`'s own operations
+  // call `jnf.Files` directly and cannot depend on `jvm`.
+  private[galilei] def nioPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
 
 
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)

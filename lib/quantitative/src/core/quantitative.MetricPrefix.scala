@@ -30,13 +30,48 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package vacuous
+package quantitative
 
-import scala.caps
+import hypotenuse.*
+import symbolism.*
 
-// `Array` (the separation-checked opaque) lives in `proscenium`, beneath this module; this
-// file adds its total read, `at`, which `proscenium` cannot define because `Optional`
-// lives here. Built on the bounds-partial `readUnchecked`, which exists for this layering.
-extension [element](array: Array[element]^{caps.any.rd})
-  def at(index: Int): Optional[element] =
-    if index >= 0 && index < array.length then array.readUnchecked(index) else Unset
+class MetricPrefix(val name: String, val symbol: String, val exponent: Int, val base: 2 | 10):
+  def apply[units <: Measure](unit: MetricUnit[units]): Quantity[units] =
+    unit.value*Quantity(base**exponent)
+
+object NoPrefix extends MetricPrefix("", "", 0, 10)
+
+object Deka extends MetricPrefix("deka", "da", 1, 10)
+object Hecto extends MetricPrefix("hecto", "h", 2, 10)
+object Kilo extends MetricPrefix("kilo", "k", 3, 10)
+object Mega extends MetricPrefix("mega", "M", 6, 10)
+object Giga extends MetricPrefix("giga", "G", 9, 10)
+object Tera extends MetricPrefix("tera", "T", 12, 10)
+object Peta extends MetricPrefix("peta", "P", 15, 10)
+object Exa extends MetricPrefix("exa", "E", 18, 10)
+object Zetta extends MetricPrefix("zetta", "Z", 21, 10)
+object Yotta extends MetricPrefix("yotta", "Y", 24, 10)
+object Ronna extends MetricPrefix("ronna", "R", 27, 10)
+object Quetta extends MetricPrefix("quetta", "Q", 30, 10)
+
+object Deci extends MetricPrefix("deci", "d", -1, 10)
+object Centi extends MetricPrefix("centi", "c", -2, 10)
+object Milli extends MetricPrefix("milli", "m", -3, 10)
+object Micro extends MetricPrefix("micro", "µ", -6, 10)
+object Nano extends MetricPrefix("nano", "n", -9, 10)
+object Pico extends MetricPrefix("pico", "p", -12, 10)
+object Femto extends MetricPrefix("femto", "f", -15, 10)
+object Atto extends MetricPrefix("atto", "a", -18, 10)
+object Zepto extends MetricPrefix("zepto", "z", -21, 10)
+object Yocto extends MetricPrefix("yocto", "y", -24, 10)
+object Ronto extends MetricPrefix("ronto", "r", -27, 10)
+object Quecto extends MetricPrefix("quecto", "q", -30, 10)
+
+object Kibi extends MetricPrefix("kibi", "Ki", 10, 2)
+object Mebi extends MetricPrefix("mebi", "Mi", 20, 2)
+object Gibi extends MetricPrefix("gibi", "Gi", 30, 2)
+object Tebi extends MetricPrefix("tebi", "Ti", 40, 2)
+object Pebi extends MetricPrefix("pebi", "Pi", 50, 2)
+object Exbi extends MetricPrefix("exbi", "Ei", 60, 2)
+object Zebi extends MetricPrefix("zebi", "Zi", 70, 2)
+object Yobi extends MetricPrefix("yobi", "Yi", 80, 2)

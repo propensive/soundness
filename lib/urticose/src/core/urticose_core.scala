@@ -61,7 +61,7 @@ extension (inline context: StringContext)
   transparent inline def udp(): Port = ${urticose.internal.portService('context, false)}
 
 extension [remote: Remotable](value: remote)
-  infix def via [port](port: port): Endpoint[port] =
+  infix def on [port](port: port): Endpoint[port] =
     Endpoint(remote.remote(value), port)
 
 extension [port](port: port)

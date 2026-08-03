@@ -38,15 +38,15 @@ package xenophile
 // and Scala Native's materializer casts it to a `Ptr[_]`. It satisfies *any* pointer-typed
 // parameter (the navigation macro subsumes the `"pointer"` topic under every `ptr<T>`), so it is
 // exactly as type-safe as C: the header checks arity and pointerness, not pointee identity.
-// Foreign memory reachable through a `Pointer` is manually managed (see `ForeignBuffer`).
-object Pointer:
+// Foreign memory reachable through an `Address` is manually managed (see `ForeignBuffer`).
+object Address:
   // The C null pointer, for optional-pointer parameters.
-  val Null: Pointer = 0L
+  val Null: Address = 0L
 
-  def apply(address: Long): Pointer = address
+  def apply(address: Long): Address = address
 
-  extension (pointer: Pointer)
+  extension (pointer: Address)
     def address: Long = pointer
     def isNull: Boolean = pointer == 0L
 
-opaque type Pointer = Long
+opaque type Address = Long

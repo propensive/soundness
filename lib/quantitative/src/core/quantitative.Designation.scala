@@ -47,10 +47,10 @@ object Designation:
   given seconds: Designation[Seconds[1]] = () => t"s"
 
   given kilograms: Designation[Kilograms[1]]:
-    override def siPrefix: Metric = Kilo
+    override def siPrefix: MetricPrefix = Kilo
     def name(): Text = t"g"
 
 trait Designation[-value]:
-  def siPrefix: Metric = NoPrefix
+  def siPrefix: MetricPrefix = NoPrefix
   def name(): Text
   def text: Text = t"${siPrefix.symbol}${name()}"

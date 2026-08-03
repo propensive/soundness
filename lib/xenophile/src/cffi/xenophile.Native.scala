@@ -65,9 +65,9 @@ object Native:
     Interoperable[Text, Native, "string"]()
 
   // Any other C pointer (`T*`, `void*`, an opaque handle, an out-param) corresponds to the raw
-  // `Pointer`; the navigation macro subsumes the `pointer` topic under every `ptr<T>` parameter.
-  given pointer: (Pointer is Interoperable in Native of "pointer") =
-    Interoperable[Pointer, Native, "pointer"]()
+  // `Address`; the navigation macro subsumes the `pointer` topic under every `ptr<T>` parameter.
+  given pointer: (Address is Interoperable in Native of "pointer") =
+    Interoperable[Address, Native, "pointer"]()
 
 trait Native extends Ecosystem:
   type Grammar = CHeaderDialect.type

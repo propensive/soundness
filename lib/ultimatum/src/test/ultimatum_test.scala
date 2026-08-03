@@ -40,7 +40,7 @@ import proscenium.compat.*
 
 object Tests extends Suite(m"Ultimatum Tests"):
   def run(): Unit =
-    suite(m"TerminalCanvas"):
+    suite(m"TerminalBoard"):
       // Capture everything a surface writes into an in-memory buffer.
       def captured(block: Stdio ?=> Unit): Text =
         val bytes = ji.ByteArrayOutputStream()
@@ -50,22 +50,22 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"move emits an absolute CSI cursor-position sequence"):
         captured: stdio ?=>
-          TerminalCanvas(80, 24).move(10.z, 5.z)
+          TerminalBoard(80, 24).move(10.z, 5.z)
       . assert(_ == t"\e[6;11H")
 
       test(m"move then put places text at the position"):
         captured: stdio ?=>
-          val surface = TerminalCanvas(80, 24)
+          val surface = TerminalBoard(80, 24)
           surface.move(10.z, 5.z)
           surface.put(t"X")
       . assert(_ == t"\e[6;11HX")
 
       test(m"clear erases the whole display"):
-        captured(TerminalCanvas(80, 24).clear())
+        captured(TerminalBoard(80, 24).clear())
       . assert(_ == t"\e[2J")
 
       test(m"hiding the cursor emits the DECTCEM reset"):
-        captured(TerminalCanvas(80, 24).cursor(false))
+        captured(TerminalBoard(80, 24).cursor(false))
       . assert(_ == t"\e[?25l")
 
     suite(m"FlowExtent"):
@@ -73,7 +73,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // the parent surface is unused.
       def extent(width: Int, height: Int): FlowExtent =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        FlowExtent(TerminalCanvas(width, height), Rect(0, 0, width, height))
+        FlowExtent(TerminalBoard(width, height), Rect(0, 0, width, height))
 
       test(m"text wraps at the rectangle's width"):
         val flow = extent(3, 2)
@@ -122,7 +122,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"flush paints the grid onto the parent at the rect's offset"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
-        val flow = FlowExtent(TerminalCanvas(80, 24), Rect(2, 1, 3, 1))
+        val flow = FlowExtent(TerminalBoard(80, 24), Rect(2, 1, 3, 1))
         flow.put(t"xy")
         flow.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -130,51 +130,51 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
     suite(m"Layout solver"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
-      def file(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.File, children.to(List))
-      def rank(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.Rank, children.to(List))
+      def strip(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.File, children.to(List))
+      def stack(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.Rank, children.to(List))
 
       test(m"fractions divide the axis proportionally"):
-        val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
+        val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
         frame.arrange(Rect(0, 0, 90, 10)).cells
       . assert(_ == List(Rect(0, 0, 20, 10), Rect(20, 0, 30, 10), Rect(50, 0, 40, 10)))
 
       test(m"largest-remainder rounding fills the axis exactly"):
-        val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
+        val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
         frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width)
       . assert(_ == List(22, 33, 45))
 
       test(m"the rounded sizes always sum to the available space"):
-        val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
+        val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
         frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width).fold(0)(_ + _)
       . assert(_ == 100)
 
       test(m"a child whose minimum exceeds its share is fixed at the minimum"):
-        val frame = file(cell(Sizing(1.0, minWidth = 8)), cell(Sizing(1.0)))
+        val frame = strip(cell(Sizing(1.0, minWidth = 8)), cell(Sizing(1.0)))
         frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
       . assert(_ == List(8, 2))
 
       test(m"a child whose maximum is below its share is capped at the maximum"):
-        val frame = file(cell(Sizing(1.0, maxWidth = 3)), cell(Sizing(1.0)))
+        val frame = strip(cell(Sizing(1.0, maxWidth = 3)), cell(Sizing(1.0)))
         frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
       . assert(_ == List(3, 7))
 
       test(m"a container's minimum is forced up to the sum of its children's"):
-        val frame = file(cell(Sizing(1.0, minWidth = 5)), cell(Sizing(1.0, minWidth = 5)))
+        val frame = strip(cell(Sizing(1.0, minWidth = 5)), cell(Sizing(1.0, minWidth = 5)))
         frame.measure(ultimatum.Axis.File)
       . assert(_ == Limits(10, Unset))
 
       test(m"file children fill the cross axis (full height)"):
-        val frame = file(cell(Sizing(1.0)), cell(Sizing(1.0)))
+        val frame = strip(cell(Sizing(1.0)), cell(Sizing(1.0)))
         frame.arrange(Rect(0, 0, 8, 4)).cells
       . assert(_ == List(Rect(0, 0, 4, 4), Rect(4, 0, 4, 4)))
 
       test(m"rank splits distribute height and fill width"):
-        val frame = rank(cell(Sizing(1.0)), cell(Sizing(1.0)))
+        val frame = stack(cell(Sizing(1.0)), cell(Sizing(1.0)))
         frame.arrange(Rect(0, 0, 8, 4)).cells
       . assert(_ == List(Rect(0, 0, 8, 2), Rect(0, 2, 8, 2)))
 
       test(m"nested ranks within files place rectangles correctly"):
-        val frame = file(cell(Sizing(1.0)), rank(cell(Sizing(1.0)), cell(Sizing(1.0))))
+        val frame = strip(cell(Sizing(1.0)), stack(cell(Sizing(1.0)), cell(Sizing(1.0))))
         frame.arrange(Rect(0, 0, 10, 4)).cells
       . assert(_ == List(Rect(0, 0, 5, 4), Rect(5, 0, 5, 2), Rect(5, 2, 5, 2)))
 
@@ -183,7 +183,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
 
-        paint(TerminalCanvas(4, 1), file(panel()(Out.print(t"AA")), panel()(Out.print(t"BB"))))
+        paint(TerminalBoard(4, 1), strip(panel()(Out.print(t"AA")), panel()(Out.print(t"BB"))))
 
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[1;1HAA\e[1;3HBB")
@@ -194,13 +194,13 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
         // "HELLO" in a 2x1 panel wraps and scrolls until only "O" remains; the
         // sibling panel's "X" is unaffected, so neither bleeds past column 2.
-        paint(TerminalCanvas(4, 1), file(panel()(Out.print(t"HELLO")), panel()(Out.print(t"X"))))
+        paint(TerminalBoard(4, 1), strip(panel()(Out.print(t"HELLO")), panel()(Out.print(t"X"))))
 
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[1;1HO \e[1;3HX ")
 
       test(m"a fixed-minimum panel squeezes its fractional sibling"):
-        val frame = file(panel(minWidth = 8)(()), panel()(())).frame
+        val frame = strip(panel(minWidth = 8)(()), panel()(())).frame
         frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
       . assert(_ == List(8, 2))
 
@@ -263,7 +263,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // the composed screen.
       test(m"TAB moves focus so typing lands in the right panel"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalCanvas(10, 4), Rect(0, 0, 10, 4))
+        val root = FlowExtent(TerminalBoard(10, 4), Rect(0, 0, 10, 4))
 
         val events = List
          ( Keypress.CharKey('h'), Keypress.CharKey('i'),
@@ -271,7 +271,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
            Keypress.CharKey('y'), Keypress.CharKey('o'),
            Keypress.Escape )
 
-        Form(root, Mode.Fullscreen, rank(editor(), editor())).run(events.iterator)
+        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
         root.render
       . assert(_ == t"hi        \n          \nyo        \n          ")
 
@@ -280,9 +280,9 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // pushed from row 2 down to row 3.
       test(m"a growing editor re-tiles and pushes its sibling down"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalCanvas(10, 4), Rect(0, 0, 10, 4))
+        val root = FlowExtent(TerminalBoard(10, 4), Rect(0, 0, 10, 4))
         val events = List.fill(21)(Keypress.CharKey('a')) ++ List(Keypress.Escape)
-        Form(root, Mode.Fullscreen, rank(editor(), editor())).run(events.iterator)
+        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
         root.render
       . assert(_ == t"aaaaaaaaaa\naaaaaaaaaa\na         \n          ")
 
@@ -304,7 +304,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
             root.resize(10, 2)
             TerminalInfo.WindowSize(2, 10)
 
-        Form(root, Mode.Fullscreen, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
+        Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
         root.render
       . assert(_ == t"A         \nB         \n          \n          ")
 
@@ -745,7 +745,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
           // this event queue deliberately stays a stdlib list.
           private var remaining: scala.collection.immutable.List[() => TerminalEvent] =
             scala.collection.immutable.List(
-              () => Signal.Winch,
+              () => Interrupt.Winch,
               () => TerminalInfo.CursorPosition(2, 1),
               () => { w = 4; TerminalInfo.WindowSize(4, 4) },
               () => Keypress.Escape)
@@ -757,7 +757,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
             remaining = remaining.tail
             head()
 
-        Form(root, Mode.Inline, rank(panel()(Out.print(t"abcdef")))).run(events)
+        Form(root, Occupancy.Inline, stack(panel()(Out.print(t"abcdef")))).run(events)
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_.contains(t"\e[2;1H\e[0J"))
 
@@ -771,11 +771,11 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val root = new InlineRoot(() => 6, () => 4)
 
         val events = List[TerminalEvent](
-          Signal.Winch,
+          Interrupt.Winch,
           Keypress.CharKey('x'),
           Keypress.Escape)
 
-        Form(root, Mode.Inline, rank(editor()), debounce = 50).run(events.iterator)
+        Form(root, Occupancy.Inline, stack(editor()), debounce = 50).run(events.iterator)
         String(bytes.toByteArray.nn, "UTF-8").tt.cut(t"\e[2K").length - 1
       . assert(_ == 1)
 
@@ -868,7 +868,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
             liveRows = 2
             TerminalInfo.WindowSize(2, 10)
 
-        Form(root, Mode.Fullscreen, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B"))))
+        Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B"))))
         . run(resize)
 
         root.render
@@ -923,7 +923,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // yields a Redraw to wake it), and confirm the layout re-tiles to include it.
       test(m"a form picks up a pane appended while it runs"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalCanvas(10, 2), Rect(0, 0, 10, 2))
+        val root = FlowExtent(TerminalBoard(10, 2), Rect(0, 0, 10, 2))
         val panes = Panes(panel()(Out.print(t"A")))
 
         val events = new Iterator[TerminalEvent]:
@@ -936,14 +936,14 @@ object Tests extends Suite(m"Ultimatum Tests"):
             panes.append(panel()(Out.print(t"B")))
             TerminalInfo.Redraw
 
-        Form(root, Mode.Fullscreen, rank(panes)).run(events)
+        Form(root, Occupancy.Fullscreen, stack(panes)).run(events)
         root.render
       . assert(_ == t"A         \nB         ")
 
     suite(m"Focus indication"):
       def grid(): FlowExtent =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        FlowExtent(TerminalCanvas(12, 2), Rect(0, 0, 12, 2))
+        FlowExtent(TerminalBoard(12, 2), Rect(0, 0, 12, 2))
 
       def captured(block: Stdio ?=> Unit): Text =
         val bytes = ji.ByteArrayOutputStream()
@@ -965,28 +965,28 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a focused editor shows the hardware cursor"):
         captured: stdio ?=>
-          EditorField(LineEditor(t"hi")).render(TerminalCanvas(20, 1), true)
+          EditorField(LineEditor(t"hi")).render(TerminalBoard(20, 1), true)
       . assert(_.s.contains("[?25h"))
 
       test(m"an unfocused editor hides the hardware cursor"):
         captured: stdio ?=>
-          EditorField(LineEditor(t"hi")).render(TerminalCanvas(20, 1), false)
+          EditorField(LineEditor(t"hi")).render(TerminalBoard(20, 1), false)
       . assert(_.s.contains("[?25l"))
 
       // Tabbing focus away from the menu must repaint it, so its marker updates
       // from `>` to `·` (a regression: only the panel gaining focus was redrawn).
       test(m"a panel that loses focus is repainted so its marker updates"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalCanvas(12, 3), Rect(0, 0, 12, 3))
-        val pane = rank(menu(List(t"alpha", t"beta"), t"alpha"), editor())
-        Form(root, Mode.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
+        val root = FlowExtent(TerminalBoard(12, 3), Rect(0, 0, 12, 3))
+        val pane = stack(menu(List(t"alpha", t"beta"), t"alpha"), editor())
+        Form(root, Occupancy.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
         root.render
       . assert(_ == t" · alpha    \n   beta     \n            ")
 
     suite(m"Borders"):
       def render(width: Int, height: Int)(pane: Pane): Text =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = FlowExtent(TerminalCanvas(width, height), Rect(0, 0, width, height))
+        val root = FlowExtent(TerminalBoard(width, height), Rect(0, 0, width, height))
         paint(root, pane)
         root.render
 
@@ -1016,11 +1016,11 @@ object Tests extends Suite(m"Ultimatum Tests"):
         (bordered.measure(ultimatum.Axis.File).min, bordered.measure(ultimatum.Axis.Rank).min)
       . assert(_ == (5, 4))
 
-// A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
+// A test-only root `Board` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and
 // the composed screen read back.
-class ResizableRoot(maxWidth: Int, maxHeight: Int)(using Stdio) extends Canvas:
-  private val flow = FlowExtent(TerminalCanvas(maxWidth, maxHeight), Rect(0, 0, maxWidth, maxHeight))
+class ResizableRoot(maxWidth: Int, maxHeight: Int)(using Stdio) extends Board:
+  private val flow = FlowExtent(TerminalBoard(maxWidth, maxHeight), Rect(0, 0, maxWidth, maxHeight))
   @scala.caps.unsafe.untrackedCaptures
   private var size: (Int, Int) = (maxWidth, maxHeight)
 

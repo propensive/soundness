@@ -305,14 +305,6 @@ extension [element](stream: Chain[element])
 
   def strict: Chain[element] = stream.stdlib.length yet stream
 
-extension (obj: Chain.type)
-  // Defers evaluation of `stream` until the result is forced. `empty.lazyAppendedAll(=> stream)`
-  // keeps the by-name suffix unforced — equivalent to (and cheaper than) the old
-  // `(dummy #:: stream).tail`, and it sidesteps the captured-by-name cons under cc.
-  def defer[element](stream: => Chain[element]): Chain[element] =
-    Chain().lazyAppendedAll(stream)
-
-
 extension (stream: Chain[Data])
   def drop(bytes: Bytes): Chain[Data] =
     def recur(stream: Chain[Data], count: Bytes): Chain[Data] = stream.flow(Chain()):

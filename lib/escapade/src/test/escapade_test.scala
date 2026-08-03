@@ -648,12 +648,12 @@ object Tests extends Suite(m"Escapade tests"):
         e"  hello  ".trim(Rtl).plain
       . assert(_ == t"  hello")
 
-      test(m"strip prefix"):
-        e"prehello".strip(t"pre").plain
+      test(m"chomp prefix"):
+        e"prehello".chomp(t"pre").plain
       . assert(_ == t"hello")
 
-      test(m"strip suffix Rtl"):
-        e"hellopost".strip(t"post", Rtl).plain
+      test(m"chomp suffix Rtl"):
+        e"hellopost".chomp(t"post", Rtl).plain
       . assert(_ == t"hello")
 
       test(m"pad to width"):

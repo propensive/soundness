@@ -40,14 +40,14 @@ import spectacular.*
 import vacuous.*
 
 object Interaction:
-  // Both widgets render through a `Canvas`: positioning is `move`/`put`, width
+  // Both widgets render through a `Board`: positioning is `move`/`put`, width
   // comes from `surface.width`, and the surface decides whether those map to
-  // relative motion at the prompt (a standalone `InlineCanvas`) or absolute
+  // relative motion at the prompt (a standalone `InlineBoard`) or absolute
   // placement within a panel (an `Extent`). The surface is summoned from scope,
   // so a panel's `Extent` is used automatically when a widget runs inside one.
   // `new`-instance form (not a colon-body given): the synthesized given class does not admit
   // the `^{surface}` result annotation the capturing surface requires.
-  given selectMenu: [item: Showable] => (surface: Canvas^)
+  given selectMenu: [item: Showable] => (surface: Board^)
   =>  (Interaction[item, SelectMenu[item]]^{surface}) = new Interaction[item, SelectMenu[item]]:
     override def before(): Unit = surface.cursor(false)
 
@@ -73,7 +73,7 @@ object Interaction:
 
     def result(state: SelectMenu[item]): item = state.current
 
-  given lineEditor: (surface: Canvas^)
+  given lineEditor: (surface: Board^)
   =>  (Interaction[Text, LineEditor]^{surface}) = new Interaction[Text, LineEditor]:
     // The last row the editor's content reached, so `after` can drop the cursor
     // onto a fresh line below it.

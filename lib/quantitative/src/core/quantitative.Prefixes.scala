@@ -37,12 +37,12 @@ import scala.math
 import prepositional.*
 
 object Prefixes:
-  def apply[units](prefixes: List[Metric], minimum: Double = 1.0): Prefixes on units =
+  def apply[units](prefixes: List[MetricPrefix], minimum: Double = 1.0): Prefixes on units =
     new Prefixes(prefixes, minimum):
       type Plane = units
 
-class Prefixes(val prefixes: List[Metric], val minimum: Double) extends Planar:
-  def select(value: Double): Metric =
+class Prefixes(val prefixes: List[MetricPrefix], val minimum: Double) extends Planar:
+  def select(value: Double): MetricPrefix =
     if value == 0.0 then NoPrefix else
       val abs = math.abs(value)
       val candidates = (NoPrefix :: prefixes).sortBy(-_.exponent)

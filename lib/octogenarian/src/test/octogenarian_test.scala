@@ -87,7 +87,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
       worktree
 
     def writeFile(path: Path on Linux, content: Text): Unit =
-      if !path.exists() then path.create[File]()
+      if !path.existent() then path.create[File]()
       path.open[File](Write): handle ?=>
         handle.write(Chain(content.in[Data]))
 
@@ -407,7 +407,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
 
       test(m"Git.init creates a .git directory under the worktree"):
         val dir = freshDir()
-        Git.init(dir).repo.gitDir.exists()
+        Git.init(dir).repo.gitDir.existent()
       .assert(_ == true)
 
       test(m"Git.init exposes its worktree via .repo"):
@@ -424,13 +424,13 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"Git.initBare leaves no .git subdirectory"):
         val dir = freshDir()
         Git.initBare(dir)
-        !(dir/".git").exists()
+        !(dir/".git").existent()
       .assert(_ == true)
 
       test(m"Git.initBare creates a HEAD file at the gitDir root"):
         val dir = freshDir()
         Git.initBare(dir)
-        (dir/"HEAD").exists()
+        (dir/"HEAD").existent()
       .assert(_ == true)
 
     // ----- log / revParse -------------------------------------------------
@@ -564,7 +564,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"old.txt", t"hello\n", t"first")
         worktree.mv(worktree.path / t"old.txt", worktree.path / t"new.txt")
-        !(worktree.path / t"old.txt").exists() && (worktree.path / t"new.txt").exists()
+        !(worktree.path / t"old.txt").existent() && (worktree.path / t"new.txt").existent()
       .assert(_ == true)
 
       test(m"mv stages the rename for the next commit"):
@@ -584,7 +584,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"first")
         commitFile(worktree, t"b", t"b\n", t"second")
         worktree.reset(ResetMode.Soft, Refspec.head(1))
-        worktree.repo.log().length == 1 && (worktree.path / t"b").exists()
+        worktree.repo.log().length == 1 && (worktree.path / t"b").existent()
       .assert(_ == true)
 
       test(m"reset --soft leaves changes staged"):
@@ -613,7 +613,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"b", t"b\n", t"second")
         worktree.reset(ResetMode.Hard, Refspec.head(1))
         // b.txt is gone entirely.
-        !(worktree.path / t"b").exists() && worktree.status().isEmpty
+        !(worktree.path / t"b").existent() && worktree.status().isEmpty
       .assert(_ == true)
 
     // ----- branches and tags ----------------------------------------------
@@ -847,7 +847,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val featureHash = commitFile(worktree, t"b", t"b\n", t"feature")
         worktree.checkout(GitBranch(t"main"))
         worktree.cherryPick(featureHash)
-        (worktree.path / t"b").exists()
+        (worktree.path / t"b").existent()
       .assert(_ == true)
 
       test(m"cherryPick advances HEAD by one commit"):
@@ -868,7 +868,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"base")
         val toRevert = commitFile(worktree, t"b", t"b\n", t"add b")
         worktree.revert(toRevert)
-        worktree.repo.log().length == 3 && !(worktree.path / t"b").exists()
+        worktree.repo.log().length == 3 && !(worktree.path / t"b").existent()
       .assert(_ == true)
 
       test(m"revert with noCommit leaves the inverse staged"):

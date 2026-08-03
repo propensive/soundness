@@ -4007,7 +4007,7 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   def applyDynamic(name: String)(ordinal: Ordinal = Prim)(using erased dynamicXmlEnabler: DynamicXmlEnabler)
   :   Fragment =
 
-    vacuous.at(childElements(name))(ordinal.n0).lay(new Fragment())(new Fragment(_))
+    childElements(name).at(ordinal).lay(new Fragment())(new Fragment(_))
 
 sealed trait Node extends Xml
 

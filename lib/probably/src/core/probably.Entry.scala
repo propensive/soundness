@@ -63,7 +63,7 @@ case class Run
 
 // The accumulated runs at one coordinate of a test: repeated executions of the same cell
 // gather here, generalizing repeated-verdict accumulation to every test kind.
-final class Cell():
+final class Tally():
   private val mutex: Mutex = Mutex()
   private val runs0: scm.ArrayBuffer[Run] = scm.ArrayBuffer()
 
@@ -81,7 +81,7 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
   @scala.caps.unsafe.untrackedCaptures
   private var ticks0: Map[Axis.Spec, List[Value]] = Map()
   @scala.caps.unsafe.untrackedCaptures
-  private var cells0: Ledger[List[Value], Cell] = Ledger()
+  private var cells0: Ledger[List[Value], Tally] = Ledger()
 
   @scala.caps.unsafe.untrackedCaptures
   var headline: Optional[Metric] = Unset
@@ -89,19 +89,19 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
   var anchor: Optional[Anchor] = Unset
 
   def axes: List[Axis.Spec] = mutex(axes0)
-  def cells: List[(List[Value], Cell)] = mutex(cells0.to[List])
+  def cells: List[(List[Value], Tally)] = mutex(cells0.to[List])
 
   // Returns the cell at the given coordinates, creating it if absent. Appends any
   // not-yet-seen axes (emergent axes extend the axis list as their coordinates arrive) and
   // registers each axis's values in first-appearance order.
-  def cell(coordinates: List[(Axis.Spec, Value)]): Cell = mutex:
+  def cell(coordinates: List[(Axis.Spec, Value)]): Tally = mutex:
     coordinates.each: (axis, value) =>
       if !axes0.has(axis) then axes0 = axes0 :+ axis
       val seen = ticks0.at(axis).or(Nil)
       if !seen.has(value) then ticks0 = ticks0.updated(axis, seen :+ value)
 
     val address = coordinates.map(_(1))
-    if !cells0.defines(address) then cells0 = cells0.updated(address, Cell())
+    if !cells0.defines(address) then cells0 = cells0.updated(address, Tally())
     cells0(address)
 
   // The coordinate values of one axis in presentation order: first-appearance order for

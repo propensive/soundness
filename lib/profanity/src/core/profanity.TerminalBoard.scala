@@ -35,38 +35,39 @@ package profanity
 import anticipation.*
 import denominative.*
 import escapade.*
+import turbulence.*
 
-object Canvas:
-  // The default surface for a terminal is an inline one: widgets summoned with a
-  // `Terminal` in scope render in place at the cursor. A panel supplies its own
-  // `Extent` (a `Canvas`) in a nearer scope, which shadows this default.
-  given inlineCanvas: (terminal: Terminal) => Canvas = InlineCanvas(terminal)
+object TerminalBoard:
+  def apply(width: Int, height: Int)(using Stdio): TerminalBoard =
+    new TerminalBoard(() => width, () => height)
 
-// The single abstraction every renderer draws through. All positioning happens
-// by calling `move` (never by printing escape codes inline), so the same widget
-// code can target the real terminal or a clipped sub-rectangle (an `Extent`)
-// without change. Coordinates are surface-local, top-origin `Ordinal`s: `column`
-// is the horizontal cell (x) and `row` the vertical cell (y), both zero-based.
-trait Canvas:
-  def width: Int
-  def height: Int
+  // Build a surface covering the whole terminal, reading its size live (so a
+  // resize is reflected the next time the layout is solved) and writing through
+  // its `Stdio`. The size thunks retain the terminal, so the canvas honestly
+  // captures it.
+  def apply(terminal: Terminal): TerminalBoard^{terminal} =
+    // Both thunks only read the same terminal's dimensions; no aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      new TerminalBoard(() => terminal.knownColumns, () => terminal.knownRows)
+        (using terminal.stdio)
 
-  // Position the cursor at a surface-local cell.
-  def move(column: Ordinal, row: Ordinal): Unit
+// A `Board` over a real terminal: every positioning operation maps to an
+// escapade `csi` sequence, written through the in-scope `Stdio`. It keeps no
+// cursor of its own — `put` lets the terminal advance the hardware cursor
+// naturally, while `move`/`showCaret` set absolute positions. `width`/`height`
+// are read on demand, so a terminal-backed canvas tracks the live size.
+class TerminalBoard(widthFn: () => Int, heightFn: () => Int)(using Stdio) extends Board:
+  def width: Int = widthFn()
+  def height: Int = heightFn()
 
-  // Write at the current cursor, advancing it.
-  def put(text: Text): Unit
-  def put(text: Teletype): Unit
+  // `csi.cup` takes a 1-based (row, column); our coordinates are 0-based
+  // `Ordinal`s, so `.n1` converts each.
+  def move(column: Ordinal, row: Ordinal): Unit = Out.print(csi.cup(row.n1, column.n1))
 
-  // Erase the whole surface, or the current row from the cursor onwards.
-  def clear(): Unit
-  def clearLine(): Unit
-
-  // Show or hide the hardware cursor.
-  def cursor(visible: Boolean): Unit
-
-  // Leave the visible caret at a surface-local cell (after a frame is drawn).
-  def showCaret(column: Ordinal, row: Ordinal): Unit
-
-  // Commit a frame; a no-op on an unbuffered surface.
-  def flush(): Unit
+  def put(text: Text): Unit = Out.print(text)
+  def put(text: Teletype): Unit = Out.print(text)
+  def clear(): Unit = Out.print(csi.ed(2))
+  def clearLine(): Unit = Out.print(csi.el(0))
+  def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
+  def showCaret(column: Ordinal, row: Ordinal): Unit = move(column, row)
+  def flush(): Unit = ()

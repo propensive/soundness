@@ -30,44 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package profanity
+package ultimatum
 
-import anticipation.*
-import denominative.*
-import escapade.*
-import turbulence.*
-
-object TerminalCanvas:
-  def apply(width: Int, height: Int)(using Stdio): TerminalCanvas =
-    new TerminalCanvas(() => width, () => height)
-
-  // Build a surface covering the whole terminal, reading its size live (so a
-  // resize is reflected the next time the layout is solved) and writing through
-  // its `Stdio`. The size thunks retain the terminal, so the canvas honestly
-  // captures it.
-  def apply(terminal: Terminal): TerminalCanvas^{terminal} =
-    // Both thunks only read the same terminal's dimensions; no aliased writer.
-    scala.caps.unsafe.unsafeAssumeSeparate:
-      new TerminalCanvas(() => terminal.knownColumns, () => terminal.knownRows)
-        (using terminal.stdio)
-
-// A `Canvas` over a real terminal: every positioning operation maps to an
-// escapade `csi` sequence, written through the in-scope `Stdio`. It keeps no
-// cursor of its own — `put` lets the terminal advance the hardware cursor
-// naturally, while `move`/`showCaret` set absolute positions. `width`/`height`
-// are read on demand, so a terminal-backed canvas tracks the live size.
-class TerminalCanvas(widthFn: () => Int, heightFn: () => Int)(using Stdio) extends Canvas:
-  def width: Int = widthFn()
-  def height: Int = heightFn()
-
-  // `csi.cup` takes a 1-based (row, column); our coordinates are 0-based
-  // `Ordinal`s, so `.n1` converts each.
-  def move(column: Ordinal, row: Ordinal): Unit = Out.print(csi.cup(row.n1, column.n1))
-
-  def put(text: Text): Unit = Out.print(text)
-  def put(text: Teletype): Unit = Out.print(text)
-  def clear(): Unit = Out.print(csi.ed(2))
-  def clearLine(): Unit = Out.print(csi.el(0))
-  def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
-  def showCaret(column: Ordinal, row: Ordinal): Unit = move(column, row)
-  def flush(): Unit = ()
+// How much of the terminal an interactive layout occupies. `Fullscreen` takes over
+// the terminal via the alternate screen buffer and fills its fixed height;
+// `Inline` renders a variable-height block at the cursor (sized to its content),
+// without the alternate buffer, leaving the terminal's scrollback intact.
+enum Occupancy:
+  case Inline, Fullscreen

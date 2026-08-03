@@ -36,9 +36,9 @@ import soundness.*
 
 import errorDiagnostics.stackTracesDiagnostics
 
-case class Person(@index email: Text, name: Text)
+case class Person(@primary email: Text, name: Text)
 
-case class Product(@index code: Int, description: Text)
+case class Product(@primary code: Int, description: Text)
 
 object Tests extends Suite(m"Gnossienne Tests"):
   def run(): Unit =

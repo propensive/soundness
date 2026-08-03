@@ -42,9 +42,14 @@ import contingency.*
 import prepositional.*
 import serpentine.*
 
-// The `java.nio` representations of a path, for interoperating with Java APIs directly.
+// The `java.nio` representations of a path, for interoperating with Java APIs directly. Not
+// exported into `soundness`: these are an escape hatch from the typed API, so reaching them
+// through `galilei.javaPath` is the deliberate step it should be.
 extension [plane: Filesystem](path: Path on plane)
+  @unexported
   def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
+
+  @unexported
   def javaFile: ji.File = javaPath.toFile.nn
 
 object SocketCreation:

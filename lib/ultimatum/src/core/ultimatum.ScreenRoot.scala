@@ -51,14 +51,14 @@ object ScreenRoot:
   def apply(width: Int, height: Int)(using Stdio): ScreenRoot =
     new ScreenRoot(() => width, () => height)
 
-// The root `Canvas` for FULLSCREEN mode: panels composite into its character grid
+// The root `Board` for FULLSCREEN mode: panels composite into its character grid
 // (inherited from `GridSurface`), and `flush` presents by diffing the grid against
 // the snapshot of what the last present drew, overprinting only the damaged runs —
 // an unchanged cell is a no-op and an identical frame emits nothing at all. Every
 // present is ONE write, so partial frames never flash and the SIGWINCH size-probe
 // reply cannot interleave mid-frame. The first present, and any present after
 // `invalidate` (a resize, when the terminal has reflowed whatever was on screen),
-// redraws every row. It replaces the unbuffered `TerminalCanvas` as the fullscreen
+// redraws every row. It replaces the unbuffered `TerminalBoard` as the fullscreen
 // root, whose immediate per-`put` writes re-emitted every cell a repaint touched.
 class ScreenRoot(widthFn: () => Int, heightFn: () => Int)(using stdio: Stdio)
 extends GridSurface(widthFn(), heightFn()):

@@ -65,7 +65,7 @@ object Materializer:
       // The segments are a hex digest and `<universe>.jar`, admissible on any filesystem.
       val target = unsafely((cache / identity / t"$universe.jar").on[Linux])
 
-      if !target.exists() then
+      if !target.existent() then
         val report = Verification.install(lira)
 
         val tree = report.materialized.stdlib.find(_(0) == universe) match

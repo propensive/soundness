@@ -140,7 +140,7 @@ def fixture(): Unit = cli:
         val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
         trap:
-          case Signal.Int =>
+          case Interrupt.Int =>
             received.offer(t"outer")
             SignalResponse.Accept
 
@@ -152,7 +152,7 @@ def fixture(): Unit = cli:
 
     case Argument("trap-undefined") :: Nil =>
       execute:
-        trap { case Signal.Winch => SignalResponse.Accept }
+        trap { case Interrupt.Winch => SignalResponse.Accept }
         Thread.sleep(5000L)
         Exit.Ok
 

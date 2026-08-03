@@ -95,7 +95,7 @@ extends Openable:
 
     // The register works on real paths, so two routes to one directory (via symlinks, or via
     // `.` and repeated separators) register as the same subtree.
-    val real: Text = value.javaPath.toRealPath().nn.toString.tt
+    val real: Text = value.nioPath.toRealPath().nn.toString.tt
 
     if !AccessRegister.acquire(real, mode.atoms)
     then abort(IoError(value, Operation.Open, Reason.Busy))

@@ -62,7 +62,7 @@ object Subtree:
   // `using` parameter selected by plane refinement: routing them through typeclass instances
   // capturing the handle fails under capture checking (given resolution mints fresh roots the
   // scoped capability cannot flow into). The names are chosen not to collide with lexically
-  // imported generic extensions (turbulence's `read`, vacuous's `present`, galilei's `exists`
+  // imported generic extensions (turbulence's `read`, vacuous's `present`, galilei's `existent`
   // and `delete`), which would otherwise be tried first and fail without falling through.
   extension [plane <: Subtree](path: Path on plane)
     transparent inline def contents[result]
@@ -121,7 +121,7 @@ object Subtree:
     ( using filesystem: under is Filesystem )
     ( using backend: FilesystemBackend on under )
   :   Boolean =
-    galilei.exists(path)()
+    galilei.existent(path)()
 
   def entriesResolved[under](path: Path on under)
     ( using filesystem: under is Filesystem )
