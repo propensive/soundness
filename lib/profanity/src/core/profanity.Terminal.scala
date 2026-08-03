@@ -171,7 +171,7 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
     val reports0 = metrics.reports
 
     console.trap:
-      case Signal.Winch =>
+      case Interrupt.Winch =>
         // The anchor query goes FIRST — the cursor still sits wherever the last
         // present parked it, and the size probe's corner-jam would move it. The
         // expectations are queued before the write, so a reply can never arrive to
@@ -179,7 +179,7 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
         reports0.add(Terminal.Report.Anchor)
         reports0.add(Terminal.Report.Size)
         out0.print(t"${Terminal.anchorQuery}${Terminal.reportSize}")
-        events0.put(Signal.Winch)
+        events0.put(Interrupt.Winch)
         SignalResponse.Accept
 
       case signal =>

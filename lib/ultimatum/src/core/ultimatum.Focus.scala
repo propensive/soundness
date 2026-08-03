@@ -41,12 +41,12 @@ import spectacular.*
 import vacuous.*
 
 // A focusable element bound into an interactive layout. It owns mutable widget
-// state, renders itself onto whichever `Canvas` the driver gives it (so the
+// state, renders itself onto whichever `Board` the driver gives it (so the
 // driver can move it to a new rectangle on re-layout), folds an event into its
 // state, and reports the intrinsic size its current content needs — the hook the
 // reactive layout uses to grow or shrink a panel.
 trait Focus:
-  def render(canvas: Canvas^, focused: Boolean): Unit
+  def render(canvas: Board^, focused: Boolean): Unit
   def handle(event: TerminalEvent): Unit
   def measure(width: Int): (Int, Int)
 
@@ -62,8 +62,8 @@ class EditorField(initial: LineEditor = LineEditor()) extends Focus:
   // The shared `Interaction` draws the editor and positions the caret; the
   // hardware cursor is then shown only when this field has focus, so the caret
   // appears in the focused editor and is hidden elsewhere.
-  def render(canvas: Canvas^, focused: Boolean): Unit =
-    given canvas0: (Canvas^{canvas}) = canvas
+  def render(canvas: Board^, focused: Boolean): Unit =
+    given canvas0: (Board^{canvas}) = canvas
     summon[Interaction[Text, LineEditor]].render(Unset, editor)
     canvas.cursor(focused)
 
@@ -85,8 +85,8 @@ class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
   // pointer (`>`) when this field has focus, a dot (`·`) when it does not, so the
   // selection is always visible but the focused menu is distinguished. The
   // hardware cursor is kept hidden — a menu has no text caret.
-  def render(canvas: Canvas^, focused: Boolean): Unit =
-    given canvas0: (Canvas^{canvas}) = canvas
+  def render(canvas: Board^, focused: Boolean): Unit =
+    given canvas0: (Board^{canvas}) = canvas
     val cols = canvas.width.max(1)
     canvas.move(Prim, Prim)
     canvas.clear()

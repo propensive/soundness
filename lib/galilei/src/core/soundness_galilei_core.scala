@@ -38,7 +38,7 @@ export
       created, CreateFlag, CreateNonexistentParents, Creation, D, delete,
       DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, DirectoryHandle,
       DirectoryOpenable, Dos, Drive, Entry,
-      entry, executable, exists, Explorable, Fifo, file, File, FileOpenable,
+      entry, executable, Explorable, existent, Fifo, file, File, FileOpenable,
       FilesystemAttribute, FilesystemBackend,
       Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile, javaPath, Linux, Local,
       MacOs, modified, MoveAtomically, moveInto, moveTo, OpenFlag,

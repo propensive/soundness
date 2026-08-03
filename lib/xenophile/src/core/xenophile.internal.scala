@@ -247,7 +247,7 @@ object Xenophile:
       case Foreign.Type.Applied(constructor, ok :: _) if constructor.s == "result" => reprOf(ok)
       case _                                                                       => Unset
 
-    // A raw C `Pointer` argument (topic `pointer`) satisfies *any* pointer-typed parameter
+    // A raw C `Address` argument (topic `pointer`) satisfies *any* pointer-typed parameter
     // (`ptr<T>`, of which `char*`'s `string` special case is not one) — the C dialect checks
     // pointerness, not pointee identity, exactly as C itself does.
     val pointerOk: Boolean = paramType match

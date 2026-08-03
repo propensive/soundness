@@ -35,63 +35,38 @@ package profanity
 import anticipation.*
 import denominative.*
 import escapade.*
-import gossamer.*
-import turbulence.*
 
-object InlineCanvas:
-  def apply(terminal: Terminal): InlineCanvas =
-    new InlineCanvas(terminal.knownColumns, terminal.knownRows)(using terminal.stdio)
+object Board:
+  // The default surface for a terminal is an inline one: widgets summoned with a
+  // `Terminal` in scope render in place at the cursor. A panel supplies its own
+  // `Extent` (a `Board`) in a nearer scope, which shadows this default.
+  given inlineBoard: (terminal: Terminal) => Board = InlineBoard(terminal)
 
-// A `Canvas` that renders a widget "inline" at the terminal's current cursor
-// position, using relative cursor motion. Local coordinates are interpreted
-// relative to the line where rendering began (local row 0) and absolute column 0,
-// so a standalone widget redraws in place — exactly as profanity's widgets did
-// with hand-written escape codes — while being driven through the same move/put
-// `Canvas` API as a panel's `Extent`. The surface tracks its own cursor so that
-// each `move` can be expressed as relative vertical motion plus an absolute
-// column, which is what keeps the widget anchored to the prompt rather than the
-// top-left of the screen.
-class InlineCanvas(val width: Int, val height: Int)(using Stdio) extends Canvas:
-  @scala.caps.unsafe.untrackedCaptures
-  private var row: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
-  private var column: Int = 0
+// The single abstraction every renderer draws through. All positioning happens
+// by calling `move` (never by printing escape codes inline), so the same widget
+// code can target the real terminal or a clipped sub-rectangle (an `Extent`)
+// without change. Coordinates are surface-local, top-origin `Ordinal`s: `column`
+// is the horizontal cell (x) and `row` the vertical cell (y), both zero-based.
+trait Board:
+  def width: Int
+  def height: Int
 
-  def move(column2: Ordinal, row2: Ordinal): Unit =
-    val targetRow = row2.n0
-    val targetColumn = column2.n0
+  // Position the cursor at a surface-local cell.
+  def move(column: Ordinal, row: Ordinal): Unit
 
-    if targetRow < row then Out.print(csi.cuu(row - targetRow))
-    else if targetRow > row then Out.print(csi.cud(targetRow - row))
+  // Write at the current cursor, advancing it.
+  def put(text: Text): Unit
+  def put(text: Teletype): Unit
 
-    Out.print(csi.cha(targetColumn + 1))
-    row = targetRow
-    column = targetColumn
+  // Erase the whole surface, or the current row from the cursor onwards.
+  def clear(): Unit
+  def clearLine(): Unit
 
-  def put(text: Text): Unit =
-    val string = text.s
-    var i = 0
+  // Show or hide the hardware cursor.
+  def cursor(visible: Boolean): Unit
 
-    while i < string.length do
-      val char = string.charAt(i)
+  // Leave the visible caret at a surface-local cell (after a frame is drawn).
+  def showCaret(column: Ordinal, row: Ordinal): Unit
 
-      if char == '\n' then
-        Out.print(t"\r\n")
-        row += 1
-        column = 0
-      else
-        Out.print(t"$char")
-        column += 1
-
-        if column >= width then
-          column = 0
-          row += 1
-
-      i += 1
-
-  def put(text: Teletype): Unit = put(text.plain)
-  def clear(): Unit = Out.print(csi.ed(0))
-  def clearLine(): Unit = Out.print(csi.el(0))
-  def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
-  def showCaret(column2: Ordinal, row2: Ordinal): Unit = move(column2, row2)
-  def flush(): Unit = ()
+  // Commit a frame; a no-op on an unbuffered surface.
+  def flush(): Unit

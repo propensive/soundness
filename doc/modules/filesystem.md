@@ -180,8 +180,8 @@ A directory's immediate children stream from `children`, and its whole subtree f
 
 ```scala
 directory.children       // Stream[Path on Local]
-file.exists()            // true
-file.size()             // the size in bytes
+file.existent()          // true
+file.size()              // the size in bytes
 ```
 
 ### Standard directories

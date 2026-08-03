@@ -51,7 +51,7 @@ import yossarian.*
 // content (`Text`/`Ascii`/`Writing`/`Teletype`) can be written, so colour survives.
 // Subclasses supply `cursor`, `showCaret` and `flush`.
 private[ultimatum] abstract class GridSurface(initialWidth: Int, initialHeight: Int)
-extends Canvas:
+extends Board:
   @scala.caps.unsafe.untrackedCaptures
   protected var gridWidth: Int = initialWidth.max(1)
   @scala.caps.unsafe.untrackedCaptures

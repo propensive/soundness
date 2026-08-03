@@ -37,13 +37,13 @@ import denominative.*
 import profanity.*
 import turbulence.*
 
-// A `Canvas` confined to a `Rect` of a parent surface, backed by the shared
+// A `Board` confined to a `Rect` of a parent surface, backed by the shared
 // character grid (`GridSurface`). Writes flow and wrap within the rectangle;
 // `flush` paints the grid onto the parent surface, one row at a time, via the
-// parent's `move`/`put` (so positioning is always expressed through the `Canvas`
+// parent's `move`/`put` (so positioning is always expressed through the `Board`
 // interface, never as inline escapes). It is also an `Stdio`, so bare
 // `Out.println` in a panel body flows into it.
-class FlowExtent(parent: Canvas^, val rect: Rect)
+class FlowExtent(parent: Board^, val rect: Rect)
 extends GridSurface(rect.width, rect.height), Extent:
   def cursor(visible: Boolean): Unit = parent.cursor(visible)
 

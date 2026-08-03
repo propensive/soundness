@@ -60,12 +60,12 @@ enum TerminalInfo extends TerminalEvent:
   // changed the layout.
   case Redraw
 
-object Signal:
-  given decoder: Signal is Decodable in Text = text => Signal.valueOf(text.lower.capitalize.s)
-  given encodable: Signal is Encodable in Text = _.shortName
-  given showable: Signal is Showable = _.shortName
+object Interrupt:
+  given decoder: Interrupt is Decodable in Text = text => Interrupt.valueOf(text.lower.capitalize.s)
+  given encodable: Interrupt is Encodable in Text = _.shortName
+  given showable: Interrupt is Showable = _.shortName
 
-enum Signal extends TerminalEvent:
+enum Interrupt extends TerminalEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld,
     Cont, Stop, Tstp, Ttin, Ttou, Urg, Xcpu, Xfsz, Vtalrm, Prof, Winch, Io, Pwr, Sys
 

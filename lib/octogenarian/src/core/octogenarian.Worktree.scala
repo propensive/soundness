@@ -58,9 +58,9 @@ object Worktree:
   :   Worktree =
 
     unsafely(path.generic.as[Path on Linux]).pipe: path =>
-      if !path.exists() then abort(GitError(RepoDoesNotExist))
+      if !path.existent() then abort(GitError(RepoDoesNotExist))
 
-      if (path / ".git").exists() then Worktree(GitRepo((path / ".git")), path)
+      if (path / ".git").existent() then Worktree(GitRepo((path / ".git")), path)
       else abort(GitError(NoWorkTree))
 
 

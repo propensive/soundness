@@ -55,7 +55,7 @@ import vacuous.*
 // Marshalling matches `NativeInvoke`: C primitives pass through (boxed, as `invokeWithArguments`
 // expects), a `string` argument (`Text`) is copied into a confined per-call `Arena`, and a
 // `pointer` argument (any other `T*`) travels as its raw address via `MemorySegment.ofAddress`.
-// A `string` result is read back out of native memory; a pointer result becomes a `Pointer`.
+// A `string` result is read back out of native memory; a pointer result becomes an `Address`.
 object PanamaInvoke:
   def invoke[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
     import quotes.reflect.*
@@ -204,7 +204,7 @@ object PanamaInvoke:
           }
 
     // Unmarshals the (boxed) result by the header's result type: a `string` is read back from
-    // native memory as `Text`, a pointer becomes its raw address (a `Pointer`), a primitive is
+    // native memory as `Text`, a pointer becomes its raw address (an `Address`), a primitive is
     // simply unboxed by the cast, and `void` yields `Unit`.
     prototype.result match
       case Foreign.Type.Named(t"void") =>
@@ -218,4 +218,4 @@ object PanamaInvoke:
         '{$invocation.asInstanceOf[result]}
 
       case _ =>
-        '{Pointer($invocation.asInstanceOf[MemorySegment].address).asInstanceOf[result]}
+        '{Address($invocation.asInstanceOf[MemorySegment].address).asInstanceOf[result]}

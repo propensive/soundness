@@ -86,12 +86,12 @@ object PdfFile:
         val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
           workingDirectory[Path on Local].resolve(filename)
 
-        if !flags.has(CreateFlag.Replace) && target.exists()
+        if !flags.has(CreateFlag.Replace) && target.existent()
         then abort(PdfError(PdfError.Reason.Io(t"the file already exists")))
 
         if flags.has(CreateFlag.Parents) then
           target.parent.let: parent =>
-            if !parent.exists() then parent.create[Directory]()
+            if !parent.existent() then parent.create[Directory]()
 
         val part: Text = t".${target.name}.part"
         val temporary = target.peer(part)

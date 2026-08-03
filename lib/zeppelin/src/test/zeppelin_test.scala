@@ -364,7 +364,7 @@ object Tests extends Suite(m"Zeppelin tests"):
             builder.insert(zipRef(t"x"), t"data")
             abort(ZipError(ZipError.Reason.MissingEocd))
 
-        target.exists()
+        target.existent()
       . assert(_ == false)
 
       test(m"Creating over an existing archive requires Replace"):

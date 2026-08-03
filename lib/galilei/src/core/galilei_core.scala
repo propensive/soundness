@@ -56,7 +56,7 @@ extension (inline context: StringContext)
   transparent inline def p(): Path = ${galilei.internal.path('context)}
 
 extension [target: Substantiable](value: target)
-  def exists(): Boolean = target.existence(value)
+  def existent(): Boolean = target.existence(value)
 
 // The contextual file handle within an `open` block, in the manner of facsimile's `pdf`.
 // Transparent inline so the handle's precise (grant-refined, capturing) type is preserved: a

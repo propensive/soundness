@@ -58,7 +58,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A fresh path does not exist"):
         dest
-      . assert(!_.exists())
+      . assert(!_.existent())
 
       test(m"A file opened for writing can be written and read back"):
         unsafely:
@@ -70,7 +70,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"The path exists after writing"):
         dest
-      . assert(_.exists())
+      . assert(_.existent())
 
       test(m"Opening an Eof appends to the file"):
         unsafely:
@@ -178,7 +178,7 @@ object Tests extends Suite(m"Galilei tests"):
           val target: Path on Linux = base / "twice.txt"
           target.create[File]()
           target.create[File](CreateFlag.Replace)
-          target.exists()
+          target.existent()
       . assert(_ == true)
 
       test(m"Creating beneath a missing parent fails without Parents"):
@@ -191,7 +191,7 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           val target: Path on Linux = base / "a" / "b" / "c"
           target.create[Directory](CreateFlag.Parents)
-          target.exists()
+          target.existent()
       . assert(_ == true)
 
       test(m"Directory authoring provides a fresh-plane handle over the new directory"):
@@ -216,7 +216,7 @@ object Tests extends Suite(m"Galilei tests"):
               (dir / "x.txt").overwrite(t"data")
               abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
 
-          target.exists()
+          target.existent()
       . assert(_ == false)
 
       test(m"File authoring commits the staged content on success"):
@@ -239,7 +239,7 @@ object Tests extends Suite(m"Galilei tests"):
               handle.write(Chain(t"data".in[Data]))
               abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
 
-          target.exists()
+          target.existent()
       . assert(_ == false)
 
     suite(m"Scratch directories"):
@@ -258,7 +258,7 @@ object Tests extends Suite(m"Galilei tests"):
               (scratch / "file.txt").overwrite(t"data")
               ((scratch / "file.txt").extant(), scratch.stem)
 
-            (written, stem.exists())
+            (written, stem.existent())
       . assert(_ == (true, false))
 
       test(m"A scratch directory is removed even when the scope fails"):
@@ -272,7 +272,7 @@ object Tests extends Suite(m"Galilei tests"):
               stem = scratch.stem
               abort(IoError(base, IoError.Operation.Write, IoError.Reason.Unsupported))
 
-          stem.let(_.exists()).or(true)
+          stem.let(_.existent()).or(true)
       . assert(_ == false)
 
     suite(m"Memory-mapped access"):

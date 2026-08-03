@@ -60,7 +60,7 @@ object ForeignBuffer:
     buffer
 
 class ForeignBuffer(arena: Arena, private[xenophile] val segment: MemorySegment, val size: Int):
-  def pointer: Pointer = Pointer(segment.address)
+  def pointer: Address = Address(segment.address)
   def data(length: Int): Data = ForeignLibrary.bytes(segment, length)
   def int: Int = segment.get(ValueLayout.JAVA_INT.nn, 0L)
   def free(): Unit = arena.close()

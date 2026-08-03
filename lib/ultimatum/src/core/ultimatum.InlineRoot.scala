@@ -61,7 +61,7 @@ object InlineRoot:
 
     new InlineRoot(() => width, () => height)
 
-// The root `Canvas` for INLINE mode: panels composite into its character grid
+// The root `Board` for INLINE mode: panels composite into its character grid
 // (inherited from `GridSurface`), and `flush` presents the grid with ABSOLUTE row
 // addressing (`cup`) so a redraw always lands in the same place and never drifts —
 // the property a relative, cursor-tracking present loses the moment a resize reflows

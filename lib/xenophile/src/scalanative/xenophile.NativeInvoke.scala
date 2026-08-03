@@ -159,7 +159,7 @@ object NativeInvoke:
 
     // Each C type maps to the Scala type of identical ABI: a primitive (`int`→`Int`; Scala Native's
     // `CInt` etc. are aliases), `CString` (`char*`) for a `Text`, or `Ptr[Byte]` for any other
-    // pointer (`T*`/`void*`/opaque handle, whose Scala value is the raw-address `Pointer`). `cType`
+    // pointer (`T*`/`void*`/opaque handle, whose Scala value is the raw-address `Address`). `cType`
     // returns the `CFuncPtr` slot type and the marshalling `Kind` it needs. The `CString` type is
     // read off `dlopen`'s own `CString` parameter, so no Native type is named here.
     val cstringType = dlopen.paramSymss.head.head.info
@@ -191,7 +191,7 @@ object NativeInvoke:
     val hasStringArg = paramInfo.exists(_._2 == Kind.Str)
     val arity = paramInfo.length
 
-    // The `Ptr`↔`Long` bridges for `Pointer` arguments and results: `fromRawPtr`/`toRawPtr` (from
+    // The `Ptr`↔`Long` bridges for `Address` arguments and results: `fromRawPtr`/`toRawPtr` (from
     // the `scala.scalanative.runtime` package object, whose members dotty exposes on the package
     // symbol) and the `Intrinsics` casts.
     val runtimePackage = Symbol.requiredPackage("scala.scalanative.runtime")
@@ -251,7 +251,7 @@ object NativeInvoke:
 
     // The invocation: each argument is unwrapped from the navigation's `Literal` (the cast unboxes
     // it from `Any`); a `string` one is marshalled to a `CString` in `zone`, and a `pointer` one
-    // (a raw-address `Long`, since `Pointer` is opaquely a `Long`) to a `Ptr[Byte]` with
+    // (a raw-address `Long`, since `Address` is opaquely a `Long`) to a `Ptr[Byte]` with
     // `fromRawPtr(castLongToRawPtr(_))`. A `string` result is read back with `fromCString`, and a
     // pointer result lowered to its raw address with `castRawPtrToLong(toRawPtr(_))`.
     def invocation(zone: Optional[Term]): Term =

@@ -41,7 +41,7 @@ import rudiments.*
 // `frame`) and yields its leaves in order (via `leaves`), so a solved
 // `Placement`'s cells line up one-to-one with the leaves.
 // A pane tree is pure: a `Leaf`'s deferred `content` is a *pure* function of its `Extent` (an
-// `Extent` is itself the `Stdio`/`Canvas` it renders into, so content only uses what it is given and
+// `Extent` is itself the `Stdio`/`Board` it renders into, so content only uses what it is given and
 // captures nothing ambient), so panes can be freely collected and traversed under capture checking.
 enum Pane:
   def sizing: Sizing

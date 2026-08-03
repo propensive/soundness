@@ -159,7 +159,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                     val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
                     trap:
-                      case Signal.Int =>
+                      case Interrupt.Int =>
                         received.offer(t"outer")
                         SignalResponse.Accept
 
@@ -171,7 +171,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
                 case Argument("trap-undefined") :: Nil =>
                   execute:
-                    trap { case Signal.Winch => SignalResponse.Accept }
+                    trap { case Interrupt.Winch => SignalResponse.Accept }
                     snooze(5*Second) yet Exit.Ok
 
                 case Argument("trap-slow") :: Nil =>
@@ -253,7 +253,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"$tool stderr 'error message'".exec[Stderr]().text.trim
             .assert(_ == t"error message")
 
-          suite(m"Signal forwarding"):
+          suite(m"Interrupt forwarding"):
             test(m"SIGTERM causes the launcher to exit"):
               val t0 = jl.System.currentTimeMillis
               val proc = sh"$tool sleep 1".fork[Exit]()

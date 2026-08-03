@@ -37,26 +37,26 @@ import denominative.*
 import escapade.*
 import turbulence.*
 
-object TerminalCanvas:
-  def apply(width: Int, height: Int)(using Stdio): TerminalCanvas =
-    new TerminalCanvas(() => width, () => height)
+object TerminalBoard:
+  def apply(width: Int, height: Int)(using Stdio): TerminalBoard =
+    new TerminalBoard(() => width, () => height)
 
   // Build a surface covering the whole terminal, reading its size live (so a
   // resize is reflected the next time the layout is solved) and writing through
   // its `Stdio`. The size thunks retain the terminal, so the canvas honestly
   // captures it.
-  def apply(terminal: Terminal): TerminalCanvas^{terminal} =
+  def apply(terminal: Terminal): TerminalBoard^{terminal} =
     // Both thunks only read the same terminal's dimensions; no aliased writer.
     scala.caps.unsafe.unsafeAssumeSeparate:
-      new TerminalCanvas(() => terminal.knownColumns, () => terminal.knownRows)
+      new TerminalBoard(() => terminal.knownColumns, () => terminal.knownRows)
         (using terminal.stdio)
 
-// A `Canvas` over a real terminal: every positioning operation maps to an
+// A `Board` over a real terminal: every positioning operation maps to an
 // escapade `csi` sequence, written through the in-scope `Stdio`. It keeps no
 // cursor of its own — `put` lets the terminal advance the hardware cursor
 // naturally, while `move`/`showCaret` set absolute positions. `width`/`height`
 // are read on demand, so a terminal-backed canvas tracks the live size.
-class TerminalCanvas(widthFn: () => Int, heightFn: () => Int)(using Stdio) extends Canvas:
+class TerminalBoard(widthFn: () => Int, heightFn: () => Int)(using Stdio) extends Board:
   def width: Int = widthFn()
   def height: Int = heightFn()
 

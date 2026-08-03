@@ -194,7 +194,7 @@ object Completions:
                 sh"pwsh -NoProfile -Command 'echo $$PROFILE'".exec[Path on Linux]()
               val marker = t"# $command tab-completions"
 
-              if profile.exists() && profile.read[Text].contains(marker)
+              if profile.existent() && profile.read[Text].contains(marker)
               then Installation.InstallResult.AlreadyInstalled(Shell.Powershell, profile.encode)
               else
                 Eof(profile).open(Write): handle ?=>
@@ -221,10 +221,10 @@ object Completions:
       case StreamError(_)      => InstallError(InstallError.Reason.Io)
 
     . protect:
-        dirs.seek { dir => dir.exists() && dir.writable() }.let: dir =>
+        dirs.seek { dir => dir.existent() && dir.writable() }.let: dir =>
           val path = dir/scriptName
 
-          if path.exists()
+          if path.existent()
           then Installation.InstallResult.AlreadyInstalled(shell, path.encode)
           else
             path.write(script(shell, command).sysData)

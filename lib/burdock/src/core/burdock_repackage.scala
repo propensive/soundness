@@ -111,7 +111,7 @@ def repackage(): Unit = application(scala.collection.immutable.Nil):
       def cached(hash: Text): Optional[List[Zip.Entry]] =
         val cacheJar: Path on Linux = cacheDir/t"$hash.jar"
 
-        if !cacheJar.exists() then Unset else
+        if !cacheJar.existent() then Unset else
           Zipfile.read(cacheJar).entries.filter: entry =>
             !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
 
