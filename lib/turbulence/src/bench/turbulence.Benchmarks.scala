@@ -601,17 +601,17 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
     // Chained example S: slice + transcode (no compression, 3-way), combining
-    // the `drop`/`take`/`fold` kernel operators with transcoding. `drop`/`take`
-    // are chunk-aware byte counts in all three libraries; the terminal count
-    // folds over whole windows.
+    // the `discard`/`truncate`/`gather` kernel operators with transcoding. The
+    // slice bounds are chunk-aware byte counts in all three libraries; the
+    // terminal count accumulates over whole windows.
     suite(m"Chained: drop -> transcode -> take -> count (4 MB)"):
-      bench(m"Soundness  drop.dec.enc.take.fold")
+      bench(m"Soundness  discard.dec.enc.truncate.gather")
         ( target = 1*Second, operationSize = textSize ):
         '{
-            turbulence.Benchmarks.textData.stream.drop(turbulence.Benchmarks.dropBytes)
+            turbulence.Benchmarks.textData.stream.discard(turbulence.Benchmarks.dropBytes)
             . via(summon[CharDecoder]).via(summon[CharEncoder])
-            . take(turbulence.Benchmarks.takeBytes)
-            . fold(0L)((total, _, _, count) => total + count)
+            . truncate(turbulence.Benchmarks.takeBytes)
+            . gather(0L)((total, _, _, count) => total + count)
         }
 
       bench(m"FS2  drop.utf8.take.count")(target = 1*Second, operationSize = textSize):

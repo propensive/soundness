@@ -36,11 +36,6 @@ import soundness.*
 
 import proscenium.compat.*
 
-// The kernel `Stream.take`/`drop` are shadowed here by turbulence's legacy
-// `Chain[Data]` `take`/`drop` arriving through the `soundness.*` wildcard;
-// the explicit imports restore the kernel versions under test.
-import zephyrine.{take, drop}
-
 import randomization.unseededRandomization
 
 import supervisors.globalSupervisor
@@ -875,45 +870,46 @@ object Tests extends Suite(m"Zephyrine tests"):
           Stream(Iterator(t"ab", t"cd", t"e")).memoize.s
         . assert(_ == "abcde")
 
-        test(m"take limits a stream to its first elements"):
-          small.stream.take(3).memoize.readable.to(List)
+        test(m"truncate limits a stream to its first elements"):
+          small.stream.truncate(3).memoize.readable.to(List)
         . assert(_ == List[Byte](1, 2, 3))
 
-        test(m"take across chunk boundaries"):
-          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5, 6))).take(4).memoize.to[List]
+        test(m"truncate across chunk boundaries"):
+          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5, 6)))
+          . truncate(4).memoize.to[List]
         . assert(_ == List[Byte](1, 2, 3, 4))
 
-        test(m"take of more than the stream holds yields the whole stream"):
-          small.stream.take(100).memoize.to[List]
+        test(m"truncate to more than the stream holds yields the whole stream"):
+          small.stream.truncate(100).memoize.to[List]
         . assert(_ == small.to[List])
 
-        test(m"take zero yields an empty stream"):
-          small.stream.take(0).memoize.to[List]
+        test(m"truncate to zero yields an empty stream"):
+          small.stream.truncate(0).memoize.to[List]
         . assert(_ == List())
 
-        test(m"drop skips a stream's first elements"):
-          small.stream.drop(2).memoize.to[List]
+        test(m"discard skips a stream's first elements"):
+          small.stream.discard(2).memoize.to[List]
         . assert(_ == List[Byte](3, 4, 5))
 
-        test(m"drop across chunk boundaries"):
-          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5, 6))).drop(4).memoize.to[List]
+        test(m"discard across chunk boundaries"):
+          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5, 6)))
+          . discard(4).memoize.to[List]
         . assert(_ == List[Byte](5, 6))
 
-        test(m"drop of more than the stream holds yields an empty stream"):
-          small.stream.drop(100).memoize.to[List]
+        test(m"discard of more than the stream holds yields an empty stream"):
+          small.stream.discard(100).memoize.to[List]
         . assert(_ == List())
 
-        test(m"take and drop compose to a slice"):
-          Stream(Data.fill(20)(_.toByte)).drop(5).take(5).memoize.to[List]
+        test(m"truncate and discard compose to a slice"):
+          Stream(Data.fill(20)(_.toByte)).discard(5).truncate(5).memoize.to[List]
         . assert(_ == List[Byte](5, 6, 7, 8, 9))
 
-        test(m"take composes with a duct"):
-          small.stream.take(3).via(Doubler()).memoize.to[List]
+        test(m"truncate composes with a duct"):
+          small.stream.truncate(3).via(Doubler()).memoize.to[List]
         . assert(_ == List[Byte](1, 1, 2, 2, 3, 3))
 
-        test(m"fold reduces over windows without boxing"):
-          import zephyrine.fold
-          bytes.stream.fold(0L): (total, storage, start, count) =>
+        test(m"gather reduces over windows without boxing"):
+          bytes.stream.gather(0L): (total, storage, start, count) =>
             val array = storage.asInstanceOf[scala.Array[Byte]]
             var sum = total
             var index = 0
@@ -963,8 +959,8 @@ object Tests extends Suite(m"Zephyrine tests"):
           rows.to[List]
         . assert(_ == List(Row(1), Row(2), Row(3)))
 
-        test(m"records composes with take"):
-          Stream(Iterator(Array.of(Row(1), Row(2)), Array.of(Row(3), Row(4)))).take(3).records
+        test(m"records composes with truncate"):
+          Stream(Iterator(Array.of(Row(1), Row(2)), Array.of(Row(3), Row(4)))).truncate(3).records
           . to(List)
         . assert(_ == List(Row(1), Row(2), Row(3)))
 

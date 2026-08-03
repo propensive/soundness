@@ -204,13 +204,14 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
     addressable.build(target)
 
-  // Drain the stream, threading an accumulator through each window: the
-  // window-level fold, the terminal counterpart to a pull chain. The operation
+  // Drain the stream, threading an accumulator through each window: `sweep`'s
+  // accumulating counterpart, the terminal end of a pull chain. The operation
   // receives the running state, the raw window storage, its start index and its
-  // element count; it must not retain the storage. Unlike an element-wise fold,
-  // this exposes the raw window, so a byte reduction runs over the array with no
-  // per-element boxing. (The `Stream[Data]` overload below types the window.)
-  def fold[state](initial: state)(operation: (state, AnyRef, Int, Int) => state)
+  // element count; it must not retain the storage. Unlike an element-wise fold
+  // over a collection, this exposes the raw window, so a byte reduction runs
+  // over the array with no per-element boxing. (The `Stream[Data]` overload
+  // below types the window.)
+  def gather[state](initial: state)(operation: (state, AnyRef, Int, Int) => state)
     (using buffering: Buffering)
   :   state =
 
@@ -230,12 +231,12 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
   // The first `count` elements, then end-of-stream. The remainder of the
   // upstream is released unread on `close`. (FS2 `take`, ZIO `ZStream.take`.)
-  def take(count: Long): (Stream[medium] over Credit)^ = takeStream(stream, count)
+  def truncate(count: Long): (Stream[medium] over Credit)^ = truncateStream(stream, count)
 
   // Skip the first `count` elements, then pass the rest through unchanged. The
   // skipped elements are pulled and discarded on the first `refill`. (FS2
   // `drop`, ZIO `ZStream.drop`.)
-  def drop(count: Long): (Stream[medium] over Credit)^ = dropStream(stream, count)
+  def discard(count: Long): (Stream[medium] over Credit)^ = discardStream(stream, count)
 
   // A single-consumer iterator of materialized chunks, one per refill: the
   // bridge by which stream content interleaves with other values (archive
@@ -276,7 +277,7 @@ extension [record](consume stream: (Stream[Array[record]^{}] over Credit)^)
   // it closes the stream when it reports exhaustion, so a consumer must drain it
   // (or close the stream by other means) to release the upstream. Per-record
   // combinators come free from the `Iterator` interface (and rudiments' `each`);
-  // window-level access for hot loops is `sweep`/`fold` above.
+  // window-level access for hot loops is `sweep`/`gather` above.
   def records(using Buffering): Iterator[record]^ = recordIterator(stream)
 
 // A pull endpoint lending a bounded view of a cursor: the next `length` elements
@@ -549,13 +550,13 @@ private def throughDuct[in, out, upTransport, downTransport]
         duct.close()
         stream.close()
 
-// `take`/`drop` wrappers, in helpers rather than inline in the extension for
-// the same reason as `throughDuct`: a local binding of the upstream would hide
-// it from the anonymous class, whereas the consumed parameter carries its
-// capture explicitly. Each delegates window access to the upstream (zero copy)
-// and only adjusts the element budget.
+// `truncate`/`discard` wrappers, in helpers rather than inline in the
+// extension for the same reason as `throughDuct`: a local binding of the
+// upstream would hide it from the anonymous class, whereas the consumed
+// parameter carries its capture explicitly. Each delegates window access to
+// the upstream (zero copy) and only adjusts the element budget.
 
-private def takeStream[medium](consume stream: (Stream[medium] over Credit)^, count: Long)
+private def truncateStream[medium](consume stream: (Stream[medium] over Credit)^, count: Long)
 :   (Stream[medium] over Credit)^ =
 
     new Stream[medium](using stream.addressable):
@@ -583,7 +584,7 @@ private def takeStream[medium](consume stream: (Stream[medium] over Credit)^, co
 
       override update def close(): Unit = stream.close()
 
-private def dropStream[medium](consume stream: (Stream[medium] over Credit)^, count: Long)
+private def discardStream[medium](consume stream: (Stream[medium] over Credit)^, count: Long)
 :   (Stream[medium] over Credit)^ =
 
     new Stream[medium](using stream.addressable):
@@ -602,9 +603,9 @@ private def dropStream[medium](consume stream: (Stream[medium] over Credit)^, co
         while pending > 0 && !ended do
           stream.refill(Credit(pending.min(Int.MaxValue.toLong))) match
             case available: Int =>
-              val discard = available.toLong.min(pending).toInt
-              stream.skip(discard)
-              pending -= discard
+              val skipped = available.toLong.min(pending).toInt
+              stream.skip(skipped)
+              pending -= skipped
 
             case _ => ended = true
 
