@@ -44,6 +44,10 @@ import vacuous.*
 import syntaxHighlighting.unnumberedTeletypeable
 
 extension (message: SemanticMessage)
+  // Not exported into `soundness`: `teletype` there is escapade's `Teletypeable`
+  // rendering, used in a dozen modules. This one takes an explicit `Reifier`, and
+  // every call site already spells it `delicious.teletype(…)`.
+  @unexported
   /** Render the message as styled terminal text: embedded code samples are
    *  syntax-highlighted by harlequin, and types are re-rendered through
    *  stenography (abbreviated according to the given `Imports`) and then

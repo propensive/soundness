@@ -85,17 +85,18 @@ def menu[item: Showable]
   val sizing = Sizing(fraction, minWidth, maxWidth, minHeight, maxHeight)
   Pane.Widget(sizing, MenuField(SelectMenu(options, current)))
 
-// A split whose children sit side by side as columns (distributing width).
-def file(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.File, Panes(panes*))
+// A split whose children sit side by side as columns (distributing width): a
+// strip of panes across the terminal, on the `File` axis.
+def strip(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.File, Panes(panes*))
 
 // A column split over a live container, whose children can change while running.
-def file(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.File, panes)
+def strip(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.File, panes)
 
-// A split whose children stack as rows (distributing height).
-def rank(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, Panes(panes*))
+// A split whose children stack as rows (distributing height), on the `Rank` axis.
+def stack(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, Panes(panes*))
 
 // A row split over a live container, whose children can change while running.
-def rank(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.Rank, panes)
+def stack(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.Rank, panes)
 
 // Wrap `child` in a box-drawing border. Each requested side becomes a thin leaf
 // panel whose content is regenerated from its solved size, so an edge always
@@ -136,17 +137,18 @@ def border
   // The middle band: the child flanked by whichever vertical edges are requested.
   val middle =
     val edge = if left then List(verticalRule) else Nil
-    file(((edge :+ child) ::: (if right then List(verticalRule) else Nil)).stdlib*)
+    strip(((edge :+ child) ::: (if right then List(verticalRule) else Nil)).stdlib*)
 
   // A horizontal band (the top or bottom): a rule flanked by whichever corners
   // are requested (a corner appears only where a vertical edge also meets it).
   def band(leftCorner: Text, rightCorner: Text): Pane =
     val start = if left then List(corner(leftCorner)) else Nil
-    file(((start :+ horizontalRule) ::: (if right then List(corner(rightCorner)) else Nil)).stdlib*)
+    val end = if right then List(corner(rightCorner)) else Nil
+    strip(((start :+ horizontalRule) ::: end).stdlib*)
 
   val head = if top then List(band(style.topLeft, style.topRight)) else Nil
   val foot = if bottom then List(band(style.bottomLeft, style.bottomRight)) else Nil
-  rank(((head :+ middle) ::: foot).stdlib*)
+  stack(((head :+ middle) ::: foot).stdlib*)
 
 // Drive an interactive layout, looping over terminal events until the user exits.
 // Used inside `interactive`. In `Fullscreen` mode the layout takes over the

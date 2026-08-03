@@ -264,7 +264,7 @@ extension [textual: Textual](text: textual)
   def starts(prefix: Text): Boolean = textual.text(text).s.startsWith(prefix.s)
   def ends(suffix: Text): Boolean = textual.text(text).s.endsWith(suffix.s)
 
-  def strip(affix: Text, bidi: Bidi = Ltr): textual = bidi match
+  def chomp(affix: Text, bidi: Bidi = Ltr): textual = bidi match
     case Ltr => if text.starts(affix) then text.skip(affix.length) else text
     case Rtl => if text.ends(affix) then text.skip(affix.length, Rtl) else text
 

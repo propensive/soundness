@@ -55,7 +55,7 @@ def demo(): Unit = cli:
         form(Occupancy.Inline)(demoLayout)
         Exit.Ok
 
-// rank(title, file(sidebar, rank(heading, compose, activity)), status), with the
+// stack(title, strip(sidebar, stack(heading, compose, activity)), status), with the
 // sidebar, compose box and activity panel each wrapped in a `border` and the
 // heading underlined by a bottom-only border:
 //
@@ -95,4 +95,4 @@ private def demoLayout: Pane =
   val compose = border(BorderStyle.heavy):
     editor(LineEditor(mode = LineEditor.Mode.Multiline(_ => false)))
 
-  rank(title, file(sidebar, rank(heading, compose, activity)), status)
+  stack(title, strip(sidebar, stack(heading, compose, activity)), status)

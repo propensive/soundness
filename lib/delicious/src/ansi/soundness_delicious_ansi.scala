@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export delicious.teletype
+// Nothing to export: this component's only public name, `teletype`, clashes in the umbrella
+// with escapade's `Teletypeable` rendering, which has the stronger claim on it. Reach this
+// one via `delicious.teletype`, as every call site already does.
