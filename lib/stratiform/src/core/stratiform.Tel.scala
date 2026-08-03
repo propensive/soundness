@@ -114,13 +114,19 @@ object Tel extends Tel2:
 
   // How a value of a codec's type occupies a compound line's atom positions,
   // approximating §20.2's member classification from Scala types alone
-  // (issue #1694): `Scalar` is atom-assignable and never skipped, `Flag`
-  // (Boolean) is atom-assignable when the atom text equals the keyword, and
-  // `Struct` (a nested record, sum, or map) can only be filled by a keyword
-  // child. The schema-less approximation diverges from §20.2 in documented
-  // ways: an all-singleton enum decodes through its text codec and so is
-  // `Scalar`, not Flag-shaped, and non-singleton sums are `Struct` even
-  // where a schema's all-Flag select would be atom-assignable.
+  // (issue #1694): `Scalar` is atom-assignable and never skipped, `Flag` is
+  // atom-assignable when the atom text equals the keyword, and `Struct` (a
+  // nested record, sum, or map) can only be filled by a keyword child.
+  //
+  // The schema-less approximation diverges from §20.2 in documented ways.
+  // No derived codec is `Flag`-natured: a §20 flag is keyword presence
+  // alone, whereas a Scala `Boolean` is a value, so it maps to `Scalar` and
+  // reads and writes an explicit `true`/`false` atom — the mapping the
+  // derived schema and BinTEL also use. A custom codec for a genuinely
+  // flag-shaped type may opt into `Flag`. Likewise an all-singleton enum
+  // decodes through its text codec and so is `Scalar`, and non-singleton
+  // sums are `Struct` even where a schema's all-Flag select would be
+  // atom-assignable.
   enum Nature:
     case Scalar, Flag, Struct
 
@@ -506,11 +512,7 @@ object Tel extends Tel2:
           override def optional: Boolean = true
 
           def parse(reader: TelReader^, indent: Int): value =
-            // A bare entry means `Unset` for most types, but a Flag-natured
-            // inner reads it as flag presence (`Optional[Boolean]` of
-            // `true`) — the AST `optionalDecodable`'s test exactly.
-            if reader.hasSubstance || field.nature == Tel.Nature.Flag
-            then field.parse(reader, indent)
+            if reader.hasSubstance then field.parse(reader, indent)
             else
               reader.skipEntry(indent)
               Unset
@@ -560,15 +562,6 @@ object Tel extends Tel2:
     // `absent()` semantics — raise and continue with the sentinel.
     def missing[value](sentinel: value)(using Tactic[TelError]): value =
       raise(TelError(TelError.Reason.Absent)) yet sentinel
-
-    // A staged `Boolean` field's entry read, mirroring `booleanParsable`:
-    // flag semantics (§20) make a present entry with no atom the bare flag
-    // form, meaning `true`, while a present-but-unparseable atom is still
-    // `NotScalar`.
-    def flagEntry(reader: TelReader^): Boolean =
-      reader.boolean().lay:
-        if reader.primaryPresent then scalarFault(reader, t"Boolean", false) else true
-      . apply(identity)
 
     // A present entry whose atom was missing or unparseable: the byte-parsed
     // primitives' fault split — a missing atom is `Absent`, a
@@ -715,6 +708,10 @@ object Tel extends Tel2:
     def atomLong(text: Text)(using Tactic[TelError]): Long =
       val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
       parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Long"))) yet 0L)
+
+    def atomBoolean(text: Text)(using Tactic[TelError]): Boolean =
+      if text == t"true" then true else if text == t"false" then false
+      else raise(TelError(TelError.Reason.NotScalar(text, t"Boolean"))) yet false
 
     // Field instances travel wrapped in the `Field.Adapter`; the engine
     // looks through it for repeatability and element hooks.
@@ -2001,23 +1998,16 @@ object Tel extends Tel2:
     new Tel.Parsable:
       type Self = Boolean
       def shape(): Morphology = Morphology.Bool
-      override def nature: Tel.Nature = Tel.Nature.Flag
+      override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): Boolean =
-        // Flag semantics (§20): a present entry with no atom is the bare
-        // flag form, meaning `true`; a present-but-unparseable atom is
-        // still `NotScalar`, exactly as on the AST path.
-        reader.boolean().lay(
-          if reader.primaryPresent then Parsable.scalarFault(reader, t"Boolean", false) else true
-        )(identity)
+        reader.boolean().lay(Parsable.scalarFault(reader, t"Boolean", false))(identity)
 
-      override def absent()(using Tactic[TelError]): Boolean = false
+      override def absent()(using Tactic[TelError]): Boolean =
+        raise(TelError(TelError.Reason.Absent)) yet false
 
       override def parseAtom(text: Text)(using Tactic[TelError]): Boolean =
-        if text == t"true" then true else if text == t"false" then false
-        else raise(TelError(TelError.Reason.NotScalar(text, t"Boolean"))) yet false
-
-      override def parseFlag()(using Tactic[TelError]): Boolean = true
+        Parsable.atomBoolean(text)
 
   // `Tel` reads itself directly through the AST bridge — the direct
   // counterpart of `telDecodable`.

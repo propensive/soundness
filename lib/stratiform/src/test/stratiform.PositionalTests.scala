@@ -46,8 +46,8 @@ import Tel.given
 // atoms (§20.2).
 case class PRecipient(name: Text, address: Optional[Text]) derives CanEqual
 case class PDelivery(recipient: Optional[PRecipient]) derives CanEqual
-case class PFlagItem(a: Boolean, b: Optional[Boolean], c: Text) derives CanEqual
-case class PHolder(item: PFlagItem) derives CanEqual
+case class PTriple(one: Text, two: Optional[Text]) derives CanEqual
+case class PHolder(item: PTriple) derives CanEqual
 case class PLog(label: Text, values: List[Int]) derives CanEqual
 case class PLogBook(log: PLog) derives CanEqual
 case class PFlags(active: Boolean, verbose: Optional[Boolean]) derives CanEqual
@@ -70,9 +70,9 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         positional.read[Tel].as[PDelivery] == explicit.read[Tel].as[PDelivery]
       . assert(identity)
 
-      test(m"an atom skips an optional flag and fills the scalar (worked example)"):
+      test(m"consecutive atoms fill consecutive scalar members"):
         t"item a xyz\n".read[Tel].as[PHolder]
-      . assert(_ == PHolder(PFlagItem(true, Unset, t"xyz")))
+      . assert(_ == PHolder(PTriple(t"a", t"xyz")))
 
       test(m"a repeatable field consumes every remaining atom"):
         t"log lbl 1 2 3\n".read[Tel].as[PLogBook]
@@ -82,13 +82,16 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         t"log lbl 1\n  values 2\n".read[Tel].as[PLogBook]
       . assert(_ == PLogBook(PLog(t"lbl", List(1, 2))))
 
-      test(m"a bare flag keyword decodes true and an absent flag false"):
-        t"active\n".read[Tel].as[PFlags]
-      . assert(_ == PFlags(true, Unset))
+      // A Scala `Boolean` is a value, not a §20 flag: it reads and writes an
+      // explicit `true`/`false` atom, the mapping the derived schema and
+      // BinTEL also use.
+      test(m"a Boolean field reads its explicit atom"):
+        t"active true\nverbose false\n".read[Tel].as[PFlags]
+      . assert(_ == PFlags(true, false))
 
-      test(m"a bare optional flag decodes as present true"):
-        t"active\nverbose\n".read[Tel].as[PFlags]
-      . assert(_ == PFlags(true, true))
+      test(m"an absent Optional Boolean reads as Unset"):
+        t"active false\n".read[Tel].as[PFlags]
+      . assert(_ == PFlags(false, Unset))
 
       test(m"only the first optional scalar fills positionally (§20.8)"):
         t"pair hello\n".read[Tel].as[PPairBox]
@@ -103,13 +106,13 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
       . assert(_ == TelError.Reason.NonRepeatableTooMany)
 
       test(m"excess atoms raise E302"):
-        capture[TelError](t"item a xyz extra\n".read[Tel].as[PHolder]).reason
+        capture[TelError](t"item a b c\n".read[Tel].as[PHolder]).reason
       . assert(_ == TelError.Reason.TooManyAtoms)
 
     suite(m"Positional atom decoding (§19.2, direct path)"):
       given PRecipient is Tel.Parsable = Tel.Parsable.derived
       given PDelivery is Tel.Parsable = Tel.Parsable.derived
-      given PFlagItem is Tel.Parsable = Tel.Parsable.derived
+      given PTriple is Tel.Parsable = Tel.Parsable.derived
       given PHolder is Tel.Parsable = Tel.Parsable.derived
       given PLog is Tel.Parsable = Tel.Parsable.derived
       given PLogBook is Tel.Parsable = Tel.Parsable.derived
@@ -127,10 +130,10 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         (doc.read[PDelivery in Tel], parity[PDelivery](doc))
       . assert(_ == (PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")), true))
 
-      test(m"the worked example parses directly, equally on both paths"):
+      test(m"consecutive atoms fill consecutive members, equally on both paths"):
         val doc = t"item a xyz\n"
         (doc.read[PHolder in Tel], parity[PHolder](doc))
-      . assert(_ == (PHolder(PFlagItem(true, Unset, t"xyz")), true))
+      . assert(_ == (PHolder(PTriple(t"a", t"xyz")), true))
 
       test(m"a repeatable field consumes the rest, equally on both paths"):
         val doc = t"log lbl 1 2 3\n"
@@ -142,15 +145,10 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         (doc.read[PLogBook in Tel], parity[PLogBook](doc))
       . assert(_ == (PLogBook(PLog(t"lbl", List(1, 2))), true))
 
-      test(m"bare and absent flags parse directly, equally on both paths"):
-        val doc = t"active\n"
+      test(m"Boolean fields read explicit atoms, equally on both paths"):
+        val doc = t"active true\nverbose false\n"
         (doc.read[PFlags in Tel], parity[PFlags](doc))
-      . assert(_ == (PFlags(true, Unset), true))
-
-      test(m"a bare optional flag parses as present true, equally on both paths"):
-        val doc = t"active\nverbose\n"
-        (doc.read[PFlags in Tel], parity[PFlags](doc))
-      . assert(_ == (PFlags(true, true), true))
+      . assert(_ == (PFlags(true, false), true))
 
       test(m"optional scalars fill per §20.8, equally on both paths"):
         val doc = t"pair hello\n  second world\n"
@@ -162,7 +160,7 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
       . assert(_ == TelError.Reason.NonRepeatableTooMany)
 
       test(m"excess atoms raise E302 on the direct path"):
-        capture[TelError](t"item a xyz extra\n".read[PHolder in Tel]).reason
+        capture[TelError](t"item a b c\n".read[PHolder in Tel]).reason
       . assert(_ == TelError.Reason.TooManyAtoms)
 
     suite(m"Encoder atom forms and flags (§22.3)"):
@@ -185,18 +183,21 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         (value.encode.show.s.tt.read[Tel].as[PNote] == value, literalForm)
       . assert(_ == (true, true))
 
-      test(m"a true flag encodes as the bare keyword"):
+      // A Boolean encodes as its explicit atom, and an absent `Optional`
+      // contributes no compound — the form the derived schema and BinTEL
+      // both expect.
+      test(m"a Boolean encodes as an explicit true/false atom"):
         val doc = PFlags(true, Unset).encode
         (doc.childCompounds.readable.length, doc.childCompounds.readable.head.keyword,
          doc.childCompounds.readable.head.atoms.length)
-      . assert(_ == (1, t"active", 0))
+      . assert(_ == (1, t"active", 1))
 
-      test(m"a false flag is omitted and an optional false stays explicit"):
+      test(m"a false Boolean is written, not omitted"):
         val doc = PFlags(false, false).encode
-        (doc.childCompounds.readable.length, doc.childCompounds.readable.head.keyword)
-      . assert(_ == (1, t"verbose"))
+        (doc.childCompounds.readable.length, doc.field(t"active").vouch.primaryAtom)
+      . assert(_ == (2, t"false"))
 
-      test(m"every flag combination round-trips through serialized text"):
+      test(m"every Boolean combination round-trips through serialized text"):
         val values = List
          ( PFlags(true, Unset), PFlags(false, Unset), PFlags(true, true),
            PFlags(false, false), PFlags(true, false), PFlags(false, true) )
@@ -214,7 +215,7 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
     suite(m"Positional atom decoding (§19.2, staged path)"):
       given PRecipient is Tel.Parsable = Tel.Parsable.staged
       given PDelivery is Tel.Parsable = Tel.Parsable.staged
-      given PFlagItem is Tel.Parsable = Tel.Parsable.staged
+      given PTriple is Tel.Parsable = Tel.Parsable.staged
       given PHolder is Tel.Parsable = Tel.Parsable.staged
       given PLog is Tel.Parsable = Tel.Parsable.staged
       given PLogBook is Tel.Parsable = Tel.Parsable.staged
@@ -234,10 +235,10 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         (doc.read[PDelivery in Tel], parity[PDelivery](doc))
       . assert(_ == (PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")), true))
 
-      test(m"the worked example parses staged, equally on both paths"):
+      test(m"consecutive atoms fill consecutive members, equally on both paths"):
         val doc = t"item a xyz\n"
         (doc.read[PHolder in Tel], parity[PHolder](doc))
-      . assert(_ == (PHolder(PFlagItem(true, Unset, t"xyz")), true))
+      . assert(_ == (PHolder(PTriple(t"a", t"xyz")), true))
 
       test(m"a repeatable field consumes the rest, equally on both paths"):
         val doc = t"log lbl 1 2 3\n"
@@ -249,15 +250,10 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         (doc.read[PLogBook in Tel], parity[PLogBook](doc))
       . assert(_ == (PLogBook(PLog(t"lbl", List(1, 2))), true))
 
-      test(m"bare and absent flags parse staged, equally on both paths"):
-        val doc = t"active\n"
+      test(m"Boolean fields read explicit atoms, equally on both paths"):
+        val doc = t"active true\nverbose false\n"
         (doc.read[PFlags in Tel], parity[PFlags](doc))
-      . assert(_ == (PFlags(true, Unset), true))
-
-      test(m"a bare optional flag parses as present true, equally on both paths"):
-        val doc = t"active\nverbose\n"
-        (doc.read[PFlags in Tel], parity[PFlags](doc))
-      . assert(_ == (PFlags(true, true), true))
+      . assert(_ == (PFlags(true, false), true))
 
       test(m"optional scalars fill per §20.8, equally on both paths"):
         val doc = t"pair hello\n  second world\n"
@@ -274,7 +270,7 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
       . assert(_ == TelError.Reason.NonRepeatableTooMany)
 
       test(m"excess atoms raise E302 on the staged path"):
-        capture[TelError](t"item a xyz extra\n".read[PHolder in Tel]).reason
+        capture[TelError](t"item a b c\n".read[PHolder in Tel]).reason
       . assert(_ == TelError.Reason.TooManyAtoms)
 
       test(m"an unparseable positional atom raises NotScalar"):
@@ -327,20 +323,16 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
          reparses(PPairBox(PPair(Unset, t"x"))))
       . assert(_ == (0, true))
 
-      test(m"an elided false flag lets the run continue and skip on decode"):
+      // A Boolean is a scalar member, so it joins the inline run as its
+      // explicit `true`/`false` atom.
+      test(m"a false Boolean joins the inline run as its atom"):
         val doc = Tel.canonical(PGuardBox(PGuard(false, t"hello")))
         (doc.childCompounds.readable.head.atoms.length,
          reparses(PGuardBox(PGuard(false, t"hello"))))
-      . assert(_ == (1, true))
+      . assert(_ == (2, true))
 
-      test(m"a true flag joins the run as its keyword"):
+      test(m"a true Boolean joins the inline run as its atom"):
         val doc = Tel.canonical(PGuardBox(PGuard(true, t"hello")))
         (doc.childCompounds.readable.head.atoms.length,
          reparses(PGuardBox(PGuard(true, t"hello"))))
       . assert(_ == (2, true))
-
-      test(m"a value colliding with an elided flag keyword takes child form"):
-        val doc = Tel.canonical(PGuardBox(PGuard(false, t"flag")))
-        (doc.childCompounds.readable.head.atoms.length,
-         reparses(PGuardBox(PGuard(false, t"flag"))))
-      . assert(_ == (0, true))

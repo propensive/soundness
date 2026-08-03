@@ -677,7 +677,9 @@ object internal:
               case BooleanK =>
                 firstWins:
                   '{
-                    Tel.Parsable.focusing($foci, $keyText)(Tel.Parsable.flagEntry($reader))
+                    Tel.Parsable.focusing($foci, $keyText):
+                      $reader.boolean()
+                      . lay(Tel.Parsable.scalarFault($reader, t"Boolean", false))(identity)
                   }.asTerm
 
               case TextK =>
@@ -782,9 +784,12 @@ object internal:
                         Tel.Parsable.atomLong($first)(using $tactic)
                     }.asTerm
 
-                // A Flag-natured field's assigned atom is its keyword, and
-                // means presence.
-                case BooleanK => fill(Literal(BooleanConstant(true)))
+                case BooleanK =>
+                  fill:
+                    '{
+                      Tel.Parsable.focusing($foci, $keyText):
+                        Tel.Parsable.atomBoolean($first)(using $tactic)
+                    }.asTerm
 
                 case TextK => fill(first.asTerm)
 
@@ -912,8 +917,8 @@ object internal:
               case TextK    => '{ Tel.Parsable.missing[Text](t"")(using $tactic) }.asExprOf[fieldType]
               case StringK  => '{ Tel.Parsable.missing[String]("")(using $tactic) }.asExprOf[fieldType]
 
-              // A Flag field's absence is `false`, not an error (§20).
-              case BooleanK => '{ false }.asExprOf[fieldType]
+              case BooleanK =>
+                '{ Tel.Parsable.missing[Boolean](false)(using $tactic) }.asExprOf[fieldType]
 
             val resolveAbsent: Term =
               Assign
