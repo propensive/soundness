@@ -193,28 +193,28 @@ private[probably] object TerseRenderer:
           detail match
             case Verdict.Detail.Throws(err) =>
               Out.println:
-                t"  threw ${err.component}.${err.className}: ${Format.truncate(err.message.text)}"
+                t"  threw ${err.component}.${err.className}: ${Format.abbreviate(err.message.text)}"
 
               err.crop(t"probably.Runner", t"run()").frames.stdlib.take(3).foreach: frame =>
                 Out.println(formatFrame(frame))
 
             case Verdict.Detail.CheckThrows(err) =>
-              val message = Format.truncate(err.message.text)
+              val message = Format.abbreviate(err.message.text)
               Out.println(t"  check threw ${err.component}.${err.className}: $message")
 
               err.crop(t"probably.Verdict#", t"apply()").frames.stdlib.take(3).foreach: frame =>
                 Out.println(formatFrame(frame))
 
             case Verdict.Detail.Compare(expected, observed, _) =>
-              Out.println(t"  expected: ${Format.truncate(expected.sub(t"\n", t" "))}")
-              Out.println(t"  observed: ${Format.truncate(observed.sub(t"\n", t" "))}")
+              Out.println(t"  expected: ${Format.abbreviate(expected.sub(t"\n", t" "))}")
+              Out.println(t"  observed: ${Format.abbreviate(observed.sub(t"\n", t" "))}")
 
             case Verdict.Detail.Message(text) =>
-              Out.println(t"  ${Format.truncate(text)}")
+              Out.println(t"  ${Format.abbreviate(text)}")
 
             case Verdict.Detail.Captures(captures) =>
               captures.stdlib.foreach: (expr, value) =>
-                Out.println(t"  $expr = ${Format.truncate(value)}")
+                Out.println(t"  $expr = ${Format.abbreviate(value)}")
 
         Out.println(t"")
 

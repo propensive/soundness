@@ -35,13 +35,16 @@ package delicious
 import anticipation.*
 import vacuous.*
 
-object Style:
-  def apply(text: Optional[Text]): Style = text.lay(Style.Default): text =>
+object Rendition:
+  def apply(text: Optional[Text]): Rendition = text.lay(Rendition.Default): text =>
     text.s match
       case "dcl"     => Declaration
       case "located" => Located
       case "full"    => Full
       case _         => Default
 
-enum Style:
+// The form a symbol reference is presented in — its declaration, its located
+// name, its full name, or the default — carried by every markup node. Not
+// visual styling, despite the `style` attribute it is parsed from.
+enum Rendition:
   case Default, Declaration, Located, Full

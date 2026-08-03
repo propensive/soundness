@@ -75,7 +75,7 @@ object Markup:
     def attr(name: Text): Optional[Text] =
       attrs.find(_(0) == name).optional.let(_(1))
 
-    val style = Style(attr(t"style"))
+    val rendition = Rendition(attr(t"style"))
 
     kind.s match
       case "type" =>
@@ -84,12 +84,12 @@ object Markup:
             Placeholder.decode(value).option
           })
 
-        Typed(attr(t"tasty"), placeholders, style, children)
+        Typed(attr(t"tasty"), placeholders, rendition, children)
 
-      case "sym"  => Symbolic(attr(t"name").or(t""), attr(t"full").or(t""), style, children)
-      case "name" => Named(attr(t"isType").let(_ == t"true").or(false), style, children)
-      case "code" => Code(style, children)
-      case _      => Spanned(kind, style, children)
+      case "sym"  => Symbolic(attr(t"name").or(t""), attr(t"full").or(t""), rendition, children)
+      case "name" => Named(attr(t"isType").let(_ == t"true").or(false), rendition, children)
+      case "code" => Code(rendition, children)
+      case _      => Spanned(kind, rendition, children)
 
   /** Parse a marked-up string into a tree, following the compiler's
    *  `DiagnosticMarkup.parse` semantics exactly: anything that does not form a
@@ -175,13 +175,13 @@ enum Markup:
   case Typed
         (tasty:        Optional[Text],
          placeholders: List[Placeholder],
-         style:        Style,
+         rendition:    Rendition,
          children:     List[Markup])
 
-  case Symbolic(name: Text, full: Text, style: Style, children: List[Markup])
-  case Named(isType: Boolean, style: Style, children: List[Markup])
-  case Code(style: Style, children: List[Markup])
-  case Spanned(kind: Text, style: Style, children: List[Markup])
+  case Symbolic(name: Text, full: Text, rendition: Rendition, children: List[Markup])
+  case Named(isType: Boolean, rendition: Rendition, children: List[Markup])
+  case Code(rendition: Rendition, children: List[Markup])
+  case Spanned(kind: Text, rendition: Rendition, children: List[Markup])
 
   def plain: Text = this match
     case Textual(text)               => text

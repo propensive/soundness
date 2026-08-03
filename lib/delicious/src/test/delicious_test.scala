@@ -86,21 +86,21 @@ object Tests extends Suite(m"Delicious Tests"):
       Markup.parse(t"method ${mark(t"sym", List(t"name" -> t"foo", t"full" -> t"example.foo"), t"foo")} here")
     . assert(_ == List
         ( Markup.Textual(t"method "),
-          Markup.Symbolic(t"foo", t"example.foo", Style.Default, List(Markup.Textual(t"foo"))),
+          Markup.Symbolic(t"foo", t"example.foo", Rendition.Default, List(Markup.Textual(t"foo"))),
           Markup.Textual(t" here") ))
 
     test(m"A name marker records whether it is a type name"):
       Markup.parse(mark(t"name", List(t"isType" -> t"true"), t"Elem"))
-    . assert(_ == List(Markup.Named(true, Style.Default, List(Markup.Textual(t"Elem")))))
+    . assert(_ == List(Markup.Named(true, Rendition.Default, List(Markup.Textual(t"Elem")))))
 
     test(m"An unknown marker kind falls back to a spanned node"):
       Markup.parse(mark(t"mystery", Nil, t"???"))
-    . assert(_ == List(Markup.Spanned(t"mystery", Style.Default, List(Markup.Textual(t"???")))))
+    . assert(_ == List(Markup.Spanned(t"mystery", Rendition.Default, List(Markup.Textual(t"???")))))
 
-    test(m"Styles decode from their wire names"):
+    test(m"Renditions decode from their wire names"):
       Markup.parse(mark(t"sym", List(t"name" -> t"foo", t"style" -> t"dcl"), t"def foo: Int"))
     . assert(_ == List
-        ( Markup.Symbolic(t"foo", t"", Style.Declaration, List(Markup.Textual(t"def foo: Int"))) ))
+        ( Markup.Symbolic(t"foo", t"", Rendition.Declaration, List(Markup.Textual(t"def foo: Int"))) ))
 
     test(m"Markers nest, and children keep their order"):
       val inner = mark(t"sym", List(t"name" -> t"foo"), t"foo")
@@ -108,15 +108,15 @@ object Tests extends Suite(m"Delicious Tests"):
     . assert(_ == List
         ( Markup.Named
             ( false,
-              Style.Default,
+              Rendition.Default,
               List
                 ( Markup.Textual(t"method "),
-                  Markup.Symbolic(t"foo", t"", Style.Default, List(Markup.Textual(t"foo"))) )) ))
+                  Markup.Symbolic(t"foo", t"", Rendition.Default, List(Markup.Textual(t"foo"))) )) ))
 
     test(m"Percent-encoded attribute values decode"):
       Markup.parse(mark(t"sym", List(t"name" -> t"%003ainit%003a"), t"constructor"))
     . assert(_ == List
-        ( Markup.Symbolic(t":init:", t"", Style.Default, List(Markup.Textual(t"constructor"))) ))
+        ( Markup.Symbolic(t":init:", t"", Rendition.Default, List(Markup.Textual(t"constructor"))) ))
 
     test(m"A stray start marker is dropped"):
       Markup.parse(t"broken ${Start} text")
@@ -146,7 +146,7 @@ object Tests extends Suite(m"Delicious Tests"):
         ( Markup.Typed
             ( t"QUJD",
               List(Placeholder(0, PlaceholderKind.LocalType, t"Foo", 1, Unset, t"Foo[Int]")),
-              Style.Default,
+              Rendition.Default,
               List(Markup.Textual(t"Foo[Int]")) ) ))
 
     test(m"A placeholder decodes its six fields"):
@@ -239,19 +239,19 @@ object Tests extends Suite(m"Delicious Tests"):
       given Imports = Imports.empty
 
       test(m"A pickled type payload reifies to a stenography rendering"):
-        reifier.syntax(Markup.Typed(stringPayload, Nil, Style.Default, Nil)).let(_.text)
+        reifier.syntax(Markup.Typed(stringPayload, Nil, Rendition.Default, Nil)).let(_.text)
       . assert(_ == t"java.lang.String")
 
       test(m"A placeholder payload reifies with its placeholder substituted"):
         val placeholder =
           Placeholder(0, PlaceholderKind.LocalType, t"Local", 0, t"Bad.scala:2", t"Bad.Local")
 
-        reifier.syntax(Markup.Typed(placeholderPayload, List(placeholder), Style.Default, Nil))
+        reifier.syntax(Markup.Typed(placeholderPayload, List(placeholder), Rendition.Default, Nil))
         . let(_.text)
       . assert(_ == t"scala.collection.immutable.List[Bad.Local]")
 
       test(m"An unpicklable payload degrades to Unset"):
-        reifier.syntax(Markup.Typed(t"bm90IHRhc3R5", Nil, Style.Default, Nil))
+        reifier.syntax(Markup.Typed(t"bm90IHRhc3R5", Nil, Rendition.Default, Nil))
       . assert(_ == Unset)
 
       test(m"A marked message renders types through stenography"):
