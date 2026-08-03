@@ -153,33 +153,26 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
         (schemaReasons, codecReason)
       . assert(_ == (Set(TelError.Reason.TooManyAtoms), TelError.Reason.TooManyAtoms))
 
-    suite(m"Codec/assign equivalence (flags, hand-built schema)"):
-      // The schema derivation does not yet model Boolean fields as Flag
-      // members, so the flag fixture pairs the codecs against a hand-built
-      // schema with true Flag members.
-      val flagsSchema = Tels(
-        name     = t"flags",
-        document = Tels.Struct(
-          members = Array.of(
-            Tels.Field(Tels.Polarity.Loose, Tels.Polarity.Implicit, t"active", Tels.Flag, Unset),
-            Tels.Field(Tels.Polarity.Loose, Tels.Polarity.Implicit, t"verbose", Tels.Flag, Unset)),
-          validators = Array.empty),
-        layers   = Array.empty,
-        sigil    = Unset,
-        records  = Array.empty,
-        scalars  = Array.empty,
-        selects  = Array.empty)
-
-      test(m"a bare flag agrees across codecs and type assignment"):
-        val doc = t"active\n"
-        val decoded = doc.read[Tel].as[PFlags] == PFlags(true, Unset)
-        val issues = validateAssign(doc.read[Tel], flagsSchema).items.length
-        val oracle = scalars(Tel.Type.assign(doc.read[Tel], flagsSchema))
-        (decoded, issues, oracle)
-      . assert(_ == (true, 0, scala.collection.immutable.List(("#/0", "+"))))
-
-      test(m"the encoded flag form validates against the flag schema"):
+    suite(m"Encoded values validate against their derived schema"):
+      // The invariant the benchmarks caught breaking: whatever the encoder
+      // writes for a field must satisfy the schema derived from the same
+      // type. A Boolean is a scalar member on both sides — an encoder that
+      // elided or bare-keyworded it would fail its own schema with E307 or
+      // E311.
+      test(m"a Boolean field's encoding validates and decodes back"):
         val encoded = PFlags(true, Unset).encode
-        val issues = validateAssign(encoded, flagsSchema).items.length
+        val issues = validateAssign(encoded, Tels.tels[PFlags](t"flags")).items.length
         (encoded.as[PFlags], issues)
       . assert(_ == (PFlags(true, Unset), 0))
+
+      test(m"a false Boolean's encoding validates against the derived schema"):
+        val encoded = PFlags(false, false).encode
+        val issues = validateAssign(encoded, Tels.tels[PFlags](t"flags")).items.length
+        (encoded.as[PFlags], issues)
+      . assert(_ == (PFlags(false, false), 0))
+
+      test(m"a record of scalars, collections and nested records validates"):
+        val value = PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way"))
+        val issues = validateAssign(value.encode, Tels.tels[PDelivery](t"delivery")).items.length
+        (value.encode.as[PDelivery], issues)
+      . assert(_ == (PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")), 0))

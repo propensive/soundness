@@ -440,23 +440,7 @@ trait Tel2 extends Tel3:
               val encoded = contextual.encode(fieldValue)
               val keyword = renames.at(label).or(Tel.camelToKebab(label.s))
 
-              // Flag encoding (§20): `true` is the bare keyword and a plain
-              // `false` flag is omitted, since decoding reads absence as
-              // false. An `Optional[Boolean]`'s `false` stays explicit, so
-              // Unset / true / false remain distinguishable (omitted / bare
-              // keyword / `keyword false`); its Unset encodes an empty
-              // document and emits nothing below.
-              if contextual.nature == Tel.Nature.Flag then
-                encoded.subtree match
-                  case c: Tel.Compound =>
-                    if encoded.primaryAtom == t"true"
-                    then compounds += Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-                    else if encoded.primaryAtom == t"false" && !contextual.optional
-                    then ()
-                    else compounds += c.copy(keyword = keyword)
-
-                  case _ => ()
-              else encoded.subtree match
+              encoded.subtree match
                 case c: Tel.Compound =>
                   compounds += c.copy(keyword = keyword)
 
@@ -476,7 +460,6 @@ trait Tel2 extends Tel3:
         :   scala.collection.immutable.List[Mutation.Member] =
 
           val members = scala.collection.mutable.ListBuffer.empty[Mutation.Member]
-          val elidedFlags = scala.collection.mutable.HashSet.empty[Text]
 
           fields(value): [field] =>
             fieldValue =>
@@ -484,32 +467,20 @@ trait Tel2 extends Tel3:
 
               contextual.nature match
                 case Tel.Nature.Flag =>
+                  // No derived codec is flag-natured (a Scala `Boolean` is a
+                  // value, §20 flags are keyword presence), but a custom one
+                  // may be: `true` is the bare keyword, `false` is elided.
                   val encoded = contextual.encode(fieldValue)
 
-                  encoded.subtree match
-                    case c: Tel.Compound =>
-                      if encoded.primaryAtom == t"true"
-                      then members += Mutation.Member.Flag(keyword)
-                      else if encoded.primaryAtom == t"false" && !contextual.optional
-                      then elidedFlags += keyword
-                      else members += Mutation.Member.Child(c.copy(keyword = keyword))
-
-                    case _ => elidedFlags += keyword
+                  if encoded.primaryAtom == t"true" then members += Mutation.Member.Flag(keyword)
+                  else members += Mutation.Member.Break
 
                 case Tel.Nature.Scalar =>
                   val encoded = contextual.encode(fieldValue)
 
                   encoded.subtree match
                     case c: Tel.Compound =>
-                      val text = encoded.primaryAtom
-
-                      // A value colliding with a preceding elided flag's
-                      // keyword would set that flag on re-decode; the child
-                      // form sidesteps the collision.
-                      if elidedFlags.contains(text)
-                      then members += Mutation.Member.Child:
-                        Tel.Compound(keyword, c.atoms, Unset, Array.empty)
-                      else members += Mutation.Member.Value(keyword, List(text))
+                      members += Mutation.Member.Value(keyword, List(encoded.primaryAtom))
 
                     case d: Tel.Document =>
                       // A repeatable scalar field: all occurrences inline or
@@ -525,20 +496,14 @@ trait Tel2 extends Tel3:
                       else if children.length == 1
                       then members += Mutation.Member.Child(children(0).copy(keyword = keyword))
                       else
-                        var collision = false
                         val texts = scala.collection.mutable.ListBuffer.empty[Text]
 
                         children.each: child =>
-                          val text =
-                            if child.atoms.length == 0 then t""
-                            else Positional.text(child.atoms(0))
+                          texts +=
+                            ( if child.atoms.length == 0 then t""
+                              else Positional.text(child.atoms(0)) )
 
-                          if elidedFlags.contains(text) then collision = true
-                          texts += text
-
-                        if collision then children.each: child =>
-                          members += Mutation.Member.Child(child.copy(keyword = keyword))
-                        else members += Mutation.Member.Value(keyword, List.of(texts.toList))
+                        members += Mutation.Member.Value(keyword, List.of(texts.toList))
 
                 case Tel.Nature.Struct =>
                   val encoded = contextual.constructed(fieldValue)
@@ -641,23 +606,18 @@ trait Tel2 extends Tel3:
       primitiveFault(tel, t"Double", 0.0): atom =>
         try atom.s.toDouble catch case _: NumberFormatException => Unset
 
-  // Flag semantics (§20): a present, keyword-bearing compound with no atom
-  // is the bare flag form, meaning `true`; an absent field decodes `false`
-  // via `absent()`. The explicit `true`/`false` atom forms stay readable.
+  // A Scala `Boolean` is a value, not a TEL flag (§20 flags are keyword
+  // presence alone), so it reads and writes the explicit `true`/`false` atom
+  // — the mapping every layer agrees on, from the derived schema through
+  // BinTEL. A codec may opt into `Tel.Nature.Flag` for a genuinely
+  // flag-shaped type.
   given booleanDecodable: (tactic: Tactic[TelError]) => ((Boolean is Tel.Decodable)^{tactic}) =
-    new Tel.Decodable:
-      type Self = Boolean
-      def shape(): Morphology = Morphology.Bool
-      override def nature: Tel.Nature = Tel.Nature.Flag
-      override def absent()(using Tactic[TelError]): Boolean = false
-
-      def decoded(tel: Tel): Boolean =
-        if tel.atomTexts.isEmpty && bareCompound(tel) then true
-        else primitiveFault(tel, t"Boolean", false): atom =>
-          atom.s match
-            case "true"  => true
-            case "false" => false
-            case _       => Unset
+    Tel.Decodable(() => Morphology.Bool, Tel.Nature.Scalar): tel =>
+      primitiveFault(tel, t"Boolean", false): atom =>
+        atom.s match
+          case "true"  => true
+          case "false" => false
+          case _       => Unset
 
   given telDecodable: Tel is Tel.Decodable = Tel.Decodable(() => Morphology.Any)(identity(_))
 
@@ -677,7 +637,7 @@ trait Tel2 extends Tel3:
     Tel.Encodable(() => Morphology.Real, Tel.Nature.Scalar): d => Tel.scalar(Text(d.toString))
 
   given booleanEncodable: Boolean is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Bool, Tel.Nature.Flag): b => Tel.scalar(Text(b.toString))
+    Tel.Encodable(() => Morphology.Bool, Tel.Nature.Scalar): b => Tel.scalar(Text(b.toString))
 
   given telEncodable: Tel is Tel.Encodable = Tel.Encodable(() => Morphology.Any)(identity(_))
 
@@ -713,11 +673,7 @@ trait Tel2 extends Tel3:
       override def absent()(using Tactic[TelError]): value = Unset
 
       def decoded(telVal: Tel): value =
-        // A bare entry means `Unset` for most types, but a Flag-natured
-        // inner reads it as flag presence (`Optional[Boolean]` of `true`).
-        if telVal.childCompounds.nil && telVal.atomTexts.nil
-           && decodable0.nature != Tel.Nature.Flag
-        then Unset
+        if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset
         else decodable0.decoded(telVal)
 
   // Collection support (aligned with `#1291`) — a `List`/`Set` encodes to a
