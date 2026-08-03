@@ -88,21 +88,6 @@ extension [plane: Filesystem](path: Path on plane)
     val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
     protect(Operation.Write)(jnf.Files.write(javaPath, Array.unsafeJvm(bytes)))
 
-  // Append `content` to the file in its entirety as a single, direct operation, creating the file
-  // if it does not exist — the eager counterpart of `Eof(path).open(Write)(file.write(content))`.
-  def append[content](content: content)
-    ( using streamable: (content is Streamable by Data over Credit)^ )
-    ( using Tactic[IoError]^ )
-  :   Unit =
-    val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
-
-    protect(Operation.Write):
-      jnf.Files.write
-        ( javaPath,
-          Array.unsafeJvm(bytes),
-          jnf.StandardOpenOption.CREATE,
-          jnf.StandardOpenOption.APPEND )
-
   // Inline, so the thunk never crosses a checked context-function boundary (which would
   // hide the `block` parameter); the body is checked at each expansion site instead.
   private[galilei] inline def protect[result](operation: Operation)(inline block: result)

@@ -37,7 +37,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
-import galilei.{append as _, *}
+import galilei.*
 import gossamer.*
 import guillotine.*
 import kaleidoscope.*

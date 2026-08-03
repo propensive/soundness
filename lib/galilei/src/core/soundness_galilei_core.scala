@@ -34,7 +34,7 @@ package soundness
 
 export
   galilei
-  . { accessed, append, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
+  . { accessed, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
       created, CreateFlag, CreateNonexistentParents, Creation, D, delete,
       DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, DirectoryHandle,
       DirectoryOpenable, Dos, Drive, Entry,

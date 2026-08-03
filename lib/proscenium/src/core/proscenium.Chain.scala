@@ -70,6 +70,12 @@ object Chain:
   def cons[element](head: element, tail: => Chain[element]): Chain[element] =
     of(sci.LazyList.cons(head, tail.stdlib))
 
+  // Defers evaluation of `chain` until the result is forced. `empty.lazyAppendedAll(=> chain)`
+  // keeps the by-name suffix unforced — equivalent to (and cheaper than) the old
+  // `(dummy #:: chain).tail`, and it sidesteps the captured-by-name cons under cc.
+  def defer[element](chain: => Chain[element]): Chain[element] =
+    Chain().lazyAppendedAll(chain)
+
   def unapplySeq[element](lazyList: Chain[element]): Option[Seq[element]] = Some(lazyList.stdlib)
 
   // `.to[Chain]` support (see `List`): the conversion is on `Chain.type` only, so it cannot

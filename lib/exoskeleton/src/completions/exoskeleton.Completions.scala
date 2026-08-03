@@ -38,6 +38,7 @@ import proscenium.compat.*
 
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
+import aperture.*
 import contingency.*
 import denominative.*
 import digression.idempotent
@@ -196,7 +197,9 @@ object Completions:
               if profile.exists() && profile.read[Text].contains(marker)
               then Installation.InstallResult.AlreadyInstalled(Shell.Powershell, profile.encode)
               else
-                profile.append(script(Shell.Powershell, command).sysData)
+                Eof(profile).open(Write): handle ?=>
+                  handle.write(script(Shell.Powershell, command).sysData)
+
                 Installation.InstallResult.Installed(Shell.Powershell, profile.encode)
 
             .or(Installation.InstallResult.NoWritableLocation(Shell.Powershell))
