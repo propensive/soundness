@@ -1015,6 +1015,10 @@ object breviloquence extends Library:
     )
   object test extends Tests(core, staged, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
+    // The benchmark sources annotate the `Array[Byte]^{}` payloads they hold, matching the
+    // capture-checked `core` they measure, so they need capture checking enabled too.
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
     def mvnDeps = Seq(
       mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2",
       mvn"io.bullet::borer-core:1.16.0"

@@ -68,11 +68,13 @@ case class BenchUsers(users: List[BenchUser])
 object BenchUsers:
   given parsable: BenchUsers is Json.Parsable = Json.Parsable.derived
 
-// Jsoniter's view of the same records, with `String` fields as a Jsoniter
-// user would declare them (`Text` is an opaque zero-cost wrapper over
-// `String`, so the two targets are materially identical).
+// Jsoniter's view of the same records, with `String` fields and a stdlib
+// `List` as a Jsoniter user would declare them (`Text` is an opaque zero-cost
+// wrapper over `String`, so the two targets are materially identical, and
+// `JsonCodecMaker` cannot see through the opaque `proscenium.List` to derive
+// a codec for it).
 case class JsoniterUser(id: Int, username: String, email: String, active: Boolean, role: String)
-case class JsoniterUsers(users: List[JsoniterUser])
+case class JsoniterUsers(users: scala.collection.immutable.List[JsoniterUser])
 
 enum JsonParser:
   case Merino, MerinoTracking, Jawn, Circe, Jsoniter, Jackson
@@ -150,10 +152,10 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       while
         reader.key().lay(false): key =>
           if key == t"users" then
-            val builder = List.newBuilder[BenchUser]
+            val builder = scala.collection.immutable.List.newBuilder[BenchUser]
             reader.openArray()
             while reader.element() do builder += user()
-            users = builder.result()
+            users = List.of(builder.result())
           else reader.skipValue()
           true
       do ()
@@ -355,7 +357,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
           p = ws(p)
           if p >= limit || buffer(p) != '[' then bail()
           p += 1
-          val builder = List.newBuilder[BenchUser]
+          val builder = scala.collection.immutable.List.newBuilder[BenchUser]
           p = ws(p)
 
           if p < limit && buffer(p) == ']' then p += 1
@@ -411,7 +413,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
                 elements = false
               else bail()
 
-          users = builder.result()
+          users = List.of(builder.result())
         else bail()
 
       if !usersSeen then bail()

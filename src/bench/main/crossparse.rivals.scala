@@ -40,6 +40,13 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
+// The mirror records below are the rivals' own view of the corpus, and their derivation macros
+// (Jsoniter's `JsonCodecMaker`, borer's and circe's derivation) cannot see through the opaque
+// `proscenium.List` to build a codec for it. A user of those libraries would reach for the
+// stdlib `List` anyway, so this shadows the one `proscenium.*` brings into scope — keeping the
+// rival side of the comparison written exactly as its own users would write it.
+import scala.collection.immutable.{List, Nil}
+
 // ── Third-party baselines for the document matrix ───────────────────────
 // The best-in-class library for each format decodes the same corpus bytes
 // to `String`-field mirror records: Jsoniter (JSON, macro-generated
@@ -78,14 +85,19 @@ case class MDecimals(values: List[Double])
 
 // The expected mirror of each corpus, for the correctness gates.
 object mirrors:
+  // Each `map` below runs over the Soundness model's `proscenium.List` and lands in a mirror
+  // record's stdlib `List`, so the results cross back over the `stdlib` bridge.
+
   def config(value: Config): MConfig =
     MConfig
       ( MWebApp
           ( value.webApp.servlets.map: servlet =>
               MServlet
                 ( servlet.servletName.s, servlet.servletClass.s,
-                  servlet.params.map { param => MParam(param.key.s, param.value.s) } ),
-            value.webApp.mappings.map { mapping => MMapping(mapping.servletName.s, mapping.url.s) },
+                  servlet.params.map { param => MParam(param.key.s, param.value.s) }.stdlib )
+            . stdlib,
+            value.webApp.mappings.map { mapping => MMapping(mapping.servletName.s, mapping.url.s) }
+            . stdlib,
             MTaglib(value.webApp.taglib.uri.s, value.webApp.taglib.location.s) ) )
 
   def menu(value: MenuDoc): MMenuDoc =
@@ -94,19 +106,22 @@ object mirrors:
           ( value.menu.id.s, value.menu.value.s,
             MPopup
               ( value.menu.popup.menuitems.map: item =>
-                  MMenuItem(item.value.s, item.onclick.s) ) ) )
+                  MMenuItem(item.value.s, item.onclick.s)
+                . stdlib ) ) )
 
   def users(value: Users): MUsers =
     MUsers
       ( value.users.map: user =>
-          MUser(user.id, user.username.s, user.email.s, user.active, user.role.s) )
+          MUser(user.id, user.username.s, user.email.s, user.active, user.role.s)
+        . stdlib )
 
   def logs(value: Logs): MLogs =
     MLogs
       ( value.logs.map: entry =>
           MLogEntry
             ( entry.timestamp, entry.level.s, entry.service.s, entry.requestId.s,
-              entry.userId, entry.message.s ) )
+              entry.userId, entry.message.s )
+        . stdlib )
 
   def transactions(value: Transactions): MTransactions =
     MTransactions
@@ -114,10 +129,11 @@ object mirrors:
           MTransaction
             ( transaction.from.s, transaction.to.s, transaction.valueWei.s,
               transaction.valueEth.s, transaction.gasPriceWei.s, transaction.gasUsed,
-              transaction.blockNumber, transaction.nonce, transaction.temperatureDelta ) )
+              transaction.blockNumber, transaction.nonce, transaction.temperatureDelta )
+        . stdlib )
 
-  def ints(value: Ints): MInts = MInts(value.values)
-  def decimals(value: Decimals): MDecimals = MDecimals(value.values)
+  def ints(value: Ints): MInts = MInts(value.values.stdlib)
+  def decimals(value: Decimals): MDecimals = MDecimals(value.values.stdlib)
 
 // The Jsoniter codecs: one macro-generated codec per document root.
 object jsoniterCodecs:

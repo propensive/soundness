@@ -42,6 +42,7 @@ import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import probably.*
 import proscenium.*
+import proscenium.compat.*
 import quantitative.*
 import rudiments.*
 import sedentary.*

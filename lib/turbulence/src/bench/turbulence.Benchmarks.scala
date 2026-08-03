@@ -51,6 +51,7 @@ import prepositional.*
 import probably.*
 import proscenium.*
 import quantitative.*
+import rudiments.*
 import sedentary.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
@@ -104,15 +105,23 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   // comparison fair, so this deliberately stays a stdlib interop boundary.
   lazy val inputSeq: scala.collection.immutable.ArraySeq[Byte] =
     scala.collection.immutable.ArraySeq.unsafeWrapArray(inputArray)
+
+  // A window onto `input`. `Data` is a frozen `Array[Byte]`, which has no `slice` of its
+  // own, so this reads through the read-only view and re-freezes the result.
+  def slice(from: Int, until: Int): Data = Array.frozen(input.readable.slice(from, until))
   // The same 4 MB split into 64 KiB chunks, so aggregation/write loops iterate
   // (a single in-memory chunk would let `read[Data]` fold to an identity).
   lazy val inputChunks: Chain[Data] =
     Chain.from((0 until input.length by 65536).map: offset =>
-      input.slice(offset, (offset + 65536).min(input.length)))
+      slice(offset, (offset + 65536).min(input.length)))
+  // The same chunks as a stdlib `List`. The rival pipelines fold and map over the corpus with
+  // their own combinators, which need a stdlib collection; like `inputSeq` above, this is a
+  // deliberate interop boundary rather than a gap in `Chain`.
+  lazy val inputChunkList: scala.collection.immutable.List[Data] = inputChunks.stdlib.toList
   // The 4 MB split into four equal parts, one per source stream for fan-in.
   lazy val quarters: IndexedSeq[Data] =
     val q = input.length/4
-    IndexedSeq.tabulate(4)(i => input.slice(i*q, if i == 3 then input.length else (i + 1)*q))
+    IndexedSeq.tabulate(4)(i => slice(i*q, if i == 3 then input.length else (i + 1)*q))
 
   // ~4 MB of UTF-8 text with multi-byte characters, so the decode exercises the
   // cross-chunk continuation path in every library.
@@ -148,7 +157,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
   // ZIO's unsafe-run entry point, wrapping each ZIO benchmark's effect.
   def runZio[A](effect: zio.ZIO[Any, Throwable, A]): A =
-    zio.Unsafe.unsafe:: unsafe ?=> zio.Runtime.default.unsafe.run(effect).getOrThrow()
+    zio.Unsafe.unsafe: (unsafe: zio.Unsafe) ?=>
+      zio.Runtime.default.unsafe.run(effect).getOrThrow()
   // A fixed-capacity `Buffering`, for the block-size sweep.
   def buffering(n: Int): Buffering = new Buffering:
     def capacity(substrate: Substrate): Int = n
@@ -205,7 +215,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedInputArray))
             . covary[cats.effect.IO]
-            . through(comp.gunzip()).bind(_.content)
+            . through(comp.gunzip()).flatMap(_.content)
             . compile.count.unsafeRunSync()
         }
 
@@ -373,7 +383,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             import cats.effect.unsafe.implicits.global
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
-            . through(comp.gzip()).through(comp.gunzip()).bind(_.content)
+            . through(comp.gzip()).through(comp.gunzip()).flatMap(_.content)
             . compile.count.unsafeRunSync()
         }
 
@@ -424,7 +434,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             import cats.effect.unsafe.implicits.global
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedTextArray)).covary[cats.effect.IO]
-            . through(comp.gunzip()).bind(_.content)
+            . through(comp.gunzip()).flatMap(_.content)
             . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
         }
 
@@ -458,7 +468,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             . through(comp.gzip())
             . through(fs2.text.base64.encode)
             . through(fs2.text.base64.decode)
-            . through(comp.gunzip()).bind(_.content)
+            . through(comp.gunzip()).flatMap(_.content)
             . compile.count.unsafeRunSync()
         }
 
@@ -679,7 +689,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             turbulence.Benchmarks.aesKey.uncloak:
               Chain(turbulence.Benchmarks.input).encrypt(InitializationVector.random)
-              . map(_.length.toLong).sum
+              . fold(0L)(_ + _.length)
         }
 
       bench(m"JDK  javax.crypto.Cipher")(target = 1*Second, operationSize = size):
@@ -696,7 +706,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Public read vs kernel memoize (4 MB)"):
       bench(m"Soundness  Stream.memoize (kernel)")
         ( target = 1*Second, operationSize = size ):
-        '{ turbulence.Benchmarks.inputChunks.iterator.stream.memoize.length }
+        '{ turbulence.Benchmarks.inputChunks.stdlib.iterator.stream.memoize.length }
 
       bench(m"Soundness  read[Data]")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.inputChunks.read[Data].length }
@@ -830,9 +840,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO, cats.syntax.all.*
-            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).bind: channel =>
+            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
               val produce =
-                turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
+                turbulence.Benchmarks.inputChunkList.foldLeft(IO.unit): (io, chunk) =>
                   io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[scala.Array[Byte]])).void
                 *> channel.close.void
               produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
@@ -845,7 +855,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               import zio.*, zio.stream.*
               val source =
                 ZStream.fromIterable
-                  (turbulence.Benchmarks.inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
+                  (turbulence.Benchmarks.inputChunkList.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
               for
                 queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
                 _     <- source.runIntoQueue(queue).fork
@@ -918,7 +928,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             turbulence.Benchmarks.runZio:
               import zio.*, zio.stream.*
               ZIO.scoped:
-                ZStream.fromChunk(Chunk.fromArray(turbulence.Benchmarks.inputArray)).broadcast(3, 16).bind: streams =>
+                ZStream.fromChunk(Chunk.fromArray(turbulence.Benchmarks.inputArray)).broadcast(3, 16).flatMap: streams =>
                   ZIO.foreachPar(streams)(_.runCount).map(_.sum)
         }
 
@@ -946,9 +956,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO
-            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).bind: channel =>
+            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
               val produce =
-                turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
+                turbulence.Benchmarks.inputChunkList.foldLeft(IO.unit): (io, chunk) =>
                   io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[scala.Array[Byte]])).void
                 *> channel.close.void
               produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
@@ -961,7 +971,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               import zio.*, zio.stream.*
               val source =
                 ZStream.fromIterable
-                  (turbulence.Benchmarks.inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
+                  (turbulence.Benchmarks.inputChunkList.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
               for
                 queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
                 _     <- source.runIntoQueue(queue).fork
@@ -993,9 +1003,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO
-            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).bind: channel =>
+            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
               val produce =
-                turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
+                turbulence.Benchmarks.inputChunkList.foldLeft(IO.unit): (io, chunk) =>
                   io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[scala.Array[Byte]])).void
                 *> channel.close.void
               produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
@@ -1008,7 +1018,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               import zio.*, zio.stream.*
               val source =
                 ZStream.fromIterable
-                  (turbulence.Benchmarks.inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
+                  (turbulence.Benchmarks.inputChunkList.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
               for
                 queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
                 _     <- source.runIntoQueue(queue).fork
@@ -1045,7 +1055,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedInputArray))
             . covary[cats.effect.IO]
-            . through(comp.gunzip()).bind(_.content)
+            . through(comp.gunzip()).flatMap(_.content)
             . compile.count.unsafeRunSync()
         }
 
@@ -1119,9 +1129,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           '{
               import cats.effect.unsafe.implicits.global
               import cats.effect.IO
-              val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).bind: channel =>
+              val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
                 val produce =
-                  turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
+                  turbulence.Benchmarks.inputChunkList.foldLeft(IO.unit): (io, chunk) =>
                     io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[scala.Array[Byte]])).void
                   *> channel.close.void
                 produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
@@ -1135,7 +1145,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                 import zio.*, zio.stream.*
                 val source =
                   ZStream.fromIterable
-                    (turbulence.Benchmarks.inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
+                    (turbulence.Benchmarks.inputChunkList.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
                 for
                   queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
                   _     <- source.runIntoQueue(queue).fork

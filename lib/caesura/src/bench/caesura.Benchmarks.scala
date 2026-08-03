@@ -43,6 +43,7 @@ import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import probably.*
 import proscenium.*
+import rudiments.*
 import quantitative.*
 import sedentary.*
 import superlunary.embeddings.automatic
