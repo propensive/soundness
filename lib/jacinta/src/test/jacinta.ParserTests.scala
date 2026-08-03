@@ -66,10 +66,10 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
     // the proscala toolchain cache — survives the throwaway attest worktrees,
     // so only the very first run on a machine needs network access.
     val jsonSuite: Path on Linux =
-      if (localSuite/"test_parsing").exists() then localSuite
+      if (localSuite/"test_parsing").existent() then localSuite
       else Xdg.cacheHome[Path on Linux]/"soundness"/"JSONTestSuite"
 
-    if !(jsonSuite/"test_parsing").exists() then
+    if !(jsonSuite/"test_parsing").existent() then
       Git.clone(url"https://github.com/nst/JSONTestSuite", jsonSuite).complete()
 
     val tests: Path on Linux = jsonSuite/"test_parsing"
