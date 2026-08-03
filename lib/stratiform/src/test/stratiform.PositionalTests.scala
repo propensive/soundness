@@ -211,6 +211,78 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         value.encode.show.s.tt.read[PNote in Tel] == value
       . assert(identity)
 
+    suite(m"Positional atom decoding (§19.2, staged path)"):
+      given PRecipient is Tel.Parsable = Tel.Parsable.staged
+      given PDelivery is Tel.Parsable = Tel.Parsable.staged
+      given PFlagItem is Tel.Parsable = Tel.Parsable.staged
+      given PHolder is Tel.Parsable = Tel.Parsable.staged
+      given PLog is Tel.Parsable = Tel.Parsable.staged
+      given PLogBook is Tel.Parsable = Tel.Parsable.staged
+      given PFlags is Tel.Parsable = Tel.Parsable.staged
+      given PPair is Tel.Parsable = Tel.Parsable.staged
+      given PPairBox is Tel.Parsable = Tel.Parsable.staged
+      given PNote is Tel.Parsable = Tel.Parsable.staged
+
+      // The acceptance criterion for staged generation: the staged read must
+      // equal the AST-path read, for the same input.
+      inline def parity[value](tel: Text)(using value is Tel.Parsable, value is Tel.Decodable)
+      :   Boolean =
+        tel.read[value in Tel] == tel.read[Tel].as[value]
+
+      test(m"inline atoms assign positionally, equally on both paths (#1699)"):
+        val doc = t"recipient  Acme Corporation\n  address  1 Acme Way\n"
+        (doc.read[PDelivery in Tel], parity[PDelivery](doc))
+      . assert(_ == (PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")), true))
+
+      test(m"the worked example parses staged, equally on both paths"):
+        val doc = t"item a xyz\n"
+        (doc.read[PHolder in Tel], parity[PHolder](doc))
+      . assert(_ == (PHolder(PFlagItem(true, Unset, t"xyz")), true))
+
+      test(m"a repeatable field consumes the rest, equally on both paths"):
+        val doc = t"log lbl 1 2 3\n"
+        (doc.read[PLogBook in Tel], parity[PLogBook](doc))
+      . assert(_ == (PLogBook(PLog(t"lbl", List(1, 2, 3))), true))
+
+      test(m"repeatable occurrences split atoms/children, equally on both paths"):
+        val doc = t"log lbl 1\n  values 2\n"
+        (doc.read[PLogBook in Tel], parity[PLogBook](doc))
+      . assert(_ == (PLogBook(PLog(t"lbl", List(1, 2))), true))
+
+      test(m"bare and absent flags parse staged, equally on both paths"):
+        val doc = t"active\n"
+        (doc.read[PFlags in Tel], parity[PFlags](doc))
+      . assert(_ == (PFlags(true, Unset), true))
+
+      test(m"a bare optional flag parses as present true, equally on both paths"):
+        val doc = t"active\nverbose\n"
+        (doc.read[PFlags in Tel], parity[PFlags](doc))
+      . assert(_ == (PFlags(true, true), true))
+
+      test(m"optional scalars fill per §20.8, equally on both paths"):
+        val doc = t"pair hello\n  second world\n"
+        (doc.read[PPairBox in Tel], parity[PPairBox](doc))
+      . assert(_ == (PPairBox(PPair(t"hello", t"world")), true))
+
+      test(m"a source atom supplies a staged scalar field"):
+        val doc = t"body\n    line one\n    line two\n"
+        (doc.read[PNote in Tel], parity[PNote](doc))
+      . assert(_ == (PNote(t"line one\nline two"), true))
+
+      test(m"an atom plus a same-keyword child raises E308 on the staged path"):
+        capture[TelError](t"log lbl\n  label dup\n".read[PLogBook in Tel]).reason
+      . assert(_ == TelError.Reason.NonRepeatableTooMany)
+
+      test(m"excess atoms raise E302 on the staged path"):
+        capture[TelError](t"item a xyz extra\n".read[PHolder in Tel]).reason
+      . assert(_ == TelError.Reason.TooManyAtoms)
+
+      test(m"an unparseable positional atom raises NotScalar"):
+        capture[TelError](t"log lbl notanumber\n".read[PLogBook in Tel]).reason match
+          case TelError.Reason.NotScalar(_, expected) => expected
+          case _                                      => t"?"
+      . assert(_ == t"Int")
+
     suite(m"Canonical construction (§22.2)"):
       given canonicalRecipient: (PRecipient is Tel.Parsable) = Tel.Parsable.derived
       given canonicalDelivery: (PDelivery is Tel.Parsable) = Tel.Parsable.derived
