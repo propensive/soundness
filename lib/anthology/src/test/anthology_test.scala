@@ -180,6 +180,41 @@ object Tests extends Suite(m"Anthology Tests"):
           process1.errors
     . aspire(_.nonEmpty)
 
+    test(m"An OCI image linkage is not available without toolchain and WIT world"):
+      demilitarize:
+        summon[Linkage[Artifact.OciImage]]
+    . assert(_.nonEmpty)
+
+    test(m"An OCI image is linkable from sjsir given the WASI prerequisites"):
+      demilitarize:
+        import ociLinkages.given
+        given WasiToolchain = ???
+        given WitWorld = ???
+        summon[Linkage[Artifact.OciImage]]
+    . assert(_ == Nil)
+
+    test(m"An OCI image cannot be linked from a classfile compilation"):
+      demilitarize:
+        import ociLinkages.given
+        given WasiToolchain = ???
+        given WitWorld = ???
+        val compilation: Compilation[Universe.Classfile] = ???
+        Linker[Artifact.OciImage](Nil).link(compilation, Nil, ???)
+    . assert(_.nonEmpty)
+
+    // Not read through `Linkage#initial`, as the APK defaults are: summoning the OCI linkage needs
+    // a `WasiToolchain`, whose only constructor probes for `wasm-tools` and `wit-bindgen`, and a
+    // unit test should not depend on those being installed.
+    test(m"An OCI image config defaults to the wasm/wasip2 platform"):
+      val config = OciConfiguration(StandardConfig())
+      (config.architecture, config.os)
+    . assert(_ == (t"wasm", t"wasip2"))
+
+    test(m"An OCI option is not applicable to a WASI component linker"):
+      demilitarize:
+        Linker[Artifact.Wasi[0.2]](List(ociOptions.os(t"wasip3")))
+    . assert(_.nonEmpty)
+
     test(m"WASI 0.3 is not linkable even with the 0.2 prerequisites"):
       demilitarize:
         given WasiToolchain = ???

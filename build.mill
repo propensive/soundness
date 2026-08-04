@@ -889,8 +889,15 @@ object anthology extends Library:
     override def scalaJs = false // packages Android applications (`java.security`, `zeppelin`)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  // Wraps a linked WASI component in a Wasm OCI Artifact — reusing `link` for the component
+  // itself, embarcadero for the image, and xenophile's WIT parser to read the world's imports and
+  // exports into the artifact's config.
+  object oci extends Component(link, embarcadero.oci, xenophile.wit, galilei.core):
+    override def scalaJs = false // packages linked components (drives the Scala.js linker)
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   object test
-  extends Tests(`scala`, `java`, kotlin, core, linker, link, nir, dex, apk, spectacular.core):
+  extends Tests(`scala`, `java`, kotlin, core, linker, link, nir, dex, apk, oci, spectacular.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

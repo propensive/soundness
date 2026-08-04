@@ -32,40 +32,23 @@
                                                                                                   */
 package anthology
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import proscenium.compat.*
+import vacuous.*
 
-object Provenance:
-  given jar: (Provenance[Artifact.Jar] from Universe.Classfile):
-    type Origin = Universe.Classfile
+import org.scalajs.linker.interface.StandardConfig
 
-  given dex: (Provenance[Artifact.Dex] from Universe.Classfile):
-    type Origin = Universe.Classfile
-
-  given apk: (Provenance[Artifact.Apk] from Universe.Classfile):
-    type Origin = Universe.Classfile
-
-  given js: [module <: Artifact.Js.Modules]
-  =>  (Provenance[Artifact.Js[module]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given wasm: (Provenance[Artifact.Wasm] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given wasi: [version <: Artifact.Wasi.Versions]
-  =>  (Provenance[Artifact.Wasi[version]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given ociImage: (Provenance[Artifact.OciImage] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given binary: (Provenance[Artifact.Binary] from Universe.Nir):
-    type Origin = Universe.Nir
-
-  given library: [universe <: Universe] => (Provenance[Artifact.Library[universe]] from universe):
-    type Origin = universe
-
-// Witnesses the universe an artifact is produced from—its origin. Unconditional: every artifact
-// has a provenance, whether or not it is currently linkable, so it can drive compilation
-// (`producing`) without demanding the link-time prerequisites that a `Linkage` may impose.
-trait Provenance[artifact <: Artifact]:
-  type Origin <: Universe
+// The options for an OCI-image link: the inner Scala.js configuration the component is linked
+// with, and the metadata written into the artifact's config blob.
+//
+// `os` names the WASI generation the component was built for. It is a field rather than a
+// constant because it is the field a container runtime dispatches on, and it moves with WASI:
+// `wasip1` for the preview-1 syscall ABI, `wasip2` for the component model, `wasip3` once native
+// async lands.
+case class OciConfiguration
+  ( config:       StandardConfig,
+    architecture: Text                = t"wasm",
+    os:           Text                = t"wasip2",
+    author:       Optional[Text]      = Unset,
+    annotations:  Map[Text, Text]     = Map() )
