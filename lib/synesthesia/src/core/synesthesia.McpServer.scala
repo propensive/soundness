@@ -71,7 +71,7 @@ trait McpServer():
   :   Http.Response =
 
     recover:
-      case error @ JsonRpcError(_) =>
+      case error @ JsonRpcError(_, _, _) =>
         import hieroglyph.charEncoders.utf8Encoder
         Http.Response(Unfulfilled(t"JSON-RPC error: ${error.message.text}"))
 

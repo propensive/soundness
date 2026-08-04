@@ -32,14 +32,27 @@
                                                                                                   */
 package obligatory
 
+import anticipation.*
 import fulminate.*
+import vacuous.*
 
 object JsonRpcError:
   enum Reason(val number: Int) extends Clarification:
     case UnknownMethod extends Reason(1)
+    case Failed        extends Reason(2)
+    case Abandoned     extends Reason(3)
 
   given communicable: Reason is Communicable =
     case Reason.UnknownMethod => m"the method name was not recognised by the dispatcher"
+    case Reason.Failed        => m"the peer answered the request with an error"
+    case Reason.Abandoned     => m"the request was never answered"
 
-case class JsonRpcError(reason: JsonRpcError.Reason)(using Diagnostics)
+// `code` and `detail` carry the peer's `error.code` and `error.message` when the fault came back
+// over the wire, so a caller can map the failure onto its own protocol's vocabulary — an LSP
+// client, for instance, recovers an `LspError.Reason` from the code.
+case class JsonRpcError
+   ( reason: JsonRpcError.Reason,
+     code:   Optional[Int]  = Unset,
+     detail: Optional[Text] = Unset )
+   ( using Diagnostics )
 extends Error(721, reason.number)(m"the JSON-RPC operation failed because $reason")
