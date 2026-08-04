@@ -62,13 +62,13 @@ extension (consume stream: (Stream[Data] over Credit)^)
   def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
   :   (Stream[Data] over Credit)^ =
 
-    stream.via(compression.compressor()).asInstanceOf[(Stream[Data] over Credit)^]
+    stream.viaDuct(compression.compressor()).asInstanceOf[(Stream[Data] over Credit)^]
 
   def decompress[format <: Compressor]
     ( using compression: format is Compression, buffering: Buffering )
   :   (Stream[Data] over Credit)^ =
 
-    stream.via(compression.decompressor()).asInstanceOf[(Stream[Data] over Credit)^]
+    stream.viaDuct(compression.decompressor()).asInstanceOf[(Stream[Data] over Credit)^]
 
 extension (stream: Chain[Data])
   def compress[compression <: Compressor: Compression]: Chain[Data] =

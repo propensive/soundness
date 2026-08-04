@@ -160,11 +160,16 @@ object Blake3:
       val blockLen:           Int,
       val flags:              Int ):
 
-    def chainingValue(): scala.Array[Int] =
+    // Freshly allocated and copied into, so no writer can alias it: `^{}` is the
+    // whole story, which is what lets the hasher's stack own these values.
+    def chainingValue(): scala.Array[Int]^{} =
       val out = compress(inputChainingValue, blockWords, counter, blockLen, flags)
       val cv = new scala.Array[Int](8)
       System.arraycopy(out, 0, cv, 0, 8)
-      cv
+      // `cv` is allocated three lines above and never escapes, so no writer can
+      // alias it; capture checking cannot see that through `arraycopy`, so the
+      // freshness is asserted here, exactly as proscenium's `Array.of` does.
+      scala.caps.unsafe.unsafeAssumePure(cv)
 
     def rootOutputBytes(outLen: Int): Array[Byte]^{} =
       val result = Array[Byte](outLen)
@@ -200,7 +205,7 @@ object Blake3:
 
   private def parentCv
     ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
-  :   scala.Array[Int] =
+  :   scala.Array[Int]^{} =
 
     parentOutput(leftCv, rightCv, keyWords, flags).chainingValue()
 
@@ -256,18 +261,18 @@ object Blake3:
   private final class Hasher(keyWordsInit: scala.Array[Int], val flags: Int) extends caps.Mutable:
     private val keyWords: scala.Array[Int] = keyWordsInit.clone()
     private var chunkState: ChunkState^ = ChunkState(keyWords, 0L, flags)
-    private var cvStack: scala.Array[scala.Array[Int]]^ = new scala.Array[scala.Array[Int]](54)
+    private var cvStack: scala.Array[scala.Array[Int]^{}]^ = new scala.Array[scala.Array[Int]^{}](54)
     private var cvStackLen: Int = 0
 
-    private update def pushStack(cv: scala.Array[Int]): Unit =
+    private update def pushStack(cv: scala.Array[Int]^{}): Unit =
       cvStack(cvStackLen) = cv
       cvStackLen += 1
 
-    private update def popStack(): scala.Array[Int] =
+    private update def popStack(): scala.Array[Int]^{} =
       cvStackLen -= 1
       cvStack(cvStackLen)
 
-    private update def addChunkCv(initialCv: scala.Array[Int], initialTotal: Long): Unit =
+    private update def addChunkCv(initialCv: scala.Array[Int]^{}, initialTotal: Long): Unit =
       var cv = initialCv
       var totalChunks = initialTotal
 

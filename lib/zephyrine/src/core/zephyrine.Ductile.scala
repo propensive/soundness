@@ -48,45 +48,20 @@ import vacuous.*
 // `intake.accepting(stage)`. Instances are typed
 // `X is Ductile by In to Out over Transport`, with `Upstream` (the demand
 // type the stage presents to its upstream) as a further member, `Credit` in
-// almost all cases. A `Duct` is trivially its own descriptor, so raw ducts
-// compose with the same `through`/`accepting` calls.
+// almost all cases. A `Duct` is *not* a descriptor and has no instance here:
+// it is already the stage a descriptor would build, so it attaches directly
+// with `stream.viaDuct(duct)` or `intake.acceptingDuct(duct)`.
 object Ductile:
   // The fully-determined type of a `Ductile` instance for `stage`, naming all
   // five type members positionally.
-  type Of[stage, in, out, transport, upstream] =
+  type Instance[stage, in, out, transport, upstream] =
     (stage is Ductile by in to out over transport) { type Upstream = upstream }
-
-  given duct: [in, out, transport, upstream,
-        stage <: (Duct[in, out] { type Transport = transport; type Upstream = upstream })^]
-  =>  Of[stage, in, out, transport, upstream] =
-
-    // The identity instance: the cast bridges the capture-decorated inferred member types
-    // against the declared alias (bare `stage` under a stateful bound reads as `.rd`).
-    (new Ductile:
-      type Self = stage
-      type Operand = in
-      type Result = out
-      type Transport = transport
-      type Upstream = upstream
-
-      def duct(consume stage0: stage^)(using Buffering)
-      :   (Duct[in, out] { type Transport = transport; type Upstream = upstream })^ =
-
-        // consumed pass-through: ownership moves from caller to result (the admission
-        // gap for direct returns is bridged by the erasure cast)
-        stage0.asInstanceOf[(Duct[in, out] { type Transport = transport; type Upstream = upstream })^]
-    ).asInstanceOf[Ductile {
-      type Self = stage^{caps.any.rd}
-      type Operand = in
-      type Result = out
-      type Transport = transport
-      type Upstream = upstream }]
 
   // Character decoding as a pipeline stage. Bytes are staged internally (so
   // multi-byte characters split across refills are carried, and `step`
   // always consumes what it is offered), and malformed input is substituted
   // through the decoder's `TextSanitizer`, exactly as `CharDecoder.decoded`.
-  given charDecoder: Of[CharDecoder, Data, Text, Credit, Credit] =
+  given charDecoder: Instance[CharDecoder, Data, Text, Credit, Credit] =
     new Ductile:
       type Self = CharDecoder
       type Operand = Data
@@ -347,7 +322,7 @@ object Ductile:
   // Character encoding as a pipeline stage. Malformed input (a split
   // surrogate pair at end-of-stream) and unmappable characters are replaced,
   // mirroring the replacement semantics of `CharEncoder.encoded`.
-  given charEncoder: Of[CharEncoder, Text, Data, Credit, Credit] =
+  given charEncoder: Instance[CharEncoder, Text, Data, Credit, Credit] =
     new Ductile:
       type Self = CharEncoder
       type Operand = Text

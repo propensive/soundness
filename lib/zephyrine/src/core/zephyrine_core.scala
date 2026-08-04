@@ -125,6 +125,20 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
     throughDuct[in, ductile.Result, transport, ductile.Transport]
       (ductile.duct(stage), stream)
 
+  // Pull-composition with a duct directly. A `Duct` *is* a pipeline stage, not a
+  // description of one, so it needs no `Ductile` instance to be attached: the duct
+  // type already states its operand, result and both transports. Going through the
+  // typeclass instead would mean instantiating `Ductile` at the duct's own type,
+  // which capture checking cannot express — the identity instance's `Self` and the
+  // type argument `via` infers differ only in whether they are boxed.
+  def viaDuct[out, downTransport]
+    ( consume duct:
+        (Duct[in, out] { type Transport = downTransport; type Upstream = transport })^ )
+    ( using Buffering )
+  :   (Stream[out] over downTransport)^ =
+
+    throughDuct[in, out, transport, downTransport](duct, stream)
+
   // The pump loop connecting a pull-chain to a push-chain, on the calling
   // thread: poll the intake's demand, refill with it, transfer the window.
   // This is the only place data crosses from the pull side to the push side
@@ -161,8 +175,17 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
   :   (Intake[ductile.Operand] over ductile.Upstream)^ =
 
     // See `throughDuct` above.
-    acceptingDuct[ductile.Operand, out, ductile.Upstream, transport]
+    intakeThroughDuct[ductile.Operand, out, ductile.Upstream, transport]
       (ductile.duct(stage), intake)
+
+  // Push-composition with a duct directly; see `viaDuct` above.
+  def acceptingDuct[in, upTransport]
+    ( consume duct:
+        (Duct[in, out] { type Transport = transport; type Upstream = upTransport })^ )
+    ( using Buffering )
+  :   (Intake[in] over upTransport)^ =
+
+    intakeThroughDuct[in, out, upTransport, transport](duct, intake)
 
 
 // ─── terminal operations and explicit replay ───────────────────────────────────────────
@@ -613,7 +636,7 @@ private def discardStream[medium](consume stream: (Stream[medium] over Credit)^,
 
       override update def close(): Unit = stream.close()
 
-private def acceptingDuct[in, out, upTransport, downTransport]
+private def intakeThroughDuct[in, out, upTransport, downTransport]
   ( consume duct:
       (Duct[in, out] { type Transport = downTransport; type Upstream = upTransport })^,
     consume intake: (Intake[out] over downTransport)^ )

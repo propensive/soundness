@@ -106,7 +106,7 @@ extends Cipher, Encryption, Symmetric:
     val session = cipher.stream(transformation, key, iv)
     val finalise: Int => Unit = total => padding.verify(total, blockSize, mode.blockAligned)
 
-    stream.via(CipherDuct(session, iv, finalise)).asInstanceOf[(Stream[Data] over Credit)^]
+    stream.viaDuct(CipherDuct(session, iv, finalise)).asInstanceOf[(Stream[Data] over Credit)^]
 
   // Kernel-native streaming decryption. The leading IV block (for modes that
   // use one) is consumed off the stream before the session begins. NOTE: an
@@ -132,7 +132,7 @@ extends Cipher, Encryption, Symmetric:
     // The duct retains the ambient tactic, which the `consume` formal cannot see is not an
     // aliased writer.
     scala.caps.unsafe.unsafeAssumeSeparate:
-      stream.via(DecipherDuct(start, ivSize, tactic)).asInstanceOf[(Stream[Data] over Credit)^]
+      stream.viaDuct(DecipherDuct(start, ivSize, tactic)).asInstanceOf[(Stream[Data] over Credit)^]
 
   def decrypt(bytes: Data, key: Data): Data =
     val ivSize: Optional[Int] = if mode.usesIv then cipher.blockSize(transformation) else Unset

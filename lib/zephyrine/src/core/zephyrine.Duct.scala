@@ -38,8 +38,8 @@ import prepositional.*
 import vacuous.*
 
 // A synchronous transformation stage, attachable to either end of a pipeline:
-// `stream.via(duct)` yields a differently-typed `Stream`, and
-// `intake.accepting(duct)` yields a differently-typed `Intake` — the same
+// `stream.viaDuct(duct)` yields a differently-typed `Stream`, and
+// `intake.acceptingDuct(duct)` yields a differently-typed `Intake` — the same
 // `Duct` instance serves both, since `translate` converts demand whichever
 // direction it is reported.
 //
@@ -75,7 +75,7 @@ object Duct:
   // backing directly when the medium exposes one, else one copy in) until the
   // input is consumed, output windows accumulate into the medium's builder,
   // and `flush` drains the duct's terminal state. This is the whole-value
-  // counterpart of `stream.via(duct)`: one transformation, two drivers.
+  // counterpart of `stream.viaDuct(duct)`: one transformation, two drivers.
   def feed[in, out](value: in, consume duct: (Duct[in, out])^)(using buffering: Buffering): out =
     val length = duct.input.length(value)
 

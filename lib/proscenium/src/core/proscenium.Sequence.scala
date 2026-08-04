@@ -67,4 +67,9 @@ object Sequence:
   extension [element](sequence: Sequence[element])
     inline def stdlib: sci.Vector[element] = sequence.asInstanceOf[sci.Vector[element]]
 
+  given sequenceIsSpreadable: [element] => (Spreadable[Sequence[element]] { type Out = sci.Vector[element] }) =
+    new Spreadable[Sequence[element]]:
+      type Out = sci.Vector[element]
+      def spread(value: Sequence[element]): sci.Vector[element] = value
+
 opaque type Sequence[+element] = sci.Vector[element]

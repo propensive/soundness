@@ -85,6 +85,11 @@ val Nil: List[Nothing] = List.of(sci.Nil)
 // is the HEAD (the left operand). It cannot be a top-level extension (the name would clash
 // with the extractor object), so it rides on a given, whose extensions are candidates
 // wherever the given is visible — everywhere, via `-Yimports`.
+  given listIsSpreadable: [element] => (Spreadable[List[element]] { type Out = sci.List[element] }) =
+    new Spreadable[List[element]]:
+      type Out = sci.List[element]
+      def spread(value: List[element]): sci.List[element] = value
+
 given consConstructor: Object with
   extension [element](head: element)
     infix def :: (tail: List[element]): List[element] =

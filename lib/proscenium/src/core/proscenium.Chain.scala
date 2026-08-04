@@ -97,6 +97,11 @@ object Chain:
 // order, so the receiver is the HEAD; it rides on a given (a top-level name would clash with the
 // extractor object). The head is by-value (call sites hoist it), but the TAIL is by-name so the
 // stream stays lazy — `head #:: recur()` must not evaluate `recur()`.
+  given chainIsSpreadable: [element] => (Spreadable[Chain[element]] { type Out = sci.LazyList[element] }) =
+    new Spreadable[Chain[element]]:
+      type Out = sci.LazyList[element]
+      def spread(value: Chain[element]): sci.LazyList[element] = value
+
 given lazyCons: Object with
   extension [element](head: element)
     infix def #:: (tail: => Chain[element]): Chain[element] =
