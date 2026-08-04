@@ -33,8 +33,9 @@
 package obligatory
 
 import scala.annotation.*
-import scala.collection.mutable as scm
 import scala.quoted.*
+
+import java.util.concurrent as juc
 
 import anticipation.*
 import contingency.*
@@ -57,7 +58,19 @@ import zephyrine.*
 import httpBackends.virtualMachine
 
 object JsonRpc:
-  private val promises: scm.HashMap[Text | Int, Promise[Json]] = scm.HashMap()
+  // Requests in flight, by correlation id. Concurrent and self-evicting: the requesting thread
+  // registers, and a reader on another thread completes and removes — a plain `HashMap` races,
+  // and entries that are never removed leak for the lifetime of the process.
+  private val promises: juc.ConcurrentHashMap[Text | Int, Promise[Json]] = juc.ConcurrentHashMap()
+
+  // Faults for requests answered with an `error` member. An error response carries no result to
+  // fulfil the promise with, so the fault is recorded here and the promise cancelled; `outcome`
+  // pairs the two back together for the caller awaiting the request.
+  private val faults: juc.ConcurrentHashMap[Text | Int, Failure] = juc.ConcurrentHashMap()
+
+  private def claim(id: Text | Int): Optional[Promise[Json]] = promises.remove(id) match
+    case null                   => Unset
+    case promise: Promise[Json] => promise
 
   inline def serve[interface](interface: interface): Json => Optional[Json] =
     ${obligatory.internal.dispatcher[interface]('interface)}
@@ -87,15 +100,55 @@ object JsonRpc:
     target.put(Request("2.0", method, payload, Unset).in[Json])
     Promise[Unit]().tap(_.offer(()))
 
-  def request(target: JsonRpc, method: Text, payload: Json): Promise[Json] =
+  // A request in flight: the promise its response will fulfil, and the correlation id it was sent
+  // under. The id is retained because an error response cannot fulfil the promise, and must be
+  // matched back to the caller by id instead.
+  case class Pending(id: Text, promise: Promise[Json])
+
+  def call(target: JsonRpc, method: Text, payload: Json): Pending =
     val uuid = Uuid().text
     val promise: Promise[Json] = Promise()
-    promises(uuid) = promise
+    promises.put(uuid, promise)
 
     target.put(Request("2.0", method, payload, uuid.in[Json]).in[Json])
-    promise
+    Pending(uuid, promise)
 
-  def receive(id: Text, result: Json): Unit = promises.at(id).let(_.offer(result))
+  def request(target: JsonRpc, method: Text, payload: Json): Promise[Json] =
+    call(target, method, payload).promise
+
+  // Awaits a request's response, raising the peer's fault as a `JsonRpcError` rather than
+  // blocking forever on a promise an error response could never fulfil.
+  def outcome(pending: Pending)(using Monitor, Tactic[JsonRpcError]): Json =
+    import fulminate.errorDiagnostics.stackTracesDiagnostics
+
+    try unsafely(pending.promise.await())
+    catch case async: AsyncError => faults.remove(pending.id) match
+      case null =>
+        abort(JsonRpcError(JsonRpcError.Reason.Abandoned))
+
+      case failure: Failure =>
+        abort(JsonRpcError(JsonRpcError.Reason.Failed, failure.code, failure.message))
+
+  def receive(id: Text, result: Json): Unit = claim(id).let(_.offer(result))
+
+  def receiveFailure(id: Text, failure: Failure): Unit =
+    faults.put(id, failure)
+    claim(id).let(_.cancel())
+
+  // Routes a response back to the caller awaiting it. A conformant peer answers with exactly one
+  // of `result` and `error`, and the distinction matters: the second is a fault, not a value.
+  def answer(json: Json): Unit =
+    import dynamicJsonAccess.enabled
+    import strategies.throwUnsafely
+
+    // `try`/`catch` rather than `safely`: a decodable cannot thread the boundary tactic under
+    // separation checking, and an unreadable member is simply absent.
+    val id: Optional[Text] = try json.id.as[Text] catch case _: Exception => Unset
+    val failure: Optional[Failure] = try json.error.as[Failure] catch case _: Exception => Unset
+    val result: Optional[Json] = try json.result catch case _: Exception => Unset
+
+    id.let: id =>
+      failure.lay(result.let(receive(id, _)))(receiveFailure(id, _))
 
 
   def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Probate, Online)
@@ -103,7 +156,7 @@ object JsonRpc:
 
     val uuid = Uuid().text
     val promise: Promise[Json] = Promise()
-    promises(uuid) = promise
+    promises.put(uuid, promise)
     import charEncoders.utf8Encoder
     import formatting.compactJsonFormatting
     import logging.silentLogging
@@ -148,7 +201,13 @@ object JsonRpc:
 trait JsonRpc extends Original:
   private val channel: Relay[Json] = Relay()
 
-  inline def client: Origin = ${obligatory.internal.client[Origin]('this)}
+  inline def client: Origin = proxy[Origin]
+
+  // A caller-side proxy for an arbitrary interface, rather than for the fixed `Origin`. A protocol
+  // whose method surface is split across several interfaces — to keep each generated dispatcher
+  // within the per-class constant-pool limit — needs one proxy per interface, all sharing this
+  // instance's single outgoing channel.
+  inline def proxy[interface]: interface = ${obligatory.internal.client[interface]('this)}
 
   def put(json: Json): Unit =
     channel.put(json)

@@ -84,10 +84,7 @@ object internal:
 
           (safely(json.method.as[Text]): @scala.unchecked) match
             case Unset =>
-              val response = json.as[JsonRpc.Response]
-
-              response.id.let: id => JsonRpc.receive(id.as[Text], response.result)
-
+              JsonRpc.answer(json)
               Unset
 
             case method: Text =>
@@ -300,6 +297,7 @@ object internal:
     import quotes.reflect.*
 
     val rpcType = TypeRepr.of[rpc].typeSymbol
+    val bareType = TypeRepr.of[bare].typeSymbol
     val interface = TypeRepr.of[interface]
 
     val rpcMethods = interface.typeSymbol.declaredMethods.filter: method =>
@@ -353,31 +351,46 @@ object internal:
                     parameter list
                   """
 
+          // A `@bare` parameter is sent as the whole `params` value, mirroring the dispatcher's
+          // treatment of it; anything else is a member of a `params` object.
+          val bareValues = params.zip(paramSymbols).collect:
+            case (ident, param) if param.annotations.exists(_.tpe.typeSymbol == bareType) =>
+              param.info.asType.absolve match
+                case '[param] => Expr.summon[param is Encodable in Json] match
+                  case Some('{$encoder: (`param` `is` Encodable `in` Json)}) =>
+                    '{${encoder}.encoded(${ident.asExprOf[param]})}
+
+                  case _ =>
+                    halt:
+                      m"""
+                        could not find a contextual
+                        ${TypeRepr.of[param is Encodable in Json].show} instance for parameter
+                        ${param.name} of ${method.name}
+                      """
+
+          val payload: Expr[Json] = bareValues match
+            case scala.collection.immutable.Nil        => '{Map(${Varargs(entries)}*).in[Json]}
+            case scala.collection.immutable.List(bare) => bare
+
+            case _ =>
+              halt(m"the method ${method.name} declares more than one `@bare` parameter")
+
           val result: TypeRepr = runSym.info.absolve match
             case MethodType(_, _, result) => result
 
           val notification = result.dealias.typeSymbol == TypeRepr.of[Unit].dealias.typeSymbol
-          val id = if notification then '{Unset} else Expr(Uuid().show)
           val methodName = Expr(method.name.tt)
 
           if notification then Some:
-            ' {
-                val json = Map(${Varargs(entries)}*).in[Json]
-                JsonRpc.notification($rpc, $methodName, json)
-              }
-
-            . asTerm
+            '{JsonRpc.notification($rpc, $methodName, $payload)}.asTerm
           else result.asType.absolve match
             case '[result] => (Expr.summon[result is Json.Decodable], Expr.summon[Monitor]) match
               case (Some(decoder), Some(monitor)) =>
                 Some:
                   ' {
-                      val json = Map(${Varargs(entries)}*).in[Json]
-
                       unsafely:
                         val response =
-                          JsonRpc.request($rpc, $methodName, json)
-                          . await()(using $monitor)
+                          JsonRpc.outcome(JsonRpc.call($rpc, $methodName, $payload))(using $monitor)
 
                         $decoder.decoded(response)
                     }

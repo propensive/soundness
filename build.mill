@@ -1521,7 +1521,8 @@ object eucalyptus extends Library:
       settings.sep(super.scalacOptions())
 
 object exegesis extends Library:
-  object core extends Component(obligatory.json, ethereal.core, exoskeleton.completions):
+  object core extends Component(obligatory.json, ethereal.core, exoskeleton.completions,
+      guillotine.core, aperture.core):
     override def scalaJs = false // LSP server; depends on JVM-only `ethereal`/`exoskeleton`
     override def scalacOptions = Task:
       settings.maxInlines(settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")), "48")

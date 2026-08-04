@@ -72,8 +72,18 @@ object Job:
 // A `Job` is a *capability*: it is the live handle to a running subprocess (its streams and
 // its lifecycle), tracked fresh from `fork()`. `Exclusive` because a subprocess's stdio has
 // a single owner.
-class Job[+exec <: Label, result] private[guillotine] (process: java.lang.Process)
+//
+// A pipeline has a process at each end, and they are not the same one: its output comes from the
+// last process, and its input goes to the first. `process` is therefore the tail — whose output,
+// exit status and pid speak for the pipeline — and `head` is where input is written, which for a
+// single command is the same process. The distinction is not cosmetic: `startPipeline` replaces
+// every process's standard input but the first's with a null stream that throws on any write.
+class Job[+exec <: Label, result] private[guillotine]
+   ( process: java.lang.Process, head: java.lang.Process )
 extends Subprocess, ProcessRef, caps.ExclusiveCapability:
+
+  private[guillotine] def this(process: java.lang.Process) = this(process, process)
+
   def pid: Pid = Pid(process.pid)
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
@@ -104,7 +114,16 @@ extends Subprocess, ProcessRef, caps.ExclusiveCapability:
   def stdin[chunk](stream: (Stream[chunk] over Credit)^)
     ( using writable: (ProcessInput is Writable by chunk)^ )
   :   Unit =
-    writable.write(ProcessInput(process.getOutputStream.nn), stream)
+    writable.write(ProcessInput(head.getOutputStream.nn), stream)
+
+  // Standard input as a push endpoint. `stdin` writes a whole stream and closes the pipe when it
+  // ends, which suits a process that consumes its input and exits; a long-lived child that must be
+  // driven message-by-message — a language server, a REPL — needs the incremental form instead:
+  // each window is written and flushed as it arrives, and the pipe is closed only by `finish`.
+  def intake(using sink: (ji.OutputStream is Sink by Data over Credit)^)
+  :   (Intake[Data] over Credit)^ =
+
+    sink.intake(head.getOutputStream.nn)
 
 
   def await()(using computable: (result is Computable)^): result =

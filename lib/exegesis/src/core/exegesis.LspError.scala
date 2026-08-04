@@ -52,6 +52,21 @@ object LspError:
     case ServerCancelled      extends Reason(9, -32802)
     case RequestFailed        extends Reason(10, -32803)
 
+  // The inverse of `code`: recovers the reason from an error response's wire code, for a client
+  // reading a fault a server sent it. A server may answer with a code outside the standard set —
+  // the protocol reserves a range for implementation-defined errors — which is `Unset` here, and
+  // reported as `Internal` by the caller.
+  def reason(code: Int): Optional[Reason] =
+    var found: Optional[Reason] = Unset
+    var index: Int = 0
+
+    while index < Reason.values.length do
+      val reason = Reason.values(index)
+      if reason.code == code then found = reason
+      index += 1
+
+    found
+
   given communicable: Reason is Communicable =
     case Reason.Parse                => m"the message could not be parsed as JSON"
     case Reason.InvalidRequest       => m"the message was not a valid JSON-RPC request"

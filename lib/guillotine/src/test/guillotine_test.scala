@@ -390,6 +390,35 @@ object Tests extends Suite(m"Guillotine tests"):
         proc.await().trim
       . assert(_ == t"hi")
 
+      test(m"drive a live process incrementally through its intake"):
+        val proc = sh"cat".fork[Text]()
+        val intake = proc.intake
+        intake.put(Data(104, 105, 10))
+        intake.flush()
+        // The pipe is still open, so `cat` is still running and echoing.
+        val alive = proc.alive
+        intake.put(Data(98, 121, 101, 10))
+        intake.finish()
+        (alive, proc.await().trim)
+      . assert(_ == (true, t"hi\nbye"))
+
+      test(m"pipe Chain[Data] into the head of a pipeline"):
+        val proc = (sh"cat" | sh"tr a-z A-Z").fork[Text]()
+        proc.stdin(Stream(Data(104, 105, 10)))
+        proc.await().trim
+      . assert(_ == t"HI")
+
+      test(m"drive a live pipeline incrementally through its intake"):
+        val proc = (sh"cat" | sh"tr a-z A-Z").fork[Text]()
+        val intake = proc.intake
+        intake.put(Data(104, 105, 10))
+        intake.flush()
+        val alive = proc.alive
+        intake.put(Data(98, 121, 101, 10))
+        intake.finish()
+        (alive, proc.await().trim)
+      . assert(_ == (true, t"HI\nBYE"))
+
       test(m"read stderr from a forked job"):
         val proc = sh"sh -c 'echo err 1>&2; sleep 0.05'".fork[Unit]()
         val bytes = proc.stderr().memoize
