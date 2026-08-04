@@ -488,6 +488,47 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))
 
+      // A `Servable` for `Text` sets `content-type` itself, so naming it at the call site would
+      // once have sent the field twice. A singleton field must not repeat; a list-based field or
+      // `Set-Cookie` may, and must therefore survive the same merge.
+      test(m"A singleton header named at the call site overrides the Servable's"):
+        val response = Http.Response(Http.Ok, contentType = media"text/plain")(t"hello")
+        response.textHeaders.stdlib.count(_.key.lower == t"content-type")
+
+      . assert(_ == 1)
+
+      test(m"The overriding singleton keeps the call site's value"):
+        val response = Http.Response(Http.Ok, contentType = media"text/plain")(t"hello")
+        wire(response).contains(t"content-type: text/plain")
+
+      . assert(_ == true)
+
+      test(m"A Servable's header survives when the call site names no such field"):
+        wire(Http.Response(Http.Ok)(t"hello")).contains(t"content-type: text/plain")
+
+      . assert(_ == true)
+
+      test(m"Set-Cookie is repeatable, so both values are kept"):
+        val served = Http.Response(Http.Ok, setCookie = t"a=1")(t"hello") + Cookie.Value(t"b", t"2")
+        served.textHeaders.stdlib.count(_.key.lower == t"set-cookie")
+
+      . assert(_ == 2)
+
+      test(m"A repeatable field is not treated as a singleton"):
+        (Http.Header.repeatable(t"set-cookie"), Http.Header.repeatable(t"vary"))
+
+      . assert(_ == (true, true))
+
+      test(m"Field names are matched case-insensitively"):
+        (Http.Header.repeatable(t"Set-Cookie"), Http.Header.repeatable(t"Content-Type"))
+
+      . assert(_ == (true, false))
+
+      test(m"An unknown field is treated as a singleton"):
+        Http.Header.repeatable(t"x-soundness-unknown")
+
+      . assert(_ == false)
+
       test(m"HEAD response omits the body but keeps headers"):
         val response = Http.Response(Http.Ok)(t"hello")
         val text = wire(response, includeBody = false)

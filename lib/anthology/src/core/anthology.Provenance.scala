@@ -55,6 +55,9 @@ object Provenance:
   =>  (Provenance[Artifact.Wasi[version]] from Universe.Sjsir):
     type Origin = Universe.Sjsir
 
+  given ociImage: (Provenance[Artifact.OciImage] from Universe.Sjsir):
+    type Origin = Universe.Sjsir
+
   given binary: (Provenance[Artifact.Binary] from Universe.Nir):
     type Origin = Universe.Nir
 

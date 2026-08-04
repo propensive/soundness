@@ -33,25 +33,15 @@
 package embarcadero
 
 import anticipation.*
-import gesticulate.*
 import vacuous.*
 
-// A namespace for OCI document types whose natural names are too generic to live at the
-// top level of the `soundness` package: `Oci.Manifest` would otherwise clash with
-// revolution's JAR `Manifest`.
-object Oci:
-  // The two forms an image's config blob can take, distinguished on the wire by the
-  // config descriptor's media type: the classic runtime image config, and the Wasm
-  // artifact config. Everything above the config blob — the manifest, the index, the
-  // image layout — is shared between them.
-  type Config = ImageConfig | WasmConfig
-
-  // An OCI image manifest: a descriptor for the config blob plus the ordered list of
-  // layer descriptors. `schemaVersion` is always `2`.
-  case class Manifest
-    ( schemaVersion: Int,
-      mediaType:     MediaType,
-      config:        Descriptor,
-      layers:        List[Descriptor],
-      annotations:   Optional[Map[Text, Text]] = Unset )
-  derives CanEqual
+// The `component` member of a Wasm artifact config: the Component Model interfaces the
+// component exports and imports, and — where it targets a standard world, such as
+// `wasi:http/proxy@0.2.0` — the name of that world. The Wasm OCI Artifact layout requires
+// this member for `wasip2` artifacts, and it is what lets a host decide, before fetching
+// the component itself, whether it can satisfy the capabilities the workload asks for.
+case class WasmComponent
+  ( exports: List[Text],
+    imports: List[Text],
+    target:  Optional[Text] = Unset )
+derives CanEqual

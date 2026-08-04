@@ -151,6 +151,14 @@ object sjsLinkages:
   given wasi(using toolchain: WasiToolchain, world: WitWorld)
   :   (Linkage[Artifact.Wasi[0.2]] from Universe.Sjsir) =
 
+    wasiLinkage(world)
+
+  // The WASI linkage with its `Form` still visible, so a linkage that wraps a component — the OCI
+  // image family in the `oci` module — can reuse both its configuration and its link step. The
+  // `given` above widens `Form` back to the abstract member, which is what callers should see.
+  private[anthology] def wasiLinkage(world: WitWorld)
+  :   Linkage[Artifact.Wasi[0.2]] { type Origin = Universe.Sjsir; type Form = StandardConfig } =
+
     Sjs
       ( _.withModuleKind(ModuleKind.WasmComponent)
         . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))

@@ -73,6 +73,12 @@ object Artifact:
   // A standalone WebAssembly artifact bound to a version of the WASI system interface.
   sealed trait Wasi[+version <: Wasi.Versions] extends Artifact
 
+  // Sjsir universe: a WASI component packaged as a Wasm OCI Artifact and written as an
+  // `oci-archive` — the form a container runtime with a Wasm shim (`io.containerd.wasmtime.v1`)
+  // schedules, and a registry distributes. Its linkage lives in the `oci` module:
+  // `import ociLinkages.given`.
+  sealed trait OciImage extends Artifact
+
   // Nir universe: a machine-code executable, bound to an operating system's C library; the
   // platform and architecture are selected at link time as a `Triple`.
   sealed trait Binary extends Artifact

@@ -40,19 +40,25 @@ import turbulence.*
 import zephyrine.*
 import proscenium.compat.*
 
-// A single image layer, built from a `bitumen.Tarfile`. A layer carries two distinct
-// digests: the `diff_id` is the SHA-256 of the *uncompressed* tar (recorded in the
-// image config's `rootfs.diff_ids`), while the descriptor's `digest` is the
-// SHA-256 of the *gzip-compressed* blob (recorded in the manifest), alongside the
-// compressed `size`.
+// A single image layer. A layer carries two distinct digests: the `diff_id` is the
+// SHA-256 of the *unstored* content (recorded in the image config's `rootfs.diff_ids`),
+// while the descriptor's `digest` is the SHA-256 of the blob as actually stored
+// (recorded in the manifest), alongside its `size`. For a filesystem layer those differ,
+// because storage compresses; for an uncompressed blob layer they coincide.
 object Layer:
-  def apply(tar: Tarfile): Layer = new Layer(tar)
+  // A filesystem layer built from a `bitumen.Tarfile`, stored gzip-compressed.
+  def apply(tar: Tarfile): Layer =
+    lazy val raw = tar.source[Data].memoize
+    new Layer(raw, raw.compress[Gzip], media"application/vnd.oci.image.layer.v1.tar+gzip")
 
-class Layer(val tar: Tarfile):
-  lazy val raw:        Data       = tar.source[Data].memoize
+  // A layer whose content is a single opaque blob, stored verbatim and typed by its own
+  // media type — the form a Wasm OCI artifact uses for its `application/wasm` component.
+  // With no compression step, `diffId` and `digest` are the same value.
+  def blob(data: Data, mediaType: MediaType): Layer = new Layer(data, data, mediaType)
+
+class Layer private (raw0: => Data, blob0: => Data, mediaType: MediaType):
+  lazy val raw:        Data       = raw0
+  lazy val blob:       Data       = blob0
   lazy val diffId:     Text       = sha256(raw)
-  lazy val blob:       Data       = raw.compress[Gzip]
   lazy val digest:     Text       = sha256(blob)
-
-  lazy val descriptor: Descriptor =
-    Descriptor(media"application/vnd.oci.image.layer.v1.tar+gzip", digest, blob.length.toLong)
+  lazy val descriptor: Descriptor = Descriptor(mediaType, digest, blob.length.toLong)

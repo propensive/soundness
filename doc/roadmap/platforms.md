@@ -66,6 +66,13 @@ reason names a missing WASI capability. Interim gauge:
 
     ls -d lib/*/src/wasi | wc -l    # 7 and rising
 
+A component is now deployable as well as runnable: `Image.wasm` (embarcadero) packages one as a
+Wasm OCI Artifact, `Artifact.OciImage` (anthology) links straight to that from a compilation, and
+`make wasm-e2e` serves the packaged HTTP component under `wasmtime serve`. What is still missing
+between here and a Wasm workload running on a cluster is distribution — nothing in the tree speaks
+the OCI registry protocol, so an artifact reaches a registry only via `skopeo` or `ctr` — and the
+containerd client cannot yet name a Wasm runtime when it creates a container.
+
 ## plat-5: the parity statement holds
 
 Horizon: long

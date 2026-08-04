@@ -572,6 +572,48 @@ object Tests extends Suite(m"Xenophile tests"):
         WitDialect.parse(wit).stdlib(t"random").stdlib(t"get-random-u64").module.or(t"")
       . assert(_ == t"wasi:random/random@0.2.0")
 
+    suite(m"Wit worlds"):
+      val source =
+        t"""package test:demo@1.0.0;
+            world service {
+              import wasi:io/streams@0.2.0;
+              import wasi:clocks/monotonic-clock@0.2.0;
+              export wasi:http/incoming-handler@0.2.0;
+            }"""
+
+      test(m"a world's imports are read in order, as Component Model ids"):
+        WitDialect.worlds(source).stdlib(t"service").imports
+      . assert(_ == List(t"wasi:io/streams@0.2.0", t"wasi:clocks/monotonic-clock@0.2.0"))
+
+      test(m"a world's exports are read separately from its imports"):
+        WitDialect.worlds(source).stdlib(t"service").exports
+      . assert(_ == List(t"wasi:http/incoming-handler@0.2.0"))
+
+      test(m"a bare interface name is qualified with the package id"):
+        val wit = t"package test:demo@1.0.0; world w { import helper; }"
+        WitDialect.worlds(wit).stdlib(t"w").imports
+      . assert(_ == List(t"test:demo/helper@1.0.0"))
+
+      test(m"an inline function import references no interface"):
+        val wit = t"package test:demo@1.0.0; world w { import log: func(message: string); }"
+        WitDialect.worlds(wit).stdlib(t"w").imports
+      . assert(_ == List())
+
+      test(m"an inline interface export references no interface"):
+        val wit = t"package test:demo@1.0.0; world w { export handler: interface { go: func(); } }"
+        WitDialect.worlds(wit).stdlib(t"w").exports
+      . assert(_ == List())
+
+      test(m"a world does not capture items from an interface beside it"):
+        val wit = t"package test:demo@1.0.0; interface i { go: func(); } world w { import wasi:io/streams@0.2.0; }"
+        WitDialect.worlds(wit).stdlib(t"w").imports
+      . assert(_ == List(t"wasi:io/streams@0.2.0"))
+
+      test(m"every world in a source is read"):
+        val wit = t"package test:demo@1.0.0; world a { export x:y/z@1.0.0; } world b { import p:q/r@1.0.0; }"
+        WitDialect.worlds(wit).stdlib.keySet.toList.sorted
+      . assert(_ == List(t"a", t"b"))
+
     suite(m"WebIDL (synthetic sample)"):
       val shape: Foreign of "Shape" from WebIdl = Foreign["Shape", WebIdl]
       val circle: Foreign of "Circle" from WebIdl = Foreign["Circle", WebIdl]

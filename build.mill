@@ -556,7 +556,7 @@ object soundness extends Toolchain:
     pneumatic.core, pneumatic.flate,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
-    prophesy.core)
+    prophesy.core, anticipation.color, anticipation.generic)
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
@@ -588,7 +588,7 @@ object soundness extends Toolchain:
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
     anthology.lira,
     anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`,
-    delicious.ansi)
+    delicious.ansi, anthology.kotlin, anthology.oci, hyperbole.stacks)
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
@@ -598,7 +598,8 @@ object soundness extends Toolchain:
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
-    xenophile.wit, xenophile.cffi, xenophile.scalanative, telekinesis.core, graffiti.core)
+    xenophile.wit, xenophile.cffi, xenophile.scalanative, xenophile.kotlin, telekinesis.core,
+    graffiti.core)
 
   // The three platform aggregates. `jvm` is every JVM module (the group bundles); `wasi` is the
   // WASI backends (compiled here as ordinary JVM, which typechecks their deferred `invoke`
@@ -889,8 +890,15 @@ object anthology extends Library:
     override def scalaJs = false // packages Android applications (`java.security`, `zeppelin`)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  // Wraps a linked WASI component in a Wasm OCI Artifact — reusing `link` for the component
+  // itself, embarcadero for the image, and xenophile's WIT parser to read the world's imports and
+  // exports into the artifact's config.
+  object oci extends Component(link, embarcadero.oci, xenophile.wit, galilei.core):
+    override def scalaJs = false // packages linked components (drives the Scala.js linker)
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   object test
-  extends Tests(`scala`, `java`, kotlin, core, linker, link, nir, dex, apk, spectacular.core):
+  extends Tests(`scala`, `java`, kotlin, core, linker, link, nir, dex, apk, oci, spectacular.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2976,7 +2984,13 @@ object nativelink extends Module:
 // for wasmtime to run. The link is driven by an in-tree driver (tests/wasm/linker) because
 // mill's Scala.js worker cannot express the fork-only WasmFeatures (WIT directory/world) config.
 object wasm extends Module:
-  object app extends ScalaJSModule, Toolchain:
+  // A guest compiled under `-scalajs` for linking as a Wasm component. Two exist, one per world:
+  // `app` exports `wasi:cli/run` and drives the seven backends as a client; `httpApp` exports
+  // `wasi:http/incoming-handler` and exercises the server half of telekinesis' WASI HTTP backend.
+  // They are separate modules because a component's exports must match its world exactly, so the
+  // two `@WitImplementation` objects cannot share a source set.
+  trait Guest extends ScalaJSModule, Toolchain:
+    def sourceDir: String
     def scalaVersion = settings.scalaVersion
     def scalaJSVersion = settings.scalaJsVersion
     // The `wasi*Api`/backend-given imports are load-bearing only inside the deferred `invoke`
@@ -2990,20 +3004,85 @@ object wasm extends Module:
     // separation-checked in its own module; the harness is not library surface. Restore this if a
     // merge from a branch where every module is `sep` flips it back.
     def scalacOptions = settings.cc(settings.scalaOptions :+ "-Wconf:origin=.*wasi.*:s")
-    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "src")
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / sourceDir)
 
     override def moduleDeps = Seq(
       ambience.wasi.js, aviation.wasi.js, capricious.wasi.js, coaxial.wasi.js,
       galilei.wasi.js, telekinesis.wasi.js, turbulence.wasi.js)
+
+  object app extends Guest:
+    def sourceDir = "src"
+
+  object httpApp extends Guest:
+    def sourceDir = "http"
 
   object linker extends ScalaModule, Toolchain:
     def scalaVersion = settings.scalaVersion
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "linker")
     def mvnDeps = Seq(mvn"io.github.scala-wasm:scalajs-linker_2.13:${settings.scalaJsVersion}")
 
+  // Wraps a linked component in a Wasm OCI Artifact. A JVM driver, like `linker`: it needs
+  // embarcadero and xenophile on its classpath, which the build itself does not have.
+  object packager extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = settings.scalaOptions
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "packager")
+    override def moduleDeps = Seq(embarcadero.oci, xenophile.wit, turbulence.core)
+
   def witDir = Task.Source(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "wit")
 
+  // The two components. `Task#apply()` expands only lexically inside a `Task` block, so each task
+  // resolves its own guest's classpath and hands `link` plain paths.
   def component: T[PathRef] = Task:
+    link
+      ( app.compile().classes.path +: app.compileClasspath().toSeq.map(_.path),
+        linker.runClasspath().map(_.path),
+        witDir().path,
+        "e2e",
+        Task.dest )
+
+  def httpComponent: T[PathRef] = Task:
+    link
+      ( httpApp.compile().classes.path +: httpApp.compileClasspath().toSeq.map(_.path),
+        linker.runClasspath().map(_.path),
+        witDir().path,
+        "http",
+        Task.dest )
+
+  // The two components, packaged as Wasm OCI Artifacts (`oci-archive` tars).
+  def image: T[PathRef] = Task:
+    pack(component().path, witDir().path, "e2e", packager.runClasspath().map(_.path), Task.dest)
+
+  def httpImage: T[PathRef] = Task:
+    pack(httpComponent().path, witDir().path, "http", packager.runClasspath().map(_.path),
+        Task.dest)
+
+  // Runs the packager driver over an already-linked component, producing `image.tar` in `dest`.
+  private def pack
+    ( component:       os.Path,
+      wit:             os.Path,
+      world:           String,
+      driverClasspath: Seq[os.Path],
+      dest:            os.Path )
+  :   PathRef =
+
+    val archive = dest / "image.tar"
+    val driver = driverClasspath.map(_.toString).mkString(java.io.File.pathSeparator)
+
+    os.proc("java", "-cp", driver, "wasme2e.Package", component.toString, wit.toString, world,
+        archive.toString)
+    . call(stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(archive)
+
+  // Links one guest's classpath against one world of `tests/wasm/wit`, producing `main.wasm`.
+  private def link
+    ( guestClasspath:  Seq[os.Path],
+      driverClasspath: Seq[os.Path],
+      wit:             os.Path,
+      world:           String,
+      dest:            os.Path )
+  :   PathRef =
     // The WasmComponent link shells out to `wasm-tools component new` and the scala-wasm fork of
     // `wit-bindgen` (which must answer `wit-bindgen scala`); fail fast with an actionable message
     // rather than a confusing mid-link error.
@@ -3015,19 +3094,16 @@ object wasm extends Module:
         s"`${tool.head}` is unavailable — install wasm-tools and the scala-wasm fork of "
         + "wit-bindgen (see the CI-workflow tooling notes in .claude/CLAUDE.md)")
 
-    val classpath =
-      (app.compile().classes.path +: app.compileClasspath().toSeq.map(_.path)).filter(os.exists)
-
-    val driverClasspath =
-      linker.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+    val classpath = guestClasspath.filter(os.exists)
+    val driver = driverClasspath.map(_.toString).mkString(java.io.File.pathSeparator)
 
     val command: Seq[String] =
-      Seq("java", "-cp", driverClasspath, "wasme2e.Link",
-        Task.dest.toString, witDir().path.toString, "e2e") ++ classpath.map(_.toString)
+      Seq("java", "-cp", driver, "wasme2e.Link", dest.toString, wit.toString, world)
+      ++ classpath.map(_.toString)
 
     os.proc(command).call(stdout = os.Inherit, stderr = os.Inherit)
 
-    PathRef(Task.dest / "main.wasm")
+    PathRef(dest / "main.wasm")
 
 // The Android sample (`tests/android`; instructions in tests/android/README.md): builds Google's
 // Dice Roller codelab as a Soundness app — Scala source calling Android and Kotlin APIs through

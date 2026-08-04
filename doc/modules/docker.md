@@ -79,6 +79,50 @@ image.manifest     // the OCI manifest tying config and layers together
 as bytes and written to a file, it produces an image that `docker load` or containerd will
 accept.
 
+### WebAssembly workloads
+
+A container image describes a filesystem, but `runc` — the thing that unpacks and runs one —
+is not the only way to run a workload. A [Wasm](https://webassembly.org/) component needs no
+rootfs at all: a runtime such as [wasmtime](https://wasmtime.dev/), reached through a
+containerd shim like `io.containerd.wasmtime.v1`, instantiates it directly. What changes is
+not the distribution format but what the configuration says the artifact *is*.
+
+`Image.wasm` assembles that form — a
+[Wasm OCI Artifact](https://tag-runtime.cncf.io/wgs/wasm/deliverables/wasm-oci-artifact/):
+
+```scala
+val artifact =
+  Image.wasm
+   ( component,
+     exports = List(t"wasi:http/incoming-handler@0.2.0"),
+     imports = List(t"wasi:io/streams@0.2.0"),
+     target  = t"wasi:http/proxy@0.2.0" )
+```
+
+The manifest, index and archive are the ordinary ones, so the same registries and tools carry
+it. Only two things differ: the config blob is typed `application/vnd.wasm.config.v0+json`
+and describes a component rather than a filesystem, and the single layer is the component
+itself — `application/wasm`, stored uncompressed, so its `diffId` and `digest` coincide.
+
+```scala
+artifact.wasmConfig.vouch.os            // wasip2 — the WASI generation
+artifact.wasmConfig.vouch.architecture  // wasm
+```
+
+The `exports` and `imports` are the Component Model interfaces the workload offers and needs.
+Recording them makes the image self-describing: a host can tell whether it can satisfy the
+workload's capabilities before fetching the component. They are usually not written by hand
+but read from the WIT world the component was linked against, which is the authoritative
+statement of the same contract:
+
+```scala
+val world: WitDialect.World = WitDialect.worlds(source).stdlib(t"http")
+Image.wasm(component, exports = world.exports, imports = world.imports)
+```
+
+Anthology does exactly this when it links an `Artifact.OciImage`, so a compilation can go from
+source to a distributable artifact in one step, with nothing stating the contract twice.
+
 ### Reading an image
 
 An existing OCI archive — a file or a block of bytes — is read by *opening* it, which makes
@@ -95,6 +139,17 @@ archive.open[Image](): handle ?=>
 Reaching a layer three ways makes the cost explicit: `compressed` yields the stored bytes
 untouched, `layer` decompresses them as a stream, and `verified` decompresses and checks the
 content against the digest the manifest declares, raising an `OciError` if they disagree.
+
+A reader that does not already know which kind of artifact it has opened asks for `config`,
+which dispatches on the config descriptor's media type — so telling a component from a
+filesystem is a question the archive answers, not one the caller has to have known:
+
+```scala
+archive.open[Image](): handle ?=>
+  handle.config match
+    case config: WasmConfig  => config.component  // a component: run it in a Wasm engine
+    case config: ImageConfig => config.rootfs     // a filesystem: unpack and run it
+```
 
 ### Connecting to a daemon
 
