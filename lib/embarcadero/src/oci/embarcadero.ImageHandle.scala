@@ -118,6 +118,26 @@ extends caps.ExclusiveCapability:
       import strategies.throwUnsafely
       bytes.read[Json].as[ImageConfig]
 
+  // The decoded Wasm artifact config for a manifest (by default, the first).
+  def wasmConfig(using Tactic[OciError]): WasmConfig = wasmConfig(manifest)
+
+  def wasmConfig(manifest: Oci.Manifest)(using Tactic[OciError]): WasmConfig =
+    val bytes = verified(manifest.config)
+
+    decode(manifest.config.digest):
+      import strategies.throwUnsafely
+      bytes.read[Json].as[WasmConfig]
+
+  // The decoded config blob for a manifest (by default, the first), in whichever form the
+  // config descriptor's media type says it takes. This is the entry point for a reader
+  // that does not already know which kind of artifact it has opened — a runtime deciding
+  // whether to unpack a rootfs or instantiate a component.
+  def config(using Tactic[OciError]): Oci.Config = config(manifest)
+
+  def config(manifest: Oci.Manifest)(using Tactic[OciError]): Oci.Config =
+    if manifest.config.mediaType == media"application/vnd.wasm.config.v0+json"
+    then wasmConfig(manifest) else imageConfig(manifest)
+
   // A layer's stored blob, verbatim: for OCI layers, the gzip-compressed tar.
   def compressed(descriptor: Descriptor)(using Tactic[OciError])
   :   (Stream[Data] over Credit)^ =

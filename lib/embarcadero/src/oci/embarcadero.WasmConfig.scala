@@ -33,25 +33,23 @@
 package embarcadero
 
 import anticipation.*
-import gesticulate.*
+import gossamer.*
 import vacuous.*
 
-// A namespace for OCI document types whose natural names are too generic to live at the
-// top level of the `soundness` package: `Oci.Manifest` would otherwise clash with
-// revolution's JAR `Manifest`.
-object Oci:
-  // The two forms an image's config blob can take, distinguished on the wire by the
-  // config descriptor's media type: the classic runtime image config, and the Wasm
-  // artifact config. Everything above the config blob — the manifest, the index, the
-  // image layout — is shared between them.
-  type Config = ImageConfig | WasmConfig
-
-  // An OCI image manifest: a descriptor for the config blob plus the ordered list of
-  // layer descriptors. `schemaVersion` is always `2`.
-  case class Manifest
-    ( schemaVersion: Int,
-      mediaType:     MediaType,
-      config:        Descriptor,
-      layers:        List[Descriptor],
-      annotations:   Optional[Map[Text, Text]] = Unset )
-  derives CanEqual
+// A Wasm artifact config document (media type `application/vnd.wasm.config.v0+json`): the
+// config blob of a Wasm OCI Artifact. It stands where an `ImageConfig` would, but describes
+// a component rather than a filesystem — there is no `rootfs`, because there are no layers
+// to stack. `layerDigests` names the single `application/wasm` blob directly, and
+// `component` states the interfaces it needs.
+//
+// `architecture` is `"wasm"` and `os` names the WASI generation (`"wasip1"`, `"wasip2"`,
+// `"wasip3"`). A container runtime dispatches on those two fields to recognise that an
+// artifact is a Wasm workload at all, rather than a rootfs to hand to `runc`.
+case class WasmConfig
+  ( created:      Optional[Text]          = Unset,
+    author:       Optional[Text]          = Unset,
+    architecture: Text                    = t"wasm",
+    os:           Text                    = t"wasip2",
+    layerDigests: List[Text],
+    component:    Optional[WasmComponent] = Unset )
+derives CanEqual

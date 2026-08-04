@@ -76,8 +76,54 @@ object Image:
           rootfs       = RootFs(t"layers", layers.map(_.diffId)),
           config       = config )
 
-    val configBytes      = render(imageConfig)
-    val configType       = media"application/vnd.oci.image.config.v1+json"
+    assemble
+      ( layers,
+        imageConfig,
+        render(imageConfig),
+        media"application/vnd.oci.image.config.v1+json",
+        annotations )
+
+  // Assembles a Wasm OCI Artifact: a single, uncompressed `application/wasm` layer
+  // carrying `component`, under a config blob that names the WASI generation and the
+  // Component Model interfaces the component exports and imports. The manifest, index
+  // and archive are the ordinary OCI ones — only the two media types and the shape of
+  // the config document distinguish this from an image with a filesystem.
+  def wasm
+    ( component:    Data,
+      exports:      List[Text]                = Nil,
+      imports:      List[Text]                = Nil,
+      target:       Optional[Text]            = Unset,
+      architecture: Text                      = t"wasm",
+      os:           Text                      = t"wasip2",
+      annotations:  Optional[Map[Text, Text]] = Unset )
+  :   Image =
+
+    val layer = Layer.blob(component, media"application/wasm")
+
+    val wasmConfig =
+      WasmConfig
+        ( architecture = architecture,
+          os           = os,
+          layerDigests = List(layer.digest),
+          component    = WasmComponent(exports, imports, target) )
+
+    assemble
+      ( List(layer),
+        wasmConfig,
+        render(wasmConfig),
+        media"application/vnd.wasm.config.v0+json",
+        annotations )
+
+  // The assembly shared by every artifact form: descriptor the config blob, wrap it and
+  // the layers in a manifest, and name that manifest from a single-entry index.
+  private def assemble
+    ( layers:      List[Layer],
+      config:      Oci.Config,
+      configBytes: Data,
+      configType:  MediaType,
+      annotations: Optional[Map[Text, Text]] )
+  :   Image =
+
     val configDescriptor = descriptorOf(configType, configBytes)
 
     val manifestType = media"application/vnd.oci.image.manifest.v1+json"
@@ -92,12 +138,12 @@ object Image:
     val index      = Index(2, indexType, List(manifestDescriptor))
     val indexBytes = render(index)
 
-    Image(layers, imageConfig, configBytes, configDescriptor, manifest, manifestBytes,
+    Image(layers, config, configBytes, configDescriptor, manifest, manifestBytes,
         manifestDescriptor, index, indexBytes)
 
 case class Image
   ( layers:             List[Layer],
-    imageConfig:        ImageConfig,
+    config:             Oci.Config,
     configBytes:        Data,
     configDescriptor:   Descriptor,
     manifest:           Oci.Manifest,
@@ -105,6 +151,12 @@ case class Image
     manifestDescriptor: Descriptor,
     index:              Index,
     indexBytes:         Data ):
+
+  // The config blob narrowed to whichever form it takes; each is `Unset` for an image of
+  // the other kind, so a caller that knows which it built can read the typed document
+  // without a match.
+  def imageConfig: Optional[ImageConfig] = config.only { case config: ImageConfig => config }
+  def wasmConfig: Optional[WasmConfig] = config.only { case config: WasmConfig => config }
 
   // Every blob in the image, as `(digest, bytes)` pairs: the config, each layer,
   // and the manifest.

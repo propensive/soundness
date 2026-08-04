@@ -87,24 +87,30 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == List(t"hello.txt"))
 
     suite(m"Image config"):
+      val imageConfig = image.imageConfig.vouch
+
+      test(m"an image built with layers carries an image config, not a wasm one"):
+        (image.imageConfig.present, image.wasmConfig.present)
+      . assert(_ == (true, false))
+
       test(m"rootfs diff_ids list the layer diff_id in order"):
-        image.imageConfig.rootfs.diff_ids
+        imageConfig.rootfs.diff_ids
       . assert(_ == List(layer.diffId))
 
       test(m"rootfs type is 'layers'"):
-        image.imageConfig.rootfs.`type`
+        imageConfig.rootfs.`type`
       . assert(_ == t"layers")
 
       test(m"architecture and os default to amd64/linux"):
-        (image.imageConfig.architecture, image.imageConfig.os)
+        (imageConfig.architecture, imageConfig.os)
       . assert(_ == (t"amd64", t"linux"))
 
       test(m"config blob JSON uses the snake_case diff_ids key"):
-        image.imageConfig.in[Json].show.s.contains("\"diff_ids\"")
+        imageConfig.in[Json].show.s.contains("\"diff_ids\"")
       . assert(_ == true)
 
       test(m"config blob JSON preserves the capitalised Cmd key"):
-        image.imageConfig.in[Json].show.s.contains("\"Cmd\"")
+        imageConfig.in[Json].show.s.contains("\"Cmd\"")
       . assert(_ == true)
 
     suite(m"Manifest"):
@@ -185,7 +191,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"the image config round-trips"):
         archiveData.open[Image]() { handle ?=> handle.imageConfig }
-      . assert(_ == image.imageConfig)
+      . assert(_ == image.imageConfig.vouch)
 
       test(m"a layer's stored blob streams verbatim"):
         archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.head).memoize.to[List] }
@@ -234,6 +240,98 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       test(m"opening an archive for writing is refused"):
         failure(archiveData.open[Image](Write) { handle ?=> () })
       . assert(_ == OciError.Reason.WriteUnsupported)
+
+    suite(m"Wasm OCI artifact"):
+      // Not a real component: the artifact machinery never parses the bytes, so an
+      // arbitrary payload exercises every digest, descriptor and document the same way.
+      val component = t" asm   ".in[Data]
+
+      val artifact =
+        Image.wasm
+          ( component,
+            exports = List(t"wasi:http/incoming-handler@0.2.0"),
+            imports = List(t"wasi:io/streams@0.2.0"),
+            target  = t"wasi:http/proxy@0.2.0" )
+
+      val wasmConfig = artifact.wasmConfig.vouch
+      val wasmLayer  = artifact.layers.head
+
+      test(m"the artifact carries a wasm config, not an image config"):
+        (artifact.wasmConfig.present, artifact.imageConfig.present)
+      . assert(_ == (true, false))
+
+      test(m"the config descriptor uses the wasm artifact media type"):
+        artifact.manifest.config.mediaType
+      . assert(_ == media"application/vnd.wasm.config.v0+json")
+
+      test(m"the single layer is typed application/wasm"):
+        artifact.manifest.layers.map(_.mediaType)
+      . assert(_ == List(media"application/wasm"))
+
+      test(m"the layer is stored uncompressed, verbatim"):
+        wasmLayer.blob.to[List]
+      . assert(_ == component.to[List])
+
+      test(m"an uncompressed layer's diff_id and digest coincide"):
+        wasmLayer.diffId == wasmLayer.digest
+      . assert(_ == true)
+
+      test(m"architecture and os default to wasm/wasip2"):
+        (wasmConfig.architecture, wasmConfig.os)
+      . assert(_ == (t"wasm", t"wasip2"))
+
+      test(m"layerDigests names the component blob"):
+        wasmConfig.layerDigests
+      . assert(_ == List(wasmLayer.digest))
+
+      test(m"the component's exports, imports and target are recorded"):
+        wasmConfig.component.vouch
+      . assert:
+          _ == WasmComponent
+                ( List(t"wasi:http/incoming-handler@0.2.0"),
+                  List(t"wasi:io/streams@0.2.0"),
+                  t"wasi:http/proxy@0.2.0" )
+
+      test(m"config JSON uses the spec's camelCase layerDigests key"):
+        wasmConfig.in[Json].show.s.contains("\"layerDigests\"")
+      . assert(_ == true)
+
+      test(m"config JSON omits created and author when unset"):
+        val json = wasmConfig.in[Json].show.s
+        json.contains("\"created\"") || json.contains("\"author\"")
+      . assert(_ == false)
+
+      test(m"the config blob digest matches the rendered bytes"):
+        artifact.configDescriptor.digest
+      . assert(_ == t"sha256:${artifact.configBytes.digest[Sha2[256]].serialize[Hex]}")
+
+      test(m"the artifact archives as an ordinary oci-layout with three blobs"):
+        val entries =
+          Tarfile.read(artifact.archive.source[Data]).to(List).asInstanceOf[List[bitumen.Tar.Entry]]
+
+        val names = entries.map(_.entryName)
+        (names.has(t"oci-layout"), names.stdlib.count(_.s.startsWith("blobs/sha256/")))
+      . assert(_ == (true, 3))
+
+      test(m"the component round-trips out of the archive unchanged"):
+        val archived = artifact.archive.source[Data].memoize
+        archived.open[Image]() { handle ?=> handle.layer(artifact.manifest.layers.head).memoize.to[List] }
+      . assert(_ == component.to[List])
+
+      test(m"the wasm config round-trips, digest-verified"):
+        val archived = artifact.archive.source[Data].memoize
+        archived.open[Image]() { handle ?=> handle.wasmConfig }
+      . assert(_ == wasmConfig)
+
+      test(m"a reader dispatches on the config media type without being told"):
+        val archived = artifact.archive.source[Data].memoize
+        archived.open[Image]() { handle ?=> handle.config.only { case _: WasmConfig => true } }
+      . assert(_ == true)
+
+      test(m"the same reader still recognises a classic image config"):
+        val archived = image.archive.source[Data].memoize
+        archived.open[Image]() { handle ?=> handle.config.only { case _: ImageConfig => true } }
+      . assert(_ == true)
 
     suite(m"containerd over a gRPC loopback"):
       import threading.virtualThreading
