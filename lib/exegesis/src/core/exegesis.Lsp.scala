@@ -35,11 +35,17 @@ package exegesis
 import scala.caps
 import scala.collection.mutable as scm
 
+import java.io as ji
+
+import ambience.*
 import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import eucalyptus.*
+import fulminate.*
 import gossamer.*
+import guillotine.*
 import hieroglyph.*
 import jacinta.*
 import obligatory.*
@@ -61,6 +67,11 @@ object Lsp:
     def span: Span = Span.line(line.z, character.z, 0)
 
   object Range:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: Range is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
     def from(span: Span): Optional[Range] = span.startLine.let: startLine =>
       val startColumn = span.startColumn.lay(0)(_.n0)
       val endLine = span.endLine.lay(startLine.n0)(_.n0)
@@ -71,7 +82,24 @@ object Lsp:
     def span: Span =
       Span.region(start.line.z, start.character.z, end.line.z, end.character.z)
 
+  object Location:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: Location is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class Location(uri: Text, range: Range)
+
+  object Envelope:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: Envelope is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
+  // Any JSON-RPC message, read only for the two members that decide how it is handled: the method
+  // it names — which a response does not — and the id it correlates on, which a notification does
+  // not. Both are optional, so every message decodes.
+  case class Envelope(method: Optional[Text] = Unset, id: Optional[Json] = Unset)
 
   // Documents
 
@@ -141,6 +169,12 @@ object Lsp:
       workspaceSymbolProvider:          Optional[Boolean]                         = Unset,
       executeCommandProvider:           Optional[ExecuteCommandOptions]           = Unset )
 
+  object InitializeResult:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: InitializeResult is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class InitializeResult
     ( capabilities: ServerCapabilities, serverInfo: Optional[ServerInfo] = Unset )
 
@@ -167,11 +201,29 @@ object Lsp:
       insertText:    Optional[Text]               = Unset,
       data:          Optional[Json]               = Unset )
 
+  object CompletionList:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: CompletionList is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class CompletionList(isIncomplete: Boolean = false, items: List[CompletionItem] = Nil)
+
+  object Hover:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: Hover is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class Hover(contents: MarkupContent, range: Optional[Range] = Unset)
 
   case class ReferenceContext(includeDeclaration: Boolean)
+
+  object DocumentSymbol:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: DocumentSymbol is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class DocumentSymbol
     ( name:           Text,
@@ -182,6 +234,12 @@ object Lsp:
       children:       Optional[List[DocumentSymbol]] = Unset )
 
   case class FormattingOptions(tabSize: Int, insertSpaces: Boolean)
+  object TextEdit:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: TextEdit is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class TextEdit(range: Range, newText: Text)
 
   object WorkspaceEdit:
@@ -219,12 +277,30 @@ object Lsp:
       documentation: Optional[MarkupContent]              = Unset,
       parameters:    Optional[List[ParameterInformation]] = Unset )
 
+  object SignatureHelp:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: SignatureHelp is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class SignatureHelp
     ( signatures: List[SignatureInformation] = Nil, activeSignature: Optional[Int] = Unset )
 
   // Highlights, folding and selection
 
+  object DocumentHighlight:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: DocumentHighlight is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class DocumentHighlight(range: Range, kind: Optional[DocumentHighlightKind] = Unset)
+
+  object FoldingRange:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: FoldingRange is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class FoldingRange
     ( startLine:      Int,
@@ -233,6 +309,12 @@ object Lsp:
       endCharacter:   Optional[Int]  = Unset,
       kind:           Optional[Text] = Unset,
       collapsedText:  Optional[Text] = Unset )
+
+  object SelectionRange:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: SelectionRange is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SelectionRange(range: Range, parent: Optional[SelectionRange] = Unset)
 
@@ -272,7 +354,19 @@ object Lsp:
   // Colors
 
   case class Color(red: Double, green: Double, blue: Double, alpha: Double)
+  object ColorInformation:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: ColorInformation is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class ColorInformation(range: Range, color: Color)
+
+  object ColorPresentation:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: ColorPresentation is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class ColorPresentation
     ( label:               Text,
@@ -300,7 +394,19 @@ object Lsp:
       selectionRange: Range,
       data:           Optional[Json]            = Unset )
 
+  object CallHierarchyIncomingCall:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: CallHierarchyIncomingCall is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class CallHierarchyIncomingCall(from: CallHierarchyItem, fromRanges: List[Range])
+  object CallHierarchyOutgoingCall:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: CallHierarchyOutgoingCall is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class CallHierarchyOutgoingCall(to: CallHierarchyItem, fromRanges: List[Range])
 
   object TypeHierarchyItem:
@@ -325,8 +431,20 @@ object Lsp:
   // Semantic tokens
 
   case class SemanticTokensLegend(tokenTypes: List[Text], tokenModifiers: List[Text])
+  object SemanticTokens:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: SemanticTokens is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class SemanticTokens(resultId: Optional[Text] = Unset, data: List[Int] = Nil)
   case class SemanticTokensEdit(start: Int, deleteCount: Int, data: Optional[List[Int]] = Unset)
+
+  object SemanticTokensDelta:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: SemanticTokensDelta is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SemanticTokensDelta
     ( resultId: Optional[Text] = Unset, edits: List[SemanticTokensEdit] = Nil )
@@ -361,12 +479,36 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class InlineValueContext(frameId: Int, stoppedLocation: Range)
+  object InlineValueText:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: InlineValueText is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class InlineValueText(range: Range, text: Text)
 
+  object LinkedEditingRanges:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: LinkedEditingRanges is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class LinkedEditingRanges(ranges: List[Range], wordPattern: Optional[Text] = Unset)
+  object Moniker:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: Moniker is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
   case class Moniker(scheme: Text, identifier: Text, unique: Text, kind: Optional[Text] = Unset)
 
   // Pull diagnostics
+
+  object DocumentDiagnosticReport:
+    // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    given decodable: DocumentDiagnosticReport is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class DocumentDiagnosticReport
     ( kind: Text = t"full", resultId: Optional[Text] = Unset, items: List[Diagnostic] = Nil )
@@ -1291,6 +1433,23 @@ object Lsp:
   // escape hatch, and the routing used by `listen`.
   def dispatcher(server: Lsp): Json => Optional[Json] = LspDispatch(server)
 
+  // The method a message names, or `Unset` if it names none — which marks it a response.
+  private[exegesis] def method(json: Json): Optional[Text] = envelope(json).method
+
+  // The id a message correlates on, for a message of any kind. `JsonRpc.Request` and
+  // `JsonRpc.Response` each demand a member — `method`, `result` — that the other kind lacks, and
+  // an error response has neither, so neither can read the id of an arbitrary message.
+  private[exegesis] def identifier(json: Json): Optional[Json] = envelope(json).id
+
+  private[exegesis] def envelope(json: Json): Envelope =
+    import strategies.throwUnsafely
+    try json.as[Envelope] catch case _: Exception => Envelope()
+
+  // The `params` of a message, or the whole message if it has none.
+  private[exegesis] def params(json: Json): Json =
+    import dynamicJsonAccess.enabled
+    try json.params catch case _: Exception => json
+
   private[exegesis] def requestId(json: Json): Optional[Json] =
     // Throwing rather than `safely`: the request decodable cannot thread the boundary tactic
     // under separation checking, and an unreadable id is simply absent.
@@ -1308,9 +1467,119 @@ object Lsp:
       def received(message: Text): Unit = ()
       def sent(message: Text): Unit = ()
 
+    // Supplied contextually, as for `Listener.quiet`.
+    given silent: Observer = Silent
+
   trait Observer:
     def received(message: Text): Unit
     def sent(message: Text): Unit
+
+  object Listener:
+    // The default: an editor that sends but never listens. Legitimate for a one-shot query, and
+    // the right default for a proxy, which relays what it receives rather than acting on it.
+    object Quiet extends Listener
+
+    // Supplied contextually, so that a listener never has to be bound to a name at the use site:
+    // an instance capturing the session's monitor would hide it from everything defined after it.
+    given quiet: Listener = Quiet
+
+  // The inbound half of a client's exchange with a server: the notifications a server sends
+  // unbidden, and the requests it makes of its client. Unlike `Observer`, whose two methods are
+  // abstract, every method here has a no-op default — a listener implements only the handful of
+  // messages it acts on, out of a surface that grows with the protocol.
+  trait Listener:
+    def diagnostics(uri: Text, version: Optional[Int], reports: List[Diagnostic]): Unit = ()
+    def message(kind: MessageType, text: Text): Unit = ()
+    def log(kind: MessageType, text: Text): Unit = ()
+    def trace(text: Text): Unit = ()
+    def telemetry(payload: Json): Unit = ()
+    def progress(token: Json, value: Json): Unit = ()
+    def cancel(id: Json): Unit = ()
+
+    // The requests a server makes of its client — `workspace/applyEdit`,
+    // `workspace/configuration`, `window/showMessageRequest`, `client/registerCapability`, and
+    // whatever else a particular server asks for. These are passed raw, rather than modelled: the
+    // set is open, and a client that does not advertise a capability is not asked. `Unset` answers
+    // with JSON `null`, which a server must tolerate for a capability its client never claimed.
+    def request(method: Text, params: Json): Optional[Json] = Unset
+
+    // Every message the server sends, before the session routes it to the handlers above.
+    // Returning `true` means the message has been dealt with and should be routed no further,
+    // which is what a proxy — relaying messages rather than acting on them, responses included —
+    // needs, and what the named handlers cannot express.
+    def intercept(message: Json): Boolean = false
+
+  // What a proxy does with a message it has been shown.
+  enum Transit:
+    // Pass it on unchanged: the default, and what happens to everything unregistered.
+    case Forward
+
+    // Pass on this message instead.
+    case Rewrite(message: Json)
+
+    // Swallow it. A request dropped on the way out is never answered, so drop notifications, or
+    // answer the request here instead.
+    case Drop
+
+    // Answer the request without troubling the server, which never sees it. Ignored for a
+    // message that is not a request.
+    case Answer(result: Json)
+
+  object Server:
+    // Named, not anonymous: an anonymous subclass would freshen the capability types in the
+    // instance's inferred `Result` (see the note on coaxial's `Sessional` instance). A listener or
+    // an observer is supplied by constructing an `LspSessional` explicitly and binding it as a
+    // given; the ambient instance is the silent one.
+    // The listener and the observer come from the context rather than from the target: a value
+    // capturing the session's monitor may not be bound to a name at the use site, and an instance
+    // summoned in passing never is.
+    given sessional: (monitor:     Monitor,
+                      probate:     Probate,
+                      diagnostics: Diagnostics,
+                      working:     WorkingDirectory,
+                      listener:    Lsp.Listener^,
+                      observer:    Lsp.Observer^)
+    =>  (LspSessional^{monitor}) =
+      // The listener and the observer are sealed into the instance: both are used only while the
+      // session is open — which the lambda `session` lends to bounds — and admitting them to the
+      // instance's type would put a capability in the type of anything that summons it, including
+      // a static object's method.
+      LspSessional
+       ( caps.unsafe.unsafeAssumePure(listener), caps.unsafe.unsafeAssumePure(observer) )
+
+    // A server launched as a subprocess: how an editor starts a language server.
+    def apply(command: guillotine.Command): Server = Server.Process(command)
+
+    // A server already running behind a pair of streams. Widened to `Server`, which is what a
+    // session's typeclass instance is indexed by.
+    def streams(input: ji.InputStream, output: ji.OutputStream): Server =
+      Server.Streams(input, output)
+
+  // A language server this process can speak to: the far end of the exchange `listen` serves.
+  // `session` — aperture's — opens the channel to it, lends a connection for the duration of a
+  // lambda, and disposes of both afterwards, so neither can outlive the server that answers them.
+  //
+  // A plain value, holding no capability: the channel is minted when the session opens and
+  // disposed of when it ends, and a stream or an intake — single-owner, and dead once the server
+  // is gone — has no business being carried in a description of where to find a server.
+  enum Server:
+    // Standard input and output of a subprocess carry the protocol.
+    case Process(command: guillotine.Command)
+
+    // A server already running behind a pair of byte streams: one in this process, one behind a
+    // socket, or a fixture in a test. `java.io` streams rather than turbulence's, for the same
+    // reason: these are inert handles, and the single-owner stream and intake are minted from
+    // them per session.
+    case Streams(input: ji.InputStream, output: ji.OutputStream)
+
+  // Serves an editor over the stdio transport while forwarding everything to a language server
+  // upstream, amending what the block registers on the lent proxy. See `LspProxy`.
+  def proxy(upstream: Server, observer: Observer = Observer.Silent)
+     ( register: (proxy: LspProxy^) ?=> Unit )
+     ( using Stdio^, Monitor, Probate, WorkingDirectory, Diagnostics )
+  :   Unit =
+
+    LspProxy.run(upstream, observer)(register)
 
   // Establishes a Language Server over the stdio transport. The block registers the server's
   // feature handlers on the lent registry; once it returns, the registry is consumed and frozen,
@@ -1346,28 +1615,21 @@ object Lsp:
       session.outgoing.stdlib.iterator.each: json =>
         val body: Text = json.encode
         observer.sent(body)
-        val payload: Data = body.in[Data]
-        summon[Stdio].write(t"Content-Length: ${payload.length}\r\n\r\n".in[Data])
-        summon[Stdio].write(payload)
+        summon[Stdio].write(LspTransport.frame(body))
         summon[Stdio].out.flush()
 
-    summon[Stdio].in.source[Data].toProgression.stdlib.iterator.frames[ContentLength].each:
-      frame =>
-        // Observed before parsing, so a message that fails to decode is logged as it arrived.
-        val message: Text = frame.utf8
-        observer.received(message)
+    LspTransport.pump(summon[Stdio].in.source[Data], observer): message =>
+      safely(message.as[Json]).lay(session.put(JsonRpc.failure(-32700, t"Parse error"))):
+        json =>
+          val response: Optional[Json] =
+            try dispatch(json) catch
+              case error: JsonError =>
+                JsonRpc.failure(-32602, t"Invalid params", requestId(json))
 
-        safely(message.as[Json]).lay(session.put(JsonRpc.failure(-32700, t"Parse error"))):
-          json =>
-            val response: Optional[Json] =
-              try dispatch(json) catch
-                case error: JsonError =>
-                  JsonRpc.failure(-32602, t"Invalid params", requestId(json))
+              case error: Exception =>
+                JsonRpc.failure(-32603, t"Internal error", requestId(json))
 
-                case error: Exception =>
-                  JsonRpc.failure(-32603, t"Internal error", requestId(json))
-
-            session.conclude(json, response).let(session.put)
+          session.conclude(json, response).let(session.put)
 
     writer.cancel()
 
@@ -1377,7 +1639,7 @@ object Lsp:
 // protocol would overflow the JVM per-class constant-pool limit. `LspServer.dispatcher` routes each
 // request to the sub-dispatcher whose interface declares its method (see `JsonRpc.methods`).
 
-trait LspLifecycle extends JsonRpc:
+trait LspLifecycle:
 
   @rpc
   def initialize
@@ -1415,7 +1677,7 @@ trait LspLifecycle extends JsonRpc:
   @rpc
   def `textDocument/didClose`(textDocument: Lsp.TextDocumentIdentifier): Unit
 
-trait LspLanguage extends JsonRpc:
+trait LspLanguage:
 
   @rpc
   def `textDocument/completion`
@@ -1464,7 +1726,7 @@ trait LspLanguage extends JsonRpc:
   def `textDocument/signatureHelp`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
   :   Optional[Lsp.SignatureHelp]
 
-trait LspNavigation extends JsonRpc:
+trait LspNavigation:
 
   @rpc
   def `textDocument/declaration`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
@@ -1510,7 +1772,7 @@ trait LspNavigation extends JsonRpc:
     ( textDocument: Lsp.TextDocumentIdentifier, color: Lsp.Color, range: Lsp.Range )
   :   List[Lsp.ColorPresentation]
 
-trait LspEditing extends JsonRpc:
+trait LspEditing:
 
   @rpc
   def `textDocument/rangeFormatting`
@@ -1566,7 +1828,7 @@ trait LspEditing extends JsonRpc:
   @rpc
   def `typeHierarchy/subtypes`(item: Lsp.TypeHierarchyItem): List[Lsp.TypeHierarchyItem]
 
-trait LspAdvanced extends JsonRpc:
+trait LspAdvanced:
 
   @rpc
   def `textDocument/semanticTokens/full`(textDocument: Lsp.TextDocumentIdentifier)
@@ -1609,7 +1871,7 @@ trait LspAdvanced extends JsonRpc:
       previousResultId: Optional[Text] )
   :   Lsp.DocumentDiagnosticReport
 
-trait LspWorkspace extends JsonRpc:
+trait LspWorkspace:
 
   @rpc
   def `workspace/symbol`(query: Text): List[Lsp.WorkspaceSymbol]
@@ -1650,7 +1912,7 @@ trait LspWorkspace extends JsonRpc:
 // The `*/resolve` requests: the client sends back an item it received earlier for the server to
 // fill in lazily-computed fields. Their wire `params` is the bare item, not a `params` object with
 // named fields, so each parameter is marked `@bare` (see `obligatory.bare`).
-trait LspResolve extends JsonRpc:
+trait LspResolve:
 
   @rpc
   def `completionItem/resolve`(@bare item: Lsp.CompletionItem): Lsp.CompletionItem
@@ -1672,6 +1934,18 @@ trait LspResolve extends JsonRpc:
 
 // The full protocol: the union of every sub-interface, fixing `Origin` to `LspClient`. `LspServer`
 // implements this; `LspServer.dispatcher` serves each sub-interface separately, routing by method.
+//
+// `JsonRpc` is mixed in here rather than into each sub-interface, because a sub-interface is also
+// the *caller's* view of the protocol: `JsonRpc.proxy` builds a module implementing it, and a
+// module cannot inherit `JsonRpc`'s abstract `Origin`. Serving is unaffected — `JsonRpc.serve`
+// takes the implementation as an argument, and an `Lsp` conforms to each part.
 trait Lsp
-extends LspLifecycle, LspLanguage, LspNavigation, LspEditing, LspAdvanced, LspWorkspace, LspResolve:
+extends LspLifecycle,
+        LspLanguage,
+        LspNavigation,
+        LspEditing,
+        LspAdvanced,
+        LspWorkspace,
+        LspResolve,
+        JsonRpc:
   type Origin = LspClient

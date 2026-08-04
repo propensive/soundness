@@ -128,6 +128,76 @@ response with the reason's wire code and the request's own id; for a notificatio
 may not be answered, it is reported through `window/logMessage`. Requests for documents
 that are not open, and commands that were never registered, are answered the same way.
 
+### Talking to a server
+
+The same vocabulary reads in the other direction. `Lsp.Server` describes a language server
+this process can speak to — a command to launch, or a pair of streams already connected to
+one — and `session`, the extension method from Soundness's `Sessional` typeclass, opens the
+channel, lends a connection for the duration of a block, and disposes of both afterwards. A
+connection cannot escape the block, so it can never outlive the server that answers it.
+
+```scala
+Lsp.Server(sh"rust-analyzer").session: server ?=>
+  server.initialize(root = t"file:///project")
+  server.initialized()
+  server.open(t"file:///project/src/main.rs", t"rust", source)
+  server.hover(t"file:///project/src/main.rs", Position(10, 4))
+```
+
+Requests return the same types a server's handlers return — `Optional[Hover]`,
+`CompletionList`, `List[Location]` — and notifications (`open`, `edit`, `save`, `close`)
+return nothing. An error response from the server is raised as an `LspError` carrying the
+reason its wire code names, rather than being awaited forever. Requests are answered on a
+task of their own, so several may be in flight at once, and may come back in any order.
+
+What a server says unbidden — diagnostics, window messages, progress — reaches an
+`Lsp.Listener`, whose methods all default to doing nothing, so a client implements only what
+it acts on. A listener is supplied contextually:
+
+```scala
+given diagnostics: Lsp.Listener = new Lsp.Listener:
+  override def diagnostics(uri: Text, version: Optional[Int], reports: List[Diagnostic])
+  :   Unit =
+    reports.each { report => Out.println(t"$uri: ${report.message}") }
+```
+
+### Proxying a server
+
+A proxy is both halves at once: it serves an editor over its own standard input and output
+while holding a session with a real language server, forwarding everything between them and
+amending what it chooses to. `Lsp.proxy` runs that exchange, and the block registers the
+amendments:
+
+```scala
+Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
+  rewrite.capabilities(_.copy(hoverProvider = true))
+
+  rewrite.hover: hover =>
+    hover.copy(contents = MarkupContent(value = t"_(proxied)_ ${hover.contents.value}"))
+
+  rewrite.diagnostics(_.filter(_.severity != DiagnosticSeverity.Hint))
+```
+
+Everything not registered is forwarded byte for byte: methods this library does not model,
+capabilities it does not know about, and the editor's own request ids, which are never
+rewritten. The relay is asynchronous in both directions, so a proxy changes what an exchange
+says, not how it behaves.
+
+Each `rewrite` combinator decodes the payload into the same type the server side uses,
+applies the function and re-encodes it; `rewrite.result` and `rewrite.notification` take a
+method name and a `Json => Json` for anything without a combinator of its own. For whole
+messages there are two more hooks — `rewrite.outbound` and `rewrite.inbound` — each
+returning what should become of the message:
+
+```scala
+rewrite.outbound: (method, message) =>
+  if method == t"textDocument/inlineValue" then Transit.Drop else Transit.Forward
+```
+
+`Transit.Forward` passes the message on, `Transit.Rewrite` passes on a different one,
+`Transit.Drop` swallows it, and `Transit.Answer` answers a request here, so that the server
+upstream never sees it.
+
 ### Running the server
 
 `Lsp.listen` serves standard input until it is exhausted, so a server object supplies a

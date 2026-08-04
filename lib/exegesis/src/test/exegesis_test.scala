@@ -32,6 +32,7 @@
                                                                                                   */
 package exegesis
 
+import scala.caps
 import scala.collection.mutable as scm
 
 import java.io as ji
@@ -40,9 +41,12 @@ import java.util.concurrent as juc
 import soundness.*
 
 import charEncoders.utf8Encoder
+import errorDiagnostics.stackTracesDiagnostics
+import logging.silentLogging
 import probates.awaitProbate
 import strategies.throwUnsafely
 import threading.virtualThreading
+import workingDirectories.defaultWorkingDirectory
 
 // Kept as a top-level object (its own class) rather than nested in `Tests` so the LSP codecs the
 // dispatcher inlines do not add to the `Tests` class, which would otherwise exceed the JVM
@@ -143,6 +147,114 @@ object TrafficFixture:
         hover(Hover(MarkupContent(value = document.text)))
 
     List.from(log.synchronized(log.toList))
+
+// Runs a real `Lsp.listen` server on its own task, joined to a client by a pair of pipes: an
+// exchange that crosses the framing and the codecs in both directions, exactly as it would between
+// an editor and a language server it launched. Top-level for the same reason as `TestServer`: both
+// halves inline the LSP codecs, which would otherwise count against the `Tests` class's size.
+object LoopbackFixture:
+  import Lsp.*
+
+  // A listener that records what the server said unbidden.
+  class Record() extends Lsp.Listener:
+    private val log: scm.ArrayBuffer[Text] = scm.ArrayBuffer()
+    def notes: List[Text] = log.synchronized(List.from(log.toList))
+
+    override def diagnostics(uri: Text, version: Optional[Int], reports: List[Diagnostic]): Unit =
+      val messages = reports.stdlib.map(_.message.s).mkString(",")
+      log.synchronized(log.append(t"diagnostics:$uri:$messages"))
+
+    override def message(kind: MessageType, text: Text): Unit =
+      log.synchronized(log.append(t"message:$text"))
+
+  def connect[result](using listener: Lsp.Listener^)(lambda: (session: LspConnection^) ?=> result)
+  :   result =
+
+    val toServer: ji.PipedOutputStream = ji.PipedOutputStream()
+    val serverIn: ji.PipedInputStream = ji.PipedInputStream(toServer, 65536)
+    val toClient: ji.PipedOutputStream = ji.PipedOutputStream()
+    val clientIn: ji.PipedInputStream = ji.PipedInputStream(toClient, 65536)
+
+    given stdio: Stdio =
+      Stdio(ji.PrintStream(toClient, true), null, serverIn, termcapDefinitions.basicTermcap)
+
+    supervise:
+      async:
+        Lsp.listen(t"Loopback", t"1.0"):
+          opened:
+            client.publishDiagnostics
+              ( document.uri,
+                List
+                  ( Diagnostic
+                      ( range    = document.fullRange,
+                        severity = DiagnosticSeverity.Warning,
+                        message  = t"opened" ) ) )
+
+          hover(Hover(MarkupContent(value = document.text)))
+
+          complete():
+            CompletionList(items = List(CompletionItem(label = t"loopback")))
+
+          command(t"test.fail"):
+            raise(LspError(LspError.Reason.RequestFailed, t"deliberate"))
+            Unset
+
+      Lsp.Server.streams(clientIn, toServer).session: connection ?=>
+        lambda
+
+// Editor, proxy and server, all three in this process, joined by two pairs of pipes: the editor
+// speaks to the proxy over the proxy's own standard input and output, and the proxy holds a session
+// with the server it forwards to. Nothing here knows it is not talking to a real language server
+// over a real subprocess pipe.
+object ProxyFixture:
+  import Lsp.*
+
+  def connect[result](using listener: Lsp.Listener^)
+     ( lambda: (session: LspConnection^) ?=> result )
+  :   result =
+
+    val toServer: ji.PipedOutputStream = ji.PipedOutputStream()
+    val serverIn: ji.PipedInputStream = ji.PipedInputStream(toServer, 65536)
+    val fromServer: ji.PipedOutputStream = ji.PipedOutputStream()
+    val serverOut: ji.PipedInputStream = ji.PipedInputStream(fromServer, 65536)
+    val toProxy: ji.PipedOutputStream = ji.PipedOutputStream()
+    val proxyIn: ji.PipedInputStream = ji.PipedInputStream(toProxy, 65536)
+    val fromProxy: ji.PipedOutputStream = ji.PipedOutputStream()
+    val proxyOut: ji.PipedInputStream = ji.PipedInputStream(fromProxy, 65536)
+
+    supervise:
+      async:
+        given stdio: Stdio =
+          Stdio(ji.PrintStream(fromServer, true), null, serverIn, termcapDefinitions.basicTermcap)
+
+        Lsp.listen(t"Upstream", t"1.0"):
+          opened:
+            client.publishDiagnostics
+              ( document.uri,
+                List
+                  ( Diagnostic
+                      ( range    = document.fullRange,
+                        severity = DiagnosticSeverity.Warning,
+                        message  = t"upstream" ) ) )
+
+          hover(Hover(MarkupContent(value = document.text)))
+
+          complete():
+            CompletionList(items = List(CompletionItem(label = t"upstream")))
+
+      async:
+        given stdio: Stdio =
+          Stdio(ji.PrintStream(fromProxy, true), null, proxyIn, termcapDefinitions.basicTermcap)
+
+        Lsp.proxy(Lsp.Server.streams(serverOut, toServer)):
+          rewrite.capabilities(_.copy(renameProvider = true))
+          rewrite.hover: hover =>
+            hover.copy(contents = MarkupContent(value = t"[${hover.contents.value}]"))
+
+          rewrite.diagnostics(_.map(_.copy(message = t"proxied")))
+
+      Lsp.Server.streams(proxyOut, toProxy).session: connection ?=>
+        lambda
 
 object Tests extends Suite(m"Exegesis Tests"):
   import Lsp.*
@@ -358,5 +470,109 @@ object Tests extends Suite(m"Exegesis Tests"):
       test(m"an outbound message is observed as the response to the request"):
         traffic.stdlib.last._2.as[Json].as[JsonRpc.Response].id.vouch.as[Int]
       . assert(_ == 0)
+
+    suite(m"Client sessions"):
+      test(m"initialize reports the capabilities the server derived"):
+        val record = LoopbackFixture.Record()
+        given listener: (LoopbackFixture.Record^) = record
+
+        LoopbackFixture.connect: server ?=>
+          val result = server.initialize(root = t"file:///project")
+          server.initialized()
+          (result.serverInfo.let(_.name), result.capabilities.hoverProvider)
+
+      . assert(_ == (t"Loopback", true))
+
+      test(m"a request round-trips through the framing and the codecs"):
+        val record = LoopbackFixture.Record()
+        given listener: (LoopbackFixture.Record^) = record
+
+        LoopbackFixture.connect: server ?=>
+          server.initialize()
+          server.initialized()
+          server.open(t"file:///a.scala", t"scala", t"hello")
+          server.hover(t"file:///a.scala", Position(0, 0)).let(_.contents.value)
+
+      . assert(_ == t"hello")
+
+      test(m"a completion request decodes the server's list"):
+        val record = LoopbackFixture.Record()
+        given listener: (LoopbackFixture.Record^) = record
+
+        LoopbackFixture.connect: server ?=>
+          server.initialize()
+          server.initialized()
+          server.open(t"file:///a.scala", t"scala", t"hello")
+          server.complete(t"file:///a.scala", Position(0, 0)).items.stdlib.map(_.label.s)
+
+      . assert(_ == List("loopback"))
+
+      test(m"a server notification reaches the listener"):
+        val record = LoopbackFixture.Record()
+        given listener: (LoopbackFixture.Record^) = record
+
+        LoopbackFixture.connect: server ?=>
+          server.initialize()
+          server.initialized()
+          server.open(t"file:///a.scala", t"scala", t"hello")
+          // The notification is unsolicited, so a request is used to establish that it has been
+          // read: the server publishes before it answers.
+          server.hover(t"file:///a.scala", Position(0, 0))
+
+        record.notes.stdlib.map(_.s)
+
+      . assert(_ == List("diagnostics:file:///a.scala:opened"))
+
+      test(m"an error response is raised as an LspError, not awaited forever"):
+        val record = LoopbackFixture.Record()
+        given listener: (LoopbackFixture.Record^) = record
+
+        LoopbackFixture.connect: server ?=>
+          server.initialize()
+          server.initialized()
+          capture[LspError](server.execute(t"test.fail")).reason
+
+      . assert(_ == LspError.Reason.RequestFailed)
+
+    suite(m"Proxying"):
+      test(m"the proxy amends the capabilities the upstream server advertised"):
+        ProxyFixture.connect: server ?=>
+          val result = server.initialize()
+          (result.serverInfo.let(_.name), result.capabilities.renameProvider)
+
+      . assert(_ == (t"Upstream", true))
+
+      test(m"a registered rewriter amends the upstream response"):
+        ProxyFixture.connect: server ?=>
+          server.initialize()
+          server.initialized()
+          server.open(t"file:///a.scala", t"scala", t"hello")
+          server.hover(t"file:///a.scala", Position(0, 0)).let(_.contents.value)
+
+      . assert(_ == t"[hello]")
+
+      test(m"a rewriter amends a notification the server sent unbidden"):
+        val record = LoopbackFixture.Record()
+        given listener: (LoopbackFixture.Record^) = record
+
+        ProxyFixture.connect: server ?=>
+          server.initialize()
+          server.initialized()
+          server.open(t"file:///a.scala", t"scala", t"hello")
+          // A request establishes that the notification preceding it has been read.
+          server.hover(t"file:///a.scala", Position(0, 0))
+
+        record.notes.stdlib.map(_.s)
+
+      . assert(_ == List("diagnostics:file:///a.scala:proxied"))
+
+      test(m"an unregistered method passes through untouched"):
+        ProxyFixture.connect: server ?=>
+          server.initialize()
+          server.initialized()
+          server.open(t"file:///a.scala", t"scala", t"hello")
+          server.complete(t"file:///a.scala", Position(0, 0)).items.stdlib.map(_.label.s)
+
+      . assert(_ == List("upstream"))
 
     CaptureTests()
