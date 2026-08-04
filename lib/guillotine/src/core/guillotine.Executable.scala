@@ -160,5 +160,9 @@ case class Pipeline(commands: Command*) extends Executable:
 
     Log.info(ExecEvent.PipelineStart(commands.to(List)))
 
-    val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.last
-    new Job[Exec, result](pipeline)
+    val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala
+
+    // The tail speaks for the pipeline — its output and its exit status are the pipeline's — but
+    // input is written to the head: `startPipeline` wires every later process's standard input to
+    // its predecessor's output, and replaces it with a stream that throws on any write.
+    new Job[Exec, result](pipeline.last, pipeline.head)
