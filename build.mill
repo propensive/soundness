@@ -556,7 +556,7 @@ object soundness extends Toolchain:
     pneumatic.core, pneumatic.flate,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
-    prophesy.core)
+    prophesy.core, anticipation.color, anticipation.generic)
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
@@ -588,7 +588,7 @@ object soundness extends Toolchain:
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
     anthology.lira,
     anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`,
-    delicious.ansi)
+    delicious.ansi, anthology.kotlin, anthology.oci, hyperbole.stacks)
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
@@ -598,7 +598,8 @@ object soundness extends Toolchain:
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
-    xenophile.wit, xenophile.cffi, xenophile.scalanative, telekinesis.core, graffiti.core)
+    xenophile.wit, xenophile.cffi, xenophile.scalanative, xenophile.kotlin, telekinesis.core,
+    graffiti.core)
 
   // The three platform aggregates. `jvm` is every JVM module (the group bundles); `wasi` is the
   // WASI backends (compiled here as ordinary JVM, which typechecks their deferred `invoke`
