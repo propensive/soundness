@@ -47,17 +47,112 @@ import vacuous.*
 // `record`s become navigable foreign types whose members are their fields; an `interface`'s
 // functions become members of a type named after the interface; `enum`s and `flags` are treated as
 // `s32`; `type` aliases are resolved. The `package` declaration is read to qualify each interface's
-// functions with their Component Model module id (e.g. `wasi:random/random@0.2.0`); `use`, `world`,
-// `variant` and `resource` declarations are recognised but their bodies are skipped. Line and block
-// comments are ignored.
+// functions with their Component Model module id (e.g. `wasi:random/random@0.2.0`); `use`,
+// `variant` and `resource` declarations are recognised but their bodies are skipped. A `world`'s
+// body is skipped for navigation purposes, but `worlds` reads its imports and exports. Line and
+// block comments are ignored.
 object WitDialect extends Dialect:
+  // The imports and exports of a `world` declaration, as Component Model interface ids. A world
+  // states which host capabilities a component needs and which interfaces it offers — which is
+  // precisely what a Wasm OCI Artifact's config records, so a packager can describe a component
+  // from the world it was linked against without disassembling the component itself.
+  case class World(name: Text, imports: List[Text], exports: List[Text])
+
   def parse(source: Text): proscenium.Map[Text, proscenium.Map[Text, Prototype]] =
     parse0(source).asInstanceOf[proscenium.Map[Text, proscenium.Map[Text, Prototype]]]
+
+  // Every `world` declared in a source, by name. A bare interface name (`import monotonic-clock;`,
+  // naming an interface in the same package) is qualified with the package id, so every id in the
+  // result is a full Component Model id. Inline definitions — `import name: func(…)` and
+  // `export name: interface { … }` — reference no interface, so they contribute no id.
+  def worlds(source: Text): proscenium.Map[Text, World] =
+    worlds0(tokenize(source.s), Map(), Unset).asInstanceOf[proscenium.Map[Text, World]]
 
   private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
     val (types, typedefs) = items(tokenize(source.s), Map(), Map(), Unset)
 
     resolve(types, typedefs)
+
+  // Walks the top-level items looking only for `world` declarations, tracking the `package` id so
+  // bare interface names inside a world can be qualified.
+  private def worlds0(tokens: List[String], worlds: Map[Text, World], pkg: Optional[Text])
+  :   Map[Text, World] =
+
+    tokens match
+      case Nil =>
+        worlds
+
+      case "package" :: rest =>
+        val (id, after) = packageId(rest)
+        worlds0(after, worlds, id)
+
+      case "world" :: name :: "{" :: rest =>
+        val (parsed, after) = world(rest, name.tt, Nil, Nil, pkg)
+        worlds0(after, worlds.updated(name.tt, parsed), pkg)
+
+      // An interface body can contain neither a world nor a package, so it is skipped wholesale;
+      // without this, a `use` inside one could be mistaken for a top-level item.
+      case "interface" :: _ :: "{" :: rest =>
+        worlds0(skipBraces(rest, 1), worlds, pkg)
+
+      case _ :: rest =>
+        worlds0(rest, worlds, pkg)
+
+  // Walks a world body, accumulating the ids named by its `import` and `export` items. Anything
+  // else — `include`, `use`, a stray token — is stepped over.
+  private def world
+    ( tokens:  List[String],
+      name:    Text,
+      imports: List[Text],
+      exports: List[Text],
+      pkg:     Optional[Text] )
+  :   (World, List[String]) =
+
+    def built = World(name, List.of(imports.stdlib.reverse), List.of(exports.stdlib.reverse))
+
+    tokens match
+      case Nil =>
+        (built, Nil)
+
+      case "}" :: rest =>
+        (built, rest)
+
+      case "import" :: rest =>
+        val (id, after) = worldItem(rest, Nil, pkg)
+        world(after, name, id.lay(imports)(_ :: imports), exports, pkg)
+
+      case "export" :: rest =>
+        val (id, after) = worldItem(rest, Nil, pkg)
+        world(after, name, imports, id.lay(exports)(_ :: exports), pkg)
+
+      case _ :: rest =>
+        world(rest, name, imports, exports, pkg)
+
+  // Reads one `import`/`export` item, returning the interface id it references — `Unset` for an
+  // inline definition, which references none — and the tokens after it. Ids contain no internal
+  // whitespace, so joining the tokens with no separator reassembles `wasi:cli/run@0.2.0` exactly.
+  private def worldItem(tokens: List[String], acc: List[String], pkg: Optional[Text])
+  :   (Optional[Text], List[String]) =
+
+    tokens match
+      case Nil =>
+        (Unset, Nil)
+
+      // `name: interface { … }` defines an interface inline rather than referencing one.
+      case "{" :: rest =>
+        (Unset, skipBraces(rest, 1))
+
+      case ";" :: rest =>
+        val id = acc.stdlib.reverse.mkString
+
+        // `name: func(…)` is an inline function import, not an interface reference. A name with no
+        // `:` is an interface in this package, which the package id qualifies.
+        if id.contains("func(") then (Unset, rest)
+        else if id.contains(":") then (id.tt, rest)
+        else (moduleId(pkg, id.tt).or(id.tt), rest)
+
+      case head :: rest =>
+        worldItem(rest, head :: acc, pkg)
 
   // WIT identifiers are kebab-case, so `-` is an identifier character — except in `->` (the
   // return-type arrow). Other punctuation becomes single-character tokens; `//` and `/* … */`
