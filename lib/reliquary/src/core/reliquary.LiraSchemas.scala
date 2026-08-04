@@ -43,11 +43,13 @@ import vacuous.*
 // canonical `.tel` document (at `res/test/reliquary/`) verbatim; the test suite asserts the two
 // stay in agreement and pins each schema's signature as a golden value.
 //
-// The schemas encode the LIRA specification's §14 with the agreed amendments: universes are
-// `jvm | sjsir | nir`; a `Section` may carry a `derivative` hash (its canonical derived JAR); a
-// `version` is optional (a release without one is a development release) and strictly numeric;
-// and a `Dependency` may be scoped to particular universes, or pinned to an exact `build` during
-// development.
+// The schemas encode the LIRA specification's §14: universes are `jvm | sjsir | nir`; a
+// `Section` is keyed by universe and integration (§9.5) and may carry a `derivative` hash (its
+// canonical derived JAR); a `version` is optional (a release without one is a development
+// release) and strictly numeric; a `Dependency` may be scoped to particular universes or
+// integrations, or pinned to an exact `build` during development; and a `Profile` records the
+// ecosystem predicates a release claims, with the guarantee levels its last step did not
+// preserve (§11.6, §12.4).
 object LiraSchemas:
   import Tels.{Field, Polarity, RecordDefinition, Reference, ScalarDefinition, SelectDefinition,
       SelectRef, Struct, Type, Variant}
@@ -84,6 +86,8 @@ object LiraSchemas:
   private val natural:      Type = Reference(t"Natural")
   private val disciplineId: Type = Reference(t"DisciplineId")
   private val identifier:   Type = Reference(t"Identifier")
+  private val profileId:    Type = Reference(t"ProfileId")
+  private val guarantee:    Type = Reference(t"Guarantee")
   private val string:       Type = Reference(t"String")
 
   private val hashScalar: ScalarDefinition = scalar("Hash", "base-256-hash")
@@ -106,6 +110,8 @@ object LiraSchemas:
         field("toolchain", Reference(t"Tool"), repeatable = Loose),
         field("owns", namespace, required = Loose, repeatable = Loose),
         field("api", Reference(t"Api"), repeatable = Loose),
+        field("profile", Reference(t"Profile"), required = Loose, repeatable = Loose),
+        field("integration", Reference(t"Integration"), required = Loose, repeatable = Loose),
         field("dependency", Reference(t"Dependency"), required = Loose, repeatable = Loose),
         field("delta", hash, required = Loose),
         field("section", Reference(t"Section"), repeatable = Loose),
@@ -124,18 +130,28 @@ object LiraSchemas:
         field("discipline", disciplineId),
         field("atoms", hash)),
 
+      record("Profile",
+        field("id", profileId),
+        field("breaks", guarantee, required = Loose, repeatable = Loose)),
+
+      record("Integration",
+        field("id", identifier),
+        field("rank", natural, required = Loose),
+        field("label", string, required = Loose)),
+
       record("Dependency",
         field("module", moduleName),
         field("api", hash),
         field("version", semver, required = Loose),
         field("build", hash, required = Loose),
         field("universe", identifier, required = Loose, repeatable = Loose),
+        field("integration", identifier, required = Loose, repeatable = Loose),
         field("uses", hash, required = Loose),
         field("spans", hash, required = Loose, repeatable = Loose)),
 
       record("Section",
         selectRef("Universe"),
-        field("against", hash, required = Loose, repeatable = Loose),
+        field("integration", identifier, required = Loose),
         field("tree", hash),
         field("delete", string, required = Loose, repeatable = Loose),
         field("derivative", hash, required = Loose)),
@@ -156,7 +172,9 @@ object LiraSchemas:
       scalar("Namespace", "namespace"),
       scalar("Semver", "semver"),
       scalar("Natural", "natural"),
-      scalar("DisciplineId", "discipline-id")),
+      scalar("DisciplineId", "discipline-id"),
+      scalar("ProfileId", "profile-id"),
+      scalar("Guarantee", "guarantee")),
     selects  = Array.of(
       select("Universe",
         variant("jvm"),
@@ -230,7 +248,7 @@ object LiraSchemas:
   // The BASE-256 schema signatures of the five canonical documents, pinned as golden values (the
   // test suite recomputes each from its `res/test/reliquary/*.tel` mirror and checks agreement).
   // A conforming document of each schema carries its signature on the pragma line.
-  val liraSignature:  Text = t"1Ϊð8ƨẉǽhῘĝοΊơḠơǓĺШḤγàӯǽmẗṽFíǽĝӝӖЭ"
+  val liraSignature:  Text = t"ẋḣẀΦḤȐYeû0VǓңңќỵ0ẃẈşȑĺЖȐAÞjìẓȧƟḋh"
   val treeSignature:  Text = t"ǨẙơẗỵclϋẁЫĥᾸMôĮẍOώżӯάǢЗĆӸkҚțȐωǢέӫ"
   val atomsSignature: Text = t"2ӪççÃ5AḟǑXϋƤzᾱĺHϕЂẌǒEẂẁĮί9ḀẘΊÐιЪp"
   val usesSignature:  Text = t"şşCȧOӖGҐΪḍḋjΊӁῚƟȐЌĥέȦЬƜδĻĘ1Ȑḟ6ӟÔḍ"

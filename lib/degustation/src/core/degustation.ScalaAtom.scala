@@ -40,7 +40,7 @@ enum ScalaReference:
   case Own(key: Text)
   case Foreign(key: Text)
 
-// One atom of the `scala-tasty/1` discipline, before hashing: the stable key, whether the atom
+// One atom of the `tasty/1` discipline, before hashing: the stable key, whether the atom
 // is replaceable (an inline or macro body) rather than rigid, the canonical encoding whose hash
 // is the atom's value, and the references collected from a replaceable body.
 case class ScalaAtom

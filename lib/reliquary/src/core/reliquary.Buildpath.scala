@@ -69,34 +69,87 @@ object Buildpath:
       val expected = s"${version.major}.${manifest.lineage.stdlib.size - 1}.${version.patch}"
       abort(LiraError(Reason.VersionProjection(Text(expected))))
 
+// An assignment (§13.3): one integration per release, under which a buildpath's validity is
+// decided. A release declaring no integrations maps to `Unset`, its single implicit one.
+case class Assignment(choices: List[(Text, Optional[Text])]):
+  def apply(module: Text): Optional[Text] =
+    choices.stdlib.find(_(0) == module).map(_(1)).getOrElse(Unset)
+
 // A set of releases intended for joint use (§13). It is unordered — the coherence rules make
 // ordering irrelevant — and every rule here is decidable from manifests alone, without reading
-// any payload. Closure and satisfaction are evaluated per requested universe, since a
-// dependency may be scoped to the universes whose implementations need it.
+// any payload. Closure and satisfaction are evaluated per requested universe and per the
+// integration the assignment chose, since a dependency may be scoped to either axis.
 case class Buildpath(releases: List[LiraManifest]):
 
   def apply(module: Text): Optional[LiraManifest] =
     releases.stdlib.find(_.module == module).getOrElse(Unset)
 
   // The lira#1 reverse lookup: given the hash of a canonical derivative artifact (a classpath
-  // JAR), find the release one of whose sections declares it.
-  def byDerivative(hash: Data): Optional[LiraManifest] =
-    def declares(manifest: LiraManifest): Boolean =
-      manifest.section.stdlib.exists: section =>
-        section.derivative.let { declared => Blob.compare(declared, hash) == 0 }.or(false)
+  // JAR), find the release and the section declaring it — the section, not just the release,
+  // because a derivative belongs to one (universe, integration) cell, so the hash identifies
+  // which integration the artifact is (§13.6).
+  def byDerivative(hash: Data): Optional[(LiraManifest, Section)] =
+    val found = releases.stdlib.flatMap: manifest =>
+      manifest.section.stdlib.collect:
+        case section if section.derivative.let(Blob.compare(_, hash) == 0).or(false) =>
+          (manifest, section)
 
-    releases.stdlib.find(declares).getOrElse(Unset)
+    found.headOption.getOrElse(Unset)
 
-  // §13.3 validity for one universe. Diamond dependencies resolve by construction: requirements
-  // on two snapshots of one module are jointly satisfiable iff some lineage contains both.
-  def validate(universe: Text): List[LiraAdvisory] raises LiraError =
+  // The integrations a release offers, in canonical order (§13.3): ascending `rank`, then
+  // ascending `id`. A release declaring none offers exactly one, its implicit `Unset`. An
+  // unranked integration sorts after every ranked one rather than at zero, so that leaving
+  // `rank` off never silently promotes an alternative above the publisher's preferred build.
+  def candidates(manifest: LiraManifest): scala.List[Optional[Text]] =
+    if manifest.integration.stdlib.isEmpty then scala.List(Unset) else
+      manifest.integration.stdlib.sortBy: integration =>
+        (integration.rank.or(Long.MaxValue), integration.id.s)
+
+      . map { integration => integration.id }.toList
+
+  // §13.3: valid for a universe iff *some* assignment makes it so.
+  //
+  // The search collapses. A buildpath is a *fixed* set of releases, and every rule an assignment
+  // can affect — closure (4) and satisfaction (5) — is a property of one release together with
+  // its own choice: which release provides a module is decided by the buildpath, never by an
+  // integration. So the choices are independent, and the canonical assignment is found by taking,
+  // for each release, the first of its candidates whose own dependencies hold. There is no
+  // backtracking and no combinatorial blow-up, and the result is canonical by construction
+  // because `candidates` is already in (rank, id) order.
+  //
+  // Coupling would appear only in a resolver that also chose *which* releases to include, since
+  // an integration can then pull a module in; that is dependency resolution proper, and it is
+  // outside §13.3, which audits a buildpath it is handed.
+  def resolve(universe: Text): Assignment raises LiraError =
+    val chosen = releases.stdlib.sortBy(_.module.s).map: manifest =>
+      candidates(manifest).find(satisfies(universe, manifest, _)) match
+        case scala.Some(candidate) => (manifest.module, candidate)
+        case _                     => abort(LiraError(Reason.NoAssignment))
+
+    Assignment(List.from(chosen))
+
+  // Whether one release's dependencies hold under one choice of its integration: rules 4 and 5,
+  // as a predicate rather than a diagnosis. `audit` reports which rule failed and why.
+  private def satisfies(universe: Text, manifest: LiraManifest, integration: Optional[Text])
+  :   Boolean =
+
+    manifest.dependency.stdlib.forall: dependency =>
+      if !dependency.applies(universe, integration) then true else
+        apply(dependency.module) match
+          case candidate: LiraManifest =>
+            Lineage.contains(candidate.lineage, dependency.api)
+            && dependency.build.let(Blob.compare(_, candidate.payload.hash) == 0).or(true)
+
+          case _ => false
+
+  // §13.3 structural rules, which no assignment can affect: at most one release per module
+  // (L111) and pairwise-disjoint `owns` claims (L112).
+  private def structural(): Unit raises LiraError =
     val all = releases.stdlib
 
-    // L111: at most one release per module.
     all.groupBy(_.module).foreach: (module, group) =>
       if group.size > 1 then abort(LiraError(Reason.DuplicateModule(module)))
 
-    // L112: `owns` claims pairwise disjoint; a namespace and any dotted extension of it clash.
     val claims = all.flatMap: manifest =>
       manifest.owns.stdlib.map: namespace => (manifest.module, namespace)
 
@@ -109,23 +162,23 @@ case class Buildpath(releases: List[LiraManifest]):
           if one == two || one.startsWith(two + ".") || two.startsWith(one + ".")
           then abort(LiraError(Reason.NamespaceClash(left(1))))
 
+  // Closure (L113) and satisfaction (L114) under one assignment, reporting the precise rule that
+  // fails. `resolve` answers only whether *some* assignment works; this says why a given one does
+  // not, which is what a diagnostic needs.
+  private def audit(universe: Text, assignment: Assignment)
+  :   List[LiraAdvisory] raises LiraError =
+
     val advisories = scala.collection.mutable.ArrayBuffer[LiraAdvisory]()
 
-    all.foreach: manifest =>
+    releases.stdlib.foreach: manifest =>
       manifest.dependency.stdlib.foreach: dependency =>
-        val applies =
-          dependency.universe.stdlib.isEmpty || dependency.universe.stdlib.contains(universe)
-
-        if applies then
-          // L113: closure — the dependency must be present.
+        if dependency.applies(universe, assignment(manifest.module)) then
           val candidate = apply(dependency.module) match
             case candidate: LiraManifest => candidate
 
             case _ =>
               abort(LiraError(Reason.AbsentDependency(dependency.module)))
 
-          // L114: satisfaction — the required snapshot must appear in the candidate's lineage,
-          // and a development-time build pin must match the candidate's implementation identity.
           if !Lineage.contains(candidate.lineage, dependency.api)
           then abort(LiraError(Reason.Unsatisfiable(dependency.module)))
 
@@ -139,3 +192,22 @@ case class Buildpath(releases: List[LiraManifest]):
               if hint != actual then advisories += LiraAdvisory.VersionMismatch(hint, actual)
 
     List.from(advisories)
+
+  // §13.3 validity for one universe, with the assignment that establishes it. Diamond
+  // dependencies resolve by construction: requirements on two snapshots of one module are
+  // jointly satisfiable iff some lineage contains both.
+  //
+  // Where no release declares an integration the assignment is unique, so the search is skipped
+  // entirely and the rules read exactly as they did before integrations existed — including the
+  // diagnostics, which name the failing dependency rather than reporting that no assignment
+  // exists.
+  def resolved(universe: Text): (Assignment, List[LiraAdvisory]) raises LiraError =
+    structural()
+
+    val assignment =
+      if releases.stdlib.forall(_.integration.stdlib.isEmpty) then Assignment(List())
+      else resolve(universe)
+
+    (assignment, audit(universe, assignment))
+
+  def validate(universe: Text): List[LiraAdvisory] raises LiraError = resolved(universe)(1)

@@ -45,6 +45,15 @@ object OpaqueDiscipline extends Discipline:
   def id: Text = t"opaque/1"
   def claims(path: TreePath, data: Data): Boolean = true
 
+  // Universal by necessity: it is the fallback, so it must be able to claim content in any
+  // universe. Keys are paths, so keying is by declaration in the only sense available to it.
+  // It certifies both levels trivially, admitting no change at all below the major grade.
+  def domain: Discipline.Domain = Discipline.Domain.Universal
+  def keying: Discipline.Keying = Discipline.Keying.Declaration
+
+  def guarantees(universe: Text): Set[Discipline.Guarantee] =
+    Set(Discipline.Guarantee.Linkage, Discipline.Guarantee.Recompilation)
+
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises DisciplineError =
 

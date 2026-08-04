@@ -43,13 +43,18 @@ import vacuous.*
 import LiraError.Reason
 import errorDiagnostics.emptyDiagnostics
 
-// The language-blind producer: given one body of content per universe — the first is the root —
-// it atomizes every universe under the discipline registry, enforces the cross-universe API
+// The language-blind producer: given one body of content per section — the first is the root —
+// it atomizes every section under the discipline registry, enforces the cross-section API
 // invariant (L108), computes minimal overlays, derivative hashes, the snapshot and lineage, and
 // assembles the complete `.lira` file. Everything here is deterministic for fixed inputs.
 object LiraAssembler:
 
-  case class SectionInput(universe: Text, content: List[(TreePath, Data)])
+  // One cell of the (universe × integration) matrix (§9.5). `integration` is absent where the
+  // release declares none, which is its single implicit integration.
+  case class SectionInput
+    ( universe:    Text,
+      content:     List[(TreePath, Data)],
+      integration: Optional[Text] = Unset )
 
   def assemble
     ( module:      Text,
@@ -59,9 +64,11 @@ object LiraAssembler:
       lineage:     List[Data]                    = List(),
       toolchain:   List[LiraManifest.Tool]       = List(),
       owns:        List[Text]                    = List(),
-      dependency:  List[LiraManifest.Dependency] = List(),
-      delta:       Optional[LiraDelta]           = Unset,
-      classpath:   Text => List[Text]            = { _ => List() },
+      profile:     List[LiraManifest.Profile]     = List(),
+      integration: List[LiraManifest.Integration] = List(),
+      dependency:  List[LiraManifest.Dependency]  = List(),
+      delta:       Optional[LiraDelta]            = Unset,
+      classpath:   SectionInput => List[Text]     = { _ => List() },
       sign:        LiraManifest => LiraManifest  = identity(_) )
   :   Data raises LiraError raises DisciplineError =
 
@@ -74,11 +81,21 @@ object LiraAssembler:
       LiraTree.of:
         input.content.map: pair => TreeEntry(pair(0), LiraHash(LiraHash.Domain.Blob, pair(1)))
 
-    // Each universe's content is atomized independently; the atom sets must be identical, as
-    // (discipline, key, class, value hash), for the release to present one API (L108).
+    // Each section's content is atomized independently; the atom sets must be identical, as
+    // (discipline, key, class, value hash), for the release to present one API on every universe
+    // and under every integration (L108). The classpath is a property of the section, since it
+    // is exactly what distinguishes one integration from another.
     val atomized = inputs.map: input =>
-      val context = Discipline.Context(input.universe, classpath(input.universe))
+      val context = Discipline.Context(input.universe, input.integration, classpath(input))
       (input.universe, disciplines.atomize(input.content, context))
+
+    // L127: a declared discipline must atomize some universe this release carries. An
+    // atomization of nothing is not a claim about anything.
+    val universes = inputs.map(_.universe).toSet
+
+    disciplines.all.stdlib.foreach: discipline =>
+      if !universes.exists(discipline.domain.covers)
+      then abort(LiraError(Reason.InapplicableDiscipline(discipline.id)))
 
     def summary(atomizations: List[Atomization])
     :   scala.collection.immutable.Set[(Text, Text, AtomClass, Text)] =
@@ -123,10 +140,11 @@ object LiraAssembler:
 
       val section =
         Section
-          ( universe   = input.universe,
-            tree       = LiraHash(LiraHash.Domain.Blob, tree.encode),
-            delete     = delete,
-            derivative = Derivative.hash(target, store) )
+          ( universe    = input.universe,
+            integration = input.integration,
+            tree        = LiraHash(LiraHash.Domain.Blob, tree.encode),
+            delete      = delete,
+            derivative  = Derivative.hash(target, store) )
 
       (section, tree.encode)
 
@@ -137,17 +155,23 @@ object LiraAssembler:
 
     val manifest =
       LiraManifest
-        ( module     = module,
-          version    = version,
-          lineage    = fullLineage,
-          toolchain  = toolchain,
-          owns       = owns,
-          api        = api,
-          dependency = dependency,
-          delta      = deltaBlob.let { data => LiraHash(LiraHash.Domain.Blob, data) },
-          section    = List.from(builtSections.map(_(0))),
-          payload    = LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob,
+        ( module      = module,
+          version     = version,
+          lineage     = fullLineage,
+          toolchain   = toolchain,
+          owns        = owns,
+          api         = api,
+          profile     = profile,
+          integration = integration,
+          dependency  = dependency,
+          delta       = deltaBlob.let { data => LiraHash(LiraHash.Domain.Blob, data) },
+          section     = List.from(builtSections.map(_(0))),
+          payload     = LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob,
               Array.freeze(Array[Byte](0)))) )
+
+    // The producer never emits a file a consumer would reject: L131/L133 are decidable from the
+    // manifest, so they are checked here rather than discovered at install time.
+    Verification.integrations(manifest)
 
     val blobs = contentBlobs ++ builtSections.map(_(1)) ++ atomsBlobs ++ deltaBlob.option.toList
 

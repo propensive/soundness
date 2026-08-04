@@ -46,14 +46,57 @@ object LiraManifest:
   case class Tool(name: Text, version: Text, flag: List[Text] = List())
   case class Api(discipline: Text, atoms: Data)
 
+  // The guarantee levels of §11.5 that can be claimed or broken. Behavior is absent by design:
+  // no hash scheme certifies it (§18), so it is not expressible in a `breaks` field.
+  enum Guarantee:
+    case Linkage, Recompilation
+
+    def keyword: Text = this match
+      case Linkage       => t"linkage"
+      case Recompilation => t"recompilation"
+
+  object Guarantee:
+    def parse(keyword: Text): Optional[Guarantee] = keyword.s match
+      case "linkage"       => Linkage
+      case "recompilation" => Recompilation
+      case _               => Unset
+
+  // An ecosystem profile this release claims to satisfy (§11.6), with the guarantee levels its
+  // lineage step did not preserve (§12.4). `breaks` being empty means the step preserved every
+  // level the profile certifies — the whole value of the record is that its absence means
+  // something, so a level not preserved and not listed is invalid (L130).
+  case class Profile(id: Text, breaks: List[Guarantee] = List())
+
+  // One alternative dependency vector the release was built against (§9.5). `rank` orders the
+  // canonical assignment (§13.3), lower first; a rank left unset sorts after every declared one,
+  // so a publisher who ranks nothing gets declaration-order-independent, id-ordered resolution.
+  // `label` carries no authority (§14). It is one TEL atom, so it holds no whitespace: TEL
+  // splits unquoted values on whitespace, and a `String` field admits exactly one atom. Prose
+  // labels would need the field declared repeatable, or a literal-atom encoding (TEL §15); both
+  // are spec decisions rather than implementation ones, so the field stays a single token here.
+  case class Integration(id: Text, rank: Optional[Long] = Unset, label: Optional[Text] = Unset)
+
   case class Dependency
-    ( module:   Text,
-      api:      Data,
-      version:  Optional[Semver] = Unset,
-      build:    Optional[Data]   = Unset,
-      universe: List[Text]       = List(),
-      uses:     Optional[Data]   = Unset,
-      spans:    List[Data]       = List() )
+    ( module:      Text,
+      api:         Data,
+      version:     Optional[Semver] = Unset,
+      build:       Optional[Data]   = Unset,
+      universe:    List[Text]       = List(),
+      integration: List[Text]       = List(),
+      uses:        Optional[Data]   = Unset,
+      spans:       List[Data]       = List() ):
+
+    // §13.2: the two scopes are independent and conjunctive. An empty list on either axis means
+    // "every value of that axis", which is how a dependency common to all of them is declared
+    // once and unscoped.
+    def applies(universe: Text, integration: Optional[Text]): Boolean =
+      val universeApplies = this.universe.stdlib.isEmpty || this.universe.stdlib.contains(universe)
+
+      val integrationApplies =
+        this.integration.stdlib.isEmpty
+        || integration.let { id => this.integration.stdlib.contains(id) }.or(false)
+
+      universeApplies && integrationApplies
 
   case class Payload(compression: Text, length: Long, hash: Data)
   case class Signature(signer: Text, algorithm: Text, key: Data, value: Text)
@@ -134,13 +177,30 @@ object LiraManifest:
       val fields = children(compound)
 
       Dependency
-        ( module   = required(fields, t"module"),
-          api      = hash(required(fields, t"api")),
-          version  = field(fields, t"version").let(semver(_)),
-          build    = field(fields, t"build").let(hash(_)),
-          universe = List.from(repeated(fields, t"universe")),
-          uses     = field(fields, t"uses").let(hash(_)),
-          spans    = List.from(repeated(fields, t"spans").map(hash(_))) )
+        ( module      = required(fields, t"module"),
+          api         = hash(required(fields, t"api")),
+          version     = field(fields, t"version").let(semver(_)),
+          build       = field(fields, t"build").let(hash(_)),
+          universe    = List.from(repeated(fields, t"universe")),
+          integration = List.from(repeated(fields, t"integration")),
+          uses        = field(fields, t"uses").let(hash(_)),
+          spans       = List.from(repeated(fields, t"spans").map(hash(_))) )
+
+    val profile = top.filter(_.keyword == t"profile").map: compound =>
+      val fields = children(compound)
+
+      val breaks = repeated(fields, t"breaks").map: keyword =>
+        Guarantee.parse(keyword).or(abort(bad(t"$keyword is not a guarantee level")))
+
+      Profile(required(fields, t"id"), List.from(breaks))
+
+    val integration = top.filter(_.keyword == t"integration").map: compound =>
+      val fields = children(compound)
+
+      Integration
+        ( id    = required(fields, t"id"),
+          rank  = field(fields, t"rank").let { text => text.s.toLong },
+          label = field(fields, t"label") )
 
     val section = top.filter(_.keyword == t"section").map: compound =>
       val universe = texts(compound) match
@@ -152,11 +212,11 @@ object LiraManifest:
       val fields = children(compound)
 
       Section
-        ( universe   = universe,
-          tree       = hash(required(fields, t"tree")),
-          delete     = List.from(repeated(fields, t"delete").map(TreePath(_))),
-          against    = List.from(repeated(fields, t"against").map(hash(_))),
-          derivative = field(fields, t"derivative").let(hash(_)) )
+        ( universe    = universe,
+          integration = field(fields, t"integration"),
+          tree        = hash(required(fields, t"tree")),
+          delete      = List.from(repeated(fields, t"delete").map(TreePath(_))),
+          derivative  = field(fields, t"derivative").let(hash(_)) )
 
     val payload = top.filter(_.keyword == t"payload").toList match
       case scala.List(compound) =>
@@ -179,34 +239,38 @@ object LiraManifest:
           required(fields, t"value") )
 
     LiraManifest
-      ( module     = required(top, t"module"),
-        version    = field(top, t"version").let(semver(_)),
-        lineage    = List.from(repeated(top, t"lineage").map(hash(_))),
-        toolchain  = List.from(toolchain),
-        owns       = List.from(repeated(top, t"owns")),
-        api        = List.from(api),
-        dependency = List.from(dependency),
-        delta      = field(top, t"delta").let(hash(_)),
-        section    = List.from(section),
-        payload    = payload,
-        signature  = List.from(signature) )
+      ( module      = required(top, t"module"),
+        version     = field(top, t"version").let(semver(_)),
+        lineage     = List.from(repeated(top, t"lineage").map(hash(_))),
+        toolchain   = List.from(toolchain),
+        owns        = List.from(repeated(top, t"owns")),
+        api         = List.from(api),
+        profile     = List.from(profile),
+        integration = List.from(integration),
+        dependency  = List.from(dependency),
+        delta       = field(top, t"delta").let(hash(_)),
+        section     = List.from(section),
+        payload     = payload,
+        signature   = List.from(signature) )
 
 // The typed view of a `.lira` manifest (§14). Decoding always retains the parsed `Tel` alongside
 // (in `Lira`): signing and reserialization operate on the TEL semantic model; this class is the
 // ergonomic projection. A manifest without a `version` is a development release, identified
 // purely by its hashes and unpublishable until a version is assigned.
 case class LiraManifest
-  ( module:     Text,
-    version:    Optional[Semver]                 = Unset,
-    lineage:    List[Data],
-    toolchain:  List[LiraManifest.Tool]          = List(),
-    owns:       List[Text]                       = List(),
-    api:        List[LiraManifest.Api],
-    dependency: List[LiraManifest.Dependency]    = List(),
-    delta:      Optional[Data]                   = Unset,
-    section:    List[Section],
-    payload:    LiraManifest.Payload,
-    signature:  List[LiraManifest.Signature]     = List() ):
+  ( module:      Text,
+    version:     Optional[Semver]                = Unset,
+    lineage:     List[Data],
+    toolchain:   List[LiraManifest.Tool]         = List(),
+    owns:        List[Text]                      = List(),
+    api:         List[LiraManifest.Api],
+    profile:     List[LiraManifest.Profile]      = List(),
+    integration: List[LiraManifest.Integration]  = List(),
+    dependency:  List[LiraManifest.Dependency]   = List(),
+    delta:       Optional[Data]                  = Unset,
+    section:     List[Section],
+    payload:     LiraManifest.Payload,
+    signature:   List[LiraManifest.Signature]    = List() ):
 
   // The root section is the first (§9.1); overlays materialize against it.
   def root: Optional[Section] = if section.stdlib.isEmpty then Unset else section.stdlib.head
@@ -239,6 +303,17 @@ case class LiraManifest
       lines += s"  discipline ${api.discipline}"
       lines += s"  atoms ${LiraHash.text(api.atoms)}"
 
+    profile.stdlib.foreach: profile =>
+      lines += "profile"
+      lines += s"  id ${profile.id}"
+      profile.breaks.stdlib.foreach: level => lines += s"  breaks ${level.keyword}"
+
+    integration.stdlib.foreach: integration =>
+      lines += "integration"
+      lines += s"  id ${integration.id}"
+      integration.rank.let: rank => lines += s"  rank $rank"
+      integration.label.let: label => lines += s"  label $label"
+
     dependency.stdlib.foreach: dependency =>
       lines += "dependency"
       lines += s"  module ${dependency.module}"
@@ -249,6 +324,10 @@ case class LiraManifest
 
       dependency.build.let: build => lines += s"  build ${LiraHash.text(build)}"
       dependency.universe.stdlib.foreach: universe => lines += s"  universe $universe"
+
+      dependency.integration.stdlib.foreach: integration =>
+        lines += s"  integration $integration"
+
       dependency.uses.let: uses => lines += s"  uses ${LiraHash.text(uses)}"
       dependency.spans.stdlib.foreach: spans => lines += s"  spans ${LiraHash.text(spans)}"
 
@@ -256,7 +335,7 @@ case class LiraManifest
 
     section.stdlib.foreach: section =>
       lines += s"section ${section.universe}"
-      section.against.stdlib.foreach: hash => lines += s"  against ${LiraHash.text(hash)}"
+      section.integration.let: id => lines += s"  integration $id"
       lines += s"  tree ${LiraHash.text(section.tree)}"
       section.delete.stdlib.foreach: path => lines += s"  delete ${path.text}"
       section.derivative.let: hash => lines += s"  derivative ${LiraHash.text(hash)}"

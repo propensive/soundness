@@ -46,7 +46,9 @@ import vacuous.*
 //  - `namespace`:      dotted package-style segments (letters, digits, `_`; no leading digit)
 //  - `semver`:         exactly `major.minor.patch`, each a natural; no prerelease/build suffixes
 //  - `natural`:        a decimal natural with no superfluous leading zero
-//  - `discipline-id`:  `<kebab-name>/<positive integer>`, e.g. `scala-tasty/1`
+//  - `discipline-id`:  `<kebab-name>/<positive integer>`, e.g. `tasty/1`
+//  - `profile-id`:     the same grammar as a discipline (§11.6), e.g. `jvm/1`
+//  - `guarantee`:      `linkage` or `recompilation` (§11.5; behavior is not certifiable)
 //  - `tree-path`:      relative `/`-separated path; no empty, `.` or `..` segments
 //  - `atom-class`:     `rigid` or `replaceable`
 object LiraValidators:
@@ -62,6 +64,8 @@ object LiraValidators:
           case "semver"        => semver(value)
           case "natural"       => natural(value)
           case "discipline-id" => disciplineId(value)
+          case "profile-id"    => profileId(value)
+          case "guarantee"     => guarantee(value)
           case "tree-path"     => treePath(value)
           case "atom-class"    => atomClass(value)
           case _               => unknown(method)
@@ -137,6 +141,21 @@ object LiraValidators:
     if parts.length != 2 || !kebab(parts(0).nn) || !naturalNumber(parts(1)) || parts(1) == "0"
     then fail(t"a discipline is identified as `<name>/<positive integer>`", (0, value.s.length))
     else Response.Valid
+
+  // §11.6: a profile is identified on the same terms as a discipline, and must likewise bump its
+  // version on any change to a predicate.
+  private def profileId(value: Text): Response =
+    val parts = value.s.split("/", -1).nn
+
+    if parts.length != 2 || !kebab(parts(0).nn) || !naturalNumber(parts(1)) || parts(1) == "0"
+    then fail(t"a profile is identified as `<name>/<positive integer>`", (0, value.s.length))
+    else Response.Valid
+
+  // §11.5 names three guarantee levels, but only two can be claimed or broken: behavior is not
+  // certified by any hash scheme, so it is not expressible in a `breaks` field.
+  private def guarantee(value: Text): Response =
+    if value.s == "linkage" || value.s == "recompilation" then Response.Valid
+    else fail(t"a guarantee level is `linkage` or `recompilation`", (0, value.s.length))
 
   private def treePath(value: Text): Response =
     val s = value.s

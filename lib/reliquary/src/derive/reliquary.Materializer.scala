@@ -42,6 +42,7 @@ import monotonous.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import vacuous.*
 import turbulence.*
 
 import LiraError.Reason
@@ -58,18 +59,25 @@ object Materializer:
   def classpath(liras: List[Lira], universe: Text, cache: Path on Linux)
   :   LocalClasspath raises LiraError raises IoError raises StreamError =
 
-    Buildpath(liras.map(_.manifest)).validate(universe)
+    val (assignment, _) = Buildpath(liras.map(_.manifest)).resolved(universe)
 
     val jars = liras.stdlib.map: lira =>
       val identity = lira.manifest.payload.hash.serialize[Hex]
-      // The segments are a hex digest and `<universe>.jar`, admissible on any filesystem.
-      val target = unsafely((cache / identity / t"$universe.jar").on[Linux])
+      val integration = assignment(lira.manifest.module)
+
+      // The cache slot is per (release, universe, integration): integrations share a payload
+      // hash by definition, so keying on universe alone would let the first one materialized
+      // stand in for every other one, permanently.
+      val slot = integration.let { id => t"$universe.$id.jar" }.or(t"$universe.jar")
+
+      // The segments are a hex digest and a filename, admissible on any filesystem.
+      val target = unsafely((cache / identity / slot).on[Linux])
 
       if !target.existent() then
         val report = Verification.install(lira)
 
-        val tree = report.materialized.stdlib.find(_(0) == universe) match
-          case scala.Some(pair) => pair(1)
+        val tree = report.tree(universe, integration) match
+          case tree: LiraTree => tree
 
           case _ =>
             abort(LiraError(Reason.InvalidManifest(t"the release has no $universe section")))
