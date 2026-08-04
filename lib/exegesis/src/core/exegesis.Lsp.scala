@@ -1573,13 +1573,14 @@ object Lsp:
     case Streams(input: ji.InputStream, output: ji.OutputStream)
 
   // Serves an editor over the stdio transport while forwarding everything to a language server
-  // upstream, amending what the block registers on the lent proxy. See `LspProxy`.
-  def proxy(upstream: Server, observer: Observer = Observer.Silent)
-     ( register: (proxy: LspProxy^) ?=> Unit )
-     ( using Stdio^, Monitor, Probate, WorkingDirectory, Diagnostics )
+  // upstream, amending what the block registers on the lent proxy. The block may capture the
+  // monitor, which a hook needs to await an answer of its own; see `LspProxy`.
+  def proxy[capture^](upstream: Server, observer: Observer = Observer.Silent)
+     ( register: (proxy: LspProxy^) ?->{capture} Unit )
+     ( using Stdio^, Monitor^{capture}, Probate, WorkingDirectory, Diagnostics )
   :   Unit =
 
-    LspProxy.run(upstream, observer)(register)
+    LspProxy.run[capture](upstream, observer)(register)
 
   // Establishes a Language Server over the stdio transport. The block registers the server's
   // feature handlers on the lent registry; once it returns, the registry is consumed and frozen,

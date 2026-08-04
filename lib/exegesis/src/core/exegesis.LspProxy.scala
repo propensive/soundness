@@ -60,7 +60,12 @@ import Lsp.*
 // Two layers of interception live here. The typed rewriters — `hover`, `capabilities`, and the
 // rest — are keyed by method and act on a decoded payload; the raw hooks act on whole messages,
 // including methods this library does not model. What neither covers is forwarded byte for byte.
-class LspProxy private[exegesis] () extends caps.ExclusiveCapability:
+//
+// The session with the server upstream comes in with the proxy, and goes back out through
+// `upstream`: a rewriter or a hook is registered before the session exists, but runs while it
+// does, so a proxy may ask the server something the editor never asked for.
+class LspProxy private[exegesis] (private[exegesis] val session: LspProxy.Upstream)
+extends caps.ExclusiveCapability:
   // The rewriters, by method: an erased rim like `LspRegistry`'s slots, for the same reason — a
   // function value in an invariant container freshens its capture set at every adaptation.
   @scala.caps.unsafe.untrackedCaptures
@@ -75,7 +80,33 @@ class LspProxy private[exegesis] () extends caps.ExclusiveCapability:
   @scala.caps.unsafe.untrackedCaptures
   var inbound0: AnyRef | Null = null
 
+  @scala.caps.unsafe.untrackedCaptures
+  var connected0: AnyRef | Null = null
+
 object LspProxy:
+  // The raw hooks' types, named because each is written three times — registered, read out of
+  // the erased rim, and applied — and must be spelled identically at all three.
+  private[exegesis] type OutboundHook = (Text, Json) => Transit
+  private[exegesis] type InboundHook = (Optional[Text], Json) => Transit
+
+  // The session a proxy holds with the server upstream, which `upstream` reads and `run` fills in.
+  // A cell, and a parameter of the proxy rather than a slot on it, for two reasons: the listener
+  // that carries messages to the hooks is built before the session exists — `Sessional#session`
+  // takes the listener, so the listener cannot take the connection — and `run` must not touch the
+  // proxy again once registration is over.
+  private[exegesis] class Upstream():
+    @scala.caps.unsafe.untrackedCaptures
+    var connection: LspConnection | Null = null
+
+    // Sealed on the way in and out, as the listener is: the connection is lent for the life of the
+    // session, and every hook that reads it here runs within it.
+    def open(connection: LspConnection^): Unit =
+      this.connection = caps.unsafe.unsafeAssumePure(connection)
+
+    def apply(): Optional[LspConnection] = connection match
+      case null                      => Unset
+      case connection: LspConnection => caps.unsafe.unsafeAssumePure(connection)
+
   // Runs the proxy: this process serves an editor over its own standard input and output while
   // holding a session with the server it forwards to.
   //
@@ -84,17 +115,22 @@ object LspProxy:
   // order, exactly as they would be without a proxy in the middle. Request ids pass through
   // unchanged, so a response returns under the id the editor chose; the id-to-method map exists
   // only so that a response can be given back its type on the way out.
-  def run
+  //
+  // The registration block is capture-polymorphic, and the monitor is declared to be among what it
+  // captures: a hook that asks the server something of its own needs the monitor to await the
+  // answer, and separation checking would otherwise see the block and this method aliasing it.
+  def run[capture^]
      ( upstream: Lsp.Server, observer: Lsp.Observer = Lsp.Observer.Silent )
-     ( register: (proxy: LspProxy^) ?=> Unit )
-     ( using stdio: Stdio^, monitor: Monitor, probate: Probate, working: WorkingDirectory,
+     ( register: (proxy: LspProxy^) ?->{capture} Unit )
+     ( using stdio: Stdio^, monitor: Monitor^{capture}, probate: Probate, working: WorkingDirectory,
              diagnostics: Diagnostics )
   :   Unit =
 
     import strategies.throwUnsafely
     import Json.jsonEncodableInText
 
-    val proxy: LspProxy^ = LspProxy()
+    val session: Upstream = Upstream()
+    val proxy: LspProxy^ = LspProxy(session)
     register(using proxy)
 
     // Registration is over, so the rules are read out once, here: everything below closes over
@@ -102,8 +138,12 @@ object LspProxy:
     // exists.
     val results: scm.HashMap[Text, AnyRef] = proxy.results
     val notices: scm.HashMap[Text, AnyRef] = proxy.notices
-    val inbound0: Optional[(Optional[Text], Json) => Transit] = inbound(proxy.inbound0)
-    val outbound0: Optional[(Text, Json) => Transit] = outbound(proxy.outbound0)
+    val inbound0: Optional[InboundHook] = inbound(proxy.inbound0)
+    val outbound0: Optional[OutboundHook] = outbound(proxy.outbound0)
+    // Nullable rather than `Optional`, and alone among the rules in that: a function in a
+    // container is capture-polymorphic, and the block is passed to a task rather than called here,
+    // which is one adaptation more than an `Optional` of it survives.
+    val connected0: (() => Unit) | Null = connected(proxy.connected0)
 
     // The method each in-flight request named, by the text of its id. An id is matched by its
     // encoded form because the protocol allows either a number or a string, and the proxy neither
@@ -124,31 +164,44 @@ object LspProxy:
     given listener: Lsp.Listener = caps.unsafe.unsafeAssumePure(new Lsp.Listener:
       override def intercept(json: Json): Boolean =
         val method: Optional[Text] = Lsp.method(json)
+        val id: Optional[Json] = Lsp.identifier(json)
 
         // A response is retyped by the method it answers, a notification by its own name.
         val answered: Optional[Text] =
-          if method.absent
-          then Lsp.identifier(json).let { id => pending.remove(id.encode).getOrElse(Unset) }
+          if method.absent then id.let { id => pending.remove(id.encode).getOrElse(Unset) }
           else Unset
 
-        val retyped: Json =
-          val typed: Json = answered.lay(json): method =>
-            rule(results.get(method)).lay(json)(rewriteResult(json, _))
+        // A response the proxy never forwarded a request for, answering under an id of the form
+        // `JsonRpc.call` mints, answers a request the proxy asked of its own accord. It is not the
+        // editor's to receive, so it is not intercepted: the session routes it to the caller
+        // awaiting it. The editor's ids cannot be confused with these, because a request that
+        // crossed this proxy was recorded in `pending` above.
+        if method.absent && answered.absent && id.let(token(_)).present then false else
+          val retyped: Json =
+            val typed: Json = answered.lay(json): method =>
+              rule(results.get(method)).lay(json)(rewriteResult(json, _))
 
-          method.lay(typed): method =>
-            rule(notices.get(method)).lay(typed)(rewriteParams(typed, _))
+            method.lay(typed): method =>
+              rule(notices.get(method)).lay(typed)(rewriteParams(typed, _))
 
-        inbound0.lay(downstream(retyped)): hook =>
-          hook(method.or(answered), retyped) match
-            case Transit.Forward       => downstream(retyped)
-            case Transit.Rewrite(json) => downstream(json)
-            case Transit.Drop          => ()
-            case Transit.Answer(_)     => ()
+          inbound0.lay(downstream(retyped)): hook =>
+            hook(method.or(answered), retyped) match
+              case Transit.Forward       => downstream(retyped)
+              case Transit.Rewrite(json) => downstream(json)
+              case Transit.Drop          => ()
+              case Transit.Answer(_)     => ()
 
-        true )
+          true )
 
     upstream.session: server ?=>
-      LspTransport.pump(stdio.in.source[Data], observer): message =>
+      // The session is published before a single message crosses, so every hook that runs sees it.
+      session.open(server)
+
+      // On its own task, because it may await what it asks, and the loop below must not wait for
+      // it: an editor's first request arrives before a server has finished starting up.
+      val startup = if connected0 == null then null else async(connected0.nn())
+
+      try LspTransport.pump(stdio.in.source[Data], observer): message =>
         safely(message.as[Json]).let: json =>
           Lsp.method(json).let: method =>
             val id: Optional[Json] = Lsp.identifier(json)
@@ -166,6 +219,8 @@ object LspProxy:
                 // Answered here, so the server never sees the request and never answers it.
                 case Transit.Answer(result) =>
                   id.let { id => downstream(JsonRpc.Response("2.0", result, id).in[Json]) }
+
+      finally if startup != null then startup.nn.cancel()
 
   // The `result` member of a response, rewritten in place. A response carrying an `error` is left
   // alone: a fault is not a payload, and a rewriter typed for the payload could not read it.
@@ -214,19 +269,26 @@ object LspProxy:
         val lambda: Json => Json = value.asInstanceOf[LspRegistry.Slot[Json => Json]].value
         lambda
 
-  private def outbound(hook: AnyRef | Null): Optional[(Text, Json) => Transit] =
+  private def outbound(hook: AnyRef | Null): Optional[OutboundHook] =
     if hook == null then Unset else
-      val relay: (Text, Json) => Transit =
-        hook.asInstanceOf[LspRegistry.Slot[(Text, Json) => Transit]].value
+      val relay: OutboundHook = hook.asInstanceOf[LspRegistry.Slot[OutboundHook]].value
 
       relay
 
-  private def inbound(hook: AnyRef | Null): Optional[(Optional[Text], Json) => Transit] =
+  private def inbound(hook: AnyRef | Null): Optional[InboundHook] =
     if hook == null then Unset else
-      val relay: (Optional[Text], Json) => Transit =
-        hook.asInstanceOf[LspRegistry.Slot[(Optional[Text], Json) => Transit]].value
+      val relay: InboundHook = hook.asInstanceOf[LspRegistry.Slot[InboundHook]].value
 
       relay
+
+  private def connected(block: AnyRef | Null): (() => Unit) | Null =
+    if block == null then null else block.asInstanceOf[LspRegistry.Slot[() => Unit]].value
+
+  // The id of a message, if the peer chose a string for it: the form `JsonRpc.call` mints, and so
+  // the form a response to a request the proxy made itself comes back under.
+  private def token(id: Json): Optional[Text] =
+    import strategies.throwUnsafely
+    try id.as[Text] catch case _: Exception => Unset
 
 // The proxy's registration combinators, in a namespace of their own: `Lsp.hover` registers a
 // handler for a server this process implements, while `rewrite.hover` amends one a server upstream
@@ -343,12 +405,18 @@ object rewrite:
     proxy.notices(method) = LspRegistry.Slot[Json => Json](lambda)
 
   // The whole-message hooks: every message the editor sends, and every message the server sends
-  // back, with the chance to forward it, amend it, drop it, or answer it here.
-  transparent inline def outbound(inline hook: (Text, Json) => Transit)(using proxy: LspProxy^)
+  // back, with the chance to forward it, amend it, drop it, or answer it here. Each may also ask
+  // the server something of its own, through `upstream` — mind which thread the hook runs on, as
+  // `upstream` documents.
+  transparent inline def outbound(inline hook: LspProxy.OutboundHook)(using proxy: LspProxy^)
   :   Unit =
-    proxy.outbound0 = LspRegistry.Slot[(Text, Json) => Transit](hook)
+    proxy.outbound0 = LspRegistry.Slot[LspProxy.OutboundHook](hook)
 
-  transparent inline def inbound(inline hook: (Optional[Text], Json) => Transit)
-     ( using proxy: LspProxy^ )
-  :   Unit =
-    proxy.inbound0 = LspRegistry.Slot[(Optional[Text], Json) => Transit](hook)
+  transparent inline def inbound(inline hook: LspProxy.InboundHook)(using proxy: LspProxy^): Unit =
+    proxy.inbound0 = LspRegistry.Slot[LspProxy.InboundHook](hook)
+
+  // Run once, on a task of its own, as soon as the proxy has a session with the server upstream:
+  // the place for what a proxy must ask before it can amend anything, and the only hook free to
+  // await an answer.
+  transparent inline def connected(inline block: => Unit)(using proxy: LspProxy^): Unit =
+    proxy.connected0 = LspRegistry.Slot[() => Unit](() => block)

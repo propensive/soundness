@@ -30,7 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package exegesis
 
-export exegesis.{Lsp, LspClient, LspConnection, LspDispatch, LspError, LspProxy, LspRegistry,
-    LspSessional, rewrite, upstream}
+import fulminate.*
+import rudiments.*
+import vacuous.*
+
+// The session a proxy holds with the server upstream: what a proxy uses to ask the server
+// something the editor never asked for. In scope wherever the proxy is — inside the raw hooks
+// `rewrite.outbound` and `rewrite.inbound`, inside a `rewrite.connected` block, and inside the
+// typed rewriters — but not before the session exists, which is why it is a method and not a
+// value: registration itself runs before the proxy has a server to talk to.
+//
+// A hook runs on the thread that delivered the message it is amending, so how a request may be
+// made depends on which hook makes it. `rewrite.inbound` runs on the task reading the server's
+// messages — the same task that would deliver the response — so a request awaited there would
+// wait forever, and must be made in an `async` block. `rewrite.outbound` runs on the loop reading
+// the editor, which is not that task, so awaiting there is safe, though it holds up the editor
+// until the server answers. `rewrite.connected` has a task of its own and may await freely.
+def upstream(using proxy: LspProxy^): LspConnection =
+  proxy.session().or(panic(m"the proxy has no session with a server upstream yet"))
