@@ -3020,6 +3020,14 @@ object wasm extends Module:
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "linker")
     def mvnDeps = Seq(mvn"io.github.scala-wasm:scalajs-linker_2.13:${settings.scalaJsVersion}")
 
+  // Wraps a linked component in a Wasm OCI Artifact. A JVM driver, like `linker`: it needs
+  // embarcadero and xenophile on its classpath, which the build itself does not have.
+  object packager extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = settings.scalaOptions
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "packager")
+    override def moduleDeps = Seq(embarcadero.oci, xenophile.wit, turbulence.core)
+
   def witDir = Task.Source(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "wit")
 
   // The two components. `Task#apply()` expands only lexically inside a `Task` block, so each task
@@ -3039,6 +3047,32 @@ object wasm extends Module:
         witDir().path,
         "http",
         Task.dest )
+
+  // The two components, packaged as Wasm OCI Artifacts (`oci-archive` tars).
+  def image: T[PathRef] = Task:
+    pack(component().path, witDir().path, "e2e", packager.runClasspath().map(_.path), Task.dest)
+
+  def httpImage: T[PathRef] = Task:
+    pack(httpComponent().path, witDir().path, "http", packager.runClasspath().map(_.path),
+        Task.dest)
+
+  // Runs the packager driver over an already-linked component, producing `image.tar` in `dest`.
+  private def pack
+    ( component:       os.Path,
+      wit:             os.Path,
+      world:           String,
+      driverClasspath: Seq[os.Path],
+      dest:            os.Path )
+  :   PathRef =
+
+    val archive = dest / "image.tar"
+    val driver = driverClasspath.map(_.toString).mkString(java.io.File.pathSeparator)
+
+    os.proc("java", "-cp", driver, "wasme2e.Package", component.toString, wit.toString, world,
+        archive.toString)
+    . call(stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(archive)
 
   // Links one guest's classpath against one world of `tests/wasm/wit`, producing `main.wasm`.
   private def link
