@@ -86,3 +86,4 @@ object Kotlin:
 
 trait Kotlin extends Ecosystem:
   type Grammar = KotlinDialect.type
+  type Emission = "xenophile.KotlinInvoke"

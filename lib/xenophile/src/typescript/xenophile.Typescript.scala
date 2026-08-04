@@ -76,3 +76,4 @@ object Typescript:
 
 trait Typescript extends Ecosystem:
   type Grammar = TypescriptDialect.type
+  type Emission = "xenophile.JsInvoke"

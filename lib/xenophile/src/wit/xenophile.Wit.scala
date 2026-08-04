@@ -85,3 +85,4 @@ object Wit:
 
 trait Wit extends Ecosystem:
   type Grammar = WitDialect.type
+  type Emission = "xenophile.WasmInvoke"

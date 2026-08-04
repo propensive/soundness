@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export xenophile.{Dialect, Ecosystem, Foreign, Interface, Interoperable, Prototype}
+export xenophile.{invoke, Dialect, Ecosystem, Foreign, Interface, Interoperable, Materializer,
+    Prototype}

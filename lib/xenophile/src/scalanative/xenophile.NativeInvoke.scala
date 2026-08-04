@@ -58,8 +58,8 @@ import vacuous.*
 // argument, recovered from the `Foreign.converter` `Conversion` the navigation applied, is passed
 // to a `CFuncPtr` of the matching arity, with `Text` arguments marshalled to a `CString` in a
 // `Zone` and a `Text` result read back with `fromCString`. General pointers/structs are next.
-object NativeInvoke:
-  def invoke[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
+object NativeInvoke extends Materializer:
+  def materialize[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
     import quotes.reflect.*
 
     // The native runtime entry points, resolved from the downstream `nativelib`/`posixlib` so this
@@ -79,69 +79,7 @@ object NativeInvoke:
     // was reached through is recovered from the `Foreign.Expression` the navigation built.
     val (_, origin) = Xenophile.receiver(self)
 
-    // The navigation expands to `Foreign.make(<AST>).asInstanceOf[…]`, nested in `Inlined`/`Typed`
-    // layers `underlyingArgument` cannot fold away; recover the AST by term-level stripping, as in
-    // `WasmInvoke`/`JsInvoke`.
-    def strip(term: Term): Term = term match
-      case Inlined(_, _, body)                        => strip(body)
-      case Typed(expr, _)                             => strip(expr)
-      case Block(Nil, expr)                           => strip(expr)
-      case TypeApply(Select(expr, "asInstanceOf"), _) => strip(expr)
-      case _                                          => term
-
-    def stringOf(term: Term): Text = strip(term).absolve match
-      case Literal(StringConstant(string)) => string.tt
-
-    def literal(term: Term): Text = strip(term).absolve match
-      case Apply(Ident("tt"), sci.List(argument)) => stringOf(argument)
-      case other                              => stringOf(other)
-
-    def notCall: Nothing =
-      halt(m"xenophile: `invoke` expects a foreign function invocation, `interface.function()`")
-
-    // Peel to `Foreign.make(<AST>)`; take its argument — the navigation expression AST.
-    val expression = strip(self.asTerm.underlyingArgument).absolve match
-      case Apply(Select(_, "make"), sci.List(argument)) => strip(argument)
-      case _                                        => notCall
-
-    // The argument operands the navigation applied (`Expression.Apply`'s argument list); an empty
-    // list for the bare selection of a zero-parameter function (`Expression.Select`, preferred
-    // inside `inline` definitions).
-    def argumentList(term: Term): List[Term] = strip(term) match
-      case Apply(_, sci.List(varargs)) => strip(varargs).absolve match
-        case Repeated(elements, _) => elements.map(strip)
-        case _                     => Nil
-
-      case _ =>
-        Nil
-
-    val (selectNode, argumentTerms) = expression match
-      case Apply(Select(_, "apply"), sci.List(node, args)) => (strip(node), argumentList(args))
-      case _                                           => (expression, Nil)
-
-    val (owner, function) = selectNode.absolve match
-      case Apply(Select(_, "apply"), List(_, member, owner)) => (literal(owner), literal(member))
-      case _                                                 => notCall
-
-    // The Scala value wrapped by the `Foreign.converter` `Conversion` in an argument operand — the
-    // argument of the conversion's `apply` (`argTree` emits `arg.expr`, where `arg` is that
-    // converted value). Recovered by traversal, as in `WasmInvoke`.
-    def convertedValue(term: Term): Term =
-      var found: Optional[Term] = Unset
-
-      val traverser = new TreeTraverser:
-        override def traverseTree(tree: Tree)(owner: Symbol): Unit = tree match
-          case Apply(Select(qualifier, "apply"), List(value))
-          if qualifier.tpe <:< TypeRepr.of[Conversion[Nothing, Foreign]] =>
-            if found.absent then found = value
-
-          case _ =>
-            traverseTreeChildren(tree)(owner)
-
-      traverser.traverseTree(term)(Symbol.spliceOwner)
-
-      found.or:
-        halt(m"xenophile: a foreign argument must be a Scala value with an `Interoperable`")
+    val (owner, function, _, argumentTerms) = Xenophile.navigation(self)
 
     // Validate the call against the parsed C header and read its parameter and result types.
     val allDefinitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
@@ -255,9 +193,9 @@ object NativeInvoke:
     // `fromRawPtr(castLongToRawPtr(_))`. A `string` result is read back with `fromCString`, and a
     // pointer result lowered to its raw address with `castRawPtrToLong(toRawPtr(_))`.
     def invocation(zone: Optional[Term]): Term =
-      val callArgs = argumentTerms.zip(paramInfo).map: (term, info) =>
+      val callArgs = argumentTerms.to(List).zip(paramInfo).map: (term, info) =>
         val (tpe, kind) = info
-        val value = convertedValue(term)
+        val value = Xenophile.convertedValue(term)
 
         kind match
           case Kind.Str =>

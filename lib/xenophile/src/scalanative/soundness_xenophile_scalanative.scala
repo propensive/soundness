@@ -32,10 +32,9 @@
                                                                                                   */
 package soundness
 
-// `invoke` materializes a fully-applied C `Foreign` navigation into a real Scala Native call,
-// resolving the symbol with `dlsym` and invoking it through a `CFuncPtr`. Must be applied
-// directly to an inline navigation chain — e.g. `Foreign["library", Native].random().invoke[Int]`
-// — not to a value bound to a `val`. It is the Scala Native analogue of `PanamaInvoke` (the JVM
-// Panama materializer); the two lower the identical navigation for different platforms and are
-// never on the same application's classpath.
-export xenophile.{NativeInvoke, invoke}
+// `NativeInvoke` is the C ecosystem's Scala Native backend: it lowers a fully-applied C `Foreign`
+// navigation into a real Scala Native call, resolving the symbol with `dlsym` and invoking it
+// through a `CFuncPtr`, for the single `invoke` in `xenophile.core`. It is the analogue of the
+// `native` module's `PanamaInvoke` — the two lower the identical navigation for different
+// platforms, and a build gets whichever of the two modules it depends on.
+export xenophile.NativeInvoke

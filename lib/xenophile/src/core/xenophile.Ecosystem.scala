@@ -37,3 +37,17 @@ package xenophile
 // ecosystem.
 trait Ecosystem:
   type Grammar <: Dialect
+
+  // The `Materializer` objects that can emit a call in this ecosystem, named by fully-qualified
+  // class name — as literal types, and as a union where a language has more than one backend.
+  //
+  // Names, not singleton types like `Grammar`, because an ecosystem must not depend on the module
+  // that materializes it: `xenophile.wasm` already depends on `xenophile.wit`, so `Wit` naming
+  // `WasmInvoke` as a type would close a cycle. A name costs the compiler's checking, which is
+  // why `materializerFor` reports a missing one precisely.
+  //
+  // A union is how the C ecosystem carries its two backends, which differ by *target platform*
+  // rather than by ecosystem. The build picks between them by which module it depends on — only
+  // one is ever on a real classpath, and `enigmatic.openssl` compiles one unchanged source both
+  // ways on exactly that basis — so `materializerFor` takes the first candidate it can load.
+  type Emission

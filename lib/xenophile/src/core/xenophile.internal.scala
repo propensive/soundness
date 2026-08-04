@@ -69,6 +69,142 @@ object Xenophile:
     catch case _: Throwable =>
       halt(m"xenophile: could not load the grammar for the foreign source language")
 
+  // Resolves the emission backend for a source language by reading the `Emission` member of its
+  // `Ecosystem` — the fully-qualified names of `Materializer` objects — and loading the first that
+  // is on the classpath. The reflective step is `dialectFor`'s, and for the same reason: `core`
+  // must reach a backend it cannot depend on. Only the name differs, because a *type* would make
+  // the ecosystem depend on the backend, and `xenophile.wasm` already depends on `xenophile.wit`.
+  //
+  // "The first that is on the classpath" is what makes the choice the build's. The C ecosystem
+  // names two — Panama for the JVM, `CFuncPtr` for Scala Native — and no real classpath carries
+  // both: `enigmatic.openssl` compiles one unchanged source both ways purely by swapping
+  // `xenophile.native` for `xenophile.scalanative` in its `nativeModuleDeps`.
+  private def materializerFor(using quotes: Quotes)(origin: quotes.reflect.TypeRepr): Materializer =
+    import quotes.reflect.*
+
+    val emission = origin.typeSymbol.typeMember("Emission")
+
+    if !emission.exists
+    then halt(m"xenophile: the source language names no materializer (it defines no `Emission`)")
+
+    // A union of candidates flattens to a list; a single candidate is a list of one.
+    def candidates(repr: TypeRepr): Seq[Text] = repr.dealias match
+      case OrType(left, right)                => candidates(left) ++ candidates(right)
+      case ConstantType(StringConstant(name)) => Seq(name.tt)
+
+      case _ =>
+        halt(m"xenophile: the source language's `Emission` is not a materializer's name")
+
+    val names = origin.memberType(emission) match
+      case TypeBounds(_, hi) => candidates(hi)
+      case other             => candidates(other)
+
+    // The singleton of a named object is the static `MODULE$` field of its `$`-suffixed module
+    // class. A candidate that is simply absent is skipped — that is the other platform's backend,
+    // which this build did not depend on.
+    def load(name: Text): Optional[Materializer] =
+      try
+        val module = Class.forName(name.s+"$").nn
+        module.getField("MODULE$").nn.get(null).nn.asInstanceOf[Materializer]
+      catch case _: Throwable => Unset
+
+    var found: Optional[Materializer] = Unset
+
+    names.foreach: name =>
+      if found.absent then found = load(name)
+
+    found.or:
+      halt(m"xenophile: no materializer for this foreign source language is on the classpath")
+
+  // The single terminal for every ecosystem: let the backend the build selected emit the call.
+  def invoke[result: Type](self: Expr[Foreign]): Macro[result] =
+    val (_, origin) = receiver(self)
+    materializerFor(origin).materialize[result](self)
+
+  // Peels a navigation apart into the foreign type it selected from, the member it reached, the
+  // receiver's own tree (which WIT resource methods thread as a handle) and the operand trees.
+  //
+  // Until the five backends were unified this was copied verbatim into each of them, and three
+  // divergences had already crept in: Kotlin rejected the bare selection the others accepted, and
+  // Wasm lacked the others' plain string-literal fallback. This takes the lenient reading of each.
+  private[xenophile] def navigation(using quotes: Quotes)(self: Expr[Foreign])
+  :   (Text, Text, quotes.reflect.Term, Seq[quotes.reflect.Term]) =
+
+    import quotes.reflect.*
+
+    // The navigation expands to `Foreign.make(<AST>).asInstanceOf[…]`, and reaching a materializer
+    // through further `inline` definitions (an inline given publishing a deferred import, say)
+    // nests it in `Inlined`/`Typed` layers that `underlyingArgument` cannot fold away. So the AST
+    // is recovered by term-level stripping rather than by quote-pattern matching.
+    def strip(term: Term): Term = term match
+      case Inlined(_, _, body)                        => strip(body)
+      case Typed(expr, _)                             => strip(expr)
+      case Block(Nil, expr)                           => strip(expr)
+      case TypeApply(Select(expr, "asInstanceOf"), _) => strip(expr)
+      case _                                          => term
+
+    def stringOf(term: Term): Text = strip(term).absolve match
+      case Literal(StringConstant(string)) => string.tt
+
+    // `.tt` desugars to `tt("…")`; recover the string from the operand, or from a bare literal.
+    def literal(term: Term): Text = strip(term).absolve match
+      case Apply(Ident("tt"), Seq(argument)) => stringOf(argument)
+      case other                             => stringOf(other)
+
+    def notCall: Nothing =
+      halt(m"xenophile: `invoke` expects a foreign function invocation, `interface.function(…)`")
+
+    val expression = strip(self.asTerm.underlyingArgument).absolve match
+      case Apply(Select(_, "make"), Seq(argument)) => strip(argument)
+      case _                                       => notCall
+
+    // The elements of the `Expr.ofList`-built argument list of an `Expression.Apply`.
+    def argumentList(term: Term): Seq[Term] = strip(term) match
+      case Apply(_, Seq(varargs)) => strip(varargs) match
+        case Repeated(elements, _) => elements.map(strip)
+        case _                     => Seq()
+
+      case _ =>
+        Seq()
+
+    // Either an applied call — `Expression.Apply(select, arguments)`, whose companion `apply`
+    // takes two arguments — or the bare selection of a zero-parameter function
+    // (`Expression.Select`, whose companion `apply` takes three): `interface.function.invoke[R]`.
+    // The latter is preferred inside `inline` definitions, where re-inlining an empty-varargs
+    // application trips path-dependent type avoidance.
+    val (selectNode, argumentTerms) = expression match
+      case Apply(Select(_, "apply"), Seq(node, args)) => (strip(node), argumentList(args))
+      case _                                          => (expression, Seq())
+
+    selectNode.absolve match
+      case Apply(Select(_, "apply"), Seq(receiver, member, owner)) =>
+        (literal(owner), literal(member), strip(receiver), argumentTerms)
+
+      case _ =>
+        notCall
+
+  // The Scala value wrapped by the `Foreign.converter` `Conversion` in a navigation operand: a
+  // converted argument, or (for WIT) a resource-handle receiver.
+  private[xenophile] def convertedValue(using quotes: Quotes)(term: quotes.reflect.Term)
+  :   quotes.reflect.Term =
+
+    import quotes.reflect.*
+    var found: Optional[Term] = Unset
+
+    val traverser = new TreeTraverser:
+      override def traverseTree(tree: Tree)(owner: Symbol): Unit = tree match
+        case Apply(Select(qualifier, "apply"), Seq(value))
+        if qualifier.tpe <:< TypeRepr.of[Conversion[Nothing, Foreign]] =>
+          if found.absent then found = value
+
+        case _ =>
+          traverseTreeChildren(tree)(owner)
+
+    traverser.traverseTree(term)(Symbol.spliceOwner)
+
+    found.or:
+      halt(m"xenophile: a foreign operand must be a Scala value with an `Interoperable` instance")
+
   // Reads the definitions resource at `path` and parses it with the grammar for `origin`.
   // Parsed definitions are cached by resource path for the lifetime of a compilation run, so that
   // navigating a chain like `foo.bar.qux` parses each resource only once instead of per access.

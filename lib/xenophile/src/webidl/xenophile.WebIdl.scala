@@ -93,3 +93,4 @@ object WebIdl:
 
 trait WebIdl extends Ecosystem:
   type Grammar = WebIdlDialect.type
+  type Emission = "xenophile.JsInvoke"
