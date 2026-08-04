@@ -121,7 +121,10 @@ fi
 # spec's shape and — the part that matters — that the layer bytes are still a runnable component,
 # by extracting them from the archive and running them.
 
-./mill --no-daemon -j "$JOBS" --ticker false wasm.image wasm.httpImage || exit 1
+# One invocation per task: `mill a b` reads `b` as an *argument to* `a` rather than as a second
+# task, so a combined line silently builds only the first and still exits 0.
+./mill --no-daemon -j "$JOBS" --ticker false wasm.image || exit 1
+./mill --no-daemon -j "$JOBS" --ticker false wasm.httpImage || exit 1
 
 # check <label> <archive> <expected-export> <expected-target> <extract-to>
 # Validates the artifact's media types, platform and component metadata, and writes out its layer.

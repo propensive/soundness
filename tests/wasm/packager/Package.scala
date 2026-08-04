@@ -4,7 +4,6 @@ import java.nio.file as jnf
 
 import anticipation.*
 import embarcadero.*
-import gesticulate.*
 import gossamer.*
 import rudiments.*
 import turbulence.*
@@ -44,7 +43,7 @@ object Package:
         val file = files(index).nn
 
         if !file.getName.nn.endsWith(".wit") then search(index + 1) else
-          val text = String(jnf.Files.readAllBytes(file.toPath.nn).nn, "UTF-8").tt
+          val text = String(jnf.Files.readAllBytes(file.toPath).nn, "UTF-8").tt
           WitDialect.worlds(text).stdlib.get(world).optional.or(search(index + 1))
 
     val found = search(0).or:
