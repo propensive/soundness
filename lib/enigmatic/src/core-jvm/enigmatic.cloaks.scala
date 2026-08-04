@@ -141,7 +141,7 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
     random.nextBytes(nonce)
 
     val ciphertext = withKey: keyBytes =>
-      aes[scala.Array[Byte]^{}](keyBytes, jc.Cipher.ENCRYPT_MODE, nonce)(_.doFinal(bytes).nn)
+      aes[scala.Array[Byte]](keyBytes, jc.Cipher.ENCRYPT_MODE, nonce)(_.doFinal(bytes).nn)
 
     ju.Arrays.fill(bytes, 0.toByte)
 
@@ -151,7 +151,7 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
       new Secret:
         def uncloak[result](block: scala.Array[Byte] => result): result =
           val cleartext = withKey: keyBytes =>
-            aes[scala.Array[Byte]^{}](keyBytes, jc.Cipher.DECRYPT_MODE, nonce)(_.doFinal(ciphertext).nn)
+            aes[scala.Array[Byte]](keyBytes, jc.Cipher.DECRYPT_MODE, nonce)(_.doFinal(ciphertext).nn)
 
           try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
 
