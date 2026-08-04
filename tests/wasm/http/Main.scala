@@ -30,7 +30,4 @@ object Service extends IncomingHandler:
       val body = request.body().memoize.utf8
       val echo = t"${request.method} ${request.target}\n${body}"
 
-      // No explicit `contentType`: `Text`'s `Servable` already sets one, and `Protoresponse`
-      // concatenates its own headers with the served response's rather than replacing, so naming
-      // it here would put `content-type` on the wire twice.
-      Http.Response(Http.Ok)(echo)
+      Http.Response(Http.Ok, contentType = media"text/plain")(echo)

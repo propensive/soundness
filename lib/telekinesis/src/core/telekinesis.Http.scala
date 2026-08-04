@@ -77,6 +77,28 @@ object Http:
   object Header:
     given encodable: Http.Header is Encodable in Http.Header = identity(_)
 
+    // The fields that may legitimately appear more than once in a message. Most may not, and a
+    // recipient may treat a repeated singleton field as malformed (RFC 9110 §5.3). Two kinds may:
+    // list-based fields, where repeating a field means the same as sending one comma-joined value,
+    // and `Set-Cookie`, which *must* be repeated rather than joined, because a cookie's value can
+    // itself contain a comma (RFC 6265 §3).
+    private val repeatableFields: Set[Text] =
+      Set
+       ( t"accept", t"accept-charset", t"accept-encoding", t"accept-language", t"accept-patch",
+         t"accept-ranges", t"access-control-allow-headers", t"access-control-allow-methods",
+         t"access-control-expose-headers", t"access-control-request-headers", t"allow", t"alt-svc",
+         t"cache-control", t"clear-site-data", t"connection", t"content-encoding",
+         t"content-language", t"expect", t"forwarded", t"if-match", t"if-none-match", t"link",
+         t"pragma", t"prefer", t"preference-applied", t"proxy-authenticate", t"set-cookie", t"te",
+         t"trailer", t"transfer-encoding", t"upgrade", t"vary", t"via", t"warning",
+         t"www-authenticate" )
+
+    // Whether a field may appear more than once. Field names are case-insensitive, so the key is
+    // lowered before lookup. An unknown field is treated as a singleton: that is the safe default,
+    // since duplicating a singleton is a protocol error while collapsing a repeat of an unlisted
+    // list-based field only loses a value the caller has explicitly replaced.
+    def repeatable(key: Text): Boolean = repeatableFields.stdlib.contains(key.lower)
+
   case class Header(key: Text, value: Text)
 
   object Method:
@@ -668,10 +690,21 @@ object Http:
       def apply[servable: Servable](body: servable): Response =
         val response = servable.serve(body)
 
+        // A header named at the call site *overrides* the one the `Servable` derives for the
+        // same field, rather than joining it: `Response(Ok, contentType = …)(text)` would
+        // otherwise put `content-type` on the wire twice, once from the call site and once
+        // from `Text`'s `Servable`, and a recipient may treat a repeated singleton field as
+        // malformed. Only singleton fields are overridden, though — a repeatable field such as
+        // `Set-Cookie` keeps both, since repeating it is how more than one value is expressed.
+        // Comparison is case-insensitive, as field names are.
+        val derived = response.textHeaders.stdlib.filterNot: header =>
+          !Header.repeatable(header.key)
+          && headers.stdlib.exists(_.key.lower == header.key.lower)
+
         Response
           ( 1.1,
             status0.or(response.status),
-            List.of(headers.stdlib ++ response.textHeaders.stdlib),
+            List.of(headers.stdlib ++ derived),
             // `serve` returns a pure `Response`, so its body is pure; the seal only
             // discharges the field's capture-polymorphic declared type.
             caps.unsafe.unsafeAssumePure(response.body) )
