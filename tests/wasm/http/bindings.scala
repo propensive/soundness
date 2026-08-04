@@ -4,10 +4,22 @@
 // the `wasi:http` resources through xenophile's `invoke` — which emits `witImportCall` against the
 // interface's own WIT contract — rather than through generated Scala facades.
 //
-// The two parameter types must be scala-wasm's own facade classes, not local redeclarations: the
-// linker emits a cast of each incoming resource handle to the canonical facade for its WIT resource
-// (`scala.scalajs.wasi.http.types.IncomingRequest`), so a same-shaped trait declared here traps at
-// run time with `wasm trap: cast failure` before the handler is ever entered.
+// The two parameter types are substituted for scala-wasm's own facade classes, and that
+// substitution is load-bearing — it works around a bug in the generator. For an exported function
+// taking an imported resource, `wit-bindgen scala` types the parameter as its *own* generated
+// facade (`componentmodel.wasi.http.types.IncomingRequest`), while the backend emits a cast of the
+// incoming handle to the canonical one (`scala.scalajs.wasi.http.types.IncomingRequest`). The two
+// are unrelated types, so the guest traps before the handler is entered:
+//
+//     wasm trap: cast failure
+//     0: as.scala.scalajs.wasi.http.types.package$IncomingRequest
+//     1: f.e2ehttp.Service$.handle;Lcomponentmodel.wasi.http.types.package$IncomingRequest;…
+//     2: wasi:http/incoming-handler@0.2.0#handle
+//
+// Verified against the generator's unmodified output (2026-08-04, wit-bindgen-cli 0.50.0,
+// wasmtime 46.0.1): to reproduce, generate with `--world http`, compile the emitted
+// `componentmodel/` tree as-is, and serve it — it links cleanly and traps on the first request.
+// Naming `scala.scalajs.wasi.…` here is the fix until the generator does.
 package componentmodel.exports.wasi.http
 
 import scala.scalajs.wasi.http.types.{IncomingRequest, ResponseOutparam}
