@@ -33,12 +33,3 @@
 package soundness
 
 export xenophile.{Js, JsInvoke}
-
-// Materializes a fully-applied JavaScript `Foreign` navigation into a real Scala.js dynamic call.
-// Must be applied directly to an inline navigation chain — e.g.
-// `Foreign["Math", Typescript].random().invoke[F64]` — not to a value bound to a `val`. It mirrors
-// the `Wasm` module's `invoke`; the two target different Scala.js link outputs (JS vs the Wasm
-// Component Model) and are never on the same application's classpath.
-extension (foreign: xenophile.Foreign)
-  transparent inline def invoke[result]: result =
-    ${xenophile.JsInvoke.invoke[result]('foreign)}

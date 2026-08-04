@@ -2626,8 +2626,8 @@ object xenophile extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Scala Native materializer: lowers a C `Foreign` navigation to a `dlsym`+`CFuncPtr` call.
   // Compiled for the JVM (where the macro runs) and cross-compiled for native (where downstream
-  // callers link it). Its `invoke` extension collides by design with `wasm`/`js` (they target
-  // different platforms), so — like `js` — it is not bundled into the `test` module.
+  // callers link it). It is the second of the two backends the `Native` ecosystem's `Emission`
+  // names; a build gets this one or `native`, never both.
   object scalanative extends Component(core, cffi):
     override def scalaJs = false // a Scala Native materializer; no JS relevance
     override def scalaNative = true // but it is, of course, the native materializer itself
@@ -2656,14 +2656,14 @@ object xenophile extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The JavaScript materializer: emits Scala.js dynamic calls for WebIDL/TypeScript navigations.
-  // The `invoke` extension it exports collides by design with `wasm`'s (they target different
-  // Scala.js link outputs), so it is not bundled into the `test` module alongside `wasm`.
   object js extends Component(core, hypotenuse.core, anticipation.codec, distillate.core,
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(typescript, native, wit, webidl, wasm, kotlin, hellenism.core,
-      harlequin.core):
+  // Every backend at once — which only typechecks because they now share the single `invoke` in
+  // `core` rather than exporting one apiece into `soundness`.
+  object test extends Tests(typescript, native, wit, webidl, wasm, kotlin, js, scalanative,
+      hellenism.core, harlequin.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
     // kotlin-stdlib is the Kotlin-classfile fixture: its `@Metadata`-annotated classes let the

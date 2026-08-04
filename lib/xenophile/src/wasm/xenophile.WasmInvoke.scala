@@ -53,85 +53,15 @@ import vacuous.*
 // scala-wasm compiler). Unlike querencia's runtime `Javascript.serialize`, this runs at compile
 // time, so it is a macro that deconstructs the inline navigation (the `invoke` extension in the
 // module's package object must be applied directly to an inline chain — not to a `val`).
-object WasmInvoke:
-  def invoke[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
+object WasmInvoke extends Materializer:
+  def materialize[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
     import quotes.reflect.*
 
     // The receiver carries the source language (`Origin`) in its refined type; the WIT function it
     // was reached through is recovered from the `Foreign.Expression` the navigation built.
     val (_, origin) = Xenophile.receiver(self)
 
-    // The navigation expands to `Foreign.make(<AST>).asInstanceOf[…]`, and reaching this macro
-    // through further `inline` definitions (e.g. an inline given publishing a deferred import)
-    // nests it in `Inlined`/`Typed` layers that `underlyingArgument` cannot fold away. So the AST
-    // is recovered by term-level stripping, as in `JsInvoke`, rather than quote-pattern matching.
-    def strip(term: Term): Term = term match
-      case Inlined(_, _, body)                        => strip(body)
-      case Typed(expr, _)                             => strip(expr)
-      case Block(Nil, expr)                           => strip(expr)
-      case TypeApply(Select(expr, "asInstanceOf"), _) => strip(expr)
-      case _                                          => term
-
-    // `.tt` desugars to `tt("…")`; recover the string from the operand (or a bare string literal).
-    def stringOf(term: Term): Text = strip(term).absolve match
-      case Literal(StringConstant(string)) => string.tt
-
-    def literal(term: Term): Text = strip(term).absolve match
-      case Apply(Ident("tt"), sci.List(argument)) => stringOf(argument)
-
-    def notCall: Nothing =
-      halt(m"xenophile: `invoke` expects a foreign function invocation, `interface.function(args)`")
-
-    val expression = strip(self.asTerm.underlyingArgument).absolve match
-      case Apply(Select(_, "make"), sci.List(argument)) => strip(argument)
-      case _                                        => notCall
-
-    // The elements of the `Expr.ofList`-built argument list of an `Expression.Apply`.
-    def argumentList(term: Term): sci.List[Term] = strip(term) match
-      case Apply(_, sci.List(varargs)) => strip(varargs) match
-        case Repeated(elements, _) => elements.map(strip)
-        case _                     => sci.Nil
-
-      case _ =>
-        sci.Nil
-
-    // The Scala value wrapped by the `Foreign.converter` `Conversion` in a navigation operand (a
-    // converted argument, or a `WitHandle` receiver): the argument of the conversion's `apply`.
-    def convertedValue(term: Term): Term =
-      var found: Optional[Term] = Unset
-
-      val traverser = new TreeTraverser:
-        override def traverseTree(tree: Tree)(owner: Symbol): Unit = tree match
-          case Apply(Select(qualifier, "apply"), sci.List(value))
-          if qualifier.tpe <:< TypeRepr.of[Conversion[Nothing, Foreign]] =>
-            if found.absent then found = value
-
-          case _ =>
-            traverseTreeChildren(tree)(owner)
-
-      traverser.traverseTree(term)(Symbol.spliceOwner)
-
-      found.or:
-        halt(m"xenophile: a foreign operand must be a Scala value with an `Interoperable` instance")
-
-    // Either an applied call — `Expression.Apply(select, args)`, whose companion `apply` takes two
-    // arguments — or the bare selection of a zero-parameter WIT function (`Expression.Select`,
-    // whose companion `apply` takes three): `interface.function.invoke[R]`. The latter is
-    // preferred inside `inline` definitions, where re-inlining an empty-varargs application trips
-    // path-dependent type avoidance.
-    val (selectNode, argumentTerms) = expression match
-      case Apply(Select(_, "apply"), sci.List(node, arguments)) =>
-        (strip(node), argumentList(arguments))
-
-      case _ =>
-        (expression, sci.Nil)
-
-    val (receiverNode, owner, function) = selectNode.absolve match
-      case Apply(Select(_, "apply"), sci.List(receiver, member, owner)) =>
-        (strip(receiver), literal(owner), literal(member))
-
-      case _ =>
-        notCall
+    val (owner, function, receiverNode, argumentTerms) = Xenophile.navigation(self)
 
     // Look up the function's module id (e.g. `wasi:random/random@0.2.0`) from the definitions.
     val allDefinitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
@@ -745,8 +675,9 @@ object WasmInvoke:
             (carrier, encoded)
 
     val argumentPairs: List[Term] =
-      argumentTerms.zip(parameterTypes).flatMap: (argument, parameter) =>
-        val (carrierRepr, encoded) = encodedArgument(convertedValue(argument), parameter)
+      argumentTerms.to(sci.List).zip(parameterTypes).flatMap: (argument, parameter) =>
+        val (carrierRepr, encoded) =
+          encodedArgument(Xenophile.convertedValue(argument), parameter)
 
         val slot =
           Apply

@@ -33,4 +33,4 @@
 package soundness
 
 export xenophile.{companion, enumEntry, make, singleton, Facade, Kotlin, KotlinDialect,
-    KotlinFacade, KotlinInvoke, KotlinRuntime, kotlinInvocation}
+    KotlinFacade, KotlinInvoke, KotlinRuntime}
