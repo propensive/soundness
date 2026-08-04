@@ -64,8 +64,6 @@ given webIdlDom: WebIdlDomSource = Interface[WebIdlDom](cp"/xenophile/dom.idl")
 object Tests extends Suite(m"Xenophile tests"):
   def run(): Unit =
     suite(m"Kotlin ecosystem"):
-      import kotlinInvocation.invoke
-
       test(m"a top-level Kotlin function call materializes as a direct JVM call"):
         Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
         . getProgressionLastElement(1, 10, 2)
@@ -475,6 +473,14 @@ object Tests extends Suite(m"Xenophile tests"):
         val text = arena.allocateFrom("hello, world").nn
         libc.handle(t"strlen").invokeWithArguments(text).nn.asInstanceOf[Long]
       . assert(_ == 12L)
+
+      // The bare `invoke`, on a module that also depends on the Wasm, JS, Kotlin and Scala Native
+      // backends: it resolves to Panama because the `Native` ecosystem names both C backends and
+      // only `PanamaInvoke` is on this classpath. Before the backends shared one `invoke`, this
+      // could not be written here at all.
+      test(m"FFM: `invoke` materializes a C call as a Panama downcall"):
+        library.abs(-5).invoke[Int]
+      . assert(_ == 5)
 
       test(m"a C struct field has the field's foreign type"):
         val point: Foreign of "Point" from Native = Foreign["Point", Native]

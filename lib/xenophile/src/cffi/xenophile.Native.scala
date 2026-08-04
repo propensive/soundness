@@ -71,3 +71,9 @@ object Native:
 
 trait Native extends Ecosystem:
   type Grammar = CHeaderDialect.type
+
+  // Two backends, one per target platform: `xenophile.native` lowers to a Panama downcall on the
+  // JVM, `xenophile.scalanative` to a `dlsym`/`CFuncPtr` call on Scala Native. A build depends on
+  // one or the other — never both — so naming both here lets the same source compile either way,
+  // which is what `enigmatic.openssl` relies on.
+  type Emission = "xenophile.PanamaInvoke" | "xenophile.NativeInvoke"

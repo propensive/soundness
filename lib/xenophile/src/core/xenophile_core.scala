@@ -32,10 +32,19 @@
                                                                                                   */
 package xenophile
 
-// The `invoke` terminal (re-exported to the `soundness` package alongside `NativeInvoke`).
-// Plain `inline` (not `transparent`): the return type is fixed by the type argument, and
-// non-transparency defers the macro so the `scala.scalanative.*` call only materializes at the
-// downstream (Native-linked) call site.
+// The one terminal for every ecosystem and every target platform. Which backend emits the call —
+// Panama, Scala Native, Wasm, JS or Kotlin — follows from the receiver's `Origin` and the
+// `Materialization` the build put on the classpath, so this module depends on none of them and
+// exactly one `invoke` reaches the `soundness` umbrella. (It used to be five, one per backend,
+// which `import soundness.*` resolved by classpath order.)
+//
+// Must be applied directly to an inline navigation chain — e.g.
+// `Foreign["random", Wit].\`get-random-u64\`().invoke[U64]` — not to a value bound to a `val`.
+//
+// Plain `inline`, not `transparent`: the result type is fully determined by the type argument in
+// all five backends, and non-transparency defers the macro when `invoke` appears inside another
+// `inline` definition, so a library can publish an inline given whose call only materializes at
+// the downstream (Wasm-, JS- or Native-linked) call site — where the platform runtime is on the
+// classpath.
 extension (foreign: Foreign)
-  inline def invoke[result]: result =
-    ${NativeInvoke.invoke[result]('foreign)}
+  inline def invoke[result]: result = ${Xenophile.invoke[result]('foreign)}

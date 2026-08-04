@@ -50,8 +50,8 @@ import prepositional.*
 //
 // Like `WasmInvoke`, this v1 materializes nullary method calls (`receiver.method()`); argument
 // marshalling through `Encodable in Js` is a follow-up, tracked alongside the `Wasm` form's.
-object JsInvoke:
-  def invoke[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
+object JsInvoke extends Materializer:
+  def materialize[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
     import quotes.reflect.*
 
     // The `js.Dynamic` interop entry points, resolved from the downstream Scala.js library. Named
@@ -62,26 +62,6 @@ object JsInvoke:
     val applyDynamic = dynamic.methodMember("applyDynamic").head
     // A concrete `js.Any` tree for the empty varargs element (an inferred one fails to resolve).
     val jsAnyTree = TypeTree.ref(Symbol.requiredClass("scala.scalajs.js.Any"))
-
-    // The navigation the `invoke` is applied to expands to `Foreign.make(<AST>).asInstanceOf[…]`,
-    // itself wrapped in `Inlined`/`Typed` layers (the inline `applyDynamic` leaves a `Foreign_this`
-    // binding, so `underlyingArgument` cannot fold the `Inlined` away). Rather than quote-match
-    // through those layers, we peel them at tree level and read the `Foreign.Expression` AST the
-    // navigation macros built directly. (`.tt` desugars to a plain `tt("…")` application.)
-    def strip(term: Term): Term = term match
-      case Inlined(_, _, body)                        => strip(body)
-      case Typed(expr, _)                             => strip(expr)
-      case Block(Nil, expr)                           => strip(expr)
-      case TypeApply(Select(expr, "asInstanceOf"), _) => strip(expr)
-      case _                                          => term
-
-    // `.tt` desugars to `tt("…")`; recover the string from the operand (or a bare string literal).
-    def stringOf(term: Term): Text = strip(term).absolve match
-      case Literal(StringConstant(string)) => string.tt
-
-    def literal(term: Term): Text = strip(term).absolve match
-      case Apply(Ident("tt"), List(argument)) => stringOf(argument)
-      case other                              => stringOf(other)
 
     // `receiver.selectDynamic("name")`, yielding another `js.Dynamic`.
     def select(receiver: Term, name: Text): Term =
@@ -100,24 +80,10 @@ object JsInvoke:
         ( Apply(Select(receiver, applyDynamic), List(Literal(StringConstant(method.s)))),
           List(arguments) )
 
-    def notCall: Nothing = halt(m"xenophile: `invoke` expects a call, `receiver.method()`")
-
-    // Peel to the `Foreign.make(<AST>)` application; take its argument — the expression AST.
-    val expression = strip(self.asTerm.underlyingArgument).absolve match
-      case Apply(Select(_, "make"), List(argument)) => strip(argument)
-      case _                                        => notCall
-
-    // Like `WasmInvoke`, the `owner` recorded on the `Select` names the type the method belongs to;
-    // for a global JavaScript object (`Math`, `crypto`, …) that is the global property to read, so
-    // the call is `global.<owner>.<method>()`. AST: `Apply(Select(_, member, owner), _)`
-    // (`Apply.apply` has two arguments; the nested `Select.apply` has three).
-    val selectNode = expression match
-      case Apply(Select(_, "apply"), List(node, _)) => strip(node)
-      case _                                        => notCall
-
-    val (owner, function) = selectNode.absolve match
-      case Apply(Select(_, "apply"), List(_, member, owner)) => (literal(owner), literal(member))
-      case _                                                 => notCall
+    // The owner recorded on the navigation's `Select` names the type the method belongs to; for a
+    // global JavaScript object (`Math`, `crypto`, …) that is the global property to read, so the
+    // call is `global.<owner>.<method>()`.
+    val (owner, function, _, _) = Xenophile.navigation(self)
 
     val call = applyNullary(select(Ref(globalMethod), owner), function)
 

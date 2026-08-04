@@ -48,67 +48,13 @@ import vacuous.*
 // downstream compile classpath, so this module needs no dependency on the Kotlin libraries it
 // calls into. This v1 materializes calls to top-level (static) functions; instance receivers
 // and properties follow.
-object KotlinInvoke:
-  def invoke[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
+object KotlinInvoke extends Materializer:
+  def materialize[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
     import quotes.reflect.*
 
-    def strip(term: Term): Term = term match
-      case Inlined(_, _, body)                        => strip(body)
-      case Typed(expr, _)                             => strip(expr)
-      case Block(Nil, expr)                           => strip(expr)
-      case TypeApply(Select(expr, "asInstanceOf"), _) => strip(expr)
-      case _                                          => term
+    val (owner, function, _, argumentTerms) = Xenophile.navigation(self)
 
-    def stringOf(term: Term): Text = strip(term).absolve match
-      case Literal(StringConstant(string)) => string.tt
-
-    def literal(term: Term): Text = strip(term).absolve match
-      case Apply(Ident("tt"), List(argument)) => stringOf(argument)
-      case other                              => stringOf(other)
-
-    def notCall: Nothing =
-      halt(m"xenophile: `invoke` expects a Kotlin function invocation, `facade.function(…)`")
-
-    val expression = strip(self.asTerm.underlyingArgument).absolve match
-      case Apply(Select(_, "make"), List(argument)) => strip(argument)
-      case _                                        => notCall
-
-    def argumentList(term: Term): List[Term] = strip(term) match
-      case Apply(_, List(varargs)) => strip(varargs).absolve match
-        case Repeated(elements, _) => elements.map(strip)
-        case _                     => Nil
-
-      case _ =>
-        Nil
-
-    val (selectNode, argumentTerms) = expression match
-      case Apply(Select(_, "apply"), List(node, args)) => (strip(node), argumentList(args))
-      case _                                           => notCall
-
-    val (owner, function) = selectNode.absolve match
-      case Apply(Select(_, "apply"), List(_, member, owner)) => (literal(owner), literal(member))
-      case _                                                 => notCall
-
-    // The Scala value wrapped by the `Foreign.converter` `Conversion` in an argument operand,
-    // recovered by traversal, as in `PanamaInvoke`.
-    def convertedValue(term: Term): Term =
-      var found: Optional[Term] = Unset
-
-      val traverser = new TreeTraverser:
-        override def traverseTree(tree: Tree)(owner: Symbol): Unit = tree match
-          case Apply(Select(qualifier, "apply"), List(value))
-          if qualifier.tpe <:< TypeRepr.of[Conversion[Nothing, Foreign]] =>
-            if found.absent then found = value
-
-          case _ =>
-            traverseTreeChildren(tree)(owner)
-
-      traverser.traverseTree(term)(Symbol.spliceOwner)
-
-      found.or:
-        halt(m"xenophile: a Kotlin argument must be a Scala value with an `Interoperable`")
-
-    val argumentValues = argumentTerms.map(convertedValue)
+    val argumentValues = argumentTerms.to(List).map(Xenophile.convertedValue)
 
     // The parameter segment of a JVM method descriptor, split into one entry per parameter.
     def descriptorParameters(descriptor: Text): List[Text] =
@@ -180,10 +126,3 @@ object KotlinInvoke:
     val call = Apply(Select(Ref(module), method), arguments)
 
     TypeApply(Select.unique(call, "asInstanceOf"), List(TypeTree.of[result])).asExprOf[result]
-
-// The `invoke` terminal for Kotlin navigations. Deliberately housed in its own object rather
-// than exported loose: other ecosystems' materializers (Wasm, JS) export `invoke` extensions
-// too, so a named import — `import kotlinInvocation.invoke` — disambiguates where they coexist.
-object kotlinInvocation:
-  extension (foreign: Foreign)
-    transparent inline def invoke[result]: result = ${KotlinInvoke.invoke[result]('foreign)}

@@ -56,70 +56,14 @@ import vacuous.*
 // expects), a `string` argument (`Text`) is copied into a confined per-call `Arena`, and a
 // `pointer` argument (any other `T*`) travels as its raw address via `MemorySegment.ofAddress`.
 // A `string` result is read back out of native memory; a pointer result becomes an `Address`.
-object PanamaInvoke:
-  def invoke[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
+object PanamaInvoke extends Materializer:
+  def materialize[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
     import quotes.reflect.*
 
     // The receiver carries the source language (`Origin`) in its refined type; the C function it
-    // was reached through is recovered from the `Foreign.Expression` the navigation built —
-    // term-level stripping, as in `NativeInvoke`/`WasmInvoke`/`JsInvoke`.
+    // was reached through is peeled out of the navigation tree by the shared recovery in `core`.
     val (_, origin) = Xenophile.receiver(self)
-
-    def strip(term: Term): Term = term match
-      case Inlined(_, _, body)                        => strip(body)
-      case Typed(expr, _)                             => strip(expr)
-      case Block(Nil, expr)                           => strip(expr)
-      case TypeApply(Select(expr, "asInstanceOf"), _) => strip(expr)
-      case _                                          => term
-
-    def stringOf(term: Term): Text = strip(term).absolve match
-      case Literal(StringConstant(string)) => string.tt
-
-    def literal(term: Term): Text = strip(term).absolve match
-      case Apply(Ident("tt"), List(argument)) => stringOf(argument)
-      case other                              => stringOf(other)
-
-    def notCall: Nothing =
-      halt(m"xenophile: `invoke` expects a foreign function invocation, `interface.function()`")
-
-    val expression = strip(self.asTerm.underlyingArgument).absolve match
-      case Apply(Select(_, "make"), List(argument)) => strip(argument)
-      case _                                        => notCall
-
-    def argumentList(term: Term): List[Term] = strip(term) match
-      case Apply(_, List(varargs)) => strip(varargs).absolve match
-        case Repeated(elements, _) => elements.map(strip)
-        case _                     => Nil
-
-      case _ =>
-        Nil
-
-    val (selectNode, argumentTerms) = expression match
-      case Apply(Select(_, "apply"), List(node, args)) => (strip(node), argumentList(args))
-      case _                                           => (expression, Nil)
-
-    val (owner, function) = selectNode.absolve match
-      case Apply(Select(_, "apply"), List(_, member, owner)) => (literal(owner), literal(member))
-      case _                                                 => notCall
-
-    // The Scala value wrapped by the `Foreign.converter` `Conversion` in an argument operand,
-    // recovered by traversal, as in `NativeInvoke`.
-    def convertedValue(term: Term): Term =
-      var found: Optional[Term] = Unset
-
-      val traverser = new TreeTraverser:
-        override def traverseTree(tree: Tree)(owner: Symbol): Unit = tree match
-          case Apply(Select(qualifier, "apply"), List(value))
-          if qualifier.tpe <:< TypeRepr.of[Conversion[Nothing, Foreign]] =>
-            if found.absent then found = value
-
-          case _ =>
-            traverseTreeChildren(tree)(owner)
-
-      traverser.traverseTree(term)(Symbol.spliceOwner)
-
-      found.or:
-        halt(m"xenophile: a foreign argument must be a Scala value with an `Interoperable`")
+    val (owner, function, _, argumentTerms) = Xenophile.navigation(self)
 
     // Validate the call against the parsed C header and read its parameter and result types.
     val allDefinitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
@@ -168,8 +112,8 @@ object PanamaInvoke:
     // is copied into `arena` (absent unless some parameter needs it); any other pointer travels
     // as a zero-length segment of its raw address.
     def marshalled(arena: Optional[Expr[Arena]]): List[Expr[AnyRef]] =
-      argumentTerms.zip(parameterTypes).map: (term, paramType) =>
-        val value = convertedValue(term).asExpr
+      argumentTerms.to(List).zip(parameterTypes).map: (term, paramType) =>
+        val value = Xenophile.convertedValue(term).asExpr
 
         paramType match
           case Foreign.Type.Named(t"string") =>
