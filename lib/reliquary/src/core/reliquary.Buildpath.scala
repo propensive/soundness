@@ -124,9 +124,27 @@ case class Buildpath(releases: List[LiraManifest]):
     val chosen = releases.stdlib.sortBy(_.module.s).map: manifest =>
       candidates(manifest).find(satisfies(universe, manifest, _)) match
         case scala.Some(candidate) => (manifest.module, candidate)
-        case _                     => abort(LiraError(Reason.NoAssignment))
+
+        // Because the choices are independent, a failure is always one release's: there is no
+        // combination to report, only the module none of whose integrations hold.
+        case _ => abort(LiraError(Reason.NoAssignment(manifest.module)))
 
     Assignment(List.from(chosen))
+
+  // §13.2 satisfaction, plus §13.4 spanning: the required snapshot must appear in the candidate's
+  // lineage, or one of the snapshots the dependent has *proven* it spans must. A span is a
+  // publisher's recorded proof that its used-set is contained in that release's atom set, so a
+  // module that spans a dependency's major boundary resolves against either side of it without a
+  // variant compilation — which is the cheaper answer §9.5 tells producers to prefer.
+  //
+  // Spans are taken on trust here, because they are not decidable from one manifest: proving one
+  // requires atomizing the candidate's payload, so it is a publish-time check a registry makes
+  // across two releases (§16), not something buildpath validation can redo from manifests alone.
+  private def requirementMet(dependency: LiraManifest.Dependency, candidate: LiraManifest)
+  :   Boolean =
+
+    Lineage.contains(candidate.lineage, dependency.api)
+    || dependency.spans.stdlib.exists(Lineage.contains(candidate.lineage, _))
 
   // Whether one release's dependencies hold under one choice of its integration: rules 4 and 5,
   // as a predicate rather than a diagnosis. `audit` reports which rule failed and why.
@@ -137,7 +155,7 @@ case class Buildpath(releases: List[LiraManifest]):
       if !dependency.applies(universe, integration) then true else
         apply(dependency.module) match
           case candidate: LiraManifest =>
-            Lineage.contains(candidate.lineage, dependency.api)
+            requirementMet(dependency, candidate)
             && dependency.build.let(Blob.compare(_, candidate.payload.hash) == 0).or(true)
 
           case _ => false
@@ -162,6 +180,17 @@ case class Buildpath(releases: List[LiraManifest]):
           if one == two || one.startsWith(two + ".") || two.startsWith(one + ".")
           then abort(LiraError(Reason.NamespaceClash(left(1))))
 
+    // L126: `export` and `track` paths are pairwise disjoint across modules, so a classpath-style
+    // reference resolves to exactly one module. `scan` directories are exempt — cross-module
+    // aggregation under a shared directory is precisely their purpose.
+    val named = all.flatMap: manifest =>
+      manifest.resource.stdlib
+        . filter(_.mode != LiraManifest.ResourceMode.Scan)
+        . map: resource => (manifest.module, resource.path.text)
+
+    named.groupBy(_(1)).foreach: (path, group) =>
+      if group.map(_(0)).distinct.size > 1 then abort(LiraError(Reason.ResourceClash(path)))
+
   // Closure (L113) and satisfaction (L114) under one assignment, reporting the precise rule that
   // fails. `resolve` answers only whether *some* assignment works; this says why a given one does
   // not, which is what a diagnostic needs.
@@ -179,7 +208,7 @@ case class Buildpath(releases: List[LiraManifest]):
             case _ =>
               abort(LiraError(Reason.AbsentDependency(dependency.module)))
 
-          if !Lineage.contains(candidate.lineage, dependency.api)
+          if !requirementMet(dependency, candidate)
           then abort(LiraError(Reason.Unsatisfiable(dependency.module)))
 
           dependency.build.let: build =>

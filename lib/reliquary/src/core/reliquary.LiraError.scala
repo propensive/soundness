@@ -63,12 +63,15 @@ object LiraError:
     case BadSignature(signer: Text)           extends Reason(121)
     case UnknownAlgorithm(name: Text)         extends Reason(122)
     case UnknownKey(fingerprint: Text)        extends Reason(123)
+    case BadResource(detail: Text)            extends Reason(124)
+    case IneffectiveResource(path: Text)      extends Reason(125)
+    case ResourceClash(path: Text)            extends Reason(126)
     case InapplicableDiscipline(id: Text)     extends Reason(127)
     case ProfileViolated(id: Text, detail: Text) extends Reason(128)
     case ProfileWeakens(id: Text)             extends Reason(129)
     case UnrecordedBreak(id: Text, level: Text) extends Reason(130)
     case BadIntegration(detail: Text)         extends Reason(131)
-    case NoAssignment                         extends Reason(132)
+    case NoAssignment(module: Text)           extends Reason(132)
     case UnrealizedIntegration(id: Text)      extends Reason(133)
 
   given communicable: Reason is Communicable =
@@ -95,6 +98,12 @@ object LiraError:
     case Reason.BadSignature(signer)          => m"the signature by $signer does not verify"
     case Reason.UnknownAlgorithm(name)        => m"the signature algorithm $name is unknown"
     case Reason.UnknownKey(fingerprint)       => m"no key matches the fingerprint $fingerprint"
+    case Reason.BadResource(detail)           => m"the resource claims are ill-formed: $detail"
+
+    case Reason.IneffectiveResource(path) =>
+      m"the resource $path resolves to nothing, or to content another discipline claims"
+
+    case Reason.ResourceClash(path)           => m"the resource path $path is claimed twice"
 
     case Reason.InapplicableDiscipline(id) =>
       m"the discipline $id atomizes no universe this release carries"
@@ -106,7 +115,8 @@ object LiraError:
       m"the step does not preserve $level but the profile $id does not record it"
 
     case Reason.BadIntegration(detail)      => m"the integrations are ill-formed: $detail"
-    case Reason.NoAssignment                => m"no assignment of integrations validates"
+    case Reason.NoAssignment(module) =>
+      m"no integration of $module is satisfiable on this buildpath"
     case Reason.UnrealizedIntegration(id)   => m"the integration $id has no section"
 
 case class LiraError(reason: LiraError.Reason)(using Diagnostics)

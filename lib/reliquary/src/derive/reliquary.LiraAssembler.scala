@@ -66,6 +66,7 @@ object LiraAssembler:
       owns:        List[Text]                    = List(),
       profile:     List[LiraManifest.Profile]     = List(),
       integration: List[LiraManifest.Integration] = List(),
+      resource:    List[LiraManifest.Resource]    = List(),
       dependency:  List[LiraManifest.Dependency]  = List(),
       delta:       Optional[LiraDelta]            = Unset,
       classpath:   SectionInput => List[Text]     = { _ => List() },
@@ -85,15 +86,42 @@ object LiraAssembler:
     // (discipline, key, class, value hash), for the release to present one API on every universe
     // and under every integration (L108). The classpath is a property of the section, since it
     // is exactly what distinguishes one integration from another.
+    // L124 before anything else: an ill-formed set of claims makes the partition ambiguous, so
+    // there is nothing sensible to atomize.
+    ResourceDiscipline.check(resource)
+
+    val registry = Discipline.Registry(disciplines.declared, resource)
+
     val atomized = inputs.map: input =>
       val context = Discipline.Context(input.universe, input.integration, classpath(input))
-      (input.universe, disciplines.atomize(input.content, context))
+      (input.universe, registry.atomize(input.content, context))
+
+    // L125: an `export` or `track` declaration must be effective — a declared path that resolves
+    // to no item in any section, or that some other discipline claims, is an assembly-time
+    // error. A presence guarantee over nothing, or over content whose contract another
+    // discipline already carries, is never what the author meant.
+    val resourceDiscipline = ResourceDiscipline(resource)
+
+    (resourceDiscipline.exports.stdlib ++ resourceDiscipline.tracked.stdlib).foreach: path =>
+      val present = inputs.exists: input =>
+        input.content.stdlib.exists: pair => pair(0).text == path.text
+
+      if !present
+      then abort(LiraError(Reason.IneffectiveResource(path.text)))
+
+      val claimedByOther = disciplines.declared.stdlib.exists: discipline =>
+        inputs.exists: input =>
+          input.content.stdlib.exists: pair =>
+            pair(0).text == path.text && discipline.claims(pair(0), pair(1))
+
+      if claimedByOther
+      then abort(LiraError(Reason.IneffectiveResource(path.text)))
 
     // L127: a declared discipline must atomize some universe this release carries. An
     // atomization of nothing is not a claim about anything.
     val universes = inputs.map(_.universe).toSet
 
-    disciplines.all.stdlib.foreach: discipline =>
+    registry.all.stdlib.foreach: discipline =>
       if !universes.exists(discipline.domain.covers)
       then abort(LiraError(Reason.InapplicableDiscipline(discipline.id)))
 
@@ -160,6 +188,7 @@ object LiraAssembler:
           lineage     = fullLineage,
           toolchain   = toolchain,
           owns        = owns,
+          resource    = resource,
           api         = api,
           profile     = profile,
           integration = integration,

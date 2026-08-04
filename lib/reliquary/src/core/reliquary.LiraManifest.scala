@@ -70,10 +70,10 @@ object LiraManifest:
   // One alternative dependency vector the release was built against (§9.5). `rank` orders the
   // canonical assignment (§13.3), lower first; a rank left unset sorts after every declared one,
   // so a publisher who ranks nothing gets declaration-order-independent, id-ordered resolution.
-  // `label` carries no authority (§14). It is one TEL atom, so it holds no whitespace: TEL
-  // splits unquoted values on whitespace, and a `String` field admits exactly one atom. Prose
-  // labels would need the field declared repeatable, or a literal-atom encoding (TEL §15); both
-  // are spec decisions rather than implementation ones, so the field stays a single token here.
+  // `label` is prose and carries no authority (§14). It is one atom even when it contains
+  // spaces: `render` separates it from its keyword by a hard-space run, which switches TEL into
+  // hard-space mode for the rest of the line (TEL §10.3), so the single spaces within it are
+  // content rather than phrase separators.
   case class Integration(id: Text, rank: Optional[Long] = Unset, label: Optional[Text] = Unset)
 
   case class Dependency
@@ -97,6 +97,28 @@ object LiraManifest:
         || integration.let { id => this.integration.stdlib.contains(id) }.or(false)
 
       universeApplies && integrationApplies
+
+  // How a declared resource participates in the algebra (§11.4). `Export` guarantees the name is
+  // present; `Track` additionally tracks the bytes as replaceable churn; `Scan` claims a whole
+  // directory atomless, so nothing under it is contractual.
+  enum ResourceMode:
+    case Export, Track, Scan
+
+    def keyword: Text = this match
+      case Export => t"export"
+      case Track  => t"track"
+      case Scan   => t"scan"
+
+  object ResourceMode:
+    def parse(keyword: Text): Optional[ResourceMode] = keyword.s match
+      case "export" => Export
+      case "track"  => Track
+      case "scan"   => Scan
+      case _        => Unset
+
+  // One resource claim (§11.4): an authorial statement, like `owns`, that parameterizes the
+  // `resource/1` discipline's claiming.
+  case class Resource(mode: ResourceMode, path: TreePath)
 
   case class Payload(compression: Text, length: Long, hash: Data)
   case class Signature(signer: Text, algorithm: Text, key: Data, value: Text)
@@ -186,6 +208,16 @@ object LiraManifest:
           uses        = field(fields, t"uses").let(hash(_)),
           spans       = List.from(repeated(fields, t"spans").map(hash(_))) )
 
+    val resource = top.filter(_.keyword == t"resource").map: compound =>
+      val mode = texts(compound) match
+        case scala.collection.immutable.Vector(mode) =>
+          ResourceMode.parse(mode).or(abort(bad(t"$mode is not a resource mode")))
+
+        case _ =>
+          abort(bad(t"a resource needs exactly one mode"))
+
+      Resource(mode, TreePath(required(children(compound), t"path")))
+
     val profile = top.filter(_.keyword == t"profile").map: compound =>
       val fields = children(compound)
 
@@ -244,6 +276,7 @@ object LiraManifest:
         lineage     = List.from(repeated(top, t"lineage").map(hash(_))),
         toolchain   = List.from(toolchain),
         owns        = List.from(repeated(top, t"owns")),
+        resource    = List.from(resource),
         api         = List.from(api),
         profile     = List.from(profile),
         integration = List.from(integration),
@@ -263,6 +296,7 @@ case class LiraManifest
     lineage:     List[Data],
     toolchain:   List[LiraManifest.Tool]         = List(),
     owns:        List[Text]                      = List(),
+    resource:    List[LiraManifest.Resource]     = List(),
     api:         List[LiraManifest.Api],
     profile:     List[LiraManifest.Profile]      = List(),
     integration: List[LiraManifest.Integration]  = List(),
@@ -298,6 +332,10 @@ case class LiraManifest
 
     owns.stdlib.foreach: space => lines += s"owns $space"
 
+    resource.stdlib.foreach: resource =>
+      lines += s"resource ${resource.mode.keyword}"
+      lines += s"  path ${resource.path.text}"
+
     api.stdlib.foreach: api =>
       lines += "api"
       lines += s"  discipline ${api.discipline}"
@@ -312,7 +350,9 @@ case class LiraManifest
       lines += "integration"
       lines += s"  id ${integration.id}"
       integration.rank.let: rank => lines += s"  rank $rank"
-      integration.label.let: label => lines += s"  label $label"
+      // Two spaces, not one: the hard-space run makes the whole remainder of the line one atom
+      // (TEL §10.3), which is what lets a label contain spaces.
+      integration.label.let: label => lines += s"  label  $label"
 
     dependency.stdlib.foreach: dependency =>
       lines += "dependency"
