@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export degustation.ScalaTasty
+export degustation.Tasty

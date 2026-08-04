@@ -294,9 +294,9 @@ object Tests extends Suite(m"Degustation Tests"):
       import reliquary.*
       val path = TreePath(t"fixture/Alpha.tasty")
 
-      (ScalaTasty.claims(path, Array.freeze(Array[Byte](0))),
-       ScalaTasty.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](0))),
-       ScalaTasty.claims(TreePath(t"readme.md"), Array.freeze(Array[Byte](0))))
+      (Tasty.claims(path, Array.freeze(Array[Byte](0))),
+       Tasty.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](0))),
+       Tasty.claims(TreePath(t"readme.md"), Array.freeze(Array[Byte](0))))
     . assert(_ == (true, true, false))
 
     test(m"a jvm-only lira assembles from a real compilation and verifies"):
@@ -307,7 +307,7 @@ object Tests extends Suite(m"Degustation Tests"):
         Compilation[Universe.Classfile](unsafely(out.s.tt.as[soundness.Path on Linux]), classpath)
 
       val input = LiraBundle.jvm(compilation)
-      val registry = Discipline.Registry(List(ScalaTasty))
+      val registry = Discipline.Registry(List(Tasty))
 
       val bytes = LiraAssembler.assemble
         ( t"fixture-core",
@@ -325,8 +325,8 @@ object Tests extends Suite(m"Degustation Tests"):
        lira.manifest.section.stdlib.map(_.universe),
        lira.manifest.section.stdlib.forall(_.derivative.present),
        report.atomizations.stdlib.map(_.discipline))
-    . assert(_ == (t"fixture-core", scala.List(t"scala-tasty/1"), scala.List(t"jvm"), true,
-        scala.List(t"scala-tasty/1")))
+    . assert(_ == (t"fixture-core", scala.List(t"tasty/1"), scala.List(t"jvm"), true,
+        scala.List(t"tasty/1")))
 
     val sjsJars = scala.List("scala3-library_sjs1.jar", "scalajs-scalalib_2.13.jar")
       . map(lib.resolve(_).nn)
@@ -352,7 +352,7 @@ object Tests extends Suite(m"Degustation Tests"):
         val sjsInput = LiraBundle.sjsir(Compilation[Universe.Sjsir]
           (unsafely(sjsOut.s.tt.as[soundness.Path on Linux]), sjsClasspath))
 
-        val registry = Discipline.Registry(List(ScalaTasty))
+        val registry = Discipline.Registry(List(Tasty))
 
         def contextClasspath(universe: Text): List[Text] =
           if universe == t"sjsir" then List.from(Text(sjsOut.s) :: sjsLibraryPaths)
@@ -363,15 +363,15 @@ object Tests extends Suite(m"Degustation Tests"):
             List(jvmInput, sjsInput),
             registry,
             toolchain = List(LiraBundle.tool[Universe.Classfile](t"3.9.0")),
-            classpath = contextClasspath(_) )
+            classpath = { input => contextClasspath(input.universe) } )
 
         val lira = Lira.read(bytes)
         val report = Verification.install(lira)
         val sjsSection = lira.manifest.section.stdlib.find(_.universe == t"sjsir")
 
         (lira.manifest.section.stdlib.map(_.universe),
-         report.materialized.stdlib.map(_(0)),
-         report.materialized.stdlib.find(_(0) == t"sjsir")
+         report.materialized.stdlib.map(_(0).universe),
+         report.materialized.stdlib.find(_(0).universe == t"sjsir")
            . map(_(1).entries.stdlib.exists(_.path.text.s.endsWith(".sjsir"))))
       . assert(_ == (scala.List(t"jvm", t"sjsir"), scala.List(t"jvm", t"sjsir"),
           scala.Some(true)))
@@ -387,10 +387,10 @@ object Tests extends Suite(m"Degustation Tests"):
 
       val binary = (TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](4)))
       val all = List.from(content.stdlib :+ binary)
-      val context = Discipline.Context(t"jvm", List.from(libraryPaths))
-      val atomization = ScalaTasty.atomize(all, context)
+      val context = Discipline.Context(t"jvm", classpath = List.from(libraryPaths))
+      val atomization = Tasty.atomize(all, context)
 
       (atomization.discipline,
        atomization.atoms.stdlib.exists(_.key.s.startsWith("fixture.Overloads.f(")),
        atomization.atoms.stdlib.exists(_.key.s.contains("Alpha.class")))
-    . assert(_ == (t"scala-tasty/1", true, false))
+    . assert(_ == (t"tasty/1", true, false))

@@ -41,13 +41,25 @@ import rudiments.*
 
 import errorDiagnostics.emptyDiagnostics
 
-// The `scala-tasty/1` discipline, adapted to reliquary's SPI. It claims `.tasty` files — the
+// The `tasty/1` discipline, adapted to reliquary's SPI. It claims `.tasty` files — the
 // interface carrier shared by the `jvm`, `sjsir` and `nir` universes — for atomization, and
 // claims the derived binaries (`.class`, `.sjsir`, `.nir`) *atomless*: their interface is
 // exactly the TASTy's, so they contribute no atoms of their own and never fall through to
 // `opaque/1`, where every rebuild would register as a major event.
-object ScalaTasty extends Discipline:
-  def id: Text = t"scala-tasty/1"
+object Tasty extends Discipline:
+  def id: Text = t"tasty/1"
+
+  // TASTy is carried in every universe of the motivating ecosystem, so the domain is universal
+  // and the cross-section invariant (§9.6) binds all of them — which is what makes "one API on
+  // every platform" checkable. Keying is by declaration (`tasty.md` §6): a TASTy reference names
+  // the declaring symbol, so an inherited member need not be re-atomized under each type that
+  // presents it. Classfile-level linkage is the JVM ecosystem profile's, not this discipline's,
+  // so only the TASTy level is certified here.
+  def domain: Discipline.Domain = Discipline.Domain.Universal
+  def keying: Discipline.Keying = Discipline.Keying.Declaration
+
+  def guarantees(universe: Text): Set[Discipline.Guarantee] =
+    Set(Discipline.Guarantee.Linkage, Discipline.Guarantee.Recompilation)
 
   private val atomless: scala.List[String] = scala.List(".class", ".sjsir", ".nir")
 

@@ -34,25 +34,61 @@ package reliquary
 
 import anticipation.*
 import contingency.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
 
 object Discipline:
-  // What a compiler-based discipline needs beyond the content itself: which universe is being
-  // atomized, and the dependency classpath materialized from the buildpath (entries as textual
-  // paths, so the core stays platform-light).
-  case class Context(universe: Text, classpath: List[Text] = List())
+  // What a compiler-based discipline needs beyond the content itself: which section is being
+  // atomized — its universe and, where the release offers alternative dependency vectors (§9.5),
+  // its integration — and the dependency classpath materialized from the buildpath (entries as
+  // textual paths, so the core stays platform-light). The classpath is a property of the
+  // integration, which is why atomization is per-section and not per-universe.
+  case class Context
+    ( universe:    Text,
+      integration: Optional[Text] = Unset,
+      classpath:   List[Text]     = List() )
+
+  // The universes a discipline atomizes at all (§11.2, requirement 1). A universal discipline
+  // atomizes whatever universe it is given; a universe-specific one names its universes, and the
+  // cross-section invariant (§9.6) is vacuous outside them. Claiming nothing in a universe
+  // outside the domain is not the same as claiming content atomless.
+  enum Domain:
+    case Universal
+    case Universes(names: Set[Text])
+
+    def covers(universe: Text): Boolean = this match
+      case Universal        => true
+      case Universes(names) => names.stdlib.contains(universe)
+
+  // Whether an atom's key names the type that *declares* a member, or every type that *presents*
+  // it after inheritance (§11.2, requirement 4). Declaration keying is sound exactly where every
+  // reference a certified consumer can make resolves through the declaring type.
+  enum Keying:
+    case Declaration, Membership
+
+  // What a discipline's rigid atoms certify (§11.2 requirement 7, §11.5). Behavior is not a
+  // certifiable level and so has no case here: no hash scheme certifies it (§18).
+  enum Guarantee:
+    case Linkage, Recompilation
 
   // An ordered set of disciplines. Content is claimed by the first discipline whose `claims`
   // accepts it; anything left unclaimed falls to `opaque/1` (§11.3), so nothing in a LIRA file
-  // is ever outside the compatibility algebra.
+  // is ever outside the compatibility algebra. A discipline out of its domain claims nothing,
+  // ahead of any question of what it would have claimed.
   class Registry(disciplines: List[Discipline]):
+    def all: List[Discipline] = List.from(disciplines.stdlib :+ OpaqueDiscipline)
+
     def atomize(content: List[(TreePath, Data)], context: Context)
     :   List[Atomization] raises DisciplineError =
 
-      val all = disciplines.stdlib :+ OpaqueDiscipline
       var remaining = content.stdlib
 
-      val results = all.map: discipline =>
-        val (claimed, rest) = remaining.partition: (path, data) => discipline.claims(path, data)
+      val results = all.stdlib.map: discipline =>
+        val (claimed, rest) =
+          if !discipline.domain.covers(context.universe) then (scala.Nil, remaining)
+          else remaining.partition: (path, data) => discipline.claims(path, data)
+
         remaining = rest
         (discipline, claimed)
 
@@ -67,6 +103,14 @@ object Discipline:
 trait Discipline:
   def id: Text
   def claims(path: TreePath, data: Data): Boolean
+
+  // The three declarative requirements of §11.2. `domain` scopes the cross-section invariant
+  // (§9.6) and decides L127; `keying` and `guarantees` are contracts a discipline states and
+  // this core takes on trust — neither is checkable by machine, and both change what a reader
+  // may conclude from a grade (§12.4).
+  def domain: Discipline.Domain
+  def keying: Discipline.Keying
+  def guarantees(universe: Text): Set[Discipline.Guarantee]
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises DisciplineError

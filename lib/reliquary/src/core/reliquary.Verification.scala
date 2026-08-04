@@ -34,7 +34,11 @@ package reliquary
 
 import anticipation.*
 import contingency.*
+import gossamer.*
+import rudiments.*
 import vacuous.*
+
+import LiraError.Reason
 
 // Verification is re-execution of the construction, bottom-up (§16). `install` performs the
 // language-blind steps every consumer runs: payload decompression and hashing (1), blob-stream
@@ -43,14 +47,52 @@ import vacuous.*
 // separately: the first two need disciplines and the predecessor, the last needs key material.
 object Verification:
 
+  // `materialized` is keyed by the whole section, not by universe alone: a release offering
+  // alternative dependency vectors (§9.5) has one entry per (universe, integration) cell.
   case class Report
     ( blobstore:     Blobstore,
       atomizations:  List[Atomization],
-      materialized:  List[(Text, LiraTree)],
-      advisories:    List[LiraAdvisory] )
+      materialized:  List[(Section, LiraTree)],
+      advisories:    List[LiraAdvisory] ):
+
+    def tree(universe: Text, integration: Optional[Text]): Optional[LiraTree] =
+      materialized.stdlib.find: pair =>
+        pair(0).universe == universe && pair(0).integration.option == integration.option
+
+      . map(_(1)).getOrElse(Unset)
+
+  // L131/L133: the integration declarations must be well-formed — ids unique, every section's
+  // integration declared, no two sections sharing a (universe, integration) key — and every
+  // declared integration must be realized by at least one section. Decidable from the manifest
+  // alone, so every consumer checks it, not just a registry.
+  def integrations(manifest: LiraManifest): Unit raises LiraError =
+    val declared = manifest.integration.stdlib.map(_.id)
+
+    declared.groupBy(identity).foreach: (id, group) =>
+      if group.size > 1
+      then abort(LiraError(Reason.BadIntegration(t"the integration $id is declared twice")))
+
+    manifest.section.stdlib.foreach: section =>
+      section.integration.let: id =>
+        if !declared.contains(id)
+        then abort(LiraError(Reason.BadIntegration(t"the section names undeclared $id")))
+
+      if section.integration.absent && !declared.isEmpty
+      then abort(LiraError(Reason.BadIntegration(t"a section names no integration")))
+
+    manifest.section.stdlib.groupBy(_.key).foreach: (key, group) =>
+      if group.size > 1
+      then abort(LiraError(Reason.BadIntegration(t"two sections share universe ${key(0)}")))
+
+    declared.foreach: id =>
+      val realized = manifest.section.stdlib.exists: section =>
+        section.integration.let(_ == id).or(false)
+
+      if !realized then abort(LiraError(Reason.UnrealizedIntegration(id)))
 
   def install(lira: Lira): Report raises LiraError =
     val manifest = lira.manifest
+    integrations(manifest)
 
     // Steps 1–2: decompress within the declared length, verify the payload hash, and re-derive
     // every blob identity while checking stream order (L102–L105).
@@ -91,9 +133,9 @@ object Verification:
         val known = trees.tail.filter: pair => pair(0).known.present
 
         val results = known.map: pair =>
-          (pair(0).universe, Overlay.materialize(rootTree, pair(0).delete, pair(1)))
+          (pair(0), Overlay.materialize(rootTree, pair(0).delete, pair(1)))
 
-        (rootSection.universe, rootTree) :: results.toList
+        (rootSection, rootTree) :: results.toList
 
     // Step 5: the snapshot recomputed from the atom listings must equal the last lineage entry.
     Lineage.check(manifest.lineage, Snapshot(atomizations))

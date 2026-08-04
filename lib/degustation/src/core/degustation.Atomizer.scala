@@ -36,7 +36,7 @@ import scala.quoted.Quotes
 
 import anticipation.*
 
-// The atomization rules of `scala-tasty/1`, applied over the compiler's reflection of unpickled
+// The atomization rules of `tasty/1`, applied over the compiler's reflection of unpickled
 // TASTy. The folding principle (LIRA §10.3) governs every decision here: declarations whose
 // addition cannot break consumers stand alone as atoms; fragments whose addition can break
 // consumers fold into their enclosing atom's value, so the entire compatibility check stays set

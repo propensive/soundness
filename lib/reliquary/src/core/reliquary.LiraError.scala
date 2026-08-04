@@ -63,6 +63,13 @@ object LiraError:
     case BadSignature(signer: Text)           extends Reason(121)
     case UnknownAlgorithm(name: Text)         extends Reason(122)
     case UnknownKey(fingerprint: Text)        extends Reason(123)
+    case InapplicableDiscipline(id: Text)     extends Reason(127)
+    case ProfileViolated(id: Text, detail: Text) extends Reason(128)
+    case ProfileWeakens(id: Text)             extends Reason(129)
+    case UnrecordedBreak(id: Text, level: Text) extends Reason(130)
+    case BadIntegration(detail: Text)         extends Reason(131)
+    case NoAssignment                         extends Reason(132)
+    case UnrealizedIntegration(id: Text)      extends Reason(133)
 
   given communicable: Reason is Communicable =
     case Reason.InvalidManifest(detail)       => m"the manifest is invalid: $detail"
@@ -72,7 +79,7 @@ object LiraError:
     case Reason.PayloadHash                   => m"the payload hash is not its declared value"
     case Reason.InvalidTree(detail)           => m"a tree metadata blob is invalid: $detail"
     case Reason.OverlayNotMinimal(path)       => m"the overlay is not minimal at $path"
-    case Reason.ApiDivergence(detail)         => m"the universes differ in API: $detail"
+    case Reason.ApiDivergence(detail)         => m"the sections differ in API: $detail"
     case Reason.LineageMismatch               => m"the last lineage entry is not this snapshot"
     case Reason.UngradedSuccessor             => m"the release is not a patch or minor successor"
     case Reason.DuplicateModule(module)       => m"the buildpath contains $module more than once"
@@ -88,6 +95,19 @@ object LiraError:
     case Reason.BadSignature(signer)          => m"the signature by $signer does not verify"
     case Reason.UnknownAlgorithm(name)        => m"the signature algorithm $name is unknown"
     case Reason.UnknownKey(fingerprint)       => m"no key matches the fingerprint $fingerprint"
+
+    case Reason.InapplicableDiscipline(id) =>
+      m"the discipline $id atomizes no universe this release carries"
+
+    case Reason.ProfileViolated(id, detail) => m"the profile $id is violated: $detail"
+    case Reason.ProfileWeakens(id)          => m"the profile $id weakens a core requirement"
+
+    case Reason.UnrecordedBreak(id, level) =>
+      m"the step does not preserve $level but the profile $id does not record it"
+
+    case Reason.BadIntegration(detail)      => m"the integrations are ill-formed: $detail"
+    case Reason.NoAssignment                => m"no assignment of integrations validates"
+    case Reason.UnrealizedIntegration(id)   => m"the integration $id has no section"
 
 case class LiraError(reason: LiraError.Reason)(using Diagnostics)
 extends Error(640, reason.number)(m"the LIRA operation failed because $reason")
