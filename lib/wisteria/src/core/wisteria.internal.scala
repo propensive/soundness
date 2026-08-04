@@ -1040,4 +1040,9 @@ object internal:
           case Nil       => selection
           case arguments => selection.appliedToTypes(arguments)
 
-    . map(_.asExprOf[field]).getOrElse('{Unset})
+    // Ascribed, not bare: the macro's declared result is `Optional[field]`, and a bare
+    // `'{Unset}` expands with the singleton type `Unset.type`. The conformance check on a
+    // macro expansion dealiases opaque types on both sides, but only reaches them through a
+    // `TypeRef`; a singleton hides `Unset`'s underlying type, so the expansion no longer
+    // conformed to the dealiased `Optional[field]`.
+    . map(_.asExprOf[field]).getOrElse('{Unset: Optional[field]})
