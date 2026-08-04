@@ -209,6 +209,13 @@ object LoopbackFixture:
 object ProxyFixture:
   import Lsp.*
 
+  // The command a `workspace/executeCommand` request names, or nothing for any other message.
+  // Decoded in a `try` rather than with `safely`, here and below: a decodable cannot thread the
+  // boundary tactic under separation checking.
+  def commandName(message: Json): Text =
+    import dynamicJsonAccess.enabled
+    try Lsp.params(message).command.as[Text] catch case _: Exception => t""
+
   def connect[result](using listener: Lsp.Listener^)
      ( lambda: (session: LspConnection^) ?=> result )
   :   result =
@@ -221,6 +228,9 @@ object ProxyFixture:
     val proxyIn: ji.PipedInputStream = ji.PipedInputStream(toProxy, 65536)
     val fromProxy: ji.PipedOutputStream = ji.PipedOutputStream()
     val proxyOut: ji.PipedInputStream = ji.PipedInputStream(fromProxy, 65536)
+
+    // What the proxy learned from the server before the editor asked it anything.
+    val startup: Promise[Json] = Promise()
 
     supervise:
       async:
@@ -242,6 +252,8 @@ object ProxyFixture:
           complete():
             CompletionList(items = List(CompletionItem(label = t"upstream")))
 
+          command(t"test.classpath")(t"a.jar".in[Json])
+
       async:
         given stdio: Stdio =
           Stdio(ji.PrintStream(fromProxy, true), null, proxyIn, termcapDefinitions.basicTermcap)
@@ -252,6 +264,30 @@ object ProxyFixture:
             hover.copy(contents = MarkupContent(value = t"[${hover.contents.value}]"))
 
           rewrite.diagnostics(_.map(_.copy(message = t"proxied")))
+
+          // Asked as soon as the proxy has a server to ask, and kept for whoever wants it.
+          rewrite.connected:
+            val classpath: Json =
+              try upstream.execute(t"test.classpath").or(t"none".in[Json])
+              catch case _: Exception => t"none".in[Json]
+
+            startup.offer(classpath)
+
+          // Two commands the server upstream knows nothing about, answered by the proxy out of
+          // what it asked the server itself: one asked here and now, one asked at startup.
+          rewrite.outbound: (method, message) =>
+            val name: Text = ProxyFixture.commandName(message)
+
+            if name == t"proxy.now" then
+              val classpath: Json =
+                try upstream.execute(t"test.classpath").or(t"none".in[Json])
+                catch case _: Exception => t"none".in[Json]
+
+              Transit.Answer(classpath)
+
+            else if name == t"proxy.startup"
+            then Transit.Answer(safely(startup.await()).or(t"none".in[Json]))
+            else Transit.Forward
 
       Lsp.Server.streams(proxyOut, toProxy).session: connection ?=>
         lambda
@@ -565,6 +601,22 @@ object Tests extends Suite(m"Exegesis Tests"):
         record.notes.stdlib.map(_.s)
 
       . assert(_ == List("diagnostics:file:///a.scala:proxied"))
+
+      test(m"a hook asks the server upstream a question of its own"):
+        ProxyFixture.connect: server ?=>
+          server.initialize()
+          server.initialized()
+          server.execute(t"proxy.now").let(_.as[Text])
+
+      . assert(_ == t"a.jar")
+
+      test(m"a proxy asks the server a question as soon as it connects"):
+        ProxyFixture.connect: server ?=>
+          server.initialize()
+          server.initialized()
+          server.execute(t"proxy.startup").let(_.as[Text])
+
+      . assert(_ == t"a.jar")
 
       test(m"an unregistered method passes through untouched"):
         ProxyFixture.connect: server ?=>

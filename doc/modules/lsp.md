@@ -198,6 +198,32 @@ rewrite.outbound: (method, message) =>
 `Transit.Drop` swallows it, and `Transit.Answer` answers a request here, so that the server
 upstream never sees it.
 
+A proxy is not limited to what the editor asks. The session with the server upstream is in
+scope as `upstream` throughout the registration block, so a hook may ask a question of its
+own — typically for the project state only the server knows — and `rewrite.connected` runs
+once, on a task of its own, as soon as that session is open:
+
+```scala
+Lsp.proxy(Lsp.Server(sh"jdtls")):
+  val classpath: Promise[Json] = Promise()
+
+  rewrite.connected:
+    classpath.offer(upstream.execute(t"java.project.getClasspaths", arguments).or(Json()))
+
+  rewrite.inbound: (method, message) =>
+    if method == t"language/status" then async(refresh(classpath.await()))
+    Transit.Forward
+```
+
+Answers come back to the caller that asked for them, and never reach the editor: a response
+to a request the proxy made itself is routed to whoever awaits it, rather than relayed.
+
+Mind which thread each hook runs on. `rewrite.inbound` runs on the task that reads the
+server's messages — the task that would deliver the answer — so a request awaited there
+would wait forever, and must be made in an `async` block, as above. `rewrite.outbound` runs
+on the loop that reads the editor, which is not that task, so awaiting there is safe, though
+the editor waits with it. `rewrite.connected` has a task of its own and may await freely.
+
 ### Running the server
 
 `Lsp.listen` serves standard input until it is exhausted, so a server object supplies a
