@@ -231,7 +231,7 @@ object TypescriptParser:
     def declarations(): List[TypescriptDeclaration] raises TypescriptError =
       val module = moduleForm
       val result = scala.collection.mutable.ListBuffer[TypescriptDeclaration]()
-      block(Nil, module, result, top = true)
+      block(Nil, module, result, ambient = false)
 
       val seen = scala.collection.mutable.HashSet[Text]()
 
@@ -249,23 +249,26 @@ object TypescriptParser:
 
       List.from(result.toList)
 
+    // `ambient` marks a namespace body, where every declaration is exported implicitly: an
+    // ambient namespace has no notion of a private member, so its contents are as reachable as
+    // the namespace itself.
     private def block
-      ( scope:  TypescriptDeclaration.Scope,
-        module: Boolean,
-        into:   scala.collection.mutable.ListBuffer[TypescriptDeclaration],
-        top:    Boolean )
+      ( scope:   TypescriptDeclaration.Scope,
+        module:  Boolean,
+        into:    scala.collection.mutable.ListBuffer[TypescriptDeclaration],
+        ambient: Boolean )
     :   Unit raises TypescriptError =
 
       while peek().present && !at(t"}") do
-        if at(t"}") then () else declaration(scope, module, into, top)
+        if at(t"}") then () else declaration(scope, module, into, ambient)
 
       ()
 
     private def declaration
-      ( scope:  TypescriptDeclaration.Scope,
-        module: Boolean,
-        into:   scala.collection.mutable.ListBuffer[TypescriptDeclaration],
-        top:    Boolean )
+      ( scope:   TypescriptDeclaration.Scope,
+        module:  Boolean,
+        into:    scala.collection.mutable.ListBuffer[TypescriptDeclaration],
+        ambient: Boolean )
     :   Unit raises TypescriptError =
 
       if skip(t";") then ()
@@ -279,13 +282,13 @@ object TypescriptParser:
         if exported && (at(t"default") || at(t"=") || at(t"{") || at(t"*")) then skipStatement()
         else
           skip(t"declare")
-          declared(scope, module, into, top, exported || !module)
+          declared(scope, module, into, ambient, exported || ambient || !module)
 
     private def declared
       ( scope:   TypescriptDeclaration.Scope,
         module:  Boolean,
         into:    scala.collection.mutable.ListBuffer[TypescriptDeclaration],
-        top:     Boolean,
+        ambient: Boolean,
         visible: Boolean )
     :   Unit raises TypescriptError =
 
@@ -293,7 +296,9 @@ object TypescriptParser:
         val keyword = identifier()
         val name = if keyword == t"global" then t"global" else identifier()
         expect(t"{")
-        block(List.from(scope.stdlib :+ name), module, into, top = false)
+        // The namespace's own visibility becomes its contents': an unexported namespace exports
+        // nothing, however its members are written.
+        block(List.from(scope.stdlib :+ name), module, into, ambient = visible)
         expect(t"}")
       else if at(t"interface") then into += interfaceDeclaration(scope, visible)
       else if at(t"class") || at(t"abstract") then into += classDeclaration(scope, visible)

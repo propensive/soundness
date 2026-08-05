@@ -582,7 +582,7 @@ object soundness extends Toolchain:
     probably.coverage)
 
   object tool extends Bundle(anthology.core, decorum.plugin, degustation.core,
-    degustation.lira, harlequin.core, hellenism.core,
+    degustation.lira, mandible.lira, xenophile.lira, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, reliquary.core, revolution.core, umbrageous.plugin,
     anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
@@ -2618,6 +2618,11 @@ object xenophile extends Library:
   object typescript extends Component(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+
+  object lira extends Component(typescript, reliquary.core):
+    override def scalaJs = false // adapts the discipline to reliquary's JVM-only SPI
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The platform-neutral C front end (the `Native` ecosystem type markers and the `CHeaderDialect`
   // header parser); shared by the JVM Panama backend and the Scala Native backend, so it carries no
   // platform runtime and cross-compiles to both.
@@ -2670,7 +2675,7 @@ object xenophile extends Library:
   // Every backend at once — which only typechecks because they now share the single `invoke` in
   // `core` rather than exporting one apiece into `soundness`.
   object test extends Tests(typescript, native, wit, webidl, wasm, kotlin, js, scalanative,
-      hellenism.core, harlequin.core):
+      lira, hellenism.core, harlequin.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
     // kotlin-stdlib is the Kotlin-classfile fixture: its `@Metadata`-annotated classes let the

@@ -791,6 +791,7 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_ == List(t"qux"))
 
     typescriptParserTests()
+    dtsDisciplineTests()
 
   def typescriptParserTests(): Unit =
     import strategies.throwUnsafely
@@ -958,3 +959,124 @@ object Tests extends Suite(m"Xenophile tests"):
       TypescriptDialect.parse(t"interface Box<T> { value: T; }")
       . at(t"Box").lay(scala.Nil) { members => members.stdlib.keys.toList }
     . assert(_ == scala.List(t"value"))
+
+  def dtsDisciplineTests(): Unit =
+    import reliquary.*
+    import alphabets.hexLowerCase
+    import strategies.throwUnsafely
+
+    def content(source: Text): List[(TreePath, Data)] =
+      List((TreePath(t"types/index.d.ts"), Array.unsafeFrozen(source.s.getBytes("UTF-8").nn)))
+
+    def atomize(source: Text): Atomization =
+      DtsDiscipline.atomize(content(source), Discipline.Context(t"jvm"))
+
+    def keys(source: Text): scala.List[Text] =
+      atomize(source).atoms.stdlib.map(_.key).sortBy(_.s)
+
+    def grade(before: Text, after: Text): Grade =
+      Grade.between(List(atomize(before)), List(atomize(after)))
+
+    val baseline: Text =
+      t"""|export interface Client {
+          |  send(message: string): void;
+          |  readonly id: string;
+          |}
+          |export type Handle = string | number;
+          |export declare function connect(url: string): Client;
+          |""".s.stripMargin.tt
+
+    test(m"the discipline claims declaration files and nothing else"):
+      val data = Array.freeze(Array[Byte](0))
+
+      (DtsDiscipline.claims(TreePath(t"types/index.d.ts"), data),
+       DtsDiscipline.claims(TreePath(t"lib/index.js"), data),
+       DtsDiscipline.claims(TreePath(t"readme.md"), data))
+    . assert(_ == (true, false, false))
+
+    test(m"the discipline certifies recompilation and not linkage"):
+      (DtsDiscipline.id, DtsDiscipline.guarantees(t"jvm"), DtsDiscipline.keying)
+    . assert(_ == (t"dts/1", Set(Discipline.Guarantee.Recompilation),
+        Discipline.Keying.Declaration))
+
+    test(m"each exported declaration and each member yields an atom"):
+      keys(baseline)
+    . assert(_ == scala.List(t"Client", t"Client#id", t"Client#send", t"Handle", t"connect"))
+
+    test(m"an unexported declaration is not part of the contract"):
+      keys(t"export interface A { x: number; }\ninterface Hidden { y: number; }")
+    . assert(_ == scala.List(t"A", t"A#x"))
+
+    test(m"atomization is deterministic"):
+      def once(): scala.List[(Text, Text)] =
+        atomize(baseline).atoms.stdlib
+        . map { atom => (atom.key, atom.valueHash.serialize[Hex]) }
+        . sortBy(_(0).s)
+
+      once() == once()
+    . assert(identity)
+
+    test(m"renaming a type parameter changes nothing"):
+      grade(t"export interface Box<T> { value: T; }", t"export interface Box<U> { value: U; }")
+    . assert(_ == Grade.Patch)
+
+    test(m"reordering the members of a union changes nothing"):
+      grade(t"export type T = A | B;", t"export type T = B | A;")
+    . assert(_ == Grade.Patch)
+
+    test(m"reordering the elements of a tuple is a major change"):
+      grade(t"export type T = [A, B];", t"export type T = [B, A];")
+    . assert(_ == Grade.Major)
+
+    // The one change that is honestly two events: adding a member is pure extension for a
+    // consumer who calls the interface, and a break for one who implements it. The member's own
+    // atom records the first; the fold of member keys into the interface's atom records the
+    // second, and the second is what the grade reports.
+    test(m"adding an interface member is a major change for implementors"):
+      grade(t"export interface A { x: number; }", t"export interface A { x: number; y: number; }")
+    . assert(_ == Grade.Major)
+
+    test(m"the added member is nonetheless an atom of its own"):
+      keys(t"export interface A { x: number; y: number; }")
+    . assert(_ == scala.List(t"A", t"A#x", t"A#y"))
+
+    test(m"adding a whole interface is a minor change"):
+      grade(t"export interface A { x: number; }",
+          t"export interface A { x: number; }\nexport interface B { y: number; }")
+    . assert(_ == Grade.Minor)
+
+    test(m"removing a member is a major change"):
+      grade(t"export interface A { x: number; y: number; }", t"export interface A { x: number; }")
+    . assert(_ == Grade.Major)
+
+    test(m"making a member optional is a major change"):
+      grade(t"export interface A { x: number; }", t"export interface A { x?: number; }")
+    . assert(_ == Grade.Major)
+
+    test(m"adding an overload is a major change"):
+      grade(t"export interface A { f(x: number): void; }",
+          t"export interface A { f(x: number): void; f(x: string): void; }")
+    . assert(_ == Grade.Major)
+
+    test(m"changing a declaration's namespace changes its key"):
+      keys(t"export declare namespace a { interface X { y: number; } }")
+    . assert(_ == scala.List(t"a.X", t"a.X#y"))
+
+    test(m"an unreadable declaration file is an atomization error"):
+      import errorDiagnostics.stackTracesDiagnostics
+
+      capture[DisciplineError]:
+        DtsDiscipline.atomize(content(t"export type T<A> = A extends string ? 1 : 2;"),
+            Discipline.Context(t"jvm"))
+
+      . reason
+    . assert:
+        case DisciplineError.Reason.Malformed(_) => true
+        case _                                   => false
+
+    test(m"the registry falls back to opaque for content the discipline does not claim"):
+      val registry = Discipline.Registry(List(DtsDiscipline))
+      val js = List((TreePath(t"lib/index.js"), Array.freeze(Array[Byte](1))))
+
+      registry.atomize(js, Discipline.Context(t"jvm")).stdlib.map(_.discipline)
+    . assert(_ == scala.List(t"opaque/1"))
