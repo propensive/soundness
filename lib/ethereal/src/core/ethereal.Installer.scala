@@ -52,6 +52,7 @@ import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
+import zeppelin.*
 
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -122,6 +123,7 @@ object Installer:
       case NameError(_, _, _)   => InstallError(InstallError.Reason.Io)
       case ExecError(_, _, _)   => InstallError(InstallError.Reason.Io)
       case StreamError(_)       => InstallError(InstallError.Reason.Io)
+      case ZipError(_)          => InstallError(InstallError.Reason.Io)
 
     . protect:
         val command: Text = service.script
@@ -151,6 +153,12 @@ object Installer:
               if prefixSize > 0.b
               then file.write(stream.take(prefixSize) #::: stream.drop(fileSize - jarSize))
               else file.write(stream)
+
+            // Excising the embedded payload from between the stub and the JAR moves the JAR
+            // earlier by exactly the payload's size, which invalidates the JAR's ZIP64 locator —
+            // the one physical offset the format records. See `Zipfile.rebase` and #1680.
+            if prefixSize > 0.b && payloadSize > 0.b
+            then Zipfile.rebase(service.executable, -payloadSize.long)
 
             file.executable() = true
             Result.Installed(command, file.encode)
