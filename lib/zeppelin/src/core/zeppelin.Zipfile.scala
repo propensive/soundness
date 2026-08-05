@@ -86,6 +86,42 @@ object Zipfile:
 
   def read(data: Data): Zipfile raises ZipError = parse(DataSource(data))
 
+  // Every offset a ZIP archive records is central-directory-relative: a reader derives the shift
+  // from the difference between the recorded and the physical position of the central directory,
+  // which is why an archive concatenated onto a binary prefix still reads. The ZIP64 locator's
+  // pointer to the ZIP64 end-of-central-directory record is the sole exception — it is a physical
+  // file offset — so prepending a prefix (or excising bytes from one, as a self-installing
+  // executable does) invalidates exactly that field. This reader tolerates it by falling back to
+  // the record's physical position, but the JDK's follows it blindly and then declines to open the
+  // archive at all, with no diagnostic. `rebase` shifts the pointer by `delta`; an archive with no
+  // ZIP64 locator — anything under 0xffff entries, which is nearly everything — is left untouched.
+  def rebase[path: Abstractable across Paths to Text](path: path, delta: Long)
+  :   Unit raises ZipError =
+
+    val filename: Text = path.generic
+    val source = FileSource(filename)
+    val (_, _, eocdOffset) = findEocd(source)
+
+    if eocdOffset >= 20 then
+      val locator = source.read(eocdOffset - 20, 20)
+
+      if Zip.u32(locator, 0) == (Zip.zip64LocatorSig.toLong & 0xffffffffL) then
+        val rebased = Zip.u64(locator, 8) + delta
+
+        if rebased < 0 || rebased + 56 > source.size
+        then raise(ZipError(ZipError.Reason.Zip64Error))
+        else
+          val update: Data = Data.build(8): array =>
+            Zip.putU64(array, 0, rebased)
+
+          val channel =
+            jnc.FileChannel.open(jnf.Path.of(filename.s), jnf.StandardOpenOption.WRITE).nn
+
+          try
+            val buffer = jn.ByteBuffer.wrap(update.asInstanceOf[scala.Array[Byte]]).nn
+            while buffer.hasRemaining do channel.write(buffer, eocdOffset - 12 + buffer.position)
+          finally channel.close()
+
   private def checkDuplicates(entries: Iterable[Zip.Entry]): Unit raises ZipError =
     val seen = scala.collection.mutable.HashSet[Text]()
 
@@ -142,7 +178,10 @@ object Zipfile:
 
         Array.unsafeFrozen(buffer.array.nn)
 
-  private[zeppelin] def parse(source: Expanse): Zipfile raises ZipError =
+  // The end-of-central-directory trailer is the archive's last record, but a comment of up to
+  // 0xffff bytes may follow it, so it is found by scanning back for its signature. Returns the
+  // window scanned, the trailer's index within it, and its absolute offset in the archive.
+  private def findEocd(source: Expanse): (Data, Int, Long) raises ZipError =
     val size = source.size
     if size < 22 then raise(ZipError(ZipError.Reason.MissingEocd))
 
@@ -154,7 +193,11 @@ object Zipfile:
     while i >= 0 && Zip.u32(window, i) != Zip.eocdSig.toLong do i -= 1
     if i < 0 then raise(ZipError(ZipError.Reason.MissingEocd))
 
-    val eocdOffset = windowStart + i
+    (window, i, windowStart + i)
+
+  private[zeppelin] def parse(source: Expanse): Zipfile raises ZipError =
+    val size = source.size
+    val (window, i, eocdOffset) = findEocd(source)
     var entryCount = Zip.u16(window, i + 10).toLong
     var cdSize = Zip.u32(window, i + 12)
     var cdOffset = Zip.u32(window, i + 16)

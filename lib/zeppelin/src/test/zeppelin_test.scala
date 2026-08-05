@@ -440,6 +440,52 @@ object Tests extends Suite(m"Zeppelin tests"):
         Zipfile.read(path).entries.stdlib.length
       . assert(_ == 66000)
 
+      // Concatenation, rather than `Zipfile.write(…, prefix)`: an Ethereal launcher is built by
+      // appending an already-linked JAR to a runner binary, which leaves the ZIP64 locator's
+      // pointer — the format's one physical offset — pointing into the prefix. See
+      // `Zipfile.rebase`.
+      val stub: Data = Array.tabulate(1024)(i => (i*11).toByte)
+
+      def concatenate(name: Text, prefix: Data, archive: Data): Path on Linux =
+        val path = workDir/name
+        val out = ji.FileOutputStream(ji.File(path.encode.s))
+
+        try
+          out.write(Array.unsafeJvm(prefix))
+          out.write(Array.unsafeJvm(archive))
+        finally out.close()
+
+        path
+
+      test(m"a stale ZIP64 locator stops the JDK opening a concatenated archive"):
+        val stale = concatenate(t"zip64-stale.zip", stub, bytesOf(path))
+        try jdkNames(stale).length catch case exception: Exception => -1
+      . assert(_ == -1)
+
+      test(m"the native reader tolerates a stale ZIP64 locator"):
+        val stale = concatenate(t"zip64-stale2.zip", stub, bytesOf(path))
+        Zipfile.read(stale).entries.stdlib.length
+      . assert(_ == 66000)
+
+      test(m"rebasing a concatenated ZIP64 archive restores the JDK reader"):
+        val rebased = concatenate(t"zip64-rebased.zip", stub, bytesOf(path))
+        Zipfile.rebase(rebased, stub.length)
+        jdkNames(rebased).length
+      . assert(_ == 66000)
+
+      test(m"a rebased archive still reads natively, prefix and all"):
+        val rebased = concatenate(t"zip64-rebased2.zip", stub, bytesOf(path))
+        Zipfile.rebase(rebased, stub.length)
+        Zipfile.read(rebased).prefix.lay(0)(_.length)
+      . assert(_ == 1024)
+
+      test(m"rebasing an archive with no ZIP64 locator changes nothing"):
+        val plain = writeZip(t"rebase-noop.zip", entry(t"a.txt", t"alpha"))
+        val before = bytesOf(plain).to[List]
+        Zipfile.rebase(plain, 1024)
+        bytesOf(plain).to[List] == before
+      . assert(_ == true)
+
     suite(m"Binary prefix"):
       val prefix: Data = Array.tabulate(64)(i => (i*7).toByte)
 
