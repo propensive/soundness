@@ -32,6 +32,6 @@
                                                                                                   */
 package dissonance
 
-enum Region[element]:
+enum Tract[element]:
   case Changed(deletions: List[Del[element]], insertions: List[Ins[element]])
   case Unchanged(retentions: List[Par[element]])

@@ -172,11 +172,11 @@ case class Diff[element](edits: Edit[element]*):
 
   def rdiff(similar: (element, element) => Boolean, subSize: Int = 1): RDiff[element] =
     val changes = collate.bind:
-      case Region.Unchanged(pars)    => (pars: List[Change[element]])
-      case Region.Changed(dels, Nil) => (dels: List[Change[element]])
-      case Region.Changed(Nil, inss) => (inss: List[Change[element]])
+      case Tract.Unchanged(pars)    => (pars: List[Change[element]])
+      case Tract.Changed(dels, Nil) => (dels: List[Change[element]])
+      case Tract.Changed(Nil, inss) => (inss: List[Change[element]])
 
-      case Region.Changed(dels, inss) =>
+      case Tract.Changed(dels, inss) =>
         if inss.length == dels.length && inss.length <= subSize
         then
           val subs = dels.zip(inss).map: (del, ins) =>
@@ -198,17 +198,17 @@ case class Diff[element](edits: Edit[element]*):
 
     RDiff(changes*)
 
-  def collate: List[Region[element]] =
+  def collate: List[Tract[element]] =
     edits.to(List).runsBy:
       case Par(_, _, _) => true
       case _            => false
 
     . map:
         case xs@(Par(_, _, _) :: _) =>
-          Region.Unchanged(xs.collect { case par: Par[element] => par })
+          Tract.Unchanged(xs.collect { case par: Par[element] => par })
 
         case xs =>
-          Region.Changed
+          Tract.Changed
             ( xs.collect { case del: Del[element] => del },
               xs.collect { case ins: Ins[element] => ins } )
 

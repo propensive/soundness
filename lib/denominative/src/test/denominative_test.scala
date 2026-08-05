@@ -548,35 +548,35 @@ object Tests extends Suite(m"Denominative Tests"):
         span.startColumn
       . assert(_ == Unset)
 
-    suite(m"Span region-mode tests"):
-      val span = Span.region(2.z, 4.z, 6.z, 9.z)
+    suite(m"Span area-mode tests"):
+      val span = Span.area(2.z, 4.z, 6.z, 9.z)
 
-      test(m"region mode reports Region"):
+      test(m"area mode reports Area"):
         span.mode
-      . assert(_ == Span.Mode.Region)
+      . assert(_ == Span.Mode.Area)
 
-      test(m"region round-trips the start line"):
+      test(m"area round-trips the start line"):
         span.startLine.vouch
       . assert(_ == 2.z)
 
-      test(m"region round-trips the start column"):
+      test(m"area round-trips the start column"):
         span.startColumn.vouch
       . assert(_ == 4.z)
 
-      test(m"region round-trips the end line"):
+      test(m"area round-trips the end line"):
         span.endLine.vouch
       . assert(_ == 6.z)
 
-      test(m"region round-trips the end column"):
+      test(m"area round-trips the end column"):
         span.endColumn.vouch
       . assert(_ == 9.z)
 
-      test(m"a multi-line region is not single-line"):
+      test(m"a multi-line area is not single-line"):
         span.singleLine
       . assert(_ == false)
 
-      test(m"region line count is inclusive"):
-        Span.region(10.z, 0.z, 13.z, 0.z).lineCount.vouch
+      test(m"area line count is inclusive"):
+        Span.area(10.z, 0.z, 13.z, 0.z).lineCount.vouch
       . assert(_ == 4)
 
     suite(m"Span empty-mode tests"):

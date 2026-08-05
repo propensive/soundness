@@ -758,7 +758,7 @@ object Html extends Tag.Container
     private inline def cursor: Cursor[Text, ?]^ = cursor0.asInstanceOf[Cursor[Text, ?]^]
     private var heldToken: Cursor.Held | Null = null
 
-    type Region = Cursor.Mark
+    type Anchor = Cursor.Mark
 
     // ─── parser-local snapshot of the cursor's buffer / position ───────────
     //
@@ -913,7 +913,7 @@ object Html extends Tag.Container
     protected inline def let(inline body: Char => Unit): Unit =
       if more then body(peek)
 
-    type Mark = Region
+    type Mark = Anchor
 
     // Render line/column on demand for error messages.
     protected inline def currentPosition(): Position = computePosition()

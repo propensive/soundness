@@ -80,7 +80,7 @@ object Lsp:
 
   case class Range(start: Position, end: Position):
     def span: Span =
-      Span.region(start.line.z, start.character.z, end.line.z, end.character.z)
+      Span.area(start.line.z, start.character.z, end.line.z, end.character.z)
 
   object Location:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
