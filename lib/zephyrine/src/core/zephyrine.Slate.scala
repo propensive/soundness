@@ -46,11 +46,14 @@ opaque type Slate[medium] = AnyRef
 object Slate:
   // As `Region.over`, but lending write access: the storage must be exclusive.
   inline def over[medium, result](using addressable: medium is Addressable)
-    ( storage: addressable.Storage^, offset: Int, limit: Int )
+    ( storage: addressable.Storage^{caps.any}, offset: Int, limit: Int )
     ( inline lambda: (slate: Slate[medium]) => (Interval in slate.type) => result )
   :   result =
 
-    val size = addressable.storageSize(storage)
+    // The cast erases the exclusive capture for the read-only size query: passing an
+    // exclusive reference into a `{caps.any.rd}` parameter is rejected when `Storage` is
+    // abstract, and nothing of the reference is retained.
+    val size = addressable.storageSize(storage.asInstanceOf[addressable.Storage])
     val start = offset.max(0).min(size)
     val end = limit.max(start).min(size)
     val slate: Slate[medium] = storage.asInstanceOf[AnyRef]

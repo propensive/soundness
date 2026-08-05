@@ -35,6 +35,8 @@ package facsimile
 import proscenium.compat.*
 
 import anticipation.*
+import denominative.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
@@ -57,38 +59,25 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
   def regulation: Credit is Regulation = summon[Credit is Regulation]
   def translate(demand: Credit): Credit = demand
 
-  update def step
-    ( source: input.Storage,
-      sourceOffset: Int,
-      sourceLength: Int,
-      target: output.Storage,
-      targetOffset: Int,
-      targetSpace: Int )
+  update def step(source: Region[Data])(range: Interval in source.type)
+    ( target: Slate[Data] )(space: Interval in target.type)
   :   Duct.Progress =
 
-    val bytes = source.asInstanceOf[scala.Array[Byte]]
-    var i = 0
+    source.visit(range) { index => gathered += source(index) }
+    Duct.Progress((range: Interval).size, 0)
 
-    while i < sourceLength do
-      gathered += bytes(sourceOffset + i)
-      i += 1
-
-    Duct.Progress(sourceLength, 0)
-
-  override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val out = target.asInstanceOf[scala.Array[Byte]]
-
+  override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
     val data = result.or:
       val transformed = transform(Array.unsafeFrozen(gathered.toArray))
       result = transformed
       transformed
 
-    val count = targetSpace.min(data.length - delivered)
-    var i = 0
+    val count = (space: Interval).size.min(data.length - delivered)
+    var index = 0
 
-    while i < count do
-      writable(out)(targetOffset + i) = data(delivered + i)
-      i += 1
+    target.visit(space.capped(count)): ordinal =>
+      target(ordinal) = data(delivered + index)
+      index += 1
 
     delivered += count
     count

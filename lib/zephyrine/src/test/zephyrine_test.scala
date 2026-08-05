@@ -1131,23 +1131,28 @@ object Tests extends Suite(m"Zephyrine tests"):
 
     override def quantum: Int = 2
 
-    def step
-      ( source: input.Storage,
-        sourceOffset: Int,
-        sourceLength: Int,
-        target: output.Storage,
-        targetOffset: Int,
-        targetSpace: Int )
+    def step(source: Region[Data])(range: Interval in source.type)
+      ( target: Slate[Data] )(space: Interval in target.type)
     :   Duct.Progress =
+
+      val sourceInterval: Interval = range
+      val sourceOffset = sourceInterval.start.n0
+      val sourceLength = sourceInterval.size
+      val targetInterval: Interval = space
+      val targetOffset = targetInterval.start.n0
+      val targetSpace = targetInterval.size
+      val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+
+      val out: scala.Array[Byte]^ =
+        unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
 
       var consumed: Int = 0
       var produced: Int = 0
-      val target2 = target.asInstanceOf[input.Storage]
 
       while consumed < sourceLength && produced + 2 <= targetSpace do
-        val byte = input.storageAddress(source, sourceOffset + consumed)
-        input.storageUpdate(target2, targetOffset + produced, byte)
-        input.storageUpdate(target2, targetOffset + produced + 1, byte)
+        val byte = bytes(sourceOffset + consumed)
+        out(targetOffset + produced) = byte
+        out(targetOffset + produced + 1) = byte
         consumed += 1
         produced += 2
 
@@ -1164,25 +1169,23 @@ object Tests extends Suite(m"Zephyrine tests"):
     def regulation: Credit is Regulation = summon[Credit is Regulation]
     def translate(demand: Credit): Credit = demand
 
-    update def step
-      ( source: input.Storage,
-        sourceOffset: Int,
-        sourceLength: Int,
-        target: output.Storage,
-        targetOffset: Int,
-        targetSpace: Int )
+    update def step(source: Region[Data])(range: Interval in source.type)
+      ( target: Slate[Data] )(space: Interval in target.type)
     :   Duct.Progress =
 
-      val count = sourceLength.min(targetSpace)
-      input.transfer(source, sourceOffset, target.asInstanceOf[input.Storage], targetOffset, count)
-
+      val count = source.blit(range)(target)(space)
       Duct.Progress(count, count)
 
-    override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
+    override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
       if emitted then 0 else
         emitted = true
-        output.storageUpdate(target, targetOffset, 99.toByte.asInstanceOf[output.Operand])
-        1
+        var written = 0
+
+        target.visit(space.capped(1)): ordinal =>
+          target(ordinal) = 99.toByte
+          written = 1
+
+        written
 
   // Passes refills through unchanged, recording each demand it receives.
   class Recorder(consume underlying0: (Stream[Data] over Credit)^) extends Stream[Data]:

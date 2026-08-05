@@ -38,6 +38,9 @@ import rudiments.reverse
 import java.lang as jl
 
 import anticipation.*
+import contingency.*
+import denominative.*
+import vacuous.*
 import beneficence.*
 import prepositional.*
 import zephyrine.*
@@ -136,16 +139,19 @@ object LineSeparation:
 
             written
 
-          update def step
-            ( source: input.Storage,
-              sourceOffset: Int,
-              sourceLength: Int,
-              target: output.Storage,
-              targetOffset: Int,
-              targetSpace: Int )
+          update def step(source: Region[Text])(range: Interval in source.type)
+            ( target: Slate[Array[Text]^{}] )(space: Interval in target.type)
           :   Duct.Progress =
 
-            val chars = source.asInstanceOf[scala.Array[Char]]
+            val sourceInterval: Interval = range
+            val sourceOffset = sourceInterval.start.n0
+            val sourceLength = sourceInterval.size
+            val targetInterval: Interval = space
+            val targetOffset = targetInterval.start.n0
+            val targetSpace = targetInterval.size
+            val chars = unsafely(source.raw.asInstanceOf[scala.Array[Char]])
+            val slots: scala.Array[AnyRef]^ =
+              unsafely(target.raw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
             var consumed: Int = 0
             var produced: Int = 0
 
@@ -164,7 +170,7 @@ object LineSeparation:
                   if char == '\n' then { consumed += 1; act(stage.crlf) }
                   else act(stage.cr)
 
-                produced += deliver(target.asInstanceOf[scala.Array[AnyRef]^], targetOffset + produced)
+                produced += deliver(slots, targetOffset + produced)
               else
                 val char = chars(sourceOffset + consumed)
 
@@ -176,8 +182,7 @@ object LineSeparation:
                     then { consumed += 1; act(stage.lfcr) }
                     else act(stage.lf)
 
-                    produced +=
-                      deliver(target.asInstanceOf[scala.Array[AnyRef]^], targetOffset + produced)
+                    produced += deliver(slots, targetOffset + produced)
                   else pending = 10
                 else if char == '\r' then
                   consumed += 1
@@ -187,8 +192,7 @@ object LineSeparation:
                     then { consumed += 1; act(stage.crlf) }
                     else act(stage.cr)
 
-                    produced +=
-                      deliver(target.asInstanceOf[scala.Array[AnyRef]^], targetOffset + produced)
+                    produced += deliver(slots, targetOffset + produced)
                   else pending = 13
                 else
                   // Bulk-append the run of ordinary chars up to the next
@@ -204,9 +208,12 @@ object LineSeparation:
 
             Duct.Progress(consumed, produced)
 
-          override update def flush
-            ( target: output.Storage, targetOffset: Int, targetSpace: Int )
+          override update def flush(target: Slate[Array[Text]^{}])(space: Interval in target.type)
           :   Int =
+
+            val targetInterval: Interval = space
+            val targetOffset = targetInterval.start.n0
+            val targetSpace = targetInterval.size
 
             if !drained then
               drained = true
@@ -231,10 +238,11 @@ object LineSeparation:
 
             var count: Int = 0
 
-            while count < targetSpace && tail.nonEmpty do
-              target.asInstanceOf[scala.Array[AnyRef]^](targetOffset + count) =
-                tail.head.asInstanceOf[AnyRef]
+            val slots: scala.Array[AnyRef]^ =
+              unsafely(target.raw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
 
+            while count < targetSpace && tail.nonEmpty do
+              slots(targetOffset + count) = tail.head.asInstanceOf[AnyRef]
               tail = tail.tail
               count += 1
 

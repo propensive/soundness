@@ -33,6 +33,10 @@
 package pneumatic
 
 import anticipation.*
+import contingency.*
+import denominative.*
+import prepositional.*
+import vacuous.*
 import zephyrine.*
 
 // Streaming compression as a pipeline stage, over the pure-Scala `Deflater`. The three
@@ -75,17 +79,19 @@ extends Duct[Data, Data]:
 
     target(offset + 9) = -1
 
-  update def step
-    ( source: input.Storage,
-      sourceOffset: Int,
-      sourceLength: Int,
-      target: output.Storage,
-      targetOffset: Int,
-      targetSpace: Int )
+  update def step(source: Region[Data])(range: Interval in source.type)
+    ( target: Slate[Data] )(space: Interval in target.type)
   :   Duct.Progress =
 
-    val bytes = source.asInstanceOf[scala.Array[Byte]]
-    val out: scala.Array[Byte]^ = target.asInstanceOf[scala.Array[Byte]]
+    val sourceInterval: Interval = range
+    val sourceOffset = sourceInterval.start.n0
+    val sourceLength = sourceInterval.size
+    val targetInterval: Interval = space
+    val targetOffset = targetInterval.start.n0
+    val targetSpace = targetInterval.size
+    val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+    val out: scala.Array[Byte]^ =
+      unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
     var consumed: Int = 0
     var produced: Int = 0
 
@@ -119,8 +125,12 @@ extends Duct[Data, Data]:
 
     Duct.Progress(consumed, produced)
 
-  override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val out: scala.Array[Byte]^ = target.asInstanceOf[scala.Array[Byte]]
+  override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
+    val targetInterval: Interval = space
+    val targetOffset = targetInterval.start.n0
+    val targetSpace = targetInterval.size
+    val out: scala.Array[Byte]^ =
+      unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
     var produced: Int = 0
 
     if !headerDone && targetSpace >= 10 then
@@ -233,17 +243,19 @@ extends Duct[Data, Data]:
   private update def afterComment: Header =
     if (flags & 2) != 0 then Header.Checksum(2) else Header.Done
 
-  update def step
-    ( source: input.Storage,
-      sourceOffset: Int,
-      sourceLength: Int,
-      target: output.Storage,
-      targetOffset: Int,
-      targetSpace: Int )
+  update def step(source: Region[Data])(range: Interval in source.type)
+    ( target: Slate[Data] )(space: Interval in target.type)
   :   Duct.Progress =
 
-    val bytes = source.asInstanceOf[scala.Array[Byte]]
-    val out: scala.Array[Byte]^ = target.asInstanceOf[scala.Array[Byte]]
+    val sourceInterval: Interval = range
+    val sourceOffset = sourceInterval.start.n0
+    val sourceLength = sourceInterval.size
+    val targetInterval: Interval = space
+    val targetOffset = targetInterval.start.n0
+    val targetSpace = targetInterval.size
+    val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+    val out: scala.Array[Byte]^ =
+      unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
     var consumed: Int = 0
     var produced: Int = 0
 
@@ -284,8 +296,12 @@ extends Duct[Data, Data]:
 
   // The inflater may hold far more pending output than one step's space, so
   // it must keep draining after the upstream ends.
-  override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val out: scala.Array[Byte]^ = target.asInstanceOf[scala.Array[Byte]]
+  override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
+    val targetInterval: Interval = space
+    val targetOffset = targetInterval.start.n0
+    val targetSpace = targetInterval.size
+    val out: scala.Array[Byte]^ =
+      unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
     var produced: Int = 0
     var run: Int = 1
 

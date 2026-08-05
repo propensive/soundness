@@ -34,6 +34,7 @@ package zephyrine
 
 import scala.caps
 
+import denominative.*
 import prepositional.*
 import vacuous.*
 
@@ -97,7 +98,11 @@ object Duct:
     var consumed = 0
 
     while consumed < length do
-      val progress = duct.step(source0, consumed, length - consumed, buffer0, 0, space)
+      val progress =
+        Region.over[in, Duct.Progress](using duct.input)(source0, consumed, length): region =>
+          range =>
+            Slate.over[out, Duct.Progress](using duct.output)(buffer, 0, space): slate =>
+              slateSpace => duct.step(region)(range)(slate)(slateSpace)
 
       if progress.produced > 0 then duct.output.cloneStorage(buffer0, 0, progress.produced)(target)
 
@@ -106,11 +111,15 @@ object Duct:
       if progress.consumed == 0 && progress.produced == 0 then consumed = length
       else consumed += progress.consumed
 
-    var flushed = duct.flush(buffer0, 0, space)
+    def flushOnce(): Int =
+      Slate.over[out, Int](using duct.output)(buffer, 0, space): slate =>
+        slateSpace => duct.flush(slate)(slateSpace)
+
+    var flushed = flushOnce()
 
     while flushed > 0 do
       duct.output.cloneStorage(buffer0, 0, flushed)(target)
-      flushed = duct.flush(buffer0, 0, space)
+      flushed = flushOnce()
 
     duct.close()
     duct.output.build(target)
@@ -118,9 +127,16 @@ object Duct:
 // A duct is single-owner mutable state (compressors, partial atoms), so it is a stateful
 // capability: `step`/`flush`/`close` mutate it and require exclusive access, while
 // `translate`/`quantum`/`regulation` are pure queries.
-abstract class Duct[in, out]
-  ( using val input: in is Addressable, val output: out is Addressable )
+// Type parameters are named `operand`/`result` (not `in`/`out`) so the prepositional infix
+// `in` remains usable in member signatures. The two `Addressable` instances are exposed as
+// plain (non-given) members: were they `using val`s, every summon of an `Addressable` inside
+// a same-medium duct (`Duct[Data, Data]`) would be ambiguous between them.
+abstract class Duct[operand, result]
+  ( using input0: operand is Addressable, output0: result is Addressable )
 extends caps.ExclusiveCapability, caps.Stateful:
+
+  val input: operand is Addressable = input0
+  val output: result is Addressable = output0
 
   type Transport
   type Upstream
@@ -138,13 +154,13 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // a duct whose smallest output atom is two elements.
   def quantum: Int = 1
 
-  update def step
-    ( source: input.Storage,
-      sourceOffset: Int,
-      sourceLength: Int,
-      target: output.Storage,
-      targetOffset: Int,
-      targetSpace: Int )
+  // Transform the readable `range` of `source` into the writable `space` of `target`. The
+  // regions carry their windows as branded intervals, so an implementation cannot index
+  // outside them except through the greppable `unsafely(raw)` escape hatch — which kernels
+  // wrapping offset-based JDK APIs (charsets, ciphers, compressors) legitimately take,
+  // widening the intervals back to offsets at that boundary.
+  update def step(source: Region[operand])(range: Interval in source.type)
+    ( target: Slate[result] )(space: Interval in target.type)
   :   Duct.Progress
 
   // Emit terminal state after the upstream ends: a compressor's tail, and —
@@ -153,6 +169,6 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // undelivered output than one step's space). A duct whose state can retain
   // output MUST override this; the first `0` it returns is taken as the end
   // of the stream. Called repeatedly until it returns `0`.
-  update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int = 0
+  update def flush(target: Slate[result])(space: Interval in target.type): Int = 0
 
   update def close(): Unit = ()

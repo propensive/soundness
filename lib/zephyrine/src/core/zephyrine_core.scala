@@ -519,6 +519,11 @@ private def throughDuct[in, out, upTransport, downTransport]
       private var ended: Boolean = false
       private var flushed: Boolean = false
 
+      // Re-asserts the exclusivity the cast-erased field forgot: the buffer is
+      // reached only through this (exclusive) endpoint.
+      private def exclusive(): duct.output.Storage^ =
+        storage.asInstanceOf[duct.output.Storage^]
+
       protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
@@ -537,7 +542,10 @@ private def throughDuct[in, out, upTransport, downTransport]
 
             while limit0 == 0 && !flushed do
               if ended then
-                val produced = duct.flush(storage, limit0, space - limit0)
+                val produced =
+                  Slate.over[out, Int](using duct.output)(exclusive(), limit0, space): slate =>
+                    slateSpace => duct.flush(slate)(slateSpace)
+
                 if produced == 0 then flushed = true else limit0 += produced
               else
                 stream.refill(duct.translate(demand)) match
@@ -552,13 +560,13 @@ private def throughDuct[in, out, upTransport, downTransport]
                       // stream's storage and the duct's input storage
                       // coincide, even though their paths differ.
                       val progress =
-                        duct.step
+                        Region.over[in, Duct.Progress](using duct.input)
                           ( stream.storage(using Unsafe).asInstanceOf[duct.input.Storage],
-                            stream.start,
-                            count,
-                            storage,
-                            limit0,
-                            space - limit0 )
+                            stream.start, stream.start + count )
+                          ( region => range =>
+                              Slate.over[out, Duct.Progress](using duct.output)
+                                (exclusive(), limit0, space): slate =>
+                                  slateSpace => duct.step(region)(range)(slate)(slateSpace) )
 
                       stream.skip(progress.consumed)
                       limit0 += progress.produced
@@ -668,13 +676,12 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
           val free = intake.reserve(duct.quantum)
 
           val progress =
-            duct.step
-              ( storage,
-                offset,
-                mark0 - offset,
-                intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage],
-                intake.mark,
-                free )
+            Region.over[in, Duct.Progress](using duct.input)(storage, offset, mark0): region =>
+              range =>
+                Slate.over[out, Duct.Progress](using duct.output)
+                  ( intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage^],
+                    intake.mark, intake.mark + free )
+                  ( slate => slateSpace => duct.step(region)(range)(slate)(slateSpace) )
 
           intake.commit(progress.produced)
           offset += progress.consumed
@@ -690,10 +697,10 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
           val free = intake.reserve(duct.quantum)
 
           produced =
-            duct.flush
-              ( intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage],
-                intake.mark,
-                free )
+            Slate.over[out, Int](using duct.output)
+              ( intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage^],
+                intake.mark, intake.mark + free )
+              ( slate => slateSpace => duct.flush(slate)(slateSpace) )
 
           if produced > 0 then intake.commit(produced)
 
