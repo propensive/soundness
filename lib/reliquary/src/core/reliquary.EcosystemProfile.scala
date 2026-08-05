@@ -167,3 +167,9 @@ trait EcosystemProfile:
   def advisories(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
   :   List[Text] raises DisciplineError =
     List()
+
+  // §13.3 rule 6: the predicates this profile imposes over a whole buildpath, decidable from
+  // manifests alone — a profile predicate requiring payload inspection is a publish-time check
+  // (§16), not a buildpath rule. Toolchain coherence (`jvm.md` §6) is the motivating case.
+  // Returns violation details; an empty list is coherence.
+  def coherence(releases: List[LiraManifest]): List[Text] = List()

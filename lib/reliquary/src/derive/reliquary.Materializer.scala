@@ -64,9 +64,15 @@ object Materializer:
     if universe == t"host"
     then abort(LiraError(Reason.BadHostContract(t"the host world derives no artifacts")))
 
-    val (assignment, _) = Buildpath(liras.map(_.manifest)).resolved(universe)
+    val path = Buildpath(liras.map(_.manifest))
+    val (assignment, _) = path.resolved(universe)
 
-    val jars = liras.stdlib.map: lira =>
+    // §13.5: one artifact set *per universe of the target*. A release serving a joined universe
+    // (named by a `serves` record, §13.2) belongs to that universe's derivation, not this one.
+    val serving = liras.stdlib.filter: lira =>
+      path.serving(universe, lira.manifest.module) == universe
+
+    val jars = serving.map: lira =>
       val identity = lira.manifest.payload.hash.serialize[Hex]
       val integration = assignment(lira.manifest.module)
 

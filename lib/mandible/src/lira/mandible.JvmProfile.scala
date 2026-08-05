@@ -155,3 +155,14 @@ object JvmProfile extends EcosystemProfile:
     List.from:
       constants(previous, next).stdlib.map: key =>
         t"the constant $key changed value; consumers that inlined it are stale until recompiled"
+
+  // §6's toolchain predicate, at the scope where it is stated: every release on a buildpath
+  // must carry metadata a consuming compiler can read, and a release recording no toolchain at
+  // all makes the claim uncheckable rather than false — reported as a violation, per release.
+  // Which TASTy versions a *particular* consumer's compiler reads is that consumer's knowledge,
+  // not the manifests', so the window comparison belongs to the consuming tool; what is
+  // buildpath-decidable is that every release states what produced it.
+  override def coherence(releases: List[LiraManifest]): List[Text] =
+    List.from:
+      releases.stdlib.filter(_.toolchain.stdlib.isEmpty).map: manifest =>
+        t"${manifest.module} records no toolchain, so TASTy readability cannot be checked"

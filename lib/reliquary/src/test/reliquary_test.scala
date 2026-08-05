@@ -1159,16 +1159,20 @@ object Tests extends Suite(m"Reliquary Tests"):
           deps:         List[LiraManifest.Dependency]  = List(),
           version:      Optional[Semver]               = Unset,
           section:      List[Section]                  = List(),
-          integrations: List[LiraManifest.Integration] = List() )
+          integrations: List[LiraManifest.Integration] = List(),
+          profiles:     List[LiraManifest.Profile]     = List(),
+          toolchain:    List[LiraManifest.Tool]        = List() )
       :   LiraManifest =
 
         LiraManifest
           ( module      = module,
             version     = version,
             lineage     = lineage,
+            toolchain   = toolchain,
             owns        = owns,
             resource    = resources,
             api         = List(),
+            profile     = profiles,
             integration = integrations,
             dependency  = deps,
             section     = section,
@@ -1553,6 +1557,141 @@ object Tests extends Suite(m"Reliquary Tests"):
         (UsesBlob.staleness(List(old), List(Replacement(old, neo))),
          UsesBlob.staleness(List(neo), List(Replacement(old, neo))))
       . assert(_ == (true, false))
+
+    suite(m"Joins, pins and coherence"):
+      def payloadStub(module: Text): LiraManifest.Payload =
+        LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob, encode(module)))
+
+      def stub
+        ( module:    Text,
+          lineage:   List[Data],
+          deps:      List[LiraManifest.Dependency] = List(),
+          section:   List[Section]                 = List(),
+          profiles:  List[LiraManifest.Profile]    = List(),
+          toolchain: List[LiraManifest.Tool]       = List() )
+      :   LiraManifest =
+
+        LiraManifest
+          ( module     = module,
+            lineage    = lineage,
+            toolchain  = toolchain,
+            api        = List(),
+            profile    = profiles,
+            dependency = deps,
+            section    = section,
+            payload    = payloadStub(module) )
+
+      val snapOne = LiraHash(LiraHash.Domain.Snapshot, encode(t"join-one"))
+      val snapTwo = LiraHash(LiraHash.Domain.Snapshot, encode(t"join-two"))
+      val jsSection = Section(t"js", tree = blob(encode(t"js-tree")))
+
+      def needy(): LiraManifest =
+        stub(t"alpha", List(snapOne),
+          deps = List(LiraManifest.Dependency(t"webstuff", snapTwo, serves = t"js")))
+
+      test(m"a serves dependency round-trips through the manifest"):
+        val bytes = LiraAssembler.assemble(t"consumer",
+          List(LiraAssembler.SectionInput(t"jvm", List((TreePath(t"a/A.class"), classA)))),
+          Discipline.Registry(List()),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+          dependency = List(LiraManifest.Dependency(t"native-bits", snapTwo,
+            universe = List(t"jvm"), serves = t"nir")))
+
+        Lira.read(bytes).manifest.dependency.stdlib.map: dependency =>
+          (dependency.module, dependency.serves, dependency.universe.stdlib)
+      . assert(_ == scala.List((t"native-bits", Optional(t"nir"), scala.List(t"jvm"))))
+
+      test(m"a join edge to a universe outside the target fails closure"):
+        val web = stub(t"webstuff", List(snapTwo), section = List(jsSection))
+
+        capture[LiraError](Buildpath(List(needy(), web)).validate(t"jvm")).reason
+      . assert(_ == LiraError.Reason.AbsentDependency(t"webstuff"))
+
+      test(m"a join edge into the target's joins passes closure"):
+        val web = stub(t"webstuff", List(snapTwo), section = List(jsSection))
+        Buildpath(List(needy(), web)).validate(t"jvm", joins = List(t"js")).stdlib.size
+      . assert(_ == 0)
+
+      test(m"a join edge to content the candidate does not offer fails closure"):
+        val web = stub(t"webstuff", List(snapTwo),
+          section = List(Section(t"jvm", tree = blob(encode(t"t")))))
+
+        capture[LiraError]:
+          Buildpath(List(needy(), web)).validate(t"jvm", joins = List(t"js"))
+        . reason
+      . assert(_ == LiraError.Reason.AbsentDependency(t"webstuff"))
+
+      test(m"a serving release resolves its own dependencies in its universe"):
+        // `webstuff` serves `js`, and its own dependency is scoped to `js` — so the target
+        // being `jvm` does not exempt it: applicability quantifies over the universe a release
+        // serves (§13.3), and the absent `polyfill` fails closure.
+        val web = stub(t"webstuff", List(snapTwo), section = List(jsSection),
+          deps = List(LiraManifest.Dependency(t"polyfill", snapOne, universe = List(t"js"))))
+
+        capture[LiraError]:
+          Buildpath(List(needy(), web)).validate(t"jvm", joins = List(t"js"))
+        . reason
+      . assert(_ == LiraError.Reason.AbsentDependency(t"polyfill"))
+
+      test(m"a pin selects a declared integration over the canonical one"):
+        val alpha = LiraManifest(
+          module      = t"alpha",
+          lineage     = List(snapOne),
+          api         = List(),
+          integration = List(
+            LiraManifest.Integration(t"slow", rank = 7L),
+            LiraManifest.Integration(t"fast", rank = 2L)),
+          section     = List(),
+          payload     = payloadStub(t"alpha"))
+
+        Buildpath(List(alpha)).resolved(t"jvm", pins = List((t"alpha", t"slow")))(0)(t"alpha")
+      . assert(_ == t"slow")
+
+      test(m"a pin naming an undeclared integration is refused"):
+        val alpha = stub(t"alpha", List(snapOne))
+
+        capture[LiraError]:
+          Buildpath(List(alpha)).resolved(t"jvm", pins = List((t"alpha", t"missing")))
+        . reason match
+            case LiraError.Reason.BadIntegration(_) => true
+            case _                                  => false
+      . assert(identity)
+
+      test(m"rule 6 imposes a declared profile's coherence over the whole path"):
+        object Strict extends EcosystemProfile:
+          def id: Text = t"strict/1"
+          def certifies: Set[Discipline.Guarantee] = Set(Discipline.Guarantee.Linkage)
+
+          def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
+          :   List[EcosystemProfile.Violation] raises DisciplineError =
+            List()
+
+          override def coherence(releases: List[LiraManifest]): List[Text] =
+            List.from:
+              releases.stdlib.filter(_.toolchain.stdlib.isEmpty).map: manifest =>
+                t"${manifest.module} records no toolchain"
+
+        val registry = EcosystemProfile.Registry(List(Strict))
+        val scala39 = List(LiraManifest.Tool(t"scala", t"3.9.0"))
+
+        val declarer = stub(t"alpha", List(snapOne),
+          profiles = List(LiraManifest.Profile(t"strict/1")), toolchain = scala39)
+
+        val bare = stub(t"beta", List(snapTwo))
+        val tooled = stub(t"beta", List(snapTwo), toolchain = scala39)
+
+        val failing =
+          capture[LiraError]:
+            Buildpath(List(declarer, bare)).validate(t"jvm", profiles = registry)
+          . reason match
+              case LiraError.Reason.ProfileViolated(t"strict/1", _) => true
+              case _                                                => false
+
+        val passing =
+          Buildpath(List(declarer, tooled)).validate(t"jvm", profiles = registry).stdlib.size
+
+        (failing, passing)
+      . assert(_ == (true, 0))
 
     suite(m"Derivative artifacts"):
       import distillate.*

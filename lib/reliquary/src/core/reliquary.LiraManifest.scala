@@ -76,12 +76,18 @@ object LiraManifest:
   // content rather than phrase separators.
   case class Integration(id: Text, rank: Optional[Long] = Unset, label: Optional[Text] = Unset)
 
+  // `serves` names the universe in which the dependency itself offers its content, when that
+  // differs from the universes the depending sections consume it in — the join case (§13.2): a
+  // Scala module whose `sjsir` build invokes a TypeScript module declares `universe sjsir` and
+  // `serves js`, and the two universes meet at a bundler join. A dependency without `serves` is
+  // satisfied in the same universe it applies to.
   case class Dependency
     ( module:      Text,
       api:         Data,
       version:     Optional[Semver] = Unset,
       build:       Optional[Data]   = Unset,
       universe:    List[Text]       = List(),
+      serves:      Optional[Text]   = Unset,
       integration: List[Text]       = List(),
       uses:        Optional[Data]   = Unset,
       spans:       List[Data]       = List() ):
@@ -214,6 +220,7 @@ object LiraManifest:
           version     = field(fields, t"version").let(semver(_)),
           build       = field(fields, t"build").let(hash(_)),
           universe    = List.from(repeated(fields, t"universe")),
+          serves      = field(fields, t"serves"),
           integration = List.from(repeated(fields, t"integration")),
           uses        = field(fields, t"uses").let(hash(_)),
           spans       = List.from(repeated(fields, t"spans").map(hash(_))) )
@@ -388,6 +395,7 @@ case class LiraManifest
 
       dependency.build.let: build => lines += s"  build ${LiraHash.text(build)}"
       dependency.universe.stdlib.foreach: universe => lines += s"  universe $universe"
+      dependency.serves.let: serves => lines += s"  serves $serves"
 
       dependency.integration.stdlib.foreach: integration =>
         lines += s"  integration $integration"

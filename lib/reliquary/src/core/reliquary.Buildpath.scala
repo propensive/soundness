@@ -33,7 +33,9 @@
 package reliquary
 
 import anticipation.*
+import anticipation.*
 import contingency.*
+import gossamer.*
 import vacuous.*
 
 import LiraError.Reason
@@ -120,9 +122,32 @@ case class Buildpath(releases: List[LiraManifest]):
   // Coupling would appear only in a resolver that also chose *which* releases to include, since
   // an integration can then pull a module in; that is dependency resolution proper, and it is
   // outside §13.3, which audits a buildpath it is handed.
-  def resolve(universe: Text): Assignment raises LiraError =
+  // §13.3: each release serves one universe of the target — the primary, unless a dependency
+  // record naming the release carries `serves` (§13.2), in which case the universe that record
+  // names. Closure and compatibility quantify over the records applicable to the universe a
+  // release serves, which is what makes a cross-universe dependency's own dependencies resolve
+  // in *its* universe rather than the target's.
+  def serving(primary: Text, module: Text): Text =
+    releases.stdlib.flatMap: manifest =>
+      manifest.dependency.stdlib.filter(_.module == module).flatMap(_.serves.option)
+
+    . headOption.getOrElse(primary)
+
+  // A pin is how a consumer states a preference the manifests cannot imply (§13.3): the named
+  // release takes the named integration, the remaining releases their canonical choices.
+  def resolve(universe: Text, pins: List[(Text, Text)] = List()): Assignment raises LiraError =
     val chosen = releases.stdlib.sortBy(_.module.s).map: manifest =>
-      candidates(manifest).find(satisfies(universe, manifest, _)) match
+      val pinned = pins.stdlib.find(_(0) == manifest.module).map(_(1))
+
+      val options: scala.List[Optional[Text]] = pinned match
+        case scala.Some(id) =>
+          if !manifest.integration.stdlib.exists(_.id == id)
+          then abort(LiraError(Reason.BadIntegration(t"the pin names undeclared $id")))
+          scala.List(id)
+
+        case _ => candidates(manifest)
+
+      options.find(satisfies(serving(universe, manifest.module), manifest, _)) match
         case scala.Some(candidate) => (manifest.module, candidate)
 
         // Because the choices are independent, a failure is always one release's: there is no
@@ -198,19 +223,31 @@ case class Buildpath(releases: List[LiraManifest]):
   // Closure (L113) and satisfaction (L114) under one assignment, reporting the precise rule that
   // fails. `resolve` answers only whether *some* assignment works; this says why a given one does
   // not, which is what a diagnostic needs.
-  private def audit(universe: Text, assignment: Assignment)
+  private def audit(universe: Text, joins: List[Text], assignment: Assignment)
   :   List[LiraAdvisory] raises LiraError =
 
     val advisories = scala.collection.mutable.ArrayBuffer[LiraAdvisory]()
 
     releases.stdlib.foreach: manifest =>
+      val served = serving(universe, manifest.module)
+
       manifest.dependency.stdlib.foreach: dependency =>
-        if dependency.applies(universe, assignment(manifest.module)) then
+        if dependency.applies(served, assignment(manifest.module)) then
           val candidate = apply(dependency.module) match
             case candidate: LiraManifest => candidate
 
             case _ =>
               abort(LiraError(Reason.AbsentDependency(dependency.module)))
+
+          // Rule 4's serves clause: a join edge to a universe the target does not include, or
+          // to content the candidate does not offer, fails closure exactly as an absent module
+          // does (§13.2, §13.3).
+          dependency.serves.let: target =>
+            if target != universe && !joins.stdlib.contains(target)
+            then abort(LiraError(Reason.AbsentDependency(dependency.module)))
+
+            if !candidate.section.stdlib.exists(_.world == target)
+            then abort(LiraError(Reason.AbsentDependency(dependency.module)))
 
           if !requirementMet(dependency, candidate)
           then abort(LiraError(Reason.Unsatisfiable(dependency.module)))
@@ -226,12 +263,14 @@ case class Buildpath(releases: List[LiraManifest]):
 
     List.from(advisories)
 
-  // The sections a target's universe and an assignment select (§13.3, §13.5): per release, the
-  // section for that universe and that release's assigned integration.
+  // The sections a target and an assignment select (§13.3, §13.5): per release, the section for
+  // the universe that release serves and its assigned integration.
   private def selected(universe: Text, assignment: Assignment): scala.List[Section] =
     releases.stdlib.flatMap: manifest =>
+      val served = serving(universe, manifest.module)
+
       manifest.section.stdlib.filter: section =>
-        section.world == universe
+        section.world == served
         && section.integration.option == assignment(manifest.module).option
 
   // The host-contract modules the selected sections' `requires` records name — the modules rule
@@ -302,20 +341,40 @@ case class Buildpath(releases: List[LiraManifest]):
   // Rule 7 runs against the given host contracts; where none are given the rule is left
   // *pending*, not passed, and the `HostPending` advisory names the contracts still needed —
   // the mode report §13.3 requires.
+  //
+  // `joins` completes the target (§13.3): the universes that join the primary one, which rule
+  // 4's serves clause admits join edges into. `pins` are the consumer's integration choices;
+  // unpinned releases take their canonical ones. `profiles` supplies rule 6's implementations:
+  // every profile declared by any release imposes its buildpath predicates over the whole path,
+  // and only an implemented profile can be checked here — an unimplementable declared profile
+  // is a registry's refusal at publish time (L140), not re-litigated on every resolution.
   def resolved
     ( universe:  Text,
+      joins:     List[Text]         = List(),
+      pins:      List[(Text, Text)] = List(),
       contracts: List[LiraManifest] = List(),
       atoms:     Text => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
-      used:      Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset } )
+      used:      Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
+      profiles:  EcosystemProfile.Registry = EcosystemProfile.Registry(List()) )
   :   (Assignment, List[LiraAdvisory]) raises LiraError =
 
     structural()
 
     val assignment =
-      if releases.stdlib.forall(_.integration.stdlib.isEmpty) then Assignment(List())
-      else resolve(universe)
+      if pins.stdlib.isEmpty && releases.stdlib.forall(_.integration.stdlib.isEmpty)
+      then Assignment(List())
+      else resolve(universe, pins)
 
-    val advisories = audit(universe, assignment)
+    val advisories = audit(universe, joins, assignment)
+
+    // Rule 6: profile coherence over the whole buildpath.
+    releases.stdlib.flatMap(_.profile.stdlib.map(_.id)).distinct.foreach: id =>
+      profiles(id).let: profile =>
+        val details = profile.coherence(releases).stdlib
+
+        if !details.isEmpty
+        then abort(LiraError(Reason.ProfileViolated(id, Text(details.map(_.s).mkString("; ")))))
+
     val required = requiredContracts(universe, assignment)
 
     if contracts.stdlib.isEmpty then
@@ -329,8 +388,11 @@ case class Buildpath(releases: List[LiraManifest]):
 
   def validate
     ( universe:  Text,
+      joins:     List[Text]         = List(),
+      pins:      List[(Text, Text)] = List(),
       contracts: List[LiraManifest] = List(),
       atoms:     Text => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
-      used:      Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset } )
+      used:      Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
+      profiles:  EcosystemProfile.Registry = EcosystemProfile.Registry(List()) )
   :   List[LiraAdvisory] raises LiraError =
-    resolved(universe, contracts, atoms, used)(1)
+    resolved(universe, joins, pins, contracts, atoms, used, profiles)(1)

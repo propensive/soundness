@@ -483,6 +483,25 @@ object Tests extends Suite(m"Mandible tests"):
       capture[LiraError](EcosystemProfile.audit(registry, declared, before, before)).reason
     . assert(_ == LiraError.Reason.ProfileViolated(t"broken/1", t"out of scope"))
 
+    test(m"the toolchain predicate reports releases with no toolchain record"):
+      def data(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
+
+      def release(module: Text, toolchain: List[LiraManifest.Tool]): LiraManifest =
+        LiraManifest(
+          module    = module,
+          lineage   = List(LiraHash(LiraHash.Domain.Snapshot, data(module))),
+          toolchain = toolchain,
+          api       = List(),
+          section   = List(),
+          payload   = LiraManifest.Payload(t"brotli", 0L,
+              LiraHash(LiraHash.Domain.Blob, data(module))))
+
+      val tooled = release(t"alpha", List(LiraManifest.Tool(t"scala", t"3.9.0")))
+      val bare = release(t"beta", List())
+
+      JvmProfile.coherence(List(tooled, bare)).stdlib.map(_.s.takeWhile(_ != ' '))
+    . assert(_ == scala.List("beta"))
+
     test(m"changed constants surface through the audit's advisory channel"):
       val registry = EcosystemProfile.Registry(List(JvmProfile))
       val declared = List(LiraManifest.Profile(t"jvm/1"))

@@ -38,6 +38,7 @@ record Dependency
   field version Semver optional
   field build Hash optional
   field universe Identifier optional repeatable
+  field serves Identifier optional
   field integration Identifier optional repeatable
   field uses Hash optional
   field spans Hash optional repeatable

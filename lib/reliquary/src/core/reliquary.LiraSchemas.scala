@@ -153,6 +153,7 @@ object LiraSchemas:
         field("version", semver, required = Loose),
         field("build", hash, required = Loose),
         field("universe", identifier, required = Loose, repeatable = Loose),
+        field("serves", identifier, required = Loose),
         field("integration", identifier, required = Loose, repeatable = Loose),
         field("uses", hash, required = Loose),
         field("spans", hash, required = Loose, repeatable = Loose)),
@@ -289,7 +290,7 @@ object LiraSchemas:
   // The BASE-256 schema signatures of the six canonical documents, pinned as golden values (the
   // test suite recomputes each from its `res/test/reliquary/*.tel` mirror and checks agreement).
   // A conforming document of each schema carries its signature on the pragma line.
-  val liraSignature:  Text = t"εȑẀϗЫẃþyşẁЪƥdӯTzĝ8ӝήBϗĺӸḤῩῺṽOκḠôĻ"
+  val liraSignature:  Text = t"εUYțẀñẆơÇMĆẗΎŠľЭЂẉąӮ0ÅðϕῡΔẙȑẀĆӜ1M"
   val treeSignature:  Text = t"ǨẙơẗỵclϋẁЫĥᾸMôĮẍOώżӯάǢЗĆӸkҚțȐωǢέӫ"
   val atomsSignature: Text = t"2ӪççÃ5AḟǑXϋƤzᾱĺHϕЂẌǒEẂẁĮί9ḀẘΊÐιЪp"
   val usesSignature:  Text = t"şşCȧOӖGҐΪḍḋjΊӁῚƟȐЌĥέȦЬƜδĻĘ1Ȑḟ6ӟÔḍ"
