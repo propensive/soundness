@@ -27,41 +27,51 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
-┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package zephyrine
 
-export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
-    Duct, Ductile, Expanse, Malleable, Pace,
-    Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
-    Records, records, Region, Regulation, Slate, Spring, Stream, Substrate, capped, chunks,
-    discard, gather, locate,
-    locateKey, memoize, pump, stream, streamOf, sweep, toProgression, truncate,
-    viaDuct, acceptingDuct}
+import scala.caps
 
-// Hand-written forwarders: the synthesized export forwarders for these dependent-typed
-// extensions lose the `ductile.Result`/`ductile.Operand` path refinements under capture
-// checking and fail to retypecheck.
-extension [in, transport](consume stream: (Stream[in] over transport)^)
-  def via[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile by in) { type Upstream = transport },
-            buffering: Buffering )
-  :   (Stream[ductile.Result] over ductile.Transport)^ =
-    // The call's dependent result widens to a `Ductile{...}#Result` projection rather than
-    // narrowing back to this forwarder's `ductile.Result`; the value is returned unchanged,
-    // so the cast only restores the dependent typing the export forwarder would have lost.
-    zephyrine.via[in, transport](stream)[stage](stage)(using ductile, buffering)
-    . asInstanceOf[(Stream[ductile.Result] over ductile.Transport)^]
+import denominative.*
+import prepositional.*
+import vacuous.*
 
-extension [out, transport](consume intake: (Intake[out] over transport)^)
-  def accepting[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile to out) { type Transport = transport },
-            buffering: Buffering )
-  :   (Intake[ductile.Operand] over ductile.Upstream)^ =
-    // See `via` above.
-    zephyrine.accepting[out, transport](intake)[stage](stage)(using ductile, buffering)
-    . asInstanceOf[(Intake[ductile.Operand] over ductile.Upstream)^]
+// The writable counterpart of `Region`, for duct output windows: `update` in place of
+// `apply`, with the same branding discipline. See `zephyrine.Region.scala` for the design.
+// The accessors live in the companion (found through implicit scope) rather than at the top
+// level: top-level extensions in separate files of one package cannot overload `Region`'s.
+opaque type Slate[medium] = AnyRef
 
-package parsing:
-  export zephyrine.parsing.trackPositions
+object Slate:
+  // As `Region.over`, but lending write access: the storage must be exclusive.
+  inline def over[medium, result](using addressable: medium is Addressable)
+    ( storage: addressable.Storage^, offset: Int, limit: Int )
+    ( inline lambda: (slate: Slate[medium]) => (Interval in slate.type) => result )
+  :   result =
+
+    val size = addressable.storageSize(storage)
+    val start = offset.max(0).min(size)
+    val end = limit.max(start).min(size)
+    val slate: Slate[medium] = storage.asInstanceOf[AnyRef]
+    lambda(slate)(Interval.zerary(start, end).asInstanceOf[Interval in slate.type])
+
+  extension [medium](slate: Slate[medium])(using addressable: medium is Addressable)
+    inline def update(index: Ordinal in slate.type, operand: addressable.Operand): Unit =
+      val ordinal: Ordinal = index
+      addressable.storageUpdate(slate.asInstanceOf[addressable.Storage^], ordinal.n0, operand)
+
+    inline def visit(range: Interval in slate.type)
+      ( inline lambda: (Ordinal in slate.type) => Unit )
+    :   Unit =
+
+      val window: Interval = range
+      var index: Int = window.start.n0
+      val end: Int = window.limit.n0
+
+      while index < end do
+        lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in slate.type])
+        index += 1
+
+    inline def raw(using Unsafe): addressable.Storage^ =
+      slate.asInstanceOf[addressable.Storage^]

@@ -581,6 +581,92 @@ object Tests extends Suite(m"Zephyrine tests"):
             (inner, cursor.grab(outer, cursor.mark).s)
         . assert(_ == ((true, "a")))
 
+      suite(m"Region tests"):
+        def sample(size: Int): scala.Array[Byte]^ =
+          val buffer = Array.scratch[Byte](size)
+          var index = 0
+
+          while index < size do
+            buffer(index) = index.toByte
+            index += 1
+
+          buffer
+
+        test(m"visit sums a clamped window"):
+          val buffer = sample(10)
+          var total = 0
+
+          Region.over[Data, Unit](buffer, 1, 9): region =>
+            range => region.visit(range) { index => total += region(index).toInt }
+
+          total
+        . assert(_ == 36)
+
+        test(m"over clamps an oversized window to the storage"):
+          val buffer = sample(4)
+          var count = 0
+
+          Region.over[Data, Unit](buffer, 0, 100): region =>
+            range => region.visit(range) { _ => count += 1 }
+
+          count
+        . assert(_ == 4)
+
+        test(m"visit8 takes the unrolled path and mops up the tail"):
+          val buffer = sample(19)
+          var whole = 0
+          var rest = 0
+
+          Region.over[Data, Unit](buffer, 0, 19): region =>
+            range =>
+              region.visit8(range)
+               ( (i0, i1, i2, i3, i4, i5, i6, i7) =>
+                   whole += region(i0) + region(i1) + region(i2) + region(i3)
+                     + region(i4) + region(i5) + region(i6) + region(i7) )
+               ( index => rest += region(index).toInt )
+
+          (whole, rest)
+        . assert(_ == ((120, 51)))
+
+        test(m"capped narrows a window, preserving its brand"):
+          val buffer = sample(10)
+          var count = 0
+
+          Region.over[Data, Unit](buffer, 2, 10): region =>
+            range => region.visit(range.capped(3)) { _ => count += 1 }
+
+          count
+        . assert(_ == 3)
+
+        test(m"materialize copies exactly the window"):
+          val buffer = sample(10)
+
+          Region.over[Data, Data](buffer, 2, 5): region =>
+            range => region.materialize(range)
+        . assert(_.to[List] == List[Byte](2, 3, 4))
+
+        test(m"blit copies no more than the slate's space"):
+          val source = sample(10)
+          val target = Array.scratch[Byte](4)
+
+          val copied = Region.over[Data, Int](source, 5, 10): region =>
+            range =>
+              Slate.over[Data, Int](target, 0, 4): slate =>
+                space => region.blit(range)(slate)(space)
+
+          (copied, target(0), target(3))
+        . assert(_ == ((4, 5.toByte, 8.toByte)))
+
+        test(m"slate update writes through branded ordinals"):
+          val target = Array.scratch[Byte](6)
+
+          Slate.over[Data, Unit](target, 2, 5): slate =>
+            space => slate.visit(space) { index => slate(index) = 7.toByte }
+
+          (target(1), target(2), target(4),
+           target(5))
+        . assert(_ == ((0.toByte, 7.toByte, 7.toByte, 0.toByte)))
+
       suite(m"Streaming kernel tests"):
         val small = Array.of[Byte](1, 2, 3, 4, 5)
 
