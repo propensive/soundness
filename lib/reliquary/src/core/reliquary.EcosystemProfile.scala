@@ -46,7 +46,7 @@ object EcosystemProfile:
   // is handed, because a profile that checks structural invariants over a universe's content
   // (§11.6, clause 2) needs exactly what a discipline over that universe would need.
   case class Section
-    ( universe:    Text,
+    ( world:       Text,
       content:     List[(TreePath, Data)],
       integration: Optional[Text] = Unset,
       classpath:   List[Text]     = List() )
@@ -59,8 +59,8 @@ object EcosystemProfile:
     ( sections: List[Section],
       manifest: Optional[LiraManifest] = Unset ):
 
-    def section(universe: Text): Optional[Section] =
-      sections.stdlib.find { section => section.universe == universe }.getOrElse(Unset)
+    def section(world: Text): Optional[Section] =
+      sections.stdlib.find { section => section.world == world }.getOrElse(Unset)
 
   // A predicate failure, at the guarantee level it breaks. A profile reports what it found; the
   // audit below decides whether the release accounted for it.

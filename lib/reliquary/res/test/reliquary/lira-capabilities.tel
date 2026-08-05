@@ -1,0 +1,17 @@
+tel 1.0
+
+# The capability listing of a host contract with no formal carrier (hosts.md §5): the single
+# tree item at the path `capabilities`, claimed by `capability/1`. Rows are sorted by ascending
+# name with no duplicates; `probe` is advisory and enters no atom. This document is the
+# canonical mirror of the hand-encoded `LiraSchemas.capabilities`; reliquary's test suite
+# asserts the two are structurally identical and pins this document's schema signature.
+
+name lira-capabilities
+
+record Capability
+  field name Identifier
+  field version String optional
+  field probe String optional
+
+document
+  field capability Capability optional repeatable

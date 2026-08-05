@@ -161,14 +161,18 @@ case class Buildpath(releases: List[LiraManifest]):
           case _ => false
 
   // §13.3 structural rules, which no assignment can affect: at most one release per module
-  // (L111) and pairwise-disjoint `owns` claims (L112).
+  // (L111) and pairwise-disjoint `owns` claims (L112). Host contracts are exempt from rules 2–3
+  // (hosts.md §8): a contract describes an environment and contributes no namespace claims and
+  // no resources, so one mistakenly placed among the releases must not clash with anything.
   private def structural(): Unit raises LiraError =
     val all = releases.stdlib
 
     all.groupBy(_.module).foreach: (module, group) =>
       if group.size > 1 then abort(LiraError(Reason.DuplicateModule(module)))
 
-    val claims = all.flatMap: manifest =>
+    val libraries = all.filter { manifest => !manifest.hostContract }
+
+    val claims = libraries.flatMap: manifest =>
       manifest.owns.stdlib.map: namespace => (manifest.module, namespace)
 
     claims.zipWithIndex.foreach: (left, index) =>
@@ -183,7 +187,7 @@ case class Buildpath(releases: List[LiraManifest]):
     // L126: `export` and `track` paths are pairwise disjoint across modules, so a classpath-style
     // reference resolves to exactly one module. `scan` directories are exempt — cross-module
     // aggregation under a shared directory is precisely their purpose.
-    val named = all.flatMap: manifest =>
+    val named = libraries.flatMap: manifest =>
       manifest.resource.stdlib
         . filter(_.mode != LiraManifest.ResourceMode.Scan)
         . map: resource => (manifest.module, resource.path.text)
@@ -222,6 +226,70 @@ case class Buildpath(releases: List[LiraManifest]):
 
     List.from(advisories)
 
+  // The sections a target's universe and an assignment select (§13.3, §13.5): per release, the
+  // section for that universe and that release's assigned integration.
+  private def selected(universe: Text, assignment: Assignment): scala.List[Section] =
+    releases.stdlib.flatMap: manifest =>
+      manifest.section.stdlib.filter: section =>
+        section.world == universe
+        && section.integration.option == assignment(manifest.module).option
+
+  // The host-contract modules the selected sections' `requires` records name — the modules rule
+  // 7 needs contracts for, and what `HostPending` reports when validation runs without any.
+  def requiredContracts(universe: Text, assignment: Assignment): List[Text] =
+    List.from:
+      selected(universe, assignment).flatMap: section =>
+        section.requires.stdlib.map(_.module)
+
+      . distinct
+
+  // §13.3 rule 7 (L136, L137): every `requires` record of every selected section must be
+  // satisfied by the given contracts, per hosts.md §7 — the required snapshot appears in the
+  // named contract's lineage, or the requirement's used-set is contained in a contract's atom
+  // set. The latter extends across contracts of *different* modules, which is sound because
+  // atoms are content-addressed and module-blind; it needs the contract atom sets and the Uses
+  // blobs, which live in payloads, so callers supply them as lookups and a lookup left unset
+  // simply forgoes spanning. Aggregation (hosts.md §10) needs no extra pass: the contracts are
+  // one release per module, so requirements are jointly satisfiable iff each is individually —
+  // by lineage, both snapshots must be in the one given lineage; by spanning, a union of
+  // used-sets is contained in a contract's atoms iff each member is.
+  def hostRequirements
+    ( universe:   Text,
+      assignment: Assignment,
+      contracts:  List[LiraManifest],
+      atoms:      Text => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
+      used:       Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset } )
+  :   Unit raises LiraError =
+
+    contracts.stdlib.foreach: contract =>
+      if !contract.hostContract
+      then abort(LiraError(Reason.NotHostContract(contract.module)))
+
+    selected(universe, assignment).foreach: section =>
+      section.requires.stdlib.foreach: requirement =>
+        // L137, from the other end: a requirement naming a module whose releases are ordinary
+        // libraries is a category error, checkable wherever that module's manifest is in hand.
+        apply(requirement.module).let: release =>
+          if !release.hostContract
+          then abort(LiraError(Reason.NotHostContract(requirement.module)))
+
+        val named = contracts.stdlib.find(_.module == requirement.module)
+
+        val byLineage = named.exists: contract =>
+          Lineage.contains(contract.lineage, requirement.api)
+
+        val bySpanning = requirement.uses.let: usesHash =>
+          used(usesHash).let: usedSet =>
+            contracts.stdlib.exists: contract =>
+              atoms(contract.module).let(usedSet.subsetOf(_)).or(false)
+
+          . or(false)
+
+        . or(false)
+
+        if !byLineage && !bySpanning
+        then abort(LiraError(Reason.UnsatisfiedRequirement(requirement.module)))
+
   // §13.3 validity for one universe, with the assignment that establishes it. Diamond
   // dependencies resolve by construction: requirements on two snapshots of one module are
   // jointly satisfiable iff some lineage contains both.
@@ -230,13 +298,39 @@ case class Buildpath(releases: List[LiraManifest]):
   // entirely and the rules read exactly as they did before integrations existed — including the
   // diagnostics, which name the failing dependency rather than reporting that no assignment
   // exists.
-  def resolved(universe: Text): (Assignment, List[LiraAdvisory]) raises LiraError =
+  //
+  // Rule 7 runs against the given host contracts; where none are given the rule is left
+  // *pending*, not passed, and the `HostPending` advisory names the contracts still needed —
+  // the mode report §13.3 requires.
+  def resolved
+    ( universe:  Text,
+      contracts: List[LiraManifest] = List(),
+      atoms:     Text => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
+      used:      Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset } )
+  :   (Assignment, List[LiraAdvisory]) raises LiraError =
+
     structural()
 
     val assignment =
       if releases.stdlib.forall(_.integration.stdlib.isEmpty) then Assignment(List())
       else resolve(universe)
 
-    (assignment, audit(universe, assignment))
+    val advisories = audit(universe, assignment)
+    val required = requiredContracts(universe, assignment)
 
-  def validate(universe: Text): List[LiraAdvisory] raises LiraError = resolved(universe)(1)
+    if contracts.stdlib.isEmpty then
+      if required.stdlib.isEmpty then (assignment, advisories)
+      else
+        val pending = List(LiraAdvisory.HostPending(required))
+        (assignment, List.from(advisories.stdlib ++ pending.stdlib))
+    else
+      hostRequirements(universe, assignment, contracts, atoms, used)
+      (assignment, advisories)
+
+  def validate
+    ( universe:  Text,
+      contracts: List[LiraManifest] = List(),
+      atoms:     Text => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
+      used:      Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset } )
+  :   List[LiraAdvisory] raises LiraError =
+    resolved(universe, contracts, atoms, used)(1)

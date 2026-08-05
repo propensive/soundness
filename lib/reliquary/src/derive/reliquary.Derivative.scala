@@ -91,6 +91,6 @@ object Derivative:
   def verify(manifest: LiraManifest, report: Verification.Report): Unit raises LiraError =
     manifest.section.stdlib.foreach: section =>
       section.derivative.let: declared =>
-        report.tree(section.universe, section.integration).let: tree =>
+        report.tree(section.world, section.integration).let: tree =>
           if Blob.compare(hash(tree, report.blobstore), declared) != 0
-          then abort(LiraError(Reason.BadDerivative(section.universe)))
+          then abort(LiraError(Reason.BadDerivative(section.world)))

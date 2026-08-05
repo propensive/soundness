@@ -76,6 +76,9 @@ object LiraError:
     case BadIntegration(detail: Text)         extends Reason(131)
     case NoAssignment(module: Text)           extends Reason(132)
     case UnrealizedIntegration(id: Text)      extends Reason(133)
+    case BadHostContract(detail: Text)        extends Reason(135)
+    case UnsatisfiedRequirement(module: Text) extends Reason(136)
+    case NotHostContract(module: Text)        extends Reason(137)
     case BadDerivative(universe: Text)        extends Reason(138)
     case MalformedPayload(detail: Text)       extends Reason(139)
     case UnimplementedClaim(id: Text)         extends Reason(140)
@@ -126,6 +129,13 @@ object LiraError:
     case Reason.NoAssignment(module) =>
       m"no integration of $module is satisfiable on this buildpath"
     case Reason.UnrealizedIntegration(id)   => m"the integration $id has no section"
+    case Reason.BadHostContract(detail)     => m"the host contract is ill-formed: $detail"
+
+    case Reason.UnsatisfiedRequirement(module) =>
+      m"no given host contract satisfies the requirement on $module"
+
+    case Reason.NotHostContract(module) =>
+      m"the requirement names $module, whose releases are not host contracts"
 
     case Reason.BadDerivative(universe) =>
       m"the declared derivative hash of the $universe section does not recompute"

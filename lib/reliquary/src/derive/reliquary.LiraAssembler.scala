@@ -49,12 +49,15 @@ import errorDiagnostics.emptyDiagnostics
 // assembles the complete `.lira` file. Everything here is deterministic for fixed inputs.
 object LiraAssembler:
 
-  // One cell of the (universe × integration) matrix (§9.5). `integration` is absent where the
-  // release declares none, which is its single implicit integration.
+  // One cell of the (world × integration) matrix (§9.5). `integration` is absent where the
+  // release declares none, which is its single implicit integration. `requires` names the host
+  // contracts this section's code assumes (hosts.md §6) — authorial, so it arrives as input
+  // rather than being computed.
   case class SectionInput
-    ( universe:    Text,
+    ( world:       Text,
       content:     List[(TreePath, Data)],
-      integration: Optional[Text] = Unset )
+      integration: Optional[Text] = Unset,
+      requires:    List[LiraManifest.Requires] = List() )
 
   def assemble
     ( module:      Text,
@@ -96,8 +99,8 @@ object LiraAssembler:
     val registry = Discipline.Registry(disciplines.declared, resource)
 
     val atomized = inputs.map: input =>
-      val context = Discipline.Context(input.universe, input.integration, classpath(input))
-      (input.universe, registry.atomize(input.content, context))
+      val context = Discipline.Context(input.world, input.integration, classpath(input))
+      (input.world, registry.atomize(input.content, context))
 
     // The same per-section view a discipline is given, for the profile predicates below. Built
     // here so that a profile checking structural invariants over a universe's content (§11.6,
@@ -105,7 +108,7 @@ object LiraAssembler:
     val profileSections = List.from:
       inputs.map: input =>
         EcosystemProfile.Section
-          (input.universe, input.content, input.integration, classpath(input))
+          (input.world, input.content, input.integration, classpath(input))
 
     // L125: an `export` or `track` declaration must be effective — a declared path that resolves
     // to no item in any section, or that some other discipline claims, is an assembly-time
@@ -132,7 +135,7 @@ object LiraAssembler:
     // atomization of nothing is not a claim about anything. The rule quantifies over the
     // *declared* disciplines: `resource/1` and `opaque/1` are the registry's own and universal,
     // so the question never arises for them.
-    val universes = inputs.map(_.universe).toSet
+    val universes = inputs.map(_.world).toSet
 
     registry.declared.stdlib.foreach: discipline =>
       if !universes.exists(discipline.domain.covers)
@@ -181,11 +184,12 @@ object LiraAssembler:
 
       val section =
         Section
-          ( universe    = input.universe,
+          ( world       = input.world,
             integration = input.integration,
             tree        = LiraHash(LiraHash.Domain.Blob, tree.encode),
             delete      = delete,
-            derivative  = Derivative.hash(target, store) )
+            derivative  = Derivative.hash(target, store),
+            requires    = input.requires )
 
       (section, tree.encode)
 
@@ -211,9 +215,10 @@ object LiraAssembler:
           payload     = LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob,
               Array.freeze(Array[Byte](0)))) )
 
-    // The producer never emits a file a consumer would reject: L131/L133 are decidable from the
-    // manifest, so they are checked here rather than discovered at install time.
+    // The producer never emits a file a consumer would reject: L131/L133/L135 are decidable
+    // from the manifest, so they are checked here rather than discovered at install time.
     Verification.integrations(manifest)
+    Verification.hostShape(manifest)
 
     // L140: the assembler is about to sign every declared profile as a checked claim, so a
     // declared profile it cannot check is refused outright — an unverifiable claim is worse

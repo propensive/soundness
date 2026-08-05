@@ -98,6 +98,16 @@ object LiraManifest:
 
       universeApplies && integrationApplies
 
+  // One host requirement of a section (hosts.md §6): the host contract's module name and the
+  // required contract snapshot, satisfied by lineage membership or by spanning where a Uses
+  // blob is attached (hosts.md §7). Authorial: no verifier can decide that code needs what it
+  // declares (§16), which is why the environment itself is probed at a third moment.
+  case class Requires
+    ( module:  Text,
+      api:     Data,
+      version: Optional[Semver] = Unset,
+      uses:    Optional[Data]   = Unset )
+
   // How a declared resource participates in the algebra (§11.4). `Export` guarantees the name is
   // present; `Track` additionally tracks the bytes as replaceable churn; `Scan` claims a whole
   // directory atomless, so nothing under it is contractual.
@@ -235,20 +245,30 @@ object LiraManifest:
           label = field(fields, t"label") )
 
     val section = top.filter(_.keyword == t"section").map: compound =>
-      val universe = texts(compound) match
-        case scala.collection.immutable.Vector(universe) => universe
+      val world = texts(compound) match
+        case scala.collection.immutable.Vector(world) => world
 
         case _ =>
-          abort(bad(t"a section needs exactly one universe"))
+          abort(bad(t"a section needs exactly one world"))
 
       val fields = children(compound)
 
+      val requires = fields.filter(_.keyword == t"requires").map: requirement =>
+        val subfields = children(requirement)
+
+        Requires
+          ( module  = required(subfields, t"module"),
+            api     = hash(required(subfields, t"api")),
+            version = field(subfields, t"version").let(semver(_)),
+            uses    = field(subfields, t"uses").let(hash(_)) )
+
       Section
-        ( universe    = universe,
+        ( world       = world,
           integration = field(fields, t"integration"),
           tree        = hash(required(fields, t"tree")),
           delete      = List.from(repeated(fields, t"delete").map(TreePath(_))),
-          derivative  = field(fields, t"derivative").let(hash(_)) )
+          derivative  = field(fields, t"derivative").let(hash(_)),
+          requires    = List.from(requires) )
 
     val payload = top.filter(_.keyword == t"payload").toList match
       case scala.List(compound) =>
@@ -310,6 +330,10 @@ case class LiraManifest
   def root: Optional[Section] = if section.stdlib.isEmpty then Unset else section.stdlib.head
 
   def development: Boolean = version.absent
+
+  // A release carrying a `host` section is a host contract (§9.4, hosts.md §4) — recognizable
+  // from its manifest alone, which is what makes L137 checkable at resolution time.
+  def hostContract: Boolean = section.stdlib.exists(_.world == t"host")
 
   // The canonical text of the whole file's manifest part: directive, pragma, one blank line,
   // then the compounds in schema order, LF-terminated. Deterministic; `Lira.read` accepts any
@@ -374,11 +398,21 @@ case class LiraManifest
     delta.let: delta => lines += s"delta ${LiraHash.text(delta)}"
 
     section.stdlib.foreach: section =>
-      lines += s"section ${section.universe}"
+      lines += s"section ${section.world}"
       section.integration.let: id => lines += s"  integration $id"
       lines += s"  tree ${LiraHash.text(section.tree)}"
       section.delete.stdlib.foreach: path => lines += s"  delete ${path.text}"
       section.derivative.let: hash => lines += s"  derivative ${LiraHash.text(hash)}"
+
+      section.requires.stdlib.foreach: requirement =>
+        lines += "  requires"
+        lines += s"    module ${requirement.module}"
+        lines += s"    api ${LiraHash.text(requirement.api)}"
+
+        requirement.version.let: version =>
+          lines += s"    version ${version.major}.${version.minor}.${version.patch}"
+
+        requirement.uses.let: uses => lines += s"    uses ${LiraHash.text(uses)}"
 
     lines += "payload"
     lines += s"  compression ${payload.compression}"

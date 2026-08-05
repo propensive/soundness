@@ -57,7 +57,7 @@ object Verification:
 
     def tree(universe: Text, integration: Optional[Text]): Optional[LiraTree] =
       materialized.stdlib.find: pair =>
-        pair(0).universe == universe && pair(0).integration.option == integration.option
+        pair(0).world == universe && pair(0).integration.option == integration.option
 
       . map(_(1)).getOrElse(Unset)
 
@@ -90,9 +90,25 @@ object Verification:
 
       if !realized then abort(LiraError(Reason.UnrealizedIntegration(id)))
 
+  // L135 (§9.4, hosts.md §4): a release carrying a `host` section is a host contract, and its
+  // shape is fixed — exactly that one section, no integrations, no dependencies, and no
+  // `requires` records on the section. The exclusions are not arbitrary: an integration is an
+  // alternative dependency vector and a contract has no dependencies to vary, and a contract
+  // requiring a host would make satisfaction recursive. Decidable from the manifest alone.
+  def hostShape(manifest: LiraManifest): Unit raises LiraError =
+    if manifest.hostContract then
+      def bad(detail: Text): Nothing = abort(LiraError(Reason.BadHostContract(detail)))
+      if manifest.section.stdlib.size != 1 then bad(t"it carries more than one section")
+      if !manifest.integration.stdlib.isEmpty then bad(t"it declares integrations")
+      if !manifest.dependency.stdlib.isEmpty then bad(t"it declares dependencies")
+
+      manifest.section.stdlib.foreach: section =>
+        if !section.requires.stdlib.isEmpty then bad(t"its section carries requirements")
+
   def install(lira: Lira): Report raises LiraError =
     val manifest = lira.manifest
     integrations(manifest)
+    hostShape(manifest)
     ResourceDiscipline.check(manifest.resource)
 
     // Steps 1–2: decompress within the declared length, verify the payload hash, and re-derive
@@ -174,7 +190,7 @@ object Verification:
         abort(LiraError(Reason.UnimplementedClaim(id)))
 
     val registry = Discipline.Registry(List.from(resolved), manifest.resource)
-    val universes = manifest.section.stdlib.map(_.universe).toSet
+    val universes = manifest.section.stdlib.map(_.world).toSet
 
     resolved.foreach: discipline =>
       if !universes.exists(discipline.domain.covers)
@@ -200,7 +216,7 @@ object Verification:
 
       val context =
         Discipline.Context
-          (section.universe, section.integration, classpath(section.universe,
+          (section.world, section.integration, classpath(section.world,
               section.integration))
 
       (section, summary(registry.atomize(content, context)))
@@ -212,7 +228,7 @@ object Verification:
 
       computed.drop(1).foreach: (section, other) =>
         if other != root
-        then abort(LiraError(Reason.ApiDivergence(t"${section.universe} differs from the root")))
+        then abort(LiraError(Reason.ApiDivergence(t"${section.world} differs from the root")))
 
   // Step 4's sibling for profiles (§11.6, L128/L130). `install` stays language-blind, exactly as
   // it does for re-atomization and lineage-step grading, and this recovers the per-section
@@ -230,7 +246,7 @@ object Verification:
         (entry.path, report.blobstore.resolve(entry.blob))
 
       EcosystemProfile.Section
-        (section.universe, content, section.integration, classpath(section.universe,
+        (section.world, content, section.integration, classpath(section.world,
             section.integration))
 
     EcosystemProfile.Evidence(List.from(sections), manifest)

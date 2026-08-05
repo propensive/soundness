@@ -59,6 +59,11 @@ object Materializer:
   def classpath(liras: List[Lira], universe: Text, cache: Path on Linux)
   :   LocalClasspath raises LiraError raises IoError raises StreamError =
 
+    // `host` sections are never materialized onto any artifact path (§13.5): a host contract's
+    // content describes the environment and joins nothing.
+    if universe == t"host"
+    then abort(LiraError(Reason.BadHostContract(t"the host world derives no artifacts")))
+
     val (assignment, _) = Buildpath(liras.map(_.manifest)).resolved(universe)
 
     val jars = liras.stdlib.map: lira =>

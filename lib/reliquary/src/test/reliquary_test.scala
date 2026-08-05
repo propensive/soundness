@@ -109,11 +109,12 @@ object Tests extends Suite(m"Reliquary Tests"):
 
 
     val schemas = List(
-      (t"lira",       LiraSchemas.lira,  LiraSchemas.liraSignature),
-      (t"lira-tree",  LiraSchemas.tree,  LiraSchemas.treeSignature),
-      (t"lira-atoms", LiraSchemas.atoms, LiraSchemas.atomsSignature),
-      (t"lira-uses",  LiraSchemas.uses,  LiraSchemas.usesSignature),
-      (t"lira-delta", LiraSchemas.delta, LiraSchemas.deltaSignature))
+      (t"lira",              LiraSchemas.lira,         LiraSchemas.liraSignature),
+      (t"lira-tree",         LiraSchemas.tree,         LiraSchemas.treeSignature),
+      (t"lira-atoms",        LiraSchemas.atoms,        LiraSchemas.atomsSignature),
+      (t"lira-uses",         LiraSchemas.uses,         LiraSchemas.usesSignature),
+      (t"lira-delta",        LiraSchemas.delta,        LiraSchemas.deltaSignature),
+      (t"lira-capabilities", LiraSchemas.capabilities, LiraSchemas.capabilitiesSignature))
 
     suite(m"Schema documents"):
       for (name, tels, signature) <- schemas do
@@ -721,7 +722,7 @@ object Tests extends Suite(m"Reliquary Tests"):
     suite(m"Container and verification"):
       test(m"an assembled lira reads back and verifies"):
         val report = Verification.install(Lira.read(makeLira()))
-        report.materialized.stdlib.map { pair => pair(0).universe }
+        report.materialized.stdlib.map { pair => pair(0).world }
       . assert(_ == scala.List(t"jvm", t"sjsir"))
 
       test(m"resource/1 atomizes exports by name and tracks content"):
@@ -978,7 +979,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       test(m"the sjsir overlay materializes without the deleted classfile"):
         val report = Verification.install(Lira.read(makeLira()))
-        val sjsir = report.materialized.stdlib.find { pair => pair(0).universe == t"sjsir" }
+        val sjsir = report.materialized.stdlib.find { pair => pair(0).world == t"sjsir" }
 
         sjsir.map { pair => pair(1).entries.map(_.path.text).stdlib }
       . assert(_ == scala.Some(scala.List(t"a/A.sjsir", t"a/A.tasty")))
@@ -1733,7 +1734,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         val evidence = Verification.evidence(lira.manifest, report)
 
         evidence.sections.stdlib.map: section =>
-          (section.universe, section.content.stdlib.map(_(0).text))
+          (section.world, section.content.stdlib.map(_(0).text))
 
       . assert(_ == scala.List(
           (t"jvm", scala.List(t"a/A.class", t"a/A.special")),
@@ -1743,7 +1744,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         val scoped = new Discipline:
           def id: Text = t"scoped/1"
           def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".class")
-          def domain: Discipline.Domain = Discipline.Domain.Universes(Set(t"jvm"))
+          def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"jvm"))
           def keying: Discipline.Keying = Discipline.Keying.Membership
 
           def guarantees(universe: Text): Set[Discipline.Guarantee] =
@@ -1765,3 +1766,258 @@ object Tests extends Suite(m"Reliquary Tests"):
 
         (jvm.stdlib.map(_.discipline), sjsir.stdlib.map(_.discipline))
       . assert(_ == (scala.List(t"scoped/1"), scala.List(t"opaque/1")))
+
+    suite(m"Host contracts and requirements"):
+      def capabilities(rows: Text): Data =
+        encode(t"tel 1.0 ${LiraSchemas.capabilitiesSignature}\n\n$rows")
+
+      val hostContext = Discipline.Context(t"host")
+      val gitOnly = capabilities(t"capability\n  name git\n")
+
+      def atomsOf(data: Data): List[Atom] =
+        CapabilityDiscipline.atomize(List((TreePath(t"capabilities"), data)), hostContext).atoms
+
+      def hashesOf(data: Data): scala.List[Text] =
+        atomsOf(data).stdlib.map { atom => LiraHash.text(atom.valueHash) }
+
+      test(m"a capability listing atomizes to one rigid atom per row"):
+        val listing = capabilities(t"capability\n  name git\ncapability\n  name sh\n")
+
+        atomsOf(listing).stdlib.map { atom => (atom.key, atom.atomClass) }.toSet
+      . assert(_ == scala.collection.immutable.Set
+          ((t"git", AtomClass.Rigid), (t"sh", AtomClass.Rigid)))
+
+      test(m"a probe is advisory and enters no atom"):
+        hashesOf(capabilities(t"capability\n  name git\n  probe  command -v git\n"))
+        == hashesOf(gitOnly)
+      . assert(identity)
+
+      test(m"a version predicate folds into the atom's value"):
+        hashesOf(capabilities(t"capability\n  name git\n  version  >= 2.30\n"))
+        != hashesOf(gitOnly)
+      . assert(identity)
+
+      test(m"unsorted capability rows are rejected"):
+        val listing = capabilities(t"capability\n  name sh\ncapability\n  name git\n")
+
+        capture[DisciplineError](atomsOf(listing)).reason match
+          case DisciplineError.Reason.Malformed(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"a duplicated capability is rejected"):
+        val listing = capabilities(t"capability\n  name git\ncapability\n  name git\n")
+
+        capture[DisciplineError](atomsOf(listing)).reason match
+          case DisciplineError.Reason.Malformed(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"a host contract assembles, reads and verifies"):
+        val bytes = LiraAssembler.assemble(t"posix",
+          List(LiraAssembler.SectionInput(t"host",
+            List((TreePath(t"capabilities"), gitOnly)))),
+          Discipline.Registry(List(CapabilityDiscipline)),
+          toolchain = List(LiraManifest.Tool(t"lira", t"0.1")))
+
+        val lira = Lira.read(bytes)
+        Verification.install(lira)
+        (lira.manifest.hostContract, lira.manifest.section.stdlib.map(_.world))
+      . assert(_ == (true, scala.List(t"host")))
+
+      // L135's four exclusions, each on a hand-built manifest, since the assembler itself
+      // refuses to produce one.
+      def handBuilt
+        ( integrations:  List[LiraManifest.Integration] = List(),
+          integrationId: Optional[Text]                 = Unset,
+          dependencies:  List[LiraManifest.Dependency]  = List(),
+          requires:      List[LiraManifest.Requires]    = List(),
+          extraSection:  Boolean                        = false )
+      :   Data =
+
+        val tree = LiraTree.of(List(TreeEntry(TreePath(t"capabilities"), blob(gitOnly))))
+
+        val atomization =
+          CapabilityDiscipline.atomize(List((TreePath(t"capabilities"), gitOnly)), hostContext)
+
+        val atomsData = AtomsBlob.encode(atomization)
+        val snapshot = Snapshot(List(atomization))
+        val jvmTree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
+
+        val sections =
+          val host = Section(t"host", integrationId, blob(tree.encode), requires = requires)
+
+          if extraSection
+          then List(host, Section(t"jvm", integrationId, blob(jvmTree.encode)))
+          else List(host)
+
+        val manifest = LiraManifest(
+          module      = t"posix",
+          version     = revolution.Semver(0, 1, 0),
+          lineage     = List(snapshot),
+          toolchain   = List(LiraManifest.Tool(t"lira", t"0.1")),
+          api         = List(LiraManifest.Api(t"capability/1", blob(atomsData))),
+          integration = integrations,
+          dependency  = dependencies,
+          section     = sections,
+          payload     = LiraManifest.Payload(t"brotli", 0L, blob(encode(t""))))
+
+        Lira.assemble(manifest,
+          List(gitOnly, tree.encode, atomsData, classA, jvmTree.encode))
+
+      def shapeFailure(bytes: Data): Boolean =
+        capture[LiraError](Verification.install(Lira.read(bytes))).reason match
+          case LiraError.Reason.BadHostContract(_) => true
+          case _                                   => false
+
+      test(m"a host contract with a second section is L135"):
+        shapeFailure(handBuilt(extraSection = true))
+      . assert(identity)
+
+      test(m"a host contract declaring an integration is L135"):
+        shapeFailure(handBuilt(
+          integrations = List(LiraManifest.Integration(t"alt")), integrationId = t"alt"))
+      . assert(identity)
+
+      test(m"a host contract declaring a dependency is L135"):
+        shapeFailure(handBuilt(dependencies =
+          List(LiraManifest.Dependency(t"other", blob(encode(t"snap"))))))
+      . assert(identity)
+
+      test(m"a host contract carrying requirements is L135"):
+        shapeFailure(handBuilt(requires =
+          List(LiraManifest.Requires(t"other", blob(encode(t"snap"))))))
+      . assert(identity)
+
+      test(m"section requirements round-trip through the manifest"):
+        val requirement =
+          LiraManifest.Requires(t"posix", blob(encode(t"snap")), uses = blob(encode(t"uses")))
+
+        val bytes = LiraAssembler.assemble(t"consumer",
+          List(LiraAssembler.SectionInput(t"jvm",
+            List((TreePath(t"a/A.class"), classA)), requires = List(requirement))),
+          Discipline.Registry(List()),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")))
+
+        val back = Lira.read(bytes).manifest.section.stdlib.head.requires.stdlib
+
+        back.map: entry =>
+          (entry.module, LiraHash.text(entry.api), entry.uses.let(LiraHash.text(_)))
+      . assert(_ == scala.List(
+          (t"posix", LiraHash.text(blob(encode(t"snap"))),
+           Optional(LiraHash.text(blob(encode(t"uses")))))))
+
+      // Rule 7 (§13.3, hosts.md §7), over stub manifests: satisfaction is manifest-decidable,
+      // spanning arrives through the caller-supplied lookups.
+      val snapA = LiraHash(LiraHash.Domain.Snapshot, encode(t"contract-a"))
+      val snapB = LiraHash(LiraHash.Domain.Snapshot, encode(t"contract-b"))
+      val usesHash = blob(encode(t"uses-blob"))
+
+      def payloadStub(module: Text): LiraManifest.Payload =
+        LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob, encode(module)))
+
+      def library(requires: List[LiraManifest.Requires], module: Text = t"consumer")
+      :   LiraManifest =
+        LiraManifest(
+          module  = module,
+          lineage = List(snapB),
+          api     = List(),
+          section = List(Section(t"jvm", tree = blob(encode(t"tree")), requires = requires)),
+          payload = payloadStub(module))
+
+      def contractStub(module: Text, lineage: List[Data]): LiraManifest =
+        LiraManifest(
+          module  = module,
+          lineage = lineage,
+          api     = List(),
+          section = List(Section(t"host", tree = blob(encode(t"host-tree")))),
+          payload = payloadStub(module))
+
+      test(m"a requirement satisfied by the contract's lineage passes rule 7"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA)))
+        val contract = contractStub(t"posix", List(snapA))
+        Buildpath(List(lib)).validate(t"jvm", contracts = List(contract)).stdlib.size
+      . assert(_ == 0)
+
+      test(m"an unsatisfiable requirement is L136"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA)))
+        val contract = contractStub(t"posix", List(snapB))
+
+        capture[LiraError]:
+          Buildpath(List(lib)).validate(t"jvm", contracts = List(contract))
+        . reason
+      . assert(_ == LiraError.Reason.UnsatisfiedRequirement(t"posix"))
+
+      test(m"validation without a contract reports rule 7 as pending"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA)))
+
+        Buildpath(List(lib)).validate(t"jvm").stdlib.exists: advisory =>
+          advisory match
+            case LiraAdvisory.HostPending(modules) => modules.stdlib == scala.List(t"posix")
+            case _                                 => false
+      . assert(identity)
+
+      test(m"a requirement naming a library module is L137"):
+        val lib = library(List(LiraManifest.Requires(t"other", snapA)))
+        val other = library(List(), module = t"other")
+        val contract = contractStub(t"posix", List(snapA))
+
+        capture[LiraError]:
+          Buildpath(List(lib, other)).validate(t"jvm", contracts = List(contract))
+        . reason
+      . assert(_ == LiraError.Reason.NotHostContract(t"other"))
+
+      test(m"a non-contract given as a contract is L137"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA)))
+        val fake = library(List(), module = t"posix")
+
+        capture[LiraError]:
+          Buildpath(List(lib)).validate(t"jvm", contracts = List(fake))
+        . reason
+      . assert(_ == LiraError.Reason.NotHostContract(t"posix"))
+
+      test(m"cross-contract spanning satisfies a requirement"):
+        // The requirement names `posix`, whose snapshot no given contract carries; the used-set
+        // is contained in a *different* module's atom set, which hosts.md §7 accepts because
+        // atoms are content-addressed and module-blind.
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA, uses = usesHash)))
+        val javalib = contractStub(t"scalajs-javalib", List(snapB))
+
+        val atoms = { (module: Text) =>
+          if module == t"scalajs-javalib"
+          then scala.collection.immutable.Set(t"h1", t"h2")
+          else Unset
+        }
+
+        val used = { (data: Data) =>
+          if Blob.compare(data, usesHash) == 0
+          then scala.collection.immutable.Set(t"h1")
+          else Unset
+        }
+
+        Buildpath(List(lib))
+        . validate(t"jvm", contracts = List(javalib), atoms = atoms, used = used)
+        . stdlib.size
+      . assert(_ == 0)
+
+      test(m"spanning fails where the used-set is not contained"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA, uses = usesHash)))
+        val javalib = contractStub(t"scalajs-javalib", List(snapB))
+
+        val atoms = { (module: Text) =>
+          if module == t"scalajs-javalib"
+          then scala.collection.immutable.Set(t"h2")
+          else Unset
+        }
+
+        val used = { (data: Data) =>
+          if Blob.compare(data, usesHash) == 0
+          then scala.collection.immutable.Set(t"h1")
+          else Unset
+        }
+
+        capture[LiraError]:
+          Buildpath(List(lib))
+          . validate(t"jvm", contracts = List(javalib), atoms = atoms, used = used)
+        . reason
+      . assert(_ == LiraError.Reason.UnsatisfiedRequirement(t"posix"))

@@ -355,7 +355,7 @@ object Tests extends Suite(m"Degustation Tests"):
 
       (lira.manifest.module,
        lira.manifest.api.stdlib.map(_.discipline),
-       lira.manifest.section.stdlib.map(_.universe),
+       lira.manifest.section.stdlib.map(_.world),
        lira.manifest.section.stdlib.forall(_.derivative.present),
        report.atomizations.stdlib.map(_.discipline))
     . assert(_ == (t"fixture-core", scala.List(t"tasty/1"), scala.List(t"jvm"), true,
@@ -396,15 +396,15 @@ object Tests extends Suite(m"Degustation Tests"):
             List(jvmInput, sjsInput),
             registry,
             toolchain = List(LiraBundle.tool[Universe.Classfile](t"3.9.0")),
-            classpath = { input => contextClasspath(input.universe) } )
+            classpath = { input => contextClasspath(input.world) } )
 
         val lira = Lira.read(bytes)
         val report = Verification.install(lira)
-        val sjsSection = lira.manifest.section.stdlib.find(_.universe == t"sjsir")
+        val sjsSection = lira.manifest.section.stdlib.find(_.world == t"sjsir")
 
-        (lira.manifest.section.stdlib.map(_.universe),
-         report.materialized.stdlib.map(_(0).universe),
-         report.materialized.stdlib.find(_(0).universe == t"sjsir")
+        (lira.manifest.section.stdlib.map(_.world),
+         report.materialized.stdlib.map(_(0).world),
+         report.materialized.stdlib.find(_(0).world == t"sjsir")
            . map(_(1).entries.stdlib.exists(_.path.text.s.endsWith(".sjsir"))))
       . assert(_ == (scala.List(t"jvm", t"sjsir"), scala.List(t"jvm", t"sjsir"),
           scala.Some(true)))

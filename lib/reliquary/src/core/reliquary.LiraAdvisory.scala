@@ -41,3 +41,9 @@ enum LiraAdvisory:
   case NotNumeric(version: Semver)
   case VersionMismatch(declared: Semver, expected: Semver)
   case UnreferencedBlobs(hashes: List[Text])
+
+  // §13.3 rule 7 was left pending: the buildpath was validated without a host contract, and the
+  // named modules' requirements remain unchecked. A tool MUST report which mode it validated in,
+  // since a buildpath can cohere as a library composition and still be unsatisfiable on the
+  // host a consumer intends.
+  case HostPending(modules: List[Text])

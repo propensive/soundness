@@ -57,7 +57,7 @@ object Tasty extends Discipline:
   // inherited member need not be re-atomized under each type that presents it. Classfile-level
   // linkage is the JVM ecosystem profile's, not this discipline's, so only the TASTy level is
   // certified here.
-  def domain: Discipline.Domain = Discipline.Domain.Universes(Set(t"jvm", t"sjsir", t"nir"))
+  def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"jvm", t"sjsir", t"nir"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
   def guarantees(universe: Text): Set[Discipline.Guarantee] =
