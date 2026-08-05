@@ -38,6 +38,7 @@ import scala.annotation.nowarn
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gigantism.*
 import gossamer.*
@@ -172,14 +173,24 @@ package socketBackends:
                 Unset
 
     // Writes a whole pull-stream to a WASI `output-stream`, one `blocking-write-and-flush` per
-    // window.
+    // region. A hand-rolled drain loop rather than `sweep`: this body is pickled into the
+    // enclosing inline given and re-typechecked in wasm guests, whose flag set cannot
+    // elaborate `sweep`'s dependent-typed Region lambda.
     private def drain(outputHandle: WitHandle of "output-stream", input: (Stream[Data] over Credit)^)
     :   Unit =
 
       val stream: Foreign of "output-stream" from Wit = outputHandle
 
-      input.sweep: region =>
-        range => stream.`blocking-write-and-flush`(region.materialize(range)).invoke[Unit]
+      def loop(): Unit = input.refill(Credit(Long.MaxValue)) match
+        case count: Int =>
+          val chunk = input.addressable.materialize(input.storage(using Unsafe), input.start, count)
+          stream.`blocking-write-and-flush`(chunk).invoke[Unit]
+          input.skip(count)
+          loop()
+
+        case _ => ()
+
+      try loop() finally input.close()
 
     // Presents a connected socket's stream halves as a `Duplex`: `source` reads, `send` writes,
     // `close` drops both streams and the socket.
