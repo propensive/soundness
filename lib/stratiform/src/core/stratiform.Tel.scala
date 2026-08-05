@@ -44,6 +44,7 @@ import scala.language.dynamics
 import anticipation.*
 import aperture.*
 import contingency.*
+import denominative.{Span, z}
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -91,26 +92,26 @@ object Tel extends Tel2:
   val Position: TelError.Position.type = TelError.Position
 
   // The focus carried by `Tel#as[T]` for multi-error accrual: a keyword path
-  // identifying the field being decoded (and, for parser-phase errors, an
-  // optional source position). Mirrors `Json.Focus` / `Yaml.Focus`. The
-  // `position` is populated lazily by `withPosition(tel)`, which delegates to
+  // identifying the field being decoded (and, for located errors, the source
+  // `Span` of the compound's keyword). Mirrors `Json.Focus` / `Yaml.Focus`. The
+  // `span` is populated lazily by `withSpan(tel)`, which delegates to
   // `tel.locate(pointer)`, so a root parsed without position tracking (hence no
-  // `positionIndex`) leaves `position` Unset and the success path pays nothing.
-  case class Focus(pointer: TelPath = TelPath.Root, position: Optional[TelError.Position] = Unset)
+  // `positionIndex`) leaves `span` empty and the success path pays nothing.
+  case class Focus(pointer: TelPath = TelPath.Root, span: Span = Span.empty)
   derives CanEqual:
-    def withPosition(tel: Tel): Focus = copy(position = tel.locate(pointer))
+    def withSpan(tel: Tel): Focus = copy(span = tel.locate(pointer).lay(Span.empty)(_.span))
 
-  // Fill in a source `Position` for every focus accrued so far by locating its
+  // Fill in a source `Span` for every focus accrued so far by locating its
   // keyword path in `tel` — the counterpart of `Json#as`'s enrichment. A no-op
   // unless the ambient `Foci` is a tracking one and `tel` was parsed under
   // `parsing.trackPositions` (so carries a `positionIndex`); an unresolvable
   // path — a member absent from the source — keeps its pointer and leaves the
-  // position Unset. An error registered outside every `focus` block has no
+  // span empty. An error registered outside every `focus` block has no
   // focus at all and takes the root one, which renders as `#`, exactly as an
   // absent focus did. Public because `Tel#as` is `inline` and expands into
   // user modules, which may only reference public members.
   def supplementPositions(tel: Tel)(using foci: Foci[Tel.Focus]): Unit =
-    foci.supplement(foci.length, _.let(_.withPosition(tel)).or(Tel.Focus()))
+    foci.supplement(foci.length, _.let(_.withSpan(tel)).or(Tel.Focus()))
 
   extension (tel: Tel)
     def edited(revision: Revision): Tel raises MutationError = revision(tel)
@@ -3131,16 +3132,23 @@ object Tel extends Tel2:
 
       col
 
-    private update def errorHere(reason: Reason): (Tactic[TelError]^) ?->{this} Nothing =
+    // Every error carries a `Span` covering the offending text: `length` is the
+    // extent, in characters, of the token being read. Sites that know the token
+    // they rejected (a keyword, a pragma phrase, a hard-space run, a literal's
+    // delimiter, an indent) pass it; the rest fall back to the single character
+    // at the reported column.
+    private update def errorHere(reason: Reason, length: Int = 1)
+    :   (Tactic[TelError]^) ?->{this} Nothing =
+
       val column = columnForCurrentBytePos()
-      abort(TelError(reason, TelError.Position(lineNo, column)))
+      abort(TelError(reason, TelError.spanAt(lineNo, column, length)))
 
     // Direct line-number variant: callers pass the 1-indexed source line of
     // the offending location and its column.
-    private update def errorAt(reason: Reason, line: Int, column: Int)
+    private update def errorAt(reason: Reason, line: Int, column: Int, length: Int = 1)
     :   (Tactic[TelError]^) ?->{this} Nothing =
 
-      abort(TelError(reason, TelError.Position(line, column)))
+      abort(TelError(reason, TelError.spanAt(line, column, length)))
 
     // Recoverable-error variants of `errorHere`/`errorAt`. They `raise` the error
     // (rather than `abort`) and continue with `continuation`, which realises the
@@ -3150,19 +3158,20 @@ object Tel extends Tel2:
     // continues, so a document with several recoverable defects reports them all.
     // The continuation MUST advance the cursor past the offending input (or the
     // surrounding flow must), otherwise an enclosing scan loop would not progress.
-    private update inline def recoverHere[T](reason: Reason)(continuation: => T)
-      ( using Tactic[TelError]^ )
-    :   T =
-
-      raise(TelError(reason, TelError.Position(lineNo, columnForCurrentBytePos())))
-      continuation
-
-    private update inline def recoverAt[T](reason: Reason, line: Int, column: Int)
+    private update inline def recoverHere[T](reason: Reason, length: Int = 1)
       ( continuation: => T )
       ( using Tactic[TelError]^ )
     :   T =
 
-      raise(TelError(reason, TelError.Position(line, column)))
+      raise(TelError(reason, TelError.spanAt(lineNo, columnForCurrentBytePos(), length)))
+      continuation
+
+    private update inline def recoverAt[T](reason: Reason, line: Int, column: Int, length: Int = 1)
+      ( continuation: => T )
+      ( using Tactic[TelError]^ )
+    :   T =
+
+      raise(TelError(reason, TelError.spanAt(line, column, length)))
       continuation
 
     // ── Mark / hold plumbing ──────────────────────────────────────────────────
@@ -3499,7 +3508,9 @@ object Tel extends Tel2:
             syncTo()
             val pragmaEndAbs = cursor.position.n0
 
-            if pragmaEndAbs > 4096 then recoverAt(Reason.PragmaTooLong, pragmaLine, 1)(())
+            // The whole pragma line is the offending text, and it has now been read.
+            if pragmaEndAbs > 4096
+            then recoverAt(Reason.PragmaTooLong, pragmaLine, 1, payload.length)(())
 
             consumeLineEnding()
             prevLineWasBoundary = true
@@ -3599,17 +3610,21 @@ object Tel extends Tel2:
     private update def parsePragmaContent(content: String, line: Int)
     :   (Tactic[TelError]^) ?->{this} Tel.Pragma =
 
-      val parts = splitPragmaPhrases(content)
+      val (parts, offsets) = splitPragmaPhrases(content)
 
       // §19.5 RestartFromPragma: a non-`tel` head is recorded but parsing continues.
-      if parts.head != "tel" then recoverAt(Reason.PragmaNotFirst, line, 1)(())
+      if parts.head != "tel"
+      then recoverAt(Reason.PragmaNotFirst, line, offsets.head + 1, parts.head.length)(())
 
       val version =
-        if parts.length >= 2 then parseVersion(parts(1), line) else (1, 0)
+        if parts.length >= 2 then parseVersion(parts(1), line, offsets(1) + 1) else (1, 0)
 
       // §19.5 IgnoreExtraPragmaAtoms: only parts 2 and 3 are read below, so excess
-      // atoms are already ignored once the error is recorded.
-      if parts.length > 4 then recoverAt(Reason.ExtraPragmaContent, line, 1)(())
+      // atoms are already ignored once the error is recorded. The span runs from the
+      // first excess atom to the end of the line.
+      if parts.length > 4
+      then recoverAt(Reason.ExtraPragmaContent, line, offsets(4) + 1, content.length - offsets(4))
+        ( () )
 
       val schemaText: Optional[Text] =
         if parts.length >= 3 then
@@ -3627,7 +3642,7 @@ object Tel extends Tel2:
 
           // §19.5 IgnoreSchemaId: a malformed schema identifier is dropped (Unset).
           if !isUrl && !isBase256
-          then recoverAt(Reason.BadSchemaIdentifier, line, 1)(Unset)
+          then recoverAt(Reason.BadSchemaIdentifier, line, offsets(2) + 1, s.length)(Unset)
           else Text(s): Optional[Text]
         else
           Unset
@@ -3636,7 +3651,7 @@ object Tel extends Tel2:
         if parts.length >= 4 && parts(3).length == 1 then
           val c = parts(3).charAt(0)
           // §19.5 UseDefaultSigil: an invalid sigil is dropped, keeping the default.
-          if c.isLetterOrDigit then recoverAt(Reason.BadSigil, line, 1)(Unset)
+          if c.isLetterOrDigit then recoverAt(Reason.BadSigil, line, offsets(3) + 1, 1)(Unset)
           else
             sigil = c.toByte
             c: Optional[Char]
@@ -3645,28 +3660,39 @@ object Tel extends Tel2:
 
       Tel.Pragma(version, schemaText, pragmaSigil)
 
-    private update def parseVersion(s: String, line: Int)
+    // `column` is the 1-indexed column of the version phrase within the pragma
+    // line, so a malformed version is spanned at the phrase itself.
+    private update def parseVersion(s: String, line: Int, column: Int)
     :   (Tactic[TelError]^) ?->{this} (Int, Int) =
 
       // §19.5 IgnoreVersion: a malformed version falls back to (0, 0) so the rest
       // of the document is still parsed (and its defects accrued).
       val dot = s.indexOf('.')
 
-      if dot <= 0 || dot == s.length - 1 then recoverAt(Reason.BadVersion, line, 1)((0, 0))
+      if dot <= 0 || dot == s.length - 1
+      then recoverAt(Reason.BadVersion, line, column, s.length)((0, 0))
       else
         try
           val major = s.substring(0, dot).toInt
           val minor = s.substring(dot + 1).toInt
 
-          if major < 0 || minor < 0 then recoverAt(Reason.BadVersion, line, 1)((0, 0))
+          if major < 0 || minor < 0
+          then recoverAt(Reason.BadVersion, line, column, s.length)((0, 0))
           else (major, minor)
 
-        catch case _: NumberFormatException => recoverAt(Reason.BadVersion, line, 1)((0, 0))
+        catch case _: NumberFormatException =>
+          recoverAt(Reason.BadVersion, line, column, s.length)((0, 0))
 
-    private update def splitPragmaPhrases(content: String): List[String] =
+    // Splits a pragma line into its phrases, pairing each with its 0-based
+    // character offset within the line so that an error in one phrase — a bad
+    // version, sigil or schema identifier — is spanned at that phrase rather
+    // than at the start of the line.
+    private update def splitPragmaPhrases(content: String): (List[String], List[Int]) =
       val parts = scala.collection.mutable.ListBuffer.empty[String]
+      val offsets = scala.collection.mutable.ListBuffer.empty[Int]
       val builder = new StringBuilder()
       var i = 0
+      var start = 0
       var hardSpaceMode = false
 
       while i < content.length do
@@ -3678,18 +3704,31 @@ object Tel extends Tel2:
           val runLength = j - i
 
           if !hardSpaceMode && runLength == 1 then
-            if builder.nonEmpty then { parts += builder.toString; builder.clear() }
+            if builder.nonEmpty then
+              parts += builder.toString
+              offsets += start
+              builder.clear()
+
             i += 1
           else
             if !hardSpaceMode then hardSpaceMode = true
-            if builder.nonEmpty then { parts += builder.toString; builder.clear() }
+
+            if builder.nonEmpty then
+              parts += builder.toString
+              offsets += start
+              builder.clear()
+
             i = j
         else
+          if builder.isEmpty then start = i
           builder.append(ch)
           i += 1
 
-      if builder.nonEmpty then parts += builder.toString
-      List.of(parts.toList)
+      if builder.nonEmpty then
+        parts += builder.toString
+        offsets += start
+
+      (List.of(parts.toList), List.of(offsets.toList))
 
     // ── Margin determination ─────────────────────────────────────────────────
 
@@ -3820,7 +3859,8 @@ object Tel extends Tel2:
       . or:
         // §19.5 ShallowerIndent: round an odd indent down to the nearer level. The
         // leading spaces are already consumed, so returning a level cannot stall.
-        recoverAt(Reason.OddIndentation, line, 1)(rel / 2)
+        // The offending text is the line's indent run.
+        recoverAt(Reason.OddIndentation, line, 1, spaces)(rel / 2)
 
     // ── Line-head fill ───────────────────────────────────────────────────────
 
@@ -3866,7 +3906,9 @@ object Tel extends Tel2:
 
         head.indentLevels =
           // §19.5 AdjustMargin: a line indented less than the margin sits at level 0.
-          if rel < 0 then recoverAt(Reason.LessThanMargin, head.startLine, 1)(0)
+          // The indent run itself is the offending text (at least one character, so
+          // an unindented line under a positive margin still has a visible span).
+          if rel < 0 then recoverAt(Reason.LessThanMargin, head.startLine, 1, spaces.max(1))(0)
           else if rel % 2 == 0 then rel / 2
           else recoverOddIndent(spaces, head.startLine)
 
@@ -3899,6 +3941,7 @@ object Tel extends Tel2:
         while !head.eof && !head.separator && head.indentLevels >= expected do
           if head.indentLevels > expected then
             val line   = head.startLine
+            val indent = head.leadingSpaces
             val lastIx = blockScratchIx - 1
 
             val reason =
@@ -3910,7 +3953,7 @@ object Tel extends Tel2:
                 else if last.tabulation.present || last.compounds.nil then Reason.ChildOfNonCompound
                 else Reason.OverIndentation
 
-            recoverAt(reason, line, 1)(())
+            recoverAt(reason, line, 1, indent.max(1))(())
             head.indentLevels = expected
 
           parseBlock(expected)  // pushes one block onto scratchBlocks; consumes ≥1 line
@@ -3938,7 +3981,7 @@ object Tel extends Tel2:
         // §19.5 AttachComment: record the misplacement but attach the comment.
         if !prevLineWasBoundary && prevContentLeadingSpaces >= 0 &&
           prevContentLeadingSpaces >= margin + indent * 2
-        then recoverAt(Reason.CommentNotPreceded, head.startLine, 1)(())
+        then recoverAt(Reason.CommentNotPreceded, head.startLine, head.leadingSpaces + 1, 1)(())
 
         val text = parseCommentLine()
         pushComment(Tel.Comment(text))
@@ -4354,8 +4397,10 @@ object Tel extends Tel2:
 
                   // §19.5 SuppressColumnAlignment: record but keep scanning (the
                   // loop self-advances and the row is re-read by parseCompoundLine).
+                  // The over-wide column value is the offending text.
                   if phraseWidth > colMax then
-                    recoverAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)(())
+                    recoverAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1, phraseWidth)
+                      ( () )
 
                 var foundIdx = -1
                 var k = 1
@@ -4364,9 +4409,11 @@ object Tel extends Tel2:
                   if markers(k) == col then foundIdx = k
                   k += 1
 
-                // §19.5 SuppressColumnAlignment: record but keep scanning.
+                // §19.5 SuppressColumnAlignment: record but keep scanning. The
+                // misaligned hard-space run — from where it began to where it ended,
+                // which is not a marker offset — is the offending text.
                 if foundIdx < 0 then
-                  recoverAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)(())
+                  recoverAt(Reason.HardSpaceWrongPosition, lineNumber, runStart + 1, runLen)(())
 
                 columnIdx = foundIdx
                 phraseStart = col
@@ -4397,13 +4444,15 @@ object Tel extends Tel2:
         // §10.4 / §11.1: at most one source / literal atom per compound. §19.5
         // IgnoreDuplicateAtom: record the duplicate but consume (and discard) it so
         // the cursor advances past it and parsing continues.
+        // The duplicate's own indent is all that has been read of it when the error
+        // is raised, so the span covers the line up to its first content byte.
         if first.present && !head.eof && !head.blank then
           if head.leadingSpaces == literalIndent then
-            recoverAt(Reason.DuplicateLiteral, head.startLine, 1):
+            recoverAt(Reason.DuplicateLiteral, head.startLine, 1, literalIndent):
               parseLiteralAtom(literalIndent)
               ()
           else if head.leadingSpaces == sourceIndent then
-            recoverAt(Reason.DuplicateSource, head.startLine, 1):
+            recoverAt(Reason.DuplicateSource, head.startLine, 1, sourceIndent):
               parseSourceAtom(sourceIndent)
               ()
 
@@ -4561,7 +4610,15 @@ object Tel extends Tel2:
       while !done do
         // §19.5 PayloadToEof: an unterminated literal ends at EOF rather than
         // aborting, so the rest of the document can still be parsed and accrued.
-        if !more then done = recoverAt(Reason.UnclosedLiteral, openingLine, 1)(true)
+        // The unclosed literal is reported at its opening delimiter, which is the
+        // text a caller must fix (by matching it on a closing line).
+        if !more
+        then done = recoverAt
+                     ( Reason.UnclosedLiteral,
+                       openingLine,
+                       literalIndent + 1,
+                       delimiter.length )
+                     ( true )
         // Read a line. Inside the literal payload, line endings are not
         // subject to the document's LF/CRLF mode (per §15 the payload is
         // verbatim, with CRLF normalised to LF). One hold per payload line so
@@ -4599,7 +4656,8 @@ object Tel extends Tel2:
             // PayloadToEof: an unterminated final line ends the payload at EOF.
             if !more then
               sb.append(raw)
-              recoverAt(Reason.UnclosedLiteral, openingLine, 1)(true)
+              recoverAt(Reason.UnclosedLiteral, openingLine, literalIndent + 1, delimiter.length)
+                ( true )
             else
               advance()  // consume LF
               lineNo += 1
@@ -4634,7 +4692,7 @@ object Tel extends Tel2:
       // §19.5 RestartFromPragma: record the misplaced pragma but parse the line as
       // an ordinary compound (the keyword is already read; the rest follows).
       if mayBeMisplacedPragma && keyword == t"tel" then
-        recoverAt(Reason.PragmaNotFirst, lineNumber, 1)(())
+        recoverAt(Reason.PragmaNotFirst, lineNumber, 1, keyword.s.length)(())
 
       hasConsumedNonBlankLine = true
       parseCompoundLineRest(lineNumber)
@@ -4793,8 +4851,16 @@ object Tel extends Tel2:
       // consumed at least the keyword.)
       // §19.5 StripTrailing: the keyword/atoms already exclude the trailing space,
       // so recording the error and continuing yields the stripped line.
+      // The trailing run itself is the offending text: walk back over it (still
+      // inside the hold, so those bytes are resident) to span exactly the spaces.
       if remark.absent && more && (peek == LF || peek == CR) && pos > 0 && bytes(pos - 1) == SP
-      then recoverAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)(())
+      then
+        var back = pos
+        while back > 0 && bytes(back - 1) == SP do back -= 1
+        val trailing = pos - back
+
+        recoverAt(Reason.TrailingSpaces, lineNumber, columnForCurrentBytePos() - trailing, trailing)
+          ( () )
 
       consumeLineEnding()
       compoundLineRemark  = remark
@@ -5099,7 +5165,7 @@ object Tel extends Tel2:
         else if head.indentLevels < indent then
           done = true
         else if head.indentLevels > indent then
-          errorAt(directOverIndentReason, head.startLine, 1)
+          errorAt(directOverIndentReason, head.startLine, 1, head.leadingSpaces.max(1))
         // Both comment and tabulation lines open with the sigil, so a
         // compound line — the overwhelmingly common step — skips both
         // classifiers (and their hold ceremony) on one byte test.
@@ -5108,7 +5174,7 @@ object Tel extends Tel2:
           // consuming a comment line.
           if !prevLineWasBoundary && prevContentLeadingSpaces >= 0 &&
             prevContentLeadingSpaces >= margin + indent*2
-          then recoverAt(Reason.CommentNotPreceded, head.startLine, 1)(())
+          then recoverAt(Reason.CommentNotPreceded, head.startLine, head.leadingSpaces + 1, 1)(())
 
           directTabulation = Unset
           directGroup = DirectComments
@@ -5142,7 +5208,7 @@ object Tel extends Tel2:
 
               // E102 / §19.5 RestartFromPragma, as in `parseCompoundLine`.
               if mayBeMisplacedPragma && keyword == t"tel" then
-                recoverAt(Reason.PragmaNotFirst, directEntryLine, 1)(())
+                recoverAt(Reason.PragmaNotFirst, directEntryLine, 1, keyword.s.length)(())
 
               directEntryKeyword = keyword
               directEntryKeywordLazy = false
@@ -5151,7 +5217,7 @@ object Tel extends Tel2:
 
               // The same E102 check against the packed form of `tel`.
               if mayBeMisplacedPragma && directKeywordLen == 3 && directKeywordLow == 0x6C6574L
-              then recoverAt(Reason.PragmaNotFirst, directEntryLine, 1)(())
+              then recoverAt(Reason.PragmaNotFirst, directEntryLine, 1, directKeywordLen)(())
 
             hasConsumedNonBlankLine = true
 
@@ -5219,7 +5285,7 @@ object Tel extends Tel2:
       // would fail on it, so fail here with the same classification.
       if (tabulated || extraAtom.present) && !head.eof && !head.separator && !head.blank &&
         head.indentLevels > indent
-      then errorAt(directOverIndentReason, head.startLine, 1)
+      then errorAt(directOverIndentReason, head.startLine, 1, head.leadingSpaces.max(1))
 
       val atoms = takeAtoms(atomScratchIx - atomsStart)
       Tel.Compound(keyword, atoms, remark, children)
@@ -5265,7 +5331,7 @@ object Tel extends Tel2:
       // following deeper line is over-indented and fails with the same reason.
       if !tabulated && extraAtom.absent then parseChildren(indent)
       else if !head.eof && !head.separator && !head.blank && head.indentLevels > indent
-      then errorAt(directOverIndentReason, head.startLine, 1)
+      then errorAt(directOverIndentReason, head.startLine, 1, head.leadingSpaces.max(1))
 
     // Parses an optional `-` and one to eighteen digits — exactly the
     // spellings `parseArenaLong` accepts — or Unset.
@@ -5532,7 +5598,7 @@ object Tel extends Tel2:
       // the same way rather than letting the nested field loop consume it.
       if (tabulated || extraAtom.present) && !head.eof && !head.separator && !head.blank &&
         head.indentLevels > indent
-      then errorAt(directOverIndentReason, head.startLine, 1)
+      then errorAt(directOverIndentReason, head.startLine, 1, head.leadingSpaces.max(1))
 
     // As `directFinishLine`, but capturing the entry line's atoms — including
     // the source/literal continuation, which §14/§15 append to the atom
@@ -5571,7 +5637,7 @@ object Tel extends Tel2:
       // tabulated row, a deeper line is over-indented.
       if (tabulated || extraAtom.present) && !head.eof && !head.separator && !head.blank &&
         head.indentLevels > indent
-      then errorAt(directOverIndentReason, head.startLine, 1)
+      then errorAt(directOverIndentReason, head.startLine, 1, head.leadingSpaces.max(1))
 
       atoms
 

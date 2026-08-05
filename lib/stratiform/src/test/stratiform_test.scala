@@ -780,33 +780,51 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](t"parent\n child Alice\n".read[Tel]).reason
       . assert(_ == TelError.Reason.OddIndentation)
 
-    suite(m"Error line/column positions"):
-      // Parse-time errors carry an `Optional[TelError.Position]` so
-      // callers can point at the offending line in the source. Validation
-      // (post-parse) errors leave `position` Unset because they apply to
-      // AST nodes rather than source bytes.
+    suite(m"Error spans"):
+      // Parse-time errors carry a `Span` covering the offending text, so callers
+      // can highlight it (not merely the line) in the source. Validation
+      // (post-parse) errors leave the span empty because they apply to AST nodes
+      // rather than source bytes. `Span`'s coordinates are 0-based.
 
       test(m"BOM error is at line 1, column 1"):
-        capture[TelError](t"﻿tel 1.0\n".read[Tel]).position
-      . assert(_ == TelError.Position(1, 1))
+        capture[TelError](t"﻿tel 1.0\n".read[Tel]).span
+      . assert(_ == TelError.spanAt(1, 1, 1))
 
       test(m"OddIndentation error reports the offending line"):
-        capture[TelError](t"parent\n child Alice\n".read[Tel]).position.let(_.line)
-      . assert(_ == 2)
+        capture[TelError](t"parent\n child Alice\n".read[Tel]).span.startLine
+      . assert(_ == 1.z)
 
-      test(m"BadVersion error reports the pragma line"):
-        capture[TelError](t"tel notaversion\n".read[Tel]).position.let(_.line)
+      test(m"OddIndentation error spans the odd indent"):
+        capture[TelError](t"parent\n child Alice\n".read[Tel]).span.length
       . assert(_ == 1)
 
+      test(m"BadVersion error reports the pragma line"):
+        capture[TelError](t"tel notaversion\n".read[Tel]).span.startLine
+      . assert(_ == 0.z)
+
+      test(m"BadVersion error spans the malformed version phrase"):
+        val span = capture[TelError](t"tel notaversion\n".read[Tel]).span
+        (span.startColumn.vouch.n1, span.length.vouch)
+      . assert(_ == (5, 11))
+
       test(m"PragmaNotFirst error reports the misplaced pragma's line"):
-        capture[TelError](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).position.let(_.line)
-      . assert(_ == 2)
+        capture[TelError](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).span.startLine
+      . assert(_ == 1.z)
+
+      test(m"PragmaNotFirst error spans the `tel` keyword"):
+        capture[TelError](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).span.length
+      . assert(_ == 3)
 
       test(m"TrailingSpaces error reports the offending line"):
-        capture[TelError](t"good\nbad   \n".read[Tel]).position.let(_.line)
-      . assert(_ == 2)
+        capture[TelError](t"good\nbad   \n".read[Tel]).span.startLine
+      . assert(_ == 1.z)
 
-      test(m"Validation error (Type.assign) leaves position Unset"):
+      test(m"TrailingSpaces error spans exactly the trailing spaces"):
+        val span = capture[TelError](t"good\nbad   \n".read[Tel]).span
+        (span.startColumn.vouch.n1, span.length.vouch)
+      . assert(_ == (4, 3))
+
+      test(m"Validation error (Type.assign) leaves the span empty"):
         val schema = Tels(
           name     = t"person",
           document = Tels.Struct(
@@ -821,8 +839,8 @@ object Tests extends Suite(m"Stratiform Tests"):
           scalars  = Array.empty,
           selects  = Array.empty)
         val doc = t"age 30\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, schema)).position
-      . assert(_ == Unset)
+        capture[TelError](Tel.Type.assign(doc, schema)).span
+      . assert(_ == Span.empty)
 
     suite(m"Type assignment"):
       // A small hand-built schema for a `person` document with required
