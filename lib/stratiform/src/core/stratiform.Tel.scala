@@ -92,14 +92,18 @@ object Tel extends Tel2:
   val Position: TelError.Position.type = TelError.Position
 
   // The focus carried by `Tel#as[T]` for multi-error accrual: a keyword path
-  // identifying the field being decoded (and, for located errors, the source
-  // `Span` of the compound's keyword). Mirrors `Json.Focus` / `Yaml.Focus`. The
-  // `span` is populated lazily by `withSpan(tel)`, which delegates to
-  // `tel.locate(pointer)`, so a root parsed without position tracking (hence no
-  // `positionIndex`) leaves `span` empty and the success path pays nothing.
+  // identifying the field being decoded, and the source `Span` of the text the
+  // error is about. Mirrors `Json.Focus` / `Yaml.Focus`. The `span` is populated
+  // lazily by `withSpan(tel)` / `withKeySpan(tel)`, which delegate to
+  // `tel.locate(pointer)` / `tel.locateKey(pointer)`, so a root parsed without
+  // position tracking (hence no `positionIndex`) leaves `span` empty and the
+  // success path pays nothing.
   case class Focus(pointer: TelPath = TelPath.Root, span: Span = Span.empty)
   derives CanEqual:
     def withSpan(tel: Tel): Focus = copy(span = tel.locate(pointer).lay(Span.empty)(_.span))
+
+    def withKeySpan(tel: Tel): Focus =
+      copy(span = tel.locateKey(pointer).lay(Span.empty)(_.span))
 
   // Fill in a source `Span` for every focus accrued so far by locating its
   // keyword path in `tel` — the counterpart of `Json#as`'s enrichment. A no-op
@@ -110,8 +114,17 @@ object Tel extends Tel2:
   // focus at all and takes the root one, which renders as `#`, exactly as an
   // absent focus did. Public because `Tel#as` is `inline` and expands into
   // user modules, which may only reference public members.
+  //
+  // The two forms differ in which region of the compound they point at, and the
+  // caller picks by phase: decoding says "this value is wrong", so `Tel#as` uses
+  // the value; schema validation says "this member is wrong", so `Type.assign`
+  // uses the keyword — an unknown-keyword diagnostic must underline the keyword,
+  // which may be all the compound has.
   def supplementPositions(tel: Tel)(using foci: Foci[Tel.Focus]): Unit =
     foci.supplement(foci.length, _.let(_.withSpan(tel)).or(Tel.Focus()))
+
+  def supplementKeyPositions(tel: Tel)(using foci: Foci[Tel.Focus]): Unit =
+    foci.supplement(foci.length, _.let(_.withKeySpan(tel)).or(Tel.Focus()))
 
   extension (tel: Tel)
     def edited(revision: Revision): Tel raises MutationError = revision(tel)
@@ -1021,11 +1034,13 @@ object Tel extends Tel2:
       val rootElements =
         applyConstraints(schema.document, Array.empty[Tel.Element], rootChildren, schema)
 
-      // Locate every focus accrued by the walk against the root. Validator
+      // Locate every focus accrued by the walk against the root, at the
+      // *keyword*: schema violations are about a member, not about the text of
+      // its value, and an unknown keyword may have no value at all. Validator
       // errors (E310) are registered by the three-argument overload *after*
       // this runs, so they keep the pointer their element supplies but no
       // position.
-      Tel.supplementPositions(tel)
+      Tel.supplementKeyPositions(tel)
 
       Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
@@ -1889,7 +1904,9 @@ object Tel extends Tel2:
 
   // Resolves a `TelPath` to the source `Position` recorded in a tracked `Tel`'s
   // `PositionIndex`. Exposed uniformly as `tel.locate(path)` / `tel.locateKey(path)`
-  // through zephyrine's `Positionable`, matching `jacinta.Json` and `ypsiloid.Yaml`.
+  // through zephyrine's `Positionable`, matching `jacinta.Json` and `ypsiloid.Yaml`:
+  // `locate` gives the value — the compound's inline atoms, falling back to the
+  // keyword when it has none — and `locateKey` gives the keyword.
   given positionable: Tel is Positionable by TelPath to TelError.Position =
     new Positionable:
       type Self    = Tel
@@ -1905,10 +1922,17 @@ object Tel extends Tel2:
           walkIndex(value.subtree, index.ints, 0, Sequence.from(path.keywords.stdlib), 0, true)
 
   // Walk the packed `PositionIndex` alongside the AST, following `segments`
-  // (a root-first keyword path) from the descriptor at `offset`. TEL has no
-  // separate key/value nodes — a compound's position *is* its keyword — so
-  // `keyMode` differs from the value lookup only at the root, which has no
-  // keyword and yields `Unset`.
+  // (a root-first keyword path) from the descriptor at `offset`.
+  //
+  // TEL has no separate key and value *nodes* — a compound is one node — but it
+  // does have two distinct regions of source text, and a diagnostic wants
+  // whichever the message is about. `keyMode` picks: the keyword for
+  // `locateKey`, the inline-atom run for `locate`, matching what those two mean
+  // in `jacinta.Json` and `ypsiloid.Yaml`. A compound with no inline atoms — a
+  // parent, a flag, a remark-only line, or one whose value is a source or
+  // literal payload on later lines, which a `Line`-mode `Span` cannot express —
+  // has no value region, and falls back to its keyword. The root has no keyword,
+  // so `locateKey` yields `Unset` there.
   private def walkIndex
     ( node:     Tel.Subtree,
       data:     Array[Int]^{},
@@ -1920,10 +1944,18 @@ object Tel extends Tel2:
 
     if i >= segments.length then
       if keyMode && i == 0 then Unset
-      else TelError.Position
-        ( line   = data(offset + 1),
-          column = data(offset + 2),
-          length = Optional(data(offset + 3)) )
+      else
+        val valueColumn = data(offset + 4)
+
+        if keyMode || valueColumn == 0
+        then TelError.Position
+              ( line   = data(offset + 1),
+                column = data(offset + 2),
+                length = Optional(data(offset + 3)) )
+        else TelError.Position
+              ( line   = data(offset + 1),
+                column = valueColumn,
+                length = Optional(data(offset + 5)) )
     else
       val children = node.children.bind(_.compounds)
       val k = children.indexWhere(_.keyword == segments(i))

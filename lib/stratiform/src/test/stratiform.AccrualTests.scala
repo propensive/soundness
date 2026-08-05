@@ -392,7 +392,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         . items.map(_(0).s).to[Set]
       . assert(_ == Set("#/age"))
 
-      test(m"A malformed field is located at its compound"):
+      test(m"A malformed field is located at its value, not its keyword"):
         decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
         . items.map(_(1)).to[Set]
-      . assert(_ == Set(TelError.spanAt(2, 1, 3)))
+      . assert(_ == Set(TelError.spanAt(2, 5, 10)))
