@@ -611,6 +611,20 @@ extends caps.Mutable:
   inline def unsafePos(using erased unsafe: Unsafe): Int = pos
   inline def unsafeWriteEnd(using erased unsafe: Unsafe): Int = writeEnd
 
+  // Bounds-safe view of the cursor's readable region, elements `pos until writeEnd`: the
+  // region and its branded interval are lent to `lambda`, so every index a consumer can form
+  // is in range (see `zephyrine.Region.scala`) — the preferred boundary for scan loops that
+  // don't cache the buffer across cursor operations. Valid only until the next operation that
+  // may refill, compact or grow the buffer — the same single-owner discipline as
+  // `unsafeBuffer`, with the bounds arithmetic taken away. Parsers that snapshot the buffer
+  // into fields for register-resident hot loops (the `unsafeBuffer` protocol) remain trusted
+  // kernels behind `Unsafe`.
+  inline def region[result]
+    ( inline lambda: (region: Region[data]) => (Interval in region.type) => result )
+  :   result =
+
+    Region.over[data, result](using addressable)(buffer, pos, writeEnd)(lambda)
+
   // Bulk-advance without per-byte lineation tracking. Caller is responsible
   // for line/column updates if `lineation.active`. Intended for callers that
   // maintain a parser-local copy of `pos` for register-resident hot loops

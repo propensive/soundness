@@ -226,6 +226,20 @@ object Tests extends Suite(m"Zephyrine tests"):
           builder.toString
         . assert(_ == "Hello world!")
 
+        test(m"region lends the readable window with branded indexes"):
+          val cursor = hello
+          val builder = java.lang.StringBuilder()
+
+          while
+            cursor.region { region => range => region.visit(range) { index => builder.append(region(index)) } }
+            val count = cursor.region { _ => range => (range: Interval).size }
+            cursor.unsafeAdvanceBy(count)(using Unsafe)
+            cursor.more
+          do ()
+
+          builder.toString
+        . assert(_ == "Hello world!")
+
         test(m"Capture part of first block"):
           val cursor = hello
           val builder = java.lang.StringBuilder()
