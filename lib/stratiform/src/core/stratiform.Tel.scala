@@ -583,8 +583,18 @@ object Tel extends Tel2:
     // The prior focus's pointer, extended by one step — evaluated only at
     // error-registration time, exactly as the AST derivation builds its
     // per-field focus.
-    private def descend(base0: Optional[Tel.Focus], keyword: Text): Tel.Focus =
-      Tel.Focus(base0.let(_.pointer).or(TelPath.Root).prepend(keyword))
+    //
+    // The span works inwards-out: `focus` blocks complete innermost-first, so a
+    // span already on `base0` was stamped by a nearer, more specific frame and
+    // is kept. Only a level that has none takes `span`, and a level with nothing
+    // to point at (a field whose keyword never arrived) passes none.
+    private def descend(base0: Optional[Tel.Focus], keyword: Text, span: Span = Span.empty)
+    :   Tel.Focus =
+
+      val pointer = base0.let(_.pointer).or(TelPath.Root).prepend(keyword)
+      val inherited = base0.let(_.span).or(Span.empty)
+
+      Tel.Focus(pointer, if inherited.exists then inherited else span)
 
     // Support points for staged parsers, which are generated into user
     // modules and so may only reference public members.
@@ -595,7 +605,9 @@ object Tel extends Tel2:
       names.map { name => renames.at(name.tt).or(camelToKebab(name)).s }
 
     // A required primitive field whose keyword never arrived: the primitives'
-    // `absent()` semantics — raise and continue with the sentinel.
+    // `absent()` semantics — raise and continue with the sentinel. It carries no
+    // span: the field is not in the source, so there is no text to point at,
+    // exactly as an unresolvable pointer yields no span on the AST path.
     def missing[value](sentinel: value)(using Tactic[TelError]): value =
       raise(TelError(TelError.Reason.Absent)) yet sentinel
 
@@ -612,7 +624,35 @@ object Tel extends Tel2:
     // Focus bookkeeping for one field read, compiled away when the ambient
     // `Foci` is the inert default — the same short-circuit as the derived
     // parser's loop.
-    inline def focusing[result](foci: Foci[Tel.Focus], keyword: Text)(inline block: => result)
+    //
+    // `contingency.focus` runs its transform in a `finally`, after the block, so
+    // by then the parser has read this field's entry — and, if the field is a
+    // record, entries deeper than it. The keyword span is therefore captured
+    // *before* the block, when the parser is still parked on this entry, and the
+    // value span is asked for afterwards against the ordinal captured with it:
+    // it answers only if the entry read was this one. A leaf field gets its
+    // value; a record field, whose block descended, gets its keyword.
+    inline def focusing[result](foci: Foci[Tel.Focus], reader: TelReader^, keyword: Text)
+      ( inline block: => result )
+    :   result =
+
+      if !foci.active then block else
+        val ordinal = reader.entryOrdinal
+        val keywordSpan = reader.keywordSpan
+
+        focus(using foci):
+          val value = reader.valueSpan(ordinal)
+          descend(prior, keyword, if value.exists then value else keywordSpan)
+
+        . apply(block)
+
+    // As `focusing`, but for a field with no entry of its own in the source — a
+    // keyword that never arrived, or the tail of a repeatable field gathered
+    // once the entry loop has finished. The parser is parked on whatever it read
+    // last, which is not this field, so the focus takes its pointer and no span
+    // rather than one pointing at unrelated text.
+    inline def focusingUnlocated[result](foci: Foci[Tel.Focus], keyword: Text)
+      ( inline block: => result )
     :   result =
       if foci.active then focus(using foci)(descend(prior, keyword))(block) else block
 
@@ -851,7 +891,7 @@ object Tel extends Tel2:
                 val parsing = unwrap(entries(slot)(1))
 
                 inline def positioned[result](inline block: => result): result =
-                  if focused then focus(descend(prior, Text(keys(slot))))(block) else block
+                  focusing(foci, reader, Text(keys(slot)))(block)
 
                 parsing match
                   case gathering: Gathering if parsing.repeatable =>
@@ -896,7 +936,7 @@ object Tel extends Tel2:
 
                   buffer +=
                     ( if focused
-                      then focus(descend(prior, Text(keys(found)))):
+                      then focusing(foci, reader, Text(keys(found))):
                         gathering.parseElement(reader, indent)
                       else gathering.parseElement(reader, indent) )
 
@@ -912,7 +952,7 @@ object Tel extends Tel2:
                     reader.skipEntry(indent)
                   else values(found) =
                     if focused
-                    then focus(descend(prior, Text(keys(found)))):
+                    then focusing(foci, reader, Text(keys(found))):
                       entries(found)(1).parse(reader, indent)
                     else entries(found)(1).parse(reader, indent)
 
@@ -1998,7 +2038,7 @@ object Tel extends Tel2:
   // existing code resolves exactly as before.
   given aggregableParsed: [value]
   =>  ( parsable: (value is Tel.Parsable)^ )
-  =>  ( tactic: Tactic[TelError] )
+  =>  ( tactic: Tactic[TelError], tracking: PositionTracking )
   =>  ( ((value in Tel) is Aggregable by Data)^{parsable, tactic} ) =
     source => parseDirect(concatenate(source), parsable).asInstanceOf[value in Tel]
 
@@ -2008,22 +2048,31 @@ object Tel extends Tel2:
   // the composed pipeline by specificity.
   given readableParsed: [value]
   =>  ( parsable: (value is Tel.Parsable)^ )
-  =>  ( tactic: Tactic[TelError] )
+  =>  ( tactic: Tactic[TelError], tracking: PositionTracking )
   =>  ( (Data is Readable to (value in Tel))^{parsable, tactic} ) =
     data => parseDirect(data, parsable).asInstanceOf[value in Tel]
 
   // Direct-parsing counterpart of `parse`: drives a `Tel.Parsable` instance
   // over the input through a `TelReader`, so no document AST is built for the
-  // values the instance reads directly. Like `aggregableIn`, the direct read
-  // path does not thread position tracking (there is no `PositionIndex` —
-  // the result is the caller's value, not a `Tel`).
+  // values the instance reads directly.
+  //
+  // There is no `PositionIndex` here — the result is the caller's value, not a
+  // `Tel`, so there is nothing to resolve a pointer against once the parse is
+  // over. `parsing.trackPositions` instead turns on the line scan's extent
+  // measurement, and each focus and error takes its span from the parser as it
+  // goes. Without it the parse is exactly what it always was.
   private def parseDirect[value](input: Data, parsable: (value is Tel.Parsable)^)
-    ( using tactic: Tactic[TelError] )
+    ( using tactic: Tactic[TelError], tracking: PositionTracking )
   :   value =
 
     import zephyrine.Lineation.untrackedData
     val parser = Tel.Parser.borrow()
     parser.reset(Cursor[Data](input), Unset)
+
+    parser.spanTracking = tracking match
+      case PositionTracking.On  => true
+      case PositionTracking.Off => false
+
     parser.directProlog()
     parsable.parse(TelReader(parser, tactic))
 
@@ -2532,8 +2581,12 @@ object Tel extends Tel2:
       val p = borrow()
       p.reset(Cursor[Data](input), Unset)
       p.tracking = true
+      p.spanTracking = true
 
-      try (p.parse(), Array.from(p.positionRecords)) finally p.tracking = false
+      try (p.parse(), Array.from(p.positionRecords))
+      finally
+        p.tracking = false
+        p.spanTracking = false
 
     // Streaming parse (§6.1) of a multi-document source into the documents it
     // contains. `parseDocuments` is eager; `parseStream` parses lazily on demand.
@@ -2745,6 +2798,34 @@ object Tel extends Tel2:
     // written and no per-compound work is added).
     private[stratiform] var tracking: Boolean = false
     private[stratiform] val positionRecords = scala.collection.mutable.ArrayBuffer.empty[Int]
+
+    // Measuring a compound line's inline-atom run. Both parse paths want the
+    // same answer — the AST path folds it into the `PositionIndex`, the direct
+    // path stamps it straight onto a `Tel.Focus` — so it is computed once, in
+    // the line scan they share (`parseCompoundLineRest`), rather than twice.
+    //
+    // `spanTracking` gates it: on under `parseTracked`, and on the direct path
+    // under `parsing.trackPositions`. Off, the scan pays one never-taken branch
+    // per atom and nothing else.
+    //
+    // `lineValueOrigin` is the 1-indexed column just past the keyword, set by
+    // whichever side read the keyword; `lineValueColumn` is the first atom's
+    // column (0 for a line with no inline atoms) and `lineValueLength` the run's
+    // extent, both in characters.
+    private[stratiform] var spanTracking:    Boolean = false
+    private[stratiform] var lineValueOrigin: Int = 1
+    private[stratiform] var lineValueColumn: Int = 0
+    private[stratiform] var lineValueLength: Int = 0
+
+    // The direct path reads entries in a stream, so `directEntry*` describe
+    // whichever entry was stepped to most recently — a nested one clobbers its
+    // parent's. Stamping a focus therefore needs to know *which* entry the
+    // recorded value extent belongs to: `directEntrySeq` numbers the entries and
+    // `directValueSeq` records the number current when the extent was measured.
+    // When they differ, the block being focused read something deeper, and the
+    // focus falls back to the keyword span captured before it ran.
+    private[stratiform] var directEntrySeq: Int = 0
+    private[stratiform] var directValueSeq: Int = -1
 
     // Ancestor stack of Struct types known for each open compound, used by
     // §19.5's schema-aware E107 recovery. The element at index `i` is the
@@ -3311,7 +3392,14 @@ object Tel extends Tel2:
       bufEnd = 0
       lineNo = 1
       tracking = false
+      spanTracking = false
       positionRecords.clear()
+      lineValueOrigin = 1
+      lineValueColumn = 0
+      lineValueLength = 0
+      directEntrySeq = 0
+      directValueSeq = -1
+      directEntryKeywordLen = 0
       margin = 0
       sigil  = '#'.toByte
       crlfMode = false
@@ -4111,37 +4199,16 @@ object Tel extends Tel2:
           // keyword's first character (just past the leading spaces).
           //
           // The value extent covers the compound's inline atoms — the text a
-          // decode error is about. It is reconstructed arithmetically rather than
-          // captured during the scan: `parseCompoundLine` has just pushed this
-          // line's atoms onto `scratchAtoms`, each carrying the space run that
-          // preceded it, and inline atoms are copied from the source verbatim, so
-          // walking them from just past the keyword replays the line's layout
-          // exactly. (A single space inside a hard-space-mode atom is part of that
-          // atom's own text, so it is already counted.) Doing it here keeps every
-          // instruction inside this `tracking` branch, off the throughput path,
-          // and counts characters where a cursor column would count bytes.
+          // decode error is about — and was measured by the line scan just now,
+          // in `parseCompoundLineRest`, which the direct path shares. Reading it
+          // here rather than recomputing it is what keeps the two paths from
+          // drifting apart about where a value is.
           if tracking then
-            var column = compoundLeadingSpaces + 1 + compoundKeyword.s.length
-            var valueColumn = 0
-            var index = atomsStart
-
-            while index < atomScratchIx do
-              scratchAtoms(index) match
-                case atom: Tel.Atom.Inline =>
-                  column += atom.precedingSpaces
-                  if valueColumn == 0 then valueColumn = column
-                  column += atom.text.s.length
-
-                case _ =>
-                  ()
-
-              index += 1
-
             positionRecords += compoundLine
             positionRecords += compoundLeadingSpaces + 1
             positionRecords += compoundKeyword.s.length
-            positionRecords += valueColumn
-            positionRecords += (if valueColumn == 0 then 0 else column - valueColumn)
+            positionRecords += lineValueColumn
+            positionRecords += lineValueLength
 
           prevContentLeadingSpaces = compoundLeadingSpaces
           prevLineWasBoundary = false
@@ -4768,6 +4835,23 @@ object Tel extends Tel2:
       // preserved (only the LF before the closing delimiter is dropped, above).
       Tel.Atom.Literal(Text(delimiter), Text(sb.toString))
 
+    // The length, in the UTF-16 units a `Text` counts, of an arena byte range.
+    // Every lead byte contributes one unit, except a four-byte sequence, which
+    // is a surrogate pair and contributes two; continuation bytes contribute
+    // none. Measuring the arena directly avoids decoding an atom that the parse
+    // would not otherwise have decoded. Runs only under `spanTracking`.
+    private def arenaCharLength(offset: Int, length: Int): Int =
+      var index = 0
+      var count = 0
+
+      while index < length do
+        val byte = atomArena(offset + index)
+
+        if (byte & 0xC0) != 0x80 then count += (if (byte & 0xF8) == 0xF0 then 2 else 1)
+        index += 1
+
+      count
+
     // ── Compound line parsing ────────────────────────────────────────────────
 
     // Cursor is at the first content byte (past leading spaces). Reads the
@@ -4792,6 +4876,8 @@ object Tel extends Tel2:
         recoverAt(Reason.PragmaNotFirst, lineNumber, 1, keyword.s.length)(())
 
       hasConsumedNonBlankLine = true
+      // The value run starts just past the keyword; the scan advances from here.
+      if spanTracking then lineValueOrigin = head.leadingSpaces + 1 + keyword.s.length
       parseCompoundLineRest(lineNumber)
       compoundLineKeyword = keyword
 
@@ -4803,6 +4889,13 @@ object Tel extends Tel2:
     // consume the rest of the line through the same scan.
     private update def parseCompoundLineRest(lineNumber: Int)(using Tactic[TelError]): Unit = inHold:
       var remark: Optional[Text] = Unset
+      // The running column of the inline-atom run, advanced at each commit by
+      // the space run that preceded the atom and then by the atom's own width.
+      // Inline atoms are copied from the source verbatim, so this replays the
+      // line's layout exactly.
+      var valueCursor = lineValueOrigin
+      lineValueColumn = 0
+      lineValueLength = 0
       // Read atom bytes directly into the parser's atom-bytes arena. With
       // narrow holds, parseCompoundLine's hold has holdStart > 0, so refills
       // inside the line can compact and shift the cursor's `bytes` —
@@ -4817,6 +4910,11 @@ object Tel extends Tel2:
         if atomOpen then
           val off = arenaInFlightOffset
           val len = endInFlightAtom()
+
+          if spanTracking then
+            valueCursor += precedingSpaces
+            if lineValueColumn == 0 then lineValueColumn = valueCursor
+            valueCursor += arenaCharLength(off, len)
 
           if directPrimaryOnly then
             // Consume only the first inline atom, in the reader's requested mode;
@@ -4941,6 +5039,12 @@ object Tel extends Tel2:
               atomOpen = true
 
       commit()
+
+      if spanTracking then
+        if lineValueColumn != 0 then lineValueLength = valueCursor - lineValueColumn
+        // Tag the measurement with the entry it belongs to, so the direct path
+        // can tell whether a focused block read this entry or something deeper.
+        directValueSeq = directEntrySeq
 
       // E108: a non-blank compound line must not end with a space character.
       // Inside the outer `hold`, the buffer byte just before the current pos
@@ -5171,6 +5275,11 @@ object Tel extends Tel2:
     var directEntryLine:    Int = 1
     var directEntryKeyword: Text = t""
 
+    // The stepped-to keyword's length in characters, recorded when it is read
+    // (`directKeywordLen` is a byte length, and is only meaningful for the
+    // packable keywords the fast step handles).
+    var directEntryKeywordLen: Int = 0
+
     // Fingerprint of the keyword most recently read by `readKeyword` — the
     // packed words it computes anyway for the intern cache (low = bytes 0–3,
     // high = bytes 4–7, LSB-first), and the keyword's byte length.
@@ -5296,6 +5405,9 @@ object Tel extends Tel2:
           directEntrySpaces = head.leadingSpaces
           directEntryIndent = head.indentLevels
           directEntryLine = head.startLine
+          // A new entry: anything the previous one measured no longer describes
+          // where we are.
+          directEntrySeq += 1
 
           inHold:
             val mayBeMisplacedPragma = head.leadingSpaces == 0 && hasConsumedNonBlankLine
@@ -5309,12 +5421,21 @@ object Tel extends Tel2:
 
               directEntryKeyword = keyword
               directEntryKeywordLazy = false
+              directEntryKeywordLen = keyword.s.length
             else
               readKeywordFast()
 
               // The same E102 check against the packed form of `tel`.
               if mayBeMisplacedPragma && directKeywordLen == 3 && directKeywordLow == 0x6C6574L
               then recoverAt(Reason.PragmaNotFirst, directEntryLine, 1, directKeywordLen)(())
+
+              // A packable keyword is at most eight printable-ASCII bytes, so
+              // its byte length is also its character length.
+              directEntryKeywordLen = directKeywordLen
+
+            // The rest of this entry's line, whenever it is consumed, measures
+            // its value run from just past the keyword.
+            if spanTracking then lineValueOrigin = directEntrySpaces + 1 + directEntryKeywordLen
 
             hasConsumedNonBlankLine = true
 
@@ -5327,6 +5448,31 @@ object Tel extends Tel2:
           done = true
 
       result
+
+    // ── Direct-path spans ────────────────────────────────────────────────────
+    //
+    // No AST survives a direct parse, so there is nothing to resolve a pointer
+    // against afterwards: a focus must take its span while the parser is still
+    // on the entry. These are the two regions `locate` / `locateKey` name on the
+    // AST path, computed the same way from the same measurements.
+
+    // The current entry's keyword.
+    private[stratiform] def directKeywordSpan: Span =
+      TelError.spanAt(directEntryLine, directEntrySpaces + 1, directEntryKeywordLen)
+
+    // The current entry's inline-atom run — but only if the extent on record was
+    // measured for entry `ordinal`, and not for something read since. Empty
+    // otherwise, and empty for an entry with no inline atoms, so the caller
+    // falls back to the keyword exactly as `walkIndex` does.
+    private[stratiform] def directValueSpan(ordinal: Int): Span =
+      if directValueSeq != ordinal || lineValueColumn == 0 then Span.empty
+      else TelError.spanAt(directEntryLine, lineValueColumn, lineValueLength)
+
+    // The value span of the entry being read, falling back to its keyword — the
+    // span a decode error raised from a leaf instance should carry.
+    private[stratiform] def directEntrySpan: Span =
+      val value = directValueSpan(directEntrySeq)
+      if value.exists then value else directKeywordSpan
 
     // The keyword most recently stepped to, as interned text — behind
     // `TelReader.keywordText`, for staged parsers whose packed step reported

@@ -755,7 +755,7 @@ object stagedInternal:
               firstWins
                 ( index,
                   '{
-                    Tel.Parsable.focusing($foci, ${keyText(index)})
+                    Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
                       (${ instance.parse(reader, indent) })
                   }.asTerm )
 
@@ -765,7 +765,7 @@ object stagedInternal:
 
               firstWins
                 ( index,
-                  '{ Tel.Parsable.focusing($foci, ${keyText(index)})($call) }.asTerm )
+                  '{ Tel.Parsable.focusing($foci, $reader, ${keyText(index)})($call) }.asTerm )
 
             case Plan.Gather(_) =>
               val gather = gathers(index).get
@@ -781,7 +781,7 @@ object stagedInternal:
 
                       '{
                         $builderRef.addOne
-                          (Tel.Parsable.focusing($foci, ${keyText(index)})($call))
+                          (Tel.Parsable.focusing($foci, $reader, ${keyText(index)})($call))
                       }.asTerm
 
                 case _ =>
@@ -801,13 +801,13 @@ object stagedInternal:
               val append: Term =
                 '{
                   $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
-                    ( Tel.Parsable.focusing($foci, ${keyText(index)}):
+                    ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)}):
                         Tel.Parsable.parseElement($instanceRef, $reader, $indent) )
                 }.asTerm
 
               val read: Term =
                 '{
-                  Tel.Parsable.focusing($foci, ${keyText(index)})
+                  Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
                     ($instanceRef.parse($reader, $indent))
                 }.asTerm
 
@@ -888,7 +888,7 @@ object stagedInternal:
                   val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
                   if !declared.absent then declared.asInstanceOf[fieldType]
-                  else Tel.Parsable.focusing($foci, ${keyText(index)})($onAbsent)
+                  else Tel.Parsable.focusingUnlocated($foci, ${keyText(index)})($onAbsent)
                 }.asTerm )
 
           def whenUnseen(onAbsent: Expr[fieldType]): Term =
@@ -929,7 +929,7 @@ object stagedInternal:
                 Assign
                   ( Ref(slots(index)),
                     '{
-                      Tel.Parsable.focusing($foci, ${keyText(index)}):
+                      Tel.Parsable.focusingUnlocated($foci, ${keyText(index)}):
                         Tel.Parsable.gathered[fieldType]
                           ( $instanceRef,
                             $bufferRef match

@@ -664,7 +664,7 @@ object bintelInternal:
 
         def focusedOver[result: Type](raw: Expr[result]): Expr[result] =
           '{
-            if $focused then Tel.Parsable.focusing($foci, $keyword)($raw) else $raw
+            if $focused then Tel.Parsable.focusingUnlocated($foci, $keyword)($raw) else $raw
           }
 
         val rhs: Term = plans(index) match
@@ -815,7 +815,7 @@ object bintelInternal:
                       wisteria.internal.default[product, fieldType](${Expr(index)})
 
                     if !declared.absent then declared.asInstanceOf[fieldType]
-                    else Tel.Parsable.focusing($foci, $keyword)($absentExpr)
+                    else Tel.Parsable.focusingUnlocated($foci, $keyword)($absentExpr)
                   }.asTerm )
 
             val whenSeen: Term = plans(index) match

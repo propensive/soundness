@@ -36,6 +36,7 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
+import denominative.Span
 import vacuous.*
 
 object TelReader:
@@ -160,8 +161,34 @@ extends caps.ExclusiveCapability, caps.Stateful:
   private[stratiform] inline update def document(): Tel =
     Tel.Parser.erasedDirectDocument(parser0)(using errorTactic)
 
+  // ── Spans ──
+  //
+  // A direct parse builds no AST, so a focus cannot be located after the fact
+  // the way `Tel#as` locates its own; it takes its span from here, while the
+  // parser is still on the entry. `entryOrdinal` numbers the entries, so a
+  // caller can tell whether the value extent currently on record still belongs
+  // to the entry it is interested in, or to something read since. All three are
+  // pure values — no capability leaves through the rim.
+
+  update def entryOrdinal: Int = parser.directEntrySeq
+
+  // The current entry's keyword.
+  update def keywordSpan: Span = parser.directKeywordSpan
+
+  // The inline-atom run of entry `ordinal`, or empty if what is on record
+  // describes a different entry, or that entry had no inline atoms.
+  update def valueSpan(ordinal: Int): Span = parser.directValueSpan(ordinal)
+
   // Raise through the reader's tactic — for leaf instances that reject a
   // well-formed entry's content, continuing with a sentinel under an
-  // accruing boundary exactly like the AST primitives.
+  // accruing boundary exactly like the AST primitives. The error is located at
+  // the entry's value, or at its keyword when it has none, so a direct-path
+  // decode error carries a span just as a parse error does.
   update def fault(reason: TelError.Reason): Unit =
+    raise(TelError(reason, parser.directEntrySpan))(using errorTactic)
+
+  // As `fault`, but for a field whose keyword never arrived: there is no entry
+  // of its own to point at, so it carries no span, exactly as an unresolvable
+  // pointer does on the AST path.
+  update def absentFault(reason: TelError.Reason): Unit =
     raise(TelError(reason))(using errorTactic)
