@@ -149,6 +149,71 @@ object Verification:
 
     Report(store, atomizations, List.from(materialized), advisories)
 
+  // Step 4 (publish-time): re-atomization of every materialized section under the *declared*
+  // disciplines, in the manifest's `api`-record order — so the claiming order is the declared
+  // one (L134), never an accident of the caller's list. A declared discipline with no
+  // implementation fails the release (L140): an unverifiable claim is worse than an absent one,
+  // because consumers cannot tell the two apart from the manifest. The recomputed atomization
+  // must equal the declared listings on the root section (L141) and be identical across every
+  // other section (L108), and no declared discipline may be inapplicable (L127).
+  def reatomize
+    ( manifest:        LiraManifest,
+      report:          Report,
+      implementations: List[Discipline],
+      classpath:       (Text, Optional[Text]) => List[Text] = { (_, _) => List() } )
+  :   Unit raises LiraError raises DisciplineError =
+
+    val resourceId = ResourceDiscipline(manifest.resource).id
+    val declaredIds = manifest.api.map(_.discipline)
+
+    val languages = declaredIds.stdlib.filter: id =>
+      id != resourceId && id != OpaqueDiscipline.id
+
+    val resolved = languages.map: id =>
+      implementations.stdlib.find(_.id == id).getOrElse:
+        abort(LiraError(Reason.UnimplementedClaim(id)))
+
+    val registry = Discipline.Registry(List.from(resolved), manifest.resource)
+    val universes = manifest.section.stdlib.map(_.universe).toSet
+
+    resolved.foreach: discipline =>
+      if !universes.exists(discipline.domain.covers)
+      then abort(LiraError(Reason.InapplicableDiscipline(discipline.id)))
+
+    def summary(atomizations: List[Atomization])
+    :   scala.collection.immutable.Map
+          [Text, scala.collection.immutable.Set[(Text, AtomClass, Text)]] =
+
+      atomizations.stdlib.map: atomization =>
+        val atoms = atomization.atoms.stdlib.map: atom =>
+          (atom.key, atom.atomClass, LiraHash.text(atom.valueHash))
+
+        atomization.discipline -> atoms.toSet
+
+      . toMap
+
+    val declared = summary(report.atomizations)
+
+    val computed = report.materialized.stdlib.map: (section, tree) =>
+      val content = tree.entries.map: entry =>
+        (entry.path, report.blobstore.resolve(entry.blob))
+
+      val context =
+        Discipline.Context
+          (section.universe, section.integration, classpath(section.universe,
+              section.integration))
+
+      (section, summary(registry.atomize(content, context)))
+
+    computed.headOption.foreach: (_, root) =>
+      (declared.keySet ++ root.keySet).foreach: id =>
+        if declared.getOrElse(id, Set()) != root.getOrElse(id, Set())
+        then abort(LiraError(Reason.AtomsMismatch(id)))
+
+      computed.drop(1).foreach: (section, other) =>
+        if other != root
+        then abort(LiraError(Reason.ApiDivergence(t"${section.universe} differs from the root")))
+
   // Step 4's sibling for profiles (§11.6, L128/L130). `install` stays language-blind, exactly as
   // it does for re-atomization and lineage-step grading, and this recovers the per-section
   // content a profile's predicates read — which the report holds only as tree entries and blob

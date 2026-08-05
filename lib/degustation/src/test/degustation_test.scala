@@ -134,6 +134,39 @@ object Tests extends Suite(m"Degustation Tests"):
       keys.exists(_.contains("hidden"))
     . assert(!_)
 
+    test(m"qualified-private members are conservatively API"):
+      val qualified = listing(t"""|package fixture
+          |
+          |class Scoped:
+          |  private[fixture] def limited: Int = 0
+          |  private def hidden: Int = 0
+          |""".s.stripMargin.tt)
+
+      (qualified.exists(_(0).s.contains("limited")), qualified.exists(_(0).s.contains("hidden")))
+    . assert(_ == (true, false))
+
+    test(m"an export forwarder atomizes as its hand-written equivalent"):
+      val exported = listing(t"""|package fixture
+          |
+          |object Impl:
+          |  def value: Int = 3
+          |
+          |object Front:
+          |  export Impl.value
+          |""".s.stripMargin.tt)
+
+      val written = listing(t"""|package fixture
+          |
+          |object Impl:
+          |  def value: Int = 3
+          |
+          |object Front:
+          |  final def value: Int = Impl.value
+          |""".s.stripMargin.tt)
+
+      exported == written
+    . assert(identity)
+
     test(m"an inline definition yields a replaceable atom"):
       keys.exists { key => key.startsWith("fixture.double(") && key.endsWith("[inline]") }
     . assert(identity)

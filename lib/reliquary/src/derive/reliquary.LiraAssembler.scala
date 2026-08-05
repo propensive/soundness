@@ -72,6 +72,7 @@ object LiraAssembler:
       profiles:    EcosystemProfile.Registry      = EcosystemProfile.Registry(List()),
       predecessor: Optional[EcosystemProfile.Evidence] = Unset,
       classpath:   SectionInput => List[Text]     = { _ => List() },
+      report:      Text => Unit                   = { _ => () },
       sign:        LiraManifest => LiraManifest  = identity(_) )
   :   Data raises LiraError raises DisciplineError =
 
@@ -128,10 +129,12 @@ object LiraAssembler:
       then abort(LiraError(Reason.IneffectiveResource(path.text)))
 
     // L127: a declared discipline must atomize some universe this release carries. An
-    // atomization of nothing is not a claim about anything.
+    // atomization of nothing is not a claim about anything. The rule quantifies over the
+    // *declared* disciplines: `resource/1` and `opaque/1` are the registry's own and universal,
+    // so the question never arises for them.
     val universes = inputs.map(_.universe).toSet
 
-    registry.all.stdlib.foreach: discipline =>
+    registry.declared.stdlib.foreach: discipline =>
       if !universes.exists(discipline.domain.covers)
       then abort(LiraError(Reason.InapplicableDiscipline(discipline.id)))
 
@@ -212,6 +215,14 @@ object LiraAssembler:
     // manifest, so they are checked here rather than discovered at install time.
     Verification.integrations(manifest)
 
+    // L140: the assembler is about to sign every declared profile as a checked claim, so a
+    // declared profile it cannot check is refused outright — an unverifiable claim is worse
+    // than an absent one (§16). This holds with or without a predecessor: implementability is
+    // not a property of the step.
+    profile.stdlib.foreach: record =>
+      if profiles(record.id).absent
+      then abort(LiraError(Reason.UnimplementedClaim(record.id)))
+
     // L128/L130. Profile predicates are diachronic, so they can only run where the caller has the
     // predecessor's content in hand; with no predecessor there is no step to check, which is the
     // ordinary case for the first release of a lineage. The audit runs against the assembled
@@ -219,7 +230,8 @@ object LiraAssembler:
     // runs before signing, so nothing unverified is ever signed.
     predecessor.let: previous =>
       val evidence = EcosystemProfile.Evidence(profileSections, manifest)
-      EcosystemProfile.audit(profiles, profile, previous, evidence)
+      val audit = EcosystemProfile.audit(profiles, profile, previous, evidence)
+      audit.advisories.stdlib.foreach(report(_))
 
     val blobs = contentBlobs ++ builtSections.map(_(1)) ++ atomsBlobs ++ deltaBlob.option.toList
 

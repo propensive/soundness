@@ -933,6 +933,10 @@ object Tests extends Suite(m"Xenophile tests"):
       refuses(t"type T<A> = Array<infer B>;")
     . assert(_ == TypescriptError.Reason.Unsupported(t"an `infer` binder"))
 
+    test(m"a mapped type is refused under its own name"):
+      refuses(t"interface A { [K in B]: number; }")
+    . assert(_ == TypescriptError.Reason.Unsupported(t"a mapped type"))
+
     test(m"an unterminated string literal is a syntax error"):
       refuses(t"""type T = "unterminated;""").let:
         case TypescriptError.Reason.Syntax(_, _) => true

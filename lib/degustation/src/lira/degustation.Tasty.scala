@@ -49,13 +49,15 @@ import errorDiagnostics.emptyDiagnostics
 object Tasty extends Discipline:
   def id: Text = t"tasty/1"
 
-  // TASTy is carried in every universe of the motivating ecosystem, so the domain is universal
-  // and the cross-section invariant (§9.6) binds all of them — which is what makes "one API on
-  // every platform" checkable. Keying is by declaration (`tasty.md` §6): a TASTy reference names
-  // the declaring symbol, so an inherited member need not be re-atomized under each type that
-  // presents it. Classfile-level linkage is the JVM ecosystem profile's, not this discipline's,
-  // so only the TASTy level is certified here.
-  def domain: Discipline.Domain = Discipline.Domain.Universal
+  // The domain is the fixed set of TASTy-carrying universes (`tasty.md` §3) — not universal:
+  // the cross-section invariant (§9.6) binds exactly these, which is what makes "one API on
+  // every platform" checkable, while a universe that carries no TASTy lies outside the domain
+  // entirely, so L127 can reject a release that declares this discipline without one. Keying is
+  // by declaration (`tasty.md` §6): a TASTy reference names the declaring symbol, so an
+  // inherited member need not be re-atomized under each type that presents it. Classfile-level
+  // linkage is the JVM ecosystem profile's, not this discipline's, so only the TASTy level is
+  // certified here.
+  def domain: Discipline.Domain = Discipline.Domain.Universes(Set(t"jvm", t"sjsir", t"nir"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
   def guarantees(universe: Text): Set[Discipline.Guarantee] =

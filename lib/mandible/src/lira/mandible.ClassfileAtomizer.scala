@@ -61,9 +61,9 @@ object ClassfileAtomizer:
 
   // Flag subsets, in a fixed bit order, chosen per element kind because the JVM reuses bit
   // values across kinds (`0x0040` is `ACC_BRIDGE` on a method and `ACC_VOLATILE` on a field).
-  // `ACC_SUPER`, `ACC_SYNCHRONIZED`, `ACC_NATIVE` and `ACC_STRICT` are excluded: none is
-  // resolvable surface, and all three of the latter vary with an implementation a consumer
-  // cannot observe through linkage.
+  // `ACC_SUPER`, `ACC_SYNCHRONIZED`, `ACC_NATIVE`, `ACC_STRICT` and `ACC_MANDATED` are excluded
+  // (`classfile.md` §8): none is resolvable surface, and each varies with an implementation no
+  // consumer can observe through linkage.
   private val classFlags: scala.List[Int] =
     scala.List
       ( jlc.ClassFile.ACC_PUBLIC, jlc.ClassFile.ACC_PROTECTED, jlc.ClassFile.ACC_FINAL,
@@ -208,10 +208,13 @@ object ClassfileAtomizer:
     // method breaks every existing implementor, so the abstract member set folds into the class's
     // own atom and the addition grades major. On a final class nothing can implement it, the fold
     // is empty, and the same addition is pure extension.
+    // The fold is the sorted *key* list (`classfile.md` §9 rule 6) — the presenting owner is
+    // this class for every member of its presented set, so each key is the class's name with
+    // the member's selector appended.
     val abstracts =
       if surface.isFinal then Nil else List.from:
         members.stdlib.collect:
-          case (member, _) if member.abstrakt => member.selector
+          case (member, _) if member.abstrakt => t"${surface.name}${member.selector}"
 
         . sortBy(_.s)
 

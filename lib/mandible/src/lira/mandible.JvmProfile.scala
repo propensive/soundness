@@ -145,3 +145,13 @@ object JvmProfile extends EcosystemProfile:
         . map { _ => key }
 
     List.from(changed.flatten.toList.sortBy(_.s))
+
+  // §7's SHOULD: changed constants are surfaced through the audit's advisory channel, so a
+  // publisher sees them without any bespoke call.
+  override def advisories
+    ( previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence )
+  :   List[Text] raises DisciplineError =
+
+    List.from:
+      constants(previous, next).stdlib.map: key =>
+        t"the constant $key changed value; consumers that inlined it are stale until recompiled"

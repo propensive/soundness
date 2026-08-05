@@ -79,8 +79,11 @@ object Materializer:
         val tree = report.tree(universe, integration) match
           case tree: LiraTree => tree
 
+          // §13.5 calls this a validation-time error, and it is closure's kind (L113): a
+          // release with no section serving the target universe fails the buildpath exactly as
+          // an absent module does. The manifest itself is not at fault.
           case _ =>
-            abort(LiraError(Reason.InvalidManifest(t"the release has no $universe section")))
+            abort(LiraError(Reason.AbsentDependency(lira.manifest.module)))
 
         val data = Derivative.jar(tree, report.blobstore)
 

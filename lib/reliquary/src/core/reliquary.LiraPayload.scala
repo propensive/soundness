@@ -58,7 +58,7 @@ object LiraPayload:
   def decompress(compressed: Data, length: Long, declaredHash: Data): Data raises LiraError =
     val result =
       try compressed.decompress[Brotli] catch case error: Exception =>
-        abort(LiraError(Reason.InvalidBlobStream(t"the payload does not decompress")))
+        abort(LiraError(Reason.MalformedPayload(t"the payload does not decompress")))
 
     if result.length.toLong != length then abort(LiraError(Reason.PayloadLength(length)))
     if Blob.compare(hash(result), declaredHash) != 0 then abort(LiraError(Reason.PayloadHash))

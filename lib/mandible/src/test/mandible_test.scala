@@ -457,12 +457,38 @@ object Tests extends Suite(m"Mandible tests"):
 
       val after = evidence(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
 
-      EcosystemProfile.audit(registry, declared, before, after).stdlib
+      EcosystemProfile.audit(registry, declared, before, after).unchecked.stdlib
     . assert(_ == scala.List())
 
     test(m"a declared profile with no implementation is reported, not rejected"):
       val registry = EcosystemProfile.Registry(List(JvmProfile))
       val declared = List(LiraManifest.Profile(t"unknown/1"))
 
-      EcosystemProfile.audit(registry, declared, before, before).stdlib
+      EcosystemProfile.audit(registry, declared, before, before).unchecked.stdlib
     . assert(_ == scala.List(t"unknown/1"))
+
+    test(m"a violation at an uncertified level is the profile's defect, L128"):
+      val broken = new EcosystemProfile:
+        def id: Text = t"broken/1"
+        def certifies: Set[Discipline.Guarantee] = Set(Discipline.Guarantee.Linkage)
+
+        def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
+        :   List[EcosystemProfile.Violation] raises DisciplineError =
+          List(EcosystemProfile.Violation(Discipline.Guarantee.Recompilation, t"out of scope"))
+
+      val registry = EcosystemProfile.Registry(List(broken))
+      val declared = List(LiraManifest.Profile(t"broken/1"))
+
+      import errorDiagnostics.stackTracesDiagnostics
+      capture[LiraError](EcosystemProfile.audit(registry, declared, before, before)).reason
+    . assert(_ == LiraError.Reason.ProfileViolated(t"broken/1", t"out of scope"))
+
+    test(m"changed constants surface through the audit's advisory channel"):
+      val registry = EcosystemProfile.Registry(List(JvmProfile))
+      val declared = List(LiraManifest.Profile(t"jvm/1"))
+      val after = evidence(edit(base, t"CONSTANT = 7", t"CONSTANT = 8"), derived, api)
+
+      EcosystemProfile.audit(registry, declared, before, after).advisories.stdlib
+    . assert: advisories =>
+        advisories.length == 2
+          && advisories.forall(_.s.contains("changed value"))

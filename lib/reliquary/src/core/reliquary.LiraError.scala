@@ -68,11 +68,18 @@ object LiraError:
     case ResourceClash(path: Text)            extends Reason(126)
     case InapplicableDiscipline(id: Text)     extends Reason(127)
     case ProfileViolated(id: Text, detail: Text) extends Reason(128)
+    // L129 is structural — a profile can only add predicates through the `EcosystemProfile`
+    // SPI, never remove a core check — so this reason is reserved for a future profile-loading
+    // mechanism that could observe a weakening, and is deliberately never constructed today.
     case ProfileWeakens(id: Text)             extends Reason(129)
     case UnrecordedBreak(id: Text, level: Text) extends Reason(130)
     case BadIntegration(detail: Text)         extends Reason(131)
     case NoAssignment(module: Text)           extends Reason(132)
     case UnrealizedIntegration(id: Text)      extends Reason(133)
+    case BadDerivative(universe: Text)        extends Reason(138)
+    case MalformedPayload(detail: Text)       extends Reason(139)
+    case UnimplementedClaim(id: Text)         extends Reason(140)
+    case AtomsMismatch(id: Text)              extends Reason(141)
 
   given communicable: Reason is Communicable =
     case Reason.InvalidManifest(detail)       => m"the manifest is invalid: $detail"
@@ -87,7 +94,8 @@ object LiraError:
     case Reason.UngradedSuccessor             => m"the release is not a patch or minor successor"
     case Reason.DuplicateModule(module)       => m"the buildpath contains $module more than once"
     case Reason.NamespaceClash(space)         => m"the namespace $space is claimed twice"
-    case Reason.AbsentDependency(module)      => m"the dependency $module is not on the buildpath"
+    case Reason.AbsentDependency(module) =>
+      m"the buildpath does not supply $module in the required universe"
     case Reason.Unsatisfiable(module)         => m"no release of $module satisfies the requirement"
     case Reason.BadDirective                  => m"the interpreter directive is not byte-exact"
     case Reason.SigilSpecified                => m"a lira manifest must not specify a sigil"
@@ -118,6 +126,17 @@ object LiraError:
     case Reason.NoAssignment(module) =>
       m"no integration of $module is satisfiable on this buildpath"
     case Reason.UnrealizedIntegration(id)   => m"the integration $id has no section"
+
+    case Reason.BadDerivative(universe) =>
+      m"the declared derivative hash of the $universe section does not recompute"
+
+    case Reason.MalformedPayload(detail)    => m"the payload is malformed: $detail"
+
+    case Reason.UnimplementedClaim(id) =>
+      m"the declared discipline or profile $id has no implementation to check it"
+
+    case Reason.AtomsMismatch(id) =>
+      m"the declared $id atom listing does not recompute from the content"
 
 case class LiraError(reason: LiraError.Reason)(using Diagnostics)
 extends Error(640, reason.number)(m"the LIRA operation failed because $reason")

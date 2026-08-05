@@ -290,14 +290,14 @@ object Tests extends Suite(m"Reliquary Tests"):
           case _                                     => false
       . assert(identity)
 
-      test(m"a truncated stream is rejected"):
+      test(m"a truncated stream is a malformed payload, not an L103 violation"):
         val stream = BlobStream.write(List(blobA, blobB))
         val short = Array[Byte](stream.length - 1)
         System.arraycopy(Array.unsafeJvm(stream), 0, short.raw, 0, stream.length - 1)
 
         capture[LiraError](BlobStream.read(Array.freeze(short))).reason match
-          case LiraError.Reason.InvalidBlobStream(_) => true
-          case _                                     => false
+          case LiraError.Reason.MalformedPayload(_) => true
+          case _                                    => false
       . assert(identity)
 
       test(m"resolving an absent hash is an L104 error"):
@@ -1051,10 +1051,10 @@ object Tests extends Suite(m"Reliquary Tests"):
         data(data.length - 1) = (data(data.length - 1) ^ 0x55).toByte
 
         capture[LiraError](Verification.install(Lira.read(Array.unsafeFrozen(data)))).reason match
-          case LiraError.Reason.InvalidBlobStream(_) => true
-          case LiraError.Reason.PayloadHash          => true
-          case LiraError.Reason.PayloadLength(_)     => true
-          case _                                     => false
+          case LiraError.Reason.MalformedPayload(_) => true
+          case LiraError.Reason.PayloadHash         => true
+          case LiraError.Reason.PayloadLength(_)    => true
+          case _                                    => false
       . assert(identity)
 
     suite(m"Manifest signing"):
@@ -1604,13 +1604,164 @@ object Tests extends Suite(m"Reliquary Tests"):
         (first.entries.stdlib.size, first.entries.stdlib == second.entries.stdlib)
       . assert(_ == (1, true))
 
-      test(m"materialization refuses a universe with no section"):
+      test(m"materialization refuses a universe with no section as a closure failure"):
         val cache = unsafely:
           t"/tmp/reliquary-test-${java.lang.System.nanoTime}".as[Path on Linux]
 
         val lira = Lira.read(makeLira())
 
-        capture[LiraError](Materializer.classpath(List(lira), t"nir", cache)).reason match
-          case LiraError.Reason.InvalidManifest(_) => true
-          case _                                   => false
+        capture[LiraError](Materializer.classpath(List(lira), t"nir", cache)).reason
+      . assert(_ == LiraError.Reason.AbsentDependency(t"example-core"))
+
+    suite(m"Publish-time verification"):
+      object Special extends Discipline:
+        def id: Text = t"special/1"
+        def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".special")
+        def domain: Discipline.Domain = Discipline.Domain.Universal
+        def keying: Discipline.Keying = Discipline.Keying.Declaration
+
+        def guarantees(universe: Text): Set[Discipline.Guarantee] =
+          Set(Discipline.Guarantee.Recompilation)
+
+        def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+        :   Atomization raises DisciplineError =
+
+          val atoms = content.map: (path, data) =>
+            Atom(path.text, AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(id), data))
+
+          Atomization.of(id, atoms)
+
+      def assembled(): Data =
+        LiraAssembler.assemble(t"example-core",
+          List(
+            LiraAssembler.SectionInput(t"jvm",
+              List((TreePath(t"a/A.class"), classA), (TreePath(t"a/A.special"), tastyA))),
+            LiraAssembler.SectionInput(t"sjsir",
+              List((TreePath(t"a/A.class"), classA), (TreePath(t"a/A.special"), tastyA)))),
+          Discipline.Registry(List(Special)),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")))
+
+      test(m"sections presenting different APIs are L108"):
+        capture[LiraError]:
+          LiraAssembler.assemble(t"example-core",
+            List(
+              LiraAssembler.SectionInput(t"jvm", List((TreePath(t"a/A.class"), classA))),
+              LiraAssembler.SectionInput(t"sjsir", List((TreePath(t"a/A.class"), sjsirA)))),
+            Discipline.Registry(List()),
+            toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")))
+
+        . reason match
+            case LiraError.Reason.ApiDivergence(_) => true
+            case _                                 => false
       . assert(identity)
+
+      test(m"a declared profile with no implementation refuses assembly, L140"):
+        capture[LiraError]:
+          LiraAssembler.assemble(t"example-core",
+            List(LiraAssembler.SectionInput(t"jvm", List((TreePath(t"a/A.class"), classA)))),
+            Discipline.Registry(List()),
+            toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+            profile = List(LiraManifest.Profile(t"jvm/1")))
+
+        . reason
+      . assert(_ == LiraError.Reason.UnimplementedClaim(t"jvm/1"))
+
+      test(m"declared derivative hashes recompute at verification"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+        Derivative.verify(lira.manifest, report)
+        true
+      . assert(identity)
+
+      test(m"a tampered derivative hash is L138"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+
+        val bogus = blob(encode(t"not the derivative"))
+
+        val tampered = lira.manifest.copy(section = List.from:
+          lira.manifest.section.stdlib.map: section =>
+            section.copy(derivative = bogus))
+
+        capture[LiraError](Derivative.verify(tampered, report)).reason
+      . assert(_ == LiraError.Reason.BadDerivative(t"jvm"))
+
+      test(m"re-atomization accepts what the assembler produced"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+        Verification.reatomize(lira.manifest, report, List(Special))
+        true
+      . assert(identity)
+
+      test(m"a declared discipline with no implementation is L140 at re-atomization"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+
+        capture[LiraError](Verification.reatomize(lira.manifest, report, List())).reason
+      . assert(_ == LiraError.Reason.UnimplementedClaim(t"special/1"))
+
+      test(m"an atoms listing that does not recompute is L141"):
+        // The declared listing is computed over different bytes than the tree carries, which
+        // `install` cannot see — the listing parses and the snapshot matches it — and only
+        // re-atomization catches.
+        val context = Discipline.Context(t"jvm")
+        val registry = Discipline.Registry(List())
+        val wrong = List((TreePath(t"a/A.class"), sjsirA))
+
+        val tree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
+        val listing = AtomsBlob.encode(registry.atomize(wrong, context).stdlib.head)
+        val snapshot = Snapshot(registry.atomize(wrong, context))
+
+        val manifest = LiraManifest(
+          module    = t"example-core",
+          version   = revolution.Semver(0, 1, 0),
+          lineage   = List(snapshot),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+          api       = List(LiraManifest.Api(t"opaque/1", blob(listing))),
+          section   = List(Section(t"jvm", tree = blob(tree.encode))),
+          payload   = LiraManifest.Payload(t"brotli", 0L, blob(encode(t""))))
+
+        val lira = Lira.read(Lira.assemble(manifest, List(classA, tree.encode, listing)))
+        val report = Verification.install(lira)
+
+        capture[LiraError](Verification.reatomize(lira.manifest, report, List())).reason
+      . assert(_ == LiraError.Reason.AtomsMismatch(t"opaque/1"))
+
+      test(m"evidence reconstructs each section's content for profiles"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+        val evidence = Verification.evidence(lira.manifest, report)
+
+        evidence.sections.stdlib.map: section =>
+          (section.universe, section.content.stdlib.map(_(0).text))
+
+      . assert(_ == scala.List(
+          (t"jvm", scala.List(t"a/A.class", t"a/A.special")),
+          (t"sjsir", scala.List(t"a/A.class", t"a/A.special"))))
+
+      test(m"a universe-specific discipline claims nothing outside its domain"):
+        val scoped = new Discipline:
+          def id: Text = t"scoped/1"
+          def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".class")
+          def domain: Discipline.Domain = Discipline.Domain.Universes(Set(t"jvm"))
+          def keying: Discipline.Keying = Discipline.Keying.Membership
+
+          def guarantees(universe: Text): Set[Discipline.Guarantee] =
+            Set(Discipline.Guarantee.Linkage)
+
+          def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+          :   Atomization raises DisciplineError =
+
+            val atoms = content.map: (path, data) =>
+              Atom(path.text, AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(id), data))
+
+            Atomization.of(id, atoms)
+
+        val content = List((TreePath(t"a/A.class"), classA))
+        val registry = Discipline.Registry(List(scoped))
+
+        val jvm = registry.atomize(content, Discipline.Context(t"jvm"))
+        val sjsir = registry.atomize(content, Discipline.Context(t"sjsir"))
+
+        (jvm.stdlib.map(_.discipline), sjsir.stdlib.map(_.discipline))
+      . assert(_ == (scala.List(t"scoped/1"), scala.List(t"opaque/1")))
