@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export mandible.{ClassfileAtomizer, ClassfileDiscipline}
+export mandible.{ClassfileAtomizer, ClassfileDiscipline, JvmProfile}

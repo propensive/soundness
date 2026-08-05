@@ -148,3 +148,24 @@ object Verification:
       else List(LiraAdvisory.UnreferencedBlobs(unreferenced))
 
     Report(store, atomizations, List.from(materialized), advisories)
+
+  // Step 4's sibling for profiles (§11.6, L128/L130). `install` stays language-blind, exactly as
+  // it does for re-atomization and lineage-step grading, and this recovers the per-section
+  // content a profile's predicates read — which the report holds only as tree entries and blob
+  // hashes. `classpath` supplies the materialized dependency vector per (universe, integration)
+  // cell, since a profile checking a universe's structure needs the same view a discipline had.
+  def evidence
+    ( manifest:  LiraManifest,
+      report:    Report,
+      classpath: (Text, Optional[Text]) => List[Text] = { (_, _) => List() } )
+  :   EcosystemProfile.Evidence raises LiraError =
+
+    val sections = report.materialized.stdlib.map: (section, tree) =>
+      val content = tree.entries.map: entry =>
+        (entry.path, report.blobstore.resolve(entry.blob))
+
+      EcosystemProfile.Section
+        (section.universe, content, section.integration, classpath(section.universe,
+            section.integration))
+
+    EcosystemProfile.Evidence(List.from(sections), manifest)

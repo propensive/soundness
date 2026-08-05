@@ -80,15 +80,27 @@ object Tests extends Suite(m"Mandible tests"):
         |}
         |""".s.stripMargin.tt
 
+  val holder: Text =
+    t"""|package fixture;
+        |public class Holder<T> {
+        |  public Object get() { return null; }
+        |}
+        |""".s.stripMargin.tt
+
   // Fixture variants are made by editing the source text, so each test states exactly the one
   // change whose grade it is asserting.
   def edit(source: Text, from: Text, to: Text): Text = source.s.replace(from.s, to.s).nn.tt
 
-  def sources(base: Text, derived: Text, api: Text): Map[Text, Text] =
-    Map(t"fixture/Base.java" -> base, t"fixture/Derived.java" -> derived, t"fixture/Api.java" -> api)
+  def sources(base: Text, derived: Text, api: Text, holder: Text = holder): Map[Text, Text] =
+    Map
+      ( t"fixture/Base.java"    -> base,
+        t"fixture/Derived.java" -> derived,
+        t"fixture/Api.java"     -> api,
+        t"fixture/Holder.java"  -> holder )
 
   def run(): Unit =
     classfileDisciplineTests()
+    jvmProfileTests()
     test(m"Locate a known method on a classfile"):
       val rewrite =
         Classfile[StackTrace].let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset)).vouch
@@ -203,14 +215,14 @@ object Tests extends Suite(m"Mandible tests"):
 
     // Compiles the fixtures and returns the emitted classfiles as discipline content, plus the
     // output directory to use as the atomization classpath.
-    def compile(base: Text, derived: Text, api: Text) =
+    def compile(base: Text, derived: Text, api: Text, holder: Text = holder) =
       // The compilation runs inside `supervise`, but the classfile bytes are read outside it:
       // `Data` is a frozen-array capability, and returning one out of the supervisor's scope
       // freshens its capture set past what the enclosing method can admit.
       val out: Text = supervise:
         val directory: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
         Files.createDirectories(Paths.get(directory.encode.s))
-        Javac(Nil)(LocalClasspath())(sources(base, derived, api), directory).complete()
+        Javac(Nil)(LocalClasspath())(sources(base, derived, api, holder), directory).complete()
 
         directory.encode
 
@@ -226,8 +238,8 @@ object Tests extends Suite(m"Mandible tests"):
 
       (List.from(content), out)
 
-    def atomize(base: Text, derived: Text, api: Text): Atomization =
-      val (content, out) = compile(base, derived, api)
+    def atomize(base: Text, derived: Text, api: Text, holder: Text = holder): Atomization =
+      val (content, out) = compile(base, derived, api, holder)
       ClassfileDiscipline.atomize(content, Discipline.Context(t"jvm", classpath = List(out)))
 
     def listing(atomization: Atomization): scala.List[(Text, Text)] =
@@ -338,3 +350,119 @@ object Tests extends Suite(m"Mandible tests"):
       registry.atomize(content, context).stdlib.map: atomization =>
         (atomization.discipline, atomization.atoms.stdlib.size > 0)
     . assert(_ == scala.List((t"classfile/1", true)))
+
+  def jvmProfileTests(): Unit =
+    import reliquary.*
+
+    def compile(base: Text, derived: Text, api: Text, holder: Text = holder) =
+      val out: Text = supervise:
+        val directory: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+        Files.createDirectories(Paths.get(directory.encode.s))
+        Javac(Nil)(LocalClasspath())(sources(base, derived, api, holder), directory).complete()
+
+        directory.encode
+
+      val root = Paths.get(out.s).nn
+
+      val content = Files.walk(root).nn.iterator.nn.asScala
+        . to(scala.List)
+        . filter { path => path.toString.endsWith(".class") }
+        . sortBy(_.toString)
+        . map: path =>
+            val name = Text(root.relativize(path).nn.toString)
+            (TreePath(name), Array.unsafeFrozen(Files.readAllBytes(path).nn))
+
+      (List.from(content), out)
+
+    def evidence(base: Text, derived: Text, api: Text, holder: Text = holder) =
+      val (content, out) = compile(base, derived, api, holder)
+
+      EcosystemProfile.Evidence
+        (List(EcosystemProfile.Section(t"jvm", content, classpath = List(out))))
+
+    def atomize(base: Text, derived: Text, api: Text, holder: Text = holder): Atomization =
+      val (content, out) = compile(base, derived, api, holder)
+      ClassfileDiscipline.atomize(content, Discipline.Context(t"jvm", classpath = List(out)))
+
+    val before = evidence(base, derived, api)
+
+    def violations(base2: Text, derived2: Text, api2: Text): scala.List[Text] =
+      JvmProfile.check(before, evidence(base2, derived2, api2)).stdlib.map(_.detail)
+
+    test(m"the profile certifies linkage and nothing else"):
+      (JvmProfile.id, JvmProfile.certifies)
+    . assert(_ == (t"jvm/1", Set(Discipline.Guarantee.Linkage)))
+
+    test(m"an unchanged release violates no linkage predicate"):
+      violations(base, derived, api)
+    . assert(_.isEmpty)
+
+    test(m"adding a concrete method violates no linkage predicate"):
+      val added = t"public int added() { return 9; }\n  public int inherited"
+      violations(edit(base, t"public int inherited", added), derived, api)
+    . assert(_.isEmpty)
+
+    test(m"removing a presented method is a linkage violation"):
+      violations(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
+    . assert: details =>
+        details.exists(_.s.startsWith("fixture/Base#guarded:()I"))
+          && details.exists(_.s.startsWith("fixture/Derived#guarded:()I"))
+
+    test(m"narrowing accessibility is a linkage violation"):
+      violations(edit(base, t"protected int guarded", t"private int guarded"), derived, api)
+    . assert(_.nonEmpty)
+
+    test(m"changing a method's return type is a linkage violation"):
+      violations(edit(base, t"public int inherited() { return 1; }",
+          t"public long inherited() { return 1; }"), derived, api)
+    . assert(_.nonEmpty)
+
+    test(m"a changed constant is reported apart from the linkage predicates"):
+      val changed = edit(base, t"CONSTANT = 7", t"CONSTANT = 8")
+
+      (violations(changed, derived, api),
+       JvmProfile.constants(before, evidence(changed, derived, api)).stdlib)
+    . assert(_ == (scala.List(),
+        scala.List(t"fixture/Base.CONSTANT:I", t"fixture/Derived.CONSTANT:I")))
+
+    // Appendix D.1's second bullet, made executable: a change can break recompilation while
+    // leaving linkage untouched. Tightening a class's type-parameter bound rewrites its generic
+    // `Signature` attribute and fails every consumer's next compile, but erasure is unchanged, so
+    // every descriptor a compiled consumer resolves is byte-identical. The discipline grades it a
+    // major; the profile — which reads the linkage-only fold — finds nothing to report. Both are
+    // right, which is exactly why the two levels are recorded separately.
+    test(m"a recompilation break with no linkage break is graded but not reported"):
+      val bounded = edit(holder, t"class Holder<T>", t"class Holder<T extends Number>")
+
+      (Grade.between(List(atomize(base, derived, api)), List(atomize(base, derived, api, bounded))),
+       JvmProfile.check(before, evidence(base, derived, api, bounded)).stdlib)
+    . assert(_ == (Grade.Major, scala.List()))
+
+    // The audit (L128/L130) is what turns a finding into a verdict about the release.
+
+    test(m"an unrecorded linkage break is rejected"):
+      val registry = EcosystemProfile.Registry(List(JvmProfile))
+      val declared = List(LiraManifest.Profile(t"jvm/1"))
+      val after = evidence(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
+
+      import errorDiagnostics.stackTracesDiagnostics
+      capture[LiraError](EcosystemProfile.audit(registry, declared, before, after)).reason
+    . assert(_ == LiraError.Reason.UnrecordedBreak(t"jvm/1", t"linkage"))
+
+    test(m"a recorded linkage break is accepted"):
+      val registry = EcosystemProfile.Registry(List(JvmProfile))
+
+      val declared =
+        List(LiraManifest.Profile(t"jvm/1", List(LiraManifest.Guarantee.Linkage)))
+
+      val after = evidence(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
+
+      EcosystemProfile.audit(registry, declared, before, after).stdlib
+    . assert(_ == scala.List())
+
+    test(m"a declared profile with no implementation is reported, not rejected"):
+      val registry = EcosystemProfile.Registry(List(JvmProfile))
+      val declared = List(LiraManifest.Profile(t"unknown/1"))
+
+      EcosystemProfile.audit(registry, declared, before, before).stdlib
+    . assert(_ == scala.List(t"unknown/1"))

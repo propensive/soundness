@@ -159,7 +159,20 @@ object ClassfileAtomizer:
 
   // --- atoms --------------------------------------------------------------------------------
 
-  private def memberAtom(owner: Text, member: ClassSurface.Member): Atom =
+  // Whether generic `Signature` attributes participate in the encoding.
+  //
+  // They are *not* linkage surface: the JVM ignores them entirely, resolving on descriptors
+  // alone. They are recompilation surface, which is why the discipline folds them anyway —
+  // over-reporting a change costs a needless major, and that is the safe direction for something
+  // whose atoms are API identity. The `jvm/1` profile has the opposite exposure: over-reporting
+  // there publishes `breaks linkage` for a release that breaks no linkage, which is a false
+  // claim rather than a conservative one. So the profile asks for the narrower view.
+  enum Fold:
+    case Full, Linkage
+
+    def signatures: Boolean = this == Full
+
+  private def memberAtom(owner: Text, member: ClassSurface.Member, fold: Fold): Atom =
     val flags = member.kind match
       case ClassSurface.Kind.Method => bits(member.flags, methodFlags)
       case ClassSurface.Kind.Field  => bits(member.flags, fieldFlags)
@@ -175,7 +188,7 @@ object ClassfileAtomizer:
       utf8(out, member.name)
       utf8(out, member.descriptor)
       uvarint(out, flags)
-      optional(out, member.signature)
+      if fold.signatures then optional(out, member.signature)
       texts(out, member.exceptions)
       optional(out, member.constant)
 
@@ -188,7 +201,7 @@ object ClassfileAtomizer:
     Atom(t"$owner${member.selector}", atomClass, encoding)
 
   private def classAtom
-    ( surface: ClassSurface, members: List[(ClassSurface.Member, Boolean)] )
+    ( surface: ClassSurface, members: List[(ClassSurface.Member, Boolean)], fold: Fold )
   :   Atom =
 
     // Rule 5 of `tasty.md` §8, transposed: on a class open to subclassing, *adding* an abstract
@@ -210,14 +223,16 @@ object ClassfileAtomizer:
       // Interfaces keep no declaration order: the JVM resolves default methods by the class
       // hierarchy, not by the order of the `interfaces` array, and `ClassSurface` sorts them.
       texts(out, surface.interfaces)
-      optional(out, surface.signature)
+      if fold.signatures then optional(out, surface.signature)
       texts(out, abstracts)
 
     Atom(surface.name, AtomClass.Rigid, encoding)
 
   // Atomizes the visible classes of one release. `classes` is the release's own content, keyed by
   // JVM internal name; `classpath` locates the dependencies whose members present through it.
-  def atomize(classes: Map[Text, ClassSurface], classpath: List[Text]): Outcome =
+  def atomize(classes: Map[Text, ClassSurface], classpath: List[Text], fold: Fold = Fold.Full)
+  :   Outcome =
+
     val index = ClasspathIndex(classes, classpath)
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
     val unresolved = scala.collection.mutable.LinkedHashSet[Text]()
@@ -231,9 +246,9 @@ object ClassfileAtomizer:
           unresolved ++= missing.stdlib
 
           val members = presented(surface, index)
-          atoms += classAtom(surface, members)
+          atoms += classAtom(surface, members, fold)
 
           members.stdlib.foreach: (member, _) =>
-            atoms += memberAtom(surface.name, member)
+            atoms += memberAtom(surface.name, member, fold)
 
     Outcome(List.from(atoms.toList), List.from(unresolved.toList))
