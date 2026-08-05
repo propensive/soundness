@@ -370,6 +370,14 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         . to[Set]
       . assert(_ == Set(("#/name", false), ("#/email", false)))
 
+      // The excess atom is read by `assignAtoms`, deep inside `assignCompound`,
+      // so this proves the per-compound focus covers a compound's whole subtree
+      // and not just the keyword-dispatch step — the issue's `e302.tel` case.
+      test(m"An excess atom is located at the enclosing compound"):
+        assignPositions(t"item x y\nname n\n", atomAccrualSchema).items
+        . map { case (pointer, position) => (pointer.s, position.let(_.line).or(-1)) }.to[Set]
+      . assert(_ == Set(("#/item", 1)))
+
       // E308 is a property of a member's whole run, not of one node, so it is
       // raised outside every `focus` block: the entry has no focus at all and
       // takes the root one. `supplementPositions` must tolerate that rather
