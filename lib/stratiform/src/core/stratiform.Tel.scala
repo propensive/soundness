@@ -4073,16 +4073,43 @@ object Tel extends Tel2:
           val compoundKeyword = compoundLineKeyword
           val compoundRemark  = compoundLineRemark
 
-          // Record this compound's keyword position *before* descending, so the
-          // triple stream is pre-order (parent before children) — the order
-          // `Tel.buildIndex` folds against the AST. Column is 1-indexed at the
+          // Record this compound's position *before* descending, so the record
+          // stream is pre-order (parent before children) — the order
+          // `Tel.buildIndex` folds against the AST. Columns are 1-indexed at the
           // keyword's first character (just past the leading spaces).
+          //
+          // The value extent covers the compound's inline atoms — the text a
+          // decode error is about. It is reconstructed arithmetically rather than
+          // captured during the scan: `parseCompoundLine` has just pushed this
+          // line's atoms onto `scratchAtoms`, each carrying the space run that
+          // preceded it, and inline atoms are copied from the source verbatim, so
+          // walking them from just past the keyword replays the line's layout
+          // exactly. (A single space inside a hard-space-mode atom is part of that
+          // atom's own text, so it is already counted.) Doing it here keeps every
+          // instruction inside this `tracking` branch, off the throughput path,
+          // and counts characters where a cursor column would count bytes.
           if tracking then
+            var column = compoundLeadingSpaces + 1 + compoundKeyword.s.length
+            var valueColumn = 0
+            var index = atomsStart
+
+            while index < atomScratchIx do
+              scratchAtoms(index) match
+                case atom: Tel.Atom.Inline =>
+                  column += atom.precedingSpaces
+                  if valueColumn == 0 then valueColumn = column
+                  column += atom.text.s.length
+
+                case _ =>
+                  ()
+
+              index += 1
+
             positionRecords += compoundLine
             positionRecords += compoundLeadingSpaces + 1
             positionRecords += compoundKeyword.s.length
-            positionRecords += 0
-            positionRecords += 0
+            positionRecords += valueColumn
+            positionRecords += (if valueColumn == 0 then 0 else column - valueColumn)
 
           prevContentLeadingSpaces = compoundLeadingSpaces
           prevLineWasBoundary = false
