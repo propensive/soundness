@@ -1884,7 +1884,8 @@ object Tel extends Tel2:
   // descriptor layout documented on `PositionIndex`. The AST supplies the tree
   // shape; the records supply the coordinates. Runs only under `parseTracked`,
   // never on the hot path.
-  private[stratiform] def buildIndex(document: Tel.Document, records: Array[Int]^{}): Array[Int]^{} =
+  private[stratiform] def buildIndex(document: Tel.Document, records: Array[Int]^{})
+  :   Array[Int]^{} =
     var cursor = 0
 
     def build
@@ -1909,7 +1910,13 @@ object Tel extends Tel2:
         cursor += positionStride
 
         childDescriptors(k) =
-          build(children(k), childLine, childColumn, childLength, childValueColumn, childValueLength)
+          build
+           ( children(k),
+             childLine,
+             childColumn,
+             childLength,
+             childValueColumn,
+             childValueLength )
 
         k += 1
 
