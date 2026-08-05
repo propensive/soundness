@@ -44,6 +44,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import aperture.*
 import contingency.*
+import denominative.*
 import galilei.CreateFlag
 import gossamer.*
 import hypotenuse.*
@@ -266,8 +267,11 @@ object TarBuilder:
         val out = ji.FileOutputStream(temporary.toFile)
 
         try
-          stream.sweep: (window, start, count) =>
-            out.write(window.asInstanceOf[scala.Array[Byte]], start, count)
+          stream.sweep: region =>
+            range =>
+              val interval: Interval = range
+              out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+                  interval.size)
         finally out.close()
 
         jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,

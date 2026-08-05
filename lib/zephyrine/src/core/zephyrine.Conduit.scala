@@ -58,7 +58,7 @@ import vacuous.*
 object Conduit:
   // A queued hand-off: `storage` is either a block the writer minted and
   // filled (start 0), or the immutable backing of a chunk passed through by
-  // reference, windowed at [start, start + size). `recyclable` is true only for
+  // reference, regioned at [start, start + size). `recyclable` is true only for
   // writer-minted blocks, whose storage the reader may return to the freelist
   // for reuse; a passed-through backing is the caller's immutable data and must
   // never be recycled.
@@ -67,9 +67,9 @@ object Conduit:
   // The synchronized substrate both endpoints capture: a spin-then-park SPSC
   // ring, the failure flag, and a non-blocking pool of spent blocks the reader
   // returns to the writer for reuse.
-  private final class Core(val window: Int) extends caps.SharedCapability:
-    val handoff: Handoff = Handoff(window)
-    val freelist: Freelist = Freelist(window + 1)
+  private final class Core(val depth: Int) extends caps.SharedCapability:
+    val handoff: Handoff = Handoff(depth)
+    val freelist: Freelist = Freelist(depth + 1)
     // A JMM-managed flag: its safety is the volatile publication guarantee, not
     // aliasing analysis, so its captures are untracked.
     @caps.unsafe.untrackedCaptures @volatile var error: Throwable | Null = null
@@ -80,7 +80,7 @@ object Conduit:
 
     val block: Int = buffering.capacity(addressable0.substrate)
     val ceiling: Int = buffering.transfer(addressable0.substrate).max(block)
-    val core = new Core(buffering.window)
+    val core = new Core(buffering.depth)
 
     // Whether to recycle drained transfer blocks. When on, every minted block is
     // physically `ceiling`-sized, so the pool holds a single size and a reused
@@ -100,7 +100,7 @@ object Conduit:
     // synchronized queue transfer. With recycling, every block is physically
     // `ceiling`-sized (so any drained block fits any future reservation and the
     // pool stays single-size), while `capacity` still bounds the usable prefix,
-    // leaving the publish cadence unchanged. The memory bound is `window + 1`
+    // leaving the publish cadence unchanged. The memory bound is `depth + 1`
     // blocks of at most `ceiling` either way.
     val intake: (Intake[medium] over Credit)^ = new Intake[medium](using addressable0):
       type Transport = Credit
@@ -235,7 +235,7 @@ object Conduit:
       // backing (the caller's immutable data, never to be recycled).
       private var recyclable0: Boolean = false
 
-      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
 
@@ -292,7 +292,7 @@ object Conduit:
                 // `publish`), and a passed-through chunk backing is immutable.
                 //
                 // The outgoing block is fully drained (this branch runs only
-                // once `limit0` reached `end0`) and its window is relinquished
+                // once `limit0` reached `end0`) and its region is relinquished
                 // the moment this `refill` returns a new one, so a ceiling-sized
                 // minted block is safe to return to the writer for reuse. The
                 // freelist's publication order carries the ownership across; a

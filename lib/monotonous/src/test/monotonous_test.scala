@@ -247,7 +247,7 @@ object Drain:
 
     def recur(): Unit = stream.refill(Credit(credit)) match
       case count: Int =>
-        val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
+        val window = unsafely(stream.storage).asInstanceOf[scala.Array[Char]]
         builder.append(String(window, stream.start, count))
         stream.skip(count)
         recur()
@@ -262,7 +262,7 @@ object Drain:
 
     def recur(): Unit = stream.refill(Credit(credit)) match
       case count: Int =>
-        val window = unsafely(stream.window).asInstanceOf[scala.Array[Byte]]
+        val window = unsafely(stream.storage).asInstanceOf[scala.Array[Byte]]
         target.write(window, stream.start, count)
         stream.skip(count)
         recur()

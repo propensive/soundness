@@ -479,7 +479,7 @@ trait Addressable extends Typeclass.Pure, Operable, Targetable:
 
   // The value's backing storage, when the medium is immutable and its erased
   // representation *is* its `Storage` type, so a whole chunk can be exposed as
-  // a window — or handed across an asynchronous boundary — without copying.
+  // a region — or handed across an asynchronous boundary — without copying.
   // `Data` returns its backing array; media without a directly-exposable
   // backing (`Text`, whose `String` is not an `Array[Char]`) return `Unset`,
   // and callers copy. Exposed backing must never be mutated.

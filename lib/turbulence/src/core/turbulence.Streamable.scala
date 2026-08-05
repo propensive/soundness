@@ -106,7 +106,7 @@ object Streamable:
         private var total: Long = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -160,7 +160,7 @@ object Streamable:
       private var total: Long = 0
       private var ended: Boolean = false
 
-      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
       update def skip(count: Int): Unit = start0 += count

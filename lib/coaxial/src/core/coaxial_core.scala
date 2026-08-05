@@ -43,7 +43,7 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import urticose.MacAddress
-import zephyrine.{Stream, Credit, Buffering, Substrate, stream}
+import zephyrine.{Stream, Credit, Buffering, Substrate, capped, stream}
 import vacuous.*
 
 import Control.*
@@ -140,7 +140,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
       while !done do input.refill(demand) match
         case count: Int =>
           if count > 0 then
-            val data = input.addressable.materialize(input.window(using Unsafe), input.start, count)
+            val data = input.region { region => range => region.materialize(range.capped(count)) }
             input.skip(count)
 
             handle(using state)(message.deserialize(data)) match
@@ -200,7 +200,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
       while !done do input.refill(demand) match
         case count: Int =>
           if count > 0 then
-            val data = input.addressable.materialize(input.window(using Unsafe), input.start, count)
+            val data = input.region { region => range => region.materialize(range.capped(count)) }
             input.skip(count)
 
             handle(using state)(message.deserialize(data)) match

@@ -43,14 +43,15 @@ import vacuous.*
 import zephyrine.*
 
 object Aggregable:
-  // Drain a pull endpoint into the medium's builder: one copy per window,
+  // Drain a pull endpoint into the medium's builder: one copy per region,
   // no intermediate chunks. The native `accept` for whole-value aggregation.
   private def gather[medium](consume stream: (Stream[medium] over Credit)^): medium =
+    given stream.addressable.type = stream.addressable
     val target = stream.addressable.blank(4096)
 
     def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
       case count: Int =>
-        stream.addressable.cloneStorage(stream.window(using Unsafe), stream.start, count)(target)
+        stream.region { region => range => region.cloneTo(range)(target) }
         stream.skip(count)
         recur()
 
@@ -122,12 +123,12 @@ trait Aggregable extends Typeclass, Operable:
   // and delegates to the legacy `aggregate`; instances override it to build
   // directly from the stream's windows.
   def accept(stream: (Stream[Operand] over Credit)^): Self =
+    given stream.addressable.type = stream.addressable
+
     def recur(): Chain[Operand] =
       stream.refill(Credit(Long.MaxValue)) match
         case count: Int =>
-          val chunk =
-            stream.addressable.materialize(stream.window(using Unsafe), stream.start, count)
-
+          val chunk = stream.region { region => range => region.materialize(range) }
           stream.skip(count)
           chunk #:: recur()
 

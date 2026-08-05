@@ -835,7 +835,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(8)) match
             case count: Int =>
-              val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
+              val window = unsafely(stream.storage).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, stream.start, count))
               stream.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -869,7 +869,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(8)) match
             case count: Int =>
-              val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
+              val window = unsafely(stream.storage).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, stream.start, count))
               stream.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -888,7 +888,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
           def recur(): Unit = decoded.refill(Credit(4)) match
             case count: Int =>
-              val window = unsafely(decoded.window).asInstanceOf[scala.Array[Char]]
+              val window = unsafely(decoded.storage).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, decoded.start, count))
               decoded.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -907,7 +907,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(7)) match
             case count: Int =>
-              val window = unsafely(stream.window).asInstanceOf[scala.Array[AnyRef]]
+              val window = unsafely(stream.storage).asInstanceOf[scala.Array[AnyRef]]
 
               for index <- 0 until count
               do collected = window(stream.start + index).asInstanceOf[String] :: collected
@@ -933,9 +933,8 @@ object Tests extends Suite(m"Zephyrine tests"):
           var collected: List[Byte] = Nil
 
           Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](), Array.of[Byte](4, 5)))
-          . sweep: (storage, start, count) =>
-              val bytes = storage.asInstanceOf[scala.Array[Byte]]
-              for index <- 0 until count do collected = bytes(start + index) :: collected
+          . sweep: region =>
+              range => region.visit(range) { index => collected = region(index) :: collected }
 
           collected.reverse
         . assert(_ == List[Byte](1, 2, 3, 4, 5))
@@ -994,13 +993,12 @@ object Tests extends Suite(m"Zephyrine tests"):
           small.stream.truncate(3).viaDuct(Doubler()).memoize.to[List]
         . assert(_ == List[Byte](1, 1, 2, 2, 3, 3))
 
-        test(m"gather reduces over windows without boxing"):
-          bytes.stream.gather(0L): (total, storage, start, count) =>
-            val array = storage.asInstanceOf[scala.Array[Byte]]
-            var sum = total
-            var index = 0
-            while index < count do { sum += (array(start + index) & 0xff); index += 1 }
-            sum
+        test(m"gather reduces over regions without boxing"):
+          bytes.stream.gather(0L): region =>
+            (total, range) =>
+              var sum = total
+              region.visit(range) { index => sum += (region(index) & 0xff) }
+              sum
         . assert(_ == bytes.to[List].map(_ & 0xff).sum.toLong)
 
         test(m"toProgression yields the stream's chunks in order"):
@@ -1203,9 +1201,9 @@ object Tests extends Suite(m"Zephyrine tests"):
       demands ::= demand.count
       underlying.refill(demand)
 
-    protected def window0: AnyRef =
+    protected def storage0: AnyRef =
       val current = underlying
-      unsafely(current.window).asInstanceOf[AnyRef]
+      unsafely(current.storage).asInstanceOf[AnyRef]
     def start: Int = underlying.start
     def limit: Int = underlying.limit
     update def skip(count: Int): Unit = underlying.skip(count)

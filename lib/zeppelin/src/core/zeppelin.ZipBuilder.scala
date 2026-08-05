@@ -42,6 +42,7 @@ import java.nio.file as jnf
 import anticipation.*
 import aperture.*
 import contingency.*
+import denominative.*
 import galilei.CreateFlag
 import gossamer.*
 import prepositional.*
@@ -160,8 +161,11 @@ object ZipBuilder:
         val out = ji.FileOutputStream(temporary.toFile)
 
         try
-          zipfile.serialize.sweep: (window, start, count) =>
-            out.write(window.asInstanceOf[scala.Array[Byte]], start, count)
+          zipfile.serialize.sweep: region =>
+            range =>
+              val interval: Interval = range
+              out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+                  interval.size)
         finally out.close()
 
         jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,

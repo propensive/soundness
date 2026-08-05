@@ -42,6 +42,7 @@ import com.sun.net.httpserver as csnh
 import anticipation.*
 import beneficence.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -153,8 +154,13 @@ object HttpConnection:
             def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
               case size: Int =>
                 try
-                  val window = stream.window(using Unsafe).asInstanceOf[scala.Array[Byte]]
-                  responseBody.write(window, stream.start, size)
+                  stream.region: region =>
+                    range =>
+                      val interval: Interval = range
+
+                      responseBody.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]),
+                          interval.start.n0, interval.size)
+
                   count += size
                   responseBody.flush()
                 catch case _: ji.IOException => abort(StreamError(count.b))

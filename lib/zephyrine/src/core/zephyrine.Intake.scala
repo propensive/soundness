@@ -38,7 +38,7 @@ import rudiments.*
 import vacuous.*
 
 // The push endpoint of a streaming pipeline: a mutable buffer whose writable
-// window is exposed zero-copy to exactly one producer, and which reports its
+// region is exposed zero-copy to exactly one producer, and which reports its
 // current `demand` — the reactive message telling that producer how much it
 // can accept. An `Intake` is transformed into a differently-typed `Intake`
 // with `accepting`. `Intake` extends `Producer`, so producing code written
@@ -47,7 +47,7 @@ import vacuous.*
 // The primitive protocol is `reserve`/`buffer`/`mark`/`commit`: a writer
 // reserves contiguous space, writes directly into the intake's storage at
 // `mark`, then commits. `put`, `push` and `absorb` are final loops over that
-// protocol, so implementations provide only the window and its lifecycle.
+// protocol, so implementations provide only the region and its lifecycle.
 // The intake inherits Producer's capability classification: writes require an exclusive
 // reference; `demand` and `mark` are read-only queries.
 trait Intake[medium](using val addressable: medium is Addressable) extends Producer[medium]:
@@ -70,7 +70,7 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
 
   // Zero-copy view of this intake's buffer; elements from `mark` are writable
   // up to the last `reserve`d space. Valid only until the next `commit`,
-  // `flush` or `finish` — single-owner discipline, as `Stream.window`.
+  // `flush` or `finish` — single-owner discipline, as `Stream.region`.
   // Implementations provide the untyped `buffer0`; since `Addressable`
   // instances are unique per medium, the cast in `buffer` is sound.
   final def buffer(using Unsafe): addressable.Storage =

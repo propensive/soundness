@@ -114,9 +114,9 @@ object Ductile:
               in.position(in.position + result.length)
               decode(in, out, base, last)
 
-          // Decode window bytes `[start, sourceOffset + sourceLength)` through
+          // Decode region bytes `[start, sourceOffset + sourceLength)` through
           // the charset decoder into `[first, targetOffset + targetSpace)`:
-          // the whole window for a non-UTF-8 charset, or the remainder after
+          // the whole region for a non-UTF-8 charset, or the remainder after
           // the point where the UTF-8 kernel encountered malformed input.
           private update def stepDecoder
             ( bytes: scala.Array[Byte],
@@ -142,7 +142,7 @@ object Ductile:
               Duct.Progress(sourceLength, out.position - targetOffset)
             else
               // Output filled with complete bytes still to come, or input
-              // drained cleanly: leave any remainder for the next window.
+              // drained cleanly: leave any remainder for the next region.
               Duct.Progress(consumed, out.position - targetOffset)
 
           // The UTF-8 kernel: ASCII runs widen through an unrolled block copy
@@ -151,7 +151,7 @@ object Ductile:
           // anything above U+10FFFF all reject), and only exceptional input
           // leaves the loop: a valid-but-incomplete tail is carried exactly as
           // the decoder path carries it, and malformed input falls back to the
-          // charset decoder for the window remainder, which owns sanitizer
+          // charset decoder for the region remainder, which owns sanitizer
           // semantics unchanged.
           private update def stepUtf8
             ( bytes: scala.Array[Byte],
@@ -284,7 +284,7 @@ object Ductile:
 
             if staging.position == 0 then
               // Fast path: with no carried bytes, decode straight from the source
-              // window — no intermediate copy of the bulk of the stream.
+              // region — no intermediate copy of the bulk of the stream.
               if utf8 then
                 stepUtf8(bytes, sourceOffset, sourceLength, chars, targetOffset, targetSpace)
               else
@@ -293,7 +293,7 @@ object Ductile:
                     chars, targetOffset, targetSpace, targetOffset )
             else
               // Carry path: prior incomplete bytes are staged, so append the new
-              // window to make the split character contiguous, then decode.
+              // region to make the split character contiguous, then decode.
               val out = jn.CharBuffer.wrap(chars, targetOffset, targetSpace).nn
               val copy = sourceLength.min(staging.remaining)
               staging.put(bytes, sourceOffset, copy)

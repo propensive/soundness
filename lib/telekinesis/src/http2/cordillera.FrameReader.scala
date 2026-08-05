@@ -41,7 +41,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 import prepositional.*
-import zephyrine.{Stream, Credit, Buffering, Substrate}
+import zephyrine.{Slate, Stream, Credit, Buffering, Substrate, capped}
 
 import Http2.Frame
 import Http2Error.Reason
@@ -82,7 +82,12 @@ extends caps.ExclusiveCapability, caps.Stateful:
           val remaining = buffer.length - pos
           val grown = new scala.Array[Byte](remaining + count)
           System.arraycopy(buffer, pos, grown, 0, remaining)
-          System.arraycopy(input.window(using Unsafe), input.start, grown, remaining, count)
+
+          input.region: region =>
+            range =>
+              Slate.over[Bytes, Int](grown, remaining, remaining + count): slate =>
+                space => region.blit(range.capped(count))(slate)(space)
+
           input.skip(count)
           // The cast erases the fresh array's capture: it is confined to this
           // (exclusive) reader from here on.

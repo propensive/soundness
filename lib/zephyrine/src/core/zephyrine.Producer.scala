@@ -52,11 +52,11 @@ object Producer:
   type Bytes = Producer[Data] { type Operand = Byte }
 
   // Streaming: chunks are queued (with backpressure) and drained through `iterator`. The producing
-  // code must run on a separate fiber, since `put` blocks once the window is full.
-  def apply[medium](block: Int = 4096, window: Int = 2)(using addr: medium is Addressable)
+  // code must run on a separate fiber, since `put` blocks once the queue is full.
+  def apply[medium](block: Int = 4096, depth: Int = 2)(using addr: medium is Addressable)
   :   (Channel[medium] { type Operand = addr.Operand })^ =
 
-    Channel(block, window)(using addr)
+    Channel(block, depth)(using addr)
 
   // Synchronous: run `body`, accumulating directly into a builder, and return the whole value. No
   // concurrency, no chunk buffer, and none of the streaming path's single-thread deadlock risk.
@@ -81,7 +81,7 @@ object Producer:
     body(producer)
     addressable.build(target)
 
-  final class Channel[medium](block: Int, window: Int)(using val addressable: medium is Addressable)
+  final class Channel[medium](block: Int, depth: Int)(using val addressable: medium is Addressable)
   extends Producer[medium]:
 
     type Operand = addressable.Operand
@@ -89,7 +89,7 @@ object Producer:
     private object Done
 
     private val queue: juc.ArrayBlockingQueue[medium | Done.type] =
-      juc.ArrayBlockingQueue(window)
+      juc.ArrayBlockingQueue(depth)
 
     // Untracked, cast-erased: reached only through this producer.
     @caps.unsafe.untrackedCaptures

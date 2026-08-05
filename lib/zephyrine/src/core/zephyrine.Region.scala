@@ -40,22 +40,22 @@ import vacuous.*
 
 // A `Region` is a bounds-safe fragment of a medium's backing storage (issue #1666): an opaque
 // reference to the storage that grants no direct access — no `length`, no raw indexed read.
-// The valid window travels separately as an `Interval` branded to the region's identity
+// The valid extent travels separately as an `Interval` branded to the region's identity
 // (`Interval in region.type`), and the only producers of branded `Ordinal`s are the trusted
 // combinators below, so `apply` is total: no bounds check, no `Optional`. A region plus its
-// window is one reference and one `Long` — allocation-free, replacing the unsafe
+// extent is one reference and one `Long` — allocation-free, replacing the unsafe
 // `(storage, offset, length)` triples previously threaded through streams and ducts.
 //
-// `Slate` is the writable counterpart, for duct output windows: `update` in place of `apply`,
+// `Slate` is the writable counterpart, for duct output storage: `update` in place of `apply`,
 // with the same branding discipline.
 //
 // Both erase to an untyped `AnyRef` carrier; since `Addressable` instances are unique per
 // medium, the casts back to `addressable.Storage` are sound — the same argument as
-// `Stream.window0`. Validity is temporal (a region is valid until the lender's next refill or
+// `Stream.storage0`. Validity is temporal (a region is valid until the lender's next refill or
 // reuse), which branding alone cannot express; that remains the single-owner discipline, and
 // the lender shape below is the hook by which separation checking will later enforce it.
 //
-// Within the trusted kernel, a brand must be widened away (`val window: Interval = range`)
+// Within the trusted kernel, a brand must be widened away (`val interval: Interval = range`)
 // before the opaque type's own inline ops apply: the inliner's opaque transparency does not
 // see through the refinement `Interval { type Form = region.type }`.
 
@@ -63,7 +63,7 @@ opaque type Region[medium] = AnyRef
 
 object Region:
   // The trusted boundary constructor: binds the region to a stable name and lends the caller
-  // its branded window, clamped to the storage's true extent so the totality invariant is
+  // its branded extent, clamped to the storage's true extent so the totality invariant is
   // established by construction. The brand is sound because storage length is fixed at
   // allocation and `region` cannot be rebound.
   inline def over[medium, result](using addressable: medium is Addressable)
@@ -87,9 +87,9 @@ object Region:
       ( inline lambda: (Ordinal in region.type) => Unit )
     :   Unit =
 
-      val window: Interval = range
-      var index: Int = window.start.n0
-      val end: Int = window.limit.n0
+      val interval: Interval = range
+      var index: Int = interval.start.n0
+      val end: Int = interval.limit.n0
 
       while index < end do
         lambda(region.ordinal(index))
@@ -106,9 +106,9 @@ object Region:
       ( inline rest: (Ordinal in region.type) => Unit )
     :   Unit =
 
-      val window: Interval = range
-      var index: Int = window.start.n0
-      val end: Int = window.limit.n0
+      val interval: Interval = range
+      var index: Int = interval.start.n0
+      val end: Int = interval.limit.n0
 
       while index + 8 <= end do
         whole
@@ -123,16 +123,16 @@ object Region:
         index += 1
 
     // Bulk operations, for the `arraycopy`/`materialize`-shaped consumers: each wraps one
-    // `Addressable` primitive with the window's bounds, so no caller ever re-derives offsets.
+    // `Addressable` primitive with the extent's bounds, so no caller ever re-derives offsets.
     inline def materialize(range: Interval in region.type): medium =
-      val window: Interval = range
+      val interval: Interval = range
       addressable.materialize
-       (region.asInstanceOf[addressable.Storage], window.start.n0, window.size)
+       (region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size)
 
     inline def cloneTo(range: Interval in region.type)(target: addressable.Target): Unit =
-      val window: Interval = range
+      val interval: Interval = range
       addressable.cloneStorage
-       (region.asInstanceOf[addressable.Storage], window.start.n0, window.size)(target)
+       (region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size)(target)
 
     // Copies as much of `range` as fits in `space` — the minimum of the two sizes, returned —
     // so the operation is total by construction.
@@ -152,17 +152,18 @@ object Region:
 
     // The escape hatch for kernels whose index arithmetic outruns the combinators (compressor
     // back-references and the like): the raw storage, behind `Unsafe`, with the caller taking
-    // back responsibility for bounds.
-    inline def raw(using Unsafe): addressable.Storage^{caps.any.rd} =
+    // back responsibility for bounds. Unannotated, like `Stream.storage`: the cast launders
+    // the capture, and the `Unsafe` gate marks the responsibility boundary.
+    inline def raw(using Unsafe): addressable.Storage =
       region.asInstanceOf[addressable.Storage]
 
     // The only branded-ordinal producer, for the trusted combinators above.
     private inline def ordinal(inline n: Int): Ordinal in region.type =
       Ordinal.zerary(n).asInstanceOf[Ordinal in region.type]
 
-// Brand-preserving narrowing: a sub-interval of a valid window is itself valid, so clamping
-// preserves the brand. `capped` keeps at most the first `count` indexes of the window.
+// Brand-preserving narrowing: a sub-interval of a valid extent is itself valid, so clamping
+// preserves the brand. `capped` keeps at most the first `count` indexes of the extent.
 extension [form](range: Interval in form)
   inline def capped(count: Int): Interval in form =
-    val window: Interval = range
-    Interval.sized(window.start.n0, window.size.min(count.max(0))).asInstanceOf[Interval in form]
+    val interval: Interval = range
+    Interval.sized(interval.start.n0, interval.size.min(count.max(0))).asInstanceOf[Interval in form]

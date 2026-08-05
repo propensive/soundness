@@ -1267,7 +1267,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         def recur(): Unit = stream.refill(Credit(4096)) match
           case count: Int =>
-            val window = unsafely(stream.window).asInstanceOf[scala.Array[Byte]]
+            val window = unsafely(stream.storage).asInstanceOf[scala.Array[Byte]]
             var i = 0
 
             while i < count do

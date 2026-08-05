@@ -141,8 +141,7 @@ object Sheet:
     rowIterator:
       new Parser(() => stream.refill(Credit(block)) match
         case count: Int =>
-          val window = stream.window(using Unsafe)
-          val text = stream.addressable.materialize(window, stream.start, count)
+          val text = stream.region { region => range => region.materialize(range.capped(count)) }
           stream.skip(count)
           text
 
@@ -164,8 +163,7 @@ object Sheet:
     DsvReader(format = format, tactic = caps.unsafe.unsafeAssumePure(tactic), parser =
       new Parser(() => stream.refill(Credit(block)) match
         case count: Int =>
-          val window = stream.window(using Unsafe)
-          val text = stream.addressable.materialize(window, stream.start, count)
+          val text = stream.region { region => range => region.materialize(range.capped(count)) }
           stream.skip(count)
           text
 

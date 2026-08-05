@@ -37,7 +37,7 @@ import denominative.*
 import prepositional.*
 import vacuous.*
 
-// The writable counterpart of `Region`, for duct output windows: `update` in place of
+// The writable counterpart of `Region`, for duct output storage: `update` in place of
 // `apply`, with the same branding discipline. See `zephyrine.Region.scala` for the design.
 // The accessors live in the companion (found through implicit scope) rather than at the top
 // level: top-level extensions in separate files of one package cannot overload `Region`'s.
@@ -65,9 +65,9 @@ object Slate:
       ( inline lambda: (Ordinal in slate.type) => Unit )
     :   Unit =
 
-      val window: Interval = range
-      var index: Int = window.start.n0
-      val end: Int = window.limit.n0
+      val interval: Interval = range
+      var index: Int = interval.start.n0
+      val end: Int = interval.limit.n0
 
       while index < end do
         lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in slate.type])

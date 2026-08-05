@@ -34,12 +34,13 @@ package zephyrine
 
 import scala.caps
 
+import denominative.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
 
 // The pull endpoint of a streaming pipeline: a mutable buffer whose readable
-// window is exposed zero-copy to exactly one consumer. Backpressure is
+// region is exposed zero-copy to exactly one consumer. Backpressure is
 // intrinsic to pulling — a consumer that does not call `refill` demands
 // nothing — and the `demand` argument of each `refill` call is the reactive
 // message bounding how much the upstream may produce to satisfy it. A `Stream`
@@ -49,7 +50,7 @@ import vacuous.*
 // thread.
 object Stream:
   // A single-chunk in-memory stream. The chunk is copied into fresh storage
-  // once, at construction, so the window can be exposed mutably.
+  // once, at construction, so the region can be exposed mutably.
   def apply[medium](value: medium)(using addressable0: medium is Addressable)
   :   (Stream[medium] over Credit)^ =
 
@@ -66,10 +67,10 @@ object Stream:
       private var loaded: Boolean = false
 
       // The single buffer is filled once and only ever read thereafter, so its
-      // window ranges stay valid indefinitely — safe to share by reference.
-      override def windowStable: Boolean = true
+      // region ranges stay valid indefinitely — safe to share by reference.
+      override def regionStable: Boolean = true
 
-      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
       update def skip(count: Int): Unit = start0 += count
@@ -108,7 +109,7 @@ object Stream:
       private var limit0: Int = 0
       private var size: Int = 0
 
-      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
       update def skip(count: Int): Unit = start0 += count
@@ -151,31 +152,42 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // producing no more than `demand` permits, and return the number of
   // readable elements, i.e. `limit - start`. Returns `0` only when `demand`
   // grants nothing; returns `Unset` at end-of-stream. If unconsumed elements
-  // remain in the window, they are reported without producing more.
+  // remain in the region, they are reported without producing more.
   update def refill(demand: Transport): Optional[Int]
 
-  // Zero-copy view of this stream's buffer; elements `start until limit` are
-  // readable. Valid only until the next `refill` or `close` — the same
-  // single-owner discipline as `Cursor.unsafeBuffer`, and the hook by which
-  // separation checking will later enforce it. Implementations provide the
-  // untyped `window0`; since `Addressable` instances are unique per medium,
-  // the cast in `window` is sound.
-  final def window(using Unsafe): addressable.Storage =
-    window0.asInstanceOf[addressable.Storage]
+  // Zero-copy, bounds-safe view of this stream's readable region, elements
+  // `start until limit`: the region and its branded interval are lent to
+  // `lambda`, so every index the consumer can form is in range (see
+  // `zephyrine.Region.scala`). Valid only until the next `refill` or `close` —
+  // the same single-owner discipline as `Cursor.unsafeBuffer`, and the hook by
+  // which separation checking will later enforce it.
+  final inline def region[result]
+    ( inline lambda: (region: Region[medium]) => (Interval in region.type) => result )
+  :   result =
 
-  protected def window0: AnyRef
+    Region.over[medium, result](storage0.asInstanceOf[addressable.Storage], start, limit)(lambda)
+
+  // The raw backing storage, for fan-out plumbing that shares region ranges
+  // across endpoints by reference and for kernels whose index arithmetic
+  // outruns the region combinators. Implementations provide the untyped
+  // `storage0`; since `Addressable` instances are unique per medium, the cast
+  // is sound.
+  final def storage(using Unsafe): addressable.Storage =
+    storage0.asInstanceOf[addressable.Storage]
+
+  protected def storage0: AnyRef
   def start: Int
   def limit: Int
 
-  // Consume `count` elements of the window without materializing them.
+  // Consume `count` elements of the region without materializing them.
   update def skip(count: Int): Unit
 
-  // True when the window's backing is never overwritten while earlier ranges
+  // True when the region's backing is never overwritten while earlier ranges
   // may still be read — a single fixed buffer that `refill` only extends and
-  // `skip` only advances, so a fan-out or fan-in may share window ranges by
+  // `skip` only advances, so a fan-out or fan-in may share region ranges by
   // reference rather than copying them out. Conservatively `false`: a stream
   // that reuses its buffer between refills must never claim stability.
-  def windowStable: Boolean = false
+  def regionStable: Boolean = false
 
   // Release resources, propagating upstream through the whole chain.
   update def close(): Unit = ()

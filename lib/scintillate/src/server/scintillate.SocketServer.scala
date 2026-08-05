@@ -81,13 +81,17 @@ extends RequestServable:
     // into memory or sit unflushed in the buffer.
     var failed: Boolean = false
 
-    stream.sweep: (storage, start, size) =>
-      if !failed then
-        try
-          out.write(storage.asInstanceOf[scala.Array[Byte]], start, size)
-          out.flush()
-          count += size
-        catch case error: ji.IOException => failed = true
+    stream.sweep: region =>
+      range =>
+        if !failed then
+          val interval: Interval = range
+
+          try
+            out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+                interval.size)
+            out.flush()
+            count += interval.size
+          catch case error: ji.IOException => failed = true
 
     if failed then abort(StreamError(count.b))
 

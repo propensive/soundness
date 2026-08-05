@@ -146,7 +146,7 @@ package socketBackends:
         private var limit0: Int = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = chunk.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = chunk.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -178,9 +178,8 @@ package socketBackends:
 
       val stream: Foreign of "output-stream" from Wit = outputHandle
 
-      input.sweep: (storage, start, count) =>
-        val slice = storage.asInstanceOf[scala.Array[Byte]].slice(start, start + count).nn
-        stream.`blocking-write-and-flush`(Array.unsafeFrozen(slice)).invoke[Unit]
+      input.sweep: region =>
+        range => stream.`blocking-write-and-flush`(region.materialize(range)).invoke[Unit]
 
     // Presents a connected socket's stream halves as a `Duplex`: `source` reads, `send` writes,
     // `close` drops both streams and the socket.

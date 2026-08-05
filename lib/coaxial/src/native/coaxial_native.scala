@@ -97,7 +97,7 @@ package socketBackends:
         private var total: Long = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -458,7 +458,7 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
         private var limit0: Int = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -553,7 +553,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
         private var limit0: Int = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -568,7 +568,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
               start0 = 0
               limit0 = 0
 
-              // (`asInstanceOf` launders the field read's capture, as `window0` does, and
+              // (`asInstanceOf` launders the field read's capture, as `storage0` does, and
               // `atUnsafe` is Scala Native's array-to-pointer view — its bounds-checked `at`
               // is shadowed by rudiments' `at` extension; the indices here are in range by
               // construction.)

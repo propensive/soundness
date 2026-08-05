@@ -621,7 +621,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
          stream.refill(Credit(3)) match
           case count: Int =>
-            val window = unsafely(stream.window).asInstanceOf[scala.Array[Byte]]
+            val window = unsafely(stream.storage).asInstanceOf[scala.Array[Byte]]
             var index = 0
             while index < count do
               builder += window(stream.start + index)

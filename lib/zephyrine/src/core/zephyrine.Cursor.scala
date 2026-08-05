@@ -64,7 +64,7 @@ object Cursor:
   // A direct refill strategy: writes up to `space` elements straight into the cursor's
   // buffer at `offset`, returning the count written, `0` when nothing was granted (the
   // cursor retries), or `-1` at end-of-stream. Bypasses the `Loader` chunk protocol so a
-  // pull endpoint's window can be transferred into the cursor in a single copy, instead
+  // pull endpoint's region can be transferred into the cursor in a single copy, instead
   // of materializing an intermediate chunk that `refill` then copies again. `block` is
   // the growth hint: the cursor guarantees at least one element of space and grows its
   // buffer towards `writeEnd + block` before each fill.
@@ -162,12 +162,12 @@ object Cursor:
 
 
   // Build a Cursor over a pull endpoint: each fill refills the stream with a credit
-  // bounded by the ambient `Buffering` block size and transfers the delivered window
+  // bounded by the ambient `Buffering` block size and transfers the delivered region
   // straight into the cursor's buffer — a single copy, with no intermediate chunk
   // allocation. The credit bounds how much any upstream stage produces per fill, so
-  // memory stays bounded through a parse of an arbitrarily large input. The window is
+  // memory stays bounded through a parse of an arbitrarily large input. The region is
   // read and skipped within the fill, before the stream can refill again — the borrow
-  // discipline `Stream.window` documents, applied at the one place a cursor touches it.
+  // discipline `Stream.region` documents, applied at the one place a cursor touches it.
   def apply[data](consume stream: (Stream[data] over Credit)^)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
@@ -194,8 +194,8 @@ object Cursor:
             def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
               stream.refill(Credit(space.min(block))).lay(-1): count =>
                 val copied = count.min(space)
-                val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
-                addressable0.transfer(window, stream.start, storage, offset, copied)
+                val source = stream.storage(using Unsafe).asInstanceOf[addressable0.Storage]
+                addressable0.transfer(source, stream.start, storage, offset, copied)
                 stream.skip(copied)
                 copied
 

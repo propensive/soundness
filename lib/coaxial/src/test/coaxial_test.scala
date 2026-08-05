@@ -42,6 +42,7 @@ import java.net as jn
 import java.nio.channels as jnc
 
 import soundness.{transmit as _, listen as _, react as _, duplex as _, *}
+import zephyrine.capped
 
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
@@ -272,7 +273,7 @@ object Tests extends Suite(m"Coaxial tests"):
           val handler = (connection: Duplex) =>
             val source = connection.source
             val count = source.refill(zephyrine.Credit(64)).or(0)
-            source.addressable.materialize(source.window(using Unsafe), source.start, count)
+            source.region { region => range => region.materialize(range.capped(count)) }
 
           socket.listen[Data](handler):
 
@@ -283,7 +284,7 @@ object Tests extends Suite(m"Coaxial tests"):
               val source = duplex.source
               val count = source.refill(zephyrine.Credit(64)).or(0)
               val data =
-                source.addressable.materialize(source.window(using Unsafe), source.start, count)
+                source.region { region => range => region.materialize(range.capped(count)) }
 
               bytes(data)
         . assert(_ == bytes(ascii(t"ping")))
