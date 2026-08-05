@@ -91,6 +91,31 @@ pub fn abort(fail_file: &Path) {
     let _ = File::create(fail_file);
 }
 
+const LOG_TAIL_LINES: usize = 20;
+
+// Every startup failure below used to exit silently: `backout`'s message can only fire while the
+// pid file is empty, and `launch` writes the wrapper's pid into it before any of the polling
+// failure paths run, so nothing was ever printed. Meanwhile the JVM's own account of what went
+// wrong sat unread in `daemon.log`. That is how a JAR the JVM would not open (#1680) presented
+// itself as a flake. An *empty* log is itself a diagnosis, so say so rather than staying quiet.
+pub fn report_failure(base_dir: &Path, name: &str, reason: &str) {
+    eprintln!("\nThe {name} daemon failed to start: {reason}.");
+    eprintln!("Its state directory is {}", base_dir.display());
+    let log = base_dir.join("daemon.log");
+
+    match fs::read_to_string(&log) {
+        Ok(text) if !text.trim().is_empty() => {
+            eprintln!("The last output in {} was:", log.display());
+            let lines: Vec<&str> = text.lines().collect();
+            for line in lines.iter().skip(lines.len().saturating_sub(LOG_TAIL_LINES)) {
+                eprintln!("  {line}");
+            }
+        }
+        Ok(_) => eprintln!("{} is empty: the JVM died before it could say why.", log.display()),
+        Err(_) => eprintln!("{} could not be read.", log.display()),
+    }
+}
+
 pub fn backout(fail_file: &Path, pid_file: &Path, name: &str) {
     let metadata = match fs::metadata(fail_file) {
         Ok(metadata) => metadata,

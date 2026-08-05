@@ -35,6 +35,7 @@ package ethereal
 import java.lang as jl
 import java.io as ji
 import java.util.concurrent as juc
+import java.util.zip as juz
 
 import soundness.*
 
@@ -725,6 +726,55 @@ object Tests extends Suite(m"Ethereal Tests"):
 
       safely(sh"pkill $selfuName".exec[Exit]())
       sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
+
+      // A JAR of more than 0xffff entries carries ZIP64 end-of-central-directory records, whose
+      // locator holds the format's one physical offset. Appending such a JAR to a runner stub
+      // moves it, and a stale locator makes the JVM refuse to open the executable at all — a
+      // daemon that dies before it can say anything (#1680). The stub is a fake one carrying the
+      // ETHRCFG marker, as ziggurat's tests use; nothing here executes it. The `macos` label is
+      // deliberate: it makes `assemble` codesign the stub, which grows it, so the prefix the JAR
+      // sits behind is longer than the patched bytes — the delta must be measured from the file.
+      suite(m"Assembling a launcher around a ZIP64 JAR"):
+        val assemblyDir: Path on Linux = temporaryDirectory[Path on Linux]/Uuid().show
+        sh"mkdir -p $assemblyDir".exec[Unit]()
+
+        val stub: Data =
+          Array.unsafeFrozen
+            ( scala.Array.fill(64)(0.toByte)
+              ++ Assembler.MagicMarker
+              ++ scala.Array.fill(64 + Assembler.PublicKeyLength)(0.toByte) )
+
+        val publicKey: Data = Array.fill(Assembler.PublicKeyLength)(0.toByte)
+        val entryCount = 66000
+
+        def assembled(entries: Int): Path on Linux =
+          val jar: Path on Linux = assemblyDir/t"app$entries.jar"
+          val output: Path on Linux = assemblyDir/t"launcher$entries"
+
+          val contents: List[Zip.Entry] =
+            List.from((0 until entries).map: index =>
+              Zip.Entry(unsafely(t"e$index".as[Path on Zip]), Array.empty[Byte]))
+
+          Zipfile.write(jar)(contents.stdlib)
+
+          Assembler.assemble
+            (stub, jar, output, t"macos-arm64", 1L, 21, 24, false, publicKey)
+
+          output
+
+        def jdkEntryCount(path: Path on Linux): Int =
+          val zip = juz.ZipFile(ji.File(path.encode.s))
+          try zip.size() finally zip.close()
+
+        test(m"the JVM reads every entry of a ZIP64 launcher"):
+          jdkEntryCount(assembled(entryCount))
+        . assert(_ == entryCount)
+
+        test(m"a launcher below the ZIP64 threshold still reads"):
+          jdkEntryCount(assembled(16))
+        . assert(_ == 16)
+
+        sh"rm -rf $assemblyDir".exec[Unit]()
 
       val brokenStateDir: Path on Local =
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"brokn"

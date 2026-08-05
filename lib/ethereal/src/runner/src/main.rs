@@ -100,6 +100,8 @@ fn main() {
                 if !state::await_socket(&socket_file, 40) {
                     debug!("main: socket did not appear");
                     state::abort(&fail_file);
+                    let reason = "another launcher held the startup lock but bound no socket";
+                    state::report_failure(&base_dir, &name, reason);
                     state::backout(&fail_file, &pid_file, &name);
                     std::process::exit(1);
                 }
@@ -110,6 +112,7 @@ fn main() {
 
     if !state::socket_alive(&socket_file) {
         debug!("main: socket not alive, exiting STARTUP_FAILURE");
+        state::report_failure(&base_dir, &name, "its socket does not accept connections");
         std::process::exit(STARTUP_FAILURE_EXIT_CODE);
     }
     debug!("main: socket is alive");

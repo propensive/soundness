@@ -68,6 +68,7 @@ pub fn launch(
         Err(e) => {
             crate::debug!("launch: spawn failed: {}", e);
             crate::state::abort(fail_file);
+            crate::state::report_failure(base_dir, name, &format!("it could not be spawned ({e})"));
             std::process::exit(1);
         }
     };
@@ -89,6 +90,7 @@ pub fn launch(
         if matches!(child.try_wait(), Ok(Some(_))) && !crate::state::socket_ready(socket_file) {
             crate::debug!("launch: daemon exited during startup, aborting");
             crate::state::abort(fail_file);
+            crate::state::report_failure(base_dir, name, "it exited during startup");
             crate::state::backout(fail_file, pid_file, name);
             std::process::exit(1);
         }
@@ -105,6 +107,9 @@ pub fn launch(
     if !crate::state::socket_ready(socket_file) {
         crate::debug!("launch: socket never appeared, aborting");
         crate::state::abort(fail_file);
+        let seconds = STARTUP_POLL.as_millis()*u128::from(STARTUP_MAX_ATTEMPTS)/1000;
+        let reason = format!("it did not bind its socket within {seconds}s");
+        crate::state::report_failure(base_dir, name, &reason);
         crate::state::backout(fail_file, pid_file, name);
         std::process::exit(1);
     }

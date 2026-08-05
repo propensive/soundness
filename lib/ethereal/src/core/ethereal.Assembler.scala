@@ -48,6 +48,9 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
+import zeppelin.*
+
+import errorDiagnostics.emptyDiagnostics
 
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
@@ -154,6 +157,11 @@ object Assembler:
       if !isWindows then output.executable() = true
       safely(mute[ExecEvent](sh"codesign --sign - --force $output".exec[Exit]()))
 
+    // Measured from the file rather than taken as `patched.length`: on macOS `codesign` has just
+    // rewritten the stub, adding a signature blob, so the prefix the JAR is about to sit behind is
+    // longer than the bytes `patch` returned.
+    val prefixSize: Bytes = output.size()
+
     // Two sequential opens rather than one nested inside the other's lambda (the inner
     // open's evidence would mint fresh roots inside the outer handle's loan that cannot
     // unify with it), and a direct append-mode open rather than `Eof` (whose two-evidence
@@ -161,5 +169,16 @@ object Assembler:
     // so nothing reads the closed handle.
     val chunks = jarFile.open[File]()(List.from(file.reader().stdlib))
     output.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(Chain.from(chunks.stdlib)))
+
+    // Appending the JAR to the stub shifts every byte of it by the stub's length. ZIP offsets are
+    // relative, so a reader recovers that shift by itself — except for the ZIP64 locator's pointer,
+    // which is physical, and which only exists at all once the JAR holds more than 0xffff entries.
+    // Left stale, the JVM declines to open the executable and the daemon dies mute (#1680).
+    mitigate:
+      case ZipError(_) =>
+        AssemblyError(m"The appended JAR's ZIP64 metadata could not be rebased")
+
+    . protect:
+        Zipfile.rebase(output, prefixSize.long)
 
     if !isWindows then output.executable() = true
