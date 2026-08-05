@@ -49,11 +49,13 @@ object TelError:
   // offending line in the source. `column = 1` refers to the first
   // character of the line (including any leading spaces). Parse errors
   // that pre-date the document body (e.g. `BomPresent` at offset 0)
-  // report `(1, 1)`. Post-parse / validation errors leave `position`
-  // `Unset` unless resolved against a tracked document's `PositionIndex`
-  // (see `Tel.parseTracked` / `Tel.Focus.withPosition`).
+  // report `(1, 1)`. Post-parse / validation errors always leave the
+  // `TelError`'s own `position` Unset: their coordinates are carried on the
+  // accrued `Tel.Focus` instead, filled in from a tracked document's
+  // `PositionIndex` by `Tel.supplementPositions` / `Tel.Focus.withPosition`.
   //
-  // This is also the `Positionable` `Result` for `tel.locate(pointer)`, so it
+  // Aliased as `Tel.Position`. This is also the `Positionable` `Result` for
+  // `tel.locate(pointer)`, so it
   // extends zephyrine's `Format.Position` — `line`/`column` stay 1-based here
   // while the uniform, public `span` is 0-based (mirrors `Json.Ast.Position` /
   // `Yaml.Ast.Position`). `length` is the length in characters of the located

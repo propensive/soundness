@@ -84,11 +84,33 @@ object Tel extends Tel2:
   =>  (TelOpenable[source]^{readable, writable}) =
     TelOpenable[source]()
 
+  // The source `Position` type located by `tel.locate(pointer)` and carried on a
+  // `Tel.Focus`. Defined canonically on `TelError` (where it also locates parse
+  // errors); aliased here for symmetry with `Json.Ast.Position` / `Yaml.Ast.Position`.
+  type Position = TelError.Position
+  val Position: TelError.Position.type = TelError.Position
+
   // The focus carried by `Tel#as[T]` for multi-error accrual: a keyword path
   // identifying the field being decoded (and, for parser-phase errors, an
-  // optional source position). Mirrors `Json.Focus` / `Yaml.Focus`.
+  // optional source position). Mirrors `Json.Focus` / `Yaml.Focus`. The
+  // `position` is populated lazily by `withPosition(tel)`, which delegates to
+  // `tel.locate(pointer)`, so a root parsed without position tracking (hence no
+  // `positionIndex`) leaves `position` Unset and the success path pays nothing.
   case class Focus(pointer: TelPath = TelPath.Root, position: Optional[TelError.Position] = Unset)
-  derives CanEqual
+  derives CanEqual:
+    def withPosition(tel: Tel): Focus = copy(position = tel.locate(pointer))
+
+  // Fill in a source `Position` for every focus accrued so far by locating its
+  // keyword path in `tel` — the counterpart of `Json#as`'s enrichment. A no-op
+  // unless the ambient `Foci` is a tracking one and `tel` was parsed under
+  // `parsing.trackPositions` (so carries a `positionIndex`); an unresolvable
+  // path — a member absent from the source — keeps its pointer and leaves the
+  // position Unset. An error registered outside every `focus` block has no
+  // focus at all and takes the root one, which renders as `#`, exactly as an
+  // absent focus did. Public because `Tel#as` is `inline` and expands into
+  // user modules, which may only reference public members.
+  def supplementPositions(tel: Tel)(using foci: Foci[Tel.Focus]): Unit =
+    foci.supplement(foci.length, _.let(_.withPosition(tel)).or(Tel.Focus()))
 
   extension (tel: Tel)
     def edited(revision: Revision): Tel raises MutationError = revision(tel)
@@ -998,6 +1020,12 @@ object Tel extends Tel2:
       val rootElements =
         applyConstraints(schema.document, Array.empty[Tel.Element], rootChildren, schema)
 
+      // Locate every focus accrued by the walk against the root. Validator
+      // errors (E310) are registered by the three-argument overload *after*
+      // this runs, so they keep the pointer their element supplies but no
+      // position.
+      Tel.supplementPositions(tel)
+
       Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
     def assign(tel: Tel, schema: Tels, validators: Tel.Validator.Registry)
@@ -1286,26 +1314,35 @@ object Tel extends Tel2:
       while i < compounds.length do
         val compound = compounds(i)
 
-        // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
-        // emit no element, so remaining siblings are still validated.
-        km.get(compound.keyword) match
-          case Some(entry) =>
-            // §20.2 step 4c: all children of one member must form a single
-            // contiguous run; variants of one SelectRef share an ordinal and
-            // so interleave freely. Returning to an earlier member's run is
-            // E309, reported once per returned-to run; the child is still
-            // assigned.
-            if entry.ordinal != currentMember then
-              if currentMember >= 0 then seenMembers += currentMember
+        // Tag every error accrued for this compound (and its descendants) with
+        // its keyword path — mirroring the decode derivation's per-field `focus`
+        // — so that under a `validate[Tel.Focus]` boundary schema-validation
+        // errors carry a pointer (and, for a tracked root, a source position via
+        // `Focus.withPosition`) instead of the bare document root.
+        focus({
+          val base = prior.let(_.pointer).or(TelPath.Root)
+          Tel.Focus(base.prepend(compound.keyword))
+        }):
+          // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
+          // emit no element, so remaining siblings are still validated.
+          km.get(compound.keyword) match
+            case Some(entry) =>
+              // §20.2 step 4c: all children of one member must form a single
+              // contiguous run; variants of one SelectRef share an ordinal and
+              // so interleave freely. Returning to an earlier member's run is
+              // E309, reported once per returned-to run; the child is still
+              // assigned.
+              if entry.ordinal != currentMember then
+                if currentMember >= 0 then seenMembers += currentMember
 
-              if seenMembers.contains(entry.ordinal)
-              then recoverNode(Reason.MembersNonContiguous)(())
+                if seenMembers.contains(entry.ordinal)
+                then recoverNode(Reason.MembersNonContiguous)(())
 
-              currentMember = entry.ordinal
+                currentMember = entry.ordinal
 
-            results += assignCompound(compound, entry, schema, depth)
+              results += assignCompound(compound, entry, schema, depth)
 
-          case None => recoverNode(Reason.UnknownKeyword)(())
+            case None => recoverNode(Reason.UnknownKeyword)(())
 
         i += 1
 
@@ -1351,12 +1388,20 @@ object Tel extends Tel2:
 
         member match
           case f: Tels.Field =>
-            if requiredOf(f) && fillCount == 0 then resolveType(f.fieldType, schema) match
-              case s: Scalar => f.default match
-                case t: Text => results += Tel.Element.Value(flatStart, s, t)
-                case _       => recoverNode(Reason.RequiredMemberAbsent)(())
+            // A missing required member is reported under its own keyword path.
+            // It has no compound in the source, so `withPosition` leaves the
+            // position Unset (locate finds no node) — but the pointer still names
+            // the absent field.
+            if requiredOf(f) && fillCount == 0 then focus({
+              val base = prior.let(_.pointer).or(TelPath.Root)
+              Tel.Focus(base.prepend(f.keyword))
+            }):
+              resolveType(f.fieldType, schema) match
+                case s: Scalar => f.default match
+                  case t: Text => results += Tel.Element.Value(flatStart, s, t)
+                  case _       => recoverNode(Reason.RequiredMemberAbsent)(())
 
-              case _ => recoverNode(Reason.RequiredMemberAbsent)(())
+                case _ => recoverNode(Reason.RequiredMemberAbsent)(())
 
             // §20.2 step 5c; recovery reports the document invalid but
             // retains every occurrence.
@@ -1746,15 +1791,16 @@ object Tel extends Tel2:
   // Parse `bytes` into a `Tel` carrying a `PositionIndex`, so that
   // `tel.locate(pointer)` / `tel.locateKey(pointer)` resolve a node's keyword
   // path to its source `Position`, and accrued `Tel.Focus`es can be located via
-  // `withPosition`. Reached from the `read` / `load` givens only when
-  // `parsing.trackPositions` is in scope; otherwise the untracked `parse` runs
-  // and `positionIndex` is left Unset, so the throughput path is unaffected.
+  // `withPosition`. Reached from the `aggregable`, `aggregableIn` and `loadable`
+  // givens only when `parsing.trackPositions` is in scope; otherwise the
+  // untracked `parse` runs and `positionIndex` is left Unset, so the throughput
+  // path is unaffected.
   private def parseTracked(bytes: Data): Tel raises TelError =
     val (document, triples) = Tel.Parser.parseTracked(bytes)
     Tel(document, Optional(PositionIndex(buildIndex(document, triples))))
 
   // Parse `bytes` honouring the in-scope `Tracking` toggle (`parsing.trackPositions`).
-  private def parseTracking(bytes: Data)(using PositionTracking): Tel raises TelError =
+  private[stratiform] def parseTracking(bytes: Data)(using PositionTracking): Tel raises TelError =
     summon[PositionTracking] match
       case PositionTracking.On  => parseTracked(bytes)
       case PositionTracking.Off => parse(bytes)
@@ -1873,8 +1919,9 @@ object Tel extends Tel2:
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
   // recover those alongside the value. Per §6.1, single-document parsing
   // stops at the first document separator; content after it is ignored.
-  given aggregable: (tactic: Tactic[TelError]) => ((Tel is Aggregable by Data)^{tactic}) =
-    source => parse(concatenate(source))
+  given aggregable: (tactic: Tactic[TelError], tracking: PositionTracking)
+  =>  ((Tel is Aggregable by Data)^{tactic}) =
+    source => parseTracking(concatenate(source))
 
   // Direct parsing: when the value knows how to consume compound entries
   // itself, the document's AST is never materialized. Declared here (not in
@@ -2077,7 +2124,7 @@ object Tel extends Tel2:
   // `text.load[Tel]` for any Chain[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
-  given loadable: (tactic: Tactic[TelError], buffering: Buffering)
+  given loadable: (tactic: Tactic[TelError], buffering: Buffering, tracking: PositionTracking)
   =>  ((Tel is Loadable by Text)^{tactic}) = stream =>
     // The whole document materializes once (the parser is whole-input), but the
     // Text stream is transcoded to UTF-8 through the encoder duct and memoized
@@ -2090,9 +2137,18 @@ object Tel extends Tel2:
       . asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^]
       . memoize
 
-    val doc = Tel.Parser.parse(bytes)
-    val meta = Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings)
-    turbulence.Document(Tel(doc): Tel, meta)
+    // The metadata comes off the parsed `Tel`'s own subtree rather than from a
+    // second, untracked `Tel.Parser.parse`, so that under `parsing.trackPositions`
+    // the loaded document keeps its `positionIndex`.
+    val tel = parseTracking(bytes)
+
+    tel.subtree match
+      case doc: Tel.Document =>
+        turbulence.Document
+         ( tel, Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings) )
+
+      case _ =>
+        turbulence.Document(tel, Tel.Metadata(Unset, Unset, Tel.LineEndings.Lf))
 
   // Renders a document's presentation back to text, reversing the presentation parser. The whole
   // line-based serialization lives in this instance so that `.show` is the single route to TEL
@@ -5595,8 +5651,18 @@ extends scala.Dynamic, Documentary, Topical, Original:
   type Self = Tel
   type Metadata = Tel.Metadata
 
+  // Decode, then locate every focus the decoders accrued against this root —
+  // the per-field pointers are built by the derivation and by
+  // `Parsable.focusing`; `supplementPositions` supplies their source positions
+  // when this document was parsed under `parsing.trackPositions`. (jacinta
+  // routes the same enrichment through `distillate.Decodable.position`, which
+  // needs a `Locus`-fixing mixin and a lowest-priority adapter given; here the
+  // focus type is already fixed by the `tracks Tel.Focus` clause, so the
+  // enrichment is called directly.)
   inline def as[value: Decodable in Tel]: value raises TelError tracks Tel.Focus =
-    value.decoded(this)
+    val result = value.decoded(this)
+    Tel.supplementPositions(this)
+    result
 
   // Total field access used by the schema-typed navigation macros and by
   // internal optics: an empty `Tel` for a missing field, never raising.

@@ -69,6 +69,39 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . protect(Tel.Type.assign(tel, schema))
 
+  case class Located(items: List[(Text, Optional[TelError.Position])] = Nil)(using Diagnostics)
+  extends Error(m"${items.length} located issues"):
+    def +(pointer: Text, position: Optional[TelError.Position]): Located =
+      Located(items :+ (pointer, position))
+
+  // Validate a *tracked* document against `schema`, capturing each error's
+  // keyword-path pointer alongside the source `Position` filled in by
+  // `Tel.supplementPositions` at the end of `Tel.Type.assign`.
+  private def assignPositions(text: Text, schema: Tels): Located =
+    import parsing.trackPositions
+    val tel = text.read[Tel]
+
+    validate[Tel.Focus](Located()):
+      case error: TelError =>
+        accrual + (prior.let(_.pointer.encode).or(t"#"),
+                   prior.lay(Unset: Optional[TelError.Position])(_.position))
+    . protect(Tel.Type.assign(tel, schema))
+
+  // The decode-path counterpart: `Tel#as` locates its per-field foci against
+  // the same tracked root. Inline for the same reason as `validateTel`.
+  private inline def decodePositions[result](text: Text)
+                                    (inline decode: Tel => result raises TelError tracks Tel.Focus)
+  :   Located =
+    import parsing.trackPositions
+    val tel = text.read[Tel]
+
+    Validate[Located, [r] =>> r raises TelError, Tel.Focus]
+      ( Located(),
+        { case error: TelError =>
+            accrual + (prior.let(_.pointer.encode).or(t"#"),
+                       prior.lay(Unset: Optional[TelError.Position])(_.position)) } )
+    . protect(decode(tel))
+
   // Parse a document under an accrual boundary: recoverable parse defects
   // (§19.5) accrue rather than aborting on the first, because `read[Tel]` parses
   // through the installed `TrackTactic`.
@@ -312,3 +345,55 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
            ( TelError.Reason.BadVersion,
              TelError.Reason.OverIndentation,
              TelError.Reason.TrailingSpaces )
+
+    suite(m"Located schema-validation errors (LSP diagnostics)"):
+      test(m"Unknown-keyword errors carry their keyword pointer"):
+        assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(0).s).to[Set]
+      . assert(_ == Set("#/foo", "#/bar"))
+
+      test(m"Unknown-keyword errors are located at the offending compound"):
+        assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(1)).to[Set]
+      . assert(_ == Set(Optional(Tel.Position(1, 1, length = Optional(3))),
+                        Optional(Tel.Position(2, 1, length = Optional(3)))))
+
+      test(m"An unlocated (untracked) validation still accrues without a position"):
+        val tel = t"foo a\n".read[Tel]
+
+        validate[Tel.Focus](Issues()):
+          case error: TelError => accrual + (prior.lay(t"")(_.position.lay(t"")(_.describe)), error)
+        . protect(Tel.Type.assign(tel, optionalFieldSchema))
+        . items.map(_(0).s).to[Set]
+      . assert(_ == Set(""))
+
+      test(m"Missing required members carry a pointer but no source position"):
+        assignPositions(t"", twoRequiredSchema).items.map { case (p, pos) => (p.s, pos.present) }
+        . to[Set]
+      . assert(_ == Set(("#/name", false), ("#/email", false)))
+
+      // The excess atom is read by `assignAtoms`, deep inside `assignCompound`,
+      // so this proves the per-compound focus covers a compound's whole subtree
+      // and not just the keyword-dispatch step — the issue's `e302.tel` case.
+      test(m"An excess atom is located at the enclosing compound"):
+        assignPositions(t"item x y\nname n\n", atomAccrualSchema).items
+        . map { case (pointer, position) => (pointer.s, position.let(_.line).or(-1)) }.to[Set]
+      . assert(_ == Set(("#/item", 1)))
+
+      // E308 is a property of a member's whole run, not of one node, so it is
+      // raised outside every `focus` block: the entry has no focus at all and
+      // takes the root one. `supplementPositions` must tolerate that rather
+      // than `vouch` on it.
+      test(m"A run-level E308 accrues at the root without panicking"):
+        assignPositions(t"name Alice\nname Bob\nemail e\n", twoRequiredSchema).items
+        . map { case (p, pos) => (p.s, pos.present) }.to[Set]
+      . assert(_ == Set(("#", false)))
+
+    suite(m"Located decode errors"):
+      test(m"A malformed field's focus names the field"):
+        decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
+        . items.map(_(0).s).to[Set]
+      . assert(_ == Set("#/age"))
+
+      test(m"A malformed field is located at its compound"):
+        decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
+        . items.map(_(1)).to[Set]
+      . assert(_ == Set(Optional(Tel.Position(2, 1, length = Optional(3)))))

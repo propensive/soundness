@@ -227,9 +227,10 @@ trait Tel2 extends Tel3:
   // at runtime. Lives at this priority so `object Tel`'s direct-parsing
   // `aggregableParsed` wins whenever the value has a `Tel.Parsable`; when it
   // does not (all pre-`Parsable` code), this resolves exactly as before.
-  given aggregableIn: [value: distillate.Decodable in Tel] => (tactic: Tactic[TelError])
+  given aggregableIn: [value: distillate.Decodable in Tel]
+  =>  (tactic: Tactic[TelError], tracking: zephyrine.PositionTracking)
   =>  (((value in Tel) is Aggregable by Data)^{tactic}) =
-    source => Tel.parse(Tel.concatenate(source)).as[value].asInstanceOf[value in Tel]
+    source => Tel.parseTracking(Tel.concatenate(source)).as[value].asInstanceOf[value in Tel]
 
   object ParsableDerivation extends Derivable[Tel.Field]:
     inline def conjunction[derivation <: Product: ProductReflection]

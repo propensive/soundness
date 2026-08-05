@@ -2850,6 +2850,7 @@ object Tests extends Suite(m"Stratiform Tests"):
     VerifyTests()
     AccrualTests()
     PositionalTests()
+    PositionTests()
     EquivalenceTests()
 
     suite(m"BinTEL direct parsing (BintelInlinable)"):
