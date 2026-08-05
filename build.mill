@@ -1912,9 +1912,16 @@ object mandible extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests(core, revolution.core, quantitative.units):
+  object lira extends Component(core, reliquary.core):
+    override def scalaJs = false // adapts the discipline to reliquary's JVM-only SPI
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+
+  object test extends Tests(core, lira, revolution.core, quantitative.units, anthology.`scala`,
+      anthology.java, hellenism.jvm):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+    def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
 object locomotion extends Library:
   object core

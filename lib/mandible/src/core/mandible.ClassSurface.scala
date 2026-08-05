@@ -104,6 +104,22 @@ object ClassSurface:
 
     . getOrElse(Unset)
 
+  // A nested class's own `access_flags` record the *outer* view — a `protected` member class has
+  // neither `ACC_PUBLIC` nor `ACC_PROTECTED` there — while its real accessibility lives in the
+  // `InnerClasses` entry describing itself. Reading it back is what stops a protected nested
+  // class from being silently treated as package-private and dropped from the interface.
+  private def innerFlagsOf(attributes: List[jlc.Attribute[?]], name: Text): Optional[Int] =
+    attributes.stdlib.collectFirst:
+      case attribute: jlca.InnerClassesAttribute => attribute
+
+    . flatMap: attribute =>
+        attribute.classes.nn.to[List].stdlib.find: info =>
+          info.innerClass.nn.asInternalName.nn.tt == name
+
+        . map(_.flagsMask)
+
+    . getOrElse(Unset)
+
   private def exceptionsOf(attributes: List[jlc.Attribute[?]]): List[Text] =
     attributes.stdlib.collectFirst:
       case attribute: jlca.ExceptionsAttribute =>
@@ -144,13 +160,17 @@ object ClassSurface:
     val members =
       List.from((fields.stdlib ++ methods.stdlib).sortBy { member => member.selector.s })
 
+    val name = model.thisClass.nn.asInternalName.nn.tt
+    val attributes = model.attributes.nn.to[List]
+
     ClassSurface
-      ( model.thisClass.nn.asInternalName.nn.tt,
+      ( name,
         model.flags.nn.flagsMask,
         Optional(model.superclass.nn.orElse(null)).let(_.asInternalName.nn.tt),
         List.from(model.interfaces.nn.to[List].stdlib.map(_.asInternalName.nn.tt).sorted),
-        signatureOf(model.attributes.nn.to[List]),
-        members )
+        signatureOf(attributes),
+        members,
+        innerFlagsOf(attributes, name) )
 
 // The parsed declaration surface of one class. `name`, `superclass` and `interfaces` are JVM
 // internal names (`java/lang/String`), which is the form every reference in a classfile uses.
@@ -160,12 +180,19 @@ case class ClassSurface
     superclass: Optional[Text],
     interfaces: List[Text],
     signature:  Optional[Text],
-    members:    List[ClassSurface.Member] ):
+    members:    List[ClassSurface.Member],
+    innerFlags: Optional[Int] = Unset ):
 
-  def public: Boolean    = (flags & jlc.ClassFile.ACC_PUBLIC) != 0
   def interface: Boolean = (flags & jlc.ClassFile.ACC_INTERFACE) != 0
   def isFinal: Boolean   = (flags & jlc.ClassFile.ACC_FINAL) != 0
   def synthetic: Boolean = (flags & jlc.ClassFile.ACC_SYNTHETIC) != 0
+
+  // Accessibility comes from the `InnerClasses` entry where there is one, since that is the only
+  // place a nested class's `protected` survives.
+  def access: Int = innerFlags.or(flags)
+
+  def visible: Boolean =
+    (access & (jlc.ClassFile.ACC_PUBLIC | jlc.ClassFile.ACC_PROTECTED)) != 0
 
   // The supertypes named directly by this class, superclass first: the order the JVM's own
   // resolution walks, and the order membership keying inherits members in.
