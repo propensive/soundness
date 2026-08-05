@@ -44,15 +44,37 @@ object TelError:
     given communicable: Position is Communicable =
       position => m"line ${position.line}, column ${position.column}"
 
+  // Render a `Line`-mode `Span` — the location carried by a `TelError` — in the
+  // parser's own 1-indexed terms. A span wider than one character names its
+  // extent too, so a diagnostic reads "line 2, columns 5-8".
+  def describe(span: Span): Text =
+    val line   = span.startLine.lay(1)(_.n1)
+    val column = span.startColumn.lay(1)(_.n1)
+    val length = span.length.or(0)
+
+    if length > 1 then Text("line "+line+", columns "+column+"-"+(column + length - 1))
+    else Text("line "+line+", column "+column)
+
+  // The `Line`-mode `Span` for a token of `length` characters starting at the
+  // parser's 1-indexed `line`/`column`. `Span`'s own coordinates are 0-based, and
+  // its `Line` mode packs the column and length into 19 bits each (the line into
+  // 23), so each is clamped rather than allowed to wrap: a span into the far
+  // reaches of an implausibly long line saturates instead of pointing elsewhere.
+  def spanAt(line: Int, column: Int, length: Int): Span =
+    Span.line
+     ( (line - 1).max(0).min(0x7fffff).z,
+       (column - 1).max(0).min(0x7ffff).z,
+       length.max(0).min(0x7ffff) )
+
   // 1-indexed source position attached to a `TelError` raised by the
   // TEL parser, so a caller capturing the error can point at the
   // offending line in the source. `column = 1` refers to the first
   // character of the line (including any leading spaces). Parse errors
   // that pre-date the document body (e.g. `BomPresent` at offset 0)
   // report `(1, 1)`. Post-parse / validation errors always leave the
-  // `TelError`'s own `position` Unset: their coordinates are carried on the
+  // `TelError`'s own `span` empty: their coordinates are carried on the
   // accrued `Tel.Focus` instead, filled in from a tracked document's
-  // `PositionIndex` by `Tel.supplementPositions` / `Tel.Focus.withPosition`.
+  // `PositionIndex` by `Tel.supplementPositions` / `Tel.Focus.withSpan`.
   //
   // Aliased as `Tel.Position`. This is also the `Positionable` `Result` for
   // `tel.locate(pointer)`, so it
@@ -313,14 +335,14 @@ object TelError:
     // limits that are properties of the implementation, not the document.
     case NestingLimitExceeded                   extends Reason(501)
 
-case class TelError(reason: TelError.Reason, position: Optional[TelError.Position] = Unset)
-  ( using Diagnostics )
+// `span` locates the offending text in the source: a `Line`-mode `Span` giving
+// the 0-based line and column at which it starts and its extent in characters,
+// so a caller can highlight the token itself and not merely the line. It is
+// empty (`Span.empty` is in-band, so no `Optional` boxing) for post-parse and
+// validation errors, whose coordinates apply to AST nodes rather than source
+// bytes and are carried on the accrued `Tel.Focus`.
+case class TelError(reason: TelError.Reason, span: Span = Span.empty)(using Diagnostics)
 extends Error
   ( 605, reason.number )
-  ( position.let: p =>
-      m"the TEL document is invalid at $p because $reason"
-
-    . or(m"the TEL document is invalid because $reason") ):
-
-  // The internal 1-indexed position rendered as a uniform 0-based `Span`.
-  def span: Span = position.lay(Span.empty)(_.span)
+  ( if span.vacant then m"the TEL document is invalid because $reason"
+    else m"the TEL document is invalid at ${TelError.describe(span)} because $reason" )

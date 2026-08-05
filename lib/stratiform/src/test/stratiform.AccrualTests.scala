@@ -69,13 +69,12 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . protect(Tel.Type.assign(tel, schema))
 
-  case class Located(items: List[(Text, Optional[TelError.Position])] = Nil)(using Diagnostics)
+  case class Located(items: List[(Text, Span)] = Nil)(using Diagnostics)
   extends Error(m"${items.length} located issues"):
-    def +(pointer: Text, position: Optional[TelError.Position]): Located =
-      Located(items :+ (pointer, position))
+    def +(pointer: Text, span: Span): Located = Located(items :+ (pointer, span))
 
   // Validate a *tracked* document against `schema`, capturing each error's
-  // keyword-path pointer alongside the source `Position` filled in by
+  // keyword-path pointer alongside the source `Span` filled in by
   // `Tel.supplementPositions` at the end of `Tel.Type.assign`.
   private def assignPositions(text: Text, schema: Tels): Located =
     import parsing.trackPositions
@@ -83,8 +82,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
     validate[Tel.Focus](Located()):
       case error: TelError =>
-        accrual + (prior.let(_.pointer.encode).or(t"#"),
-                   prior.lay(Unset: Optional[TelError.Position])(_.position))
+        accrual + (prior.let(_.pointer.encode).or(t"#"), prior.lay(Span.empty)(_.span))
     . protect(Tel.Type.assign(tel, schema))
 
   // The decode-path counterpart: `Tel#as` locates its per-field foci against
@@ -99,7 +97,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       ( Located(),
         { case error: TelError =>
             accrual + (prior.let(_.pointer.encode).or(t"#"),
-                       prior.lay(Unset: Optional[TelError.Position])(_.position)) } )
+                       prior.lay(Span.empty)(_.span)) } )
     . protect(decode(tel))
 
   // Parse a document under an accrual boundary: recoverable parse defects
@@ -353,20 +351,21 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       test(m"Unknown-keyword errors are located at the offending compound"):
         assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(1)).to[Set]
-      . assert(_ == Set(Optional(Tel.Position(1, 1, length = Optional(3))),
-                        Optional(Tel.Position(2, 1, length = Optional(3)))))
+      . assert(_ == Set(TelError.spanAt(1, 1, 3), TelError.spanAt(2, 1, 3)))
 
       test(m"An unlocated (untracked) validation still accrues without a position"):
         val tel = t"foo a\n".read[Tel]
 
         validate[Tel.Focus](Issues()):
-          case error: TelError => accrual + (prior.lay(t"")(_.position.lay(t"")(_.describe)), error)
+          case error: TelError =>
+            accrual + (prior.lay(t"")(f => if f.span.vacant then t"" else TelError.describe(f.span)),
+                       error)
         . protect(Tel.Type.assign(tel, optionalFieldSchema))
         . items.map(_(0).s).to[Set]
       . assert(_ == Set(""))
 
-      test(m"Missing required members carry a pointer but no source position"):
-        assignPositions(t"", twoRequiredSchema).items.map { case (p, pos) => (p.s, pos.present) }
+      test(m"Missing required members carry a pointer but no source span"):
+        assignPositions(t"", twoRequiredSchema).items.map { case (p, span) => (p.s, span.exists) }
         . to[Set]
       . assert(_ == Set(("#/name", false), ("#/email", false)))
 
@@ -375,7 +374,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       // and not just the keyword-dispatch step — the issue's `e302.tel` case.
       test(m"An excess atom is located at the enclosing compound"):
         assignPositions(t"item x y\nname n\n", atomAccrualSchema).items
-        . map { case (pointer, position) => (pointer.s, position.let(_.line).or(-1)) }.to[Set]
+        . map { case (pointer, span) => (pointer.s, span.startLine.lay(-1)(_.n1)) }.to[Set]
       . assert(_ == Set(("#/item", 1)))
 
       // E308 is a property of a member's whole run, not of one node, so it is
@@ -384,7 +383,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       // than `vouch` on it.
       test(m"A run-level E308 accrues at the root without panicking"):
         assignPositions(t"name Alice\nname Bob\nemail e\n", twoRequiredSchema).items
-        . map { case (p, pos) => (p.s, pos.present) }.to[Set]
+        . map { case (p, span) => (p.s, span.exists) }.to[Set]
       . assert(_ == Set(("#", false)))
 
     suite(m"Located decode errors"):
@@ -396,4 +395,4 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A malformed field is located at its compound"):
         decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
         . items.map(_(1)).to[Set]
-      . assert(_ == Set(Optional(Tel.Position(2, 1, length = Optional(3)))))
+      . assert(_ == Set(TelError.spanAt(2, 1, 3)))
