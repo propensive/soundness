@@ -580,13 +580,13 @@ extends caps.ExclusiveCapability:
 
     steps match
       case Filter.Step.Inflate :: rest =>
-        pipeline(rest, stream.via(pneumatic.Zlib.compression.decompressor()))
+        pipeline(rest, stream.viaDuct(pneumatic.Zlib.compression.decompressor()))
 
       case Filter.Step.Unlzw(earlyChange) :: rest =>
-        pipeline(rest, stream.via(pneumatic.Lzw.decompressor(earlyChange)))
+        pipeline(rest, stream.viaDuct(pneumatic.Lzw.decompressor(earlyChange)))
 
       case Filter.Step.Gather(transform) :: rest =>
-        pipeline(rest, stream.via(Gathering(transform)))
+        pipeline(rest, stream.viaDuct(Gathering(transform)))
 
       case _ =>
         stream

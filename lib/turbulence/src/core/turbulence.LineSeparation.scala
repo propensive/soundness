@@ -57,7 +57,7 @@ object LineSeparation:
   //
   // A separator-free input grows `partial` without bound — the inherent
   // exposure of any line reader; cap upstream if the input is adversarial.
-  given lines: Ductile.Of[LineSeparation, Text, Array[Text]^{}, Credit, Credit] =
+  given lines: Ductile.Instance[LineSeparation, Text, Array[Text]^{}, Credit, Credit] =
     new Ductile:
       type Self = LineSeparation
       type Operand = Text

@@ -57,7 +57,7 @@ object Alphabet:
     31 - Integer.numberOfLeadingZeros(alphabet.chars.s.length)
 
   given serialization: [encoding <: Serialization]
-  =>  Ductile.Of[Alphabet[encoding], Data, Text, Credit, Credit] =
+  =>  Ductile.Instance[Alphabet[encoding], Data, Text, Credit, Credit] =
 
     // Sealed: a Ductile is a stateless stage descriptor; instantiation freshens its
     // type arguments under capture checking, which the seal discards.
@@ -177,7 +177,7 @@ object Alphabet:
             produced
 
   given deserialization: [encoding <: Serialization] => (tactic: Tactic[SerializationError])
-  =>  Ductile.Of[Alphabet[encoding], Text, Data, Credit, Credit] =
+  =>  Ductile.Instance[Alphabet[encoding], Text, Data, Credit, Credit] =
 
     // Sealed: see `serialization` above. The tactic is sealed here too — the duct
     // raises through the given's resolution-scoped tactic, which shares the

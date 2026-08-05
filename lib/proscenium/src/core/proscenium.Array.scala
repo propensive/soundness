@@ -168,4 +168,9 @@ object Array:
     // surface, which exposes no write operations.
     inline def readable: scala.IArray[element] = array.asInstanceOf[scala.IArray[element]]
 
+  given arrayIsSpreadable: [element] => (Spreadable[Array[element]^{}] { type Out = scala.Array[element]^{} }) =
+    new Spreadable[Array[element]^{}]:
+      type Out = scala.Array[element]^{}
+      def spread(value: Array[element]^{}): scala.Array[element]^{} = value
+
 opaque type Array[element] = scala.Array[element]

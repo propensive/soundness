@@ -44,15 +44,15 @@ import zephyrine.*
 // codes one table entry sooner — is the TIFF/PDF default, and what every known encoder
 // produces; the parameterized factories serve formats which state it explicitly.
 object Lzw:
-  def compressor(earlyChange: Boolean)(using Buffering): Duct[Data, Data] {
+  def compressor(earlyChange: Boolean)(using Buffering): (Duct[Data, Data] {
     type Transport = Credit
-    type Upstream = Credit } =
+    type Upstream = Credit })^ =
 
     LzwStage(LzwEncoder(earlyChange))
 
-  def decompressor(earlyChange: Boolean)(using Buffering): Duct[Data, Data] {
+  def decompressor(earlyChange: Boolean)(using Buffering): (Duct[Data, Data] {
     type Transport = Credit
-    type Upstream = Credit } =
+    type Upstream = Credit })^ =
 
     LzwStage(LzwDecoder(earlyChange))
 
@@ -63,15 +63,15 @@ object Lzw:
     drive(LzwDecoder(earlyChange), stream)
 
   given compression: Lzw is Compression:
-    def compressor()(using Buffering): Duct[Data, Data] {
+    def compressor()(using Buffering): (Duct[Data, Data] {
       type Transport = Credit
-      type Upstream = Credit } =
+      type Upstream = Credit })^ =
 
       LzwStage(LzwEncoder(true))
 
-    def decompressor()(using Buffering): Duct[Data, Data] {
+    def decompressor()(using Buffering): (Duct[Data, Data] {
       type Transport = Credit
-      type Upstream = Credit } =
+      type Upstream = Credit })^ =
 
       LzwStage(LzwDecoder(true))
 

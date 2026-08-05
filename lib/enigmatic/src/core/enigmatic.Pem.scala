@@ -144,7 +144,11 @@ object Pem:
               mitigate:
                 case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
 
-              . protect(body.toString.tt.deserialize[Base64])
+              // `[Data]` stated, not inferred: the conformance check on a macro expansion
+              // dealiases opaque types, and `Data` is a transparent alias over an opaque one.
+              // Inferred, the two sides of the check were spelled differently — `Data` against
+              // its own dealiasing, `scala.Array[Byte]` — and did not match.
+              . protect[Data](body.toString.tt.deserialize[Base64])
 
           case _ =>
             body.append(line.s)

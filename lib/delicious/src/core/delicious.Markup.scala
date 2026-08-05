@@ -137,10 +137,17 @@ object Markup:
 
       else if char == End then
         stack match
-          case top :: (rest @ (parent :: _)) =>
+          // Do not destructure the parent here (`case top :: (parent :: _)`):
+          // that binds two `Frame^`s drawn from the same stack, and the
+          // separation checker cannot prove them distinct. Finish with `top`,
+          // then reach the parent through `rest.head`, so only one frame is
+          // ever live. Were the two to alias, the old shape mutated a frame
+          // while reading it.
+          case top :: rest if rest.nonEmpty =>
             top.flush()
-            parent.children += typed(top.kind, top.attrs, top.children.to(List))
+            val node = typed(top.kind, top.attrs, top.children.to(List))
             stack = rest
+            rest.head.children += node
 
           case _ => // stray End at top level
 
@@ -155,10 +162,16 @@ object Markup:
     // splice the children of any unterminated markers into their parents
     while stack.tail.nonEmpty do
       stack match
-        case top :: (parent :: _) =>
+        // As above: one frame live at a time, parent reached via `rest.head`.
+        case top :: rest if rest.nonEmpty =>
           top.flush()
-          parent.children ++= top.children
-          stack = stack.tail
+          // `toList` copies into a fresh immutable list sharing nothing with the
+          // buffer, so the inferred `^{top.children}` is spurious; laundering it
+          // lets the orphans outlive `top`. Splicing them into the parent while
+          // they still captured `top.children` is what the checker refused.
+          val orphans = scala.caps.unsafe.unsafeAssumePure(top.children.toList)
+          stack = rest
+          rest.head.children ++= orphans
 
         case _ => ()
 

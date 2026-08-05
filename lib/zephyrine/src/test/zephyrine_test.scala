@@ -598,7 +598,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"through doubles each byte"):
           val gather = Gather()
-          small.stream.via(Doubler()).pump(gather)
+          small.stream.viaDuct(Doubler()).pump(gather)
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
         . assert(_ == (small.to[List]: List[Byte]).flatMap { byte => proscenium.List(byte, byte) })
 
@@ -606,19 +606,19 @@ object Tests extends Suite(m"Zephyrine tests"):
           val recorder = Recorder(small.stream)
           val gather = Gather()
           gather.credit = 10
-          scala.caps.unsafe.unsafeAssumeSeparate(recorder.via(Doubler()).pump(gather))
+          scala.caps.unsafe.unsafeAssumeSeparate(recorder.viaDuct(Doubler()).pump(gather))
           recorder.demands.last
         . assert(_ == 5L)
 
         test(m"accepting reports translated demand"):
           val gather = Gather()
           gather.credit = 10
-          gather.accepting(Doubler()).demand.count
+          gather.acceptingDuct(Doubler()).demand.count
         . assert(_ == 5L)
 
         test(m"accepting transforms pushed data"):
           val gather = Gather()
-          val intake = gather.accepting(Doubler())
+          val intake = gather.acceptingDuct(Doubler())
           intake.put(small)
           intake.finish()
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
@@ -626,7 +626,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"duct flush emits terminal state on finish"):
           val gather = Gather()
-          val intake = gather.accepting(Trailer())
+          val intake = gather.acceptingDuct(Trailer())
           intake.put(Array.of[Byte](1, 2))
           intake.finish()
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.to(List)
@@ -634,7 +634,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"duct flush emits terminal state at end of a pulled stream"):
           val gather = Gather()
-          Stream(Array.of[Byte](1, 2)).via(Trailer()).pump(gather)
+          Stream(Array.of[Byte](1, 2)).viaDuct(Trailer()).pump(gather)
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
         . assert(_ == List[Byte](1, 2, 99))
 
@@ -863,7 +863,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List())
 
         test(m"memoize reassembles a transformed pipeline"):
-          small.stream.via(Doubler()).memoize.to[List]
+          small.stream.viaDuct(Doubler()).memoize.to[List]
         . assert(_ == (small.to[List]: List[Byte]).flatMap { byte => proscenium.List(byte, byte) })
 
         test(m"memoize drains a text stream into a single text value"):
@@ -905,7 +905,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](5, 6, 7, 8, 9))
 
         test(m"truncate composes with a duct"):
-          small.stream.truncate(3).via(Doubler()).memoize.to[List]
+          small.stream.truncate(3).viaDuct(Doubler()).memoize.to[List]
         . assert(_ == List[Byte](1, 1, 2, 2, 3, 3))
 
         test(m"gather reduces over windows without boxing"):

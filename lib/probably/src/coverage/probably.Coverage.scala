@@ -52,8 +52,13 @@ object Coverage:
 
     if !dirFile.exists() then Coverage(dir, Array.of(), Set(), Set())
     else
+      // `listFiles` hands back a mutable array, which captures the root capability.
+      // Wrapping it in an `Option` instantiates that type variable with a capturing
+      // type, which capture checking refuses; consume the array where it is produced
+      // and let only the immutable list escape.
+      val listed = dirFile.listFiles
       val otherFiles =
-        Option(dirFile.listFiles).map(_.nn).map(_.iterator.map(_.nn).toList).getOrElse(Nil.stdlib)
+        if listed == null then Nil.stdlib else listed.nn.iterator.map(_.nn).toList
 
       val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
 
