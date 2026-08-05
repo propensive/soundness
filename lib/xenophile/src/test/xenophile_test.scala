@@ -789,3 +789,172 @@ object Tests extends Suite(m"Xenophile tests"):
         completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.bar.qu")
         . map(_.name)
       . assert(_ == List(t"qux"))
+
+    typescriptParserTests()
+
+  def typescriptParserTests(): Unit =
+    import strategies.throwUnsafely
+
+    def declarations(source: Text): List[TypescriptDeclaration] = TypescriptParser.parse(source)
+
+    def names(source: Text): scala.List[Text] = declarations(source).stdlib.map(_.key)
+
+    def members(source: Text): scala.List[Text] =
+      declarations(source).stdlib.flatMap(_.declaredMembers.stdlib).map(_.selector)
+
+    // Every construct below was dropped whole, or silently misread, by the grammar this
+    // replaced; each test names the shape rather than the mechanism.
+
+    test(m"a generic interface is read, not dropped"):
+      names(t"interface Box<T> { value: T; }")
+    . assert(_ == scala.List(t"Box"))
+
+    test(m"an interface's extends clause is recorded"):
+      declarations(t"interface A { x: number; }\ninterface B extends A { y: number; }").stdlib
+      . collect { case interface: TypescriptDeclaration.Interface => interface }
+      . flatMap(_.extending.stdlib.map(_.text))
+    . assert(_ == scala.List(t"A"))
+
+    test(m"a type alias is a declaration"):
+      names(t"type Id = string | number;")
+    . assert(_ == scala.List(t"Id"))
+
+    test(m"a class, an enum, a function and a const are declarations"):
+      names(t"""|declare class C { m(): void; }
+                |declare enum E { A, B }
+                |declare function f(x: number): string;
+                |declare const k: number;
+                |""".s.stripMargin.tt)
+    . assert(_ == scala.List(t"C", t"E", t"f", t"k"))
+
+    test(m"a namespace qualifies the declarations it encloses"):
+      names(t"declare namespace a { namespace b { interface X { y: number; } } }")
+    . assert(_ == scala.List(t"a.b.X"))
+
+    test(m"only exported declarations are exported in a module"):
+      declarations(t"export interface A { x: number; }\ninterface B { y: number; }").stdlib
+      . map { declaration => (declaration.key, declaration.exported) }
+    . assert(_ == scala.List((t"A", true), (t"B", false)))
+
+    test(m"every top-level declaration is exported in a global script"):
+      declarations(t"interface A { x: number; }").stdlib.map(_.exported)
+    . assert(_ == scala.List(true))
+
+    test(m"a comment does not start a declaration"):
+      names(t"// interface Ghost { x: number; }\ninterface Real { x: number; }")
+    . assert(_ == scala.List(t"Real"))
+
+    test(m"a block comment is skipped entirely"):
+      names(t"/* interface Ghost {\n x: number; } */\ninterface Real { x: number; }")
+    . assert(_ == scala.List(t"Real"))
+
+    test(m"an index signature is a member of its own kind"):
+      members(t"interface A { [key: string]: number; }")
+    . assert(_ == scala.List(t"[]"))
+
+    test(m"a call signature and a construct signature are distinct members"):
+      members(t"interface A { (x: number): string; new (y: string): A; }")
+    . assert(_ == scala.List(t"()", t"new()"))
+
+    test(m"a getter and a setter do not collide with a property"):
+      members(t"interface A { get x(): number; set x(value: number); }")
+    . assert(_ == scala.List(t"get x", t"set x"))
+
+    test(m"overloads accumulate under one member rather than overwriting"):
+      declarations(t"interface A { f(x: number): string; f(x: string): number; }").stdlib
+      . flatMap(_.declaredMembers.stdlib).map(_.signatures.stdlib.length)
+    . assert(_ == scala.List(2))
+
+    test(m"an inline object type does not terminate the enclosing interface"):
+      members(t"interface A { config: { host: string; port: number }; after: number; }")
+    . assert(_ == scala.List(t"config", t"after"))
+
+    test(m"a function type is read as a function, not as a stray parenthesis"):
+      declarations(t"interface A { handler: (event: string) => void; }").stdlib
+      . flatMap(_.declaredMembers.stdlib).flatMap(_.signatures.stdlib).map(_.text)
+    . assert(_ == scala.List(t"(event: string) => void"))
+
+    test(m"an intersection is not truncated to its first member"):
+      declarations(t"type T = A & B;").stdlib
+      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+    . assert(_ == scala.List(t"A & B"))
+
+    test(m"a tuple type is read"):
+      declarations(t"type T = [string, number];").stdlib
+      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+    . assert(_ == scala.List(t"[string, number]"))
+
+    test(m"a string literal type keeps its value and is not confused with a name"):
+      declarations(t"""type T = "a" | "b";""").stdlib
+      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+    . assert(_ == scala.List(t"a | b"))
+
+    test(m"a negative numeric literal type keeps its sign"):
+      declarations(t"type T = -1;").stdlib
+      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+    . assert(_ == scala.List(t"-1"))
+
+    test(m"a nested array type is read to the right depth"):
+      declarations(t"type T = string[][];").stdlib
+      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+    . assert(_ == scala.List(t"string[][]"))
+
+    test(m"a type predicate is read"):
+      declarations(t"declare function isFoo(x: unknown): x is Foo;").stdlib
+      . collect { case function: TypescriptDeclaration.Function => function }
+      . flatMap(_.signatures.stdlib).map(_.text)
+    . assert(_ == scala.List(t"(x: unknown) => x is Foo"))
+
+    test(m"a rest parameter is marked as such"):
+      declarations(t"declare function f(...args: string[]): void;").stdlib
+      . collect { case function: TypescriptDeclaration.Function => function }
+      . flatMap(_.signatures.stdlib)
+      . collect { case TypescriptType.Function(parameters, _, _, _) => parameters.stdlib.map(_.rest) }
+    . assert(_ == scala.List(scala.List(true)))
+
+    // Constructs outside the grammar are refused, never approximated. This is the property the
+    // discipline depends on: a declaration file read as a smaller contract than it declares
+    // would make every claim computed from it unsound.
+
+    def refuses(source: Text): Optional[TypescriptError.Reason] =
+      import errorDiagnostics.stackTracesDiagnostics
+      capture[TypescriptError](TypescriptParser.parse(source)).reason
+
+    test(m"a conditional type is refused"):
+      refuses(t"type T<A> = A extends string ? number : boolean;")
+    . assert(_ == TypescriptError.Reason.Unsupported(t"a conditional type"))
+
+    test(m"a template literal type is refused"):
+      refuses(t"type T = `a${'$'}{B}c`;")
+    . assert(_ == TypescriptError.Reason.Unsupported(t"a template literal type"))
+
+    test(m"an infer binder is refused"):
+      refuses(t"type T<A> = Array<infer B>;")
+    . assert(_ == TypescriptError.Reason.Unsupported(t"an `infer` binder"))
+
+    test(m"an unterminated string literal is a syntax error"):
+      refuses(t"""type T = "unterminated;""").let:
+        case TypescriptError.Reason.Syntax(_, _) => true
+        case _                                   => false
+    . assert(_ == true)
+
+    test(m"a duplicated class declaration is refused"):
+      refuses(t"declare class A {}\ndeclare class A {}")
+    . assert(_ == TypescriptError.Reason.Duplicate(t"A"))
+
+    test(m"interfaces merge, so a repeated interface name is accepted"):
+      names(t"interface A { x: number; }\ninterface A { y: number; }")
+    . assert(_ == scala.List(t"A", t"A"))
+
+    // The dialect projection, which the foreign-function macro reads.
+
+    test(m"the dialect resolves a member inherited through extends"):
+      TypescriptDialect.parse(t"interface A { x: number; }\ninterface B extends A { y: number; }")
+      . at(t"B").lay(scala.Nil) { members => members.stdlib.keys.toList }
+      . sortBy(_.s)
+    . assert(_ == scala.List(t"x", t"y"))
+
+    test(m"the dialect reads a generic interface the old grammar dropped"):
+      TypescriptDialect.parse(t"interface Box<T> { value: T; }")
+      . at(t"Box").lay(scala.Nil) { members => members.stdlib.keys.toList }
+    . assert(_ == scala.List(t"value"))

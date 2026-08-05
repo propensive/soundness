@@ -32,169 +32,119 @@
                                                                                                   */
 package xenophile
 
-import proscenium.compat.*
-
 import anticipation.*
+import contingency.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
 
-// A minimal grammar for TypeScript declaration files: enough to read `interface` blocks of fields
-// (`name: Type;`) and methods (`name(p: T, …): Type;`). It does not interpret the rest of the
-// language — unrecognised tokens between members are skipped.
+// The `Dialect` adapter over `TypescriptParser`: it projects the parsed declarations onto the
+// `Foreign` model the foreign-function macro reads.
+//
+// The projection is lossy by design — `Foreign.Type` describes only what a call site needs to
+// marshal — but the *parse* is not, which is the difference from the grammar this replaced.
+// Generic interfaces and `extends` clauses used to be dropped whole, so a member declared on a
+// base interface surfaced to the user as "has no member"; they are now resolved.
 object TypescriptDialect extends Dialect:
-  def parse(source: Text): Map[Text, Map[Text, Prototype]] = interfaces(tokenize(source.s), Map())
 
-  // Splits the source into identifier and single-character punctuation tokens, discarding
-  // whitespace; this is all the lexical structure the interface grammar needs.
-  private def punctuation(char: Char): Boolean =
-    char == '{' || char == '}' || char == '(' || char == ')' || char == ':' || char == ',' ||
-      char == ';' || char == '[' || char == ']' || char == '?' || char == '|' || char == '<' ||
-      char == '>'
+  // `Dialect.parse` is total: it cannot report an error, and the macro that calls it reports
+  // "the foreign type is not defined" from the empty result. A discipline computing a
+  // compatibility claim must never take that path — it calls `TypescriptParser.parse` directly,
+  // where an unreadable declaration is an error rather than an absent contract.
+  def parse(source: Text): Map[Text, Map[Text, Prototype]] =
+    safely(project(TypescriptParser.parse(source))).or(Map())
 
-  private def tokenize(source: String): List[String] =
-    def recur(index: Int, current: String, tokens: scala.collection.immutable.List[String])
-    :   scala.collection.immutable.List[String] =
-
-      if index >= source.length
-      then (if current.isEmpty then tokens else current :: tokens).reverse
-      else
-        val char = source.charAt(index)
-
-        if char.isLetterOrDigit || char == '_' then recur(index + 1, current + char, tokens)
-        else
-          val flushed = if current.isEmpty then tokens else current :: tokens
-
-          if punctuation(char) then recur(index + 1, "", char.toString :: flushed)
-          else recur(index + 1, "", flushed)
-
-    List.of(recur(0, "", Nil.stdlib))
-
-  private def interfaces(tokens: List[String], acc: Map[Text, Map[Text, Prototype]])
+  private def project(declarations: List[TypescriptDeclaration])
   :   Map[Text, Map[Text, Prototype]] =
 
-    tokens match
-      case "interface" :: name :: "{" :: rest =>
-        val (members, rest2) = membersOf(rest, Map())
-        interfaces(rest2, acc.updated(name.tt, members))
+    val byName = scala.collection.mutable.LinkedHashMap[Text, TypescriptDeclaration]()
 
-      case _ :: rest =>
-        interfaces(rest, acc)
+    declarations.stdlib.foreach: declaration =>
+      declaration match
+        case _: TypescriptDeclaration.Interface => byName.put(declaration.key, declaration)
+        case _: TypescriptDeclaration.Class     => byName.put(declaration.key, declaration)
+        case _                                  => ()
 
-      case Nil =>
-        acc
+    // Inherited members are resolved against the declarations of this same file. A base named by
+    // a declaration this file does not carry contributes nothing — the file is the whole world
+    // the macro has — but it never removes what is declared here.
+    def members(key: Text, seen: scala.collection.immutable.Set[Text])
+    :   scala.collection.immutable.Map[Text, Prototype] =
 
-  // Parses a type expression into a `Foreign.Type`: `T[]` and `T?` as suffixed named types, `A | B`
-  // as a union (with `| null` / `| undefined` collapsing to an optional), and `Name<args>` as a
-  // generic application.
-  private def typeOf(tokens: List[String]): (Foreign.Type, List[String]) =
-    val (first, rest0) = atom(tokens)
+      if seen.contains(key) then scala.collection.immutable.Map() else
+        byName.get(key) match
+          case scala.None => scala.collection.immutable.Map()
 
-    def union(todo: List[String], acc: List[Foreign.Type]): (List[Foreign.Type], List[String]) =
-      todo match
-        case "|" :: more =>
-          val (next, rest) = atom(more)
-          union(rest, next :: acc)
+          case scala.Some(declaration) =>
+            val bases = declaration match
+              case TypescriptDeclaration.Interface(_, _, _, extending, _, _) => extending.stdlib
 
-        case _ =>
-          (acc.reverse, todo)
+              case TypescriptDeclaration.Class(_, _, _, extending, implements, _, _, _) =>
+                extending.option.toList ++ implements.stdlib
 
-    val (members, rest) = union(rest0, List(first))
-    val result = if members.length == 1 then members.head else Foreign.Type.Union(members)
+              case _ => scala.Nil
 
-    (result, rest)
+            val inherited = bases.foldLeft(scala.collection.immutable.Map[Text, Prototype]()):
+              (accumulated, base) =>
+                base match
+                  case TypescriptType.Named(name, _) => accumulated ++ members(name, seen + key)
+                  case _                             => accumulated
 
-  // Parses a single (non-union) type. `T[]` is read as `Array<T>` (one array representation), and
-  // `null`/`undefined` are canonicalised to `undefined` (the absent value in a union).
-  private def atom(tokens: List[String]): (Foreign.Type, List[String]) = tokens match
-    case name :: "<" :: more =>
-      val (args, rest) = arguments(more, Nil)
-      (Foreign.Type.Applied(name.tt, args), rest)
+            declaration.declaredMembers.stdlib.foldLeft(inherited): (accumulated, member) =>
+              prototype(member).lay(accumulated): value =>
+                accumulated.updated(member.name, value)
 
-    case name :: "[" :: "]" :: more =>
-      (Foreign.Type.Applied(t"Array", List(Foreign.Type.Named(name.tt))), more)
+    Map.of(byName.keys.toList.map { key => key -> Map.of(members(key, scala.collection.immutable.Set())) }.toMap)
 
-    case ("null" | "undefined") :: more =>
-      (Foreign.Type.Named(t"undefined"), more)
+  // Index, call and construct signatures have no name a `Foreign` member selection could use,
+  // and a private member is not the consumer's to call.
+  private def prototype(member: TypescriptMember): Optional[Prototype] =
+    if !member.visible then Unset else member.kind match
+      case TypescriptMember.Kind.Call | TypescriptMember.Kind.Construct
+         | TypescriptMember.Kind.Index => Unset
 
-    case name :: more =>
-      (Foreign.Type.Named(name.tt), more)
+      case TypescriptMember.Kind.Property | TypescriptMember.Kind.Getter =>
+        member.signatures.stdlib.headOption.map: signature =>
+          val result = signature match
+            case TypescriptType.Function(_, result, _, _) => foreign(result)
+            case other                                    => foreign(other)
 
-    case Nil =>
-      (Foreign.Type.Named(t""), Nil)
+          Prototype(Unset, if member.optional then optional(result) else result)
 
-  private def arguments(tokens: List[String], acc: List[Foreign.Type])
-  :   (List[Foreign.Type], List[String]) =
+        . getOrElse(Unset)
 
-    tokens match
-      case ">" :: rest =>
-        (acc.reverse, rest)
+      case TypescriptMember.Kind.Method | TypescriptMember.Kind.Setter =>
+        // The first declared signature wins where a member is overloaded: `Prototype` records one
+        // arity, and TypeScript resolves against the signatures in order.
+        member.signatures.stdlib.headOption.map: signature =>
+          signature match
+            case TypescriptType.Function(parameters, result, _, _) =>
+              val arguments = parameters.map: parameter =>
+                val typed = parameter.typed.lay(Foreign.Type.Named(t"any"))(foreign(_))
+                if parameter.optional then optional(typed) else typed
 
-      case _ =>
-        val (arg, rest) = typeOf(tokens)
+              Prototype(arguments, foreign(result))
 
-        rest match
-          case "," :: more => arguments(more, arg :: acc)
-          case ">" :: more => (List.of((arg :: acc).reverse), more)
-          case _           => arguments(rest, acc)
+            case other => Prototype(Unset, foreign(other))
 
-  private def membersOf(tokens: List[String], acc: Map[Text, Prototype])
-  :   (Map[Text, Prototype], List[String]) =
+        . getOrElse(Unset)
 
-    tokens match
-      case "}" :: rest =>
-        (acc, rest)
-
-      case name :: "(" :: rest =>
-        val (parameters, rest2) = params(rest, Nil)
-
-        rest2 match
-          case ":" :: rest3 =>
-            val (result, rest4) = typeOf(rest3)
-            membersOf(semicolon(rest4), acc.updated(name.tt, Prototype(parameters, result)))
-
-          case _ =>
-            (acc, rest2)
-
-      case name :: "?" :: ":" :: rest =>
-        val (result, rest2) = typeOf(rest)
-        membersOf(semicolon(rest2), acc.updated(name.tt, Prototype(Unset, optional(result))))
-
-      case name :: ":" :: rest =>
-        val (result, rest2) = typeOf(rest)
-        membersOf(semicolon(rest2), acc.updated(name.tt, Prototype(Unset, result)))
-
-      case _ :: rest =>
-        membersOf(rest, acc)
-
-      case Nil =>
-        (acc, Nil)
-
-  // An optional member `x?: T` is `T | undefined`.
   private def optional(foreign: Foreign.Type): Foreign.Type =
     Foreign.Type.Union(List(foreign, Foreign.Type.Named(t"undefined")))
 
-  // Reads parameter declarations up to the closing `)`, keeping only each parameter's type.
-  private def params(tokens: List[String], acc: List[Foreign.Type])
-  :   (List[Foreign.Type], List[String]) =
+  // The projection onto `Foreign.Type`. Constructs the foreign model cannot express are rendered
+  // to a named type carrying their source shape, so they remain distinguishable from one another
+  // and from anything that *is* expressible — they simply will not marshal.
+  private def foreign(typed: TypescriptType): Foreign.Type = typed match
+    case TypescriptType.Named(t"null" | t"undefined", _) => Foreign.Type.Named(t"undefined")
+    case TypescriptType.Named(name, Nil)                 => Foreign.Type.Named(name)
 
-    tokens match
-      case ")" :: rest =>
-        (acc.reverse, rest)
+    case TypescriptType.Named(name, arguments) =>
+      Foreign.Type.Applied(name, arguments.map(foreign(_)))
 
-      case name :: ":" :: rest =>
-        val (kind, rest2) = typeOf(rest)
+    case TypescriptType.Array(element) =>
+      Foreign.Type.Applied(t"Array", List(foreign(element)))
 
-        rest2 match
-          case "," :: more => params(more, kind :: acc)
-          case _           => params(rest2, kind :: acc)
-
-      case _ :: rest =>
-        params(rest, acc)
-
-      case Nil =>
-        (acc.reverse, Nil)
-
-  private def semicolon(tokens: List[String]): List[String] = tokens match
-    case ";" :: rest => rest
-    case _           => tokens
+    case TypescriptType.Union(members)     => Foreign.Type.Union(members.map(foreign(_)))
+    case TypescriptType.Literal(value, _)  => Foreign.Type.Named(value)
+    case other                             => Foreign.Type.Named(other.text)
