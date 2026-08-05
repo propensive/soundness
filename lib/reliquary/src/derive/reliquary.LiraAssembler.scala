@@ -69,6 +69,8 @@ object LiraAssembler:
       resource:    List[LiraManifest.Resource]    = List(),
       dependency:  List[LiraManifest.Dependency]  = List(),
       delta:       Optional[LiraDelta]            = Unset,
+      profiles:    EcosystemProfile.Registry      = EcosystemProfile.Registry(List()),
+      predecessor: Optional[EcosystemProfile.Evidence] = Unset,
       classpath:   SectionInput => List[Text]     = { _ => List() },
       sign:        LiraManifest => LiraManifest  = identity(_) )
   :   Data raises LiraError raises DisciplineError =
@@ -95,6 +97,14 @@ object LiraAssembler:
     val atomized = inputs.map: input =>
       val context = Discipline.Context(input.universe, input.integration, classpath(input))
       (input.universe, registry.atomize(input.content, context))
+
+    // The same per-section view a discipline is given, for the profile predicates below. Built
+    // here so that a profile checking structural invariants over a universe's content (§11.6,
+    // clause 2) sees exactly what the disciplines saw, including the integration's classpath.
+    val profileSections = List.from:
+      inputs.map: input =>
+        EcosystemProfile.Section
+          (input.universe, input.content, input.integration, classpath(input))
 
     // L125: an `export` or `track` declaration must be effective — a declared path that resolves
     // to no item in any section, or that some other discipline claims, is an assembly-time
@@ -201,6 +211,15 @@ object LiraAssembler:
     // The producer never emits a file a consumer would reject: L131/L133 are decidable from the
     // manifest, so they are checked here rather than discovered at install time.
     Verification.integrations(manifest)
+
+    // L128/L130. Profile predicates are diachronic, so they can only run where the caller has the
+    // predecessor's content in hand; with no predecessor there is no step to check, which is the
+    // ordinary case for the first release of a lineage. The audit runs against the assembled
+    // manifest because a profile may impose predicates over `toolchain` records (§13.3), and it
+    // runs before signing, so nothing unverified is ever signed.
+    predecessor.let: previous =>
+      val evidence = EcosystemProfile.Evidence(profileSections, manifest)
+      EcosystemProfile.audit(profiles, profile, previous, evidence)
 
     val blobs = contentBlobs ++ builtSections.map(_(1)) ++ atomsBlobs ++ deltaBlob.option.toList
 

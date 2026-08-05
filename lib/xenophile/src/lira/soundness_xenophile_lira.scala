@@ -32,6 +32,4 @@
                                                                                                   */
 package soundness
 
-export mandible.
-        {Bytecode, BytecodePalette, Classfile, ClassfileError, ClasspathIndex, ClassSurface,
-         disassemble}
+export xenophile.{DtsAtomizer, DtsDiscipline}
