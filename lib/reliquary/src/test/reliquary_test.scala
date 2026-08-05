@@ -724,6 +724,149 @@ object Tests extends Suite(m"Reliquary Tests"):
         report.materialized.stdlib.map { pair => pair(0).universe }
       . assert(_ == scala.List(t"jvm", t"sjsir"))
 
+      test(m"resource/1 atomizes exports by name and tracks content"):
+        import LiraManifest.{Resource, ResourceMode}
+        val claims = List(
+          Resource(ResourceMode.Export, TreePath(t"r/exported.conf")),
+          Resource(ResourceMode.Track, TreePath(t"r/tracked.json")),
+          Resource(ResourceMode.Scan, TreePath(t"r/plugins")))
+
+        val registry = Discipline.Registry(List(), claims)
+
+        def atoms(exportBytes: Text, trackBytes: Text) =
+          registry.atomize(List(
+            (TreePath(t"r/exported.conf"), encode(exportBytes)),
+            (TreePath(t"r/tracked.json"), encode(trackBytes)),
+            (TreePath(t"r/plugins/one.txt"), encode(t"scanned"))),
+            Discipline.Context(t"jvm"))
+
+        val one = atoms(t"alpha", t"schema-v1")
+        val two = atoms(t"beta", t"schema-v1")
+        val three = atoms(t"alpha", t"schema-v2")
+
+        def summary(list: List[Atomization]) =
+          list.stdlib.flatMap: atomization =>
+            atomization.atoms.stdlib.map: atom =>
+              (atom.key, atom.atomClass, LiraHash.text(atom.valueHash))
+
+        // The scanned item is claimed atomless, so only two atoms exist; the export's hash is a
+        // function of the name alone, so changing its bytes changes nothing; the tracked atom is
+        // replaceable and its hash follows its content.
+        (summary(one).map(_(0)), summary(one).map(_(1)),
+         summary(one) == summary(two), summary(one) == summary(three))
+      . assert(_ == (scala.List(t"r/exported.conf", t"r/tracked.json"),
+          scala.List(AtomClass.Rigid, AtomClass.Replaceable), true, false))
+
+      test(m"a resource path declared twice is L124"):
+        import LiraManifest.{Resource, ResourceMode}
+
+        capture[LiraError](ResourceDiscipline.check(List(
+          Resource(ResourceMode.Export, TreePath(t"r/a.conf")),
+          Resource(ResourceMode.Track, TreePath(t"r/a.conf"))))).reason match
+
+          case LiraError.Reason.BadResource(_) => true
+          case _                               => false
+      . assert(identity)
+
+      test(m"an export under a scanned directory is L124"):
+        import LiraManifest.{Resource, ResourceMode}
+
+        capture[LiraError](ResourceDiscipline.check(List(
+          Resource(ResourceMode.Scan, TreePath(t"r/plugins")),
+          Resource(ResourceMode.Export, TreePath(t"r/plugins/one.txt"))))).reason match
+
+          case LiraError.Reason.BadResource(_) => true
+          case _                               => false
+      . assert(identity)
+
+      test(m"a scanned directory may be empty and claims only what lies under it"):
+        import LiraManifest.{Resource, ResourceMode}
+        val discipline = ResourceDiscipline(List(
+          Resource(ResourceMode.Scan, TreePath(t"r/plugins"))))
+
+        val data = encode(t"x")
+
+        (discipline.claims(TreePath(t"r/plugins/a.txt"), data),
+         discipline.claims(TreePath(t"r/plugins"), data),
+         discipline.claims(TreePath(t"r/pluginsx/a.txt"), data))
+      . assert(_ == (true, false, false))
+
+      test(m"an assembled release carries its resource atoms and round-trips"):
+        import LiraManifest.{Resource, ResourceMode}
+        val claims = List(
+          Resource(ResourceMode.Export, TreePath(t"r/exported.conf")),
+          Resource(ResourceMode.Scan, TreePath(t"r/plugins")))
+
+        val content = List(
+          (TreePath(t"a/A.class"), classA),
+          (TreePath(t"r/exported.conf"), encode(t"config")),
+          (TreePath(t"r/plugins/one.txt"), encode(t"plugin")))
+
+        val bytes = LiraAssembler.assemble(t"example-core",
+          List(LiraAssembler.SectionInput(t"jvm", content)),
+          Discipline.Registry(List()),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+          resource = claims)
+
+        val back = Lira.read(bytes)
+        val report = Verification.install(back)
+
+        val resourceAtoms = report.atomizations.stdlib
+          . filter(_.discipline == t"resource/1")
+          . flatMap(_.atoms.stdlib.map(_.key))
+
+        // The scanned item is atomless and the classfile falls to opaque/1, so resource/1
+        // contributes exactly the one exported name.
+        (back.manifest.resource.stdlib.map(_.mode),
+         resourceAtoms,
+         back.manifest.render == Lira.read(bytes).manifest.render)
+      . assert(_ == (scala.List(LiraManifest.ResourceMode.Export, LiraManifest.ResourceMode.Scan),
+          scala.List(t"r/exported.conf"), true))
+
+      test(m"an export resolving to no item is L125"):
+        import LiraManifest.{Resource, ResourceMode}
+
+        val claims = List(Resource(ResourceMode.Export, TreePath(t"r/absent.conf")))
+
+        capture[LiraError]:
+          LiraAssembler.assemble(t"example-core",
+            List(LiraAssembler.SectionInput(t"jvm", List((TreePath(t"a/A.class"), classA)))),
+            Discipline.Registry(List()),
+            toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+            resource = claims)
+
+        . reason
+      . assert(_ == LiraError.Reason.IneffectiveResource(t"r/absent.conf"))
+
+      test(m"an export another discipline claims is L125"):
+        import LiraManifest.{Resource, ResourceMode}
+
+        object Greedy extends Discipline:
+          def id: Text = t"greedy/1"
+          def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".conf")
+          def domain: Discipline.Domain = Discipline.Domain.Universal
+          def keying: Discipline.Keying = Discipline.Keying.Declaration
+
+          def guarantees(universe: Text): Set[Discipline.Guarantee] =
+            Set(Discipline.Guarantee.Recompilation)
+
+          def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+          :   Atomization raises DisciplineError =
+            Atomization.of(id, List())
+
+        val claims = List(Resource(ResourceMode.Export, TreePath(t"r/taken.conf")))
+
+        capture[LiraError]:
+          LiraAssembler.assemble(t"example-core",
+            List(LiraAssembler.SectionInput(t"jvm",
+              List((TreePath(t"r/taken.conf"), encode(t"config"))))),
+            Discipline.Registry(List(Greedy)),
+            toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+            resource = claims)
+
+        . reason
+      . assert(_ == LiraError.Reason.IneffectiveResource(t"r/taken.conf"))
+
       test(m"a manifest with profiles and integrations round-trips through its rendering"):
         val rootTree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
         val altTree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(sjsirA))))
@@ -744,7 +887,7 @@ object Tests extends Suite(m"Reliquary Tests"):
               breaks = List(LiraManifest.Guarantee.Linkage))),
           integration = List(
             LiraManifest.Integration(t"new", rank = 0L),
-            LiraManifest.Integration(t"old", rank = 1L, label = t"rudiments-7.x")),
+            LiraManifest.Integration(t"old", rank = 1L, label = t"built against the rudiments 0.x line")),
           dependency  = List(LiraManifest.Dependency(t"beta",
               blob(encode(t"snapshot")), integration = List(t"old"))),
           section     = List(
@@ -763,9 +906,11 @@ object Tests extends Suite(m"Reliquary Tests"):
          back.profile.stdlib.head.breaks.stdlib.head,
          back.integration.stdlib.map(_.id),
          back.section.stdlib.map(_.integration.or(t"-")),
-         back.dependency.stdlib.head.integration.stdlib)
+         back.dependency.stdlib.head.integration.stdlib,
+         back.integration.stdlib(1).label.or(t"-"))
       . assert(_ == (true, LiraManifest.Guarantee.Linkage, scala.List(t"new", t"old"),
-          scala.List(t"new", t"old"), scala.List(t"old")))
+          scala.List(t"new", t"old"), scala.List(t"old"),
+          t"built against the rudiments 0.x line"))
 
       test(m"two sections sharing a universe and integration are L131"):
         val tree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
@@ -1009,6 +1154,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         ( module:       Text,
           lineage:      List[Data],
           owns:         List[Text]                     = List(),
+          resources:    List[LiraManifest.Resource]    = List(),
           deps:         List[LiraManifest.Dependency]  = List(),
           version:      Optional[Semver]               = Unset,
           section:      List[Section]                  = List(),
@@ -1020,6 +1166,7 @@ object Tests extends Suite(m"Reliquary Tests"):
             version     = version,
             lineage     = lineage,
             owns        = owns,
+            resource    = resources,
             api         = List(),
             integration = integrations,
             dependency  = deps,
@@ -1051,6 +1198,28 @@ object Tests extends Suite(m"Reliquary Tests"):
         val path = Buildpath(List(
           stub(t"alpha", List(snapOne), owns = List(t"gossamer")),
           stub(t"beta", List(snapTwo), owns = List(t"gossamers"))))
+
+        path.validate(t"jvm").stdlib.size
+      . assert(_ == 0)
+
+      test(m"an export path claimed by two modules is L126"):
+        import LiraManifest.{Resource, ResourceMode}
+        val claim = List(Resource(ResourceMode.Export, TreePath(t"r/shared.conf")))
+
+        val path = Buildpath(List(
+          stub(t"alpha", List(snapOne), resources = claim),
+          stub(t"beta", List(snapTwo), resources = claim)))
+
+        capture[LiraError](path.validate(t"jvm")).reason
+      . assert(_ == LiraError.Reason.ResourceClash(t"r/shared.conf"))
+
+      test(m"a scanned directory shared by two modules is exempt from L126"):
+        import LiraManifest.{Resource, ResourceMode}
+        val claim = List(Resource(ResourceMode.Scan, TreePath(t"r/plugins")))
+
+        val path = Buildpath(List(
+          stub(t"alpha", List(snapOne), resources = claim),
+          stub(t"beta", List(snapTwo), resources = claim)))
 
         path.validate(t"jvm").stdlib.size
       . assert(_ == 0)
@@ -1139,7 +1308,7 @@ object Tests extends Suite(m"Reliquary Tests"):
           deps = List(LiraManifest.Dependency(t"beta", snapOne, integration = List(t"only"))))
 
         capture[LiraError](Buildpath(List(alpha, provider)).resolved(t"jvm")).reason
-      . assert(_ == LiraError.Reason.NoAssignment)
+      . assert(_ == LiraError.Reason.NoAssignment(t"alpha"))
 
       test(m"a release declaring no integration assigns the implicit one"):
         Buildpath(List(stub(t"alpha", List(snapOne)))).resolved(t"jvm")(0)(t"alpha").absent
@@ -1152,6 +1321,40 @@ object Tests extends Suite(m"Reliquary Tests"):
 
         Buildpath(List(needy, provider)).validate(t"jvm").stdlib.size
       . assert(_ == 0)
+
+      test(m"a recorded span satisfies a requirement outside the lineage"):
+        // beta's lineage carries only snapTwo, so alpha's snapOne requirement fails on lineage
+        // membership; the recorded span across the major boundary carries it (§13.4).
+        val provider = stub(t"beta", List(snapTwo))
+
+        val needy = stub(t"alpha", List(snapOne),
+          deps = List(LiraManifest.Dependency(t"beta", snapOne, spans = List(snapTwo))))
+
+        Buildpath(List(needy, provider)).validate(t"jvm").stdlib.size
+      . assert(_ == 0)
+
+      test(m"a span naming a snapshot the candidate does not carry is still L114"):
+        val provider = stub(t"beta", List(snapTwo))
+        val other = LiraHash(LiraHash.Domain.Snapshot, encode(t"three"))
+
+        val needy = stub(t"alpha", List(snapOne),
+          deps = List(LiraManifest.Dependency(t"beta", snapOne, spans = List(other))))
+
+        capture[LiraError](Buildpath(List(needy, provider)).validate(t"jvm")).reason match
+          case LiraError.Reason.Unsatisfiable(_) => true
+          case _                                 => false
+      . assert(identity)
+
+      test(m"a span lets an integration resolve that lineage membership would reject"):
+        val provider = stub(t"beta", List(snapTwo))
+
+        val alpha = stub(t"alpha", List(snapOne),
+          integrations = List(LiraManifest.Integration(t"spanned", rank = 0L)),
+          deps = List(LiraManifest.Dependency(t"beta", snapOne, integration = List(t"spanned"),
+              spans = List(snapTwo))))
+
+        Buildpath(List(alpha, provider)).resolved(t"jvm")(0)(t"alpha")
+      . assert(_ == t"spanned")
 
       test(m"a requirement outside the lineage is L114"):
         val provider = stub(t"beta", List(snapTwo))

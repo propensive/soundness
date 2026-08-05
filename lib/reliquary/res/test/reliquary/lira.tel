@@ -2,8 +2,8 @@ tel 1.0
 
 # The `lira` manifest schema (LIRA specification §14: `jvm | sjsir | nir` universes, optional
 # numeric-only `version`, dependencies scoped by universe and integration or `build`-pinned,
-# sections keyed by universe and integration with `derivative` hashes, and ecosystem `profile`
-# claims). This document is the canonical mirror of the hand-encoded
+# sections keyed by universe and integration with `derivative` hashes, `resource` claims for the
+# resource/1 discipline, and ecosystem `profile` claims). This document is the canonical mirror of the hand-encoded
 # `LiraSchemas.lira`; reliquary's test suite asserts the two are structurally identical and pins
 # this document's schema signature.
 
@@ -17,6 +17,10 @@ record Tool
 record Api
   field discipline DisciplineId
   field atoms Hash
+
+record Resource
+  select ResourceMode
+  field path TreePath
 
 record Profile
   field id ProfileId
@@ -76,6 +80,9 @@ scalar DisciplineId
 scalar ProfileId
   validate profile-id
 
+scalar TreePath
+  validate tree-path
+
 scalar Guarantee
   validate guarantee
 
@@ -84,12 +91,18 @@ select Universe
   variant sjsir Flag
   variant nir Flag
 
+select ResourceMode
+  variant export Flag
+  variant track Flag
+  variant scan Flag
+
 document
   field module ModuleName
   field version Semver optional
   field lineage Hash repeatable
   field toolchain Tool repeatable
   field owns Namespace optional repeatable
+  field resource Resource optional repeatable
   field api Api repeatable
   field profile Profile optional repeatable
   field integration Integration optional repeatable

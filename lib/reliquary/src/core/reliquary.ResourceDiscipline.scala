@@ -34,91 +34,81 @@ package reliquary
 
 import anticipation.*
 import contingency.*
-import prepositional.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
 
-object Discipline:
-  // What a compiler-based discipline needs beyond the content itself: which section is being
-  // atomized — its universe and, where the release offers alternative dependency vectors (§9.5),
-  // its integration — and the dependency classpath materialized from the buildpath (entries as
-  // textual paths, so the core stays platform-light). The classpath is a property of the
-  // integration, which is why atomization is per-section and not per-universe.
-  case class Context
-    ( universe:    Text,
-      integration: Optional[Text] = Unset,
-      classpath:   List[Text]     = List() )
+import LiraManifest.{Resource, ResourceMode}
 
-  // The universes a discipline atomizes at all (§11.2, requirement 1). A universal discipline
-  // atomizes whatever universe it is given; a universe-specific one names its universes, and the
-  // cross-section invariant (§9.6) is vacuous outside them. Claiming nothing in a universe
-  // outside the domain is not the same as claiming content atomless.
-  enum Domain:
-    case Universal
-    case Universes(names: Set[Text])
+// The normative `resource/1` discipline (§11.4): non-code content addressed by classpath-style
+// name, whose *name* may be part of a module's contract even where its bytes are not. It is the
+// one registered discipline whose claiming takes input beyond the tree itself — the manifest's
+// `resource` records, an authorial claim like `owns` — which is unproblematic because
+// atomization only ever runs where the manifest is in hand (§16, step 4).
+//
+// In the claiming order it follows every language discipline and precedes the `opaque/1`
+// fallback, so an item under a scanned directory that a language discipline claims goes to that
+// discipline, and only the remainder are atomless.
+case class ResourceDiscipline(resources: List[Resource]) extends Discipline:
+  def id: Text = t"resource/1"
 
-    def covers(universe: Text): Boolean = this match
-      case Universal        => true
-      case Universes(names) => names.stdlib.contains(universe)
+  // Universal: resources are content, not a representation of one universe. Keys are paths, so
+  // keying is by declaration in the only sense available. Rigid resource atoms certify presence
+  // at both levels — a name that resolves keeps resolving — and nothing about content, since
+  // resource bytes are behavior and no discipline certifies that (§18).
+  def domain: Discipline.Domain = Discipline.Domain.Universal
+  def keying: Discipline.Keying = Discipline.Keying.Declaration
 
-  // Whether an atom's key names the type that *declares* a member, or every type that *presents*
-  // it after inheritance (§11.2, requirement 4). Declaration keying is sound exactly where every
-  // reference a certified consumer can make resolves through the declaring type.
-  enum Keying:
-    case Declaration, Membership
+  def guarantees(universe: Text): Set[Discipline.Guarantee] =
+    Set(Discipline.Guarantee.Linkage, Discipline.Guarantee.Recompilation)
 
-  // What a discipline's rigid atoms certify (§11.2 requirement 7, §11.5). Behavior is not a
-  // certifiable level and so has no case here: no hash scheme certifies it (§18).
-  enum Guarantee:
-    case Linkage, Recompilation
+  private def named(mode: ResourceMode): List[TreePath] =
+    List.from(resources.stdlib.filter(_.mode == mode).map(_.path))
 
-  // An ordered set of disciplines. Content is claimed by the first discipline whose `claims`
-  // accepts it; anything left unclaimed falls to `opaque/1` (§11.3), so nothing in a LIRA file
-  // is ever outside the compatibility algebra. A discipline out of its domain claims nothing,
-  // ahead of any question of what it would have claimed.
-  // The claiming order of §11.4 is structural rather than a convention the caller must remember:
-  // language disciplines first, then `resource/1` over the manifest's claims, then the
-  // `opaque/1` fallback. So an item under a scanned directory that a language discipline claims
-  // goes to that discipline, and only the remainder are atomless.
-  class Registry(disciplines: List[Discipline], resources: List[LiraManifest.Resource] = List()):
-    // The language disciplines alone, without the two the registry supplies itself.
-    def declared: List[Discipline] = disciplines
+  def exports: List[TreePath] = named(ResourceMode.Export)
+  def tracked: List[TreePath] = named(ResourceMode.Track)
+  def scanned: List[TreePath] = named(ResourceMode.Scan)
 
-    def all: List[Discipline] =
-      List.from(disciplines.stdlib :+ ResourceDiscipline(resources) :+ OpaqueDiscipline)
+  // A scan claims every item whose path has the declared directory plus `/` as a prefix. The
+  // directory itself is not an item, and a scanned directory may be empty in any or all
+  // universes.
+  def underScan(path: TreePath): Boolean =
+    scanned.stdlib.exists: directory => path.text.s.startsWith(directory.text.s + "/")
 
-    def atomize(content: List[(TreePath, Data)], context: Context)
-    :   List[Atomization] raises DisciplineError =
-
-      var remaining = content.stdlib
-
-      val results = all.stdlib.map: discipline =>
-        val (claimed, rest) =
-          if !discipline.domain.covers(context.universe) then (scala.Nil, remaining)
-          else remaining.partition: (path, data) => discipline.claims(path, data)
-
-        remaining = rest
-        (discipline, claimed)
-
-      List.from:
-        results.filter { (_, claimed) => !claimed.isEmpty }.map: (discipline, claimed) =>
-          discipline.atomize(List.from(claimed), context)
-
-// A named, versioned canonicalization procedure (§11): the single language-specific plug-in
-// point of the format. Atomization must be a pure function of the content's semantic model —
-// independent of file ordering, timestamps, tool versions and fresh names — and obey the
-// folding principle (§10.3).
-trait Discipline:
-  def id: Text
-  def claims(path: TreePath, data: Data): Boolean
-
-  // The three declarative requirements of §11.2. `domain` scopes the cross-section invariant
-  // (§9.6) and decides L127; `keying` and `guarantees` are contracts a discipline states and
-  // this core takes on trust — neither is checkable by machine, and both change what a reader
-  // may conclude from a grade (§12.4).
-  def domain: Discipline.Domain
-  def keying: Discipline.Keying
-  def guarantees(universe: Text): Set[Discipline.Guarantee]
+  def claims(path: TreePath, data: Data): Boolean =
+    exports.stdlib.exists(_.text == path.text)
+    || tracked.stdlib.exists(_.text == path.text)
+    || underScan(path)
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError
+  :   Atomization raises DisciplineError =
+
+    val atoms = content.stdlib.flatMap: (path, data) =>
+      if exports.stdlib.exists(_.text == path.text) then
+        // The value hashes the path alone, so the atom asserts presence and not content: bytes
+        // may differ per universe while L108 still requires the name in every one of them.
+        scala.List(Atom(path.text, AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(id), path.bytes)))
+      else if tracked.stdlib.exists(_.text == path.text) then
+        // Content-hashed and replaceable: an edit is replaceable churn, a minor event that marks
+        // consumers whose used-sets contain the atom as stale (§13.4). Resources create no
+        // linkage, so replaceability soundness is trivial and the reference list is empty.
+        scala.List(Atom(path.text, AtomClass.Replaceable, LiraHash(LiraHash.Domain.Atom(id), data)))
+      else scala.List()  // claimed by a scan: atomless
+
+    Atomization.of(id, List.from(atoms))
+
+object ResourceDiscipline:
+  // L124: declarations must be well-formed — no path declared twice, and no `export` or `track`
+  // path lying under a declared `scan` directory — so §11.2's partition has a single claimant by
+  // construction.
+  def check(resources: List[Resource]): Unit raises LiraError =
+    val discipline = ResourceDiscipline(resources)
+    val paths = resources.stdlib.map(_.path.text)
+
+    paths.groupBy(identity).foreach: (path, group) =>
+      if group.size > 1
+      then abort(LiraError(LiraError.Reason.BadResource(t"$path is declared twice")))
+
+    (discipline.exports.stdlib ++ discipline.tracked.stdlib).foreach: path =>
+      if discipline.underScan(path)
+      then abort(LiraError(LiraError.Reason.BadResource(t"${path.text} lies under a scan")))

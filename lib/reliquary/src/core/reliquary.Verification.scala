@@ -93,6 +93,7 @@ object Verification:
   def install(lira: Lira): Report raises LiraError =
     val manifest = lira.manifest
     integrations(manifest)
+    ResourceDiscipline.check(manifest.resource)
 
     // Steps 1–2: decompress within the declared length, verify the payload hash, and re-derive
     // every blob identity while checking stream order (L102–L105).
