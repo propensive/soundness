@@ -433,7 +433,12 @@ trait Tel2 extends Tel3:
 
           Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
 
-        def encoded(value: derivation): Tel =
+        // The encoded value is taken FROZEN (`^{}`) rather than as a bare `derivation`. The type
+        // parameter may capture, so writing it plainly here re-elaborates it with a fresh capture
+        // set, which no longer matches the `Self` of `Encodable.encoded` — the definition then
+        // fails its override check under capture checking. A frozen parameter is no restriction:
+        // an encoder reads its argument and retains nothing of it.
+        def encoded(value: derivation^{}): Tel =
           val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
           fields(value): [field] =>
@@ -457,7 +462,7 @@ trait Tel2 extends Tel3:
 
         // The §22.2 member description of a value, in field order — the
         // input to `Mutation.construct` for the canonical forms below.
-        private def membersOf(value: derivation)
+        private def membersOf(value: derivation^{})
         :   scala.collection.immutable.List[Mutation.Member] =
 
           val members = scala.collection.mutable.ListBuffer.empty[Mutation.Member]
@@ -524,13 +529,13 @@ trait Tel2 extends Tel3:
 
         // The canonical child form: this record's compound with its §22.2
         // leading inline run, for embedding under a keyword.
-        override def constructed(value: derivation): Tel =
+        override def constructed(value: derivation^{}): Tel =
           Tel.make(Mutation.construct(t"", List.of(membersOf(value)), '#'))
 
         // The canonical document form: the root carries no atoms (§20.2),
         // so a leading `Break` suppresses the root's own run while nested
         // records keep theirs.
-        override def canonicalized(value: derivation): Tel =
+        override def canonicalized(value: derivation^{}): Tel =
           val compound =
             Mutation.construct(t"", List.of(Mutation.Member.Break :: membersOf(value)), '#')
 
@@ -548,7 +553,8 @@ trait Tel2 extends Tel3:
         type Self = derivation
         def shape(): Morphology = Morphology.Any
 
-        def encoded(value: derivation): Tel =
+        // Frozen, as in `conjunction` above.
+        def encoded(value: derivation^{}): Tel =
           variant(value): [variant <: derivation] =>
             v =>
               val keyword: Text = Tel.camelToKebab(label.s)
@@ -562,7 +568,7 @@ trait Tel2 extends Tel3:
 
         // The canonical child form: the chosen variant in its own §22.2
         // construct form, so a record variant carries its inline run.
-        override def constructed(value: derivation): Tel =
+        override def constructed(value: derivation^{}): Tel =
           variant(value): [variant <: derivation] =>
             v =>
               val keyword: Text = Tel.camelToKebab(label.s)
