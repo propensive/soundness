@@ -1774,14 +1774,32 @@ object Tel extends Tel2:
   //   data(offset + 1)          1-indexed source line of the node's keyword
   //   data(offset + 2)          1-indexed source column of the node's keyword
   //   data(offset + 3)          length in characters of the keyword
-  //   data(offset + 4)          child count
-  //   data(offset + 5 + k)      relative offset (from `offset`) of the k-th child
+  //   data(offset + 4)          1-indexed column of the first inline atom, or 0 for none
+  //   data(offset + 5)          length in characters of the inline-atom run, or 0
+  //   data(offset + 6)          child count
+  //   data(offset + 7 + k)      relative offset (from `offset`) of the k-th child
   //   … child descriptors laid out contiguously …
   // The document root occupies the outermost descriptor with a synthetic
   // (line 1, column 1, length 0) header; its children are the top-level compounds.
+  //
+  // The value fields locate the compound's inline atoms — the text a decode error
+  // is about — so `locate` can point at the value while `locateKey` points at the
+  // keyword. No value *line* is stored: inline atoms are by construction on the
+  // compound's own line, so it is always `data(offset + 1)`. A column of 0 means
+  // the compound has no inline atoms at all (a parent, a flag, a remark-only line,
+  // or a source/literal payload, whose lines are not spannable by a `Line`-mode
+  // `Span`); those fall back to the keyword. Columns being 1-indexed makes 0
+  // unambiguous.
+  //
   // Represented as the stdlib's immutable array (pure by construction): the frozen
   // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
   opaque type PositionIndex = scala.IArray[Int]
+
+  // Ints per compound in the parser's flat pre-order record stream, and the fixed
+  // part of a descriptor's header. Named once so the parser's append site and
+  // `buildIndex`'s fold cannot drift apart.
+  private[stratiform] inline val positionStride = 5
+  private[stratiform] inline val descriptorHeader = 7
 
   object PositionIndex:
     private[stratiform] def apply(data: Array[Int]^{}): PositionIndex = data.readable
@@ -1806,28 +1824,41 @@ object Tel extends Tel2:
       case PositionTracking.On  => parseTracked(bytes)
       case PositionTracking.Off => parse(bytes)
 
-  // Fold the parser's flat pre-order stream of (line, column, length) triples —
-  // one per compound, in recursive-descent order — into the navigable packed
+  // Fold the parser's flat pre-order stream of `positionStride`-int records — one
+  // per compound, in recursive-descent order — into the navigable packed
   // descriptor layout documented on `PositionIndex`. The AST supplies the tree
-  // shape; the triples supply the coordinates. Runs only under `parseTracked`,
+  // shape; the records supply the coordinates. Runs only under `parseTracked`,
   // never on the hot path.
-  private[stratiform] def buildIndex(document: Tel.Document, triples: Array[Int]^{}): Array[Int]^{} =
+  private[stratiform] def buildIndex(document: Tel.Document, records: Array[Int]^{}): Array[Int]^{} =
     var cursor = 0
 
-    def build(node: Tel.Subtree, line: Int, column: Int, length: Int): scala.Array[Int] =
+    def build
+      ( node:        Tel.Subtree,
+        line:        Int,
+        column:      Int,
+        length:      Int,
+        valueColumn: Int,
+        valueLength: Int )
+    :   scala.Array[Int] =
+
       val children = node.children.bind(_.compounds)
       val childDescriptors = new scala.Array[scala.Array[Int]](children.length)
       var k = 0
 
       while k < children.length do
-        val childLine   = triples(cursor)
-        val childColumn = triples(cursor + 1)
-        val childLength = triples(cursor + 2)
-        cursor += 3
-        childDescriptors(k) = build(children(k), childLine, childColumn, childLength)
+        val childLine        = records(cursor)
+        val childColumn      = records(cursor + 1)
+        val childLength      = records(cursor + 2)
+        val childValueColumn = records(cursor + 3)
+        val childValueLength = records(cursor + 4)
+        cursor += positionStride
+
+        childDescriptors(k) =
+          build(children(k), childLine, childColumn, childLength, childValueColumn, childValueLength)
+
         k += 1
 
-      val header = 5 + children.length
+      val header = descriptorHeader + children.length
       var total = header
       k = 0
 
@@ -1840,19 +1871,21 @@ object Tel extends Tel2:
       buffer(1) = line
       buffer(2) = column
       buffer(3) = length
-      buffer(4) = children.length
+      buffer(4) = valueColumn
+      buffer(5) = valueLength
+      buffer(6) = children.length
       var offset = header
       k = 0
 
       while k < children.length do
-        buffer(5 + k) = offset
+        buffer(descriptorHeader + k) = offset
         System.arraycopy(childDescriptors(k), 0, buffer, offset, childDescriptors(k).length)
         offset += childDescriptors(k).length
         k += 1
 
       buffer
 
-    Array.frozen(scala.IArray.unsafeFromArray(build(document, 1, 1, 0)))
+    Array.frozen(scala.IArray.unsafeFromArray(build(document, 1, 1, 0, 0, 0)))
 
   // Resolves a `TelPath` to the source `Position` recorded in a tracked `Tel`'s
   // `PositionIndex`. Exposed uniformly as `tel.locate(path)` / `tel.locateKey(path)`
@@ -1896,7 +1929,9 @@ object Tel extends Tel2:
       val k = children.indexWhere(_.keyword == segments(i))
 
       if k < 0 then Unset
-      else walkIndex(children(k), data, offset + data(offset + 5 + k), segments, i + 1, keyMode)
+      else
+        val child = offset + data(offset + descriptorHeader + k)
+        walkIndex(children(k), data, child, segments, i + 1, keyMode)
 
   // Concatenate the chunks of a `Chain[Data]` source into a single byte array.
   private[stratiform] def concatenate(source: Chain[Data]): Data =
@@ -2466,7 +2501,7 @@ object Tel extends Tel2:
       p.reset(Cursor[Data](input), Unset)
       p.tracking = true
 
-      try (p.parse(), Array.from(p.positionTriples)) finally p.tracking = false
+      try (p.parse(), Array.from(p.positionRecords)) finally p.tracking = false
 
     // Streaming parse (§6.1) of a multi-document source into the documents it
     // contains. `parseDocuments` is eager; `parseStream` parses lazily on demand.
@@ -2670,13 +2705,14 @@ object Tel extends Tel2:
     var documentEndsWithLf: Boolean = false
 
     // ── Position tracking (set by `Parser.parseTracked`) ──────────────────────
-    // When `tracking` is on, the parser appends one (line, column, length)
-    // triple per compound — in recursive-descent (pre-order) sequence — to
-    // `positionTriples`, from which `Tel.buildIndex` folds the navigable
-    // `PositionIndex`. Off by default, so the throughput-optimised parse path is
-    // untouched (no triple is recorded and no per-compound work is added).
+    // When `tracking` is on, the parser appends one `Tel.positionStride`-int
+    // record per compound — (line, column, keyword length, value column, value
+    // length), in recursive-descent (pre-order) sequence — to `positionRecords`,
+    // from which `Tel.buildIndex` folds the navigable `PositionIndex`. Off by
+    // default, so the throughput-optimised parse path is untouched (no record is
+    // written and no per-compound work is added).
     private[stratiform] var tracking: Boolean = false
-    private[stratiform] val positionTriples = scala.collection.mutable.ArrayBuffer.empty[Int]
+    private[stratiform] val positionRecords = scala.collection.mutable.ArrayBuffer.empty[Int]
 
     // Ancestor stack of Struct types known for each open compound, used by
     // §19.5's schema-aware E107 recovery. The element at index `i` is the
@@ -3243,7 +3279,7 @@ object Tel extends Tel2:
       bufEnd = 0
       lineNo = 1
       tracking = false
-      positionTriples.clear()
+      positionRecords.clear()
       margin = 0
       sigil  = '#'.toByte
       crlfMode = false
@@ -4042,9 +4078,11 @@ object Tel extends Tel2:
           // `Tel.buildIndex` folds against the AST. Column is 1-indexed at the
           // keyword's first character (just past the leading spaces).
           if tracking then
-            positionTriples += compoundLine
-            positionTriples += compoundLeadingSpaces + 1
-            positionTriples += compoundKeyword.s.length
+            positionRecords += compoundLine
+            positionRecords += compoundLeadingSpaces + 1
+            positionRecords += compoundKeyword.s.length
+            positionRecords += 0
+            positionRecords += 0
 
           prevContentLeadingSpaces = compoundLeadingSpaces
           prevLineWasBoundary = false
