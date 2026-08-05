@@ -663,21 +663,21 @@ object internal:
               case IntK =>
                 firstWins:
                   '{
-                    Tel.Parsable.focusing($foci, $keyText):
+                    Tel.Parsable.focusing($foci, $reader, $keyText):
                       $reader.int().lay(Tel.Parsable.scalarFault($reader, t"Int", 0))(identity)
                   }.asTerm
 
               case LongK =>
                 firstWins:
                   '{
-                    Tel.Parsable.focusing($foci, $keyText):
+                    Tel.Parsable.focusing($foci, $reader, $keyText):
                       $reader.long().lay(Tel.Parsable.scalarFault($reader, t"Long", 0L))(identity)
                   }.asTerm
 
               case BooleanK =>
                 firstWins:
                   '{
-                    Tel.Parsable.focusing($foci, $keyText):
+                    Tel.Parsable.focusing($foci, $reader, $keyText):
                       $reader.boolean()
                       . lay(Tel.Parsable.scalarFault($reader, t"Boolean", false))(identity)
                   }.asTerm
@@ -685,7 +685,7 @@ object internal:
               case TextK =>
                 firstWins:
                   '{
-                    Tel.Parsable.focusing($foci, $keyText):
+                    Tel.Parsable.focusing($foci, $reader, $keyText):
                       $reader.atom()
                       . lay { $reader.fault(TelError.Reason.Absent); t"" } (identity)
                   }.asTerm
@@ -693,7 +693,7 @@ object internal:
               case StringK =>
                 firstWins:
                   '{
-                    Tel.Parsable.focusing($foci, $keyText):
+                    Tel.Parsable.focusing($foci, $reader, $keyText):
                       $reader.atom()
                       . lay { $reader.fault(TelError.Reason.Absent); "" } { atom => atom.s }
                   }.asTerm
@@ -715,7 +715,7 @@ object internal:
                 val append: Term =
                   '{
                     $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
-                      ( Tel.Parsable.focusing($foci, $keyText):
+                      ( Tel.Parsable.focusing($foci, $reader, $keyText):
                           Tel.Parsable.parseElement
                             ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
                               $reader,
@@ -724,7 +724,7 @@ object internal:
 
                 val read: Term =
                   '{
-                    Tel.Parsable.focusing($foci, $keyText):
+                    Tel.Parsable.focusing($foci, $reader, $keyText):
                       $instances(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
                       . parse($reader, $indent)
                   }.asTerm
@@ -773,21 +773,21 @@ object internal:
                 case IntK =>
                   fill:
                     '{
-                      Tel.Parsable.focusing($foci, $keyText):
+                      Tel.Parsable.focusing($foci, $reader, $keyText):
                         Tel.Parsable.atomInt($first)(using $tactic)
                     }.asTerm
 
                 case LongK =>
                   fill:
                     '{
-                      Tel.Parsable.focusing($foci, $keyText):
+                      Tel.Parsable.focusing($foci, $reader, $keyText):
                         Tel.Parsable.atomLong($first)(using $tactic)
                     }.asTerm
 
                 case BooleanK =>
                   fill:
                     '{
-                      Tel.Parsable.focusing($foci, $keyText):
+                      Tel.Parsable.focusing($foci, $reader, $keyText):
                         Tel.Parsable.atomBoolean($first)(using $tactic)
                     }.asTerm
 
@@ -817,7 +817,7 @@ object internal:
 
                       while occurrence < $count do
                         $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
-                          ( Tel.Parsable.focusing($foci, $keyText):
+                          ( Tel.Parsable.focusing($foci, $reader, $keyText):
                               Tel.Parsable.parseAtomElement
                                 ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
                                   Tel.Parsable.positionalText
@@ -833,7 +833,7 @@ object internal:
                         val instance =
                           $instances(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
 
-                        Tel.Parsable.focusing($foci, $keyText):
+                        Tel.Parsable.focusing($foci, $reader, $keyText):
                           if instance.nature == Tel.Nature.Flag
                           then instance.parseFlag()(using $tactic)
                           else instance.parseAtom($first)(using $tactic)
@@ -927,7 +927,7 @@ object internal:
                     val declared = $fallbacks(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                     if !declared.absent then declared.asInstanceOf[fieldType]
-                    else Tel.Parsable.focusing($foci, $keyText)($onAbsent)
+                    else Tel.Parsable.focusingUnlocated($foci, $keyText)($onAbsent)
                   }.asTerm )
 
             val whenUnseen: Term =
@@ -943,7 +943,7 @@ object internal:
                   Assign
                     ( Ref(slots(index)),
                       '{
-                        Tel.Parsable.focusing($foci, $keyText):
+                        Tel.Parsable.focusingUnlocated($foci, $keyText):
                           Tel.Parsable.gathered[fieldType]
                             ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
                               proscenium.List.of

@@ -100,6 +100,44 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
                        prior.lay(Span.empty)(_.span)) } )
     . protect(decode(tel))
 
+  // The direct-path counterpart of `decodePositions`: `read[APerson in Tel]`
+  // resolves to `aggregableParsed` because a `Tel.Parsable` is in scope, so no
+  // AST is built and every span must have been stamped during the parse.
+  //
+  // Two things about the shape of these, both load-bearing. The `Tel.Parsable`
+  // is derived *inside* `protect`, because `Tel.Parsable.product` takes its
+  // `Foci` and `Tactic` when the instance is constructed, not when it parses —
+  // an instance built at object level closes over the inert default `Foci` and
+  // the file-level `throwUnsafely`, and would neither accrue nor be located.
+  // (Its type says so: a `Tel.Parsable` is capture-tracked over its tactic.)
+  // And they are written out per type rather than as one generic helper, since
+  // a second layer of `inline` indirection hoists the same summons back out of
+  // the boundary — the reason `validateTel` above exists.
+  private def directPerson(text: Text): Located =
+    import parsing.trackPositions
+
+    Validate[Located, [r] =>> r raises TelError, Tel.Focus]
+      ( Located(),
+        { case error: TelError =>
+            accrual + (prior.let(_.pointer.encode).or(t"#"),
+                       prior.lay(Span.empty)(_.span)) } )
+    . protect:
+        given APerson is Tel.Parsable = Tel.Parsable.derived
+        text.read[APerson in Tel]
+
+  private def directContact(text: Text): Located =
+    import parsing.trackPositions
+
+    Validate[Located, [r] =>> r raises TelError, Tel.Focus]
+      ( Located(),
+        { case error: TelError =>
+            accrual + (prior.let(_.pointer.encode).or(t"#"),
+                       prior.lay(Span.empty)(_.span)) } )
+    . protect:
+        given APerson is Tel.Parsable = Tel.Parsable.derived
+        given AContact is Tel.Parsable = Tel.Parsable.derived
+        text.read[AContact in Tel]
+
   // Parse a document under an accrual boundary: recoverable parse defects
   // (§19.5) accrue rather than aborting on the first, because `read[Tel]` parses
   // through the installed `TrackTactic`.
@@ -392,7 +430,54 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         . items.map(_(0).s).to[Set]
       . assert(_ == Set("#/age"))
 
-      test(m"A malformed field is located at its compound"):
+      test(m"A malformed field is located at its value, not its keyword"):
         decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
         . items.map(_(1)).to[Set]
-      . assert(_ == Set(TelError.spanAt(2, 1, 3)))
+      . assert(_ == Set(TelError.spanAt(2, 5, 10)))
+
+    // A value with any fallible scalar field can only be read through the direct
+    // path, so the spans it accrues have to be as good as the AST path's. There
+    // is no document to locate against once a direct parse ends, so the spans are
+    // stamped as it goes; these tests are what pin the two answers together.
+    suite(m"Located decode errors (direct path)"):
+      test(m"The direct path accrues a located focus at all"):
+        directPerson(t"name Alice\nage notanumber\nemail e\n")
+        . items.map { case (pointer, span) => (pointer.s, span.exists) }.to[Set]
+      . assert(_ == Set(("#/age", true)))
+
+      test(m"A malformed field is located at its value, as on the AST path"):
+        directPerson(t"name Alice\nage notanumber\nemail e\n").items.map(_(1)).to[Set]
+      . assert(_ == Set(TelError.spanAt(2, 5, 10)))
+
+      // The acceptance criterion for issue #1726: same document, both decode
+      // paths, identical (pointer, span) pairs. `PositionalTests`' own parity
+      // helper compares decoded values only, which is why this gap went unseen.
+      test(m"Both paths agree on a malformed leaf field's focus"):
+        val doc = t"name Alice\nage notanumber\nemail e\n"
+        directPerson(doc).items == decodePositions(doc)(_.as[APerson]).items
+      . assert(_ == true)
+
+      test(m"Both paths agree on a malformed field nested in a record"):
+        val doc = t"person\n  name Alice\n  age nope\n  email e\ncompany Acme\n"
+        directContact(doc).items == decodePositions(doc)(_.as[AContact]).items
+      . assert(_ == true)
+
+      test(m"Both paths agree on a missing required field"):
+        val doc = t"name Alice\nemail e\n"
+        directPerson(doc).items == decodePositions(doc)(_.as[APerson]).items
+      . assert(_ == true)
+
+      test(m"A nested field is located at its own value, not its parent's keyword"):
+        directContact(t"person\n  name Alice\n  age nope\n  email e\ncompany Acme\n")
+        . items.map { case (pointer, span) => (pointer.s, span) }.to[Set]
+      . assert(_ == Set(("#/person/age", TelError.spanAt(3, 7, 4))))
+
+      // With no `Foci` at all, the focus machinery is inert and the span has to
+      // ride on the error itself — the common fail-fast read, and the reason
+      // this path is gated on `parsing.trackPositions` rather than on whether
+      // errors are being accrued.
+      test(m"A fail-fast direct read carries the span on the error itself"):
+        import parsing.trackPositions
+        given APerson is Tel.Parsable = Tel.Parsable.derived
+        capture[TelError](t"name Alice\nage notanumber\nemail e\n".read[APerson in Tel]).span
+      . assert(_ == TelError.spanAt(2, 5, 10))
