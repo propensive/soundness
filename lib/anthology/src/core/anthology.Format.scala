@@ -51,6 +51,7 @@ object Format:
 // artifact's module system, a WASI artifact's interface version, a native binary's target
 // triple—are constructor parameters, making each parameterization a distinct node. The tiers
 // constrain edges: tools consume any format, but only ever produce intermediate representations
-// or applications.
+// or applications. Unexported: `soundness` already exports zephyrine's `Format`.
+@unexported
 trait Format:
   def id: Text

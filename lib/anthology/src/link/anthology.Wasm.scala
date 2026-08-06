@@ -30,10 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+import anticipation.*
+import gossamer.*
+
+// A core WebAssembly module with JavaScript glue, bound to a JavaScript host. Unexported:
+// `soundness` already exports xenophile's `Wasm`.
+@unexported
+object Wasm extends Format.Application:
+  def id: Text = t"wasm"

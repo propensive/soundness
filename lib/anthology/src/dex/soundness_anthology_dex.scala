@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anthology.{dexLinkages, dexOptions}
+export anthology.{Dex, dexEdges, dexLinkages, dexOptions}

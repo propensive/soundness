@@ -33,6 +33,7 @@
 package anthology
 
 import anticipation.*
+import contingency.*
 import galilei.*
 import hellenism.*
 import prepositional.*
@@ -47,3 +48,13 @@ enum Deliverable:
   case Sources(sources: Map[Text, Text], classpath: LocalClasspath)
   case Emission(out: Path on Linux, classpath: LocalClasspath)
   case Product(file: Path on Linux)
+
+  // Coercions for tools, which know statically which variant their edge consumes; `target`
+  // names the format under production, for diagnosis when a toolchain is miswired.
+  def emission(target: Format): (Path on Linux, LocalClasspath) raises LinkError = this match
+    case Emission(out, classpath) => (out, classpath)
+    case _                        => abort(LinkError(LinkError.Reason.UnexpectedInput(target.id)))
+
+  def product(target: Format): Path on Linux raises LinkError = this match
+    case Product(file) => file
+    case _             => abort(LinkError(LinkError.Reason.UnexpectedInput(target.id)))

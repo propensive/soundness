@@ -38,16 +38,16 @@ import java.nio.file as jnf
 
 import scala.util.control as suc
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import digression.*
 import galilei.*
 import gossamer.*
+import parasite.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
 import turbulence.*
-import vacuous.*
 import zeppelin.*
 
 import dexLinkages.given
@@ -78,6 +78,61 @@ object apkOptions:
 // `ApkSigner`) — a complete, installable Android application, produced with no Android SDK build
 // tool. Import it where APK artifacts are linked: `import apkLinkages.given`.
 object apkLinkages:
+  // The packaging step itself, shared between the one-hop `Linkage` and the toolchain's
+  // `apkEdges` tool: takes an already-dexed archive and yields the signed package.
+  private[anthology] def package0
+    ( form:       ApkConfiguration,
+      dexArchive: Path on Linux,
+      activity:   Fqcn,
+      out:        Path on Linux )
+  :   Path on Linux logs LinkEvent raises LinkError =
+
+    try
+      jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
+
+      val dexEntries = unsafely(Zipfile.read(dexArchive).entries).stdlib.filter: entry =>
+        entry.ref.encode.ends(t".dex")
+
+      // The binary manifest, built from the configuration and the launcher activity.
+      val manifest =
+        Axml.encode:
+          ApkManifest
+            ( packageName = form.packageName,
+              versionCode = form.versionCode,
+              versionName = form.versionName,
+              minSdk      = form.minApi,
+              targetSdk   = form.targetApi,
+              label       = form.label,
+              activity    = activity.text,
+              permissions = form.permissions )
+
+      // The package: the manifest first, then each dex stored uncompressed and 4-byte aligned
+      // so the runtime can memory-map it. `Zip.Compression.Stored` keeps every entry
+      // uncompressed, and `.aligned(4)` requests the boundary.
+      given Zip.Compression = Zip.Compression.Stored
+
+      val manifestEntry = Zip.Entry(%.on[Zip] / "AndroidManifest.xml", manifest)
+
+      // Reuse each dex entry's own path (`classes.dex`, `classes2.dex`, …), re-storing its
+      // decompressed bytes uncompressed and aligned.
+      val dexZipEntries = dexEntries.map: entry =>
+        Zip.Entry(entry.ref, unsafely(entry.read[Data])).aligned(4)
+
+      val unsignedPath = out / "unsigned.apk"
+      unsafely(Zipfile.write(unsignedPath)(manifestEntry :: dexZipEntries))
+      val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
+
+      val signed =
+        ApkSigner.sign(Array.unsafeFrozen(unsigned), form.keystore, form.storePass,
+            form.alias, form.keyPass)
+
+      val apkPath = out / "app.apk"
+      jnf.Files.write(jnf.Paths.get(apkPath.encode.s), Array.unsafeJvm(signed))
+      apkPath
+
+    catch case suc.NonFatal(error) =>
+      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+
   given apk: (Linkage[Artifact.Apk] from Universe.Classfile):
     type Origin = Universe.Classfile
     private[anthology] type Form = ApkConfiguration
@@ -95,54 +150,41 @@ object apkLinkages:
         case Nil         => abort(LinkError(LinkError.Reason.NoEntryPoint))
         case _           => abort(LinkError(LinkError.Reason.ManyEntryPoints))
 
-      try
-        jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
-        val dexDir = out / "dex"
-        jnf.Files.createDirectories(jnf.Paths.get(dexDir.encode.s))
+      jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
+      val dexDir = out / "dex"
+      jnf.Files.createDirectories(jnf.Paths.get(dexDir.encode.s))
 
-        // Dexing is the `Dex` linkage, reused verbatim: it yields an archive of `classes*.dex`.
-        val dexOptionList = List(dexOptions.minApi(form.minApi), dexOptions.mode.release)
-        val dexArchive = Linker[Artifact.Dex](dexOptionList).link(compilation, dexDir)
+      // Dexing is the `Dex` linkage, reused verbatim: it yields an archive of `classes*.dex`.
+      val dexOptionList = List(dexOptions.minApi(form.minApi), dexOptions.mode.release)
+      val dexArchive = Linker[Artifact.Dex](dexOptionList).link(compilation, dexDir)
 
-        val dexEntries = unsafely(Zipfile.read(dexArchive).entries).stdlib.filter: entry =>
-          entry.ref.encode.ends(t".dex")
+      package0(form, dexArchive, activity, out)
 
-        // The binary manifest, built from the configuration and the launcher activity.
-        val manifest =
-          Axml.encode:
-            ApkManifest
-              ( packageName = form.packageName,
-                versionCode = form.versionCode,
-                versionName = form.versionName,
-                minSdk      = form.minApi,
-                targetSdk   = form.targetApi,
-                label       = form.label,
-                activity    = activity.text,
-                permissions = form.permissions )
+// The packaging edge of a toolchain: `Dex` to `Apk`. Dexing is the preceding edge on the path,
+// so this tool consumes the dex archive it produced; the dex edge's own settings (API level,
+// release mode) are addressed to the `Dex` node.
+object apkEdges:
+  def apply(): List[Edge] = List(Edge(Dex, Apk, ApkTool))
 
-        // The package: the manifest first, then each dex stored uncompressed and 4-byte aligned
-        // so the runtime can memory-map it. `Zip.Compression.Stored` keeps every entry
-        // uncompressed, and `.aligned(4)` requests the boundary.
-        given Zip.Compression = Zip.Compression.Stored
+  private object ApkTool extends Tool:
+    type Settings = ApkConfiguration
 
-        val manifestEntry = Zip.Entry(%.on[Zip] / "AndroidManifest.xml", manifest)
+    def name: Text = t"apk"
+    def initial: ApkConfiguration = ApkConfiguration.default
 
-        // Reuse each dex entry's own path (`classes.dex`, `classes2.dex`, …), re-storing its
-        // decompressed bytes uncompressed and aligned.
-        val dexZipEntries = dexEntries.map: entry =>
-          Zip.Entry(entry.ref, unsafely(entry.read[Data])).aligned(4)
+    def run
+      ( settings:    ApkConfiguration,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
 
-        val unsignedPath = out / "unsigned.apk"
-        unsafely(Zipfile.write(unsignedPath)(manifestEntry :: dexZipEntries))
-        val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
+      val activity: Fqcn = entryPoints match
+        case List(entry) => entry.mainClass
+        case Nil         => abort(LinkError(LinkError.Reason.NoEntryPoint))
+        case _           => abort(LinkError(LinkError.Reason.ManyEntryPoints))
 
-        val signed =
-          ApkSigner.sign(Array.unsafeFrozen(unsigned), form.keystore, form.storePass,
-              form.alias, form.keyPass)
-
-        val apkPath = out / "app.apk"
-        jnf.Files.write(jnf.Paths.get(apkPath.encode.s), Array.unsafeJvm(signed))
-        apkPath
-
-      catch case suc.NonFatal(error) =>
-        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+      val dexArchive = input.product(Apk)
+      Deliverable.Product(apkLinkages.package0(settings, dexArchive, activity, out))

@@ -34,6 +34,58 @@ package anthology
 
 import scala.scalanative.build.{GC, LTO, Mode, NativeConfig}
 
+import ambience.*
+import anticipation.*
+import contingency.*
+import galilei.*
+import gossamer.*
+import parasite.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import vacuous.*
+
+// The native edges of a toolchain: `Nir` to a `Binary` per target triple, each driving the
+// Scala Native build through the C toolchain probed once for all of them. With no arguments,
+// the build host's own triple is the single target.
+object nativeEdges:
+  def apply(triples: Triple*)(using WorkingDirectory): List[Edge] raises ToolchainError =
+    val clang = NativeLinkage.probe(t"clang")
+    val clangpp = NativeLinkage.probe(t"clang++")
+
+    val targets: List[Triple] =
+      // An unrecognized build host cannot name its own triple, and in any case has no Scala
+      // Native runtime; report it as the C toolchain's absence.
+      if triples.isEmpty
+      then List(Triple.host.or(abort(ToolchainError(t"clang"))))
+      else List(triples*)
+
+    targets.map: triple => Edge(Universe.Nir, Binary(triple), NativeTool(triple, clang, clangpp))
+
+  private case class NativeTool(triple: Triple, clang: Text, clangpp: Text) extends Tool:
+    type Settings = NativeConfig
+
+    def name: Text = Binary(triple).id
+
+    def initial: NativeConfig =
+      NativeLinkage.configuration(clang, clangpp).withTargetTriple(Some(triple.text.s))
+
+    def run
+      ( settings:    NativeConfig,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
+
+      val main = entryPoints match
+        case List(entry) => entry.mainClass.text
+        case _           => abort(LinkError(LinkError.Reason.NoEntryPoint))
+
+      val (directory, classpath) = input.emission(Binary(triple))
+      Deliverable.Product(NativeLinkage.link0(settings, directory, classpath, main, out))
+
 object nativeOptions:
   private def native(edit: NativeConfig => NativeConfig): Linker.Option[Artifact.Binary] =
     Linker.Option(edit)

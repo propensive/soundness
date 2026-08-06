@@ -40,6 +40,7 @@ import soundness.*
 
 import sjsLinkages.given
 
+import errorDiagnostics.stackTracesDiagnostics
 import galilei.Linux.pathOnLinux
 import logging.silentLogging
 import probates.cancelProbate
@@ -50,6 +51,33 @@ import threading.platformThreading
 import workingDirectories.javaWorkingDirectory
 
 private type JnfPath = java.nio.file.Path
+
+// Inert graph fixtures for toolchain tests: parameterized nodes and pass-through tools which
+// record their executions in `executionLog` and never touch the filesystem.
+case class TestIr(id: Text) extends anthology.Format.Ir
+case class TestApp(id: Text) extends anthology.Format.Application
+
+object executionLog:
+  @scala.caps.unsafe.untrackedCaptures
+  var entries: List[Text] = Nil
+
+def passTool(label: Text): Tool = new Tool:
+  type Settings = Unit
+
+  def name: Text = label
+  def initial: Unit = ()
+
+  def run
+    ( settings:    Unit,
+      input:       Deliverable,
+      entryPoints: List[EntryPoint],
+      out:         soundness.Path on Linux )
+    ( using Monitor, System, WorkingDirectory )
+    ( using Tactic[LinkError], (LinkEvent is Loggable)^ )
+  :   Deliverable =
+
+    executionLog.entries = label :: executionLog.entries
+    input
 
 // Unexecuted definitions whose successful compilation assert `Provenance`'s tier structure:
 // choosing an artifact determines the universe a compilation must inhabit.
@@ -115,6 +143,83 @@ object Tests extends Suite(m"Anthology Tests"):
       demilitarize:
         Linker[Artifact.Jar](List(dexOptions.minApi(24)))
     . assert(_.nonEmpty)
+
+    // The toolchain DAG: path search and validation, checked without invoking any tool.
+    val android = Toolchain(List((jarEdges().stdlib ++ dexEdges().stdlib ++ apkEdges().stdlib)*))
+
+    test(m"The classfile-to-APK path routes through dex"):
+      android.path(Universe.Classfile, Apk).map(_.target.id)
+    . assert(_ == List(t"dex", t"apk"))
+
+    test(m"An executable JAR links directly from classfiles"):
+      android.path(Universe.Classfile, anthology.Jar).map(_.tool.name)
+    . assert(_ == List(t"jar"))
+
+    test(m"A format is a zero-length path from itself"):
+      android.path(Dex, Dex)
+    . assert(_ == Nil)
+
+    test(m"No path exists against the direction of the edges"):
+      capture[LinkError](android.path(Apk, Universe.Classfile)).reason
+    . assert(_ == LinkError.Reason.NoPath(t"apk", t"classfile"))
+
+    test(m"An unregistered edge leaves its format unreachable"):
+      capture[LinkError](Toolchain(jarEdges()).path(Universe.Classfile, Dex)).reason
+    . assert(_ == LinkError.Reason.NoPath(t"classfile", t"dex"))
+
+    test(m"Duplicate edges between the same formats are rejected"):
+      capture[LinkError](Toolchain(List((dexEdges().stdlib ++ dexEdges().stdlib)*))).reason
+    . assert(_ == LinkError.Reason.DuplicateEdge(t"classfile", t"dex"))
+
+    test(m"A cyclic toolchain is rejected"):
+      val a = TestIr(t"a")
+      val b = TestIr(t"b")
+      val cycle = List(Edge(a, b, passTool(t"ab")), Edge(b, a, passTool(t"ba")))
+      capture[LinkError](Toolchain(cycle)).reason
+    . assert(_ == LinkError.Reason.CyclicToolchain)
+
+    test(m"Two shortest paths between formats are ambiguous"):
+      val a = TestIr(t"a")
+      val b1 = TestIr(t"b1")
+      val b2 = TestIr(t"b2")
+      val c = TestApp(t"c")
+
+      val diamond =
+        Toolchain
+          ( List
+              ( Edge(a, b1, passTool(t"a-b1")),
+                Edge(a, b2, passTool(t"a-b2")),
+                Edge(b1, c, passTool(t"b1-c")),
+                Edge(b2, c, passTool(t"b2-c")) ) )
+
+      capture[LinkError](diamond.path(a, c)).reason
+    . assert(_ == LinkError.Reason.AmbiguousPath(t"a", t"c"))
+
+    test(m"Native binaries for different triples are distinct formats"):
+      Binary(Triple.Arm64MacOs) == Binary(Triple.X64Linux)
+    . assert(_ == false)
+
+    supervise:
+      val a = TestIr(t"a")
+      val b = TestIr(t"b")
+      val c = TestApp(t"c")
+
+      val chain =
+        Toolchain(List(Edge(a, b, passTool(t"first")), Edge(b, c, passTool(t"second"))))
+
+      val scratch: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+
+      test(m"Producing a format runs each path edge's tool in order"):
+        executionLog.entries = Nil
+        chain.produce(Deliverable.Product(scratch), a, c, scratch)
+        executionLog.entries
+      . assert(_ == List(t"second", t"first"))
+
+      test(m"A setting applying to no path format is rejected"):
+        val inapplicable = Setting[Unit](_ => false)(settings => settings)
+        val production = Deliverable.Product(scratch)
+        capture[LinkError](chain.produce(production, a, c, scratch, List(inapplicable))).reason
+      . assert(_ == LinkError.Reason.InapplicableSetting)
 
     test(m"The AXML encoder emits the binary-XML chunk header"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))

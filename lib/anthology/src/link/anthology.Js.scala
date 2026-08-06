@@ -30,10 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+import anticipation.*
+import gossamer.*
+
+@unexported
+object Js:
+  // How a JavaScript host consumes the artifact: an ECMAScript module, a CommonJS module, or a
+  // plain script. The module system is part of the artifact's binding contract, so it is part
+  // of the node's identity.
+  enum Module:
+    case Es, CommonJs, Script
+
+    def id: Text = this match
+      case Es       => t"es"
+      case CommonJs => t"commonjs"
+      case Script   => t"script"
+
+// JavaScript, bound to a JavaScript host (a browser's DOM or a runtime such as Node) through
+// the given module system: one application node per module system. Unexported: `soundness`
+// already exports xenophile's `Js`.
+@unexported
+case class Js(module: Js.Module) extends Format.Application:
+  def id: Text = t"js-${module.id}"

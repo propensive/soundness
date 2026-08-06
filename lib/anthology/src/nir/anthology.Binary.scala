@@ -30,10 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+import anticipation.*
+import gossamer.*
+
+// A machine-code executable, bound to one operating system and architecture's C library: one
+// application node per target triple, since a binary for one triple is as distinct from a
+// binary for another as a JAR is from a JavaScript bundle—sharing a linker does not make them
+// interchangeable. Unexported: `soundness` already exports monotonous's `Binary`.
+@unexported
+case class Binary(triple: Triple) extends Format.Application:
+  def id: Text = t"binary-${triple.text}"

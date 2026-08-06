@@ -60,9 +60,10 @@ object Toolchain:
     val nodes = all.flatMap { edge => sci.List[Format](edge.source, edge.target) }.distinct
     val outgoing = all.groupBy(_.source)
     val indegree = scm.HashMap[Format, Int]().withDefaultValue(0)
-    all.foreach { edge => indegree(edge.target) = indegree(edge.target) + 1 }
 
-    var queue: sci.List[Format] = nodes.filter { node => indegree(node) == 0 }
+    all.foreach: edge => indegree(edge.target) = indegree(edge.target) + 1
+
+    var queue: sci.List[Format] = nodes.filter(indegree(_) == 0)
     var remaining: Int = nodes.length
 
     while !queue.isEmpty do
@@ -109,7 +110,7 @@ case class Toolchain private (edges: List[Edge]):
               if !next.contains(edge.target) then discovery(edge.target) = edge
               next(edge.target) = (next.getOrElse(edge.target, 0) + routes(node)).min(2)
 
-        next.foreach { (node, count) => routes(node) = count }
+        next.foreach: (node, count) => routes(node) = count
         visited = visited ++ next.keySet
         frontier = next.keys.to(sci.List)
 
@@ -147,7 +148,7 @@ case class Toolchain private (edges: List[Edge]):
     val route = path(source, target)
 
     settings.stdlib.foreach: setting =>
-      if !route.stdlib.exists { edge => setting.appliesTo(edge.target) }
+      if !route.stdlib.map(_.target).exists(setting.appliesTo(_))
       then abort(LinkError(LinkError.Reason.InapplicableSetting))
 
     Log.info(LinkEvent.Start)
@@ -161,14 +162,18 @@ case class Toolchain private (edges: List[Edge]):
             try setting.edit(edge.target, settings0).asInstanceOf[tool.Settings]
             catch case suc.NonFatal(error) =>
               abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
-          else settings0
+          else
+            settings0
 
       tool.run(configured, current, entryPoints, destination)
 
     def walk(remaining: List[Edge], current: Deliverable): Deliverable = remaining match
-      case Nil          => current
-      case edge :: Nil  => step(edge, current, out)
-      case edge :: rest => walk(rest, step(edge, current, unsafely(out / edge.target.id)))
+      case edge :: rest =>
+        if rest.stdlib.isEmpty then step(edge, current, out)
+        else walk(rest, step(edge, current, unsafely(out / edge.target.id)))
+
+      case _ =>
+        current
 
     walk(route, input) match
       case Deliverable.Product(file) =>

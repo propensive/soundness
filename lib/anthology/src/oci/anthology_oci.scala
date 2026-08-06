@@ -36,24 +36,24 @@ import java.nio.file as jnf
 
 import scala.util.control as suc
 
-import proscenium.compat.*
+import org.scalajs.linker.interface.StandardConfig
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import digression.*
 import embarcadero.*
 import galilei.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
+import parasite.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
 import xenophile.*
 import zephyrine.*
-
-import sjsLinkages.given
 
 object ociOptions:
   private def oci(edit: OciConfiguration => OciConfiguration): Linker.Option[Artifact.OciImage] =
@@ -80,6 +80,43 @@ object ociLinkages:
   private val incomingHandler = t"wasi:http/incoming-handler@0.2.0"
   private val proxy = t"wasi:http/proxy@0.2.0"
 
+  // The wrapping step itself, shared between the one-hop `Linkage` and the toolchain's
+  // `ociEdges` tool: takes an already-linked component and writes the `oci-archive`.
+  private[anthology] def wrap
+    ( form:      OciConfiguration,
+      world:     WitWorld,
+      component: Path on Linux,
+      out:       Path on Linux )
+  :   Path on Linux logs LinkEvent raises LinkError =
+
+    val (imports, exports) = interfaces(world)
+
+    try
+      val bytes: Data =
+        jnf.Files.readAllBytes(jnf.Paths.get(component.encode.s).nn).nn.pipe(Array.unsafeFrozen)
+
+      val image =
+        Image.wasm
+          ( bytes,
+            exports      = exports,
+            imports      = imports,
+            target       = if exports.has(incomingHandler) then proxy else Unset,
+            architecture = form.architecture,
+            os           = form.os,
+            annotations  = if form.annotations.isEmpty then Unset else form.annotations )
+
+      val archive = out / "image.tar"
+      jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
+
+      jnf.Files.write
+        ( jnf.Paths.get(archive.encode.s).nn,
+          image.archive.source[Data].memoize.mutable(using Unsafe) )
+
+      archive
+
+    catch case suc.NonFatal(error) =>
+      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+
   given ociImage(using toolchain: WasiToolchain, world: WitWorld)
   :   (Linkage[Artifact.OciImage] from Universe.Sjsir) =
 
@@ -102,39 +139,13 @@ object ociLinkages:
       :   Path on Linux logs LinkEvent raises LinkError =
 
         val component = inner.link(form.config, compilation, entryPoints, out / "component")
+        wrap(form, world, component, out)
 
-        val (imports, exports) = interfaces(world)
-
-        try
-          val bytes: Data =
-            jnf.Files.readAllBytes(jnf.Paths.get(component.encode.s).nn).nn.pipe(Array.unsafeFrozen)
-
-          val image =
-            Image.wasm
-              ( bytes,
-                exports      = exports,
-                imports      = imports,
-                target       = if exports.has(incomingHandler) then proxy else Unset,
-                architecture = form.architecture,
-                os           = form.os,
-                annotations  = if form.annotations.isEmpty then Unset else form.annotations )
-
-          val archive = out / "image.tar"
-          jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
-
-          jnf.Files.write
-            ( jnf.Paths.get(archive.encode.s).nn,
-              image.archive.source[Data].memoize.mutable(using Unsafe) )
-
-          archive
-
-        catch case suc.NonFatal(error) =>
-          abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
-
-  // The world's imports and exports, read from the `.wit` sources at the top of the WIT directory.
-  // Only that top level is searched: `deps/` holds the packages the world draws on, and none of
-  // them declares the world being linked. A world that cannot be found contributes no interfaces
-  // rather than failing the link — the component is still valid, only less well described.
+  // The world's imports and exports, read from the `.wit` sources at the top of the WIT
+  // directory. Only that top level is searched: `deps/` holds the packages the world draws on,
+  // and none of them declares the world being linked. A world that cannot be found contributes
+  // no interfaces rather than failing the link — the component is still valid, only less well
+  // described.
   private def interfaces(world: WitWorld): (List[Text], List[Text]) =
     val files = jnf.Paths.get(world.directory.encode.s).nn.toFile.nn.listFiles.nn
 
@@ -147,5 +158,33 @@ object ociLinkages:
 
           WitDialect.worlds(text).stdlib.get(world.world).optional.or(search(index + 1))
 
-    search(0).lay((Nil, Nil)): found =>
-      (found.imports, found.exports)
+    search(0).lay((Nil, Nil)): found => (found.imports, found.exports)
+
+// The wrapping edge of a toolchain: the `wasip2` component to its OCI artifact. Linking the
+// component is the preceding edge on the path (`sjsEdges.wasi()`), so this tool consumes the
+// component it produced; the artifact's `component` metadata is read from the same WIT world
+// the component edge linked against.
+object ociEdges:
+  def apply()(using world: WitWorld): List[Edge] =
+    List(Edge(Wasi(Wasi.Version.Wasip2), OciImage, OciTool(world)))
+
+  private case class OciTool(world: WitWorld) extends Tool:
+    type Settings = OciConfiguration
+
+    def name: Text = t"oci"
+
+    // The embedded component configuration is unused by this edge: the component is linked by
+    // the preceding edge, configured by settings addressed to its own node.
+    def initial: OciConfiguration = OciConfiguration(StandardConfig())
+
+    def run
+      ( settings:    OciConfiguration,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
+
+      val component = input.product(OciImage)
+      Deliverable.Product(ociLinkages.wrap(settings, world, component, out))

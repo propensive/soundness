@@ -66,16 +66,12 @@ object NativeLinkage:
 
     new NativeLinkage(probe(t"clang"), probe(t"clang++"))
 
-  private def probe(tool: Text)(using WorkingDirectory): Text raises ToolchainError =
+  private[anthology] def probe(tool: Text)(using WorkingDirectory): Text raises ToolchainError =
     safely(mute[ExecEvent](sh"which $tool".exec[Text]())).let(_.trim)
     . or(abort(ToolchainError(tool)))
 
-class NativeLinkage private (clang: Text, clangpp: Text)
-extends Linkage[Artifact.Binary]:
-  type Origin = Universe.Nir
-  private[anthology] type Form = NativeConfig
-
-  private[anthology] def initial: NativeConfig =
+  // The default compiler configuration for a probed C toolchain.
+  private[anthology] def configuration(clang: Text, clangpp: Text): NativeConfig =
     NativeConfig.empty
     . withClang(jnf.Paths.get(clang.s).nn)
     . withClangPP(jnf.Paths.get(clangpp.s).nn)
@@ -84,20 +80,20 @@ extends Linkage[Artifact.Binary]:
     . withLTO(LTO.none)
     . withBaseName("main")
 
-  private[anthology] def link
-    ( form:        NativeConfig,
-      compilation: Compilation[Universe.Nir],
-      entryPoints: List[Linker.EntryPoint],
-      out:         Path on Linux )
+  // The link pipeline itself, shared between the one-hop `Linkage` and the toolchain's
+  // `nativeEdges` tools: drives the Scala Native build over the emission directory and its
+  // classpath, and returns the executable's path.
+  private[anthology] def link0
+    ( form:      NativeConfig,
+      directory: Path on Linux,
+      classpath: LocalClasspath,
+      main:      Text,
+      out:       Path on Linux )
   :   Path on Linux logs LinkEvent raises LinkError =
 
-    val main = entryPoints match
-      case List(entry) => entry.mainClass.text
-      case _           => abort(LinkError(LinkError.Reason.NoEntryPoint))
-
     val entries: List[jnf.Path] =
-      jnf.Paths.get(compilation.out.encode.s).nn ::
-        compilation.classpath.entries.bind:
+      jnf.Paths.get(directory.encode.s).nn ::
+        classpath.entries.bind:
           case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
           case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
           case _                                   => Nil
@@ -120,3 +116,23 @@ extends Linkage[Artifact.Binary]:
 
     catch case suc.NonFatal(error) =>
       abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+
+class NativeLinkage private (clang: Text, clangpp: Text)
+extends Linkage[Artifact.Binary]:
+  type Origin = Universe.Nir
+  private[anthology] type Form = NativeConfig
+
+  private[anthology] def initial: NativeConfig = NativeLinkage.configuration(clang, clangpp)
+
+  private[anthology] def link
+    ( form:        NativeConfig,
+      compilation: Compilation[Universe.Nir],
+      entryPoints: List[Linker.EntryPoint],
+      out:         Path on Linux )
+  :   Path on Linux logs LinkEvent raises LinkError =
+
+    val main = entryPoints match
+      case List(entry) => entry.mainClass.text
+      case _           => abort(LinkError(LinkError.Reason.NoEntryPoint))
+
+    NativeLinkage.link0(form, compilation.out, compilation.classpath, main, out)

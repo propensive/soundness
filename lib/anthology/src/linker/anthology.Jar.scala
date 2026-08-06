@@ -30,10 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+import anticipation.*
+import gossamer.*
+
+// An executable JAR, bound to the JDK: the application node reached from `Classfile` through
+// `jarEdges`. Unexported: `soundness` already exports zeppelin's `Jar`.
+@unexported
+object Jar extends Format.Application:
+  def id: Text = t"jar"

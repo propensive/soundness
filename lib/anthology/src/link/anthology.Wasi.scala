@@ -30,10 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+import anticipation.*
+import gossamer.*
+
+object Wasi:
+  // WASI interface versions: `wasip1` (0.1) is a flat, libc-style syscall ABI on core modules;
+  // `wasip2` (0.2) is the component model, with imports and exports described by WIT; `wasip3`
+  // (0.3) adds native asynchrony. The version determines the artifact's ABI, so it is part of
+  // the node's identity.
+  enum Version:
+    case Wasip1, Wasip2, Wasip3
+
+    def id: Text = this match
+      case Wasip1 => t"wasip1"
+      case Wasip2 => t"wasip2"
+      case Wasip3 => t"wasip3"
+
+// A standalone WebAssembly artifact bound to a version of the WASI system interface: one
+// application node per version.
+case class Wasi(version: Wasi.Version) extends Format.Application:
+  def id: Text = version.id
