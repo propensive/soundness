@@ -697,7 +697,7 @@ extends caps.ExclusiveCapability:
     val window = source.read(position, 24)
 
     window.survey: surveyor =>
-      surveyor.skipWhile { byte => CosLexer.whitespace(byte & 0xff) }
+      surveyor.pace { byte => CosLexer.whitespace(byte & 0xff) }
       surveyor.matches(marker) { (byte, char) => (byte & 0xff) == char.toInt }
 
   // Resolves a value and, one level down, the elements of an array or the values of a

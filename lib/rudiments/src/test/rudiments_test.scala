@@ -249,7 +249,7 @@ object Tests extends Suite(m"Rudiments Tests"):
         var next = ' '
 
         line.survey: surveyor =>
-          skipped = (surveyor.skipWhile(_ == ' '): Interval).size
+          skipped = (surveyor.pace(_ == ' '): Interval).size
           surveyor.point.let { i => next = line.at(i) }
 
         (skipped, next)
@@ -263,18 +263,18 @@ object Tests extends Suite(m"Rudiments Tests"):
           while surveyor.more do
             surveyor.point.let: start =>
               val style = styles.at(start)
-              lengths ::= (surveyor.skipWhile(_ == style): Interval).size
+              lengths ::= (surveyor.pace(_ == style): Interval).size
 
         lengths.reverse
       . assert(_ == List(3, 2, 1))
 
-      test(m"`skipUntil` stops at the delimiter, and `remainder` brands the rest"):
+      test(m"a negated `pace` stops at the delimiter, and `remainder` brands the rest"):
         val csv = t"key:value"
         var key = t""
         var rest = -1
 
         csv.survey: surveyor =>
-          val name = surveyor.skipUntil(_ == ':')
+          val name = surveyor.pace(_ != ':')
           val builder = java.lang.StringBuilder()
           csv.iterate(name) { i => builder.append(csv.at(i)) }
           key = builder.toString.tt
@@ -410,7 +410,7 @@ object Tests extends Suite(m"Rudiments Tests"):
         val text = t"ab"
 
         text.survey: surveyor =>
-          surveyor.skipWhile { _ => true }
+          surveyor.pace { _ => true }
           (surveyor.more, surveyor.point, (surveyor.remainder: Interval).size)
       . assert(_ == ((false, Unset, 0)))
 

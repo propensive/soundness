@@ -45,7 +45,7 @@ import vacuous.*
 // converged on informally with `i`/`j` walker loops.
 //
 // Position may equal the size (exhaustion); no read is offered at the bare position, so
-// there is nothing partial to call: reads happen only inside `skipWhile`-family combinators,
+// there is nothing partial to call: reads happen only inside the pacing combinators,
 // which check `more` and the predicate together, or through the branded products.
 //
 // The brand is sound for immutable receivers on stable paths, like `within` and `extent`.
@@ -84,7 +84,7 @@ final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinar
     else otherwise
 
   // Consume up to `count` elements, returning the branded run actually traversed (clamped
-  // at exhaustion): the counted form of `skipWhile`.
+  // at exhaustion): the counted form of `pace`.
   inline def take(count: Int): Interval in brand =
     val start = mark0
     mark0 = (mark0 + count.max(0)).min(size)
@@ -123,20 +123,16 @@ final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinar
   inline def remainder: Interval in brand =
     Interval.zerary(mark0, size).asInstanceOf[Interval in brand]
 
-  // Advance while the predicate holds of the current element, returning the branded run
-  // traversed (possibly empty): `surveyor.skipWhile(_ == ' ')` is the whitespace skip, and
-  // `surveyor.skipWhile(_ == style)` is run detection, with the run's length available as the
-  // interval's size.
-  inline def skipWhile(inline predicate: operand => Boolean): Interval in brand =
+  // Pace out the run of elements satisfying the predicate — advancing over it and returning
+  // it as a branded interval, possibly empty: `surveyor.pace(_ == ' ')` is the whitespace
+  // skip, `surveyor.pace(_ == style)` is run detection (with the run's length as the
+  // interval's size), and a delimited scan is a negated predicate, `pace(_ != ':')`.
+  inline def pace(inline predicate: operand => Boolean): Interval in brand =
     val start = mark0
 
     while mark0 < size && predicate(read(value, mark0)) do mark0 += 1
 
     Interval.zerary(start, mark0).asInstanceOf[Interval in brand]
-
-  // Advance until the predicate holds (or exhaustion), returning the branded run skipped.
-  inline def skipUntil(inline predicate: operand => Boolean): Interval in brand =
-    skipWhile(!predicate(_))
 
 extension [collection](value: collection)
   // Lend a surveyor over this collection: reads resolve through the `Indexable` instance, and
