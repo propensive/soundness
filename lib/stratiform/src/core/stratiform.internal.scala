@@ -46,6 +46,7 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
+import denominative.*
 import rudiments.*
 import vacuous.*
 
@@ -69,14 +70,7 @@ object internal:
   private final val MarkerString: String = Marker.toString
 
   private def hasMarker(text: Text): Boolean =
-    var i = 0
-    val s = text.s
-
-    while i < s.length do
-      if s.charAt(i) == Marker then return true
-      i += 1
-
-    false
+    text.spot { index => text.at(index) == Marker }.present
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )
@@ -328,15 +322,9 @@ object internal:
      out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
 
-    if pattern.length != input.length then false
-    else
-      var i = 0
-
-      while i < pattern.length do
-        if !matchBlock(pattern(i), input(i), marker, out) then return false
-        i += 1
-
-      true
+    pattern.length == input.length && pattern.spot: index =>
+      !input.at(index).lay(false)(matchBlock(pattern.at(index), _, marker, out))
+    . absent
 
   private def matchBlock
     ( pattern: Tel.Block,
@@ -347,14 +335,12 @@ object internal:
 
     if pattern.compounds.length != input.compounds.length then false
     else
-      var i = 0
+      val left = pattern.compounds
+      val right = input.compounds
 
-      while i < pattern.compounds.length do
-        if !matchCompound(pattern.compounds(i), input.compounds(i), marker, out) then return false
-
-        i += 1
-
-      true
+      left.spot: index =>
+        !right.at(index).lay(false)(matchCompound(left.at(index), _, marker, out))
+      . absent
 
   private def matchCompound
     ( pattern: Tel.Compound,
@@ -366,13 +352,14 @@ object internal:
     if pattern.keyword != input.keyword then false
     else if pattern.atoms.length != input.atoms.length then false
     else
-      var i = 0
+      val left = pattern.atoms
+      val right = input.atoms
 
-      while i < pattern.atoms.length do
-        if !matchAtom(pattern.atoms(i), input.atoms(i), marker, out) then return false
-        i += 1
+      val atoms = left.spot: index =>
+        !right.at(index).lay(false)(matchAtom(left.at(index), _, marker, out))
+      . absent
 
-      matchBlocks(pattern.children, input.children, marker, out)
+      atoms && matchBlocks(pattern.children, input.children, marker, out)
 
   private def matchAtom
     ( pattern: Tel.Atom,
