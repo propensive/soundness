@@ -30,7 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{CHeaderAtomizer, CHeaderDiscipline, DtsAtomizer, DtsDiscipline,
-    WebIdlAtomizer, WebIdlDiscipline, WitAtomizer, WitDiscipline}
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import reliquary.*
+import rudiments.*
+
+import errorDiagnostics.emptyDiagnostics
+
+// The `wit/1` discipline, adapted to reliquary's SPI: the WIT surface of a WASI-world host
+// contract — and, when the reserved `component` universe's schema layer lands, of a library
+// component — atomized per `wit.md`.
+object WitDiscipline extends Discipline:
+  def id: Text = t"wit/1"
+
+  def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".wit")
+
+  def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"host", t"component"))
+  def keying: Discipline.Keying = Discipline.Keying.Declaration
+
+  def guarantees(world: Text): Set[Discipline.Guarantee] =
+    Set(Discipline.Guarantee.Recompilation)
+
+  def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+  :   Atomization raises DisciplineError =
+
+    val documents = content.stdlib.map: (path, data) =>
+      val source = Text(String(Array.unsafeJvm(data), "UTF-8"))
+
+      mitigate:
+        case WitParseError(reason) =>
+          DisciplineError(id, DisciplineError.Reason.Malformed(t"${path.text}: $reason"))
+
+      . protect(WitParser.parse(source))
+
+    Atomization.of(id, WitAtomizer.atomize(List.from(documents)))

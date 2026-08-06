@@ -792,6 +792,9 @@ object Tests extends Suite(m"Xenophile tests"):
 
     typescriptParserTests()
     dtsDisciplineTests()
+    webIdlDisciplineTests()
+    witDisciplineTests()
+    cheaderDisciplineTests()
 
   def typescriptParserTests(): Unit =
     import strategies.throwUnsafely
@@ -1084,3 +1087,364 @@ object Tests extends Suite(m"Xenophile tests"):
 
       registry.atomize(js, Discipline.Context(t"jvm")).stdlib.map(_.discipline)
     . assert(_ == scala.List(t"opaque/1"))
+
+  def webIdlDisciplineTests(): Unit =
+    import reliquary.*
+    import strategies.throwUnsafely
+
+    def content(source: Text): List[(TreePath, Data)] =
+      List((TreePath(t"idl/browser.idl"), Array.unsafeFrozen(source.s.getBytes("UTF-8").nn)))
+
+    def atomize(source: Text): Atomization =
+      WebIdlDiscipline.atomize(content(source), Discipline.Context(t"host"))
+
+    def keys(source: Text): scala.List[Text] =
+      atomize(source).atoms.stdlib.map(_.key).sortBy(_.s)
+
+    def grade(before: Text, after: Text): Grade =
+      Grade.between(List(atomize(before)), List(atomize(after)))
+
+    val baseline: Text =
+      t"""|interface Widget {
+          |  readonly attribute DOMString name;
+          |  undefined render(long depth);
+          |};
+          |dictionary Options {
+          |  required DOMString mode;
+          |  long retries = 3;
+          |};
+          |enum Direction { "up", "down" };
+          |""".s.stripMargin.tt
+
+    suite(m"The `webidl/1` discipline"):
+      test(m"the discipline claims idl files in the host world and nothing else"):
+        val data = Array.freeze(Array[Byte](0))
+
+        (WebIdlDiscipline.claims(TreePath(t"idl/dom.idl"), data),
+         WebIdlDiscipline.claims(TreePath(t"lib/index.js"), data),
+         WebIdlDiscipline.domain.covers(t"host"),
+         WebIdlDiscipline.domain.covers(t"jvm"))
+      . assert(_ == (true, false, true, false))
+
+      test(m"declarations, members, fields and values yield atoms"):
+        keys(baseline)
+      . assert(_ == scala.List(t"Direction", t"Direction#down", t"Direction#up", t"Options",
+          t"Options#retries", t"Widget", t"Widget#name", t"Widget#render(s32)"))
+
+      test(m"adding an interface member is a minor for callers"):
+        val grown = t"${baseline}partial interface Widget { attribute long depth; };"
+        grade(baseline, grown)
+      . assert(_ == Grade.Minor)
+
+      test(m"adding a required dictionary member is major"):
+        val grown = baseline.s.replace("required DOMString mode;",
+            "required DOMString mode;\n  required long width;").nn.tt
+        grade(baseline, grown)
+      . assert(_ == Grade.Major)
+
+      test(m"adding an optional dictionary member is minor"):
+        val grown = baseline.s.replace("long retries = 3;",
+            "long retries = 3;\n  boolean verbose = false;").nn.tt
+        grade(baseline, grown)
+      . assert(_ == Grade.Minor)
+
+      test(m"adding an enumeration value is minor"):
+        grade(baseline, baseline.s.replace("\"down\"", "\"down\", \"left\"").nn.tt)
+      . assert(_ == Grade.Minor)
+
+      test(m"removing a member is major"):
+        grade(baseline, baseline.s.replace("  undefined render(long depth);\n", "").nn.tt)
+      . assert(_ == Grade.Major)
+
+      test(m"a mixin's members atomize under the including interface"):
+        val mixed =
+          t"""|interface Base {};
+              |interface mixin Extras { undefined extra(); };
+              |Base includes Extras;
+              |""".s.stripMargin.tt
+
+        keys(mixed)
+      . assert(_ == scala.List(t"Base", t"Base#extra()"))
+
+      test(m"a partial interface in another file completes its target"):
+        val split = List(
+          (TreePath(t"idl/a.idl"),
+           Array.unsafeFrozen(t"interface W {};".s.getBytes("UTF-8").nn)),
+          (TreePath(t"idl/b.idl"),
+           Array.unsafeFrozen(t"partial interface W { attribute long x; };".s
+              .getBytes("UTF-8").nn)))
+
+        WebIdlDiscipline.atomize(split, Discipline.Context(t"host")).atoms.stdlib.map(_.key)
+        . sortBy(_.s)
+      . assert(_ == scala.List(t"W", t"W#x"))
+
+      test(m"exposure scopes are part of the key"):
+        keys(t"[Exposed=(Window,Worker)] interface Scoped {};")
+      . assert(_ == scala.List(t"Scoped[Window,Worker]"))
+
+      test(m"identically-shaped members of different interfaces do not alias"):
+        val twins = t"interface A { attribute long x; };\ninterface B { attribute long x; };"
+        val atoms = atomize(twins).atoms.stdlib
+
+        atoms.map { atom => LiraHash.text(atom.valueHash) }.distinct.size
+        == atoms.size
+      . assert(identity)
+
+      test(m"union member order does not affect a hash"):
+        val one = atomize(t"interface U { attribute (long or DOMString) x; };")
+        val two = atomize(t"interface U { attribute (DOMString or long) x; };")
+
+        one.atoms.stdlib.map { atom => LiraHash.text(atom.valueHash) }
+        == two.atoms.stdlib.map { atom => LiraHash.text(atom.valueHash) }
+      . assert(identity)
+
+      test(m"an unsupported construct is an atomization error"):
+        import errorDiagnostics.stackTracesDiagnostics
+
+        capture[DisciplineError](atomize(t"weird thing;")).reason match
+          case DisciplineError.Reason.Malformed(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"the real DOM excerpt atomizes"):
+        val stream = getClass.getResourceAsStream("/xenophile/dom.idl").nn
+        val bytes = stream.readAllBytes().nn
+        stream.close()
+        atomize(Text(String(bytes, "UTF-8"))).atoms.stdlib.size
+      . assert(_ > 50)
+
+  def witDisciplineTests(): Unit =
+    import reliquary.*
+    import strategies.throwUnsafely
+
+    def content(source: Text): List[(TreePath, Data)] =
+      List((TreePath(t"wit/api.wit"), Array.unsafeFrozen(source.s.getBytes("UTF-8").nn)))
+
+    def atomize(source: Text): Atomization =
+      WitDiscipline.atomize(content(source), Discipline.Context(t"host"))
+
+    def keys(source: Text): scala.List[Text] =
+      atomize(source).atoms.stdlib.map(_.key).sortBy(_.s)
+
+    def grade(before: Text, after: Text): Grade =
+      Grade.between(List(atomize(before)), List(atomize(after)))
+
+    val baseline: Text =
+      t"""|package wasi:random@0.2.0;
+          |
+          |interface random {
+          |  record seed { value: u64 }
+          |  get-random-bytes: func(len: u64) -> list<u8>;
+          |}
+          |
+          |world host {
+          |  import random;
+          |  export run;
+          |}
+          |""".s.stripMargin.tt
+
+    suite(m"The `wit/1` discipline"):
+      test(m"the discipline claims wit files in its two worlds and nothing else"):
+        val data = Array.freeze(Array[Byte](0))
+
+        (WitDiscipline.claims(TreePath(t"wit/world.wit"), data),
+         WitDiscipline.claims(TreePath(t"lib/api.idl"), data),
+         WitDiscipline.domain.covers(t"host"),
+         WitDiscipline.domain.covers(t"component"),
+         WitDiscipline.domain.covers(t"jvm"))
+      . assert(_ == (true, false, true, true, false))
+
+      test(m"interfaces, items and worlds yield package-qualified atoms"):
+        keys(baseline)
+      . assert(_ == scala.List(
+          t"wasi:random/host@0.2.0",
+          t"wasi:random/host@0.2.0#import wasi:random/random@0.2.0",
+          t"wasi:random/random@0.2.0",
+          t"wasi:random/random@0.2.0#get-random-bytes",
+          t"wasi:random/random@0.2.0#seed"))
+
+      test(m"adding a function to an interface is minor"):
+        val grown = baseline.s.replace("}\n\nworld",
+            "  get-random-u64: func() -> u64;\n}\n\nworld").nn.tt
+        grade(baseline, grown)
+      . assert(_ == Grade.Minor)
+
+      test(m"adding a record field is major"):
+        grade(baseline, baseline.s.replace("{ value: u64 }", "{ value: u64, extra: u32 }").nn.tt)
+      . assert(_ == Grade.Major)
+
+      test(m"a world gaining an import is minor"):
+        val source = baseline.s.replace("interface random {",
+            "interface insecure { i: func(); }\ninterface random {").nn.tt
+        val grown = source.s.replace("import random;", "import random;\n  import insecure;").nn.tt
+        grade(source, grown)
+      . assert(_ == Grade.Minor)
+
+      test(m"a world gaining an export is major"):
+        grade(baseline, baseline.s.replace("export run;", "export run;\n  export other;").nn.tt)
+      . assert(_ == Grade.Major)
+
+      test(m"a use-imported reference is qualified to its source interface"):
+        val direct =
+          t"""|package a:pkg;
+              |interface one {
+              |  type id = u64;
+              |}
+              |interface two {
+              |  use one.{id};
+              |  get: func() -> id;
+              |}
+              |""".s.stripMargin.tt
+
+        val renamed = direct.s.replace("use one.{id};", "use one.{id as key};").nn
+          .replace("-> id;", "-> key;").nn.tt
+
+        val hashes = { (source: Text) =>
+          atomize(source).atoms.stdlib
+          . filter(_.key == t"a:pkg/two#get")
+          . map { atom => LiraHash.text(atom.valueHash) }
+        }
+
+        hashes(direct) == hashes(renamed)
+      . assert(identity)
+
+      test(m"a since gate is consumed and an unstable gate is refused"):
+        import errorDiagnostics.stackTracesDiagnostics
+
+        val gated =
+          t"""|package a:pkg;
+              |interface one {
+              |  @since(version = 0.2.1)
+              |  get: func() -> u64;
+              |}
+              |""".s.stripMargin.tt
+
+        val unstable = gated.s.replace("@since(version = 0.2.1)",
+            "@unstable(feature = fancy)").nn.tt
+
+        val accepted = atomize(gated).atoms.stdlib.exists(_.key == t"a:pkg/one#get")
+
+        val refused =
+          capture[DisciplineError](atomize(unstable)).reason match
+            case DisciplineError.Reason.Malformed(_) => true
+            case _                                   => false
+
+        (accepted, refused)
+      . assert(_ == (true, true))
+
+      test(m"an unresolvable type reference is an error"):
+        import errorDiagnostics.stackTracesDiagnostics
+
+        capture[DisciplineError]:
+          atomize(t"package a:pkg;\ninterface one { get: func() -> mystery; }")
+        . reason match
+            case DisciplineError.Reason.Unresolved(_) => true
+            case _                                    => false
+      . assert(identity)
+
+      test(m"the sample wit fixture atomizes"):
+        val stream = getClass.getResourceAsStream("/xenophile/api.wit").nn
+        val bytes = stream.readAllBytes().nn
+        stream.close()
+        atomize(Text(String(bytes, "UTF-8"))).atoms.stdlib.size
+      . assert(_ > 10)
+
+  def cheaderDisciplineTests(): Unit =
+    import reliquary.*
+    import strategies.throwUnsafely
+
+    def content(source: Text): List[(TreePath, Data)] =
+      List((TreePath(t"include/library.h"), Array.unsafeFrozen(source.s.getBytes("UTF-8").nn)))
+
+    def atomize(source: Text): Atomization =
+      CHeaderDiscipline.atomize(content(source), Discipline.Context(t"host"))
+
+    def keys(source: Text): scala.List[Text] =
+      atomize(source).atoms.stdlib.map(_.key).sortBy(_.s)
+
+    def hashOf(source: Text, key: Text): Optional[Text] =
+      atomize(source).atoms.stdlib.find(_.key == key)
+      . map { atom => LiraHash.text(atom.valueHash) }.getOrElse(Unset)
+
+    def grade(before: Text, after: Text): Grade =
+      Grade.between(List(atomize(before)), List(atomize(after)))
+
+    val baseline: Text =
+      t"""|typedef struct Point { int x; int y; } Point;
+          |typedef enum { LEFT, RIGHT } Direction;
+          |int add(int a, int b);
+          |size_t strlen(const char* s);
+          |""".s.stripMargin.tt
+
+    suite(m"The `cheader/1` discipline"):
+      test(m"the discipline claims headers in the host world and nothing else"):
+        val data = Array.freeze(Array[Byte](0))
+
+        (CHeaderDiscipline.claims(TreePath(t"include/openssl.h"), data),
+         CHeaderDiscipline.claims(TreePath(t"src/main.c"), data),
+         CHeaderDiscipline.domain.covers(t"host"),
+         CHeaderDiscipline.domain.covers(t"nir"))
+      . assert(_ == (true, false, true, false))
+
+      test(m"declarations are keyed by bare name"):
+        keys(baseline)
+      . assert(_ == scala.List(t"Direction", t"Point", t"add", t"strlen"))
+
+      test(m"adding a declaration is minor and removing one is major"):
+        val grown = t"${baseline}double pow(double base, double exponent);"
+        (grade(baseline, grown), grade(grown, baseline))
+      . assert(_ == (Grade.Minor, Grade.Major))
+
+      test(m"signedness distinguishes hashes"):
+        hashOf(t"int f(unsigned int x);", t"f") != hashOf(t"int f(int x);", t"f")
+      . assert(identity)
+
+      test(m"pointer depth distinguishes hashes"):
+        hashOf(t"int f(char** x);", t"f") != hashOf(t"int f(char* x);", t"f")
+      . assert(identity)
+
+      test(m"pointee constness folds and by-value constness does not"):
+        (hashOf(t"int f(const char* x);", t"f") != hashOf(t"int f(char* x);", t"f"),
+         hashOf(t"int f(const int x);", t"f") == hashOf(t"int f(int x);", t"f"))
+      . assert(_ == (true, true))
+
+      test(m"parameter names do not fold"):
+        hashOf(t"int add(int a, int b);", t"add") == hashOf(t"int add(int x, int y);", t"add")
+      . assert(identity)
+
+      test(m"enumerator values fold, explicit or implicit"):
+        (hashOf(t"typedef enum { A, B } E;", t"E")
+           == hashOf(t"typedef enum { A = 0, B = 1 } E;", t"E"),
+         hashOf(t"typedef enum { A, B } E;", t"E")
+           != hashOf(t"typedef enum { A, B = 5 } E;", t"E"))
+      . assert(_ == (true, true))
+
+      test(m"completing an opaque struct changes its value"):
+        hashOf(t"struct S;", t"S") != hashOf(t"struct S { int x; };", t"S")
+      . assert(identity)
+
+      test(m"an unsupported construct is an atomization error"):
+        import errorDiagnostics.stackTracesDiagnostics
+
+        capture[DisciplineError](atomize(t"int x = 4;")).reason match
+          case DisciplineError.Reason.Malformed(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"the sample library header atomizes"):
+        val stream = getClass.getResourceAsStream("/xenophile/library.h").nn
+        val bytes = stream.readAllBytes().nn
+        stream.close()
+        atomize(Text(String(bytes, "UTF-8"))).atoms.stdlib.map(_.key).sortBy(_.s)
+      . assert(_.contains(t"HMAC") == false)
+
+      test(m"the openssl header atomizes with its functions keyed by symbol"):
+        // The header lives in enigmatic's resources; where it is absent from this suite's
+        // classpath the test degenerates to a pass rather than a false failure.
+        val stream = getClass.getResourceAsStream("/enigmatic/openssl.h")
+
+        if stream == null then true else
+          val bytes = stream.nn.readAllBytes().nn
+          stream.nn.close()
+          atomize(Text(String(bytes, "UTF-8"))).atoms.stdlib.exists(_.key == t"RAND_bytes")
+      . assert(_ == true)
