@@ -30,7 +30,92 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package mandible
 
-export mandible.{ClassfileAtomizer, ClassfileDiscipline, CtSym, HostArchive, HostContracts,
-    HostRelease, JsigDiscipline, JvmProfile}
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import reliquary.*
+import revolution.Semver
+import rudiments.*
+import vacuous.*
+
+import LiraError.Reason
+
+// One harvested release of a host's surface: the vendor's name for it (which becomes the
+// release's tag, LIRA §12.6) and its content tree.
+case class HostRelease(tag: Text, content: List[(TreePath, Data)])
+
+// Builds the release sequence of a host-contract module from harvested surfaces: each release
+// is atomized under `jsig/1`, graded against its predecessor by the ordinary algebra, given
+// the derived version §12.5 dictates, threaded onto the lineage — a major beginning a fresh
+// one — and assembled as a complete, tagged `.lira` host contract.
+//
+// A major is a removal in the host's history (the JDK 9 and 11 removals are the canonical
+// cases), and L110 requires the operator to sanction it: `allowMajor` is that sanction, per
+// tag, so an unexpected removal fails loudly rather than silently fracturing the lineage.
+object HostContracts:
+
+  def assemble
+    ( module:     Text,
+      releases:   List[HostRelease],
+      toolchain:  List[LiraManifest.Tool],
+      allowMajor: Text -> Boolean            = { _ => false },
+      sign:       LiraManifest -> LiraManifest = { manifest => manifest } )
+  :   List[(Text, Data)] raises LiraError raises DisciplineError =
+
+    val registry = Discipline.Registry(List(JsigDiscipline))
+    val context = Discipline.Context(t"host")
+    val results = scala.collection.mutable.ListBuffer[(Text, Data)]()
+
+    var previous: Optional[List[Atomization]] = Unset
+    var lineage: List[Data] = List()
+    var version: Semver = Semver(0, 1, 0)
+
+    var todo = releases.stdlib
+
+    while todo.nonEmpty do
+      val release = todo.head
+      todo = todo.tail
+      val atomizations = registry.atomize(release.content, context)
+      val snapshot = Snapshot(atomizations)
+
+      previous.let: before =>
+        Grade.between(before, atomizations) match
+          case Grade.Patch =>
+            version = Semver(version.major, version.minor, version.patch + 1)
+
+          case Grade.Minor =>
+            version = Semver(version.major, version.minor + 1, 0)
+            lineage = List.from(lineage.stdlib :+ snapshot)
+
+          case Grade.Major =>
+            if !allowMajor(release.tag)
+            then abort(LiraError(Reason.UngradedSuccessor))
+
+            // §12.5: in the 0 series the minor conventionally carries breaking steps.
+            version =
+              if version.major == 0 then Semver(0, version.minor + 1, 0)
+              else Semver(version.major + 1, 0, 0)
+
+            lineage = List(snapshot)
+
+      . or:
+          lineage = List(snapshot)
+
+      val bytes =
+        LiraAssembler.assemble
+          ( module,
+            List(LiraAssembler.SectionInput(t"host", release.content)),
+            registry,
+            version   = version,
+            tag       = List(release.tag),
+            lineage   = lineage,
+            toolchain = toolchain,
+            sign      = sign )
+
+      results += ((release.tag, bytes))
+      previous = atomizations
+
+    List.from(results.toList)

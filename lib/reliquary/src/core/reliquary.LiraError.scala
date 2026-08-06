@@ -83,6 +83,7 @@ object LiraError:
     case MalformedPayload(detail: Text)       extends Reason(139)
     case UnimplementedClaim(id: Text)         extends Reason(140)
     case AtomsMismatch(id: Text)              extends Reason(141)
+    case TagReassigned(tag: Text)             extends Reason(142)
 
   given communicable: Reason is Communicable =
     case Reason.InvalidManifest(detail)       => m"the manifest is invalid: $detail"
@@ -147,6 +148,9 @@ object LiraError:
 
     case Reason.AtomsMismatch(id) =>
       m"the declared $id atom listing does not recompute from the content"
+
+    case Reason.TagReassigned(tag) =>
+      m"the tag $tag already names a different release of this module"
 
 case class LiraError(reason: LiraError.Reason)(using Diagnostics)
 extends Error(640, reason.number)(m"the LIRA operation failed because $reason")

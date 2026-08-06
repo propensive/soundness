@@ -30,7 +30,118 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package mandible
 
-export mandible.{ClassfileAtomizer, ClassfileDiscipline, CtSym, HostArchive, HostContracts,
-    HostRelease, JsigDiscipline, JvmProfile}
+import scala.collection.immutable.List as SList
+import scala.jdk.CollectionConverters.*
+
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import reliquary.*
+import rudiments.*
+import vacuous.*
+
+// Harvesters for host-contract surfaces (`jsig.md` §6): readers that turn the artifacts host
+// vendors already publish into the content trees a `.lira` host contract carries.
+//
+// `CtSym` reads the JDK's own `ct.sym` — the compile-time symbol table `--release` uses —
+// which holds the signature surface of every release back to JDK 8, so one modern JDK yields
+// the whole `jdk` lineage. `HostArchive` reads a stub jar (`android.jar` per API level, a
+// `scalajs-javalib` artifact) into the same shape.
+object CtSym:
+
+  // The running JDK's own `ct.sym`, where one exists.
+  def location(): Optional[Text] =
+    val home = java.lang.System.getProperty("java.home").nn
+    val path = java.nio.file.Paths.get(home, "lib", "ct.sym").nn
+    if java.nio.file.Files.exists(path) then Text(path.toString) else Unset
+
+  // `ct.sym` entry names begin with a run of release codes — `8`–`9` for JDK 8 and 9, then
+  // `A` = 10, `B` = 11, … — naming every release the entry's content is identical in.
+  private def decode(char: Char): Optional[Int] =
+    if char >= '5' && char <= '9' then char - '0'
+    else if char >= 'A' && char <= 'Z' then char - 'A' + 10
+    else Unset
+
+  private def code(release: Int): Char =
+    if release < 10 then ('0' + release).toChar else ('A' + release - 10).toChar
+
+  // The releases the symbol table carries, ascending.
+  def releases(path: Text): List[Int] =
+    val zip = java.util.zip.ZipFile(path.s)
+
+    try
+      val found = scala.collection.mutable.SortedSet[Int]()
+
+      zip.entries.nn.asScala.foreach: entry =>
+        val name = entry.nn.getName.nn
+        val slash = name.indexOf('/')
+
+        if slash > 0 then name.substring(0, slash).nn.foreach: char =>
+          decode(char).let { release => found += release }
+
+      List.from(found.toList)
+
+    finally zip.close()
+
+  // The signature surface of one release: every `.sig` entry present in it, with the release
+  // codes stripped from the path, so the tree reads `java.base/java/lang/Object.sig`.
+  // `module-info.sig` entries are omitted — module descriptors are not consumer surface. A
+  // `prefix`, where given, keeps a harvest to the paths beneath it; contracts SHOULD be
+  // harvested whole (`jsig.md` §4), and the filter exists for tooling and tests.
+  def surface(path: Text, release: Int, prefix: Optional[Text] = Unset)
+  :   List[(TreePath, Data)] raises LiraError =
+
+    val zip = java.util.zip.ZipFile(path.s)
+    val marker = code(release)
+
+    try
+      val entries = scala.collection.mutable.ListBuffer[(TreePath, Data)]()
+
+      zip.entries.nn.asScala.foreach: entry =>
+        val name = entry.nn.getName.nn
+        val slash = name.indexOf('/')
+
+        if slash > 0 && name.substring(0, slash).nn.indexOf(marker.toInt) >= 0 && name.endsWith(".sig")
+        && !name.endsWith("module-info.sig")
+        then
+          val inner = name.substring(slash + 1).nn
+
+          if prefix.let { p => inner.startsWith(p.s) }.or(true) then
+            val stream = zip.getInputStream(entry).nn
+            val bytes = stream.readAllBytes().nn
+            stream.close()
+            entries += ((TreePath(Text(inner)), Array.unsafeFrozen(bytes)))
+
+      List.from(entries.toList)
+
+    finally zip.close()
+
+// A stub jar — `android.jar` for one API level, or any signature-bearing archive — read into
+// the content tree a host contract carries.
+object HostArchive:
+
+  def surface(path: Text, prefix: Optional[Text] = Unset): List[(TreePath, Data)] raises
+      LiraError =
+
+    val zip = java.util.zip.ZipFile(path.s)
+
+    try
+      val entries = scala.collection.mutable.ListBuffer[(TreePath, Data)]()
+
+      zip.entries.nn.asScala.foreach: entry =>
+        val name = entry.nn.getName.nn
+
+        if name.endsWith(".class") && !name.endsWith("module-info.class")
+        && prefix.let { p => name.startsWith(p.s) }.or(true)
+        then
+          val stream = zip.getInputStream(entry).nn
+          val bytes = stream.readAllBytes().nn
+          stream.close()
+          entries += ((TreePath(Text(name)), Array.unsafeFrozen(bytes)))
+
+      List.from(entries.toList)
+
+    finally zip.close()

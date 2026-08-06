@@ -92,6 +92,7 @@ object LiraSchemas:
   private val guarantee:    Type = Reference(t"Guarantee")
   private val string:       Type = Reference(t"String")
   private val treePath:     Type = Reference(t"TreePath")
+  private val tagName:      Type = Reference(t"TagName")
 
   private val hashScalar: ScalarDefinition = scalar("Hash", "base-256-hash")
 
@@ -109,6 +110,7 @@ object LiraSchemas:
       members = Array.of(
         field("module", moduleName),
         field("version", semver, required = Loose),
+        field("tag", tagName, required = Loose, repeatable = Loose),
         field("lineage", hash, repeatable = Loose),
         field("toolchain", Reference(t"Tool"), repeatable = Loose),
         field("owns", namespace, required = Loose, repeatable = Loose),
@@ -187,6 +189,7 @@ object LiraSchemas:
       scalar("ModuleName", "module-name"),
       scalar("Namespace", "namespace"),
       scalar("Semver", "semver"),
+      scalar("TagName", "tag-name"),
       scalar("Natural", "natural"),
       scalar("DisciplineId", "discipline-id"),
       scalar("ProfileId", "profile-id"),
@@ -290,7 +293,7 @@ object LiraSchemas:
   // The BASE-256 schema signatures of the six canonical documents, pinned as golden values (the
   // test suite recomputes each from its `res/test/reliquary/*.tel` mirror and checks agreement).
   // A conforming document of each schema carries its signature on the pragma line.
-  val liraSignature:  Text = t"εUYțẀñẆơÇMĆẗΎŠľЭЂẉąӮ0ÅðϕῡΔẙȑẀĆӜ1M"
+  val liraSignature:  Text = t"ϗƤҚЂЫǑmӪwUKΎ5ύ9ẈGÅЖӸψðΩȦӂSẓῩҚӂЊHk"
   val treeSignature:  Text = t"ǨẙơẗỵclϋẁЫĥᾸMôĮẍOώżӯάǢЗĆӸkҚțȐωǢέӫ"
   val atomsSignature: Text = t"2ӪççÃ5AḟǑXϋƤzᾱĺHϕЂẌǒEẂẁĮί9ḀẘΊÐιЪp"
   val usesSignature:  Text = t"şşCȧOӖGҐΪḍḋjΊӁῚƟȐЌĥέȦЬƜδĻĘ1Ȑḟ6ӟÔḍ"

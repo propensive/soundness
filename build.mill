@@ -583,7 +583,8 @@ object soundness extends Toolchain:
 
   object tool extends Bundle(anthology.core, decorum.plugin, degustation.core,
     degustation.lira, mandible.lira, xenophile.lira, harlequin.core, hellenism.core,
-    hyperbole.core, octogenarian.core, reliquary.core, revolution.core, umbrageous.plugin,
+    hyperbole.core, octogenarian.core, reliquary.core, reliquary.derive, revolution.core,
+    umbrageous.plugin,
     anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
     anthology.lira,
@@ -690,7 +691,7 @@ object keywords extends BaseScalaModule:
 object groupCheck extends Module:
   // Library directories on disk that are deliberately not wired into the build
   // (work-in-progress modules with no compiling sources yet).
-  def disabledLibraries: Set[String] = Set()
+  def disabledLibraries: Set[String] = Set("murmuration")
 
   // Published `Component`s deliberately not included in any soundness.{base,cli,data,sci,
   // test,tool,web} group bundle: the compiler plugins (published but used via `-Xplugin`),
@@ -713,7 +714,10 @@ object groupCheck extends Module:
     "proscenium.core",
     "breviloquence.staged", "jacinta.staged", "locomotion.staged", "stratiform.staged",
     "stratiform.binaryStaged", "xylophone.staged",
-    "prescience.core", "prescience.leaves"
+    "prescience.core", "prescience.leaves",
+    // The Android link stages: published, but their R8 toolchain dependency is heavyweight and
+    // strictly opt-in, so they stay out of `soundness-all` rather than joining a group bundle.
+    "anthology.apk", "anthology.dex"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -1912,7 +1916,7 @@ object mandible extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object lira extends Component(core, reliquary.core):
+  object lira extends Component(core, reliquary.core, reliquary.derive):
     override def scalaJs = false // adapts the discipline to reliquary's JVM-only SPI
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))

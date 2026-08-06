@@ -64,6 +64,7 @@ object LiraAssembler:
       sections:    List[SectionInput],
       disciplines: Discipline.Registry,
       version:     Optional[Semver]              = Unset,
+      tag:         List[Text]                    = List(),
       lineage:     List[Data]                    = List(),
       toolchain:   List[LiraManifest.Tool]       = List(),
       owns:        List[Text]                    = List(),
@@ -202,6 +203,7 @@ object LiraAssembler:
       LiraManifest
         ( module      = module,
           version     = version,
+          tag         = tag,
           lineage     = fullLineage,
           toolchain   = toolchain,
           owns        = owns,
