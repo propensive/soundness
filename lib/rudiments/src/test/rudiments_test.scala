@@ -153,6 +153,48 @@ object Tests extends Suite(m"Rudiments Tests"):
         total
       . assert(_ == 60)
 
+      test(m"`iterate` over a branded sub-interval visits only that range"):
+        var total = 0
+        array.iterate(array.lead(_ => true).capped(2)) { i => total += array.at(i) }
+        total
+      . assert(_ == 30)
+
+      test(m"`spot` finds the first matching confined index"):
+        text.spot { i => text.at(i) == 'l' }.let { i => (i: Ordinal).n0 }
+      . assert(_ == 2)
+
+      test(m"`spot` returns Unset when nothing matches"):
+        text.spot { i => text.at(i) == 'z' }
+      . assert(_ == Unset)
+
+      test(m"`lead` spans the matching prefix and stops at the first mismatch"):
+        val interval: Interval = text.lead { i => text.at(i) != 'l' }
+        interval.size
+      . assert(_ == 2)
+
+      test(m"`lead` spans the whole extent when everything matches"):
+        val interval: Interval = text.lead { _ => true }
+        interval.size
+      . assert(_ == 5)
+
+      test(m"`pare` drops the matching suffix, respecting the floor"):
+        val digits = Array.of(3, 7, 0, 0, 0)
+        val interval: Interval = digits.pare(1) { i => digits.at(i) == 0 }
+        interval.size
+      . assert(_ == 2)
+
+      test(m"`pare` never shrinks below its floor"):
+        val zeros = Array.of(0, 0, 0)
+        val interval: Interval = zeros.pare(1) { i => zeros.at(i) == 0 }
+        interval.size
+      . assert(_ == 1)
+
+      test(m"`retrace` visits confined indices in reverse"):
+        val builder = java.lang.StringBuilder()
+        text.retrace { i => builder.append(text.at(i)) }
+        builder.toString.tt
+      . assert(_ == t"olleh")
+
     // test(m"Display a PID"):
     //   Pid(2999).toString
     // .assert(_ == "↯2999")

@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-// `Region`, `Slate` and `capped` are deliberately absent: their lenders and combinators are
+// `Region` and `Slate` are deliberately absent: their lenders and combinators are
 // dependent-typed inline extensions, which synthesized export forwarders break (see the
 // hand-written `via`/`accepting` forwarders below for the same problem). Consumers import
 // them from `zephyrine` directly.

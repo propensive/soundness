@@ -43,7 +43,8 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import urticose.MacAddress
-import zephyrine.{Stream, Credit, Buffering, Substrate, capped, stream}
+import denominative.capped
+import zephyrine.{Stream, Credit, Buffering, Substrate, stream}
 import vacuous.*
 
 import Control.*

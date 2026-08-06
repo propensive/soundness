@@ -42,7 +42,7 @@ import java.net as jn
 import java.nio.channels as jnc
 
 import soundness.{transmit as _, listen as _, react as _, duplex as _, *}
-import zephyrine.capped
+import denominative.capped
 
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder

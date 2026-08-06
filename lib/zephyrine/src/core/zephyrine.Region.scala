@@ -160,10 +160,3 @@ object Region:
     // The only branded-ordinal producer, for the trusted combinators above.
     private inline def ordinal(inline n: Int): Ordinal in region.type =
       Ordinal.zerary(n).asInstanceOf[Ordinal in region.type]
-
-// Brand-preserving narrowing: a sub-interval of a valid extent is itself valid, so clamping
-// preserves the brand. `capped` keeps at most the first `count` indexes of the extent.
-extension [form](range: Interval in form)
-  inline def capped(count: Int): Interval in form =
-    val interval: Interval = range
-    Interval.sized(interval.start.n0, interval.size.min(count.max(0))).asInstanceOf[Interval in form]

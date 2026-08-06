@@ -50,7 +50,8 @@ import hieroglyph.*
 import monotonous.*
 import parasite.*
 import prepositional.*
-import zephyrine.{capped, memoize}
+import denominative.capped
+import zephyrine.memoize
 import rudiments.*
 import spectacular.*
 import telekinesis.*

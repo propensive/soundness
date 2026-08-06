@@ -41,7 +41,8 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 import prepositional.*
-import zephyrine.{Slate, Stream, Credit, Buffering, Substrate, capped}
+import denominative.capped
+import zephyrine.{Slate, Stream, Credit, Buffering, Substrate}
 
 import Http2.Frame
 import Http2Error.Reason
