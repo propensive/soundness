@@ -30,12 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-// `Format` and `Language` are not exported: `soundness` already exports zephyrine's `Format`
-// and cosmopolite's `Language`, so anthology's are used fully-qualified or via `anthology.*`.
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+import ambience.*
+import anticipation.*
+import contingency.*
+import galilei.*
+import parasite.*
+import prepositional.*
+import serpentine.*
+
+// A toolchain edge's implementation: a compiler, linker or packager, together with the settings
+// type configuring it and its default configuration. Tools are inert values: the capabilities
+// their execution needs (asynchrony, system properties, a working directory) flow through
+// `run`'s context rather than being captured at construction.
+trait Tool:
+  type Settings
+
+  def name: Text
+  def initial: Settings
+
+  def run
+    ( settings:    Settings,
+      input:       Deliverable,
+      entryPoints: List[EntryPoint],
+      out:         Path on Linux )
+    ( using Monitor, System, WorkingDirectory )
+    ( using Tactic[LinkError], (LinkEvent is Loggable)^ )
+  :   Deliverable

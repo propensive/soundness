@@ -30,12 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-// `Format` and `Language` are not exported: `soundness` already exports zephyrine's `Format`
-// and cosmopolite's `Language`, so anthology's are used fully-qualified or via `anthology.*`.
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+import anticipation.*
+import gossamer.*
+
+// The source languages: the roots of a toolchain. Each language's compile edges into the
+// universes its compiler can emit are provided by that compiler's component.
+enum Language extends Format.Source:
+  case Scala, Java, Kotlin
+
+  def id: Text = this match
+    case Scala  => t"scala"
+    case Java   => t"java"
+    case Kotlin => t"kotlin"

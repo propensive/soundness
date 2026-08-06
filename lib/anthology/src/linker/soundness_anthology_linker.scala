@@ -34,4 +34,4 @@ package soundness
 
 export
   anthology
-  . { Bundler, jarOptions, Linkage, LinkError, LinkEvent, Linker, ToolchainError }
+  . { Bundler, jarOptions, Linkage, Linker, ToolchainError }

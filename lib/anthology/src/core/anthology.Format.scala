@@ -30,12 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-// `Format` and `Language` are not exported: `soundness` already exports zephyrine's `Format`
-// and cosmopolite's `Language`, so anthology's are used fully-qualified or via `anthology.*`.
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+import anticipation.*
+
+object Format:
+  // A format compilers consume: a source language such as Scala, Java or Kotlin.
+  trait Source extends Format
+
+  // A format holding open-world, pre-link content: an intermediate representation such as
+  // classfiles, `.sjsir` or `.nir`, in which libraries compose.
+  trait Ir extends Format
+
+  // A closed format a build produces for a host to run: an executable JAR, an APK, a JavaScript
+  // bundle or a native binary.
+  trait Application extends Format
+
+// A node of a `Toolchain`: a source language, an intermediate representation or an application
+// format. Identity is value equality, so a format's user-visible parameters—a JavaScript
+// artifact's module system, a WASI artifact's interface version, a native binary's target
+// triple—are constructor parameters, making each parameterization a distinct node. The tiers
+// constrain edges: tools consume any format, but only ever produce intermediate representations
+// or applications.
+trait Format:
+  def id: Text

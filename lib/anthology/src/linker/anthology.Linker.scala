@@ -41,7 +41,9 @@ import serpentine.*
 
 object Linker:
   // An entry point whose `main(args: Array[String])` method runs when the linked module loads.
-  case class EntryPoint(mainClass: Fqcn)
+  // Now `anthology.EntryPoint` in the core module, aliased here for the one-hop API.
+  type EntryPoint = anthology.EntryPoint
+  val EntryPoint: anthology.EntryPoint.type = anthology.EntryPoint
 
   object Option:
     // Sound by construction: options are only creatable through the per-family DSLs, each of

@@ -30,12 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-// `Format` and `Language` are not exported: `soundness` already exports zephyrine's `Format`
-// and cosmopolite's `Language`, so anthology's are used fully-qualified or via `anthology.*`.
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+// A toolchain edge: the tool that produces `target`-format content from `source`-format
+// content. Sources are never produced, so a target is an intermediate representation or an
+// application format.
+case class Edge(source: Format, target: Format.Ir | Format.Application, tool: Tool)

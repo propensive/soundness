@@ -32,19 +32,18 @@
                                                                                                   */
 package anthology
 
-import digression.*
-import fulminate.*
+import anticipation.*
+import galilei.*
+import hellenism.*
+import prepositional.*
+import serpentine.*
 
-object LinkError:
-  enum Reason(val number: Int) extends Clarification:
-    case Failed(trace: StackTrace) extends Reason(1)
-    case NoEntryPoint              extends Reason(3)
-    case ManyEntryPoints           extends Reason(4)
-
-  given communicable: Reason is Communicable =
-    case Reason.Failed(_)       => m"the linker terminated abnormally"
-    case Reason.NoEntryPoint    => m"a native executable requires exactly one entry point"
-    case Reason.ManyEntryPoints => m"an executable JAR permits at most one entry point"
-
-case class LinkError(reason: LinkError.Reason)(using Diagnostics)
-extends Error(443, reason.number)(m"linking failed because $reason")
+// The value flowing along a toolchain path: what each edge's tool consumes and what it
+// produces. `Sources` inhabit a source-language node; an `Emission`—a compilation's output
+// directory and the classpath it was compiled against—inhabits an intermediate-representation
+// node; a `Product`—a linked or packaged file—inhabits an application node. A tool given a
+// variant it cannot consume raises `LinkError.Reason.UnexpectedInput`.
+enum Deliverable:
+  case Sources(sources: Map[Text, Text], classpath: LocalClasspath)
+  case Emission(out: Path on Linux, classpath: LocalClasspath)
+  case Product(file: Path on Linux)

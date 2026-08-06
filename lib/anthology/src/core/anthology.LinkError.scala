@@ -30,12 +30,55 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-// `Format` and `Language` are not exported: `soundness` already exports zephyrine's `Format`
-// and cosmopolite's `Language`, so anthology's are used fully-qualified or via `anthology.*`.
-export
-  anthology
-  . { Artifact, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Deliverable, Edge, EntryPoint, Importance, LinkError,
-      LinkEvent, NirPlugin, Notice, Provenance, Setting, Tool, Toolchain, Universe }
+import anticipation.*
+import digression.*
+import fulminate.*
+
+object LinkError:
+  enum Reason(val number: Int) extends Clarification:
+    case Failed(trace: StackTrace)                  extends Reason(1)
+    case NoEntryPoint                               extends Reason(3)
+    case ManyEntryPoints                            extends Reason(4)
+    case NoPath(source: Text, target: Text)         extends Reason(5)
+    case AmbiguousPath(source: Text, target: Text)  extends Reason(6)
+    case InapplicableSetting                        extends Reason(7)
+    case DuplicateEdge(source: Text, target: Text)  extends Reason(8)
+    case CyclicToolchain                            extends Reason(9)
+    case UnexpectedInput(format: Text)              extends Reason(10)
+    case CompilationFailed(errors: Int)             extends Reason(11)
+    case MissingSetting(name: Text)                 extends Reason(12)
+    case Packaging(detail: Text)                    extends Reason(13)
+
+  given communicable: Reason is Communicable =
+    case Reason.Failed(_)       => m"the linker terminated abnormally"
+    case Reason.NoEntryPoint    => m"a native executable requires exactly one entry point"
+    case Reason.ManyEntryPoints => m"an executable JAR permits at most one entry point"
+
+    case Reason.NoPath(source, target) =>
+      m"the toolchain has no path from $source to $target"
+
+    case Reason.AmbiguousPath(source, target) =>
+      m"""
+        the toolchain has several shortest paths from $source to $target, so an intermediate
+        format must be produced explicitly
+      """
+
+    case Reason.InapplicableSetting =>
+      m"a setting applies to no format produced on the path"
+
+    case Reason.DuplicateEdge(source, target) =>
+      m"the toolchain declares more than one edge from $source to $target"
+
+    case Reason.CyclicToolchain => m"the toolchain's edges form a cycle"
+
+    case Reason.UnexpectedInput(format) =>
+      m"the tool producing $format cannot consume the content it was given"
+
+    case Reason.CompilationFailed(errors) => m"compilation failed with $errors errors"
+    case Reason.MissingSetting(name)      => m"the setting $name is required but unspecified"
+    case Reason.Packaging(detail)         => m"packaging failed: $detail"
+
+case class LinkError(reason: LinkError.Reason)(using Diagnostics)
+extends Error(443, reason.number)(m"linking failed because $reason")

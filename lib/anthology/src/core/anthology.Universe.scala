@@ -60,6 +60,25 @@ object Universe:
 // The universe a compilation inhabits: the intermediate representation it emits, and hence the
 // ecosystem of library artifacts it can link with. `Classfile` is JVM classfiles; `Sjsir` is
 // Scala.js IR, whose linked representation (JavaScript, browser Wasm or a WASI component) is
-// chosen at link time; `Nir` is Scala Native IR, linked to machine code through LLVM.
-enum Universe:
+// chosen at link time; `Nir` is Scala Native IR, linked to machine code through LLVM. Each
+// universe is an intermediate-representation node of a `Toolchain`.
+enum Universe extends Format.Ir:
   case Classfile, Sjsir, Nir
+
+  def id: Text = this match
+    case Classfile => t"classfile"
+    case Sjsir     => t"sjsir"
+    case Nir       => t"nir"
+
+  // The label of the LIRA section holding this universe's content.
+  def section: Text = this match
+    case Classfile => t"jvm"
+    case Sjsir     => t"sjsir"
+    case Nir       => t"nir"
+
+  // The filename suffixes of this universe's stored representations: each universe's binary
+  // form, plus the TASTy that carries its interface.
+  def suffixes: List[Text] = this match
+    case Classfile => List(t".class", t".tasty")
+    case Sjsir     => List(t".sjsir", t".tasty")
+    case Nir       => List(t".nir", t".tasty")
