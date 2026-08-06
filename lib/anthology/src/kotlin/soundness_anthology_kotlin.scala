@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export anthology.Kotlinc
+export anthology.{Kotlinc, kotlincEdges}
 
 package kotlincOptions:
   export anthology.kotlincOptions.*

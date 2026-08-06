@@ -339,7 +339,7 @@ object Tests extends Suite(m"Degustation Tests"):
       val compilation =
         Compilation[Universe.Classfile](unsafely(out.s.tt.as[soundness.Path on Linux]), classpath)
 
-      val input = LiraBundle.jvm(compilation)
+      val input = LiraBundle(compilation)
       val registry = Discipline.Registry(List(Tasty))
 
       val bytes = LiraAssembler.assemble
@@ -379,10 +379,10 @@ object Tests extends Suite(m"Degustation Tests"):
         val (_, _, jvmOut) = compileWith(fixture, classpath, libraryPaths, false)
         val (_, _, sjsOut) = compileWith(fixture, sjsClasspath, sjsLibraryPaths, true)
 
-        val jvmInput = LiraBundle.jvm(Compilation[Universe.Classfile]
+        val jvmInput = LiraBundle(Compilation[Universe.Classfile]
           (unsafely(jvmOut.s.tt.as[soundness.Path on Linux]), classpath))
 
-        val sjsInput = LiraBundle.sjsir(Compilation[Universe.Sjsir]
+        val sjsInput = LiraBundle(Compilation[Universe.Sjsir]
           (unsafely(sjsOut.s.tt.as[soundness.Path on Linux]), sjsClasspath))
 
         val registry = Discipline.Registry(List(Tasty))

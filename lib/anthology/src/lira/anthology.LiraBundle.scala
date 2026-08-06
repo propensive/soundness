@@ -46,21 +46,13 @@ import reliquary.*
 // the root section's tree, and byte-divergent files (a fresh compiler run pickles a fresh UUID)
 // surface as minimal overlays — while the atoms, which are semantic, stay identical (L108).
 object LiraBundle:
-
-  def jvm(compilation: Compilation[Universe.Classfile])
+  // Each universe knows its own LIRA section label and the filename suffixes of its stored
+  // representations, so one method serves all three.
+  def apply[universe <: Universe & Singleton: ValueOf](compilation: Compilation[universe])
   :   LiraAssembler.SectionInput raises LiraError =
 
-    section(t"jvm", compilation.out.encode, scala.List(".class", ".tasty"))
-
-  def sjsir(compilation: Compilation[Universe.Sjsir])
-  :   LiraAssembler.SectionInput raises LiraError =
-
-    section(t"sjsir", compilation.out.encode, scala.List(".sjsir", ".tasty"))
-
-  def nir(compilation: Compilation[Universe.Nir])
-  :   LiraAssembler.SectionInput raises LiraError =
-
-    section(t"nir", compilation.out.encode, scala.List(".nir", ".tasty"))
+    val universe: Universe = valueOf[universe]
+    section(universe.section, compilation.out.encode, universe.suffixes)
 
   // The toolchain record for a compilation (§14): the compiler version and the
   // universe-selecting flags of its emission.
@@ -69,13 +61,13 @@ object LiraBundle:
 
     LiraManifest.Tool(t"scala", version, emission.flags)
 
-  private def section(universe: Text, out: Text, suffixes: scala.List[String])
+  private def section(universe: Text, out: Text, suffixes: List[Text])
   :   LiraAssembler.SectionInput raises LiraError =
 
     val root = jnf.Paths.get(out.s).nn
 
     def wanted(path: jnf.Path): Boolean =
-      suffixes.exists: suffix => path.toString.endsWith(suffix)
+      suffixes.stdlib.exists: suffix => path.toString.endsWith(suffix.s)
 
     val content = jnf.Files.walk(root).nn.iterator.nn.asScala.to(scala.List)
       . filter(wanted)

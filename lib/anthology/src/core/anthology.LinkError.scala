@@ -50,6 +50,8 @@ object LinkError:
     case CompilationFailed(errors: Int)             extends Reason(11)
     case MissingSetting(name: Text)                 extends Reason(12)
     case Packaging(detail: Text)                    extends Reason(13)
+    case CompilerCrash                              extends Reason(14)
+    case CompilerUnusable(detail: Text)             extends Reason(15)
 
   given communicable: Reason is Communicable =
     case Reason.Failed(_)       => m"the linker terminated abnormally"
@@ -79,6 +81,8 @@ object LinkError:
     case Reason.CompilationFailed(errors) => m"compilation failed with $errors errors"
     case Reason.MissingSetting(name)      => m"the setting $name is required but unspecified"
     case Reason.Packaging(detail)         => m"packaging failed: $detail"
+    case Reason.CompilerCrash             => m"the compiler crashed"
+    case Reason.CompilerUnusable(detail)  => m"the compiler could not be run: $detail"
 
 case class LinkError(reason: LinkError.Reason)(using Diagnostics)
 extends Error(443, reason.number)(m"linking failed because $reason")

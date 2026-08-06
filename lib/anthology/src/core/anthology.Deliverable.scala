@@ -51,6 +51,10 @@ enum Deliverable:
 
   // Coercions for tools, which know statically which variant their edge consumes; `target`
   // names the format under production, for diagnosis when a toolchain is miswired.
+  def sources(target: Format): (Map[Text, Text], LocalClasspath) raises LinkError = this match
+    case Sources(sources, classpath) => (sources, classpath)
+    case _ => abort(LinkError(LinkError.Reason.UnexpectedInput(target.id)))
+
   def emission(target: Format): (Path on Linux, LocalClasspath) raises LinkError = this match
     case Emission(out, classpath) => (out, classpath)
     case _                        => abort(LinkError(LinkError.Reason.UnexpectedInput(target.id)))

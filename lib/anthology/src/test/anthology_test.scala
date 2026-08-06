@@ -452,6 +452,41 @@ object Tests extends Suite(m"Anthology Tests"):
               mute[ExecEvent](sh"java -jar $artifact".exec[Text]()).trim
         . assert(_ == t"hello")
 
+        // The whole point of source nodes: one path from `.scala` text to a runnable JAR, with
+        // the compiler and the bundler both selected by the path rather than named by the caller.
+        test(m"One path compiles Scala source and runs the JAR it produces"):
+          val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))), jarEdges())
+          val staged: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+
+          toolchain.produce
+            ( Deliverable.Sources(Map(t"hello.scala" -> source), classpath),
+              Language.Scala,
+              anthology.Jar,
+              staged,
+              List(jarOptions.name(t"whole.jar")),
+              List(EntryPoint(Fqcn(t"Main"))) )
+
+          . pipe: artifact =>
+              mute[ExecEvent](sh"java -jar $artifact".exec[Text]()).trim
+        . assert(_ == t"hello")
+
+        test(m"A compile edge reports a failing compilation as an error count"):
+          val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))))
+          val staged: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+          val bad = Map(t"bad.scala" -> t"class Bad:\n  def x: Int = \"nope\"\n")
+
+          capture[LinkError]
+            ( toolchain.produce
+                ( Deliverable.Sources(bad, classpath),
+                  Language.Scala,
+                  Universe.Classfile,
+                  staged ) )
+
+          . reason match
+              case LinkError.Reason.CompilationFailed(errors) => errors > 0
+              case _                                          => false
+        . assert(_ == true)
+
         test(m"Linking as DEX produces an archive containing classes.dex"):
           Toolchain(dexEdges()).produce
             ( Deliverable.Emission(out, classpath), Universe.Classfile, Dex, linked )
