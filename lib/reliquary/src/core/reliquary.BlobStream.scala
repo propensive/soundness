@@ -79,14 +79,14 @@ object BlobStream:
 
         mitigate:
           case _: VarintError =>
-            LiraError(Reason.InvalidBlobStream(t"a record length is malformed"))
+            LiraError(Reason.MalformedPayload(t"a record length is malformed"))
 
         . protect(Varint.decode(data, offset))
 
       val length = decoded.value
 
       if length > Int.MaxValue.toLong || decoded.next + length.toInt > data.length
-      then abort(LiraError(Reason.InvalidBlobStream(t"a record overruns the end of the stream")))
+      then abort(LiraError(Reason.MalformedPayload(t"a record overruns the end of the stream")))
 
       val content = Array[Byte](length.toInt)
       System.arraycopy(Array.unsafeJvm(data), decoded.next, content.raw, 0, length.toInt)

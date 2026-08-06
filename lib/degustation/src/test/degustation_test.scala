@@ -134,6 +134,39 @@ object Tests extends Suite(m"Degustation Tests"):
       keys.exists(_.contains("hidden"))
     . assert(!_)
 
+    test(m"qualified-private members are conservatively API"):
+      val qualified = listing(t"""|package fixture
+          |
+          |class Scoped:
+          |  private[fixture] def limited: Int = 0
+          |  private def hidden: Int = 0
+          |""".s.stripMargin.tt)
+
+      (qualified.exists(_(0).s.contains("limited")), qualified.exists(_(0).s.contains("hidden")))
+    . assert(_ == (true, false))
+
+    test(m"an export forwarder atomizes as its hand-written equivalent"):
+      val exported = listing(t"""|package fixture
+          |
+          |object Impl:
+          |  def value: Int = 3
+          |
+          |object Front:
+          |  export Impl.value
+          |""".s.stripMargin.tt)
+
+      val written = listing(t"""|package fixture
+          |
+          |object Impl:
+          |  def value: Int = 3
+          |
+          |object Front:
+          |  final def value: Int = Impl.value
+          |""".s.stripMargin.tt)
+
+      exported == written
+    . assert(identity)
+
     test(m"an inline definition yields a replaceable atom"):
       keys.exists { key => key.startsWith("fixture.double(") && key.endsWith("[inline]") }
     . assert(identity)
@@ -322,7 +355,7 @@ object Tests extends Suite(m"Degustation Tests"):
 
       (lira.manifest.module,
        lira.manifest.api.stdlib.map(_.discipline),
-       lira.manifest.section.stdlib.map(_.universe),
+       lira.manifest.section.stdlib.map(_.world),
        lira.manifest.section.stdlib.forall(_.derivative.present),
        report.atomizations.stdlib.map(_.discipline))
     . assert(_ == (t"fixture-core", scala.List(t"tasty/1"), scala.List(t"jvm"), true,
@@ -363,15 +396,15 @@ object Tests extends Suite(m"Degustation Tests"):
             List(jvmInput, sjsInput),
             registry,
             toolchain = List(LiraBundle.tool[Universe.Classfile](t"3.9.0")),
-            classpath = { input => contextClasspath(input.universe) } )
+            classpath = { input => contextClasspath(input.world) } )
 
         val lira = Lira.read(bytes)
         val report = Verification.install(lira)
-        val sjsSection = lira.manifest.section.stdlib.find(_.universe == t"sjsir")
+        val sjsSection = lira.manifest.section.stdlib.find(_.world == t"sjsir")
 
-        (lira.manifest.section.stdlib.map(_.universe),
-         report.materialized.stdlib.map(_(0).universe),
-         report.materialized.stdlib.find(_(0).universe == t"sjsir")
+        (lira.manifest.section.stdlib.map(_.world),
+         report.materialized.stdlib.map(_(0).world),
+         report.materialized.stdlib.find(_(0).world == t"sjsir")
            . map(_(1).entries.stdlib.exists(_.path.text.s.endsWith(".sjsir"))))
       . assert(_ == (scala.List(t"jvm", t"sjsir"), scala.List(t"jvm", t"sjsir"),
           scala.Some(true)))

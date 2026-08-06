@@ -38,18 +38,20 @@ import proscenium.compat.*
 import stratiform.*
 import vacuous.*
 
-// Hand-encoded `Tels` values for the `lira` schema and its four metadata-blob schemas, following
+// Hand-encoded `Tels` values for the `lira` schema and its five metadata-blob schemas, following
 // the precedent of `Tels.Axiom`: the Scala literals below are primary, and each mirrors a
 // canonical `.tel` document (at `res/test/reliquary/`) verbatim; the test suite asserts the two
 // stay in agreement and pins each schema's signature as a golden value.
 //
-// The schemas encode the LIRA specification's §14: universes are `jvm | sjsir | nir`; a
-// `Section` is keyed by universe and integration (§9.5) and may carry a `derivative` hash (its
-// canonical derived JAR); a `version` is optional (a release without one is a development
-// release) and strictly numeric; a `Dependency` may be scoped to particular universes or
-// integrations, or pinned to an exact `build` during development; and a `Profile` records the
-// ecosystem predicates a release claims, with the guarantee levels its last step did not
-// preserve (§11.6, §12.4).
+// The schemas encode the LIRA specification's §14: worlds are `jvm | sjsir | nir | host` — the
+// three universes of the motivating ecosystem, and the one world that is not a universe, which
+// holds a host contract's content (hosts.md); a `Section` is keyed by world and integration
+// (§9.5), may carry a `derivative` hash (its canonical derived JAR), and may carry `requires`
+// records naming the host contracts its code assumes; a `version` is optional (a release
+// without one is a development release) and strictly numeric; a `Dependency` may be scoped to
+// particular universes or integrations, or pinned to an exact `build` during development; and a
+// `Profile` records the ecosystem predicates a release claims, with the guarantee levels its
+// last step did not preserve (§11.6, §12.4).
 object LiraSchemas:
   import Tels.{Field, Polarity, RecordDefinition, Reference, ScalarDefinition, SelectDefinition,
       SelectRef, Struct, Type, Variant}
@@ -151,16 +153,24 @@ object LiraSchemas:
         field("version", semver, required = Loose),
         field("build", hash, required = Loose),
         field("universe", identifier, required = Loose, repeatable = Loose),
+        field("serves", identifier, required = Loose),
         field("integration", identifier, required = Loose, repeatable = Loose),
         field("uses", hash, required = Loose),
         field("spans", hash, required = Loose, repeatable = Loose)),
 
+      record("Requires",
+        field("module", moduleName),
+        field("api", hash),
+        field("version", semver, required = Loose),
+        field("uses", hash, required = Loose)),
+
       record("Section",
-        selectRef("Universe"),
+        selectRef("World"),
         field("integration", identifier, required = Loose),
         field("tree", hash),
         field("delete", string, required = Loose, repeatable = Loose),
-        field("derivative", hash, required = Loose)),
+        field("derivative", hash, required = Loose),
+        field("requires", Reference(t"Requires"), required = Loose, repeatable = Loose)),
 
       record("Payload",
         field("compression", identifier),
@@ -183,10 +193,11 @@ object LiraSchemas:
       scalar("TreePath", "tree-path"),
       scalar("Guarantee", "guarantee")),
     selects  = Array.of(
-      select("Universe",
+      select("World",
         variant("jvm"),
         variant("sjsir"),
-        variant("nir")),
+        variant("nir"),
+        variant("host")),
 
       select("ResourceMode",
         variant("export"),
@@ -257,11 +268,31 @@ object LiraSchemas:
     scalars  = builtins ++ Array.of(hashScalar),
     selects  = Array.empty[SelectDefinition])
 
-  // The BASE-256 schema signatures of the five canonical documents, pinned as golden values (the
+  // The capability listing of a host contract with no formal carrier (hosts.md §5): the single
+  // tree item at the path `capabilities`, claimed by `capability/1`. Rows are sorted by
+  // ascending name with no duplicates; `probe` is advisory and enters no atom.
+  val capabilities: Tels = Tels(
+    name     = t"lira-capabilities",
+    document = Struct(
+      members    = Array.of(field("capability", Reference(t"Capability"),
+          required = Loose, repeatable = Loose)),
+      validators = Array.empty[Text]),
+    layers   = Array.empty[Tels.Layer],
+    sigil    = Unset,
+    records  = Array.of(
+      record("Capability",
+        field("name", identifier),
+        field("version", string, required = Loose),
+        field("probe", string, required = Loose))),
+    scalars  = builtins,
+    selects  = Array.empty[SelectDefinition])
+
+  // The BASE-256 schema signatures of the six canonical documents, pinned as golden values (the
   // test suite recomputes each from its `res/test/reliquary/*.tel` mirror and checks agreement).
   // A conforming document of each schema carries its signature on the pragma line.
-  val liraSignature:  Text = t"ψñŻṛγeẙðẁƏơǣǿÐẇӂàfơẃẇḢAῘΔӮžSẙӜύYç"
+  val liraSignature:  Text = t"εUYțẀñẆơÇMĆẗΎŠľЭЂẉąӮ0ÅðϕῡΔẙȑẀĆӜ1M"
   val treeSignature:  Text = t"ǨẙơẗỵclϋẁЫĥᾸMôĮẍOώżӯάǢЗĆӸkҚțȐωǢέӫ"
   val atomsSignature: Text = t"2ӪççÃ5AḟǑXϋƤzᾱĺHϕЂẌǒEẂẁĮί9ḀẘΊÐιЪp"
   val usesSignature:  Text = t"şşCȧOӖGҐΪḍḋjΊӁῚƟȐЌĥέȦЬƜδĻĘ1Ȑḟ6ӟÔḍ"
   val deltaSignature: Text = t"gЪΪΞKῺκḢҚdḣulƒjazỲύþῺѝgļEvḞϕϊḟẉtǣ"
+  val capabilitiesSignature: Text = t"ẋƒҢιƟžŀæДNGqЌλ1ḞλſẉûÙῡẂȧώẆlώĘdSỲÔ"

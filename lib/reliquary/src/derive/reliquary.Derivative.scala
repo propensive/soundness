@@ -38,6 +38,7 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
@@ -83,3 +84,13 @@ object Derivative:
 
   def hash(tree: LiraTree, store: Blobstore): Data raises LiraError =
     LiraHash(LiraHash.Domain.Derivative, jar(tree, store))
+
+  // §16 step 3 (L138): every declared derivative hash must recompute from the section's
+  // materialized tree. Sections of unknown universes are never materialized (§9.4), so a
+  // declared derivative there stays unchecked here, exactly as the rest of the section does.
+  def verify(manifest: LiraManifest, report: Verification.Report): Unit raises LiraError =
+    manifest.section.stdlib.foreach: section =>
+      section.derivative.let: declared =>
+        report.tree(section.world, section.integration).let: tree =>
+          if Blob.compare(hash(tree, report.blobstore), declared) != 0
+          then abort(LiraError(Reason.BadDerivative(section.world)))

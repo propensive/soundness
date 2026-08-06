@@ -40,26 +40,27 @@ import vacuous.*
 
 object Discipline:
   // What a compiler-based discipline needs beyond the content itself: which section is being
-  // atomized — its universe and, where the release offers alternative dependency vectors (§9.5),
+  // atomized — its world and, where the release offers alternative dependency vectors (§9.5),
   // its integration — and the dependency classpath materialized from the buildpath (entries as
   // textual paths, so the core stays platform-light). The classpath is a property of the
   // integration, which is why atomization is per-section and not per-universe.
   case class Context
-    ( universe:    Text,
+    ( world:       Text,
       integration: Optional[Text] = Unset,
       classpath:   List[Text]     = List() )
 
-  // The universes a discipline atomizes at all (§11.2, requirement 1). A universal discipline
-  // atomizes whatever universe it is given; a universe-specific one names its universes, and the
-  // cross-section invariant (§9.6) is vacuous outside them. Claiming nothing in a universe
-  // outside the domain is not the same as claiming content atomless.
+  // The worlds a discipline atomizes at all (§11.2, requirement 1): universes, and possibly the
+  // `host` world (hosts.md). A universal discipline atomizes whatever world it is given — which
+  // is `dts/1`'s case, and brings host contracts within its reach; a world-specific one names
+  // its worlds, and the cross-section invariant (§9.6) is vacuous outside them. Claiming
+  // nothing in a world outside the domain is not the same as claiming content atomless.
   enum Domain:
     case Universal
-    case Universes(names: Set[Text])
+    case Worlds(names: Set[Text])
 
-    def covers(universe: Text): Boolean = this match
-      case Universal        => true
-      case Universes(names) => names.stdlib.contains(universe)
+    def covers(world: Text): Boolean = this match
+      case Universal     => true
+      case Worlds(names) => names.stdlib.contains(world)
 
   // Whether an atom's key names the type that *declares* a member, or every type that *presents*
   // it after inheritance (§11.2, requirement 4). Declaration keying is sound exactly where every
@@ -94,7 +95,7 @@ object Discipline:
 
       val results = all.stdlib.map: discipline =>
         val (claimed, rest) =
-          if !discipline.domain.covers(context.universe) then (scala.Nil, remaining)
+          if !discipline.domain.covers(context.world) then (scala.Nil, remaining)
           else remaining.partition: (path, data) => discipline.claims(path, data)
 
         remaining = rest

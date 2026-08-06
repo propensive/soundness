@@ -30,11 +30,53 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Buildpath, CapabilityDiscipline, Discipline, DisciplineError, EcosystemProfile,
-    Grade, Lineage, Lira, LiraAdvisory,
-    LiraDelta, LiraError, LiraHash, LiraManifest, LiraPayload, LiraSchemas, LiraTree,
-    LiraValidators, LiraWorld, ManifestSigning, OpaqueDiscipline, Overlay, Publication,
-    Replacement, Section, Snapshot, TreeEntry, TreePath, UsesBlob, Verification, Versioning}
+import anticipation.*
+import fulminate.*
+import gossamer.*
+
+// The declaration model of a C header, as `cheader/1` atomizes it (`cheader.md`). Unlike
+// `CHeaderDialect`, which canonicalizes for FFI marshalling — collapsing signedness, pointer
+// depth and enumerators, none of which a downcall needs — this model retains the declared
+// surface: exact arithmetic spellings, pointer structure, struct and union fields, and
+// enumerator names with their values.
+enum CDeclaration:
+  case Function
+    ( name:       Text,
+      result:     Foreign.Type,
+      parameters: List[Foreign.Type],
+      variadic:   Boolean = false )
+
+  case Alias(name: Text, target: Foreign.Type)
+
+  case Structure
+    ( name:   Text,
+      union:  Boolean,
+      fields: List[(Text, Foreign.Type)],
+      opaque: Boolean = false )
+
+  case Enumeration(name: Text, cases: List[(Text, Long)])
+
+  def named: Text = this match
+    case Function(name, _, _, _)  => name
+    case Alias(name, _)           => name
+    case Structure(name, _, _, _) => name
+    case Enumeration(name, _)     => name
+
+object CHeaderError:
+  enum Reason(val number: Int) extends Clarification:
+    case Syntax(detail: Text, near: Text)  extends Reason(1)
+    case Unsupported(construct: Text)      extends Reason(2)
+
+  given communicable: Reason is Communicable =
+    case Reason.Syntax(detail, near) => m"$detail, near $near"
+
+    case Reason.Unsupported(construct) =>
+      m"the construct $construct is outside the grammar this parser accepts"
+
+// A C header could not be read as declarations. `Unsupported` is deliberately an error and not
+// a silent skip: a partially-read header understates the contract, and every claim computed
+// from it would be unsound.
+case class CHeaderError(reason: CHeaderError.Reason)(using Diagnostics)
+extends Error(646, reason.number)(m"the C header could not be read because $reason")

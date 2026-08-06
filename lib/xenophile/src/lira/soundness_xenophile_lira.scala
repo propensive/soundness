@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export xenophile.{DtsAtomizer, DtsDiscipline}
+export xenophile.{CHeaderAtomizer, CHeaderDiscipline, DtsAtomizer, DtsDiscipline,
+    KotlinMetadataAtomizer, KotlinMetadataDiscipline, WebIdlAtomizer, WebIdlDiscipline,
+    WitAtomizer, WitDiscipline}

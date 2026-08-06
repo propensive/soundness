@@ -73,6 +73,7 @@ object ClassSurface:
     def protect: Boolean   = (flags & jlc.ClassFile.ACC_PROTECTED) != 0
     def priv: Boolean      = (flags & jlc.ClassFile.ACC_PRIVATE) != 0
     def static: Boolean    = (flags & jlc.ClassFile.ACC_STATIC) != 0
+    def finl: Boolean      = (flags & jlc.ClassFile.ACC_FINAL) != 0
     def abstrakt: Boolean  = (flags & jlc.ClassFile.ACC_ABSTRACT) != 0
     def bridge: Boolean    = (flags & jlc.ClassFile.ACC_BRIDGE) != 0
     def synthetic: Boolean = (flags & jlc.ClassFile.ACC_SYNTHETIC) != 0
@@ -82,9 +83,13 @@ object ClassSurface:
     def visible: Boolean = public || protect
 
     // A `static final` field of primitive or `String` type whose value javac may already have
-    // copied into every consumer's constant pool (JLS 13.4.9). Its value is therefore
-    // *replaceable* surface, not rigid — see `ClassfileAtomizer`.
-    def inlinable: Boolean = kind == Kind.Field && static && constant.present
+    // copied into every consumer's constant pool (JLS 13.4.9, `classfile.md` §11). Its value is
+    // therefore *replaceable* surface, not rigid — see `ClassfileAtomizer`. A `ConstantValue`
+    // on anything else is not a constant a consumer's compiler inlines, so the predicate tests
+    // all three conditions, not merely the attribute's presence.
+    def inlinable: Boolean =
+      val constable = descriptor == t"Ljava/lang/String;" || descriptor.s.length == 1
+      kind == Kind.Field && static && finl && constable && constant.present
 
   private def text(entry: jlc.constantpool.Utf8Entry): Text = entry.stringValue.nn.tt
 

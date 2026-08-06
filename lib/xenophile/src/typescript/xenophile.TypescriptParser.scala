@@ -500,6 +500,11 @@ object TypescriptParser:
             List(TypescriptType.Function(List(TypescriptType.Argument(key, keyType)), value)),
             visibility, static, readonly )
 
+      // A mapped type (`[K in T]: U`) is refused under its own name: it fails the index-signature
+      // test above because `in` follows the binder where `:` would, but calling it a computed
+      // property name would misdirect whoever reads the diagnostic.
+      else if at(t"[") && ahead(2, t"in")
+      then abort(TypescriptError(Reason.Unsupported(t"a mapped type")))
       else if at(t"[") then abort(TypescriptError(Reason.Unsupported(t"a computed property name")))
       else
         val getter = at(t"get") && !(ahead(1, t":")

@@ -2619,8 +2619,8 @@ object xenophile extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object lira extends Component(typescript, reliquary.core):
-    override def scalaJs = false // adapts the discipline to reliquary's JVM-only SPI
+  object lira extends Component(typescript, webidl, wit, cffi, kotlin, reliquary.core):
+    override def scalaJs = false // adapts the disciplines to reliquary's JVM-only SPI
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The platform-neutral C front end (the `Native` ecosystem type markers and the `CHeaderDialect`

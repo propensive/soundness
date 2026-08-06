@@ -109,11 +109,12 @@ object Tests extends Suite(m"Reliquary Tests"):
 
 
     val schemas = List(
-      (t"lira",       LiraSchemas.lira,  LiraSchemas.liraSignature),
-      (t"lira-tree",  LiraSchemas.tree,  LiraSchemas.treeSignature),
-      (t"lira-atoms", LiraSchemas.atoms, LiraSchemas.atomsSignature),
-      (t"lira-uses",  LiraSchemas.uses,  LiraSchemas.usesSignature),
-      (t"lira-delta", LiraSchemas.delta, LiraSchemas.deltaSignature))
+      (t"lira",              LiraSchemas.lira,         LiraSchemas.liraSignature),
+      (t"lira-tree",         LiraSchemas.tree,         LiraSchemas.treeSignature),
+      (t"lira-atoms",        LiraSchemas.atoms,        LiraSchemas.atomsSignature),
+      (t"lira-uses",         LiraSchemas.uses,         LiraSchemas.usesSignature),
+      (t"lira-delta",        LiraSchemas.delta,        LiraSchemas.deltaSignature),
+      (t"lira-capabilities", LiraSchemas.capabilities, LiraSchemas.capabilitiesSignature))
 
     suite(m"Schema documents"):
       for (name, tels, signature) <- schemas do
@@ -290,14 +291,14 @@ object Tests extends Suite(m"Reliquary Tests"):
           case _                                     => false
       . assert(identity)
 
-      test(m"a truncated stream is rejected"):
+      test(m"a truncated stream is a malformed payload, not an L103 violation"):
         val stream = BlobStream.write(List(blobA, blobB))
         val short = Array[Byte](stream.length - 1)
         System.arraycopy(Array.unsafeJvm(stream), 0, short.raw, 0, stream.length - 1)
 
         capture[LiraError](BlobStream.read(Array.freeze(short))).reason match
-          case LiraError.Reason.InvalidBlobStream(_) => true
-          case _                                     => false
+          case LiraError.Reason.MalformedPayload(_) => true
+          case _                                    => false
       . assert(identity)
 
       test(m"resolving an absent hash is an L104 error"):
@@ -721,7 +722,7 @@ object Tests extends Suite(m"Reliquary Tests"):
     suite(m"Container and verification"):
       test(m"an assembled lira reads back and verifies"):
         val report = Verification.install(Lira.read(makeLira()))
-        report.materialized.stdlib.map { pair => pair(0).universe }
+        report.materialized.stdlib.map { pair => pair(0).world }
       . assert(_ == scala.List(t"jvm", t"sjsir"))
 
       test(m"resource/1 atomizes exports by name and tracks content"):
@@ -978,7 +979,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       test(m"the sjsir overlay materializes without the deleted classfile"):
         val report = Verification.install(Lira.read(makeLira()))
-        val sjsir = report.materialized.stdlib.find { pair => pair(0).universe == t"sjsir" }
+        val sjsir = report.materialized.stdlib.find { pair => pair(0).world == t"sjsir" }
 
         sjsir.map { pair => pair(1).entries.map(_.path.text).stdlib }
       . assert(_ == scala.Some(scala.List(t"a/A.sjsir", t"a/A.tasty")))
@@ -1051,10 +1052,10 @@ object Tests extends Suite(m"Reliquary Tests"):
         data(data.length - 1) = (data(data.length - 1) ^ 0x55).toByte
 
         capture[LiraError](Verification.install(Lira.read(Array.unsafeFrozen(data)))).reason match
-          case LiraError.Reason.InvalidBlobStream(_) => true
-          case LiraError.Reason.PayloadHash          => true
-          case LiraError.Reason.PayloadLength(_)     => true
-          case _                                     => false
+          case LiraError.Reason.MalformedPayload(_) => true
+          case LiraError.Reason.PayloadHash         => true
+          case LiraError.Reason.PayloadLength(_)    => true
+          case _                                    => false
       . assert(identity)
 
     suite(m"Manifest signing"):
@@ -1158,16 +1159,20 @@ object Tests extends Suite(m"Reliquary Tests"):
           deps:         List[LiraManifest.Dependency]  = List(),
           version:      Optional[Semver]               = Unset,
           section:      List[Section]                  = List(),
-          integrations: List[LiraManifest.Integration] = List() )
+          integrations: List[LiraManifest.Integration] = List(),
+          profiles:     List[LiraManifest.Profile]     = List(),
+          toolchain:    List[LiraManifest.Tool]        = List() )
       :   LiraManifest =
 
         LiraManifest
           ( module      = module,
             version     = version,
             lineage     = lineage,
+            toolchain   = toolchain,
             owns        = owns,
             resource    = resources,
             api         = List(),
+            profile     = profiles,
             integration = integrations,
             dependency  = deps,
             section     = section,
@@ -1553,6 +1558,141 @@ object Tests extends Suite(m"Reliquary Tests"):
          UsesBlob.staleness(List(neo), List(Replacement(old, neo))))
       . assert(_ == (true, false))
 
+    suite(m"Joins, pins and coherence"):
+      def payloadStub(module: Text): LiraManifest.Payload =
+        LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob, encode(module)))
+
+      def stub
+        ( module:    Text,
+          lineage:   List[Data],
+          deps:      List[LiraManifest.Dependency] = List(),
+          section:   List[Section]                 = List(),
+          profiles:  List[LiraManifest.Profile]    = List(),
+          toolchain: List[LiraManifest.Tool]       = List() )
+      :   LiraManifest =
+
+        LiraManifest
+          ( module     = module,
+            lineage    = lineage,
+            toolchain  = toolchain,
+            api        = List(),
+            profile    = profiles,
+            dependency = deps,
+            section    = section,
+            payload    = payloadStub(module) )
+
+      val snapOne = LiraHash(LiraHash.Domain.Snapshot, encode(t"join-one"))
+      val snapTwo = LiraHash(LiraHash.Domain.Snapshot, encode(t"join-two"))
+      val jsSection = Section(t"js", tree = blob(encode(t"js-tree")))
+
+      def needy(): LiraManifest =
+        stub(t"alpha", List(snapOne),
+          deps = List(LiraManifest.Dependency(t"webstuff", snapTwo, serves = t"js")))
+
+      test(m"a serves dependency round-trips through the manifest"):
+        val bytes = LiraAssembler.assemble(t"consumer",
+          List(LiraAssembler.SectionInput(t"jvm", List((TreePath(t"a/A.class"), classA)))),
+          Discipline.Registry(List()),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+          dependency = List(LiraManifest.Dependency(t"native-bits", snapTwo,
+            universe = List(t"jvm"), serves = t"nir")))
+
+        Lira.read(bytes).manifest.dependency.stdlib.map: dependency =>
+          (dependency.module, dependency.serves, dependency.universe.stdlib)
+      . assert(_ == scala.List((t"native-bits", Optional(t"nir"), scala.List(t"jvm"))))
+
+      test(m"a join edge to a universe outside the target fails closure"):
+        val web = stub(t"webstuff", List(snapTwo), section = List(jsSection))
+
+        capture[LiraError](Buildpath(List(needy(), web)).validate(t"jvm")).reason
+      . assert(_ == LiraError.Reason.AbsentDependency(t"webstuff"))
+
+      test(m"a join edge into the target's joins passes closure"):
+        val web = stub(t"webstuff", List(snapTwo), section = List(jsSection))
+        Buildpath(List(needy(), web)).validate(t"jvm", joins = List(t"js")).stdlib.size
+      . assert(_ == 0)
+
+      test(m"a join edge to content the candidate does not offer fails closure"):
+        val web = stub(t"webstuff", List(snapTwo),
+          section = List(Section(t"jvm", tree = blob(encode(t"t")))))
+
+        capture[LiraError]:
+          Buildpath(List(needy(), web)).validate(t"jvm", joins = List(t"js"))
+        . reason
+      . assert(_ == LiraError.Reason.AbsentDependency(t"webstuff"))
+
+      test(m"a serving release resolves its own dependencies in its universe"):
+        // `webstuff` serves `js`, and its own dependency is scoped to `js` — so the target
+        // being `jvm` does not exempt it: applicability quantifies over the universe a release
+        // serves (§13.3), and the absent `polyfill` fails closure.
+        val web = stub(t"webstuff", List(snapTwo), section = List(jsSection),
+          deps = List(LiraManifest.Dependency(t"polyfill", snapOne, universe = List(t"js"))))
+
+        capture[LiraError]:
+          Buildpath(List(needy(), web)).validate(t"jvm", joins = List(t"js"))
+        . reason
+      . assert(_ == LiraError.Reason.AbsentDependency(t"polyfill"))
+
+      test(m"a pin selects a declared integration over the canonical one"):
+        val alpha = LiraManifest(
+          module      = t"alpha",
+          lineage     = List(snapOne),
+          api         = List(),
+          integration = List(
+            LiraManifest.Integration(t"slow", rank = 7L),
+            LiraManifest.Integration(t"fast", rank = 2L)),
+          section     = List(),
+          payload     = payloadStub(t"alpha"))
+
+        Buildpath(List(alpha)).resolved(t"jvm", pins = List((t"alpha", t"slow")))(0)(t"alpha")
+      . assert(_ == t"slow")
+
+      test(m"a pin naming an undeclared integration is refused"):
+        val alpha = stub(t"alpha", List(snapOne))
+
+        capture[LiraError]:
+          Buildpath(List(alpha)).resolved(t"jvm", pins = List((t"alpha", t"missing")))
+        . reason match
+            case LiraError.Reason.BadIntegration(_) => true
+            case _                                  => false
+      . assert(identity)
+
+      test(m"rule 6 imposes a declared profile's coherence over the whole path"):
+        object Strict extends EcosystemProfile:
+          def id: Text = t"strict/1"
+          def certifies: Set[Discipline.Guarantee] = Set(Discipline.Guarantee.Linkage)
+
+          def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
+          :   List[EcosystemProfile.Violation] raises DisciplineError =
+            List()
+
+          override def coherence(releases: List[LiraManifest]): List[Text] =
+            List.from:
+              releases.stdlib.filter(_.toolchain.stdlib.isEmpty).map: manifest =>
+                t"${manifest.module} records no toolchain"
+
+        val registry = EcosystemProfile.Registry(List(Strict))
+        val scala39 = List(LiraManifest.Tool(t"scala", t"3.9.0"))
+
+        val declarer = stub(t"alpha", List(snapOne),
+          profiles = List(LiraManifest.Profile(t"strict/1")), toolchain = scala39)
+
+        val bare = stub(t"beta", List(snapTwo))
+        val tooled = stub(t"beta", List(snapTwo), toolchain = scala39)
+
+        val failing =
+          capture[LiraError]:
+            Buildpath(List(declarer, bare)).validate(t"jvm", profiles = registry)
+          . reason match
+              case LiraError.Reason.ProfileViolated(t"strict/1", _) => true
+              case _                                                => false
+
+        val passing =
+          Buildpath(List(declarer, tooled)).validate(t"jvm", profiles = registry).stdlib.size
+
+        (failing, passing)
+      . assert(_ == (true, 0))
+
     suite(m"Derivative artifacts"):
       import distillate.*
       import galilei.*
@@ -1604,13 +1744,419 @@ object Tests extends Suite(m"Reliquary Tests"):
         (first.entries.stdlib.size, first.entries.stdlib == second.entries.stdlib)
       . assert(_ == (1, true))
 
-      test(m"materialization refuses a universe with no section"):
+      test(m"materialization refuses a universe with no section as a closure failure"):
         val cache = unsafely:
           t"/tmp/reliquary-test-${java.lang.System.nanoTime}".as[Path on Linux]
 
         val lira = Lira.read(makeLira())
 
-        capture[LiraError](Materializer.classpath(List(lira), t"nir", cache)).reason match
-          case LiraError.Reason.InvalidManifest(_) => true
+        capture[LiraError](Materializer.classpath(List(lira), t"nir", cache)).reason
+      . assert(_ == LiraError.Reason.AbsentDependency(t"example-core"))
+
+    suite(m"Publish-time verification"):
+      object Special extends Discipline:
+        def id: Text = t"special/1"
+        def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".special")
+        def domain: Discipline.Domain = Discipline.Domain.Universal
+        def keying: Discipline.Keying = Discipline.Keying.Declaration
+
+        def guarantees(universe: Text): Set[Discipline.Guarantee] =
+          Set(Discipline.Guarantee.Recompilation)
+
+        def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+        :   Atomization raises DisciplineError =
+
+          val atoms = content.map: (path, data) =>
+            Atom(path.text, AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(id), data))
+
+          Atomization.of(id, atoms)
+
+      def assembled(): Data =
+        LiraAssembler.assemble(t"example-core",
+          List(
+            LiraAssembler.SectionInput(t"jvm",
+              List((TreePath(t"a/A.class"), classA), (TreePath(t"a/A.special"), tastyA))),
+            LiraAssembler.SectionInput(t"sjsir",
+              List((TreePath(t"a/A.class"), classA), (TreePath(t"a/A.special"), tastyA)))),
+          Discipline.Registry(List(Special)),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")))
+
+      test(m"sections presenting different APIs are L108"):
+        capture[LiraError]:
+          LiraAssembler.assemble(t"example-core",
+            List(
+              LiraAssembler.SectionInput(t"jvm", List((TreePath(t"a/A.class"), classA))),
+              LiraAssembler.SectionInput(t"sjsir", List((TreePath(t"a/A.class"), sjsirA)))),
+            Discipline.Registry(List()),
+            toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")))
+
+        . reason match
+            case LiraError.Reason.ApiDivergence(_) => true
+            case _                                 => false
+      . assert(identity)
+
+      test(m"a declared profile with no implementation refuses assembly, L140"):
+        capture[LiraError]:
+          LiraAssembler.assemble(t"example-core",
+            List(LiraAssembler.SectionInput(t"jvm", List((TreePath(t"a/A.class"), classA)))),
+            Discipline.Registry(List()),
+            toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+            profile = List(LiraManifest.Profile(t"jvm/1")))
+
+        . reason
+      . assert(_ == LiraError.Reason.UnimplementedClaim(t"jvm/1"))
+
+      test(m"declared derivative hashes recompute at verification"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+        Derivative.verify(lira.manifest, report)
+        true
+      . assert(identity)
+
+      test(m"a tampered derivative hash is L138"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+
+        val bogus = blob(encode(t"not the derivative"))
+
+        val tampered = lira.manifest.copy(section = List.from:
+          lira.manifest.section.stdlib.map: section =>
+            section.copy(derivative = bogus))
+
+        capture[LiraError](Derivative.verify(tampered, report)).reason
+      . assert(_ == LiraError.Reason.BadDerivative(t"jvm"))
+
+      test(m"re-atomization accepts what the assembler produced"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+        Verification.reatomize(lira.manifest, report, List(Special))
+        true
+      . assert(identity)
+
+      test(m"a declared discipline with no implementation is L140 at re-atomization"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+
+        capture[LiraError](Verification.reatomize(lira.manifest, report, List())).reason
+      . assert(_ == LiraError.Reason.UnimplementedClaim(t"special/1"))
+
+      test(m"an atoms listing that does not recompute is L141"):
+        // The declared listing is computed over different bytes than the tree carries, which
+        // `install` cannot see — the listing parses and the snapshot matches it — and only
+        // re-atomization catches.
+        val context = Discipline.Context(t"jvm")
+        val registry = Discipline.Registry(List())
+        val wrong = List((TreePath(t"a/A.class"), sjsirA))
+
+        val tree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
+        val listing = AtomsBlob.encode(registry.atomize(wrong, context).stdlib.head)
+        val snapshot = Snapshot(registry.atomize(wrong, context))
+
+        val manifest = LiraManifest(
+          module    = t"example-core",
+          version   = revolution.Semver(0, 1, 0),
+          lineage   = List(snapshot),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+          api       = List(LiraManifest.Api(t"opaque/1", blob(listing))),
+          section   = List(Section(t"jvm", tree = blob(tree.encode))),
+          payload   = LiraManifest.Payload(t"brotli", 0L, blob(encode(t""))))
+
+        val lira = Lira.read(Lira.assemble(manifest, List(classA, tree.encode, listing)))
+        val report = Verification.install(lira)
+
+        capture[LiraError](Verification.reatomize(lira.manifest, report, List())).reason
+      . assert(_ == LiraError.Reason.AtomsMismatch(t"opaque/1"))
+
+      test(m"evidence reconstructs each section's content for profiles"):
+        val lira = Lira.read(assembled())
+        val report = Verification.install(lira)
+        val evidence = Verification.evidence(lira.manifest, report)
+
+        evidence.sections.stdlib.map: section =>
+          (section.world, section.content.stdlib.map(_(0).text))
+
+      . assert(_ == scala.List(
+          (t"jvm", scala.List(t"a/A.class", t"a/A.special")),
+          (t"sjsir", scala.List(t"a/A.class", t"a/A.special"))))
+
+      test(m"a universe-specific discipline claims nothing outside its domain"):
+        val scoped = new Discipline:
+          def id: Text = t"scoped/1"
+          def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".class")
+          def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"jvm"))
+          def keying: Discipline.Keying = Discipline.Keying.Membership
+
+          def guarantees(universe: Text): Set[Discipline.Guarantee] =
+            Set(Discipline.Guarantee.Linkage)
+
+          def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+          :   Atomization raises DisciplineError =
+
+            val atoms = content.map: (path, data) =>
+              Atom(path.text, AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(id), data))
+
+            Atomization.of(id, atoms)
+
+        val content = List((TreePath(t"a/A.class"), classA))
+        val registry = Discipline.Registry(List(scoped))
+
+        val jvm = registry.atomize(content, Discipline.Context(t"jvm"))
+        val sjsir = registry.atomize(content, Discipline.Context(t"sjsir"))
+
+        (jvm.stdlib.map(_.discipline), sjsir.stdlib.map(_.discipline))
+      . assert(_ == (scala.List(t"scoped/1"), scala.List(t"opaque/1")))
+
+    suite(m"Host contracts and requirements"):
+      def capabilities(rows: Text): Data =
+        encode(t"tel 1.0 ${LiraSchemas.capabilitiesSignature}\n\n$rows")
+
+      val hostContext = Discipline.Context(t"host")
+      val gitOnly = capabilities(t"capability\n  name git\n")
+
+      def atomsOf(data: Data): List[Atom] =
+        CapabilityDiscipline.atomize(List((TreePath(t"capabilities"), data)), hostContext).atoms
+
+      def hashesOf(data: Data): scala.List[Text] =
+        atomsOf(data).stdlib.map { atom => LiraHash.text(atom.valueHash) }
+
+      test(m"a capability listing atomizes to one rigid atom per row"):
+        val listing = capabilities(t"capability\n  name git\ncapability\n  name sh\n")
+
+        atomsOf(listing).stdlib.map { atom => (atom.key, atom.atomClass) }.toSet
+      . assert(_ == scala.collection.immutable.Set
+          ((t"git", AtomClass.Rigid), (t"sh", AtomClass.Rigid)))
+
+      test(m"a probe is advisory and enters no atom"):
+        hashesOf(capabilities(t"capability\n  name git\n  probe  command -v git\n"))
+        == hashesOf(gitOnly)
+      . assert(identity)
+
+      test(m"a version predicate folds into the atom's value"):
+        hashesOf(capabilities(t"capability\n  name git\n  version  >= 2.30\n"))
+        != hashesOf(gitOnly)
+      . assert(identity)
+
+      test(m"unsorted capability rows are rejected"):
+        val listing = capabilities(t"capability\n  name sh\ncapability\n  name git\n")
+
+        capture[DisciplineError](atomsOf(listing)).reason match
+          case DisciplineError.Reason.Malformed(_) => true
           case _                                   => false
       . assert(identity)
+
+      test(m"a duplicated capability is rejected"):
+        val listing = capabilities(t"capability\n  name git\ncapability\n  name git\n")
+
+        capture[DisciplineError](atomsOf(listing)).reason match
+          case DisciplineError.Reason.Malformed(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"a host contract assembles, reads and verifies"):
+        val bytes = LiraAssembler.assemble(t"posix",
+          List(LiraAssembler.SectionInput(t"host",
+            List((TreePath(t"capabilities"), gitOnly)))),
+          Discipline.Registry(List(CapabilityDiscipline)),
+          toolchain = List(LiraManifest.Tool(t"lira", t"0.1")))
+
+        val lira = Lira.read(bytes)
+        Verification.install(lira)
+        (lira.manifest.hostContract, lira.manifest.section.stdlib.map(_.world))
+      . assert(_ == (true, scala.List(t"host")))
+
+      // L135's four exclusions, each on a hand-built manifest, since the assembler itself
+      // refuses to produce one.
+      def handBuilt
+        ( integrations:  List[LiraManifest.Integration] = List(),
+          integrationId: Optional[Text]                 = Unset,
+          dependencies:  List[LiraManifest.Dependency]  = List(),
+          requires:      List[LiraManifest.Requires]    = List(),
+          extraSection:  Boolean                        = false )
+      :   Data =
+
+        val tree = LiraTree.of(List(TreeEntry(TreePath(t"capabilities"), blob(gitOnly))))
+
+        val atomization =
+          CapabilityDiscipline.atomize(List((TreePath(t"capabilities"), gitOnly)), hostContext)
+
+        val atomsData = AtomsBlob.encode(atomization)
+        val snapshot = Snapshot(List(atomization))
+        val jvmTree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
+
+        val sections =
+          val host = Section(t"host", integrationId, blob(tree.encode), requires = requires)
+
+          if extraSection
+          then List(host, Section(t"jvm", integrationId, blob(jvmTree.encode)))
+          else List(host)
+
+        val manifest = LiraManifest(
+          module      = t"posix",
+          version     = revolution.Semver(0, 1, 0),
+          lineage     = List(snapshot),
+          toolchain   = List(LiraManifest.Tool(t"lira", t"0.1")),
+          api         = List(LiraManifest.Api(t"capability/1", blob(atomsData))),
+          integration = integrations,
+          dependency  = dependencies,
+          section     = sections,
+          payload     = LiraManifest.Payload(t"brotli", 0L, blob(encode(t""))))
+
+        Lira.assemble(manifest,
+          List(gitOnly, tree.encode, atomsData, classA, jvmTree.encode))
+
+      def shapeFailure(bytes: Data): Boolean =
+        capture[LiraError](Verification.install(Lira.read(bytes))).reason match
+          case LiraError.Reason.BadHostContract(_) => true
+          case _                                   => false
+
+      test(m"a host contract with a second section is L135"):
+        shapeFailure(handBuilt(extraSection = true))
+      . assert(identity)
+
+      test(m"a host contract declaring an integration is L135"):
+        shapeFailure(handBuilt(
+          integrations = List(LiraManifest.Integration(t"alt")), integrationId = t"alt"))
+      . assert(identity)
+
+      test(m"a host contract declaring a dependency is L135"):
+        shapeFailure(handBuilt(dependencies =
+          List(LiraManifest.Dependency(t"other", blob(encode(t"snap"))))))
+      . assert(identity)
+
+      test(m"a host contract carrying requirements is L135"):
+        shapeFailure(handBuilt(requires =
+          List(LiraManifest.Requires(t"other", blob(encode(t"snap"))))))
+      . assert(identity)
+
+      test(m"section requirements round-trip through the manifest"):
+        val requirement =
+          LiraManifest.Requires(t"posix", blob(encode(t"snap")), uses = blob(encode(t"uses")))
+
+        val bytes = LiraAssembler.assemble(t"consumer",
+          List(LiraAssembler.SectionInput(t"jvm",
+            List((TreePath(t"a/A.class"), classA)), requires = List(requirement))),
+          Discipline.Registry(List()),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")))
+
+        val back = Lira.read(bytes).manifest.section.stdlib.head.requires.stdlib
+
+        back.map: entry =>
+          (entry.module, LiraHash.text(entry.api), entry.uses.let(LiraHash.text(_)))
+      . assert(_ == scala.List(
+          (t"posix", LiraHash.text(blob(encode(t"snap"))),
+           Optional(LiraHash.text(blob(encode(t"uses")))))))
+
+      // Rule 7 (§13.3, hosts.md §7), over stub manifests: satisfaction is manifest-decidable,
+      // spanning arrives through the caller-supplied lookups.
+      val snapA = LiraHash(LiraHash.Domain.Snapshot, encode(t"contract-a"))
+      val snapB = LiraHash(LiraHash.Domain.Snapshot, encode(t"contract-b"))
+      val usesHash = blob(encode(t"uses-blob"))
+
+      def payloadStub(module: Text): LiraManifest.Payload =
+        LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob, encode(module)))
+
+      def library(requires: List[LiraManifest.Requires], module: Text = t"consumer")
+      :   LiraManifest =
+        LiraManifest(
+          module  = module,
+          lineage = List(snapB),
+          api     = List(),
+          section = List(Section(t"jvm", tree = blob(encode(t"tree")), requires = requires)),
+          payload = payloadStub(module))
+
+      def contractStub(module: Text, lineage: List[Data]): LiraManifest =
+        LiraManifest(
+          module  = module,
+          lineage = lineage,
+          api     = List(),
+          section = List(Section(t"host", tree = blob(encode(t"host-tree")))),
+          payload = payloadStub(module))
+
+      test(m"a requirement satisfied by the contract's lineage passes rule 7"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA)))
+        val contract = contractStub(t"posix", List(snapA))
+        Buildpath(List(lib)).validate(t"jvm", contracts = List(contract)).stdlib.size
+      . assert(_ == 0)
+
+      test(m"an unsatisfiable requirement is L136"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA)))
+        val contract = contractStub(t"posix", List(snapB))
+
+        capture[LiraError]:
+          Buildpath(List(lib)).validate(t"jvm", contracts = List(contract))
+        . reason
+      . assert(_ == LiraError.Reason.UnsatisfiedRequirement(t"posix"))
+
+      test(m"validation without a contract reports rule 7 as pending"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA)))
+
+        Buildpath(List(lib)).validate(t"jvm").stdlib.exists: advisory =>
+          advisory match
+            case LiraAdvisory.HostPending(modules) => modules.stdlib == scala.List(t"posix")
+            case _                                 => false
+      . assert(identity)
+
+      test(m"a requirement naming a library module is L137"):
+        val lib = library(List(LiraManifest.Requires(t"other", snapA)))
+        val other = library(List(), module = t"other")
+        val contract = contractStub(t"posix", List(snapA))
+
+        capture[LiraError]:
+          Buildpath(List(lib, other)).validate(t"jvm", contracts = List(contract))
+        . reason
+      . assert(_ == LiraError.Reason.NotHostContract(t"other"))
+
+      test(m"a non-contract given as a contract is L137"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA)))
+        val fake = library(List(), module = t"posix")
+
+        capture[LiraError]:
+          Buildpath(List(lib)).validate(t"jvm", contracts = List(fake))
+        . reason
+      . assert(_ == LiraError.Reason.NotHostContract(t"posix"))
+
+      test(m"cross-contract spanning satisfies a requirement"):
+        // The requirement names `posix`, whose snapshot no given contract carries; the used-set
+        // is contained in a *different* module's atom set, which hosts.md §7 accepts because
+        // atoms are content-addressed and module-blind.
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA, uses = usesHash)))
+        val javalib = contractStub(t"scalajs-javalib", List(snapB))
+
+        val atoms = { (module: Text) =>
+          if module == t"scalajs-javalib"
+          then scala.collection.immutable.Set(t"h1", t"h2")
+          else Unset
+        }
+
+        val used = { (data: Data) =>
+          if Blob.compare(data, usesHash) == 0
+          then scala.collection.immutable.Set(t"h1")
+          else Unset
+        }
+
+        Buildpath(List(lib))
+        . validate(t"jvm", contracts = List(javalib), atoms = atoms, used = used)
+        . stdlib.size
+      . assert(_ == 0)
+
+      test(m"spanning fails where the used-set is not contained"):
+        val lib = library(List(LiraManifest.Requires(t"posix", snapA, uses = usesHash)))
+        val javalib = contractStub(t"scalajs-javalib", List(snapB))
+
+        val atoms = { (module: Text) =>
+          if module == t"scalajs-javalib"
+          then scala.collection.immutable.Set(t"h2")
+          else Unset
+        }
+
+        val used = { (data: Data) =>
+          if Blob.compare(data, usesHash) == 0
+          then scala.collection.immutable.Set(t"h1")
+          else Unset
+        }
+
+        capture[LiraError]:
+          Buildpath(List(lib))
+          . validate(t"jvm", contracts = List(javalib), atoms = atoms, used = used)
+        . reason
+      . assert(_ == LiraError.Reason.UnsatisfiedRequirement(t"posix"))

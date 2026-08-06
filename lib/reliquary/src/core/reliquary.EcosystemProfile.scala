@@ -33,6 +33,7 @@
 package reliquary
 
 import anticipation.*
+import anticipation.*
 import contingency.*
 import gossamer.*
 import rudiments.*
@@ -45,7 +46,7 @@ object EcosystemProfile:
   // is handed, because a profile that checks structural invariants over a universe's content
   // (§11.6, clause 2) needs exactly what a discipline over that universe would need.
   case class Section
-    ( universe:    Text,
+    ( world:       Text,
       content:     List[(TreePath, Data)],
       integration: Optional[Text] = Unset,
       classpath:   List[Text]     = List() )
@@ -58,12 +59,17 @@ object EcosystemProfile:
     ( sections: List[Section],
       manifest: Optional[LiraManifest] = Unset ):
 
-    def section(universe: Text): Optional[Section] =
-      sections.stdlib.find { section => section.universe == universe }.getOrElse(Unset)
+    def section(world: Text): Optional[Section] =
+      sections.stdlib.find { section => section.world == world }.getOrElse(Unset)
 
   // A predicate failure, at the guarantee level it breaks. A profile reports what it found; the
   // audit below decides whether the release accounted for it.
   case class Violation(level: Discipline.Guarantee, detail: Text)
+
+  // What an audit found short of a violation: the profiles it could not check, and the advisory
+  // findings its profiles surfaced (`jvm/1`'s changed constants are the motivating case) — real
+  // information for a publisher, but no failure of any predicate.
+  case class Audit(unchecked: List[Text], advisories: List[Text])
 
   class Registry(profiles: List[EcosystemProfile]):
     def all: List[EcosystemProfile] = profiles
@@ -90,25 +96,40 @@ object EcosystemProfile:
       declared: List[LiraManifest.Profile],
       previous: Evidence,
       next:     Evidence )
-  :   List[Text] raises LiraError raises DisciplineError =
+  :   Audit raises LiraError raises DisciplineError =
 
     val unchecked = scala.collection.mutable.ListBuffer[Text]()
+    val advisories = scala.collection.mutable.ListBuffer[Text]()
 
     declared.stdlib.foreach: record =>
       registry(record.id) match
         case profile: EcosystemProfile =>
           val recorded = record.breaks.stdlib.map(guarantee(_)).toSet
+          val violations = profile.check(previous, next).stdlib
 
-          profile.check(previous, next).stdlib.foreach: violation =>
-            if !profile.certifies.stdlib.contains(violation.level)
-            then abort(LiraError(Reason.ProfileViolated(record.id, violation.detail)))
+          // Every offense is gathered before either abort, so the error a publisher sees names
+          // the whole finding for its rule, not merely the first violation encountered.
+          val uncertified = violations.filter: violation =>
+            !profile.certifies.stdlib.contains(violation.level)
 
-            if !recorded.contains(violation.level)
-            then abort(LiraError(Reason.UnrecordedBreak(record.id, keyword(violation.level))))
+          if !uncertified.isEmpty
+          then
+            val details = Text(uncertified.map(_.detail.s).mkString("; "))
+            abort(LiraError(Reason.ProfileViolated(record.id, details)))
+
+          val unrecorded = violations.map(_.level).distinct.filter: level =>
+            !recorded.contains(level)
+
+          if !unrecorded.isEmpty
+          then
+            val levels = Text(unrecorded.map(keyword(_).s).mkString(", "))
+            abort(LiraError(Reason.UnrecordedBreak(record.id, levels)))
+
+          advisories ++= profile.advisories(previous, next).stdlib
 
         case _ => unchecked += record.id
 
-    List.from(unchecked.toList)
+    Audit(List.from(unchecked.toList), List.from(advisories.toList))
 
   // Both vocabularies omit `behavior` for the same reason — no hash scheme certifies it (§11.5,
   // §18) — so the mapping is total in both directions.
@@ -140,3 +161,15 @@ trait EcosystemProfile:
 
   def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
   :   List[EcosystemProfile.Violation] raises DisciplineError
+
+  // Findings short of violations, surfaced for reporting (`jvm.md` §7's changed constants are
+  // the motivating case). Advisory only: nothing here affects the audit's verdict.
+  def advisories(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
+  :   List[Text] raises DisciplineError =
+    List()
+
+  // §13.3 rule 6: the predicates this profile imposes over a whole buildpath, decidable from
+  // manifests alone — a profile predicate requiring payload inspection is a publish-time check
+  // (§16), not a buildpath rule. Toolchain coherence (`jvm.md` §6) is the motivating case.
+  // Returns violation details; an empty list is coherence.
+  def coherence(releases: List[LiraManifest]): List[Text] = List()

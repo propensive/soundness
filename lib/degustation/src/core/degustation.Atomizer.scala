@@ -76,12 +76,15 @@ object Atomizer:
 
     def tag(out: java.io.ByteArrayOutputStream, char: Char): Unit = out.write(char.toInt)
 
-    // The subset of modifier flags that consumers can depend on, in a fixed bit order.
+    // The subset of modifier flags that consumers can depend on, in a fixed bit order. The
+    // `exported` flag is deliberately absent (`tasty.md` §9): an `export` forwarder atomizes
+    // identically to the equivalent hand-written forwarder, so converting between them is a
+    // non-event.
     def flagBits(symbol: Symbol): Long =
       val flags = symbol.flags
 
       scala.List(
-        Flags.Abstract, Flags.Case, Flags.Deferred, Flags.Enum, Flags.Erased, Flags.Exported,
+        Flags.Abstract, Flags.Case, Flags.Deferred, Flags.Enum, Flags.Erased,
         Flags.Final, Flags.Given, Flags.Implicit, Flags.Infix, Flags.Inline, Flags.Lazy,
         Flags.Macro, Flags.Module, Flags.Mutable, Flags.Opaque, Flags.Open, Flags.Protected,
         Flags.Sealed, Flags.Trait, Flags.Transparent)
@@ -258,7 +261,11 @@ object Atomizer:
     def excluded(symbol: Symbol): Boolean =
       val flags = symbol.flags
 
-      val hidden = flags.is(Flags.Private) || flags.is(Flags.PrivateLocal)
+      // Qualified-private (`private[scope]`) members are included, conservatively (`tasty.md`
+      // §5): macros and derivation can reach them from dependency TASTy, so only unqualified
+      // `private` and `private[this]` are outside the API.
+      val qualified = symbol.privateWithin.isDefined
+      val hidden = (flags.is(Flags.Private) && !qualified) || flags.is(Flags.PrivateLocal)
       val internal = flags.is(Flags.Artifact) || symbol.isLocalDummy || symbol.isNoSymbol
       hidden || internal
 

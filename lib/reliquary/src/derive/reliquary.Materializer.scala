@@ -59,9 +59,20 @@ object Materializer:
   def classpath(liras: List[Lira], universe: Text, cache: Path on Linux)
   :   LocalClasspath raises LiraError raises IoError raises StreamError =
 
-    val (assignment, _) = Buildpath(liras.map(_.manifest)).resolved(universe)
+    // `host` sections are never materialized onto any artifact path (§13.5): a host contract's
+    // content describes the environment and joins nothing.
+    if universe == t"host"
+    then abort(LiraError(Reason.BadHostContract(t"the host world derives no artifacts")))
 
-    val jars = liras.stdlib.map: lira =>
+    val path = Buildpath(liras.map(_.manifest))
+    val (assignment, _) = path.resolved(universe)
+
+    // §13.5: one artifact set *per universe of the target*. A release serving a joined universe
+    // (named by a `serves` record, §13.2) belongs to that universe's derivation, not this one.
+    val serving = liras.stdlib.filter: lira =>
+      path.serving(universe, lira.manifest.module) == universe
+
+    val jars = serving.map: lira =>
       val identity = lira.manifest.payload.hash.serialize[Hex]
       val integration = assignment(lira.manifest.module)
 
@@ -79,8 +90,11 @@ object Materializer:
         val tree = report.tree(universe, integration) match
           case tree: LiraTree => tree
 
+          // §13.5 calls this a validation-time error, and it is closure's kind (L113): a
+          // release with no section serving the target universe fails the buildpath exactly as
+          // an absent module does. The manifest itself is not at fault.
           case _ =>
-            abort(LiraError(Reason.InvalidManifest(t"the release has no $universe section")))
+            abort(LiraError(Reason.AbsentDependency(lira.manifest.module)))
 
         val data = Derivative.jar(tree, report.blobstore)
 
