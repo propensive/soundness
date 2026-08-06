@@ -32,5 +32,4 @@
                                                                                                   */
 package soundness
 
-export anthology.{Apk, apkEdges, apkLinkages, apkOptions, ApkConfiguration, Axml, ApkManifest,
-    ApkSigner}
+export anthology.{Apk, apkEdges, apkOptions, ApkConfiguration, Axml, ApkManifest, ApkSigner}

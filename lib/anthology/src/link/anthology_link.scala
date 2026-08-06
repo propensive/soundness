@@ -55,40 +55,94 @@ import rudiments.*
 import serpentine.*
 
 object linkerOptions:
-  private def sjs[artifact <: Artifact.Sjs](edit: StandardConfig => StandardConfig)
-  :   Linker.Option[artifact] =
+  private def applicable(format: Format): Boolean =
+    format.isInstanceOf[Js] || format == Wasm || format.isInstanceOf[Wasi]
 
-    Linker.Option(edit)
+  private def sjs(edit: StandardConfig => StandardConfig): Setting =
+    Setting[StandardConfig](applicable)(edit)
 
-  val checkIr: Linker.Option[Artifact.Sjs] = sjs(_.withCheckIR(true))
-  val sourceMaps: Linker.Option[Artifact.Sjs] = sjs(_.withSourceMap(true))
+  val checkIr: Setting = sjs(_.withCheckIR(true))
+  val sourceMaps: Setting = sjs(_.withSourceMap(true))
 
   object esVersion:
-    private def of(version: ESVersion): Linker.Option[Artifact.Sjs] =
-      sjs(_.withESFeatures(_.withESVersion(version)))
+    private def of(version: ESVersion): Setting = sjs(_.withESFeatures(_.withESVersion(version)))
 
-    val es2015: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2015)
-    val es2016: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2016)
-    val es2017: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2017)
-    val es2018: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2018)
-    val es2019: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2019)
-    val es2020: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2020)
-    val es2021: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2021)
-    val es2022: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2022)
+    val es2015: Setting = of(ESVersion.ES2015)
+    val es2016: Setting = of(ESVersion.ES2016)
+    val es2017: Setting = of(ESVersion.ES2017)
+    val es2018: Setting = of(ESVersion.ES2018)
+    val es2019: Setting = of(ESVersion.ES2019)
+    val es2020: Setting = of(ESVersion.ES2020)
+    val es2021: Setting = of(ESVersion.ES2021)
+    val es2022: Setting = of(ESVersion.ES2022)
 
   object optimize:
-    val none: Linker.Option[Artifact.Sjs] = sjs(_.withOptimizer(false))
-    val fast: Linker.Option[Artifact.Sjs] = sjs(_.withOptimizer(true))
+    val none: Setting = sjs(_.withOptimizer(false))
+    val fast: Setting = sjs(_.withOptimizer(true))
 
-// The sjsir link family: JavaScript, browser Wasm and WASI components share the Scala.js
-// linker pipeline, differing only in the configuration they mandate and the artifact they
-// produce. Since these linkages live outside `Linkage`'s implicit scope, import them where
-// sjsir artifacts are linked: `import sjsLinkages.given`.
-object sjsLinkages:
-  // The link pipeline itself, shared between the one-hop `Linkage` family and the toolchain's
-  // `sjsEdges` tools: drives the Scala.js linker over the emission directory and its classpath,
-  // and returns the artifact's path within the output directory.
-  private[anthology] def link0
+// The sjsir edges of a toolchain: `Sjsir` to each JavaScript module system, to browser Wasm,
+// and—when the WASI toolchain is probed and a WIT world given—to a WASI 0.2 component. All
+// share the Scala.js linker and its `StandardConfig` settings.
+object sjsEdges:
+  def apply(): List[Edge] =
+    List
+      ( edge(Js(Js.Module.Es), _.withModuleKind(ModuleKind.ESModule), _ / "main.js"),
+        edge(Js(Js.Module.CommonJs), _.withModuleKind(ModuleKind.CommonJSModule), _ / "main.js"),
+        edge(Js(Js.Module.Script), _.withModuleKind(ModuleKind.NoModule), _ / "main.js"),
+        edge
+          ( Wasm,
+            _.withModuleKind(ModuleKind.ESModule)
+             .withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true)),
+            _ / "main.wasm" ) )
+
+  // The component edge exists only where the WASI toolchain (`wasm-tools`, `wit-bindgen`) has
+  // been probed and a WIT world chosen; a WASI link whose native tooling is absent is not
+  // expressible.
+  def wasi()(using toolchain: WasiToolchain, world: WitWorld): Edge =
+    edge(Wasi(Wasi.Version.Wasip2), wasiConfig(world), _ / "main.wasm")
+
+  // The configuration mandated by a WASI component link against the given world.
+  private def wasiConfig(world: WitWorld): StandardConfig => StandardConfig =
+    _.withModuleKind(ModuleKind.WasmComponent)
+    . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
+    . withWasmFeatures: features =>
+        features
+        . withWitDirectory(Some(world.directory.encode.s))
+        . withWitWorld(Some(world.world.s))
+
+  private def edge
+    ( node:     Format.Application,
+      base:     StandardConfig => StandardConfig,
+      artifact: (Path on Linux) => (Path on Linux) )
+  :   Edge =
+
+    Edge(Universe.Sjsir, node, SjsTool(node, base, artifact))
+
+  private case class SjsTool
+    ( node:     Format.Application,
+      base:     StandardConfig => StandardConfig,
+      artifact: (Path on Linux) => (Path on Linux) )
+  extends Tool:
+    type Settings = StandardConfig
+
+    def name: Text = node.id
+    def initial: StandardConfig = base(StandardConfig())
+
+    def run
+      ( settings:    StandardConfig,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
+
+      val (directory, classpath) = input.emission(node)
+      Deliverable.Product(link0(settings, directory, classpath, entryPoints, out, artifact))
+
+  // The link pipeline itself: drives the Scala.js linker over the emission directory and its
+  // classpath, and returns the artifact's path within the output directory.
+  private def link0
     ( form:        StandardConfig,
       directory:   Path on Linux,
       classpath:   LocalClasspath,
@@ -132,107 +186,3 @@ object sjsLinkages:
 
     catch case suc.NonFatal(error) =>
       abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
-
-  // The configuration mandated by a WASI component link against the given world.
-  private[anthology] def wasiConfig(world: WitWorld): StandardConfig => StandardConfig =
-    _.withModuleKind(ModuleKind.WasmComponent)
-    . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
-    . withWasmFeatures: features =>
-        features
-        . withWitDirectory(Some(world.directory.encode.s))
-        . withWitWorld(Some(world.world.s))
-
-  private class Sjs[artifact <: Artifact.Sjs]
-    ( base: StandardConfig => StandardConfig, artifact: (Path on Linux) => (Path on Linux) )
-  extends Linkage[artifact]:
-    type Origin = Universe.Sjsir
-    private[anthology] type Form = StandardConfig
-    private[anthology] def initial: StandardConfig = base(StandardConfig())
-
-    private[anthology] def link
-      ( form:        StandardConfig,
-        compilation: Compilation[Universe.Sjsir],
-        entryPoints: List[Linker.EntryPoint],
-        out:         Path on Linux )
-    :   Path on Linux logs LinkEvent raises LinkError =
-
-      link0(form, compilation.out, compilation.classpath, entryPoints, out, artifact)
-
-  given jsEs: (Linkage[Artifact.Js["es"]] from Universe.Sjsir) =
-    Sjs(_.withModuleKind(ModuleKind.ESModule), _ / "main.js")
-
-  given jsCommonJs: (Linkage[Artifact.Js["commonjs"]] from Universe.Sjsir) =
-    Sjs(_.withModuleKind(ModuleKind.CommonJSModule), _ / "main.js")
-
-  given jsScript: (Linkage[Artifact.Js["script"]] from Universe.Sjsir) =
-    Sjs(_.withModuleKind(ModuleKind.NoModule), _ / "main.js")
-
-  given wasm: (Linkage[Artifact.Wasm] from Universe.Sjsir) =
-    Sjs
-      ( _.withModuleKind(ModuleKind.ESModule)
-        . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true)),
-        _ / "main.wasm" )
-
-  given wasi(using toolchain: WasiToolchain, world: WitWorld)
-  :   (Linkage[Artifact.Wasi[0.2]] from Universe.Sjsir) =
-
-    wasiLinkage(world)
-
-  // The WASI linkage with its `Form` still visible, so a linkage that wraps a component — the OCI
-  // image family in the `oci` module — can reuse both its configuration and its link step. The
-  // `given` above widens `Form` back to the abstract member, which is what callers should see.
-  private[anthology] def wasiLinkage(world: WitWorld)
-  :   Linkage[Artifact.Wasi[0.2]] { type Origin = Universe.Sjsir; type Form = StandardConfig } =
-
-    Sjs(wasiConfig(world), _ / "main.wasm")
-
-// The sjsir edges of a toolchain: `Sjsir` to each JavaScript module system, to browser Wasm,
-// and—when the WASI toolchain is probed and a WIT world given—to a WASI 0.2 component. All
-// share the Scala.js linker and its `StandardConfig` settings.
-object sjsEdges:
-  def apply(): List[Edge] =
-    List
-      ( edge(Js(Js.Module.Es), _.withModuleKind(ModuleKind.ESModule), _ / "main.js"),
-        edge(Js(Js.Module.CommonJs), _.withModuleKind(ModuleKind.CommonJSModule), _ / "main.js"),
-        edge(Js(Js.Module.Script), _.withModuleKind(ModuleKind.NoModule), _ / "main.js"),
-        edge
-          ( Wasm,
-            _.withModuleKind(ModuleKind.ESModule)
-             .withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true)),
-            _ / "main.wasm" ) )
-
-  // The component edge exists only where the WASI toolchain (`wasm-tools`, `wit-bindgen`) has
-  // been probed and a WIT world chosen, exactly as the one-hop `wasi` linkage is conditional.
-  def wasi()(using toolchain: WasiToolchain, world: WitWorld): Edge =
-    edge(Wasi(Wasi.Version.Wasip2), sjsLinkages.wasiConfig(world), _ / "main.wasm")
-
-  private def edge
-    ( node:     Format.Application,
-      base:     StandardConfig => StandardConfig,
-      artifact: (Path on Linux) => (Path on Linux) )
-  :   Edge =
-
-    Edge(Universe.Sjsir, node, SjsTool(node, base, artifact))
-
-  private case class SjsTool
-    ( node:     Format.Application,
-      base:     StandardConfig => StandardConfig,
-      artifact: (Path on Linux) => (Path on Linux) )
-  extends Tool:
-    type Settings = StandardConfig
-
-    def name: Text = node.id
-    def initial: StandardConfig = base(StandardConfig())
-
-    def run
-      ( settings:    StandardConfig,
-        input:       Deliverable,
-        entryPoints: List[EntryPoint],
-        out:         Path on Linux )
-      ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
-    :   Deliverable =
-
-      val (directory, classpath) = input.emission(node)
-      val linked = sjsLinkages.link0(settings, directory, classpath, entryPoints, out, artifact)
-      Deliverable.Product(linked)

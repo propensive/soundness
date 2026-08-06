@@ -62,8 +62,8 @@ import workingDirectories.javaWorkingDirectory
 object Bundler:
   // The classpath of the running application, as introspected from the thread-context
   // classloader (or the `java.class.path` system property as a fallback). A staging rig pairs
-  // this with its compiled output as a `Compilation` and links it into a self-contained JAR
-  // with `Linker[Artifact.Jar]`, so the JAR carries the rig's own executor and dependencies.
+  // this with its compiled output as an `Emission` and packages it into a self-contained JAR
+  // through the `Jar` edge, so the JAR carries the rig's own executor and dependencies.
   def applicationClasspath: LocalClasspath =
     val entries = classloaders.threadContextClassloader.classpath.match
       case classpath: LocalClasspath => classpath.entries

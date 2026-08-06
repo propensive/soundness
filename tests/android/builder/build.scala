@@ -41,13 +41,14 @@ import termcapDefinitions.basicTermcap
 import probates.cancelProbate
 import strategies.throwUnsafely
 import threading.platformThreading
+import workingDirectories.javaWorkingDirectory
 
 import java.nio.file.{Files, Paths}
 
 // The build driver for the Android sample: it compiles `dice.scala` against the Android platform
-// stubs and the facade runtime with anthology's `Scalac`, then links the compilation either as a
-// bare `Artifact.Dex` (for the SDK-tool packaging path) or — with no Android SDK tool whatsoever
-// — as a complete, signed `Artifact.Apk`.
+// stubs and the facade runtime with anthology's `Scalac`, then follows the toolchain path from
+// the compilation either to a bare `Dex` archive (for the SDK-tool packaging path) or — with no
+// Android SDK tool whatsoever — through `Dex` to a complete, signed `Apk`.
 //
 // Arguments: <android.jar> <output directory> <app source file> <classpath file (one entry per
 // line: the app's compile-and-dex runtime, excluding the platform)>.
@@ -103,12 +104,16 @@ object build:
 def buildDice(androidJar: String, outDir: String, sourceDir: String, classpathFile: String)
 :   Unit =
 
-  import dexLinkages.given
   val compiled = build.compilation(androidJar, outDir, sourceDir, classpathFile)
   val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
 
-  val artifact =
-    Linker[Artifact.Dex](List(dexOptions.minApi(26), dexOptions.mode.release)).link(compiled, out)
+  val artifact = supervise:
+    Toolchain(dexEdges()).produce
+      ( Deliverable.Emission(compiled.out, compiled.classpath),
+        Universe.Classfile,
+        Dex,
+        out,
+        List(dexOptions.minApi(26), dexOptions.mode.release) )
 
   Out.println(t"linked $artifact")
 
@@ -118,21 +123,24 @@ def buildDice(androidJar: String, outDir: String, sourceDir: String, classpathFi
 def buildApk(androidJar: String, outDir: String, sourceDir: String, classpathFile: String)
 :   Unit =
 
-  import apkLinkages.given
   val compiled = build.compilation(androidJar, outDir, sourceDir, classpathFile)
   val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
 
-  val artifact =
-    Linker[Artifact.Apk]
-      ( List
+  val artifact = supervise:
+    Toolchain(dexEdges(), apkEdges()).produce
+      ( Deliverable.Emission(compiled.out, compiled.classpath),
+        Universe.Classfile,
+        Apk,
+        out,
+        List
           ( apkOptions.minApi(26),
+            dexOptions.mode.release,
             apkOptions.targetApi(36),
             apkOptions.packageName(t"dev.soundness.dice"),
             apkOptions.label(t"Dice Roller"),
             apkOptions.version(1, t"1.0"),
             apkOptions.permission(t"android.permission.VIBRATE") ),
-        List(Linker.EntryPoint(Fqcn(t"dice.DiceActivity"))) )
-    . link(compiled, out)
+        List(EntryPoint(Fqcn(t"dice.DiceActivity"))) )
 
   Out.println(t"linked $artifact")
 
@@ -142,19 +150,22 @@ def buildApk(androidJar: String, outDir: String, sourceDir: String, classpathFil
 def buildSketch(androidJar: String, outDir: String, sourceDir: String, classpathFile: String)
 :   Unit =
 
-  import apkLinkages.given
   val compiled = build.compilation(androidJar, outDir, sourceDir, classpathFile)
   val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
 
-  val artifact =
-    Linker[Artifact.Apk]
-      ( List
+  val artifact = supervise:
+    Toolchain(dexEdges(), apkEdges()).produce
+      ( Deliverable.Emission(compiled.out, compiled.classpath),
+        Universe.Classfile,
+        Apk,
+        out,
+        List
           ( apkOptions.minApi(26),
+            dexOptions.mode.release,
             apkOptions.targetApi(36),
             apkOptions.packageName(t"dev.soundness.sketch"),
             apkOptions.label(t"Sketch"),
             apkOptions.version(1, t"1.0") ),
-        List(Linker.EntryPoint(Fqcn(t"sketch.SketchActivity"))) )
-    . link(compiled, out)
+        List(EntryPoint(Fqcn(t"sketch.SketchActivity"))) )
 
   Out.println(t"linked $artifact")

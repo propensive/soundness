@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anthology.{nativeEdges, NativeLinkage, nativeOptions, Triple}
+export anthology.{nativeEdges, nativeOptions, Triple}

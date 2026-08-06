@@ -98,13 +98,6 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
 
   def targeting[universe2 <: Universe]: Scalac[version, universe2] = new Scalac(options)
 
-  // Retargets this configuration at the universe from which the given artifact is produced,
-  // for callers who think in terms of the end product rather than its intermediate form.
-  def producing[artifact <: Artifact](using provenance: Provenance[artifact])
-  :   Scalac[version, provenance.Origin] =
-
-    new Scalac(options)
-
   def on(classpath: LocalClasspath): Scalac.Setup[version, universe] =
     Scalac.Setup(this, classpath)
 

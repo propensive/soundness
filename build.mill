@@ -3131,7 +3131,7 @@ object wasm extends Module:
 
 // The Android sample (`tests/android`; instructions in tests/android/README.md): builds Google's
 // Dice Roller codelab as a Soundness app — Scala source calling Android and Kotlin APIs through
-// xenophile's Kotlin facades — compiled by anthology's `Scalac` and linked as `Artifact.Dex`.
+// xenophile's Kotlin facades — compiled by anthology's `Scalac` and dexed to the `Dex` format.
 // Needs the Android platform stubs (`ANDROID_HOME` with a `platforms/android-NN`, or a direct
 // `ANDROID_JAR`); it is not part of the ordinary build. Mirrors `object wasm`.
 object android extends Module:
@@ -3174,7 +3174,7 @@ object android extends Module:
 
     PathRef(Task.dest / "main.dex.jar")
 
-  // The pure-Soundness packaging path: compile, then link `Artifact.Apk` — dexed, binary-
+  // The pure-Soundness packaging path: compile, then follow the path to `Apk` — dexed, binary-
   // manifested, zip-aligned and v2-signed with no Android SDK build tool. Produces an
   // installable, signed `app.apk`. Needs `~/.android/debug.keystore` (a PKCS#12 debug keystore,
   // as Android Studio and `keytool` create).

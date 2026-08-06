@@ -48,8 +48,10 @@ import prepositional.*
 import serpentine.*
 
 object Toolchain:
-  def apply(edges: List[Edge]): Toolchain raises LinkError =
-    val all = edges.stdlib
+  // Assembles a toolchain from any number of edge groups, as the providers supply them:
+  // `Toolchain(jarEdges(), dexEdges(), apkEdges())`.
+  def apply(edges: List[Edge]*): Toolchain raises LinkError =
+    val all = edges.toList.flatMap(_.stdlib)
 
     all.groupBy { edge => (edge.source, edge.target) }.foreach: (pair, group) =>
       if group.length > 1
@@ -77,7 +79,7 @@ object Toolchain:
 
     if remaining > 0 then abort(LinkError(LinkError.Reason.CyclicToolchain))
 
-    new Toolchain(edges)
+    new Toolchain(List.of(all))
 
 // An in-memory toolchain: a directed acyclic graph whose nodes are formats and whose edges are
 // tools. Producing one format from another is path search: the unique shortest edge sequence

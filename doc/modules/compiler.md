@@ -85,33 +85,38 @@ Scala.js IR, and `Universe.Nir` is Scala Native IR. The universe is a type param
 compiler flags each universe needs — `-scalajs`, or the Scala Native plugin — follow from it
 rather than being supplied by hand.
 
-### Linking artifacts
+### Producing artifacts
 
-A `Linker` is parameterized by the artifact it produces, and each artifact is producible from
-exactly one universe. Linking takes a compilation and an output location, and returns the path of
-what it built:
-
-```scala
-Linker[Artifact.Jar](List(jarOptions.name(t"app.jar")), List(Linker.EntryPoint(Fqcn(t"Main"))))
-. link(Compilation(output, classpath), destination)
-```
-
-From classfiles come an executable `Jar`, a `Dex` archive of Dalvik bytecode, and a complete,
-signed and aligned Android `Apk`. From Scala.js IR come `Js` — as an ECMAScript module, a CommonJS
-module or a plain script, the module system being part of the artifact's type — a `Wasm` module
-with JavaScript glue, and a standalone `Wasi` component at a stated interface version. From Scala
-Native IR comes a `Binary`, whose platform and architecture are chosen at link time as a triple.
-Every universe additionally produces a `Library`, packaging unlinked output for downstream
-assembly.
-
-The typing is not decorative. A native linker option applied to a JavaScript linker does not
-compile; an executable JAR with two entry points is rejected; and the linkages that need extra
-tooling — DEX, APK, WASI — arrive only with an explicit import of the module that provides them,
-so a build that cannot link a target says so where the code is written:
+Universes and application formats are nodes of a `Toolchain`, a directed acyclic graph whose edges
+are tools. Producing an artifact is path search: `produce` takes what you have, the format you
+want, and an output location, and runs each tool on the path between them:
 
 ```scala
-import dexLinkages.given
+Toolchain(jarEdges()).produce
+  ( Deliverable.Emission(output, classpath),
+    Universe.Classfile,
+    Jar,
+    destination,
+    List(jarOptions.name(t"app.jar")),
+    List(EntryPoint(Fqcn(t"Main"))) )
 ```
+
+From classfiles come an executable `Jar`, a `Dex` archive of Dalvik bytecode, a complete, signed
+and aligned Android `Apk`, and an `Xeq` bundle runnable straight from a shell. From Scala.js IR
+come `Js` — as an ECMAScript module, a CommonJS module or a plain script, the module system being
+part of the node's identity — a `Wasm` module with JavaScript glue, a standalone `Wasi` component
+at a stated generation, and an `OciImage` wrapping that component as an OCI artifact. From Scala
+Native IR comes a `Binary` per target triple. Every universe additionally produces a `Library`,
+packaging unlinked output for downstream assembly.
+
+Formats several edges apart need no special handling: an `Apk` runs dexing and then packaging, and
+an `OciImage` links the component and then wraps it, because those are the paths. A build that
+cannot reach a format says so — as a `NoPath` naming the two formats — rather than failing part-way
+through, and a setting that configures nothing on the path is rejected before any tool runs.
+
+Edges whose tools have prerequisites come from providers that demand evidence of them, so an edge
+whose tooling is absent cannot be built: `sjsEdges.wasi()` needs a probed `WasiToolchain` and a
+`WitWorld`, and `nativeEdges()` probes for `clang`.
 
 ### Other languages
 

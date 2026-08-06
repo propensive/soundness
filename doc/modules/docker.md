@@ -120,8 +120,8 @@ val world: WitDialect.World = WitDialect.worlds(source).stdlib(t"http")
 Image.wasm(component, exports = world.exports, imports = world.imports)
 ```
 
-Anthology does exactly this when it links an `Artifact.OciImage`, so a compilation can go from
-source to a distributable artifact in one step, with nothing stating the contract twice.
+Anthology does exactly this on its edge producing an `OciImage`, so a compilation can go from
+source to a distributable artifact along one path, with nothing stating the contract twice.
 
 ### Reading an image
 

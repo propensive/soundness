@@ -36,8 +36,6 @@ import java.nio.file as jnf
 
 import scala.util.control as suc
 
-import org.scalajs.linker.interface.StandardConfig
-
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -56,33 +54,53 @@ import xenophile.*
 import zephyrine.*
 
 object ociOptions:
-  private def oci(edit: OciConfiguration => OciConfiguration): Linker.Option[Artifact.OciImage] =
-    Linker.Option(edit)
+  private def oci(edit: OciConfiguration => OciConfiguration): Setting =
+    Setting[OciConfiguration](_ == OciImage)(edit)
 
-  def architecture(name: Text): Linker.Option[Artifact.OciImage] = oci(_.copy(architecture = name))
-  def os(name: Text): Linker.Option[Artifact.OciImage] = oci(_.copy(os = name))
-  def author(name: Text): Linker.Option[Artifact.OciImage] = oci(_.copy(author = name))
+  def architecture(name: Text): Setting = oci(_.copy(architecture = name))
+  def os(name: Text): Setting = oci(_.copy(os = name))
+  def author(name: Text): Setting = oci(_.copy(author = name))
 
-  def annotation(key: Text, value: Text): Linker.Option[Artifact.OciImage] =
+  def annotation(key: Text, value: Text): Setting =
     oci: config => config.copy(annotations = config.annotations.updated(key, value))
 
-// The sjsir-to-OCI link family: links the compilation as a WASI component (reusing the `Wasi`
-// linkage), then wraps that component in a Wasm OCI Artifact and writes it as an `oci-archive`
-// tar. Import it where OCI images are linked: `import ociLinkages.given`.
+// The wrapping edge of a toolchain: the `wasip2` component to its OCI artifact, written as an
+// `oci-archive` tar. Linking the component is the preceding edge on the path
+// (`sjsEdges.wasi()`), so this tool consumes the component it produced.
 //
 // The artifact's `component` metadata — the interfaces the workload imports and exports — is read
 // from the world it was linked against, not from the component binary: the world is the
 // authoritative statement of the contract, and reading it needs no disassembler.
-object ociLinkages:
+object ociEdges:
   // The world a component exports `wasi:http/incoming-handler` from is, by construction, the
   // standard HTTP proxy world; naming it as the artifact's `target` is what lets a host know the
   // component is servable without inspecting its exports one by one.
   private val incomingHandler = t"wasi:http/incoming-handler@0.2.0"
   private val proxy = t"wasi:http/proxy@0.2.0"
 
-  // The wrapping step itself, shared between the one-hop `Linkage` and the toolchain's
-  // `ociEdges` tool: takes an already-linked component and writes the `oci-archive`.
-  private[anthology] def wrap
+  def apply()(using world: WitWorld): List[Edge] =
+    List(Edge(Wasi(Wasi.Version.Wasip2), OciImage, OciTool(world)))
+
+  private case class OciTool(world: WitWorld) extends Tool:
+    type Settings = OciConfiguration
+
+    def name: Text = t"oci"
+    def initial: OciConfiguration = OciConfiguration()
+
+    def run
+      ( settings:    OciConfiguration,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
+
+      val component = input.product(OciImage)
+      Deliverable.Product(wrap(settings, world, component, out))
+
+  // The wrapping step itself: takes an already-linked component and writes the `oci-archive`.
+  private def wrap
     ( form:      OciConfiguration,
       world:     WitWorld,
       component: Path on Linux,
@@ -117,30 +135,6 @@ object ociLinkages:
     catch case suc.NonFatal(error) =>
       abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
 
-  given ociImage(using toolchain: WasiToolchain, world: WitWorld)
-  :   (Linkage[Artifact.OciImage] from Universe.Sjsir) =
-
-    // The component link this one wraps. Taken with its `Form` visible, so its configuration is
-    // reused rather than restated: an OCI image of a component must be linked exactly as that
-    // component would be linked on its own.
-    val inner = sjsLinkages.wasiLinkage(world)
-
-    new Linkage[Artifact.OciImage]:
-      type Origin = Universe.Sjsir
-      private[anthology] type Form = OciConfiguration
-
-      private[anthology] def initial: OciConfiguration = OciConfiguration(inner.initial)
-
-      private[anthology] def link
-        ( form:        OciConfiguration,
-          compilation: Compilation[Universe.Sjsir],
-          entryPoints: List[Linker.EntryPoint],
-          out:         Path on Linux )
-      :   Path on Linux logs LinkEvent raises LinkError =
-
-        val component = inner.link(form.config, compilation, entryPoints, out / "component")
-        wrap(form, world, component, out)
-
   // The world's imports and exports, read from the `.wit` sources at the top of the WIT
   // directory. Only that top level is searched: `deps/` holds the packages the world draws on,
   // and none of them declares the world being linked. A world that cannot be found contributes
@@ -159,32 +153,3 @@ object ociLinkages:
           WitDialect.worlds(text).stdlib.get(world.world).optional.or(search(index + 1))
 
     search(0).lay((Nil, Nil)): found => (found.imports, found.exports)
-
-// The wrapping edge of a toolchain: the `wasip2` component to its OCI artifact. Linking the
-// component is the preceding edge on the path (`sjsEdges.wasi()`), so this tool consumes the
-// component it produced; the artifact's `component` metadata is read from the same WIT world
-// the component edge linked against.
-object ociEdges:
-  def apply()(using world: WitWorld): List[Edge] =
-    List(Edge(Wasi(Wasi.Version.Wasip2), OciImage, OciTool(world)))
-
-  private case class OciTool(world: WitWorld) extends Tool:
-    type Settings = OciConfiguration
-
-    def name: Text = t"oci"
-
-    // The embedded component configuration is unused by this edge: the component is linked by
-    // the preceding edge, configured by settings addressed to its own node.
-    def initial: OciConfiguration = OciConfiguration(StandardConfig())
-
-    def run
-      ( settings:    OciConfiguration,
-        input:       Deliverable,
-        entryPoints: List[EntryPoint],
-        out:         Path on Linux )
-      ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
-    :   Deliverable =
-
-      val component = input.product(OciImage)
-      Deliverable.Product(ociLinkages.wrap(settings, world, component, out))

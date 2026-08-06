@@ -32,8 +32,6 @@
                                                                                                   */
 package anthology
 
-import proscenium.compat.*
-
 import java.nio.file as jnf
 
 import scala.util.control as suc
@@ -46,41 +44,72 @@ import galilei.*
 import gossamer.*
 import parasite.*
 import prepositional.*
+import proscenium.compat.*
 import serpentine.*
 import turbulence.*
 import zeppelin.*
 
-import dexLinkages.given
-
 object apkOptions:
-  private def apk(edit: ApkConfiguration => ApkConfiguration): Linker.Option[Artifact.Apk] =
-    Linker.Option(edit)
+  private def apk(edit: ApkConfiguration => ApkConfiguration): Setting =
+    Setting[ApkConfiguration](_ == Apk)(edit)
 
-  def minApi(level: Int): Linker.Option[Artifact.Apk] = apk(_.copy(minApi = level))
-  def targetApi(level: Int): Linker.Option[Artifact.Apk] = apk(_.copy(targetApi = level))
-  def packageName(name: Text): Linker.Option[Artifact.Apk] = apk(_.copy(packageName = name))
-  def label(text: Text): Linker.Option[Artifact.Apk] = apk(_.copy(label = text))
+  // The lowest Android API level the application must run on. The level configures both the
+  // manifest (`Apk`) and the dexing that precedes it on the path (`Dex`), so this one setting
+  // addresses both nodes, dispatching to each node's own configuration type.
+  def minApi(level: Int): Setting = new Setting:
+    def appliesTo(format: Format): Boolean = format == Apk || format == Dex
 
-  def version(code: Int, name: Text): Linker.Option[Artifact.Apk] =
+    def edit(format: Format, settings: Any): Any = format match
+      case Dex => settings.asInstanceOf[DexConfiguration].copy(minApi = level)
+      case _   => settings.asInstanceOf[ApkConfiguration].copy(minApi = level)
+
+  def targetApi(level: Int): Setting = apk(_.copy(targetApi = level))
+  def packageName(name: Text): Setting = apk(_.copy(packageName = name))
+  def label(text: Text): Setting = apk(_.copy(label = text))
+
+  def version(code: Int, name: Text): Setting =
     apk(_.copy(versionCode = code, versionName = name))
 
   // Adds a requested runtime permission (e.g. `android.permission.VIBRATE`).
-  def permission(name: Text): Linker.Option[Artifact.Apk] =
+  def permission(name: Text): Setting =
     apk: config => config.copy(permissions = config.permissions :+ name)
 
-  def keystore(path: Text, storePass: Text, alias: Text, keyPass: Text)
-  :   Linker.Option[Artifact.Apk] =
-
+  def keystore(path: Text, storePass: Text, alias: Text, keyPass: Text): Setting =
     apk(_.copy(keystore = path, storePass = storePass, alias = alias, keyPass = keyPass))
 
-// The classfile-to-APK link family: dexes the compilation (reusing the `Dex` linkage), encodes a
-// binary manifest (`Axml`), assembles a zip-aligned package (`zeppelin`), and signs it (APK v2,
-// `ApkSigner`) — a complete, installable Android application, produced with no Android SDK build
-// tool. Import it where APK artifacts are linked: `import apkLinkages.given`.
-object apkLinkages:
-  // The packaging step itself, shared between the one-hop `Linkage` and the toolchain's
-  // `apkEdges` tool: takes an already-dexed archive and yields the signed package.
-  private[anthology] def package0
+// The packaging edge of a toolchain: `Dex` to `Apk`. It encodes a binary manifest (`Axml`),
+// assembles a zip-aligned package (`zeppelin`), and signs it (APK v2, `ApkSigner`)—a complete,
+// installable Android application, produced with no Android SDK build tool. Dexing is the
+// preceding edge on the path, so this tool consumes the dex archive it produced; dex settings
+// (compilation mode, platform stubs) are addressed to the `Dex` node.
+object apkEdges:
+  def apply(): List[Edge] = List(Edge(Dex, Apk, ApkTool))
+
+  private object ApkTool extends Tool:
+    type Settings = ApkConfiguration
+
+    def name: Text = t"apk"
+    def initial: ApkConfiguration = ApkConfiguration.default
+
+    def run
+      ( settings:    ApkConfiguration,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
+
+      val activity: Fqcn = entryPoints match
+        case List(entry) => entry.mainClass
+        case Nil         => abort(LinkError(LinkError.Reason.NoEntryPoint))
+        case _           => abort(LinkError(LinkError.Reason.ManyEntryPoints))
+
+      val dexArchive = input.product(Apk)
+      Deliverable.Product(package0(settings, dexArchive, activity, out))
+
+  // The packaging step itself: takes an already-dexed archive and yields the signed package.
+  private def package0
     ( form:       ApkConfiguration,
       dexArchive: Path on Linux,
       activity:   Fqcn,
@@ -132,59 +161,3 @@ object apkLinkages:
 
     catch case suc.NonFatal(error) =>
       abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
-
-  given apk: (Linkage[Artifact.Apk] from Universe.Classfile):
-    type Origin = Universe.Classfile
-    private[anthology] type Form = ApkConfiguration
-    private[anthology] def initial: ApkConfiguration = ApkConfiguration.default
-
-    private[anthology] def link
-      ( form:        ApkConfiguration,
-        compilation: Compilation[Universe.Classfile],
-        entryPoints: List[Linker.EntryPoint],
-        out:         Path on Linux )
-    :   Path on Linux logs LinkEvent raises LinkError =
-
-      val activity: Fqcn = entryPoints match
-        case List(entry) => entry.mainClass
-        case Nil         => abort(LinkError(LinkError.Reason.NoEntryPoint))
-        case _           => abort(LinkError(LinkError.Reason.ManyEntryPoints))
-
-      jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
-      val dexDir = out / "dex"
-      jnf.Files.createDirectories(jnf.Paths.get(dexDir.encode.s))
-
-      // Dexing is the `Dex` linkage, reused verbatim: it yields an archive of `classes*.dex`.
-      val dexOptionList = List(dexOptions.minApi(form.minApi), dexOptions.mode.release)
-      val dexArchive = Linker[Artifact.Dex](dexOptionList).link(compilation, dexDir)
-
-      package0(form, dexArchive, activity, out)
-
-// The packaging edge of a toolchain: `Dex` to `Apk`. Dexing is the preceding edge on the path,
-// so this tool consumes the dex archive it produced; the dex edge's own settings (API level,
-// release mode) are addressed to the `Dex` node.
-object apkEdges:
-  def apply(): List[Edge] = List(Edge(Dex, Apk, ApkTool))
-
-  private object ApkTool extends Tool:
-    type Settings = ApkConfiguration
-
-    def name: Text = t"apk"
-    def initial: ApkConfiguration = ApkConfiguration.default
-
-    def run
-      ( settings:    ApkConfiguration,
-        input:       Deliverable,
-        entryPoints: List[EntryPoint],
-        out:         Path on Linux )
-      ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
-    :   Deliverable =
-
-      val activity: Fqcn = entryPoints match
-        case List(entry) => entry.mainClass
-        case Nil         => abort(LinkError(LinkError.Reason.NoEntryPoint))
-        case _           => abort(LinkError(LinkError.Reason.ManyEntryPoints))
-
-      val dexArchive = input.product(Apk)
-      Deliverable.Product(apkLinkages.package0(settings, dexArchive, activity, out))

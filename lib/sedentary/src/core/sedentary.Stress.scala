@@ -50,12 +50,17 @@ import hellenism.*
 import inimitable.*
 import jacinta.*
 import parasite.*
+import parasite.*
 import prepositional.*
 import probably.*
 import rudiments.*
 import serpentine.*
 import superlunary.*
 import vacuous.*
+
+import systems.javaSystem
+import threading.platformThreading
+import workingDirectories.javaWorkingDirectory
 
 // A stress test: the memory/scaling counterpart of `Bench`. Where `Bench` times one operation
 // repeated serially on the calling thread, `Stress` runs the body concurrently on `concurrency`
@@ -442,14 +447,15 @@ extends Rig:
 
   def stage(out: Path on Linux): Path on Linux = unsafely:
     val uuid = Uuid()
-    val compilation = Compilation[Universe.Classfile](out, Bundler.applicationClasspath)
 
-    val jarfile =
-      Linker[Artifact.Jar]
-        ( List(jarOptions.name(t"$uuid.jar")),
-          List(Linker.EntryPoint(fqcn"superlunary.Executor")) )
-
-      . link(compilation, out)
+    val jarfile = supervise:
+      Toolchain(jarEdges()).produce
+        ( Deliverable.Emission(out, Bundler.applicationClasspath),
+          Universe.Classfile,
+          Jar,
+          out,
+          List(jarOptions.name(t"$uuid.jar")),
+          List(EntryPoint(fqcn"superlunary.Executor")) )
 
     device.deploy(jarfile, uuid)
     jarfile

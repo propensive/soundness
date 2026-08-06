@@ -38,8 +38,6 @@ import org.scalajs.linker.interface.{ModuleKind, StandardConfig}
 
 import soundness.*
 
-import sjsLinkages.given
-
 import errorDiagnostics.stackTracesDiagnostics
 import galilei.Linux.pathOnLinux
 import logging.silentLogging
@@ -79,16 +77,10 @@ def passTool(label: Text): Tool = new Tool:
     executionLog.entries = label :: executionLog.entries
     input
 
-// Unexecuted definitions whose successful compilation assert `Provenance`'s tier structure:
-// choosing an artifact determines the universe a compilation must inhabit.
-def producingWasi(scalac: Scalac[3.8, Universe.Classfile]): Scalac[3.8, Universe.Sjsir] =
-  scalac.targeting[Universe.Classfile].producing[Artifact.Wasi[0.2]]
-
-def producingBinary(scalac: Scalac[3.8, Universe.Classfile]): Scalac[3.8, Universe.Nir] =
-  scalac.producing[Artifact.Binary]
-
-def producingDex(scalac: Scalac[3.8, Universe.Sjsir]): Scalac[3.8, Universe.Classfile] =
-  scalac.producing[Artifact.Dex]
+// The default settings of the tool on the edge producing `target`, for assertions on the
+// defaults each edge provider declares.
+def initialOf(edges: List[Edge], target: anthology.Format): Any =
+  edges.stdlib.find(_.target == target).get.tool.initial
 
 object Tests extends Suite(m"Anthology Tests"):
   def run(): Unit =
@@ -110,42 +102,27 @@ object Tests extends Suite(m"Anthology Tests"):
       summon[Universe.Emission[Universe.Sjsir]].flags
     . assert(_ == List(t"-scalajs"))
 
-    test(m"The module system is part of the JavaScript artifact's type"):
-      summon[Linkage[Artifact.Js["commonjs"]]].initial.asInstanceOf[StandardConfig]
-      . moduleKind
+    test(m"The module system is part of the JavaScript node's identity"):
+      initialOf(sjsEdges(), anthology.Js(anthology.Js.Module.CommonJs))
+      . asInstanceOf[StandardConfig].moduleKind
     . assert(_ == ModuleKind.CommonJSModule)
 
-    test(m"The JavaScript linkage produces an ES module"):
-      summon[Linkage[Artifact.Js["es"]]].initial.asInstanceOf[StandardConfig].moduleKind
+    test(m"The ES-module edge produces an ES module"):
+      initialOf(sjsEdges(), anthology.Js(anthology.Js.Module.Es))
+      . asInstanceOf[StandardConfig].moduleKind
     . assert(_ == ModuleKind.ESModule)
 
-    test(m"The browser Wasm linkage enables the WebAssembly backend"):
-      summon[Linkage[Artifact.Wasm]].initial.asInstanceOf[StandardConfig]
+    test(m"The browser Wasm edge enables the WebAssembly backend"):
+      initialOf(sjsEdges(), anthology.Wasm).asInstanceOf[StandardConfig]
       . esFeatures.useWebAssembly
     . assert(_ == true)
 
-    test(m"An unknown module system is not a JavaScript artifact"):
-      demilitarize:
-        summon[Linkage[Artifact.Js["amd"]]]
-    . assert(_.nonEmpty)
-
-    test(m"A dex linkage is not available without importing dexLinkages"):
-      demilitarize:
-        summon[Linkage[Artifact.Dex]]
-    . assert(_.nonEmpty)
-
-    test(m"The dex linkage defaults to API level 26"):
-      import dexLinkages.given
-      summon[Linkage[Artifact.Dex]].initial.asInstanceOf[DexConfiguration].minApi
+    test(m"The dex edge defaults to API level 26"):
+      initialOf(dexEdges(), Dex).asInstanceOf[DexConfiguration].minApi
     . assert(_ == 26)
 
-    test(m"A dex option is not applicable to a JAR linker"):
-      demilitarize:
-        Linker[Artifact.Jar](List(dexOptions.minApi(24)))
-    . assert(_.nonEmpty)
-
     // The toolchain DAG: path search and validation, checked without invoking any tool.
-    val android = Toolchain(List((jarEdges().stdlib ++ dexEdges().stdlib ++ apkEdges().stdlib)*))
+    val android = Toolchain(jarEdges(), dexEdges(), apkEdges())
 
     test(m"The classfile-to-APK path routes through dex"):
       android.path(Universe.Classfile, Apk).map(_.target.id)
@@ -168,7 +145,7 @@ object Tests extends Suite(m"Anthology Tests"):
     . assert(_ == LinkError.Reason.NoPath(t"classfile", t"dex"))
 
     test(m"Duplicate edges between the same formats are rejected"):
-      capture[LinkError](Toolchain(List((dexEdges().stdlib ++ dexEdges().stdlib)*))).reason
+      capture[LinkError](Toolchain(dexEdges(), dexEdges())).reason
     . assert(_ == LinkError.Reason.DuplicateEdge(t"classfile", t"dex"))
 
     test(m"A cyclic toolchain is rejected"):
@@ -221,6 +198,36 @@ object Tests extends Suite(m"Anthology Tests"):
         capture[LinkError](chain.produce(production, a, c, scratch, List(inapplicable))).reason
       . assert(_ == LinkError.Reason.InapplicableSetting)
 
+      // Cross-family settings are rejected before any tool runs, so these paths are checkable
+      // without invoking D8, the Scala.js linker or the bundler.
+      val emission = Deliverable.Emission(scratch, LocalClasspath())
+
+      test(m"A dex setting is not applicable on a JAR path"):
+        val settings = List(dexOptions.minApi(24))
+        val toolchain = Toolchain(jarEdges())
+
+        capture[LinkError]
+          ( toolchain.produce(emission, Universe.Classfile, anthology.Jar, scratch, settings) )
+        . reason
+      . assert(_ == LinkError.Reason.InapplicableSetting)
+
+      test(m"An sjs setting is not applicable on a dex path"):
+        val settings = List(linkerOptions.optimize.fast)
+        val toolchain = Toolchain(dexEdges())
+
+        capture[LinkError](toolchain.produce(emission, Universe.Classfile, Dex, scratch, settings))
+        . reason
+      . assert(_ == LinkError.Reason.InapplicableSetting)
+
+      test(m"A native setting is not applicable on a JavaScript path"):
+        val settings = List(nativeOptions.gc.immix)
+        val target = anthology.Js(anthology.Js.Module.Es)
+        val toolchain = Toolchain(sjsEdges())
+
+        capture[LinkError](toolchain.produce(emission, Universe.Sjsir, target, scratch, settings))
+        . reason
+      . assert(_ == LinkError.Reason.InapplicableSetting)
+
       // The xeq packaging edges, exercised up to (but never through) `Packager.pack`'s
       // filesystem and network work: every case below aborts before any stub is read.
       val bundles = Toolchain(xeqEdges())
@@ -249,6 +256,28 @@ object Tests extends Suite(m"Anthology Tests"):
             case _                             => false
       . assert(_ == true)
 
+    test(m"JAR and library packaging edges need no evidence"):
+      jarEdges().map(_.target.id)
+    . assert(_ == List(t"jar", t"library-classfile", t"library-sjsir", t"library-nir"))
+
+    test(m"A library JAR's universe must match its compilation's"):
+      capture[LinkError](Toolchain(jarEdges()).path(Universe.Sjsir, Library(Universe.Nir))).reason
+    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"library-nir"))
+
+    test(m"An sjsir compilation cannot be packaged as an executable JAR"):
+      capture[LinkError](Toolchain(jarEdges()).path(Universe.Sjsir, anthology.Jar)).reason
+    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"jar"))
+
+    test(m"A classfile compilation cannot be linked as JavaScript"):
+      val target = anthology.Js(anthology.Js.Module.Es)
+      capture[LinkError](Toolchain(sjsEdges()).path(Universe.Classfile, target)).reason
+    . assert(_ == LinkError.Reason.NoPath(t"classfile", t"js-es"))
+
+    test(m"WASI 0.3 is unreachable without an edge producing it"):
+      val target = Wasi(Wasi.Version.Wasip3)
+      capture[LinkError](Toolchain(sjsEdges()).path(Universe.Sjsir, target)).reason
+    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"wasip3"))
+
     test(m"The AXML encoder emits the binary-XML chunk header"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
       List(axml.readable(0), axml.readable(1), axml.readable(2), axml.readable(3)).map(_.toInt & 0xff)
@@ -261,24 +290,20 @@ object Tests extends Suite(m"Anthology Tests"):
       declared == axml.readable.length
     . assert(_ == true)
 
-    test(m"An APK linkage is not available without importing apkLinkages"):
-      demilitarize:
-        summon[Linkage[Artifact.Apk]]
-    . assert(_.nonEmpty)
-
-    test(m"The APK linkage defaults to API level 26"):
-      import apkLinkages.given
-      summon[Linkage[Artifact.Apk]].initial.asInstanceOf[ApkConfiguration].minApi
+    test(m"The APK edge defaults to API level 26"):
+      initialOf(apkEdges(), Apk).asInstanceOf[ApkConfiguration].minApi
     . assert(_ == 26)
 
-    test(m"An APK option is not applicable to a dex linker"):
-      demilitarize:
-        Linker[Artifact.Dex](List(apkOptions.minApi(24)))
-    . assert(_.nonEmpty)
+    test(m"The APK API level configures both dexing and packaging"):
+      val setting = apkOptions.minApi(24)
 
-    test(m"A WASI linkage is not available without toolchain and WIT world"):
+      ( setting.edit(Dex, initialOf(dexEdges(), Dex)).asInstanceOf[DexConfiguration].minApi,
+        setting.edit(Apk, initialOf(apkEdges(), Apk)).asInstanceOf[ApkConfiguration].minApi )
+    . assert(_ == (24, 24))
+
+    test(m"The WASI component edge is not available without toolchain and WIT world"):
       demilitarize:
-        summon[Linkage[Artifact.Wasi[0.2]]]
+        sjsEdges.wasi()
     . assert(_.nonEmpty)
 
     test(m"A well-formed compiler session block compiles cleanly"):
@@ -313,73 +338,30 @@ object Tests extends Suite(m"Anthology Tests"):
           process1.errors
     . aspire(_.nonEmpty)
 
-    test(m"An OCI image linkage is not available without toolchain and WIT world"):
-      demilitarize:
-        summon[Linkage[Artifact.OciImage]]
-    . assert(_.nonEmpty)
+    // The OCI edge itself needs only a WIT world (the component is linked by the preceding
+    // edge, whose provider probes the WASI toolchain), so its graph shape is checkable without
+    // `wasm-tools` installed.
+    val ociToolchain =
+      val world = WitWorld(unsafely(temporaryDirectory / Uuid()), t"main")
+      Toolchain(ociEdges()(using world))
 
-    test(m"An OCI image is linkable from sjsir given the WASI prerequisites"):
-      demilitarize:
-        import ociLinkages.given
-        given WasiToolchain = ???
-        given WitWorld = ???
-        summon[Linkage[Artifact.OciImage]]
-    . assert(_ == Nil)
+    test(m"An OCI image is unreachable from a classfile compilation"):
+      capture[LinkError](ociToolchain.path(Universe.Classfile, OciImage)).reason
+    . assert(_ == LinkError.Reason.NoPath(t"classfile", t"oci"))
 
-    test(m"An OCI image cannot be linked from a classfile compilation"):
-      demilitarize:
-        import ociLinkages.given
-        given WasiToolchain = ???
-        given WitWorld = ???
-        val compilation: Compilation[Universe.Classfile] = ???
-        Linker[Artifact.OciImage](Nil).link(compilation, Nil, ???)
-    . assert(_.nonEmpty)
+    test(m"An OCI image is unreachable without the component edge"):
+      capture[LinkError](ociToolchain.path(Universe.Sjsir, OciImage)).reason
+    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"oci"))
 
-    // Not read through `Linkage#initial`, as the APK defaults are: summoning the OCI linkage needs
-    // a `WasiToolchain`, whose only constructor probes for `wasm-tools` and `wit-bindgen`, and a
-    // unit test should not depend on those being installed.
     test(m"An OCI image config defaults to the wasm/wasip2 platform"):
-      val config = OciConfiguration(StandardConfig())
+      val config = OciConfiguration()
       (config.architecture, config.os)
     . assert(_ == (t"wasm", t"wasip2"))
-
-    test(m"An OCI option is not applicable to a WASI component linker"):
-      demilitarize:
-        Linker[Artifact.Wasi[0.2]](List(ociOptions.os(t"wasip3")))
-    . assert(_.nonEmpty)
-
-    test(m"WASI 0.3 is not linkable even with the 0.2 prerequisites"):
-      demilitarize:
-        given WasiToolchain = ???
-        given WitWorld = ???
-        summon[Linkage[Artifact.Wasi[0.3]]]
-    . assert(_.nonEmpty)
-
-    test(m"A classfile compilation cannot be linked as JavaScript"):
-      demilitarize:
-        val compilation: Compilation[Universe.Classfile] = ???
-        Linker[Artifact.Js["es"]](Nil).link(compilation, ???)
-    . assert(_.nonEmpty)
 
     test(m"An sjsir compilation is not a native compilation"):
       demilitarize:
         val compilation: Compilation[Universe.Sjsir] = ???
         val native: Compilation[Universe.Nir] = compilation
-    . assert(_.nonEmpty)
-
-    test(m"A native option is not applicable to a JavaScript linker"):
-      demilitarize:
-        Linker[Artifact.Js["es"]](List(nativeOptions.gc.immix))
-    . assert(_.nonEmpty)
-
-    test(m"An sjsir option is not applicable to a native linker"):
-      demilitarize:
-        Linker[Artifact.Binary](List(linkerOptions.optimize.fast))
-    . assert(_.nonEmpty)
-
-    test(m"A native linkage is not available without probing the C toolchain"):
-      demilitarize:
-        summon[Linkage[Artifact.Binary]]
     . assert(_.nonEmpty)
 
     test(m"Compiling into the nir universe requires plugin evidence"):
@@ -390,27 +372,6 @@ object Tests extends Suite(m"Anthology Tests"):
     test(m"Triples render as LLVM target triples"):
       Triple.Arm64MacOs.text
     . assert(_ == t"arm64-apple-darwin")
-
-    test(m"An sjsir compilation cannot be linked as an executable JAR"):
-      demilitarize:
-        val compilation: Compilation[Universe.Sjsir] = ???
-        Linker[Artifact.Jar](Nil).link(compilation, ???)
-    . assert(_.nonEmpty)
-
-    test(m"JAR and library packaging need no imports or evidence"):
-      demilitarize:
-        ( summon[Linkage[Artifact.Jar]],
-          summon[Linkage[Artifact.Library[Universe.Classfile]]],
-          summon[Linkage[Artifact.Library[Universe.Sjsir]]],
-          summon[Linkage[Artifact.Library[Universe.Nir]]] )
-    . assert(_.isEmpty)
-
-    test(m"A library JAR's universe must match its compilation's"):
-      demilitarize:
-        val compilation: Compilation[Universe.Sjsir] = ???
-        val out: soundness.Path on Linux = ???
-        unsafely(Linker[Artifact.Library[Universe.Nir]](Nil).link(compilation, out))
-    . assert(_.nonEmpty)
 
     // An end-to-end exercise of the portable pipeline—compile with `-scalajs`, then link as
     // JavaScript—which runs only when a cached proscala toolchain (whose distribution includes
@@ -426,7 +387,7 @@ object Tests extends Suite(m"Anthology Tests"):
         Files.createDirectories(Paths.get(out.encode.s))
 
         val process =
-          Scalac[3.8](Nil).producing[Artifact.Js["es"]]
+          Scalac[3.8](Nil).targeting[Universe.Sjsir]
             (classpath)(Map(t"hello.scala" -> source), out)
 
         test(m"A portable compilation succeeds"):
@@ -441,15 +402,23 @@ object Tests extends Suite(m"Anthology Tests"):
         val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
         test(m"Linking as JavaScript produces a nonempty main.js"):
-          Linker[Artifact.Js["es"]](Nil, List(Linker.EntryPoint(Fqcn(t"Main"))))
-          . link(Compilation(out, classpath), linked)
+          Toolchain(sjsEdges()).produce
+            ( Deliverable.Emission(out, classpath),
+              Universe.Sjsir,
+              anthology.Js(anthology.Js.Module.Es),
+              linked,
+              Nil,
+              List(EntryPoint(Fqcn(t"Main"))) )
           . pipe: artifact =>
               Files.size(Paths.get(artifact.encode.s))
         . assert(_ > 100L)
 
         test(m"Packaging an sjsir library JAR produces a nonempty archive"):
-          Linker[Artifact.Library[Universe.Sjsir]](Nil)
-          . link(Compilation(out, classpath), linked)
+          Toolchain(jarEdges()).produce
+            ( Deliverable.Emission(out, classpath),
+              Universe.Sjsir,
+              Library(Universe.Sjsir),
+              linked )
           . pipe: artifact =>
               Files.size(Paths.get(artifact.encode.s))
         . assert(_ > 100L)
@@ -472,19 +441,20 @@ object Tests extends Suite(m"Anthology Tests"):
         val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
         test(m"Linking a JAR produces a runnable artifact"):
-          Linker[Artifact.Jar]
-            ( List(jarOptions.name(t"app.jar")),
-              List(Linker.EntryPoint(Fqcn(t"Main"))) )
-          . link(Compilation(out, classpath), linked)
+          Toolchain(jarEdges()).produce
+            ( Deliverable.Emission(out, classpath),
+              Universe.Classfile,
+              anthology.Jar,
+              linked,
+              List(jarOptions.name(t"app.jar")),
+              List(EntryPoint(Fqcn(t"Main"))) )
           . pipe: artifact =>
               mute[ExecEvent](sh"java -jar $artifact".exec[Text]()).trim
         . assert(_ == t"hello")
 
         test(m"Linking as DEX produces an archive containing classes.dex"):
-          import dexLinkages.given
-
-          Linker[Artifact.Dex](Nil)
-          . link(Compilation(out, classpath), linked)
+          Toolchain(dexEdges()).produce
+            ( Deliverable.Emission(out, classpath), Universe.Classfile, Dex, linked )
           . pipe: artifact =>
               val zipfile = java.util.zip.ZipFile(artifact.encode.s)
 
@@ -564,13 +534,17 @@ object Tests extends Suite(m"Anthology Tests"):
           . exists(_.getFileName.nn.toString.endsWith(".nir"))
         . assert(_ == true)
 
-        safely(NativeLinkage()).let: nativeLinkage =>
-          given (Linkage[Artifact.Binary] from Universe.Nir) = nativeLinkage
+        safely(nativeEdges()).let: edges =>
           val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
           test(m"Linking natively produces a runnable binary"):
-            Linker[Artifact.Binary](Nil, List(Linker.EntryPoint(Fqcn(t"Main"))))
-            . link(Compilation(out, classpath), linked)
+            Toolchain(edges).produce
+              ( Deliverable.Emission(out, classpath),
+                Universe.Nir,
+                Binary(Triple.host.vouch),
+                linked,
+                Nil,
+                List(EntryPoint(Fqcn(t"Main"))) )
             . pipe: artifact =>
                 mute[ExecEvent](sh"$artifact".exec[Text]()).trim
           . assert(_ == t"hello")

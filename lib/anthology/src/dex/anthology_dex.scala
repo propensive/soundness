@@ -53,9 +53,9 @@ import prepositional.*
 import serpentine.*
 import vacuous.*
 
-// The dexing configuration `Linkage[Artifact.Dex]` folds options into: the lowest Android API
-// level the output must run on (lower levels oblige D8 to desugar more), D8's compilation mode,
-// and optionally the Android platform stubs (`android.jar`) that ground desugaring decisions in
+// The dexing configuration `dexEdges`' tool folds settings into: the lowest Android API level
+// the output must run on (lower levels oblige D8 to desugar more), D8's compilation mode, and
+// optionally the Android platform stubs (`android.jar`) that ground desugaring decisions in
 // the platform's real API surface.
 private[anthology] case class DexConfiguration
   ( minApi:   Int,
@@ -63,38 +63,56 @@ private[anthology] case class DexConfiguration
     platform: Optional[Path on Linux] )
 
 object dexOptions:
-  private def dex(edit: DexConfiguration => DexConfiguration): Linker.Option[Artifact.Dex] =
-    Linker.Option(edit)
+  private def dex(edit: DexConfiguration => DexConfiguration): Setting =
+    Setting[DexConfiguration](_ == Dex)(edit)
 
   // The lowest Android API level the artifact must run on. Levels below 24 lack native default
   // interface methods (which Scala 3 emits for trait members), so they additionally demand the
   // `platform` stubs to desugar against.
-  def minApi(level: Int): Linker.Option[Artifact.Dex] = dex(_.copy(minApi = level))
+  def minApi(level: Int): Setting = dex(_.copy(minApi = level))
 
   // An Android SDK's platform stubs (`platforms/android-<n>/android.jar`), needed only below
   // API level 24 or when the program references platform types.
-  def platform(jar: Path on Linux): Linker.Option[Artifact.Dex] = dex(_.copy(platform = jar))
+  def platform(jar: Path on Linux): Setting = dex(_.copy(platform = jar))
 
   object mode:
-    val debug: Linker.Option[Artifact.Dex] = dex(_.copy(mode = CompilationMode.DEBUG))
-    val release: Linker.Option[Artifact.Dex] = dex(_.copy(mode = CompilationMode.RELEASE))
+    val debug: Setting = dex(_.copy(mode = CompilationMode.DEBUG))
+    val release: Setting = dex(_.copy(mode = CompilationMode.RELEASE))
 
-// The classfile-to-DEX link family: drives R8's D8 dexer (a JVM library) through its API to
-// translate a compilation's classfiles, and its whole classpath with them, into an archive of
-// `classes*.dex` files—the container ART and `DexClassLoader` consume, and the form the dexes
-// of an APK are zipped from. Since this linkage lives outside `Linkage`'s implicit scope,
-// import it where DEX artifacts are linked: `import dexLinkages.given`.
-object dexLinkages:
+// The dexing edge of a toolchain: `Classfile` to `Dex`, driving R8's D8 dexer (a JVM library)
+// through its API to translate a compilation's classfiles, and its whole classpath with them,
+// into an archive of `classes*.dex` files—the container ART and `DexClassLoader` consume, and
+// the form the dexes of an APK are zipped from.
+object dexEdges:
+  def apply(): List[Edge] = List(Edge(Universe.Classfile, Dex, DexTool))
+
   // API level 26 (Android 8.0) is the earliest with native support for everything Scala 3
   // bytecode relies on, so dexing needs no platform stubs by default.
   private[anthology] def configuration: DexConfiguration =
     DexConfiguration(26, CompilationMode.DEBUG, Unset)
 
-  // The dexing pipeline itself, shared between the one-hop `Linkage` and the toolchain's
-  // `dexEdges` tool. DEX carries no entry-point metadata: ART is told its main class at
-  // invocation, by the manifest of a hosting APK or the command line of `dalvikvm`, so entry
-  // points—like a library JAR's—do not apply.
-  private[anthology] def link0
+  private object DexTool extends Tool:
+    type Settings = DexConfiguration
+
+    def name: Text = t"dex"
+    def initial: DexConfiguration = configuration
+
+    def run
+      ( settings:    DexConfiguration,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
+
+      val (directory, classpath) = input.emission(Dex)
+      Deliverable.Product(link0(settings, directory, classpath, out))
+
+  // The dexing pipeline itself. DEX carries no entry-point metadata: ART is told its main
+  // class at invocation, by the manifest of a hosting APK or the command line of `dalvikvm`,
+  // so entry points—like a library JAR's—do not apply.
+  private def link0
     ( form:      DexConfiguration,
       directory: Path on Linux,
       classpath: LocalClasspath,
@@ -146,41 +164,3 @@ object dexLinkages:
 
     catch case suc.NonFatal(error) =>
       abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
-
-  given dex: (Linkage[Artifact.Dex] from Universe.Classfile):
-    type Origin = Universe.Classfile
-    private[anthology] type Form = DexConfiguration
-    private[anthology] def initial: DexConfiguration = dexLinkages.configuration
-
-    private[anthology] def link
-      ( form:        DexConfiguration,
-        compilation: Compilation[Universe.Classfile],
-        entryPoints: List[Linker.EntryPoint],
-        out:         Path on Linux )
-    :   Path on Linux logs LinkEvent raises LinkError =
-
-      dexLinkages.link0(form, compilation.out, compilation.classpath, out)
-
-// The dexing edge of a toolchain: `Classfile` to `Dex`, driving R8's D8 dexer (a JVM library)
-// through its API to translate a compilation's classfiles, and its whole classpath with them,
-// into an archive of `classes*.dex` files.
-object dexEdges:
-  def apply(): List[Edge] = List(Edge(Universe.Classfile, Dex, DexTool))
-
-  private object DexTool extends Tool:
-    type Settings = DexConfiguration
-
-    def name: Text = t"dex"
-    def initial: DexConfiguration = dexLinkages.configuration
-
-    def run
-      ( settings:    DexConfiguration,
-        input:       Deliverable,
-        entryPoints: List[EntryPoint],
-        out:         Path on Linux )
-      ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
-    :   Deliverable =
-
-      val (directory, classpath) = input.emission(Dex)
-      Deliverable.Product(dexLinkages.link0(settings, directory, classpath, out))
