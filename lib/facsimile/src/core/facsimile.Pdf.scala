@@ -132,16 +132,20 @@ object Pdf:
     def digit(byte: Int): Boolean = byte >= '0' && byte <= '9'
 
     var found: Optional[Version] = Unset
-    var i = 0
 
-    while found.absent && i <= window.length - 8 do
-      var j = 0
-      while j < marker.length && (window(i + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
+    window.survey: surveyor =>
+      while found.absent && surveyor.glimpse(8).present do
+        if surveyor.matches(marker) { (byte, char) => (byte & 0xff) == char.toInt } then
+          surveyor.glimpse(8).let: eight =>
+            val start = (eight: Interval).start.n0
+            val major = window.at(Ordinal.zerary(start + 5)).lay(-1)(_ & 0xff)
+            val dot = window.at(Ordinal.zerary(start + 6)).lay(-1)(_ & 0xff)
+            val minor = window.at(Ordinal.zerary(start + 7)).lay(-1)(_ & 0xff)
 
-      if j == marker.length && digit(window(i + 5) & 0xff) &&
-        (window(i + 6) & 0xff) == '.' && digit(window(i + 7) & 0xff)
-      then found = Version((window(i + 5) & 0xff) - '0', (window(i + 7) & 0xff) - '0')
-      else i += 1
+            if digit(major) && dot == '.' && digit(minor)
+            then found = Version(major - '0', minor - '0')
+
+        if found.absent then surveyor.advance()
 
     found.or(abort(PdfError(PdfError.Reason.NotPdf)))
 
@@ -666,12 +670,12 @@ extends caps.ExclusiveCapability:
 
         while found.absent && offset < source.size do
           val chunk = source.read(offset, chunkSize + marker.length - 1)
-          var i = 0
 
-          while found.absent && i <= chunk.length - marker.length do
-            var j = 0
-            while j < marker.length && (chunk(i + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
-            if j == marker.length then found = offset + i else i += 1
+          chunk.survey: surveyor =>
+            while found.absent && surveyor.glimpse(marker.length).present do
+              if surveyor.matches(marker) { (byte, char) => (byte & 0xff) == char.toInt }
+              then found = offset + surveyor.passed
+              else surveyor.advance()
 
           offset += chunkSize
 
@@ -691,14 +695,10 @@ extends caps.ExclusiveCapability:
   private def endstreamFollows(position: Long): Boolean =
     val marker = t"endstream"
     val window = source.read(position, 24)
-    var i = 0
 
-    while i < window.length && CosLexer.whitespace(window(i) & 0xff) do i += 1
-
-    if i + marker.length > window.length then false else
-      var j = 0
-      while j < marker.length && (window(i + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
-      j == marker.length
+    window.survey: surveyor =>
+      surveyor.pace { byte => CosLexer.whitespace(byte & 0xff) }
+      surveyor.matches(marker) { (byte, char) => (byte & 0xff) == char.toInt }
 
   // Resolves a value and, one level down, the elements of an array or the values of a
   // dictionary: sufficient for `/Filter` and `/DecodeParms` shapes.

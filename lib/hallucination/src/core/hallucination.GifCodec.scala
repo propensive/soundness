@@ -36,6 +36,9 @@ import scala.collection.mutable as scm
 import proscenium.compat.*
 
 import anticipation.*
+import denominative.*
+import rudiments.*
+import vacuous.*
 import contingency.*
 
 import Binary.*
@@ -129,41 +132,54 @@ private[hallucination] object GifCodec:
             val indices =
               GifLzw.decode(minimum, Array.unsafeFrozen(compressed.result()), pixels)
 
-            // Interlaced frames deliver their rows in four passes.
-            val rows: scala.Array[Int]^ = new scala.Array[Int](frameHeight)
+            // Interlaced frames deliver their rows in four passes: the row permutation is a
+            // pure sequence of appends.
+            val rowMap: Array[Int]^{} = Array.scribe[Int](frameHeight): scribe =>
+              _ =>
+                if interlaced then
+                  var passes = List((0, 8), (4, 8), (2, 4), (1, 2)).stdlib
 
-            if interlaced then
-              var row = 0
-              var passes = List((0, 8), (4, 8), (2, 4), (1, 2)).stdlib
+                  while passes.nonEmpty do
+                    val (start, step) = passes.head
+                    var y = start
 
-              while passes.nonEmpty do
-                val (start, step) = passes.head
-                var y = start
+                    while y < frameHeight do
+                      scribe.append(y)
+                      y += step
 
-                while y < frameHeight do
-                  rows(row) = y
-                  row += 1
-                  y += step
+                    passes = passes.tail
+                else
+                  var y = 0
 
-                passes = passes.tail
-            else
-              var y = 0
+                  while y < frameHeight do
+                    scribe.append(y)
+                    y += 1
 
-              while y < frameHeight do
-                rows(y) = y
-                y += 1
+            // Composite the frame onto the screen: both sides are lattices, so the frame's
+            // overhang beyond the screen — previously two manual guards — is `point`'s
+            // bounds check. The palette read is checked too: a malformed GIF may index
+            // beyond a small palette (as few as two entries), which previously crashed;
+            // an out-of-range entry now composites as opaque black.
+            val screenScribe = Scribe(screen)
+            val frame = Scribe(indices.asInstanceOf[scala.Array[Byte]^])
 
-            for row <- 0 until frameHeight do
-              val y = top + rows(row)
-              var x = 0
+            screenScribe.lattice(width): target =>
+              frame.lattice(frameWidth): source =>
+                rowMap.iterate: rowOrdinal =>
+                  val row = (rowOrdinal: Ordinal).n0
+                  val y = top + rowMap.at(rowOrdinal)
 
-              while x < frameWidth do
-                val entry = indices(row*frameWidth + x)&0xff
+                  source.row(row).let: sourceRow =>
+                    var x = 0
 
-                if entry != transparentIndex && y < height && left + x < width then
-                  screen((left + x) + y*width) = palette(entry).toLong << 8 | 0xff
+                    frame.iterate(sourceRow): sourceIndex =>
+                      val entry = frame(sourceIndex)&0xff
 
-                x += 1
+                      if entry != transparentIndex then
+                        target.point(left + x, y).let: targetIndex =>
+                          screenScribe(targetIndex) = palette.at(Ordinal.zerary(entry)).or(0).toLong << 8 | 0xff
+
+                      x += 1
 
             finished = true
 

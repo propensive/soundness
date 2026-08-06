@@ -36,6 +36,7 @@ import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import pneumatic.*
@@ -209,21 +210,21 @@ private[facsimile] object Filter:
     val bytes = DataBuilder()
     var high = -1
     var done = false
-    var i = 0
 
-    while i < data.length && !done do
-      val byte = data(i) & 0xff
-      i += 1
+    data.survey: surveyor =>
+      while !done && surveyor.more do
+        surveyor.next(()): element =>
+          val byte = element & 0xff
 
-      if byte == '>' then done = true
-      else if !CosLexer.whitespace(byte) then
-        val value = CosLexer.hexadecimal(byte)
+          if byte == '>' then done = true
+          else if !CosLexer.whitespace(byte) then
+            val value = CosLexer.hexadecimal(byte)
 
-        if value < 0 then abort(PdfError(PdfError.Reason.CorruptStream(t"ASCIIHexDecode")))
-        else if high < 0 then high = value
-        else
-          bytes += ((high << 4) + value).toByte
-          high = -1
+            if value < 0 then abort(PdfError(PdfError.Reason.CorruptStream(t"ASCIIHexDecode")))
+            else if high < 0 then high = value
+            else
+              bytes += ((high << 4) + value).toByte
+              high = -1
 
     if high >= 0 then bytes += (high << 4).toByte
     bytes.result()
@@ -231,33 +232,30 @@ private[facsimile] object Filter:
   private def runLength(data: Data)(using Tactic[PdfError]): Data =
     val bytes = DataBuilder()
     var done = false
-    var i = 0
 
-    while i < data.length && !done do
-      val length = data(i) & 0xff
-      i += 1
+    data.survey: surveyor =>
+      while !done && surveyor.more do
+        surveyor.next(()): element =>
+          val length = element & 0xff
 
-      if length == 128 then done = true
-      else if length < 128 then
-        if i + length + 1 > data.length
-        then abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))
+          if length == 128 then done = true
+          else if length < 128 then
+            // A literal run of `length + 1` bytes: `take` clamps at exhaustion, so a short
+            // read means the stream is corrupt.
+            val run = surveyor.take(length + 1)
 
-        var j = 0
+            if (run: Interval).size <= length
+            then abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))
 
-        while j <= length do
-          bytes += data(i + j)
-          j += 1
+            data.iterate(run) { index => bytes += data.at(index) }
+          else
+            // One byte, repeated `257 - length` times.
+            surveyor.next(abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))):
+              byte =>
+                var j = 0
 
-        i += length + 1
-      else
-        if i >= data.length then abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))
-
-        var j = 0
-
-        while j < 257 - length do
-          bytes += data(i)
-          j += 1
-
-        i += 1
+                while j < 257 - length do
+                  bytes += byte
+                  j += 1
 
     bytes.result()

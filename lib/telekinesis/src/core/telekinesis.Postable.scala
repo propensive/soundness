@@ -38,6 +38,7 @@ import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gesticulate.*

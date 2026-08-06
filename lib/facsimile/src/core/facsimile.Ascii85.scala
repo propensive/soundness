@@ -36,6 +36,7 @@ import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -49,7 +50,6 @@ private[facsimile] object Ascii85:
     val group = new scala.Array[Int](5)
     var members = 0
     var done = false
-    var i = 0
 
     def emit(count: Int): Unit =
       var value = 0L
@@ -65,26 +65,27 @@ private[facsimile] object Ascii85:
         bytes += ((value >> shift) & 0xff).toByte
         shift -= 8
 
-    while i < data.length && !done do
-      val byte = data(i) & 0xff
-      i += 1
+    data.survey: surveyor =>
+      while !done && surveyor.more do
+        surveyor.next(()): element =>
+          val byte = element & 0xff
 
-      if byte == '~' then
-        done = true
-      else if byte == 'z' && members == 0 then
-        bytes += 0
-        bytes += 0
-        bytes += 0
-        bytes += 0
-      else if byte >= '!' && byte <= 'u' then
-        group(members) = byte - '!'
-        members += 1
+          if byte == '~' then
+            done = true
+          else if byte == 'z' && members == 0 then
+            bytes += 0
+            bytes += 0
+            bytes += 0
+            bytes += 0
+          else if byte >= '!' && byte <= 'u' then
+            group(members) = byte - '!'
+            members += 1
 
-        if members == 5 then
-          emit(5)
-          members = 0
-      else if !CosLexer.whitespace(byte) then
-        abort(PdfError(PdfError.Reason.CorruptStream(t"ASCII85Decode")))
+            if members == 5 then
+              emit(5)
+              members = 0
+          else if !CosLexer.whitespace(byte) then
+            abort(PdfError(PdfError.Reason.CorruptStream(t"ASCII85Decode")))
 
     if members == 1 then abort(PdfError(PdfError.Reason.CorruptStream(t"ASCII85Decode")))
     if members > 1 then emit(members)

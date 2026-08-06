@@ -42,6 +42,7 @@ import scala.reflect.*
 
 import anticipation.*
 import denominative.*
+import rudiments.*
 import hieroglyph.*
 import spectacular.*
 import symbolism.*
@@ -66,12 +67,9 @@ object Writing:
     val s = writing.text.s
     val boundaries = writing.boundaries
     var total = 0
-    var i = 0
-    val n = boundaries.readable.length - 1
 
-    while i < n do
-      total += graphemeM.width(Grapheme(s.substring(boundaries.readable(i), boundaries.readable(i + 1)).nn))
-      i += 1
+    boundaries.adjacent: (start, limit) =>
+      total += graphemeM.width(Grapheme(s.substring(start, limit).nn))
 
     total
 
@@ -91,13 +89,10 @@ object Writing:
 
     def map(writing: Writing)(lambda: Grapheme => Grapheme): Writing =
       val builder = jl.StringBuilder()
-      val n = writing.boundaries.readable.length - 1
-      var i = 0
 
-      while i < n do
-        val piece = writing.text.s.substring(writing.boundaries.readable(i), writing.boundaries.readable(i + 1)).nn
+      writing.boundaries.adjacent: (start, limit) =>
+        val piece = writing.text.s.substring(start, limit).nn
         builder.append(lambda(Grapheme(piece)).text.s)
-        i += 1
 
       Writing(builder.toString.nn.tt)
 

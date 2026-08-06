@@ -153,6 +153,278 @@ object Tests extends Suite(m"Rudiments Tests"):
         total
       . assert(_ == 60)
 
+      test(m"`iterate` over a branded sub-interval visits only that range"):
+        var total = 0
+        array.iterate(array.lead(_ => true).capped(2)) { i => total += array.at(i) }
+        total
+      . assert(_ == 30)
+
+      test(m"`spot` finds the first matching confined index"):
+        text.spot { i => text.at(i) == 'l' }.let { i => (i: Ordinal).n0 }
+      . assert(_ == 2)
+
+      test(m"`spot` returns Unset when nothing matches"):
+        text.spot { i => text.at(i) == 'z' }
+      . assert(_ == Unset)
+
+      test(m"`lead` spans the matching prefix and stops at the first mismatch"):
+        val interval: Interval = text.lead { i => text.at(i) != 'l' }
+        interval.size
+      . assert(_ == 2)
+
+      test(m"`lead` spans the whole extent when everything matches"):
+        val interval: Interval = text.lead { _ => true }
+        interval.size
+      . assert(_ == 5)
+
+      test(m"`pare` drops the matching suffix, respecting the floor"):
+        val digits = Array.of(3, 7, 0, 0, 0)
+        val interval: Interval = digits.pare(1) { i => digits.at(i) == 0 }
+        interval.size
+      . assert(_ == 2)
+
+      test(m"`pare` never shrinks below its floor"):
+        val zeros = Array.of(0, 0, 0)
+        val interval: Interval = zeros.pare(1) { i => zeros.at(i) == 0 }
+        interval.size
+      . assert(_ == 1)
+
+      test(m"`retrace` visits confined indices in reverse"):
+        val builder = java.lang.StringBuilder()
+        text.retrace { i => builder.append(text.at(i)) }
+        builder.toString.tt
+      . assert(_ == t"olleh")
+
+    suite(m"Scribe tests"):
+      test(m"`Array.scribe` fills through branded indices"):
+        Array.scribe[Int](4) { scribe => range => scribe.iterate { i => scribe(i) = (i: Ordinal).n0*2 } }
+        . to[List]
+      . assert(_ == List(0, 2, 4, 6))
+
+      test(m"a scribe reads back what it wrote"):
+        var last = -1
+
+        Array.scribe[Int](3): scribe =>
+          range =>
+            scribe.iterate { i => scribe(i) = 7 }
+            scribe.iterate { i => last = scribe(i) }
+
+        last
+      . assert(_ == 7)
+
+      test(m"`place` copies a whole frozen array, clamped to the space"):
+        val source = Array.of(1, 2, 3, 4, 5)
+
+        val target = Array.scribe[Int](4): scribe =>
+          range => scribe.iterate { i => if (i: Ordinal) == Sec then scribe.place(source, i) }
+
+        target.to[List]
+      . assert(_ == List(0, 1, 2, 3))
+
+      test(m"`append` writes sequentially and clamps at the end"):
+        Array.scribe[Int](3): scribe =>
+          _ =>
+            scribe.append(5)
+            scribe.append(6)
+            scribe.append(7)
+            scribe.append(8)
+        . to[List]
+      . assert(_ == List(5, 6, 7))
+
+      test(m"`mark` counts appended elements"):
+        var count = -1
+
+        Array.scribe[Int](5): scribe =>
+          _ =>
+            scribe.append(1)
+            scribe.append(2)
+            count = scribe.mark
+
+        count
+      . assert(_ == 2)
+
+      test(m"a surveyor skips whitespace and reports the run"):
+        val line = t"   indent"
+        var skipped = -1
+        var next = ' '
+
+        line.survey: surveyor =>
+          skipped = (surveyor.pace(_ == ' '): Interval).size
+          surveyor.point.let { i => next = line.at(i) }
+
+        (skipped, next)
+      . assert(_ == ((3, 'i')))
+
+      test(m"a surveyor detects successive runs with their lengths"):
+        val styles = Array.of(7L, 7L, 7L, 9L, 9L, 3L)
+        var lengths: List[Int] = Nil
+
+        styles.survey: surveyor =>
+          while surveyor.more do
+            surveyor.point.let: start =>
+              val style = styles.at(start)
+              lengths ::= (surveyor.pace(_ == style): Interval).size
+
+        lengths.reverse
+      . assert(_ == List(3, 2, 1))
+
+      test(m"a negated `pace` stops at the delimiter, and `remainder` brands the rest"):
+        val csv = t"key:value"
+        var key = t""
+        var rest = -1
+
+        csv.survey: surveyor =>
+          val name = surveyor.pace(_ != ':')
+          val builder = java.lang.StringBuilder()
+          csv.iterate(name) { i => builder.append(csv.at(i)) }
+          key = builder.toString.tt
+          rest = (surveyor.remainder: Interval).size
+
+        (key, rest)
+      . assert(_ == ((t"key", 6)))
+
+      test(m"`peek` tests the current element without advancing"):
+        val text = t"-x"
+
+        text.survey: surveyor =>
+          val dash = surveyor.peek(_ == '-')
+          val same = surveyor.peek(_ == '-')
+          surveyor.advance()
+          (dash, same, surveyor.peek(_ == '-'), surveyor.peek(_ == 'x'))
+      . assert(_ == ((true, true, false, true)))
+
+      test(m"`matches` compares a pattern without advancing"):
+        val data = t"abcdef"
+
+        data.survey: surveyor =>
+          surveyor.advance()
+          val hit = surveyor.matches(t"bcd") { (left, right) => left == right }
+          val miss = surveyor.matches(t"bce") { (left, right) => left == right }
+          val long = surveyor.matches(t"bcdefgh") { (left, right) => left == right }
+          (hit, miss, long, surveyor.passed)
+      . assert(_ == ((true, false, false, 1)))
+
+      test(m"`glimpse` lends a branded lookahead window without advancing"):
+        val text = t"hello"
+
+        text.survey: surveyor =>
+          val window = surveyor.glimpse(3).let { interval => (interval: Interval).size }
+          val overrun = surveyor.glimpse(9)
+          (window, overrun, surveyor.passed)
+      . assert(_ == ((3, Unset, 0)))
+
+      test(m"`next` consumes elements one at a time"):
+        val text = t"ab"
+        val builder = java.lang.StringBuilder()
+
+        text.survey: surveyor =>
+          while surveyor.more do surveyor.next(()) { char => builder.append(char) }
+          surveyor.next(builder.append('!')) { char => builder.append(char) }
+
+        builder.toString.tt
+      . assert(_ == t"ab!")
+
+      test(m"`take` consumes a counted, clamped run"):
+        val text = t"abcde"
+        var sizes: List[Int] = Nil
+
+        text.survey: surveyor =>
+          sizes ::= (surveyor.take(2): Interval).size
+          sizes ::= (surveyor.take(9): Interval).size
+
+        sizes.reverse
+      . assert(_ == List(2, 3))
+
+      test(m"`triples` visits whole groups and returns the branded remainder"):
+        val data = Array.of[Byte](1, 2, 3, 4, 5, 6, 7, 8)
+        var sums: List[Int] = Nil
+        var rest = -1
+
+        val remainder = data.triples { (a, b, c) => sums ::= a + b + c }
+        rest = (remainder: Interval).size
+
+        (sums.reverse, rest)
+      . assert(_ == ((List(6, 15), 2)))
+
+      test(m"`pairs` and `quads` group evenly with empty remainders"):
+        val data = Array.of[Byte](1, 2, 3, 4)
+        var pairSum = 0
+        var quadSum = 0
+
+        val pairRest = data.pairs { (a, b) => pairSum += a + b }
+        val quadRest = data.quads { (a, b, c, d) => quadSum += a + b + c + d }
+
+        (pairSum, (pairRest: Interval).size, quadSum, (quadRest: Interval).size)
+      . assert(_ == ((10, 0, 10, 0)))
+
+      test(m"`adjacent` visits every overlapping pair"):
+        val text = t"abcd"
+        val builder = java.lang.StringBuilder()
+        text.adjacent { (left, right) => builder.append(left).nn.append(right).nn.append('.') }
+        builder.toString.tt
+      . assert(_ == t"ab.bc.cd.")
+
+      test(m"a lattice mints whole rows within the storage"):
+        // 10 elements, rows of 3 spaced 4 apart: rows at 0, 4 — a third row (start 8,
+        // needing 8+3 <= 10) does not fit.
+        val data = Array.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+        var rows: List[List[Int]] = Nil
+
+        data.lattice(3, 4, 0): lattice =>
+          lattice.rows: (y, row) =>
+            var elements: List[Int] = Nil
+            data.iterate(row) { i => elements ::= data.at(i) }
+            rows ::= elements.reverse
+
+        rows.reverse
+      . assert(_ == List(List(0, 1, 2), List(4, 5, 6)))
+
+      test(m"`point` linearizes in-range coordinates and rejects others"):
+        val data = Array.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+
+        data.lattice(3, 4, 0): lattice =>
+          val hit = lattice.point(2, 1).let { i => data.at(i) }
+          (hit, lattice.point(3, 1), lattice.point(0, 3), lattice.height)
+      . assert(_ == ((6, Unset, Unset, 3)))
+
+      test(m"a lattice with an offset addresses a sub-plane"):
+        val data = Array.of(9, 9, 0, 1, 2, 3)
+        var sum = 0
+
+        data.lattice(2, 2, 2): lattice =>
+          lattice.rows { (y, row) => data.iterate(row) { i => sum += data.at(i) } }
+          sum += lattice.height*100
+
+        sum
+      . assert(_ == 206)
+
+      test(m"a lattice over a scribe writes through branded rows"):
+        Array.scribe[Int](6): scribe =>
+          _ =>
+            scribe.lattice(2, 3, 0): lattice =>
+              lattice.rows { (y, row) => scribe.iterate(row) { i => scribe(i) = y + 1 } }
+        . to[List]
+      . assert(_ == List(1, 1, 0, 2, 2, 0))
+
+      test(m"an exhausted surveyor has no point and an empty remainder"):
+        val text = t"ab"
+
+        text.survey: surveyor =>
+          surveyor.pace { _ => true }
+          (surveyor.more, surveyor.point, (surveyor.remainder: Interval).size)
+      . assert(_ == ((false, Unset, 0)))
+
+      test(m"the scan family applies to a scribe"):
+        var kept = -1
+
+        Array.scribe[Int](5): scribe =>
+          range =>
+            scribe.iterate { i => scribe(i) = (i: Ordinal).n0 }
+            kept = (scribe.pare(0) { i => scribe(i) > 2 }: Interval).size
+
+        kept
+      . assert(_ == 3)
+
     // test(m"Display a PID"):
     //   Pid(2999).toString
     // .assert(_ == "↯2999")

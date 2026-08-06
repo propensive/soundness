@@ -30,42 +30,64 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package rudiments
 
-// `Region` and `Slate` are deliberately absent: their lenders and combinators are
-// dependent-typed inline extensions, which synthesized export forwarders break (see the
-// hand-written `via`/`accepting` forwarders below for the same problem). Consumers import
-// them from `zephyrine` directly.
-export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
-    Duct, Ductile, Expanse, Malleable, Pace,
-    Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
-    Records, records, Regulation, Spring, Stream, Substrate, chunks,
-    discard, gather, locate,
-    locateKey, memoize, pump, stream, streamOf, sweep, toProgression, truncate,
-    viaDuct, acceptingDuct}
+import denominative.*
+import prepositional.*
+import vacuous.*
 
-// Hand-written forwarders: the synthesized export forwarders for these dependent-typed
-// extensions lose the `ductile.Result`/`ductile.Operand` path refinements under capture
-// checking and fail to retypecheck.
-extension [in, transport](consume stream: (Stream[in] over transport)^)
-  def via[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile by in) { type Upstream = transport },
-            buffering: Buffering )
-  :   (Stream[ductile.Result] over ductile.Transport)^ =
-    // The call's dependent result widens to a `Ductile{...}#Result` projection rather than
-    // narrowing back to this forwarder's `ductile.Result`; the value is returned unchanged,
-    // so the cast only restores the dependent typing the export forwarder would have lost.
-    zephyrine.via[in, transport](stream)[stage](stage)(using ductile, buffering)
-    . asInstanceOf[(Stream[ductile.Result] over ductile.Transport)^]
+// The 2-D geometry helper for confined indexing (issue #1666): a `Lattice` brands nothing
+// itself, but derives *linear* branded intervals and ordinals for its underlying collection
+// from two-dimensional coordinates, so all access flows through the existing confined
+// machinery — and since `Scribe` is `Countable`, the same lattice addresses a write handle.
+//
+// The dangerous arithmetic it replaces is `y*stride + x` with stride ≠ width: pixel planes,
+// interlaced rows, subsampled chroma. The lender clamps the height so that every row it can
+// mint lies wholly within the storage, making `row` and `point` total by construction; a
+// partial trailing row is simply outside the lattice.
+final class Lattice[brand] @scala.annotation.publicInBinary private[rudiments]
+  ( val width: Int, val height: Int, stride: Int, offset: Int ):
 
-extension [out, transport](consume intake: (Intake[out] over transport)^)
-  def accepting[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile to out) { type Transport = transport },
-            buffering: Buffering )
-  :   (Intake[ductile.Operand] over ductile.Upstream)^ =
-    // See `via` above.
-    zephyrine.accepting[out, transport](intake)[stage](stage)(using ductile, buffering)
-    . asInstanceOf[(Intake[ductile.Operand] over ductile.Upstream)^]
+  // Row `y` as a branded linear interval, or `Unset` outside the lattice.
+  inline def row(y: Int): Optional[Interval in brand] =
+    if y < 0 || y >= height then Unset else
+      val start = offset + y*stride
+      Interval.zerary(start, start + width).asInstanceOf[Interval in brand]
 
-package parsing:
-  export zephyrine.parsing.trackPositions
+  // The linear position of `(x, y)`, or `Unset` outside the lattice.
+  inline def point(x: Int, y: Int): Optional[Ordinal in brand] =
+    if x < 0 || x >= width || y < 0 || y >= height then Unset
+    else Ordinal.zerary(offset + y*stride + x).asInstanceOf[Ordinal in brand]
+
+  // Every row in order, as its index and branded interval.
+  inline def rows(inline lambda: (Int, Interval in brand) => Unit): Unit =
+    var y = 0
+
+    while y < height do
+      val start = offset + y*stride
+      lambda(y, Interval.zerary(start, start + width).asInstanceOf[Interval in brand])
+      y += 1
+
+extension [collection: Countable](value: collection)
+  // Lend a lattice of `width`-element rows spaced `stride` apart, starting at `offset`: the
+  // height is the number of whole rows that fit, so everything the lattice mints is in
+  // range. `stride` is clamped to at least `width` (overlapping rows would alias), and a
+  // degenerate geometry yields a zero-height lattice rather than anything partial.
+  inline def lattice[result](width: Int, stride: Int, offset: Int)
+    ( inline lambda: Lattice[value.type] => result )
+  :   result =
+
+    val size = summon[collection is Countable].size(value)
+    val width2 = width.max(0)
+    val stride2 = stride.max(width2).max(1)
+    val offset2 = offset.max(0)
+
+    val height =
+      if width2 == 0 || offset2 + width2 > size then 0
+      else (size - offset2 - width2)/stride2 + 1
+
+    lambda(new Lattice[value.type](width2, height, stride2, offset2))
+
+  // A lattice over the whole extent from the start.
+  inline def lattice[result](width: Int)(inline lambda: Lattice[value.type] => result): result =
+    lattice(width, width, 0)(lambda)

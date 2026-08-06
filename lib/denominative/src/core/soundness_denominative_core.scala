@@ -34,9 +34,9 @@ package soundness
 
 export
   denominative
-  . { aka, Countable, Vacuiscible, Indexable, gamut, Interval, iterate, nil, Ordinal, Prim, Quat, Quin, Sec,
-      Sen, Sept, Span, Ter, u, z, Zerary, limit, ult, ant, pen, LinearSizeComplexity, LinearAccessComplexity,
-      UnboundedSizeComplexity }
+  . { aka, capped, Countable, Vacuiscible, Indexable, gamut, Interval, extent, iterate, lead, nil, Ordinal, pare, Prim,
+      Quat, Quin, retrace, Sec, Sen, Sept, Span, spot, Ter, u, z, Zerary, limit, ult, ant, pen,
+      LinearSizeComplexity, LinearAccessComplexity, UnboundedSizeComplexity }
 
 package asymptotics:
   export denominative.asymptotics.{linearSizeComplexity, linearAccessComplexity,
