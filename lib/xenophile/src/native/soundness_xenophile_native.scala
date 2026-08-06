@@ -33,7 +33,7 @@
 package soundness
 
 // `PanamaInvoke` is the backend the C ecosystem's `Emission` names first: it lowers a
-// fully-applied C `Foreign` navigation into a Panama downcall for the single `invoke` in
+// fully-applied C `Foreign` navigation into a Panama downcall for the single `call` in
 // `xenophile.core`. It is the JVM analogue of the `scalanative` module's `NativeInvoke` — the two
 // lower the identical navigation for different platforms, and a build gets whichever of the two
 // modules it depends on.

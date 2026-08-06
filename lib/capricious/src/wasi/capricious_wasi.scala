@@ -38,16 +38,16 @@ import scala.util as su
 import hellenism.*
 import hypotenuse.*
 import prepositional.*
-import soundness.invoke
+import soundness.call
 import xenophile.*
 
-// The WIT definitions the navigation below is typechecked against, and which the `invoke`
+// The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for the function's module id.
 type WasiRandomApi = Interface in Wit at "/capricious/random.wit"
 given wasiRandomApi: WasiRandomApi = Interface[Wit](cp"/capricious/random.wit")
 
 package randomization:
-  // `inline`, so the `invoke` macro expands at the downstream summoning site: the Wasm Component
+  // `inline`, so the `call` macro expands at the downstream summoning site: the Wasm Component
   // import (`scala.scalajs.wit.witImportCall`) only materializes in code compiled for a Wasm
   // target, where that intrinsic is on the classpath. Summoning it requires `wasiRandomApi` (and
   // this module's WIT resource) to be visible at that site.
@@ -58,4 +58,4 @@ package randomization:
     def initialize(): su.Random =
       su.Random:
         WasiRandom: () =>
-          Foreign["random", Wit].`get-random-u64`.invoke[U64].bits.s64.long
+          Foreign["random", Wit].`get-random-u64`.call[U64]().bits.s64.long

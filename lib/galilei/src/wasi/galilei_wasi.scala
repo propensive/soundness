@@ -45,12 +45,12 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import vacuous.*
-import soundness.{invoke, dispose}
+import soundness.{call, dispose}
 import xenophile.*
 
 import IoError.{Operation, Reason}
 
-// The WIT definitions the navigation below is typechecked against, and which the `invoke`
+// The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
 // parameter types.
 type WasiFilesystemApi = Interface in Wit at "/galilei/filesystem.wit"
@@ -61,11 +61,11 @@ package filesystemBackends:
   // grants access as *preopened directory descriptors* (`wasmtime run --dir …`), and every
   // operation resolves its path against the preopen with the longest matching prefix — a path
   // outside every preopen raises `PermissionDenied`, which is the capability model speaking.
-  // `inline`, so the `invoke`s expand at the downstream summoning site: the Wasm Component
+  // `inline`, so the `call`s expand at the downstream summoning site: the Wasm Component
   // imports only materialize in code compiled for a Wasm target. Summoning it requires
   // `wasiFilesystemApi` (and this module's WIT resource) to be visible at that site.
   //
-  // WASI error codes are recovered from the `WitError` raised by `invoke`'s decoder and mapped
+  // WASI error codes are recovered from the `WitError` raised by `call`'s decoder and mapped
   // onto `IoError.Reason` — so a quota failure reports `QuotaExceeded`, not a generic error.
   //
   // The per-site duplication the compiler warns about is the point: the instance must
@@ -115,7 +115,7 @@ package filesystemBackends:
 
         val preopens =
           Foreign["preopens", Wit].`get-directories`
-          . invoke[List[(WitHandle of "descriptor", Text)]]
+          . call[List[(WitHandle of "descriptor", Text)]]()
 
         def covers(preopen: Text): Boolean =
           target == preopen || preopen == t"/" || target.starts(t"$preopen/")
@@ -151,7 +151,7 @@ package filesystemBackends:
 
         val directory: Foreign of "descriptor" from Wit = descriptor
 
-        val fields = directory.`stat-at`(follow(dereference), relative).invoke[StatFields]
+        val fields = directory.`stat-at`(follow(dereference), relative).call[StatFields]()
 
         // `descriptor-type`'s cases, by declaration order: unknown, block-device,
         // character-device, directory, fifo, symbolic-link, regular-file, socket.
@@ -194,13 +194,13 @@ package filesystemBackends:
           try
             val listing =
               directory.`open-at`(follow(true), relative, U32(2.bits), U32(1.bits))
-              . invoke[WitHandle of "descriptor"]
+              . call[WitHandle of "descriptor"]()
 
             val target: Foreign of "descriptor" from Wit = listing
 
             try
               val streamHandle =
-                target.`read-directory`.invoke[WitHandle of "directory-entry-stream"]
+                target.`read-directory`.call[WitHandle of "directory-entry-stream"]()
 
               val stream: Foreign of "directory-entry-stream" from Wit = streamHandle
 
@@ -208,7 +208,7 @@ package filesystemBackends:
               var done: Boolean = false
 
               while !done do
-                val entry = stream.`read-directory-entry`.invoke[Optional[(U8, Text)]]
+                val entry = stream.`read-directory-entry`.call[Optional[(U8, Text)]]()
                 if entry.absent then done = true else names = entry.vouch(1) :: names
 
               streamHandle.dispose()
@@ -229,14 +229,14 @@ package filesystemBackends:
 
       def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit =
         act(path, Operation.Create): (directory, relative) =>
-          directory.`create-directory-at`(relative).invoke[Unit]
+          directory.`create-directory-at`(relative).call[Unit]()
 
       def createFile(path: Path on Plane)(using Tactic[IoError]): Unit =
         act(path, Operation.Create): (directory, relative) =>
           // open-flags: create (1) | exclusive (4); descriptor-flags: write (2)
           val created =
             directory.`open-at`(follow(true), relative, U32(5.bits), U32(2.bits))
-            . invoke[WitHandle of "descriptor"]
+            . call[WitHandle of "descriptor"]()
 
           created.dispose()
 
@@ -249,15 +249,15 @@ package filesystemBackends:
             try statOf(resolve(path, Operation.Delete)(0), relative, false).entry == Directory
             catch case error: WitError => false
 
-          if directoryEntry then directory.`remove-directory-at`(relative).invoke[Unit]
-          else directory.`unlink-file-at`(relative).invoke[Unit]
+          if directoryEntry then directory.`remove-directory-at`(relative).call[Unit]()
+          else directory.`unlink-file-at`(relative).call[Unit]()
 
       def deleteIfExists(path: Path on Plane)(using Tactic[IoError]): Unit =
         if exists(path, false) then delete(path)
 
       def symlink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit =
         act(link, Operation.Create): (directory, relative) =>
-          directory.`symlink-at`(Path.encodable.encode(target), relative).invoke[Unit]
+          directory.`symlink-at`(Path.encodable.encode(target), relative).call[Unit]()
 
       def hardLink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit =
         protect(link, Operation.Create):
@@ -269,7 +269,7 @@ package filesystemBackends:
 
             try
               directory.`link-at`(follow(false), sourceRelative, destination, linkRelative)
-              . invoke[Unit]
+              . call[Unit]()
             finally destination.dispose()
           finally source.dispose()
 
@@ -297,7 +297,7 @@ package filesystemBackends:
           try
             val (to, toRelative) = resolve(destination, Operation.Move)
 
-            try directory.`rename-at`(fromRelative, to, toRelative).invoke[Unit]
+            try directory.`rename-at`(fromRelative, to, toRelative).call[Unit]()
             finally to.dispose()
           finally from.dispose()
 
@@ -309,7 +309,7 @@ package filesystemBackends:
               WitCase["new-timestamp"](t"now"),
               WitCase["new-timestamp"](t"now") )
 
-          . invoke[Unit]
+          . call[Unit]()
 
       def hidden(path: Path on Plane)(using Tactic[IoError]): Boolean =
         path.descent.to(List).prim.let(_.starts(t".")).or(false)
@@ -326,7 +326,7 @@ package filesystemBackends:
           val directory: Foreign of "descriptor" from Wit = descriptor
 
           try
-            val fields = directory.`stat-at`(follow(dereference), relative).invoke[StatFields]
+            val fields = directory.`stat-at`(follow(dereference), relative).call[StatFields]()
             fields(1).bits.s64.long.toInt
           finally descriptor.dispose()
 
@@ -370,20 +370,20 @@ package filesystemBackends:
             val opened =
               directory
               . `open-at`(pathFlags, relative, U32(openFlags.bits), U32(descriptorFlags.bits))
-              . invoke[WitHandle of "descriptor"]
+              . call[WitHandle of "descriptor"]()
 
             val target: Foreign of "descriptor" from Wit = opened
 
             def read(): Chain[Data] =
               val streamHandle =
-                target.`read-via-stream`(U64(0L.bits)).invoke[WitHandle of "input-stream"]
+                target.`read-via-stream`(U64(0L.bits)).call[WitHandle of "input-stream"]()
 
               val stream: Foreign of "input-stream" from Wit = streamHandle
               var chunks: List[Data] = Nil
 
               try
                 while true do
-                  chunks = stream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
+                  chunks = stream.`blocking-read`(U64(65536L.bits)).call[Data]() :: chunks
               catch case error: WitError => ()
 
               streamHandle.dispose()
@@ -392,12 +392,12 @@ package filesystemBackends:
             def write(data: Chain[Data]): Unit =
               val streamHandle =
                 if flags.has(OpenFlag.Append)
-                then target.`append-via-stream`.invoke[WitHandle of "output-stream"]
-                else target.`write-via-stream`(U64(0L.bits)).invoke[WitHandle of "output-stream"]
+                then target.`append-via-stream`.call[WitHandle of "output-stream"]()
+                else target.`write-via-stream`(U64(0L.bits)).call[WitHandle of "output-stream"]()
 
               val stream: Foreign of "output-stream" from Wit = streamHandle
 
-              data.each: chunk => stream.`blocking-write-and-flush`(chunk).invoke[Unit]
+              data.each: chunk => stream.`blocking-write-and-flush`(chunk).call[Unit]()
 
               streamHandle.dispose()
 

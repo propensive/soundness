@@ -152,7 +152,7 @@ object Xenophile:
       case other                             => stringOf(other)
 
     def notCall: Nothing =
-      halt(m"xenophile: `invoke` expects a foreign function invocation, `interface.function(…)`")
+      halt(m"xenophile: `call` expects a foreign function invocation, `interface.function(…)`")
 
     val expression = strip(self.asTerm.underlyingArgument).absolve match
       case Apply(Select(_, "make"), Seq(argument)) => strip(argument)
@@ -169,7 +169,7 @@ object Xenophile:
 
     // Either an applied call — `Expression.Apply(select, arguments)`, whose companion `apply`
     // takes two arguments — or the bare selection of a zero-parameter function
-    // (`Expression.Select`, whose companion `apply` takes three): `interface.function.invoke[R]`.
+    // (`Expression.Select`, whose companion `apply` takes three): `interface.function.call[R]()`.
     // The latter is preferred inside `inline` definitions, where re-inlining an empty-varargs
     // application trips path-dependent type avoidance.
     val (selectNode, argumentTerms) = expression match
@@ -432,7 +432,7 @@ object Xenophile:
       halt(m"xenophile: the foreign type $topic has no member $fieldName")
 
     // A method with parameters cannot be bare-selected, but a zero-parameter method can: the
-    // selection is typed by its result, so a terminal materializer (e.g. WIT `invoke`) can treat it
+    // selection is typed by its result, so a terminal materializer (e.g. WIT `call`) can treat it
     // as a nullary call — avoiding an empty-varargs application, which trips path-dependent type
     // avoidance when the navigation is re-inlined from an enclosing `inline` definition.
     signature.parameters.let: parameters =>

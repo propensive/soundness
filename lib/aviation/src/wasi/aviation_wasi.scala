@@ -37,16 +37,16 @@ import scala.annotation.nowarn
 import hellenism.*
 import hypotenuse.*
 import prepositional.*
-import soundness.invoke
+import soundness.call
 import xenophile.*
 
-// The WIT definitions the navigation below is typechecked against, and which the `invoke`
+// The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for the function's module id.
 type WasiClockApi = Interface in Wit at "/aviation/clocks.wit"
 given wasiClockApi: WasiClockApi = Interface[Wit](cp"/aviation/clocks.wit")
 
 package clocks:
-  // `inline`, so the `invoke` macro expands at the downstream summoning site: the Wasm Component
+  // `inline`, so the `call` macro expands at the downstream summoning site: the Wasm Component
   // import (`scala.scalajs.wit.witImportCall`) only materializes in code compiled for a Wasm
   // target, where that intrinsic is on the classpath. Summoning it requires `wasiClockApi` (and
   // this module's WIT resource) to be visible at that site.
@@ -56,12 +56,12 @@ package clocks:
   @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
   inline given wasiMonotonicClock: MonotonicClock = new MonotonicClock:
     def apply(): Instant over Monotonic =
-      Instant.of[Monotonic](Foreign["monotonic-clock", Wit].`now`.invoke[U64].bits.s64.long)
+      Instant.of[Monotonic](Foreign["monotonic-clock", Wit].`now`.call[U64]().bits.s64.long)
 
   // The wall clock reads `wasi:clocks/wall-clock` `now`, whose `datetime` record crosses the
   // boundary as a `(seconds: U64, nanoseconds: U32)` pair, converted to POSIX millisecond ticks.
   @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
   inline given wasiClock: Clock = new Clock:
     def apply(): Instant over Unix =
-      val (seconds, nanoseconds) = Foreign["wall-clock", Wit].`now`.invoke[(U64, U32)]
+      val (seconds, nanoseconds) = Foreign["wall-clock", Wit].`now`.call[(U64, U32)]()
       Instant.of[Unix](seconds.bits.s64.long*1000 + nanoseconds.bits.s32.int/1000000)
