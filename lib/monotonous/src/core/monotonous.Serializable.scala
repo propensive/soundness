@@ -39,6 +39,8 @@ import scala.caps
 import java.nio.charset.StandardCharsets
 
 import anticipation.*
+import denominative.*
+import rudiments.*
 import beneficence.*
 import hypotenuse.*
 import prepositional.*
@@ -62,16 +64,16 @@ object Serializable:
       def encode(bytes: Data): Text =
         val src = bytes.asInstanceOf[scala.Array[Byte]]
 
-        val out = bits match
-          case 4 => hex(src)
-          case 5 => base32(src)
-          case 6 => base64(src)
-          case _ => generic(src)
+        val out: Array[Byte]^{} = bits match
+          case 4 => hex(bytes)
+          case 5 => Array.freeze(base32(src))
+          case 6 => base64(bytes)
+          case _ => Array.freeze(generic(src))
 
         // Every alphabet character is ASCII, so decoding the output as Latin-1
         // yields identical text while letting the JVM adopt the byte array as the
         // compact-string backing directly, with no validating charset scan.
-        Text(String(out.raw, StandardCharsets.ISO_8859_1))
+        Text(String(Array.unsafeJvm(out), StandardCharsets.ISO_8859_1))
 
       // Hex: each byte is a self-contained group of two characters, so there is
       // no bit carry and never any padding. Both output bytes for a given input
@@ -84,25 +86,21 @@ object Serializable:
           val lo = lookup(b & 0xf) & 0xff
           (hi | (lo << 8)).toShort
 
-      private def hex(src: scala.Array[Byte]): Array[Byte]^ =
-        val pairs = hexPairs
-        val n = src.length
-        val out = Array[Byte](n*2)
-        var i = 0
-        var j = 0
+      private def hex(src: Data): Array[Byte]^{} =
+        // The one raw gate of this kernel: the pair table is indexed by *value* (`& 0xff`
+        // confines it to the table's 256 entries), which branding cannot express.
+        val pairTable = Array.unsafeJvm(hexPairs)
 
-        while i < n do
-          val pair = pairs(src(i) & 0xff).toInt
-          out(j) = pair.toByte
-          out(j + 1) = (pair >>> 8).toByte
-          i += 1
-          j += 2
-
-        out
+        Array.scribe[Byte](src.length*2): scribe =>
+          _ =>
+            src.iterate: index =>
+              val pair = pairTable(src.at(index) & 0xff).toInt
+              scribe.append(pair.toByte)
+              scribe.append((pair >>> 8).toByte)
 
       // Base64: three input bytes become four characters; a trailing group of
       // one or two bytes is completed with padding when the alphabet demands it.
-      private def base64(src: scala.Array[Byte]): Array[Byte]^ =
+      private def base64(src: Data): Array[Byte]^{} =
         val n = src.length
         val full = n/3
         val rem = n - full*3
@@ -111,41 +109,41 @@ object Serializable:
           if padding then (full + (if rem > 0 then 1 else 0))*4
           else full*4 + (if rem == 1 then 2 else if rem == 2 then 3 else 0)
 
-        val out = Array[Byte](length)
-        var i = 0
-        var j = 0
-        var g = 0
+        // The one raw gate of this kernel: the alphabet table is indexed by *value* (each
+        // index is a masked 6-bit group), which branding cannot express.
+        val table = Array.unsafeJvm(lookup)
 
-        while g < full do
-          val b0 = src(i) & 0xff
-          val b1 = src(i + 1) & 0xff
-          val b2 = src(i + 2) & 0xff
-          out(j) = lookup(b0 >>> 2)
-          out(j + 1) = lookup(((b0 & 0x3) << 4) | (b1 >>> 4))
-          out(j + 2) = lookup(((b1 & 0xf) << 2) | (b2 >>> 6))
-          out(j + 3) = lookup(b2 & 0x3f)
-          i += 3
-          j += 4
-          g += 1
+        Array.scribe[Byte](length): scribe =>
+          _ =>
+            val remainder = src.triples: (byte0, byte1, byte2) =>
+              val b0 = byte0 & 0xff
+              val b1 = byte1 & 0xff
+              val b2 = byte2 & 0xff
+              scribe.append(table(b0 >>> 2))
+              scribe.append(table(((b0 & 0x3) << 4) | (b1 >>> 4)))
+              scribe.append(table(((b1 & 0xf) << 2) | (b2 >>> 6)))
+              scribe.append(table(b2 & 0x3f))
 
-        if rem == 1 then
-          val b0 = src(i) & 0xff
-          out(j) = lookup(b0 >>> 2)
-          out(j + 1) = lookup((b0 & 0x3) << 4)
-          j += 2
-        else if rem == 2 then
-          val b0 = src(i) & 0xff
-          val b1 = src(i + 1) & 0xff
-          out(j) = lookup(b0 >>> 2)
-          out(j + 1) = lookup(((b0 & 0x3) << 4) | (b1 >>> 4))
-          out(j + 2) = lookup((b1 & 0xf) << 2)
-          j += 3
+            if rem == 1 then
+              src.iterate(remainder): index =>
+                val b0 = src.at(index) & 0xff
+                scribe.append(table(b0 >>> 2))
+                scribe.append(table((b0 & 0x3) << 4))
+            else if rem == 2 then
+              var b0 = 0
+              var first = true
 
-        while j < length do
-          out(j) = padByte
-          j += 1
+              src.iterate(remainder): index =>
+                if first then
+                  b0 = src.at(index) & 0xff
+                  first = false
+                else
+                  val b1 = src.at(index) & 0xff
+                  scribe.append(table(b0 >>> 2))
+                  scribe.append(table(((b0 & 0x3) << 4) | (b1 >>> 4)))
+                  scribe.append(table((b1 & 0xf) << 2))
 
-        out
+            while scribe.mark < length do scribe.append(padByte)
 
       // Base32: five input bytes become eight characters; trailing groups of
       // 1/2/3/4 bytes emit 2/4/5/7 characters, padded to a multiple of eight.

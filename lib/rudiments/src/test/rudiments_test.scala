@@ -335,6 +335,35 @@ object Tests extends Suite(m"Rudiments Tests"):
         sizes.reverse
       . assert(_ == List(2, 3))
 
+      test(m"`triples` visits whole groups and returns the branded remainder"):
+        val data = Array.of[Byte](1, 2, 3, 4, 5, 6, 7, 8)
+        var sums: List[Int] = Nil
+        var rest = -1
+
+        val remainder = data.triples { (a, b, c) => sums ::= a + b + c }
+        rest = (remainder: Interval).size
+
+        (sums.reverse, rest)
+      . assert(_ == ((List(6, 15), 2)))
+
+      test(m"`pairs` and `quads` group evenly with empty remainders"):
+        val data = Array.of[Byte](1, 2, 3, 4)
+        var pairSum = 0
+        var quadSum = 0
+
+        val pairRest = data.pairs { (a, b) => pairSum += a + b }
+        val quadRest = data.quads { (a, b, c, d) => quadSum += a + b + c + d }
+
+        (pairSum, (pairRest: Interval).size, quadSum, (quadRest: Interval).size)
+      . assert(_ == ((10, 0, 10, 0)))
+
+      test(m"`adjacent` visits every overlapping pair"):
+        val text = t"abcd"
+        val builder = java.lang.StringBuilder()
+        text.adjacent { (left, right) => builder.append(left).nn.append(right).nn.append('.') }
+        builder.toString.tt
+      . assert(_ == t"ab.bc.cd.")
+
       test(m"an exhausted surveyor has no point and an empty remainder"):
         val text = t"ab"
 
