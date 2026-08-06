@@ -120,3 +120,54 @@ extension [collection](value: collection)
           indexable.access(value, Ordinal.zerary(index)) )
 
       index += 1
+
+  // Whole disjoint groups of five; the branded remainder holds the 0-4 trailing elements.
+  inline def quints
+    ( using countable: collection is Countable, indexable: (collection is Indexable by Ordinal) )
+    ( inline lambda:
+        ( indexable.Result, indexable.Result, indexable.Result, indexable.Result,
+          indexable.Result ) => Unit )
+  :   Interval in value.type =
+
+    val size = countable.size(value)
+    val full = size - size%5
+    var index = 0
+
+    while index < full do
+      lambda
+        ( indexable.access(value, Ordinal.zerary(index)),
+          indexable.access(value, Ordinal.zerary(index + 1)),
+          indexable.access(value, Ordinal.zerary(index + 2)),
+          indexable.access(value, Ordinal.zerary(index + 3)),
+          indexable.access(value, Ordinal.zerary(index + 4)) )
+
+      index += 5
+
+    Interval.zerary(full, size).asInstanceOf[Interval in value.type]
+
+  // Whole disjoint octuples; the branded remainder holds the 0-7 trailing elements.
+  inline def octuples
+    ( using countable: collection is Countable, indexable: (collection is Indexable by Ordinal) )
+    ( inline lambda:
+        ( indexable.Result, indexable.Result, indexable.Result, indexable.Result,
+          indexable.Result, indexable.Result, indexable.Result, indexable.Result ) => Unit )
+  :   Interval in value.type =
+
+    val size = countable.size(value)
+    val full = size - size%8
+    var index = 0
+
+    while index < full do
+      lambda
+        ( indexable.access(value, Ordinal.zerary(index)),
+          indexable.access(value, Ordinal.zerary(index + 1)),
+          indexable.access(value, Ordinal.zerary(index + 2)),
+          indexable.access(value, Ordinal.zerary(index + 3)),
+          indexable.access(value, Ordinal.zerary(index + 4)),
+          indexable.access(value, Ordinal.zerary(index + 5)),
+          indexable.access(value, Ordinal.zerary(index + 6)),
+          indexable.access(value, Ordinal.zerary(index + 7)) )
+
+      index += 8
+
+    Interval.zerary(full, size).asInstanceOf[Interval in value.type]

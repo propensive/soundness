@@ -100,14 +100,10 @@ extension (module: Text.type)
   def ascii(bytes: Data): Text = new String(Array.unsafeJvm(bytes), "ASCII").tt
 
   def fill(length: Int)(lambda: Int => Char): Text =
-    val buffer = Array[Char](length)
-    var index = 0
+    val buffer = Array.scribe[Char](length): scribe =>
+      _ => scribe.iterate { index => scribe(index) = lambda((index: Ordinal).n0) }
 
-    while index < length do
-      buffer(index) = lambda(index)
-      index += 1
-
-    String(buffer.raw).tt
+    String(Array.unsafeJvm(buffer)).tt
 
 extension (inline context: StringContext)
   transparent inline def txt(inline parts: Any*): Text =
