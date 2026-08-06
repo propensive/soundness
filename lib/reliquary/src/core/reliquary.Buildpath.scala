@@ -50,6 +50,25 @@ object Buildpath:
     val version = manifest.version.or(abort(LiraError(Reason.VersionRequired)))
     if !Versioning.numeric(version) then abort(LiraError(Reason.VersionRequired))
 
+    // L142: a tag names exactly one release of its module, forever. A tag carried by any other
+    // published release of the module is a reassignment; and a re-signed manifest for the
+    // *same* release (the same implementation identity) may add tags but never drop one a
+    // published manifest carries.
+    val siblings = published.stdlib.filter(_.module == manifest.module)
+
+    manifest.tag.stdlib.foreach: tag =>
+      val elsewhere = siblings.exists: sibling =>
+        sibling.tag.stdlib.contains(tag)
+          && Blob.compare(sibling.payload.hash, manifest.payload.hash) != 0
+
+      if elsewhere then abort(LiraError(Reason.TagReassigned(tag)))
+
+    siblings.filter { sibling => Blob.compare(sibling.payload.hash, manifest.payload.hash) == 0 }
+    . foreach: sibling =>
+        sibling.tag.stdlib.foreach: tag =>
+          if !manifest.tag.stdlib.contains(tag)
+          then abort(LiraError(Reason.TagReassigned(tag)))
+
     manifest.dependency.stdlib.foreach: dependency =>
       // L118: build pins are development-only; publication requires snapshot requirements.
       dependency.build.let: _ => abort(LiraError(Reason.BuildPinned(dependency.module)))

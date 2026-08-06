@@ -511,3 +511,94 @@ object Tests extends Suite(m"Mandible tests"):
     . assert: advisories =>
         advisories.length == 2
           && advisories.forall(_.s.contains("changed value"))
+
+    // --- jsig/1 and host contracts ------------------------------------------------------------
+
+    test(m"jsig claims signature files and classfiles in both its worlds"):
+      val data = Array.freeze(Array[Byte](0))
+
+      (JsigDiscipline.claims(TreePath(t"java.base/java/lang/Object.sig"), data),
+       JsigDiscipline.claims(TreePath(t"android/view/View.class"), data),
+       JsigDiscipline.claims(TreePath(t"readme.md"), data),
+       JsigDiscipline.domain.covers(t"host"),
+       JsigDiscipline.domain.covers(t"jvm"),
+       JsigDiscipline.domain.covers(t"sjsir"))
+    . assert(_ == (true, true, false, true, true, false))
+
+    test(m"a supertype outside the claimed content is a boundary, not an error"):
+      val (content, _) = compile(base, derived, api)
+      val derivedOnly = List.from(content.filter { pair => pair(0).text.s.contains("Derived") })
+
+      // The classpath is empty, so `Base` is unresolvable: `classfile/1` must fail here, and
+      // `jsig/1` must not — the presented set simply lacks what the boundary hides.
+      val atoms = JsigDiscipline.atomize(derivedOnly, Discipline.Context(t"host")).atoms
+
+      (atoms.stdlib.exists(_.key == t"fixture/Derived"),
+       atoms.stdlib.exists(_.key.s.startsWith("fixture/Derived#")),
+       atoms.stdlib.exists(_.key.s.startsWith("fixture/Base")))
+    . assert(_ == (true, true, false))
+
+    test(m"host contract sequences derive versions, lineages and tags"):
+      val (v1, _) = compile(base, derived, api)
+
+      val (v2, _) = compile(edit(base, t"public int inherited",
+          t"public int added() { return 9; }\n  public int inherited"), derived, api)
+
+      val (v3, _) = compile(edit(base, t"protected int guarded() { return 2; }", t""),
+          derived, api)
+
+      val releases = List(
+        HostRelease(t"jdk-17", v1),
+        HostRelease(t"jdk-18", v2),
+        HostRelease(t"jdk-19", v3))
+
+      val liras = HostContracts.assemble(t"fixture-host", releases,
+        List(LiraManifest.Tool(t"jsig-harvest", t"0.1")),
+        allowMajor = { tag => tag == t"jdk-19" })
+
+      val parsed = liras.stdlib.map { (tag, bytes) => (tag, Lira.read(bytes)) }
+      parsed.foreach { (_, lira) => Verification.install(lira) }
+
+      val versions = parsed.map: (_, lira) =>
+        lira.manifest.version.let { v => s"${v.major}.${v.minor}.${v.patch}" }.or("")
+
+      (versions,
+       parsed.map { (_, lira) => lira.manifest.lineage.stdlib.size },
+       parsed.flatMap { (_, lira) => lira.manifest.tag.stdlib },
+       parsed.forall { (_, lira) => lira.manifest.hostContract })
+    . assert(_ == (scala.List("0.1.0", "0.2.0", "0.3.0"), scala.List(1, 2, 1),
+        scala.List(t"jdk-17", t"jdk-18", t"jdk-19"), true))
+
+    test(m"an unsanctioned major refuses the sequence, L110"):
+      val (v1, _) = compile(base, derived, api)
+
+      val (v2, _) = compile(edit(base, t"protected int guarded() { return 2; }", t""),
+          derived, api)
+
+      import errorDiagnostics.stackTracesDiagnostics
+
+      capture[LiraError]:
+        HostContracts.assemble(t"fixture-host",
+          List(HostRelease(t"a", v1), HostRelease(t"b", v2)),
+          List(LiraManifest.Tool(t"jsig-harvest", t"0.1")))
+      . reason
+    . assert(_ == LiraError.Reason.UngradedSuccessor)
+
+    test(m"ct.sym harvests a verifiable, tagged jdk contract"):
+      CtSym.location().lay(true): path =>
+        val releases = CtSym.releases(path)
+        val earliest = releases.stdlib.head
+        val surface = CtSym.surface(path, earliest, prefix = t"java.base/java/lang/")
+        val tag = Text(s"jdk-$earliest")
+
+        val liras = HostContracts.assemble(t"jdk", List(HostRelease(tag, surface)),
+          List(LiraManifest.Tool(t"jsig-harvest", t"0.1")))
+
+        val lira = Lira.read(liras.stdlib.head(1))
+        Verification.install(lira)
+
+        releases.stdlib.size >= 2
+          && surface.stdlib.size > 20
+          && lira.manifest.tag.stdlib == scala.List(tag)
+          && lira.manifest.hostContract
+    . assert(_ == true)

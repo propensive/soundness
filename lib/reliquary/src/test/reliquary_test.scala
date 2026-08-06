@@ -2160,3 +2160,70 @@ object Tests extends Suite(m"Reliquary Tests"):
           . validate(t"jvm", contracts = List(javalib), atoms = atoms, used = used)
         . reason
       . assert(_ == LiraError.Reason.UnsatisfiedRequirement(t"posix"))
+
+    suite(m"Tags"):
+      def payloadStub(module: Text): LiraManifest.Payload =
+        LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob, encode(module)))
+
+      def release
+        ( module: Text, tags: List[Text], payload: Text, version: revolution.Semver )
+      :   LiraManifest =
+
+        LiraManifest(
+          module  = module,
+          version = version,
+          tag     = tags,
+          lineage = List(LiraHash(LiraHash.Domain.Snapshot, encode(payload))),
+          api     = List(),
+          section = List(Section(t"jvm", tree = blob(encode(t"tree")))),
+          payload = LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob,
+              encode(payload))))
+
+      val one = revolution.Semver(0, 1, 0)
+      val two = revolution.Semver(0, 2, 0)
+
+      test(m"tags round-trip through the manifest"):
+        val bytes = LiraAssembler.assemble(t"jdk",
+          List(LiraAssembler.SectionInput(t"jvm", List((TreePath(t"a/A.class"), classA)))),
+          Discipline.Registry(List()),
+          tag = List(t"jdk-19", t"jdk-19.0.1"),
+          toolchain = List(LiraManifest.Tool(t"jsig-harvest", t"0.1")))
+
+        Lira.read(bytes).manifest.tag.stdlib
+      . assert(_ == scala.List(t"jdk-19", t"jdk-19.0.1"))
+
+      test(m"a tag carried by another release of the module is L142"):
+        val earlier = release(t"jdk", List(t"jdk-19"), t"one", one)
+        val later = release(t"jdk", List(t"jdk-19"), t"two", two)
+
+        capture[LiraError](Buildpath.publishable(later, List(earlier))).reason
+      . assert(_ == LiraError.Reason.TagReassigned(t"jdk-19"))
+
+      test(m"re-signing the same release may add tags but never drop one"):
+        val original = release(t"jdk", List(t"jdk-19"), t"one", one)
+        val augmented = release(t"jdk", List(t"jdk-19", t"jdk-19-ga"), t"one", one)
+        val stripped = release(t"jdk", List(), t"one", one)
+
+        Buildpath.publishable(augmented, List(original))
+
+        capture[LiraError](Buildpath.publishable(stripped, List(original))).reason
+      . assert(_ == LiraError.Reason.TagReassigned(t"jdk-19"))
+
+      test(m"the same tag on a different module is no clash"):
+        val jdk = release(t"jdk", List(t"lts"), t"one", one)
+        val android = release(t"android", List(t"lts"), t"two", two)
+        Buildpath.publishable(android, List(jdk))
+        true
+      . assert(identity)
+
+      test(m"a malformed tag fails schema validation"):
+        val bytes = LiraAssembler.assemble(t"jdk",
+          List(LiraAssembler.SectionInput(t"jvm", List((TreePath(t"a/A.class"), classA)))),
+          Discipline.Registry(List()),
+          tag = List(t"9uplet"),
+          toolchain = List(LiraManifest.Tool(t"jsig-harvest", t"0.1")))
+
+        capture[LiraError](Lira.read(bytes)).reason match
+          case LiraError.Reason.InvalidManifest(_) => true
+          case _                                   => false
+      . assert(identity)

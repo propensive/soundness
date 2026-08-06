@@ -80,6 +80,9 @@ scalar Namespace
 scalar Semver
   validate semver
 
+scalar TagName
+  validate tag-name
+
 scalar Natural
   validate natural
 
@@ -109,6 +112,7 @@ select ResourceMode
 document
   field module ModuleName
   field version Semver optional
+  field tag TagName optional repeatable
   field lineage Hash repeatable
   field toolchain Tool repeatable
   field owns Namespace optional repeatable

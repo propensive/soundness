@@ -300,6 +300,7 @@ object LiraManifest:
     LiraManifest
       ( module      = required(top, t"module"),
         version     = field(top, t"version").let(semver(_)),
+        tag         = List.from(repeated(top, t"tag")),
         lineage     = List.from(repeated(top, t"lineage").map(hash(_))),
         toolchain   = List.from(toolchain),
         owns        = List.from(repeated(top, t"owns")),
@@ -320,6 +321,7 @@ object LiraManifest:
 case class LiraManifest
   ( module:      Text,
     version:     Optional[Semver]                = Unset,
+    tag:         List[Text]                      = List(),
     lineage:     List[Data],
     toolchain:   List[LiraManifest.Tool]         = List(),
     owns:        List[Text]                      = List(),
@@ -353,6 +355,7 @@ case class LiraManifest
     lines += s"module $module"
 
     version.let: v => lines += s"version ${v.major}.${v.minor}.${v.patch}"
+    tag.stdlib.foreach: name => lines += s"tag $name"
     lineage.stdlib.foreach: hash => lines += s"lineage ${LiraHash.text(hash)}"
 
     toolchain.stdlib.foreach: tool =>

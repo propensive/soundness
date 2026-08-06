@@ -68,6 +68,7 @@ object LiraValidators:
           case "guarantee"     => guarantee(value)
           case "tree-path"     => treePath(value)
           case "atom-class"    => atomClass(value)
+          case "tag-name"      => tagName(value)
           case _               => unknown(method)
 
         case Request.Struct(method, _) => unknown(method)
@@ -100,6 +101,22 @@ object LiraValidators:
     if s.isEmpty then fail(t"the module name must not be empty", (0, 0))
     else if !s.split("[/.]", -1).nn.forall(good)
     then fail(t"each `/`- or `.`-separated segment must be kebab-case", (0, s.length))
+    else Response.Valid
+
+  // A tag name (§12.6): a letter followed by letters, digits, `-` and `.` — `jdk-19`,
+  // `scala-3.9`.
+  private def tagName(value: Text): Response =
+    val s = value.s
+
+    def tagChar(c: Char): Boolean =
+      c == '-' || c == '.' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+        || (c >= '0' && c <= '9')
+
+    if s.isEmpty then fail(t"the tag must not be empty", (0, 0))
+    else if !s.charAt(0).isLetter
+    then fail(t"a tag must start with a letter", (0, 1))
+    else if !s.forall(tagChar)
+    then fail(t"a tag may contain only letters, digits, `-` and `.`", (0, s.length))
     else Response.Valid
 
   private def namespaceChar(c: Char): Boolean =
