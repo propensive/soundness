@@ -243,6 +243,64 @@ object Tests extends Suite(m"Rudiments Tests"):
         count
       . assert(_ == 2)
 
+      test(m"a surveyor skips whitespace and reports the run"):
+        val line = t"   indent"
+        var skipped = -1
+        var next = ' '
+
+        line.survey: surveyor =>
+          skipped = (surveyor.skipWhile(_ == ' '): Interval).size
+          surveyor.point.let { i => next = line.at(i) }
+
+        (skipped, next)
+      . assert(_ == ((3, 'i')))
+
+      test(m"a surveyor detects successive runs with their lengths"):
+        val styles = Array.of(7L, 7L, 7L, 9L, 9L, 3L)
+        var lengths: List[Int] = Nil
+
+        styles.survey: surveyor =>
+          while surveyor.more do
+            surveyor.point.let: start =>
+              val style = styles.at(start)
+              lengths ::= (surveyor.skipWhile(_ == style): Interval).size
+
+        lengths.reverse
+      . assert(_ == List(3, 2, 1))
+
+      test(m"`skipUntil` stops at the delimiter, and `remainder` brands the rest"):
+        val csv = t"key:value"
+        var key = t""
+        var rest = -1
+
+        csv.survey: surveyor =>
+          val name = surveyor.skipUntil(_ == ':')
+          val builder = java.lang.StringBuilder()
+          csv.iterate(name) { i => builder.append(csv.at(i)) }
+          key = builder.toString.tt
+          rest = (surveyor.remainder: Interval).size
+
+        (key, rest)
+      . assert(_ == ((t"key", 6)))
+
+      test(m"`peek` tests the current element without advancing"):
+        val text = t"-x"
+
+        text.survey: surveyor =>
+          val dash = surveyor.peek(_ == '-')
+          val same = surveyor.peek(_ == '-')
+          surveyor.advance()
+          (dash, same, surveyor.peek(_ == '-'), surveyor.peek(_ == 'x'))
+      . assert(_ == ((true, true, false, true)))
+
+      test(m"an exhausted surveyor has no point and an empty remainder"):
+        val text = t"ab"
+
+        text.survey: surveyor =>
+          surveyor.skipWhile { _ => true }
+          (surveyor.more, surveyor.point, (surveyor.remainder: Interval).size)
+      . assert(_ == ((false, Unset, 0)))
+
       test(m"the scan family applies to a scribe"):
         var kept = -1
 
