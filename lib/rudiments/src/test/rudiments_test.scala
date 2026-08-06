@@ -195,6 +195,43 @@ object Tests extends Suite(m"Rudiments Tests"):
         builder.toString.tt
       . assert(_ == t"olleh")
 
+    suite(m"Scribe tests"):
+      test(m"`Array.scribe` fills through branded indices"):
+        Array.scribe[Int](4) { scribe => range => scribe.iterate { i => scribe(i) = (i: Ordinal).n0*2 } }
+        . to[List]
+      . assert(_ == List(0, 2, 4, 6))
+
+      test(m"a scribe reads back what it wrote"):
+        var last = -1
+
+        Array.scribe[Int](3): scribe =>
+          range =>
+            scribe.iterate { i => scribe(i) = 7 }
+            scribe.iterate { i => last = scribe(i) }
+
+        last
+      . assert(_ == 7)
+
+      test(m"`place` copies a whole frozen array, clamped to the space"):
+        val source = Array.of(1, 2, 3, 4, 5)
+
+        val target = Array.scribe[Int](4): scribe =>
+          range => scribe.iterate { i => if (i: Ordinal) == Sec then scribe.place(source, i) }
+
+        target.to[List]
+      . assert(_ == List(0, 1, 2, 3))
+
+      test(m"the scan family applies to a scribe"):
+        var kept = -1
+
+        Array.scribe[Int](5): scribe =>
+          range =>
+            scribe.iterate { i => scribe(i) = (i: Ordinal).n0 }
+            kept = (scribe.pare(0) { i => scribe(i) > 2 }: Interval).size
+
+        kept
+      . assert(_ == 3)
+
     // test(m"Display a PID"):
     //   Pid(2999).toString
     // .assert(_ == "↯2999")
