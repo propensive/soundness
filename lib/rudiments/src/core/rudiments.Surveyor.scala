@@ -90,6 +90,31 @@ final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinar
     mark0 = (mark0 + count.max(0)).min(size)
     Interval.zerary(start, mark0).asInstanceOf[Interval in brand]
 
+  // Whether the elements at the current position match `pattern` under `equal`, without
+  // advancing: the marker-match primitive of scanning parsers. False when fewer elements
+  // remain than the pattern's size.
+  inline def matches[pattern](pattern: pattern)
+    ( using countable: pattern is Countable, indexable: (pattern is Indexable by Ordinal) )
+    ( inline equal: (operand, indexable.Result) => Boolean )
+  :   Boolean =
+
+    val count = countable.size(pattern)
+
+    if size - mark0 < count then false else
+      var index = 0
+
+      while index < count
+        && equal(read(value, mark0 + index), indexable.access(pattern, Ordinal.zerary(index)))
+      do index += 1
+
+      index == count
+
+  // The branded window of the next `count` elements, without advancing, or `Unset` when
+  // fewer remain: fixed-lookahead reads then go through checked or iterated access.
+  inline def glimpse(count: Int): Optional[Interval in brand] =
+    if size - mark0 < count then Unset
+    else Interval.zerary(mark0, mark0 + count).asInstanceOf[Interval in brand]
+
   // The branded position, when not exhausted.
   inline def point: Optional[Ordinal in brand] =
     if mark0 < size then Ordinal.zerary(mark0).asInstanceOf[Ordinal in brand] else Unset

@@ -293,6 +293,48 @@ object Tests extends Suite(m"Rudiments Tests"):
           (dash, same, surveyor.peek(_ == '-'), surveyor.peek(_ == 'x'))
       . assert(_ == ((true, true, false, true)))
 
+      test(m"`matches` compares a pattern without advancing"):
+        val data = t"abcdef"
+
+        data.survey: surveyor =>
+          surveyor.advance()
+          val hit = surveyor.matches(t"bcd") { (left, right) => left == right }
+          val miss = surveyor.matches(t"bce") { (left, right) => left == right }
+          val long = surveyor.matches(t"bcdefgh") { (left, right) => left == right }
+          (hit, miss, long, surveyor.passed)
+      . assert(_ == ((true, false, false, 1)))
+
+      test(m"`glimpse` lends a branded lookahead window without advancing"):
+        val text = t"hello"
+
+        text.survey: surveyor =>
+          val window = surveyor.glimpse(3).let { interval => (interval: Interval).size }
+          val overrun = surveyor.glimpse(9)
+          (window, overrun, surveyor.passed)
+      . assert(_ == ((3, Unset, 0)))
+
+      test(m"`next` consumes elements one at a time"):
+        val text = t"ab"
+        val builder = java.lang.StringBuilder()
+
+        text.survey: surveyor =>
+          while surveyor.more do surveyor.next(()) { char => builder.append(char) }
+          surveyor.next(builder.append('!')) { char => builder.append(char) }
+
+        builder.toString.tt
+      . assert(_ == t"ab!")
+
+      test(m"`take` consumes a counted, clamped run"):
+        val text = t"abcde"
+        var sizes: List[Int] = Nil
+
+        text.survey: surveyor =>
+          sizes ::= (surveyor.take(2): Interval).size
+          sizes ::= (surveyor.take(9): Interval).size
+
+        sizes.reverse
+      . assert(_ == List(2, 3))
+
       test(m"an exhausted surveyor has no point and an empty remainder"):
         val text = t"ab"
 
