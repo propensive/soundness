@@ -589,7 +589,7 @@ object soundness extends Toolchain:
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
     anthology.lira,
     anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`,
-    delicious.ansi, anthology.kotlin, anthology.oci, hyperbole.stacks)
+    delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks)
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
@@ -901,8 +901,16 @@ object anthology extends Library:
     override def scalaJs = false // packages linked components (drives the Scala.js linker)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  // Packs an executable JAR as a self-contained command-line distributable: ethereal's reusable
+  // runner stubs and ziggurat's polyglot installer/launcher scripts, reached through the
+  // toolchain's `Jar` to `Xeq` edges.
+  object xeq extends Component(linker, ziggurat.packager):
+    override def scalaJs = false // native packaging (ethereal runners, telekinesis downloads)
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   object test
-  extends Tests(`scala`, `java`, kotlin, core, linker, link, nir, dex, apk, oci, spectacular.core):
+  extends Tests
+    ( `scala`, `java`, kotlin, core, linker, link, nir, dex, apk, oci, xeq, spectacular.core ):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
