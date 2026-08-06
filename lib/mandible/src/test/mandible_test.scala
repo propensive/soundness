@@ -602,3 +602,135 @@ object Tests extends Suite(m"Mandible tests"):
           && lira.manifest.tag.stdlib == scala.List(tag)
           && lira.manifest.hostContract
     . assert(_ == true)
+
+    // --- used-set extraction ------------------------------------------------------------------
+
+    def encode(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
+    def blob(data: Data): Data = LiraHash(LiraHash.Domain.Blob, data)
+
+    // Package-private: the source compiles in the `Holder.java` fixture slot, where a public
+    // class of another name could not.
+    val consumerOld: Text =
+      t"""|package fixture;
+          |class Consumer {
+          |  public int use(Base b) { return b.inherited(); }
+          |}
+          |""".s.stripMargin.tt
+
+    def consumerContent(baseSource: Text, consumer: Text): List[(TreePath, Data)] =
+      val (content, _) = compile(baseSource, derived, api, consumer)
+      List.from(content.filter { pair => pair(0).text.s.contains("Consumer") })
+
+    test(m"references spell membership keys and exclude the content's own classes"):
+      val refs = UsedSets.references(consumerContent(base, consumerOld))
+
+      (refs.stdlib.contains(t"fixture/Base#inherited:()I"),
+       refs.stdlib.contains(t"java/lang/Object"),
+       refs.stdlib.exists(_.s.startsWith("fixture/Consumer")))
+    . assert(_ == (true, true, false))
+
+    test(m"resolution splits a contract's atoms from foreign references"):
+      val (surface, _) = compile(base, derived, api)
+      val listing = JsigDiscipline.atomize(surface, Discipline.Context(t"host"))
+      val (matched, unmatched) = UsedSets.resolve(
+          UsedSets.references(consumerContent(base, consumerOld)), listing)
+
+      (matched.stdlib.nonEmpty,
+       unmatched.stdlib.contains(t"java/lang/Object"),
+       unmatched.stdlib.exists(_.s.startsWith("fixture/Base")))
+    . assert(_ == (true, true, false))
+
+    test(m"the uses blob round-trips its resolved hashes"):
+      val (surface, _) = compile(base, derived, api)
+      val listing = JsigDiscipline.atomize(surface, Discipline.Context(t"host"))
+      val content = consumerContent(base, consumerOld)
+      val (usesBlob, _) = UsedSets.uses(t"fixture-host", content, listing)
+      val (matched, _) = UsedSets.resolve(UsedSets.references(content), listing)
+
+      UsesBlob.decode(usesBlob)(1).stdlib.map { hash => LiraHash.text(hash) }.toSet
+      == matched.stdlib.map { hash => LiraHash.text(hash) }.toSet
+    . assert(identity)
+
+    test(m"a computed used-set decides host satisfaction by spanning"):
+      val added = edit(base, t"public int inherited",
+          t"public int added() { return 9; }\n  public int inherited")
+
+      val consumerNew = consumerOld.s.replace("b.inherited()", "b.added()").nn.tt
+
+      val (v1, _) = compile(base, derived, api)
+      val (v2, _) = compile(added, derived, api)
+
+      val contracts = HostContracts.assemble(t"fixture-host",
+        List(HostRelease(t"v1", v1), HostRelease(t"v2", v2)),
+        List(LiraManifest.Tool(t"jsig-harvest", t"0.1")))
+
+      val v1Manifest = Lira.read(contracts.stdlib.head(1)).manifest
+      val v2Manifest = Lira.read(contracts.stdlib.last(1)).manifest
+
+      val v1Listing = JsigDiscipline.atomize(v1, Discipline.Context(t"host"))
+      val v2Listing = JsigDiscipline.atomize(v2, Discipline.Context(t"host"))
+
+      // Both consumers compiled against, and resolved against, the v2 surface; the question is
+      // whether the *older* contract release satisfies each, and only their used-sets differ.
+      val snap2 = v2Manifest.lineage.stdlib.last
+      val markerOld = blob(encode(t"uses-old"))
+      val markerNew = blob(encode(t"uses-new"))
+
+      def library(marker: Data): LiraManifest =
+        LiraManifest(
+          module  = t"consumer",
+          lineage = List(LiraHash(LiraHash.Domain.Snapshot, encode(t"consumer"))),
+          api     = List(),
+          section = List(Section(t"jvm", tree = blob(encode(t"tree")),
+              requires = List(LiraManifest.Requires(t"fixture-host", snap2, uses = marker)))),
+          payload = LiraManifest.Payload(t"brotli", 0L, blob(encode(t"consumer"))))
+
+      def usedSet(consumer: Text): scala.collection.immutable.Set[Text] =
+        val (matched, _) = UsedSets.resolve(
+            UsedSets.references(consumerContent(added, consumer)), v2Listing)
+
+        matched.stdlib.map { hash => LiraHash.text(hash) }.toSet
+
+      val oldUses = usedSet(consumerOld)
+      val newUses = usedSet(consumerNew)
+
+      val contractAtoms = { (module: Text) =>
+        if module == t"fixture-host"
+        then v1Listing.atoms.stdlib.map { atom => LiraHash.text(atom.valueHash) }.toSet
+        else Unset
+      }
+
+      def lookup(marker: Data, set: scala.collection.immutable.Set[Text]) =
+        { (data: Data) => if Blob.compare(data, marker) == 0 then set else Unset }
+
+      // The old-surface consumer spans back to v1 by set inclusion; the one that calls the
+      // v2-only method provably does not.
+      val spans =
+        Buildpath(List(library(markerOld)))
+        . validate(t"jvm", contracts = List(v1Manifest), atoms = contractAtoms,
+            used = lookup(markerOld, oldUses))
+        . stdlib.isEmpty
+
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val refused =
+        capture[LiraError]:
+          Buildpath(List(library(markerNew)))
+          . validate(t"jvm", contracts = List(v1Manifest), atoms = contractAtoms,
+              used = lookup(markerNew, newUses))
+        . reason
+
+      (spans, refused)
+    . assert(_ == (true, LiraError.Reason.UnsatisfiedRequirement(t"fixture-host")))
+
+    test(m"fixture references resolve against a harvested jdk surface"):
+      CtSym.location().lay(true): path =>
+        val release = CtSym.releases(path).stdlib.head
+        val surface = CtSym.surface(path, release, prefix = t"java.base/java/lang/")
+        val listing = JsigDiscipline.atomize(surface, Discipline.Context(t"host"))
+
+        val (matched, unmatched) = UsedSets.resolve(
+            UsedSets.references(consumerContent(base, consumerOld)), listing)
+
+        matched.stdlib.nonEmpty && !unmatched.stdlib.contains(t"java/lang/Object")
+    . assert(_ == true)
