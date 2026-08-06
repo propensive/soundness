@@ -55,8 +55,11 @@ import WitParseError.Reason
 // unstable surface.
 object WitParser:
 
-  def parse(source: Text): WitDocument raises WitParseError =
-    document(tokenize(source.s))
+  // One `WitDocument` per `package` section: a curated `.wit` file may hold several packages
+  // (the WASI subsets the backends carry do), and every interface and world belongs to the
+  // package declared above it.
+  def parse(source: Text): List[WitDocument] raises WitParseError =
+    List.from(documents(tokenize(source.s)))
 
   private def fail(detail: Text, tokens: SList[String]): Nothing raises WitParseError =
     val near = Text(tokens.take(5).mkString(" "))
@@ -359,41 +362,93 @@ object WitParser:
 
   // --- worlds ---------------------------------------------------------------------------------
 
-  private def worldBody(tokens: SList[String])
-  :   (List[Text], List[Text], SList[String]) raises WitParseError =
+  private def worldBody(name: Text, tokens: SList[String])
+  :   (WitWorldModel, SList[String]) raises WitParseError =
 
-    def recur(tokens: SList[String], imports: SList[Text], exports: SList[Text])
-    :   (List[Text], List[Text], SList[String]) raises WitParseError =
+    def recur
+      ( tokens:        SList[String],
+        imports:       SList[Text],
+        exports:       SList[Text],
+        inlineImports: SList[(Text, Optional[WitFunction])],
+        inlineExports: SList[(Text, Optional[WitFunction])] )
+    :   (WitWorldModel, SList[String]) raises WitParseError =
+
+      def inlineItem(name: String, tokens: SList[String])
+      :   (Optional[WitFunction], SList[String]) raises WitParseError =
+
+        tokens match
+          case "func" :: _ =>
+            val (function, after) = functionType(Text(name.stripPrefix("%").nn), tokens, false)
+            (Optional(function), after)
+
+          // An inline interface's body is parsed — so its vocabulary is still checked — but
+          // only its name enters the world model.
+          case "interface" :: "{" :: body =>
+            val (_, after) = interfaceBody(body)
+            (Unset, after)
+
+          case _ => fail(t"`func` or `interface` was expected", tokens)
 
       gates(tokens) match
-        case "}" :: rest => (List.from(imports.reverse), List.from(exports.reverse), rest)
+        case "}" :: rest =>
+          val world =
+            WitWorldModel
+              ( name,
+                List.from(imports.reverse),
+                List.from(exports.reverse),
+                List.from(inlineImports.reverse),
+                List.from(inlineExports.reverse) )
 
-        case "import" :: name :: ";" :: rest => recur(rest, name.tt :: imports, exports)
-        case "export" :: name :: ";" :: rest => recur(rest, imports, name.tt :: exports)
+          (world, rest)
 
-        case ("import" | "export") :: _ :: ":" :: _ =>
-          unsupported(t"an inline world item")
+        case "import" :: name :: ":" :: rest =>
+          val (function, after) = inlineItem(name, rest)
+          recur(after, imports, exports, (name.tt, function) :: inlineImports, inlineExports)
+
+        case "export" :: name :: ":" :: rest =>
+          val (function, after) = inlineItem(name, rest)
+          recur(after, imports, exports, inlineImports, (name.tt, function) :: inlineExports)
+
+        case "import" :: name :: ";" :: rest =>
+          recur(rest, name.tt :: imports, exports, inlineImports, inlineExports)
+
+        case "export" :: name :: ";" :: rest =>
+          recur(rest, imports, name.tt :: exports, inlineImports, inlineExports)
 
         case "include" :: _ => unsupported(t"a world include")
         case construct :: _ => unsupported(construct.tt)
         case SNil           => fail(t"a world body is unterminated", tokens)
 
-    recur(tokens, SList(), SList())
+    recur(tokens, SList(), SList(), SList(), SList())
 
   // --- documents ------------------------------------------------------------------------------
 
-  private def document(tokens: SList[String]): WitDocument raises WitParseError =
+  private def documents(tokens: SList[String]): SList[WitDocument] raises WitParseError =
+    def flush
+      ( pkg:        Optional[Text],
+        version:    Optional[Text],
+        interfaces: SList[WitInterface],
+        worlds:     SList[WitWorldModel],
+        acc:        SList[WitDocument] )
+    :   SList[WitDocument] =
+
+      if pkg.absent && interfaces.isEmpty && worlds.isEmpty then acc
+      else
+        WitDocument(pkg, version, List.from(interfaces.reverse), List.from(worlds.reverse))
+          :: acc
+
     def recur
       ( tokens:     SList[String],
         pkg:        Optional[Text],
         version:    Optional[Text],
         interfaces: SList[WitInterface],
-        worlds:     SList[WitWorldModel] )
-    :   WitDocument raises WitParseError =
+        worlds:     SList[WitWorldModel],
+        acc:        SList[WitDocument] )
+    :   SList[WitDocument] raises WitParseError =
 
       gates(tokens) match
         case SNil =>
-          WitDocument(pkg, version, List.from(interfaces.reverse), List.from(worlds.reverse))
+          flush(pkg, version, interfaces, worlds, acc).reverse
 
         case "package" :: name :: ";" :: rest =>
           val at = name.indexOf('@')
@@ -402,17 +457,17 @@ object WitParser:
             if at < 0 then (name.tt, Unset)
             else (name.substring(0, at).nn.tt, Optional(name.substring(at + 1).nn.tt))
 
-          recur(rest, bare, declared, interfaces, worlds)
+          recur(rest, bare, declared, SList(), SList(),
+              flush(pkg, version, interfaces, worlds, acc))
 
         case "interface" :: name :: "{" :: rest =>
           val (items, after) = interfaceBody(rest)
-          recur(after, pkg, version, WitInterface(name.tt, items) :: interfaces, worlds)
+          recur(after, pkg, version, WitInterface(name.tt, items) :: interfaces, worlds, acc)
 
         case "world" :: name :: "{" :: rest =>
-          val (imports, exports, after) = worldBody(rest)
-          recur(after, pkg, version, interfaces,
-              WitWorldModel(name.tt, imports, exports) :: worlds)
+          val (world, after) = worldBody(name.tt, rest)
+          recur(after, pkg, version, interfaces, world :: worlds, acc)
 
         case construct :: _ => unsupported(construct.tt)
 
-    recur(tokens, Unset, Unset, SList(), SList())
+    recur(tokens, Unset, Unset, SList(), SList(), SList())

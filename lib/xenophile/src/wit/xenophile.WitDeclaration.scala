@@ -73,7 +73,15 @@ enum WitItem:
 
 case class WitInterface(name: Text, items: List[WitItem])
 
-case class WitWorldModel(name: Text, imports: List[Text], exports: List[Text])
+// A world's referenced imports and exports are interface ids; its *inline* items — `import
+// name: func(…)`, `export name: interface { … }` — define rather than reference, and are
+// carried as (name, function) pairs, the function absent for an inline interface.
+case class WitWorldModel
+  ( name:          Text,
+    imports:       List[Text],
+    exports:       List[Text],
+    inlineImports: List[(Text, Optional[WitFunction])] = List(),
+    inlineExports: List[(Text, Optional[WitFunction])] = List() )
 
 case class WitDocument
   ( packageName: Optional[Text],

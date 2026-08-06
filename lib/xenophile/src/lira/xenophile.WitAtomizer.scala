@@ -259,13 +259,35 @@ object WitAtomizer:
       document.worlds.stdlib.foreach: world =>
         val worldId = t"$pkg/${world.name}$suffix"
         val imports = world.imports.stdlib.map(qualify(_))
-        val exports = world.exports.stdlib.map(qualify(_)).sortBy(_.s)
+
+        // Inline items follow the same polarity as referenced ones: an inline function import
+        // is a capability the host supplies (standalone, its signature folded into the value),
+        // and an inline export joins the folded obligation list by its bare name.
+        val exports =
+          (world.exports.stdlib.map(qualify(_))
+            ++ world.inlineExports.stdlib.map { (name, _) => name })
+          . sortBy(_.s)
 
         imports.foreach: imported =>
           atoms += Atom(t"$worldId#import $imported", AtomClass.Rigid, hash: out =>
             tag(out, 'i')
             utf8(out, worldId)
             utf8(out, imported))
+
+        world.inlineImports.stdlib.foreach: (name, function) =>
+          atoms += Atom(t"$worldId#import $name", AtomClass.Rigid, hash: out =>
+            tag(out, 'i')
+            utf8(out, worldId)
+            utf8(out, name)
+
+            function.let: fn =>
+              uvarint(out, fn.parameters.stdlib.length.toLong)
+
+              fn.parameters.stdlib.foreach: (parameter, typed) =>
+                utf8(out, parameter)
+                encode(out, typed, SMap())
+
+              fn.result.lay(tag(out, '0')) { typed => tag(out, '1'); encode(out, typed, SMap()) })
 
         atoms += Atom(worldId, AtomClass.Rigid, hash: out =>
           tag(out, 'W')
