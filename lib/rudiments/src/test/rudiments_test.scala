@@ -364,6 +364,48 @@ object Tests extends Suite(m"Rudiments Tests"):
         builder.toString.tt
       . assert(_ == t"ab.bc.cd.")
 
+      test(m"a lattice mints whole rows within the storage"):
+        // 10 elements, rows of 3 spaced 4 apart: rows at 0, 4 — a third row (start 8,
+        // needing 8+3 <= 10) does not fit.
+        val data = Array.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+        var rows: List[List[Int]] = Nil
+
+        data.lattice(3, 4, 0): lattice =>
+          lattice.rows: (y, row) =>
+            var elements: List[Int] = Nil
+            data.iterate(row) { i => elements ::= data.at(i) }
+            rows ::= elements.reverse
+
+        rows.reverse
+      . assert(_ == List(List(0, 1, 2), List(4, 5, 6)))
+
+      test(m"`point` linearizes in-range coordinates and rejects others"):
+        val data = Array.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+
+        data.lattice(3, 4, 0): lattice =>
+          val hit = lattice.point(2, 1).let { i => data.at(i) }
+          (hit, lattice.point(3, 1), lattice.point(0, 3), lattice.height)
+      . assert(_ == ((6, Unset, Unset, 3)))
+
+      test(m"a lattice with an offset addresses a sub-plane"):
+        val data = Array.of(9, 9, 0, 1, 2, 3)
+        var sum = 0
+
+        data.lattice(2, 2, 2): lattice =>
+          lattice.rows { (y, row) => data.iterate(row) { i => sum += data.at(i) } }
+          sum += lattice.height*100
+
+        sum
+      . assert(_ == 206)
+
+      test(m"a lattice over a scribe writes through branded rows"):
+        Array.scribe[Int](6): scribe =>
+          _ =>
+            scribe.lattice(2, 3, 0): lattice =>
+              lattice.rows { (y, row) => scribe.iterate(row) { i => scribe(i) = y + 1 } }
+        . to[List]
+      . assert(_ == List(1, 1, 0, 2, 2, 0))
+
       test(m"an exhausted surveyor has no point and an empty remainder"):
         val text = t"ab"
 
