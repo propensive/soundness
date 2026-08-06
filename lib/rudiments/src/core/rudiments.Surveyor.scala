@@ -73,6 +73,23 @@ final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinar
   inline def peek(inline predicate: operand => Boolean): Boolean =
     mark0 < size && predicate(read(value, mark0))
 
+  // Consume the current element: apply the lambda to it and advance, or yield `otherwise`
+  // at exhaustion — the `read-then-advance` shape of byte-at-a-time decoders, fused so
+  // nothing partial exists to call and nothing boxes.
+  inline def next[result](inline otherwise: => result)(inline lambda: operand => result): result =
+    if mark0 < size then
+      val element = read(value, mark0)
+      mark0 += 1
+      lambda(element)
+    else otherwise
+
+  // Consume up to `count` elements, returning the branded run actually traversed (clamped
+  // at exhaustion): the counted form of `skipWhile`.
+  inline def take(count: Int): Interval in brand =
+    val start = mark0
+    mark0 = (mark0 + count.max(0)).min(size)
+    Interval.zerary(start, mark0).asInstanceOf[Interval in brand]
+
   // The branded position, when not exhausted.
   inline def point: Optional[Ordinal in brand] =
     if mark0 < size then Ordinal.zerary(mark0).asInstanceOf[Ordinal in brand] else Unset
