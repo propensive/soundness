@@ -37,7 +37,7 @@ import scala.caps
 // Contextual configuration determining how streaming stages are instantiated
 // with buffers. `capacity` is consulted once per stage at construction time, so
 // an adaptive instance (e.g. one consulting available memory) sees each new
-// stage, but never resizes a live one. `window` is the number of blocks of
+// stage, but never resizes a live one. `depth` is the number of blocks of
 // headroom a `Conduit` holds between its writer and reader threads.
 object Buffering:
   given standard: Buffering:
@@ -49,23 +49,23 @@ object Buffering:
     // Deep enough that a producer/consumer pair in lockstep exchange several
     // transfer blocks per wakeup rather than parking after every few: hand-off
     // throughput scales almost linearly with depth up to this point, at a
-    // bounded cost of `window` in-flight transfer blocks.
+    // bounded cost of `depth` in-flight transfer blocks.
     //
     // The capacity-search stress tests show hand-off throughput under high
-    // concurrency keeps improving well past this depth: a window covering a whole
+    // concurrency keeps improving well past this depth: a queue covering a whole
     // burst, so the producer streams it without ever parking, more than doubled
-    // sustained throughput at 64. But a deeper window multiplies the worst-case
+    // sustained throughput at 64. But a deeper depth multiplies the worst-case
     // in-flight bound of every copy-path conduit, so the default stays
-    // conservative; burst-heavy pipelines should override `window` to their burst
+    // conservative; burst-heavy pipelines should override `depth` to their burst
     // size in hand-off blocks, and the shared `Blockpool` keeps the deeper ring's
     // allocation amortised across conduit instances.
-    def window: Int = 16
+    def depth: Int = 16
 
 // Pure: a `Buffering` is only sizing policy, so instances are untracked under capture
 // checking and closures over them stay pure.
 trait Buffering extends caps.Pure:
   def capacity(substrate: Substrate): Int
-  def window: Int
+  def depth: Int
 
   // The preferred size of a block crossing an asynchronous boundary (a `Conduit`
   // hand-off, or a fan-in/fan-out pump transfer). Staging buffers want to stay

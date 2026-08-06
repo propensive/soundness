@@ -34,6 +34,7 @@ package reliquary
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -77,8 +78,11 @@ object Derivative:
 
     val out = java.io.ByteArrayOutputStream()
 
-    Zipfile(List.from(entries), Unset, Unset).serialize.sweep: (window, start, count) =>
-      out.write(window.asInstanceOf[scala.Array[Byte]], start, count)
+    Zipfile(List.from(entries), Unset, Unset).serialize.sweep: region =>
+      range =>
+        val interval: Interval = range
+        out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+            interval.size)
 
     Array.unsafeFrozen(out.toByteArray.nn)
 

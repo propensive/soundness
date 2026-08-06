@@ -30,54 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package facsimile
+package dissonance
 
-import proscenium.compat.*
-
-import anticipation.*
-import denominative.*
-import prepositional.*
-import rudiments.*
-import vacuous.*
-import zephyrine.*
-
-// A pipeline stage that gathers its whole input and transforms it during flush: the
-// streaming fallback for the textual filters (ASCIIHex, ASCII85, RunLength, LZW,
-// predictors), whose payloads are small in practice. The genuinely large payloads — raw
-// ranges, terminal image codecs, Flate — never pass through it, streaming incrementally
-// through their own stages instead.
-private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, Data]:
-  type Transport = Credit
-  type Upstream = Credit
-
-  private val gathered: scala.collection.mutable.ArrayBuffer[Byte] =
-    scala.collection.mutable.ArrayBuffer()
-
-  private var result: Optional[Data] = Unset
-  private var delivered: Int = 0
-
-  def regulation: Credit is Regulation = summon[Credit is Regulation]
-  def translate(demand: Credit): Credit = demand
-
-  update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
-  :   Duct.Progress =
-
-    source.visit(range) { index => gathered += source(index) }
-    Duct.Progress((range: Interval).size, 0)
-
-  override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
-    val data = result.or:
-      val transformed = transform(Array.unsafeFrozen(gathered.toArray))
-      result = transformed
-      transformed
-
-    val count = (space: Interval).size.min(data.length - delivered)
-    var index = 0
-
-    target.visit(space.capped(count)): ordinal =>
-      target(ordinal) = data(delivered + index)
-      index += 1
-
-    delivered += count
-    count
+enum Tract[element]:
+  case Changed(deletions: List[Del[element]], insertions: List[Ins[element]])
+  case Unchanged(retentions: List[Par[element]])

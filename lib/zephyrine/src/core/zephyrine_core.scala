@@ -36,6 +36,7 @@ import scala.caps
 import proscenium.compat.*
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import hieroglyph.*
 import prepositional.*
@@ -98,12 +99,12 @@ package parsing:
 
 export Cursor.{Mark, Offset}
 
-// A stream of parsed records: each window is a frozen-array chunk of them (the boxed
+// A stream of parsed records: each region is a frozen-array chunk of them (the boxed
 // medium), so credit counts records and `Buffering` sizes stage buffers by
 // reference count. Records are immutable values, so they cross stage and thread
 // boundaries by reference; a record must not itself hold a live endpoint. This
 // alias is the conventional shape for record-granularity streaming (rows, events,
-// frames, messages) between the windowed media (`Data`, `Text`) and materialized
+// frames, messages) between the region-based media (`Data`, `Text`) and materialized
 // collections. The record type is unbounded here — the `Addressable` given that
 // admits a record type governs at stream construction — but it must erase to a
 // reference type.
@@ -140,7 +141,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
     throughDuct[in, out, transport, downTransport](duct, stream)
 
   // The pump loop connecting a pull-chain to a push-chain, on the calling
-  // thread: poll the intake's demand, refill with it, transfer the window.
+  // thread: poll the intake's demand, refill with it, transfer the region.
   // This is the only place data crosses from the pull side to the push side
   // of a pipeline.
   def pump(consume intake: (Intake[in] over transport)^): Unit =
@@ -152,7 +153,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
         case count: Int =>
           if count > 0 then
             intake.absorb
-              ( stream.window(using Unsafe).asInstanceOf[intake.addressable.Storage],
+              ( stream.storage(using Unsafe).asInstanceOf[intake.addressable.Storage],
                 stream.start,
                 count )
 
@@ -167,7 +168,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
 extension [out, transport](consume intake: (Intake[out] over transport)^)
   // Push-composition: a differently-typed `Intake` which reports translated
   // demand, and whose commits step synchronously through the stage into
-  // this intake's writable window. The same stage value serves `via`
+  // this intake's writable region. The same stage value serves `via`
   // and `accepting`; only the attachment differs.
   def accepting[stage](consume stage: stage^)
     ( using ductile: (stage is Ductile to out) { type Transport = transport },
@@ -192,23 +193,24 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
 //
 // The safe front-end replacing the Chain views: pipeline stages compose with the
 // consume-typed `through`, and these terminal operations drain an exclusive endpoint
-// without exposing its window — each borrow is read, used and skipped before the next
+// without exposing its region — each borrow is read, used and skipped before the next
 // refill. `memoize` is the explicit replacement for Chain's implicit caching: it
 // drains the stream once into an immutable value, which may then be shared freely.
 
 extension [medium](consume stream: (Stream[medium] over Credit)^)
-  // Drain the stream, applying `operation` to each successive window (its raw
-  // storage, start index and element count); it must not retain the storage.
-  // For a byte stream the `Stream[Data]` overload below types the window as
-  // `Array[Byte]`, so the common case needs no cast.
-  def sweep(operation: (AnyRef, Int, Int) => Unit)(using buffering: Buffering): Unit =
+  // Drain the stream, applying `operation` to each successive region and its
+  // branded readable interval; it must not retain the region beyond the call.
+  def sweep(operation: (region: Region[medium]) => (Interval in region.type) => Unit)
+    (using buffering: Buffering)
+  :   Unit =
+
     // A drain loop wants boundary-transfer-sized credit: a staging-block ask
-    // would slice each larger window into many partial refills.
+    // would slice each larger region into many partial refills.
     val block = buffering.transfer(stream.addressable.substrate)
 
     def loop(): Unit = stream.refill(Credit(block)) match
       case count: Int =>
-        operation(stream.window(using Unsafe).asInstanceOf[AnyRef], stream.start, count)
+        stream.lend(operation(_))
         stream.skip(count)
         loop()
 
@@ -219,32 +221,30 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   // Drain the stream into a single immutable value: the explicit, bounded replacement
   // for a Chain's implicit memoization. The result is frozen and freely shareable.
   def memoize(using buffering: Buffering): medium =
-    val addressable = stream.addressable
-    val target = addressable.blank(buffering.capacity(addressable.substrate))
+    given stream.addressable.type = stream.addressable
+    val target = stream.addressable.blank(buffering.capacity(stream.addressable.substrate))
 
-    sweep: (storage, start, count) =>
-      addressable.cloneStorage(storage.asInstanceOf[addressable.Storage], start, count)(target)
+    sweep: region =>
+      range => region.cloneTo(range)(target)
 
-    addressable.build(target)
+    stream.addressable.build(target)
 
-  // Drain the stream, threading an accumulator through each window: `sweep`'s
+  // Drain the stream, threading an accumulator through each region: `sweep`'s
   // accumulating counterpart, the terminal end of a pull chain. The operation
-  // receives the running state, the raw window storage, its start index and its
-  // element count; it must not retain the storage. Unlike an element-wise fold
-  // over a collection, this exposes the raw window, so a byte reduction runs
-  // over the array with no per-element boxing. (The `Stream[Data]` overload
-  // below types the window.)
-  def gather[state](initial: state)(operation: (state, AnyRef, Int, Int) => state)
-    (using buffering: Buffering)
+  // receives the running state alongside the region and its branded interval,
+  // and must not retain the region beyond the call. Unlike an element-wise fold
+  // over a collection, this exposes the whole region, so a byte reduction runs
+  // over the array with no per-element boxing.
+  def gather[state](initial: state)
+    ( operation: (region: Region[medium]) => (state, Interval in region.type) => state )
+    ( using buffering: Buffering )
   :   state =
 
     val block = buffering.transfer(stream.addressable.substrate)
 
     def loop(state: state): state = stream.refill(Credit(block)) match
       case count: Int =>
-        val state2 =
-          operation(state, stream.window(using Unsafe).asInstanceOf[AnyRef], stream.start, count)
-
+        val state2 = stream.lend { region => range => operation(region)(state, range) }
         stream.skip(count)
         loop(state2)
 
@@ -280,11 +280,11 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   def toProgression(using buffering: Buffering): Chain[medium] =
     val block = buffering.transfer(stream.addressable.substrate)
 
+    given stream.addressable.type = stream.addressable
+
     def recur(): Chain[medium] = stream.refill(Credit(block)) match
       case count: Int =>
-        val chunk =
-          stream.addressable.materialize(stream.window(using Unsafe), stream.start, count)
-
+        val chunk = stream.lend { region => range => region.materialize(range) }
         stream.skip(count)
         chunk #:: recur()
 
@@ -296,16 +296,16 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
 extension [record](consume stream: (Stream[Array[record]^{}] over Credit)^)
   // Element-wise access to a stream of records: a single-consumer iterator over
-  // the records of successive windows, in order. The iterator owns the endpoint:
+  // the records of successive regions, in order. The iterator owns the endpoint:
   // it closes the stream when it reports exhaustion, so a consumer must drain it
   // (or close the stream by other means) to release the upstream. Per-record
   // combinators come free from the `Iterator` interface (and rudiments' `each`);
-  // window-level access for hot loops is `sweep`/`gather` above.
+  // region-level access for hot loops is `sweep`/`gather` above.
   def records(using Buffering): Iterator[record]^ = recordIterator(stream)
 
 // A pull endpoint lending a bounded view of a cursor: the next `length` elements
 // (or all remaining, if `Unset`), exposed zero-copy — the cursor's own buffer
-// backs each window, and skipping the stream advances the cursor. The cursor is
+// backs each region, and skipping the stream advances the cursor. The cursor is
 // LENT, not consumed: closing this stream leaves it open, positioned at the
 // boundary, and the caller resumes it there. This is the shape of a delimited
 // payload inside a longer parse: an HTTP body before the next pipelined request,
@@ -334,7 +334,7 @@ def streamOf[data](cursor: Cursor[data, {}]^, length: Optional[Long] = Unset)
       private var start0: Int = 0
       private var limit0: Int = 0
 
-      protected def window0: AnyRef = storage
+      protected def storage0: AnyRef = storage
       def start: Int = start0
       def limit: Int = limit0
 
@@ -345,7 +345,7 @@ def streamOf[data](cursor: Cursor[data, {}]^, length: Optional[Long] = Unset)
 
       // Demand does not bound exposure: the cursor refills by its own bounded
       // block, which is what bounds memory (as the iterator factory on
-      // `Stream`'s companion notes of its chunks). An unconsumed window is
+      // `Stream`'s companion notes of its chunks). An unconsumed region is
       // reported, not extended: `cursor.more` short-circuits while buffered
       // elements remain, so re-snapshotting it is free.
       update def refill(demand: Credit): Optional[Int] =
@@ -364,7 +364,7 @@ def streamOf[data](cursor: Cursor[data, {}]^, length: Optional[Long] = Unset)
 
 // A pull endpoint over a bounded range of an `Expanse`: each refill reads the
 // next chunk of the range — sized by the buffering policy's transfer block — and
-// exposes the freshly-read buffer as the window, zero-copy. Reads are issued
+// exposes the freshly-read buffer as the region, zero-copy. Reads are issued
 // only as the consumer demands them, so an unconsumed payload costs nothing and
 // a payload of any length streams in bounded memory. The expanse states its own
 // lifetime discipline (it may hold a resource open, or re-acquire one per
@@ -379,7 +379,7 @@ def streamOf(expanse: Expanse^, offset: Long, length: Long)(using buffering: Buf
       private val end: Long = offset + length
       private var position: Long = offset
 
-      // Each window is backed by the immutable chunk `read` returns, cast-erased
+      // Each region is backed by the immutable chunk `read` returns, cast-erased
       // and reached only through this endpoint; it is never written through, and
       // the next refill replaces it wholesale (hence the pure placeholder
       // initial, as in the cursor-lending factory above).
@@ -390,9 +390,9 @@ def streamOf(expanse: Expanse^, offset: Long, length: Long)(using buffering: Buf
 
       // Every refill installs a fresh immutable chunk rather than overwriting a
       // shared buffer, so previously-exposed ranges stay valid indefinitely.
-      override def windowStable: Boolean = true
+      override def regionStable: Boolean = true
 
-      protected def window0: AnyRef = storage
+      protected def storage0: AnyRef = storage
       def start: Int = start0
       def limit: Int = limit0
       update def skip(count: Int): Unit = start0 += count
@@ -431,9 +431,8 @@ private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
 
       private def advance(): Boolean = stream.refill(Credit(block)) match
         case count: Int =>
-          chunk =
-            stream.addressable.materialize(stream.window(using Unsafe), stream.start, count)
-
+          given stream.addressable.type = stream.addressable
+          chunk = stream.lend { region => range => region.materialize(range) }
           stream.skip(count)
           true
 
@@ -456,9 +455,9 @@ private def recordIterator[record]
     new Iterator[record]:
       private val block: Int = buffering.transfer(Substrate.Boxes)
 
-      // The current window: records `index until limit` of `storage` are
+      // The current region: records `index until limit` of `storage` are
       // unread; `consumed` is skipped lazily, just before the next refill, per
-      // the refill contract (an unskipped window is reported, not extended).
+      // the refill contract (an unskipped region is reported, not extended).
       // A stdlib class cannot extend `Stateful`, so its state is untracked
       // (the `inputStream` adapter's precedent).
       @caps.unsafe.untrackedCaptures
@@ -481,7 +480,7 @@ private def recordIterator[record]
 
         stream.refill(Credit(block)) match
           case count: Int =>
-            storage = stream.window(using Unsafe).asInstanceOf[scala.Array[AnyRef]]
+            storage = stream.storage(using Unsafe).asInstanceOf[scala.Array[AnyRef]]
             index = stream.start
             limit = stream.start + count
             consumed = count
@@ -520,7 +519,12 @@ private def throughDuct[in, out, upTransport, downTransport]
       private var ended: Boolean = false
       private var flushed: Boolean = false
 
-      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      // Re-asserts the exclusivity the cast-erased field forgot: the buffer is
+      // reached only through this (exclusive) endpoint.
+      private def exclusive(): duct.output.Storage^ =
+        storage.asInstanceOf[duct.output.Storage^]
+
+      protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
       update def skip(count: Int): Unit = start0 += count
@@ -538,7 +542,10 @@ private def throughDuct[in, out, upTransport, downTransport]
 
             while limit0 == 0 && !flushed do
               if ended then
-                val produced = duct.flush(storage, limit0, space - limit0)
+                val produced =
+                  Slate.over[out, Int](using duct.output)(exclusive(), limit0, space): slate =>
+                    slateSpace => duct.flush(slate)(slateSpace)
+
                 if produced == 0 then flushed = true else limit0 += produced
               else
                 stream.refill(duct.translate(demand)) match
@@ -553,13 +560,13 @@ private def throughDuct[in, out, upTransport, downTransport]
                       // stream's storage and the duct's input storage
                       // coincide, even though their paths differ.
                       val progress =
-                        duct.step
-                          ( stream.window(using Unsafe).asInstanceOf[duct.input.Storage],
-                            stream.start,
-                            count,
-                            storage,
-                            limit0,
-                            space - limit0 )
+                        Region.over[in, Duct.Progress](using duct.input)
+                          ( stream.storage(using Unsafe).asInstanceOf[duct.input.Storage],
+                            stream.start, stream.start + count )
+                          ( region => range =>
+                              Slate.over[out, Duct.Progress](using duct.output)
+                                (exclusive(), limit0, space): slate =>
+                                  slateSpace => duct.step(region)(range)(slate)(slateSpace) )
 
                       stream.skip(progress.consumed)
                       limit0 += progress.produced
@@ -576,7 +583,7 @@ private def throughDuct[in, out, upTransport, downTransport]
 // `truncate`/`discard` wrappers, in helpers rather than inline in the
 // extension for the same reason as `throughDuct`: a local binding of the
 // upstream would hide it from the anonymous class, whereas the consumed
-// parameter carries its capture explicitly. Each delegates window access to
+// parameter carries its capture explicitly. Each delegates storage access to
 // the upstream (zero copy) and only adjusts the element budget.
 
 private def truncateStream[medium](consume stream: (Stream[medium] over Credit)^, count: Long)
@@ -587,7 +594,7 @@ private def truncateStream[medium](consume stream: (Stream[medium] over Credit)^
 
       private var remaining: Long = count.max(0)
 
-      protected def window0: AnyRef = stream.window(using Unsafe).asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = stream.storage(using Unsafe).asInstanceOf[AnyRef]
       def start: Int = stream.start
 
       def limit: Int =
@@ -615,7 +622,7 @@ private def discardStream[medium](consume stream: (Stream[medium] over Credit)^,
 
       private var pending: Long = count.max(0)
 
-      protected def window0: AnyRef = stream.window(using Unsafe).asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = stream.storage(using Unsafe).asInstanceOf[AnyRef]
       def start: Int = stream.start
       def limit: Int = stream.limit
       update def skip(elements: Int): Unit = stream.skip(elements)
@@ -669,13 +676,12 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
           val free = intake.reserve(duct.quantum)
 
           val progress =
-            duct.step
-              ( storage,
-                offset,
-                mark0 - offset,
-                intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage],
-                intake.mark,
-                free )
+            Region.over[in, Duct.Progress](using duct.input)(storage, offset, mark0): region =>
+              range =>
+                Slate.over[out, Duct.Progress](using duct.output)
+                  ( intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage^],
+                    intake.mark, intake.mark + free )
+                  ( slate => slateSpace => duct.step(region)(range)(slate)(slateSpace) )
 
           intake.commit(progress.produced)
           offset += progress.consumed
@@ -691,10 +697,10 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
           val free = intake.reserve(duct.quantum)
 
           produced =
-            duct.flush
-              ( intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage],
-                intake.mark,
-                free )
+            Slate.over[out, Int](using duct.output)
+              ( intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage^],
+                intake.mark, intake.mark + free )
+              ( slate => slateSpace => duct.flush(slate)(slateSpace) )
 
           if produced > 0 then intake.commit(produced)
 

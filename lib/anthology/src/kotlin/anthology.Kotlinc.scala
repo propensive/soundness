@@ -129,7 +129,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
               val endLine = if location.getLineEnd < 1 then line else location.getLineEnd
               val endColumn = if location.getColumnEnd < 1 then column else location.getColumnEnd
 
-              Span.region((line - 1).z, (column - 1).z, (endLine - 1).z, (endColumn - 1).z)
+              Span.area((line - 1).z, (column - 1).z, (endLine - 1).z, (endColumn - 1).z)
 
           process.put(Notice(importance, file, text, span))
 

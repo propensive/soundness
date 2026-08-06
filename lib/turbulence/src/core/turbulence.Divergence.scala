@@ -73,11 +73,11 @@ object Divergence:
     // aliasing analysis (as `Conduit`'s core), so the capture is erased to let
     // the rings ride the collection.
     val queues: IndexedSeq[Handoff] =
-      IndexedSeq.fill(count)(caps.unsafe.unsafeAssumePure(Handoff(buffering.window)))
+      IndexedSeq.fill(count)(caps.unsafe.unsafeAssumePure(Handoff(buffering.depth)))
 
     @volatile var error: Throwable | Null = null
 
-    val stable: Boolean = source.windowStable
+    val stable: Boolean = source.regionStable
 
     // A shared (stable) block costs no memory per element, so there is no reason
     // to bound its size: pull the whole window at once, collapsing the hand-off
@@ -96,12 +96,12 @@ object Divergence:
           val start = source.start
 
           val storage =
-            if stable then source.window(using Unsafe)
+            if stable then source.storage(using Unsafe)
             else
               val fresh = addressable0.allocate(size)
 
               addressable0.transfer
-                ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
+                ( source.storage(using Unsafe).asInstanceOf[addressable0.Storage],
                   source.start, fresh, 0, size )
 
               fresh
@@ -155,7 +155,7 @@ object Divergence:
           private var end0: Int = 0
           private var ended: Boolean = false
 
-          protected def window0: AnyRef = storage
+          protected def storage0: AnyRef = storage
           def start: Int = start0
           def limit: Int = limit0
           update def skip(count: Int): Unit = start0 += count

@@ -310,8 +310,7 @@ object Http:
 
             case count: Int =>
               result =
-                endpoint.addressable.materialize
-                  ( endpoint.window(using Unsafe), endpoint.start, count )
+                endpoint.lend { region => range => region.materialize(range.capped(count)) }
 
               endpoint.skip(count)
               continue = false
@@ -521,7 +520,7 @@ object Http:
         private var start0: Int = 0
         private var limit0: Int = 0
 
-        protected def window0: AnyRef = storage
+        protected def storage0: AnyRef = storage
         def start: Int = start0
         def limit: Int = limit0
 
@@ -800,8 +799,7 @@ object Http:
 
               case count: Int =>
                 result =
-                  endpoint.addressable.materialize
-                    ( endpoint.window(using Unsafe), endpoint.start, count )
+                  endpoint.lend { region => range => region.materialize(range.capped(count)) }
 
                 endpoint.skip(count)
                 continue = false

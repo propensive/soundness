@@ -442,8 +442,8 @@ object Tests extends Suite(m"Turbulence tests"):
         relay.stop()
         var windows: Int = 0
 
-        relay.stream.sweep: (storage, start, count) =>
-          windows += 1
+        relay.stream.sweep: _ =>
+          _ => windows += 1
 
         windows
       . assert(_ == 1)
@@ -627,7 +627,7 @@ object Tests extends Suite(m"Turbulence tests"):
         def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
          stream.refill(Credit(64)) match
           case count: Int =>
-            val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
+            val window = unsafely(stream.storage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
             scala.caps.unsafe.unsafeAssumeSeparate(recur())

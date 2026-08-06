@@ -77,7 +77,7 @@ object HttpSession:
       import ConnectError.Reason.*
 
       pending.let: stream =>
-        try stream.asInstanceOf[(Stream[Data] over Credit)^].sweep { (_, _, _) => () } catch
+        try stream.asInstanceOf[(Stream[Data] over Credit)^].sweep { _ => _ => () } catch
           case error: ji.IOException => abort(ConnectError(Unknown))
 
       pending = Unset

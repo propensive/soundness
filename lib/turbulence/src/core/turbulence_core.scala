@@ -172,7 +172,8 @@ extension (consume stream: (Stream[Data] over Credit)^)
         val available = ensure()
 
         if available < 0 then -1 else
-          val byte = stream.window(using Unsafe).asInstanceOf[scala.Array[Byte]](stream.start) & 0xff
+          var byte: Int = 0
+          stream.lend { region => range => region.visit(range.capped(1)) { index => byte = region(index) & 0xff } }
           stream.skip(1)
           byte
 
@@ -182,7 +183,16 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
           if available < 0 then -1 else
             val take = available.min(length)
-            System.arraycopy(stream.window(using Unsafe), stream.start, target, offset, take)
+
+            // The cast launders the Java-signature parameter's capture: the caller hands
+            // this array over to be filled, so treating it as exclusive is sound.
+            val buffer: scala.Array[Byte]^ = target.nn.asInstanceOf[scala.Array[Byte]^]
+
+            stream.lend: region =>
+              range =>
+                Slate.over[Data, Int](buffer, offset, offset + take): slate =>
+                  space => region.transfer(range.capped(take))(slate)(space)
+
             stream.skip(take)
             take
 
@@ -192,12 +202,12 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
 extension (consume stream: (Stream[Data] over Credit)^)
   // Adapt a pull endpoint to the HTTP-body interchange protocol: each `next`
-  // refills with `limit` credit and materializes the delivered window.
+  // refills with `limit` credit and materializes the delivered region.
   def httpBody: HttpStreams.Body^ = limit =>
     stream.refill(Credit(limit)) match
       case count: Int =>
         val take = count.min(limit)
-        val chunk = stream.addressable.materialize(stream.window(using Unsafe), stream.start, take)
+        val chunk = stream.lend { region => range => region.materialize(range.capped(take)) }
         stream.skip(take)
         chunk
 
@@ -218,7 +228,7 @@ extension (body: HttpStreams.Body)
       private var ended: Boolean = false
 
       // The chunk is immutable and only ever read through the window.
-      protected def window0: AnyRef = chunk.asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = chunk.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
       update def skip(count: Int): Unit = start0 += count

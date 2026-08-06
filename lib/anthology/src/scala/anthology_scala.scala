@@ -148,7 +148,7 @@ private[anthology] def notice(diagnostic: Diagnostic): Notice =
   diagnostic.position.map: position =>
     position.nn.pipe: position =>
       val span =
-        Span.region
+        Span.area
           ( position.startLine.nn.z,
             position.startColumn.nn.z,
             position.endLine.nn.z,

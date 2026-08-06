@@ -32,10 +32,15 @@
                                                                                                   */
 package soundness
 
+// `Region`, `Slate` and `capped` are deliberately absent: their lenders and combinators are
+// dependent-typed inline extensions, which synthesized export forwarders break (see the
+// hand-written `via`/`accepting` forwarders below for the same problem). Consumers import
+// them from `zephyrine` directly.
 export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
     Duct, Ductile, Expanse, Malleable, Pace,
     Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
-    Records, records, Regulation, Spring, Stream, Substrate, chunks, discard, gather, locate,
+    Records, records, Regulation, Spring, Stream, Substrate, chunks,
+    discard, gather, locate,
     locateKey, memoize, pump, stream, streamOf, sweep, toProgression, truncate,
     viaDuct, acceptingDuct}
 

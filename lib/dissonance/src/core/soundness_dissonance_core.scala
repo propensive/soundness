@@ -35,4 +35,4 @@ package soundness
 export
   dissonance
   . { Change, Chunk, Del, Diff, diff, DiffError, Edit, Evolution, evolve, Ins, Par, RDiff, Redraft,
-      RedraftError, Region, Sub }
+      RedraftError, Sub, Tract }

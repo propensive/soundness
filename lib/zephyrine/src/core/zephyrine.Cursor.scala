@@ -64,7 +64,7 @@ object Cursor:
   // A direct refill strategy: writes up to `space` elements straight into the cursor's
   // buffer at `offset`, returning the count written, `0` when nothing was granted (the
   // cursor retries), or `-1` at end-of-stream. Bypasses the `Loader` chunk protocol so a
-  // pull endpoint's window can be transferred into the cursor in a single copy, instead
+  // pull endpoint's region can be transferred into the cursor in a single copy, instead
   // of materializing an intermediate chunk that `refill` then copies again. `block` is
   // the growth hint: the cursor guarantees at least one element of space and grows its
   // buffer towards `writeEnd + block` before each fill.
@@ -162,12 +162,12 @@ object Cursor:
 
 
   // Build a Cursor over a pull endpoint: each fill refills the stream with a credit
-  // bounded by the ambient `Buffering` block size and transfers the delivered window
+  // bounded by the ambient `Buffering` block size and transfers the delivered region
   // straight into the cursor's buffer — a single copy, with no intermediate chunk
   // allocation. The credit bounds how much any upstream stage produces per fill, so
-  // memory stays bounded through a parse of an arbitrarily large input. The window is
+  // memory stays bounded through a parse of an arbitrarily large input. The region is
   // read and skipped within the fill, before the stream can refill again — the borrow
-  // discipline `Stream.window` documents, applied at the one place a cursor touches it.
+  // discipline `Stream.lend` documents, applied at the one place a cursor touches it.
   def apply[data](consume stream: (Stream[data] over Credit)^)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
@@ -194,8 +194,8 @@ object Cursor:
             def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
               stream.refill(Credit(space.min(block))).lay(-1): count =>
                 val copied = count.min(space)
-                val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
-                addressable0.transfer(window, stream.start, storage, offset, copied)
+                val source = stream.storage(using Unsafe).asInstanceOf[addressable0.Storage]
+                addressable0.transfer(source, stream.start, storage, offset, copied)
                 stream.skip(copied)
                 copied
 
@@ -610,6 +610,20 @@ extends caps.Mutable:
   inline def unsafeBuffer(using erased unsafe: Unsafe): addressable.Storage = buffer
   inline def unsafePos(using erased unsafe: Unsafe): Int = pos
   inline def unsafeWriteEnd(using erased unsafe: Unsafe): Int = writeEnd
+
+  // Bounds-safe view of the cursor's readable region, elements `pos until writeEnd`: the
+  // region and its branded interval are lent to `lambda`, so every index a consumer can form
+  // is in range (see `zephyrine.Region.scala`) — the preferred boundary for scan loops that
+  // don't cache the buffer across cursor operations. Valid only until the next operation that
+  // may refill, compact or grow the buffer — the same single-owner discipline as
+  // `unsafeBuffer`, with the bounds arithmetic taken away. Parsers that snapshot the buffer
+  // into fields for register-resident hot loops (the `unsafeBuffer` protocol) remain trusted
+  // kernels behind `Unsafe`.
+  inline def lend[result]
+    ( inline lambda: (region: Region[data]) => (Interval in region.type) => result )
+  :   result =
+
+    Region.over[data, result](using addressable)(buffer, pos, writeEnd)(lambda)
 
   // Bulk-advance without per-byte lineation tracking. Caller is responsible
   // for line/column updates if `lineation.active`. Intended for callers that

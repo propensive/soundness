@@ -35,6 +35,9 @@ package gastronomy
 import scala.caps
 
 import anticipation.*
+import contingency.*
+import denominative.*
+import vacuous.*
 import prepositional.*
 import turbulence.*
 import zephyrine.*
@@ -153,8 +156,15 @@ extension [source: Streamable by Data over Credit](source: source)
   :   Digest in hash =
 
     val digester = Digester: digestion =>
-      source.source[Data].sweep: (storage, start, count) =>
-        digestion.append(storage.asInstanceOf[Array[Byte]^{caps.any.rd}], start, count)
+      source.source[Data].sweep: region =>
+        range =>
+          val interval: Interval = range
+
+          val storage = unsafely(region.raw.asInstanceOf[scala.Array[Byte]])
+
+          digestion.append
+            ( storage.asInstanceOf[Array[Byte]^{caps.any.rd}],
+              interval.start.n0, interval.size )
 
     digester.apply
 

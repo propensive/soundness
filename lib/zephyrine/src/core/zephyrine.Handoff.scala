@@ -53,8 +53,8 @@ import java.util.concurrent.locks.LockSupport
 //
 // A `SharedCapability`: like `Conduit`'s core, its guarantees come from
 // volatile publication order, not aliasing analysis.
-final class Handoff(window: Int) extends caps.SharedCapability:
-  private val capacity: Int = Integer.highestOneBit((window.max(2)*2) - 1)
+final class Handoff(depth: Int) extends caps.SharedCapability:
+  private val capacity: Int = Integer.highestOneBit((depth.max(2)*2) - 1)
   private val mask: Int = capacity - 1
   private val slots: juca.AtomicReferenceArray[AnyRef] = juca.AtomicReferenceArray(capacity)
   private val head: juca.AtomicLong = juca.AtomicLong(0)

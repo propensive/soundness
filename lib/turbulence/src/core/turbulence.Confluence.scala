@@ -71,7 +71,7 @@ object Confluence:
     val block: Int = buffering.transfer(addressable0.substrate)
 
     val queue: juc.ArrayBlockingQueue[AnyRef] =
-      juc.ArrayBlockingQueue(buffering.window.max(sources.length))
+      juc.ArrayBlockingQueue(buffering.depth.max(sources.length))
 
     val remaining: juca.AtomicInteger = juca.AtomicInteger(sources.length)
     @volatile var error: Throwable | Null = null
@@ -92,7 +92,7 @@ object Confluence:
 
       async:
         val source = handoff.asInstanceOf[(Stream[medium] over Credit)^]
-        val stable: Boolean = source.windowStable
+        val stable: Boolean = source.regionStable
 
         // A shared (stable) block costs no memory, so pull the whole window at
         // once and collapse the hand-off count; a copied block stays bounded.
@@ -111,12 +111,12 @@ object Confluence:
               val start = source.start
 
               val storage =
-                if stable then source.window(using Unsafe)
+                if stable then source.storage(using Unsafe)
                 else
                   val fresh = addressable0.allocate(count)
 
                   addressable0.transfer
-                    ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
+                    ( source.storage(using Unsafe).asInstanceOf[addressable0.Storage],
                       source.start, fresh, 0, count )
 
                   fresh
@@ -148,7 +148,7 @@ object Confluence:
       private var end0: Int = 0
       private var ended: Boolean = false
 
-      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
       update def skip(count: Int): Unit = start0 += count

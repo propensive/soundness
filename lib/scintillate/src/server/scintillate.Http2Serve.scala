@@ -38,6 +38,7 @@ import proscenium.compat.*
 import anticipation.*
 import coaxial.*
 import contingency.*
+import denominative.*
 import cordillera.*
 import gossamer.*
 import parasite.*
@@ -128,11 +129,9 @@ object Http2Serve:
                 case Http.Body.Flowing(source) =>
                   connection0.sendHeaders(streamId, List.of(headEntries), endStream = false)
 
-                  source().sweep: (storage, start, size) =>
-                    val window = storage.asInstanceOf[scala.Array[Byte]]
-                    val block = Array.unsafeFrozen(window.slice(start, start + size))
-
-                    connection0.sendData(streamId, block, endStream = false)
+                  source().sweep: region =>
+                    range =>
+                      connection0.sendData(streamId, region.materialize(range), endStream = false)
 
                   // Trailers close the stream; otherwise an empty END_STREAM DATA.
                   if trailing then sendTrailers()
@@ -216,8 +215,11 @@ extends Duplex:
   def source(using Buffering): (Stream[Data] over Credit)^ = Streamable.inputStream.stream(in)
 
   def send(consume data: (Stream[Data] over Credit)^): Unit =
-    data.sweep: (storage, start, size) =>
-      out.write(storage.asInstanceOf[scala.Array[Byte]], start, size)
+    data.sweep: region =>
+      range =>
+        val interval: Interval = range
+        out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+            interval.size)
 
     out.flush()
 

@@ -35,6 +35,9 @@ package pneumatic
 import scala.caps
 
 import anticipation.*
+import contingency.*
+import denominative.*
+import prepositional.*
 import proscenium.compat.*
 import rudiments.*
 import turbulence.*
@@ -140,27 +143,32 @@ private[pneumatic] class BrotliStage(engine0: => BrotliEngine^) extends Duct[Dat
   def regulation: Credit is Regulation = summon[Credit is Regulation]
   def translate(demand: Credit): Credit = demand
 
-  update def step
-    ( source: input.Storage,
-      sourceOffset: Int,
-      sourceLength: Int,
-      target: output.Storage,
-      targetOffset: Int,
-      targetSpace: Int )
+  update def step(source: Region[Data])(range: Interval in source.type)
+    ( target: Slate[Data] )(space: Interval in target.type)
   :   Duct.Progress =
 
-    engine.accept(source.asInstanceOf[Array[Byte]^{caps.any.rd}], sourceOffset, sourceLength)
+    val sourceInterval: Interval = range
+    val targetInterval: Interval = space
+    val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+    val out: scala.Array[Byte]^ =
+      unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+
+    engine.accept(bytes.asInstanceOf[Array[Byte]^{caps.any.rd}], sourceInterval.start.n0,
+        sourceInterval.size)
 
     Duct.Progress
-      ( sourceLength,
-        engine.deliver(target.asInstanceOf[scala.Array[Byte]], targetOffset, targetSpace) )
+      ( sourceInterval.size,
+        engine.deliver(out, targetInterval.start.n0, targetInterval.size) )
 
-  override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
+  override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
     if !finishing then
       engine.finish()
       finishing = true
 
-    engine.deliver(target.asInstanceOf[scala.Array[Byte]], targetOffset, targetSpace)
+    val targetInterval: Interval = space
+    val out: scala.Array[Byte]^ =
+      unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+    engine.deliver(out, targetInterval.start.n0, targetInterval.size)
 
 object Brotli:
   given compression: Brotli is Compression:

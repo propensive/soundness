@@ -38,6 +38,7 @@ import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import rudiments.*
@@ -126,7 +127,12 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
 
             while draining do stream.refill(Credit(Long.MaxValue)) match
               case count: Int =>
-                out.write(stream.window(using Unsafe).asInstanceOf[scala.Array[Byte]], stream.start, count)
+                stream.lend: region =>
+                  range =>
+                    val interval: Interval = range
+                    out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]),
+                        interval.start.n0, interval.size)
+
                 out.flush()
                 stream.skip(count)
 

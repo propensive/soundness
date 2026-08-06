@@ -44,6 +44,7 @@ import java.util as ju
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
@@ -97,7 +98,7 @@ package socketBackends:
         private var total: Long = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -288,13 +289,19 @@ package socketBackends:
       case ClientExchange.Tcp(socket) =>
         val out = socket.getOutputStream.nn
 
-        input.sweep: (storage, start, count) =>
-          out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
-          out.flush()
+        input.sweep: region =>
+          range =>
+            val interval: Interval = range
+            out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+                interval.size)
+            out.flush()
 
       case ClientExchange.Domain(channel) =>
-        input.sweep: (storage, start, count) =>
-          channel.write(ByteBuffer.wrap(storage.asInstanceOf[scala.Array[Byte]], start, count))
+        input.sweep: region =>
+          range =>
+            val interval: Interval = range
+            channel.write(ByteBuffer.wrap(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]),
+                interval.start.n0, interval.size))
 
         channel.shutdownOutput()
 
@@ -490,7 +497,7 @@ private[coaxial] def streamsDuplex
         private var limit0: Int = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -518,9 +525,12 @@ private[coaxial] def streamsDuplex
                   count
 
     def send(consume data: (Stream[Data] over Credit)^): Unit =
-      data.sweep: (storage, start, count) =>
-        out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
-        out.flush()
+      data.sweep: region =>
+        range =>
+          val interval: Interval = range
+          out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+              interval.size)
+          out.flush()
 
     def close(): Unit = shutdown()
 
@@ -528,9 +538,14 @@ private[coaxial] def streamsDuplex
 // reusable buffer and blocks in `read`; EOF (`-1`) terminates the stream.
 private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
   def send(consume data: (Stream[Data] over Credit)^): Unit =
-    data.sweep: (storage, start, count) =>
-      val out = ByteBuffer.wrap(storage.asInstanceOf[scala.Array[Byte]], start, count).nn
-      while out.hasRemaining do socketChannel.write(out)
+    data.sweep: region =>
+      range =>
+        val interval: Interval = range
+
+        val out = ByteBuffer.wrap(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]),
+            interval.start.n0, interval.size).nn
+
+        while out.hasRemaining do socketChannel.write(out)
 
   def close(): Unit = socketChannel.close()
 
@@ -546,7 +561,7 @@ private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = n
       private var limit0: Int = 0
       private var ended: Boolean = false
 
-      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
       update def skip(count: Int): Unit = start0 += count

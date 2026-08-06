@@ -226,6 +226,20 @@ object Tests extends Suite(m"Zephyrine tests"):
           builder.toString
         . assert(_ == "Hello world!")
 
+        test(m"region lends the readable window with branded indexes"):
+          val cursor = hello
+          val builder = java.lang.StringBuilder()
+
+          while
+            cursor.lend { region => range => region.visit(range) { index => builder.append(region(index)) } }
+            val count = cursor.lend { _ => range => (range: Interval).size }
+            cursor.unsafeAdvanceBy(count)(using Unsafe)
+            cursor.more
+          do ()
+
+          builder.toString
+        . assert(_ == "Hello world!")
+
         test(m"Capture part of first block"):
           val cursor = hello
           val builder = java.lang.StringBuilder()
@@ -581,6 +595,92 @@ object Tests extends Suite(m"Zephyrine tests"):
             (inner, cursor.grab(outer, cursor.mark).s)
         . assert(_ == ((true, "a")))
 
+      suite(m"Region tests"):
+        def sample(size: Int): scala.Array[Byte]^ =
+          val buffer = Array.scratch[Byte](size)
+          var index = 0
+
+          while index < size do
+            buffer(index) = index.toByte
+            index += 1
+
+          buffer
+
+        test(m"visit sums a clamped window"):
+          val buffer = sample(10)
+          var total = 0
+
+          Region.over[Data, Unit](buffer, 1, 9): region =>
+            range => region.visit(range) { index => total += region(index).toInt }
+
+          total
+        . assert(_ == 36)
+
+        test(m"over clamps an oversized window to the storage"):
+          val buffer = sample(4)
+          var count = 0
+
+          Region.over[Data, Unit](buffer, 0, 100): region =>
+            range => region.visit(range) { _ => count += 1 }
+
+          count
+        . assert(_ == 4)
+
+        test(m"visit8 takes the unrolled path and mops up the tail"):
+          val buffer = sample(19)
+          var whole = 0
+          var rest = 0
+
+          Region.over[Data, Unit](buffer, 0, 19): region =>
+            range =>
+              region.visit8(range)
+               ( (i0, i1, i2, i3, i4, i5, i6, i7) =>
+                   whole += region(i0) + region(i1) + region(i2) + region(i3)
+                     + region(i4) + region(i5) + region(i6) + region(i7) )
+               ( index => rest += region(index).toInt )
+
+          (whole, rest)
+        . assert(_ == ((120, 51)))
+
+        test(m"capped narrows a window, preserving its brand"):
+          val buffer = sample(10)
+          var count = 0
+
+          Region.over[Data, Unit](buffer, 2, 10): region =>
+            range => region.visit(range.capped(3)) { _ => count += 1 }
+
+          count
+        . assert(_ == 3)
+
+        test(m"materialize copies exactly the window"):
+          val buffer = sample(10)
+
+          Region.over[Data, Data](buffer, 2, 5): region =>
+            range => region.materialize(range)
+        . assert(_.to[List] == List[Byte](2, 3, 4))
+
+        test(m"transfer copies no more than the slate's space"):
+          val source = sample(10)
+          val target = Array.scratch[Byte](4)
+
+          val copied = Region.over[Data, Int](source, 5, 10): region =>
+            range =>
+              Slate.over[Data, Int](target, 0, 4): slate =>
+                space => region.transfer(range)(slate)(space)
+
+          (copied, target(0), target(3))
+        . assert(_ == ((4, 5.toByte, 8.toByte)))
+
+        test(m"slate update writes through branded ordinals"):
+          val target = Array.scratch[Byte](6)
+
+          Slate.over[Data, Unit](target, 2, 5): slate =>
+            space => slate.visit(space) { index => slate(index) = 7.toByte }
+
+          (target(1), target(2), target(4),
+           target(5))
+        . assert(_ == ((0.toByte, 7.toByte, 7.toByte, 0.toByte)))
+
       suite(m"Streaming kernel tests"):
         val small = Array.of[Byte](1, 2, 3, 4, 5)
 
@@ -749,7 +849,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(8)) match
             case count: Int =>
-              val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
+              val window = unsafely(stream.storage).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, stream.start, count))
               stream.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -783,7 +883,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(8)) match
             case count: Int =>
-              val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
+              val window = unsafely(stream.storage).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, stream.start, count))
               stream.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -802,7 +902,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
           def recur(): Unit = decoded.refill(Credit(4)) match
             case count: Int =>
-              val window = unsafely(decoded.window).asInstanceOf[scala.Array[Char]]
+              val window = unsafely(decoded.storage).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, decoded.start, count))
               decoded.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -821,7 +921,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(7)) match
             case count: Int =>
-              val window = unsafely(stream.window).asInstanceOf[scala.Array[AnyRef]]
+              val window = unsafely(stream.storage).asInstanceOf[scala.Array[AnyRef]]
 
               for index <- 0 until count
               do collected = window(stream.start + index).asInstanceOf[String] :: collected
@@ -847,9 +947,8 @@ object Tests extends Suite(m"Zephyrine tests"):
           var collected: List[Byte] = Nil
 
           Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](), Array.of[Byte](4, 5)))
-          . sweep: (storage, start, count) =>
-              val bytes = storage.asInstanceOf[scala.Array[Byte]]
-              for index <- 0 until count do collected = bytes(start + index) :: collected
+          . sweep: region =>
+              range => region.visit(range) { index => collected = region(index) :: collected }
 
           collected.reverse
         . assert(_ == List[Byte](1, 2, 3, 4, 5))
@@ -908,13 +1007,12 @@ object Tests extends Suite(m"Zephyrine tests"):
           small.stream.truncate(3).viaDuct(Doubler()).memoize.to[List]
         . assert(_ == List[Byte](1, 1, 2, 2, 3, 3))
 
-        test(m"gather reduces over windows without boxing"):
-          bytes.stream.gather(0L): (total, storage, start, count) =>
-            val array = storage.asInstanceOf[scala.Array[Byte]]
-            var sum = total
-            var index = 0
-            while index < count do { sum += (array(start + index) & 0xff); index += 1 }
-            sum
+        test(m"gather reduces over regions without boxing"):
+          bytes.stream.gather(0L): region =>
+            (total, range) =>
+              var sum = total
+              region.visit(range) { index => sum += (region(index) & 0xff) }
+              sum
         . assert(_ == bytes.to[List].map(_ & 0xff).sum.toLong)
 
         test(m"toProgression yields the stream's chunks in order"):
@@ -1047,23 +1145,28 @@ object Tests extends Suite(m"Zephyrine tests"):
 
     override def quantum: Int = 2
 
-    def step
-      ( source: input.Storage,
-        sourceOffset: Int,
-        sourceLength: Int,
-        target: output.Storage,
-        targetOffset: Int,
-        targetSpace: Int )
+    def step(source: Region[Data])(range: Interval in source.type)
+      ( target: Slate[Data] )(space: Interval in target.type)
     :   Duct.Progress =
+
+      val sourceInterval: Interval = range
+      val sourceOffset = sourceInterval.start.n0
+      val sourceLength = sourceInterval.size
+      val targetInterval: Interval = space
+      val targetOffset = targetInterval.start.n0
+      val targetSpace = targetInterval.size
+      val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+
+      val out: scala.Array[Byte]^ =
+        unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
 
       var consumed: Int = 0
       var produced: Int = 0
-      val target2 = target.asInstanceOf[input.Storage]
 
       while consumed < sourceLength && produced + 2 <= targetSpace do
-        val byte = input.storageAddress(source, sourceOffset + consumed)
-        input.storageUpdate(target2, targetOffset + produced, byte)
-        input.storageUpdate(target2, targetOffset + produced + 1, byte)
+        val byte = bytes(sourceOffset + consumed)
+        out(targetOffset + produced) = byte
+        out(targetOffset + produced + 1) = byte
         consumed += 1
         produced += 2
 
@@ -1080,25 +1183,23 @@ object Tests extends Suite(m"Zephyrine tests"):
     def regulation: Credit is Regulation = summon[Credit is Regulation]
     def translate(demand: Credit): Credit = demand
 
-    update def step
-      ( source: input.Storage,
-        sourceOffset: Int,
-        sourceLength: Int,
-        target: output.Storage,
-        targetOffset: Int,
-        targetSpace: Int )
+    update def step(source: Region[Data])(range: Interval in source.type)
+      ( target: Slate[Data] )(space: Interval in target.type)
     :   Duct.Progress =
 
-      val count = sourceLength.min(targetSpace)
-      input.transfer(source, sourceOffset, target.asInstanceOf[input.Storage], targetOffset, count)
-
+      val count = source.transfer(range)(target)(space)
       Duct.Progress(count, count)
 
-    override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
+    override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
       if emitted then 0 else
         emitted = true
-        output.storageUpdate(target, targetOffset, 99.toByte.asInstanceOf[output.Operand])
-        1
+        var written = 0
+
+        target.visit(space.capped(1)): ordinal =>
+          target(ordinal) = 99.toByte
+          written = 1
+
+        written
 
   // Passes refills through unchanged, recording each demand it receives.
   class Recorder(consume underlying0: (Stream[Data] over Credit)^) extends Stream[Data]:
@@ -1117,9 +1218,9 @@ object Tests extends Suite(m"Zephyrine tests"):
       demands ::= demand.count
       underlying.refill(demand)
 
-    protected def window0: AnyRef =
+    protected def storage0: AnyRef =
       val current = underlying
-      unsafely(current.window).asInstanceOf[AnyRef]
+      unsafely(current.storage).asInstanceOf[AnyRef]
     def start: Int = underlying.start
     def limit: Int = underlying.limit
     update def skip(count: Int): Unit = underlying.skip(count)

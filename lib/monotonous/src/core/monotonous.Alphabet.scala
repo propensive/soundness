@@ -37,6 +37,8 @@ import proscenium.compat.*
 import scala.caps
 
 import anticipation.*
+import denominative.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 import contingency.*
@@ -100,18 +102,21 @@ object Alphabet:
           def translate(demand: Credit): Credit =
             Credit((demand.count.min(Long.MaxValue/8)*base/8).max(1))
 
-          update def step
-            ( source: input.Storage,
-              sourceOffset: Int,
-              sourceLength: Int,
-              target: output.Storage,
-              targetOffset: Int,
-              targetSpace: Int )
+          update def step(source: Region[Data])(range: Interval in source.type)
+            ( target: Slate[Text] )(space: Interval in target.type)
           :   Duct.Progress =
 
-            val bytes = source.asInstanceOf[scala.Array[Byte]]
+            val sourceInterval: Interval = range
+            val sourceOffset = sourceInterval.start.n0
+            val sourceLength = sourceInterval.size
+            val targetInterval: Interval = space
+            val targetOffset = targetInterval.start.n0
+            val targetSpace = targetInterval.size
+            val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+
             // The stage's own buffer, asserted exclusive at the cast rim.
-            val chars: scala.Array[Char]^ = target.asInstanceOf[scala.Array[Char]^]
+            val chars: scala.Array[Char]^ =
+              unsafely(target.raw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -151,10 +156,13 @@ object Alphabet:
 
             Duct.Progress(consumed, produced)
 
-          override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
-          :   Int =
+          override update def flush(target: Slate[Text])(space: Interval in target.type): Int =
+            val targetInterval: Interval = space
+            val targetOffset = targetInterval.start.n0
+            val targetSpace = targetInterval.size
 
-            val chars: scala.Array[Char]^ = target.asInstanceOf[scala.Array[Char]^]
+            val chars: scala.Array[Char]^ =
+              unsafely(target.raw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
             var produced: Int = 0
 
             if !flushing then
@@ -225,18 +233,21 @@ object Alphabet:
           def translate(demand: Credit): Credit =
             Credit((demand.count.min(Long.MaxValue/8)*8/base).max(1))
 
-          update def step
-            ( source: input.Storage,
-              sourceOffset: Int,
-              sourceLength: Int,
-              target: output.Storage,
-              targetOffset: Int,
-              targetSpace: Int )
+          update def step(source: Region[Text])(range: Interval in source.type)
+            ( target: Slate[Data] )(space: Interval in target.type)
           :   Duct.Progress =
 
-            val chars = source.asInstanceOf[scala.Array[Char]]
+            val sourceInterval: Interval = range
+            val sourceOffset = sourceInterval.start.n0
+            val sourceLength = sourceInterval.size
+            val targetInterval: Interval = space
+            val targetOffset = targetInterval.start.n0
+            val targetSpace = targetInterval.size
+            val chars = unsafely(source.raw.asInstanceOf[scala.Array[Char]])
+
             // The stage's own buffer, asserted exclusive at the cast rim.
-            val bytes: scala.Array[Byte]^ = target.asInstanceOf[scala.Array[Byte]^]
+            val bytes: scala.Array[Byte]^ =
+              unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true

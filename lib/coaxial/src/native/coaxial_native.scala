@@ -45,6 +45,7 @@ import scala.scalanative.unsafe.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
@@ -97,7 +98,7 @@ package socketBackends:
         private var total: Long = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -274,9 +275,12 @@ package socketBackends:
       case ClientExchange.Tcp(socket) =>
         val out = socket.getOutputStream.nn
 
-        caps.unsafe.unsafeAssumePure(input).sweep: (storage, start, count) =>
-          out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
-          out.flush()
+        caps.unsafe.unsafeAssumePure(input).sweep: region =>
+          range =>
+            val interval: Interval = range
+            out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+                interval.size)
+            out.flush()
 
     def response(exchange: ClientExchange)(using Buffering, Tactic[StreamError])
     :   (Stream[Data] over Credit)^{caps.any} =
@@ -458,7 +462,7 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
         private var limit0: Int = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -486,9 +490,12 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
                   count
 
     def send(consume data: (Stream[Data] over Credit)^): Unit =
-      data.sweep: (storage, start, count) =>
-        out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
-        out.flush()
+      data.sweep: region =>
+        range =>
+          val interval: Interval = range
+          out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+              interval.size)
+          out.flush()
 
     def close(): Unit = shutdown()
 
@@ -553,7 +560,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
         private var limit0: Int = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -568,7 +575,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
               start0 = 0
               limit0 = 0
 
-              // (`asInstanceOf` launders the field read's capture, as `window0` does, and
+              // (`asInstanceOf` launders the field read's capture, as `storage0` does, and
               // `atUnsafe` is Scala Native's array-to-pointer view — its bounds-checked `at`
               // is shadowed by rudiments' `at` extension; the indices here are in range by
               // construction.)
@@ -587,14 +594,18 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
       // stream `write` throws at runtime; `Duplex.send` offers no typed error channel.
       import unsafeExceptions.canThrowAny
 
-      data.sweep: (storage, start, count) =>
-        val array = storage.asInstanceOf[scala.Array[Byte]]
-        var written = 0
+      data.sweep: region =>
+        range =>
+          val interval: Interval = range
+          val start = interval.start.n0
+          val count = interval.size
+          val array = unsafely(region.raw.asInstanceOf[scala.Array[Byte]])
+          var written = 0
 
-        while written < count do
-          val result = libcrypto.BIO_write(bio, array.atUnsafe(start + written), count - written)
-          if result <= 0 then throw ji.IOException("TLS: BIO_write failed: "+opensslError())
-          written += result
+          while written < count do
+            val result = libcrypto.BIO_write(bio, array.atUnsafe(start + written), count - written)
+            if result <= 0 then throw ji.IOException("TLS: BIO_write failed: "+opensslError())
+            written += result
 
     def close(): Unit =
       libcrypto.BIO_free_all(bio)

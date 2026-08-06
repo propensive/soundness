@@ -36,6 +36,7 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import prepositional.*
 import proscenium.compat.*
@@ -171,27 +172,29 @@ extends Duct[Data, Data]:
 
     count
 
-  update def step
-    ( source: input.Storage,
-      sourceOffset: Int,
-      sourceLength: Int,
-      target: output.Storage,
-      targetOffset: Int,
-      targetSpace: Int )
+  update def step(source: Region[Data])(range: Interval in source.type)
+    ( target: Slate[Data] )(space: Interval in target.type)
   :   Duct.Progress =
 
-    val bytes = target.asInstanceOf[scala.Array[Byte]]
+    val sourceLength = (range: Interval).size
+    val targetInterval: Interval = space
+    val targetOffset = targetInterval.start.n0
+    val targetSpace = targetInterval.size
+    val bytes = unsafely(target.raw.asInstanceOf[scala.Array[Byte]])
 
     if offset < pending.length then Duct.Progress(0, deliver(bytes, targetOffset, targetSpace))
     else
-      val chunk = input.materialize(source, sourceOffset, sourceLength)
+      val chunk = source.materialize(range)
       total += sourceLength
       pending = session.update(chunk)
       offset = 0
       Duct.Progress(sourceLength, deliver(bytes, targetOffset, targetSpace))
 
-  override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val bytes = target.asInstanceOf[scala.Array[Byte]]
+  override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
+    val targetInterval: Interval = space
+    val targetOffset = targetInterval.start.n0
+    val targetSpace = targetInterval.size
+    val bytes = unsafely(target.raw.asInstanceOf[scala.Array[Byte]])
 
     if offset < pending.length then deliver(bytes, targetOffset, targetSpace)
     else if !finished then
@@ -235,38 +238,32 @@ extends Duct[Data, Data]:
   def regulation: Credit is Regulation = summon[Credit is Regulation]
   def translate(demand: Credit): Credit = demand
 
-  update def step
-    ( source: input.Storage,
-      sourceOffset: Int,
-      sourceLength: Int,
-      target: output.Storage,
-      targetOffset: Int,
-      targetSpace: Int )
+  update def step(source: Region[Data])(range: Interval in source.type)
+    ( target: Slate[Data] )(space: Interval in target.type)
   :   Duct.Progress =
 
     inner match
-      case duct: CipherDuct =>
-        // `Addressable` instances are unique per medium, so the two ducts'
-        // `Storage` paths coincide at erasure.
-        duct.step
-          ( source.asInstanceOf[duct.input.Storage],
-            sourceOffset,
-            sourceLength,
-            target.asInstanceOf[duct.output.Storage],
-            targetOffset,
-            targetSpace )
+      case duct0: CipherDuct =>
+        // Re-asserts the exclusivity the untracked field forgot, as at every cast rim.
+        val duct = duct0.asInstanceOf[CipherDuct^]
+        duct.step(source)(range)(target)(space)
 
       case null =>
-        val take = sourceLength.min(ivSize - headerFilled)
-        System.arraycopy(source.asInstanceOf[scala.Array[Byte]], sourceOffset, header, headerFilled, take)
+        val sourceInterval: Interval = range
+        val take = sourceInterval.size.min(ivSize - headerFilled)
+
+        System.arraycopy(unsafely(source.raw.asInstanceOf[scala.Array[Byte]]),
+            sourceInterval.start.n0, header, headerFilled, take)
+
         headerFilled += take
         if headerFilled == ivSize then inner = begin().asInstanceOf[CipherDuct]
         Duct.Progress(take, 0)
 
-  override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
+  override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
     inner match
-      case duct: CipherDuct =>
-        try duct.flush(target.asInstanceOf[duct.output.Storage], targetOffset, targetSpace)
+      case duct0: CipherDuct =>
+        val duct = duct0.asInstanceOf[CipherDuct^]
+        try duct.flush(target)(space)
         catch case error: Exception =>
           // Matched by class name (see `securityException`): `javax.crypto` types cannot be
           // referenced from this platform-neutral file. (`canThrowAny` only relicenses the
@@ -284,4 +281,4 @@ extends Duct[Data, Data]:
 
       case null =>
         inner = begin().asInstanceOf[CipherDuct]
-        flush(target, targetOffset, targetSpace)
+        flush(target)(space)

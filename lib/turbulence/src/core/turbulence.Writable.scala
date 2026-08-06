@@ -37,6 +37,7 @@ import java.nio as jn
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
@@ -58,12 +59,14 @@ object Writable:
 
     // The non-consume `write` signature crosses to the consuming drain as a
     // neutral reference (the `accept` convention).
-    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].sweep:
-      (storage, start, count) =>
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].sweep: region =>
+      range =>
         if !failed then
+          val interval: Interval = range
+
           try
-            outputStream.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
-            total += count
+            outputStream.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0, interval.size)
+            total += interval.size
           catch case error: ji.IOException => failed = true
 
     if failed then raise(StreamError(total.b))
@@ -133,10 +136,11 @@ object Writable:
       var total: Long = 0L
       var failed: Boolean = false
 
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].sweep:
-        (storage, start, count) =>
+      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].sweep: region =>
+        range =>
           if !failed then
-            val buffer = jn.ByteBuffer.wrap(storage.asInstanceOf[scala.Array[Byte]], start, count).nn
+            val interval: Interval = range
+            val buffer = jn.ByteBuffer.wrap(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0, interval.size).nn
 
             try
               while buffer.hasRemaining do
@@ -144,7 +148,7 @@ object Writable:
                   failed = true
                   buffer.limit(0)
 
-              total += count
+              total += interval.size
             catch case error: Exception => failed = true
 
       if failed then raise(StreamError(total.b))
