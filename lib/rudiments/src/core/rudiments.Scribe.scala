@@ -49,23 +49,38 @@ import prepositional.*
 //
 // The accessors live in the companion (found through implicit scope) rather than at the top
 // level, so same-named extensions imported by wildcard cannot shadow them.
-// An untyped carrier, as `Region`/`Slate`: an opaque alias of `scala.Array` directly would be
-// mutable-classified by the mutalias patch, annotating every in-module signature with
-// `^{any.rd}` and breaking capture-free summons across the boundary. The casts are sound:
-// a scribe is minted only over the array `Array.scribe` just allocated.
-opaque type Scribe[element] = AnyRef
+// The carrier holds the buffer untyped, as `Region`/`Slate` (an opaque alias of `scala.Array`
+// directly would be mutable-classified by the mutalias patch, annotating every in-module
+// signature with `^{any.rd}` and breaking capture-free summons across the boundary), plus the
+// append cursor. The casts are sound: a scribe is minted only over the array `Array.scribe`
+// just allocated.
+opaque type Scribe[element] = Scribe.Core
 
 object Scribe:
+  // Public (with a package-private constructor routed through `apply`) because the inline
+  // lender and accessors expand in caller packages, which must be able to reference the
+  // carrier and its members. Minting a scribe grants only bounds-confined access to the
+  // array, so the public mint is not a safety hole; the freeze soundness argument belongs
+  // to `Array.scribe`, which confines the scribe it mints to one lambda.
+  final class Core private[rudiments] (val buffer: AnyRef):
+    // Untracked: the cursor is reached only through the scribe, which the lender confines
+    // to one lambda; `Stateful` would force capability typing onto a transient builder.
+    @scala.caps.unsafe.untrackedCaptures
+    var mark: Int = 0
   // Written out (not a SAM lambda): the lambda form infers a capture-annotated `Self`
   // (`Scribe[element]^{any.rd}`), which then fails to match capture-free summons.
   given countable: [element] => Scribe[element] is Countable:
-    def size(self: Scribe[element]): Int = self.asInstanceOf[scala.Array[element]].length
+    def size(self: Scribe[element]): Int =
+      self.asInstanceOf[Core].buffer.asInstanceOf[scala.Array[element]].length
 
-  private[rudiments] inline def over[element, result](buffer: scala.Array[element])
+  def apply[element](buffer: scala.Array[element]^): Scribe[element] =
+    new Core(buffer.asInstanceOf[AnyRef])
+
+  private[rudiments] inline def over[element, result](buffer: scala.Array[element]^)
     ( inline lambda: (scribe: Scribe[element]) => (Interval in scribe.type) => result )
   :   result =
 
-    val scribe: Scribe[element] = buffer.asInstanceOf[AnyRef]
+    val scribe = Scribe[element](buffer)
     lambda(scribe)(Interval.initial(buffer.length).asInstanceOf[Interval in scribe.type])
 
   extension [element](scribe: Scribe[element])
@@ -73,17 +88,32 @@ object Scribe:
       val ordinal: Ordinal = index
       // The cast re-asserts the exclusivity the carrier forgot: the array is reached only
       // through this scribe, which the lender confines to one lambda.
-      scribe.asInstanceOf[scala.Array[element]^](ordinal.n0) = value
+      scribe.asInstanceOf[Core].buffer.asInstanceOf[scala.Array[element]^](ordinal.n0) = value
 
     inline def apply(index: Ordinal in scribe.type): element =
       val ordinal: Ordinal = index
-      scribe.asInstanceOf[scala.Array[element]](ordinal.n0)
+      scribe.asInstanceOf[Core].buffer.asInstanceOf[scala.Array[element]](ordinal.n0)
+
+    // Sequential writes for data-dependent positions: each `append` writes at the scribe's own
+    // cursor and advances it, clamping silently at the end of the buffer, so no position a
+    // caller can reach is out of range. The dominant safe form for compaction and filtering
+    // loops, whose write index advances irregularly while the read index scans.
+    inline def append(value: element): Unit =
+      val core = scribe.asInstanceOf[Core]
+      val target = core.buffer.asInstanceOf[scala.Array[element]^]
+      if core.mark < target.length then
+        target(core.mark) = value
+        core.mark += 1
+
+    // The number of elements appended so far.
+    inline def mark: Int = scribe.asInstanceOf[Core].mark
 
     // Bulk copy of a whole frozen array into the scribe at `at`, clamped to the space that
     // remains: the confined form of `place`. Returns the count copied.
     inline def place(source: Array[element]^{}, at: Ordinal in scribe.type): Int =
       val ordinal: Ordinal = at
-      val target: scala.Array[element]^ = scribe.asInstanceOf[scala.Array[element]^]
+      val target: scala.Array[element]^ =
+        scribe.asInstanceOf[Core].buffer.asInstanceOf[scala.Array[element]^]
       val count = source.readable.length.min(target.length - ordinal.n0)
 
       System.arraycopy
@@ -98,6 +128,6 @@ extension (companion: Array.type)
     ( inline lambda: (scribe: Scribe[element]) => (Interval in scribe.type) => Unit )
   :   Array[element]^{} =
 
-    val buffer = new scala.Array[element](size.max(0))
+    val buffer: scala.Array[element]^ = new scala.Array[element](size.max(0))
     Scribe.over[element, Unit](buffer)(lambda)
     buffer.asInstanceOf[Array[element]^{}]

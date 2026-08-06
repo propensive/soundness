@@ -54,6 +54,12 @@ extension [populable: Vacuiscible](value: populable)
 extension [countable: Countable](value: countable)
   inline def gamut: Interval = Interval.initial(countable.size(value))
 
+  // The whole extent as a branded interval: `gamut`, confined to this value. Sound for
+  // immutable receivers on stable paths, like `within` and `confine`; a mutable countable
+  // that shrinks after the brand is minted invalidates it.
+  inline def extent: Interval in value.type =
+    Interval.initial(countable.size(value)).asInstanceOf[Interval in value.type]
+
   inline def iterate(inline lambda: (Ordinal in value.type) => Unit): Unit =
     var index: Int = 0
 

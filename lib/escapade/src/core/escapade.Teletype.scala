@@ -101,17 +101,12 @@ object Teletype:
     def fromChar(char: Char): Char = char
 
     def map(text: Teletype)(lambda: Char => Char): Teletype =
-      val plain = text.plain.s
-      val array = Array[Char](plain.length)
-      plain.getChars(0, plain.length, array.raw, 0)
-      var index = 0
-
-      while index < plain.length do
-        array(index) = lambda(array(index))
-        index += 1
+      val plain = text.plain
+      val array = Array.scribe[Char](plain.length): scribe =>
+        _ => plain.iterate { index => scribe.append(lambda(plain.at(index))) }
 
       Teletype
-        ( new String(array.raw).tt,
+        ( new String(Array.unsafeJvm(array)).tt,
           text.styles,
           text.hyperlinks,
           text.insertions,
@@ -181,36 +176,43 @@ object Teletype:
     if n == 0
     then (Array.of(if denseStyles.length > 0 then denseStyles(0) else 0L), Array.empty[Int])
     else
-      // Count runs
+      // Count runs, tracking the previous style rather than reading `i - 1` again: the
+      // confined scan visits each index once.
       var runs = 1
-      var i = 1
+      var previous: Long = denseStyles.at(Prim).or(0L)
 
-      while i < n do
-        if denseStyles(i) != denseStyles(i - 1) then runs += 1
-        i += 1
+      denseStyles.iterate(denseStyles.extent.capped(n)): index =>
+        val style = denseStyles.at(index)
+        if style != previous then runs += 1
+        previous = style
 
       if runs * SparseThreshold > n then
         // Keep dense
         (denseStyles, Array.empty[Int])
       else
-        // Convert to sparse
-        val newStyles = Array[Long](runs + 1)
-        val newBoundaries = Array[Int](runs)
-        newBoundaries(0) = 0
-        newStyles(0) = denseStyles(0)
-        var src = 1
-        var dst = 1
+        // Convert to sparse: sequential appends track the irregular write position.
+        var newBoundaries: Array[Int]^{} = Array.empty[Int]
 
-        while src < n do
-          if denseStyles(src) != denseStyles(src - 1) then
-            newBoundaries(dst) = src
-            newStyles(dst) = denseStyles(src)
-            dst += 1
+        val newStyles = Array.scribe[Long](runs + 1): styleScribe =>
+          _ =>
+            newBoundaries = Array.scribe[Int](runs): boundaryScribe =>
+              _ =>
+                boundaryScribe.append(0)
+                previous = denseStyles.at(Prim).or(0L)
+                styleScribe.append(previous)
 
-          src += 1
+                denseStyles.iterate(denseStyles.extent.capped(n)): index =>
+                  val style = denseStyles.at(index)
 
-        newStyles(runs) = denseStyles(n)  // trailing
-        (Array.freeze(newStyles), Array.freeze(newBoundaries))
+                  if style != previous then
+                    boundaryScribe.append((index: Ordinal).n0)
+                    styleScribe.append(style)
+
+                  previous = style
+
+                styleScribe.append(denseStyles.at(Ordinal.zerary(n)).or(0L))  // trailing
+
+        (newStyles, newBoundaries)
 
 
 // `boundaries` is the run-start array for the sparse form; empty for the dense form.
@@ -229,20 +231,26 @@ case class Teletype
 
   inline def isDense: Boolean = boundaries.length == 0
 
+  // The run-lookup binary search shared by `styleAt`, `dropChars` and `takeChars`: the
+  // greatest `lo` in [0, boundaries.length) whose boundary is `<= position` (`< position`
+  // when `strict`). Each probe is bounds-checked: log₂ n checks on a cold path, and the
+  // default is unreachable because `mid` always lies strictly between `lo` and `hi`.
+  private def searchRun(position: Int, strict: Boolean): Int =
+    var lo = 0
+    var hi = boundaries.length
+
+    while lo + 1 < hi do
+      val mid = (lo + hi) >>> 1
+      val boundary = boundaries.at(Ordinal.zerary(mid)).or(Int.MaxValue)
+      if (if strict then boundary < position else boundary <= position) then lo = mid else hi = mid
+
+    lo
+
   // Style at position p (0 ≤ p ≤ plain.length, where length means "trailing").
   def styleAt(p: Int): Long =
     if isDense then styles(p)
     else if p >= plain.length then styles(boundaries.length)
-    else
-      // Binary search for the run that contains p.
-      var lo = 0
-      var hi = boundaries.length
-
-      while lo + 1 < hi do
-        val mid = (lo + hi) >>> 1
-        if boundaries(mid) <= p then lo = mid else hi = mid
-
-      styles(lo)
+    else styles(searchRun(p, strict = false))
 
   // Trailing style (the style after the last char; used for joins).
   inline def trailingStyle: Long =
@@ -255,31 +263,37 @@ case class Teletype
     else if plain.length == 0 then (Array.of(if styles.length > 0 then styles(0) else 0L), Array.of(0))
     else
       val n = plain.length
-      // Count runs
+      // Count runs, tracking the previous style; see `compressIfBeneficial`.
       var runs = 1
-      var i = 1
+      var previous: Long = styles.at(Prim).or(0L)
 
-      while i < n do
-        if styles(i) != styles(i - 1) then runs += 1
-        i += 1
+      styles.iterate(styles.extent.capped(n)): index =>
+        val style = styles.at(index)
+        if style != previous then runs += 1
+        previous = style
 
-      val newStyles = Array[Long](runs + 1)
-      val newBoundaries = Array[Int](runs)
-      newBoundaries(0) = 0
-      newStyles(0) = styles(0)
-      var src = 1
-      var dst = 1
+      var newBoundaries: Array[Int]^{} = Array.empty[Int]
 
-      while src < n do
-        if styles(src) != styles(src - 1) then
-          newBoundaries(dst) = src
-          newStyles(dst) = styles(src)
-          dst += 1
+      val newStyles = Array.scribe[Long](runs + 1): styleScribe =>
+        _ =>
+          newBoundaries = Array.scribe[Int](runs): boundaryScribe =>
+            _ =>
+              boundaryScribe.append(0)
+              previous = styles.at(Prim).or(0L)
+              styleScribe.append(previous)
 
-        src += 1
+              styles.iterate(styles.extent.capped(n)): index =>
+                val style = styles.at(index)
 
-      newStyles(runs) = styles(n)
-      (Array.freeze(newStyles), Array.freeze(newBoundaries))
+                if style != previous then
+                  boundaryScribe.append((index: Ordinal).n0)
+                  styleScribe.append(style)
+
+                previous = style
+
+              styleScribe.append(styles.at(Ordinal.zerary(n)).or(0L))
+
+      (newStyles, newBoundaries)
 
   def explicit: Text = Text:
     render(termcapDefinitions.xtermTrueColorTermcap).s.flatMap: char =>
@@ -293,18 +307,13 @@ case class Teletype
       if isDense then
         // Stay dense: extend styles array with the trailing style
         val newLength = plain.length + text.length + 1
-        val arr = Array[Long](newLength)
-        var i = 0
 
-        while i < plain.length do
-          arr(i) = styles(i)
-          i += 1
+        // For indexes within the old array this reads the old style (the old trailing style
+        // at `plain.length` equals `tail`); beyond it, the default IS the extension.
+        val arr = Array.scribe[Long](newLength): scribe =>
+          _ => scribe.iterate { i => scribe(i) = styles.at(i).or(tail) }
 
-        while i < newLength do
-          arr(i) = tail
-          i += 1
-
-        Teletype(combinedPlain, Array.freeze(arr), hyperlinks, insertions, Array.empty[Int])
+        Teletype(combinedPlain, arr, hyperlinks, insertions, Array.empty[Int])
       else
         // Stay sparse: the new chars become part of the last run (since trailing style = last run
         // style) unless the last run's style differs from the trailing style — but that can't
@@ -408,16 +417,12 @@ case class Teletype
           insertions.collect { case (k, v) if k >= n => (k - n) -> v }.to(TreeMap)
 
         if isDense then
-          val arr = Array[Long](keepLength + 1)
-          var i = 0
-
-          while i <= keepLength do
-            arr(i) = styles(n + i)
-            i += 1
+          val arr = Array.scribe[Long](keepLength + 1): scribe =>
+            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(n + (i: Ordinal).n0)).or(0L) }
 
           Teletype
             ( plain.skip(n),
-              Array.freeze(arr),
+              arr,
               newHyperlinks,
               newInsertions,
               Array.empty[Int] )
@@ -425,35 +430,26 @@ case class Teletype
           // Sparse: find the run that contains position n; drop earlier runs;
           // adjust the first kept run's boundary to 0; shift all other boundaries by -n.
           val k = boundaries.length
-          // Binary search for the run at position n
-          var lo = 0
-          var hi = k
-
-          while lo + 1 < hi do
-            val mid = (lo + hi) >>> 1
-            if boundaries(mid) <= n then lo = mid else hi = mid
-
-          val firstRun = lo
+          val firstRun = searchRun(n, strict = false)
           val newK = k - firstRun
-          val newBoundariesArr = Array[Int](newK)
-          val newStylesArr = Array[Long](newK + 1)
-          newBoundariesArr(0) = 0
-          newStylesArr(0) = styles(firstRun)
-          var i = 1
 
-          while i < newK do
-            newBoundariesArr(i) = boundaries(firstRun + i) - n
-            newStylesArr(i) = styles(firstRun + i)
-            i += 1
+          val newBoundariesArr = Array.scribe[Int](newK): scribe =>
+            _ =>
+              scribe.append(0)
 
-          newStylesArr(newK) = styles(k)
+              scribe.iterate: i =>
+                if (i: Ordinal) != Prim then
+                  scribe(i) = boundaries.at(Ordinal.zerary(firstRun + (i: Ordinal).n0)).or(0) - n
+
+          val newStylesArr = Array.scribe[Long](newK + 1): scribe =>
+            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(firstRun + (i: Ordinal).n0)).or(0L) }
 
           Teletype
             ( plain.skip(n),
-              Array.freeze(newStylesArr),
+              newStylesArr,
               newHyperlinks,
               newInsertions,
-              Array.freeze(newBoundariesArr) )
+              newBoundariesArr )
 
   def takeChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl => dropChars(plain.length - n)
@@ -466,51 +462,32 @@ case class Teletype
         val newInsertions = insertions.rangeUntil(n)
 
         if isDense then
-          val arr = Array[Long](n + 1)
-          var i = 0
-
-          while i < n do
-            arr(i) = styles(i)
-            i += 1
-
-          arr(n) = 0L
+          val arr = Array.scribe[Long](n + 1): scribe =>
+            _ => scribe.iterate { i => scribe(i) = if (i: Ordinal).n0 == n then 0L else styles.at(i).or(0L) }
 
           Teletype
             ( plain.keep(n),
-              Array.freeze(arr),
+              arr,
               newHyperlinks,
               newInsertions,
               Array.empty[Int] )
         else
           // Sparse: keep runs whose start is < n; trim the last kept run; trailing style = 0L.
-          val k = boundaries.length
-          // Binary search for the last run whose start is < n
-          var lo = 0
-          var hi = k
-
-          while lo + 1 < hi do
-            val mid = (lo + hi) >>> 1
-            if boundaries(mid) < n then lo = mid else hi = mid
-
-          val lastRun = lo
+          val lastRun = searchRun(n, strict = true)
           val newK = lastRun + 1
-          val newBoundariesArr = Array[Int](newK)
-          val newStylesArr = Array[Long](newK + 1)
-          var i = 0
 
-          while i < newK do
-            newBoundariesArr(i) = boundaries(i)
-            newStylesArr(i) = styles(i)
-            i += 1
+          val newBoundariesArr = Array.scribe[Int](newK): scribe =>
+            _ => scribe.iterate { i => scribe(i) = boundaries.at(i).or(0) }
 
-          newStylesArr(newK) = 0L
+          val newStylesArr = Array.scribe[Long](newK + 1): scribe =>
+            _ => scribe.iterate { i => scribe(i) = if (i: Ordinal).n0 == newK then 0L else styles.at(i).or(0L) }
 
           Teletype
             ( plain.keep(n),
-              Array.freeze(newStylesArr),
+              newStylesArr,
               newHyperlinks,
               newInsertions,
-              Array.freeze(newBoundariesArr) )
+              newBoundariesArr )
 
   def render(termcap: Termcap): Text =
     if !termcap.ansi then plain else

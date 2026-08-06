@@ -221,6 +221,28 @@ object Tests extends Suite(m"Rudiments Tests"):
         target.to[List]
       . assert(_ == List(0, 1, 2, 3))
 
+      test(m"`append` writes sequentially and clamps at the end"):
+        Array.scribe[Int](3): scribe =>
+          _ =>
+            scribe.append(5)
+            scribe.append(6)
+            scribe.append(7)
+            scribe.append(8)
+        . to[List]
+      . assert(_ == List(5, 6, 7))
+
+      test(m"`mark` counts appended elements"):
+        var count = -1
+
+        Array.scribe[Int](5): scribe =>
+          _ =>
+            scribe.append(1)
+            scribe.append(2)
+            count = scribe.mark
+
+        count
+      . assert(_ == 2)
+
       test(m"the scan family applies to a scribe"):
         var kept = -1
 
