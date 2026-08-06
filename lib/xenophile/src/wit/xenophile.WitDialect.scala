@@ -32,25 +32,31 @@
                                                                                                   */
 package xenophile
 
-// Deliberate stdlib opt-out for `Map`: this dialect's parsing accumulators are map-algebraic
-// throughout; the single `parse` boundary re-wraps as the opaque `Map` (erasure-identical cast).
+// The dialect works with ordinary Scala collections internally; the single `parse` boundary
+// re-wraps as the opaque `Map` (erasure-identical cast).
 import scala.collection.immutable.Map
 
 import proscenium.compat.*
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
 
-// A minimal grammar for WIT (the WebAssembly Component Model's interface-definition language).
-// `record`s become navigable foreign types whose members are their fields; an `interface`'s
-// functions become members of a type named after the interface; `enum`s and `flags` are treated as
-// `s32`; `type` aliases are resolved. The `package` declaration is read to qualify each interface's
-// functions with their Component Model module id (e.g. `wasi:random/random@0.2.0`); `use`,
-// `variant` and `resource` declarations are recognised but their bodies are skipped. A `world`'s
-// body is skipped for navigation purposes, but `worlds` reads its imports and exports. Line and
-// block comments are ignored.
+// The WIT grammar for foreign navigation: a *projection* of `WitParser`'s declaration model
+// onto the flat form the wasm backend marshals against — one reader per language, two views,
+// exactly as `TypescriptDialect` projects from `TypescriptParser`.
+//
+// The parser retains the declared surface faithfully — enum and variant cases, package
+// structure, `use` clauses — and this projection deliberately erases what an invocation cannot
+// use: `record`s become navigable foreign types whose members are their fields, an interface's
+// functions become members of a type named after the interface, `enum`s collapse to the
+// unsigned discriminant that holds their cases and `flags` to a bit-vector, `option<T>`
+// becomes the union `T | none`, a `result` always carries exactly two arms (missing ones
+// padded with `_`), and `type` aliases are resolved transitively. The `package` declaration
+// qualifies each interface's functions with their Component Model module id
+// (`wasi:random/random@0.2.0`).
 object WitDialect extends Dialect:
   // The imports and exports of a `world` declaration, as Component Model interface ids. A world
   // states which host capabilities a component needs and which interfaces it offers — which is
@@ -61,402 +67,134 @@ object WitDialect extends Dialect:
   def parse(source: Text): proscenium.Map[Text, proscenium.Map[Text, Prototype]] =
     parse0(source).asInstanceOf[proscenium.Map[Text, proscenium.Map[Text, Prototype]]]
 
-  // Every `world` declared in a source, by name. A bare interface name (`import monotonic-clock;`,
-  // naming an interface in the same package) is qualified with the package id, so every id in the
-  // result is a full Component Model id. Inline definitions — `import name: func(…)` and
-  // `export name: interface { … }` — reference no interface, so they contribute no id.
+  // Every `world` declared in a source, by name. A bare interface name (`import
+  // monotonic-clock;`, naming an interface in the same package) is qualified with the package
+  // id, so every id in the result is a full Component Model id.
   def worlds(source: Text): proscenium.Map[Text, World] =
-    worlds0(tokenize(source.s), Map(), Unset).asInstanceOf[proscenium.Map[Text, World]]
+    worlds0(source).asInstanceOf[proscenium.Map[Text, World]]
+
+  private def packageOf(document: WitDocument): Optional[Text] =
+    document.packageName.let: name =>
+      document.version.let { version => t"$name@$version" }.or(name)
+
+  private def worlds0(source: Text): Map[Text, World] =
+    import strategies.throwUnsafely
+
+    WitParser.parse(source).stdlib.flatMap: document =>
+      val pkg = packageOf(document)
+
+      def qualify(id: Text): Text =
+        if id.s.contains(":") then id else moduleId(pkg, id).or(id)
+
+      document.worlds.stdlib.map: world =>
+        world.name ->
+          World(world.name, world.imports.map(qualify(_)), world.exports.map(qualify(_)))
+
+    . toMap
 
   private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
-    val (types, typedefs) = items(tokenize(source.s), Map(), Map(), Unset)
+    import strategies.throwUnsafely
+    val documents = WitParser.parse(source).stdlib
 
-    resolve(types, typedefs)
+    var types = Map[Text, Map[Text, Prototype]]()
+    var typedefs = Map[Text, Foreign.Type]()
 
-  // Walks the top-level items looking only for `world` declarations, tracking the `package` id so
-  // bare interface names inside a world can be qualified.
-  private def worlds0(tokens: List[String], worlds: Map[Text, World], pkg: Optional[Text])
-  :   Map[Text, World] =
+    for
+      document  <- documents
+      interface <- document.interfaces.stdlib
+    do
+      val pkg = packageOf(document)
+      val module = moduleId(pkg, interface.name)
+      val functions = scala.collection.mutable.LinkedHashMap[Text, Prototype]()
 
-    tokens match
-      case Nil =>
-        worlds
+      def signature(fn: WitFunction, resource: Optional[Text]): Prototype =
+        Prototype
+          ( List.from(fn.parameters.stdlib.map { (_, typed) => project(typed) }),
+            if fn.constructor then Foreign.Type.Named(resource.or(t""))
+            else fn.result.let(project(_)).or(Foreign.Type.Named(t"unit")),
+            module,
+            resource,
+            fn.static || fn.constructor )
 
-      case "package" :: rest =>
-        val (id, after) = packageId(rest)
-        worlds0(after, worlds, id)
+      interface.items.stdlib.foreach:
+        case WitItem.Function(fn) =>
+          functions(fn.name) = signature(fn, Unset)
 
-      case "world" :: name :: "{" :: rest =>
-        val (parsed, after) = world(rest, name.tt, Nil, Nil, pkg)
-        worlds0(after, worlds.updated(name.tt, parsed), pkg)
+        case WitItem.Record(name, fields) =>
+          val members = fields.stdlib.map: (field, typed) =>
+            field -> Prototype(Unset, project(typed))
 
-      // An interface body can contain neither a world nor a package, so it is skipped wholesale;
-      // without this, a `use` inside one could be mistaken for a top-level item.
-      case "interface" :: _ :: "{" :: rest =>
-        worlds0(skipBraces(rest, 1), worlds, pkg)
+          types = types.updated(name, members.toMap)
 
-      case _ :: rest =>
-        worlds0(rest, worlds, pkg)
-
-  // Walks a world body, accumulating the ids named by its `import` and `export` items. Anything
-  // else — `include`, `use`, a stray token — is stepped over.
-  private def world
-    ( tokens:  List[String],
-      name:    Text,
-      imports: List[Text],
-      exports: List[Text],
-      pkg:     Optional[Text] )
-  :   (World, List[String]) =
-
-    def built = World(name, List.of(imports.stdlib.reverse), List.of(exports.stdlib.reverse))
-
-    tokens match
-      case Nil =>
-        (built, Nil)
-
-      case "}" :: rest =>
-        (built, rest)
-
-      case "import" :: rest =>
-        val (id, after) = worldItem(rest, Nil, pkg)
-        world(after, name, id.lay(imports)(_ :: imports), exports, pkg)
-
-      case "export" :: rest =>
-        val (id, after) = worldItem(rest, Nil, pkg)
-        world(after, name, imports, id.lay(exports)(_ :: exports), pkg)
-
-      case _ :: rest =>
-        world(rest, name, imports, exports, pkg)
-
-  // Reads one `import`/`export` item, returning the interface id it references — `Unset` for an
-  // inline definition, which references none — and the tokens after it. Ids contain no internal
-  // whitespace, so joining the tokens with no separator reassembles `wasi:cli/run@0.2.0` exactly.
-  private def worldItem(tokens: List[String], acc: List[String], pkg: Optional[Text])
-  :   (Optional[Text], List[String]) =
-
-    tokens match
-      case Nil =>
-        (Unset, Nil)
-
-      // `name: interface { … }` defines an interface inline rather than referencing one.
-      case "{" :: rest =>
-        (Unset, skipBraces(rest, 1))
-
-      case ";" :: rest =>
-        val id = acc.stdlib.reverse.mkString
-
-        // `name: func(…)` is an inline function import, not an interface reference. A name with no
-        // `:` is an interface in this package, which the package id qualifies.
-        if id.contains("func(") then (Unset, rest)
-        else if id.contains(":") then (id.tt, rest)
-        else (moduleId(pkg, id.tt).or(id.tt), rest)
-
-      case head :: rest =>
-        worldItem(rest, head :: acc, pkg)
-
-  // WIT identifiers are kebab-case, so `-` is an identifier character — except in `->` (the
-  // return-type arrow). Other punctuation becomes single-character tokens; `//` and `/* … */`
-  // comments are skipped.
-  private def tokenize(source: String): List[String] =
-    def skipLine(index: Int): Int =
-      if index >= source.length || source.charAt(index) == '\n' then index + 1
-      else skipLine(index + 1)
-
-    def skipBlock(index: Int): Int =
-      if index + 1 >= source.length then source.length
-      else if source.charAt(index) == '*' && source.charAt(index + 1) == '/' then index + 2
-      else skipBlock(index + 1)
-
-    def ident(char: Char): Boolean =
-      char.isLetterOrDigit || char == '_' || char == '-'
-
-    def recur(index: Int, current: String, tokens: scala.collection.immutable.List[String])
-    :   scala.collection.immutable.List[String] =
-
-      val flushed = if current.isEmpty then tokens else current :: tokens
-
-      if index >= source.length then flushed.reverse else
-        val char = source.charAt(index)
-        val next = if index + 1 < source.length then source.charAt(index + 1) else ' '
-
-        if char == '/' && next == '/' then recur(skipLine(index), "", flushed)
-        else if char == '/' && next == '*' then recur(skipBlock(index + 2), "", flushed)
-        else if char == '-' && next == '>' then recur(index + 2, "", "->" :: flushed)
-        // `%` escapes an identifier that collides with a WIT keyword (`%stream`); the name
-        // itself is the unescaped form.
-        else if char == '%' then recur(index + 1, current, tokens)
-        else if ident(char) then recur(index + 1, current + char, tokens)
-        else if char.isWhitespace then recur(index + 1, "", flushed)
-        else recur(index + 1, "", char.toString :: flushed)
-
-    List.of(recur(0, "", Nil.stdlib))
-
-  // Parses a WIT type. `name<args>` is a generic application — `option<T>` becomes the union
-  // `T | none` (an `Optional`), and `list`/`tuple`/`result` stay applications. Primitive names are
-  // kept verbatim (`u32`, `s8`, `char`, …); the ecosystem maps each to a Hypotenuse type.
-  private def typeOf(tokens: List[String]): (Foreign.Type, List[String]) = tokens match
-    case name :: "<" :: rest =>
-      val (args, after) = typeArguments(rest, Nil)
-
-      if name == "option" then args match
-        case inner :: Nil => (Foreign.Type.Union(List(inner, Foreign.Type.Named(t"none"))), after)
-        case _            => (Foreign.Type.Applied(t"option", args), after)
-      else if name == "result" then (result(args), after)
-      else (Foreign.Type.Applied(name.tt, args), after)
-
-    case "result" :: rest =>
-      (result(Nil), rest)
-
-    case name :: rest =>
-      (Foreign.Type.Named(name.tt), rest)
-
-    case Nil =>
-      (Foreign.Type.Named(t""), Nil)
-
-  // A `result` type always carries exactly two arms: `result` and `result<T>` pad the missing
-  // `ok`/`err` arm(s) with `_`, so consumers see one uniform shape.
-  private def result(args: List[Foreign.Type]): Foreign.Type =
-    val unit = Foreign.Type.Named(t"_")
-    Foreign.Type.Applied(t"result", List.of((args.stdlib ++ List(unit, unit).stdlib).take(2)))
-
-  private def typeArguments(tokens: List[String], acc: List[Foreign.Type])
-  :   (List[Foreign.Type], List[String]) =
-
-    tokens match
-      case ">" :: rest =>
-        (acc.reverse, rest)
-
-      case _ =>
-        val (arg, rest) = typeOf(tokens)
-
-        rest match
-          case "," :: more => typeArguments(more, arg :: acc)
-          case ">" :: more => (List.of((arg :: acc).reverse), more)
-          case _           => (acc.reverse, skipTo(rest, t">"))
-
-  // Walks the top-level items, accumulating navigable types (records, and each interface's
-  // functions) and `type` aliases.
-  private def items
-    ( tokens:   List[String],
-      types:    Map[Text, Map[Text, Prototype]],
-      typedefs: Map[Text, Foreign.Type],
-      pkg:      Optional[Text] )
-  :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type]) =
-
-    tokens match
-      case Nil =>
-        (types, typedefs)
-
-      case "package" :: rest =>
-        val (id, after) = packageId(rest)
-        items(after, types, typedefs, id)
-
-      case "interface" :: name :: "{" :: rest =>
-        val (types2, typedefs2, after) = interface(rest, name.tt, types, typedefs, pkg)
-        items(after, types2, typedefs2, pkg)
-
-      case "type" :: name :: "=" :: rest =>
-        val (kind, after) = typeOf(rest)
-        items(skipTo(after, t";"), types, typedefs.updated(name.tt, kind), pkg)
-
-      case ("world" | "interface") :: _ :: "{" :: rest =>
-        items(skipBraces(rest, 1), types, typedefs, pkg)
-
-      case _ =>
-        items(skipTo(tokens, t";"), types, typedefs, pkg)
-
-  // Walks an interface body: `record`s and the interface's own functions become navigable types;
-  // an `enum` becomes the unsigned discriminant (`u8`/`u16`/`u32`) that holds its cases and `flags`
-  // a bit-vector (`b8`/`b16`/`b32`/`b64`) that holds its members; `variant` is an opaque type; and
-  // `resource`/`use` declarations are skipped (their `{ … }` bodies and statements bypassed).
-  private def interface
-    ( tokens:   List[String],
-      name:     Text,
-      types:    Map[Text, Map[Text, Prototype]],
-      typedefs: Map[Text, Foreign.Type],
-      pkg:      Optional[Text] )
-  :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type], List[String]) =
-
-    val module = moduleId(pkg, name)
-
-    def recur
-      ( todo:      List[String],
-        functions: Ledger[Text, Prototype],
-        types:     Map[Text, Map[Text, Prototype]],
-        typedefs:  Map[Text, Foreign.Type] )
-    :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type], List[String]) =
-
-      todo match
-        // Merge, rather than overwrite: a resource or variant sharing the interface's own name
-        // (e.g. the `network` resource in `interface network`) has already recorded its module
-        // under this key, which a plain overwrite with the interface's (possibly empty) functions
-        // would discard.
-        case "}" :: rest =>
-          val merged = types.get(name).optional.lay(functions.stdlib)(_ ++ functions.stdlib)
-          (types.updated(name, merged), typedefs, rest)
-
-        case Nil =>
-          val merged = types.get(name).optional.lay(functions.stdlib)(_ ++ functions.stdlib)
-          (types.updated(name, merged), typedefs, Nil)
-
-        case "record" :: record :: "{" :: rest =>
-          val (fields, after) = recordFields(rest, Ledger())
-          recur(after, functions, types.updated(record.tt, fields.stdlib), typedefs)
-
-        case "enum" :: alias :: "{" :: rest =>
-          val (count, after) = enumerators(rest, 0)
+        // An `enum` collapses to the unsigned discriminant that holds its cases, and `flags`
+        // to the bit-vector that holds its members, so the FFM layouts stay correct.
+        case WitItem.Enumeration(name, cases) =>
+          val count = cases.stdlib.length
           val topic = if count <= 256 then t"u8" else if count <= 65536 then t"u16" else t"u32"
-          recur(after, functions, types, typedefs.updated(alias.tt, Foreign.Type.Named(topic)))
+          typedefs = typedefs.updated(name, Foreign.Type.Named(topic))
 
-        case "flags" :: alias :: "{" :: rest =>
-          val (count, after) = enumerators(rest, 0)
+        case WitItem.Flags(name, names) =>
+          val count = names.stdlib.length
 
           val topic =
             if count <= 8 then t"b8" else if count <= 16 then t"b16"
             else if count <= 32 then t"b32" else t"b64"
 
-          recur(after, functions, types, typedefs.updated(alias.tt, Foreign.Type.Named(topic)))
+          typedefs = typedefs.updated(name, Foreign.Type.Named(topic))
+
+        case WitItem.Alias(name, target) =>
+          typedefs = typedefs.updated(name, project(target))
 
         // A variant (or a bodyless resource) has no navigable members, but must still record
-        // which module defines it, so functions in *other* interfaces that mention it (e.g. in a
-        // `result` error arm) resolve its facade class through `definingModule`: a single
-        // unnameable member carries the module.
-        case "variant" :: variant :: "{" :: rest =>
-          val updated = types.updated(variant.tt, declaration(variant.tt, module))
-          recur(skipBraces(rest, 1), functions, updated, typedefs)
+        // which module defines it, so functions in *other* interfaces that mention it (e.g. in
+        // a `result` error arm) resolve its facade class: a single unnameable member carries
+        // the module.
+        case WitItem.Variant(name, _) =>
+          types = types.updated(name, declaration(name, module))
 
-        case "resource" :: resource :: "{" :: rest =>
-          val (methods, after) = resourceBody(rest, resource.tt, module, Ledger())
-          recur(after, functions, types.updated(resource.tt, methods.stdlib), typedefs)
+        case WitItem.Resource(name, methods) =>
+          if methods.stdlib.isEmpty then types = types.updated(name, declaration(name, module))
+          else
+            val members = methods.stdlib.map: method =>
+              method.name -> signature(method, name)
 
-        case "resource" :: resource :: ";" :: rest =>
-          val updated = types.updated(resource.tt, declaration(resource.tt, module))
-          recur(rest, functions, updated, typedefs)
+            types = types.updated(name, members.toMap)
 
-        case "use" :: rest =>
-          recur(skipTo(rest, t";"), functions, types, typedefs)
+        case WitItem.Use(_, _) => ()
 
-        case "type" :: alias :: "=" :: rest =>
-          val (kind, after) = typeOf(rest)
-          recur(skipTo(after, t";"), functions, types, typedefs.updated(alias.tt, kind))
+      // Merge, rather than overwrite: a resource or variant sharing the interface's own name
+      // (e.g. the `network` resource in `interface network`) has already recorded its module
+      // under this key, which a plain overwrite with the interface's (possibly empty)
+      // functions would discard.
+      val merged = types.get(interface.name).optional.lay(functions.toMap)(_ ++ functions.toMap)
+      types = types.updated(interface.name, merged)
 
-        case function :: ":" :: "func" :: "(" :: rest =>
-          val (parameters, after) = params(rest, Nil)
+    resolve(types, typedefs)
 
-          val (result, after2) = after match
-            case "->" :: more => typeOf(more)
-            case more         => (Foreign.Type.Named(t"unit"), more)
+  // Collapses the parser's faithful types to the marshalling vocabulary: `option<T>` is the
+  // union `T | none` (an `Optional`), and a `result` always carries exactly two arms.
+  private def project(typed: Foreign.Type): Foreign.Type = typed match
+    case Foreign.Type.Named(name) =>
+      if name == t"result" then padded(scala.Nil) else typed
 
-          val signature = Prototype(parameters, result, module)
-          recur(skipTo(after2, t";"), functions.updated(function.tt, signature), types, typedefs)
+    case applied: Foreign.Type.Applied =>
+      val arguments = applied.arguments.stdlib.map(project(_))
 
-        // Any unrecognised `{ … }` block is skipped wholesale rather than token-by-token, so its
-        // closing brace is never mistaken for the end of the interface.
-        case "{" :: rest =>
-          recur(skipBraces(rest, 1), functions, types, typedefs)
+      if applied.constructor == t"option" && arguments.length == 1
+      then Foreign.Type.Union(List(arguments.head, Foreign.Type.Named(t"none")))
+      else if applied.constructor == t"result" then padded(arguments)
+      else Foreign.Type.Applied(applied.constructor, List.from(arguments))
 
-        case _ :: rest =>
-          recur(rest, functions, types, typedefs)
+    case Foreign.Type.Union(members) =>
+      Foreign.Type.Union(members.map(project(_)))
 
-    recur(tokens, Ledger(), types, typedefs)
-
-  // Walks a `resource … { … }` body: its methods become members of a type named after the
-  // resource, each marked with the resource it belongs to (so an invocation can address it as
-  // `[method]resource.name` and thread the receiver's handle). `constructor` and `static`
-  // declarations are recognised but skipped for now.
-  private def resourceBody
-    ( tokens:   List[String],
-      resource: Text,
-      module:   Optional[Text],
-      methods:  Ledger[Text, Prototype] )
-  :   (Ledger[Text, Prototype], List[String]) =
-
-    tokens match
-      case "}" :: rest =>
-        (methods, rest)
-
-      case Nil =>
-        (methods, Nil)
-
-      // A constructor is registered as the member `constructor`, returning the resource itself; a
-      // `static func` is a member addressed through the resource but taking no receiver.
-      case "constructor" :: "(" :: rest =>
-        val (parameters, after) = params(rest, Nil)
-        val signature = Prototype(parameters, Foreign.Type.Named(resource), module, resource, true)
-        val updated = methods.updated(t"constructor", signature)
-        resourceBody(skipTo(after, t";"), resource, module, updated)
-
-      case method :: ":" :: "static" :: "func" :: "(" :: rest =>
-        val (parameters, after) = params(rest, Nil)
-
-        val (result, after2) = after match
-          case "->" :: more => typeOf(more)
-          case more         => (Foreign.Type.Named(t"unit"), more)
-
-        val signature = Prototype(parameters, result, module, resource, true)
-        resourceBody(skipTo(after2, t";"), resource, module, methods.updated(method.tt, signature))
-
-      case method :: ":" :: "func" :: "(" :: rest =>
-        val (parameters, after) = params(rest, Nil)
-
-        val (result, after2) = after match
-          case "->" :: more => typeOf(more)
-          case more         => (Foreign.Type.Named(t"unit"), more)
-
-        val signature = Prototype(parameters, result, module, resource)
-        resourceBody(skipTo(after2, t";"), resource, module, methods.updated(method.tt, signature))
-
-      case _ :: rest =>
-        resourceBody(rest, resource, module, methods)
+  private def padded(args: scala.List[Foreign.Type]): Foreign.Type =
+    val unit = Foreign.Type.Named(t"_")
+    Foreign.Type.Applied(t"result", List.from((args ++ scala.List(unit, unit)).take(2)))
 
   // The pseudo-member recording, for a memberless type declaration, the module that defines it.
-  // A `Ledger`'s underlying map, not a plain `Map(...)`: this single entry seeds the value that
-  // later `++`-merges with an interface's functions, and the LEFT operand's factory decides
-  // whether the merged map stays insertion-ordered.
   private def declaration(name: Text, module: Optional[Text]): Map[Text, Prototype] =
-    Ledger(t"" -> Prototype(Unset, Foreign.Type.Named(name), module)).stdlib
-
-  private def recordFields(tokens: List[String], acc: Ledger[Text, Prototype])
-  :   (Ledger[Text, Prototype], List[String]) =
-
-    tokens match
-      case "}" :: rest =>
-        (acc, rest)
-
-      case name :: ":" :: rest =>
-        val (kind, after) = typeOf(rest)
-        val updated = acc.updated(name.tt, Prototype(Unset, kind))
-
-        after match
-          case "," :: more => recordFields(more, updated)
-          case _           => recordFields(after, updated)
-
-      case _ :: rest =>
-        recordFields(rest, acc)
-
-      case Nil =>
-        (acc, Nil)
-
-  private def params(tokens: List[String], acc: List[Foreign.Type])
-  :   (Optional[List[Foreign.Type]], List[String]) =
-
-    tokens match
-      case ")" :: rest =>
-        (acc.reverse, rest)
-
-      case name :: ":" :: rest =>
-        val (kind, after) = typeOf(rest)
-
-        after match
-          case "," :: more => params(more, kind :: acc)
-          case ")" :: more => (List.of((kind :: acc).reverse), more)
-          case _           => (acc.reverse, skipTo(after, t")"))
-
-      case _ :: rest =>
-        params(rest, acc)
-
-      case Nil =>
-        (acc.reverse, Nil)
+    Map(t"" -> Prototype(Unset, Foreign.Type.Named(name), module))
 
   // Resolves every `type` alias appearing in a type, transitively.
   private def resolve
@@ -484,41 +222,11 @@ object WitDialect extends Dialect:
     definitions.map: (name, members) =>
       (name, members.map { (member, sig) => (member, signature(sig)) })
 
-  // Reads the tokens of a `package …;` declaration up to (not including) the `;` and joins them
-  // with no separator — WIT package ids contain no internal whitespace, so an id such as
-  // `wasi:random@0.2.0` reassembles exactly — returning the id and the tokens after the `;`.
-  private def packageId(tokens: List[String]): (Text, List[String]) =
-    def recur(todo: List[String], acc: List[String]): (Text, List[String]) = todo match
-      case ";" :: rest  => (acc.stdlib.reverse.mkString.tt, rest)
-      case Nil          => (acc.stdlib.reverse.mkString.tt, Nil)
-      case head :: rest => recur(rest, head :: acc)
-
-    recur(tokens, Nil)
-
-  // Builds the Component Model module id for an interface from the enclosing package id: package
-  // `wasi:random@0.2.0` and interface `random` give `wasi:random/random@0.2.0` — the interface name
-  // is spliced in before the `@version`. `Unset` when there is no `package` declaration.
+  // Builds the Component Model module id for an interface from the enclosing package id:
+  // package `wasi:random@0.2.0` and interface `random` give `wasi:random/random@0.2.0` — the
+  // interface name is spliced in before the `@version`. `Unset` when there is no `package`
+  // declaration.
   private def moduleId(pkg: Optional[Text], iface: Text): Optional[Text] = pkg.let: id =>
     id.cut(t"@") match
       case base :: version :: _ => t"$base/$iface@$version"
       case _                    => t"$id/$iface"
-
-  // Skips tokens up to and including the next occurrence of `token`.
-  private def skipTo(tokens: List[String], token: Text): List[String] = tokens match
-    case Nil          => Nil
-    case head :: rest => if head == token.s then rest else skipTo(rest, token)
-
-  // Skips a balanced `{ … }` block, given the tokens just inside the opening brace (depth 1).
-  private def skipBraces(tokens: List[String], depth: Int): List[String] = tokens match
-    case Nil         => Nil
-    case "{" :: rest => skipBraces(rest, depth + 1)
-    case "}" :: rest => if depth <= 1 then rest else skipBraces(rest, depth - 1)
-    case _ :: rest   => skipBraces(rest, depth)
-
-  // Counts the case/flag names inside an `enum`/`flags` body (used to size the discriminant or
-  // bit-vector), returning the count and the tokens after the closing `}`.
-  private def enumerators(tokens: List[String], count: Int): (Int, List[String]) = tokens match
-    case "}" :: rest                          => (count, rest)
-    case Nil                                  => (count, Nil)
-    case name :: rest if name.head.isLetter   => enumerators(rest, count + 1)
-    case _ :: rest                            => enumerators(rest, count)
