@@ -33,6 +33,7 @@
 package reliquary
 
 import anticipation.*
+import gossamer.*
 import contingency.*
 import denominative.*
 import revolution.*
@@ -68,7 +69,7 @@ object Versioning:
       case Grade.Minor => List.from(lineage.stdlib :+ snapshot)
 
       case Grade.Major =>
-        if !forceMajor then abort(LiraError(Reason.UngradedSuccessor))
+        if !forceMajor then abort(LiraError(Reason.UngradedSuccessor(t"the release")))
         List(snapshot)
 
   // The §12.4 comparison, as warn-only advisories: a declared version that is not numeric, or

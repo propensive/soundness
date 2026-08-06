@@ -86,6 +86,31 @@ object CtSym:
 
     finally zip.close()
 
+  // The signature surface of one release, partitioned by platform module (hosts.md §3,
+  // "Granularity"): one (module, content) pair per platform module present in the release,
+  // with both the release codes and the module segment stripped from the paths, so the
+  // `java.base` contract's tree reads `java/lang/Object.sig`. This is the RECOMMENDED harvest
+  // for a modularized platform; `surface` below is the union view.
+  def modules(path: Text, release: Int)
+  :   List[(Text, List[(TreePath, Data)])] raises LiraError =
+
+    val grouped = scala.collection.mutable.LinkedHashMap
+        [String, scala.collection.mutable.ListBuffer[(TreePath, Data)]]()
+
+    surface(path, release).stdlib.foreach: (tree, data) =>
+      val name = tree.text.s
+      val slash = name.indexOf('/')
+
+      if slash > 0 then
+        val module = name.substring(0, slash).nn
+        val inner = name.substring(slash + 1).nn
+        grouped.getOrElseUpdate(module, scala.collection.mutable.ListBuffer())
+          += ((TreePath(Text(inner)), data))
+
+    List.from:
+      grouped.toList.sortBy(_(0)).map: (module, entries) =>
+        (Text(module), List.from(entries.toList))
+
   // The signature surface of one release: every `.sig` entry present in it, with the release
   // codes stripped from the path, so the tree reads `java.base/java/lang/Object.sig`.
   // `module-info.sig` entries are omitted — module descriptors are not consumer surface. A
