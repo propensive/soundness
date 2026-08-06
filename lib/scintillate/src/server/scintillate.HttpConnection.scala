@@ -154,7 +154,7 @@ object HttpConnection:
             def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
               case size: Int =>
                 try
-                  stream.region: region =>
+                  stream.lend: region =>
                     range =>
                       val interval: Interval = range
 

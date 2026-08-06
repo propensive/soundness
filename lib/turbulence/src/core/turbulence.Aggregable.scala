@@ -51,7 +51,7 @@ object Aggregable:
 
     def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
       case count: Int =>
-        stream.region { region => range => region.cloneTo(range)(target) }
+        stream.lend { region => range => region.cloneTo(range)(target) }
         stream.skip(count)
         recur()
 
@@ -128,7 +128,7 @@ trait Aggregable extends Typeclass, Operable:
     def recur(): Chain[Operand] =
       stream.refill(Credit(Long.MaxValue)) match
         case count: Int =>
-          val chunk = stream.region { region => range => region.materialize(range) }
+          val chunk = stream.lend { region => range => region.materialize(range) }
           stream.skip(count)
           chunk #:: recur()
 

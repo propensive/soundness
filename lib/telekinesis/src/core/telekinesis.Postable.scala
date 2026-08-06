@@ -121,7 +121,7 @@ trait Postable extends Typeclass:
     try endpoint.refill(Credit(1024)) match
       case count: Int =>
         val sample =
-          endpoint.region { region => range => region.materialize(range.capped(count)) }
+          endpoint.lend { region => range => region.materialize(range.capped(count)) }
 
         val string: Text = sample.serialize[Hex]
         if count > 128 then t"$string..." else string

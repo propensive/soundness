@@ -310,7 +310,7 @@ object Http:
 
             case count: Int =>
               result =
-                endpoint.region { region => range => region.materialize(range.capped(count)) }
+                endpoint.lend { region => range => region.materialize(range.capped(count)) }
 
               endpoint.skip(count)
               continue = false
@@ -799,7 +799,7 @@ object Http:
 
               case count: Int =>
                 result =
-                  endpoint.region { region => range => region.materialize(range.capped(count)) }
+                  endpoint.lend { region => range => region.materialize(range.capped(count)) }
 
                 endpoint.skip(count)
                 continue = false

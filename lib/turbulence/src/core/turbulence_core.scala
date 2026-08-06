@@ -173,7 +173,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
         if available < 0 then -1 else
           var byte: Int = 0
-          stream.region { region => range => region.visit(range.capped(1)) { index => byte = region(index) & 0xff } }
+          stream.lend { region => range => region.visit(range.capped(1)) { index => byte = region(index) & 0xff } }
           stream.skip(1)
           byte
 
@@ -188,10 +188,10 @@ extension (consume stream: (Stream[Data] over Credit)^)
             // this array over to be filled, so treating it as exclusive is sound.
             val buffer: scala.Array[Byte]^ = target.nn.asInstanceOf[scala.Array[Byte]^]
 
-            stream.region: region =>
+            stream.lend: region =>
               range =>
                 Slate.over[Data, Int](buffer, offset, offset + take): slate =>
-                  space => region.blit(range.capped(take))(slate)(space)
+                  space => region.transfer(range.capped(take))(slate)(space)
 
             stream.skip(take)
             take
@@ -207,7 +207,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
     stream.refill(Credit(limit)) match
       case count: Int =>
         val take = count.min(limit)
-        val chunk = stream.region { region => range => region.materialize(range.capped(take)) }
+        val chunk = stream.lend { region => range => region.materialize(range.capped(take)) }
         stream.skip(take)
         chunk
 

@@ -83,10 +83,10 @@ extends caps.ExclusiveCapability, caps.Stateful:
           val grown = new scala.Array[Byte](remaining + count)
           System.arraycopy(buffer, pos, grown, 0, remaining)
 
-          input.region: region =>
+          input.lend: region =>
             range =>
               Slate.over[Bytes, Int](grown, remaining, remaining + count): slate =>
-                space => region.blit(range.capped(count))(slate)(space)
+                space => region.transfer(range.capped(count))(slate)(space)
 
           input.skip(count)
           // The cast erases the fresh array's capture: it is confined to this

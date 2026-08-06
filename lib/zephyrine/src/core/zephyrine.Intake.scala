@@ -70,7 +70,7 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
 
   // Zero-copy view of this intake's buffer; elements from `mark` are writable
   // up to the last `reserve`d space. Valid only until the next `commit`,
-  // `flush` or `finish` — single-owner discipline, as `Stream.region`.
+  // `flush` or `finish` — single-owner discipline, as `Stream.lend`.
   // Implementations provide the untyped `buffer0`; since `Addressable`
   // instances are unique per medium, the cast in `buffer` is sound.
   final def buffer(using Unsafe): addressable.Storage =

@@ -127,7 +127,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
 
             while draining do stream.refill(Credit(Long.MaxValue)) match
               case count: Int =>
-                stream.region: region =>
+                stream.lend: region =>
                   range =>
                     val interval: Interval = range
                     out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]),

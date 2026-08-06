@@ -210,7 +210,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
     def loop(): Unit = stream.refill(Credit(block)) match
       case count: Int =>
-        stream.region(operation(_))
+        stream.lend(operation(_))
         stream.skip(count)
         loop()
 
@@ -244,7 +244,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
     def loop(state: state): state = stream.refill(Credit(block)) match
       case count: Int =>
-        val state2 = stream.region { region => range => operation(region)(state, range) }
+        val state2 = stream.lend { region => range => operation(region)(state, range) }
         stream.skip(count)
         loop(state2)
 
@@ -284,7 +284,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
     def recur(): Chain[medium] = stream.refill(Credit(block)) match
       case count: Int =>
-        val chunk = stream.region { region => range => region.materialize(range) }
+        val chunk = stream.lend { region => range => region.materialize(range) }
         stream.skip(count)
         chunk #:: recur()
 
@@ -432,7 +432,7 @@ private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
       private def advance(): Boolean = stream.refill(Credit(block)) match
         case count: Int =>
           given stream.addressable.type = stream.addressable
-          chunk = stream.region { region => range => region.materialize(range) }
+          chunk = stream.lend { region => range => region.materialize(range) }
           stream.skip(count)
           true
 

@@ -273,7 +273,7 @@ object Tests extends Suite(m"Coaxial tests"):
           val handler = (connection: Duplex) =>
             val source = connection.source
             val count = source.refill(zephyrine.Credit(64)).or(0)
-            source.region { region => range => region.materialize(range.capped(count)) }
+            source.lend { region => range => region.materialize(range.capped(count)) }
 
           socket.listen[Data](handler):
 
@@ -284,7 +284,7 @@ object Tests extends Suite(m"Coaxial tests"):
               val source = duplex.source
               val count = source.refill(zephyrine.Credit(64)).or(0)
               val data =
-                source.region { region => range => region.materialize(range.capped(count)) }
+                source.lend { region => range => region.materialize(range.capped(count)) }
 
               bytes(data)
         . assert(_ == bytes(ascii(t"ping")))

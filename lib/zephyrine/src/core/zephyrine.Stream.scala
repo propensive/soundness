@@ -161,7 +161,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // `zephyrine.Region.scala`). Valid only until the next `refill` or `close` —
   // the same single-owner discipline as `Cursor.unsafeBuffer`, and the hook by
   // which separation checking will later enforce it.
-  final inline def region[result]
+  final inline def lend[result]
     ( inline lambda: (region: Region[medium]) => (Interval in region.type) => result )
   :   result =
 

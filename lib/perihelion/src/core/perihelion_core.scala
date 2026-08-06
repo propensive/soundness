@@ -159,7 +159,7 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
   while result.absent do input.refill(demand) match
     case count: Int =>
       if count > 0 then
-        val window = input.region { region => range => region.materialize(range.capped(count)) }
+        val window = input.lend { region => range => region.materialize(range.capped(count)) }
         val acc2: Data = acc ++ window
         val marker = crlfCrlf(acc2)
 

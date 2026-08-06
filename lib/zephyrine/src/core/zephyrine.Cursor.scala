@@ -167,7 +167,7 @@ object Cursor:
   // allocation. The credit bounds how much any upstream stage produces per fill, so
   // memory stays bounded through a parse of an arbitrarily large input. The region is
   // read and skipped within the fill, before the stream can refill again — the borrow
-  // discipline `Stream.region` documents, applied at the one place a cursor touches it.
+  // discipline `Stream.lend` documents, applied at the one place a cursor touches it.
   def apply[data](consume stream: (Stream[data] over Credit)^)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
@@ -619,7 +619,7 @@ extends caps.Mutable:
   // `unsafeBuffer`, with the bounds arithmetic taken away. Parsers that snapshot the buffer
   // into fields for register-resident hot loops (the `unsafeBuffer` protocol) remain trusted
   // kernels behind `Unsafe`.
-  inline def region[result]
+  inline def lend[result]
     ( inline lambda: (region: Region[data]) => (Interval in region.type) => result )
   :   result =
 

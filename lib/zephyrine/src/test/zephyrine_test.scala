@@ -231,8 +231,8 @@ object Tests extends Suite(m"Zephyrine tests"):
           val builder = java.lang.StringBuilder()
 
           while
-            cursor.region { region => range => region.visit(range) { index => builder.append(region(index)) } }
-            val count = cursor.region { _ => range => (range: Interval).size }
+            cursor.lend { region => range => region.visit(range) { index => builder.append(region(index)) } }
+            val count = cursor.lend { _ => range => (range: Interval).size }
             cursor.unsafeAdvanceBy(count)(using Unsafe)
             cursor.more
           do ()
@@ -659,14 +659,14 @@ object Tests extends Suite(m"Zephyrine tests"):
             range => region.materialize(range)
         . assert(_.to[List] == List[Byte](2, 3, 4))
 
-        test(m"blit copies no more than the slate's space"):
+        test(m"transfer copies no more than the slate's space"):
           val source = sample(10)
           val target = Array.scratch[Byte](4)
 
           val copied = Region.over[Data, Int](source, 5, 10): region =>
             range =>
               Slate.over[Data, Int](target, 0, 4): slate =>
-                space => region.blit(range)(slate)(space)
+                space => region.transfer(range)(slate)(space)
 
           (copied, target(0), target(3))
         . assert(_ == ((4, 5.toByte, 8.toByte)))
@@ -1187,7 +1187,7 @@ object Tests extends Suite(m"Zephyrine tests"):
       ( target: Slate[Data] )(space: Interval in target.type)
     :   Duct.Progress =
 
-      val count = source.blit(range)(target)(space)
+      val count = source.transfer(range)(target)(space)
       Duct.Progress(count, count)
 
     override update def flush(target: Slate[Data])(space: Interval in target.type): Int =

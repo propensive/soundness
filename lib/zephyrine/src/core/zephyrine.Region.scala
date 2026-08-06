@@ -136,7 +136,7 @@ object Region:
 
     // Copies as much of `range` as fits in `space` — the minimum of the two sizes, returned —
     // so the operation is total by construction.
-    inline def blit(range: Interval in region.type)(slate: Slate[medium])
+    inline def transfer(range: Interval in region.type)(slate: Slate[medium])
       ( space: Interval in slate.type )
     :   Int =
 
