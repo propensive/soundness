@@ -92,7 +92,7 @@ object HostContracts:
 
           case Grade.Major =>
             if !allowMajor(release.tag)
-            then abort(LiraError(Reason.UngradedSuccessor))
+            then abort(LiraError(Reason.UngradedSuccessor(release.tag)))
 
             // §12.5: in the 0 series the minor conventionally carries breaking steps.
             version =

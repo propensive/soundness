@@ -659,7 +659,9 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       test(m"a major step without explicit request is refused (L110)"):
         capture[LiraError](Versioning.extendLineage(List(older), snapshot, Grade.Major)).reason
-      . assert(_ == LiraError.Reason.UngradedSuccessor)
+      . assert:
+          case LiraError.Reason.UngradedSuccessor(_) => true
+          case _                                     => false
 
       test(m"a requested major step begins a fresh lineage"):
         Versioning.extendLineage(List(older), snapshot, Grade.Major, forceMajor = true).stdlib
@@ -1510,7 +1512,9 @@ object Tests extends Suite(m"Reliquary Tests"):
         val dev = Lira.read(makeRelease(scala.List((t"a/C.class", t"gamma")), scala.Nil))
 
         capture[LiraError](Publication.assign(dev, base, List(base.manifest))).reason
-      . assert(_ == LiraError.Reason.UngradedSuccessor)
+      . assert:
+          case LiraError.Reason.UngradedSuccessor(_) => true
+          case _                                     => false
 
       test(m"an explicit major begins a fresh lineage"):
         val base = published()

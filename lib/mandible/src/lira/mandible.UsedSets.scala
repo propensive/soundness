@@ -131,6 +131,23 @@ object UsedSets:
 
     (List.from(matched.toList), List.from(unmatched.toList))
 
+  // Partitions reference keys across a set of contract listings — one per platform module
+  // (hosts.md §3, "Granularity") — into the used-set each contract carries, plus the remainder
+  // no listing does. The modules with non-empty parts *are* the library's host requirements:
+  // computable, not authored, since packages do not span platform modules.
+  def partition(references: List[Text], contracts: List[(Text, Atomization)])
+  :   (List[(Text, List[Data])], List[Text]) =
+
+    var remaining = references
+
+    val parts = contracts.stdlib.map: (module, listing) =>
+      val (matched, unmatched) = resolve(remaining, listing)
+      remaining = unmatched
+      (module, matched)
+
+    val used = parts.filter { part => !part(1).stdlib.isEmpty }
+    (List.from(used), remaining)
+
   // The Uses metadata blob for one module's use of one contract (§13.4, §14): the resolved
   // used-set, encoded for a `requires` or `dependency` record's `uses` field, with the
   // unmatched keys alongside for the caller's judgement.

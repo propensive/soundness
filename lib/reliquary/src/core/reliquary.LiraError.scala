@@ -49,7 +49,7 @@ object LiraError:
     case OverlayNotMinimal(path: Text)       extends Reason(107)
     case ApiDivergence(detail: Text)         extends Reason(108)
     case LineageMismatch                     extends Reason(109)
-    case UngradedSuccessor                   extends Reason(110)
+    case UngradedSuccessor(subject: Text)    extends Reason(110)
     case DuplicateModule(module: Text)       extends Reason(111)
     case NamespaceClash(space: Text)         extends Reason(112)
     case AbsentDependency(module: Text)      extends Reason(113)
@@ -95,7 +95,8 @@ object LiraError:
     case Reason.OverlayNotMinimal(path)       => m"the overlay is not minimal at $path"
     case Reason.ApiDivergence(detail)         => m"the sections differ in API: $detail"
     case Reason.LineageMismatch               => m"the last lineage entry is not this snapshot"
-    case Reason.UngradedSuccessor             => m"the release is not a patch or minor successor"
+    case Reason.UngradedSuccessor(subject) =>
+      m"$subject is not a patch or minor successor to its predecessor"
     case Reason.DuplicateModule(module)       => m"the buildpath contains $module more than once"
     case Reason.NamespaceClash(space)         => m"the namespace $space is claimed twice"
     case Reason.AbsentDependency(module) =>

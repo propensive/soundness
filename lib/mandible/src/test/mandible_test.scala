@@ -582,7 +582,7 @@ object Tests extends Suite(m"Mandible tests"):
           List(HostRelease(t"a", v1), HostRelease(t"b", v2)),
           List(LiraManifest.Tool(t"jsig-harvest", t"0.1")))
       . reason
-    . assert(_ == LiraError.Reason.UngradedSuccessor)
+    . assert(_ == LiraError.Reason.UngradedSuccessor(t"b"))
 
     test(m"ct.sym harvests a verifiable, tagged jdk contract"):
       CtSym.location().lay(true): path =>
@@ -733,4 +733,42 @@ object Tests extends Suite(m"Mandible tests"):
             UsedSets.references(consumerContent(base, consumerOld)), listing)
 
         matched.stdlib.nonEmpty && !unmatched.stdlib.contains(t"java/lang/Object")
+    . assert(_ == true)
+
+    test(m"references partition across per-module contract listings"):
+      val (surface, _) = compile(base, derived, api)
+      val baseOnly = List.from(surface.filter { pair => pair(0).text.s.contains("Base") })
+      val apiOnly = List.from(surface.filter { pair => pair(0).text.s.contains("Api") })
+
+      val contracts = List(
+        (t"mod.base", JsigDiscipline.atomize(baseOnly, Discipline.Context(t"host"))),
+        (t"mod.api", JsigDiscipline.atomize(apiOnly, Discipline.Context(t"host"))))
+
+      val consumer = consumerOld.s.replace("return b.inherited();",
+          "return b.inherited() + a.one();").nn
+        .replace("int use(Base b)", "int use(Base b, Api a)").nn.tt
+
+      val (parts, remainder) = UsedSets.partition(
+          UsedSets.references(consumerContent(base, consumer)), contracts)
+
+      (parts.stdlib.map(_(0)),
+       parts.stdlib.forall { part => part(1).stdlib.nonEmpty },
+       remainder.stdlib.contains(t"java/lang/Object"))
+    . assert(_ == (scala.List(t"mod.base", t"mod.api"), true, true))
+
+    test(m"ct.sym partitions a release by platform module"):
+      CtSym.location().lay(true): path =>
+        val release = CtSym.releases(path).stdlib.head
+        val modules = CtSym.modules(path, release)
+        val names = modules.stdlib.map(_(0))
+
+        // The module segment is stripped; what remains under `java.base` need not all be
+        // `java/*` (internal packages ride in ct.sym too), but none may still carry the
+        // module prefix.
+        val stripped = modules.stdlib.find(_(0) == t"java.base").map: pair =>
+          pair(1).stdlib.exists { entry => entry(0).text.s.startsWith("java/lang/") }
+            && !pair(1).stdlib.exists { entry => entry(0).text.s.startsWith("java.base/") }
+        . getOrElse(false)
+
+        names.contains(t"java.base") && names.length > 5 && stripped
     . assert(_ == true)
