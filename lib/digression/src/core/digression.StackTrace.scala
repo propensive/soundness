@@ -172,7 +172,7 @@ object StackTrace:
     def recur(index: Int, digits: Boolean = false): Text =
       inline def token(index: Int, string: String, text: String, digits: Boolean = false): Text =
         if
-          (0 until string.length).all: offset => char(index + offset) == string(offset)
+          (0 until string.length).all: offset => char(index + offset) == string.charAt(offset)
         then buffer.append(text) yet recur(index + string.length, digits)
         else buffer.append('#') yet recur(index + 1, digits)
 
@@ -194,7 +194,7 @@ object StackTrace:
       else char(index) match
         case '<' =>
           if
-            (0 until 6).all: offset => char(index + offset) == "<init>"(offset)
+            (0 until 6).all: offset => char(index + offset) == "<init>".charAt(offset)
           then
             buffer.append("ⲛ")
             recur(index + 6)
@@ -204,7 +204,7 @@ object StackTrace:
 
         case 'i' =>
           if
-            (0 until 8).all: offset => char(index + offset) == "initial$"(offset)
+            (0 until 8).all: offset => char(index + offset) == "initial$".charAt(offset)
           then
             buffer.append("ι")
             recur(index + 8)
@@ -214,7 +214,7 @@ object StackTrace:
 
         case 'l' =>
           if
-            (0 until 7).all: offset => char(index + offset) == "lzyINIT"(offset)
+            (0 until 7).all: offset => char(index + offset) == "lzyINIT".charAt(offset)
           then
             buffer.append("ℓ")
             recur(index + 7, true)
@@ -224,7 +224,7 @@ object StackTrace:
 
         case 's' =>
           if
-            (0 until 6).all: offset => char(index + offset) == "super$"(offset)
+            (0 until 6).all: offset => char(index + offset) == "super$".charAt(offset)
           then
             buffer.append("↑")
             recur(index + 6)

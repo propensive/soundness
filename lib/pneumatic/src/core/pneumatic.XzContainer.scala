@@ -77,7 +77,7 @@ private[pneumatic] object XzContainer:
     var i = 0
 
     while i < 6 do
-      if buffer(i) != magic(i) then
+      if buffer(i) != magic.readUnchecked(i) then
         throw IllegalStateException("the data is not in XZ format: bad magic bytes")
 
       i += 1

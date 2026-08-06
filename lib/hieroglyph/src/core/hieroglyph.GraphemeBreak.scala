@@ -43,6 +43,7 @@ import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import kaleidoscope.*
 import rudiments.*
@@ -179,11 +180,12 @@ object GraphemeBreak:
     while low <= high do
       val mid = (low + high) >>> 1
 
-      if starts(mid) > codepoint then high = mid - 1 else
+      if starts.at(Ordinal.zerary(mid)).or(Int.MaxValue) > codepoint then high = mid - 1 else
         found = mid
         low = mid + 1
 
-    if found >= 0 && codepoint <= tables.ends(found) then tables.props(found).toInt else -1
+    if found >= 0 && codepoint <= tables.ends.at(Ordinal.zerary(found)).or(-1)
+    then tables.props.at(Ordinal.zerary(found)).lay(-1)(_.toInt) else -1
 
   def property(codepoint: Int): Property =
     val ord = lookup(gbpTables, codepoint)

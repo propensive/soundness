@@ -67,9 +67,9 @@ object LineEditor:
     var column:     Int                    = 0
     var index:      Int                    = 0
 
-    while index < boundaries.length - 1 && boundaries(index) < limit do
-      val start = boundaries(index)
-      val end   = boundaries(index + 1)
+    while index < boundaries.length - 1 && boundaries.readUnchecked(index) < limit do
+      val start = boundaries.readUnchecked(index)
+      val end   = boundaries.readUnchecked(index + 1)
 
       if end - start == 1 && string.charAt(start) == '\n' then
         row += 1
@@ -128,9 +128,9 @@ extends Question[Text]:
 
   private def moveVertically(rows: Int): LineEditor =
     val (lines, starts, current) = layout
-    val column = position - starts(current)
+    val column = position - starts.stdlib(current)
     val target = (current + rows).max(0).min(lines.length - 1)
-    copy(position0 = starts(target) + column.min(lines(target).length))
+    copy(position0 = starts.stdlib(target) + column.min(lines.stdlib(target).length))
 
   def apply(keypress: TerminalEvent): LineEditor =
     try
@@ -145,11 +145,11 @@ extends Question[Text]:
 
         case Home if multiline =>
           val (_, starts, current) = layout
-          copy(position0 = starts(current))
+          copy(position0 = starts.stdlib(current))
 
         case End if multiline =>
           val (lines, starts, current) = layout
-          copy(position0 = starts(current) + lines(current).length)
+          copy(position0 = starts.stdlib(current) + lines.stdlib(current).length)
 
         case Home  => copy(position0 = 0)
         case End   => copy(position0 = value.length)

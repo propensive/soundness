@@ -172,7 +172,7 @@ object Contrastable:
         Juxtaposition.Collation
           ( name,
             left.keys.to(List).map: key =>
-              key -> juxtaposition(t"", left(key), right(key)),
+              key -> juxtaposition(t"", left(key).vouch, right(key).vouch),
             leftName,
             rightName )
 

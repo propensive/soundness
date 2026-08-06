@@ -58,7 +58,7 @@ private[hallucination] object PngCodec:
   def decode(data: Data): Raster raises RasterError =
     try
       val signed =
-        data.length >= 8 && signature.indices.forall: index => u8(data, index) == signature(index)
+        data.length >= 8 && signature.indices.forall: index => u8(data, index) == signature.readUnchecked(index)
 
       if !signed then abort(RasterError(Png(), Reason.BadSignature))
 
@@ -150,7 +150,7 @@ private[hallucination] object PngCodec:
       // The `tRNS` samples for greyscale and truecolour are full-depth values.
       def transparencySample(index: Int): Int =
         if transparency.length < index*2 + 2 then -1
-        else transparency(index*2) << 8 | transparency(index*2 + 1)
+        else transparency.readUnchecked(index*2) << 8 | transparency.readUnchecked(index*2 + 1)
 
       val words = new scala.Array[Long](width*height)
 
@@ -180,11 +180,11 @@ private[hallucination] object PngCodec:
             if depth == 16 then value >> 8 else value*255/maximum
 
           for y <- 0 until passHeight do
-            val filter = inflated(position)&0xff
+            val filter = inflated.readUnchecked(position)&0xff
             position += 1
 
             for index <- 0 until rowBytes do
-              val raw = inflated(position + index)&0xff
+              val raw = inflated.readUnchecked(position + index)&0xff
               val left = if index >= unit then current(index - unit)&0xff else 0
               val up = previous(index)&0xff
               val upLeft = if index >= unit then previous(index - unit)&0xff else 0
@@ -234,10 +234,10 @@ private[hallucination] object PngCodec:
 
                 case 3 =>
                   val entry = sample(x, 0)
-                  val color = if entry < palette.length then palette(entry) else 0
+                  val color = if entry < palette.length then palette.readUnchecked(entry) else 0
 
                   val opacity =
-                    if entry < transparency.length then transparency(entry) else 255
+                    if entry < transparency.length then transparency.readUnchecked(entry) else 255
 
                   pack(color >> 16, (color >> 8)&0xff, color&0xff, opacity)
 

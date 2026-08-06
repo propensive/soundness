@@ -82,14 +82,14 @@ private[facsimile] object Predictor:
     var in = 0
 
     while in < data.length do
-      val filter = data(in) & 0xff
+      val filter = data.readUnchecked(in) & 0xff
       in += 1
       val available = rowLength.min(data.length - in)
       val row: scala.Array[Byte] = pureByteArray(rowLength)
       var i = 0
 
       while i < available do
-        writable(row)(i) = data(in + i)
+        writable(row)(i) = data.readUnchecked(in + i)
         i += 1
 
       in += available

@@ -217,7 +217,7 @@ private[pneumatic] object BrotliDictionary:
 
     val prefix = transform.prefix
     var i = 0
-    while i < prefix.length do { dst(offset) = prefix(i); offset += 1; i += 1 }
+    while i < prefix.length do { dst(offset) = prefix.readUnchecked(i); offset += 1; i += 1 }
 
     val op = transform.kind
     var skip = omitFirst(op)
@@ -227,7 +227,7 @@ private[pneumatic] object BrotliDictionary:
     len -= omitLast(op)
 
     i = len
-    while i > 0 do { dst(offset) = word(wordOffset); offset += 1; wordOffset += 1; i -= 1 }
+    while i > 0 do { dst(offset) = word.readUnchecked(wordOffset); offset += 1; wordOffset += 1; i -= 1 }
 
     if op == UppercaseAll || op == UppercaseFirst then
       var uppercaseOffset = offset - len
@@ -253,6 +253,6 @@ private[pneumatic] object BrotliDictionary:
 
     val suffix = transform.suffix
     i = 0
-    while i < suffix.length do { dst(offset) = suffix(i); offset += 1; i += 1 }
+    while i < suffix.length do { dst(offset) = suffix.readUnchecked(i); offset += 1; i += 1 }
 
     offset - dstOffset

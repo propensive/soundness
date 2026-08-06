@@ -89,7 +89,7 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
                   ( JsonBlueprintError.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
 
     test(m"Get a color"):
-      record.children(1).color
+      record.children.stdlib(1).color
     . assert(_ == t"#ff0000")
 
     test(m"Get a nested item value"):

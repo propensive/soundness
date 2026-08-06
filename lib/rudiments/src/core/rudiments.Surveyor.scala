@@ -94,7 +94,7 @@ final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinar
   // advancing: the marker-match primitive of scanning parsers. False when fewer elements
   // remain than the pattern's size.
   inline def matches[pattern](pattern: pattern)
-    ( using countable: pattern is Countable, indexable: (pattern is Indexable by Ordinal) )
+    ( using countable: pattern is Countable, indexable: (pattern is Applicable by Ordinal) )
     ( inline equal: (operand, indexable.Result) => Boolean )
   :   Boolean =
 
@@ -135,10 +135,10 @@ final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinar
     Interval.zerary(start, mark0).asInstanceOf[Interval in brand]
 
 extension [collection](value: collection)
-  // Lend a surveyor over this collection: reads resolve through the `Indexable` instance, and
+  // Lend a surveyor over this collection: reads resolve through the `Applicable` instance, and
   // the products carry the collection's brand.
   inline def survey[result]
-    ( using indexable: (collection is Indexable by Ordinal), countable: collection is Countable )
+    ( using indexable: (collection is Applicable by Ordinal), countable: collection is Countable )
     ( inline lambda: Surveyor[collection, value.type, indexable.Result] => result )
   :   result =
 

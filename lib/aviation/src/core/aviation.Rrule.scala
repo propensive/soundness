@@ -191,9 +191,11 @@ object Rrule:
 
   // ── the expansion engine (Gregorian) ────────────────────────────────────────────────────────
 
-  private def yearOf(date: Date)(using calendar: RomanCalendar): Int = date.year(using calendar)()
+  private def yearOf(date: Date)(using calendar: RomanCalendar): Int =
+    date.year(using calendar)()
   private def monthOf(date: Date)(using calendar: RomanCalendar): Int = date.month.numerical
-  private def dayOf(date: Date)(using calendar: RomanCalendar): Int = date.day(using calendar)()
+  private def dayOf(date: Date)(using calendar: RomanCalendar): Int =
+    date.day(using calendar)()
   private def list(date: Optional[Date]): List[Date] = date.lay(Nil)(List(_))
 
   // The ascending stream of zoneless date-times. A sub-day frequency steps the clock and filters by
@@ -389,7 +391,7 @@ object Rrule:
 
     val all = weekdaysOfMonth(year, month, weekday)
     val index = if ordinal > 0 then ordinal - 1 else all.length + ordinal
-    if index >= 0 && index < all.length then all(index) else Unset
+    if index >= 0 && index < all.length then all.stdlib(index) else Unset
 
   // `BYSETPOS`: from each period's expanded set, keep the listed positions (1-based; negatives from
   // the end).
@@ -399,7 +401,7 @@ object Rrule:
 
       val chosen = positions.bind: (position: Int) =>
         val index = if position > 0 then position - 1 else count + position
-        if index >= 0 && index < count then List(candidates(index)) else Nil
+        if index >= 0 && index < count then List(candidates.stdlib(index)) else Nil
 
       chosen.distinct.sort(_.jdn)
 

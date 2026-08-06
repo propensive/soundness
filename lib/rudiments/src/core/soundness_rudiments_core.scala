@@ -37,7 +37,7 @@ export
   // `Scribe`/`scribe` and `Surveyor`/`survey` are deliberately absent: their lenders and combinators are
   // dependent-typed inline extensions, which synthesized export forwarders break (the same
   // policy as zephyrine's `Region`/`Slate`). Consumers import them from `rudiments` directly.
-  . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
+  . { !!, &, all, also, and, annex, apply, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
       DecimalConverter, Defaulting, Defaulting2, defines, Digit, each, establish, Exit,
       fuse, gib,
       give, immutable, indexBy, intercalate, javaInputStream, kib,

@@ -45,7 +45,7 @@ import doms.html.whatwg, whatwg.*
 object RadioGroup:
   given renderable: RadioGroup is Renderable in Phrasing = group =>
     val items = group.options.map: option =>
-      Label(Input.Radio(name = group.name, value = option(1)), option(2))
+      Label(Input.Radio(name = group.name, value = option.value), option.label)
 
     Fragment(items*)
 

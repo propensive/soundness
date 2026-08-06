@@ -78,7 +78,7 @@ private[probably] object TerseRenderer:
 
   private def figure(figure: Format.Figure, units: List[Text]): Teletype =
     if figure.unit >= 3 then figure.whole.teletype
-    else e"${figure.whole}.${figure.fraction} ${units(figure.unit)}"
+    else e"${figure.whole}.${figure.fraction} ${units.stdlib(figure.unit)}"
 
   private def datum(value: Datum): Teletype = value match
     case Datum.Blank                => e""

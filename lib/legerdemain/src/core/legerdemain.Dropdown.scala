@@ -45,7 +45,7 @@ import doms.html.whatwg, whatwg.*
 object Dropdown:
   given renderable: Dropdown is Renderable in Phrasing = selection =>
     val items = selection.options.map: option =>
-      whatwg.Option(value = option(0), label = option(1)).asInstanceOf[Element of Select.Transport]
+      whatwg.Option(value = option.key, label = option.value).asInstanceOf[Element of Select.Transport]
 
     Select(name = selection.name)(items*)
 

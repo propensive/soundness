@@ -63,7 +63,7 @@ object Masking:
       // A frame we generated is unmasked, so its header is 2 bytes plus the 0/2/8 bytes
       // of extended length; the mask bit (byte 1, high bit) is clear. Set it, splice in
       // a fresh 4-byte key, and XOR the payload (`Frame.unmask` is its own inverse).
-      val headerLength = (frame(1).toInt & 0x7f) match
+      val headerLength = (frame.readUnchecked(1).toInt & 0x7f) match
         case 126 => 4
         case 127 => 10
         case _   => 2
@@ -74,7 +74,7 @@ object Masking:
         Array.freeze(bytes)
 
       val header: Data = Data.fill(headerLength): index =>
-        if index == 1 then (frame(1).toInt | 0x80).toByte else frame(index)
+        if index == 1 then (frame.readUnchecked(1).toInt | 0x80).toByte else frame.readUnchecked(index)
 
       val prefix: Data = header ++ key
       val unmasked = Frame.unmask(frame.drop(headerLength), key)

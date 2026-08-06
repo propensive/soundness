@@ -362,7 +362,7 @@ object WasmInvoke extends Materializer:
       case Foreign.Type.Named(name) if name.s == "unit" || name.s == "_" =>
         marker("witUnit")
 
-      case Foreign.Type.Named(name) if primitives(name.s) =>
+      case Foreign.Type.Named(name) if primitives.has(name.s) =>
         Apply(marker("witPrim"), List(Literal(StringConstant(name.s))))
 
       // A non-primitive name is a WIT resource, variant, record, flags or enum, conveyed by its
@@ -389,7 +389,7 @@ object WasmInvoke extends Materializer:
             case Foreign.Type.Named(name) if name.s == "_" => marker("witUnit")
             case other                                     => descriptor(other)
 
-          Apply(marker("witResult"), List(arm(arguments.head), arm(arguments(1))))
+          Apply(marker("witResult"), List(arm(arguments.head), arm(arguments.stdlib(1))))
 
         case other =>
           halt(m"xenophile: the WIT type constructor $other cannot cross a WIT boundary yet")

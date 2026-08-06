@@ -219,7 +219,7 @@ object Ansi extends Ansi2:
               closures(state, text.skip(1))
 
             case '[' | '(' | '<' | '«' | '{' =>
-              state.pushStyleFrame(complement(text.at(Prim).vouch), transform)
+              state.pushStyleFrame(complement(text.at(Prim).vouch).vouch, transform)
               state.last = Unset
               closures(state, text.skip(1))
 
@@ -235,7 +235,7 @@ object Ansi extends Ansi2:
               closures(state, text.skip(1))
 
             case '[' | '(' | '<' | '«' | '{' =>
-              state.pushLinkFrame(complement(text.at(Prim).vouch), url)
+              state.pushLinkFrame(complement(text.at(Prim).vouch).vouch, url)
               state.last = Unset
               closures(state, text.skip(1))
 
@@ -250,7 +250,7 @@ object Ansi extends Ansi2:
               closures(state, text.skip(1))
 
             case '[' | '(' | '<' | '«' | '{' =>
-              state.pushEscapeFrame(complement(text.at(Prim).vouch), on, off)
+              state.pushEscapeFrame(complement(text.at(Prim).vouch).vouch, on, off)
               state.last = Unset
               closures(state, text.skip(1))
 

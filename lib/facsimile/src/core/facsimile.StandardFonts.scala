@@ -92,7 +92,7 @@ private[facsimile] object StandardFonts:
     case Standard.TimesBoldItalic => lookup(timesBoldItalic, code)
 
   private def lookup(table: Array[Short]^{}, code: Int): Double =
-    if code >= 32 && code < 32 + table.length then table(code - 32).toDouble else 500
+    if code >= 32 && code < 32 + table.length then table.readUnchecked(code - 32).toDouble else 500
 
   // AFM widths for codes 32–126, in ASCII order.
   private val helvetica: Array[Short]^{} = Array.of[Short]

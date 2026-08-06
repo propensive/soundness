@@ -496,7 +496,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == 0)
 
       test(m"chars first"):
-        e"hello".chars(0)
+        e"hello".chars.readUnchecked(0)
       . assert(_ == 'h')
 
       test(m"chars"):

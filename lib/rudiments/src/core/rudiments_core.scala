@@ -63,10 +63,18 @@ inline def probe[target]: Nothing = ${rudiments.internal.probe[target]}
 inline def typeName[target]: Text = ${rudiments.internal.name[target]}
 inline def reflectClass[target]: Class[target] = ${rudiments.internal.reflectClass}
 inline def that[result](inline block: => result): result = block
-inline def state[value](using value: value aka "state"): value = value()
-inline def next[value](using value: value aka "next"): value = value()
-inline def prior[value](using value: value aka "prior"): value = value()
-inline def ordinal(using value: Ordinal aka "ordinal"): Ordinal = value()
+inline def state[value](using value: value aka "state"): value =
+  // The explicit import outranks the package-scope deindexing `apply`, which would
+  // otherwise shadow the `Tagged` unwrapping.
+  value()
+inline def next[value](using value: value aka "next"): value =
+  // The explicit import outranks the package-scope deindexing `apply`, which would
+  // otherwise shadow the `Tagged` unwrapping.
+  value()
+inline def prior[value](using value: value aka "prior"): value =
+  value()
+inline def ordinal(using value: Ordinal aka "ordinal"): Ordinal =
+  value()
 
 inline def repeat(count: Int)(inline action: => Unit): Unit =
   var i = 0
@@ -427,9 +435,6 @@ extension [element](array: scala.Array[element])
   inline def place(value: Array[element]^{}, ordinal: Ordinal = Prim): Unit =
     System.arraycopy(value.asInstanceOf[scala.Array[element]], 0, array, ordinal.n0, value.readable.length)
 
-extension [key, value](map: sc.Map[key, value])
-  inline def defines(key: key): Boolean = map.contains(key)
-  inline def bijection: Bijection[key, value] = Bijection(map.to(sc.immutable.Map))
 
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
@@ -453,18 +458,10 @@ extension [value](list: List[value])
   def unwind(tail: List[value]): List[value] = List.of(tail.stdlib.reverse_:::(list.stdlib))
 
 extension [element](sequence: List[element])
-  def runs: List[List[element]] = runsBy(identity)
-
-  // Deliberately NOT `inline`: an `inline def` returning the union `Optional[element]` re-infers the
-  // expanded body's type at each call site, where capture checking stamps a fresh `^` capture
-  // variable on the union — which is spurious (and an error) when `element` is a pure type such as
-  // `Text`. A plain method keeps the declared `Optional[element]` result and stays capture-clean.
-  // Only `prim` gets this ungated `List` special case (O(1)); `sec`/`ter` go through the
-  // `LinearAccessComplexity`-gated `Indexable` route like every other positional access on `List`.
-  def prim: Optional[element] = if sequence.stdlib.isEmpty then Unset else sequence.stdlib.head
-
   def unique: Optional[element] =
     if sequence.stdlib.length == 1 then sequence.stdlib.head else Unset
+
+  def runs: List[List[element]] = runsBy(identity)
 
   def runsBy(lambda: element => Any): List[List[element]] =
     val stdlib = sequence.stdlib
@@ -489,42 +486,6 @@ extension [element](sequence: List[element])
 
 extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(Array.unsafeJvm(bytes))
-
-extension [indexable: Indexable](value: indexable)
-  inline def defines(index: indexable.Operand): Boolean = indexable.contains(value, index)
-
-  // Checks that `index` is defined for *this* value and, if so, returns it *confined* to it
-  // (`Operand in value.type`), which `at` recognizes statically: the subsequent access returns a
-  // bare `Result` with no second bounds check — `map.confine(key).let(map.at(_))`. It generalizes
-  // denominative's `within` (the `Ordinal` producer) to any index or key type. Sound for
-  // immutable receivers on stable paths, like `within` and `at`'s confined branch. Not `inline`:
-  // see the note on `prim`/`sec`/`ter` below (same capture-checking issue).
-  def confine(index: indexable.Operand): Optional[indexable.Operand in value.type] =
-    if indexable.contains(value, index) then index.asInstanceOf[indexable.Operand in value.type]
-    else Unset
-
-  // A single `at` that dispatches at compile time on the index type: an index statically known to
-  // be confined to *this* `value` (an `Operand in value.type`, hence in range) returns a bare
-  // `Result`; any other index is bounds-checked and returns `Optional`. The declared return type is
-  // `Optional`, so non-reducing (e.g. generic) call sites are safe; a confined index narrows to a
-  // bare `Result`.
-  transparent inline def at[index](ordinal: index)(using sub: index <:< indexable.Operand)
-  :   Optional[indexable.Result] =
-
-    summonFrom:
-      case _: (`index` <:< (indexable.Operand in value.type)) =>
-        indexable.access(value, sub(ordinal))
-
-      case _ =>
-        val key: indexable.Operand = sub(ordinal)
-
-        optimizable[indexable.Result]: default =>
-          if indexable.contains(value, key) then indexable.access(value, key) else default
-
-extension [indexable: Indexable by Ordinal](inline value: indexable)
-  inline def prim: Optional[indexable.Result] = value.at(Prim)
-  inline def sec: Optional[indexable.Result] = value.at(Sec)
-  inline def ter: Optional[indexable.Result] = value.at(Ter)
 
 extension [value: Segmentable as segmentable](inline value: value)
   inline def segment(interval: Interval): value = segmentable.segment(value, interval)

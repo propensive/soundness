@@ -37,6 +37,7 @@ import proscenium.compat.*
 import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -130,16 +131,13 @@ object Hyphenation:
       val offsets: Array[Int]^{} = exception.vouch
       val filtered = Array[Int](offsets.length)
       var count = 0
-      var k = 0
 
-      while k < offsets.length do
-        val p = offsets(k)
+      offsets.iterate: index =>
+        val p = offsets.at(index)
 
         if p >= leftMin && p <= length - rightMin then
           filtered(count) = p
           count += 1
-
-        k += 1
 
       exactCopy(filtered, count)
     else
@@ -258,16 +256,13 @@ object Hyphenation:
     if !exception.absent then
       val offsets: Array[Int]^{} = exception.vouch
       var count = 0
-      var k = 0
 
-      while k < offsets.length do
-        val p = offsets(k)
+      offsets.iterate: index =>
+        val p = offsets.at(index)
 
         if p >= leftMin && p <= length - rightMin then
           breaks(count) = p
           count += 1
-
-        k += 1
 
       count
     else
@@ -284,7 +279,7 @@ object Hyphenation:
     val n = pattern.length
 
     while k < n do
-      val v = pattern(k)
+      val v = pattern.readUnchecked(k)
       if v > scores(base + k) then scores(base + k) = v
       k += 1
 

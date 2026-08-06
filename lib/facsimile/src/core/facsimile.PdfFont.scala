@@ -246,8 +246,8 @@ enum PdfFont:
     case _ =>
       val index = code - common.firstChar
 
-      if index >= 0 && index < common.widths.length && common.widths(index) > 0
-      then common.widths(index)
+      if index >= 0 && index < common.widths.length && common.widths.readUnchecked(index) > 0
+      then common.widths.readUnchecked(index)
       else common.standard.lay(or(code)) { standard => StandardFonts.width(standard, code) }
 
   private def or(code: Int): Double = if common.defaultWidth > 0 then common.defaultWidth else 500
@@ -260,7 +260,7 @@ enum PdfFont:
   def codes(string: Data): List[Int] =
     if common.twoByte then
       List.range(0, string.length/2).map: index =>
-        ((string(index*2) & 0xff) << 8) | (string(index*2 + 1) & 0xff)
+        ((string.readUnchecked(index*2) & 0xff) << 8) | (string.readUnchecked(index*2 + 1) & 0xff)
     else string.to[List].map(_.toInt & 0xff)
 
   def decode(string: Data): Text =

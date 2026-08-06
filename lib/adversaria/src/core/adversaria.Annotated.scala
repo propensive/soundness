@@ -37,6 +37,9 @@ import proscenium.compat.*
 import scala.quoted.*
 
 import anticipation.*
+import denominative.*
+import rudiments.*
+import vacuous.*
 import prepositional.*
 
 object Annotated:
@@ -70,7 +73,7 @@ object Annotated:
     type Topic = topic
     type Target = target
     def field: Text = fields.keys.head
-    override def apply(): Set[operand] = fields(field)
+    override def apply(): Set[operand] = fields(field).or(Set())
 
   trait Subtypes extends Annotated:
     def subtypes: Map[Text, Set[Operand]]

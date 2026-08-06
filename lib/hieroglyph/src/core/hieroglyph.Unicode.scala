@@ -55,7 +55,7 @@ object Unicode:
 
   def smallCaps(text: Text): Text =
     text.s.map:
-      case char if char >= 'a' && char <= 'z' => smallCapsAlphabet(char - 'a')
+      case char if char >= 'a' && char <= 'z' => smallCapsAlphabet.charAt(char - 'a')
       case char                               => char
 
     . tt

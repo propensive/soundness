@@ -69,8 +69,11 @@ inline def append[textual: Textual, value](using builder: Builder[textual] aka "
   ( value: value )
 :   Unit =
 
+  // The explicit import outranks the deindexing `apply`, which would otherwise shadow the
+  // `Tagged` unwrapping.
+
   inline value match
-    case text: Text => builder().append(textual(text))
+    case text: Text => builder().append(textual.apply(text))
     case char: Char => builder().append(char)
     case other      => provide[textual.Show[value]](builder().append(textual.show(value)))
 
@@ -83,7 +86,8 @@ inline def appendln[textual: Textual, value](using builder: Builder[textual] aka
   builder().append('\n')
 
 
-inline def builder[value](using value: value aka "builder"): value = value()
+inline def builder[value](using value: value aka "builder"): value =
+  value()
 
 extension (module: Array.type)
   def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit): Array[element]^{} =
@@ -139,12 +143,12 @@ extension [textual](text: textual)
 
     cuttable.cut(text, delimiter, limit)
 
-extension [textual: Textual { type Result = Char }](words: Iterable[textual])
+extension [textual: Textual { type Result = Char } as instance](words: Iterable[textual])
   def pascal: textual = words.map(_.lower.capitalize).join
   def camel: textual = pascal.uncapitalize
-  def snake: textual = words.join(textual("_".tt))
-  def kebab: textual = words.join(textual("-".tt))
-  def spaced: textual = words.join(textual(" ".tt))
+  def snake: textual = words.join(instance.apply("_".tt))
+  def kebab: textual = words.join(instance.apply("-".tt))
+  def spaced: textual = words.join(instance.apply(" ".tt))
 
 extension [textual: Textual { type Result = Char }](words: List[textual])
   def pascal: textual = words.stdlib.pascal
@@ -181,7 +185,7 @@ def reversibleTextual[textual](using textual0: textual is Textual)
 
       builder()
 
-extension [textual: Textual](text: textual)
+extension [textual: Textual as instance](text: textual)
   inline def length: Int = textual.length(text)
   def plain: Text = textual.text(text)
 
@@ -193,7 +197,7 @@ extension [textual: Textual](text: textual)
     def recur(word: Ordinal, spaces: Int, result: textual): textual =
       if word == Prim then result else
         val gap = ((spaces.toDouble/word.n0) + 0.5).toInt
-        recur(word - 1, spaces - gap, result+textual(t" "*(gap + 1))+words(words.length - word.n0))
+        recur(word - 1, spaces - gap, result+instance.apply(t" "*(gap + 1))+words(words.length - word.n0))
 
     recur(Prim, extra, words(0))
 
@@ -264,12 +268,12 @@ extension [textual: Textual](text: textual)
     case Ltr => if text.starts(affix) then text.skip(affix.length) else text
     case Rtl => if text.ends(affix) then text.skip(affix.length, Rtl) else text
 
-extension [textual: Textual { type Result = Char }](text: textual)
+extension [textual: Textual { type Result = Char } as instance](text: textual)
   inline def lower: textual = textual.map(text)(_.toLower)
   inline def upper: textual = textual.map(text)(_.toUpper)
 
   def broken(predicate: (Char, Char) => Boolean, break: Char = '\u200b'): textual =
-    val breakText = textual(break.toString.tt)
+    val breakText = instance.apply(break.toString.tt)
     val builder = textual.builder()
 
     @tailrec

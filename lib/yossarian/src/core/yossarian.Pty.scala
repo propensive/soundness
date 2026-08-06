@@ -563,10 +563,11 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
       // advances forwards (matching recur's monotonic index walk), so amortised
       // cost is O(1) per character.
       inline def putGrapheme(): Pty =
-        while boundaryCursor < boundaries.length && boundaries(boundaryCursor) <= index
+        while boundaryCursor < boundaries.length
+          && boundaries.readUnchecked(boundaryCursor) <= index
         do boundaryCursor += 1
 
-        val end = boundaries(boundaryCursor)
+        val end = boundaries.readUnchecked(boundaryCursor)
         writeGrapheme(Grapheme(input.segment(index.z till end.z).s))
         recur(end, Normal)
 

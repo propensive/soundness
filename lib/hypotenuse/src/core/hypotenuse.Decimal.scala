@@ -239,7 +239,7 @@ object decimalInternal:
       var length = count + shift
 
       if residue > 0 then
-        val factor = powers(residue)
+        val factor = powers.readUnchecked(residue)
         var carry = 0L
         var i = shift
 

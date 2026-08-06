@@ -102,7 +102,7 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
 
     val address = coordinates.map(_(1))
     if !cells0.defines(address) then cells0 = cells0.updated(address, Tally())
-    cells0(address)
+    cells0(address).vouch
 
   // The coordinate values of one axis in presentation order: first-appearance order for
   // discrete axes, numeric order for integral and decimal axes.

@@ -37,14 +37,14 @@ import prepositional.*
 
 // A type whose values can be tested for membership of a value (the queried type
 // is its `Operand`, bound with `by` — e.g. `List[Int] is Inclusive by Int`).
-// Backs the `collection.has(value)` extension. Distinct from `Indexable`, whose
+// Backs the `collection.has(value)` extension. Distinct from `Applicable`, whose
 // `defines` answers whether a *key/index* is present rather than a *value*.
 // The single `Iterable` instance fixes the queried type to the collection's
 // *exact* element type via the `Element` match type, rather than a bounded
 // `collection <: Iterable[element]` whose covariance would widen the element to
 // `Matchable` — silently accepting `map.has(key)` (a key, not a value) or
 // `list.has(wrongType)`. With the exact element, `Map`'s element is a key/value
-// pair, so `map.has(key)` is a compile error; key membership is `Indexable`'s
+// pair, so `map.has(key)` is a compile error; key membership is `Applicable`'s
 // `defines`.
 object Inclusive extends Inclusive.Fallback:
   type Element[collection] = collection match

@@ -447,7 +447,7 @@ object Xml extends Tag.Container
       var i = 0
 
       while i < element.children.length do
-        element.children(i) match
+        element.children.readUnchecked(i) match
           case child: Element =>
             val childLabel = child.label.s
 
@@ -491,7 +491,7 @@ object Xml extends Tag.Container
                   var child = 0
 
                   while child < element.children.length do
-                    element.children(child) match
+                    element.children.readUnchecked(child) match
                       case node: Element => if node.label == wireName then gathered += node
                       case _             => ()
 
@@ -903,7 +903,7 @@ object Xml extends Tag.Container
     private final class ArrayProduct(values: Array[Any]^{}) extends Product:
       def canEqual(that: Any): Boolean = true
       def productArity: Int = values.length
-      def productElement(index: Int): Any = values(index)
+      def productElement(index: Int): Any = values.readUnchecked(index)
 
     // The prior focus's path, extended by one step — evaluated only at
     // error-registration time, exactly as the AST derivation builds its
@@ -940,7 +940,7 @@ object Xml extends Tag.Container
       var index = 0
 
       while index < count do
-        if !attributes(index) && keys(index) == name then return index
+        if !attributes.readUnchecked(index) && keys.readUnchecked(index) == name then return index
         index += 1
 
       -1
@@ -999,7 +999,7 @@ object Xml extends Tag.Container
           var index = 0
 
           while index < count do
-            if !fields(index)(3) && named(index) == name then return index
+            if !fields.readUnchecked(index)(3) && named.readUnchecked(index) == name then return index
             index += 1
 
           -1
@@ -1029,12 +1029,12 @@ object Xml extends Tag.Container
           index = 0
 
           while index < count do
-            if entries(index)(3) then
-              attributes.at(keys(index).tt).let: text =>
+            if entries.readUnchecked(index)(3) then
+              attributes.at(keys.readUnchecked(index).tt).let: text =>
                 values(index) =
                   if focused
-                  then focus(descend(prior, keys(index).tt))(entries(index)(1).attribute(text))
-                  else entries(index)(1).attribute(text)
+                  then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).attribute(text))
+                  else entries.readUnchecked(index)(1).attribute(text)
 
             index += 1
 
@@ -1044,8 +1044,8 @@ object Xml extends Tag.Container
             val found = indexOf(label.vouch)
 
             if found < 0 then reader.skipElement()
-            else Xml.Parsable.unwrap(entries(found)(1)) match
-              case gathering: Gathering if entries(found)(1).repeatable =>
+            else Xml.Parsable.unwrap(entries.readUnchecked(found)(1)) match
+              case gathering: Gathering if entries.readUnchecked(found)(1).repeatable =>
                 // Every occurrence of a repeatable field accumulates, in
                 // document order — the AST derivation's gather-all
                 // semantics.
@@ -1059,7 +1059,7 @@ object Xml extends Tag.Container
 
                 buffer +=
                   ( if focused
-                    then focus(descend(prior, keys(found).tt))(gathering.parseElement(reader))
+                    then focus(descend(prior, keys.readUnchecked(found).tt))(gathering.parseElement(reader))
                     else gathering.parseElement(reader) )
 
               case _ =>
@@ -1070,16 +1070,16 @@ object Xml extends Tag.Container
                 then reader.skipElement()
                 else values(found) =
                   if focused
-                  then focus(descend(prior, keys(found).tt))(entries(found)(1).parse(reader))
-                  else entries(found)(1).parse(reader)
+                  then focus(descend(prior, keys.readUnchecked(found).tt))(entries.readUnchecked(found)(1).parse(reader))
+                  else entries.readUnchecked(found)(1).parse(reader)
 
             label = reader.nextChild()
 
           index = 0
 
           while index < count do
-            Xml.Parsable.unwrap(entries(index)(1)) match
-              case gathering: Gathering if entries(index)(1).repeatable =>
+            Xml.Parsable.unwrap(entries.readUnchecked(index)(1)) match
+              case gathering: Gathering if entries.readUnchecked(index)(1).repeatable =>
                 // A repeatable field never consults the declared default:
                 // zero occurrences build the empty collection, exactly as
                 // the AST derivation decodes an empty synthetic fragment.
@@ -1089,18 +1089,18 @@ object Xml extends Tag.Container
 
                 values(index) =
                   if focused
-                  then focus(descend(prior, keys(index).tt))(gathering.gathered(elements))
+                  then focus(descend(prior, keys.readUnchecked(index).tt))(gathering.gathered(elements))
                   else gathering.gathered(elements)
 
               case _ =>
                 if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
-                  val declared = entries(index)(2).asInstanceOf[Optional[Any]]
+                  val declared = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
                   values(index) =
                     if declared.present then declared
                     else if focused
-                    then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
-                    else entries(index)(1).absent()
+                    then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).absent())
+                    else entries.readUnchecked(index)(1).absent()
 
             index += 1
 
@@ -1129,22 +1129,22 @@ object Xml extends Tag.Container
           var index = 0
 
           while index < count do
-            values(index) = Xml.Parsable.unwrap(entries(index)(1)) match
+            values(index) = Xml.Parsable.unwrap(entries.readUnchecked(index)(1)) match
               // A repeatable field builds the empty collection, exactly as
               // the AST derivation's wrong-shape fallback gathers zero
               // children — the declared default is never consulted.
-              case gathering: Gathering if entries(index)(1).repeatable =>
+              case gathering: Gathering if entries.readUnchecked(index)(1).repeatable =>
                 if focused
-                then focus(descend(prior, keys(index).tt))(gathering.gathered(Nil))
+                then focus(descend(prior, keys.readUnchecked(index).tt))(gathering.gathered(Nil))
                 else gathering.gathered(Nil)
 
               case _ =>
-                val declared = entries(index)(2).asInstanceOf[Optional[Any]]
+                val declared = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
                 if declared.present then declared
                 else if focused
-                then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
-                else entries(index)(1).absent()
+                then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).absent())
+                else entries.readUnchecked(index)(1).absent()
 
             index += 1
 
@@ -1395,7 +1395,7 @@ object Xml extends Tag.Container
     type Topic
     type Plane <: Label
 
-    def targets(tag: Text): Boolean = global || elements(tag)
+    def targets(tag: Text): Boolean = global || elements.has(tag)
 
     def merge(that: XmlAttribute): XmlAttribute =
       XmlAttribute(label, elements ++ that.elements, global || that.global)
@@ -1927,9 +1927,9 @@ object Xml extends Tag.Container
     :   Optional[Position] =
 
       if i >= segments.length then
-        Position(data(offset + 1).z, data(offset + 2).z, length = data(offset + 3))
+        Position(data.readUnchecked(offset + 1).z, data.readUnchecked(offset + 2).z, length = data.readUnchecked(offset + 3))
       else
-        val segment = segments(segments.length - 1 - i)
+        val segment = segments.stdlib(segments.length - 1 - i)
 
         XPath.parseStep(segment) match
           case Unset => Unset
@@ -1951,9 +1951,9 @@ object Xml extends Tag.Container
 
                 case element: Element =>
                   descend(element, name, ordinal).let: childElementIndex =>
-                    val attrCount = data(offset + 4)
+                    val attrCount = data.readUnchecked(offset + 4)
                     val offSlot = offset + 6 + attrCount + childElementIndex
-                    val childOff = data(offSlot)
+                    val childOff = data.readUnchecked(offSlot)
                     val child = descendAst(element, name, ordinal).vouch
                     walk(child, data, offset + childOff, segments, i + 1)
 
@@ -1971,9 +1971,9 @@ object Xml extends Tag.Container
 
       if i < 0 then Unset
       else
-        val attrOff = data(offset + 6 + i)
+        val attrOff = data.readUnchecked(offset + 6 + i)
         val base = offset + attrOff
-        Position(data(base + 1).z, data(base + 2).z, length = data(base + 3))
+        Position(data.readUnchecked(base + 1).z, data.readUnchecked(base + 2).z, length = data.readUnchecked(base + 3))
 
     // Find the position of the n-th (1-indexed) child element with the
     // given name among the child *elements only* (ignoring text, comment,
@@ -1987,7 +1987,7 @@ object Xml extends Tag.Container
       var found: Optional[Int] = Unset
 
       while i < children.length && found == Unset do
-        children(i) match
+        children.readUnchecked(i) match
           case child: Element =>
             if child.label == name then
               seen += 1
@@ -2008,7 +2008,7 @@ object Xml extends Tag.Container
       var found: Optional[Element] = Unset
 
       while i < children.length && found == Unset do
-        children(i) match
+        children.readUnchecked(i) match
           case child: Element if child.label == name =>
             seen += 1
             if seen == ordinal then found = child
@@ -3820,7 +3820,7 @@ object Xml extends Tag.Container
             advance()
             directClose()
             val scale = if decimals > 0 then decimals else 0
-            val magnitude = mantissa.toDouble/XmlParser.TenPow(scale)
+            val magnitude = mantissa.toDouble/XmlParser.TenPow.readUnchecked(scale)
             Optional(if neg then -magnitude else magnitude)
           else
             reset(start)
@@ -3983,12 +3983,12 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
     var i = 0
 
     while i < nodes.length do
-      nodes(i) match
+      nodes.readUnchecked(i) match
         case Element(_, _, children) =>
           var j = 0
 
           while j < children.length do
-            children(j) match
+            children.readUnchecked(j) match
               case child: Element if child.label == name.tt => buffer.append(child)
               case _                                        => ()
 

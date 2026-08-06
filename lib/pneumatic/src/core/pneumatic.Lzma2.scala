@@ -440,7 +440,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
 
       if distSlot < DistModelEnd then
         val index = distSlot - DistModelStart
-        reps(0) += rcDecodeBitTreeReverse(distSpecial, distSpecialOffsets(index),
+        reps(0) += rcDecodeBitTreeReverse(distSpecial, distSpecialOffsets.readUnchecked(index),
             distSpecialSize(index))
       else
         reps(0) += rcDecodeDirectBits(footerBits - AlignBits) << AlignBits
@@ -1149,7 +1149,7 @@ extends caps.Mutable:
 
       if slot < DistModelEnd then
         val index = slot - DistModelStart
-        price += RangeCoder.bitTreeReversePrice(distSpecial, distSpecialOffsets(index),
+        price += RangeCoder.bitTreeReversePrice(distSpecial, distSpecialOffsets.readUnchecked(index),
             distSpecialSize(index), dist - base)
       else
         price += RangeCoder.directBitsPrice(footerBits - AlignBits)
@@ -1268,7 +1268,7 @@ extends caps.Mutable:
 
       if slot < DistModelEnd then
         val index = slot - DistModelStart
-        rcEncodeBitTreeReverse(distSpecial, distSpecialOffsets(index), distSpecialSize(index),
+        rcEncodeBitTreeReverse(distSpecial, distSpecialOffsets.readUnchecked(index), distSpecialSize(index),
             dist - base)
       else
         rcEncodeDirectBits((dist - base) >>> AlignBits, footerBits - AlignBits)

@@ -32,6 +32,7 @@
                                                                                                   */
 package escapade
 
+
 import scala.collection.immutable.Seq
 import proscenium.compat.*
 
@@ -416,7 +417,7 @@ case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
     Text.build:
       def recur(current: AnsiStyle, index: Ordinal): Unit =
         if index.n0 < plain.length then
-          val style = ansi(index.n0)
+          val style = ansi.readUnchecked(index.n0)
 
           if style.changed then
             if style.setBold then append(escapes.bold(style.bold))

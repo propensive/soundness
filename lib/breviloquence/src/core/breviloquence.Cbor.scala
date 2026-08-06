@@ -245,8 +245,8 @@ object Cbor extends Cbor2, Dynamic:
       var index = 0
 
       while index < count do
-        array(index*2) = keys(index)
-        array(index*2 + 1) = values(index)
+        array(index*2) = keys.readUnchecked(index)
+        array(index*2 + 1) = values.readUnchecked(index)
         index += 1
 
       Array.freeze(array)
@@ -868,7 +868,7 @@ object Cbor extends Cbor2, Dynamic:
       Array.freeze(out)
 
     private inline def boxLong(value: Long): AnyRef =
-      if value >= 0L && value < LongCacheSize then longCache(value.toInt)
+      if value >= 0L && value < LongCacheSize then longCache.readUnchecked(value.toInt)
       else java.lang.Long.valueOf(value).nn
 
     def parse(source: Array[Byte]^{}): Cbor.Ast raises CborError =
@@ -1610,7 +1610,7 @@ object Cbor extends Cbor2, Dynamic:
 
 
 class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives CanEqual:
-  def apply(index: Int): Cbor raises CborError = Cbor(root.array(index))
+  def apply(index: Int): Cbor raises CborError = Cbor(root.array.readUnchecked(index))
 
   def selectDynamic(field: String)(using erased dynamicCborEnabler: DynamicCborEnabler): Cbor raises CborError =
     apply(field.tt)

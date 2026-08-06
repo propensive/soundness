@@ -790,7 +790,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
         scanning = false
 
-    if scanning then while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+    if scanning then while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
     if i < limit && bytes(i) == Quote then
       val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
@@ -804,7 +804,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // Fast scan for plain printable ASCII that needs no escape handling.
     // The 256-entry `StringScanContinue` table collapses the three
     // comparisons (`>= 32`, `!= "`, `!= \`) into a single load + compare.
-    while more && StringScanContinue(peek & 0xFF) != 0 do advance()
+    while more && StringScanContinue.readUnchecked(peek & 0xFF) != 0 do advance()
 
     // Span from the string token's opening quote (one byte before the
     // content region) — see `tail`.
@@ -846,7 +846,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
         scanning = false
 
-    if scanning then while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+    if scanning then while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
     if i < limit && bytes(i) == Quote then
       val length = i - start
@@ -880,7 +880,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   private update def parseObjectKeyGeneral()(using Tactic[ParseError]): String = holding:
     val region = begin()
 
-    while more && StringScanContinue(peek & 0xFF) != 0 do advance()
+    while more && StringScanContinue.readUnchecked(peek & 0xFF) != 0 do advance()
 
     // Span from the string token's opening quote (one byte before the
     // content region) — see `tail`.
@@ -1268,9 +1268,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           val mag =
             if mantissa == 0L then 0.0
             else if mantissa < (1L << 53) && totalExp >= 0 && totalExp <= 22 then
-              mantissa.toDouble * TenPow(totalExp)
+              mantissa.toDouble * TenPow.readUnchecked(totalExp)
             else if mantissa < (1L << 53) && totalExp < 0 && totalExp >= -22 then
-              mantissa.toDouble / TenPow(-totalExp)
+              mantissa.toDouble / TenPow.readUnchecked(-totalExp)
             else
               java.math.BigDecimal.valueOf(mantissa).nn.scaleByPowerOfTen(totalExp).nn.doubleValue
 
@@ -2245,7 +2245,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           scanning = false
 
       pos = i
-      while more && StringScanContinue(peek & 0xFF) != 0 do advance()
+      while more && StringScanContinue.readUnchecked(peek & 0xFF) != 0 do advance()
       if !more then errorAt(Issue.PrematureEnd)
       val ch = peek
 
@@ -2306,7 +2306,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
           scanning = false
 
-      if scanning then while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+      if scanning then while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
       if i < limit && bytes(i) == Quote then
         val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
@@ -2494,8 +2494,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
         val mag =
           if mantissa == 0L then 0.0
-          else if totalExp >= 0 then mantissa.toDouble * TenPow(totalExp)
-          else mantissa.toDouble / TenPow(-totalExp)
+          else if totalExp >= 0 then mantissa.toDouble * TenPow.readUnchecked(totalExp)
+          else mantissa.toDouble / TenPow.readUnchecked(-totalExp)
 
         return if negative then -mag else mag
 
@@ -2983,7 +2983,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val limit = bufEnd
     var i = start
 
-    while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+    while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
     val index =
       if i < limit && bytes(i) == Quote && i - start <= 16 && i > start then
@@ -3022,7 +3022,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val limit = bufEnd
     var i = start
 
-    while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+    while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
     if i < limit && bytes(i) == Quote then
       val length = i - start

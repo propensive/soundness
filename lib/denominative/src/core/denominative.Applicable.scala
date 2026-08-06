@@ -41,10 +41,10 @@ import scala.collection.mutable as scm
 import anticipation.*
 import prepositional.*
 
-object Indexable:
+object Applicable:
   // The frozen array, `Array[element]^{}`, likewise: the bounds-partial `readUnchecked` is
   // safe behind `contains`.
-  given frozenArray: [element] => (Array[element]^{}) is Indexable:
+  given frozenArray: [element] => (Array[element]^{}) is Applicable:
     type Self = Array[element]^{}
     type Operand = Ordinal
     type Result = element
@@ -54,7 +54,7 @@ object Indexable:
 
     def access(array: Array[element]^{}, index: Ordinal): Result = array.readUnchecked(index.n0)
 
-  given indexedSeq: [element] => IndexedSeq[element] is Indexable:
+  given indexedSeq: [element] => IndexedSeq[element] is Applicable:
     type Self = IndexedSeq[element]
     type Operand = Ordinal
     type Result = element
@@ -65,7 +65,7 @@ object Indexable:
     def access(sequence: IndexedSeq[element], index: Ordinal): Result = sequence(index.n0)
 
   // Opaque `Sequence` is no longer an `IndexedSeq` subtype, so it needs its own instance.
-  given sequence: [element] => Sequence[element] is Indexable:
+  given sequence: [element] => Sequence[element] is Applicable:
     type Self = Sequence[element]
     type Operand = Ordinal
     type Result = element
@@ -76,7 +76,7 @@ object Indexable:
     def access(sequence: Sequence[element], index: Ordinal): Result = sequence.stdlib(index.n0)
 
   // Opaque `List`: positional access is O(n), so the instance is gated behind `LinearAccessComplexity`.
-  given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Indexable:
+  given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Applicable:
     type Self = List[element]
     type Operand = Ordinal
     type Result = element
@@ -86,7 +86,7 @@ object Indexable:
 
     def access(list: List[element], index: Ordinal): Result = list.stdlib(index.n0)
 
-  given text: [element] => Text is Indexable:
+  given text: [element] => Text is Applicable:
     type Self = Text
     type Operand = Ordinal
     type Result = Char
@@ -94,7 +94,7 @@ object Indexable:
     def contains(text: Text, index: Ordinal): Boolean = index.n0 >= 0 && index.n0 < text.s.length
     def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
-  given map: [key, value] => Map[key, value] is Indexable:
+  given map: [key, value] => Map[key, value] is Applicable:
     type Self = Map[key, value]
     type Operand = key
     type Result = value
@@ -102,7 +102,7 @@ object Indexable:
     def contains(value: Self, index: key): Boolean = value.stdlib.contains(index)
     def access(value: Self, index: key): value = value.stdlib(index)
 
-  given ledger: [key, value] => Ledger[key, value] is Indexable:
+  given ledger: [key, value] => Ledger[key, value] is Applicable:
     type Self = Ledger[key, value]
     type Operand = key
     type Result = value
@@ -110,7 +110,7 @@ object Indexable:
     def contains(value: Self, index: key): Boolean = value.stdlib.contains(index)
     def access(value: Self, index: key): value = value.stdlib(index)
 
-  given hashMap: [key, value] => scm.HashMap[key, value] is Indexable:
+  given hashMap: [key, value] => scm.HashMap[key, value] is Applicable:
     type Self = scm.HashMap[key, value]
     type Operand = key
     type Result = value
@@ -118,6 +118,6 @@ object Indexable:
     def contains(value: Self, index: key): Boolean = value.contains(index)
     def access(value: Self, index: key): value = value(index)
 
-trait Indexable extends Typeclass.Pure, Operable, Resultant:
+trait Applicable extends Typeclass.Pure, Operable, Resultant:
   def contains(value: Self, index: Operand): Boolean
   def access(value: Self, index: Operand): Result

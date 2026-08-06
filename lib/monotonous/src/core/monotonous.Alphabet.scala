@@ -266,10 +266,10 @@ object Alphabet:
                   val c1 = chars(sourceOffset + consumed + 1).toInt
                   val c2 = chars(sourceOffset + consumed + 2).toInt
                   val c3 = chars(sourceOffset + consumed + 3).toInt
-                  val v0 = if c0 < invLength then inversions(c0) else -1
-                  val v1 = if c1 < invLength then inversions(c1) else -1
-                  val v2 = if c2 < invLength then inversions(c2) else -1
-                  val v3 = if c3 < invLength then inversions(c3) else -1
+                  val v0 = if c0 < invLength then inversions.readUnchecked(c0) else -1
+                  val v1 = if c1 < invLength then inversions.readUnchecked(c1) else -1
+                  val v2 = if c2 < invLength then inversions.readUnchecked(c2) else -1
+                  val v3 = if c3 < invLength then inversions.readUnchecked(c3) else -1
 
                   if v0 < 0 || v0 > dataMax || v1 < 0 || v1 > dataMax || v2 < 0 || v2 > dataMax
                       || v3 < 0 || v3 > dataMax
@@ -317,7 +317,7 @@ case class Alphabet[encoding <: Serialization]
   def apply(index: Int): Char = chars.s.charAt(index)
 
   def invert(position: Int, char: Char): Int raises SerializationError =
-    if char < inversions.length && inversions(char) >= 0 then inversions(char)
+    if char < inversions.length && inversions.readUnchecked(char) >= 0 then inversions.readUnchecked(char)
     else abort(SerializationError(position, char))
 
   lazy val inverse: Map[Char, Int] =

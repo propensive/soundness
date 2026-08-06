@@ -203,7 +203,7 @@ object Tarfile:
                   val path = decodePath(nameText)
 
                   val inlineSegments: List[SparseSegment] = readInlineSparseMap(head)
-                  val isExtended: Boolean = head(482) != 0.toByte
+                  val isExtended: Boolean = head.readUnchecked(482) != 0.toByte
 
                   val realSize: Long =
                     TarHeader.decodeOctal(head.slice(483, 495), t"realsize").long
@@ -319,7 +319,7 @@ object Tarfile:
     var i = 0
 
     while i < data.length && allZero do
-      if data(i) != 0.toByte then allZero = false
+      if data.readUnchecked(i) != 0.toByte then allZero = false
       i = i + 1
 
     if allZero then 0L else TarHeader.decodeOctal(data, t"sparse.field").long
@@ -363,7 +363,7 @@ object Tarfile:
           pos = pos + 24
           i = i + 1
 
-        val moreExtended = head(504) != 0.toByte
+        val moreExtended = head.readUnchecked(504) != 0.toByte
         List.of(builder.result()) ::: readSparseExtensions(cursor, moreExtended)
 
   private def resolveName

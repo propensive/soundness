@@ -1075,8 +1075,8 @@ object corpora:
       List.tabulate(500): i =>
         LogEntry
           ( timestamp = 1700000000L + i,
-            level     = levels(i & 3),
-            service   = services(i % 5),
+            level     = levels.stdlib(i & 3),
+            service   = services.stdlib(i % 5),
             requestId = t"req-$i",
             userId    = 1000 + (i % 50),
             message   = t"event-$i-processed" )

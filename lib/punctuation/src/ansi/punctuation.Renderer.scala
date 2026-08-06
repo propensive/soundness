@@ -317,7 +317,7 @@ object Renderer:
           var k = 0
 
           while k < breaks.length do
-            val b = breaks(k)
+            val b = breaks.readUnchecked(k)
             // After break, prefix is `b` chars; we add a hyphen, total `b + 1`.
             if b + 1 <= avail && b > best then best = b
             k += 1

@@ -382,7 +382,7 @@ private[probably] object Documenting:
 
       val points = entry.cells.stdlib.flatMap: (address, cell) =>
         run(cell).option.flatMap: run0 =>
-          if index < 0 then None else address(index).numeric.option.map(_.toLong -> run0)
+          if index < 0 then None else address.stdlib(index).numeric.option.map(_.toLong -> run0)
 
       entry -> Map.of(points.toMap)
 

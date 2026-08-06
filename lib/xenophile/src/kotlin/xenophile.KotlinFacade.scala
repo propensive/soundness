@@ -1329,7 +1329,7 @@ object KotlinFacade:
     val absent = proscenium.List.of((0 until member.arity).filter(!provided.stdlib.contains(_)).toList)
 
     if absent.isEmpty then
-      val ordered = (0 until member.arity).to(List).map(provided(_))
+      val ordered = (0 until member.arity).to(List).map { index => provided(index).vouch }
       invocation(self, repr, className, field, ordered, prototype)
     else
       val undefaulted = absent.filter: index =>

@@ -32,6 +32,7 @@
                                                                                                   */
 package honeycomb
 
+
 import scala.collection.immutable.Seq
 import scala.collection.immutable.IndexedSeq
 

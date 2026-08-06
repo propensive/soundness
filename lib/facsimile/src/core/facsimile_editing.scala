@@ -297,8 +297,8 @@ private def buildOutline
       var dict: Map[Text, Cos] =
         Map(t"Title" -> Cos.Chars(Cos.encodeText(bookmark.title)), t"Parent" -> parent)
 
-      if index > 0 then dict = dict.updated(t"Prev", refs(index - 1))
-      if index < refs.length - 1 then dict = dict.updated(t"Next", refs(index + 1))
+      if index > 0 then dict = dict.updated(t"Prev", refs.stdlib(index - 1))
+      if index < refs.length - 1 then dict = dict.updated(t"Next", refs.stdlib(index + 1))
 
       childFirst.let: first => dict = dict.updated(t"First", first)
 

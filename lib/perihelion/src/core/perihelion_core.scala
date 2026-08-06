@@ -146,7 +146,7 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
 
   def crlfCrlf(data: Data): Int =
     def matches(i: Int): Boolean =
-      data(i) == 13 && data(i + 1) == 10 && data(i + 2) == 13 && data(i + 3) == 10
+      data.readUnchecked(i) == 13 && data.readUnchecked(i + 1) == 10 && data.readUnchecked(i + 2) == 13 && data.readUnchecked(i + 3) == 10
 
     def recur(index: Int): Int =
       if index + 3 >= data.length then -1 else if matches(index) then index else recur(index + 1)

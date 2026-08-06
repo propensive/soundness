@@ -32,6 +32,7 @@
                                                                                                   */
 package gossamer
 
+
 import proscenium.compat.*
 
 import scala.collection.immutable.Seq
@@ -190,7 +191,9 @@ object internal:
         def fromChar(char: Char): Byte = char.toByte
         def length(ascii: Ascii): Int = ascii.size
         def text(ascii: Ascii): Text = String(ascii.asInstanceOf[scala.Array[Byte]], "ASCII").nn.tt
-        def access(ascii: Ascii, index: Ordinal): Byte = ascii(index.n0)
+        def access(ascii: Ascii, index: Ordinal): Byte =
+          import scala.IArray.apply
+          ascii(index.n0)
         def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
         def size(ascii: Ascii): Int = ascii.length
 

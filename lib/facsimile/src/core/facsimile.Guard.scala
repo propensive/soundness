@@ -258,7 +258,7 @@ private[facsimile] object Guard:
       var sum = 0
       i = 0
       while i < 16 do
-        sum += e(i) & 0xff
+        sum += e.readUnchecked(i) & 0xff
         i += 1
 
       val bits = sum%3 match
@@ -269,7 +269,7 @@ private[facsimile] object Guard:
       k = sha(bits, e)
       round += 1
 
-      if round >= 64 && (e(e.length - 1) & 0xff) <= round - 32 then done = true
+      if round >= 64 && (e.readUnchecked(e.length - 1) & 0xff) <= round - 32 then done = true
 
     k.take(32)
 

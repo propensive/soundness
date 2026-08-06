@@ -188,11 +188,11 @@ case class Diff[element](edits: Edit[element]*):
           val inssSeq = Sequence.from(inss.stdlib.map(_.value))
 
           val subs = dissonance.diff(delsSeq, inssSeq, similar).edits.toList.map:
-            case Del(index, _) => Del(dels(index).left, dels(index).value)
-            case Ins(index, _) => Ins(inss(index).right, inss(index).value)
+            case Del(index, _) => Del(dels.stdlib(index).left, dels.stdlib(index).value)
+            case Ins(index, _) => Ins(inss.stdlib(index).right, inss.stdlib(index).value)
 
             case Par(left, right, _) =>
-              Sub(dels(left).left, inss(right).right, dels(left).value, inss(right).value)
+              Sub(dels.stdlib(left).left, inss.stdlib(right).right, dels.stdlib(left).value, inss.stdlib(right).value)
 
           (List.of(subs): List[Change[element]])
 

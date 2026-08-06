@@ -35,6 +35,7 @@ package digression
 import proscenium.compat.*
 
 import anticipation.*
+import denominative.*
 import contingency.*
 import prepositional.*
 import rudiments.*
@@ -67,11 +68,9 @@ object Fqcn:
   private[digression] def join(parts: Array[Text]^{}, count: Int): Text =
     val builder = StringBuilder()
 
-    var index = 0
-    while index < count do
-      if index > 0 then builder.append(".")
-      builder.append(parts(index).s)
-      index += 1
+    parts.iterate(parts.extent.capped(count)): index =>
+      if (index: Ordinal) != Prim then builder.append(".")
+      builder.append(parts.at(index).s)
 
     builder.toString.tt
 

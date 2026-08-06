@@ -64,7 +64,7 @@ private[facsimile] object ContentWriter:
     def out(text: Text): Unit =
       val raw = charEncoders.iso88591Encoder.encoded(text)
       var i = 0
-      while i < raw.length do { builder += raw(i); i += 1 }
+      while i < raw.length do { builder += raw.readUnchecked(i); i += 1 }
 
     def num(value: Double): Text =
       if value == value.toLong.toDouble then value.toLong.toString.tt

@@ -251,8 +251,8 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
           val raw = arr.toList
           if (raw.length & 1) == 0 then
             // Object: alternating key/value
-            val keys = (0 until raw.length/2).toList.map(i => raw(i*2).asInstanceOf[String])
-            val values = (0 until raw.length/2).toList.map(i => shape(raw(i*2 + 1)))
+            val keys = (0 until raw.length/2).toList.map(i => raw.stdlib(i*2).asInstanceOf[String])
+            val values = (0 until raw.length/2).toList.map(i => shape(raw.stdlib(i*2 + 1)))
             (keys, values)
           else
             // Array: strip sentinel pad if present

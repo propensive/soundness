@@ -102,7 +102,7 @@ object Decodable extends Decodable2:
       try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
         abort(NumberError(text, Float, NumberError.Reason.Unparseable))
 
-  given char: Char is Decodable in Text = _.s(0)
+  given char: Char is Decodable in Text = _.s.charAt(0)
 
   given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
   =>  (tactic: Tactic[VariantError]^)

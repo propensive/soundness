@@ -32,6 +32,8 @@
                                                                                                   */
 package honeycomb
 
+import honeycomb.internal.Attributes
+
 import scala.collection.immutable.Seq
 
 import scala.language.dynamics
@@ -150,7 +152,7 @@ object Honeycomb:
           if index == pattern.children.length then expr else
             val expr2 =
               descend
-                (array, pattern.children(index), '{$scrutinee.children(${Expr(index)})}, '{true})
+                (array, pattern.children.readUnchecked(index), '{$scrutinee.children(${Expr(index)})}, '{true})
 
             elements(index + 1)('{$expr && $expr2})
 

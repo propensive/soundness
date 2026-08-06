@@ -82,7 +82,7 @@ private[phoenicia] object Sfnt:
 
       sum
 
-    (0 until 4).each: index => buffer(index) = version(index)
+    (0 until 4).each: index => buffer(index) = version.readUnchecked(index)
 
     putU16(4, count)
     putU16(6, searchRange)

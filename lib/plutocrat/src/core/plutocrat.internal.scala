@@ -56,18 +56,18 @@ object internal:
     def apply(isin: Text): Isin raises IsinError =
       if isin.length != 12 then abort(IsinError(IsinError.WrongLength(isin.length))) else
         var result: Long = 0L
-        val cc0 = isin.s(0)
+        val cc0 = isin.s.charAt(0)
 
         if 'A' <= cc0 <= 'Z' then result |= ((cc0.toLong - 'A') & 0b11111) << 59
         else raise(IsinError(IsinError.BadCountryCode(isin.keep(2))))
 
-        val cc1 = isin.s(1)
+        val cc1 = isin.s.charAt(1)
 
         if 'A' <= cc1 <= 'Z' then result |= ((cc1.toLong - 'A') & 0b11111) << 54
         else raise(IsinError(IsinError.BadCountryCode(isin.keep(2))))
 
         for index <- 2 until 11 do
-          val char = isin.s(index)
+          val char = isin.s.charAt(index)
 
           if '0' <= char <= '9' || 'A' <= char <= 'Z'
           then result |= ((char.toLong - '0') & 0b111111) << (60 - index*6)
@@ -116,9 +116,9 @@ object internal:
     protected[plutocrat] def apply[currency <: Label](currency: Text, value: Long)
     :   Money in currency =
 
-      val c1 = ((currency.s(0) - 'A') & 0b11111L) << 59
-      val c2 = ((currency.s(1) - 'A') & 0b11111L) << 54
-      val c3 = ((currency.s(2) - 'A') & 0b11111L) << 49
+      val c1 = ((currency.s.charAt(0) - 'A') & 0b11111L) << 59
+      val c2 = ((currency.s.charAt(1) - 'A') & 0b11111L) << 54
+      val c3 = ((currency.s.charAt(2) - 'A') & 0b11111L) << 49
 
       (value & ((1L << 49) - 1L) | c1 | c2 | c3).asInstanceOf[Money in currency]
 

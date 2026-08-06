@@ -277,10 +277,10 @@ case class Ttf(data: Data):
           HMetrics(B16(data, offset + index*4).u16.int, B16(data, offset + index*4 + 2).s16.int)
 
     def advanceWidth(glyphId: Int): Int =
-      metrics(if glyphId < count then glyphId else count - 1).advanceWidth
+      metrics.readUnchecked(if glyphId < count then glyphId else count - 1).advanceWidth
 
     def leftSideBearing(glyphId: Int): Int =
-      if glyphId < count then metrics(glyphId).leftSideBearing
+      if glyphId < count then metrics.readUnchecked(glyphId).leftSideBearing
       else B16(data, offset + count*4 + (glyphId - count)*2).s16.int
 
     case class HMetrics(advanceWidth: Int, leftSideBearing: Int)
@@ -296,7 +296,7 @@ case class Ttf(data: Data):
 
   case class GlyfTable(offset: Int, loca: LocaTable):
     def apply(glyphId: Int): GlyphRecord =
-      GlyphRecord(offset + loca.offsets(glyphId), loca.offsets(glyphId + 1) - loca.offsets(glyphId))
+      GlyphRecord(offset + loca.offsets.readUnchecked(glyphId), loca.offsets.readUnchecked(glyphId + 1) - loca.offsets.readUnchecked(glyphId))
 
     // One glyph's raw data. A glyph with no outline — a space — has zero extent; a composite
     // glyph has a negative contour count and a list of component glyphs.
@@ -460,7 +460,7 @@ case class Ttf(data: Data):
       // A byte-indexed array of glyph ids, for the first 256 character codes only.
       case class Format0(start: Int) extends Format:
         def glyph(char: Char): Glyph[ttf.type] =
-          Glyph(ttf, if char < 256 then data(start + char) & 0xff else 0)
+          Glyph(ttf, if char < 256 then data.readUnchecked(start + char) & 0xff else 0)
 
       // Segmented ranges over the Basic Multilingual Plane. Each segment maps by a delta, or
       // — when its range offset is nonzero — indirects into the glyph-id array which follows
@@ -469,8 +469,8 @@ case class Ttf(data: Data):
         def glyph(char: Char): Glyph[ttf.type] =
           val index = segments.indexWhere(char <= _.end)
 
-          if index < 0 || char < segments(index).start then Glyph(ttf, 0) else
-            val segment = segments(index)
+          if index < 0 || char < segments.readUnchecked(index).start then Glyph(ttf, 0) else
+            val segment = segments.readUnchecked(index)
 
             val id =
               if segment.rangeOffset == 0 then char + segment.delta

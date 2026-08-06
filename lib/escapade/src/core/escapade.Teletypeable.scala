@@ -135,7 +135,7 @@ object Teletypeable:
       val frame = row.frame
       val obj = frame.displaySegment.starts(t"Ξ")
       val methodCls = if obj then frame.displaySegment.skip(1) else frame.displaySegment
-      val color = packages(frame.method.prefix)
+      val color = packages(frame.method.prefix).vouch
 
       if row.sameClass || plumbing(row)
       then e"${palette.subdue(color, 0.85)}(${frame.displayPrefix}.$methodCls)"

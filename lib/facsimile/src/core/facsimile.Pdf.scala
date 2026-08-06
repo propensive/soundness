@@ -258,7 +258,7 @@ extends caps.ExclusiveCapability:
   private[facsimile] def pageReference(ordinal: Ordinal)(using Tactic[PdfError]): Optional[Cos.Ref] =
     val entries = pageEntries
     if ordinal.n0 < 0 || ordinal.n0 >= entries.length then Unset
-    else entries(ordinal.n0)(0).let(Cos.Ref(_, 0))
+    else entries.at(ordinal.n0.z).vouch(0).let(Cos.Ref(_, 0))
 
   def trailer: Map[Text, Cos] = xref.trailer
 
@@ -683,8 +683,8 @@ extends caps.ExclusiveCapability:
           // The end-of-line before `endstream` belongs to the syntax, not the payload.
           val windowStart = (position - 2).max(body.start)
           val window = source.read(windowStart, (position - windowStart).toInt)
-          val last = if window.length >= 1 then window(window.length - 1) & 0xff else -1
-          val prior = if window.length >= 2 then window(window.length - 2) & 0xff else -1
+          val last = if window.length >= 1 then window.readUnchecked(window.length - 1) & 0xff else -1
+          val prior = if window.length >= 2 then window.readUnchecked(window.length - 2) & 0xff else -1
 
           if prior == 0x0d && last == 0x0a then position - 2
           else if last == 0x0a || last == 0x0d then position - 1

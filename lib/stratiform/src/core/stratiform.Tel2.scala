@@ -500,14 +500,14 @@ trait Tel2 extends Tel3:
 
                       if children.length == 0 then members += Mutation.Member.Break
                       else if children.length == 1
-                      then members += Mutation.Member.Child(children(0).copy(keyword = keyword))
+                      then members += Mutation.Member.Child(children.readUnchecked(0).copy(keyword = keyword))
                       else
                         val texts = scala.collection.mutable.ListBuffer.empty[Text]
 
                         children.each: child =>
                           texts +=
                             ( if child.atoms.length == 0 then t""
-                              else Positional.text(child.atoms(0)) )
+                              else Positional.text(child.atoms.readUnchecked(0)) )
 
                         members += Mutation.Member.Value(keyword, List.of(texts.toList))
 

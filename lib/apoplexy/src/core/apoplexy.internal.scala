@@ -476,7 +476,7 @@ object Apoplexy:
         def deeper(key: List[Text]): Boolean =
           isPrefix(newSegs, key) && key.length > newSegs.length
 
-        val following = keys.filter(deeper).map(_(newSegs.length)).find(isTemplate)
+        val following = keys.filter(deeper).map(_.stdlib(newSegs.length)).find(isTemplate)
 
         following match
           case None => shortcut(self, doc, source, newLocus, Nil, positional)

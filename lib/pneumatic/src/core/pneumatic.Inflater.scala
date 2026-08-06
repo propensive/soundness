@@ -309,8 +309,8 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
                 r(2) = v(p) // simple code is just the value
                 p += 1
               else
-                r(0) = e(v(p) - s) + 16 + 64 // non-simple: look up in lists
-                r(2) = d(v(p) - s)
+                r(0) = e.readUnchecked(v(p) - s) + 16 + 64 // non-simple: look up in lists
+                r(2) = d.readUnchecked(v(p) - s)
                 p += 1
 
               // fill code-like entries with r
@@ -488,7 +488,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
             p += 1
             k += 8
 
-          tindex = (treeIndex + (b & inflateMask(j)))*3
+          tindex = (treeIndex + (b & inflateMask.readUnchecked(j)))*3
           b >>>= tree(tindex + 1)
           k -= tree(tindex + 1)
           e = tree(tindex)
@@ -520,7 +520,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
             p += 1
             k += 8
 
-          len += b & inflateMask(j)
+          len += b & inflateMask.readUnchecked(j)
           b >>= j
           k -= j
 
@@ -539,7 +539,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
             p += 1
             k += 8
 
-          tindex = (treeIndex + (b & inflateMask(j)))*3
+          tindex = (treeIndex + (b & inflateMask.readUnchecked(j)))*3
           b >>= tree(tindex + 1)
           k -= tree(tindex + 1)
           e = tree(tindex)
@@ -567,7 +567,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
             p += 1
             k += 8
 
-          dist += b & inflateMask(j)
+          dist += b & inflateMask.readUnchecked(j)
           b >>= j
           k -= j
           codesMode = Copy
@@ -689,8 +689,8 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
     q = write; m = if q < read then read - q - 1 else windowEnd - q
 
     // initialize masks
-    val ml = inflateMask(bl) // mask for literal/length tree
-    val md = inflateMask(bd) // mask for distance tree
+    val ml = inflateMask.readUnchecked(bl) // mask for literal/length tree
+    val md = inflateMask.readUnchecked(bd) // mask for distance tree
 
     // Parameters rather than captures, to keep the hot locals unboxed (see `proc`).
     def leave(status: Int, b: Int, k0: Int, p0: Int, n0: Int, q: Int): Int =
@@ -734,7 +734,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
 
           if (e & 16) != 0 then
             e &= 15
-            c = tp(tpIndexT3 + 2) + (b & inflateMask(e))
+            c = tp(tpIndexT3 + 2) + (b & inflateMask.readUnchecked(e))
             b >>= e
             k -= e
 
@@ -767,7 +767,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
                   p += 1
                   k += 8
 
-                d = tp(tpIndexT3 + 2) + (b & inflateMask(e))
+                d = tp(tpIndexT3 + 2) + (b & inflateMask.readUnchecked(e))
                 b >>= e
                 k -= e
 
@@ -818,7 +818,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
                 distDone = true
               else if (e & 64) == 0 then
                 t += tp(tpIndexT3 + 2)
-                t += b & inflateMask(e)
+                t += b & inflateMask.readUnchecked(e)
                 tpIndexT3 = (tpIndex + t)*3
                 e = tp(tpIndexT3)
               else
@@ -828,7 +828,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
             innerDone = true
           else if (e & 64) == 0 then
             t += tp(tpIndexT3 + 2)
-            t += b & inflateMask(e)
+            t += b & inflateMask.readUnchecked(e)
             tpIndexT3 = (tpIndex + t)*3
             e = tp(tpIndexT3)
 
@@ -1042,7 +1042,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
                 k += 8
 
             if !bail then
-              blens(border(index)) = b & 7
+              blens(border.readUnchecked(index)) = b & 7
               index += 1
               b >>>= 3
               k -= 3
@@ -1050,7 +1050,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
           if bail then return leave(r, b, k, p, n, q)
 
           while index < 19 do
-            blens(border(index)) = 0
+            blens(border.readUnchecked(index)) = 0
             index += 1
 
           bb = 7
@@ -1085,8 +1085,8 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
                   k += 8
 
               if !bail then
-                t = hufts((tb + (b & inflateMask(t)))*3 + 1)
-                val c = hufts((tb + (b & inflateMask(t)))*3 + 2)
+                t = hufts((tb + (b & inflateMask.readUnchecked(t)))*3 + 1)
+                val c = hufts((tb + (b & inflateMask.readUnchecked(t)))*3 + 2)
 
                 if c < 16 then
                   b >>>= t
@@ -1109,7 +1109,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
                   if !bail then
                     b >>>= t
                     k -= t
-                    j += b & inflateMask(i)
+                    j += b & inflateMask.readUnchecked(i)
                     b >>>= i
                     k -= i
 

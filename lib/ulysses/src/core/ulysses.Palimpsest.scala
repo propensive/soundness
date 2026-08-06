@@ -57,7 +57,7 @@ object Palimpsest:
     var i = 0
 
     while i < n do
-      val hash = hashes(i)
+      val hash = hashes.stdlib(i)
       val o    = cadence.offset(i)
       var j    = 0
 

@@ -32,6 +32,7 @@
                                                                                                   */
 package jacinta
 
+
 import scala.collection.immutable.Seq
 import scala.collection.immutable.IndexedSeq
 
@@ -640,7 +641,7 @@ object internal:
   private def arrayElements(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.take(n - 1) else arr
+    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.take(n - 1) else arr
 
   private def hasMarker(s: String): Boolean =
     var i = 0
@@ -902,8 +903,8 @@ object internal:
 
         val pieces =
           (0 until n).toList.map: i =>
-            val k = node(i*2).asInstanceOf[String]
-            val v = node(i*2 + 1)
+            val k = node.readUnchecked(i*2).asInstanceOf[String]
+            val v = node.readUnchecked(i*2 + 1)
 
             if k == MarkerString then
               v.asMatchable match
@@ -1114,7 +1115,7 @@ object internal:
         // Determine whether the last element is a spread.
 
         val tailSpread: Boolean =
-          n > 0 && (elements(n - 1).asMatchable match
+          n > 0 && (elements.readUnchecked(n - 1).asMatchable match
             case Unset => spreads.has(nextHole + countHolesInPrefix(elements, n - 1))
             case _     => false)
 
@@ -1132,7 +1133,7 @@ object internal:
         var i = 0
 
         while i < prefixLen do
-          val el = elements(i)
+          val el = elements.readUnchecked(i)
           val itemExpr = '{$scrutinee.arrayElement(${Expr(i)})}
           combined = descend(array, el, itemExpr, combined)
           i += 1
@@ -1169,7 +1170,7 @@ object internal:
         var i = 0
 
         while i < upTo do
-          count += countHolesIn(elements(i))
+          count += countHolesIn(elements.readUnchecked(i))
           i += 1
 
         count
@@ -1214,7 +1215,7 @@ object internal:
             var k = 0
 
             while k < elems.length do
-              c += countHolesIn(elems(k))
+              c += countHolesIn(elems.readUnchecked(k))
               k += 1
 
             c
@@ -1233,11 +1234,11 @@ object internal:
 
         val literalKeys =
           (0 until pairs).toList.collect:
-            case i if node(i*2).asInstanceOf[String] != MarkerString =>
-              node(i*2).asInstanceOf[String]
+            case i if node.readUnchecked(i*2).asInstanceOf[String] != MarkerString =>
+              node.readUnchecked(i*2).asInstanceOf[String]
 
         val hasRest: Boolean =
-          (0 until pairs).exists: i => node(i*2).asInstanceOf[String] == MarkerString
+          (0 until pairs).exists: i => node.readUnchecked(i*2).asInstanceOf[String] == MarkerString
 
         // Initial: object-shape and key cardinality.
         val cardinality: Expr[Boolean] =
@@ -1279,8 +1280,8 @@ object internal:
         var i = 0
 
         while i < pairs do
-          val k = node(i*2).asInstanceOf[String]
-          val v = node(i*2 + 1)
+          val k = node.readUnchecked(i*2).asInstanceOf[String]
+          val v = node.readUnchecked(i*2 + 1)
           if k == MarkerString then
             // Rest hole — capture remaining keys/values as a Json object
             val idx = nextHole
@@ -1505,10 +1506,10 @@ object internal:
       val cursor = Symbol.newVal(owner, "index", TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
 
       val slotDefs = List.range(0, arity).map: index =>
-        ValDef(slots(index), Some(zero(fieldTypes(index))))
+        ValDef(slots.stdlib(index), Some(zero(fieldTypes(index))))
 
       val seenDefs = List.range(0, arity).map: index =>
-        ValDef(seens(index), Some(Literal(BooleanConstant(false))))
+        ValDef(seens.stdlib(index), Some(Literal(BooleanConstant(false))))
 
       // One switch arm per field: read the value (with focus bookkeeping),
       // assign it and mark it seen.
@@ -1535,8 +1536,8 @@ object internal:
         val rhs =
           Block
             ( scala.collection.immutable.List
-                ( Assign(Ref(slots(index)), read),
-                  Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
+                ( Assign(Ref(slots.stdlib(index)), read),
+                  Assign(Ref(seens.stdlib(index)), Literal(BooleanConstant(true))) ),
               Literal(UnitConstant()) )
 
         CaseDef(Literal(IntConstant(index)), None, rhs)
@@ -1567,7 +1568,7 @@ object internal:
 
           def chain(index: Int): Term =
             if index == arity then '{ Json.KeyTable.Unknown }.asTerm
-            else packedNames(index) match
+            else packedNames.stdlib(index) match
               case None => chain(index + 1)
 
               case Some((low, highWord)) =>
@@ -1632,8 +1633,8 @@ object internal:
               }.asTerm
 
             If
-              ( '{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm,
-                Assign(Ref(slots(index)), resolve),
+              ( '{ !${Ref(seens.stdlib(index)).asExprOf[Boolean]} }.asTerm,
+                Assign(Ref(slots.stdlib(index)), resolve),
                 Literal(UnitConstant()) )
 
       val construct: Term =

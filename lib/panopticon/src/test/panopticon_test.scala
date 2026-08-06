@@ -201,7 +201,7 @@ object Tests extends Suite(m"Panopticon tests"):
       val r = org.lens
        ( _.depts(Each).lead.role.name  = "Boss",
          _.depts(Prim).lead.role.count = 0 )
-      ( r.depts(0).lead.role, r.depts(1).lead.role )
+      ( r.depts.stdlib(0).lead.role, r.depts.stdlib(1).lead.role )
     . assert(_ == (Role("Boss", 0), Role("Boss", 300)))
 
     test(m"Filter[T] traversal forces fallback"):
@@ -219,7 +219,7 @@ object Tests extends Suite(m"Panopticon tests"):
        ( _.depts(Prim).members(Filter[Employee](_.age > 35)).age = 99,
          _.depts(Each).lead.role.name  = "Boss",
          _.depts(Each).lead.role.count = 0 )
-      ( r.depts(0).lead.role, r.depts(0).members.map(_.age) )
+      ( r.depts.stdlib(0).lead.role, r.depts.stdlib(0).members.map(_.age) )
     . assert(_ == (Role("Boss", 0), List(30, 99)))
 
     test(m"three updates sharing a Prim traversal"):

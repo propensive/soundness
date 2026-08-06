@@ -121,8 +121,8 @@ private[facsimile] object Xref:
 
       while i < limit do
         // A candidate object header is `<digits> <digits> obj` at a token boundary.
-        if matches(chunk, i, t"obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk(i + 3) & 0xff))
-           && (i == 0 || CosLexer.whitespace(chunk(i - 1) & 0xff))
+        if matches(chunk, i, t"obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff))
+           && (i == 0 || CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff))
         then
           objectHeader(chunk, i).let: (number, generation, start) =>
             val offset = base + start
@@ -160,9 +160,9 @@ private[facsimile] object Xref:
   private def objectHeader(chunk: Data, objAt: Int): Optional[(Int, Int, Int)] =
     def digits(end: Int): Optional[(Int, Int)] = // (value, startIndex), scanning back from end
       var i = end
-      while i > 0 && CosLexer.whitespace(chunk(i - 1) & 0xff) do i -= 1
+      while i > 0 && CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff) do i -= 1
       val last = i
-      while i > 0 && { val b = chunk(i - 1) & 0xff; b >= '0' && b <= '9' } do i -= 1
+      while i > 0 && { val b = chunk.readUnchecked(i - 1) & 0xff; b >= '0' && b <= '9' } do i -= 1
       if i == last then Unset else (parseInt(chunk, i, last), i)
 
     digits(objAt).let: (generation, genStart) =>
@@ -172,7 +172,7 @@ private[facsimile] object Xref:
     var value = 0
     var i = start
     while i < end do
-      value = value*10 + (chunk(i) & 0xff) - '0'
+      value = value*10 + (chunk.readUnchecked(i) & 0xff) - '0'
       i += 1
     value
 
@@ -257,7 +257,7 @@ private[facsimile] object Xref:
 
   private def matches(window: Data, index: Int, marker: Text): Boolean =
     var j = 0
-    while j < marker.length && (window(index + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
+    while j < marker.length && (window.readUnchecked(index + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
     j == marker.length
 
   private def section(source: ByteSource, offset: Long)
@@ -364,9 +364,9 @@ private[facsimile] object Xref:
             then abort(PdfError(PdfError.Reason.MalformedXref(offset)))
 
             // A zero-width first field defaults to type 1; other absent fields default to 0.
-            val kind = if widths(0) == 0 then 1L else field(data, position, widths(0))
-            val second = field(data, position + widths(0), widths(1))
-            val third = field(data, position + widths(0) + widths(1), widths(2))
+            val kind = if widths.stdlib(0) == 0 then 1L else field(data, position, widths.stdlib(0))
+            val second = field(data, position + widths.stdlib(0), widths.stdlib(1))
+            val third = field(data, position + widths.stdlib(0) + widths.stdlib(1), widths.stdlib(2))
             position += rowLength
 
             val entry = kind match
@@ -387,7 +387,7 @@ private[facsimile] object Xref:
     var i = 0
 
     while i < width do
-      value = (value << 8) + (data(start + i) & 0xff)
+      value = (value << 8) + (data.readUnchecked(start + i) & 0xff)
       i += 1
 
     value
