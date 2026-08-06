@@ -103,7 +103,7 @@ object Teletype:
     def map(text: Teletype)(lambda: Char => Char): Teletype =
       val plain = text.plain
       val array = Array.scribe[Char](plain.length): scribe =>
-        _ => plain.iterate { index => scribe.append(lambda(plain.at(index))) }
+        _ => plain.iterate { index => scribe.append(lambda(plain(index))) }
 
       Teletype
         ( new String(Array.unsafeJvm(array)).tt,
@@ -216,11 +216,11 @@ object Teletype:
 
 
 // `boundaries` is the run-start array for the sparse form; empty for the dense form.
-// Dense:  styles.length == plain.length + 1; styles(i) is the style for char i (0 ≤ i < length)
-//         and styles(length) is the trailing style.
-// Sparse: styles.length == boundaries.length + 1; boundaries(i) is the start position of run i
-//         (boundaries(0) == 0). Run i covers [boundaries(i), nextStart) where nextStart is
-//         boundaries(i+1) or plain.length for the last run. styles(boundaries.length) is the
+// Dense:  styles.length == plain.length + 1; styles.at(i) is the style for char i (0 ≤ i < length)
+//         and styles.at(length) is the trailing style.
+// Sparse: styles.length == boundaries.length + 1; boundaries.at(i) is the start position of run i
+//         (boundaries.at(0) == 0). Run i covers [boundaries.at(i), nextStart) where nextStart is
+//         boundaries.at(i+1) or plain.length for the last run. styles.at(boundaries.length) is the
 //         trailing style.
 case class Teletype
   ( plain:      Text,
@@ -317,8 +317,8 @@ case class Teletype
       else
         // Stay sparse: the new chars become part of the last run (since trailing style = last run
         // style) unless the last run's style differs from the trailing style — but that can't
-        // happen because styles(boundaries.length-1) is the last run's style, and
-        // styles(boundaries.length) is trailing.
+        // happen because styles.at(boundaries.length-1) is the last run's style, and
+        // styles.at(boundaries.length) is trailing.
         // They may differ. If so, we need a new run for the appended text.
         val k = boundaries.length
         val lastRunStyle = styles.readUnchecked(k - 1)

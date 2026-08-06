@@ -430,7 +430,7 @@ case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
 
             val current2 = current.update(style)
 
-            append(plain.at(index).vouch)
+            append(plain(index).vouch)
             recur(current2, index + 1)
           else
             recur(current, index + 1)

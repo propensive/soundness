@@ -67,25 +67,25 @@ object PdfFont:
   // error, since fonts are consulted opportunistically during extraction.
   private[facsimile] def read(value: Cos)(using pdf: Pdf)(using Tactic[PdfError]): Optional[PdfFont] =
     value.dictionary.let: entries =>
-      val subtype = entries.at(t"Subtype").let(pdf.resolved(_).name).or(t"")
-      val baseFont = entries.at(t"BaseFont").let(pdf.resolved(_).name).or(t"")
+      val subtype = entries(t"Subtype").let(pdf.resolved(_).name).or(t"")
+      val baseFont = entries(t"BaseFont").let(pdf.resolved(_).name).or(t"")
       val standard = StandardFonts.recognize(baseFont)
 
-      val descriptor = pdf.resolved(entries.at(t"FontDescriptor").or(Cos.Nil))
+      val descriptor = pdf.resolved(entries(t"FontDescriptor").or(Cos.Nil))
         . dictionary.or(Map[Text, Cos]())
 
-      val defaultWidth = descriptor.at(t"MissingWidth").let(pdf.resolved(_).double).or(0.0)
-      val firstChar = entries.at(t"FirstChar").let(pdf.resolved(_).long).or(0L).toInt
+      val defaultWidth = descriptor(t"MissingWidth").let(pdf.resolved(_).double).or(0.0)
+      val firstChar = entries(t"FirstChar").let(pdf.resolved(_).long).or(0L).toInt
 
       val widths: Array[Double]^{} =
-        pdf.resolved(entries.at(t"Widths").or(Cos.Nil)).elements.lay(Array.empty[Double]):
+        pdf.resolved(entries(t"Widths").or(Cos.Nil)).elements.lay(Array.empty[Double]):
           elements => Array.from(elements.stdlib.map(pdf.resolved(_).double.or(0.0)))
 
       val embedded: Optional[Ttf] =
-        val program = descriptor.at(t"FontFile2").or:
-          descriptor.at(t"FontFile3").let: value =>
+        val program = descriptor(t"FontFile2").or:
+          descriptor(t"FontFile3").let: value =>
             val body = pdf.resolved(value)
-            val subtype = body.dictionary.or(Map[Text, Cos]()).at(t"Subtype").let(_.name)
+            val subtype = body.dictionary.or(Map[Text, Cos]())(t"Subtype").let(_.name)
             if subtype == t"OpenType" then value else Unset
 
         program.let(pdf.resolved(_)).let:
@@ -93,7 +93,7 @@ object PdfFont:
           case _              => Unset
 
       val toUnicode: Optional[CharMap] =
-        pdf.resolved(entries.at(t"ToUnicode").or(Cos.Nil)) match
+        pdf.resolved(entries(t"ToUnicode").or(Cos.Nil)) match
           case body: Cos.Body => safely(CharMap.parse(pdf.payload(body)))
           case _              => Unset
 
@@ -106,7 +106,7 @@ object PdfFont:
         case t"StandardEncoding" => PdfEncoding.standard: Array[Char]^{}
         case _                   => Unset
 
-      val encodingValue = pdf.resolved(entries.at(t"Encoding").or(Cos.Nil))
+      val encodingValue = pdf.resolved(entries(t"Encoding").or(Cos.Nil))
 
       val encoding: Optional[Array[Char]^{}] = encodingValue match
         case Cos.Name(name)          => encodingTable(name)
@@ -146,7 +146,7 @@ object PdfFont:
         case "TrueType" => TrueType(common(false, Map(), defaultWidth))
 
         case "Type3" =>
-          val matrix = pdf.resolved(entries.at(t"FontMatrix").or(Cos.Nil)).elements
+          val matrix = pdf.resolved(entries(t"FontMatrix").or(Cos.Nil)).elements
             . lay(PdfMatrix(0.001, 0, 0, 0.001, 0, 0)): elements =>
                 elements.map(pdf.resolved(_).double.or(0.0)) match
                   case List(a, b, c, d, e, f) => PdfMatrix(a, b, c, d, e, f)
@@ -157,23 +157,23 @@ object PdfFont:
           Type3(matrix, common(false, Map(), defaultWidth).copy(widths = scaled))
 
         case "Type0" =>
-          val descendant = pdf.resolved(entries.at(t"DescendantFonts").or(Cos.Nil)).elements
+          val descendant = pdf.resolved(entries(t"DescendantFonts").or(Cos.Nil)).elements
             . lay(Map[Text, Cos]()): elements =>
                 elements match
                   case List(first) => pdf.resolved(first).dictionary.or(Map[Text, Cos]())
                   case _           => Map[Text, Cos]()
 
-          val cidDescriptor = pdf.resolved(descendant.at(t"FontDescriptor").or(Cos.Nil))
+          val cidDescriptor = pdf.resolved(descendant(t"FontDescriptor").or(Cos.Nil))
             . dictionary.or(Map[Text, Cos]())
 
           val cidEmbedded: Optional[Ttf] =
-            cidDescriptor.at(t"FontFile2").or(cidDescriptor.at(t"FontFile3"))
+            cidDescriptor(t"FontFile2").or(cidDescriptor(t"FontFile3"))
             . let(pdf.resolved(_)).let:
                 case body: Cos.Body => safely(Ttf(pdf.payload(body)))
                 case _              => Unset
 
-          val defaultCid = descendant.at(t"DW").let(pdf.resolved(_).double).or(1000.0)
-          val cidWidths = cidWidthArray(descendant.at(t"W"))
+          val defaultCid = descendant(t"DW").let(pdf.resolved(_).double).or(1000.0)
+          val cidWidths = cidWidthArray(descendant(t"W"))
 
           Type0:
             Common
@@ -241,7 +241,7 @@ enum PdfFont:
   // The advance of a code, in thousandths of an em.
   def width(code: Int): Double = this match
     case Type0(common) =>
-      common.cidWidths.at(code).or(common.defaultWidth)
+      common.cidWidths(code).or(common.defaultWidth)
 
     case _ =>
       val index = code - common.firstChar
@@ -268,7 +268,7 @@ enum PdfFont:
 
     codes(string).each: code =>
       val mapped: Optional[Text] = common.toUnicode.let(_(code)).or:
-        common.differences.at(code).or:
+        common.differences(code).or:
           common.encoding.let: table =>
             if code >= 0 && code < table.length then table(code).toString.tt else Unset
 

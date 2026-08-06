@@ -197,5 +197,5 @@ case class Screenshot(screen: Array[Text]^{}, size: (Int, Int), cursor: (Ordinal
     val line0 = screen.at(cursor(1)).or(t"")
     val line = line0+t" "*(size(0) - line0.length)
 
-    t"${line.before(cursor(0))}${line.at(cursor(0)).let(decorate).or(t"?")}${line.from(cursor(0))}"
+    t"${line.before(cursor(0))}${line(cursor(0)).let(decorate).or(t"?")}${line.from(cursor(0))}"
     . trim

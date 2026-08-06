@@ -550,8 +550,8 @@ object Protobuf extends Protobuf2:
     protobuf =>
       val entries = protobuf.occurrences.map: entry =>
         val fields = ProtobufParser(entry.payload).fields()
-        val key = keyDecodable.decoded(Repeated(fields.at(1).or(Nil)))
-        val value = valueDecodable.decoded(Repeated(fields.at(2).or(Nil)))
+        val key = keyDecodable.decoded(Repeated(fields(1).or(Nil)))
+        val value = valueDecodable.decoded(Repeated(fields(2).or(Nil)))
         (key, value)
 
       Map.from(entries.stdlib)
@@ -585,7 +585,7 @@ object Protobuf extends Protobuf2:
       val pairs =
         contexts[derivation]():
           [field0] => context =>
-            (label, annotated.at(label).let(_.head.number).or(index + 1))
+            (label, annotated(label).let(_.head.number).or(index + 1))
 
       Map.from(pairs.readable.toSeq)
 
@@ -604,7 +604,7 @@ object Protobuf extends Protobuf2:
 
           build[derivation]:
             [field0] => context =>
-              map.at(numbers(label).vouch).lay(default.or(context.decoded(Protobuf.Absent))): values =>
+              map(numbers(label).vouch).lay(default.or(context.decoded(Protobuf.Absent))): values =>
                 context.decoded(Protobuf.Repeated(values)) }
 
     inline def disjunction[derivation: SumReflection]: (derivation is Decodable in Protobuf)^ =
@@ -631,7 +631,7 @@ object Protobuf extends Protobuf2:
       val pairs =
         contexts[derivation]():
           [field0] => context =>
-            (label, annotated.at(label).let(_.head.number).or(index + 1))
+            (label, annotated(label).let(_.head.number).or(index + 1))
 
       Map.from(pairs.readable.toSeq)
 

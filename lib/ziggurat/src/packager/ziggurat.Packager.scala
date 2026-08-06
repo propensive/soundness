@@ -126,7 +126,7 @@ object Packager:
 
             case Packaging.RunnerSource.Remote(baseUrl, hashes) =>
               val expected: Text =
-                hashes.at(label).lest(PackageError(m"No runner hash given for $label"))
+                hashes(label).lest(PackageError(m"No runner hash given for $label"))
 
               val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
               val runner: Data = mute[HttpEvent](t"$base$name".as[HttpUrl].fetch().read[Data])
@@ -177,7 +177,7 @@ object Packager:
                     if label.starts(t"windows") then t"runner-$label.exe" else t"runner-$label"
 
                   val hash: Text =
-                    hashes.at(label).lest(PackageError(m"No runner hash given for $label"))
+                    hashes(label).lest(PackageError(m"No runner hash given for $label"))
 
                   (label, t"$base$name", hash)
 

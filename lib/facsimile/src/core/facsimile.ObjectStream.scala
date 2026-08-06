@@ -58,7 +58,7 @@ private[facsimile] object ObjectStream:
     new ObjectStream(data, first, offsets)
 
 private[facsimile] class ObjectStream(data: Data, first: Int, offsets: Map[Int, Int]):
-  def apply(number: Int)(using Tactic[PdfError]): Optional[Cos] = offsets.at(number).let: offset =>
+  def apply(number: Int)(using Tactic[PdfError]): Optional[Cos] = offsets(number).let: offset =>
     val scan = Scan(data)
     scan.skip(first.toLong + offset)
     CosParser(CosLexer(scan)).value()

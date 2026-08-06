@@ -189,7 +189,7 @@ private[probably] object TerseRenderer:
         val location = t"${row.id.codepoint.source}:${row.id.codepoint.line}"
         Out.println(t"${row.id.id}  ${row.id.name.text} @ $location")
 
-        details.at(row.id).or(Nil).stdlib.foreach: detail =>
+        details(row.id).or(Nil).stdlib.foreach: detail =>
           detail match
             case Verdict.Detail.Throws(err) =>
               Out.println:

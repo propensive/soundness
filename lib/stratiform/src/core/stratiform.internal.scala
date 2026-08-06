@@ -70,7 +70,7 @@ object internal:
   private final val MarkerString: String = Marker.toString
 
   private def hasMarker(text: Text): Boolean =
-    text.spot { index => text.at(index) == Marker }.present
+    text.spot { index => text(index) == Marker }.present
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )

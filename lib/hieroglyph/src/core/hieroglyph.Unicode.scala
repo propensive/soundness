@@ -98,8 +98,8 @@ object Unicode:
     case char if char <= ' ' => ('\u2400' + char).toChar
     case char                => char
 
-  def apply(name: Text): Optional[Char | Text] = unicodeData.at(name)
-  def name(char: Char): Optional[Text] = unicodeNames.at(char)
+  def apply(name: Text): Optional[Char | Text] = unicodeData(name)
+  def name(char: Char): Optional[Text] = unicodeNames(char)
 
   lazy val unicodeData: Map[Text, Char | Text] =
     val in: ji.InputStream =

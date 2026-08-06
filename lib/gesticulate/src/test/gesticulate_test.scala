@@ -128,8 +128,7 @@ object Tests extends Suite(m"Gesticulate tests"):
       . assert(_ == Multipart.Disposition.FormData)
 
       test(m"Headers map preserved"):
-        Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.headers
-          .at(t"Content-Type").or(t"")
+        Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.headers.at(t"Content-Type").or(t"")
 
       . assert(_ == t"text/plain")
 

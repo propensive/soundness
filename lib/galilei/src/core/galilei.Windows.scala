@@ -67,8 +67,8 @@ object Windows:
     type Plane = Windows
 
     def decode(text: Text): Drive raises PathError =
-      if text.length >= 3 && text.at(Sec) == ':' && text.at(Ter) == '\\'
-      then Drive(text.at(Prim).vouch)
+      if text.length >= 3 && text(Sec) == ':' && text(Ter) == '\\'
+      then Drive(text(Prim).vouch)
       else abort(PathError(_.InvalidRoot))
 
     def length(text: Text): Int raises PathError = 3

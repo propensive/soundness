@@ -285,7 +285,7 @@ object Syntax:
               case other =>
                 symbolic(name)
 
-            context.at(name.tt).lay(syntax)(Infix(syntax, ": ", _))
+            context(name.tt).lay(syntax)(Infix(syntax, ": ", _))
 
         Sequence('[', List.of(items))
 

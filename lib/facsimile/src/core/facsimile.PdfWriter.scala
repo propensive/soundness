@@ -86,7 +86,7 @@ private[facsimile] object PdfWriter:
     ascii(t"trailer\n<< /Size ${maxNumber + 1}")
 
     List(t"Root", t"Info", t"ID").each: (key: Text) =>
-      pdf.trailerOverrides.at(key).or(pdf.trailer.at(key)).let: value =>
+      pdf.trailerOverrides.at(key).or(pdf.trailer(key)).let: value =>
         ascii(t" /$key ")
         // The writer thunks share only this append pass's own accumulators.
         scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
@@ -115,7 +115,7 @@ private[facsimile] object PdfWriter:
 
     changed.each: (number: Int) =>
       offsets(number) = baseOffset + length
-      val generation = pdf.xref.entries.at(number) match
+      val generation = pdf.xref.entries(number) match
         case Xref.Entry.Direct(_, gen) => gen
         case _                         => 0
 
@@ -142,7 +142,7 @@ private[facsimile] object PdfWriter:
     // The trailer carries forward the original `/Root`, `/Info`, `/Encrypt` and `/ID`, with
     // any write-scope overrides (e.g. a newly-created `/Info`) taking precedence.
     val carried = List(t"Root", t"Info", t"Encrypt", t"ID").bind: key =>
-      pdf.trailer.at(key).let(value => List(key -> value)).or(Nil)
+      pdf.trailer(key).let(value => List(key -> value)).or(Nil)
 
     val entries: List[(Text, Cos)] = List.of((carried.stdlib.toMap ++ pdf.trailerOverrides).toList)
 
@@ -163,13 +163,13 @@ private[facsimile] object PdfWriter:
         run.each: number =>
           if number == 0 then ascii(t"0000000000 65535 f \n")
           else if pdf.freed.contains(number) then
-            val generation = pdf.xref.entries.at(number) match
+            val generation = pdf.xref.entries(number) match
               case Xref.Entry.Direct(_, gen) => gen + 1
               case _                         => 1
 
             ascii(t"0000000000 ${pad5(generation)} f \n")
           else
-            val generation = pdf.xref.entries.at(number) match
+            val generation = pdf.xref.entries(number) match
               case Xref.Entry.Direct(_, gen) => gen
               case _                         => 0
 
@@ -237,13 +237,13 @@ private[facsimile] object PdfWriter:
       if entry == number then row(1, offset, 0)
       else if entry == 0 then row(0, 0, 65535)
       else if pdf.freed.contains(entry) then
-        val generation = pdf.xref.entries.at(entry) match
+        val generation = pdf.xref.entries(entry) match
           case Xref.Entry.Direct(_, gen) => gen + 1
           case _                         => 1
 
         row(0, 0, generation)
       else
-        val generation = pdf.xref.entries.at(entry) match
+        val generation = pdf.xref.entries(entry) match
           case Xref.Entry.Direct(_, gen) => gen
           case _                         => 0
 

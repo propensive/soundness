@@ -213,13 +213,13 @@ object Ansi extends Ansi2:
           closures(state, text)
 
         case Pending.Style(transform) =>
-          text.at(Prim) match
+          text(Prim) match
             case Bsl =>
               state.last = Unset
               closures(state, text.skip(1))
 
             case '[' | '(' | '<' | '«' | '{' =>
-              state.pushStyleFrame(complement(text.at(Prim).vouch).vouch, transform)
+              state.pushStyleFrame(complement(text(Prim).vouch).vouch, transform)
               state.last = Unset
               closures(state, text.skip(1))
 
@@ -229,13 +229,13 @@ object Ansi extends Ansi2:
               closures(state, text)
 
         case Pending.Link(url) =>
-          text.at(Prim) match
+          text(Prim) match
             case Bsl =>
               state.last = Unset
               closures(state, text.skip(1))
 
             case '[' | '(' | '<' | '«' | '{' =>
-              state.pushLinkFrame(complement(text.at(Prim).vouch).vouch, url)
+              state.pushLinkFrame(complement(text(Prim).vouch).vouch, url)
               state.last = Unset
               closures(state, text.skip(1))
 
@@ -244,13 +244,13 @@ object Ansi extends Ansi2:
               closures(state, text)
 
         case Pending.Escape(on, off) =>
-          text.at(Prim) match
+          text(Prim) match
             case Bsl =>
               state.last = Unset
               closures(state, text.skip(1))
 
             case '[' | '(' | '<' | '«' | '{' =>
-              state.pushEscapeFrame(complement(text.at(Prim).vouch).vouch, on, off)
+              state.pushEscapeFrame(complement(text(Prim).vouch).vouch, on, off)
               state.last = Unset
               closures(state, text.skip(1))
 

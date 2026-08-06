@@ -87,7 +87,7 @@ object Frame:
       var i = 0
 
       while i < n do
-        if pinned(i).present then used += pinned(i).vouch else weight += frac.at(i.z).vouch
+        if pinned(i).present then used += pinned(i).vouch else weight += frac(i.z).vouch
         i += 1
 
       ((available - used).max(0), weight)
@@ -101,13 +101,13 @@ object Frame:
 
       while i < n do
         if pinned(i).absent then
-          val ideal = if weight <= 0.0 then 0.0 else pool*frac.at(i.z).vouch/weight
+          val ideal = if weight <= 0.0 then 0.0 else pool*frac(i.z).vouch/weight
 
-          if ideal < min.at(i.z).vouch then
-            pinned(i) = min.at(i.z).vouch
+          if ideal < min(i.z).vouch then
+            pinned(i) = min(i.z).vouch
             changed = true
           else
-            max.at(i.z).let: hi =>
+            max(i.z).let: hi =>
               if ideal > hi then
                 pinned(i) = hi
                 changed = true
@@ -123,7 +123,7 @@ object Frame:
     while i < n do
       if pinned(i).present then sizes(i) = pinned(i).vouch
       else
-        val raw = if weight <= 0.0 then 0.0 else pool*frac.at(i.z).vouch/weight
+        val raw = if weight <= 0.0 then 0.0 else pool*frac(i.z).vouch/weight
         val floor = raw.toInt
         sizes(i) = floor
         remainders(i) = raw - floor
@@ -203,8 +203,8 @@ enum Frame:
 
       val placements = children.stdlib.zipWithIndex.map: (child, i) =>
         val childRect = axis match
-          case Axis.File => Rect(offsets.at(i.z).vouch, rect.top, sizes.at(i.z).vouch, rect.height)
-          case Axis.Rank => Rect(rect.left, offsets.at(i.z).vouch, rect.width, sizes.at(i.z).vouch)
+          case Axis.File => Rect(offsets(i.z).vouch, rect.top, sizes(i.z).vouch, rect.height)
+          case Axis.Rank => Rect(rect.left, offsets(i.z).vouch, rect.width, sizes(i.z).vouch)
 
         child.arrange(childRect)
 

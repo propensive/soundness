@@ -252,7 +252,7 @@ trait Tel2 extends Tel3:
 
             contexts[derivation]():
               [field] => context =>
-                ( renames.at(label).or(Tel.camelToKebab(label.s)).s,
+                ( renames(label).or(Tel.camelToKebab(label.s)).s,
                   context: Tel.Parsing,
                   default[Optional[field]]: Any )
           },
@@ -285,7 +285,7 @@ trait Tel2 extends Tel3:
             // so the skip rule may pass over it — which the canonical
             // encoder relies on when it elides a false flag from a run.
             Positional.Profile
-              ( renames.at(label).or(Tel.camelToKebab(label.s)),
+              ( renames(label).or(Tel.camelToKebab(label.s)),
                 context.nature,
                 context.repeatable,
                 required = context.nature != Tel.Nature.Flag
@@ -316,7 +316,7 @@ trait Tel2 extends Tel3:
 
               build[derivation]: [field] =>
                 ctx =>
-                  val keyword: Text = renames.at(label).or(Tel.camelToKebab(label.s))
+                  val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
 
                   val positional: scala.collection.immutable.List[Tel.Atom] =
                     if assigned.length == 0 then scala.collection.immutable.Nil
@@ -410,7 +410,7 @@ trait Tel2 extends Tel3:
                 if compounds.nil then abort(TelError(TelError.Reason.Absent))
 
                 val variant: Tel = Tel.make(compounds.head)
-                val variantKeyword: Text = labels.at(variant.keyword).or(variant.keyword)
+                val variantKeyword: Text = labels(variant.keyword).or(variant.keyword)
 
                 delegate(variantKeyword): [variant <: derivation] =>
                   ctx => ctx.decoded(variant)
@@ -444,7 +444,7 @@ trait Tel2 extends Tel3:
           fields(value): [field] =>
             fieldValue =>
               val encoded = contextual.encode(fieldValue)
-              val keyword = renames.at(label).or(Tel.camelToKebab(label.s))
+              val keyword = renames(label).or(Tel.camelToKebab(label.s))
 
               encoded.subtree match
                 case c: Tel.Compound =>
@@ -469,7 +469,7 @@ trait Tel2 extends Tel3:
 
           fields(value): [field] =>
             fieldValue =>
-              val keyword: Text = renames.at(label).or(Tel.camelToKebab(label.s))
+              val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
 
               contextual.nature match
                 case Tel.Nature.Flag =>

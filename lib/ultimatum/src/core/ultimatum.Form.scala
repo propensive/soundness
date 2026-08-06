@@ -107,7 +107,7 @@ class Form
 
     focusLeaf = Sequence.from:
       (0 until leaves.length).collect:
-        case i if leaves.at(i.z).vouch.isInstanceOf[Pane.Widget] => i
+        case i if leaves(i.z).vouch.isInstanceOf[Pane.Widget] => i
 
     val stays = focused.lay(false): widget => focuses.indexWhere(_ eq widget) >= 0
 
@@ -134,7 +134,7 @@ class Form
 
       case Pane.Widget(sizing, widget) =>
         index += 1
-        val (minWidth, minHeight) = widget.measure(widths.at(index.z).vouch)
+        val (minWidth, minHeight) = widget.measure(widths(index.z).vouch)
 
         val grown = sizing.copy(minWidth = sizing.minWidth.max(minWidth),
             minHeight = sizing.minHeight.max(minHeight))
@@ -158,9 +158,9 @@ class Form
     Sequence.from(frame.arrange(Rect(0, 0, root.width, height)).cells.stdlib)
 
   private def paint(index: Int): Unit =
-    val extent = FlowExtent(root, rects.at(index.z).vouch)
+    val extent = FlowExtent(root, rects(index.z).vouch)
 
-    leaves.at(index.z).vouch match
+    leaves(index.z).vouch match
       case Pane.Leaf(_, content) =>
         content(extent)
         extent.flush()
@@ -197,7 +197,7 @@ class Form
         rects = updated
         dirty.each(paint(_))
 
-    if focuses.nonEmpty then paint(focusLeaf.at(focusIndex.z).vouch)
+    if focuses.nonEmpty then paint(focusLeaf(focusIndex.z).vouch)
     root.flush()
 
   // Repaint immediately, folding in any coalesced or pending-resize work. Used for
@@ -275,8 +275,8 @@ class Form
         if focuses.nonEmpty then
           // Repaint the panel losing focus too, so its focus indicator updates;
           // the panel gaining focus is repainted by `refresh` (focused last).
-          val vacated = focusLeaf.at(focusIndex.z).vouch
-          focused = focuses.at(((focusIndex + 1)%focuses.length).z).vouch
+          val vacated = focusLeaf(focusIndex.z).vouch
+          focused = focuses(((focusIndex + 1)%focuses.length).z).vouch
           requestRefresh(Set(vacated))
 
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
@@ -325,8 +325,8 @@ class Form
 
       case event =>
         if focuses.nonEmpty then
-          focuses.at(focusIndex.z).vouch.handle(event)
-          val changed = Set(focusLeaf.at(focusIndex.z).vouch)
+          focuses(focusIndex.z).vouch.handle(event)
+          val changed = Set(focusLeaf(focusIndex.z).vouch)
 
           // During a pending resize the widget's state updates immediately, but its
           // repaint coalesces into the debounced resize flush: presenting now would

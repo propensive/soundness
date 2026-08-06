@@ -108,7 +108,7 @@ package httpServers:
   =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](true, false)
 
-def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
+def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies(key)
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
   ( using connection: HttpConnection )

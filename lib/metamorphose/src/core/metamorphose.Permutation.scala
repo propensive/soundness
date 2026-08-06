@@ -79,7 +79,7 @@ case class Permutation(factoradic: Factoradic):
     // A permutation fixes every point outside its domain; `List` positional access is
     // O(n), accepted here explicitly through the asymptotic gate.
     import denominative.asymptotics.linearAccessComplexity
-    expansion.at(Ordinal.zerary(n)).or(n)
+    expansion(Ordinal.zerary(n)).or(n)
 
   def apply[element](sequence: List[element]): List[element] raises PermutationError =
     if sequence.length < lehmer.length then

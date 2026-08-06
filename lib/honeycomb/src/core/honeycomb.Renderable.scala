@@ -60,7 +60,7 @@ object Renderable:
 
     val rows = stackTrace.frames.map: (frame: StackTrace.Frame) =>
       Tr
-        ( Td.at(Code(t"at")),
+        ( Td(Code(t"at")),
           Td.`class`(Code(frame.displayClass)),
           Td.method(Code(frame.displayMethod)),
           Td.file(Code(frame.file)),

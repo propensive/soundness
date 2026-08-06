@@ -136,11 +136,11 @@ object Tests extends Suite(m"Rudiments Tests"):
       val array = Array.of(10, 20, 30)
 
       test(m"Plain `at` returns Optional"):
-        text.at(Prim).vouch
+        text(Prim).vouch
       . assert(_ == 'h')
 
       test(m"`within` + confined `at` returns a bare element"):
-        Ter.within(text).let { i => val c: Char = text.at(i); c }
+        Ter.within(text).let { i => val c: Char = text(i); c }
       . assert(_ == 'l')
 
       test(m"`within` returns Unset for an out-of-range Ordinal"):
@@ -160,15 +160,15 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == 30)
 
       test(m"`spot` finds the first matching confined index"):
-        text.spot { i => text.at(i) == 'l' }.let { i => (i: Ordinal).n0 }
+        text.spot { i => text(i) == 'l' }.let { i => (i: Ordinal).n0 }
       . assert(_ == 2)
 
       test(m"`spot` returns Unset when nothing matches"):
-        text.spot { i => text.at(i) == 'z' }
+        text.spot { i => text(i) == 'z' }
       . assert(_ == Unset)
 
       test(m"`lead` spans the matching prefix and stops at the first mismatch"):
-        val interval: Interval = text.lead { i => text.at(i) != 'l' }
+        val interval: Interval = text.lead { i => text(i) != 'l' }
         interval.size
       . assert(_ == 2)
 
@@ -191,7 +191,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"`retrace` visits confined indices in reverse"):
         val builder = java.lang.StringBuilder()
-        text.retrace { i => builder.append(text.at(i)) }
+        text.retrace { i => builder.append(text(i)) }
         builder.toString.tt
       . assert(_ == t"olleh")
 
@@ -250,7 +250,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
         line.survey: surveyor =>
           skipped = (surveyor.pace(_ == ' '): Interval).size
-          surveyor.point.let { i => next = line.at(i) }
+          surveyor.point.let { i => next = line(i) }
 
         (skipped, next)
       . assert(_ == ((3, 'i')))
@@ -276,7 +276,7 @@ object Tests extends Suite(m"Rudiments Tests"):
         csv.survey: surveyor =>
           val name = surveyor.pace(_ != ':')
           val builder = java.lang.StringBuilder()
-          csv.iterate(name) { i => builder.append(csv.at(i)) }
+          csv.iterate(name) { i => builder.append(csv(i)) }
           key = builder.toString.tt
           rest = (surveyor.remainder: Interval).size
 
@@ -825,10 +825,10 @@ object Tests extends Suite(m"Rudiments Tests"):
     suite(m"confine tests"):
       test(m"confined Map key accesses bare value"):
         val map = Map(1 -> "one".tt, 2 -> "two".tt)
-        map.confine(1).let(map.at(_))
+        map.confine(1).let(map(_))
       . assert(_ == "one".tt)
 
       test(m"absent Map key does not confine"):
         val map = Map(1 -> "one".tt)
-        map.confine(9).let(map.at(_))
+        map.confine(9).let(map(_))
       . assert(_ == Unset)

@@ -97,7 +97,7 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
   def cell(coordinates: List[(Axis.Spec, Value)]): Tally = mutex:
     coordinates.each: (axis, value) =>
       if !axes0.has(axis) then axes0 = axes0 :+ axis
-      val seen = ticks0.at(axis).or(Nil)
+      val seen = ticks0(axis).or(Nil)
       if !seen.has(value) then ticks0 = ticks0.updated(axis, seen :+ value)
 
     val address = coordinates.map(_(1))
@@ -107,7 +107,7 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
   // The coordinate values of one axis in presentation order: first-appearance order for
   // discrete axes, numeric order for integral and decimal axes.
   def values(axis: Axis.Spec): List[Value] =
-    val seen = mutex(ticks0.at(axis).or(Nil))
+    val seen = mutex(ticks0(axis).or(Nil))
 
     axis.domain match
       case Axis.Domain.Discrete => seen

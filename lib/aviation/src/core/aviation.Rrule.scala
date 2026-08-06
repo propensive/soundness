@@ -123,7 +123,7 @@ object Rrule:
           case List(key, value) => Some(key.upper -> value)
           case _                => None
 
-    def field(key: Text): Optional[Text] = fields.at(key)
+    def field(key: Text): Optional[Text] = fields(key)
 
     Rrule
       ( start,

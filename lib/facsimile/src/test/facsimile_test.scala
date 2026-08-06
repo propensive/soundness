@@ -360,7 +360,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"the trailer holds the catalog reference"):
         PdfFile(document(catalog)).open():
-          pdf.trailer.at(t"Root")
+          pdf.trailer(t"Root")
       . assert(_ == Cos.Ref(1, 0))
 
       test(m"an object resolves through the cross-reference table"):
@@ -740,7 +740,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts.at(t"F1").vouch.embedded.let(_.data.to[List])
+          pdf.page(Prim).fonts(t"F1").vouch.embedded.let(_.data.to[List])
       . assert(_ == fontProgram.to[List])
 
       test(m"content using an embedded font extracts as text"):
@@ -769,7 +769,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts.at(t"F1").vouch match
+          pdf.page(Prim).fonts(t"F1").vouch match
             case _: PdfFont.TrueType => true
             case _                   => false
       . assert(_ == true)
@@ -782,7 +782,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts.at(t"F1").vouch.baseFont
+          pdf.page(Prim).fonts(t"F1").vouch.baseFont
       . assert(_ == t"TestSans")
 
       test(m"the font descriptor carries the font's real metrics"):
@@ -793,12 +793,12 @@ object Tests extends Suite(m"Facsimile tests"):
           val dict = doc.resolved(font).dictionary.or(noParms)
 
           val descriptor =
-            doc.resolved(dict.at(t"FontDescriptor").or(Cos.Nil)).dictionary.or(noParms)
+            doc.resolved(dict(t"FontDescriptor").or(Cos.Nil)).dictionary.or(noParms)
 
-          ( descriptor.at(t"FontBBox"),
-            descriptor.at(t"ItalicAngle"),
-            descriptor.at(t"CapHeight"),
-            descriptor.at(t"Flags") )
+          ( descriptor(t"FontBBox"),
+            descriptor(t"ItalicAngle"),
+            descriptor(t"CapHeight"),
+            descriptor(t"Flags") )
       . assert(_ == (Cos.Sequence(List(Cos.Integral(-50), Cos.Integral(-200), Cos.Integral(1000),
             Cos.Integral(800))), Cos.Real(-11.5), Cos.Integral(730), Cos.Integral(97)))
 
@@ -809,7 +809,7 @@ object Tests extends Suite(m"Facsimile tests"):
           val font = doc.embedFont(Ttf(miniFont))
           val dict = doc.resolved(font).dictionary.or(noParms)
 
-          dict.at(t"Widths") match
+          dict(t"Widths") match
             case Cos.Sequence(widths) => (widths.stdlib('A' - 32), widths.stdlib('z' - 32))
             case _                    => Unset
       . assert(_ == (Cos.Integral(500), Cos.Integral(0)))
@@ -822,7 +822,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts.at(t"F1").vouch.baseFont
+          pdf.page(Prim).fonts(t"F1").vouch.baseFont
       . assert(_.s.matches("[A-Z]{6}\\+TestSans"))
 
       test(m"a subset program keeps used outlines and drops the rest"):
@@ -833,7 +833,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts.at(t"F1").vouch.embedded.let: ttf =>
+          pdf.page(Prim).fonts(t"F1").vouch.embedded.let: ttf =>
             (ttf.glyf(1).empty, ttf.glyf(2).empty)
       . assert(_ == (false, true))
 
@@ -845,7 +845,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts.at(t"F1").vouch.embedded.let: ttf =>
+          pdf.page(Prim).fonts(t"F1").vouch.embedded.let: ttf =>
             (ttf.glyf(1).empty, ttf.glyf(2).empty, ttf.glyf(3).composite)
       . assert(_ == (false, false, true))
 
@@ -943,7 +943,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val truncated = text.substring(0, text.indexOf("xref")).nn.tt.in[Data]
 
         PdfFile(truncated).open():
-          pdf.resolved(pdf.trailer.at(t"Root").or(Cos.Nil))(t"Note").let(_.text)
+          pdf.resolved(pdf.trailer(t"Root").or(Cos.Nil))(t"Note").let(_.text)
       . assert(_ == t"kept")
 
       test(m"a corrupt startxref offset falls back to scanning"):
@@ -983,7 +983,7 @@ object Tests extends Suite(m"Facsimile tests"):
           (base + "1 0 obj\n<< /Type /Catalog /Pages 2 0 R /Note (updated) >>\nendobj\n").tt
 
         PdfFile(updated.in[Data]).open():
-          pdf.resolved(pdf.trailer.at(t"Root").or(Cos.Nil))(t"Note").let(_.text)
+          pdf.resolved(pdf.trailer(t"Root").or(Cos.Nil))(t"Note").let(_.text)
       . assert(_ == t"updated")
 
     suite(m"Cross-reference streams and object streams"):
@@ -1019,7 +1019,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"the trailer is the cross-reference stream dictionary"):
         PdfFile(xrefStreamDocument()).open():
-          pdf.trailer.at(t"Type")
+          pdf.trailer(t"Type")
       . assert(_ == Cos.Name(t"XRef"))
 
       test(m"an object loads from a compressed object stream"):
@@ -1142,7 +1142,7 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"an inline image folds into one operator"):
         operators(t"BI /W 2 /H 2 /L 4 ID  EI").stdlib match
           case List(PdfOperator.InlineImage(parameters, data)) =>
-            (parameters.at(t"W"), data.length)
+            (parameters(t"W"), data.length)
 
           case _ =>
             (Unset, 0)
@@ -1151,7 +1151,7 @@ object Tests extends Suite(m"Facsimile tests"):
     suite(m"Fonts"):
       test(m"a standard-14 font is recognized with its metrics"):
         PdfFile(contentPage(t"")).open():
-          val font = pdf.page(Prim).fonts.at(t"F1").vouch
+          val font = pdf.page(Prim).fonts(t"F1").vouch
           (font.standard, font.width('A'))
       . assert(_ == (PdfFont.Standard.Helvetica, 667.0))
 
@@ -1164,7 +1164,7 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          val font = pdf.page(Prim).fonts.at(t"F1").vouch
+          val font = pdf.page(Prim).fonts(t"F1").vouch
           (font.width('A'), font.width('B'))
       . assert(_ == (800.0, 667.0))
 
@@ -1177,7 +1177,7 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).fonts.at(t"F1").vouch.decode(data('A', 'B', 0x93))
+          pdf.page(Prim).fonts(t"F1").vouch.decode(data('A', 'B', 0x93))
       . assert(_ == t"éB“")
 
       test(m"a ToUnicode map takes precedence"):
@@ -1191,7 +1191,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Length ${cmap.length} >>\nstream\n$cmap\nendstream".in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).fonts.at(t"F1").vouch.decode(data('A', 0x60, 0x61, 0x62))
+          pdf.page(Prim).fonts(t"F1").vouch.decode(data('A', 0x60, 0x61, 0x62))
       . assert(_ == t"Bpqr")
 
       test(m"a Type0 font reads two-byte codes and CID widths"):
@@ -1205,7 +1205,7 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          val font = pdf.page(Prim).fonts.at(t"F1").vouch
+          val font = pdf.page(Prim).fonts(t"F1").vouch
           (font.codes(data(0, 10, 0, 11)), font.width(10), font.width(21), font.width(99))
       . assert(_ == (List(10, 11), 600.0, 500.0, 750.0))
 
@@ -1763,14 +1763,14 @@ object Tests extends Suite(m"Facsimile tests"):
           ( t"/Names << /Dests << /Names [(intro) [3 0 R /XYZ 10 20 null]] >> >>" )
 
         PdfFile(doc).open():
-          pdf.destinations.at(t"intro")
+          pdf.destinations(t"intro")
       . assert(_ == Destination.Xyz(Prim, 10.0, 20.0, Unset))
 
       test(m"an old-style /Dests dictionary also resolves"):
         val doc = navigable(t"/Dests << /intro [3 0 R /FitH 30] >>")
 
         PdfFile(doc).open():
-          pdf.destinations.at(t"intro")
+          pdf.destinations(t"intro")
       . assert(_ == Destination.FitWidth(Prim, 30.0))
 
       test(m"bookmarks form a tree with destinations"):

@@ -321,14 +321,14 @@ object Tests extends Suite(m"Mosquito tests"):
         val m = Matrix[2, 2]((4.0, 7.0), (2.0, 6.0))
         val product = m*m.inverse.vouch
         val target = Matrix[2, 2]((1.0, 0.0), (0.0, 1.0))
-        product.elements.indices.map(i => math.abs(product.elements(i) - target.elements(i))).max
+        product.elements.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
       . assert(_ < 0.000001)
 
       test(m"M times M-inverse is identity (3x3)"):
         val m = Matrix[3, 3]((1.0, 2.0, 3.0), (0.0, 1.0, 4.0), (5.0, 6.0, 0.0))
         val product = m*m.inverse.vouch
         val target = Matrix[3, 3]((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
-        product.elements.indices.map(i => math.abs(product.elements(i) - target.elements(i))).max
+        product.elements.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
       . assert(_ < 0.000001)
 
       test(m"Inverse of singular 3x3 matrix is Unset"):

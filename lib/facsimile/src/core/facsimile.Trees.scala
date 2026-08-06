@@ -62,7 +62,7 @@ private[facsimile] object Trees:
         else pairs(pdf.resolved(node), key, visited + number)
 
       case Cos.Dictionary(entries) =>
-        entries.at(t"Kids").let(pdf.resolved(_).elements).lay(leaf(entries, key)): kids =>
+        entries(t"Kids").let(pdf.resolved(_).elements).lay(leaf(entries, key)): kids =>
           kids.bind(pairs(_, key, visited))
 
       case _ =>
@@ -72,7 +72,7 @@ private[facsimile] object Trees:
   ( using Tactic[PdfError] )
   :   List[(Cos, Cos)] =
 
-    pdf.resolved(entries.at(key).or(Cos.Nil)).elements.lay(List()): elements =>
+    pdf.resolved(entries(key).or(Cos.Nil)).elements.lay(List()): elements =>
       elements.batched(2).bind:
         case List(key, value) => List((pdf.resolved(key), value))
         case _                => List()

@@ -495,7 +495,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"")
 
       test(m"Random access of character"):
-        t"123".at(Prim)
+        t"123"(Prim)
 
       . assert(_ == '1')
 
@@ -505,7 +505,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       //. assert(_ == RangeError(5, 0, 3))
 
       test(m"Random access of out-of-range character"):
-        t"123".at(Sen)
+        t"123"(Sen)
 
       . assert(_ == Unset)
 

@@ -376,7 +376,7 @@ object Dsv extends Dsv2:
                 // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
                 // position.
                 val row2 = row.columns.lay(Dsv(row.data.drop(count))): columns =>
-                  columns.at(label).lay(Dsv(Array.of[Text]())): i =>
+                  columns(label).lay(Dsv(Array.of[Text]())): i =>
                     Dsv(row.data.drop(i))
 
                 count += spans.readUnchecked(index)
@@ -408,7 +408,7 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
 
 
   def apply[value](using value: (value is Decodable in Text)^)(field: Text): Optional[value] =
-    columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))
+    columns.let(_(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
   override def hashCode: Int = data.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
 

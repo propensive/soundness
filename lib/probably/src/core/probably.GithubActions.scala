@@ -46,7 +46,7 @@ object GithubActions:
   def workspaceRelative(path: Text): Text =
     safely(Environment.githubWorkspace[Text]).let: workspace =>
       if path.starts(workspace) && path.length > workspace.length &&
-        path.at(workspace.length.z) == '/'
+        path(workspace.length.z) == '/'
       then path.skip(workspace.length + 1)
       else path
 

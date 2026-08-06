@@ -64,7 +64,7 @@ object SvgParser:
       abort(SvgError(SvgError.Reason.NotAnSvg(labelOf(other))))
 
   private def numAttr(elem: Element, name: Text, default: Float = 0.0f): Float =
-    elem.attributes.at(name).let: text => safely(text.as[Double].toFloat).or(default)
+    elem.attributes(name).let: text => safely(text.as[Double].toFloat).or(default)
     . or(default)
 
   def decodeSvg(elem: Element)(using Tactic[SvgError]): Svg =
@@ -120,10 +120,10 @@ object SvgParser:
     Ellipse(Point(cx, cy), rx, ry, Angle(0))
 
   private def decodePath(elem: Element)(using Tactic[SvgError]): Outline =
-    val d = elem.attributes.at(t"d").or(t"")
+    val d = elem.attributes(t"d").or(t"")
     val ops = parsePathData(d)
-    val id = elem.attributes.at(t"id").let(SvgId(_))
-    val transforms = elem.attributes.at(t"transform").let(parseTransforms).or(Nil)
+    val id = elem.attributes(t"id").let(SvgId(_))
+    val transforms = elem.attributes(t"transform").let(parseTransforms).or(Nil)
     Outline(ops = ops.reverse, id = id, transforms = transforms)
 
 
@@ -140,7 +140,7 @@ object SvgParser:
     ( using Tactic[SvgError] )
   :   LinearGradient[Color in Srgb] =
 
-    val id = elem.attributes.at(t"id").let(SvgId(_)).or(SvgId(t""))
+    val id = elem.attributes(t"id").let(SvgId(_)).or(SvgId(t""))
 
     val stops: List[Stop[Color in Srgb]] =
       List.of:
@@ -151,13 +151,13 @@ object SvgParser:
 
 
   private def decodeStop(elem: Element)(using Tactic[SvgError]): Stop[Color in Srgb] =
-    val rawOffset = elem.attributes.at(t"offset")
+    val rawOffset = elem.attributes(t"offset")
       . let: text => safely(text.as[Double]).or(0.0)
       . or(0.0)
 
     val clamped = rawOffset.max(0.0).min(1.0)
     val offset: 0.0 ~ 1.0 = NumericRange.apply[0.0, 1.0](clamped)
-    val colorText = elem.attributes.at(t"stop-color").or(t"#000000")
+    val colorText = elem.attributes(t"stop-color").or(t"#000000")
     Stop(offset, parseColor(colorText))
 
   // SVG path-data tokeniser + dispatcher. Supports M/m, L/l, H/h, V/v, C/c, Q/q, Z/z.

@@ -330,7 +330,7 @@ trait Json2 extends Json3:
 
       build[derivation]: [field] =>
         context =>
-          val key: Text = renames.at(label).or(label)
+          val key: Text = renames(label).or(label)
 
           focus({
             val base = prior.let(_.pointer).or(JsonPointer())
@@ -373,7 +373,7 @@ trait Json2 extends Json3:
               val wire: Text = discriminable.discriminate(json).or:
                 focus(prior.or(Json.Focus(JsonPointer())))(abort(JsonError(Reason.Absent)))
 
-              val discriminant: Text = variantNames.at(wire).or(wire)
+              val discriminant: Text = variantNames(wire).or(wire)
 
               // The variant decodes the whole value for the internal-field
               // shape (its tag is simply skipped as an unknown key — no need
@@ -402,7 +402,7 @@ trait Json2 extends Json3:
 
           contexts[derivation]():
             [field] => context =>
-              ( renames.at(label).or(label).s,
+              ( renames(label).or(label).s,
                 context: Json.Parsing,
                 default[Optional[field]]: Any )
         },
@@ -440,7 +440,7 @@ trait Json2 extends Json3:
 
                     // The variant re-reads the whole object, skipping the
                     // tag as an unknown key.
-                    delegate(variantNames.at(wire).or(wire)):
+                    delegate(variantNames(wire).or(wire)):
                       [variant <: derivation] => context => context.parse(reader)
 
           case wrapper: Json.DiscriminantWrapper[?] =>
@@ -455,7 +455,7 @@ trait Json2 extends Json3:
                     val wire: Text = reader.key().or(abort(JsonError(Reason.Absent)))
 
                     val result =
-                      delegate(variantNames.at(wire).or(wire)):
+                      delegate(variantNames(wire).or(wire)):
                         [variant <: derivation] => context => context.parse(reader)
 
                     // A wrapper is a single-key object; anything more means
@@ -474,7 +474,7 @@ trait Json2 extends Json3:
                     val wire: Text = reader.discriminant(envelope.tagField).or:
                       abort(JsonError(Reason.Absent))
 
-                    val name = variantNames.at(wire).or(wire)
+                    val name = variantNames(wire).or(wire)
                     reader.openObject()
                     var result: Optional[derivation] = Unset
                     var continue = true
@@ -514,7 +514,7 @@ trait Json2 extends Json3:
 
             fields(value): [field] =>
               field =>
-                val key: Text = renames.at(label).or(label)
+                val key: Text = renames(label).or(label)
 
                 focus({
                   val base = prior.let(_.pointer).or(JsonPointer())
@@ -549,7 +549,7 @@ trait Json2 extends Json3:
 
           variant(value): [variant <: derivation] =>
             value =>
-              discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
+              discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
 object Json extends Json2, Dynamic:
   // Controls how a `Json` value is serialized. `indent` is the whitespace unit per nesting level;
@@ -820,7 +820,7 @@ object Json extends Json2, Dynamic:
 
     // The wire keys of a product's fields, `@name` renames applied.
     def wireKeys(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
-      names.map { name => renames.at(name.tt).or(name.tt).s }
+      names.map { name => renames(name.tt).or(name.tt).s }
 
     // A required field whose key was absent from the object.
     def missing[value]()(using Tactic[JsonError]): value = abort(JsonError(Reason.Absent))

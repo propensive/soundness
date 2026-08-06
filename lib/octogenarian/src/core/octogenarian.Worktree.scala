@@ -335,7 +335,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
     val ignoredParam = if ignored then sh"--ignored" else sh""
 
-    def unescape(text: Text): Text = if text.at(Prim) != '"' then text else Text.build:
+    def unescape(text: Text): Text = if text(Prim) != '"' then text else Text.build:
       def recur(index: Int, escape: Boolean): Unit =
         if index < text.length then
           text.s.charAt(index) match

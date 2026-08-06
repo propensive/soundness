@@ -46,5 +46,5 @@ object variables extends Dynamic:
   :   result =
 
     val map = Map.from(variables.map(_.tt.uncamel.snake.upper -> _))
-    val environment: Environment = name => map.at(name).or(environment0.variable(name))
+    val environment: Environment = name => map(name).or(environment0.variable(name))
     block(using environment)

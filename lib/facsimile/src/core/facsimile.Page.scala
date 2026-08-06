@@ -56,10 +56,10 @@ object Page:
 
     def update(node: Map[Text, Cos]): Inherited =
       Inherited
-        ( node.at(t"Resources").or(resources),
-          node.at(t"MediaBox").or(mediaBox),
-          node.at(t"CropBox").or(cropBox),
-          node.at(t"Rotate").or(rotate) )
+        ( node(t"Resources").or(resources),
+          node(t"MediaBox").or(mediaBox),
+          node(t"CropBox").or(cropBox),
+          node(t"Rotate").or(rotate) )
 
 // A leaf of the page tree, with its inherited attributes applied. A `Page` resolves lazily
 // through the document, so it captures the `Pdf` and cannot outlive the `open` scope;
@@ -75,22 +75,22 @@ class Page private[facsimile]
 
   // 1 default user-space unit is `userUnit`/72 inch; `/UserUnit` is not inheritable.
   def userUnit(using Tactic[PdfError]): Double =
-    entries.at(t"UserUnit").let(pdf.resolved(_).double).or(1.0)
+    entries(t"UserUnit").let(pdf.resolved(_).double).or(1.0)
 
   def mediaBox(using Tactic[PdfError]): PdfRect =
-    box(entries.at(t"MediaBox").or(inherited.mediaBox))
+    box(entries(t"MediaBox").or(inherited.mediaBox))
     . or(abort(PdfError(PdfError.Reason.MissingEntry(t"MediaBox"))))
 
   def cropBox(using Tactic[PdfError]): PdfRect =
-    box(entries.at(t"CropBox").or(inherited.cropBox)).or(mediaBox)
+    box(entries(t"CropBox").or(inherited.cropBox)).or(mediaBox)
 
   // The bleed, trim and art boxes are not inheritable and default to the crop box.
-  def bleedBox(using Tactic[PdfError]): PdfRect = box(entries.at(t"BleedBox")).or(cropBox)
-  def trimBox(using Tactic[PdfError]): PdfRect = box(entries.at(t"TrimBox")).or(cropBox)
-  def artBox(using Tactic[PdfError]): PdfRect = box(entries.at(t"ArtBox")).or(cropBox)
+  def bleedBox(using Tactic[PdfError]): PdfRect = box(entries(t"BleedBox")).or(cropBox)
+  def trimBox(using Tactic[PdfError]): PdfRect = box(entries(t"TrimBox")).or(cropBox)
+  def artBox(using Tactic[PdfError]): PdfRect = box(entries(t"ArtBox")).or(cropBox)
 
   def rotation(using Tactic[PdfError]): Page.Rotation =
-    val degrees = entries.at(t"Rotate").or(inherited.rotate).let(pdf.resolved(_).long).or(0L)
+    val degrees = entries(t"Rotate").or(inherited.rotate).let(pdf.resolved(_).long).or(0L)
 
     ((degrees%360 + 360)%360) match
       case 90L  => Page.Rotation.Quarter
@@ -110,10 +110,10 @@ class Page private[facsimile]
 
   // The page's fonts, keyed by resource name — the names `Tf` refers to.
   def fonts(using Tactic[PdfError]): Map[Text, PdfFont] =
-    val resources = pdf.resolved(entries.at(t"Resources").or(inherited.resources).or(Cos.Nil))
+    val resources = pdf.resolved(entries(t"Resources").or(inherited.resources).or(Cos.Nil))
       . dictionary.or(Map[Text, Cos]())
 
-    pdf.resolved(resources.at(t"Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
+    pdf.resolved(resources(t"Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
     . toList.bind: (name, value) =>
         PdfFont.read(pdf.resolved(value))(using pdf).lay(List[(Text, PdfFont)]()): font =>
           List(name -> font)
@@ -123,7 +123,7 @@ class Page private[facsimile]
   // The page's content: its `/Contents` streams decoded and concatenated, which the
   // specification requires to be treated as a single stream, with whitespace between.
   def content(using Tactic[PdfError]): Data =
-    val streams = pdf.resolved(entries.at(t"Contents").or(Cos.Nil)) match
+    val streams = pdf.resolved(entries(t"Contents").or(Cos.Nil)) match
       case body: Cos.Body =>
         List(body)
 
@@ -159,9 +159,9 @@ class Page private[facsimile]
     val named = pdf.rawDestinations
     val scale = userUnit
 
-    pdf.resolved(entries.at(t"Annots").or(Cos.Nil)).elements.lay(List()): items =>
+    pdf.resolved(entries(t"Annots").or(Cos.Nil)).elements.lay(List()): items =>
       items.flatMap: item =>
-        Annotation.read(item, pages, named.at(_), scale)(using pdf).lay(List())(List(_))
+        Annotation.read(item, pages, named(_), scale)(using pdf).lay(List())(List(_))
 
   private def box(value: Optional[Cos])(using Tactic[PdfError]): Optional[PdfRect] =
     value.let(PdfRect.read(_, userUnit)(using pdf))

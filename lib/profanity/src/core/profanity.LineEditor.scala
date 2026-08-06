@@ -165,13 +165,13 @@ extends Question[Text]:
 
         case Ctrl(Left) =>
           val position2 =
-            ((position - 2 `max` 0) to 0 by -1).seek: index => value.at(index.z) == ' '
+            ((position - 2 `max` 0) to 0 by -1).seek: index => value(index.z) == ' '
 
           copy(position0 = position2.lay(0)(_ + 1))
 
         case Ctrl(Right) =>
           val range = ((position + 1) `min` (value.length - 1)) to (value.length - 1)
-          val position2 = range.seek { index => value.at(index.z) == ' ' }.lay(value.length)(_ + 1)
+          val position2 = range.seek { index => value(index.z) == ' ' }.lay(value.length)(_ + 1)
           copy(position0 = position2 `min` value.length)
 
         case _ =>

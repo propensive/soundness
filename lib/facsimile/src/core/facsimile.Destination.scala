@@ -70,7 +70,7 @@ object Destination:
     pdf.resolved(value) match
       case Cos.Sequence(target :: Cos.Name(kind) :: rest) =>
         val page: Optional[Ordinal] = target match
-          case Cos.Ref(number, _)  => pages.at(number)
+          case Cos.Ref(number, _)  => pages(number)
           case Cos.Integral(index) => index.toInt.z
           case _                   => Unset
 

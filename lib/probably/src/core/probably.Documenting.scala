@@ -153,7 +153,7 @@ private[probably] object Documenting:
     case Nil      => Unset
 
   private def metric(run: Run, metric: Metric): Optional[Double] =
-    run.metrics.at(metric)
+    run.metrics(metric)
 
   // A metric's value as a semantic datum, formatted by dimension.
   private def datum(metric: Metric, value: Double): Datum = metric.dimension match
@@ -271,14 +271,14 @@ private[probably] object Documenting:
       val cells = entry.cells.to[Map]
 
       val anchored: Optional[(Anchor, Run)] =
-        entry.anchor.let: anchor => cells.at(List(anchor.value)).let(run(_)).let(anchor -> _)
+        entry.anchor.let: anchor => cells(List(anchor.value)).let(run(_)).let(anchor -> _)
 
       val comparisonColumns = anchored.lay(Nil): (anchor, _) =>
         List(Column(t"×${anchor.value.text}", numeric = true))
 
       val rows = List.of:
         entry.values(axis).stdlib.flatMap: value =>
-          cells.at(List(value)).option.flatMap: cell =>
+          cells(List(value)).option.flatMap: cell =>
             run(cell).option.map: run0 =>
               val comparison = anchored.lay(Nil): (anchor, anchorRun) =>
                 List(relative(anchor, anchorRun, run0))
@@ -310,7 +310,7 @@ private[probably] object Documenting:
 
       val rows = List.of:
         entry.values(axis).stdlib.flatMap: value =>
-          cells.at(List(value)).option.map: cell =>
+          cells(List(value)).option.map: cell =>
             val durations = cell.runs.stdlib.flatMap(_.verdict.option).map(_.duration)
             val avg = if durations.isEmpty then 0L else durations.sum/durations.length
             val time = if avg == 0L then Datum.Blank else Datum.Time(avg)
@@ -341,7 +341,7 @@ private[probably] object Documenting:
 
     val rows = entry.values(first).map: row =>
       val cellsRow: List[Datum] = columnValues.map: column =>
-        cells.at(List(row, column)).lay(Datum.Gap)(cellDatum(entry, _))
+        cells(List(row, column)).lay(Datum.Gap)(cellDatum(entry, _))
       (Datum.Str(row.text) :: cellsRow): List[Datum]
 
     val columns = Column(first.label) :: columnValues.map: value =>
@@ -364,8 +364,8 @@ private[probably] object Documenting:
           val cellsRow: List[Datum] = columnValues.map: column =>
             val anchorAddress = if onFirst then List(anchor.value, column) else List(row, anchor.value)
 
-            cells.at(List(row, column)).let(run(_)).lay(Datum.Gap): run0 =>
-              cells.at(anchorAddress).let(run(_)).lay(Datum.Blank): anchorRun =>
+            cells(List(row, column)).let(run(_)).lay(Datum.Gap): run0 =>
+              cells(anchorAddress).let(run(_)).lay(Datum.Blank): anchorRun =>
                 relative(anchor, anchorRun, run0)
           (Datum.Str(row.text) :: cellsRow): List[Datum]
 
@@ -409,7 +409,7 @@ private[probably] object Documenting:
           val limit: Long = sustained.lay(Long.MaxValue)(_(0))
 
           val cells: List[Optional[(Int, Boolean)]] = steps.map: step =>
-            curve.at(step).let: run0 =>
+            curve(step).let: run0 =>
               val throughput = metric(run0, Metric.Throughput).or(0.0).toLong
               val level = ((throughput*8L + peak - 1L)/peak).toInt.min(8).max(1)
               (level, step > limit)

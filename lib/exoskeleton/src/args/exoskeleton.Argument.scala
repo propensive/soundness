@@ -75,7 +75,7 @@ case class Argument
   def apply(): Text = format match
     case Argument.Format.Full            => value
     case Argument.Format.FlagSuffix      => value.skip(2)
-    case Argument.Format.CharFlag(index) => t"-${value.at(index + 1).or('-')}"
+    case Argument.Format.CharFlag(index) => t"-${value(index + 1).or('-')}"
     case Argument.Format.EqualityPrefix  => value.before(value.offsetOf("=").or(Prim))
     case Argument.Format.EqualitySuffix  => value.after(value.offsetOf("=").or(Prim))
 
@@ -106,4 +106,4 @@ case class Argument
       options.stdlib.map: option => (operand.suggest(option).text, option)
 
     suggest(options.map(operand.suggest(_)))
-    mapping.at(this())
+    mapping(this())

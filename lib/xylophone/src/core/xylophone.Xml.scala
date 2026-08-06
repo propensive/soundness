@@ -461,7 +461,7 @@ object Xml extends Tag.Container
       build[derivation]: [field] =>
         context =>
           val fieldLabel: Text = wisteria.label[Text]
-          val wireName: Text = renames.at(fieldLabel).or(fieldLabel)
+          val wireName: Text = renames(fieldLabel).or(fieldLabel)
           focus({
             // Each outer `focus` runs *after* the inner one, so we
             // extend `prior` at the root side (`/outer/inner`), not the
@@ -473,7 +473,7 @@ object Xml extends Tag.Container
               // `@attribute` field: decode from the matching attribute as a
               // `TextNode`; a missing attribute falls back to the declared
               // default, else the `Absent` sentinel (raise + continue).
-              element.attributes.at(wireName).lay(default.or(context.decoded(Absent))): text =>
+              element.attributes(wireName).lay(default.or(context.decoded(Absent))): text =>
                 context.decoded(TextNode(text))
             else
               // The `AnyRef` cast (rather than `asMatchable`) sidesteps the
@@ -538,7 +538,7 @@ object Xml extends Tag.Container
 
               val resolved: Optional[Text] =
                 discriminable.discriminate(xml).let: wire =>
-                  val discriminant = variantNames.at(wire).or(wire)
+                  val discriminant = variantNames(wire).or(wire)
                   if labels.has(discriminant) then discriminant else Unset
 
               resolved.let: discriminant =>
@@ -566,8 +566,8 @@ object Xml extends Tag.Container
     type Form = xylophone.Xml
 
     def discriminate(xml: xylophone.Xml): Optional[Text] = xml match
-      case Element(_, attributes, _)           => attributes.at(attribute)
-      case Fragment(Element(_, attributes, _)) => attributes.at(attribute)
+      case Element(_, attributes, _)           => attributes(attribute)
+      case Fragment(Element(_, attributes, _)) => attributes(attribute)
       case _                                   => Unset
 
     def rewrite(kind: Text, xml: xylophone.Xml): xylophone.Xml = xml match
@@ -627,7 +627,7 @@ object Xml extends Tag.Container
         fields(value): [field] =>
           field =>
             val fieldLabel: Text = wisteria.label[Text]
-            val wireName: Text = renames.at(fieldLabel).or(fieldLabel)
+            val wireName: Text = renames(fieldLabel).or(fieldLabel)
             val encoder: field is Encodable in Xml = wisteria.contextual
             val encoded: Xml = encoder.encoded(field)
 
@@ -673,7 +673,7 @@ object Xml extends Tag.Container
         variant(value): [variant <: derivation] =>
           value =>
             val label = wisteria.label[Text]
-            discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
+            discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
   // ── Direct parsing ─────────────────────────────────────────────────────
   //
@@ -916,7 +916,7 @@ object Xml extends Tag.Container
 
     // The wire names of a product's fields, `@name` renames applied.
     def wireNames(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
-      names.map { name => renames.at(name.tt).or(name.tt).s }
+      names.map { name => renames(name.tt).or(name.tt).s }
 
     // A required primitive field whose name never arrived: the primitives'
     // `absent()` semantics — raise and continue with the sentinel.
@@ -1030,7 +1030,7 @@ object Xml extends Tag.Container
 
           while index < count do
             if entries.readUnchecked(index)(3) then
-              attributes.at(keys.readUnchecked(index).tt).let: text =>
+              attributes(keys.readUnchecked(index).tt).let: text =>
                 values(index) =
                   if focused
                   then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).attribute(text))
@@ -1368,7 +1368,7 @@ object Xml extends Tag.Container
               [field] => context =>
                 val fieldLabel: Text = wisteria.label[Text]
 
-                ( renames.at(fieldLabel).or(fieldLabel).s,
+                ( renames(fieldLabel).or(fieldLabel).s,
                   context: Xml.Parsing,
                   default[Optional[field]]: Any,
                   attributeFields.defines(fieldLabel) )
@@ -4078,7 +4078,7 @@ extends Node, Topical, Transportive:
   def selectDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute on Topic in Form)
   :   Optional[Text] =
 
-    attributes.at(name.tt)
+    attributes(name.tt)
 
 
   def updateDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute in Form)

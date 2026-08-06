@@ -65,7 +65,7 @@ object Hostname:
   private[urticose] def parse(text: Text): Hostname raises HostnameError =
     val builder: TextBuilder = TextBuilder()
 
-    def recur(index: Ordinal, dnsLabels: List[DnsLabel]): Hostname = text.at(index) match
+    def recur(index: Ordinal, dnsLabels: List[DnsLabel]): Hostname = text(index) match
       case char: Char if char != '.' =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
         then builder.append(char.toString.tt)

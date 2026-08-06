@@ -333,27 +333,27 @@ object Bytecode:
 
         case tswitch: jlci.TableSwitchInstruction =>
           val defaultLabel: jlc.Label = tswitch.defaultTarget.nn
-          val default = labels.at(defaultLabel).or(0)
+          val default = labels(defaultLabel).or(0)
 
           val targets = tswitch.cases.nn.to[List].map: c =>
             val label: jlc.Label = c.nn.target.nn
-            labels.at(label).or(0)
+            labels(label).or(0)
 
           Tableswitch(default, tswitch.lowValue, tswitch.highValue, targets)
 
         case lswitch: jlci.LookupSwitchInstruction =>
           val defaultLabel: jlc.Label = lswitch.defaultTarget.nn
-          val default = labels.at(defaultLabel).or(0)
+          val default = labels(defaultLabel).or(0)
 
           val cases = lswitch.cases.nn.to[List].map: c =>
             val label: jlc.Label = c.nn.target.nn
-            (c.nn.caseValue, labels.at(label).or(0))
+            (c.nn.caseValue, labels(label).or(0))
 
           Lookupswitch(default, cases)
 
         case branch: jlci.BranchInstruction =>
           val targetLabel: jlc.Label = branch.target.nn
-          val target = labels.at(targetLabel).or(0)
+          val target = labels(targetLabel).or(0)
 
           source.opcode.nn.bytecode.absolve match
             case 153 => Ifeq(target)

@@ -43,12 +43,12 @@ object Luhn:
   def digit(number: Text): Int =
     def recur(index: Int, sum: Int, odd: Boolean): Int =
       if index < 0 then (10 - sum%10)%10 else
-        val n: Int = ((if odd then 2 else 1)*(number.at(index.z).vouch - '0')).toInt
+        val n: Int = ((if odd then 2 else 1)*(number(index.z).vouch - '0')).toInt
         recur(index - 1, sum + (if n > 9 then n - 9 else n), !odd)
 
     recur(number.length - 1, 0, true)
 
   def check(number: Text): Boolean =
-    digit(number.skip(1, Rtl)) == number.at((number.length - 1).z).vouch - '0'
+    digit(number.skip(1, Rtl)) == number((number.length - 1).z).vouch - '0'
 
   def check(number: Long): Boolean = check(number.show)

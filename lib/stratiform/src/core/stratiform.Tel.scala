@@ -603,7 +603,7 @@ object Tel extends Tel2:
     // The wire keywords of a product's fields: `@name` renames applied
     // verbatim, camel→kebab otherwise — the same mapping as the derivations.
     def wireKeywords(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
-      names.map { name => renames.at(name.tt).or(camelToKebab(name)).s }
+      names.map { name => renames(name.tt).or(camelToKebab(name)).s }
 
     // A required primitive field whose keyword never arrived: the primitives'
     // `absent()` semantics — raise and continue with the sentinel. It carries no
@@ -2006,7 +2006,7 @@ object Tel extends Tel2:
                 length = Optional(data.readUnchecked(offset + 5)) )
     else
       val children = node.children.bind(_.compounds)
-      val k = children.indexWhere { child => segments.at(denominative.Ordinal.zerary(i)).lay(false)(_ == child.keyword) }
+      val k = children.indexWhere { child => segments(denominative.Ordinal.zerary(i)).lay(false)(_ == child.keyword) }
 
       if k < 0 then Unset
       else

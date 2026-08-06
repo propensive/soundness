@@ -184,7 +184,7 @@ object Contrastable:
 
             val entries =
               keys.to(List).map: key =>
-                key -> juxtaposition(t"", left.at(key).or(missing), right.at(key).or(missing))
+                key -> juxtaposition(t"", left(key).or(missing), right(key).or(missing))
 
             val name = if lname == rname then lname else t"$lname/$rname"
             Juxtaposition.Collation(name, entries, lname, rname)

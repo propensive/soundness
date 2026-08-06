@@ -84,7 +84,7 @@ object Runners:
     val name: Text = runnerName(label)
 
     val expected: Text =
-      hashes.at(label).lest(RunnerError(m"There is no published runner stub for platform $label"))
+      hashes(label).lest(RunnerError(m"There is no published runner stub for platform $label"))
 
     mitigate:
       case HttpError(_, _)   => RunnerError(m"Could not download the stub $name from $baseUrl")

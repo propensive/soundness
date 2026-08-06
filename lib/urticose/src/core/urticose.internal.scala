@@ -426,7 +426,7 @@ object internal:
         halt(340, m"the $portType port number ${portNumber} is not in the range 1-65535")
 
     . or:
-        serviceNames.at((tcp, id)).lay(halt(915, m"$id is not a valid $portType port")):
+        serviceNames((tcp, id)).lay(halt(915, m"$id is not a valid $portType port")):
           case port: Int =>
             ConstantType(IntConstant(port)).asType.absolve match
               case '[type number <: Int; number] =>

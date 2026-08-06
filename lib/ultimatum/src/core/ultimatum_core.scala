@@ -208,7 +208,7 @@ def dirtyCells
 :   Set[Int] =
 
   val moved = (0 until current.length).filter: i =>
-    i >= previous.length || previous.at(i.z).vouch != current.at(i.z).vouch
+    i >= previous.length || previous(i.z).vouch != current(i.z).vouch
 
   Set.from(moved) ++ changed
 

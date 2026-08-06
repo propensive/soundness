@@ -53,7 +53,7 @@ trait Enumerable:
   val name: Text
   val values: Array[Self]^{}
 
-  def value(name: Text): Optional[Self] = valuesMap.at(name)
+  def value(name: Text): Optional[Self] = valuesMap(name)
   def name(value: Self): Text = value.toString.tt
   def index(value: Self): Int = value.ordinal
 

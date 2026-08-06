@@ -87,7 +87,7 @@ extends Watcher:
     val base = directory.toString.show
 
     current.stdlib.each: (name, entry) =>
-      previous.at(name) match
+      previous(name) match
         case last: Entry =>
           if !entry.directory && last != entry then spool.put(WatchEvent.Modify(base, name))
 

@@ -82,7 +82,7 @@ extends Topical:
   def matches(key: Argument): Boolean =
     val flag =
       if key().starts(t"--") then key().skip(2) else if key().starts(t"-")
-      then key().at(Sec) else Unset
+      then key()(Sec) else Unset
 
     flag == name || aliases.stdlib.contains(flag)
 
@@ -106,7 +106,7 @@ extends Topical:
       Map.from(options.map { option => (suggestible.suggest(option).text, option) })
 
     given interpretable: Topic is Interpretable =
-      case List(value) => mapping.at(value())
+      case List(value) => mapping(value())
       case _           => Unset
 
     given suggestions: Topic is Discoverable = _ => options.map(suggestible.suggest(_))

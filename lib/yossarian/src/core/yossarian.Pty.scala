@@ -577,7 +577,7 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
               scrollBottom = scrollBottom, pendingWrap = pendingWrap),
           output = output)
       else
-        val current: Char = input.at(index.z).vouch
+        val current: Char = input(index.z).vouch
 
         context match
           case Normal =>

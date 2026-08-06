@@ -329,4 +329,4 @@ case class Alphabet[encoding <: Serialization]
     val max = inverse.stdlib.keysIterator.max
 
     Array.tabulate(max + 1): index =>
-      inverse.at(index.toChar).or(-1)
+      inverse(index.toChar).or(-1)

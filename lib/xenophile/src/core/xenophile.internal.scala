@@ -246,10 +246,10 @@ object Xenophile:
 
     val members = Map.of(refinements(self.asTerm.tpe.widen))
 
-    val topic = members.at(t"Topic").or:
+    val topic = members(t"Topic").or:
       halt(m"xenophile: the receiver is not a foreign type (it has no `Topic`)")
 
-    val origin = members.at(t"Origin").or:
+    val origin = members(t"Origin").or:
       halt(m"xenophile: the receiver does not record its source language (it has no `Origin`)")
 
     (topic, origin)
@@ -272,7 +272,7 @@ object Xenophile:
 
     import quotes.reflect.*
 
-    Map.of(refinements(self.asTerm.tpe.widen)).at(t"Locus")
+    Map.of(refinements(self.asTerm.tpe.widen))(t"Locus")
 
   // Summons the `Interface` given for a source language and reads its definitions path (`Locus`)
   // as the singleton path type, or `Unset` when no such `Interface` (or no path) is in scope.
@@ -289,7 +289,7 @@ object Xenophile:
 
         case Some(found) =>
           val members = Map.of(refinements(found.asTerm.tpe) ++ refinements(found.asTerm.tpe.widen))
-          members.at(t"Locus")
+          members(t"Locus")
 
   // The definitions path carried by a `Locus` singleton type.
   private[xenophile] def locusText(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
@@ -373,7 +373,7 @@ object Xenophile:
     val paramTopic = reprOf(paramType)
     val argRepr = arg.asTerm.tpe.widen
 
-    val argTopic = Map.of(refinements(argRepr)).at(t"Topic").or:
+    val argTopic = Map.of(refinements(argRepr))(t"Topic").or:
       halt(m"xenophile: the foreign type of an argument to $method is not known")
 
     // The `ok` arm topic of a `result<ok, err>` parameter, if it is one — so a value of that arm's
@@ -417,7 +417,7 @@ object Xenophile:
         summonedLocus(originRepr).or:
           halt(m"xenophile: no `Interface` with a definitions path is in scope")
 
-      val members = definitions(originRepr, locusText(locusRepr)).at(topic).or:
+      val members = definitions(originRepr, locusText(locusRepr))(topic).or:
         halt(m"xenophile: the foreign type $topic is not defined")
 
       (members, locusRepr)
@@ -428,7 +428,7 @@ object Xenophile:
     val topic = topicName(topicRepr)
     val (typeMembers, locusRepr) = prototypes(self, originRepr, topic)
 
-    val signature = typeMembers.at(fieldName).or:
+    val signature = typeMembers(fieldName).or:
       halt(m"xenophile: the foreign type $topic has no member $fieldName")
 
     // A method with parameters cannot be bare-selected, but a zero-parameter method can: the
@@ -494,7 +494,7 @@ object Xenophile:
     val topic = topicName(topicRepr)
     val (typeMembers, locusRepr) = prototypes(self, originRepr, topic)
 
-    val signature = typeMembers.at(fieldName).or:
+    val signature = typeMembers(fieldName).or:
       halt(m"xenophile: the foreign type $topic has no member $fieldName")
 
     val parameters = signature.parameters.or:
@@ -546,7 +546,7 @@ object Xenophile:
 
     val members = Map.of(refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen))
 
-    val locusRepr = members.at(t"Locus").or:
+    val locusRepr = members(t"Locus").or:
       halt(m"xenophile: the resource does not carry a singleton path type (it has no `Locus`)")
 
     interfaceOf[form](locusRepr)

@@ -68,7 +68,7 @@ object MathmlParser:
     List.of(elem.children.readable.toList.collect { case element: Element => element })
 
   private def attributesOf(elem: Element): List[(Text, Text)] =
-    List.of(elem.attributes.keys.map { key => (key, elem.attributes.at(key).or(t"")) }.toList)
+    List.of(elem.attributes.keys.map { key => (key, elem.attributes(key).or(t"")) }.toList)
 
   private def textOf(elem: Element): Text =
     List.of(elem.children.readable.toList.collect { case TextNode(text) => text }).join
@@ -82,7 +82,7 @@ object MathmlParser:
   def decodeMath(elem: Element)(using Tactic[MathmlError]): Math =
     val kept = attributesOf(elem).filter { case (key, _) => key != t"xmlns" && key != t"display" }
 
-    val display: Optional[Display] = elem.attributes.at(t"display").let: text =>
+    val display: Optional[Display] = elem.attributes(t"display").let: text =>
       Display.unapply(text).getOrElse(Display.Inline)
 
     Math(children(elem), display, kept)

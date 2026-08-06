@@ -76,14 +76,14 @@ object Authority:
           abort(UrlError(value, offset, Expected(Number)))
 
     def parseHostPort(hostPort: Text, base: Ordinal, userInfo: Optional[Text]): Authority =
-      if hostPort.at(Prim) == '[' then
+      if hostPort(Prim) == '[' then
         safely(hostPort.where(_ == ']')).asMatchable match
           case Zerary(close) =>
             val ipv6 = hostPort.segment(Sec till close).as[Ipv6]
             val afterClose: Ordinal = close + 1
 
             if afterClose.n0 >= hostPort.limit.n0 then Authority(ipv6, userInfo)
-            else if hostPort.at(afterClose) == ':' then
+            else if hostPort(afterClose) == ':' then
               val portOffset: Ordinal = base + (afterClose.n0 + 1)
               val port = parsePort(hostPort.after(afterClose), portOffset)
               Authority(ipv6, userInfo, port)

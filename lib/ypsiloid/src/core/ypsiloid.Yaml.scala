@@ -182,7 +182,7 @@ trait Yaml2:
 
       build[derivation]: [field] =>
         context =>
-          val key: Text = renames.at(label).or(label)
+          val key: Text = renames(label).or(label)
           val target = key.s
           var found: Yaml.Ast | Null = null
 
@@ -240,7 +240,7 @@ trait Yaml2:
 
             val resolved: Optional[Text] =
               discriminable.discriminate(yaml).let: wire =>
-                val discriminant = variantNames.at(wire).or(wire)
+                val discriminant = variantNames(wire).or(wire)
                 if labels.has(discriminant) then discriminant else Unset
 
             resolved.let: discriminant =>
@@ -269,7 +269,7 @@ trait Yaml2:
 
           fields(value): [field] =>
             field =>
-              val key: Text = renames.at(label).or(label)
+              val key: Text = renames(label).or(label)
 
               focus({
                 val base = prior.let(_.pointer).or(YamlPath())
@@ -292,7 +292,7 @@ trait Yaml2:
 
       variant(value): [variant <: derivation] =>
         value =>
-          discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
+          discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
 object Yaml extends Yaml2, Dynamic:
   // Controls how a `Yaml` value is serialized. YAML's block style is fixed and round-trip-
