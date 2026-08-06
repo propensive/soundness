@@ -30,8 +30,52 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{CHeaderAtomizer, CHeaderDiscipline, DtsAtomizer, DtsDiscipline,
-    KotlinMetadataAtomizer, KotlinMetadataDiscipline, WebIdlAtomizer, WebIdlDiscipline,
-    WitAtomizer, WitDiscipline}
+import scala.collection.immutable.List as SList
+
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import reliquary.*
+import rudiments.*
+
+// The `kotlin-metadata/1` discipline, adapted to reliquary's SPI: the Kotlin declaration
+// surface carried by `@Metadata` annotations on JVM classfiles, atomized per `kotlin.md`.
+//
+// Claiming order beside `classfile/1` is load-bearing (`kotlin.md` §3): both claim `.class`
+// files, this discipline only those carrying the annotation, so a registry must list
+// `kotlin-metadata/1` first or it is left nothing to claim. The claiming test itself is a
+// constant-pool scan for the annotation's descriptor — cheap, and confirmed properly against
+// the loaded class before any atom is emitted.
+object KotlinMetadataDiscipline extends Discipline:
+  def id: Text = t"kotlin-metadata/1"
+
+  def claims(path: TreePath, data: Data): Boolean =
+    path.text.s.endsWith(".class") && carries(data)
+
+  // ISO-8859-1 maps bytes to chars one-to-one, so a string search over the classfile's bytes
+  // finds the descriptor wherever the constant pool holds it.
+  private def carries(data: Data): Boolean =
+    String(Array.unsafeJvm(data), "ISO-8859-1").contains("Lkotlin/Metadata;")
+
+  // `{jvm, host}`: the metadata rides in JVM classfiles, and the `host` inclusion admits
+  // contracts carried as API-stub classfiles — the anticipated Android surface (hosts.md §3).
+  def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"jvm", t"host"))
+
+  // Membership, as `classfile.md` §6: a Kotlin call site resolves members through the receiver.
+  def keying: Discipline.Keying = Discipline.Keying.Membership
+
+  def guarantees(world: Text): Set[Discipline.Guarantee] =
+    Set(Discipline.Guarantee.Recompilation)
+
+  def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+  :   Atomization raises DisciplineError =
+
+    val classes: SList[(Text, Data)] = content.stdlib.map: (path, data) =>
+      val binary = Text(path.text.s.stripSuffix(".class").nn.replace("/", ".").nn)
+      (binary, data)
+
+    Atomization.of(id,
+        KotlinMetadataAtomizer.atomize(classes, context.classpath.stdlib))

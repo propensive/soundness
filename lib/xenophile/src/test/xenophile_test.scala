@@ -795,6 +795,7 @@ object Tests extends Suite(m"Xenophile tests"):
     webIdlDisciplineTests()
     witDisciplineTests()
     cheaderDisciplineTests()
+    kotlinMetadataDisciplineTests()
 
   def typescriptParserTests(): Unit =
     import strategies.throwUnsafely
@@ -1448,3 +1449,76 @@ object Tests extends Suite(m"Xenophile tests"):
           stream.nn.close()
           atomize(Text(String(bytes, "UTF-8"))).atoms.stdlib.exists(_.key == t"RAND_bytes")
       . assert(_ == true)
+
+  def kotlinMetadataDisciplineTests(): Unit =
+    import reliquary.*
+    import strategies.throwUnsafely
+
+    // Real Kotlin classfiles from the kotlin-stdlib fixture already on this suite's classpath.
+    def classfile(name: Text): Data =
+      val stream = getClass.getResourceAsStream(s"/${name.s.replace(".", "/")}.class").nn
+      val bytes = stream.readAllBytes().nn
+      stream.close()
+      Array.unsafeFrozen(bytes)
+
+    def content(names: Text*): List[(TreePath, Data)] =
+      List.from:
+        names.map: name =>
+          (TreePath(t"${name.s.replace(".", "/").nn}.class"), classfile(name))
+
+    def atomize(names: Text*): Atomization =
+      KotlinMetadataDiscipline.atomize(content(names*), Discipline.Context(t"jvm"))
+
+    suite(m"The `kotlin-metadata/1` discipline"):
+      test(m"the discipline claims metadata-carrying classfiles and nothing else"):
+        val kotlin = classfile(t"kotlin.Pair")
+        val scala0 = classfile(t"xenophile.Tests")
+
+        (KotlinMetadataDiscipline.claims(TreePath(t"kotlin/Pair.class"), kotlin),
+         KotlinMetadataDiscipline.claims(TreePath(t"xenophile/Tests.class"), scala0),
+         KotlinMetadataDiscipline.claims(TreePath(t"readme.md"), kotlin))
+      . assert(_ == (true, false, false))
+
+      test(m"a data class atomizes its members, constructor and class atom"):
+        val keys = atomize(t"kotlin.Pair").atoms.stdlib.map(_.key)
+
+        (keys.contains(t"kotlin.Pair"),
+         keys.contains(t"kotlin.Pair.first"),
+         keys.exists(_.s.startsWith("kotlin.Pair#component1(")),
+         keys.exists(_.s.startsWith("kotlin.Pair#constructor(")))
+      . assert(_ == (true, true, true, true))
+
+      test(m"parameter types carry nullability marks in the key"):
+        atomize(t"kotlin.Pair").atoms.stdlib.map(_.key.s)
+        . exists { key => key.startsWith("kotlin.Pair#constructor(") }
+      . assert(identity)
+
+      test(m"suspend functions are atomized rather than dropped"):
+        // `kotlin.sequences.SequenceScope` is the canonical suspend surface: `yield` is a
+        // suspend function, and the whole point of this discipline is that it is visible.
+        atomize(t"kotlin.sequences.SequenceScope").atoms.stdlib.map(_.key.s)
+        . exists(_.startsWith("kotlin.sequences.SequenceScope#yield("))
+      . assert(identity)
+
+      test(m"an enum class atomizes with its class atom"):
+        atomize(t"kotlin.DeprecationLevel").atoms.stdlib.map(_.key)
+        . contains(t"kotlin.DeprecationLevel")
+      . assert(identity)
+
+      test(m"atomization is deterministic"):
+        val one = atomize(t"kotlin.Pair").atoms.stdlib.map { a => LiraHash.text(a.valueHash) }
+        val two = atomize(t"kotlin.Pair").atoms.stdlib.map { a => LiraHash.text(a.valueHash) }
+        one == two
+      . assert(identity)
+
+      test(m"identically-shaped members of different classes do not alias"):
+        val atoms = atomize(t"kotlin.Pair", t"kotlin.Triple").atoms.stdlib
+        atoms.map { atom => LiraHash.text(atom.valueHash) }.distinct.size == atoms.size
+      . assert(identity)
+
+      test(m"the registry claims kotlin classes ahead of the opaque fallback"):
+        val registry = Discipline.Registry(List(KotlinMetadataDiscipline))
+        val mixed = content(t"kotlin.Pair") 
+
+        registry.atomize(mixed, Discipline.Context(t"jvm")).stdlib.map(_.discipline)
+      . assert(_ == scala.List(t"kotlin-metadata/1"))
