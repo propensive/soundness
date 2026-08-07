@@ -241,6 +241,43 @@ object Tests extends Suite(m"Stenography Tests"):
       Syntax.name[Addable { type Q = Int; type Other = String}]
     . assert(_ == t"Addable { type Q = Int; type Other = String }")
 
+    // Written as refinements rather than as `Addable by Int`, because the compiler keeps the
+    // alias when it is written, and it is precisely the dealiased form these cover.
+    test(m"Prefer an infix alias over the refinement it expands to"):
+      Syntax.name[Addable { type Operand = Int }]
+    . assert(_ == t"Addable by Int")
+
+    test(m"Prefer `in` over a `Form` refinement"):
+      Syntax.name[Addable { type Form = Int }]
+    . assert(_ == t"Addable in Int")
+
+    test(m"Prefer infix aliases for several refined members"):
+      Syntax.name[Addable { type Operand = Int; type Result = Double }]
+    . assert(_ == t"Addable by Int to Double")
+
+    test(m"Prefer an infix alias alongside a member which has none"):
+      Syntax.name[Addable { type Operand = Int; type Q = String }]
+    . assert(_ == t"Addable by Int { type Q = String }")
+
+    // The parentheses are redundant — an alphabetic infix type operator binds tighter than the
+    // function arrow — but `Function` parenthesises any parameter whose precedence it exceeds,
+    // and alphabetic operators score lowest. That applies equally to the `is` this generalises,
+    // so it is left alone here.
+    test(m"Prefer an infix alias within a function type"):
+      Syntax.name[(Addable { type Operand = Int }) => String]
+    . assert(_ == t"(Addable by Int) => String")
+
+    // `Addable by (? <: Int)` is not what `by` expands to, so a bounded member has to stay a
+    // refinement rather than acquire a wildcard operand.
+    test(m"Leave a refinement which bounds, rather than aliases, its member"):
+      Syntax.name[Addable { type Operand <: Int }]
+    . assert(_ == t"Addable { type Operand = ? <: Int }")
+
+    // `Q` has no infix alias refining it, so this must not pick up a neighbour's operator.
+    test(m"Leave a refinement whose member has no infix alias"):
+      Syntax.name[Addable { type Q = Int }]
+    . assert(_ == t"Addable { type Q = Int }")
+
     test(m"Refined higher-kinded type member"):
       Syntax.name[Addable { type Hkt[Bar] = Option[Bar] }]
     . assert(_ == t"Addable { type Hkt = [Bar] =>> Option[Bar] }")

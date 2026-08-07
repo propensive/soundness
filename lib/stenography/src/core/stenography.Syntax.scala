@@ -378,6 +378,27 @@ object Syntax:
     case _            => panic(m"expected a Value")
 
 
+  // A refinement of a single type member can be written with an infix type alias, where one
+  // which refines that member is in scope: `Foo { type Form = Bar }` is `Foo in Bar`. Only an
+  // alias member qualifies; `Foo { type Form <: Bar }` is not what `Foo in Bar` expands to, so
+  // it stays a refinement rather than acquiring a wildcard operand.
+  private def infixAlias(using Quotes)(using bindings: Bindings)
+    ( base: quotes.reflect.TypeRepr, name: String, member: quotes.reflect.TypeRepr )
+  :   Optional[Syntax] =
+
+    import quotes.reflect.*
+
+    if !bindings.infixAliases.contains(name) then Unset else
+      val operator = bindings.infixAliases(name)
+
+      member match
+        case TypeBounds(lower, upper) if lower == upper =>
+          Infix(apply(base), operator, apply(lower))
+
+        case _ =>
+          Unset
+
+
   def apply(using Quotes)(using bindings: Bindings = Bindings())
     ( repr: quotes.reflect.TypeRepr, retry: Boolean = true )
   :   Syntax =
@@ -545,7 +566,8 @@ object Syntax:
           functionSyntax(typ, Nil, false).or(apply(member))
 
         case Refinement(base, name, member) =>
-          if name == "Self" then Infix(apply(member), "is", apply(base)) else
+          if name == "Self" then Infix(apply(member), "is", apply(base))
+          else infixAlias(base, name, member).or:
             val refined: Structural = apply(base) match
               case refined@Structural(base, members, defs) => refined
 
