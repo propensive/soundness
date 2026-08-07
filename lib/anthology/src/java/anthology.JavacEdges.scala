@@ -30,6 +30,59 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+import java.nio.file as jnf
+
+import ambience.*
+import anticipation.*
+import contingency.*
+import fulminate.*
+import galilei.*
+import gossamer.*
+import parasite.*
+import prepositional.*
+import serpentine.*
+
+import errorDiagnostics.emptyDiagnostics
+import probates.cancelProbate
+
+// The Java compile edge of a toolchain: `Language.Java` to the classfile universe. Java has one
+// backend, so unlike Scala there is nothing to choose.
+object javacEdges:
+  def apply(javac: Javac): List[Edge] =
+    List(Edge(Language.Java, Universe.Classfile, JavacTool(javac)))
+
+  private case class JavacTool(javac: Javac) extends Tool:
+    type Settings = Unit
+
+    def name: Text = t"javac"
+    def initial: Unit = ()
+
+    def run
+      ( settings:    Unit,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using tactic: Tactic[LinkError], linkEvents: LinkEvent is Loggable )
+    :   Deliverable =
+
+      val (sources, classpath) = input.sources(Universe.Classfile)
+      jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
+
+      given compileEvents: (CompileEvent is Loggable) = CompileEvents.relay(using linkEvents)
+
+      mitigate:
+        case CompilerError() => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
+        case AsyncError(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
+
+      . protect:
+          val process = javac(classpath)(sources, out)
+
+          process.complete() match
+            case CompileResult.Success  => Deliverable.Emission(out, classpath)
+            case CompileResult.Crash(_) => abort(LinkError(LinkError.Reason.CompilerCrash))
+
+            case CompileResult.Failure =>
+              abort(LinkError(LinkError.Reason.CompilationFailed(process.errors)))

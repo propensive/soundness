@@ -30,6 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+import anticipation.*
+import gossamer.*
+
+// A core WebAssembly module with JavaScript glue, bound to a JavaScript host. Unexported:
+// `soundness` already exports xenophile's `Wasm`.
+@unexported
+object Wasm extends Format.Application:
+  def id: Text = t"wasm"

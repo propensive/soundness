@@ -34,24 +34,28 @@ package anthology
 
 import java.nio.file as jnf
 
+import scala.collection.immutable as sci
 import scala.jdk.CollectionConverters.*
 import scala.util.control as suc
 
 import com.android.tools.r8.{CompilationMode, D8, D8Command, Diagnostic, DiagnosticsHandler,
     OutputMode}
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import digression.*
 import galilei.*
+import gossamer.*
 import hellenism.*
+import parasite.*
 import prepositional.*
 import serpentine.*
 import vacuous.*
 
-// The dexing configuration `Linkage[Artifact.Dex]` folds options into: the lowest Android API
-// level the output must run on (lower levels oblige D8 to desugar more), D8's compilation mode,
-// and optionally the Android platform stubs (`android.jar`) that ground desugaring decisions in
+// The dexing configuration `dexEdges`' tool folds settings into: the lowest Android API level
+// the output must run on (lower levels oblige D8 to desugar more), D8's compilation mode, and
+// optionally the Android platform stubs (`android.jar`) that ground desugaring decisions in
 // the platform's real API surface.
 private[anthology] case class DexConfiguration
   ( minApi:   Int,
@@ -59,90 +63,104 @@ private[anthology] case class DexConfiguration
     platform: Optional[Path on Linux] )
 
 object dexOptions:
-  private def dex(edit: DexConfiguration => DexConfiguration): Linker.Option[Artifact.Dex] =
-    Linker.Option(edit)
+  private def dex(edit: DexConfiguration => DexConfiguration): Setting =
+    Setting[DexConfiguration](_ == Dex)(edit)
 
   // The lowest Android API level the artifact must run on. Levels below 24 lack native default
   // interface methods (which Scala 3 emits for trait members), so they additionally demand the
   // `platform` stubs to desugar against.
-  def minApi(level: Int): Linker.Option[Artifact.Dex] = dex(_.copy(minApi = level))
+  def minApi(level: Int): Setting = dex(_.copy(minApi = level))
 
   // An Android SDK's platform stubs (`platforms/android-<n>/android.jar`), needed only below
   // API level 24 or when the program references platform types.
-  def platform(jar: Path on Linux): Linker.Option[Artifact.Dex] = dex(_.copy(platform = jar))
+  def platform(jar: Path on Linux): Setting = dex(_.copy(platform = jar))
 
   object mode:
-    val debug: Linker.Option[Artifact.Dex] = dex(_.copy(mode = CompilationMode.DEBUG))
-    val release: Linker.Option[Artifact.Dex] = dex(_.copy(mode = CompilationMode.RELEASE))
+    val debug: Setting = dex(_.copy(mode = CompilationMode.DEBUG))
+    val release: Setting = dex(_.copy(mode = CompilationMode.RELEASE))
 
-// The classfile-to-DEX link family: drives R8's D8 dexer (a JVM library) through its API to
-// translate a compilation's classfiles, and its whole classpath with them, into an archive of
-// `classes*.dex` files—the container ART and `DexClassLoader` consume, and the form the dexes
-// of an APK are zipped from. Since this linkage lives outside `Linkage`'s implicit scope,
-// import it where DEX artifacts are linked: `import dexLinkages.given`.
-object dexLinkages:
-  given dex: (Linkage[Artifact.Dex] from Universe.Classfile):
-    type Origin = Universe.Classfile
-    private[anthology] type Form = DexConfiguration
+// The dexing edge of a toolchain: `Classfile` to `Dex`, driving R8's D8 dexer (a JVM library)
+// through its API to translate a compilation's classfiles, and its whole classpath with them,
+// into an archive of `classes*.dex` files—the container ART and `DexClassLoader` consume, and
+// the form the dexes of an APK are zipped from.
+object dexEdges:
+  def apply(): List[Edge] = List(Edge(Universe.Classfile, Dex, DexTool))
 
-    // API level 26 (Android 8.0) is the earliest with native support for everything Scala 3
-    // bytecode relies on, so dexing needs no platform stubs by default.
-    private[anthology] def initial: DexConfiguration =
-      DexConfiguration(26, CompilationMode.DEBUG, Unset)
+  // API level 26 (Android 8.0) is the earliest with native support for everything Scala 3
+  // bytecode relies on, so dexing needs no platform stubs by default.
+  private[anthology] def configuration: DexConfiguration =
+    DexConfiguration(26, CompilationMode.DEBUG, Unset)
 
-    private[anthology] def link
-      ( form:        DexConfiguration,
-        compilation: Compilation[Universe.Classfile],
-        entryPoints: List[Linker.EntryPoint],
+  private object DexTool extends Tool:
+    type Settings = DexConfiguration
+
+    def name: Text = t"dex"
+    def initial: DexConfiguration = configuration
+
+    def run
+      ( settings:    DexConfiguration,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
         out:         Path on Linux )
-    :   Path on Linux logs LinkEvent raises LinkError =
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
 
-      // DEX carries no entry-point metadata: ART is told its main class at invocation, by the
-      // manifest of a hosting APK or the command line of `dalvikvm`, so entry points—like a
-      // library JAR's—do not apply.
+      val (directory, classpath) = input.emission(Dex)
+      Deliverable.Product(link0(settings, directory, classpath, out))
 
-      val roots: scala.collection.immutable.List[jnf.Path] =
-        jnf.Paths.get(compilation.out.encode.s).nn ::
-          compilation.classpath.entries.stdlib.flatMap:
-            case ClasspathEntry.Directory(directory) => scala.collection.immutable.List(jnf.Paths.get(directory.s).nn)
-            case ClasspathEntry.Jar(jar)             => scala.collection.immutable.List(jnf.Paths.get(jar.s).nn)
-            case _                                   => scala.collection.immutable.Nil
+  // The dexing pipeline itself. DEX carries no entry-point metadata: ART is told its main
+  // class at invocation, by the manifest of a hosting APK or the command line of `dalvikvm`,
+  // so entry points—like a library JAR's—do not apply.
+  private def link0
+    ( form:      DexConfiguration,
+      directory: Path on Linux,
+      classpath: LocalClasspath,
+      out:       Path on Linux )
+  :   Path on Linux logs LinkEvent raises LinkError =
 
-      val (archives, directories) = roots.partition(jnf.Files.isRegularFile(_))
+    val roots: sci.List[jnf.Path] =
+      jnf.Paths.get(directory.encode.s).nn ::
+        classpath.entries.stdlib.flatMap:
+          case ClasspathEntry.Directory(directory) => sci.List(jnf.Paths.get(directory.s).nn)
+          case ClasspathEntry.Jar(jar)             => sci.List(jnf.Paths.get(jar.s).nn)
+          case _                                   => sci.Nil
 
-      // D8 accepts archives wholesale but not directories, whose classfiles are enumerated
-      // individually; `module-info` classfiles are not program code and are excluded.
-      val classfiles: scala.collection.immutable.List[jnf.Path] = directories.flatMap: directory =>
-        val walk = jnf.Files.walk(directory).nn
+    val (archives, directories) = roots.partition(jnf.Files.isRegularFile(_))
 
-        try walk.iterator.nn.asScala.toList.filter: path =>
-          path.toString.endsWith(".class") && !path.toString.endsWith("module-info.class")
-        finally walk.close()
+    // D8 accepts archives wholesale but not directories, whose classfiles are enumerated
+    // individually; `module-info` classfiles are not program code and are excluded.
+    val classfiles: sci.List[jnf.Path] = directories.flatMap: directory =>
+      val walk = jnf.Files.walk(directory).nn
 
-      object handler extends DiagnosticsHandler:
-        override def error(diagnostic: Diagnostic | Null): Unit =
-          Log.warn(LinkEvent.Message(diagnostic.nn.getDiagnosticMessage.nn.tt))
+      try walk.iterator.nn.asScala.toList.filter: path =>
+        path.toString.endsWith(".class") && !path.toString.endsWith("module-info.class")
+      finally walk.close()
 
-        override def warning(diagnostic: Diagnostic | Null): Unit =
-          Log.warn(LinkEvent.Message(diagnostic.nn.getDiagnosticMessage.nn.tt))
+    object handler extends DiagnosticsHandler:
+      override def error(diagnostic: Diagnostic | Null): Unit =
+        Log.warn(LinkEvent.Message(diagnostic.nn.getDiagnosticMessage.nn.tt))
 
-        override def info(diagnostic: Diagnostic | Null): Unit =
-          Log.info(LinkEvent.Message(diagnostic.nn.getDiagnosticMessage.nn.tt))
+      override def warning(diagnostic: Diagnostic | Null): Unit =
+        Log.warn(LinkEvent.Message(diagnostic.nn.getDiagnosticMessage.nn.tt))
 
-      try
-        val outPath = jnf.Paths.get(out.encode.s).nn
-        jnf.Files.createDirectories(outPath)
+      override def info(diagnostic: Diagnostic | Null): Unit =
+        Log.info(LinkEvent.Message(diagnostic.nn.getDiagnosticMessage.nn.tt))
 
-        val builder = D8Command.builder(handler).nn
-        builder.addProgramFiles((archives ++ classfiles).asJava)
-        builder.setMinApiLevel(form.minApi)
-        builder.setMode(form.mode)
-        builder.setOutput(outPath.resolve("main.dex.jar").nn, OutputMode.DexIndexed)
+    try
+      val outPath = jnf.Paths.get(out.encode.s).nn
+      jnf.Files.createDirectories(outPath)
 
-        form.platform.let: platform => builder.addLibraryFiles(jnf.Paths.get(platform.encode.s))
+      val builder = D8Command.builder(handler).nn
+      builder.addProgramFiles((archives ++ classfiles).asJava)
+      builder.setMinApiLevel(form.minApi)
+      builder.setMode(form.mode)
+      builder.setOutput(outPath.resolve("main.dex.jar").nn, OutputMode.DexIndexed)
 
-        D8.run(builder.build().nn)
-        out / "main.dex.jar"
+      form.platform.let: platform => builder.addLibraryFiles(jnf.Paths.get(platform.encode.s))
 
-      catch case suc.NonFatal(error) =>
-        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+      D8.run(builder.build().nn)
+      out / "main.dex.jar"
+
+    catch case suc.NonFatal(error) =>
+      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))

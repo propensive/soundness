@@ -33,45 +33,10 @@
 package anthology
 
 import anticipation.*
-import contingency.*
-import digression.*
-import galilei.*
-import prepositional.*
-import serpentine.*
+import gossamer.*
 
-object Linker:
-  // An entry point whose `main(args: Array[String])` method runs when the linked module loads.
-  case class EntryPoint(mainClass: Fqcn)
-
-  object Option:
-    // Sound by construction: options are only creatable through the per-family DSLs, each of
-    // which types its options at a subset of exactly one link family, and every `Linkage` of
-    // that family fixes `Form` to the type the DSL edits; no option is typed across families.
-    private[anthology] def apply[artifact <: Artifact, form](edit0: form => form)
-    :   Option[artifact] =
-
-      new Option[artifact]:
-        private[anthology] def edit(form0: Any): Any = edit0(form0.asInstanceOf[form])
-
-  // Options are constructible only through the per-family DSLs, keeping the underlying linker
-  // configuration types out of the public API; contravariance permits an option declared for a
-  // union of artifacts in the options list of any of that union's linkers.
-  trait Option[-artifact <: Artifact]:
-    private[anthology] def edit(form0: Any): Any
-
-case class Linker[artifact <: Artifact]
-  ( options: List[Linker.Option[artifact]], entryPoints: List[Linker.EntryPoint] = Nil ):
-
-  def link(using linkage: Linkage[artifact])
-    ( compilation: Compilation[linkage.Origin], out: Path on Linux )
-  :   Path on Linux logs LinkEvent raises LinkError =
-
-    Log.info(LinkEvent.Start)
-
-    val form: linkage.Form =
-      options.stdlib.foldLeft(linkage.initial): (form, option) =>
-        option.edit(form).asInstanceOf[linkage.Form]
-
-    val result = linkage.link(form, compilation, entryPoints, out)
-    Log.info(LinkEvent.Linked(result.encode))
-    result
+// A WASI component packaged as a Wasm OCI Artifact and written as an `oci-archive`—the form a
+// container runtime with a Wasm shim (`io.containerd.wasmtime.v1`) schedules, and a registry
+// distributes: the application node reached from `Sjsir` through the `wasip2` component.
+object OciImage extends Format.Application:
+  def id: Text = t"oci"

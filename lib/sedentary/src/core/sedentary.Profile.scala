@@ -49,12 +49,17 @@ import gossamer.*
 import hellenism.*
 import inimitable.*
 import jacinta.*
+import parasite.*
 import prepositional.*
 import rudiments.*
 import probably.*
 import serpentine.*
 import superlunary.*
 import vacuous.*
+
+import systems.javaSystem
+import threading.platformThreading
+import workingDirectories.javaWorkingDirectory
 
 // A profile test: where `Bench` measures how fast a fragment runs and `Stress` how it
 // scales, `Profile` measures where its time goes. The body is run repeatedly on a single
@@ -191,14 +196,15 @@ extends Rig:
 
   def stage(out: Path on Linux): Path on Linux = unsafely:
     val uuid = Uuid()
-    val compilation = Compilation[Universe.Classfile](out, Bundler.applicationClasspath)
 
-    val jarfile =
-      Linker[Artifact.Jar]
-        ( List(jarOptions.name(t"$uuid.jar")),
-          List(Linker.EntryPoint(fqcn"superlunary.Executor")) )
-
-      . link(compilation, out)
+    val jarfile = supervise:
+      Toolchain(jarEdges()).produce
+        ( Deliverable.Emission(out, Bundler.applicationClasspath),
+          Universe.Classfile,
+          Jar,
+          out,
+          List(jarOptions.name(t"$uuid.jar")),
+          List(EntryPoint(fqcn"superlunary.Executor")) )
 
     device.deploy(jarfile, uuid)
     jarfile

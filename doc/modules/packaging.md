@@ -78,16 +78,19 @@ two versions of the same library coexist in one classpath without touching each 
 
 ### Android applications
 
-An Android application is a further target of the same [linking](compiler.md) scheme rather than
-a separate toolchain. Classfiles link to Dalvik bytecode as an `Artifact.Dex`, and an
-`Artifact.Apk` goes further: the dexed code, a binary `AndroidManifest.xml`, zip-aligned and
-signed, ready to install:
+An Android application is a further target of the same [toolchain](compiler.md) rather than a
+separate one. Classfiles dex to Dalvik bytecode as a `Dex` archive, and `Apk` goes one edge
+further: the dexed code, a binary `AndroidManifest.xml`, zip-aligned and signed, ready to install.
+Asking for the `Apk` runs both tools, since that is the path between the two formats:
 
 ```scala
-import apkLinkages.given
-
-Linker[Artifact.Apk](List(apkOptions.minApi(24)))
-. link(Compilation(output, classpath), destination)
+Toolchain(dexEdges(), apkEdges()).produce
+  ( Deliverable.Emission(output, classpath),
+    Universe.Classfile,
+    Apk,
+    destination,
+    List(apkOptions.minApi(24)),
+    List(EntryPoint(fqcn"com.example.MainActivity")) )
 ```
 
 The manifest is built from a typed configuration and encoded as Android's binary XML, and signing

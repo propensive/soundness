@@ -30,6 +30,60 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+import java.nio.file as jnf
+
+import ambience.*
+import anticipation.*
+import contingency.*
+import fulminate.*
+import galilei.*
+import gossamer.*
+import parasite.*
+import prepositional.*
+import serpentine.*
+
+import errorDiagnostics.emptyDiagnostics
+import probates.cancelProbate
+
+// The Kotlin compile edge of a toolchain: `Language.Kotlin` to the classfile universe. Kotlin's
+// other backends emit klib rather than a universe anthology models, so only the JVM one is here.
+object kotlincEdges:
+  def apply[version <: Kotlinc.Versions](kotlinc: Kotlinc[version]): List[Edge] =
+    List(Edge(Language.Kotlin, Universe.Classfile, KotlincTool(kotlinc)))
+
+  private case class KotlincTool[version <: Kotlinc.Versions](kotlinc: Kotlinc[version])
+  extends Tool:
+    type Settings = Unit
+
+    def name: Text = t"kotlinc"
+    def initial: Unit = ()
+
+    def run
+      ( settings:    Unit,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using tactic: Tactic[LinkError], linkEvents: LinkEvent is Loggable )
+    :   Deliverable =
+
+      val (sources, classpath) = input.sources(Universe.Classfile)
+      jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
+
+      given compileEvents: (CompileEvent is Loggable) = CompileEvents.relay(using linkEvents)
+
+      mitigate:
+        case CompilerError() => LinkError(LinkError.Reason.CompilerUnusable(t"kotlinc"))
+        case AsyncError(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"kotlinc"))
+
+      . protect:
+          val process = kotlinc(classpath)(sources, out)
+
+          process.complete() match
+            case CompileResult.Success  => Deliverable.Emission(out, classpath)
+            case CompileResult.Crash(_) => abort(LinkError(LinkError.Reason.CompilerCrash))
+
+            case CompileResult.Failure =>
+              abort(LinkError(LinkError.Reason.CompilationFailed(process.errors)))

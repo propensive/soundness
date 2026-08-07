@@ -30,6 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+object Setting:
+  def apply[settings](applies: Format -> Boolean)(edit0: settings -> settings): Setting =
+    new Setting:
+      def appliesTo(format: Format): Boolean = applies(format)
+      def edit(format: Format, settings0: Any): Any = edit0(settings0.asInstanceOf[settings])
+
+// A tool setting, addressed to the formats whose production it configures: a `Toolchain`
+// applies it, in order, to the initial settings of every path edge whose target satisfies
+// `appliesTo`. Contract: `appliesTo(format)` implies `edit(format, _)` accepts and returns the
+// settings type of every edge targeting `format`. A setting spanning formats with different
+// settings types (an Android API level configures both dexing and packaging) dispatches on its
+// `format` argument.
+trait Setting:
+  def appliesTo(format: Format): Boolean
+  def edit(format: Format, settings: Any): Any

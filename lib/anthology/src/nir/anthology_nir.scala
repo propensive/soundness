@@ -32,27 +32,126 @@
                                                                                                   */
 package anthology
 
-import scala.scalanative.build.{GC, LTO, Mode, NativeConfig}
+import java.nio.file as jnf
+
+import scala.concurrent.*
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.*
+import scala.scalanative.build.{Build, Config, GC, LTO, Mode, NativeConfig}
+import scala.scalanative.util.Scope
+import scala.util.control as suc
+
+import ambience.*
+import anticipation.*
+import contingency.*
+import digression.*
+import distillate.*
+import eucalyptus.*
+import galilei.*
+import gossamer.*
+import guillotine.*
+import hellenism.*
+import parasite.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import vacuous.*
 
 object nativeOptions:
-  private def native(edit: NativeConfig => NativeConfig): Linker.Option[Artifact.Binary] =
-    Linker.Option(edit)
-
-  def target(triple: Triple): Linker.Option[Artifact.Binary] =
-    native(_.withTargetTriple(Some(triple.text.s)))
+  private def native(edit: NativeConfig => NativeConfig): Setting =
+    Setting[NativeConfig](_.isInstanceOf[Binary])(edit)
 
   object gc:
-    val immix: Linker.Option[Artifact.Binary] = native(_.withGC(GC.immix))
-    val commix: Linker.Option[Artifact.Binary] = native(_.withGC(GC.commix))
-    val boehm: Linker.Option[Artifact.Binary] = native(_.withGC(GC.boehm))
-    val none: Linker.Option[Artifact.Binary] = native(_.withGC(GC.none))
+    val immix: Setting = native(_.withGC(GC.immix))
+    val commix: Setting = native(_.withGC(GC.commix))
+    val boehm: Setting = native(_.withGC(GC.boehm))
+    val none: Setting = native(_.withGC(GC.none))
 
   object mode:
-    val debug: Linker.Option[Artifact.Binary] = native(_.withMode(Mode.debug))
-    val releaseFast: Linker.Option[Artifact.Binary] = native(_.withMode(Mode.releaseFast))
-    val releaseFull: Linker.Option[Artifact.Binary] = native(_.withMode(Mode.releaseFull))
+    val debug: Setting = native(_.withMode(Mode.debug))
+    val releaseFast: Setting = native(_.withMode(Mode.releaseFast))
+    val releaseFull: Setting = native(_.withMode(Mode.releaseFull))
 
   object lto:
-    val none: Linker.Option[Artifact.Binary] = native(_.withLTO(LTO.none))
-    val thin: Linker.Option[Artifact.Binary] = native(_.withLTO(LTO.thin))
-    val full: Linker.Option[Artifact.Binary] = native(_.withLTO(LTO.full))
+    val none: Setting = native(_.withLTO(LTO.none))
+    val thin: Setting = native(_.withLTO(LTO.thin))
+    val full: Setting = native(_.withLTO(LTO.full))
+
+// The native edges of a toolchain: `Nir` to a `Binary` per target triple, each driving the
+// Scala Native build through the C toolchain (`clang` and `clang++`) probed once for all of
+// them — a native link whose native tooling is absent is not expressible. With no arguments,
+// the build host's own triple is the single target; targets beyond the host require a C
+// toolchain (and sysroot) capable of cross-compilation.
+object nativeEdges:
+  def apply(triples: Triple*)(using WorkingDirectory): List[Edge] raises ToolchainError =
+    val clang = probe(t"clang")
+    val clangpp = probe(t"clang++")
+
+    val targets: List[Triple] =
+      // An unrecognized build host cannot name its own triple, and in any case has no Scala
+      // Native runtime; report it as the C toolchain's absence.
+      if triples.isEmpty
+      then List(Triple.host.or(abort(ToolchainError(t"clang"))))
+      else List(triples*)
+
+    targets.map: triple => Edge(Universe.Nir, Binary(triple), NativeTool(triple, clang, clangpp))
+
+  private def probe(tool: Text)(using WorkingDirectory): Text raises ToolchainError =
+    safely(mute[ExecEvent](sh"which $tool".exec[Text]())).let(_.trim)
+    . or(abort(ToolchainError(tool)))
+
+  private case class NativeTool(triple: Triple, clang: Text, clangpp: Text) extends Tool:
+    type Settings = NativeConfig
+
+    def name: Text = Binary(triple).id
+
+    def initial: NativeConfig =
+      NativeConfig.empty
+      . withClang(jnf.Paths.get(clang.s).nn)
+      . withClangPP(jnf.Paths.get(clangpp.s).nn)
+      . withGC(GC.immix)
+      . withMode(Mode.debug)
+      . withLTO(LTO.none)
+      . withBaseName("main")
+      . withTargetTriple(Some(triple.text.s))
+
+    def run
+      ( settings:    NativeConfig,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
+
+      val main = entryPoints match
+        case List(entry) => entry.mainClass.text
+        case _           => abort(LinkError(LinkError.Reason.NoEntryPoint))
+
+      val (directory, classpath) = input.emission(Binary(triple))
+
+      val entries: List[jnf.Path] =
+        jnf.Paths.get(directory.encode.s).nn ::
+          classpath.entries.bind:
+            case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
+            case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
+            case _                                   => Nil
+
+      try
+        val outPath = jnf.Paths.get(out.encode.s).nn
+        jnf.Files.createDirectories(outPath)
+        given Scope = Scope.forever
+
+        val config =
+          Config.empty
+          . withBaseDir(outPath.toAbsolutePath.nn)
+          . withMainClass(Some(main.s))
+          . withClassPath(entries.stdlib)
+          . withModuleName("main")
+          . withCompilerConfig(settings)
+
+        val artifact = Await.result(Build.build(config), 1800.seconds)
+        Deliverable.Product(unsafely(artifact.toString.tt.as[Path on Linux]))
+
+      catch case suc.NonFatal(error) =>
+        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))

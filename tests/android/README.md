@@ -5,7 +5,7 @@ codelab](https://developer.android.com/codelabs/basic-android-kotlin-compose-bui
 (the classic first-steps Android app: a die face and a *Roll* button): a single activity,
 written in Scala (`src/dice.scala`), which reaches Android's widgets and Kotlin's
 `kotlin.random.Random` through xenophile's Kotlin facades, compiled with anthology's `Scalac`
-and linked as `Artifact.Dex` (`builder/build.scala` drives both).
+and dexed to the `Dex` format (`builder/build.scala` drives both).
 
 The UI is built programmatically, so the app needs no XML layouts and no resource compilation
 beyond its manifest.
@@ -54,7 +54,7 @@ produce `out/android/dex.dest/dice.apk`.
 ANDROID_HOME=~/Library/Android/sdk ./mill android.apk
 ```
 
-This links `Artifact.Apk` directly: anthology dexes the code, encodes the binary manifest itself
+This follows the path to `Apk`: anthology dexes the code, encodes the binary manifest itself
 (`Axml` — no `aapt2`), assembles the archive with 4-byte-aligned dex entries (zeppelin's
 alignment — no `zipalign`), and applies an APK Signature Scheme v2 signature (gastronomy SHA-256
 digests + `java.security` RSA — no `apksigner`). The only external requirement is a JDK and the

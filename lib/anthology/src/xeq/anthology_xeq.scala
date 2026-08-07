@@ -32,63 +32,86 @@
                                                                                                   */
 package anthology
 
-import java.nio.file as jnf
-
-import scala.util.control as suc
-
 import ambience.*
 import anticipation.*
 import contingency.*
-import digression.*
-import embarcadero.*
+import ethereal.*
+import fulminate.*
 import galilei.*
 import gossamer.*
 import parasite.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import serpentine.*
-import turbulence.*
 import vacuous.*
-import xenophile.*
-import zephyrine.*
+import ziggurat.*
 
-object ociOptions:
-  private def oci(edit: OciConfiguration => OciConfiguration): Setting =
-    Setting[OciConfiguration](_ == OciImage)(edit)
+import errorDiagnostics.emptyDiagnostics
 
-  def architecture(name: Text): Setting = oci(_.copy(architecture = name))
-  def os(name: Text): Setting = oci(_.copy(os = name))
-  def author(name: Text): Setting = oci(_.copy(author = name))
+object xeqOptions:
+  private def xeq(edit: XeqConfiguration => XeqConfiguration): Setting =
+    Setting[XeqConfiguration](_.isInstanceOf[Xeq])(edit)
 
-  def annotation(key: Text, value: Text): Setting =
-    oci: config => config.copy(annotations = config.annotations.updated(key, value))
+  // The distributable's basename within the output directory.
+  def name(name: Text): Setting = xeq(_.copy(name = name))
 
-// The wrapping edge of a toolchain: the `wasip2` component to its OCI artifact, written as an
-// `oci-archive` tar. Linking the component is the preceding edge on the path
-// (`sjsEdges.wasi()`), so this tool consumes the component it produced.
-//
-// The artifact's `component` metadata — the interfaces the workload imports and exports — is read
-// from the world it was linked against, not from the component binary: the world is the
-// authoritative statement of the contract, and reading it needs no disassembler.
-object ociEdges:
-  // The world a component exports `wasi:http/incoming-handler` from is, by construction, the
-  // standard HTTP proxy world; naming it as the artifact's `target` is what lets a host know the
-  // component is servable without inspecting its exports one by one.
-  private val incomingHandler = t"wasi:http/incoming-handler@0.2.0"
-  private val proxy = t"wasi:http/proxy@0.2.0"
+  // Adds a target platform label (e.g. `linux-x64`); with none, every platform the runner
+  // source names is targeted.
+  def target(label: Text): Setting = xeq: config => config.copy(targets = label :: config.targets)
 
-  def apply()(using world: WitWorld): List[Edge] =
-    List(Edge(Wasi(Wasi.Version.Wasip2), OciImage, OciTool(world)))
+  object runners:
+    // The published `runners-<version>` release, verified against its committed manifest.
+    def standard: Setting = xeq(_.copy(runners = Packaging.RunnerSource.Remote(Runners.baseUrl, Runners.hashes)))
 
-  private case class OciTool(world: WitWorld) extends Tool:
-    type Settings = OciConfiguration
+    // A local directory of prebuilt stubs (e.g. the output of `make runners-build`).
+    def local(directory: Path on Linux): Setting =
+      xeq(_.copy(runners = Packaging.RunnerSource.Local(directory)))
 
-    def name: Text = t"oci"
-    def initial: OciConfiguration = OciConfiguration()
+    def remote(baseUrl: Text, hashes: Map[Text, Text]): Setting =
+      xeq(_.copy(runners = Packaging.RunnerSource.Remote(baseUrl, hashes)))
+
+  def java(minimum: Int, preferred: Int): Setting =
+    xeq: config =>
+      config.copy(java = config.java.copy(minimum = minimum, preferred = preferred))
+
+  object bundle:
+    def jre: Setting = xeq: config =>
+      config.copy(java = config.java.copy(bundle = Packaging.Bundle.Jre))
+
+    def jdk: Setting = xeq: config =>
+      config.copy(java = config.java.copy(bundle = Packaging.Bundle.Jdk))
+
+  def signing
+    ( publicKey:      Optional[Path on Linux] = Unset,
+      seed:           Optional[Path on Linux] = Unset,
+      allowDowngrade: Boolean                 = false )
+  :   Setting =
+
+    xeq(_.copy(signing = Packaging.Signing(publicKey, seed, allowDowngrade)))
+
+  def buildId(id: Long): Setting = xeq(_.copy(buildId = id))
+
+// The xeq packaging edges of a toolchain: `Jar` to each delivery mode's bundle, all a thin
+// facade over `ziggurat.Packager` — which patches ethereal's reusable runner stubs, appends
+// the JAR, and wraps the result in a polyglot script where the delivery calls for one.
+object xeqEdges:
+  def apply(): List[Edge] =
+    List
+      ( edge(Packaging.Delivery.EmbedAll),
+        edge(Packaging.Delivery.Download),
+        edge(Packaging.Delivery.Native) )
+
+  private def edge(delivery: Packaging.Delivery): Edge =
+    Edge(Jar, anthology.Xeq(delivery), XeqTool(delivery))
+
+  private case class XeqTool(delivery: Packaging.Delivery) extends Tool:
+    type Settings = XeqConfiguration
+
+    def name: Text = anthology.Xeq(delivery).id
+    def initial: XeqConfiguration = XeqConfiguration()
 
     def run
-      ( settings:    OciConfiguration,
+      ( settings:    XeqConfiguration,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
@@ -96,60 +119,35 @@ object ociEdges:
       ( using Tactic[LinkError], LinkEvent is Loggable )
     :   Deliverable =
 
-      val component = input.product(OciImage)
-      Deliverable.Product(wrap(settings, world, component, out))
+      val jar = input.product(anthology.Xeq(delivery))
 
-  // The wrapping step itself: takes an already-linked component and writes the `oci-archive`.
-  private def wrap
-    ( form:      OciConfiguration,
-      world:     WitWorld,
-      component: Path on Linux,
-      out:       Path on Linux )
-  :   Path on Linux logs LinkEvent raises LinkError =
+      val runners = settings.runners.or:
+        abort(LinkError(LinkError.Reason.MissingSetting(t"runners")))
 
-    val (imports, exports) = interfaces(world)
+      // With no explicit targets, target every platform the runner source names; a local
+      // directory names none, so explicit targets are required there.
+      val targets: List[Text] =
+        if !settings.targets.stdlib.isEmpty then settings.targets else runners.absolve match
+          case Packaging.RunnerSource.Remote(_, hashes) =>
+            List(hashes.stdlib.keys.toSeq.sortBy(_.s)*)
 
-    try
-      val bytes: Data =
-        jnf.Files.readAllBytes(jnf.Paths.get(component.encode.s).nn).nn.pipe(Array.unsafeFrozen)
+          case Packaging.RunnerSource.Local(_) =>
+            abort(LinkError(LinkError.Reason.MissingSetting(t"targets")))
 
-      val image =
-        Image.wasm
-          ( bytes,
-            exports      = exports,
-            imports      = imports,
-            target       = if exports.has(incomingHandler) then proxy else Unset,
-            architecture = form.architecture,
-            os           = form.os,
-            annotations  = if form.annotations.isEmpty then Unset else form.annotations )
+      val packaging =
+        Packaging
+          ( name         = settings.name,
+            targets      = targets,
+            delivery     = delivery,
+            dependencies = Packaging.Dependencies.FatJar(jar),
+            output       = unsafely(out / settings.name),
+            runnerSource = runners,
+            java         = settings.java,
+            signing      = settings.signing,
+            buildId      = settings.buildId )
 
-      val archive = out / "image.tar"
-      jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
+      mitigate:
+        case error: PackageError => LinkError(LinkError.Reason.Packaging(error.message.text))
 
-      jnf.Files.write
-        ( jnf.Paths.get(archive.encode.s).nn,
-          image.archive.source[Data].memoize.mutable(using Unsafe) )
-
-      archive
-
-    catch case suc.NonFatal(error) =>
-      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
-
-  // The world's imports and exports, read from the `.wit` sources at the top of the WIT
-  // directory. Only that top level is searched: `deps/` holds the packages the world draws on,
-  // and none of them declares the world being linked. A world that cannot be found contributes
-  // no interfaces rather than failing the link — the component is still valid, only less well
-  // described.
-  private def interfaces(world: WitWorld): (List[Text], List[Text]) =
-    val files = jnf.Paths.get(world.directory.encode.s).nn.toFile.nn.listFiles.nn
-
-    def search(index: Int): Optional[WitDialect.World] =
-      if index >= files.length then Unset else
-        val file = files(index).nn
-
-        if !file.getName.nn.endsWith(".wit") then search(index + 1) else
-          val text = String(jnf.Files.readAllBytes(file.toPath.nn).nn, "UTF-8").tt
-
-          WitDialect.worlds(text).stdlib.get(world.world).optional.or(search(index + 1))
-
-    search(0).lay((Nil, Nil)): found => (found.imports, found.exports)
+      . protect:
+          Deliverable.Product(Packager.pack(packaging))

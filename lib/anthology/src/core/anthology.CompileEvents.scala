@@ -30,6 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+import anticipation.*
+import fulminate.*
+
+object CompileEvents:
+  // Relays a compiler's diagnostics onto the toolchain's own event channel, so a build watching
+  // one path's events sees compilation and linking alike. Compile edges install this for the
+  // duration of a compile, since a `Tool` is given the link channel and the compilers speak
+  // their own.
+  // Capture-polymorphic over the link channel's own capabilities, so the relay honestly carries
+  // whatever the toolchain's channel captures.
+  def relay[cap^](using linkEvents: (LinkEvent is Loggable)^{cap})
+  :   (CompileEvent is Loggable)^{cap} =
+
+    new Loggable:
+      type Self = CompileEvent
+
+      def log(level: Level, timestamp: Long, event: => CompileEvent): Unit =
+        linkEvents.log(level, timestamp, LinkEvent.Message(event.communicate.text))

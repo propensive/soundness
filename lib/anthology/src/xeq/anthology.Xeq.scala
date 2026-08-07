@@ -30,6 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+import anticipation.*
+import gossamer.*
+import ziggurat.*
+
+// A command-line-runnable xeq bundle: an executable JAR packaged for direct invocation from a
+// shell, built on ethereal's reusable runner stubs and ziggurat's polyglot scripts. The
+// delivery mode is part of the node's identity, since each is a different distributable: an
+// installer script embedding every platform's runner (`EmbedAll`), a launcher script that
+// downloads the right runner on first run (`Download`), or a single self-contained binary for
+// one platform (`Native`). Unexported: `soundness` already exports ziggurat's `Xeq`.
+@unexported
+case class Xeq(delivery: Packaging.Delivery) extends Format.Application:
+  def id: Text = delivery match
+    case Packaging.Delivery.EmbedAll => t"xeq-embedall"
+    case Packaging.Delivery.Download => t"xeq-download"
+    case Packaging.Delivery.Native   => t"xeq-native"

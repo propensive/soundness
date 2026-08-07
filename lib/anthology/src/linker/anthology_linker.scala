@@ -32,9 +32,92 @@
                                                                                                   */
 package anthology
 
+import java.nio.file as jnf
+
+import scala.util.control as suc
+
+import ambience.*
 import anticipation.*
+import contingency.*
+import digression.*
+import galilei.*
+import gossamer.*
+import hellenism.*
+import parasite.*
+import prepositional.*
+import serpentine.*
+import vacuous.*
 
 object jarOptions:
-  // The filename of the JAR within the link's output directory.
-  def name(name: Text): Linker.Option[Artifact.Packaged] =
-    Linker.Option((_: Text) => name)
+  // The filename of the JAR within the output directory, for both `Jar` and `Library` nodes.
+  def name(name: Text): Setting =
+    Setting[Text](format => format == Jar || format.isInstanceOf[Library])(_ => name)
+
+// The JAR-packaging edges of a toolchain: `Classfile` to `Jar` (an executable JAR of the whole
+// classpath) and each universe to its `Library` (a JAR of the compilation's own output). Both
+// tools' settings are the JAR's filename within the output directory.
+object jarEdges:
+  def apply(): List[Edge] =
+    List
+      ( Edge(Universe.Classfile, Jar, JarTool),
+        Edge(Universe.Classfile, Library(Universe.Classfile), LibraryTool(Universe.Classfile)),
+        Edge(Universe.Sjsir, Library(Universe.Sjsir), LibraryTool(Universe.Sjsir)),
+        Edge(Universe.Nir, Library(Universe.Nir), LibraryTool(Universe.Nir)) )
+
+  private object JarTool extends Tool:
+    type Settings = Text
+
+    def name: Text = t"jar"
+    def initial: Text = t"main.jar"
+
+    def run
+      ( settings:    Text,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
+
+      val (directory, classpath) = input.emission(Jar)
+
+      val main: Optional[Fqcn] = entryPoints match
+        case Nil         => Unset
+        case List(entry) => entry.mainClass
+        case _           => abort(LinkError(LinkError.Reason.ManyEntryPoints))
+
+      try
+        jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
+        val entries = Classpath.Directory(directory) :: classpath.entries
+        val jarfile = unsafely(Bundler.assemble(LocalClasspath(entries*), out / settings, main))
+        Deliverable.Product(jarfile)
+
+      catch case suc.NonFatal(error) =>
+        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+
+  private case class LibraryTool(universe: Universe) extends Tool:
+    type Settings = Text
+
+    def name: Text = t"library"
+    def initial: Text = t"main.jar"
+
+    // A library packages only the compilation's own output, and entry points do not apply.
+    def run
+      ( settings:    Text,
+        input:       Deliverable,
+        entryPoints: List[EntryPoint],
+        out:         Path on Linux )
+      ( using Monitor, System, WorkingDirectory )
+      ( using Tactic[LinkError], LinkEvent is Loggable )
+    :   Deliverable =
+
+      val (directory, _) = input.emission(Library(universe))
+
+      try
+        jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
+        val entries = List(Classpath.Directory(directory))
+        val jarfile = unsafely(Bundler.assemble(LocalClasspath(entries*), out / settings, Unset))
+        Deliverable.Product(jarfile)
+
+      catch case suc.NonFatal(error) =>
+        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))

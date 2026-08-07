@@ -30,6 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+import anticipation.*
+import gossamer.*
+
+// The source languages: the roots of a toolchain. Each language's compile edges into the
+// universes its compiler can emit are provided by that compiler's component. Unexported:
+// `soundness` already exports cosmopolite's `Language`.
+@unexported
+enum Language extends Format.Source:
+  case Scala, Java, Kotlin
+
+  def id: Text = this match
+    case Scala  => t"scala"
+    case Java   => t"java"
+    case Kotlin => t"kotlin"

@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anthology.{ociLinkages, ociOptions, OciConfiguration}
+export anthology.{ociEdges, OciImage, ociOptions, OciConfiguration}

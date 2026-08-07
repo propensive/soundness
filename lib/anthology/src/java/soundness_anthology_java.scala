@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anthology.{Javac, JavacOption}
+export anthology.{Javac, javacEdges, JavacOption}

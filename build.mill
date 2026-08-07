@@ -589,7 +589,7 @@ object soundness extends Toolchain:
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
     anthology.lira,
     anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`,
-    delicious.ansi, anthology.kotlin, anthology.oci, hyperbole.stacks)
+    delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks)
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
@@ -901,8 +901,16 @@ object anthology extends Library:
     override def scalaJs = false // packages linked components (drives the Scala.js linker)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  // Packs an executable JAR as a self-contained command-line distributable: ethereal's reusable
+  // runner stubs and ziggurat's polyglot installer/launcher scripts, reached through the
+  // toolchain's `Jar` to `Xeq` edges.
+  object xeq extends Component(linker, ziggurat.packager):
+    override def scalaJs = false // native packaging (ethereal runners, telekinesis downloads)
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   object test
-  extends Tests(`scala`, `java`, kotlin, core, linker, link, nir, dex, apk, oci, spectacular.core):
+  extends Tests
+    ( `scala`, `java`, kotlin, core, linker, link, nir, dex, apk, oci, xeq, spectacular.core ):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3123,7 +3131,7 @@ object wasm extends Module:
 
 // The Android sample (`tests/android`; instructions in tests/android/README.md): builds Google's
 // Dice Roller codelab as a Soundness app — Scala source calling Android and Kotlin APIs through
-// xenophile's Kotlin facades — compiled by anthology's `Scalac` and linked as `Artifact.Dex`.
+// xenophile's Kotlin facades — compiled by anthology's `Scalac` and dexed to the `Dex` format.
 // Needs the Android platform stubs (`ANDROID_HOME` with a `platforms/android-NN`, or a direct
 // `ANDROID_JAR`); it is not part of the ordinary build. Mirrors `object wasm`.
 object android extends Module:
@@ -3166,7 +3174,7 @@ object android extends Module:
 
     PathRef(Task.dest / "main.dex.jar")
 
-  // The pure-Soundness packaging path: compile, then link `Artifact.Apk` — dexed, binary-
+  // The pure-Soundness packaging path: compile, then follow the path to `Apk` — dexed, binary-
   // manifested, zip-aligned and v2-signed with no Android SDK build tool. Produces an
   // installable, signed `app.apk`. Needs `~/.android/debug.keystore` (a PKCS#12 debug keystore,
   // as Android Studio and `keytool` create).

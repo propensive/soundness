@@ -58,6 +58,8 @@ import vacuous.*
 import filesystemOptions.deleteRecursively.disabled
 import logging.silentLogging
 import probates.cancelProbate
+import systems.javaSystem
+import threading.platformThreading
 import workingDirectories.javaWorkingDirectory
 
 import filesystemBackends.virtualMachine
@@ -112,11 +114,16 @@ extends Rig:
       // `Fqcn.apply` rather than the `fqcn""` interpolator: the macro's synthesized tree
       // fails capture-variable unification when expanded in a capture-checked module.
       val executor: Fqcn = safely(Fqcn(t"superlunary.Executor2")).vouch
-      val compilation = Compilation[Universe.Classfile](out, Bundler.applicationClasspath)
 
-      val jarfile =
-        Linker[Artifact.Jar](List(jarOptions.name(t"$name.jar")), List(Linker.EntryPoint(executor)))
-        . link(compilation, out)
+      val jarfile = supervise:
+        unsafely:
+          Toolchain(jarEdges()).produce
+            ( Deliverable.Emission(out, Bundler.applicationClasspath),
+              Universe.Classfile,
+              Jar,
+              out,
+              List(jarOptions.name(t"$name.jar")),
+              List(EntryPoint(executor)) )
 
       val cmd = (buildId: @unchecked) match
         case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"

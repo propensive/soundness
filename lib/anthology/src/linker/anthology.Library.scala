@@ -30,6 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+import anticipation.*
+import gossamer.*
+
+// A library JAR of one universe's compilation output—classfiles, and any `.sjsir` or `.nir`
+// alongside them—packaged for downstream assembly rather than execution. Packaging rather than
+// closed-world linking, but an application node all the same: one per universe.
+case class Library(universe: Universe) extends Format.Application:
+  def id: Text = t"library-${universe.id}"

@@ -30,6 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+import anticipation.*
+import gossamer.*
+
+// Dalvik executable bytecode, bound to the Android runtime, packaged as an archive of
+// `classes*.dex` files: an application node in its own right (`DexClassLoader` consumes it
+// directly), and the intermediate node on the path from `Classfile` to `Apk`.
+object Dex extends Format.Application:
+  def id: Text = t"dex"

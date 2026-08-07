@@ -34,10 +34,23 @@ package anthology
 
 import anticipation.*
 import gossamer.*
+import vacuous.*
 
-// A target platform for a native link, rendered as an LLVM target triple. The default—omitting
-// a `target` option—links for the build host; targets beyond the host require a C toolchain
-// (and sysroot) capable of cross-compilation.
+object Triple:
+  // The build host's target, read from the JVM's `os.name` and `os.arch` properties, or
+  // `Unset` on a platform outside the enumeration.
+  def host: Optional[Triple] =
+    val os = java.lang.System.getProperty("os.name").nn.toLowerCase.nn
+    val arch = java.lang.System.getProperty("os.arch").nn.toLowerCase.nn
+    val arm = arch.contains("aarch64") || arch.contains("arm64")
+
+    if os.contains("mac") then (if arm then Arm64MacOs else X64MacOs)
+    else if os.contains("linux") then (if arm then Arm64Linux else X64Linux)
+    else if os.contains("windows") then (if arm then Arm64Windows else X64Windows)
+    else Unset
+
+// A target platform for a native link, rendered as an LLVM target triple. Targets beyond the
+// build host require a C toolchain (and sysroot) capable of cross-compilation.
 enum Triple:
   case Arm64MacOs, X64MacOs, Arm64Linux, X64Linux, Arm64Windows, X64Windows
 

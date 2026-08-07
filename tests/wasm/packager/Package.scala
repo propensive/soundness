@@ -14,9 +14,9 @@ import zephyrine.*
 // Wraps a linked `.wasm` component in a Wasm OCI Artifact and writes it as an `oci-archive` tar.
 // Driven by the `wasm.image`/`wasm.httpImage` mill tasks; a standalone driver for the same reason
 // the linker is one — it needs Soundness modules on its classpath, which the build itself does not
-// have. `anthology.oci` models this properly as a `Linkage`, driving the component link too; this
-// driver starts from an already-linked component, so the e2e can package exactly the bytes the
-// scenarios ran.
+// have. `anthology.oci` models this properly as a toolchain edge, following the component link;
+// this driver starts from an already-linked component, so the e2e can package exactly the bytes
+// the scenarios ran.
 //
 // The `component` metadata is read from the WIT world with `WitDialect.worlds`, so the artifact
 // states which host capabilities the workload needs without anything disassembling the component.

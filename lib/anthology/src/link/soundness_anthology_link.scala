@@ -34,4 +34,4 @@ package soundness
 
 export
   anthology
-  . { linkerOptions, sjsLinkages, WasiToolchain, WitWorld }
+  . { linkerOptions, sjsEdges, Wasi, WasiToolchain, WitWorld }

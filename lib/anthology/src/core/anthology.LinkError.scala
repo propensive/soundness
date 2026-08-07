@@ -32,91 +32,57 @@
                                                                                                   */
 package anthology
 
-import java.nio.file as jnf
-
-import scala.concurrent.*
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.*
-import scala.scalanative.build.{Build, Config, GC, LTO, Mode, NativeConfig}
-import scala.scalanative.util.Scope
-import scala.util.control as suc
-
-import ambience.*
 import anticipation.*
-import contingency.*
 import digression.*
-import distillate.*
-import eucalyptus.*
-import galilei.*
-import gossamer.*
-import guillotine.*
-import hellenism.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import vacuous.*
+import fulminate.*
 
-// The Scala Native link family. An instance exists only via the probing `apply`, which verifies
-// that the C toolchain (`clang` and `clang++`) the link shells out to is present—so, as with
-// WASI components, a native link whose native tooling is absent is not expressible. Put one in
-// scope with `given NativeLinkage = NativeLinkage()`.
-object NativeLinkage:
-  def apply()(using WorkingDirectory)
-  :   (Linkage[Artifact.Binary] from Universe.Nir) raises ToolchainError =
+object LinkError:
+  enum Reason(val number: Int) extends Clarification:
+    case Failed(trace: StackTrace)                  extends Reason(1)
+    case NoEntryPoint                               extends Reason(3)
+    case ManyEntryPoints                            extends Reason(4)
+    case NoPath(source: Text, target: Text)         extends Reason(5)
+    case AmbiguousPath(source: Text, target: Text)  extends Reason(6)
+    case InapplicableSetting                        extends Reason(7)
+    case DuplicateEdge(source: Text, target: Text)  extends Reason(8)
+    case CyclicToolchain                            extends Reason(9)
+    case UnexpectedInput(format: Text)              extends Reason(10)
+    case CompilationFailed(errors: Int)             extends Reason(11)
+    case MissingSetting(name: Text)                 extends Reason(12)
+    case Packaging(detail: Text)                    extends Reason(13)
+    case CompilerCrash                              extends Reason(14)
+    case CompilerUnusable(detail: Text)             extends Reason(15)
 
-    new NativeLinkage(probe(t"clang"), probe(t"clang++"))
+  given communicable: Reason is Communicable =
+    case Reason.Failed(_)       => m"the linker terminated abnormally"
+    case Reason.NoEntryPoint    => m"a native executable requires exactly one entry point"
+    case Reason.ManyEntryPoints => m"an executable JAR permits at most one entry point"
 
-  private def probe(tool: Text)(using WorkingDirectory): Text raises ToolchainError =
-    safely(mute[ExecEvent](sh"which $tool".exec[Text]())).let(_.trim)
-    . or(abort(ToolchainError(tool)))
+    case Reason.NoPath(source, target) =>
+      m"the toolchain has no path from $source to $target"
 
-class NativeLinkage private (clang: Text, clangpp: Text)
-extends Linkage[Artifact.Binary]:
-  type Origin = Universe.Nir
-  private[anthology] type Form = NativeConfig
+    case Reason.AmbiguousPath(source, target) =>
+      m"""
+        the toolchain has several shortest paths from $source to $target, so an intermediate
+        format must be produced explicitly
+      """
 
-  private[anthology] def initial: NativeConfig =
-    NativeConfig.empty
-    . withClang(jnf.Paths.get(clang.s).nn)
-    . withClangPP(jnf.Paths.get(clangpp.s).nn)
-    . withGC(GC.immix)
-    . withMode(Mode.debug)
-    . withLTO(LTO.none)
-    . withBaseName("main")
+    case Reason.InapplicableSetting =>
+      m"a setting applies to no format produced on the path"
 
-  private[anthology] def link
-    ( form:        NativeConfig,
-      compilation: Compilation[Universe.Nir],
-      entryPoints: List[Linker.EntryPoint],
-      out:         Path on Linux )
-  :   Path on Linux logs LinkEvent raises LinkError =
+    case Reason.DuplicateEdge(source, target) =>
+      m"the toolchain declares more than one edge from $source to $target"
 
-    val main = entryPoints match
-      case List(entry) => entry.mainClass.text
-      case _           => abort(LinkError(LinkError.Reason.NoEntryPoint))
+    case Reason.CyclicToolchain => m"the toolchain's edges form a cycle"
 
-    val entries: List[jnf.Path] =
-      jnf.Paths.get(compilation.out.encode.s).nn ::
-        compilation.classpath.entries.bind:
-          case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
-          case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
-          case _                                   => Nil
+    case Reason.UnexpectedInput(format) =>
+      m"the tool producing $format cannot consume the content it was given"
 
-    try
-      val outPath = jnf.Paths.get(out.encode.s).nn
-      jnf.Files.createDirectories(outPath)
-      given Scope = Scope.forever
+    case Reason.CompilationFailed(errors) => m"compilation failed with $errors errors"
+    case Reason.MissingSetting(name)      => m"the setting $name is required but unspecified"
+    case Reason.Packaging(detail)         => m"packaging failed: $detail"
+    case Reason.CompilerCrash             => m"the compiler crashed"
+    case Reason.CompilerUnusable(detail)  => m"the compiler could not be run: $detail"
 
-      val config =
-        Config.empty
-        . withBaseDir(outPath.toAbsolutePath.nn)
-        . withMainClass(Some(main.s))
-        . withClassPath(entries.stdlib)
-        . withModuleName("main")
-        . withCompilerConfig(form)
-
-      val artifact = Await.result(Build.build(config), 1800.seconds)
-      unsafely(artifact.toString.tt.as[Path on Linux])
-
-    catch case suc.NonFatal(error) =>
-      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+case class LinkError(reason: LinkError.Reason)(using Diagnostics)
+extends Error(443, reason.number)(m"linking failed because $reason")

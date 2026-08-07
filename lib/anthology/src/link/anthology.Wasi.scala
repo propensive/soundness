@@ -32,40 +32,23 @@
                                                                                                   */
 package anthology
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
 
-object Provenance:
-  given jar: (Provenance[Artifact.Jar] from Universe.Classfile):
-    type Origin = Universe.Classfile
+object Wasi:
+  // WASI interface versions: `wasip1` (0.1) is a flat, libc-style syscall ABI on core modules;
+  // `wasip2` (0.2) is the component model, with imports and exports described by WIT; `wasip3`
+  // (0.3) adds native asynchrony. The version determines the artifact's ABI, so it is part of
+  // the node's identity.
+  enum Version:
+    case Wasip1, Wasip2, Wasip3
 
-  given dex: (Provenance[Artifact.Dex] from Universe.Classfile):
-    type Origin = Universe.Classfile
+    def id: Text = this match
+      case Wasip1 => t"wasip1"
+      case Wasip2 => t"wasip2"
+      case Wasip3 => t"wasip3"
 
-  given apk: (Provenance[Artifact.Apk] from Universe.Classfile):
-    type Origin = Universe.Classfile
-
-  given js: [module <: Artifact.Js.Modules]
-  =>  (Provenance[Artifact.Js[module]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given wasm: (Provenance[Artifact.Wasm] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given wasi: [version <: Artifact.Wasi.Versions]
-  =>  (Provenance[Artifact.Wasi[version]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given ociImage: (Provenance[Artifact.OciImage] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given binary: (Provenance[Artifact.Binary] from Universe.Nir):
-    type Origin = Universe.Nir
-
-  given library: [universe <: Universe] => (Provenance[Artifact.Library[universe]] from universe):
-    type Origin = universe
-
-// Witnesses the universe an artifact is produced from—its origin. Unconditional: every artifact
-// has a provenance, whether or not it is currently linkable, so it can drive compilation
-// (`producing`) without demanding the link-time prerequisites that a `Linkage` may impose.
-trait Provenance[artifact <: Artifact]:
-  type Origin <: Universe
+// A standalone WebAssembly artifact bound to a version of the WASI system interface: one
+// application node per version.
+case class Wasi(version: Wasi.Version) extends Format.Application:
+  def id: Text = version.id

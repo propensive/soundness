@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anthology.{Dex, dexEdges, dexOptions}
+export anthology.{xeqEdges, xeqOptions, XeqConfiguration}

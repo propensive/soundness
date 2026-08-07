@@ -30,6 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export anthology.{Dex, dexEdges, dexOptions}
+import digression.*
+
+// An entry point whose `main(args: Array[String])` method runs when the linked artifact loads.
+// Ambient along a whole toolchain path: each tool applies or ignores it as its format demands.
+case class EntryPoint(mainClass: Fqcn)

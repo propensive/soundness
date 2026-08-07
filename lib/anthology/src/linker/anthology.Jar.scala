@@ -32,19 +32,11 @@
                                                                                                   */
 package anthology
 
-import digression.*
-import fulminate.*
+import anticipation.*
+import gossamer.*
 
-object LinkError:
-  enum Reason(val number: Int) extends Clarification:
-    case Failed(trace: StackTrace) extends Reason(1)
-    case NoEntryPoint              extends Reason(3)
-    case ManyEntryPoints           extends Reason(4)
-
-  given communicable: Reason is Communicable =
-    case Reason.Failed(_)       => m"the linker terminated abnormally"
-    case Reason.NoEntryPoint    => m"a native executable requires exactly one entry point"
-    case Reason.ManyEntryPoints => m"an executable JAR permits at most one entry point"
-
-case class LinkError(reason: LinkError.Reason)(using Diagnostics)
-extends Error(443, reason.number)(m"linking failed because $reason")
+// An executable JAR, bound to the JDK: the application node reached from `Classfile` through
+// `jarEdges`. Unexported: `soundness` already exports zeppelin's `Jar`.
+@unexported
+object Jar extends Format.Application:
+  def id: Text = t"jar"

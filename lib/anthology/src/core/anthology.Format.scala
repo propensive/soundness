@@ -32,63 +32,26 @@
                                                                                                   */
 package anthology
 
-object Artifact:
-  // Classfile universe: an executable JAR, bound to the JDK.
-  sealed trait Jar extends Artifact
+import anticipation.*
 
-  // Any universe: a library JAR of the compilation's output—classfiles, and any `.sjsir` or
-  // `.nir` alongside them—for downstream assembly rather than execution. Packaging rather than
-  // closed-world linking, but produced through the same `Linker` verb.
-  sealed trait Library[+universe <: Universe] extends Artifact
+object Format:
+  // A format compilers consume: a source language such as Scala, Java or Kotlin.
+  trait Source extends Format
 
-  // Classfile universe: Dalvik executable bytecode, bound to the Android runtime, packaged as
-  // an archive of `classes*.dex` files. Its linkage lives in the `dex` module:
-  // `import dexLinkages.given`.
-  sealed trait Dex extends Artifact
+  // A format holding open-world, pre-link content: an intermediate representation such as
+  // classfiles, `.sjsir` or `.nir`, in which libraries compose.
+  trait Ir extends Format
 
-  // Classfile universe: a complete, installable Android application package — the dexed code,
-  // a binary manifest, aligned and signed — bound to the Android runtime. Its linkage lives in
-  // the `apk` module: `import apkLinkages.given`.
-  sealed trait Apk extends Artifact
+  // A closed format a build produces for a host to run: an executable JAR, an APK, a JavaScript
+  // bundle or a native binary.
+  trait Application extends Format
 
-  object Js:
-    // How a JavaScript host consumes the artifact: an ECMAScript module, a CommonJS module, or
-    // a plain script. The module system is part of the artifact's binding contract, so it is
-    // part of its type.
-    type Modules = "es" | "commonjs" | "script"
-
-  // Sjsir universe: JavaScript, bound to a JavaScript host (a browser's DOM or a runtime such
-  // as Node) through the given module system.
-  sealed trait Js[+module <: Js.Modules] extends Artifact
-
-  // Sjsir universe: a core WebAssembly module with JavaScript glue, bound to a JavaScript host.
-  sealed trait Wasm extends Artifact
-
-  object Wasi:
-    // WASI interface versions: 0.1 (preview 1) is a flat, libc-style syscall ABI on core
-    // modules; 0.2 is the component model, with imports and exports described by WIT; 0.3 adds
-    // native asynchrony. Versions determine the artifact's ABI, so they are part of its type.
-    type Versions = 0.1 | 0.2 | 0.3
-
-  // A standalone WebAssembly artifact bound to a version of the WASI system interface.
-  sealed trait Wasi[+version <: Wasi.Versions] extends Artifact
-
-  // Sjsir universe: a WASI component packaged as a Wasm OCI Artifact and written as an
-  // `oci-archive` — the form a container runtime with a Wasm shim (`io.containerd.wasmtime.v1`)
-  // schedules, and a registry distributes. Its linkage lives in the `oci` module:
-  // `import ociLinkages.given`.
-  sealed trait OciImage extends Artifact
-
-  // Nir universe: a machine-code executable, bound to an operating system's C library; the
-  // platform and architecture are selected at link time as a `Triple`.
-  sealed trait Binary extends Artifact
-
-  // The artifacts linked from `.sjsir` by the Scala.js linker, sharing one options family.
-  type Sjs = Js[Js.Modules] | Wasm | Wasi[Wasi.Versions]
-
-  // The JAR-packaged artifacts, sharing one options family.
-  type Packaged = Jar | Library[Universe]
-
-// A linked product of a compilation: the tier users choose from. Each artifact is producible
-// from exactly one universe, witnessed by `Provenance`.
-sealed trait Artifact
+// A node of a `Toolchain`: a source language, an intermediate representation or an application
+// format. Identity is value equality, so a format's user-visible parameters—a JavaScript
+// artifact's module system, a WASI artifact's interface version, a native binary's target
+// triple—are constructor parameters, making each parameterization a distinct node. The tiers
+// constrain edges: tools consume any format, but only ever produce intermediate representations
+// or applications. Unexported: `soundness` already exports zephyrine's `Format`.
+@unexported
+trait Format:
+  def id: Text

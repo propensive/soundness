@@ -53,6 +53,7 @@ import gossamer.*
 import hellenism.*
 import inimitable.*
 import jacinta.*
+import parasite.*
 import prepositional.*
 import probably.*
 import rudiments.*
@@ -60,6 +61,10 @@ import serpentine.*
 import superlunary.*
 import symbolism.*
 import vacuous.*
+
+import systems.javaSystem
+import threading.platformThreading
+import workingDirectories.javaWorkingDirectory
 
 case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice) extends Rig:
   type Result[output] = output
@@ -100,14 +105,15 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
 
   def stage(out: Path on Linux): Path on Linux = unsafely:
     val uuid = Uuid()
-    val compilation = Compilation[Universe.Classfile](out, Bundler.applicationClasspath)
 
-    val jarfile =
-      Linker[Artifact.Jar]
-        ( List(jarOptions.name(t"$uuid.jar")),
-          List(Linker.EntryPoint(fqcn"superlunary.Executor")) )
-
-      . link(compilation, out)
+    val jarfile = supervise:
+      Toolchain(jarEdges()).produce
+        ( Deliverable.Emission(out, Bundler.applicationClasspath),
+          Universe.Classfile,
+          Jar,
+          out,
+          List(jarOptions.name(t"$uuid.jar")),
+          List(EntryPoint(fqcn"superlunary.Executor")) )
 
     device.deploy(jarfile, uuid)
     jarfile
