@@ -72,27 +72,18 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   // argument typing, so resolution falls through to more specific `apply` extensions (e.g.
   // compat's frozen-array `apply(Int)`). Declared `inline` so a confined argument's precise
   // type (`Operand in value.type`) survives substitution and the delegate still narrows.
-  // The parameter is typed `applicable.Operand` directly (not a bounded type parameter), so a
-  // call with any other index type makes this candidate inapplicable by argument typing and
-  // resolution falls through to more specific `apply` extensions (compat's frozen-array
-  // `apply(Int)` in particular). The confined/checked dispatch happens here on the inline
-  // argument's own singleton type, since the declared parameter type would widen it away
-  // before the `rudiments` original could see it.
-  transparent inline def apply(ordinal: applicable.Operand)
+  // Same `[index]`-and-evidence shape as the `rudiments` originals (a parameter typed
+  // `applicable.Operand` with singleton-type dispatch in the body does not survive TASTY:
+  // consumers compiling against the pickled extension cannot construct the candidate). The
+  // delegation is inline, so the precise index type flows through and the originals'
+  // confined/checked dispatch behaves identically here.
+  transparent inline def apply[index](ordinal: index)(using sub: index <:< applicable.Operand)
   :   vacuous.Optional[applicable.Result] =
-    scala.compiletime.summonFrom:
-      case _: (ordinal.type <:< prepositional.`in`[applicable.Operand, value.type]) =>
-        applicable.access(value, ordinal)
-      case _ =>
-        rudiments.at(value)(ordinal)
+    rudiments.apply(value)(ordinal)
 
-  transparent inline def at(ordinal: applicable.Operand)
+  transparent inline def at[index](ordinal: index)(using sub: index <:< applicable.Operand)
   :   vacuous.Optional[applicable.Result] =
-    scala.compiletime.summonFrom:
-      case _: (ordinal.type <:< prepositional.`in`[applicable.Operand, value.type]) =>
-        applicable.access(value, ordinal)
-      case _ =>
-        rudiments.at(value)(ordinal)
+    rudiments.at(value)(ordinal)
 
 extension [element](sequence: proscenium.List[element])
   // Mirrors the ungated `List` special case in `rudiments.Deindex` (same non-`inline`
