@@ -186,10 +186,43 @@ object PlatformSupervisor extends ThreadSupervisor:
         name().let(_.s).let(thread.setName(_))
         thread.start()
 
+// The failure path is, in a long-lived process, the code most likely to run for the first time late
+// in that process's life — and classloading is not guaranteed to still work by then. A daemon whose
+// jar has been replaced underneath it (rebuilt in place while it runs) holds an open `JarFile` whose
+// central directory has gone stale, so every class it has not *already* loaded fails from then on;
+// and a strand being cancelled through `Thread.interrupt` can fail a classload mid-read, because NIO
+// channel reads throw on an interrupted thread. Either way, if recording a failure were the first
+// touch of `Fulfillment.Failed`, that classload would throw `NoClassDefFoundError` in place of the
+// original error — destroying the only evidence of what actually went wrong — and leave the
+// strand's promise unsettled, parking every joiner forever.
+//
+// So every class the failure and shutdown paths need is loaded and initialized here instead, at the
+// birth of the first worker (whose `state` field reads `initial`), while classloading still works.
+private object Preload:
+  private def touch(value: Any): Unit = ()
+
+  val initial: Fulfillment[Nothing] =
+    touch(Fulfillment.Active(0L))
+    touch(Fulfillment.Completed(0L, ()))
+    touch(Fulfillment.Delivered(0L, ()))
+    touch(Fulfillment.Failed(Exception()))
+    touch(Fulfillment.Cancelled)
+    touch(Remedy.Accept)
+    touch(Remedy.Reject)
+    touch(Remedy.Escalate(Error(Exception())))
+    touch(AsyncError(Reason.Cancelled)(using Diagnostics.omit))
+
+    // Both settlement paths, which reach `Promise.State.Cancelled` — the counterpart inside
+    // `Promise`, equally unloaded until the first cancellation, and reached only as a strand dies.
+    Promise[Unit]().offer(())
+    Promise[Unit]().cancel()
+
+    Fulfillment.Initializing
+
 abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) extends Monitor:
   self: Worker^ =>
   private val state: juca.AtomicReference[Fulfillment[Result]] =
-    juca.AtomicReference(Fulfillment.Initializing)
+    juca.AtomicReference[Fulfillment[Result]](Preload.initial)
 
   @scala.caps.unsafe.untrackedCaptures
   private var relents: Int = 1
@@ -350,6 +383,12 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
       case Active(_) => true
       case _         => false
 
+    // The body's failure, kept in a local *before* any attempt to record it: recording allocates,
+    // and an allocation can fail. Should the `state.set` below not survive, this local is the only
+    // remaining evidence of what actually went wrong, and the `finally` block escalates it rather
+    // than letting the secondary failure stand in for it.
+    var failure: Optional[Throwable] = Unset
+
     try
       if started then evaluate(this).tap: result =>
         state.updateAndGet:
@@ -369,10 +408,14 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
           case _         => ()
 
       case error: Throwable =>
+        failure = error
         state.set(Failed(error))
 
     finally
-      try probate.cleanup(this) catch case error: Throwable => state.set(Failed(error))
+      // Nothing in the shutdown path may leave the promise unsettled: a joiner parked on an
+      // unsettled promise is parked forever, and *that* — not whatever went wrong here — is what
+      // turns a dead strand into a client which never returns. So every step which can throw runs
+      // inside a `try` whose own `finally` settles the promise unconditionally.
 
       // A fire-and-forget worker has no join at which to deliver a failure, so route it to the trap
       // installed nearby. This runs before the promise is settled below, so anything attending the
@@ -384,28 +427,55 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
         case Remedy.Reject          => error
         case Remedy.Escalate(other) => other
 
-      val escalation: Optional[Throwable] = if !daemon then Unset else state.get().nn match
-        case Failed(error: Error) => remedy(error)
-        case Failed(error)        => error
-        case Initializing         => Unset
-        case Cancelled            => Unset
-        case Active(_)            => Unset
-        case Completed(_, _)      => Unset
-        case Delivered(_, _)      => Unset
+      var escalation: Optional[Throwable] = failure
 
-      parent.remove(this)
+      // Fold a shutdown-path failure into the escalation. The body's own failure is the more
+      // informative of the two, so it remains the escalation and the newcomer is attached to it;
+      // neither is lost, and the one which reaches the uncaught-exception handler still names the
+      // original cause.
+      def absorb(error: Throwable): Unit =
+        escalation = escalation.lay(error): original =>
+          if original `ne` error then original.addSuppressed(error)
+          original
 
-      // The transition is pure — `updateAndGet` may re-run it under contention — and the promise
-      // is settled exactly once afterwards, from the installed state. Ordering matters: the state
-      // must be terminal before the promise wakes any joiner.
-      state.updateAndGet:
-        case null | Initializing | Active(_) => Cancelled
-        case state                           => state
+      try
+        try probate.cleanup(this) catch case error: Throwable => state.set(Failed(error))
 
-      . match
-        case Completed(_, value) => promise.offer(value)
-        case Delivered(_, _)     => ()
-        case _                   => promise.cancel()
+        // The last five cases cover a body which failed without the failure ever reaching the
+        // state: no joiner can then be shown it, so escalating is the only way it is not dropped in
+        // silence, and that holds whether the worker is a daemon or not.
+        escalation = state.get().nn match
+          case Failed(error: Error) => if daemon then remedy(error) else Unset
+          case Failed(error)        => if daemon then error else Unset
+          case Initializing         => failure
+          case Cancelled            => failure
+          case Active(_)            => failure
+          case Completed(_, _)      => failure
+          case Delivered(_, _)      => failure
+
+      catch case error: Throwable => absorb(error)
+
+      finally
+        // Deregistration and settlement both belong here rather than above: a trap which throws
+        // must not be able to leave a dead worker in its parent's registry, nor — far worse — leave
+        // this promise unsettled.
+        try parent.remove(this) catch case error: Throwable => absorb(error)
+
+        // The transition is pure — `updateAndGet` may re-run it under contention — and the promise
+        // is settled exactly once afterwards, from the installed state. Ordering matters: the state
+        // must be terminal before the promise wakes any joiner. If even that fails, cancelling is
+        // the last resort: a joiner woken with an `AsyncError` beats a joiner never woken at all.
+        try
+          state.updateAndGet:
+            case null | Initializing | Active(_) => Cancelled
+            case state                           => state
+
+          . match
+            case Completed(_, value) => promise.offer(value)
+            case Delivered(_, _)     => ()
+            case _                   => promise.cancel()
+
+        catch case error: Throwable => promise.cancel()
 
       escalation.let(throw _)
 

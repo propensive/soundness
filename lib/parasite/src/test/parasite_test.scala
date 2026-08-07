@@ -1538,3 +1538,38 @@ object Tests extends Suite(m"Parasite tests"):
           hook.cancel()
           delivered
         . assert(_ == 1)
+
+      suite(m"Failures while a strand is shutting down"):
+        // A probate whose `trap` throws stands in for anything which can fail on the way out of a
+        // dead strand — in the reported case, the classload of `Fulfillment.Failed` against a jar
+        // replaced underneath a long-running daemon. The strand dies either way; what must never
+        // happen is that its promise is left unsettled, parking every joiner on it forever.
+        object brokenProbate extends Probate:
+          def cleanup(worker: Worker): Unit = ()
+
+          override def trap(worker: Worker, error: Error): Remedy =
+            throw RuntimeException("trap failed")
+
+        test(m"A daemon whose trap throws still settles its promise"):
+          given probate: Probate = brokenProbate
+          val signal = Promise[Int]()
+          val hook = Os.intercept[Fault](signal.offer(1))
+          val d = daemon(raise(FooError(1)))
+
+          // Attended from a separate strand so that the assertion can time out rather than hang if
+          // the promise is never settled.
+          val attended = async(d.attend() yet true)
+          val settled = safely(attended.await(5.0*Second)).or(false)
+          hook.cancel()
+          settled
+        . assert(_ == true)
+
+        test(m"A daemon whose trap throws escalates the failure"):
+          given probate: Probate = brokenProbate
+          val signal = Promise[Int]()
+          val hook = Os.intercept[Fault](signal.offer(1))
+          daemon(throw RuntimeException("boom"))
+          val delivered = safely(signal.await(5.0*Second)).or(0)
+          hook.cancel()
+          delivered
+        . assert(_ == 1)
