@@ -32,13 +32,19 @@
                                                                                                   */
 package urticose
 
+import anticipation.*
+import escapade.*
+import iridescence.*
 import prepositional.*
+import spectacular.*
 
-extension (inline context: StringContext)
-  transparent inline def url(inline parts: Any*): Url[Label] =
-    ${urticose.protointernal.refined('context, 'parts)}
+type UrlPalette = Palette:
+  type Form = Srgb
+  def link: Color in Srgb
 
-  transparent inline def email(): EmailAddress = ${urticose.internal.emailAddress('context)}
-  transparent inline def host(): Hostname = ${urticose.internal.hostname('context)}
-
-type HttpUrl = Url["https" | "http"]
+// Styling for `Url`s, kept out of `urticose.url` so that parsing and rendering URLs does not
+// draw in the ANSI stack. Note that `escapade` supplies a generic `Teletypeable` fallback for
+// any `Showable` type, so a call site which does not import this given still compiles — and
+// renders the URL unstyled.
+given urlTeletype: [scheme <: Label] => (palette: UrlPalette) => Url[scheme] is Teletypeable =
+  url => e"$Underline(${Fg(palette.link)}(${url.show}))"

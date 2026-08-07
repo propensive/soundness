@@ -778,7 +778,7 @@ object soundness extends Toolchain:
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
-    honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
+    honeycomb.core, urticose.core, urticose.url, urticose.ansi, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
     legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http,
@@ -2221,10 +2221,14 @@ object urticose extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object url extends Component(escapade.core, serpentine.core, core):
+  object url extends Component(anticipation.url, serpentine.core, core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, url):
+  // `Url` styling, which is all that `urticose` needed `escapade` (and hence `iridescence`) for.
+  object ansi extends Component(escapade.core, url):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(ansi, core, url):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

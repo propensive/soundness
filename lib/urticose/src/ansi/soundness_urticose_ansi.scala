@@ -30,15 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package soundness
 
-import prepositional.*
-
-extension (inline context: StringContext)
-  transparent inline def url(inline parts: Any*): Url[Label] =
-    ${urticose.protointernal.refined('context, 'parts)}
-
-  transparent inline def email(): EmailAddress = ${urticose.internal.emailAddress('context)}
-  transparent inline def host(): Hostname = ${urticose.internal.hostname('context)}
-
-type HttpUrl = Url["https" | "http"]
+export urticose.{urlTeletype, UrlPalette}
