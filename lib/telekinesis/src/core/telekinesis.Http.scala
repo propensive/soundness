@@ -926,7 +926,14 @@ object Http:
 
       while reading do
         if cursor.peek == '\r' then
-          cursor.next()
+          // Consume the head's final CRLF with `advance` rather than `next`:
+          // `next` calls `more`, which forces a blocking refill of the
+          // underlying stream. That is fatal for a bodiless response (204,
+          // 304, 1xx, or an answer to `HEAD`) on a kept-alive connection: the
+          // server sends nothing after the head until our next request, so
+          // the refill would deadlock. The symmetric hazard to the server
+          // side's `Http.Request.parseHead`; see issue #1301.
+          cursor.advance()
           cursor.expect('\n')(expected('\n'))
           reading = false
 
@@ -946,7 +953,7 @@ object Http:
             cursor.seek('\r'.toByte.asInstanceOf[cursor.addressable.Operand])
             Ascii(cursor.grab(start, cursor.mark)).show
 
-          cursor.next()
+          cursor.advance()
           cursor.expect('\n')(expected('\n'))
           headers = Http.Header(header, value) :: headers
 

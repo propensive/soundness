@@ -278,6 +278,28 @@ object Tests extends Suite(m"Telekinesis tests"):
           case HttpResponseError.Reason.Status(_) => true
           case _                                  => false
 
+      suite(m"Keep-alive boundary"):
+        // Simulates a kept-alive connection: the server sends a complete
+        // bodiless response and then nothing until the next request. Parsing
+        // the head must not read past its final CRLF — the pull for a further
+        // chunk would deadlock on a real socket (issue #1301). The second
+        // chunk here stands in for a later response that must stay unread.
+        test(m"Bodiless response head does not read past the final CRLF"):
+          class Live() extends Iterator[Data]:
+            @scala.caps.unsafe.untrackedCaptures
+            var pulls: Int = 0
+            def hasNext: Boolean = true
+
+            def next(): Data =
+              pulls += 1
+              if pulls == 1 then t"HTTP/1.1 204 No Content\r\nServer: test\r\n\r\n".in[Data]
+              else t"HTTP/1.1 200 OK\r\n\r\n".in[Data]
+
+          val live = Live()
+          val head = Http.Response.parseHead(Cursor[Data](live))
+          (head.status, live.pulls)
+        . assert(_ == (Http.NoContent, 1))
+
       test(m"Fetch a URL"):
         url"https://httpbin.org/post"
         . submit(Http.Post, contentEncoding = enc"UTF-8", accept = media"application/json")

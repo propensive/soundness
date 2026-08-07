@@ -567,6 +567,28 @@ object Tests extends Suite(m"Zephyrine tests"):
           cursor.peek == 'b'
         . assert(identity)
 
+        // Simulates a live keep-alive stream: the source yields a whole
+        // two-byte message in its first chunk, and the next chunk (a later,
+        // independent message) would only arrive after we reply. Consuming
+        // the final byte with `expect` must not pull that second chunk
+        // (issue #1301) — on a real socket the pull would deadlock.
+        test(m"Cursor[Data].expect on a message's final byte does not refill"):
+          class Live() extends Iterator[Data]:
+            @scala.caps.unsafe.untrackedCaptures
+            var pulls: Int = 0
+            def hasNext: Boolean = true
+
+            def next(): Data =
+              pulls += 1
+              if pulls == 1 then Data('a'.toByte, 'b'.toByte) else Data('X'.toByte)
+
+          val live = Live()
+          val cursor = Cursor(live)
+          cursor.expect('a')(Mismatch())
+          cursor.expect('b')(Mismatch())
+          live.pulls
+        . assert(_ == 1)
+
       suite(m"lookahead tests"):
         test(m"lookahead returns result without advancing on success"):
           val cursor = Cursor[Text](Iterator(t"abcd"))
