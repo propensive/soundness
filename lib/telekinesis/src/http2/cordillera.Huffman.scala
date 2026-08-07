@@ -125,9 +125,9 @@ object Huffman:
     var i = 0
 
     while i < data.length do
-      val symbol = data(i) & 0xff
-      val code = codes(symbol)
-      val length = lengths(symbol)
+      val symbol = data.readUnchecked(i) & 0xff
+      val code = codes.readUnchecked(symbol)
+      val length = lengths.readUnchecked(symbol)
       bitBuffer = (bitBuffer << length) | (code.toLong & ((1L << length) - 1))
       bitCount += length
 
@@ -154,7 +154,7 @@ object Huffman:
     var i = 0
 
     while i < data.length do
-      val byte = data(i) & 0xff
+      val byte = data.readUnchecked(i) & 0xff
       var bit = 7
 
       while bit >= 0 do
@@ -165,7 +165,7 @@ object Huffman:
         var symbol = 0
 
         while symbol < 256 && !matched do
-          if lengths(symbol) == bits && codes(symbol) == current then
+          if lengths.readUnchecked(symbol) == bits && codes.readUnchecked(symbol) == current then
             buf.add(symbol.toByte)
             current = 0
             bits = 0

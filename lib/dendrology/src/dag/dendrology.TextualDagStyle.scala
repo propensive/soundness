@@ -43,7 +43,7 @@ import symbolism.*
 
 import DagTile.*
 
-case class TextualDagStyle[line: Textual]
+case class TextualDagStyle[line: Textual as textual]
   ( space:      Text,
     cornerNe:   Text,
     vertical:   Text,
@@ -54,7 +54,7 @@ case class TextualDagStyle[line: Textual]
     junction:   Text )
 extends DagStyle[line]:
   def serialize(tiles: List[DagTile], node: line): line =
-    line(tiles.map(text(_)).join)+node
+    textual(tiles.map(text(_)).join)+node
 
   def text(tile: DagTile): Text = tile match
     case Space      => space

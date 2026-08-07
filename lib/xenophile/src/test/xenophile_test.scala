@@ -67,7 +67,7 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a top-level Kotlin function call materializes as a direct JVM call"):
         Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
         . getProgressionLastElement(1, 10, 2)
-        . invoke[Int]
+        . call[Int]()
       . assert(_ == 9)
 
       test(m"a Kotlin navigation records the member's foreign result type"):
@@ -479,7 +479,7 @@ object Tests extends Suite(m"Xenophile tests"):
       // only `PanamaInvoke` is on this classpath. Before the backends shared one `invoke`, this
       // could not be written here at all.
       test(m"FFM: `invoke` materializes a C call as a Panama downcall"):
-        library.abs(-5).invoke[Int]
+        library.abs(-5).call[Int]()
       . assert(_ == 5)
 
       test(m"a C struct field has the field's foreign type"):

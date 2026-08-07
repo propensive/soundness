@@ -32,6 +32,8 @@
                                                                                                   */
 package hallucination
 
+import rudiments.Scribe.apply
+
 import scala.collection.mutable as scm
 import proscenium.compat.*
 
@@ -120,7 +122,7 @@ private[hallucination] object GifCodec:
               var index = 0
 
               while index < size do
-                compressed += data(position + 1 + index).toByte
+                compressed += data.readUnchecked(position + 1 + index).toByte
                 index += 1
 
               position += size + 1
@@ -252,7 +254,7 @@ private[hallucination] object GifCodec:
     write8(0)
 
     for index <- 0 until (1 << bits) do
-      val color = if index < palette.length then palette(index) else 0
+      val color = if index < palette.length then palette.readUnchecked(index) else 0
       write8(color >> 16)
       write8((color >> 8)&0xff)
       write8(color&0xff)
@@ -283,7 +285,7 @@ private[hallucination] object GifCodec:
       var index = 0
 
       while index < size do
-        output += compressed(offset + index)
+        output += compressed.readUnchecked(offset + index)
         index += 1
 
       offset += size

@@ -117,7 +117,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
     var index: Int = 0
 
     while index < preface.length do
-      if read(index) != preface(index)
+      if read.readUnchecked(index) != preface.readUnchecked(index)
       then abort(Http2Error(Reason.Protocol(t"bad connection preface")))
       index += 1
 

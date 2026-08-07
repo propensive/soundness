@@ -51,10 +51,10 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
-import soundness.{invoke, dispose}
+import soundness.{call, dispose}
 import xenophile.*
 
-// The WIT definitions the navigation below is typechecked against, and which the `invoke`
+// The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
 // parameter types.
 type WasiSocketsApi = Interface in Wit at "/coaxial/sockets.wit"
@@ -72,7 +72,7 @@ package socketBackends:
   // network access with `wasmtime run -S inherit-network`) and asynchronous: `start-connect` /
   // `accept` are driven to completion by blocking on the socket's `pollable`. Only TCP is
   // supported — WASI has no Unix-domain sockets (those operations raise), and UDP is not yet
-  // wired. `inline`, so the `invoke`s expand at the downstream summoning site, where the WASI
+  // wired. `inline`, so the `call`s expand at the downstream summoning site, where the WASI
   // facades are on the classpath.
   @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
   inline given wasi: SocketBackend = new SocketBackend:
@@ -83,7 +83,7 @@ package socketBackends:
 
     // The shared `wasi:sockets` default network, opened once per operation and dropped after use.
     private def network(): WitHandle of "network" =
-      Foreign["instance-network", Wit].`instance-network`.invoke[WitHandle of "network"]
+      Foreign["instance-network", Wit].`instance-network`.call[WitHandle of "network"]()
 
     // Builds an `ip-socket-address` from a dotted-quad host and port. Only IPv4 literals are
     // handled; a host that is not a literal address (needing DNS) raises.
@@ -104,7 +104,7 @@ package socketBackends:
         Foreign["tcp-create-socket", Wit].asInstanceOf[Foreign of "tcp-create-socket" from Wit]
 
       factory.`create-tcp-socket`(WitCase["ip-address-family"]("ipv4"))
-      . invoke[WitHandle of "tcp-socket"]
+      . call[WitHandle of "tcp-socket"]()
 
     // Opens a TCP connection to `host:port` and drives `start-connect` to completion, blocking on
     // the socket's pollable. Returns the connection's stream halves and the socket handle.
@@ -114,11 +114,11 @@ package socketBackends:
       val socket: Foreign of "tcp-socket" from Wit = socketHandle
 
       try
-        socket.`start-connect`(net, address(host, port)).invoke[Unit]
+        socket.`start-connect`(net, address(host, port)).call[Unit]()
         await(socketHandle)
 
         val (input, output) =
-          socket.`finish-connect`.invoke[(WitHandle of "input-stream", WitHandle of "output-stream")]
+          socket.`finish-connect`.call[(WitHandle of "input-stream", WitHandle of "output-stream")]()
 
         WasiExchange(input, output, socketHandle)
       catch case error: WitError =>
@@ -128,9 +128,9 @@ package socketBackends:
     // Blocks until the socket is ready for the next step of a `start-`/`finish-` operation.
     private def await(socketHandle: WitHandle of "tcp-socket"): Unit =
       val socket: Foreign of "tcp-socket" from Wit = socketHandle
-      val pollableHandle = socket.subscribe.invoke[WitHandle of "pollable"]
+      val pollableHandle = socket.subscribe.call[WitHandle of "pollable"]()
       val pollable: Foreign of "pollable" from Wit = pollableHandle
-      pollable.block.invoke[Unit]
+      pollable.block.call[Unit]()
       pollableHandle.dispose()
 
     // A pull endpoint over a WASI `input-stream`: each refill is one `blocking-read`, whose result
@@ -163,7 +163,7 @@ package socketBackends:
 
               try
                 val want = if capacity < granted then capacity else granted
-                val data = stream.`blocking-read`(U64(want.toLong.bits)).invoke[Data]
+                val data = stream.`blocking-read`(U64(want.toLong.bits)).call[Data]()
                 chunk = data
                 start0 = 0
                 limit0 = chunk.length
@@ -184,7 +184,7 @@ package socketBackends:
       def loop(): Unit = input.refill(Credit(Long.MaxValue)) match
         case count: Int =>
           val chunk = input.addressable.materialize(input.storage(using Unsafe), input.start, count)
-          stream.`blocking-write-and-flush`(chunk).invoke[Unit]
+          stream.`blocking-write-and-flush`(chunk).call[Unit]()
           input.skip(count)
           loop()
 
@@ -213,10 +213,10 @@ package socketBackends:
         val net = network()
         val socketHandle = createSocket()
         val socket: Foreign of "tcp-socket" from Wit = socketHandle
-        socket.`start-bind`(net, address(t"0.0.0.0", port.number)).invoke[Unit]
-        socket.`finish-bind`.invoke[Unit]
-        socket.`start-listen`.invoke[Unit]
-        socket.`finish-listen`.invoke[Unit]
+        socket.`start-bind`(net, address(t"0.0.0.0", port.number)).call[Unit]()
+        socket.`finish-bind`.call[Unit]()
+        socket.`start-listen`.call[Unit]()
+        socket.`finish-listen`.call[Unit]()
         socketHandle
 
     def listenDomain(address: DomainSocket, options: List[SocketOption]): WitHandle of "tcp-socket" =
@@ -229,8 +229,8 @@ package socketBackends:
         await(socketHandle)
 
         val (client, input, output) =
-          socket.accept.invoke
-            [(WitHandle of "tcp-socket", WitHandle of "input-stream", WitHandle of "output-stream")]
+          socket.accept
+          . call[(WitHandle of "tcp-socket", WitHandle of "input-stream", WitHandle of "output-stream")]()
 
         duplexOf(WasiExchange(input, output, client))
       catch case error: WitError => abort(ConnectionError(ConnectionError.Reason.Accept))

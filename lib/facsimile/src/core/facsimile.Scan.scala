@@ -68,14 +68,14 @@ private[facsimile] class Scan(source: ByteSource, start: Long):
 
       count.min(chunk.length)
 
-  def peek: Int = if ensure(1) < 1 then -1 else chunk(cursor) & 0xff
+  def peek: Int = if ensure(1) < 1 then -1 else chunk.readUnchecked(cursor) & 0xff
 
   def peek(ahead: Int): Int =
-    if ensure(ahead + 1) < ahead + 1 then -1 else chunk(cursor + ahead) & 0xff
+    if ensure(ahead + 1) < ahead + 1 then -1 else chunk.readUnchecked(cursor + ahead) & 0xff
 
   def take(): Int =
     if ensure(1) < 1 then -1 else
-      val byte = chunk(cursor) & 0xff
+      val byte = chunk.readUnchecked(cursor) & 0xff
       cursor += 1
       byte
 

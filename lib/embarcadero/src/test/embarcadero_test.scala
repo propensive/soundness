@@ -616,7 +616,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
                     serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
                   else
                     val body =
-                      responses.at(path).or(GrpcFraming.encode(Empty().in[Protobuf].encode))
+                      responses(path).or(GrpcFraming.encode(Empty().in[Protobuf].encode))
 
                     val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
                     serverSide.send(zephyrine.Stream(Frame.Data(id, body, false).serialize))

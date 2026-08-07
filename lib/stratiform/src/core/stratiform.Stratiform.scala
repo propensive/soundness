@@ -103,7 +103,7 @@ object Stratiform:
     import quotes.reflect.*
     val members = Map.of(refinements(self.asTerm.tpe.widen))
 
-    members.at(t"Topic").let: position => (position, members.at(t"Origin").or(position))
+    members(t"Topic").let: position => (position, members(t"Origin").or(position))
 
   def select(self: Expr[Tel], field: Expr[String]): Macro[Tel] =
 

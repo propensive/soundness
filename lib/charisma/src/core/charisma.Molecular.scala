@@ -43,7 +43,7 @@ trait Molecular extends Formulable:
   infix def * (moleculable: Molecular): Molecule =
     val elements2 = Map.of:
       moleculable.molecule.elements.stdlib.fuse(molecule.elements.stdlib):
-        state.updated(next(0), molecule.elements.at(next(0)).or(0) + next(1))
+        state.updated(next(0), molecule.elements(next(0)).or(0) + next(1))
 
     Molecule(elements2, molecule.charge + moleculable.molecule.charge)
 

@@ -73,10 +73,10 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
               if cell.minHeight > lineNumber
               then
                 cell.textAlign.pad
-                  ( cell(lineNumber), widths(index), lineNumber == cell.minHeight - 1 )
+                  ( cell(lineNumber), widths.readUnchecked(index), lineNumber == cell.minHeight - 1 )
 
               else
-                Textual((t" "*widths(index)))
+                Textual((t" "*widths.readUnchecked(index)))
 
             . join(leftEdge, midEdge, rightEdge)
 

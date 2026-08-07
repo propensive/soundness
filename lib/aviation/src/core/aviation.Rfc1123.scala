@@ -66,7 +66,7 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
     var index: Ordinal = Prim
 
     def fail(issue: Rfc1123.Issue): Unit = raise(TimeError(_.Format(text, Rfc1123, index)(issue)))
-    def focus: Char = text.at(index).or('\u0000')
+    def focus: Char = text(index).or('\u0000')
     def next(): Char = (index += 1) yet focus
     def expect(char: Char): Unit = if next() != char then fail(Expect(char))
 

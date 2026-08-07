@@ -144,7 +144,7 @@ trait Cbor2:
 
       build[derivation]: [field] =>
         context =>
-          val key: Text = renames.at(label).or(label)
+          val key: Text = renames(label).or(label)
 
           values.get(key.s) match
             case Some(value) => context.decoded(new Cbor(value))
@@ -164,7 +164,7 @@ trait Cbor2:
             val wire: Text =
               discriminable.discriminate(cbor).lest(CborError(Reason.Absent))
 
-            val discriminant: Text = variantNames.at(wire).or(wire)
+            val discriminant: Text = variantNames(wire).or(wire)
 
             delegate(discriminant): [variant <: derivation] =>
               context => context.decoded(cbor)
@@ -185,7 +185,7 @@ trait Cbor2:
             val encoded = contextual.encode(field).root
 
             if !encoded.unset then
-              labels += mapping.at(label).or(label).s
+              labels += mapping(label).or(label).s
               values += encoded
 
         ast(Ast.map(Array.from(labels), Array.from(values)))
@@ -199,7 +199,7 @@ trait Cbor2:
 
       variant(value): [variant <: derivation] =>
         value =>
-          discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
+          discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
 object Cbor extends Cbor2, Dynamic:
   // CBOR major-type representation in storage. Arrays are stored as an
@@ -245,8 +245,8 @@ object Cbor extends Cbor2, Dynamic:
       var index = 0
 
       while index < count do
-        array(index*2) = keys(index)
-        array(index*2 + 1) = values(index)
+        array(index*2) = keys.readUnchecked(index)
+        array(index*2 + 1) = values.readUnchecked(index)
         index += 1
 
       Array.freeze(array)
@@ -868,7 +868,7 @@ object Cbor extends Cbor2, Dynamic:
       Array.freeze(out)
 
     private inline def boxLong(value: Long): AnyRef =
-      if value >= 0L && value < LongCacheSize then longCache(value.toInt)
+      if value >= 0L && value < LongCacheSize then longCache.readUnchecked(value.toInt)
       else java.lang.Long.valueOf(value).nn
 
     def parse(source: Array[Byte]^{}): Cbor.Ast raises CborError =
@@ -1610,7 +1610,7 @@ object Cbor extends Cbor2, Dynamic:
 
 
 class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives CanEqual:
-  def apply(index: Int): Cbor raises CborError = Cbor(root.array(index))
+  def apply(index: Int): Cbor raises CborError = Cbor(root.array.readUnchecked(index))
 
   def selectDynamic(field: String)(using erased dynamicCborEnabler: DynamicCborEnabler): Cbor raises CborError =
     apply(field.tt)

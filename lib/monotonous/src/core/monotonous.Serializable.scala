@@ -81,8 +81,8 @@ object Serializable:
       // byte stores per input byte — the JDK `HexDigits.digitPair` trick.
       private lazy val hexPairs: Array[Short]^{} =
         Array.tabulate(256): b =>
-          val hi = lookup(b >>> 4) & 0xff
-          val lo = lookup(b & 0xf) & 0xff
+          val hi = lookup.readUnchecked(b >>> 4) & 0xff
+          val lo = lookup.readUnchecked(b & 0xf) & 0xff
           (hi | (lo << 8)).toShort
 
       private def hex(src: Data): Array[Byte]^{} =

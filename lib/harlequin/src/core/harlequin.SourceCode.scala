@@ -696,7 +696,7 @@ case class SourceCode
     completions: Optional[Completions] = Unset ):
 
   def lastLine: Int = offset + lines.length - 1
-  def apply(line: Int): List[Token] = lines(line - offset)
+  def apply(line: Int): List[Token] = lines.readUnchecked(line - offset)
 
   def extract(range: Span): SourceCode =
     val startLine = range.startLine.lay(0)(_.n0)

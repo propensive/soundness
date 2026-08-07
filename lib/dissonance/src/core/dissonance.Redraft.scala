@@ -100,7 +100,7 @@ object Redraft:
 
     def seek(from: Int, text: Text): Int =
       var j = from
-      while j < n && !compare(original(j), text) do j += 1
+      while j < n && !compare(original.stdlib(j), text) do j += 1
       if j < n then j else -1
 
     var cursor = 0
@@ -113,7 +113,7 @@ object Redraft:
       var k = cursor
 
       while k < target do
-        edits = Par(k, right, original(k)) :: edits
+        edits = Par(k, right, original.stdlib(k)) :: edits
         right += 1
         k += 1
 
@@ -121,14 +121,14 @@ object Redraft:
 
     def keep(index: Int, text: Text, line: Int): Unit =
       keepUpTo(index)
-      edits = Par(index, right, original(index)) :: edits
+      edits = Par(index, right, original.stdlib(index)) :: edits
       matchers = Matcher(text, index, line) :: matchers
       right += 1
       cursor = index + 1
 
     def cut(index: Int, text: Text, line: Int): Unit =
       keepUpTo(index)
-      edits = Del(index, original(index)) :: edits
+      edits = Del(index, original.stdlib(index)) :: edits
       matchers = Matcher(text, index, line) :: matchers
       cursor = index + 1
 
@@ -179,7 +179,7 @@ object Redraft:
 
         case matcher :: rest =>
           var j = limit
-          while j >= 0 && !compare(original(j), matcher.text) do j -= 1
+          while j >= 0 && !compare(original.stdlib(j), matcher.text) do j -= 1
           if j < 0 then Unset else alignRight(rest, j - 1, j :: acc)
 
     alignRight(ordered.reverse, n - 1, Nil).let: rightmost =>

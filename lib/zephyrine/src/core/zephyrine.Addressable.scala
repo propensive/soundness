@@ -63,7 +63,7 @@ object Addressable:
       Array.unsafeFrozen(target.toByteArray.nn)
 
     inline def length(bytes: Data): Int = bytes.length
-    inline def address(bytes: Data, index: Ordinal): Byte = bytes(index.n0)
+    inline def address(bytes: Data, index: Ordinal): Byte = bytes.readUnchecked(index.n0)
     inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data = bytes.slice(start.n0, end.n0)
 
 
@@ -136,7 +136,7 @@ object Addressable:
       Array.unsafeFrozen(target.toArray[element])
 
     def length(block: Array[element]^{}): Int = block.length
-    def address(block: Array[element]^{}, index: Ordinal): element = block(index.n0)
+    def address(block: Array[element]^{}, index: Ordinal): element = block.readUnchecked(index.n0)
 
     def grab(block: Array[element]^{}, start: Ordinal, end: Ordinal): Array[element]^{} =
       block.slice(start.n0, end.n0)
@@ -148,7 +148,7 @@ object Addressable:
       var index = start.n0
 
       while index <= end.n0 do
-        target += source(index)
+        target += source.readUnchecked(index)
         index += 1
 
     def allocate(size: Int): scala.Array[AnyRef] = new scala.Array[AnyRef](size)
@@ -227,7 +227,7 @@ object Addressable:
       Array.freeze(array).asInstanceOf[Array[Text]^{}]
 
     def length(block: Array[Text]^{}): Int = block.length
-    def address(block: Array[Text]^{}, index: Ordinal): Text = block(index.n0)
+    def address(block: Array[Text]^{}, index: Ordinal): Text = block.readUnchecked(index.n0)
 
     def grab(block: Array[Text]^{}, start: Ordinal, end: Ordinal): Array[Text]^{} =
       block.slice(start.n0, end.n0)
@@ -239,7 +239,7 @@ object Addressable:
       var index = start.n0
 
       while index <= end.n0 do
-        target += source(index)
+        target += source.readUnchecked(index)
         index += 1
 
     def allocate(size: Int): scala.Array[AnyRef] = new scala.Array[AnyRef](size)
@@ -312,7 +312,7 @@ object Addressable:
       Array.freeze(array)
 
     def length(block: Array[Data]^{}): Int = block.length
-    def address(block: Array[Data]^{}, index: Ordinal): Data = block(index.n0)
+    def address(block: Array[Data]^{}, index: Ordinal): Data = block.readUnchecked(index.n0)
 
     def grab(block: Array[Data]^{}, start: Ordinal, end: Ordinal): Array[Data]^{} =
       block.slice(start.n0, end.n0)
@@ -324,7 +324,7 @@ object Addressable:
       var index = start.n0
 
       while index <= end.n0 do
-        target += source(index)
+        target += source.readUnchecked(index)
         index += 1
 
     def allocate(size: Int): scala.Array[AnyRef] = new scala.Array[AnyRef](size)

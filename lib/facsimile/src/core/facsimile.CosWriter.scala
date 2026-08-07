@@ -115,7 +115,7 @@ private[facsimile] object CosWriter:
     var i = 0
 
     while i < raw.length do
-      val byte = raw(i) & 0xff
+      val byte = raw.readUnchecked(i) & 0xff
 
       if byte < 0x21 || byte > 0x7e || CosLexer.delimiter(byte) || byte == '#' then
         builder += '#'.toByte
@@ -132,7 +132,7 @@ private[facsimile] object CosWriter:
     var i = 0
 
     while i < data.length do
-      val byte = data(i) & 0xff
+      val byte = data.readUnchecked(i) & 0xff
 
       byte match
         case '('  => bytes(builder, "\\(")

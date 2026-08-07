@@ -88,30 +88,30 @@ private[facsimile] object Guard:
   ( using Tactic[PdfError] )
   :   Guard =
 
-    val filter = encrypt.at(t"Filter").let(pdf.resolved(_).name).or(t"")
+    val filter = encrypt(t"Filter").let(pdf.resolved(_).name).or(t"")
     if filter != t"Standard" then abort(PdfError(PdfError.Reason.UnsupportedEncryption(0)))
 
-    val version = encrypt.at(t"V").let(pdf.resolved(_).long).or(0L).toInt
-    val revision = encrypt.at(t"R").let(pdf.resolved(_).long).or(0L).toInt
-    val length = encrypt.at(t"Length").let(pdf.resolved(_).long).or(40L).toInt
-    val permissions = encrypt.at(t"P").let(pdf.resolved(_).long).or(0L).toInt
-    val owner = encrypt.at(t"O").let(pdf.resolved(_).chars).or(Array.empty[Byte])
-    val user = encrypt.at(t"U").let(pdf.resolved(_).chars).or(Array.empty[Byte])
+    val version = encrypt(t"V").let(pdf.resolved(_).long).or(0L).toInt
+    val revision = encrypt(t"R").let(pdf.resolved(_).long).or(0L).toInt
+    val length = encrypt(t"Length").let(pdf.resolved(_).long).or(40L).toInt
+    val permissions = encrypt(t"P").let(pdf.resolved(_).long).or(0L).toInt
+    val owner = encrypt(t"O").let(pdf.resolved(_).chars).or(Array.empty[Byte])
+    val user = encrypt(t"U").let(pdf.resolved(_).chars).or(Array.empty[Byte])
 
     val encryptMetadata =
-      encrypt.at(t"EncryptMetadata").let(pdf.resolved(_).truth).or(true)
+      encrypt(t"EncryptMetadata").let(pdf.resolved(_).truth).or(true)
 
     // The stream and string crypt-filter methods: revisions ≤4 apply one method throughout;
     // revision 4+ names filters in `/CF` selected by `/StmF` and `/StrF`.
     val (streamMethod, stringMethod) =
       if version >= 4 then
-        val filters = pdf.resolved(encrypt.at(t"CF").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
+        val filters = pdf.resolved(encrypt(t"CF").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
 
         def method(selector: Text): Method =
-          encrypt.at(selector).let(pdf.resolved(_).name).or(t"Identity") match
+          encrypt(selector).let(pdf.resolved(_).name).or(t"Identity") match
             case t"Identity" => Method.Identity
             case name =>
-              val cfm = pdf.resolved(filters.at(name).or(Cos.Nil))(t"CFM").let(_.name).or(t"")
+              val cfm = pdf.resolved(filters(name).or(Cos.Nil))(t"CFM").let(_.name).or(t"")
               cfm match
                 case t"V2"    => Method.Rc4
                 case t"AESV2" => Method.Aes128
@@ -125,7 +125,7 @@ private[facsimile] object Guard:
       // Revisions 5–6 (AES-256): the file key is unwrapped from `/UE` with a key derived
       // from the password, and neither object number nor generation enters the per-object
       // key.
-      val ue = encrypt.at(t"UE").let(pdf.resolved(_).chars).or(Array.empty[Byte])
+      val ue = encrypt(t"UE").let(pdf.resolved(_).chars).or(Array.empty[Byte])
 
       val fileKey = unwrap6(password, user, ue)
         . or(abort(PdfError(PdfError.Reason.BadPassword)))
@@ -258,7 +258,7 @@ private[facsimile] object Guard:
       var sum = 0
       i = 0
       while i < 16 do
-        sum += e(i) & 0xff
+        sum += e.readUnchecked(i) & 0xff
         i += 1
 
       val bits = sum%3 match
@@ -269,7 +269,7 @@ private[facsimile] object Guard:
       k = sha(bits, e)
       round += 1
 
-      if round >= 64 && (e(e.length - 1) & 0xff) <= round - 32 then done = true
+      if round >= 64 && (e.readUnchecked(e.length - 1) & 0xff) <= round - 32 then done = true
 
     k.take(32)
 

@@ -78,7 +78,7 @@ private[probably] object TerseRenderer:
 
   private def figure(figure: Format.Figure, units: List[Text]): Teletype =
     if figure.unit >= 3 then figure.whole.teletype
-    else e"${figure.whole}.${figure.fraction} ${units(figure.unit)}"
+    else e"${figure.whole}.${figure.fraction} ${units.stdlib(figure.unit)}"
 
   private def datum(value: Datum): Teletype = value match
     case Datum.Blank                => e""
@@ -189,7 +189,7 @@ private[probably] object TerseRenderer:
         val location = t"${row.id.codepoint.source}:${row.id.codepoint.line}"
         Out.println(t"${row.id.id}  ${row.id.name.text} @ $location")
 
-        details.at(row.id).or(Nil).stdlib.foreach: detail =>
+        details(row.id).or(Nil).stdlib.foreach: detail =>
           detail match
             case Verdict.Detail.Throws(err) =>
               Out.println:

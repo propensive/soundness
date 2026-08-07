@@ -45,7 +45,7 @@ import prepositional.*
 extension [collection](value: collection)
   // Whole disjoint pairs, in order; the branded remainder holds the 0 or 1 trailing element.
   inline def pairs
-    ( using countable: collection is Countable, indexable: (collection is Indexable by Ordinal) )
+    ( using countable: collection is Countable, indexable: (collection is Applicable by Ordinal) )
     ( inline lambda: (indexable.Result, indexable.Result) => Unit )
   :   Interval in value.type =
 
@@ -64,7 +64,7 @@ extension [collection](value: collection)
 
   // Whole disjoint triples; the branded remainder holds the 0-2 trailing elements.
   inline def triples
-    ( using countable: collection is Countable, indexable: (collection is Indexable by Ordinal) )
+    ( using countable: collection is Countable, indexable: (collection is Applicable by Ordinal) )
     ( inline lambda: (indexable.Result, indexable.Result, indexable.Result) => Unit )
   :   Interval in value.type =
 
@@ -84,7 +84,7 @@ extension [collection](value: collection)
 
   // Whole disjoint quadruples; the branded remainder holds the 0-3 trailing elements.
   inline def quads
-    ( using countable: collection is Countable, indexable: (collection is Indexable by Ordinal) )
+    ( using countable: collection is Countable, indexable: (collection is Applicable by Ordinal) )
     ( inline lambda:
         (indexable.Result, indexable.Result, indexable.Result, indexable.Result) => Unit )
   :   Interval in value.type =
@@ -107,7 +107,7 @@ extension [collection](value: collection)
   // Every adjacent (overlapping) pair, in order: the boundary-window shape. A collection of
   // fewer than two elements yields nothing.
   inline def adjacent
-    ( using countable: collection is Countable, indexable: (collection is Indexable by Ordinal) )
+    ( using countable: collection is Countable, indexable: (collection is Applicable by Ordinal) )
     ( inline lambda: (indexable.Result, indexable.Result) => Unit )
   :   Unit =
 
@@ -123,7 +123,7 @@ extension [collection](value: collection)
 
   // Whole disjoint groups of five; the branded remainder holds the 0-4 trailing elements.
   inline def quints
-    ( using countable: collection is Countable, indexable: (collection is Indexable by Ordinal) )
+    ( using countable: collection is Countable, indexable: (collection is Applicable by Ordinal) )
     ( inline lambda:
         ( indexable.Result, indexable.Result, indexable.Result, indexable.Result,
           indexable.Result ) => Unit )
@@ -147,7 +147,7 @@ extension [collection](value: collection)
 
   // Whole disjoint octuples; the branded remainder holds the 0-7 trailing elements.
   inline def octuples
-    ( using countable: collection is Countable, indexable: (collection is Indexable by Ordinal) )
+    ( using countable: collection is Countable, indexable: (collection is Applicable by Ordinal) )
     ( inline lambda:
         ( indexable.Result, indexable.Result, indexable.Result, indexable.Result,
           indexable.Result, indexable.Result, indexable.Result, indexable.Result ) => Unit )

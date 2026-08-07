@@ -149,7 +149,7 @@ private[facsimile] object TextExtractor:
         offset(dx, dy)
 
       case PdfOperator.SetFont(name, points) =>
-        font = fonts.at(name)
+        font = fonts(name)
         size = points
 
       // Via `stdlib.foreach` and a `Double`-first match: the frozen-array union member

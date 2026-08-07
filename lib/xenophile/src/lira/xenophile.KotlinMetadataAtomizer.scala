@@ -359,7 +359,7 @@ object KotlinMetadataAtomizer:
       def attempt(candidate: String): Optional[Class[?]] = load(candidate)
 
       def variants(name: String): SList[String] =
-        val indices = name.indices.filter(name(_) == '.').reverse.to(SList)
+        val indices = name.indices.filter(name.charAt(_) == '.').reverse.to(SList)
         name :: indices.map { index => name.updated(index, '$') }
 
       def search(candidates: SList[String]): Optional[Class[?]] = candidates match

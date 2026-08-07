@@ -103,7 +103,7 @@ class Hpack(maxTableSize: Int = 4096):
   // continuation). Returns the value and the index just past the integer.
   private def readInteger(data: Data, offset: Int, prefix: Int): (Int, Int) raises Http2Error =
     val mask = (1 << prefix) - 1
-    val first = data(offset) & mask
+    val first = data.readUnchecked(offset) & mask
 
     if first < mask then (first, offset + 1) else
       var result = mask
@@ -113,7 +113,7 @@ class Hpack(maxTableSize: Int = 4096):
 
       while continue do
         if pos >= data.length then abort(Http2Error(Reason.Truncated))
-        val byte = data(pos) & 0xff
+        val byte = data.readUnchecked(pos) & 0xff
         result += (byte & 0x7f) << shift
         shift += 7
         pos += 1
@@ -126,7 +126,7 @@ class Hpack(maxTableSize: Int = 4096):
   //
   // A length-prefixed octet sequence; the prefix's high bit flags Huffman coding.
   private def readString(data: Data, offset: Int): (Text, Int) raises Http2Error =
-    val huffman = (data(offset) & 0x80) != 0
+    val huffman = (data.readUnchecked(offset) & 0x80) != 0
     val (length, start) = readInteger(data, offset, 7)
     if start + length > data.length then abort(Http2Error(Reason.Truncated))
     val raw: Data = data.slice(start, start + length)
@@ -150,7 +150,7 @@ class Hpack(maxTableSize: Int = 4096):
       (HpackEntry(name, value), next)
 
     while pos < data.length do
-      val byte = data(pos) & 0xff
+      val byte = data.readUnchecked(pos) & 0xff
 
       if (byte & 0x80) != 0 then
         // Indexed header field (§6.1): whole field from the table.

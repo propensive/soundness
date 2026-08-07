@@ -56,7 +56,7 @@ private[facsimile] object Rc4:
     i = 0
 
     while i < 256 do
-      j = (j + state(i) + (key(i%key.length) & 0xff)) & 0xff
+      j = (j + state(i) + (key.readUnchecked(i%key.length) & 0xff)) & 0xff
       val swap = state(i)
       state(i) = state(j)
       state(j) = swap
@@ -74,7 +74,7 @@ private[facsimile] object Rc4:
       val swap = state(a)
       state(a) = state(b)
       state(b) = swap
-      out(k) = (data(k) ^ state((state(a) + state(b)) & 0xff)).toByte
+      out(k) = (data.readUnchecked(k) ^ state((state(a) + state(b)) & 0xff)).toByte
       k += 1
 
     Array.freeze(out)

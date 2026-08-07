@@ -63,13 +63,13 @@ object Annotation:
 
     pdf.resolved(value) match
       case Cos.Dictionary(entries) =>
-        PdfRect.read(entries.at(t"Rect").or(Cos.Nil), scale).let: rect =>
-          val action = pdf.resolved(entries.at(t"A").or(Cos.Nil))
+        PdfRect.read(entries(t"Rect").or(Cos.Nil), scale).let: rect =>
+          val action = pdf.resolved(entries(t"A").or(Cos.Nil))
           val kind = action(t"S").let(_.name).or(t"")
 
-          entries.at(t"Subtype").let(pdf.resolved(_).name).or(t"") match
+          entries(t"Subtype").let(pdf.resolved(_).name).or(t"") match
             case t"Link" =>
-              val target = entries.at(t"Dest")
+              val target = entries(t"Dest")
                 . or(if kind == t"GoTo" then action(t"D") else Unset)
 
               val uri =
@@ -80,12 +80,12 @@ object Annotation:
             case t"Text" =>
               Note
                 ( rect,
-                  entries.at(t"Contents").let(pdf.resolved(_).text),
-                  entries.at(t"Open").let(pdf.resolved(_).truth).or(false),
+                  entries(t"Contents").let(pdf.resolved(_).text),
+                  entries(t"Open").let(pdf.resolved(_).truth).or(false),
                   entries )
 
             case t"Widget" =>
-              Widget(rect, entries.at(t"T").let(pdf.resolved(_).text), entries)
+              Widget(rect, entries(t"T").let(pdf.resolved(_).text), entries)
 
             case subtype =>
               Other(subtype, rect, entries)

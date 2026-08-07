@@ -246,7 +246,7 @@ object Sheet:
       if index >= 0 && index < cellsBuf.length then cellsBuf(index) else Unset
 
     private[caesura] def columnIndex(name: Text): Optional[Int] =
-      headings.let(_.at(name))
+      headings.let(_(name))
 
     private[caesura] def materialize(): Dsv =
       val n = cellsBuf.length

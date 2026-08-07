@@ -331,8 +331,8 @@ object Tests extends Suite(m"Phoenicia Tests"):
 
         (0 until bytes.length by 4).each: index =>
           val word =
-            ((bytes(index) & 0xffL) << 24) | ((bytes(index + 1) & 0xffL) << 16) |
-            ((bytes(index + 2) & 0xffL) << 8) | (bytes(index + 3) & 0xffL)
+            ((bytes.readUnchecked(index) & 0xffL) << 24) | ((bytes.readUnchecked(index + 1) & 0xffL) << 16) |
+            ((bytes.readUnchecked(index + 2) & 0xffL) << 8) | (bytes.readUnchecked(index + 3) & 0xffL)
 
           sum = (sum + word) & 0xffffffffL
 

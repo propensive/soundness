@@ -67,8 +67,8 @@ object Imprintable:
       var index      = 0
 
       while index < count do
-        val start: Int  = boundaries(index)
-        val piece: Text = self.plain.s.substring(start, boundaries(index + 1)).nn.tt
+        val start: Int  = boundaries.readUnchecked(index)
+        val piece: Text = self.plain.s.substring(start, boundaries.readUnchecked(index + 1)).nn.tt
         lambda(Grapheme(piece.s), StyleWord(self.styleAt(start)))
         index += 1
 

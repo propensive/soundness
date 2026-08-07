@@ -93,7 +93,7 @@ object Bundler:
           classpath.entries.bind:
           case ClasspathEntry.Directory(directory) =>
             val root = directory.as[Path on Linux]
-            root.descendants.stdlib.filter: entry => !omissions(entry.name)
+            root.descendants.stdlib.filter: entry => !omissions.has(entry.name)
             . map: file =>
               if file.entry() == Directory then Unset else
                 val ref = %.on[Zip] + root.toward(file).on[Zip]

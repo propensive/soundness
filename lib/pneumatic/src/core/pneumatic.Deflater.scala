@@ -116,7 +116,7 @@ private[pneumatic] object Deflater:
 
   // Mapping from a distance to a distance code, where dist is the distance - 1.
   def dCode(dist: Int): Int =
-    if dist < 256 then distCode(dist) else distCode(256 + (dist >>> 7))
+    if dist < 256 then distCode.readUnchecked(dist) else distCode.readUnchecked(256 + (dist >>> 7))
   // Reverse the first len bits of a code.
   def biReverse(code0: Int, len0: Int): Int =
     var code = code0
@@ -252,10 +252,10 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     var i = 0
     while i < hashSize do { head(i) = 0; i += 1 }
 
-    maxLazyMatch = configMaxLazy(level)
-    goodMatch = configGoodLength(level)
-    niceMatch = configNiceLength(level)
-    maxChainLength = configMaxChain(level)
+    maxLazyMatch = configMaxLazy.readUnchecked(level)
+    goodMatch = configGoodLength.readUnchecked(level)
+    niceMatch = configNiceLength.readUnchecked(level)
+    maxChainLength = configMaxChain.readUnchecked(level)
 
     strstart = 0
     blockStart = 0
@@ -373,10 +373,10 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
       if n <= maxCode then // a leaf node
         blCount(bits) = (blCount(bits) + 1).toShort
         xbits = 0
-        if n >= base then xbits = extra(n - base)
+        if n >= base then xbits = extra.readUnchecked(n - base)
         f = tree(n*2)
         optLen += f*(bits + xbits)
-        if stree.length != 0 then staticLen += f*(stree(n*2 + 1) + xbits)
+        if stree.length != 0 then staticLen += f*(stree.readUnchecked(n*2 + 1) + xbits)
 
       h += 1
 
@@ -450,7 +450,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
       tree(node*2) = 1
       depth(node) = 0
       optLen -= 1
-      if stree.length != 0 then staticLen -= stree(node*2 + 1)
+      if stree.length != 0 then staticLen -= stree.readUnchecked(node*2 + 1)
       // node is 0 or 1 so it does not have extra bits
 
 
@@ -564,7 +564,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     // 4 bit length codes be sent.
     var maxBlindex = BlCodes - 1
 
-    while maxBlindex >= 3 && blTree(blOrder(maxBlindex)*2 + 1) == 0 do maxBlindex -= 1
+    while maxBlindex >= 3 && blTree(blOrder.readUnchecked(maxBlindex)*2 + 1) == 0 do maxBlindex -= 1
 
     // Update optLen to include the bit length tree and counts
     optLen += 3*(maxBlindex + 1) + 5 + 5 + 4
@@ -580,7 +580,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     var rank = 0
 
     while rank < blcodes do
-      sendBits(blTree(blOrder(rank)*2 + 1).toInt, 3)
+      sendBits(blTree(blOrder.readUnchecked(rank)*2 + 1).toInt, 3)
       rank += 1
 
     sendTree(dynLtree, lcodes - 1) // literal tree
@@ -701,8 +701,8 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
       // Here, lc is the match length - MinMatch
       dist -= 1 // dist = match distance - 1
 
-      dynLtree((lengthCode(lc) + Literals + 1)*2) =
-        (dynLtree((lengthCode(lc) + Literals + 1)*2) + 1).toShort
+      dynLtree((lengthCode.readUnchecked(lc) + Literals + 1)*2) =
+        (dynLtree((lengthCode.readUnchecked(lc) + Literals + 1)*2) + 1).toShort
 
       dynDtree(dCode(dist)*2) = (dynDtree(dCode(dist)*2) + 1).toShort
 
@@ -713,7 +713,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
       var dcode = 0
 
       while dcode < DCodes do
-        outLength = (outLength + dynDtree(dcode*2)*(5L + extraDbits(dcode))).toInt
+        outLength = (outLength + dynDtree(dcode*2)*(5L + extraDbits.readUnchecked(dcode))).toInt
         dcode += 1
 
       outLength >>>= 3
@@ -739,21 +739,21 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
         if dist == 0 then sendCode(lc, ltree) // send a literal byte
         else
           // Here, lc is the match length - MinMatch
-          code = lengthCode(lc)
+          code = lengthCode.readUnchecked(lc)
           sendCode(code + Literals + 1, ltree) // send the length code
-          var extra = extraLbits(code)
+          var extra = extraLbits.readUnchecked(code)
 
           if extra != 0 then
-            lc -= baseLength(code)
+            lc -= baseLength.readUnchecked(code)
             sendBits(lc, extra) // send the extra length bits
 
           dist -= 1 // dist is now the match distance - 1
           code = dCode(dist)
           sendCode(code, dtree) // send the distance code
-          extra = extraDbits(code)
+          extra = extraDbits.readUnchecked(code)
 
           if extra != 0 then
-            dist -= baseDist(code)
+            dist -= baseDist.readUnchecked(code)
             sendBits(dist, extra) // send the extra distance bits
 
         lx < lastLit
@@ -1312,7 +1312,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
     // Start a new block or continue the current one.
     if availIn != 0 || lookahead != 0 || (flush != ZNoFlush && status != FinishState) then
-      val bstate = configFunc(level) match
+      val bstate = configFunc.readUnchecked(level) match
         case StoredFunc => deflateStored(flush, target)
         case FastFunc   => deflateFast(flush, target)
         case _          => deflateSlow(flush, target)

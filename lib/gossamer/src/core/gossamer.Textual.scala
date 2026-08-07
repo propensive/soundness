@@ -40,7 +40,7 @@ import symbolism.*
 import vacuous.*
 
 object Textual:
-  def apply[textual: Textual](text: Text): textual = textual(text)
+  def apply[textual: Textual as instance](text: Text): textual = instance.apply(text)
 
   given concatenable: [textual: Textual] => textual is Concatenable:
     type Operand = textual
@@ -80,7 +80,7 @@ object Textual:
     def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
     def size(text: Self): Int = text.length
 
-trait Textual extends Typeclass.Pure, Countable, Segmentable, Zeroic, Indexable:
+trait Textual extends Typeclass.Pure, Countable, Segmentable, Zeroic, Applicable:
   type Operand = Ordinal
   type Result
   type Show[value]

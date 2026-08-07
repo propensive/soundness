@@ -68,10 +68,10 @@ object PanamaInvoke extends Materializer:
     // Validate the call against the parsed C header and read its parameter and result types.
     val allDefinitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
 
-    val members = allDefinitions.at(owner).or:
+    val members = allDefinitions(owner).or:
       halt(m"xenophile: the foreign type $owner is not defined")
 
-    val prototype = members.at(function).or:
+    val prototype = members(function).or:
       halt(m"xenophile: the foreign type $owner has no member $function")
 
     val parameterTypes = prototype.parameters.let(_.stdlib).or(Nil)

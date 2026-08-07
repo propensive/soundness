@@ -330,7 +330,7 @@ trait Json2 extends Json3:
 
       build[derivation]: [field] =>
         context =>
-          val key: Text = renames.at(label).or(label)
+          val key: Text = renames(label).or(label)
 
           focus({
             val base = prior.let(_.pointer).or(JsonPointer())
@@ -373,7 +373,7 @@ trait Json2 extends Json3:
               val wire: Text = discriminable.discriminate(json).or:
                 focus(prior.or(Json.Focus(JsonPointer())))(abort(JsonError(Reason.Absent)))
 
-              val discriminant: Text = variantNames.at(wire).or(wire)
+              val discriminant: Text = variantNames(wire).or(wire)
 
               // The variant decodes the whole value for the internal-field
               // shape (its tag is simply skipped as an unknown key — no need
@@ -402,7 +402,7 @@ trait Json2 extends Json3:
 
           contexts[derivation]():
             [field] => context =>
-              ( renames.at(label).or(label).s,
+              ( renames(label).or(label).s,
                 context: Json.Parsing,
                 default[Optional[field]]: Any )
         },
@@ -440,7 +440,7 @@ trait Json2 extends Json3:
 
                     // The variant re-reads the whole object, skipping the
                     // tag as an unknown key.
-                    delegate(variantNames.at(wire).or(wire)):
+                    delegate(variantNames(wire).or(wire)):
                       [variant <: derivation] => context => context.parse(reader)
 
           case wrapper: Json.DiscriminantWrapper[?] =>
@@ -455,7 +455,7 @@ trait Json2 extends Json3:
                     val wire: Text = reader.key().or(abort(JsonError(Reason.Absent)))
 
                     val result =
-                      delegate(variantNames.at(wire).or(wire)):
+                      delegate(variantNames(wire).or(wire)):
                         [variant <: derivation] => context => context.parse(reader)
 
                     // A wrapper is a single-key object; anything more means
@@ -474,7 +474,7 @@ trait Json2 extends Json3:
                     val wire: Text = reader.discriminant(envelope.tagField).or:
                       abort(JsonError(Reason.Absent))
 
-                    val name = variantNames.at(wire).or(wire)
+                    val name = variantNames(wire).or(wire)
                     reader.openObject()
                     var result: Optional[derivation] = Unset
                     var continue = true
@@ -514,7 +514,7 @@ trait Json2 extends Json3:
 
             fields(value): [field] =>
               field =>
-                val key: Text = renames.at(label).or(label)
+                val key: Text = renames(label).or(label)
 
                 focus({
                   val base = prior.let(_.pointer).or(JsonPointer())
@@ -549,7 +549,7 @@ trait Json2 extends Json3:
 
           variant(value): [variant <: derivation] =>
             value =>
-              discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
+              discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
 object Json extends Json2, Dynamic:
   // Controls how a `Json` value is serialized. `indent` is the whitespace unit per nesting level;
@@ -820,7 +820,7 @@ object Json extends Json2, Dynamic:
 
     // The wire keys of a product's fields, `@name` renames applied.
     def wireKeys(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
-      names.map { name => renames.at(name.tt).or(name.tt).s }
+      names.map { name => renames(name.tt).or(name.tt).s }
 
     // A required field whose key was absent from the object.
     def missing[value]()(using Tactic[JsonError]): value = abort(JsonError(Reason.Absent))
@@ -892,7 +892,7 @@ object Json extends Json2, Dynamic:
     private final class ArrayProduct(values: Array[Any]^{}) extends Product:
       def canEqual(that: Any): Boolean = true
       def productArity: Int = values.length
-      def productElement(index: Int): Any = values(index)
+      def productElement(index: Int): Any = values.readUnchecked(index)
 
     // The derived product parser's engine. `fields0` is an explicit thunk
     // (nameable in the capture set, unlike a by-name) evaluated lazily, so
@@ -932,13 +932,13 @@ object Json extends Json2, Dynamic:
           var index = 0
 
           while index < count do
-            if named(index) eq key then return index
+            if named.readUnchecked(index) eq key then return index
             index += 1
 
           index = 0
 
           while index < count do
-            if named(index) == key then return index
+            if named.readUnchecked(index) == key then return index
             index += 1
 
           -1
@@ -965,9 +965,9 @@ object Json extends Json2, Dynamic:
             if found < 0 then reader.skipValue()
             else values(found) =
               if focused
-              then focus(descend(prior, keys(found).tt))(entries(found)(1).parse(reader))
+              then focus(descend(prior, keys.readUnchecked(found).tt))(entries.readUnchecked(found)(1).parse(reader))
               else
-                (kinds(found): @scala.annotation.switch) match
+                (kinds.readUnchecked(found): @scala.annotation.switch) match
                   case KindInt     => reader.long().toInt
                   case KindLong    => reader.long()
                   case KindDouble  => reader.double()
@@ -975,7 +975,7 @@ object Json extends Json2, Dynamic:
                   case KindText    => reader.string()
                   case KindString  => reader.string().s
                   case KindBoolean => reader.boolean()
-                  case _           => entries(found)(1).parse(reader)
+                  case _           => entries.readUnchecked(found)(1).parse(reader)
 
             found = reader.keyIndex(table)
 
@@ -983,13 +983,13 @@ object Json extends Json2, Dynamic:
 
           while index < count do
             if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
-              val fallback = entries(index)(2).asInstanceOf[Optional[Any]]
+              val fallback = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
               values(index) =
                 if fallback.present then fallback
                 else if focused
-                then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
-                else entries(index)(1).absent()
+                then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).absent())
+                else entries.readUnchecked(index)(1).absent()
 
             index += 1
 
@@ -1039,7 +1039,7 @@ object Json extends Json2, Dynamic:
       var index = 0
 
       while index < count do
-        val key = keys(index)
+        val key = keys.readUnchecked(index)
         val length = key.length
         var fits = length > 0 && length <= 16
         var position = 0
@@ -1073,7 +1073,7 @@ object Json extends Json2, Dynamic:
       // Direct-mapped hash over the packed forms: capacity is the smallest
       // power of two holding all keys at load factor <= 1/2, retried at
       // double the size when two keys collide. Lookups are then one
-      // multiply-shift and one slot probe. `slots(slot)` holds the key's
+      // multiply-shift and one slot probe. `slots.readUnchecked(slot)` holds the key's
       // index + 1 (0 = empty). Degenerates to `capacity = 0` (linear scan)
       // only if collisions persist at 4x — practically never for the small,
       // distinct key sets of a case class. Each attempt's buffer is local to
@@ -1086,8 +1086,8 @@ object Json extends Json2, Dynamic:
           var probeIndex = 0
 
           while probeIndex < count && !clash do
-            if packableFrozen(probeIndex) then
-              val slot = (((lowsFrozen(probeIndex)*KeyTable.Scramble) ^ highsFrozen(probeIndex))
+            if packableFrozen.readUnchecked(probeIndex) then
+              val slot = (((lowsFrozen.readUnchecked(probeIndex)*KeyTable.Scramble) ^ highsFrozen.readUnchecked(probeIndex))
                 .toInt & (capacity - 1)).abs
 
               if attempt(slot) == 0 then attempt(slot) = probeIndex + 1 else clash = true
@@ -1127,15 +1127,15 @@ object Json extends Json2, Dynamic:
     def indexOf(low: Long, high: Long): Int =
       if capacity != 0 then
         val slot = (((low*KeyTable.Scramble) ^ high).toInt & (capacity - 1)).abs
-        val found = slots(slot) - 1
+        val found = slots.readUnchecked(slot) - 1
 
-        if found >= 0 && lows(found) == low && highs(found) == high then found
+        if found >= 0 && lows.readUnchecked(found) == low && highs.readUnchecked(found) == high then found
         else KeyTable.Unknown
       else
         var index = 0
 
         while index < count do
-          if packable(index) && lows(index) == low && highs(index) == high then return index
+          if packable.readUnchecked(index) && lows.readUnchecked(index) == low && highs.readUnchecked(index) == high then return index
           index += 1
 
         KeyTable.Unknown
@@ -1144,13 +1144,13 @@ object Json extends Json2, Dynamic:
       var index = 0
 
       while index < count do
-        if keys(index) eq name then return index
+        if keys.readUnchecked(index) eq name then return index
         index += 1
 
       index = 0
 
       while index < count do
-        if keys(index) == name then return index
+        if keys.readUnchecked(index) == name then return index
         index += 1
 
       KeyTable.Unknown
@@ -1287,10 +1287,10 @@ object Json extends Json2, Dynamic:
           while index < n do
             newlineIndent(level)
 
-            writeString(node(index*2).asInstanceOf[String])
+            writeString(node.readUnchecked(index*2).asInstanceOf[String])
             producer.put(":")
             if formatting.indent.present then producer.put(" ")
-            recur(node(index*2 + 1).asInstanceOf[Json.Ast], level + 1)
+            recur(node.readUnchecked(index*2 + 1).asInstanceOf[Json.Ast], level + 1)
 
             if index < last then producer.put(",")
             index += 1
@@ -1305,7 +1305,7 @@ object Json extends Json2, Dynamic:
           val raw = elements.length
 
           val n =
-            if raw > 0 && (elements(raw - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
+            if raw > 0 && (elements.readUnchecked(raw - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
             then raw - 1
             else raw
 
@@ -1316,7 +1316,7 @@ object Json extends Json2, Dynamic:
           while index < n do
             newlineIndent(level)
 
-            recur(elements(index).asInstanceOf[Json.Ast], level + 1)
+            recur(elements.readUnchecked(index).asInstanceOf[Json.Ast], level + 1)
             if index < last then producer.put(",")
             index += 1
 
@@ -1531,8 +1531,8 @@ object Json extends Json2, Dynamic:
       var i = 0
 
       while i < n do
-        arr(i*2) = keys(i)
-        arr(i*2 + 1) = values(i)
+        arr(i*2) = keys.readUnchecked(i)
+        arr(i*2 + 1) = values.readUnchecked(i)
         i += 1
 
       Array.freeze(arr)
@@ -1639,14 +1639,14 @@ object Json extends Json2, Dynamic:
       //   - boxed `Array[Any]^{}`: direct indexed lookup.
       def arrayElement(index: Int): Json.Ast = (json: @unchecked) match
         case bcds: (Array[Long]^{}) @unchecked =>
-          val v = bcds(index)
+          val v = bcds.readUnchecked(index)
           val text = Bcd.bcdLongText(v)
 
           try Json.Ast(java.lang.Long.parseLong(text))
           catch case _: NumberFormatException => Json.Ast(java.lang.Double.parseDouble(text))
 
         case smalls: (Array[Int]^{}) @unchecked =>
-          Json.Ast(smalls(index))
+          Json.Ast(smalls.readUnchecked(index))
 
         case _ =>
           json.asInstanceOf[Array[Json.Ast]^{}](index)
@@ -1667,7 +1667,7 @@ object Json extends Json2, Dynamic:
         var i = 0
 
         while i < len do
-          if arr(i) == key then return i/2
+          if arr.readUnchecked(i) == key then return i/2
           i += 2
         -1
 
@@ -1694,7 +1694,7 @@ object Json extends Json2, Dynamic:
             val n = json.arrayLength
 
             if n == full.length then full
-            else Array.tabulate(n)(full(_))
+            else Array.tabulate(n)(full.readUnchecked(_))
           else
             // hoisted: a fresh array built inside `yet`'s by-name operand (which
             // captures the ambient Tactic) could not escape it
@@ -1759,8 +1759,8 @@ object Json extends Json2, Dynamic:
           var i = 0
 
           while i < n do
-            keys(i) = arr(i*2).asInstanceOf[String]
-            values(i) = arr(i*2 + 1).asInstanceOf[Json.Ast]
+            keys(i) = arr.readUnchecked(i*2).asInstanceOf[String]
+            values(i) = arr.readUnchecked(i*2 + 1).asInstanceOf[Json.Ast]
             i += 1
 
           (Array.freeze(keys).asInstanceOf[Array[String]^{}],
@@ -1965,9 +1965,9 @@ object Json extends Json2, Dynamic:
     if i >= segments.length then
       if keyMode then Unset
       else Json.Ast.Position
-        ( line   = data(offset + 1),
-          column = data(offset + 2),
-          length = data(offset + 3) )
+        ( line   = data.readUnchecked(offset + 1),
+          column = data.readUnchecked(offset + 2),
+          length = data.readUnchecked(offset + 3) )
     else
       // `JsonPointer.path.descent` is stored leaf-first (Serpentine's `/`
       // prepends), so iterate it in reverse to walk root-to-leaf.
@@ -1977,14 +1977,14 @@ object Json extends Json2, Dynamic:
         val k = ast.objectIndexOf(seg)
 
         if k < 0 then Unset else
-          val entryOff = data(offset + 5 + k)
+          val entryOff = data.readUnchecked(offset + 5 + k)
           val isLast = i == segments.length - 1
 
           if isLast && keyMode then
             Json.Ast.Position
-              ( line   = data(offset + entryOff),
-                column = data(offset + entryOff + 1),
-                length = data(offset + entryOff + 2) )
+              ( line   = data.readUnchecked(offset + entryOff),
+                column = data.readUnchecked(offset + entryOff + 1),
+                length = data.readUnchecked(offset + entryOff + 2) )
           else
             walkIndex
               ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
@@ -1994,7 +1994,7 @@ object Json extends Json2, Dynamic:
 
           if k < 0 || k >= ast.arrayLength then Unset
           else
-            val childOff = data(offset + 5 + k)
+            val childOff = data.readUnchecked(offset + 5 + k)
 
             walkIndex
               ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
@@ -2589,7 +2589,7 @@ extends Dynamic, Topical, Original derives CanEqual:
     else Json.ast(Json.Ast(Unset))
 
   // Raising array access, preserving the behaviour of plain `json(i)`.
-  private[jacinta] def indexValue(index: Int): Json raises JsonError = Json(root.array(index))
+  private[jacinta] def indexValue(index: Int): Json raises JsonError = Json(root.array.readUnchecked(index))
 
   // Array indexing. For a schema-typed `Json of List[E] from R` the navigation
   // macro yields `Json of E from R`; for a plain `Json` it indexes at runtime
@@ -2792,7 +2792,7 @@ extends Dynamic, Topical, Original derives CanEqual:
             i += 1
 
           leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
-            recur(leftMap(key), rightMap(key))
+            recur(leftMap(key).vouch, rightMap(key).vouch)
 
       def recur(left: Json.Ast, right: Json.Ast): Boolean = right.asMatchable match
         case right: Long => left.asMatchable match

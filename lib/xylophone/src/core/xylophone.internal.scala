@@ -187,7 +187,7 @@ object internal:
           if index == pattern.children.length then expr else
             val expr2 =
               descend
-                (array, pattern.children(index), '{$scrutinee.children(${Expr(index)})}, '{true})
+                (array, pattern.children.readUnchecked(index), '{$scrutinee.children.readUnchecked(${Expr(index)})}, '{true})
 
             elements(index + 1)('{$expr && $expr2})
 
@@ -784,7 +784,7 @@ object internal:
 
     // `Attributes` is a `Text`-keyed map, so it indexes through the shared `at` (giving
     // `Optional`).
-    given indexable: Attributes is Indexable:
+    given indexable: Attributes is Applicable:
       type Operand = Text
       type Result = Text
 
@@ -866,7 +866,7 @@ object internal:
 
         throw new NoSuchElementException(s"key not found: $key")
 
-      // `at` without the `Indexable` detour, whose resolution is ambiguous
+      // `at` without the `Applicable` detour, whose resolution is ambiguous
       // against the array instance under the opaque bound — used by
       // staged parsers' generated `@attribute` steps.
       def fetch(key: Text): Optional[Text] =

@@ -76,7 +76,7 @@ object internal:
   private def stripPad(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1) else arr
+    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1) else arr
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
@@ -342,8 +342,8 @@ object internal:
 
         val pieces: scala.collection.immutable.List[Expr[Iterable[(String, Yaml.Ast)]]] =
           (0 until n).toList.map: i =>
-            val k = node(i*2).asInstanceOf[String]
-            val v = node(i*2 + 1)
+            val k = node.readUnchecked(i*2).asInstanceOf[String]
+            val v = node.readUnchecked(i*2 + 1)
 
             if k == MarkerString then
               v.asMatchable match
@@ -499,7 +499,7 @@ object internal:
         val n = elements.length
 
         val tailSpread: Boolean =
-          n > 0 && (elements(n - 1).asMatchable match
+          n > 0 && (elements.readUnchecked(n - 1).asMatchable match
             case s: String if s == MarkerString =>
               spreads.has(nextHole + countHolesInPrefix(elements, n - 1))
 
@@ -517,7 +517,7 @@ object internal:
         var i = 0
 
         while i < prefixLen do
-          val el = elements(i)
+          val el = elements.readUnchecked(i)
           val itemExpr = '{$scrutinee.arrayElement(${Expr(i)})}
           combined = descend(array, el, itemExpr, combined)
           i += 1
@@ -552,7 +552,7 @@ object internal:
         var i = 0
 
         while i < upTo do
-          count += countHolesIn(elements(i))
+          count += countHolesIn(elements.readUnchecked(i))
           i += 1
 
         count
@@ -592,7 +592,7 @@ object internal:
             var k = 0
 
             while k < elems.length do
-              c += countHolesIn(elems(k))
+              c += countHolesIn(elems.readUnchecked(k))
               k += 1
 
             c
@@ -610,11 +610,11 @@ object internal:
 
         val literalKeys: scala.collection.immutable.List[String] =
           (0 until pairs).toList.collect:
-            case i if node(i*2).asInstanceOf[String] != MarkerString =>
-              node(i*2).asInstanceOf[String]
+            case i if node.readUnchecked(i*2).asInstanceOf[String] != MarkerString =>
+              node.readUnchecked(i*2).asInstanceOf[String]
 
         val hasRest: Boolean =
-          (0 until pairs).exists: i => node(i*2).asInstanceOf[String] == MarkerString
+          (0 until pairs).exists: i => node.readUnchecked(i*2).asInstanceOf[String] == MarkerString
 
         val cardinality: Expr[Boolean] =
           if hasRest then
@@ -655,8 +655,8 @@ object internal:
         var i = 0
 
         while i < pairs do
-          val k = node(i*2).asInstanceOf[String]
-          val v = node(i*2 + 1)
+          val k = node.readUnchecked(i*2).asInstanceOf[String]
+          val v = node.readUnchecked(i*2 + 1)
 
           if k == MarkerString then
             val idx = nextHole

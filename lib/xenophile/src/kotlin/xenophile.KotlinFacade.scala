@@ -58,7 +58,7 @@ object KotlinFacade:
   private def transport(using quotes: Quotes)(self: Expr[Facade]): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    Map.of(Xenophile.refinements(self.asTerm.tpe.widen)).at(t"Transport").or:
+    Map.of(Xenophile.refinements(self.asTerm.tpe.widen))(t"Transport").or:
       halt(m"xenophile: the facade does not record its underlying type")
 
   private def classNameOf(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
@@ -245,7 +245,7 @@ object KotlinFacade:
     val stringy = TypeRepr.of[String] <:< target || target =:= TypeRepr.of[CharSequence]
 
     val transported =
-      Map.of(Xenophile.refinements(argument.tpe.widen)).at(t"Transport").lay(false)(_ <:< target)
+      Map.of(Xenophile.refinements(argument.tpe.widen))(t"Transport").lay(false)(_ <:< target)
 
     val direct = argument.tpe.widen <:< target || (textual && stringy) || transported
 
@@ -1172,7 +1172,7 @@ object KotlinFacade:
       else '{null}
 
     val values = types.zipWithIndex.map: (parameter, index) =>
-      provided.at(index).let { argument => adapted(argument, parameter).asExpr }.or(zero(parameter))
+      provided(index).let { argument => adapted(argument, parameter).asExpr }.or(zero(parameter))
 
     // Bit `i` set means parameter `i` takes its default.
     val mask: Int = types.indices.filter(!provided.stdlib.contains(_)).foldLeft(0): (acc, index) =>
@@ -1318,7 +1318,7 @@ object KotlinFacade:
             assign(rest, next, acc.updated(index, term))
 
           case (key, term) :: rest =>
-            val index = positions.at(key).or:
+            val index = positions(key).or:
               val declared = member.parameters.join(t", ")
               halt(m"xenophile: $className.$field has no parameter $key; it declares: $declared")
 
@@ -1329,7 +1329,7 @@ object KotlinFacade:
     val absent = proscenium.List.of((0 until member.arity).filter(!provided.stdlib.contains(_)).toList)
 
     if absent.isEmpty then
-      val ordered = (0 until member.arity).to(List).map(provided(_))
+      val ordered = (0 until member.arity).to(List).map { index => provided(index).vouch }
       invocation(self, repr, className, field, ordered, prototype)
     else
       val undefaulted = absent.filter: index =>
@@ -1430,7 +1430,7 @@ object KotlinFacade:
   def unwrapped(self: Expr[Facade])(using Quotes): Expr[Any] =
     import quotes.reflect.*
 
-    val transport = Map.of(Xenophile.refinements(self.asTerm.tpe.widen)).at(t"Transport")
+    val transport = Map.of(Xenophile.refinements(self.asTerm.tpe.widen))(t"Transport")
 
     if transport.absent then '{$self.raw} else
       transport.vouch.asType.absolve match

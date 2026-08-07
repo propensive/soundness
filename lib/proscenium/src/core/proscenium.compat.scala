@@ -46,7 +46,6 @@ import proscenium.{Array, Ledger, List, Map, Set, Chain, Sequence}
 // emptiness is the completion signal for the `Set` migration. Not auto-imported: `-Yimports`
 // pulls only top-level `proscenium` members, so every use is greppable.
 extension [element](set: Set[element])
-  inline def apply(element: element): Boolean = set.stdlib(element)
   inline def forall(predicate: element => Boolean): Boolean = set.stdlib.forall(predicate)
   inline def count(predicate: element => Boolean): Int = set.stdlib.count(predicate)
   inline def find(predicate: element => Boolean): Option[element] = set.stdlib.find(predicate)
@@ -94,7 +93,6 @@ extension [key, value](map: Map[key, value])
   // NO `getOrElse` shim: its by-name default parameter in an inline extension crashes the capture
   // checker's Setup phase (boxDeeply assertion); call sites bridge via `stdlib` instead.
 
-  inline def apply(key: key): value = map.stdlib(key)
   inline def keySet: Set[key] = Set.of(map.stdlib.keySet)
   inline def keys: Iterable[key] = map.stdlib.keys
   inline def values: Iterable[value] = map.stdlib.values
@@ -133,7 +131,6 @@ extension [key, value](map: Map[key, value])
 // `stdlib` or `at(...).or(...)`).
 extension [key, value](ledger: Ledger[key, value])
   inline def get(key: key): Option[value] = ledger.stdlib.get(key)
-  inline def apply(key: key): value = ledger.stdlib(key)
   inline def keySet: Set[key] = Set.of(ledger.stdlib.keySet)
   inline def keys: Iterable[key] = ledger.stdlib.keys
   inline def values: Iterable[value] = ledger.stdlib.values
@@ -234,7 +231,6 @@ extension [element](list: List[element])
   inline def iterator: Iterator[element] = list.stdlib.iterator
   inline def indexOf(element: element): Int = list.stdlib.indexOf(element)
   inline def indexWhere(predicate: element => Boolean): Int = list.stdlib.indexWhere(predicate)
-  inline def apply(index: Int): element = list.stdlib.apply(index)
   inline def updated(index: Int, element2: element): List[element] =
     List.of(list.stdlib.updated(index, element2))
 
@@ -391,7 +387,6 @@ extension [element](sequence: Sequence[element])
   inline def iterator: Iterator[element] = sequence.stdlib.iterator
   inline def indexOf(element: element): Int = sequence.stdlib.indexOf(element)
   inline def indexWhere(predicate: element => Boolean): Int = sequence.stdlib.indexWhere(predicate)
-  inline def apply(index: Int): element = sequence.stdlib.apply(index)
 
   inline def updated(index: Int, element2: element): Sequence[element] =
     Sequence.of(sequence.stdlib.updated(index, element2))

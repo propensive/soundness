@@ -103,7 +103,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   def setInfo(info: PdfInfo)(using Tactic[PdfError]): Unit =
     val dict = Cos.Dictionary(PdfInfo.dictionary(info))
 
-    pdf.trailer.at(t"Info") match
+    pdf.trailer(t"Info") match
       case ref: Cos.Ref =>
         pdf.put(ref.number, dict)
 
@@ -130,10 +130,10 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     scala.caps.unsafe.unsafeAssumeSeparate:
      editPage(pdf, page): entries =>
-      val resources = pdf.resolved(entries.at(t"Resources").or(Cos.Nil)).dictionary
+      val resources = pdf.resolved(entries(t"Resources").or(Cos.Nil)).dictionary
         . or(Map[Text, Cos]())
 
-      val existing = pdf.resolved(resources.at(category).or(Cos.Nil)).dictionary
+      val existing = pdf.resolved(resources(category).or(Cos.Nil)).dictionary
         . or(Map[Text, Cos]())
 
       val category0 = Cos.Dictionary(existing.updated(name, resource))
@@ -173,7 +173,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     scala.caps.unsafe.unsafeAssumeSeparate:
      editPage(pdf, page): entries =>
-      val existing = entries.at(t"Annots").let(pdf.resolved(_).elements).or(Nil)
+      val existing = entries(t"Annots").let(pdf.resolved(_).elements).or(Nil)
       entries.updated(t"Annots", Cos.Sequence(existing :+ ref))
 
   // Replaces the document outline (bookmarks). The tree is rebuilt as fresh objects with the
@@ -203,7 +203,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   ( using Tactic[PdfError] )
   :   Cos.Ref =
 
-    val root = pdf.catalog.at(t"Pages").or(abort(PdfError(PdfError.Reason.MissingEntry(t"Pages"))))
+    val root = pdf.catalog(t"Pages").or(abort(PdfError(PdfError.Reason.MissingEntry(t"Pages"))))
 
     val rootRef = root match
       case ref: Cos.Ref => ref
@@ -227,8 +227,8 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     scala.caps.unsafe.unsafeAssumeSeparate:
      pdf.editDictionary(rootRef.number): tree =>
-      val kids = tree.at(t"Kids").let(pdf.resolved(_).elements).or(Nil)
-      val count = tree.at(t"Count").let(_.long).or(kids.length.toLong)
+      val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
+      val count = tree(t"Count").let(_.long).or(kids.length.toLong)
 
       tree.updated(t"Kids", Cos.Sequence(kids :+ pageRef))
         . updated(t"Count", Cos.Integral(count + 1))
@@ -240,7 +240,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   // is left in place.
   def removePage(page: Page^)(using Tactic[PdfError]): Unit =
     page.number.let: pageNumber =>
-      val parent = page.entries.at(t"Parent")
+      val parent = page.entries(t"Parent")
 
       parent.let: parentRef =>
         parentRef match
@@ -248,7 +248,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
             // The edit reads and rewrites the same single-owner document.
             scala.caps.unsafe.unsafeAssumeSeparate:
              pdf.editDictionary(ref.number): tree =>
-              val kids = tree.at(t"Kids").let(pdf.resolved(_).elements).or(Nil)
+              val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
 
               val remaining = kids.filter:
                 case Cos.Ref(number, _) => number != pageNumber
@@ -297,8 +297,8 @@ private def buildOutline
       var dict: Map[Text, Cos] =
         Map(t"Title" -> Cos.Chars(Cos.encodeText(bookmark.title)), t"Parent" -> parent)
 
-      if index > 0 then dict = dict.updated(t"Prev", refs(index - 1))
-      if index < refs.length - 1 then dict = dict.updated(t"Next", refs(index + 1))
+      if index > 0 then dict = dict.updated(t"Prev", refs.stdlib(index - 1))
+      if index < refs.length - 1 then dict = dict.updated(t"Next", refs.stdlib(index + 1))
 
       childFirst.let: first => dict = dict.updated(t"First", first)
 

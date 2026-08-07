@@ -62,13 +62,13 @@ object Local:
     type Plane = Local
 
     def length(text: Text): 1 | 3 raises PathError =
-      if text.starts(t"/") then 1 else if text.s(1) == ':' && text.s(2) == '\\' then 3
+      if text.starts(t"/") then 1 else if text.s.charAt(1) == ':' && text.s.charAt(2) == '\\' then 3
       else abort(PathError(_.InvalidRoot))
 
     def decode(text: Text): %.type | Drive raises PathError =
       length(text) match
         case 1 => %
-        case 3 => Drive(text.s(0).lest(PathError(_.InvalidRoot)))
+        case 3 => Drive(text.s.charAt(0).lest(PathError(_.InvalidRoot)))
 
     def encode(root: %.type | Drive): Text = root match
       case Drive(letter) => t"$letter:\\"

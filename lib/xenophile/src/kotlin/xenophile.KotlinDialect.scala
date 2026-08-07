@@ -87,14 +87,14 @@ object KotlinDialect extends Dialect:
     resolved(typeName).let(_.prototypes)
 
   private[xenophile] def members(typeName: Text, name: Text): List[JvmMember] =
-    resolved(typeName).let(_.members.at(name)).or(Nil)
+    resolved(typeName).let(_.members(name)).or(Nil)
 
   private[xenophile] def memberPrototype(typeName: Text, name: Text): Optional[Prototype] =
-    resolved(typeName).let(_.prototypes.at(name))
+    resolved(typeName).let(_.prototypes(name))
 
   // The setter of a `var` property, when the property is mutable.
   private[xenophile] def setter(typeName: Text, name: Text): Optional[JvmMember] =
-    resolved(typeName).let(_.setters.at(name))
+    resolved(typeName).let(_.setters(name))
 
   // The declaration-order identifiers of a class's type parameters, for substituting a
   // `Facade`'s Scala type arguments into `#<id>` type-parameter references.

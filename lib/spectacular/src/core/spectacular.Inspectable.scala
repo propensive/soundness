@@ -208,7 +208,7 @@ object Inspectable extends Inspectable2:
   private def arrayPrefix(string: String): String =
     val brackets = string.count(_ == '[')
 
-    val arrayType = string(brackets) match
+    val arrayType = string.charAt(brackets) match
       case 'B' => "🅱" // Byte
       case 'C' => "🅲" // Char
       case 'D' => "🅳" // Double
@@ -220,7 +220,7 @@ object Inspectable extends Inspectable2:
       case 'Z' => "🆉" // Boolean
       case _   => "🯄" // Unknown
 
-    val dimension = if brackets < 2 then "".tt else brackets.toString.map("⁰¹²³⁴⁵⁶⁷⁸⁹"(_)).tt
+    val dimension = if brackets < 2 then "".tt else brackets.toString.map { digit => "⁰¹²³⁴⁵⁶⁷⁸⁹".charAt(digit - '0') }.tt
 
     arrayType+dimension//+renderBraille(string.split("@").nn(1).nn)
 

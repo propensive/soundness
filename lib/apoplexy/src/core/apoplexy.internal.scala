@@ -123,9 +123,9 @@ object Apoplexy:
     import quotes.reflect.*
 
     val members = Map.of(refinements(self.asTerm.tpe.widen))
-    val locus = members.at(t"Locus").lay(t"/")(stringOf(_))
-    val source = members.at(t"Source").or(halt(m"apoplexy: the receiver has no spec `Source`"))
-    val wire = members.at(t"Transport").lay(Wire.Json)(wireOfRepr(_))
+    val locus = members(t"Locus").lay(t"/")(stringOf(_))
+    val source = members(t"Source").or(halt(m"apoplexy: the receiver has no spec `Source`"))
+    val wire = members(t"Transport").lay(Wire.Json)(wireOfRepr(_))
 
     (locus, stringOf(source), wire)
 
@@ -189,7 +189,7 @@ object Apoplexy:
     import quotes.reflect.*
 
     val params =
-      doc.paths.at(path).lay(List[OpenApi.Parameter]()): item =>
+      doc.paths(path).lay(List[OpenApi.Parameter]()): item =>
         item.operations.stdlib.values.flatMap(_.parameters.stdlib).to(List)
 
     params.find { p => p.name == parameter && p.`in` == OpenApi.Parameter.In.Path } match
@@ -218,7 +218,7 @@ object Apoplexy:
   private def responseWire(operation: OpenApi.Operation): Optional[Wire] =
     val status = operation.responses.keys.filter(_.starts(t"2")).to(List).sort(_.s).prim
 
-    status.let(operation.responses.at(_)).let: response => wireOf(response.content)
+    status.let(operation.responses(_)).let: response => wireOf(response.content)
 
   // The spec-wide wire format if every operation agrees, else `Json` as a neutral
   // placeholder for navigation types. The authoritative format is always recomputed
@@ -263,7 +263,7 @@ object Apoplexy:
 
     val verb = methodName(method)
 
-    val operation = doc.paths.at(locus).let(_.operations.at(method)).or:
+    val operation = doc.paths(locus).let(_.operations(method)).or:
       halt(m"apoplexy: $locus defines no $verb operation")
 
     val queryParams = operation.parameters.filter(_.`in` == OpenApi.Parameter.In.Query)
@@ -299,7 +299,7 @@ object Apoplexy:
     // The wire format the spec dictates for this operation: the response body's
     // media type, else the request body's, else JSON. An operation that mixes
     // request and response media types is not supported.
-    val respWire = operation.responses.at(status).let: response => wireOf(response.content)
+    val respWire = operation.responses(status).let: response => wireOf(response.content)
 
     val reqWire = operation.requestBody.let: body => wireOf(body.content)
 
@@ -377,7 +377,7 @@ object Apoplexy:
   :   Expr[Any] =
 
     val methods =
-      doc.paths.at(locus).lay(List[Http.Method]()): item =>
+      doc.paths(locus).lay(List[Http.Method]()): item =>
         item.operations.keys.filter(_ != Http.Delete).to(List)
 
     methods match
@@ -404,7 +404,7 @@ object Apoplexy:
         halt(m"apoplexy: arguments must be passed directly")
 
   private def defines(using Quotes)(doc: OpenApi, locus: Text, method: Http.Method): Boolean =
-    doc.paths.at(locus).let(_.operations.defines(method)).or(false)
+    doc.paths(locus).let(_.operations.defines(method)).or(false)
 
   // --- macros --------------------------------------------------------------
 
@@ -414,7 +414,7 @@ object Apoplexy:
     val members = Map.of(refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen))
 
     val source =
-      members.at(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
+      members(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
 
     val doc = spec(source)
     val base = if doc.servers.nil then t"" else doc.servers.head.url
@@ -430,7 +430,7 @@ object Apoplexy:
     val (locus, source, wire) = receiver(self)
     val doc = spec(source)
 
-    verbs.at(name) match
+    verbs(name) match
       case method: Http.Method if defines(doc, locus, method) =>
         invoke(self, doc, source, locus, method, Nil, Nil)
 
@@ -462,7 +462,7 @@ object Apoplexy:
       case Varargs(exprs) => exprs.to(List)
       case _              => halt(m"apoplexy: arguments must be passed directly")
 
-    verbs.at(name) match
+    verbs(name) match
       case method: Http.Method if defines(doc, locus, method) =>
         invoke(self, doc, source, locus, method, Nil, positional)
 
@@ -476,7 +476,7 @@ object Apoplexy:
         def deeper(key: List[Text]): Boolean =
           isPrefix(newSegs, key) && key.length > newSegs.length
 
-        val following = keys.filter(deeper).map(_(newSegs.length)).find(isTemplate)
+        val following = keys.filter(deeper).map(_.stdlib(newSegs.length)).find(isTemplate)
 
         following match
           case None => shortcut(self, doc, source, newLocus, Nil, positional)
@@ -538,7 +538,7 @@ object Apoplexy:
     val named = entries.filter(_(0) != t"")
     val positional = entries.filter(_(0) == t"").map(_(1))
 
-    verbs.at(name) match
+    verbs(name) match
       case method: Http.Method if defines(doc, locus, method) =>
         invoke(self, doc, source, locus, method, named, positional)
 
@@ -549,7 +549,7 @@ object Apoplexy:
 
         if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
 
-        if doc.paths.at(newLocus).absent
+        if doc.paths(newLocus).absent
         then halt(m"apoplexy: $newLocus is not a complete endpoint")
 
         shortcut(self, doc, source, newLocus, named, positional)
@@ -639,10 +639,10 @@ object Apoplexy:
       val members = Map.of(refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen))
 
       val pointer =
-        members.at(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
+        members(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
 
       val source =
-        members.at(t"Form").lay(halt(m"apoplexy: missing spec source"))(stringOf(_))
+        members(t"Form").lay(halt(m"apoplexy: missing spec source"))(stringOf(_))
 
       conformsTo(valueRepr, resolveSchema(source, pointer))
 

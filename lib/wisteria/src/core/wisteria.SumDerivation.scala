@@ -62,6 +62,8 @@ object SumDerivation:
 
       fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
         [variant2 <: derivation] => field =>
+          // The explicit import outranks the deindexing `apply`, which would otherwise
+          // shadow the `Tagged` unwrapping.
           if index == variantIndex() then field.asInstanceOf[variant] else Unset
 
 

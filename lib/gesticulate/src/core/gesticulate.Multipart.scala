@@ -116,7 +116,7 @@ object Multipart:
             var i = 0
 
             while ok && i < boundary.length do
-              ok = cursor.next() && cursor.peek == boundary(i)
+              ok = cursor.next() && cursor.peek == boundary.readUnchecked(i)
               i += 1
 
             ok

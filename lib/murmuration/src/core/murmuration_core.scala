@@ -39,7 +39,7 @@ import anticipation.*
 import prepositional.*
 
 // `collection.has(value)` (value membership) for any `collection` that is `Inclusive`; the queried
-// value type is fixed by the instance's `Operand`. Whether a *key/index* is present is `Indexable`'s
+// value type is fixed by the instance's `Operand`. Whether a *key/index* is present is `Applicable`'s
 // `defines` instead (that lives in `rudiments`, being `Ordinal`-adjacent).
 extension [self](self: self)(using inclusive: self is Inclusive)
   def has(value: inclusive.Operand): Boolean = inclusive.has(self, value)

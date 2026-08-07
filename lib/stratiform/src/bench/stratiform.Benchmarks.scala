@@ -148,7 +148,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
           ( id     = 10000L + index,
             name   = t"customer-$index",
             email  = t"user$index@example.com",
-            region = regions(index % 4) ),
+            region = regions.stdlib(index % 4) ),
         items     = List.tabulate(6)(lineItem(index, _)),
         priority  = index % 3 == 0,
         discount  = 0.25*(index % 3) )

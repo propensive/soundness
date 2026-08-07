@@ -123,12 +123,12 @@ object Tests extends Suite(m"Zeppelin tests"):
     // The general-purpose bit flag of the first local file header.
     def firstFlag(path: Path on Linux): Int =
       val data = bytesOf(path)
-      (data(6) & 0xff) | ((data(7) & 0xff) << 8)
+      (data.readUnchecked(6) & 0xff) | ((data.readUnchecked(7) & 0xff) << 8)
 
     def contains(data: Data, signature: List[Int]): Boolean =
       val window = signature.length
       (0 to data.length - window).exists: i =>
-        (0 until window).forall(j => (data(i + j) & 0xff) == signature(j))
+        (0 until window).forall(j => (data.readUnchecked(i + j) & 0xff) == signature.stdlib(j))
 
     suite(m"Zip.Entry construction and content"):
       test(m"entry built from a path and Text exposes its path"):
@@ -165,7 +165,7 @@ object Tests extends Suite(m"Zeppelin tests"):
         val bytes = bytesOf(writeZip(t"aligned.zip", stored))
 
         def u16(offset: Int): Int =
-          (bytes(offset).toInt & 0xff) | ((bytes(offset + 1).toInt & 0xff) << 8)
+          (bytes.readUnchecked(offset).toInt & 0xff) | ((bytes.readUnchecked(offset + 1).toInt & 0xff) << 8)
 
         (30 + u16(26) + u16(28))%4
       . assert(_ == 0)

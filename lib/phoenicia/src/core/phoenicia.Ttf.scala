@@ -103,48 +103,48 @@ case class Ttf(data: Data):
     . pipe(Map.from(_))
 
   def head: HeadTable raises FontError =
-    tables.at(TtfTag.Head).let: ref =>
+    tables(TtfTag.Head).let: ref =>
       data.unpackFrom[HeadTable](ref.offset).tap: table =>
         if table.magicNumber != 0x5f0f3cf5.bits then raise(FontError(FontError.Reason.MagicNumber))
 
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
 
   def cmap: CmapTable raises FontError =
-    tables.at(TtfTag.Cmap).let: ref => CmapTable(ref.offset)
+    tables(TtfTag.Cmap).let: ref => CmapTable(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Cmap)))
 
   def hhea: HheaTable raises FontError =
-    tables.at(TtfTag.Hhea).let: ref => data.unpackFrom[HheaTable](ref.offset)
+    tables(TtfTag.Hhea).let: ref => data.unpackFrom[HheaTable](ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hhea)))
 
   def hmtx: HmtxTable raises FontError =
-    tables.at(TtfTag.Hmtx).let: ref => HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
+    tables(TtfTag.Hmtx).let: ref => HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx)))
 
   def maxp: MaxpTable raises FontError =
-    tables.at(TtfTag.Maxp).let: ref => MaxpTable(ref.offset)
+    tables(TtfTag.Maxp).let: ref => MaxpTable(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Maxp)))
 
   def post: PostTable raises FontError =
-    tables.at(TtfTag.Post).let: ref => PostTable(ref.offset)
+    tables(TtfTag.Post).let: ref => PostTable(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Post)))
 
   def os2: Os2Table raises FontError =
-    tables.at(OtfTag.Os2).let: ref => Os2Table(ref.offset)
+    tables(OtfTag.Os2).let: ref => Os2Table(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(OtfTag.Os2)))
 
   def name: NameTable raises FontError =
-    tables.at(TtfTag.Name).let: ref => NameTable(ref.offset)
+    tables(TtfTag.Name).let: ref => NameTable(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Name)))
 
   def loca: LocaTable raises FontError =
-    tables.at(TtfTag.Loca).let: ref =>
+    tables(TtfTag.Loca).let: ref =>
       LocaTable(ref.offset, maxp.glyphCount, head.indexToLocFormat.int == 1)
 
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Loca)))
 
   def glyf: GlyfTable raises FontError =
-    tables.at(TtfTag.Glyf).let: ref => GlyfTable(ref.offset, loca)
+    tables(TtfTag.Glyf).let: ref => GlyfTable(ref.offset, loca)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Glyf)))
 
   // A new font containing only the outlines needed to render the given characters — plus any
@@ -186,7 +186,7 @@ case class Ttf(data: Data):
       newLoca(id*4 + 2) = (offsets(id) >> 8).toByte
       newLoca(id*4 + 3) = offsets(id).toByte
 
-    val headRef = tables.at(TtfTag.Head).lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
+    val headRef = tables(TtfTag.Head).lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
     val headData = data.slice(headRef.offset, headRef.offset + headRef.length)
     val newHead = Array[Byte](headData.length)
     newHead.copyFrom(headData, 0, 0, headData.length)
@@ -277,10 +277,10 @@ case class Ttf(data: Data):
           HMetrics(B16(data, offset + index*4).u16.int, B16(data, offset + index*4 + 2).s16.int)
 
     def advanceWidth(glyphId: Int): Int =
-      metrics(if glyphId < count then glyphId else count - 1).advanceWidth
+      metrics.readUnchecked(if glyphId < count then glyphId else count - 1).advanceWidth
 
     def leftSideBearing(glyphId: Int): Int =
-      if glyphId < count then metrics(glyphId).leftSideBearing
+      if glyphId < count then metrics.readUnchecked(glyphId).leftSideBearing
       else B16(data, offset + count*4 + (glyphId - count)*2).s16.int
 
     case class HMetrics(advanceWidth: Int, leftSideBearing: Int)
@@ -296,7 +296,7 @@ case class Ttf(data: Data):
 
   case class GlyfTable(offset: Int, loca: LocaTable):
     def apply(glyphId: Int): GlyphRecord =
-      GlyphRecord(offset + loca.offsets(glyphId), loca.offsets(glyphId + 1) - loca.offsets(glyphId))
+      GlyphRecord(offset + loca.offsets.readUnchecked(glyphId), loca.offsets.readUnchecked(glyphId + 1) - loca.offsets.readUnchecked(glyphId))
 
     // One glyph's raw data. A glyph with no outline — a space — has zero extent; a composite
     // glyph has a negative contour count and a list of component glyphs.
@@ -460,7 +460,7 @@ case class Ttf(data: Data):
       // A byte-indexed array of glyph ids, for the first 256 character codes only.
       case class Format0(start: Int) extends Format:
         def glyph(char: Char): Glyph[ttf.type] =
-          Glyph(ttf, if char < 256 then data(start + char) & 0xff else 0)
+          Glyph(ttf, if char < 256 then data.readUnchecked(start + char) & 0xff else 0)
 
       // Segmented ranges over the Basic Multilingual Plane. Each segment maps by a delta, or
       // — when its range offset is nonzero — indirects into the glyph-id array which follows
@@ -469,8 +469,8 @@ case class Ttf(data: Data):
         def glyph(char: Char): Glyph[ttf.type] =
           val index = segments.indexWhere(char <= _.end)
 
-          if index < 0 || char < segments(index).start then Glyph(ttf, 0) else
-            val segment = segments(index)
+          if index < 0 || char < segments.readUnchecked(index).start then Glyph(ttf, 0) else
+            val segment = segments.readUnchecked(index)
 
             val id =
               if segment.rangeOffset == 0 then char + segment.delta

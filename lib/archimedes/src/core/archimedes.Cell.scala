@@ -41,6 +41,7 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.Measurable
 import hieroglyph.textMetrics.wideCharacterWidthMetric
+import denominative.*
 import rudiments.*
 import vacuous.*
 
@@ -80,7 +81,7 @@ object Cell:
 
   // The text of `cell`'s row, or a full-width blank when the row is out of bounds.
   private def slice(cell: Cell, row: Int): Text =
-    if row >= 0 && row < cell.height then cell.lines(row).text else spaces(cell.width).text
+    cell.lines(row.z).let(_.text).or(spaces(cell.width).text)
 
   val empty: Cell = Cell(Sequence(Writing.empty), 0, 0)
 
@@ -104,7 +105,7 @@ object Cell:
 
       val lines = Sequence.from:
         (0 until height).map: row =>
-          Writing(List.of(framed.map { cell => cell.lines(row).text }).join)
+          Writing(List.of(framed.map { cell => cell.lines((row).z).vouch.text }).join)
 
       Cell(lines, cells.stdlib.map(_.width).reduceLeft(_ + _), ascent)
 
@@ -143,11 +144,11 @@ object Cell:
 
         val scripts =
           if row < superscript.height then
-            val text = superscript.lines(row).text
+            val text = superscript.lines((row).z).vouch.text
             val pad = spaces(right - superscript.width).text
             t"$text$pad"
           else if row >= middle then
-            val text = subscript.lines(row - middle).text
+            val text = subscript.lines((row - middle).z).vouch.text
             val pad = spaces(right - subscript.width).text
             t"$text$pad"
           else
@@ -177,7 +178,7 @@ object Cell:
   def radical(inner: Cell): Cell =
     if inner.height > 1 then tallRadical(inner) else
       val overline = Writing(t"$Corner${repeat(Bar, inner.width).text}")
-      val body = Writing(t"$Radical${inner.lines(0).text}")
+      val body = Writing(t"$Radical${inner.lines((0).z).vouch.text}")
       Cell(Sequence(overline, body), inner.width + 1, 1)
 
   private def tallRadical(inner: Cell): Cell =
@@ -186,7 +187,7 @@ object Cell:
     val body = Sequence.from:
       (0 until inner.height).map: row =>
         val foot = if row == inner.height - 1 then Tick else ' '
-        Writing(t"$foot$Stem${inner.lines(row).text}")
+        Writing(t"$foot$Stem${inner.lines((row).z).vouch.text}")
 
     Cell(Sequence(overline) ::: body, inner.width + 2, inner.baseline + 1)
 
@@ -197,8 +198,8 @@ object Cell:
 
     val lines = Sequence.from:
       (0 until radicand.height).map: row =>
-        val prefix = if row < index.height then index.lines(row).text else spaces(index.width).text
-        Writing(t"$prefix${radicand.lines(row).text}")
+        val prefix = if row < index.height then index.lines((row).z).vouch.text else spaces(index.width).text
+        Writing(t"$prefix${radicand.lines((row).z).vouch.text}")
 
     Cell(lines, index.width + radicand.width, radicand.baseline)
 

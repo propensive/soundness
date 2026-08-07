@@ -54,10 +54,10 @@ object PdfRect:
         val values = elements.map(pdf.resolved(_).double.or(0.0)*scale)
 
         PdfRect
-          ( Quantity[Points[1]](values(0).min(values(2))),
-            Quantity[Points[1]](values(1).min(values(3))),
-            Quantity[Points[1]](values(0).max(values(2))),
-            Quantity[Points[1]](values(1).max(values(3))) )
+          ( Quantity[Points[1]](values.stdlib(0).min(values.stdlib(2))),
+            Quantity[Points[1]](values.stdlib(1).min(values.stdlib(3))),
+            Quantity[Points[1]](values.stdlib(0).max(values.stdlib(2))),
+            Quantity[Points[1]](values.stdlib(1).max(values.stdlib(3))) )
 
 // A rectangle in default user space, held as typesafe lengths: one PDF point is exactly
 // 1/72 inch, which is `quantitative`'s `Points` unit.

@@ -36,7 +36,7 @@ import scala.collection.immutable as sci
 
 // The first opaque collection alias: an immutable indexed sequence backed by `Vector`, whose
 // members are deliberately invisible — its API is the typeclass-driven extension surface
-// (`Indexable`, `Countable`, `Traversable`, `Reshapable`, `Convertible`, …), which is total.
+// (`Applicable`, `Countable`, `Traversable`, `Reshapable`, `Convertible`, …), which is total.
 // The companion holds only construction, the `stdlib` bridge, pattern support and the `Seq`
 // conversion (for vararg splices and stdlib-boundary interop); operations live with their
 // typeclasses. The boundary functions cast (`asInstanceOf`): under capture checking an identity

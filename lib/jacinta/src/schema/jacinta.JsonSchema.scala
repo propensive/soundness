@@ -335,7 +335,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
       val map =
         contexts[derivation]():
           [field] => schema =>
-            val schema2 = descriptions.at(label).lay(schema.schema()): memo =>
+            val schema2 = descriptions(label).lay(schema.schema()): memo =>
               schema.schema().description = memo.stdlib.map(_.description).join(t"\n")
 
             (label, schema2)
@@ -361,7 +361,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
       val schemas =
         choices:
           [variant <: derivation] => schema =>
-            descriptions.at(label).lay(schema.schema()): memo =>
+            descriptions(label).lay(schema.schema()): memo =>
               schema.schema().description = memo.stdlib.map(_.description).join(t"\n")
 
         . to[List]

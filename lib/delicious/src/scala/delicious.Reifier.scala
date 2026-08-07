@@ -64,7 +64,7 @@ object Reifier:
       if text.s.length >= 2 && text.s.startsWith("\"") && text.s.endsWith("\"") then
         val body = text.s.substring(1, text.s.length - 1).nn.tt
 
-        Placeholder.reference(body).let { id => byId.at(id).let { p => Syntax.Symbolic(p.printed) } }
+        Placeholder.reference(body).let { id => byId(id).let { p => Syntax.Symbolic(p.printed) } }
         . or(Placeholder.escaped(body).let { literal => Syntax.Primitive(t"\"$literal\"") })
 
       else Unset

@@ -49,7 +49,7 @@ object Facade extends prophesy.Completable:
     ( receiver: quotes.reflect.TypeRepr, prefix: Text )
   :   List[prophesy.Completion] =
 
-    Map.of(Xenophile.refinements(receiver)).at(t"Transport").lay(Nil): transport =>
+    Map.of(Xenophile.refinements(receiver))(t"Transport").lay(Nil): transport =>
       val className =
         transport.dealias.classSymbol.map(_.fullName.replace("$.", ".").nn.tt)
 

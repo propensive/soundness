@@ -47,7 +47,7 @@ object Optical:
   given ordinalList: [element] => Ordinal is Optical from List[element] onto element =
     ordinal =>
       Optic: (origin, lambda) =>
-        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
+        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin.stdlib(ordinal.n0)))
         else origin
 
   given ordinalSeries: [element] => Ordinal is Optical from Sequence[element] onto element =
@@ -62,7 +62,7 @@ object Optical:
   given at: [key, element] => key is Optical from Map[key, element] onto element =
     key =>
       Optic: (origin, lambda) =>
-        origin.at(key).let(lambda).lay(origin)(value => Map.of(origin.stdlib.updated(key, value)))
+        origin(key).let(lambda).lay(origin)(value => Map.of(origin.stdlib.updated(key, value)))
 
   // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM pipeline —
   // rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.

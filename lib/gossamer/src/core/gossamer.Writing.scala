@@ -41,6 +41,7 @@ import java.lang as jl
 import scala.reflect.*
 
 import anticipation.*
+
 import denominative.*
 import rudiments.*
 import hieroglyph.*
@@ -101,10 +102,10 @@ object Writing:
 
     def access(writing: Writing, index: Ordinal): Grapheme =
       Grapheme:
-        writing.text.s.substring(writing.boundaries(index.n0), writing.boundaries(index.n0 + 1)).nn
+        writing.text.s.substring(writing.boundaries.readUnchecked(index.n0), writing.boundaries.readUnchecked(index.n0 + 1)).nn
 
     def indexOf(writing: Writing, sub: Text, start: Ordinal): Optional[Ordinal] =
-      val charStart = writing.boundaries(start.n0.min(writing.boundaries.readable.length - 1))
+      val charStart = writing.boundaries.at(Ordinal.zerary(start.n0.min(writing.boundaries.readable.length - 1))).or(0)
       val foundChar = writing.text.s.indexOf(sub.s, charStart)
 
       if foundChar < 0 then Unset else

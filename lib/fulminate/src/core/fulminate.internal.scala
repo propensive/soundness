@@ -125,7 +125,7 @@ object internal:
           val text = decode(segment)
 
           if index < segments.stdlib.size - 1
-          then List(text, '{$subListRef(${Expr(startIndex + index)})}).stdlib
+          then List(text, '{$subListRef.stdlib(${Expr(startIndex + index)})}).stdlib
           else List(text).stdlib
 
       (items, startIndex + segments.stdlib.size - 1)

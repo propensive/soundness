@@ -410,7 +410,7 @@ private[probably] object AnsiRenderer:
       row.status match
         case Status.Fail | Status.Throws | Status.CheckThrows | Status.Mixed =>
           val firstDetail: Optional[Verdict.Detail] =
-            details.at(row.id).let(_.headOption.getOrElse(Unset))
+            details(row.id).let(_.headOption.getOrElse(Unset))
 
           GithubActions.error
             ( message = describeFailure(firstDetail),

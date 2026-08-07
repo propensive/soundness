@@ -42,7 +42,7 @@ import proscenium.compat.*
 
 // A `Crypto` provider backed by OpenSSL's `libcrypto`, called through xenophile's typed C
 // navigation: the prototypes in `/enigmatic/openssl.h` are parsed by `CHeaderDialect` at compile
-// time, and each fully-applied navigation's `invoke` materializes as a Panama downcall on the JVM
+// time, and each fully-applied navigation's `call` materializes as a Panama downcall on the JVM
 // and a direct C call on Scala Native — this one source serves both platforms, with buffers
 // passed through the platform-twinned `ForeignBuffer` and opaque handles as `Address`s.
 //
@@ -71,7 +71,7 @@ object OpensslCrypto extends Crypto:
       val output = ForeignBuffer(size)
 
       try
-        Foreign["library", Native].RAND_bytes(output.pointer, size).invoke[Int]
+        Foreign["library", Native].RAND_bytes(output.pointer, size).call[Int]()
         output.data(size)
       finally output.free()
 
@@ -87,7 +87,7 @@ object OpensslCrypto extends Crypto:
         Foreign["library", Native].HMAC
           ( md, keyBuffer.pointer, key.length, dataBuffer.pointer, data.length.toLong,
             output.pointer, outputLength.pointer )
-        . invoke[Address]
+        . call[Address]()
 
         output.data(outputLength.int)
 
@@ -110,11 +110,11 @@ object OpensslCrypto extends Crypto:
   def ecdsa(digest: Text): Crypto.SignatureScheme = JavaStdlibCrypto.ecdsa(digest)
 
   private def digest(algorithm: Text): Address = algorithm match
-    case t"HmacSHA256" => Foreign["library", Native].EVP_sha256().invoke[Address]
-    case t"HmacSHA384" => Foreign["library", Native].EVP_sha384().invoke[Address]
-    case t"HmacSHA512" => Foreign["library", Native].EVP_sha512().invoke[Address]
-    case t"HmacSHA1"   => Foreign["library", Native].EVP_sha1().invoke[Address]
-    case t"HmacMD5"    => Foreign["library", Native].EVP_md5().invoke[Address]
+    case t"HmacSHA256" => Foreign["library", Native].EVP_sha256().call[Address]()
+    case t"HmacSHA384" => Foreign["library", Native].EVP_sha384().call[Address]()
+    case t"HmacSHA512" => Foreign["library", Native].EVP_sha512().call[Address]()
+    case t"HmacSHA1"   => Foreign["library", Native].EVP_sha1().call[Address]()
+    case t"HmacMD5"    => Foreign["library", Native].EVP_md5().call[Address]()
     case other         => panic(m"unsupported HMAC algorithm: $other")
 
   // Maps a JCE-style cipher name (`AES`, `CBC`, key length) to OpenSSL's name, e.g.
@@ -125,14 +125,14 @@ object OpensslCrypto extends Crypto:
     case other  => panic(m"unsupported OpenSSL cipher: $other")
 
   private def cipher(name: Text): Address =
-    val result = Foreign["library", Native].EVP_get_cipherbyname(name).invoke[Address]
+    val result = Foreign["library", Native].EVP_get_cipherbyname(name).call[Address]()
     if result.isNull then panic(m"unknown OpenSSL cipher: $name") else result
 
   private def newContext(): Address =
-    Foreign["library", Native].EVP_CIPHER_CTX_new().invoke[Address]
+    Foreign["library", Native].EVP_CIPHER_CTX_new().call[Address]()
 
   private def freeContext(context: Address): Unit =
-    Foreign["library", Native].EVP_CIPHER_CTX_free(context).invoke[Unit]
+    Foreign["library", Native].EVP_CIPHER_CTX_free(context).call[Unit]()
 
   // Initialises `context` for one direction of one transformation: cipher selection, key and
   // (optional) IV, and padding. The two EVP directions are distinct C entry points, so each
@@ -151,14 +151,14 @@ object OpensslCrypto extends Crypto:
       if encrypting then
         Foreign["library", Native]
         . EVP_EncryptInit_ex(context, cipher0, Address.Null, keyBuffer.pointer, ivPointer)
-        . invoke[Int]
+        . call[Int]()
       else
         Foreign["library", Native]
         . EVP_DecryptInit_ex(context, cipher0, Address.Null, keyBuffer.pointer, ivPointer)
-        . invoke[Int]
+        . call[Int]()
 
       if parts(2) == t"NoPadding" then
-        Foreign["library", Native].EVP_CIPHER_CTX_set_padding(context, 0).invoke[Int]
+        Foreign["library", Native].EVP_CIPHER_CTX_set_padding(context, 0).call[Int]()
 
     finally
       keyBuffer.free()
@@ -175,11 +175,11 @@ object OpensslCrypto extends Crypto:
       if encrypting then
         Foreign["library", Native]
         . EVP_EncryptUpdate(context, output.pointer, length.pointer, input.pointer, chunk.length)
-        . invoke[Int]
+        . call[Int]()
       else
         Foreign["library", Native]
         . EVP_DecryptUpdate(context, output.pointer, length.pointer, input.pointer, chunk.length)
-        . invoke[Int]
+        . call[Int]()
 
       output.data(length.int)
 
@@ -198,11 +198,11 @@ object OpensslCrypto extends Crypto:
       then
         Foreign["library", Native]
         . EVP_EncryptFinal_ex(context, output.pointer, length.pointer)
-        . invoke[Int]
+        . call[Int]()
       else
         Foreign["library", Native]
         . EVP_DecryptFinal_ex(context, output.pointer, length.pointer)
-        . invoke[Int]
+        . call[Int]()
 
       output.data(length.int)
 

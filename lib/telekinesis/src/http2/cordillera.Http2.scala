@@ -137,11 +137,11 @@ object Http2:
 
   object Frame:
     private[cordillera] def uint24(data: Bytes, offset: Int): Int =
-      ((data(offset) & 0xff) << 16) | ((data(offset + 1) & 0xff) << 8) | (data(offset + 2) & 0xff)
+      ((data.readUnchecked(offset) & 0xff) << 16) | ((data.readUnchecked(offset + 1) & 0xff) << 8) | (data.readUnchecked(offset + 2) & 0xff)
 
     private[cordillera] def uint32(data: Bytes, offset: Int): Long =
-      ((data(offset).toLong & 0xff) << 24) | ((data(offset + 1).toLong & 0xff) << 16) |
-        ((data(offset + 2).toLong & 0xff) << 8) | (data(offset + 3).toLong & 0xff)
+      ((data.readUnchecked(offset).toLong & 0xff) << 24) | ((data.readUnchecked(offset + 1).toLong & 0xff) << 16) |
+        ((data.readUnchecked(offset + 2).toLong & 0xff) << 8) | (data.readUnchecked(offset + 3).toLong & 0xff)
 
     private def writeUint24(buf: ByteBuf^, value: Int): Unit =
       buf.add(((value >>> 16) & 0xff).toByte)
@@ -159,8 +159,8 @@ object Http2:
     def decode(data: Bytes, offset: Int): (Frame, Int) raises Http2Error =
       if offset + 9 > data.length then abort(Http2Error(Reason.Truncated))
       val length = uint24(data, offset)
-      val typeId = data(offset + 3) & 0xff
-      val flags = data(offset + 4) & 0xff
+      val typeId = data.readUnchecked(offset + 3) & 0xff
+      val flags = data.readUnchecked(offset + 4) & 0xff
       val streamId = (uint32(data, offset + 5) & 0x7fffffffL).toInt
       val start = offset + 9
       val end = start + length
@@ -222,7 +222,7 @@ object Http2:
     private def stripPadding(payload: Bytes, flags: Int): Bytes raises Http2Error =
       if !Flags.set(flags, Flags.Padded) then payload else
         if payload.length < 1 then abort(Http2Error(Reason.Truncated))
-        val padLength = payload(0) & 0xff
+        val padLength = payload.readUnchecked(0) & 0xff
         if 1 + padLength > payload.length then abort(Http2Error(Reason.Protocol(t"bad padding")))
         payload.slice(1, payload.length - padLength)
 
@@ -232,7 +232,7 @@ object Http2:
       var i = 0
 
       while i < payload.length do
-        val id = ((payload(i) & 0xff) << 8) | (payload(i + 1) & 0xff)
+        val id = ((payload.readUnchecked(i) & 0xff) << 8) | (payload.readUnchecked(i + 1) & 0xff)
         builder += Setting(id, uint32(payload, i + 2))
         i += 6
 

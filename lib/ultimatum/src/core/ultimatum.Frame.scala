@@ -34,6 +34,7 @@ package ultimatum
 
 import proscenium.compat.*
 
+import denominative.*
 import rudiments.*
 import vacuous.*
 
@@ -86,7 +87,7 @@ object Frame:
       var i = 0
 
       while i < n do
-        if pinned(i).present then used += pinned(i).vouch else weight += frac(i)
+        if pinned(i).present then used += pinned(i).vouch else weight += frac(i.z).vouch
         i += 1
 
       ((available - used).max(0), weight)
@@ -100,13 +101,13 @@ object Frame:
 
       while i < n do
         if pinned(i).absent then
-          val ideal = if weight <= 0.0 then 0.0 else pool*frac(i)/weight
+          val ideal = if weight <= 0.0 then 0.0 else pool*frac(i.z).vouch/weight
 
-          if ideal < min(i) then
-            pinned(i) = min(i)
+          if ideal < min(i.z).vouch then
+            pinned(i) = min(i.z).vouch
             changed = true
           else
-            max(i).let: hi =>
+            max(i.z).let: hi =>
               if ideal > hi then
                 pinned(i) = hi
                 changed = true
@@ -122,7 +123,7 @@ object Frame:
     while i < n do
       if pinned(i).present then sizes(i) = pinned(i).vouch
       else
-        val raw = if weight <= 0.0 then 0.0 else pool*frac(i)/weight
+        val raw = if weight <= 0.0 then 0.0 else pool*frac(i.z).vouch/weight
         val floor = raw.toInt
         sizes(i) = floor
         remainders(i) = raw - floor
@@ -202,8 +203,8 @@ enum Frame:
 
       val placements = children.stdlib.zipWithIndex.map: (child, i) =>
         val childRect = axis match
-          case Axis.File => Rect(offsets(i), rect.top, sizes(i), rect.height)
-          case Axis.Rank => Rect(rect.left, offsets(i), rect.width, sizes(i))
+          case Axis.File => Rect(offsets(i.z).vouch, rect.top, sizes(i.z).vouch, rect.height)
+          case Axis.Rank => Rect(rect.left, offsets(i.z).vouch, rect.width, sizes(i.z).vouch)
 
         child.arrange(childRect)
 

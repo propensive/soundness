@@ -42,7 +42,7 @@ import scala.quoted.*
 // (a Scala Native `dlsym`/`CFuncPtr` call), `WasmInvoke` (a Wasm Component Model import),
 // `JsInvoke` (a Scala.js dynamic call) and `KotlinInvoke` (a direct JVM call). Each ecosystem
 // names the ones that serve it in its `Emission` member, and `core` loads whichever the build put
-// on the classpath reflectively — so it depends on none of them, and the single `invoke`
+// on the classpath reflectively — so it depends on none of them, and the single `call`
 // extension can live here rather than being duplicated once per backend.
 trait Materializer:
   def materialize[result: Type](self: Expr[Foreign])(using Quotes): Expr[result]

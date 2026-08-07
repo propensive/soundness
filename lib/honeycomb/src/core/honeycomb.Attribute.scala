@@ -32,6 +32,8 @@
                                                                                                   */
 package honeycomb
 
+import rudiments.*
+
 import proscenium.compat.*
 
 import anticipation.*
@@ -41,7 +43,7 @@ case class Attribute(label: Text, elements: Set[Text], global: Boolean):
   type Topic
   type Plane <: Label
 
-  def targets(tag: Text): Boolean = global || elements(tag)
+  def targets(tag: Text): Boolean = global || elements.has(tag)
 
   def merge(that: Attribute): Attribute =
     Attribute(label, elements ++ that.elements, global || that.global)

@@ -57,7 +57,10 @@ import LineSeparation.*
 import abstractables.instantAbstractable
 import probates.awaitProbate
 
-inline def more[value](using value: value aka "more"): value = value()
+inline def more[value](using value: value aka "more"): value =
+  // The explicit import outranks the deindexing `apply`, which would otherwise shadow the
+  // `Tagged` unwrapping.
+  value()
 
 extension [value](value: value)
   // A streamable value's pull endpoint: the fluent form of
@@ -408,7 +411,7 @@ extension (stream: Chain[Data])
 
     override def close(): Unit = ()
 
-    def read(): Int = if available() == 0 then -1 else (focus(offset) & 0xff).also(offset += 1)
+    def read(): Int = if available() == 0 then -1 else (focus.readUnchecked(offset) & 0xff).also(offset += 1)
 
     override def read(array: scala.Array[Byte] | Null, arrayOffset: Int, length: Int): Int =
       if length == 0 then 0 else

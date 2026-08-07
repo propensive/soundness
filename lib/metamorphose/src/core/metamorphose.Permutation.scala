@@ -41,6 +41,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import rudiments.*
+import vacuous.*
 
 object Permutation:
   def bySize(n: Int): Chain[Permutation] = Chain.range[BigInt](0, Factorial(n)).map: i =>
@@ -74,7 +75,11 @@ case class Permutation(factoradic: Factoradic):
   lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.length)))
 
   def bytes: Data = unsafely(factoradic.number.toByteArray.immutable)
-  def apply(n: Int): Int = expansion(n)
+  def apply(n: Int): Int =
+    // A permutation fixes every point outside its domain; `List` positional access is
+    // O(n), accepted here explicitly through the asymptotic gate.
+    import denominative.asymptotics.linearAccessComplexity
+    expansion(Ordinal.zerary(n)).or(n)
 
   def apply[element](sequence: List[element]): List[element] raises PermutationError =
     if sequence.length < lehmer.length then

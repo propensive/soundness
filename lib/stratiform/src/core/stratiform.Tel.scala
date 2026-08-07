@@ -32,6 +32,7 @@
                                                                                                   */
 package stratiform
 
+
 import scala.collection.immutable.Vector
 
 import scala.caps
@@ -578,7 +579,7 @@ object Tel extends Tel2:
     private final class ArrayProduct(values: Array[Any]^{}) extends Product:
       def canEqual(that: Any): Boolean = true
       def productArity: Int = values.length
-      def productElement(index: Int): Any = values(index)
+      def productElement(index: Int): Any = values.readUnchecked(index)
 
     // The prior focus's pointer, extended by one step — evaluated only at
     // error-registration time, exactly as the AST derivation builds its
@@ -602,7 +603,7 @@ object Tel extends Tel2:
     // The wire keywords of a product's fields: `@name` renames applied
     // verbatim, camel→kebab otherwise — the same mapping as the derivations.
     def wireKeywords(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
-      names.map { name => renames.at(name.tt).or(camelToKebab(name)).s }
+      names.map { name => renames(name.tt).or(camelToKebab(name)).s }
 
     // A required primitive field whose keyword never arrived: the primitives'
     // `absent()` semantics — raise and continue with the sentinel. It carries no
@@ -664,7 +665,7 @@ object Tel extends Tel2:
       var index = 0
 
       while index < count do
-        if keys(index) == name then return index
+        if keys.readUnchecked(index) == name then return index
         index += 1
 
       -1
@@ -713,11 +714,11 @@ object Tel extends Tel2:
       var index = 0
 
       while index < count do
-        val instance = instances(index)
+        val instance = instances.readUnchecked(index)
 
         // A primitive field's nature is fixed by its type at expansion; an
         // instance-backed field's comes from the instance itself.
-        val nature = if instance == null then natures(index) else instance.nature
+        val nature = if instance == null then natures.readUnchecked(index) else instance.nature
         val repeatable = instance != null && instance.repeatable
         val optional = instance != null && instance.optional
 
@@ -725,12 +726,12 @@ object Tel extends Tel2:
         // absence reads `false`), so the skip rule may pass over it.
         profiles(index) =
           Positional.Profile
-            ( Text(keys(index)),
+            ( Text(keys.readUnchecked(index)),
               nature,
               repeatable,
               required =
                 nature != Tel.Nature.Flag
-                && !(optional || fallbacks(index).asInstanceOf[Optional[Any]].present) )
+                && !(optional || fallbacks.readUnchecked(index).asInstanceOf[Optional[Any]].present) )
 
         index += 1
 
@@ -843,7 +844,7 @@ object Tel extends Tel2:
           var index = 0
 
           while index < count do
-            if named(index) == name then return index
+            if named.readUnchecked(index) == name then return index
             index += 1
 
           -1
@@ -885,13 +886,13 @@ object Tel extends Tel2:
             var slot = 0
 
             while slot < assigned.length do
-              val slotAtoms = assigned(slot).stdlib
+              val slotAtoms = assigned.readUnchecked(slot).stdlib
 
               if slotAtoms.nonEmpty then
-                val parsing = unwrap(entries(slot)(1))
+                val parsing = unwrap(entries.readUnchecked(slot)(1))
 
                 inline def positioned[result](inline block: => result): result =
-                  focusing(foci, reader, Text(keys(slot)))(block)
+                  focusing(foci, reader, Text(keys.readUnchecked(slot)))(block)
 
                 parsing match
                   case gathering: Gathering if parsing.repeatable =>
@@ -919,7 +920,7 @@ object Tel extends Tel2:
 
             if found < 0 then reader.skipEntry(indent)
             else
-              val parsing = unwrap(entries(found)(1))
+              val parsing = unwrap(entries.readUnchecked(found)(1))
 
               parsing match
                 case gathering: Gathering if parsing.repeatable =>
@@ -936,7 +937,7 @@ object Tel extends Tel2:
 
                   buffer +=
                     ( if focused
-                      then focusing(foci, reader, Text(keys(found))):
+                      then focusing(foci, reader, Text(keys.readUnchecked(found))):
                         gathering.parseElement(reader, indent)
                       else gathering.parseElement(reader, indent) )
 
@@ -952,16 +953,16 @@ object Tel extends Tel2:
                     reader.skipEntry(indent)
                   else values(found) =
                     if focused
-                    then focusing(foci, reader, Text(keys(found))):
-                      entries(found)(1).parse(reader, indent)
-                    else entries(found)(1).parse(reader, indent)
+                    then focusing(foci, reader, Text(keys.readUnchecked(found))):
+                      entries.readUnchecked(found)(1).parse(reader, indent)
+                    else entries.readUnchecked(found)(1).parse(reader, indent)
 
             next = reader.keyword(indent)
 
           index = 0
 
           while index < count do
-            val parsing = unwrap(entries(index)(1))
+            val parsing = unwrap(entries.readUnchecked(index)(1))
 
             if parsing.repeatable then
               val elements: List[Any] = values(index) match
@@ -975,18 +976,18 @@ object Tel extends Tel2:
                   // derivation decodes an empty synthetic document.
                   values(index) =
                     if focused
-                    then focus(descend(prior, Text(keys(index))))(gathering.gathered(elements))
+                    then focus(descend(prior, Text(keys.readUnchecked(index))))(gathering.gathered(elements))
                     else gathering.gathered(elements)
 
                 case _ => ()
             else if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
-              val fallback = entries(index)(2).asInstanceOf[Optional[Any]]
+              val fallback = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
               values(index) =
                 if fallback.present then fallback
                 else if focused
-                then focus(descend(prior, Text(keys(index))))(entries(index)(1).absent())
-                else entries(index)(1).absent()
+                then focus(descend(prior, Text(keys.readUnchecked(index))))(entries.readUnchecked(index)(1).absent())
+                else entries.readUnchecked(index)(1).absent()
 
             index += 1
 
@@ -1162,7 +1163,7 @@ object Tel extends Tel2:
       var flatIdx = 0
 
       while idx < parent.members.length do
-        parent.members(idx) match
+        parent.members.readUnchecked(idx) match
           case f: Tels.Field =>
             builder(f.keyword) = KeywordEntry(flatIdx, idx, f.fieldType, f)
             flatIdx += 1
@@ -1174,7 +1175,7 @@ object Tel extends Tel2:
             var v = 0
 
             while v < selectDef.variants.length do
-              val variant = selectDef.variants(v)
+              val variant = selectDef.variants.readUnchecked(v)
 
               builder(variant.keyword) =
                 KeywordEntry(flatIdx + v, idx, variant.variantType, s, Optional(variant))
@@ -1269,7 +1270,7 @@ object Tel extends Tel2:
             case None            => 0
 
       while i < atoms.length do
-        val atomText = atoms(i) match
+        val atomText = atoms.readUnchecked(i) match
           case Tel.Atom.Inline(t, _)  => t
           case Tel.Atom.Source(t)     => t
           case Tel.Atom.Literal(_, t) => t
@@ -1281,7 +1282,7 @@ object Tel extends Tel2:
         var scanning = true
 
         while scanning && pos < parent.members.length do
-          val member = parent.members(pos)
+          val member = parent.members.readUnchecked(pos)
 
           val skippable = member match
             case _: Exclude => true
@@ -1302,13 +1303,13 @@ object Tel extends Tel2:
           recoverNode(Reason.TooManyAtoms)(())
           i = atoms.length
         else
-          if !atomAssignable(parent.members(pos), schema) then
+          if !atomAssignable(parent.members.readUnchecked(pos), schema) then
             // §20.2 step 3c: an atom arrived at a required member that can
             // only be filled by compound children. Recovery drops the atom;
             // the member may still be filled by a child.
             recoverNode(Reason.AtomAtNonAssignablePos)(())
           else
-            parent.members(pos) match
+            parent.members.readUnchecked(pos) match
               case f: Tels.Field =>
                 resolveType(f.fieldType, schema) match
                   case s: Scalar =>
@@ -1368,7 +1369,7 @@ object Tel extends Tel2:
       var i = 0
 
       while i < compounds.length do
-        val compound = compounds(i)
+        val compound = compounds.readUnchecked(i)
 
         // Tag every error accrued for this compound (and its descendants) with
         // its keyword path — mirroring the decode derivation's per-field `focus`
@@ -1432,7 +1433,7 @@ object Tel extends Tel2:
       var flatStart = 0
 
       while memberIdx < parent.members.length do
-        val member = parent.members(memberIdx)
+        val member = parent.members.readUnchecked(memberIdx)
         val width = flatWidth(member)
 
         // §20.2 step 5a: atoms and compound children assigned to the member
@@ -1902,16 +1903,16 @@ object Tel extends Tel2:
       var k = 0
 
       while k < children.length do
-        val childLine        = records(cursor)
-        val childColumn      = records(cursor + 1)
-        val childLength      = records(cursor + 2)
-        val childValueColumn = records(cursor + 3)
-        val childValueLength = records(cursor + 4)
+        val childLine        = records.readUnchecked(cursor)
+        val childColumn      = records.readUnchecked(cursor + 1)
+        val childLength      = records.readUnchecked(cursor + 2)
+        val childValueColumn = records.readUnchecked(cursor + 3)
+        val childValueLength = records.readUnchecked(cursor + 4)
         cursor += positionStride
 
         childDescriptors(k) =
           build
-           ( children(k),
+           ( children.readUnchecked(k),
              childLine,
              childColumn,
              childLength,
@@ -1992,25 +1993,25 @@ object Tel extends Tel2:
     if i >= segments.length then
       if keyMode && i == 0 then Unset
       else
-        val valueColumn = data(offset + 4)
+        val valueColumn = data.readUnchecked(offset + 4)
 
         if keyMode || valueColumn == 0
         then TelError.Position
-              ( line   = data(offset + 1),
-                column = data(offset + 2),
-                length = Optional(data(offset + 3)) )
+              ( line   = data.readUnchecked(offset + 1),
+                column = data.readUnchecked(offset + 2),
+                length = Optional(data.readUnchecked(offset + 3)) )
         else TelError.Position
-              ( line   = data(offset + 1),
+              ( line   = data.readUnchecked(offset + 1),
                 column = valueColumn,
-                length = Optional(data(offset + 5)) )
+                length = Optional(data.readUnchecked(offset + 5)) )
     else
       val children = node.children.bind(_.compounds)
-      val k = children.indexWhere(_.keyword == segments(i))
+      val k = children.indexWhere { child => segments(denominative.Ordinal.zerary(i)).lay(false)(_ == child.keyword) }
 
       if k < 0 then Unset
       else
-        val child = offset + data(offset + descriptorHeader + k)
-        walkIndex(children(k), data, child, segments, i + 1, keyMode)
+        val child = offset + data.readUnchecked(offset + descriptorHeader + k)
+        walkIndex(children.readUnchecked(k), data, child, segments, i + 1, keyMode)
 
   // Concatenate the chunks of a `Chain[Data]` source into a single byte array.
   private[stratiform] def concatenate(source: Chain[Data]): Data =
@@ -2357,7 +2358,7 @@ object Tel extends Tel2:
         // indexed: the foreach lambda would capture the exclusive producer transitively
         var childIndex = 0
         while childIndex < compound.children.length do
-          emitBlock(compound.children(childIndex), indent + 1, sigil)
+          emitBlock(compound.children.readUnchecked(childIndex), indent + 1, sigil)
           childIndex += 1
 
       def emitBlock(block: Tel.Block, indent: Int, sigil: Char): Unit =
@@ -2373,10 +2374,10 @@ object Tel extends Tel2:
           var i = 0
 
           while i < tab.markerOffsets.length do
-            val targetCol = tab.markerOffsets(i)
+            val targetCol = tab.markerOffsets.readUnchecked(i)
             while line.length < targetCol do line.append(' ')
             line.append(sigil)
-            val heading = tab.headings(i).s
+            val heading = tab.headings.readUnchecked(i).s
 
             if heading.nonEmpty then
               line.append(' ')
@@ -2492,7 +2493,7 @@ object Tel extends Tel2:
 
         if index >= base && index < base + compounds.length
         then
-          block.copy(compounds = compounds.updated(index - base, transform(compounds(index - base))))
+          block.copy(compounds = compounds.updated(index - base, transform(compounds.readUnchecked(index - base))))
         else
           block
 
@@ -3780,18 +3781,18 @@ object Tel extends Tel2:
       then recoverAt(Reason.PragmaNotFirst, line, offsets.head + 1, parts.head.length)(())
 
       val version =
-        if parts.length >= 2 then parseVersion(parts(1), line, offsets(1) + 1) else (1, 0)
+        if parts.length >= 2 then parseVersion(parts.stdlib(1), line, offsets.stdlib(1) + 1) else (1, 0)
 
       // §19.5 IgnoreExtraPragmaAtoms: only parts 2 and 3 are read below, so excess
       // atoms are already ignored once the error is recorded. The span runs from the
       // first excess atom to the end of the line.
       if parts.length > 4
-      then recoverAt(Reason.ExtraPragmaContent, line, offsets(4) + 1, content.length - offsets(4))
+      then recoverAt(Reason.ExtraPragmaContent, line, offsets.stdlib(4) + 1, content.length - offsets.stdlib(4))
         ( () )
 
       val schemaText: Optional[Text] =
         if parts.length >= 3 then
-          val s = parts(2)
+          val s = parts.stdlib(2)
           // §8.1: the schema identifier is either an HTTP/HTTPS URL (with a
           // `://`) or a bare BASE-256-encoded schema signature. The BASE-256
           // alphabet (§4) is exactly the Unicode letters and ASCII digits, so
@@ -3805,16 +3806,16 @@ object Tel extends Tel2:
 
           // §19.5 IgnoreSchemaId: a malformed schema identifier is dropped (Unset).
           if !isUrl && !isBase256
-          then recoverAt(Reason.BadSchemaIdentifier, line, offsets(2) + 1, s.length)(Unset)
+          then recoverAt(Reason.BadSchemaIdentifier, line, offsets.stdlib(2) + 1, s.length)(Unset)
           else Text(s): Optional[Text]
         else
           Unset
 
       val pragmaSigil: Optional[Char] =
-        if parts.length >= 4 && parts(3).length == 1 then
-          val c = parts(3).charAt(0)
+        if parts.length >= 4 && parts.stdlib(3).length == 1 then
+          val c = parts.stdlib(3).charAt(0)
           // §19.5 UseDefaultSigil: an invalid sigil is dropped, keeping the default.
-          if c.isLetterOrDigit then recoverAt(Reason.BadSigil, line, offsets(3) + 1, 1)(Unset)
+          if c.isLetterOrDigit then recoverAt(Reason.BadSigil, line, offsets.stdlib(3) + 1, 1)(Unset)
           else
             sigil = c.toByte
             c: Optional[Char]
@@ -3941,7 +3942,7 @@ object Tel extends Tel2:
       var i = 0
 
       while i < parent.members.length && found.absent do
-        parent.members(i) match
+        parent.members.readUnchecked(i) match
           case f: Tels.Field =>
             if f.keyword == keyword then found = f.fieldType
 
@@ -3962,7 +3963,7 @@ object Tel extends Tel2:
       var hit = false
 
       while !hit && i < parent.members.length do
-        parent.members(i) match
+        parent.members.readUnchecked(i) match
           case f: Tels.Field =>
             if f.keyword == keyword then hit = true
 
@@ -4564,7 +4565,7 @@ object Tel extends Tel2:
               else
                 if columnIdx >= 1 && columnIdx < markers.length - 1 then
                   val phraseWidth = runStart - phraseStart
-                  val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
+                  val colMax = markers.readUnchecked(columnIdx + 1) - markers.readUnchecked(columnIdx) - 2
 
                   // §19.5 SuppressColumnAlignment: record but keep scanning (the
                   // loop self-advances and the row is re-read by parseCompoundLine).
@@ -4577,7 +4578,7 @@ object Tel extends Tel2:
                 var k = 1
 
                 while k < markers.length && foundIdx < 0 do
-                  if markers(k) == col then foundIdx = k
+                  if markers.readUnchecked(k) == col then foundIdx = k
                   k += 1
 
                 // §19.5 SuppressColumnAlignment: record but keep scanning. The
@@ -5991,7 +5992,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // field compound contains the indexed children.
   private[stratiform] def selectFieldIndex(field: String, index: Int): Tel =
     val cs = selectField(field).childCompounds
-    if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
+    if index < 0 || index >= cs.length then Tel.empty else Tel(cs.readUnchecked(index))
 
   // Indexed access into a *repeated* (collection) field: a `List`/`Set` field is
   // encoded as repeated keyword compounds (per `#1291`), so index the n-th sibling
@@ -5999,7 +6000,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // positions. An empty `Tel` when the index is out of range.
   private[stratiform] def selectRepeatedField(field: String, index: Int): Tel =
     val cs = childCompounds.filter(_.keyword == Tel.camelToKebab(field))
-    if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
+    if index < 0 || index >= cs.length then Tel.empty else Tel(cs.readUnchecked(index))
 
   // Dynamic field access: `tel.firstName` looks up the kebab-case keyword
   // "first-name". For a schema-typed `Tel of P from R` the macro checks `P` has
@@ -6043,7 +6044,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // Used by primitive Decodable instances which interpret a compound's
   // first atom as its scalar value.
   def primaryAtom: Text =
-    if atomTexts.isEmpty then t"" else atomTexts(0)
+    atomTexts.at(denominative.Prim).or(t"")
 
   // All child compounds, flattened across the node's blocks (presentation-
   // level comments and tabulations are dropped from this view).

@@ -83,7 +83,7 @@ object Tests extends Suite(m"Wisteria tests"):
           build[derivation]:
             [field] =>
               readable =>
-                if index < array.length then readable.read(array(index).tt) else default.or(???)
+                if index < array.length then readable.read(array.stdlib(index).tt) else default.or(???)
 
     inline def disjunction[derivation: SumReflection]: Readable[derivation] = text =>
       Array.unsafeFrozen(text.s.split(":").nn).toList.map(_.nn.tt).absolve match

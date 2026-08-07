@@ -78,7 +78,7 @@ case class Manifest(entries: Map[Text, Text]):
   def apply[key <: Label: DecodableManifest](attribute: ManifestAttribute[key])
   :   Optional[key.Topic] =
 
-    if entries.defines(attribute.key) then key.decoded(entries(attribute.key)) else Unset
+    entries(attribute.key).let(key.decoded(_))
 
 
   def serialize: Data =

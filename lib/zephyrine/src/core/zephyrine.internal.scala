@@ -45,7 +45,7 @@ object internal:
 
     def recur(index: Int, checks: Expr[Unit]): Expr[Unit] =
       if index >= text.length then checks else
-        val char = text(index)
+        val char = text.charAt(index)
 
         val checks2 =
           ' {

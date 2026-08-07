@@ -103,7 +103,7 @@ object Media:
           ()
 
       ps.map((param: Text) => param.cut(t"=", 2)).map: (p: List[Text]) =>
-        p(0).show -> p(1).show
+        p.stdlib(0).show -> p.stdlib(1).show
 
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
       suffixes.map(_.lower.capitalize).bind: suffix =>

@@ -128,14 +128,14 @@ class TestsMap():
   private var tests: Ledger[TestId, ReportLine] = Ledger()
 
   def list: List[(TestId, ReportLine)] = mutex(tests.to[List])
-  def apply(testId: TestId): ReportLine = mutex(tests(testId))
+  def apply(testId: TestId): ReportLine = mutex(tests(testId).vouch)
 
   def update(testId: TestId, reportLine: ReportLine) = mutex:
     tests = tests.updated(testId, reportLine)
 
   def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = mutex:
     if !tests.defines(testId) then tests = tests.updated(testId, reportLine)
-    tests(testId)
+    tests(testId).vouch
 
 // The report's intermediate representation: a tree of suites (namespacing only), whose
 // leaves are uniform `Entry` values — one per named test, of any kind, holding that test's

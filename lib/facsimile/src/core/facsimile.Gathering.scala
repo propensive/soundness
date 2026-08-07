@@ -76,7 +76,7 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
     var index = 0
 
     target.visit(space.capped(count)): ordinal =>
-      target(ordinal) = data(delivered + index)
+      target(ordinal) = data.readUnchecked(delivered + index)
       index += 1
 
     delivered += count

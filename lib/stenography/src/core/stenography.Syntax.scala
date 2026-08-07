@@ -232,7 +232,7 @@ object Syntax:
     . view
     . mapValues: bounds =>
         bounds.length match
-          case 1 => bounds(0)(1)
+          case 1 => bounds.prim.vouch(1)
           case _ => Sequence('{', bounds.map(_(1)))
 
     . to(scala.collection.immutable.Map)
@@ -285,7 +285,7 @@ object Syntax:
               case other =>
                 symbolic(name)
 
-            context.at(name.tt).lay(syntax)(Infix(syntax, ": ", _))
+            context(name.tt).lay(syntax)(Infix(syntax, ": ", _))
 
         Sequence('[', List.of(items))
 
@@ -410,7 +410,7 @@ object Syntax:
               if isPackage(name2) then simple else Simple(Designator.Type(designator, name2))
 
             case refined@Structural(base, members, defs) =>
-              if members.defines(name) then members(name.tt) else Projection(refined, name.tt)
+              members(name.tt).or(Projection(refined, name.tt))
 
             case symbolic@Symbolic(_) =>
               Selection(symbolic, name)
@@ -437,7 +437,7 @@ object Syntax:
               if isPackage(name) then simple else Value(Designator.Term(designator, name))
 
             case refined@Structural(base, members, defs) =>
-              if members.defines(name) then members(name.tt) else Projection(refined, name.tt)
+              members(name.tt).or(Projection(refined, name.tt))
 
             case symbolic@Symbolic(_) =>
               Selection(symbolic, name)
@@ -717,7 +717,9 @@ enum Syntax:
     case Application(left, elements, infix) =>
       left match
         case Simple(Designator.Type(parent, name)) if infix && imports.has(parent) =>
-          Infix(elements(0), name, elements(1)).text
+          elements.stdlib match
+            case scala.List(first, second) => Infix(first, name, second).text
+            case _ => left.text+elements.map(_.text).mkString("[", ", ", "]").tt
 
         case _ =>
           left.text+elements.map(_.text).mkString("[", ", ", "]").tt

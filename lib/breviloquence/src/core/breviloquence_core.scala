@@ -32,6 +32,7 @@
                                                                                                   */
 package breviloquence
 
+
 import anticipation.*
 import contingency.*
 import prepositional.*
@@ -108,7 +109,7 @@ extension (cbor: Cbor.Ast)
     var index = 0
 
     while index < count do
-      if array(index) == key then return index/2
+      if array.readUnchecked(index) == key then return index/2
       index += 2
 
     -1

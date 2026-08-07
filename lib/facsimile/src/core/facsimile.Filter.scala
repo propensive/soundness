@@ -128,7 +128,7 @@ private[facsimile] object Filter:
     // opaque `List` combinators (boxing), so the interior stays stdlib inside one `List.of`.
     List.of:
       chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
-        val predicted = parms.at(t"Predictor").let(_.long).or(1L) > 1
+        val predicted = parms(t"Predictor").let(_.long).or(1L) > 1
 
         id match
           case Id.Flate =>
@@ -172,15 +172,15 @@ private[facsimile] object Filter:
       abort(PdfError(PdfError.Reason.CorruptStream(t"LZWDecode")))
 
   private def earlyChange(parms: Map[Text, Cos]): Boolean =
-    parms.at(t"EarlyChange").let(_.long).or(1L) == 1L
+    parms(t"EarlyChange").let(_.long).or(1L) == 1L
 
   private def predict(data: Data, parms: Map[Text, Cos])(using Tactic[PdfError]): Data =
-    val predictor = parms.at(t"Predictor").let(_.long).or(1L).toInt
+    val predictor = parms(t"Predictor").let(_.long).or(1L).toInt
 
     if predictor <= 1 then data else
-      val colors = parms.at(t"Colors").let(_.long).or(1L).toInt
-      val bits = parms.at(t"BitsPerComponent").let(_.long).or(8L).toInt
-      val columns = parms.at(t"Columns").let(_.long).or(1L).toInt
+      val colors = parms(t"Colors").let(_.long).or(1L).toInt
+      val bits = parms(t"BitsPerComponent").let(_.long).or(8L).toInt
+      val columns = parms(t"Columns").let(_.long).or(1L).toInt
       Predictor(data, predictor, colors, bits, columns)
 
   // FlateDecode is zlib-framed deflate, but raw streams occur in the wild: on a zlib failure,

@@ -32,6 +32,7 @@
                                                                                                   */
 package stratiform
 
+
 import anticipation.*
 import proscenium.compat.*
 import contingency.*
@@ -556,7 +557,7 @@ object Tels extends Tels2:
         seqEq(a.layers, b.layers, layerEq)
 
     private def seqEq[T](a: Array[T]^{}, b: Array[T]^{}, eq: (T, T) => Boolean): Boolean =
-      a.length == b.length && (0 until a.length).forall: i => eq(a(i), b(i))
+      a.length == b.length && (0 until a.length).forall: i => eq(a.readUnchecked(i), b.readUnchecked(i))
 
     private def structEq(a: Struct, b: Struct): Boolean =
       seqEq(a.members, b.members, memberEq) && seqEq(a.validators, b.validators, textEq)
@@ -618,7 +619,7 @@ object Tels extends Tels2:
       var i = 0
 
       while i < compounds.length do
-        val c = compounds(i)
+        val c = compounds.readUnchecked(i)
 
         c.keyword.s match
           case "name"     => name = firstAtomText(c)
@@ -654,7 +655,7 @@ object Tels extends Tels2:
 
     private def firstAtomText(c: Tel.Compound): Optional[Text] =
       val texts = c.atoms.collect { case Tel.Atom.Inline(t, _) => t }
-      if texts.nil then Unset else texts(0): Optional[Text]
+      if texts.nil then Unset else texts.readUnchecked(0): Optional[Text]
 
     private def atomTexts(c: Tel.Compound): Array[Text]^{} =
       c.atoms.collect { case Tel.Atom.Inline(t, _) => t }
@@ -669,7 +670,7 @@ object Tels extends Tels2:
     // (inline, source, or literal) — used for both `default` and the §20
     // `description` child, whose prose is typically a source atom (§14).
     private def scalarAtomText(c: Tel.Compound): Optional[Text] =
-      if c.atoms.nil then Unset else c.atoms(0) match
+      if c.atoms.nil then Unset else c.atoms.readUnchecked(0) match
         case Tel.Atom.Inline(t, _)  => t
         case Tel.Atom.Source(t)     => t
         case Tel.Atom.Literal(_, t) => t
@@ -711,7 +712,7 @@ object Tels extends Tels2:
           case "variant" =>
             val ats = atomTexts(cc)
             if ats.length < 2 then abort(TelError(Reason.RequiredMemberAbsent))
-            variants += Variant(ats(0), parseType(ats(1)), descriptionOf(childCompounds(cc)))
+            variants += Variant(ats.readUnchecked(0), parseType(ats.readUnchecked(1)), descriptionOf(childCompounds(cc)))
 
           case _ =>
             abort(TelError(Reason.UnknownKeyword))
@@ -759,7 +760,7 @@ object Tels extends Tels2:
 
           case "exclude" =>
             val ats = atomTexts(cc)
-            if ats.length >= 1 then members += Exclude(ats(0))
+            if ats.length >= 1 then members += Exclude(ats.readUnchecked(0))
 
           // The Definition's own `description` (§20); consumed by the
           // enclosing parseRecord/parseBody, not a member.
@@ -771,8 +772,8 @@ object Tels extends Tels2:
     private def parseField(c: Tel.Compound): Field raises TelError =
       val ats = atomTexts(c)
       if ats.length < 2 then abort(TelError(Reason.RequiredMemberAbsent))
-      val keyword = ats(0)
-      val fieldType = parseType(ats(1))
+      val keyword = ats.readUnchecked(0)
+      val fieldType = parseType(ats.readUnchecked(1))
 
       var required:   Polarity = Polarity.Implicit
       var repeatable: Polarity = Polarity.Implicit
@@ -781,7 +782,7 @@ object Tels extends Tels2:
       var j = 2
 
       while j < ats.length do
-        ats(j).s match
+        ats.readUnchecked(j).s match
           case "optional"     => required   = Polarity.Loose
           case "required"     => required   = Polarity.Tight
           case "repeatable"   => repeatable = Polarity.Loose
@@ -789,7 +790,7 @@ object Tels extends Tels2:
 
           case "default" =>
             if j + 1 < ats.length then
-              default = ats(j + 1): Optional[Text]
+              default = ats.readUnchecked(j + 1): Optional[Text]
               j += 1
 
           case _              => ()
@@ -802,7 +803,7 @@ object Tels extends Tels2:
     private def parseSelectRef(c: Tel.Compound): SelectRef raises TelError =
       val ats = atomTexts(c)
       if ats.length < 1 then abort(TelError(Reason.RequiredMemberAbsent))
-      val reference = ats(0)
+      val reference = ats.readUnchecked(0)
 
       var required:   Polarity = Polarity.Implicit
       var repeatable: Polarity = Polarity.Implicit
@@ -810,7 +811,7 @@ object Tels extends Tels2:
       var j = 1
 
       while j < ats.length do
-        ats(j).s match
+        ats.readUnchecked(j).s match
           case "optional"     => required   = Polarity.Loose
           case "required"     => required   = Polarity.Tight
           case "repeatable"   => repeatable = Polarity.Loose
@@ -872,7 +873,7 @@ object Tels extends Tels2:
       var result: Optional[Text] = Unset
 
       while i < children.length do
-        children(i) match
+        children.readUnchecked(i) match
           case Tel.Element.Value(j, _, t) if j == idx => result = t
           case _                                      => ()
 
@@ -885,7 +886,7 @@ object Tels extends Tels2:
 
     private def nodeAt(children: Array[Tel.Element]^{}, idx: Int): Optional[Tel.Element] =
       val found = nodesAt(children, idx)
-      if found.nil then Unset else found(0)
+      if found.nil then Unset else found.readUnchecked(0)
 
     private def present(children: Array[Tel.Element]^{}, idx: Int): Boolean =
       children.exists(kidx(_) == idx)
@@ -935,7 +936,7 @@ object Tels extends Tels2:
       var i = 0
 
       while i < children.length do
-        val e = children(i)
+        val e = children.readUnchecked(i)
 
         kidx(e) match
           case k if k == fieldIdx    => members += fieldFromElement(e)
@@ -970,7 +971,7 @@ object Tels extends Tels2:
       var i = 0
 
       while i < ch.length do
-        val e = ch(i)
+        val e = ch.readUnchecked(i)
 
         kidx(e) match
           case 1 => variants += variantFromElement(e)

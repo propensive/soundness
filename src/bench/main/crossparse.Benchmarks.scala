@@ -143,7 +143,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
           ( id     = 10000L + index,
             name   = t"customer-$index",
             email  = t"user$index@example.com",
-            region = regions(index % 4) ),
+            region = regions.stdlib(index % 4) ),
         items     = List.tabulate(6)(lineItem(index, _)),
         payment   = payment,
         priority  = index % 3 == 0,

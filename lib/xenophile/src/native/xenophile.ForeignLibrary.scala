@@ -86,13 +86,13 @@ object ForeignLibrary:
       case Nil =>
         throw IllegalArgumentException(t"no native library could be loaded from $paths".s)
 
-    val signatures = CHeaderDialect.parse(header).at(CHeaderDialect.library).or(Map[Text, Prototype]())
+    val signatures = CHeaderDialect.parse(header)(CHeaderDialect.library).or(Map[Text, Prototype]())
     new ForeignLibrary(attempt(paths), signatures)
 
   // The process-wide default lookup (the C standard library and already-loaded
   // images); useful for `libc` symbols without naming a library file.
   def system(header: Text): ForeignLibrary =
-    val signatures = CHeaderDialect.parse(header).at(CHeaderDialect.library).or(Map[Text, Prototype]())
+    val signatures = CHeaderDialect.parse(header)(CHeaderDialect.library).or(Map[Text, Prototype]())
     new ForeignLibrary(linker.defaultLookup.nn, signatures)
 
   // Copies bytes into freshly-allocated native memory in `arena`.
@@ -161,6 +161,6 @@ class ForeignLibrary(lookup: SymbolLookup, signatures: Map[Text, Prototype]):
   // signature. Invoke it with `invokeWithArguments`, passing `MemorySegment`s for
   // pointer parameters and boxed primitives for the rest.
   def handle(function: Text): MethodHandle =
-    val signature = signatures.at(function).or(panic(m"no such foreign function: $function"))
+    val signature = signatures(function).or(panic(m"no such foreign function: $function"))
     val symbol = lookup.find(function.s).nn.orElseThrow().nn
     ForeignLibrary.linker.downcallHandle(symbol, ForeignLibrary.descriptor(signature)).nn

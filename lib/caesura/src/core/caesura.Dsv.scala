@@ -32,6 +32,7 @@
                                                                                                   */
 package caesura
 
+
 import scala.caps
 
 import proscenium.compat.*
@@ -339,7 +340,7 @@ object Dsv extends Dsv2:
             // Header mode locates the field by column name; positional mode
             // reads the field's span starting at the running offset.
             val at = Dsv.Field.fieldColumn(carrier, label).or(count)
-            count += spans(index)
+            count += spans.readUnchecked(index)
             Dsv.Field.parseField(contextual, carrier, at))
 
   object DecodableDerivation extends ProductDerivable[Decodable in Dsv]:
@@ -375,10 +376,10 @@ object Dsv extends Dsv2:
                 // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
                 // position.
                 val row2 = row.columns.lay(Dsv(row.data.drop(count))): columns =>
-                  columns.at(label).lay(Dsv(Array.of[Text]())): i =>
+                  columns(label).lay(Dsv(Array.of[Text]())): i =>
                     Dsv(row.data.drop(i))
 
-                count += spans(index)
+                count += spans.readUnchecked(index)
 
                 focus(CellRef(Prim, label)):
                   contextual.decoded(row2))
@@ -407,13 +408,13 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
 
 
   def apply[value](using value: (value is Decodable in Text)^)(field: Text): Optional[value] =
-    columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))
+    columns.let(_(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
-  override def hashCode: Int = data.indices.fuse(0)(state*31 + data(next).hashCode)
+  override def hashCode: Int = data.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.indices.all: index => data(index) == row.data(index)
+      data.length == row.data.length && data.indices.all: index => data.readUnchecked(index) == row.data.readUnchecked(index)
 
     case _ =>
       false

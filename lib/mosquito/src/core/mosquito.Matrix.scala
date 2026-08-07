@@ -58,16 +58,16 @@ object Matrix:
 
       val columnWidths: Array[Int]^{} = Array.from:
         (0 until matrix.columns).map: column =>
-          sizes:
+          sizes.readUnchecked:
             column + matrix.columns*(0 until matrix.rows).maxBy: row =>
-              sizes(matrix.columns*row + column)
+              sizes.readUnchecked(matrix.columns*row + column)
 
       (0 until matrix.rows).map: row =>
         val before = if row == 0 then t"⎡ " else if row == matrix.rows - 1 then t"⎣ " else t"⎪ "
         val after = if row == 0 then t" ⎤" else if row == matrix.rows - 1 then t" ⎦" else t" ⎪"
 
         (0 until matrix.columns).map: column =>
-          textElements(matrix.columns*row + column).pad(columnWidths(column), Rtl)
+          textElements.readUnchecked(matrix.columns*row + column).pad(columnWidths.readUnchecked(column), Rtl)
 
         . join(before, t" ", after)
 
@@ -94,7 +94,7 @@ object Matrix:
         var i = 0
 
         while i < length do
-          array(i) = addable.add(left.elements(i), right.elements(i))
+          array(i) = addable.add(left.elements.readUnchecked(i), right.elements.readUnchecked(i))
           i += 1
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
@@ -120,7 +120,7 @@ object Matrix:
         var i = 0
 
         while i < length do
-          array(i) = subtractable.subtract(left.elements(i), right.elements(i))
+          array(i) = subtractable.subtract(left.elements.readUnchecked(i), right.elements.readUnchecked(i))
           i += 1
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
@@ -222,15 +222,15 @@ object Matrix:
     if submatrixSize == 1 then
       val row = java.lang.Long.numberOfTrailingZeros(rowMask)
       val column = java.lang.Long.numberOfTrailingZeros(columnMask)
-      elements(dimension*row + column)
+      elements.readUnchecked(dimension*row + column)
     else if submatrixSize == 2 then
       val firstRow = java.lang.Long.numberOfTrailingZeros(rowMask)
       val secondRow = java.lang.Long.numberOfTrailingZeros(rowMask & (rowMask - 1L))
       val firstColumn = java.lang.Long.numberOfTrailingZeros(columnMask)
       val secondColumn = java.lang.Long.numberOfTrailingZeros(columnMask & (columnMask - 1L))
 
-      elements(dimension*firstRow + firstColumn)*elements(dimension*secondRow + secondColumn) -
-        elements(dimension*firstRow + secondColumn)*elements(dimension*secondRow + firstColumn)
+      elements.readUnchecked(dimension*firstRow + firstColumn)*elements.readUnchecked(dimension*secondRow + secondColumn) -
+        elements.readUnchecked(dimension*firstRow + secondColumn)*elements.readUnchecked(dimension*secondRow + firstColumn)
     else
       val expansionRow = java.lang.Long.numberOfTrailingZeros(rowMask)
       val remainingRows = rowMask & ~(1L << expansionRow)
@@ -240,7 +240,7 @@ object Matrix:
       val firstMinor =
         laplaceExpansion(elements, dimension, remainingRows, firstColumnsRemoved, submatrixSize - 1)
 
-      var result: element = elements(dimension*expansionRow + firstColumn)*firstMinor
+      var result: element = elements.readUnchecked(dimension*expansionRow + firstColumn)*firstMinor
       var remainingColumns = firstColumnsRemoved
       var position = 1
 
@@ -251,7 +251,7 @@ object Matrix:
         val minor =
           laplaceExpansion(elements, dimension, remainingRows, columnsRemoved, submatrixSize - 1)
 
-        val term: element = elements(dimension*expansionRow + column)*minor
+        val term: element = elements.readUnchecked(dimension*expansionRow + column)*minor
         result = if position % 2 == 1 then result - term else result + term
         remainingColumns = remainingColumns & ~(1L << column)
         position += 1
@@ -322,7 +322,7 @@ object Matrix:
       var copyIndex = 0
 
       while copyIndex < size do
-        b(copyIndex) = rhs.data(copyIndex).asInstanceOf[element]
+        b(copyIndex) = rhs.data.readUnchecked(copyIndex).asInstanceOf[element]
         copyIndex += 1
 
       var col = 0
@@ -450,8 +450,8 @@ object Matrix:
 
       if determinantValue == zeroic.zero then Unset
       else if dimension == 1 then
-        val one: element = elements(0)/elements(0)
-        new Matrix[element, n, n](1, 1, Array.of(one/elements(0)))
+        val one: element = elements.readUnchecked(0)/elements.readUnchecked(0)
+        new Matrix[element, n, n](1, 1, Array.of(one/elements.readUnchecked(0)))
       else
         val resultElements = Array.build[element](dimension*dimension): array =>
           var outputRow = 0
@@ -613,7 +613,7 @@ object Matrix:
 class Matrix[element, rows <: Int, columns <: Int]
   ( val rows: Int, val columns: Int, val elements: Array[element]^{} ):
 
-  def apply(row: Int, column: Int): element = elements(columns*row + column)
+  def apply(row: Int, column: Int): element = elements.readUnchecked(columns*row + column)
 
   def row(index: Int): Vector[element, columns] =
     val cols = columns
@@ -622,7 +622,7 @@ class Matrix[element, rows <: Int, columns <: Int]
       var i = 0
 
       while i < cols do
-        array(i) = elements(cols*index + i)
+        array(i) = elements.readUnchecked(cols*index + i)
         i += 1
 
     new Vector[element, columns](arr)
@@ -632,7 +632,7 @@ class Matrix[element, rows <: Int, columns <: Int]
       var i = 0
 
       while i < rows do
-        array(i) = elements(columns*i + index)
+        array(i) = elements.readUnchecked(columns*i + index)
         i += 1
 
     new Vector[element, rows](arr)
@@ -645,7 +645,7 @@ class Matrix[element, rows <: Int, columns <: Int]
         var col = 0
 
         while col < columns do
-          array(rows*col + row) = elements(columns*row + col)
+          array(rows*col + row) = elements.readUnchecked(columns*row + col)
           col += 1
 
         row += 1
@@ -668,7 +668,7 @@ class Matrix[element, rows <: Int, columns <: Int]
         while c < newCols do
           val origRow = if r < droppedRow then r else r + 1
           val origCol = if c < droppedColumn then c else c + 1
-          array(newCols*r + c) = elements(columns*origRow + origCol)
+          array(newCols*r + c) = elements.readUnchecked(columns*origRow + origCol)
           c += 1
 
         r += 1
@@ -684,11 +684,11 @@ class Matrix[element, rows <: Int, columns <: Int]
   :   element =
 
     val length = elements.length
-    var sum: multiplicable.Result = elements(0)*elements(0)
+    var sum: multiplicable.Result = elements.readUnchecked(0)*elements.readUnchecked(0)
     var i = 1
 
     while i < length do
-      sum = addable.add(sum, elements(i)*elements(i))
+      sum = addable.add(sum, elements.readUnchecked(i)*elements.readUnchecked(i))
       i += 1
 
     sum.sqrt
@@ -760,7 +760,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     var index = 0
 
     while index < elements.length do
-      hash = scala.util.hashing.MurmurHash3.mix(hash, elements(index).##)
+      hash = scala.util.hashing.MurmurHash3.mix(hash, elements.readUnchecked(index).##)
       index += 1
 
     scala.util.hashing.MurmurHash3.finalizeHash(hash, elements.length)
@@ -775,7 +775,7 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     while index < elements.length do
       if index > 0 then builder.append(", ")
-      builder.append(elements(index).toString)
+      builder.append(elements.readUnchecked(index).toString)
       index += 1
 
     builder.append("]").toString
@@ -790,7 +790,7 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     val elements2 = Array.build[multiplication.Result](elements.length): array =>
       elements.indices.each: index =>
-        array(index) = elements(index)*right
+        array(index) = elements.readUnchecked(index)*right
 
     new Matrix(rows, columns, elements2)
 
@@ -801,7 +801,7 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     val elements2 = Array.build[div.Result](elements.length): array =>
       elements.indices.each: index =>
-        array(index) = elements(index)/right
+        array(index) = elements.readUnchecked(index)/right
 
     new Matrix(rows, columns, elements2)
 
@@ -858,12 +858,12 @@ class Matrix[element, rows <: Int, columns <: Int]
 
       while row < rows do
         var sum: multiplication.Result =
-          apply(row, 0)*right.data(0).asInstanceOf[right]
+          apply(row, 0)*right.data.readUnchecked(0).asInstanceOf[right]
 
         var k = 1
 
         while k < inner do
-          sum = sum + apply(row, k)*right.data(k).asInstanceOf[right]
+          sum = sum + apply(row, k)*right.data.readUnchecked(k).asInstanceOf[right]
           k += 1
 
         array(row) = sum

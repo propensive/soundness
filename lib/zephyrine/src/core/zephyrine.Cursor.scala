@@ -253,13 +253,17 @@ object Cursor:
     @targetName("peekByte")
     inline def peek: Datum =
       if cursor.finished then Datum.End
-      else Datum.fromRaw(cursor.buffer(using Unsafe)(cursor.unsafePos(using Unsafe)) & 0xff)
+      else
+        val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
+        Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)) & 0xff)
 
   extension [cap^](cursor: Cursor[Text, cap])
     @targetName("peekChar")
     inline def peek: Datum =
       if cursor.finished then Datum.End
-      else Datum.fromRaw(cursor.buffer(using Unsafe)(cursor.unsafePos(using Unsafe)).toInt)
+      else
+        val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Char]]
+        Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)).toInt)
 
   // Match the cursor's current operand against `target`. On a match, advance
   // past it; on a mismatch (or EOF), raise `failure` via the ambient

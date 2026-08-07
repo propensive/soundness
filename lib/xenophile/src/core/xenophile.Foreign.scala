@@ -82,12 +82,12 @@ object Foreign extends prophesy.Completable:
 
     val members = Map.of(Xenophile.refinements(receiver))
 
-    members.at(t"Topic").lay(Nil): topicRepr =>
-      members.at(t"Origin").lay(Nil): originRepr =>
-        members.at(t"Locus").lay(Nil): locusRepr =>
+    members(t"Topic").lay(Nil): topicRepr =>
+      members(t"Origin").lay(Nil): originRepr =>
+        members(t"Locus").lay(Nil): locusRepr =>
           (topicRepr.dealias, locusRepr.dealias) match
             case (ConstantType(StringConstant(topic)), ConstantType(StringConstant(locus))) =>
-              Xenophile.definitions(originRepr, locus.tt).at(topic.tt).lay(Nil): prototypes =>
+              Xenophile.definitions(originRepr, locus.tt)(topic.tt).lay(Nil): prototypes =>
                 List.of(prototypes.stdlib.toList.sortBy(_(0).s)).map: (name, prototype) =>
                   val kind = prototype.parameters.lay(prophesy.Completion.Kind.Term): _ =>
                     prophesy.Completion.Kind.Method

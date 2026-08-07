@@ -182,7 +182,7 @@ trait Yaml2:
 
       build[derivation]: [field] =>
         context =>
-          val key: Text = renames.at(label).or(label)
+          val key: Text = renames(label).or(label)
           val target = key.s
           var found: Yaml.Ast | Null = null
 
@@ -191,10 +191,10 @@ trait Yaml2:
             var i = 0
 
             while i < n && found == null do
-              val entryKey = arr(i).asInstanceOf[Yaml.Ast]
+              val entryKey = arr.readUnchecked(i).asInstanceOf[Yaml.Ast]
 
               entryKey.asMatchable match
-                case s: String if s == target => found = arr(i + 1).asInstanceOf[Yaml.Ast]
+                case s: String if s == target => found = arr.readUnchecked(i + 1).asInstanceOf[Yaml.Ast]
                 case _                        => ()
               i += 2
           // Each outer `focus` runs *after* the inner one
@@ -240,7 +240,7 @@ trait Yaml2:
 
             val resolved: Optional[Text] =
               discriminable.discriminate(yaml).let: wire =>
-                val discriminant = variantNames.at(wire).or(wire)
+                val discriminant = variantNames(wire).or(wire)
                 if labels.has(discriminant) then discriminant else Unset
 
             resolved.let: discriminant =>
@@ -269,7 +269,7 @@ trait Yaml2:
 
           fields(value): [field] =>
             field =>
-              val key: Text = renames.at(label).or(label)
+              val key: Text = renames(label).or(label)
 
               focus({
                 val base = prior.let(_.pointer).or(YamlPath())
@@ -292,7 +292,7 @@ trait Yaml2:
 
       variant(value): [variant <: derivation] =>
         value =>
-          discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
+          discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
 object Yaml extends Yaml2, Dynamic:
   // Controls how a `Yaml` value is serialized. YAML's block style is fixed and round-trip-
@@ -708,7 +708,7 @@ object Yaml extends Yaml2, Dynamic:
       var i = 0
 
       while i < n do
-        val (k, v) = entries(i)
+        val (k, v) = entries.readUnchecked(i)
         arr(i*2) = k.asInstanceOf[Any]
         arr(i*2 + 1) = v.asInstanceOf[Any]
         i += 1
@@ -740,7 +740,7 @@ object Yaml extends Yaml2, Dynamic:
     // The user-visible length of a sequence (excludes the pad sentinel).
     def sequenceLength(arr: Array[Any]^{}): Int =
       val n = arr.length
-      if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq arrayPad) then n - 1 else n
+      if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq arrayPad) then n - 1 else n
 
     // The number of (key, value) pairs in a mapping.
     def mappingSize(arr: Array[Any]^{}): Int = arr.length / 2
@@ -752,7 +752,7 @@ object Yaml extends Yaml2, Dynamic:
       var i = 0
 
       while i < n do
-        body(arr(i).asInstanceOf[Yaml.Ast])
+        body(arr.readUnchecked(i).asInstanceOf[Yaml.Ast])
         i += 1
 
     // Apply `body(key, value)` to each entry of a mapping. Used by Map/case-
@@ -762,7 +762,7 @@ object Yaml extends Yaml2, Dynamic:
       var i = 0
 
       while i < n do
-        body(arr(i).asInstanceOf[Yaml.Ast], arr(i + 1).asInstanceOf[Yaml.Ast])
+        body(arr.readUnchecked(i).asInstanceOf[Yaml.Ast], arr.readUnchecked(i + 1).asInstanceOf[Yaml.Ast])
         i += 2
 
     // ── Pattern-match extractors ────────────────────────────────────────────
@@ -969,7 +969,7 @@ object Yaml extends Yaml2, Dynamic:
           val n = arrayLength
 
           if n == full.length then full
-          else Array.tabulate(n)(full(_))
+          else Array.tabulate(n)(full.readUnchecked(_))
         else
           expected(YamlPrimitive.Sequence) yet Array.of[Yaml.Ast]()
 
@@ -1045,27 +1045,27 @@ object Yaml extends Yaml2, Dynamic:
     if i >= segments.length then
       if keyMode then Unset
       else Yaml.Ast.Position
-        ( line   = data(offset + 1),
-          column = data(offset + 2),
-          length = data(offset + 3) )
+        ( line   = data.readUnchecked(offset + 1),
+          column = data.readUnchecked(offset + 2),
+          length = data.readUnchecked(offset + 3) )
     else
       // `YamlPath.path.descent` is stored leaf-first (Serpentine's `/`
       // prepends), so iterate it in reverse to walk root-to-leaf.
-      val seg = segments(segments.length - 1 - i).s
+      val seg = segments.stdlib(segments.length - 1 - i).s
 
       if ast.isObject then
         val k = ast.objectIndexOf(seg)
 
         if k < 0 then Unset
         else
-          val entryOff = data(offset + 5 + k)
+          val entryOff = data.readUnchecked(offset + 5 + k)
           val isLast = i == segments.length - 1
 
           if isLast && keyMode then
             Yaml.Ast.Position
-              ( line   = data(offset + entryOff),
-                column = data(offset + entryOff + 1),
-                length = data(offset + entryOff + 2) )
+              ( line   = data.readUnchecked(offset + entryOff),
+                column = data.readUnchecked(offset + entryOff + 1),
+                length = data.readUnchecked(offset + entryOff + 2) )
           else
             walkIndex
               ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
@@ -1075,7 +1075,7 @@ object Yaml extends Yaml2, Dynamic:
 
           if k < 0 || k >= ast.arrayLength then Unset
           else
-            val childOff = data(offset + 5 + k)
+            val childOff = data.readUnchecked(offset + 5 + k)
 
             walkIndex
               ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )

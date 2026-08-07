@@ -103,7 +103,7 @@ object Teletype:
     def map(text: Teletype)(lambda: Char => Char): Teletype =
       val plain = text.plain
       val array = Array.scribe[Char](plain.length): scribe =>
-        _ => plain.iterate { index => scribe.append(lambda(plain.at(index))) }
+        _ => plain.iterate { index => scribe.append(lambda(plain(index))) }
 
       Teletype
         ( new String(Array.unsafeJvm(array)).tt,
@@ -174,7 +174,7 @@ object Teletype:
     val n = plain.length
 
     if n == 0
-    then (Array.of(if denseStyles.length > 0 then denseStyles(0) else 0L), Array.empty[Int])
+    then (Array.of(if denseStyles.length > 0 then denseStyles.readUnchecked(0) else 0L), Array.empty[Int])
     else
       // Count runs, tracking the previous style rather than reading `i - 1` again: the
       // confined scan visits each index once.
@@ -216,11 +216,11 @@ object Teletype:
 
 
 // `boundaries` is the run-start array for the sparse form; empty for the dense form.
-// Dense:  styles.length == plain.length + 1; styles(i) is the style for char i (0 ≤ i < length)
-//         and styles(length) is the trailing style.
-// Sparse: styles.length == boundaries.length + 1; boundaries(i) is the start position of run i
-//         (boundaries(0) == 0). Run i covers [boundaries(i), nextStart) where nextStart is
-//         boundaries(i+1) or plain.length for the last run. styles(boundaries.length) is the
+// Dense:  styles.length == plain.length + 1; styles.at(i) is the style for char i (0 ≤ i < length)
+//         and styles.at(length) is the trailing style.
+// Sparse: styles.length == boundaries.length + 1; boundaries.at(i) is the start position of run i
+//         (boundaries.at(0) == 0). Run i covers [boundaries.at(i), nextStart) where nextStart is
+//         boundaries.at(i+1) or plain.length for the last run. styles.at(boundaries.length) is the
 //         trailing style.
 case class Teletype
   ( plain:      Text,
@@ -248,19 +248,19 @@ case class Teletype
 
   // Style at position p (0 ≤ p ≤ plain.length, where length means "trailing").
   def styleAt(p: Int): Long =
-    if isDense then styles(p)
-    else if p >= plain.length then styles(boundaries.length)
-    else styles(searchRun(p, strict = false))
+    if isDense then styles.readUnchecked(p)
+    else if p >= plain.length then styles.readUnchecked(boundaries.length)
+    else styles.readUnchecked(searchRun(p, strict = false))
 
   // Trailing style (the style after the last char; used for joins).
   inline def trailingStyle: Long =
-    if isDense then styles(plain.length) else styles(boundaries.length)
+    if isDense then styles.readUnchecked(plain.length) else styles.readUnchecked(boundaries.length)
 
   // Convert to sparse form's (styles, boundaries) representation.
   // For an already-sparse Teletype this is O(1); for a dense one it's O(plain.length).
   def asSparseArrays: (Array[Long]^{}, Array[Int]^{}) =
     if !isDense then (styles, boundaries)
-    else if plain.length == 0 then (Array.of(if styles.length > 0 then styles(0) else 0L), Array.of(0))
+    else if plain.length == 0 then (Array.of(if styles.length > 0 then styles.readUnchecked(0) else 0L), Array.of(0))
     else
       val n = plain.length
       // Count runs, tracking the previous style; see `compressIfBeneficial`.
@@ -317,11 +317,11 @@ case class Teletype
       else
         // Stay sparse: the new chars become part of the last run (since trailing style = last run
         // style) unless the last run's style differs from the trailing style — but that can't
-        // happen because styles(boundaries.length-1) is the last run's style, and
-        // styles(boundaries.length) is trailing.
+        // happen because styles.at(boundaries.length-1) is the last run's style, and
+        // styles.at(boundaries.length) is trailing.
         // They may differ. If so, we need a new run for the appended text.
         val k = boundaries.length
-        val lastRunStyle = styles(k - 1)
+        val lastRunStyle = styles.readUnchecked(k - 1)
         if lastRunStyle == tail then
           // Just extend plain; runs unchanged
           Teletype(combinedPlain, styles, hyperlinks, insertions, boundaries)
@@ -374,8 +374,8 @@ case class Teletype
         val (bStyles, bBoundaries) = that.asSparseArrays
         val aK = aBoundaries.length
         val bK = bBoundaries.length
-        val aLastStyle = aStyles(aK - 1)
-        val bFirstStyle = bStyles(0)
+        val aLastStyle = aStyles.readUnchecked(aK - 1)
+        val bFirstStyle = bStyles.readUnchecked(0)
         val merge = aLastStyle == bFirstStyle
         val newK = aK + bK - (if merge then 1 else 0)
         val newBoundariesArr = Array[Int](newK)
@@ -388,12 +388,12 @@ case class Teletype
         var ni = aK
 
         while bi < bK do
-          newBoundariesArr(ni) = bBoundaries(bi) + aN
-          newStylesArr(ni) = bStyles(bi)
+          newBoundariesArr(ni) = bBoundaries.readUnchecked(bi) + aN
+          newStylesArr(ni) = bStyles.readUnchecked(bi)
           bi += 1
           ni += 1
         // Trailing style is B's trailing
-        newStylesArr(newK) = bStyles(bK)
+        newStylesArr(newK) = bStyles.readUnchecked(bK)
 
         Teletype
           ( combinedPlain,
@@ -532,9 +532,9 @@ case class Teletype
         var i = 0
 
         while i < n do
-          val s = styles(i)
+          val s = styles.readUnchecked(i)
           var j = i + 1
-          while j < n && styles(j) == s do j += 1
+          while j < n && styles.readUnchecked(j) == s do j += 1
           emitRunStyle(s, i)
           emitText(i, j)
           i = j
@@ -543,9 +543,9 @@ case class Teletype
         var r = 0
 
         while r < k do
-          val from = boundaries(r)
-          val to = if r + 1 < k then boundaries(r + 1) else n
-          val s = styles(r)
+          val from = boundaries.readUnchecked(r)
+          val to = if r + 1 < k then boundaries.readUnchecked(r + 1) else n
+          val s = styles.readUnchecked(r)
           emitRunStyle(s, from)
           emitText(from, to)
           r += 1

@@ -1445,7 +1445,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"@memo annotation sets a description on a field"):
         JsonSchema.derived[Marked].schema() match
-          case obj: JsonSchema.Object => obj.properties.at(t"n").let(_.description).or(t"")
+          case obj: JsonSchema.Object => obj.properties(t"n").let(_.description).or(t"")
           case _                      => t""
       . assert(_ == t"the count")
 

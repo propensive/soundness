@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
+import denominative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -175,9 +176,9 @@ object PeriodicTable:
   lazy val symbols: Map[Text, ChemicalElement] = unsafely(elements.readable.indexBy(_.symbol))
 
   def apply(number: Int): Optional[ChemicalElement] =
-    if 1 <= number <= 118 then elements.readable(number - 1) else Unset
+    elements.at(Ordinal.zerary(number - 1))
 
-  def apply(symbol: Text): Optional[ChemicalElement] = symbols.at(symbol).or(Unset)
+  def apply(symbol: Text): Optional[ChemicalElement] = symbols(symbol).or(Unset)
 
   private val prefixes: Array[Text]^{} =
     Array.of(t"nil", t"un", t"bi", t"tri", t"quad", t"pent", t"hex", t"sept", t"oct", t"enn")
@@ -187,7 +188,7 @@ object PeriodicTable:
       if digits == 0
       then ChemicalElement(number, symbol.capitalize, name.capitalize.sub(t"ii", t"i"))
       else
-        val prefix = prefixes(digits%10)
-        recur(prefix+name, t"${prefix.chars(0)}$symbol", digits/10)
+        val prefix = prefixes.readUnchecked(digits%10)
+        recur(prefix+name, t"${prefix.s.charAt(0)}$symbol", digits/10)
 
     recur(t"ium", t"", number)

@@ -59,11 +59,11 @@ object Pax:
       var lengthEnd = pos
 
       while lengthEnd < data.length &&
-        data(lengthEnd) >= '0'.toByte &&
-        data(lengthEnd) <= '9'.toByte
+        data.readUnchecked(lengthEnd) >= '0'.toByte &&
+        data.readUnchecked(lengthEnd) <= '9'.toByte
       do lengthEnd += 1
 
-      if lengthEnd == pos || lengthEnd >= data.length || data(lengthEnd) != ' '.toByte
+      if lengthEnd == pos || lengthEnd >= data.length || data.readUnchecked(lengthEnd) != ' '.toByte
       then
         raise(TarError(TarError.Reason.BadPaxRecord(data)))
         pos = data.length
@@ -74,7 +74,7 @@ object Pax:
           try data.slice(pos, lengthEnd).ascii.s.toInt
           catch case _: NumberFormatException => 0
 
-        if length < 1 || pos + length > data.length || data(pos + length - 1) != '\n'.toByte
+        if length < 1 || pos + length > data.length || data.readUnchecked(pos + length - 1) != '\n'.toByte
         then
           raise(TarError(TarError.Reason.BadPaxRecord(data)))
           pos = data.length

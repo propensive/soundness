@@ -32,6 +32,7 @@
                                                                                                   */
 package honeycomb
 
+
 import scala.{caps, compiletime}
 import proscenium.compat.*
 

@@ -32,6 +32,7 @@
                                                                                                   */
 package escritoire
 
+
 import proscenium.compat.*
 
 import scala.collection.immutable.IndexedSeq
@@ -83,13 +84,13 @@ abstract class Tabulation[text: ClassTag]():
           columns.indices.map: index =>
             val dataMax =
               if !include(index) then 0 else rows.map: cells =>
-                columns(index).sizing.width[text](cells(index), width, slack).or(0)
+                columns.readUnchecked(index).sizing.width[text](cells.readUnchecked(index), width, slack).or(0)
 
               . stdlib.maxOption.getOrElse(0)
 
             val titleMax =
               if !include(index) then 0 else titles.map: cells =>
-                columns(index).sizing.width[text](cells(index), width, slack).or(0)
+                columns.readUnchecked(index).sizing.width[text](cells.readUnchecked(index), width, slack).or(0)
 
               . stdlib.maxOption.getOrElse(0)
 

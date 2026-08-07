@@ -174,7 +174,7 @@ object SyntaxMatcher:
     :   List[(List[Syntax], List[ValueToken])] =
 
       List.range(0, terms.stdlib.length).bind: index =>
-        consume(terms(index), tokens).map: rem =>
+        consume(terms.stdlib(index), tokens).map: rem =>
           (List.of(terms.stdlib.patch(index, List[Syntax]().stdlib, 1)), rem)
 
     private def allOf(terms: List[Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =

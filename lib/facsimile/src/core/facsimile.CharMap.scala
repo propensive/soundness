@@ -120,4 +120,4 @@ private[facsimile] object CharMap:
     CharMap(Map.of(entries.result()), codeBytes)
 
 private[facsimile] case class CharMap(entries: Map[Int, Text], codeBytes: Int):
-  def apply(code: Int): Optional[Text] = entries.at(code)
+  def apply(code: Int): Optional[Text] = entries(code)

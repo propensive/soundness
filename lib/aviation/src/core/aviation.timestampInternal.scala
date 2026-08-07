@@ -131,13 +131,16 @@ object timestampInternal:
         : Quanta[Days[1]])
 
     given dateSubtractable2: Date is Subtractable by Quanta[Days[1]] to Date = Subtractable:
-      (end, start) => end.addDays(-start[Days])
+      (end, start) =>
+        end.addDays(-start[Days])
 
     given dateAddable: Date is Addable by Quanta[Days[1]] to Date = Addable:
-      (left, right) => left.addDays(right[Days])
+      (left, right) =>
+        left.addDays(right[Days])
 
     given dateAddable2: Quanta[Days[1]] is Addable by Date to Date = Addable:
-      (left, right) => right.addDays(left[Days])
+      (left, right) =>
+        right.addDays(left[Days])
 
     // Date-only display (no time-of-day), honouring locale-ish formatting givens.
     given dateShowable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable =

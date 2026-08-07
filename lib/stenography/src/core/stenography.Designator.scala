@@ -47,7 +47,7 @@ object Designator:
     def recur(i: Ordinal, start: Ordinal, designator: Optional[Designator]): Designator =
       def next = text.segment(start thru i - 1)
 
-      text.at(i) match
+      text(i) match
         case Unset => designator.lay(Designator.Top(next))(Designator.Term(_, next))
 
         case '.' =>

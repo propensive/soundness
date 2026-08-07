@@ -274,17 +274,17 @@ extension [plane: Filesystem](path: Path on plane)
     symlinkTo(unsafely(destination.child(path.descent.head)))
 
 
-  def modified[instant: Instantiable across Instants from Long]()
+  def modified[instant: Instantiable across Instants from Long as instantiable]()
     ( using backend: FilesystemBackend on plane )
   :   instant raises IoError =
 
-    instant(backend.stat(path, true).modified)
+    instantiable.apply(backend.stat(path, true).modified)
 
-  def accessed[instant: Instantiable across Instants from Long]()
+  def accessed[instant: Instantiable across Instants from Long as instantiable]()
     ( using backend: FilesystemBackend on plane )
   :   instant raises IoError =
 
-    instant(backend.stat(path, true).accessed)
+    instantiable.apply(backend.stat(path, true).accessed)
 
   def readable(using FilesystemBackend on plane): FilesystemAttribute.Readable[plane] =
     FilesystemAttribute.Readable(path)
@@ -302,11 +302,11 @@ extension [plane: Filesystem](path: Path on plane)
     Log.fine(IoEvent.Touch(path.show))
 
 extension (path: Path on Windows)
-  def created[instant: Instantiable across Instants from Long]()
+  def created[instant: Instantiable across Instants from Long as instantiable]()
     ( using backend: FilesystemBackend on Windows )
   :   instant raises IoError =
 
-    instant:
+    instantiable.apply:
       backend.stat(path, true).created.or:
         abort(IoError(path, Operation.Metadata, Reason.Unsupported))
 

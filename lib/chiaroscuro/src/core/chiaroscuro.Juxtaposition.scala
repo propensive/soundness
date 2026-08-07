@@ -88,7 +88,7 @@ object Juxtaposition:
           if comparison.all(_(1).singleChar) then
             var topSum = 0
             var bottomSum = 0
-            def pad(value: Text): Char = value.at(Prim).let(Unicode.visible).or(' ')
+            def pad(value: Text): Char = value(Prim).let(Unicode.visible).or(' ')
 
             comparison.stdlib.grouped(columns).zipWithIndex.map: (comparison2, index) =>
               val first = index == 0

@@ -75,7 +75,7 @@ private[facsimile] object Xref:
       // cross-reference stream carrying the entries — typically for objects in object
       // streams — which legacy readers see as free. The table's live entries win, but its
       // free markers yield to the stream's.
-      val sectionEntries = sectionTrailer.at(t"XRefStm").let(_.long).lay(classicEntries):
+      val sectionEntries = sectionTrailer(t"XRefStm").let(_.long).lay(classicEntries):
         hybrid =>
           val (hybridEntries, _) = stream(source, hybrid)
 
@@ -86,7 +86,7 @@ private[facsimile] object Xref:
       val mergedEntries = Map.of(sectionEntries.stdlib ++ entries.stdlib)
       val mergedTrailer = Map.of(sectionTrailer.stdlib ++ trailer.stdlib)
 
-      sectionTrailer.at(t"Prev").let(_.long)
+      sectionTrailer(t"Prev").let(_.long)
       . lay(Xref(mergedEntries, mergedTrailer, head, streamed(source, head))): previous =>
           recur(previous, mergedEntries, mergedTrailer, visited + offset)
 
@@ -121,8 +121,8 @@ private[facsimile] object Xref:
 
       while i < limit do
         // A candidate object header is `<digits> <digits> obj` at a token boundary.
-        if matches(chunk, i, t"obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk(i + 3) & 0xff))
-           && (i == 0 || CosLexer.whitespace(chunk(i - 1) & 0xff))
+        if matches(chunk, i, t"obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff))
+           && (i == 0 || CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff))
         then
           objectHeader(chunk, i).let: (number, generation, start) =>
             val offset = base + start
@@ -142,7 +142,7 @@ private[facsimile] object Xref:
           safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
             content match
               case body @ Cos.Body(dictionary, _)
-              if dictionary.at(t"Type").let(_.name) == t"ObjStm" =>
+              if dictionary(t"Type").let(_.name) == t"ObjStm" =>
                 objStmMembers(source, body).each: number =>
                   if !direct.defines(number)
                   then entries = entries.updated(number, Entry.Compressed(container, 0))
@@ -160,9 +160,9 @@ private[facsimile] object Xref:
   private def objectHeader(chunk: Data, objAt: Int): Optional[(Int, Int, Int)] =
     def digits(end: Int): Optional[(Int, Int)] = // (value, startIndex), scanning back from end
       var i = end
-      while i > 0 && CosLexer.whitespace(chunk(i - 1) & 0xff) do i -= 1
+      while i > 0 && CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff) do i -= 1
       val last = i
-      while i > 0 && { val b = chunk(i - 1) & 0xff; b >= '0' && b <= '9' } do i -= 1
+      while i > 0 && { val b = chunk.readUnchecked(i - 1) & 0xff; b >= '0' && b <= '9' } do i -= 1
       if i == last then Unset else (parseInt(chunk, i, last), i)
 
     digits(objAt).let: (generation, genStart) =>
@@ -172,7 +172,7 @@ private[facsimile] object Xref:
     var value = 0
     var i = start
     while i < end do
-      value = value*10 + (chunk(i) & 0xff) - '0'
+      value = value*10 + (chunk.readUnchecked(i) & 0xff) - '0'
       i += 1
     value
 
@@ -180,14 +180,14 @@ private[facsimile] object Xref:
   // payload; tolerant of any failure (a member simply stays unrecovered).
   private def objStmMembers(source: ByteSource, body: Cos.Body): List[Int] =
     safely:
-      val length = body.entries.at(t"Length").let(_.long)
+      val length = body.entries(t"Length").let(_.long)
         . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Length")))).toInt
 
-      val count = body.entries.at(t"N").let(_.long)
+      val count = body.entries(t"N").let(_.long)
         . or(abort(PdfError(PdfError.Reason.MissingEntry(t"N")))).toInt
 
       val raw = source.read(body.start, length)
-      val chain = Filter.chain(body.entries.at(t"Filter"), body.entries.at(t"DecodeParms"))
+      val chain = Filter.chain(body.entries(t"Filter"), body.entries(t"DecodeParms"))
       val data = Filter.decode(raw, chain)
       val lexer = CosLexer(Scan(data))
 
@@ -208,7 +208,7 @@ private[facsimile] object Xref:
         entry match
           case Entry.Direct(offset, generation) =>
             safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
-              content.dictionary.let(_.at(t"Type")).let(_.name) match
+              content.dictionary.let(_(t"Type")).let(_.name) match
                 case t"Catalog" => Some(number -> generation)
                 case _          => None
 
@@ -257,7 +257,7 @@ private[facsimile] object Xref:
 
   private def matches(window: Data, index: Int, marker: Text): Boolean =
     var j = 0
-    while j < marker.length && (window(index + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
+    while j < marker.length && (window.readUnchecked(index + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
     j == marker.length
 
   private def section(source: ByteSource, offset: Long)
@@ -329,26 +329,26 @@ private[facsimile] object Xref:
 
     parser.indirect() match
       case (_, _, Cos.Body(dictionary, start)) =>
-        val length = dictionary.at(t"Length").let(_.long)
+        val length = dictionary(t"Length").let(_.long)
           . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Length")))).toInt
 
         val raw = source.read(start, length)
         if raw.length < length then abort(PdfError(PdfError.Reason.Truncated))
 
-        val chain = Filter.chain(dictionary.at(t"Filter"), dictionary.at(t"DecodeParms"))
+        val chain = Filter.chain(dictionary(t"Filter"), dictionary(t"DecodeParms"))
         val data = Filter.decode(raw, chain)
 
-        val widths: List[Int] = dictionary.at(t"W").let(_.elements)
+        val widths: List[Int] = dictionary(t"W").let(_.elements)
           . or(abort(PdfError(PdfError.Reason.MissingEntry(t"W"))))
           . map(_.long.or(abort(PdfError(PdfError.Reason.TypeMismatch(t"W", t"an integer")))).toInt)
 
         if widths.length != 3 then abort(PdfError(PdfError.Reason.MalformedXref(offset)))
 
-        val size = dictionary.at(t"Size").let(_.long)
+        val size = dictionary(t"Size").let(_.long)
           . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Size"))))
 
         val ranges: List[(Long, Long)] =
-          dictionary.at(t"Index").let(_.elements).lay(List((0L, size))): elements =>
+          dictionary(t"Index").let(_.elements).lay(List((0L, size))): elements =>
             elements.map(_.long.or(abort(PdfError(PdfError.Reason.MalformedXref(offset)))))
             . grouped(2).to(List).map:
                 case List(first, count) => (first, count)
@@ -364,9 +364,9 @@ private[facsimile] object Xref:
             then abort(PdfError(PdfError.Reason.MalformedXref(offset)))
 
             // A zero-width first field defaults to type 1; other absent fields default to 0.
-            val kind = if widths(0) == 0 then 1L else field(data, position, widths(0))
-            val second = field(data, position + widths(0), widths(1))
-            val third = field(data, position + widths(0) + widths(1), widths(2))
+            val kind = if widths.stdlib(0) == 0 then 1L else field(data, position, widths.stdlib(0))
+            val second = field(data, position + widths.stdlib(0), widths.stdlib(1))
+            val third = field(data, position + widths.stdlib(0) + widths.stdlib(1), widths.stdlib(2))
             position += rowLength
 
             val entry = kind match
@@ -387,7 +387,7 @@ private[facsimile] object Xref:
     var i = 0
 
     while i < width do
-      value = (value << 8) + (data(start + i) & 0xff)
+      value = (value << 8) + (data.readUnchecked(start + i) & 0xff)
       i += 1
 
     value

@@ -134,7 +134,7 @@ private[hallucination] object JpegEncoder:
     var i = 0
 
     while i < 64 do
-      val z = ZigZag(i)
+      val z = ZigZag.readUnchecked(i)
       result(i) = quantizeValue(samples(z), quant(z))
       i += 1
 
@@ -263,7 +263,7 @@ private[hallucination] object JpegEncoder:
     var k = 0
 
     while k < 64 do
-      u8(quant(ZigZag(k)))
+      u8(quant(ZigZag.readUnchecked(k)))
       k += 1
 
   private def writeHuffman
