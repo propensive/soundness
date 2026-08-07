@@ -39,9 +39,14 @@ import contingency.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 import vacuous.*
 
 object Uuid extends Extractor[Text, Uuid]:
+  // In `Uuid`'s own companion rather than `Showable`'s, so that `spectacular` need not depend on
+  // `inimitable`; being companion-to-companion, this is the same implicit scope as before.
+  given showable: Uuid is Showable = _.text
+
   def parse(text: Text): Uuid raises UuidError =
     extract(text).lest(UuidError(text))
 

@@ -1541,7 +1541,8 @@ object denominative extends Library:
       settings.sep(super.scalacOptions())
 
 object digression extends Library:
-  object core extends Component(contingency.core, iridescence.core):
+  object core extends Component(contingency.core, iridescence.core,
+      spectacular.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Rendering stack traces as ANSI tables, which is why `escapade.core` used to need both
@@ -2098,7 +2099,7 @@ object imperial extends Library:
       settings.sep(super.scalacOptions())
 
 object inimitable extends Library:
-  object core extends Component(contingency.core):
+  object core extends Component(contingency.core, spectacular.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2601,7 +2602,7 @@ object serpentine extends Library:
   object bench extends Benchmarks(core, galilei.core, quantitative.units)
 
 object spectacular extends Library:
-  object core extends Component(stenography.core, inimitable.core, wisteria.core, digression.core):
+  object core extends Component(stenography.core, wisteria.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
