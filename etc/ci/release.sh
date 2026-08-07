@@ -85,9 +85,9 @@ git tag -s "$VERSION" -m "Version $VERSION"
 export SOUNDNESS_RELEASE_VERSION="$VERSION"
 
 # Guard: every published module must resolve to exactly $VERSION before anything leaves the machine.
-# Probes both compiler plugins (which shipped a stale 0.63.0 in the 0.64.0 bundle) plus a normal
-# module; the env var makes all modules resolve identically, so a representative few suffice.
-for module in beneficence.plugin larceny.plugin rudiments.core; do
+# Probes both compiler plugins (which shipped a stale 0.63.0 in the 0.64.0 bundle) plus a bundle and
+# the universal artifact; the env var makes all modules resolve identically, so a few suffice.
+for module in beneficence.plugin larceny.plugin soundness.base soundness.all; do
   resolved=$(./mill show "$module.publishVersion" | tr -d '"')
   if [[ "$resolved" != "$VERSION" ]]; then
     echo "release: $module.publishVersion=$resolved, expected $VERSION; aborting" >&2
@@ -96,30 +96,19 @@ for module in beneficence.plugin larceny.plugin rudiments.core; do
   fi
 done
 
-# Build the publish selector: every PublishModule EXCEPT the dormant platform crosses (the `.js`
-# cross of a `scalaJs = false` module and the `.native` cross of a `scalaNative = false` module).
-# Those can't cross-compile, and mill has no per-module publish skip, so subtract `dormantCrosses`
-# (derived in build.mill from the capability flags) from the `__.publishArtifacts` wildcard.
-dormant_file=$(mktemp)
-./mill show dormantCrosses 2>/dev/null \
-  | python3 -c 'import json,sys; [print(x) for x in json.load(sys.stdin)]' \
-  | sort > "$dormant_file"
-keep=$(./mill resolve '__.publishArtifacts' 2>/dev/null \
-  | grep -E '^[a-zA-Z].*\.publishArtifacts$' \
-  | sed -E 's/\.publishArtifacts$//' \
-  | sort | grep -vxF -f "$dormant_file")
-rm -f "$dormant_file"
-if [[ -z "$keep" ]]; then
-  echo "release: computed an empty publish set; aborting" >&2
+# Build the publish selector: the bundles, their live platform crosses, the standalone compiler
+# plugins and the universal `soundness` artifact — never a `__.publishArtifacts` wildcard, which
+# would publish all ~230 components and blow through Maven Central's per-deployment file limit.
+if ! publish_selector=$(./etc/ci/publish-selector.sh); then
   git tag -d "$VERSION" >/dev/null; exit 1
 fi
-publish_selector="{$(printf '%s\n' "$keep" | paste -sd, -)}.publishArtifacts"
-echo "release: publishing $(printf '%s\n' "$keep" | grep -c .) modules (dormant crosses excluded)"
+echo "release: publishing $(./mill show publishableModules 2>/dev/null \
+  | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))') artifacts"
 
 if ! ./mill mill.javalib.SonatypeCentralPublishModule/publishAll \
        --publishArtifacts "$publish_selector" \
        --shouldRelease true \
-       --bundleName "dev.soundness-soundness:$VERSION"; then
+       --bundleName "dev.propensive-soundness:$VERSION"; then
   echo "release: publish failed; removing local tag $VERSION" >&2
   git tag -d "$VERSION" >/dev/null
   exit 1
