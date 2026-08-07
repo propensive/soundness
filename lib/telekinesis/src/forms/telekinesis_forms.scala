@@ -42,6 +42,7 @@ import fulminate.Hazard
 import distillate.*
 import honeycomb.*
 import legerdemain.*
+import gossamer.*
 import prepositional.*
 import vacuous.*
 
@@ -74,3 +75,18 @@ def orchestrate[value: Encodable in Query](initial: Optional[value] = Unset)[res
 :   Orchestrate[value, result]^{render, caps.any} =
 
   new Orchestrate[value, result](initial)(render(using _))
+
+// `Submission.form`, which renders the submission as an HTML form. It is an extension here
+// rather than a member of `Submission` so that `telekinesis.core` — the HTTP client and server
+// vocabulary — does not depend on honeycomb and legerdemain's widgets.
+extension [value](submission: Submission[value])
+  def form
+    ( submit:     Optional[Text]       = Unset,
+      value:      Optional[value]      = Unset,
+      validation: Optional[Validation] = Unset )
+    ( using value is Formulaic, value is Encodable in Query, Formulation )
+  :   Html of Flow =
+
+    // FIXME: Check why `data` isn't used
+    val data: Optional[Query] = submission.query.or(value.let(_.encode))
+    elicit[value](submission.query, validation.or(Validation()), submit)

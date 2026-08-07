@@ -32,10 +32,4 @@
                                                                                                   */
 package soundness
 
-export
-  legerdemain
-  . { Checkbox, Combobox, Dropdown, edit, elicit, Elicitable, Elicitable2, Field, Formulaic,
-      Formulation, RadioGroup, Widget }
-
-package formulations:
-  export legerdemain.formulations.defaultFormulation
+export telekinesis.{form, Orchestrate, orchestrate}

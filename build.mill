@@ -785,7 +785,9 @@ object soundness extends Toolchain:
     honeycomb.core, urticose.core, urticose.url, urticose.ansi, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
-    legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http,
+    legerdemain.core, legerdemain.query, telekinesis.forms, caduceus.core, caduceus.resend,
+    orthodoxy.core,
+    jacinta.http,
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
@@ -1306,7 +1308,7 @@ object burdock extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core
       extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.jvm,
-                       gastronomy.core, jacinta.core, fulminate.print, boot):
+                       gastronomy.core, jacinta.core, fulminate.print, hellenism.core, boot):
     override def scalaJs = false // packaging; depends on JVM-only `zeppelin`/`telekinesis`
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
@@ -2173,11 +2175,17 @@ object larceny extends Library:
     override def finalMainClass: Task.Simple[String] = "run"
 
 object legerdemain extends Library:
-  object core extends Component(honeycomb.core, anamnesis.core):
+  // The `Query` type and its `Parametric` typeclass: the form-encoded half of the library, with
+  // no HTML in it. `telekinesis` needs only this, so keeping it out of `core` takes the whole
+  // HTML/XML stack off the HTTP-client path.
+  object query extends Component(anamnesis.core, gossamer.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object core extends Component(honeycomb.core, query):
     override def scalaNative = false // renders HTML via honeycomb (classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, scintillate.server):
+  object test extends Tests(core, query, scintillate.server):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
     override def enabled = false
@@ -2564,7 +2572,7 @@ object savagery extends Library:
       settings.sep(super.scalacOptions())
 
 object scintillate extends Library:
-  object server extends Component(telekinesis.core, telekinesis.http2):
+  object server extends Component(telekinesis.core, telekinesis.http2, hellenism.core):
     override def scalaJs = false // HTTP server via `telekinesis`/`coaxial` sockets
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2714,13 +2722,14 @@ object synesthesia extends Library:
     override def scalacOptions = Task:
       settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"), "48")
 
-  object test extends Tests(core):
+  // The test server builds an HTML document, which `core` itself never does.
+  object test extends Tests(core, honeycomb.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
 object tarantula extends Library:
   object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core, diuretic.core,
-      gastronomy.core, guillotine.core):
+      gastronomy.core, guillotine.core, honeycomb.core):
     override def scalaJs = false // browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2735,10 +2744,18 @@ object tarantula extends Library:
       settings.sep(super.scalacOptions())
 
 object telekinesis extends Library:
-  object core extends Component(monotonous.core, legerdemain.core, turbulence.core, urticose.url):
-    // HTTP: reaches `legerdemain` (HTML, JVM/JS-only) and would need a native sockets/HTTP backend
-    // (there is none yet — the JVM `java.net.http` transport lives in `telekinesis.jvm`).
+  object core extends Component(gesticulate.core, monotonous.core, legerdemain.query,
+      turbulence.core, urticose.url):
+    // HTTP: would need a native sockets/HTTP backend (there is none yet — the JVM
+    // `java.net.http` transport lives in `telekinesis.jvm`). The HTML half, which was the other
+    // reason this could not cross-compile, is now in `telekinesis.forms`.
     override def scalaNative = false
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Rendering a `Submission` as an HTML form, and the `Orchestrate` request/render cycle: the
+  // only part of telekinesis that needs honeycomb and legerdemain's widgets.
+  object forms extends Component(core, legerdemain.core):
+    override def scalaNative = false // renders HTML via honeycomb (classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can

@@ -36,7 +36,7 @@ export
   telekinesis
   . { Acceptance, Auth, AuthError, ConnectError, Context, Cookie, Directive, fetch, Fetchable, Http,
       HttpClient, HttpError, HttpEvent, HttpRedirection, HttpRequestError, HttpResponseError,
-      Orchestrate, orchestrate, Parameter, Postable, query, Receivable, Receivable2, Redirects,
+      Parameter, Postable, query, Receivable, Receivable2, Redirects,
       Servable, Session, Submission, submit, TransferEncoding }
 
 package queryParameters:
