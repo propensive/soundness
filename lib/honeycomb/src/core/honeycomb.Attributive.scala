@@ -37,7 +37,6 @@ import gossamer.*
 import nomenclature.*
 import prepositional.*
 import spectacular.*
-import urticose.*
 import vacuous.*
 
 object Attributive:
@@ -64,7 +63,6 @@ object Attributive:
   given url: [url: Abstractable across Urls to Text] => url is Attributive to Whatwg.Url =
     (key, value) => (key, value.generic)
 
-  given url: HttpUrl is Attributive to Whatwg.Url = (key, value) => (key, value.show)
   given style: Text is Attributive to Whatwg.Css = (key, value) => (key, value)
 
   given cssClassList: List[Name[CssClass]] is Attributive to Whatwg.CssClassList =

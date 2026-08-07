@@ -1316,7 +1316,7 @@ object cacophony extends Library:
       settings.sep(super.scalacOptions())
 
 object caduceus extends Library:
-  object core extends Component(honeycomb.core):
+  object core extends Component(honeycomb.core, urticose.url):
     override def scalaNative = false // renders HTML via honeycomb (classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2001,13 +2001,14 @@ object hellenism extends Library:
       settings.sep(super.scalacOptions())
 
 object honeycomb extends Library:
-  object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url,
+  object core extends Component(panopticon.core, gesticulate.core, xylophone.core, anticipation.url,
       nomenclature.core, hellenism.core):
     override def scalaNative = false // loads its HTML entity tables from classpath resources at
                                      // runtime via hellenism's classloaders (JVM/JS-only)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core)
+  // The tests write `url"…"` attributes, which `core` itself no longer needs `urticose` for.
+  object test extends Tests(core, urticose.url)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(mvn"org.jsoup:jsoup:1.18.3")
 
@@ -2689,7 +2690,7 @@ object tarantula extends Library:
       settings.sep(super.scalacOptions())
 
 object telekinesis extends Library:
-  object core extends Component(monotonous.core, legerdemain.core, turbulence.core):
+  object core extends Component(monotonous.core, legerdemain.core, turbulence.core, urticose.url):
     // HTTP: reaches `legerdemain` (HTML, JVM/JS-only) and would need a native sockets/HTTP backend
     // (there is none yet — the JVM `java.net.http` transport lives in `telekinesis.jvm`).
     override def scalaNative = false
