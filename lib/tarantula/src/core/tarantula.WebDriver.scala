@@ -37,7 +37,6 @@ import contingency.*
 import distillate.*
 import gesticulate.*
 import gossamer.*
-import hallucination.*
 import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder
 import textSanitizers.strictSanitizer
 import jacinta.*, formatting.compactJsonFormatting, dynamicJsonAccess.enabled
@@ -89,8 +88,11 @@ case class WebDriver(port: Int):
       def click(): Unit logs HttpEvent = post(t"click", t"{}".read[Json])
       def clear(): Unit logs HttpEvent = post(t"clear", t"{}".read[Json])
 
-      def screenshot(): Raster in Png logs HttpEvent =
-        get(t"screenshot").value.as[Text].deserialize[Base64].read[Raster in Png]
+      // The raw PNG bytes. `screenshot()`, which decodes them into a `Raster in Png`, is an
+      // extension method in `tarantula.image`, so that browser automation does not depend on
+      // an image-codec library.
+      def screenshotData(): Data logs HttpEvent =
+        get(t"screenshot").value.as[Text].deserialize[Base64]
 
       def value(text: Text): Unit logs HttpEvent =
         case class Data(text: Text)

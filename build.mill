@@ -766,6 +766,7 @@ object soundness extends Toolchain:
     def summary = "Numeric and scientific computing: units, matrices, geometry and precision"
 
   object test extends Bundle(capricious.core, sedentary.core, tarantula.core,
+    tarantula.image,
     superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core,
     probably.coverage):
     def summary = "Testing: suites, assertions, coverage, generators and browser automation"
@@ -2717,11 +2718,18 @@ object synesthesia extends Library:
       settings.sep(super.scalacOptions())
 
 object tarantula extends Library:
-  object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core, guillotine.core):
+  object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core, diuretic.core,
+      gastronomy.core, guillotine.core):
     override def scalaJs = false // browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // Decoding a screenshot into a `Raster in Png`, which is all that browser automation needed
+  // `hallucination` (and its gesticulate/pneumatic.flate/iridescence closure) for.
+  object image extends Component(core, hallucination.core):
+    override def scalaJs = false // extends `tarantula.core`
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, image):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
