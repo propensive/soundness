@@ -32,9 +32,13 @@
                                                                                                   */
 package soundness
 
+// `apply` (the `Kelvin(…)` absolute-temperature constructor) is deliberately NOT re-exported:
+// its forwarder is a toplevel `apply` in package `soundness`, which collides with the deindexing
+// `apply` declared by `rudiments` — the compiler keeps whichever the classpath orders first and
+// silently drops the other. The extension remains available via `import quantitative.*`.
 export
   quantitative
-  . { apply, Acre, Ampere, Are, Barye, Becquerel, Biot, Calorie, Candela, Coulomb, Darcy, Days,
+  . { Acre, Ampere, Are, Barye, Becquerel, Biot, Calorie, Candela, Coulomb, Darcy, Days,
       Debye,
       Drams, Dyne, Em, Ems, Emu, Erg, Farad, Feet, FluidOunce, Foot, Franklin, Furlong, Furlongs,
       Galileo, Gallon, Gauss, Gilbert, Grain, Grains, Gram, Gray, Henry, Hertz, Hours,
