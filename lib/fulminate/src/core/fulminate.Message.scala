@@ -43,8 +43,6 @@ import symbolism.*
 object Message:
   def apply(value: Text): Message = Message(List(value))
 
-  given printable: Message is Printable = (message, termcap) => message.text
-
   // In `Message`'s own companion (not `Communicable`'s) so it is in implicit scope when resolving
   // `Message is Transcribable to carrier` — letting `Loggable.fanOut` log a bare `Message`.
   given communicable: Message is Communicable = identity(_)

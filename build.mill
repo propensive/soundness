@@ -726,6 +726,7 @@ object soundness extends Toolchain:
   object base extends Bundle(ambience.core, aperture.core, aviation.core, contextual.core,
     contingency.core, denominative.core, digression.core, diuretic.core, fulminate.core,
     hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
+    fulminate.print,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
     parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
@@ -1049,7 +1050,7 @@ object adversaria extends Library:
       settings.sep(super.scalacOptions())
 
 object ambience extends Library:
-  object core extends Component(anticipation.path, gossamer.core):
+  object core extends Component(anticipation.path, anticipation.print, gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // WASI-backed environment: an `Environment` given whose variables come from a Wasm Component
@@ -1304,7 +1305,7 @@ object burdock extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core
       extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.jvm,
-                       gastronomy.core, jacinta.core, boot):
+                       gastronomy.core, jacinta.core, fulminate.print, boot):
     override def scalaJs = false // packaging; depends on JVM-only `zeppelin`/`telekinesis`
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
@@ -1327,7 +1328,7 @@ object caduceus extends Library:
     override def scalaNative = false // renders HTML via honeycomb (classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object resend extends Component(core, telekinesis.jvm, jacinta.core):
+  object resend extends Component(core, telekinesis.jvm, jacinta.core, fulminate.print):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -1476,10 +1477,10 @@ object cosmopolite extends Library:
     override def enabled = false
 
 object dendrology extends Library:
-  object tree extends Component(gossamer.core):
+  object tree extends Component(anticipation.print, gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object dag extends Component(acyclicity.core):
+  object dag extends Component(acyclicity.core, anticipation.print):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object demo extends Internal(dag, turbulence.core, ambience.core):
@@ -1650,8 +1651,8 @@ object escapade extends Library:
   object csi extends Component(gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object core extends Component(csi, gossamer.core, anticipation.url, iridescence.core,
-      mercator.core, zephyrine.core):
+  object core extends Component(csi, gossamer.core, anticipation.print, anticipation.url,
+      iridescence.core, mercator.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Writing streams of `Teletype` records to the standard streams: escapade's only use of
@@ -1670,7 +1671,7 @@ object escapade extends Library:
   object bench extends Benchmarks(core, quantitative.units)
 
 object escritoire extends Library:
-  object core extends Component(gossamer.core, polysyllabic.core):
+  object core extends Component(anticipation.print, gossamer.core, polysyllabic.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -1857,12 +1858,18 @@ object frontier extends Library:
       settings.sep(super.scalacOptions())
 
 object fulminate extends Library:
-  object core extends Component(anticipation.text, anticipation.print, anticipation.log, proscenium.core, gigantism.core):
+  object core extends Component(anticipation.text, anticipation.log, proscenium.core,
+      gigantism.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object test extends Tests(core):
+  // `Message`'s `Printable` instance, and fulminate's only use of `anticipation.print`.
+  object print extends Component(core, anticipation.print):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+
+  object test extends Tests(core, print):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2755,8 +2762,8 @@ object telekinesis extends Library:
 
 object turbulence extends Library:
   object core
-  extends Component(anticipation.http, hieroglyph.core, parasite.core, capricious.core,
-      zephyrine.core):
+  extends Component(anticipation.http, anticipation.print, hieroglyph.core, parasite.core,
+      capricious.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // WASI-backed standard streams: a `Stdio` whose output writes through the `wasi:io/streams`
