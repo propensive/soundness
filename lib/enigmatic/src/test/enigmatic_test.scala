@@ -340,21 +340,36 @@ object Tests extends Suite(m"Enigmatic tests"):
         t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
-    test(m"Decryption with the wrong key fails with a CryptoError"):
+    // Wrong-key CBC decryption yields uniform garbage, and PKCS7 unpadding accepts any
+    // final block ending `0x01` (or `0x02 0x02`, and so on), so about one run in 256 the
+    // garbage forms valid padding and decryption "succeeds". Both outcomes demonstrate
+    // the property that matters, so both are accepted; `Invalid PKCS7 padding is reported
+    // as BadPadding` below covers the padding failure deterministically.
+    test(m"Decryption with the wrong key never recovers the plaintext"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val wrongKey = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val ciphertext = key.uncloak(t"Hello world".encrypt(InitializationVector.random))
-      capture[CryptoError](wrongKey.uncloak(ciphertext.decrypt.as[Text])).reason
-    . assert(_ == CryptoError.Reason.BadPadding)
 
-    test(m"Streaming decryption with the wrong key raises a CryptoError"):
+      attempt[CryptoError](wrongKey.uncloak(ciphertext.decrypt.as[Text])) match
+        case Attempt.Failure(error) => error.reason == CryptoError.Reason.BadPadding
+        case Attempt.Success(text)  => text != t"Hello world"
+
+    . assert(_ == true)
+
+    test(m"Streaming decryption with the wrong key never recovers the plaintext"):
       // The provider's tag/padding failure surfaces at end-of-stream as a typed
       // `CryptoError`, not the raw JCE exception, when the final window is pulled.
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val wrongKey = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val ciphertext = key.uncloak(t"Hello world".encrypt(InitializationVector.random))
-      capture[CryptoError](wrongKey.uncloak(ciphertext.stream.decrypt.memoize)).reason
-    . assert(_ == CryptoError.Reason.BadPadding)
+
+      attempt[CryptoError](wrongKey.uncloak(ciphertext.stream.decrypt.memoize)) match
+        case Attempt.Failure(error) => error.reason == CryptoError.Reason.BadPadding
+
+        case Attempt.Success(data) =>
+          data.serialize[Hex] != t"Hello world".in[Data].serialize[Hex]
+
+    . assert(_ == true)
 
     test(m"AES/CBC/NoPadding round-trips block-aligned input"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
@@ -366,6 +381,17 @@ object Tests extends Suite(m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
       capture[CryptoError](key.uncloak(t"Hello world".encrypt(InitializationVector.random))).reason
     . assert(_ == CryptoError.Reason.IllegalBlockSize)
+
+    test(m"Invalid PKCS7 padding is reported as BadPadding"):
+      val bytes: Data = t"a-32-byte-key-for-aes-256-cbc!!!".in[Data]
+      val rawKey: SymmetricKey[Aes[256] over Cbc against NoPadding] = SymmetricKey(bytes)
+      val paddedKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] = SymmetricKey(bytes)
+
+      // The recovered final block ends in `f` (0x66), which is never a valid PKCS7 pad
+      // length, so unpadding fails for every run rather than for 255 runs in 256.
+      val ciphertext = rawKey.uncloak(t"0123456789abcdef".encrypt(InitializationVector.random))
+      capture[CryptoError](paddedKey.uncloak(ciphertext.decrypt.as[Text])).reason
+    . assert(_ == CryptoError.Reason.BadPadding)
 
     test(m"AES/CTR/NoPadding (stream mode) accepts any length"):
       val key = SymmetricKey.generate[Aes[256] over Ctr against NoPadding]()
