@@ -46,7 +46,6 @@ coaxial	yes	core	core	wasi	backends: core+jvm+wasi; JVM-only submodule(s): jvm
 contextual	yes	yes	yes	js	
 contingency	yes	yes	yes	js	
 cosmopolite	yes	yes	yes	js	
-decorum	yes	no	no	no	compiler plugin: uses the JVM-only dotty compiler API
 delicious	yes	yes	yes	js	JVM-only submodule(s): ansi, scala
 dendrology	yes	yes	yes	js	
 denominative	yes	yes	yes	js	

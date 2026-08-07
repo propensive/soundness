@@ -11,4 +11,5 @@ extensions belong (the `<module>_core.scala` file, with companion-first ordering
 It will also describe the `soundness_<module>_core.scala` re-export that lifts a
 module's public surface into the umbrella `soundness` package, and the rules for
 what is exported versus kept internal. Some of this is already touched on in
-`syntax.md` §2; this standard will gather the structural conventions in one place.
+Consequent Style's Locatability rules (`L1`–`L5`, see [`syntax.md`](syntax.md));
+this standard will gather the structural conventions in one place.

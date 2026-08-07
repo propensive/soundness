@@ -292,6 +292,20 @@ object toolchain extends Module:
 
     PathRef(Task.dest)
 
+// The Consequent Style checker, which supersedes the in-repo `decorum` plugin. It links against
+// compiler internals, so it is published per *exact* compiler version (the `CrossVersion.full`
+// convention); no artifact exists for the fork, so the coordinate is pinned to the stock
+// `3.9.0-RC4` the fork is built from rather than derived from `settings.scalaVersion`. Resolved
+// intransitively for the same reason as `nscplugin` below: `-Xplugin:` rejects a non-plugin jar,
+// so exactly one must come back. `dev.propensive` artifacts published with `mill publishLocal`
+// land in `~/.ivy2/local`, which is in coursier's default resolver set.
+object consequentToolchain extends mill.javalib.CoursierModule:
+  val version = sys.env.getOrElse("SOUNDNESS_CONSEQUENT_VERSION", "0.1.0")
+  val compiler = "3.9.0-RC4"
+
+  def plugin: T[PathRef] = Task:
+    defaultResolver().classpath(Seq(mvn"dev.propensive:consequent_$compiler:$version"), false).head
+
 // Resolves the stock Scala Native artifacts from Maven Central (they are not fork-built, so no
 // local repository view is needed). `nscplugin` is the compiler plugin that lowers to NIR, added
 // as a single `-Xplugin:` (resolved intransitively so no non-plugin jar is passed to `-Xplugin`,
@@ -494,7 +508,8 @@ extends BaseScalaModule, SonatypeCentralPublishModule, PlatformCross:
 
   override def scalacOptions = Task:
     settings.scalaOptions
-      :+ s"-Xplugin:${decorum.plugin.assembly().path}"
+      :+ s"-Xplugin:${consequentToolchain.plugin().path}"
+      :+ "-P:consequent:umbrella=soundness"
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 // Like `Component`, but not published to Maven Central. For demos, examples, and
 // other modules that are built and tested but never released.
@@ -507,7 +522,8 @@ trait Internal(dependencies: JavaModule*) extends BaseScalaModule:
 
   override def scalacOptions = Task:
     settings.scalaOptions
-      :+ s"-Xplugin:${decorum.plugin.assembly().path}"
+      :+ s"-Xplugin:${consequentToolchain.plugin().path}"
+      :+ "-P:consequent:umbrella=soundness"
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
   def enabled: Boolean = true
@@ -581,7 +597,7 @@ object soundness extends Toolchain:
     superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core,
     probably.coverage)
 
-  object tool extends Bundle(anthology.core, decorum.plugin, degustation.core,
+  object tool extends Bundle(anthology.core, degustation.core,
     degustation.lira, mandible.lira, xenophile.lira, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, reliquary.core, reliquary.derive, revolution.core,
     umbrageous.plugin,
@@ -1240,14 +1256,6 @@ object dendrology extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(tree, dag):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions())
-
-object decorum extends Library:
-  object plugin extends BareComponent():
-    override def scalaJs = false // compiler plugin: uses the JVM-only dotty compiler API
-    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
-  object test extends Tests(plugin):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2813,7 +2821,7 @@ val allLibraries: Seq[Library] = Seq(
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
   charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
-  decorum, degustation, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,
+  degustation, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton, facsimile,
   frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,

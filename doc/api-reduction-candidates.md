@@ -316,5 +316,5 @@ Executed as the reference transformation: `PemError → Pem.Error`, `PemLabel �
 Gotchas observed (apply to every C1 rename):
 - **`XxxError → Xxx.Error` shadows the base.** A nested `case class Error` makes the bare `Error` in its own `extends` clause self-referential — qualify the base as `extends fulminate.Error(...)`. This bites *every* error-nesting (the largest C1 sub-cluster).
 - **Move imports with the body.** Nesting `PemLabel` pulled `spectacular.*` (its `Showable`) into `Pem.scala`; check the donor file's imports when folding a type in.
-- **SN-847**: deleting the old `module.Xxx.scala` file is required (the type is no longer top-level); the receiving `module.Foo.scala` already satisfies the rule. SN-398 ordering (companion `object` before its `class`/`enum`) must hold for the *nested* pair too.
+- **L2**: deleting the old `module.Xxx.scala` file is required (the type is no longer top-level); the receiving `module.Foo.scala` already satisfies the rule. L3 ordering (companion `object` before its `class`/`enum`) must hold for the *nested* pair too.
 - **Enum cases** (`Proprietary`, `fromOrdinal`) resolve unqualified inside the nested companion object exactly as they did at top level — no change needed there.
