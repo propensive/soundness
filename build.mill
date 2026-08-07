@@ -748,7 +748,8 @@ object soundness extends Toolchain:
     def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
-    facsimile.core, gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
+    facsimile.core, gastronomy.core, chiaroscuro.core, chiaroscuro.render, jacinta.core,
+    monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
@@ -1405,10 +1406,15 @@ object charisma extends Library:
       settings.sep(super.scalacOptions())
 
 object chiaroscuro extends Library:
-  object core extends Component(escapade.core, dendrology.tree, escritoire.core, dissonance.core):
+  object core extends Component(dissonance.core, gossamer.core, wisteria.core, kaleidoscope.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // Rendering a `Juxtaposition` as a table of differences, which is all that structural
+  // contrast needed the ANSI and table-layout stack for.
+  object render extends Component(core, escapade.core, dendrology.tree, escritoire.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, render):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2409,8 +2415,8 @@ object proscenium extends Library:
       settings.sep(super.scalacOptions())
 
 object probably extends Library:
-  object core extends Component(anticipation.check, chiaroscuro.core, ambience.core,
-      eucalyptus.core, nomenclature.core, coverage):
+  object core extends Component(anticipation.check, chiaroscuro.core, chiaroscuro.render,
+      ambience.core, eucalyptus.core, nomenclature.core, coverage):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")

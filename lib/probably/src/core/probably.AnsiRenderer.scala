@@ -56,6 +56,11 @@ import vacuous.*
 import Format.measurable
 import tableStyles.defaultTableStyle
 
+// `Juxtaposition`'s renderer lives in `chiaroscuro.render`, not in the enum's companion, so it
+// is not in implicit scope. Without this import `cmp.teletype` below silently resolves to
+// escapade's generic `Showable` fallback and prints the value instead of the difference table.
+import chiaroscuro.juxtapositionTeletype
+
 // The full-colour renderer: tables, ribbons, banner, sparklines, histograms and coverage,
 // plus GitHub Actions annotations when running there. All content decisions live in
 // `Documenting`; this object decides only presentation.

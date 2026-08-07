@@ -35,6 +35,7 @@ package chiaroscuro
 import soundness.*
 
 import proscenium.compat.*
+import textMetrics.uniformMetric
 
 case class Person(name: Text, age: Int)
 case class Organization(name: Text, ceo: Person, staff: List[Person])
@@ -141,3 +142,33 @@ object Tests extends Suite(m"Chiaroscuro tests"):
       test(m"Text comparison"):
         t"The quick brown fox jumps over the lazy dog"
       . aspire(_ == t"The quick brown foxes jumped over the dog")
+
+    suite(m"Juxtaposition rendering tests"):
+      // `Text is Measurable` is derived generically from `Char is Measurable`, as escritoire does.
+      given charMeasurable: Char is Measurable = _.toString.tt.metrics
+
+      given palette: JuxtapositionPalette = new JuxtapositionPalette:
+        def background: Color in Srgb  = WebColors.Black
+        def foreground: Color in Srgb  = WebColors.White
+        def unaccented: Color in Srgb  = WebColors.DimGray
+        def informative: Color in Srgb = WebColors.Silver
+        def subdued: Color in Srgb     = WebColors.DimGray
+        def positive: Color in Srgb    = WebColors.LimeGreen
+        def negative: Color in Srgb    = WebColors.Red
+
+      // `juxtapositionTeletype` is no longer in `Juxtaposition`'s implicit scope, and escapade
+      // renders any `Showable` value unstyled, so a call site which fails to import it degrades
+      // silently rather than failing to compile. These assertions pin the real renderer's output.
+      // `juxtapositionTeletype` is no longer in `Juxtaposition`'s implicit scope, and escapade
+      // renders any `Showable` value unstyled, so a call site which fails to import it degrades
+      // silently — printing `Collation(Text,List(…))` — rather than failing to compile.
+      test(m"A differing pair renders as a difference table, not as the enum's text"):
+        t"alpha".contrast(t"alpha".sub(t"a", t"b")).teletype.plain.trim
+      . assert(_ == t"""────┬─────┬────
+   ⁰│alpha│⁵   
+   ₀│blphb│₅   
+────┴─────┴────""")
+
+      test(m"An equal pair renders as the expected value"):
+        24.contrast(24).teletype.plain
+      . assert(_ == t"The value 24 was expected")
