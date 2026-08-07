@@ -42,7 +42,6 @@ import anticipation.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
-import probably.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

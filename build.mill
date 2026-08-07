@@ -734,10 +734,10 @@ object soundness extends Toolchain:
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
     prophesy.core, murmuration.core, beneficence.core, proscenium.core, prescience.core,
     prescience.leaves,
-    anticipation.codec, anticipation.color, anticipation.generic, anticipation.gfx,
-    anticipation.html, anticipation.http, anticipation.log, anticipation.opaque,
-    anticipation.path, anticipation.print, anticipation.text, anticipation.time,
-    anticipation.url):
+    anticipation.check, anticipation.codec, anticipation.color, anticipation.generic,
+    anticipation.gfx, anticipation.html, anticipation.http, anticipation.log,
+    anticipation.opaque, anticipation.path, anticipation.print, anticipation.text,
+    anticipation.time, anticipation.url):
     def summary = "Core Soundness abstractions: text, collections, effects and interfaces"
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
@@ -1182,6 +1182,11 @@ object anticipation extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object path extends Component(text, generic):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The `Checkable` typeclass and its `Tolerance`/`===` vocabulary, so that a module which
+  // compares values for equivalence need not depend on `probably`, the test framework.
+  object check extends Component(hypotenuse.core, rudiments.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object time extends Component(generic):
@@ -1810,7 +1815,7 @@ object exoskeleton extends Library:
 
 object facsimile extends Library:
   object core extends Component(aperture.core, galilei.core, galilei.jvm, ambience.core, turbulence.core,
-      pneumatic.flate, zephyrine.core, gastronomy.core, enigmatic.core,
+      pneumatic.flate, zephyrine.core, gastronomy.core, enigmatic.core, eucalyptus.core,
       hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core):
     override def scalaJs = false // memory-mapped random-access reads (galilei.jvm `Ram`), JCE
     override def scalacOptions = Task:
@@ -2311,7 +2316,7 @@ object perihelion extends Library:
   object test extends Tests(core, jacinta.core)
 
 object phoenicia extends Library:
-  object core extends Component(quantitative.units, polaris.core):
+  object core extends Component(quantitative.units, polaris.core, turbulence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2404,8 +2409,8 @@ object proscenium extends Library:
       settings.sep(super.scalacOptions())
 
 object probably extends Library:
-  object core extends Component(chiaroscuro.core, ambience.core, eucalyptus.core,
-      nomenclature.core, coverage):
+  object core extends Component(anticipation.check, chiaroscuro.core, ambience.core,
+      eucalyptus.core, nomenclature.core, coverage):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
@@ -2452,7 +2457,8 @@ object punctuation extends Library:
   object bench extends Benchmarks(core, quantitative.units)
 
 object quantitative extends Library:
-  object core extends Component(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time, probably.core):
+  object core extends Component(hypotenuse.core, gossamer.core, anticipation.opaque,
+      anticipation.time, anticipation.check):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   object units extends Component(core):
@@ -2950,7 +2956,8 @@ object xylophone extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
-  object test extends Tests(core, staged)
+  // The tests decode an `EmailAddress`, which `core` itself never mentions.
+  object test extends Tests(core, staged, urticose.core)
   object bench extends Benchmarks(core, quantitative.units, hellenism.core):
     def mvnDeps = Seq(mvn"org.scala-lang.modules::scala-xml:2.4.0")
 
