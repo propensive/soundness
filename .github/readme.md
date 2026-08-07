@@ -43,7 +43,10 @@ modules for one domain, and can be specified as follows:
    automatically.
 
  - To include _everything in Soundness_, use
-   `dev.propensive:soundness:<version>`.
+   `dev.propensive:soundness:<version>`. This covers every bundle except the two
+   opt-in ones, `staged` and `android`, whose dependencies (the staging compiler
+   and R8) are heavyweight enough that they should only ever be asked for by
+   name.
 
  - The compiler plugins are published separately, since they are used with
    `-Xplugin:` rather than on the classpath: `dev.propensive:larceny-plugin`,
