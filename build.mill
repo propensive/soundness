@@ -1047,7 +1047,7 @@ object adversaria extends Library:
       settings.sep(super.scalacOptions())
 
 object ambience extends Library:
-  object core extends Component(gossamer.core):
+  object core extends Component(anticipation.path, gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // WASI-backed environment: an `Environment` given whose variables come from a Wasm Component
@@ -1408,7 +1408,8 @@ object chiaroscuro extends Library:
       settings.sep(super.scalacOptions())
 
 object coaxial extends Library:
-  object core extends Component(urticose.core, frontier.core, turbulence.core, aperture.core):
+  object core extends Component(anticipation.path, urticose.core, frontier.core, turbulence.core,
+    aperture.core):
     // The native `SocketBackend` (`socketBackends.native`) is folded into the native cross via
     // `nativeSources` (as galilei's filesystem backend is): TCP and UDP over Scala Native's
     // `java.net` sockets, with Unix-domain sockets and TLS unsupported for now.
@@ -1589,7 +1590,7 @@ object enigmatic extends Library:
   // the `JavaStdlibCrypto` provider and PKCS#12 keystores compile against `javax.crypto`/
   // `java.security` on the JVM (`core-jvm`) and against panicking stubs on native (`core-native`,
   // where the OpenSSL provider is the real implementation).
-  object core extends Component(aperture.core, gastronomy.core, asn1):
+  object core extends Component(anticipation.path, aperture.core, gastronomy.core, asn1):
     override def scalaJs = false // `javax.crypto` has no JS analogue (and no OpenSSL either)
     override def scalaNative = true // but native has the OpenSSL provider
     // `core-jvm` also holds the off-heap/encrypting cloaks (`java.lang.foreign`).
@@ -1828,7 +1829,7 @@ object frontier extends Library:
       settings.sep(super.scalacOptions())
 
 object fulminate extends Library:
-  object core extends Component(anticipation.http, anticipation.print, anticipation.log, proscenium.core, gigantism.core):
+  object core extends Component(anticipation.text, anticipation.print, anticipation.log, proscenium.core, gigantism.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -1893,7 +1894,8 @@ object geodesy extends Library:
       settings.sep(super.scalacOptions())
 
 object gesticulate extends Library:
-  object core extends Component(gossamer.core, anticipation.html, turbulence.core, zephyrine.core):
+  object core extends Component(gossamer.core, anticipation.html, anticipation.path,
+    turbulence.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -1919,10 +1921,10 @@ object gnossienne extends Library:
       settings.sep(super.scalacOptions())
 
 object gossamer extends Library:
-  object core extends Component(mercator.core, hieroglyph.core, contextual.core, spectacular.core, hypotenuse.core, distillate.core):
+  object core extends Component(hieroglyph.core, kaleidoscope.core, spectacular.core, hypotenuse.core, distillate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, serpentine.core):
+  object test extends Tests(core, mercator.core, serpentine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2219,7 +2221,7 @@ object urticose extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object url extends Component(escapade.core, serpentine.core, anticipation.html, core):
+  object url extends Component(escapade.core, serpentine.core, core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, url):
@@ -2486,8 +2488,7 @@ object murmuration extends Library:
 
 object rudiments extends Library:
   object core extends Component(
-      anticipation.http,
-      anticipation.path,
+      anticipation.codec,
       vacuous.core,
       denominative.core,
       murmuration.core
@@ -2648,7 +2649,7 @@ object superlunary extends Library:
     override def finalMainClass: Task.Simple[String] = "superlunary.run"
 
 object surveillance extends Library:
-  object core extends Component(aperture.core, eucalyptus.core):
+  object core extends Component(anticipation.path, aperture.core, eucalyptus.core):
     override def scalaJs = false // file watching (`java.nio.file` WatchService)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2720,7 +2721,7 @@ object telekinesis extends Library:
 
 object turbulence extends Library:
   object core
-  extends Component(hieroglyph.core, parasite.core, capricious.core, stenography.core,
+  extends Component(anticipation.http, hieroglyph.core, parasite.core, capricious.core,
       zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2930,7 +2931,7 @@ object querencia extends Library:
       settings.sep(super.scalacOptions())
 
 object xylophone extends Library:
-  object core extends Component(zephyrine.core, adversaria.core, typonym.core, urticose.core, wisteria.core, panopticon.core, turbulence.core, serpentine.core):
+  object core extends Component(zephyrine.core, adversaria.core, typonym.core, wisteria.core, panopticon.core, turbulence.core, serpentine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Expr-level `Inlinable` typeclass and its expansion-time instance
