@@ -30,10 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export
-  anthology
-  . { Compilation, CompileEvent, CompileEvents, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Component, Deliverable, Edge, EntryPoint, Importance,
-      LinkError, LinkEvent, NirPlugin, Notice, Setting, Tool, Toolchain, Universe, WasmObject }
+import anticipation.*
+import gossamer.*
+
+// The LIRA `component` universe: WebAssembly library components, composing with one another
+// through interfaces described by WIT — the same relation WIT bears to this universe as TASTy
+// bears to `sjsir` and `nir`. It is a `Format.Ir` rather than a `Universe`, since no Scala
+// compilation emits it: a component is an application (`Wasi`) when the world it exports is
+// runnable, and content in this universe when it is composed with others. No edge yet produces
+// or consumes it; the node exists so that composition tools can register theirs.
+object Component extends Format.Ir:
+  def id: Text = t"component"

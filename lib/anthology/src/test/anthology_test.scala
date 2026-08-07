@@ -278,6 +278,17 @@ object Tests extends Suite(m"Anthology Tests"):
       capture[LinkError](Toolchain(sjsEdges()).path(Universe.Sjsir, target)).reason
     . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"wasip3"))
 
+    // The `component` and `wasm-object` universes are nodes without edges: LIRA's registry
+    // names them, and composition tools will register into them, but no Soundness tool yet
+    // produces or consumes either.
+    test(m"The component universe is a node awaiting edges"):
+      capture[LinkError](Toolchain(sjsEdges()).path(Universe.Sjsir, Component)).reason
+    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"component"))
+
+    test(m"The wasm-object universe is a node awaiting edges"):
+      capture[LinkError](Toolchain(sjsEdges()).path(WasmObject, Wasi(Wasi.Version.Wasip1))).reason
+    . assert(_ == LinkError.Reason.NoPath(t"wasm-object", t"wasip1"))
+
     test(m"The AXML encoder emits the binary-XML chunk header"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
       List(axml.readable(0), axml.readable(1), axml.readable(2), axml.readable(3)).map(_.toInt & 0xff)
