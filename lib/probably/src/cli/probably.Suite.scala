@@ -40,6 +40,10 @@ import ambience.*, environments.javaEnvironment
 import anticipation.*
 import contingency.*
 import digression.*
+// The stack-trace renderers live in `digression.ansi`, not in `StackTrace`'s companion, so they
+// are not in implicit scope; without this import `.teletype` on a stack trace falls back to
+// escapade's generic `Showable` renderer.
+import digression.{exceptionTeletype, frameTeletype, methodTeletype, stackTraceTeletype}
 import escapade.*
 import fulminate.*
 import gossamer.*

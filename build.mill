@@ -742,7 +742,8 @@ object soundness extends Toolchain:
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
-    eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, imperial.core, profanity.core,
+    eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, escapade.io,
+    escapade.graphics, digression.ansi, imperial.core, profanity.core,
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager,
     ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
@@ -1541,7 +1542,12 @@ object digression extends Library:
   object core extends Component(contingency.core, iridescence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // Rendering stack traces as ANSI tables, which is why `escapade.core` used to need both
+  // `escritoire` and `digression`.
+  object ansi extends Component(core, escapade.core, escritoire.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, ansi):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -1644,10 +1650,21 @@ object escapade extends Library:
   object csi extends Component(gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object core extends Component(csi, anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core):
+  object core extends Component(csi, gossamer.core, anticipation.url, iridescence.core,
+      mercator.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, yossarian.core):
+  // Writing streams of `Teletype` records to the standard streams: escapade's only use of
+  // `turbulence`.
+  object io extends Component(core, turbulence.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Rendering a `Graphical` value as half-block characters: escapade's only use of
+  // `anticipation.gfx`.
+  object graphics extends Component(core, anticipation.gfx):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, graphics, io, yossarian.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units)
@@ -1798,7 +1815,7 @@ object exoskeleton extends Library:
   object args extends Component(escapade.core, profanity.core, ambience.core, quantitative.units):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object core extends Component(args, galilei.jvm):
+  object core extends Component(args, galilei.jvm, digression.ansi):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2416,7 +2433,7 @@ object proscenium extends Library:
 
 object probably extends Library:
   object core extends Component(anticipation.check, chiaroscuro.core, chiaroscuro.render,
-      ambience.core, eucalyptus.core, nomenclature.core, coverage):
+      ambience.core, digression.ansi, escapade.io, eucalyptus.core, nomenclature.core, coverage):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")

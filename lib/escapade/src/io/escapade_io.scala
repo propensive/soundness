@@ -32,50 +32,29 @@
                                                                                                   */
 package escapade
 
+import anticipation.*
+import prepositional.*
 import proscenium.compat.*
 import rudiments.*
-
-import anticipation.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
-import iridescence.*
-import prepositional.*
-import spectacular.*
+import symbolism.*
+import turbulence.*
 import vacuous.*
+import zephyrine.*
 
-object Teletypeable:
-  given teletype: Teletype is Teletypeable = identity(_)
-  given text: Text is Teletypeable = text => Teletype(text)
+// Teletype values are records, so their streams travel on the boxed medium
+// (windows of `Array[Teletype]^{}`); each record prints as it arrives.
+given out: Stdio => Out.type is Writable by (Array[Teletype]^{}) = new Writable:
+  type Self = Out.type
+  type Operand = Array[Teletype]^{}
 
-  given colorable: [value: {Showable as showable, Colorable as colorable}]
-  =>  value is Teletypeable =
+  def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
+    . records.each(Out.print(_))
 
-    value => e"${value.color}(${value.show})"
+given err: Stdio => Err.type is Writable by (Array[Teletype]^{}) = new Writable:
+  type Self = Err.type
+  type Operand = Array[Teletype]^{}
 
-  given message: Message is Teletypeable = _.fold[Teletype](e""): (acc, next, level) =>
-    level match
-      case 0 => e"$acc$next"
-      case 1 => e"$acc$Italic(${Fg(Chroma(0xefe68b))}($next))"
-      case _ => e"$acc$Italic($Bold(${Fg(Chroma(0xffd600))}($next)))"
-
-  given option: [value: Teletypeable] => Option[value] is Teletypeable =
-    case None        => Teletype("empty".show)
-    case Some(value) => value.teletype
-
-  given showable: [value: Showable] => value is Teletypeable = value => Teletype(value.show)
-
-  given error: Error is Teletypeable = _.message.teletype
-
-  given double: (decimalizer: Decimalizer) => Double is Teletypeable = double =>
-    Teletype.styled(decimalizer.decimalize(double))(_.copy(fg = Chroma(0xffd600)))
-
-  given throwable: Throwable is Teletypeable = throwable =>
-    Teletype.styled[String]
-      (throwable.getClass.getName.nn.show.cut(t".").last.s)(_.copy(fg = Chroma(0xdc133b)))
-
-trait Teletypeable extends Typeclass.Pure:
-  def teletype(value: Self): Teletype
-
-  def contramap[self2](lambda: self2 -> Self): self2 is Teletypeable =
-    value => teletype(lambda(value))
+  def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
+    . records.each(Err.print(_))
