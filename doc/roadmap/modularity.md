@@ -30,10 +30,14 @@ snapshots from that audit and must be re-verified at implementation time.
 ## Mechanics that apply to every leg
 
 - A new component means: a `build.mill` object, a `lib/<name>/src/<sub>/` directory, a
-  `soundness_<lib>_<sub>.scala` export file, and membership in exactly one
-  `soundness.{base,cli,data,sci,test,tool,web,wasi}` bundle or in `groupCheck.excluded`;
+  `soundness_<lib>_<sub>.scala` export file, and membership in **exactly one** bundle;
   `./mill groupCheck.validate` enforces this. A new library additionally needs an
-  `allLibraries` entry.
+  `allLibraries` entry. Since #1744 the bundle is the unit of publication and each bundle
+  derives its POM dependencies from its closure, so a component in no bundle is not published
+  at all, and a component in two is packaged twice; `groupCheck.excluded` no longer lists
+  interface modules, holding only the three standalone compiler plugins. Prefer the bundle
+  that already owns the component's siblings (all `anticipation.*` are in `base`), and check
+  that a new cross-bundle edge is one the graph already has.
 - When a definition moves between components, its line in the old `soundness_*.scala` export
   file must be deleted **in the same commit** — duplicate toplevel exports resolve silently
   by classpath order.
@@ -109,7 +113,7 @@ noted.
   :64 (which routes through `Url`'s `abstractable = _.show`). Add a rendering test proving
   identical output, delete :67, and swap honeycomb.core's dep from urticose.url to
   anticipation.url.
-- **anticipation.check**: a new anticipation submodule (in `groupCheck.excluded` with its
+- **anticipation.check**: a new anticipation submodule (in the `base` bundle with its
   siblings) holding probably's `Checkable` typeclass; probably.core re-exports it, and
   quantitative.core swaps its probably.core dep for anticipation.check (the macro sites are
   quantitative.internal.scala:208 and protointernal.scala:790). This frees ~40 modules —
@@ -271,7 +275,7 @@ expansion-time environment: macroClassloader, currentOutputDirectory, definedInC
 innerClasspath, the TypeShape transport, `summonViaStaging` and the cache — ~250–300 lines
 per engine, and prescience.internal.scala already holds the proto-version they all copied.
 
-A new `prescience.staged` (in `groupCheck.excluded` like its siblings) provides that kernel
+A new `prescience.staged` (bundled alongside its siblings) provides that kernel
 once, parameterised by the format trait's `Class` (`TypeRepr.typeConstructorOf` instead of a
 static `TypeRepr.of`). The format-specific generators, `fieldSeam` inline methods,
 `Inlinable` traits and the six `XxxReader` classes **stay in their format packages**: the
