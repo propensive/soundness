@@ -23,29 +23,40 @@ Soundness is composed of over one hundred modules. Each module has its own
 unique name and purpose, and may be used alone (with its dependencies) or in
 combination with other modules in the ecosystem. Most modules have a `core`
 component, but many have additional components for optional functionality.
-Bundles of modules for the six domains above are also provided.
+Modules are distributed in bundles, one for each of the domains above.
 
 ### Binary dependencies
 
-Releases are published on Maven Central, and can be specified as follows:
+Releases are published on Maven Central as bundles, each of which packages the
+modules for one domain, and can be specified as follows:
 
  - To include a bundle of modules, use
-   `dev.soundness:soundness-<bundle>:<version>` where _`<bundle>`_ is `cli`,
-   `data`, `sci`, `test`, `tool` or `web`, for example,
-   `dev.soundness:soundness-sci:0.48.0`.
-   
- - To include one specific module, use
-   `dev.soundness:<module>-<component>:<version>`, where _`<module>`_ is one of
-   the modules from the
-   [lib](https://github.com/propensive/soundness/tree/main/lib) directory, and
-   _`<component>`_ is typically `core`, but may be something else for modules
-   with optional components, for example `dev.soundness:rudiments-core:0.48.0`
-   or `dev.soundness:punctuation-html:0.48.0`.
-   
- - To include _everything in Soundness_, use
-   `dev.soundness:soundness-all:<version>`.
+   `dev.propensive:soundness-<bundle>:<version>` where _`<bundle>`_ is one of:
+   - `base`, the core abstractions every other bundle builds on
+   - `cli`, `data`, `sci`, `test`, `tool` or `web`, for the domains above
+   - `wasi`, the WASI backends for the platform-abstraction modules
+   - `staged`, the expansion-time variants of the data-format modules
+   - `android`, the Android dexing and packaging stages
 
-Version numbers are synchronized across all modules, and the latest release
+   for example, `dev.propensive:soundness-sci:0.65.0`. A bundle depends on the
+   other bundles it needs, so `soundness-sci` brings in `soundness-base`
+   automatically.
+
+ - To include _everything in Soundness_, use
+   `dev.propensive:soundness:<version>`. This covers every bundle except the two
+   opt-in ones, `staged` and `android`, whose dependencies (the staging compiler
+   and R8) are heavyweight enough that they should only ever be asked for by
+   name.
+
+ - The compiler plugins are published separately, since they are used with
+   `-Xplugin:` rather than on the classpath: `dev.propensive:larceny-plugin`,
+   `dev.propensive:umbrageous-plugin` and `dev.propensive:beneficence-plugin`.
+
+Individual modules do not have coordinates of their own: Maven Central limits
+how many files a single deployment may contain, and Soundness has too many
+modules to publish each one separately.
+
+Version numbers are synchronized across all bundles, and the latest release
 version is shown at the top of this page. Binary compatibility is not guaranteed
 between modules with different version numbers.
 

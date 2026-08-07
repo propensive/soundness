@@ -1,8 +1,7 @@
-Wisteria 0.23.0 is available as a binary for Scala 3.5.0 and later, from [Maven
-Central](https://central.sonatype.com). To include it in an `sbt` build, use
-the coordinates:
+Wisteria is published on [Maven Central](https://central.sonatype.com) as part of the
+`soundness-base` bundle. To include it in an `sbt` build, use the coordinates:
 ```scala
-libraryDependencies += "dev.soundness" % "wisteria-core" % "0.23.0"
+libraryDependencies += "dev.propensive" % "soundness-base" % "<version>"
 ```
 
 

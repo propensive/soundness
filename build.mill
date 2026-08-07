@@ -361,13 +361,21 @@ trait Toolchain extends ScalaModule:
   override def scalaCompilerBridge: T[Option[PathRef]] = Task:
     Some(PathRef(toolchain.distribution().path / "scala3-sbt-bridge.jar"))
 
+// The beneficence plugin writes `META-INF/givens/<typeclass>` and `META-INF/services/probably.Suite`
+// into every module that contributes an entry to them, so both are per-module *fragments* of a
+// build-wide index: whenever modules are merged into a single jar — an assembly, or a published
+// bundle artifact — the fragments must be concatenated rather than resolved last-one-wins. Every
+// fragment ends with a newline, so the empty separator is correct.
+val mergeRules: Seq[mill.javalib.Assembly.Rule] =
+  Seq(mill.javalib.Assembly.Rule.AppendPattern("META-INF/givens/.*"),
+      mill.javalib.Assembly.Rule.AppendPattern("META-INF/services/.*"))
+
 trait BaseScalaModule extends Toolchain:
   override def scalaVersion = settings.scalaVersion
   override def scalacOptions = settings.scalaOptions
   def consoleScalacOptions = scalacOptions()
 
-  override def assemblyRules =
-    super.assemblyRules :+ mill.javalib.Assembly.Rule.AppendPattern("META-INF/givens/.*")
+  override def assemblyRules = super.assemblyRules ++ mergeRules
 
   // A `Task.Input` (not a cached `Task`), because the published version is external state Mill
   // can't see: a plain cached target reads `git` once and persists the string in `out/`, so a
@@ -393,8 +401,8 @@ trait BaseScalaModule extends Toolchain:
 
   def artifactSuffix = Task("")
   def pomSettings = Task(PomSettings(
-    description = "soundness-all",
-    organization = "dev.soundness",
+    description = "Soundness",
+    organization = "dev.propensive",
     url = "https://soundness.dev/",
     licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("propensive", "soundness"),
@@ -554,7 +562,154 @@ trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
-trait Bundle(dependencies: PublishModule*) extends BaseScalaModule, PublishModule:
+// ------------------------ BUNDLES ------------------------
+
+// Maven Central caps the number of files, the total size and the frequency of deployments, and
+// publishing every component across three platforms (~480 artifacts, ~10 000 files once poms,
+// sources, javadoc, signatures and checksums are counted) is far over those caps. The BUNDLE is
+// therefore the unit of publication: each bundle packages the classfiles and resources of the
+// components listed in it into a single fat jar, and its POM depends on the other bundles that own
+// the rest of its dependency closure. Components remain ordinary `PublishModule`s in the build —
+// `mill rudiments.core.publishLocal` still works for debugging — but the release selector,
+// `publishableModules`, names only the bundles, the standalone compiler plugins, and the universal
+// `soundness` artifact.
+//
+// Two invariants make this sound, both enforced by `groupCheck.validate`:
+//
+//   1. every published component belongs to exactly ONE bundle. In none, and its classfiles ship
+//      nowhere; in two, and a user who has both bundles has the classes twice on the classpath.
+//   2. a bundle's POM dependencies are DERIVED from the module graph (`bundleDeps` below), never
+//      declared, so the published closure cannot drift away from what is packaged.
+//
+// The compiler plugins are the one exception to bundles-only: a `-Xplugin:` jar must declare
+// exactly one plugin, so `beneficence.plugin`, `larceny.plugin` and `umbrageous.plugin` remain
+// standalone artifacts and are excluded from every bundle's contents.
+type Bundled = BaseScalaModule & PlatformCross & PublishModule
+
+// The published-artifact half of a bundle, shared by the JVM bundle and by its `js` and `native`
+// crosses: `parts` are the modules whose output it packages, `bundleDeps` the other published
+// artifacts covering the rest of the closure.
+trait BundleArtifact extends JavaModule, PublishModule:
+  def parts: Seq[JavaModule]
+  def bundleDeps: Seq[PublishModule]
+
+  // One jar out of many modules' `localClasspath` — their own classfiles and resources, not the
+  // resolved third-party classpath, which stays in the POM. `Assembly.create` rather than
+  // `Jvm.createJar` for the sake of `mergeRules`: without them one module's `META-INF/givens`
+  // index fragment would silently displace every other module's.
+  override def jar: T[PathRef] = Task:
+    val inputs = Task.traverse(parts)(_.localClasspath)().flatten.map(_.path).filter(os.exists)
+
+    mill.javalib.Assembly.create
+     (Task.dest / "out.jar",
+      inputs,
+      manifest(),
+      assemblyRules = mill.javalib.Assembly.defaultRules ++ mergeRules)
+    . pathRef
+
+  // The sources of everything in the jar, so a user's IDE can still navigate into the library.
+  override def sourceJar: T[PathRef] = Task:
+    val sources = Task.traverse(parts)(_.allSources)().flatten
+    val resources = Task.traverse(parts)(_.resources)().flatten
+    val paths = (sources ++ resources).map(_.path).filter(os.exists)
+
+    PathRef(mill.util.Jvm.createJar(Task.dest / "out.jar", paths, manifest()))
+
+  // Mill's default would name every packaged component as a POM dependency, which is exactly what
+  // is no longer published; the third-party dependencies are handled as mill handles them.
+  override def publishXmlDeps: Task[Seq[mill.javalib.publish.Dependency]] = Task.Anon:
+    val resolve = resolvePublishDependency()
+    val compile = Task.traverse(parts)(_.allMvnDeps)().flatten.distinct.map(resolve)
+
+    val provided = Task.traverse(parts)(_.compileMvnDeps)().flatten.distinct.map(resolve)
+      . filterNot(compile.contains)
+
+    val bundles = Task.sequence(bundleDeps.map(_.artifactMetadata))()
+
+    compile ++ provided.map(_.copy(scope = Scope.Provided))
+      ++ bundles.map(mill.javalib.publish.Dependency(_, Scope.Compile))
+
+  // `publishLocal` writes an `ivy.xml` whose dependencies come from `publishMvnDeps`, not from
+  // `publishXmlDeps` above, so the substitution has to be made a second time here: otherwise a
+  // locally-published bundle resolves (through coursier's `ivy2Local`) to component coordinates
+  // that no longer exist anywhere.
+  override def publishMvnDeps: Task[(Map[coursier.core.Module, String],
+                                     coursier.core.DependencyManagement.Map)
+                                    => Seq[mill.javalib.publish.Dependency]] =
+    Task.Anon:
+      val dependencies = publishXmlDeps()
+
+      (_: Map[coursier.core.Module, String], _: coursier.core.DependencyManagement.Map)
+        => dependencies
+
+trait Bundle(components: Bundled*) extends BaseScalaModule, SonatypeCentralPublishModule,
+    BundleArtifact:
+  bundle =>
+  def summary: String
+  // An opt-in bundle is published but left out of the universal `soundness` artifact, so that its
+  // heavyweight dependencies are only ever pulled in by naming it explicitly.
+  def optIn: Boolean = false
+  def contents: Seq[Bundled] = components
+  def parts: Seq[JavaModule] = components
+  def sources = Task.Sources()
+  def moduleDeps = components
+  def bundleDeps: Seq[PublishModule] = bundleClosure(components).filterNot(_ == bundle)
+  override def pomSettings = Task(super.pomSettings().copy(description = summary))
+
+  // The Scala.js and Scala Native crosses of the bundle: the same construction one platform down,
+  // over the platform-capable subset of the contents (a capable component's whole closure is
+  // capable, so the subset is closed). A bundle with no capable component publishes no cross:
+  // `publishableModules` names a cross only when its contents are non-empty.
+  def jsContents: Seq[ScalaJSModule & PublishModule] = jsDeps(components)
+  def nativeContents: Seq[ScalaModule & PublishModule] = nativeDeps(components)
+
+  object js extends ScalaJSModule, Toolchain, SonatypeCentralPublishModule, BundleArtifact:
+    def scalaVersion = settings.scalaVersion
+    def scalaJSVersion = settings.scalaJsVersion
+    def scalacOptions = settings.scalaOptions
+    def sources = Task.Sources()
+    override def moduleDeps = bundle.jsContents
+    def parts: Seq[JavaModule] = bundle.jsContents
+    // `.filter(_.jsContents.nonEmpty)`: `jsDeps` silently skips a dependency that is not itself
+    // JS-capable, so a bundle's JS closure can name a bundle with no JS cross of its own, and that
+    // cross is never published.
+    def bundleDeps: Seq[PublishModule] =
+      bundleClosure(components.filter(_.scalaJs)).filterNot(_ == bundle)
+        . filter(_.jsContents.nonEmpty).map(_.js)
+
+    // Published as `<bundle>_sjs1_3`, with the coordinate base, version, POM and empty docJar
+    // shared with the JVM bundle — exactly as a component's `js` cross shares its JVM module's.
+    override def artifactName = bundle.artifactName()
+    def publishVersion = Task(bundle.publishVersion())
+    def pomSettings = Task(bundle.pomSettings())
+    override def docJar = Task(bundle.docJar())
+
+  object native extends ScalaModule, Toolchain, SonatypeCentralPublishModule, BundleArtifact:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = Task:
+      settings.scalaOptions :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
+
+    def sources = Task.Sources()
+    override def moduleDeps = bundle.nativeContents
+    def parts: Seq[JavaModule] = bundle.nativeContents
+    def bundleDeps: Seq[PublishModule] =
+      bundleClosure(components.filter(_.scalaNative)).filterNot(_ == bundle)
+        . filter(_.nativeContents.nonEmpty).map(_.native)
+
+    // As for a component's `native` cross: a plain `ScalaModule` would be given a JVM-style `_3`
+    // and masquerade as the JVM coordinate, so force the Scala Native platform suffix.
+    override def platformSuffix =
+      Task(s"_native${settings.scalaNativeVersion.split('.').take(2).mkString(".")}")
+
+    override def artifactName = bundle.artifactName()
+    def publishVersion = Task(bundle.publishVersion())
+    def pomSettings = Task(bundle.pomSettings())
+    override def docJar = Task(bundle.docJar())
+
+// A compile-time aggregate of other modules: no sources, no artifact. Used for the platform and
+// whole-build roots (`soundness.jvm`, `soundness.all`) that exist so that one `mill` invocation
+// compiles everything.
+trait Aggregate(dependencies: JavaModule*) extends BaseScalaModule:
   def sources = Task.Sources()
   def moduleDeps = dependencies
 
@@ -563,6 +718,11 @@ object soundness extends Toolchain:
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq()
 
+  // `base` also holds the layers every other bundle's closure reaches but which are not libraries
+  // in their own right: the `anticipation.*` interface components, `proscenium` (the prelude) and
+  // `beneficence` (the givens-index plugin's runtime half). They used to be listed in
+  // `groupCheck.excluded` and be published under coordinates of their own; now that a bundle's
+  // contents are what gets packaged, they have to be in one.
   object base extends Bundle(ambience.core, aperture.core, aviation.core, contextual.core,
     contingency.core, denominative.core, digression.core, diuretic.core, fulminate.core,
     hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
@@ -572,13 +732,20 @@ object soundness extends Toolchain:
     pneumatic.core, pneumatic.flate,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
-    prophesy.core, anticipation.color, anticipation.generic)
+    prophesy.core, murmuration.core, beneficence.core, proscenium.core, prescience.core,
+    prescience.leaves,
+    anticipation.codec, anticipation.color, anticipation.generic, anticipation.gfx,
+    anticipation.html, anticipation.http, anticipation.log, anticipation.opaque,
+    anticipation.path, anticipation.print, anticipation.text, anticipation.time,
+    anticipation.url):
+    def summary = "Core Soundness abstractions: text, collections, effects and interfaces"
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
     eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, imperial.core, profanity.core,
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager,
-    ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core)
+    ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core):
+    def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
     facsimile.core, gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
@@ -587,47 +754,66 @@ object soundness extends Toolchain:
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
     enigmatic.x509,
     stratiform.binary, stratiform.records, bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
-    embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256)
+    embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256):
+    def summary = "Data formats, serialization, cryptography and persistence"
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
     charisma.core, geodesy.angle, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
-    quantitative.core, quantitative.units)
+    quantitative.core, quantitative.units):
+    def summary = "Numeric and scientific computing: units, matrices, geometry and precision"
 
-  object test extends Bundle(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
+  object test extends Bundle(capricious.core, sedentary.core, tarantula.core,
     superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core,
-    probably.coverage)
+    probably.coverage):
+    def summary = "Testing: suites, assertions, coverage, generators and browser automation"
 
   object tool extends Bundle(anthology.core, degustation.core,
     degustation.lira, mandible.lira, xenophile.lira, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, reliquary.core, reliquary.derive, revolution.core,
-    umbrageous.plugin,
     anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
     anthology.lira,
     anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`,
-    delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks)
+    delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks):
+    def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
-    legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
+    legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http,
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
     xenophile.wit, xenophile.cffi, xenophile.scalanative, xenophile.kotlin, telekinesis.core,
-    graffiti.core)
+    graffiti.core):
+    def summary = "The web: HTTP, HTML, CSS, JSON APIs, and JavaScript/WebAssembly interop"
 
-  // The three platform aggregates. `jvm` is every JVM module (the group bundles); `wasi` is the
-  // WASI backends (compiled here as ordinary JVM, which typechecks their deferred `invoke`
-  // navigation — the guard that catches breakage like a streaming-kernel change); `js` is the
-  // Scala.js cross-build of every JS-capable component (including the `.wasi` modules' `.js`
-  // outputs). `all` spans the two JVM-classpath aggregates; the Scala.js surface is a distinct
-  // platform and is built through `js` alongside it (both are compiled by CI).
-  object jvm extends Bundle(base, cli, data, sci, test, tool, web)
+  // The two opt-in bundles. Their contents used to sit in `groupCheck.excluded`, deliberately kept
+  // out of every bundle so nobody inherits their heavyweight dependencies: `staged` pulls
+  // in the staging compiler, `android` pulls in R8. Bundles-only publishing means they must be
+  // packaged somewhere, so they get a bundle each rather than joining a general-purpose one — the
+  // opt-in is now "don't depend on this artifact" instead of "don't depend on this component".
+  object staged extends Bundle(breviloquence.staged, jacinta.staged, locomotion.staged,
+    stratiform.staged, stratiform.binaryStaged, xylophone.staged):
+    override def optIn = true
+    def summary = "Expansion-time (staging compiler) variants of the data-format modules"
+
+  object android extends Bundle(anthology.dex, anthology.apk):
+    override def optIn = true
+    def summary = "Android link stages: dexing and APK packaging, via R8"
 
   object wasi extends Bundle(ambience.wasi, aviation.wasi, capricious.wasi, coaxial.wasi,
-    galilei.wasi, telekinesis.wasi, turbulence.wasi)
+    galilei.wasi, telekinesis.wasi, turbulence.wasi):
+    def summary = "WASI backends for the platform-abstraction modules"
+
+  // The platform aggregates. `jvm` is every JVM bundle; `js` is the Scala.js cross-build of every
+  // JS-capable component (including the `.wasi` modules' `.js` outputs); `native` its Scala Native
+  // counterpart. `all` spans the two JVM-classpath aggregates plus the standalone plugins, so that
+  // one `mill soundness.all` compiles everything that gets published. The Scala.js and Native
+  // surfaces are distinct platforms, built through `js`/`native` alongside it (CI compiles all
+  // three).
+  object jvm extends Aggregate(base, cli, data, sci, test, tool, web, staged, android)
 
   object js extends ScalaJSModule, Toolchain:
     def scalaVersion = settings.scalaVersion
@@ -641,7 +827,41 @@ object soundness extends Toolchain:
     def scalaVersion = settings.scalaVersion
     override def moduleDeps = nativeComponents
 
-  object all extends Bundle(jvm, wasi)
+  object all extends Aggregate(jvm, wasi, beneficence.plugin, larceny.plugin, umbrageous.plugin)
+
+  // The universal artifact, `dev.propensive:soundness`: a POM-only aggregate of every bundle, for
+  // users who want the lot. It carries no classfiles of its own — its jar would be a second copy of
+  // every bundle — so it is published with `pom` packaging, which also exempts it from Central's
+  // sources/javadoc requirement. It cannot simply be `all` with a `PublishModule` mixed in, because
+  // mill requires a `PublishModule`'s `moduleDeps` to be publishable and the compile-everything
+  // aggregates are not; hence a module of its own, with the bundles named as POM dependencies. The
+  // compiler plugins are deliberately not among them: they link against the compiler and belong on
+  // a `-Xplugin:` line, not on a user's compile classpath. Neither are the opt-in bundles: `staged`
+  // would put the staging compiler on every user's classpath, and `android` would make R8 — which
+  // is served by Google's repository, not Central — a dependency of "all of Soundness".
+  object universal extends BaseScalaModule, SonatypeCentralPublishModule:
+    def sources = Task.Sources()
+    def moduleDeps = Seq()
+    override def artifactName = Task("soundness")
+    override def pomPackagingType: String = PackagingType.Pom
+
+    override def pomSettings =
+      Task(super.pomSettings().copy(description = "The complete Soundness library"))
+
+    override def publishXmlDeps: Task[Seq[mill.javalib.publish.Dependency]] = Task.Anon:
+      Task.sequence(leafBundles.filterNot(_.optIn).map(_.artifactMetadata))()
+        . map(mill.javalib.publish.Dependency(_, Scope.Compile))
+
+    // As for a bundle: `publishLocal`'s `ivy.xml` takes its dependencies from here rather than from
+    // `publishXmlDeps`, and without this it would name none at all.
+    override def publishMvnDeps: Task[(Map[coursier.core.Module, String],
+                                       coursier.core.DependencyManagement.Map)
+                                      => Seq[mill.javalib.publish.Dependency]] =
+      Task.Anon:
+        val dependencies = publishXmlDeps()
+
+        (_: Map[coursier.core.Module, String], _: coursier.core.DependencyManagement.Map)
+          => dependencies
 
 object test extends Toolchain:
   def scalaVersion = settings.scalaVersion
@@ -707,34 +927,13 @@ object keywords extends BaseScalaModule:
 object groupCheck extends Module:
   // Library directories on disk that are deliberately not wired into the build
   // (work-in-progress modules with no compiling sources yet).
-  def disabledLibraries: Set[String] = Set("murmuration")
+  def disabledLibraries: Set[String] = Set()
 
-  // Published `Component`s deliberately not included in any soundness.{base,cli,data,sci,
-  // test,tool,web} group bundle: the compiler plugins (published but used via `-Xplugin`),
-  // and the `anticipation.*` interface components plus `proscenium.core`, which reach
-  // `soundness-all` transitively as dependencies of bundled modules. Non-published modules
-  // (demos, examples) use the `Internal` trait instead and
-  // are not subject to this check.
-  //
-  // Also excluded: the `.staged` expansion-time (staging-compiler) variants and the
-  // `prescience.*` compile-time-evaluation modules. These are deliberately split out of their
-  // `core`s so users don't inherit the compiler/staging jars unless they opt in, so they stay
-  // out of `soundness-all` rather than joining a group bundle. (`prescience.leaves` is a shim
-  // that only orders compilation.)
-  def excluded: Set[String] = Set(
-    "anticipation.codec", "anticipation.color", "anticipation.generic", "anticipation.gfx",
-    "anticipation.html", "anticipation.http", "anticipation.log", "anticipation.opaque",
-    "anticipation.path", "anticipation.print", "anticipation.text", "anticipation.time",
-    "anticipation.url",
-    "beneficence.core", "beneficence.plugin",
-    "proscenium.core",
-    "breviloquence.staged", "jacinta.staged", "locomotion.staged", "stratiform.staged",
-    "stratiform.binaryStaged", "xylophone.staged",
-    "prescience.core", "prescience.leaves",
-    // The Android link stages: published, but their R8 toolchain dependency is heavyweight and
-    // strictly opt-in, so they stay out of `soundness-all` rather than joining a group bundle.
-    "anthology.apk", "anthology.dex"
-  )
+  // Published `Component`s deliberately not packaged in any bundle: the three compiler plugins,
+  // which are published standalone because a `-Xplugin:` jar must declare exactly one plugin.
+  // Non-published modules (demos, examples) use the `Internal` trait instead and are not subject
+  // to this check.
+  def excluded: Set[String] = standalonePlugins.map(_.moduleSegments.render).toSet
 
   def validate(): Command[Unit] = Task.Command:
     val onDisk = os.list(mill.api.BuildCtx.workspaceRoot / "lib").iterator
@@ -745,12 +944,17 @@ object groupCheck extends Module:
     val declaredComponents = allLibraries.flatMap(_.moduleDirectChildren).collect:
       case c: (Component | BareComponent) => c.moduleSegments.render
     .toSet
-    val groupBundles = Seq(soundness.base, soundness.cli, soundness.data,
-                           soundness.sci, soundness.test, soundness.tool, soundness.web,
-                           soundness.wasi)
-    val coveredComponents = groupBundles.flatMap(_.moduleDeps.map(_.moduleSegments.render)).toSet
+    val bundled = leafBundles.flatMap(_.contents.map(_.moduleSegments.render))
+    val coveredComponents = bundled.toSet
 
     val problems = scala.collection.mutable.Buffer.empty[String]
+
+    // Bundles are what gets published, so a component in two bundles is packaged twice: a user who
+    // has both artifacts has every one of its classes on the classpath twice.
+    val duplicated = bundled.groupBy(identity).collect { case (name, uses) if uses.size > 1 => name }
+    if duplicated.nonEmpty then
+      problems += "Components packaged in more than one bundle (each belongs to exactly "
+        + "one):\n  " + duplicated.toSeq.sorted.mkString("\n  ")
 
     val newOnDisk = onDisk -- declaredLibraries -- disabledLibraries
     if newOnDisk.nonEmpty then
@@ -763,20 +967,33 @@ object groupCheck extends Module:
       problems += "`allLibraries` references libraries with no `lib/<name>/src` "
         + "directory:\n  " + orphanLibs.toSeq.sorted.mkString("\n  ")
 
+    // Bundles are the published unit, so a component in no bundle is a component whose classfiles
+    // ship nowhere at all — it would simply vanish from Maven Central.
     val unbundled = declaredComponents -- coveredComponents -- excluded
     if unbundled.nonEmpty then
-      problems += "Components not in any soundness.* group bundle and not in "
-        + "`groupCheck.excluded` (a new module needs to join a group bundle, or "
-        + "be explicitly excluded):\n  " + unbundled.toSeq.sorted.mkString("\n  ")
+      problems += "Components packaged in no bundle, so they would not be published at all "
+        + "(add each to a soundness.* bundle, or to `groupCheck.excluded` if it is published "
+        + "standalone):\n  " + unbundled.toSeq.sorted.mkString("\n  ")
 
     val unknownInBundles = coveredComponents -- declaredComponents
     if unknownInBundles.nonEmpty then
-      problems += "Group bundles reference components that aren't declared in any "
+      problems += "Bundles reference components that aren't declared in any "
         + "Library:\n  " + unknownInBundles.toSeq.sorted.mkString("\n  ")
+
+    // Each bundle's POM dependencies are derived from its closure, so a component reached from
+    // outside its own bundle must be owned by a bundle: `bundleClosure` throws otherwise. Force
+    // every bundle's dependencies here (including the platform crosses) so the release finds out
+    // now rather than half way through publishing.
+    leafBundles.foreach: bundle =>
+      try bundle.bundleDeps ++ bundle.js.bundleDeps ++ bundle.native.bundleDeps
+      catch case error: Exception => problems += error.getMessage.nn
 
     if problems.nonEmpty then Result.Failure(problems.mkString("\n\n"))
     else
-      Task.log.info(s"groupCheck: ${declaredLibraries.size} libraries, ${declaredComponents.size} components, ${coveredComponents.size} in group bundles. OK.")
+      Task.log.info(s"groupCheck: ${declaredLibraries.size} libraries, "
+        + s"${declaredComponents.size} components, ${coveredComponents.size} packaged in "
+        + s"${leafBundles.size} bundles, ${excluded.size} published standalone. OK.")
+
       Result.Success(())
 
 // ------------------------ WEBSITE ------------------------
@@ -2829,7 +3046,7 @@ val allLibraries: Seq[Library] = Seq(
   honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
   monotonous,
-  mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
+  mosquito, murmuration, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
   perihelion, phoenicia, plutocrat, pneumatic, polaris, polysyllabic, polyvinyl, prepositional,
   prescience,
   probably, profanity, prophesy,
@@ -2856,18 +3073,60 @@ val nativeComponents: Seq[ScalaModule] =
     case component: Component if component.scalaNative     => component.native
     case component: BareComponent if component.scalaNative => component.native
 
-// The platform crosses that must NOT be published: the `.js` cross of a `scalaJs = false` module
-// and the `.native` cross of a `scalaNative = false` module are dormant — never compiled by the
-// `soundness.js`/`soundness.native` aggregates and unable to cross-compile (e.g. a compiler plugin
-// under Scala.js). `release.sh` subtracts these from `__.publishArtifacts`, since mill has no
-// per-module publish skip. Path matching can't identify them (the `xenophile.js`/`.native`
-// *components* are not crosses), so they are derived here from the capability flags.
-def dormantCrosses: T[Seq[String]] = Task:
-  allLibraries.flatMap(_.moduleDirectChildren).flatMap:
-    case component: PlatformCross =>
-      val base = component.moduleSegments.render
-      Option.when(!component.scalaJs)(s"$base.js") ++ Option.when(!component.scalaNative)(s"$base.native")
-    case _ => Nil
+// ------------------------ PUBLISHING ------------------------
+
+// The bundles that package components. `soundness.universal` is not one of them: it packages
+// nothing and is published as a POM-only aggregate of these.
+val leafBundles: Seq[Bundle] = Seq(soundness.base, soundness.cli, soundness.data, soundness.sci,
+  soundness.test, soundness.tool, soundness.web, soundness.staged, soundness.android,
+  soundness.wasi)
+
+// The compiler plugins: published standalone, because a `-Xplugin:` jar must declare exactly one
+// plugin and so cannot be merged into a fat bundle jar. They are the only published components.
+val standalonePlugins: Seq[Bundled] = Seq(beneficence.plugin, larceny.plugin, umbrageous.plugin)
+
+// Which bundle packages which component. This map is the whole of the bundles-only scheme: a
+// component's classfiles ship in `bundleOwner(component)`'s jar, and any bundle whose closure
+// reaches that component from outside gets a POM dependency on that bundle instead.
+lazy val bundleOwner: Map[String, Bundle] =
+  leafBundles.flatMap { bundle => bundle.contents.map(_.moduleSegments.render -> bundle) }.toMap
+
+// The transitive `moduleDeps` closure of some modules, deduplicated, in a deterministic order.
+def moduleClosure(roots: Seq[JavaModule]): Seq[JavaModule] =
+  @annotation.tailrec
+  def recur(pending: List[JavaModule], seen: Seq[JavaModule]): Seq[JavaModule] = pending match
+    case Nil          => seen
+    case head :: tail =>
+      if seen.contains(head) then recur(tail, seen)
+      else recur(head.moduleDeps.toList ++ tail, seen :+ head)
+
+  recur(roots.toList, Nil)
+
+// The bundles owning everything `roots` transitively depend upon: the derived POM dependencies of
+// a bundle artifact, including the bundle the roots themselves belong to (callers drop that).
+// Sorted, so the generated POM is stable. A component in no bundle would mean classfiles that ship
+// nowhere, so it fails the build here; `groupCheck.validate` reports the full list up front.
+def bundleClosure(roots: Seq[Bundled]): Seq[Bundle] =
+  moduleClosure(roots).map(_.moduleSegments.render).distinct.map: component =>
+    bundleOwner.getOrElse(component, throw Exception(s"build: `$component` belongs to no bundle, "
+        + "so its classfiles would not be published anywhere; add it to one (`groupCheck.validate` "
+        + "checks this)"))
+  . distinct.sortBy(_.moduleSegments.render)
+
+// The release selector: exactly the modules `etc/ci/release.sh` publishes. The bundles (with the
+// `js`/`native` cross of each bundle that has platform-capable contents — a bundle with none, like
+// `tool`, would otherwise publish an empty cross), the standalone compiler plugins, and the
+// universal `soundness` artifact. NOT the ~230 components: their classfiles ship inside the
+// bundles, and their coordinates no longer exist on Maven Central.
+def publishableModules: T[Seq[String]] = Task:
+  val bundles = leafBundles.flatMap: bundle =>
+    val path = bundle.moduleSegments.render
+
+    Seq(path) ++ Option.when(bundle.jsContents.nonEmpty)(s"$path.js")
+      ++ Option.when(bundle.nativeContents.nonEmpty)(s"$path.native")
+
+  (bundles ++ standalonePlugins.map(_.moduleSegments.render)
+    :+ soundness.universal.moduleSegments.render).sorted
 
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
 // the JS-capable modules, so the linker reports any reachable reference to a
