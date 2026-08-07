@@ -28,7 +28,6 @@ coaxial: socket tcp udp networking domain-socket bindable connection
 contextual: string-interpolation interpolator typesafe-interpolation custom-interpolators
 contingency: error-handling exceptions tactics recovery validation effects
 cosmopolite: i18n internationalization locale language polyglot l10n
-decorum: compiler-plugin code-style linting static-analysis
 delicious: semantic-diagnostics compiler-errors explanations diagnostics
 dendrology: tree-diagram dag-diagram ascii-tree visualization tree-rendering
 denominative: ordinal indexing zero-based one-based interval

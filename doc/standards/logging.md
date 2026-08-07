@@ -108,7 +108,7 @@ where the context exists, and still only when the event is actually logged.
 
 Each module that logs defines a single `enum` named `<Domain>Event` in its own
 file `<module>.<Event>.scala`, with the companion `object` before the `enum`
-(SN-398). Cases are CamelCase verb or noun phrases carrying the relevant values
+(L3). Cases are CamelCase verb or noun phrases carrying the relevant values
 as typed fields:
 
 ```scala
@@ -127,9 +127,9 @@ enum ExecEvent:
 ```
 
 The companion holds a `given communicable: <Event> is Communicable` that maps each
-case to an `m"..."` message, with the `=>` arrows aligned (syntax.md §5.1).
+case to an `m"..."` message, with the `=>` arrows aligned (Consequent Style `T1`).
 
-The event type must be exported into the `soundness` package (SN-742).
+The event type must be exported into the `soundness` package (L4).
 
 ### Composing with `ExecEvent`
 

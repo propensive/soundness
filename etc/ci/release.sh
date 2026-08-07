@@ -87,7 +87,7 @@ export SOUNDNESS_RELEASE_VERSION="$VERSION"
 # Guard: every published module must resolve to exactly $VERSION before anything leaves the machine.
 # Probes both compiler plugins (which shipped a stale 0.63.0 in the 0.64.0 bundle) plus a normal
 # module; the env var makes all modules resolve identically, so a representative few suffice.
-for module in beneficence.plugin decorum.plugin rudiments.core; do
+for module in beneficence.plugin larceny.plugin rudiments.core; do
   resolved=$(./mill show "$module.publishVersion" | tr -d '"')
   if [[ "$resolved" != "$VERSION" ]]; then
     echo "release: $module.publishVersion=$resolved, expected $VERSION; aborting" >&2

@@ -64,7 +64,6 @@ object Tests extends Suite(m"Soundness tests"):
     contingency.Tests()
     cordillera.Tests()
     //cosmopolite.Tests()
-    decorum.Tests()
     degustation.Tests()
     dendrology.Tests()
     denominative.Tests()
