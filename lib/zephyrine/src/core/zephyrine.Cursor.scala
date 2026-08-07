@@ -241,7 +241,9 @@ object Cursor:
 
   // Safe, allocation-free single-element peek. Returns `Datum.End` when the
   // cursor is finished; otherwise the current byte (unsigned, `0..255`) or
-  // char wrapped as a `Datum`. The `Datum` opaque type (backed by `Int`)
+  // char wrapped as a `Datum`. May block (via `finished` → refill) to fetch
+  // the operand being inspected — acceptable, since that operand must exist
+  // for any match — but never reads past it. The `Datum` opaque type (backed by `Int`)
   // is deliberately distinct from raw `Int` so that arithmetic or
   // `Byte`/`Char` confusion can't happen silently — comparison with the
   // expected literal is via the dedicated `Datum.==` overloads, which still
@@ -272,6 +274,12 @@ object Cursor:
   // target is `Char` for both variants so callers don't need `'X'.toByte`
   // on `Cursor[Data]`; for ASCII targets the `Datum`-vs-`Char` comparison
   // compiles to a single primitive `int == int`.
+  //
+  // The match consumes with `advance()`, not `next()`: `peek` has already
+  // confirmed the operand is present, and `next()`'s trailing `more` would
+  // force a blocking refill for the byte *after* the match — fatal when
+  // `expect` consumes the final delimiter of a message on a keep-alive
+  // stream whose peer sends nothing more until we reply (issue #1301).
   extension [cap^](cursor: Cursor[Data, cap])
     @targetName("expectByte")
     inline def expect[error <: Hazard](target: Char)
@@ -279,7 +287,7 @@ object Cursor:
       ( using Tactic[error] )
     :   Unit =
 
-      if cursor.peek == target then cursor.next() else raise(failure)
+      if cursor.peek == target then cursor.advance() else raise(failure)
 
   extension [cap^](cursor: Cursor[Text, cap])
     @targetName("expectChar")
@@ -288,7 +296,7 @@ object Cursor:
       ( using Tactic[error] )
     :   Unit =
 
-      if cursor.peek == target then cursor.next() else raise(failure)
+      if cursor.peek == target then cursor.advance() else raise(failure)
 
   // Run `action` inside a hold and always restore the cursor position to
   // where it was on entry, regardless of the result — i.e. a non-consuming
@@ -323,6 +331,18 @@ object Cursor:
     inline def buffer(using erased unsafe: Unsafe): scala.Array[Char] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Char]]
 
+// BLOCKING-LOOKAHEAD HAZARD (issue #1301): every operation that asks whether data exists —
+// `more`, `finished`, `peek`, and `next()` (whose trailing `more` runs after consuming) —
+// refills from the source once the buffer drains, and a refill BLOCKS until the source
+// yields data or EOF. On finite or EOF-terminated input that is always prompt and harmless.
+// But a parser that stops at a message boundary on a LIVE stream with no EOF between
+// messages (HTTP/1.1 keep-alive, any half-duplex request/response protocol) must never
+// look past the message's final operand: the peer sends nothing more until we reply, so
+// the refill deadlocks. Such parsers must consume the final delimiter with `peek` (or
+// `expect`) then `advance()` — which never refills — and bound reads with `available`,
+// `take`, or an explicit length. `expect` and `take` are internally safe; the exemplar
+// call site is telekinesis's `Http.Request.parseHead`.
+//
 // `cap^` is the capture set of the `load` thunk: `{}` for an in-memory cursor (the loader is a
 // no-op), or the capabilities a streaming loader draws from (e.g. a socket). Tracking it as an
 // explicit capture parameter — rather than letting capture checking infer a blanket self-capture —
@@ -502,6 +522,13 @@ extends caps.Mutable:
   // `Cursor.forward` rationale and keeps the inner loop one instruction
   // tighter — important for raw byte-scan parsers like Merino where the
   // hot loop is `while more && {peek-test} do advance()`.
+  //
+  // Deferring the refill also makes `advance()` the boundary-safety
+  // primitive: it is the only way to consume an operand *without* touching
+  // the source. A parser stopping at a message boundary on a live stream
+  // (see the hazard note on the class) must consume its final delimiter
+  // with `peek`-then-`advance()` — as `expect` and `take` do — never with
+  // `next()`.
   inline update def advance(): Unit =
     if lineationActive then
       val operand = addressable.storageAddress(buffer, pos)
@@ -546,7 +573,10 @@ extends caps.Mutable:
     columnNo = denominative.Ordinal.zerary(value)
 
   // `next()` is `advance(); more`, so it returns `true` while more data is
-  // available and `false` when the stream is exhausted.
+  // available and `false` when the stream is exhausted. The trailing `more`
+  // means it blocks on a refill once the buffer drains — so never use it to
+  // consume the last operand of a message on a live stream (see the hazard
+  // note on the class); consume with `peek`-then-`advance()` instead.
   inline update def next(): Boolean =
     advance()
     more
@@ -653,9 +683,15 @@ extends caps.Mutable:
 
   // ─── search primitives ────────────────────────────────────────────────────
 
+  // Entered via `more`, not unconditionally: the previous operation may have
+  // consumed the buffer's last operand with a deferred-refill `advance()`
+  // (directly, or via `expect`/`take`), leaving `pos` at `writeEnd` with the
+  // current operand not yet loaded. Reading `datum` before a refill would
+  // then see stale storage. Stopping on a match performs no further refill,
+  // so `seek` never reads past the operand it finds.
   inline update def seek(target: addressable.Operand): Boolean =
     var found = false
-    var continue = true
+    var continue = more
 
     while continue do
       found = datum(using Unsafe) == target

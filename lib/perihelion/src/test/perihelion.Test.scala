@@ -243,6 +243,31 @@ object Tests extends Suite(m"Perihelion tests"):
         capture[WebsocketError](parseFrame(frame(0x8, closeBytes(1004, "")))).reason
       . assert(_ == WebsocketError.Reason.BadClose)
 
+      // Simulates a live connection delivering a complete zero-payload
+      // unmasked control frame (a server's empty Pong: 0x8a 0x00) and then
+      // nothing until some later frame. Parsing must return the frame without
+      // pulling past its final byte — that pull would stall the completed
+      // frame behind the peer's next transmission (issue #1301).
+      test(m"An empty control frame parses without reading past its end"):
+        class Live() extends Iterator[Data]:
+          @scala.caps.unsafe.untrackedCaptures
+          var pulls: Int = 0
+          def hasNext: Boolean = true
+
+          def next(): Data =
+            pulls += 1
+            if pulls == 1 then Data(0x8a.toByte, 0x00.toByte) else Data(0x8a.toByte)
+
+        val live = Live()
+        val frame = Frame.parse(Cursor[Data](live))(using Masking.Client())
+
+        val isEmptyPong = frame match
+          case Frame.Pong(payload) => payload.length == 0
+          case _                   => false
+
+        (isEmptyPong, live.pulls)
+      . assert(_ == (true, 1))
+
     suite(m"Message reassembly"):
       test(m"A single text frame yields one message"):
         texts(readMessages(frame(0x1, octets("hello"))))

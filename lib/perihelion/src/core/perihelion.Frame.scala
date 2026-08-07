@@ -61,14 +61,19 @@ object Frame:
   // payload — or `Unset` at a clean end of stream. The byte-level counterpart of
   // `Frame.encode`. `Masking` fixes the direction: a server requires the frame to be
   // masked (a client's), a client requires it to be unmasked (a server's). Uses
-  // `peek`/`next`/`take` (not `lay`/`seek`), which don't reference the cursor's erased
-  // `Operand` type, so it works on a bare `Cursor[Data, ?]` parameter.
+  // `peek`/`advance`/`take` (not `lay`/`seek`), which don't reference the cursor's
+  // erased `Operand` type, so it works on a bare `Cursor[Data, ?]` parameter.
+  // Header bytes are consumed with `advance()` rather than `next()`: `next`'s
+  // trailing `more` forces a blocking refill, so for a zero-payload unmasked frame
+  // (an empty server→client Ping/Pong/Close, whose last byte is `byte1`) it would
+  // stall the completed frame until the peer happened to send another (issue #1301).
+  // Blocking is intended only at the head of a frame — the `finished` guard below.
   def parse(cursor: Cursor[Data, {}]^)(using masking: Masking)
     ( using Tactic[WebsocketError] )
   :   Optional[Frame] =
     if cursor.finished then Unset else
       val byte0 = cursor.peek.asInt
-      cursor.next()
+      cursor.advance()
       val fin = (byte0 & 0x80) != 0
 
       // RFC 6455 §5.2: RSV1/2/3 must be zero unless an extension negotiated them,
@@ -78,7 +83,7 @@ object Frame:
       val opcode = byte0 & 0x0f
 
       val byte1 = cursor.peek.asInt
-      cursor.next()
+      cursor.advance()
       val masked = (byte1 & 0x80) != 0
 
       // RFC 6455 §5.1: a server must reject an unmasked client frame; a client must
