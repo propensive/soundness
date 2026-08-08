@@ -465,7 +465,28 @@ Horizon: mid — after mod-4, so nothing moves twice.
 - **Remaining dedups**: the JSON string-escaping routine (jacinta.Json.scala:1247–1279,
   copied verbatim into ypsiloid) becomes a gossamer-level helper; a CSI tokenizer in
   escapade.csi replaces yossarian.Pty's and profanity.Keyboard's private escape-sequence
-  state machines (yossarian's tests are the gate); a `SecureEntropy` capability in
+  state machines (yossarian's tests are the gate);
+
+  **Both of these premises fail on inspection.**
+
+  The string escaper is *not* verbatim. jacinta names seven escapes (quote, backslash,
+  backspace, formfeed, newline, return, tab); ypsiloid names five, omitting backspace and
+  formfeed, which its `c < ' '` branch then emits as six-character unicode references instead --
+  valid YAML, different bytes. ypsiloid also wraps the whole routine in `if plainSafe(string)`,
+  because YAML may emit an unquoted plain scalar and JSON may not. What is genuinely shared is
+  about twelve lines of sliding-window loop and an `escape` helper; the differences are precisely
+  the parts that matter. Sharing it means parameterising over the escape table, in two hot
+  serialisers, for twelve lines. (Whether ypsiloid's omission is deliberate is worth asking.)
+
+  The CSI item is not a deduplication at all: `escapade.csi` is a *writer* -- `cuu`, `cud`, `sgr`
+  and friends generate sequences -- and contains no parser, so this means writing a tokenizer,
+  not moving one. The two consumers then differ in the ways that make a tokenizer hard to share:
+  yossarian parses a complete buffer with a pure state machine and *raises* `PtyEscapeError` on
+  malformed input, as a terminal emulator must; profanity reads a live TTY where the parse is
+  entangled with timing -- its `Lookahead` exists to decide whether a bare ESC is the Escape key
+  or the start of a sequence split across a packet boundary -- and it degrades to
+  `Keypress.Escape` rather than failing, because a user may type anything. A shared tokenizer
+  would have to abstract over both the input model and the error policy. a `SecureEntropy` capability in
   capricious replaces the direct `SecureRandom`/`UUID.randomUUID` uses in perihelion,
   enigmatic and inimitable (restoring wasi parity) — **needs a decision; see below**; telekinesis exports its byte-level
   header-block scanner for obligatory.ContentLength and scintillate (correction 3 applies).
