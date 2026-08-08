@@ -256,10 +256,34 @@ Horizon: near–mid
   The confined-indexing cluster (Scribe, Grouping, Lattice, Surveyor, Deindex, Segmentable,
   Populated, ~730 lines, all sitting directly on denominative — the shape that ypsiloid,
   stratiform, facsimile and escapade converged on) becomes a new library (placeholder name
-  **`concordance`** — rename at will) between denominative and rudiments. Mutex, Counter
+  **`concordance`**) between denominative and rudiments. Mutex, Counter
   and Loop (JVM concurrency) move to parasite; Exit to imperial or ambience;
   DecimalConverter to gossamer (rejoining Decimalizer, and cutting beneficence); Bijection
   to murmuration once correction 2 is decided.
+
+  The `concordance` extraction is **done**, with one decision worth keeping: its sources keep
+  `package rudiments`. Repackaging was tried first and abandoned — `Deindex`'s `apply`, `at`
+  and `prim` extensions are the tree's indexing vocabulary, so a new package forces an import
+  into nearly every file that indexes anything; the cascade reached sixty-odd components over
+  six rounds and was still spreading. Keeping the package made the split invisible: no source
+  file changed at all. `Bijection` went with the cluster rather than to murmuration, because
+  its only consumer is `Deindex.bijection` and it needs denominative, which murmuration lacks.
+
+  The **remaining re-homings are not worth doing as specified**, and the measurements say why:
+  none of them reduces any dependency closure, because none of the code involved depends on
+  anything that is not already universal. `Mutex`, `Counter` and `Loop` import only
+  `java.util.concurrent`; `Exit` (48 lines) imports nothing at all; `DecimalConverter` imports
+  only anticipation and beneficence. In particular the claim that moving `DecimalConverter`
+  cuts beneficence from rudiments is wrong: beneficence is on the compile classpath of *every*
+  one of rudiments' dependencies, `vacuous` and `denominative` included, so it stays regardless.
+  Against that nil benefit, the moves cost import sweeps of the consumers, which number 4 for
+  `DecimalConverter`, 9 for `Mutex`, 23 for `Exit` and 32 for `Loop`/`loop` (code uses, comments
+  excluded) — `loop` being control-flow vocabulary in the same way `apply` is indexing
+  vocabulary. They are worth doing only if the goal is rudiments' *description* rather than the
+  build graph, and then only by moving the module while keeping the package, as `concordance`
+  does. Note also that parasite.core already depends on rudiments.core, so anything moving into
+  parasite must leave rudiments with no reference to it (true today of Loop, whose only mention
+  in rudiments is the `loop` extension that defines it).
 - **gossamer.lexicon**: Dictionary.scala (434 lines) moves to a submodule; check overlap
   with nomenclature.lexicon first.
 
