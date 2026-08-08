@@ -228,6 +228,27 @@ Horizon: near–mid
   (Tel2.scala:107–137) become `stratiform.optics`, cutting panopticon; the schema layer
   (Tels.scala, Tels2.scala) becomes `stratiform.schema`, mirroring jacinta.schema's bundle
   placement.
+
+  **Status:** `stratiform.optics` is **done** — the three lens/optic givens were members of
+  `trait Tel2` (and so inherited into `Tel`'s implicit scope) and are now toplevel givens
+  `telLens`, `telOrdinalOptical` and `telEachOptical`, cutting panopticon from stratiform.core.
+  `Tel` is a plain class, not a `Product`, so panopticon's generic `deref` lens cannot silently
+  substitute for a missing import.
+
+  `stratiform.schema` is **blocked**: `Tel.scala` has 51 code references to `Tels` — `assign`,
+  `resolveType`, `keywordMap` and friends — so the schema layer is woven into the core AST and
+  cannot move above it. Unlike jacinta, whose core does not use its schema, stratiform's does.
+
+  `stratiform.editing` is **partly analysed and not attempted**. A useful finding: `Tel.scala`'s
+  `import aperture.*` is dead — the file references nothing from it — so the aperture edge rests
+  entirely on `TelHandle.scala` plus two `Openable` givens. Those two are the obstacle: `Tel`'s
+  `telOpenable` (Tel.scala:83) deliberately outranks `Tel2`'s `telViewOpenable` (Tel2.scala:100)
+  because a given in the object beats one inherited from the trait, and that is what makes a
+  writable source resolve to the write-back instance. Flattening both into toplevel givens in a
+  new component destroys the ordering and makes them ambiguous for a source that is both
+  `Readable` and `Writable`. Doing this leg means reconstructing the object-extends-trait
+  layering inside `stratiform.editing`, deliberately, with a test that pins which instance a
+  read-write source selects.
 - **turbulence.stdio** — the concrete answer to "turbulence needs a clearer purpose":
   *streams* and *the standard streams* are different modules. Verified: Stdio, Io, In, Out
   and Err never touch the streaming algebra (they import only java.io, anticipation.print,

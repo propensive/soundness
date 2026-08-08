@@ -791,7 +791,7 @@ object soundness extends Toolchain:
     caduceus.resend,
     orthodoxy.core,
     jacinta.http,
-    stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
+    stratiform.http, stratiform.optics, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
     xenophile.wit, xenophile.cffi, xenophile.scalanative, xenophile.kotlin, telekinesis.core,
@@ -2655,7 +2655,13 @@ object stenography extends Library:
       settings.sep(super.scalacOptions())
 
 object stratiform extends Library:
-  object core extends Component(zephyrine.core, turbulence.core, panopticon.core, gossamer.core, contingency.core, anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core, gigantism.core, fulminate.core, adversaria.core, aperture.core):
+  object core extends Component(zephyrine.core, turbulence.core, gossamer.core, contingency.core,
+      anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core,
+      gigantism.core, fulminate.core, adversaria.core, aperture.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The panopticon lens/optic instances for `Tel`, and stratiform's only use of panopticon.
+  object optics extends Component(core, panopticon.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object base256 extends Component(gossamer.core, contingency.core, fulminate.core, anticipation.codec, vacuous.core):
@@ -2697,7 +2703,7 @@ object stratiform extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, base256, binary, binaryStaged, records, staged, time, http,
+  object test extends Tests(core, base256, binary, binaryStaged, records, staged, optics, time, http,
       eucalyptus.core, galilei.jvm)
   object bench extends Benchmarks(core, base256, binary, binaryStaged, quantitative.units,
       hellenism.core, ambience.core)
