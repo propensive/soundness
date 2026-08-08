@@ -68,13 +68,16 @@ extends JsonRpc, caps.ExclusiveCapability:
   // (as in `LspSession.client0`).
   private val channel: JsonRpc = caps.unsafe.unsafeAssumePure(this)
 
-  val lifecycle:  LspLifecycle  = channel.proxy[LspLifecycle]
-  val language:   LspLanguage   = channel.proxy[LspLanguage]
-  val navigation: LspNavigation = channel.proxy[LspNavigation]
-  val editing:    LspEditing    = channel.proxy[LspEditing]
-  val advanced:   LspAdvanced   = channel.proxy[LspAdvanced]
-  val workspace:  LspWorkspace  = channel.proxy[LspWorkspace]
-  val resolve:    LspResolve    = channel.proxy[LspResolve]
+  // The same confinement argument seals each proxy: the generated module's only capabilities
+  // are this connection and the Lsp object, both already reachable through the member that
+  // holds it, so the pure interface type loses nothing that is not confined here anyway.
+  val lifecycle:  LspLifecycle  = caps.unsafe.unsafeAssumePure(channel.proxy[LspLifecycle])
+  val language:   LspLanguage   = caps.unsafe.unsafeAssumePure(channel.proxy[LspLanguage])
+  val navigation: LspNavigation = caps.unsafe.unsafeAssumePure(channel.proxy[LspNavigation])
+  val editing:    LspEditing    = caps.unsafe.unsafeAssumePure(channel.proxy[LspEditing])
+  val advanced:   LspAdvanced   = caps.unsafe.unsafeAssumePure(channel.proxy[LspAdvanced])
+  val workspace:  LspWorkspace  = caps.unsafe.unsafeAssumePure(channel.proxy[LspWorkspace])
+  val resolve:    LspResolve    = caps.unsafe.unsafeAssumePure(channel.proxy[LspResolve])
 
   // A fault the server reports as an error response arrives as a `JsonRpcError` carrying the wire
   // code, which is exactly the vocabulary of `LspError.Reason`; a code outside the standard set is
