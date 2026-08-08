@@ -731,7 +731,7 @@ object soundness extends Toolchain:
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
     parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
-    pneumatic.core, pneumatic.flate,
+    pneumatic.core, pneumatic.flate, pneumatic.brotli, pneumatic.lzma, pneumatic.lzw,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     concordance.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
@@ -747,12 +747,13 @@ object soundness extends Toolchain:
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
     eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, escapade.io,
     escapade.graphics, digression.ansi, imperial.core, profanity.core,
-    surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager,
+    surveillance.core, punctuation.ansi, hallucination.ansi, hallucination.canvas,
+    ziggurat.core, ziggurat.packager,
     ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
-    facsimile.core, gastronomy.core, chiaroscuro.core, chiaroscuro.render, jacinta.core,
+    facsimile.core, facsimile.file, gastronomy.core, chiaroscuro.core, chiaroscuro.render, jacinta.core,
     monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
@@ -1858,13 +1859,18 @@ object exoskeleton extends Library:
       settings.sep(super.scalacOptions())
 
 object facsimile extends Library:
-  object core extends Component(aperture.core, galilei.core, galilei.jvm, ambience.core, turbulence.core,
-      pneumatic.flate, zephyrine.core, gastronomy.core, enigmatic.core, eucalyptus.core,
+  object core extends Component(aperture.core, turbulence.core,
+      pneumatic.flate, pneumatic.lzw, zephyrine.core, gastronomy.core, enigmatic.core, eucalyptus.core,
       hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core):
-    override def scalaJs = false // memory-mapped random-access reads (galilei.jvm `Ram`), JCE
+    override def scalaJs = false // JCE (`enigmatic`), for the `Guard` encryption layer
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // Opening a PDF from a path and writing one back: facsimile's only use of galilei and ambience.
+  object file extends Component(core, galilei.core, galilei.jvm, ambience.core):
+    override def scalaJs = false // memory-mapped random-access reads (galilei.jvm `Ram`)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, file):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2011,15 +2017,21 @@ object hallucination extends Library:
   // Raster images with pluggable codec backends: `javax.imageio` on the JVM, and pure-Scala
   // codecs everywhere else (Scala.js and WASI), selected by the `core-jvm`/`core-native` source
   // directories.
-  object core extends Component(anticipation.gfx, aperture.core, iridescence.core, gesticulate.core, pneumatic.flate):
+  object core extends Component(anticipation.gfx, iridescence.core, gesticulate.core,
+      pneumatic.flate):
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
     override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Opening a raster as a scoped `Canvas`: hallucination's only use of aperture. (Named for
+  // `Canvas` rather than for the dependency, which a nested `aperture` object would shadow.)
+  object canvas extends Component(core, aperture.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object ansi extends Component(escapade.core, core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(ansi):
+  object test extends Tests(ansi, canvas):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2413,7 +2425,19 @@ object pneumatic extends Library:
     override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "flate-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, flate):
+  // Each codec is its own component: a consumer that needs DEFLATE should not also compile
+  // Brotli's 1,761 lines of dictionary tables or the LZMA2 range coder. All keep
+  // `package pneumatic`, so only the build graph changes.
+  object brotli extends Component(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object lzma extends Component(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object lzw extends Component(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, flate, brotli, lzma, lzw):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2535,7 +2559,7 @@ object quantitative extends Library:
       settings.sep(super.scalacOptions())
 
 object reliquary extends Library:
-  object core extends Component(stratiform.core, stratiform.binary, stratiform.base256,
+  object core extends Component(pneumatic.brotli, stratiform.core, stratiform.binary, stratiform.base256,
       gastronomy.core, pneumatic.core, enigmatic.core, revolution.core):
     override def scalaJs = false // stratiform.binary is transitively JVM-only
     override def scalacOptions = Task:
@@ -2845,7 +2869,7 @@ object turbulence extends Library:
   // Comparative streaming benchmarks against the effect-based streaming libraries. External,
   // benchmark-only deps (resolved from Maven Central) exactly as `jacinta.bench` pulls circe/jsoniter.
   object bench
-  extends Benchmarks(core, pneumatic.flate, quantitative.units, monotonous.core, enigmatic.core):
+  extends Benchmarks(core, pneumatic.flate, pneumatic.brotli, quantitative.units, monotonous.core, enigmatic.core):
     def mvnDeps = Seq(
       mvn"dev.zio::zio-streams:2.1.26",
       mvn"co.fs2::fs2-core:3.13.0",

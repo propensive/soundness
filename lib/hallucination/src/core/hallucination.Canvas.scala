@@ -32,9 +32,6 @@
                                                                                                   */
 package hallucination
 
-object Canvas:
-  given openable: [layout <: Tuple] => RasterOpenable[layout] = RasterOpenable[layout]()
-
 // The form phantom for opening a raster for scoped pixel access:
 // `raster.open[Canvas]()` for reading, or `raster.open[Canvas](Read & Write)` to mutate pixels
 // in place.

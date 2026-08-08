@@ -30,9 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package facsimile
 
-// `Descriptor` clashes with embarcadero's OCI `Descriptor` in the umbrella; reach it via
-// `hallucination.Descriptor`.
-export hallucination.{Bmp, Canvas, Gif, Jpeg, pixel, Png, Raster, RasterError,
-    Rasterizable, repack, Webp}
+import ambience.*
+import anticipation.*
+import contingency.*
+import galilei.*
+import prepositional.*
+import proscenium.compat.*
+
+// These were anchored in `Pdf`'s companion so that `path.open[Pdf]()` and `data.open[Pdf]()`
+// resolved with no import. They live here now, with `PdfFile`, so that reading and writing PDF
+// documents in memory does not drag in a filesystem and an environment; the cost is that
+// opening a PDF from a path needs these imported. `Openable` has no generic fallback, so a call
+// site that forgets fails to compile.
+given pdfPathOpenable: [path: Abstractable across Paths to Text]
+=>  (tactic: Tactic[PdfError])
+=>  ( PdfFile.PdfPathOpenable[path]^{tactic} ) =
+  PdfFile.PdfPathOpenable[path]
+
+given pdfDataOpenable: (tactic: Tactic[PdfError]) => ( PdfFile.PdfDataOpenable^{tactic} ) =
+  PdfFile.PdfDataOpenable()
+
+// Anchored here so `path.create[Pdf](): doc ?=> …` resolves the `Pdf` form with no import.
+given pdfCreatable: [path: Abstractable across Paths to Text]
+=>  (tactic: Tactic[PdfError])
+=>  ( PdfFile.PdfCreatable[path]^{tactic} ) =
+  PdfFile.PdfCreatable[path]

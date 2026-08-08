@@ -340,12 +340,57 @@ Horizon: mid — ordered: pneumatic, then hallucination, then facsimile.
   CanvasHandle/RasterOpenable; the gesticulate media-type descriptors follow their formats;
   pneumatic.flate moves to the png component; tarantula.image retargets png. Deduplication
   (Crc32, GifLzw) waits for mod-5 — split first, dedup second, one purpose per PR.
+
+  The core-size estimate is right: the files that stay come to ~880 lines. The
+  aperture component is **done**, though named `hallucination.canvas` — a component named
+  `aperture` nested inside `object hallucination` shadows the `aperture` library it depends on,
+  and mill's build file resolves the inner name first. `Canvas`'s `openable` given travelled
+  with `CanvasHandle` and `RasterOpenable`, which emptied `Canvas`'s companion, so the companion
+  is gone and `Canvas` is now just the form phantom.
+
+  The **per-format split is blocked on a semantic question, not a mechanical one**. The
+  pure-Scala backend (`core-native/RasterBackend.scala`) is a hard-coded dispatcher over all
+  five codecs, and its format-agnostic `decode(data)` sniffs magic bytes by trying PNG, GIF,
+  BMP, JPEG and WebP in turn. Splitting the codecs into separate components means that method
+  can only recognise the formats actually linked in, so `decode(data)` becomes
+  classpath-dependent where today it always recognises all five. That is arguably the point of
+  the split, but it is an observable behaviour change and needs sign-off; the alternative is to
+  invert the dispatcher into a registry each format component contributes to, which is a design
+  change of its own. Worth noting while deciding: on the JVM the backend uses `javax.imageio`
+  for PNG, JPEG, GIF and BMP and only the pure-Scala `WebpCodec`, so the four other pure codecs
+  are compiled but unused at runtime there — they exist to be differentially tested against
+  ImageIO, which any split has to keep possible.
 - **facsimile splits**: Ascii85 moves to monotonous; Rc4 to enigmatic; Predictor (PNG/TIFF
   row filters, duplicating PngCodec logic) to the png component or pneumatic;
   `facsimile.crypto` takes Guard (cutting enigmatic and gastronomy from core);
   `facsimile.file` takes PdfFile (cutting galilei and ambience, and letting core drop
   `scalaJs = false`); `facsimile.fonts` takes the ~900-line phoenicia-facing font
   machinery. aviation stays with PdfInfo or rides with the file component.
+
+  Mapping each heavy dependency to the files that import it gives: enigmatic → Guard, Pdf,
+  PdfFile; gastronomy → FontEmbedder, Guard; galilei and ambience → PdfFile alone; phoenicia →
+  FontEmbedder, PdfFont, facsimile_editing; aviation → PdfInfo.
+
+  **`facsimile.file` is done**, and takes galilei and ambience with it: facsimile.core's compile
+  classpath drops from 67 modules to 62. `PdfFile` appeared in `Pdf` only as three `Openable`
+  givens, which moved with it as `pdfPathOpenable`, `pdfDataOpenable` and `pdfCreatable`. Their
+  comment recorded that they were "anchored here — the form's companion — so `path.open[Pdf]()`
+  … resolve with no import", so this knowingly trades that ergonomics away; `Openable` has no
+  fallback, so a call site that forgets the import fails to compile.
+
+  Core keeps `scalaJs = false`, contrary to the roadmap: the reason was two things, memory-mapped
+  reads *and* JCE, and only the first left with `PdfFile`. `enigmatic` stays because `Pdf` itself
+  uses it.
+
+  **`facsimile.crypto` and `facsimile.fonts` are blocked**, both because `Pdf` and the page model
+  depend on what they would take. Encryption is woven into `Pdf`: `guard` is a private var of
+  type `Optional[Guard]`, `decryptStrings` takes a `Guard`, and `Guard.Method` drives
+  `cryptMethod`. Fonts are woven into the page model: `Page.fonts` returns `Map[Text, PdfFont]`,
+  `TextExtractor.extract` takes one, and `TextRun` has a `font: PdfFont` field. `FontEmbedder`
+  alone may be separable, which would cut gastronomy only if `Guard` moved too — so the two are
+  coupled. Ascii85, Rc4 and Predictor are mod-5 deduplication items rather than splits, and
+  Ascii85 in particular cannot use `monotonous.Serializable.base`, whose bit-packing assumes a
+  power-of-two alphabet; base-85 is not one.
 
 Done when: a consumer of one format no longer compiles the others' code, and platform flags
 reflect the new closures.
