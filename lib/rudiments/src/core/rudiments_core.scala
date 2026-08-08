@@ -61,10 +61,10 @@ export rudiments.internal.{Bytes, Digit}
 // that shape. Call sites still write `fixpoint(init) { recur ?=> ... }`: the context lambda
 // SAM-converts. The knot is tied eta-delayed, so `fn` is only re-entered when the recursion
 // is applied (the old eager knot recursed unconditionally).
-trait Recurrence[value]:
+trait Fixpoint[value]:
   def apply(using recur: value ->{this} value): value ->{recur} value
 
-def fixpoint[value](initial: value)(fn: Recurrence[value]^): value =
+def fixpoint[value](initial: value)(fn: Fixpoint[value]^): value =
   def recurrence(v: value): value = fn(using recurrence)(v)
   recurrence(initial)
 

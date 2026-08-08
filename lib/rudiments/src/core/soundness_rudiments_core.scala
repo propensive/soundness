@@ -43,7 +43,7 @@ export
       give, immutable, indexBy, intercalate, javaInputStream, kib,
       longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
-      prior, probe, product, Recurrence, reflectClass, repeat, runs, runsBy, segment, Segmentable,
+      prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
       indexed, least, most, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, where,
