@@ -733,6 +733,7 @@ object soundness extends Toolchain:
     parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
     pneumatic.core, pneumatic.flate,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
+    concordance.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
     prophesy.core, murmuration.core, beneficence.core, proscenium.core, prescience.core,
     prescience.leaves,
@@ -1456,6 +1457,19 @@ object prophesy extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+
+object concordance extends Library:
+  // Confined indexing: `Deindex`, `Segmentable`, `Populated` and `Bijection`, with the `Scribe`,
+  // `Surveyor`, `Grouping` and `Lattice` combinators. These sit directly on `denominative` — the
+  // shape ypsiloid, stratiform, facsimile and escapade converged on — so they belong below
+  // `rudiments` rather than inside it. The sources keep `package rudiments`: `Deindex`'s `apply`,
+  // `at` and `prim` extensions are the whole tree's indexing vocabulary, and repackaging them
+  // would force an import into almost every file that indexes anything, for no benefit — the
+  // point of the split is the build graph, not the namespace.
+  object core extends Component(anticipation.text, denominative.core, prepositional.core,
+      vacuous.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
 object contextual extends Library:
   object core extends Component(rudiments.core):
@@ -2547,6 +2561,7 @@ object murmuration extends Library:
 object rudiments extends Library:
   object core extends Component(
       anticipation.codec,
+      concordance.core,
       vacuous.core,
       denominative.core,
       murmuration.core
@@ -3120,7 +3135,7 @@ val allLibraries: Seq[Library] = Seq(
   breviloquence,
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
-  charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
+  charisma, chiaroscuro, coaxial, concordance, contextual, contingency, cosmopolite,
   degustation, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton, facsimile,
