@@ -39,6 +39,7 @@ import scala.collection.mutable as scm
 import scala.math
 
 import anticipation.*
+import corpuscular.*
 import contingency.*
 import pneumatic.*
 import rudiments.*

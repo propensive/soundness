@@ -399,15 +399,65 @@ reflect the new closures.
 
 Horizon: mid — after mod-4, so nothing moves twice.
 
-- **A binary-primitives library** (placeholder name **`corpuscular`**; the fallback is a
-  hypotenuse submodule): varints/LEB128 (seeded from stratiform.Varint), big-/little-endian
-  accessors and a back-patchable byte builder (seeded from hallucination.Binary), bit
-  readers/writers in LSB- and MSB-first variants, and a canonical-Huffman table builder
-  (seeded from pneumatic.BrotliDecoder's, the cleanest of four). It lands with tests
-  replicating every donor's edge cases *before* any consumer migrates.
-- **Checksums into gastronomy**: a fast non-`Digestion` CRC-32/CRC-64/Adler-32 API;
-  pneumatic.Flate, hallucination's png component, zeppelin and pneumatic's XzCheck migrate,
-  gated by golden-vector tests. Four hand-rolled CRC-32s become one.
+- **A binary-primitives library** (**`corpuscular`**, now created): varints/LEB128 (seeded from
+  stratiform.Varint), big-/little-endian accessors and a back-patchable byte builder (seeded
+  from hallucination.Binary), bit readers/writers in LSB- and MSB-first variants, and a
+  canonical-Huffman table builder (seeded from pneumatic.BrotliDecoder's, the cleanest of four).
+  It lands with tests replicating every donor's edge cases *before* any consumer migrates.
+
+  **The varints are not shareable as the roadmap assumes.** `stratiform.Varint.decode` and
+  locomotion's `ProtobufParser` are not the same function with cosmetic differences:
+
+  - stratiform aborts when `shift >= 64`; locomotion tolerates `shift` up to 70 and *discards*
+    bits above 63 (`if shift < 64 then result |= …`), which is protobuf's rule for non-canonical
+    encodings. Unifying them changes one or the other's behaviour on malformed input.
+  - stratiform returns an allocated `Decoded(value, offset)`; locomotion mutates the parser's
+    `pos` field and allocates nothing. A shared decoder either allocates in protobuf's hot loop
+    or needs a cursor-style API that no donor currently has.
+  - the error types differ (`VarintError` versus `ProtobufError` carrying a position), and the
+    positions are part of protobuf's diagnostics.
+
+  The *encoders* are closer, and `size`/`write` may still be worth sharing. What is genuinely
+  duplicated is **inside locomotion**: `ProtobufParser` has the same decode loop twice,
+  differing only in whether it bounds against `data.length` or `boundary`. That is a local
+  refactor, parameterising the bound — worth doing, but it is a hot loop, so it wants
+  `make bench` for protobuf either side of the change rather than being done on sight.
+- **Checksums into ~~gastronomy~~ `corpuscular`**: a fast non-`Digestion` CRC-32/CRC-64/Adler-32
+  API. **Partly done.** The shared implementations and their golden-vector tests have landed in
+  `corpuscular`, and hallucination's PNG codec has migrated.
+
+  Not gastronomy: `gastronomy.core` sits on 45 modules where `pneumatic.core` sits on 24, and
+  neither pneumatic nor hallucination depends on gastronomy, so putting fast checksums there
+  would nearly double their closures to save a table and a loop. `corpuscular` sits below them
+  on `anticipation.codec` alone.
+
+  The count of "four hand-rolled CRC-32s" needs correcting in both directions. There are five
+  implementations of three algorithms — pneumatic's streaming `Crc32` and `Adler32` (JZlib
+  ports), pneumatic's `Crc64` in the XZ layer, hallucination's one-shot `Crc32`, and zeppelin's
+  `crc32` — but **two of them should not be deduplicated at all**: zeppelin's delegates to
+  `java.util.zip.CRC32`, and gastronomy's `Digestion` CRC-32 likewise goes through
+  `JavaStdlibHashing`. Both are JVM intrinsics; replacing them with a table-driven Scala loop
+  would be a performance regression for no benefit. The same is true of pneumatic on the JVM,
+  whose `FlateBackend` uses `JavaCrc32`; its pure `Crc32` is the JS/native path only.
+
+  That asymmetry is itself worth resolving, and is recorded here as an open decision. pneumatic
+  picks its checksum per platform — `flate-jvm` supplies `JavaCrc32`, `flate-native` the pure
+  one — whereas zeppelin and gastronomy reach for `java.util.zip` unconditionally. For zeppelin
+  that choice is part of why it is pinned to the JVM (`scalaJs = false`, "zip archives
+  (`java.util.zip`, `galilei`)"): a ZIP library that cross-compiled would need the pure
+  checksum, which `corpuscular` now provides. So the wiring is possible, and pneumatic's
+  `<name>-jvm`/`<name>-native` source-directory split is the precedent for it. The decision is
+  whether to adopt it — either make the platform choice consistent everywhere, or state plainly
+  which libraries are JVM-only by design and stop paying for the abstraction elsewhere.
+
+  **pneumatic's migration is blocked on capture checking.** `corpuscular`'s checksums are
+  `caps.Mutable` with `update def` methods, which is where the codebase is heading (XzCheck's
+  own checkers are already written that way), but adapting `FlateChecksum` to that shape fails:
+  `Deflater` holds its `adler` field read-only, so it may not call an update method on it, and
+  the same applies throughout the JZlib port. pneumatic's build comment already records that
+  this code "does not (yet) satisfy the stricter ruleset". Either the port adopts the capture
+  discipline, or `corpuscular` grows a plain-`def` variant for it; that is a decision, not a
+  detail.
 - **Consumer migration** onto the binary-primitives library, split by consumer:
   (a) pneumatic and hallucination codecs; (b) telekinesis.http2's Hpack and FrameReader;
   (c) stratiform, locomotion (which has two internal varint copies), mandible,
@@ -415,10 +465,50 @@ Horizon: mid — after mod-4, so nothing moves twice.
 - **Remaining dedups**: the JSON string-escaping routine (jacinta.Json.scala:1247–1279,
   copied verbatim into ypsiloid) becomes a gossamer-level helper; a CSI tokenizer in
   escapade.csi replaces yossarian.Pty's and profanity.Keyboard's private escape-sequence
-  state machines (yossarian's tests are the gate); a `SecureEntropy` capability in
+  state machines (yossarian's tests are the gate);
+
+  **Both of these premises fail on inspection.**
+
+  The string escaper is *not* verbatim. jacinta names seven escapes (quote, backslash,
+  backspace, formfeed, newline, return, tab); ypsiloid names five, omitting backspace and
+  formfeed, which its `c < ' '` branch then emits as six-character unicode references instead --
+  valid YAML, different bytes. ypsiloid also wraps the whole routine in `if plainSafe(string)`,
+  because YAML may emit an unquoted plain scalar and JSON may not. What is genuinely shared is
+  about twelve lines of sliding-window loop and an `escape` helper; the differences are precisely
+  the parts that matter. Sharing it means parameterising over the escape table, in two hot
+  serialisers, for twelve lines. (Whether ypsiloid's omission is deliberate is worth asking.)
+
+  The CSI item is not a deduplication at all: `escapade.csi` is a *writer* -- `cuu`, `cud`, `sgr`
+  and friends generate sequences -- and contains no parser, so this means writing a tokenizer,
+  not moving one. The two consumers then differ in the ways that make a tokenizer hard to share:
+  yossarian parses a complete buffer with a pure state machine and *raises* `PtyEscapeError` on
+  malformed input, as a terminal emulator must; profanity reads a live TTY where the parse is
+  entangled with timing -- its `Lookahead` exists to decide whether a bare ESC is the Escape key
+  or the start of a sequence split across a packet boundary -- and it degrades to
+  `Keypress.Escape` rather than failing, because a user may type anything. A shared tokenizer
+  would have to abstract over both the input model and the error policy. a `SecureEntropy` capability in
   capricious replaces the direct `SecureRandom`/`UUID.randomUUID` uses in perihelion,
-  enigmatic and inimitable (restoring wasi parity); telekinesis exports its byte-level
+  enigmatic and inimitable (restoring wasi parity) — **needs a decision; see below**; telekinesis exports its byte-level
   header-block scanner for obligatory.ContentLength and scintillate (correction 3 applies).
+
+**SecureEntropy.** The list of sites needs correcting before this is attempted. enigmatic's
+`SecureRandom` uses are all in `core-jvm`, its JVM backend, alongside a `core-native` twin and an
+OpenSSL provider — that is the platform-backend pattern working as intended, not a parity gap, and
+they should stay. perihelion is `scalaJs = false`, so its per-connection `SecureRandom` for
+WebSocket masking keys is JVM-only by construction. The real site is inimitable's `Uuid.apply()`,
+which calls `ju.UUID.randomUUID()` in a library that cross-compiles to every platform.
+
+capricious is a viable home — `capricious.core` cross-compiles (the `scalaNative = false` is on
+`capricious.wasi`), and capricious already has exactly the right precedent: a `wasi` component
+supplying a `Randomization` backed by a `wasi:random/random` import.
+
+What makes this a decision rather than a change is the shape. `Uuid()` has around 28 call sites
+across the tree, so `def apply()(using SecureEntropy)` is a public API change requiring the
+capability in scope everywhere. The alternative is `core-jvm`/`core-native` backends inside
+inimitable, as galilei and pneumatic do, which fixes parity with no API change. Choosing between
+them depends on whether `java.util.UUID.randomUUID` is actually deficient on JS, Native and WASI —
+it compiles on all of them, so this is a question about entropy quality, and wants measuring on
+those platforms rather than assuming.
 
 Done when: each algorithm has exactly one implementation, verified by grep for the
 signature patterns (CRC tables, Huffman builders, varint loops).
