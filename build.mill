@@ -733,7 +733,7 @@ object soundness extends Toolchain:
     parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
     pneumatic.core, pneumatic.flate, pneumatic.brotli, pneumatic.lzma, pneumatic.lzw,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
-    concordance.core,
+    concordance.core, corpuscular.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
     prophesy.core, murmuration.core, beneficence.core, proscenium.core, prescience.core,
     prescience.leaves,
@@ -1486,6 +1486,19 @@ object contingency extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core)
+
+object corpuscular extends Library:
+  // Binary primitives shared by the codecs: the checksums first (CRC-32, CRC-64, Adler-32),
+  // which pneumatic, hallucination and zeppelin each had their own copy of. Deliberately *not*
+  // in gastronomy: gastronomy.core sits on 45 modules against pneumatic.core's 24, and neither
+  // pneumatic nor hallucination depends on it, so putting fast checksums there would nearly
+  // double their closures to save a table and a loop.
+  object core extends Component(anticipation.codec):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
 
 object cosmopolite extends Library:
   object core extends Component(gossamer.core):
@@ -3170,7 +3183,8 @@ val allLibraries: Seq[Library] = Seq(
   breviloquence,
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
-  charisma, chiaroscuro, coaxial, concordance, contextual, contingency, cosmopolite,
+  charisma, chiaroscuro, coaxial, concordance, contextual, contingency, corpuscular,
+  cosmopolite,
   degustation, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton, facsimile,
