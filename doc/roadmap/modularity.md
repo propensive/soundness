@@ -399,12 +399,29 @@ reflect the new closures.
 
 Horizon: mid — after mod-4, so nothing moves twice.
 
-- **A binary-primitives library** (placeholder name **`corpuscular`**; the fallback is a
-  hypotenuse submodule): varints/LEB128 (seeded from stratiform.Varint), big-/little-endian
-  accessors and a back-patchable byte builder (seeded from hallucination.Binary), bit
-  readers/writers in LSB- and MSB-first variants, and a canonical-Huffman table builder
-  (seeded from pneumatic.BrotliDecoder's, the cleanest of four). It lands with tests
-  replicating every donor's edge cases *before* any consumer migrates.
+- **A binary-primitives library** (**`corpuscular`**, now created): varints/LEB128 (seeded from
+  stratiform.Varint), big-/little-endian accessors and a back-patchable byte builder (seeded
+  from hallucination.Binary), bit readers/writers in LSB- and MSB-first variants, and a
+  canonical-Huffman table builder (seeded from pneumatic.BrotliDecoder's, the cleanest of four).
+  It lands with tests replicating every donor's edge cases *before* any consumer migrates.
+
+  **The varints are not shareable as the roadmap assumes.** `stratiform.Varint.decode` and
+  locomotion's `ProtobufParser` are not the same function with cosmetic differences:
+
+  - stratiform aborts when `shift >= 64`; locomotion tolerates `shift` up to 70 and *discards*
+    bits above 63 (`if shift < 64 then result |= …`), which is protobuf's rule for non-canonical
+    encodings. Unifying them changes one or the other's behaviour on malformed input.
+  - stratiform returns an allocated `Decoded(value, offset)`; locomotion mutates the parser's
+    `pos` field and allocates nothing. A shared decoder either allocates in protobuf's hot loop
+    or needs a cursor-style API that no donor currently has.
+  - the error types differ (`VarintError` versus `ProtobufError` carrying a position), and the
+    positions are part of protobuf's diagnostics.
+
+  The *encoders* are closer, and `size`/`write` may still be worth sharing. What is genuinely
+  duplicated is **inside locomotion**: `ProtobufParser` has the same decode loop twice,
+  differing only in whether it bounds against `data.length` or `boundary`. That is a local
+  refactor, parameterising the bound — worth doing, but it is a hot loop, so it wants
+  `make bench` for protobuf either side of the change rather than being done on sight.
 - **Checksums into ~~gastronomy~~ `corpuscular`**: a fast non-`Digestion` CRC-32/CRC-64/Adler-32
   API. **Partly done.** The shared implementations and their golden-vector tests have landed in
   `corpuscular`, and hallucination's PNG codec has migrated.
