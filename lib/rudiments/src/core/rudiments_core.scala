@@ -54,10 +54,17 @@ import vacuous.*
 
 export rudiments.internal.{Bytes, Digit}
 
-// The returned arrow declares its dependency on `recur` (`->{recur}`) rather than claiming a
-// pure result, which capture checking rejects (#1412); the knot is tied eta-delayed so `fn` is
-// only re-entered when the recursion is applied (the eager knot recursed unconditionally).
-def fixpoint[value](initial: value)(fn: (recur: value => value) ?=> value ->{recur} value): value =
+// The SAM trait names the knot's true aliasing: the recursion passed as `recur` captures the
+// recurrence itself (`->{this}`), and the result arrow declares its dependency on `recur`
+// rather than claiming purity (#1412). A context-function formal cannot express this (it
+// cannot name the function value inside its own type), so separation checking rightly rejects
+// that shape. Call sites still write `fixpoint(init) { recur ?=> ... }`: the context lambda
+// SAM-converts. The knot is tied eta-delayed, so `fn` is only re-entered when the recursion
+// is applied (the old eager knot recursed unconditionally).
+trait Recurrence[value]:
+  def apply(using recur: value ->{this} value): value ->{recur} value
+
+def fixpoint[value](initial: value)(fn: Recurrence[value]^): value =
   def recurrence(v: value): value = fn(using recurrence)(v)
   recurrence(initial)
 
