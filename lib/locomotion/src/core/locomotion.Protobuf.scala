@@ -563,7 +563,9 @@ object Protobuf extends Protobuf2:
       val numbers = fieldNumbers[derivation]
 
       value =>
-        val bytes = printed: printer =>
+        // The parameter ascription pins the lambda's type at each expansion site; without it,
+        // repeated expansions in one unit reuse a memoized capability root (#26547).
+        val bytes = printed: (printer: ProtobufPrinter^) =>
           fields(value):
             [field0] => fieldValue =>
               printer.field(numbers(label).vouch, contextual.encode(fieldValue))
@@ -574,7 +576,9 @@ object Protobuf extends Protobuf2:
       value =>
         variant(value):
           [variant <: derivation] => variantValue =>
-            val payload = printed(_.field(index + 1, contextual.encode(variantValue)))
+            // Parameter ascription pins the capability root per expansion, as in `conjunction`.
+            val payload = printed: (printer: ProtobufPrinter^) =>
+              printer.field(index + 1, contextual.encode(variantValue))
             Protobuf.Wire(WireType.Len, payload)
 
     inline def fieldNumbers[derivation <: Product: ProductReflection]: Map[Text, Int] =

@@ -78,7 +78,8 @@ object Installer:
 
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
     ( using Environment, System )
-  :   List[Path on Linux] logs DaemonLogEvent raises InstallError =
+    ( using Tactic[InstallError], (DaemonLogEvent is Loggable)^ )
+  :   List[Path on Linux] =
 
     mitigate:
       case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
