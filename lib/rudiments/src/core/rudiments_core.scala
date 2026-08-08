@@ -54,10 +54,12 @@ import vacuous.*
 
 export rudiments.internal.{Bytes, Digit}
 
-// `fixpoint` was removed: it does not yet type-check under capture checking (the recursive
-// context function trips "Reference `recur` is not included in the allowed capture set") and
-// was unused. Issue #1412 tracks a capture-correct reformulation; the old definition is in
-// that issue and the git history.
+// The returned arrow declares its dependency on `recur` (`->{recur}`) rather than claiming a
+// pure result, which capture checking rejects (#1412); the knot is tied eta-delayed so `fn` is
+// only re-entered when the recursion is applied (the eager knot recursed unconditionally).
+def fixpoint[value](initial: value)(fn: (recur: value => value) ?=> value ->{recur} value): value =
+  def recurrence(v: value): value = fn(using recurrence)(v)
+  recurrence(initial)
 
 inline def probe[target]: Nothing = ${rudiments.internal.probe[target]}
 inline def typeName[target]: Text = ${rudiments.internal.name[target]}

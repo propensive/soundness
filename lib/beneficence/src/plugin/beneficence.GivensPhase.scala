@@ -57,7 +57,7 @@ class GivensPhase() extends PluginPhase:
       val sources: mutable.LinkedHashSet[String] = mutable.LinkedHashSet.empty
 
       units.foreach: unit =>
-        sources += unit.source.file.path
+        sources += unit.source.path
         collect(unit, collectedGivens, collectedSuites, findable, suite)
 
       GivensWriter.merge(collectedGivens, sources.toSet)
@@ -73,7 +73,7 @@ class GivensPhase() extends PluginPhase:
     ( using Context )
   :   Unit =
 
-    val sourceFile = unit.source.file.path
+    val sourceFile = unit.source.path
 
     val traverser = new tpd.TreeTraverser:
       def traverse(tree: tpd.Tree)(using Context): Unit =
