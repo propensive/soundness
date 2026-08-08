@@ -367,6 +367,31 @@ Horizon: mid — ordered: pneumatic, then hallucination, then facsimile.
   `scalaJs = false`); `facsimile.fonts` takes the ~900-line phoenicia-facing font
   machinery. aviation stays with PdfInfo or rides with the file component.
 
+  Mapping each heavy dependency to the files that import it gives: enigmatic → Guard, Pdf,
+  PdfFile; gastronomy → FontEmbedder, Guard; galilei and ambience → PdfFile alone; phoenicia →
+  FontEmbedder, PdfFont, facsimile_editing; aviation → PdfInfo.
+
+  **`facsimile.file` is done**, and takes galilei and ambience with it: facsimile.core's compile
+  classpath drops from 67 modules to 62. `PdfFile` appeared in `Pdf` only as three `Openable`
+  givens, which moved with it as `pdfPathOpenable`, `pdfDataOpenable` and `pdfCreatable`. Their
+  comment recorded that they were "anchored here — the form's companion — so `path.open[Pdf]()`
+  … resolve with no import", so this knowingly trades that ergonomics away; `Openable` has no
+  fallback, so a call site that forgets the import fails to compile.
+
+  Core keeps `scalaJs = false`, contrary to the roadmap: the reason was two things, memory-mapped
+  reads *and* JCE, and only the first left with `PdfFile`. `enigmatic` stays because `Pdf` itself
+  uses it.
+
+  **`facsimile.crypto` and `facsimile.fonts` are blocked**, both because `Pdf` and the page model
+  depend on what they would take. Encryption is woven into `Pdf`: `guard` is a private var of
+  type `Optional[Guard]`, `decryptStrings` takes a `Guard`, and `Guard.Method` drives
+  `cryptMethod`. Fonts are woven into the page model: `Page.fonts` returns `Map[Text, PdfFont]`,
+  `TextExtractor.extract` takes one, and `TextRun` has a `font: PdfFont` field. `FontEmbedder`
+  alone may be separable, which would cut gastronomy only if `Guard` moved too — so the two are
+  coupled. Ascii85, Rc4 and Predictor are mod-5 deduplication items rather than splits, and
+  Ascii85 in particular cannot use `monotonous.Serializable.base`, whose bit-packing assumes a
+  power-of-two alphabet; base-85 is not one.
+
 Done when: a consumer of one format no longer compiles the others' code, and platform flags
 reflect the new closures.
 

@@ -753,7 +753,7 @@ object soundness extends Toolchain:
     def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
-    facsimile.core, gastronomy.core, chiaroscuro.core, chiaroscuro.render, jacinta.core,
+    facsimile.core, facsimile.file, gastronomy.core, chiaroscuro.core, chiaroscuro.render, jacinta.core,
     monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
@@ -1859,13 +1859,18 @@ object exoskeleton extends Library:
       settings.sep(super.scalacOptions())
 
 object facsimile extends Library:
-  object core extends Component(aperture.core, galilei.core, galilei.jvm, ambience.core, turbulence.core,
+  object core extends Component(aperture.core, turbulence.core,
       pneumatic.flate, pneumatic.lzw, zephyrine.core, gastronomy.core, enigmatic.core, eucalyptus.core,
       hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core):
-    override def scalaJs = false // memory-mapped random-access reads (galilei.jvm `Ram`), JCE
+    override def scalaJs = false // JCE (`enigmatic`), for the `Guard` encryption layer
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // Opening a PDF from a path and writing one back: facsimile's only use of galilei and ambience.
+  object file extends Component(core, galilei.core, galilei.jvm, ambience.core):
+    override def scalaJs = false // memory-mapped random-access reads (galilei.jvm `Ram`)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, file):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

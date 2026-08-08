@@ -74,22 +74,6 @@ object Pdf:
     val source = DataSource(bytes)
     Pdf(source, Xref.load(source), Version(1, 7))
 
-  // Anchored here — the form's companion — so `path.open[Pdf]()` and `data.open[Pdf]()`
-  // resolve with no import.
-  given pathOpenable: [path: Abstractable across Paths to Text]
-  =>  (tactic: Tactic[PdfError])
-  =>  ( PdfFile.PdfPathOpenable[path]^{tactic} ) =
-    PdfFile.PdfPathOpenable[path]
-
-  given dataOpenable: (tactic: Tactic[PdfError]) => ( PdfFile.PdfDataOpenable^{tactic} ) =
-    PdfFile.PdfDataOpenable()
-
-  // Anchored here so `path.create[Pdf](): doc ?=> …` resolves the `Pdf` form with no import.
-  given creatable: [path: Abstractable across Paths to Text]
-  =>  (tactic: Tactic[PdfError])
-  =>  ( PdfFile.PdfCreatable[path]^{tactic} ) =
-    PdfFile.PdfCreatable[path]
-
   case class Version(major: Int, minor: Int)
 
   // An embedded file from the `/EmbeddedFiles` name tree. Its metadata is materialized, but
