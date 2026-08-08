@@ -340,6 +340,26 @@ Horizon: mid — ordered: pneumatic, then hallucination, then facsimile.
   CanvasHandle/RasterOpenable; the gesticulate media-type descriptors follow their formats;
   pneumatic.flate moves to the png component; tarantula.image retargets png. Deduplication
   (Crc32, GifLzw) waits for mod-5 — split first, dedup second, one purpose per PR.
+
+  The core-size estimate is right: the files that stay come to ~880 lines. The
+  aperture component is **done**, though named `hallucination.canvas` — a component named
+  `aperture` nested inside `object hallucination` shadows the `aperture` library it depends on,
+  and mill's build file resolves the inner name first. `Canvas`'s `openable` given travelled
+  with `CanvasHandle` and `RasterOpenable`, which emptied `Canvas`'s companion, so the companion
+  is gone and `Canvas` is now just the form phantom.
+
+  The **per-format split is blocked on a semantic question, not a mechanical one**. The
+  pure-Scala backend (`core-native/RasterBackend.scala`) is a hard-coded dispatcher over all
+  five codecs, and its format-agnostic `decode(data)` sniffs magic bytes by trying PNG, GIF,
+  BMP, JPEG and WebP in turn. Splitting the codecs into separate components means that method
+  can only recognise the formats actually linked in, so `decode(data)` becomes
+  classpath-dependent where today it always recognises all five. That is arguably the point of
+  the split, but it is an observable behaviour change and needs sign-off; the alternative is to
+  invert the dispatcher into a registry each format component contributes to, which is a design
+  change of its own. Worth noting while deciding: on the JVM the backend uses `javax.imageio`
+  for PNG, JPEG, GIF and BMP and only the pure-Scala `WebpCodec`, so the four other pure codecs
+  are compiled but unused at runtime there — they exist to be differentially tested against
+  ImageIO, which any split has to keep possible.
 - **facsimile splits**: Ascii85 moves to monotonous; Rc4 to enigmatic; Predictor (PNG/TIFF
   row filters, duplicating PngCodec logic) to the png component or pneumatic;
   `facsimile.crypto` takes Guard (cutting enigmatic and gastronomy from core);
