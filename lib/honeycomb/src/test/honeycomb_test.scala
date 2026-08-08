@@ -747,6 +747,13 @@ object Tests extends Suite(m"Honeycombd Tests"):
           t"<div><p>x</p></div>".read[Html of "div"].show
         . assert(_ == t"<div><p>x</p></div>")
 
+        // An `HttpUrl` attribute is rendered by the generic `Abstractable across Urls` given,
+        // which routes through `HttpUrl`'s `abstractable = _.show`; honeycomb no longer carries
+        // a specific `HttpUrl is Attributive` given of its own.
+        test(m"element with an HttpUrl attribute"):
+          A(href = url"https://example.com/a?b=c#d")(TextNode(t"link")).show
+        . assert(_ == t"""<a href="https://example.com/a?b=c#d">link</a>""")
+
       suite(m"Adoption agency algorithm"):
         test(m"unclosed b at end of p"):
           t"""<div><p><b>X</p></div>""".read[Html of "div"]

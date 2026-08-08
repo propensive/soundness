@@ -37,9 +37,30 @@ import soundness.*
 import proscenium.compat.*
 import fulminate.errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
+import urticose.urlTeletype
 
 object Tests extends Suite(m"Urticose tests"):
+  given palette: UrlPalette = new Palette:
+    type Form = Srgb
+    def background: Color in Srgb = WebColors.Black
+    def foreground: Color in Srgb = WebColors.White
+    def link: Color in Srgb       = WebColors.DeepSkyBlue
+
   def run(): Unit =
+    suite(m"URL styling tests"):
+      // `escapade` renders any `Showable` type unstyled if no `Teletypeable` is found, so a
+      // lost `urlTeletype` given would degrade silently rather than failing to compile.
+      test(m"A URL renders with styling, not via the plain Showable fallback"):
+        val url = url"https://example.com/path"
+        val styled = e"$url".render(termcapDefinitions.xterm256Termcap)
+        styled == e"${url.show}".render(termcapDefinitions.xterm256Termcap)
+      . assert(_ == false)
+
+      test(m"A styled URL still contains the URL's own text"):
+        val url = url"https://example.com/path"
+        e"$url".plain
+      . assert(_ == t"https://example.com/path")
+
     suite(m"Internet tests"):
       def remoteCall()(using Internet): Unit = ()
 

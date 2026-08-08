@@ -38,10 +38,8 @@ import scala.quoted.*
 
 import anticipation.*
 import denominative.*
-import digression.*
 import fulminate.*
 import proscenium.compat.mkString
-import inimitable.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -59,7 +57,6 @@ object Showable:
   given double: (decimalizer: DecimalConverter) => Double is Showable = decimalizer.decimalize(_)
   given boolean: (affirmation: Affirmation) => Boolean is Showable = affirmation(_)
   given option: [value: Showable] => Option[value] is Showable = _.fold("none".tt)(value.text(_))
-  given uuid: Uuid is Showable = _.text
   given bytes: Bytes is Showable = _.text
   given enumeration: [enumeration <: reflect.Enum] => enumeration is Showable = _.toString.tt
 
@@ -85,29 +82,6 @@ object Showable:
   given meta: [meta] => (quotes: Quotes) => Type[meta] is Showable =
     stenography.internal.name[meta](using _)
 
-  given stackTrace: StackTrace is Showable = stack =>
-    val methodWidth = stack.frames.map(_.displayMethod.s.length).stdlib.maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.displayClass.s.length).stdlib.maxOption.getOrElse(0)
-    val fileWidth = stack.frames.map(_.file.s.length).stdlib.maxOption.getOrElse(0)
-    val fullClass = s"${stack.component}.${stack.className}".tt
-    val init = s"$fullClass: ${stack.message}".tt
-
-    val root = stack.frames.fold(init):
-      case (msg, frame) =>
-        val obj = frame.method.className.s.endsWith("#")
-        val drop = if frame.source.absent && obj then 1 else 0
-        val file = (" "*(fileWidth - frame.file.s.length))+frame.file
-        val dot = if frame.source.present || obj then ".".tt else "#".tt
-        val className = frame.displayClass.s.dropRight(drop)
-        val classPad = (" "*(classWidth - className.length)).tt
-        val method = frame.displayMethod
-        val methodPad = (" "*(methodWidth - method.s.length)).tt
-        val line = frame.line.let(_.show).or("?".tt)
-        val code = frame.source.let(_.code).lay("".tt)(code => s"\n       $code".tt)
-
-        s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line$code".tt
-
-    stack.cause.lay(root): cause => s"$root\ncaused by:\n$cause".tt
 
 trait Showable extends Communicable:
   def text(value: Self): Text

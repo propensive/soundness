@@ -40,6 +40,10 @@ import contingency.*
 import dendrology.*
 import denominative.*
 import digression.*
+// The stack-trace renderers live in `digression.ansi`, not in `StackTrace`'s companion, so they
+// are not in implicit scope; without this import `.teletype` on a stack trace falls back to
+// escapade's generic `Showable` renderer.
+import digression.{exceptionTeletype, frameTeletype, methodTeletype, stackTraceTeletype}
 import distillate.*
 import escapade.*
 import escritoire.*, columnAttenuation.ignoreAttenuation
@@ -55,6 +59,11 @@ import vacuous.*
 
 import Format.measurable
 import tableStyles.defaultTableStyle
+
+// `Juxtaposition`'s renderer lives in `chiaroscuro.render`, not in the enum's companion, so it
+// is not in implicit scope. Without this import `cmp.teletype` below silently resolves to
+// escapade's generic `Showable` fallback and prints the value instead of the difference table.
+import chiaroscuro.juxtapositionTeletype
 
 // The full-colour renderer: tables, ribbons, banner, sparklines, histograms and coverage,
 // plus GitHub Actions annotations when running there. All content decisions live in

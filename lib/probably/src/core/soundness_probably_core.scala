@@ -34,11 +34,11 @@ package soundness
 
 export
   probably
-  . { !==, +/-, ===, Anchor, Arithmetic, Autopsy, Axable, Axis, Baseline, Benchmark, Cadential,
-      Checkable, Ci, debug, Geometric, GithubActions, Harness, Hotspots, Inclusion,
+  . { Anchor, Arithmetic, Autopsy, Axable, Axis, Baseline, Benchmark, Cadential,
+      Ci, debug, Geometric, GithubActions, Harness, Hotspots, Inclusion,
       Max, Mean, Metric, Min, nominative, Probing, Report, Reporter, Run, Runner, Spread,
       Spread2, Strain, suite, Tally, Temporal, Test, test, Testable, TestId, TestPalette,
-      Tolerance, Trial, Value, Verdict, ± }
+      Trial, Value, Verdict }
 
 package harnesses:
   export probably.harnesses.threadLocal

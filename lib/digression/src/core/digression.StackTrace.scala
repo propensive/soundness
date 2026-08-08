@@ -38,6 +38,7 @@ import iridescence.*
 import prepositional.*
 import proscenium.compat.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -104,6 +105,32 @@ object StackTrace:
   // default does nothing, and an implementation is supplied from elsewhere by importing it.
   trait Resolver:
     def resolve(frame: Frame): Frame
+
+  // In `StackTrace`'s own companion rather than `Showable`'s, so that `spectacular` need not
+  // depend on `digression`; being companion-to-companion, the implicit scope is unchanged.
+  given showable: StackTrace is Showable = stack =>
+    val methodWidth = stack.frames.map(_.displayMethod.s.length).stdlib.maxOption.getOrElse(0)
+    val classWidth = stack.frames.map(_.displayClass.s.length).stdlib.maxOption.getOrElse(0)
+    val fileWidth = stack.frames.map(_.file.s.length).stdlib.maxOption.getOrElse(0)
+    val fullClass = s"${stack.component}.${stack.className}".tt
+    val init = s"$fullClass: ${stack.message}".tt
+
+    val root = stack.frames.fold(init):
+      case (msg, frame) =>
+        val obj = frame.method.className.s.endsWith("#")
+        val drop = if frame.source.absent && obj then 1 else 0
+        val file = " ".repeat(fileWidth - frame.file.s.length).nn+frame.file
+        val dot = if frame.source.present || obj then ".".tt else "#".tt
+        val className = frame.displayClass.s.dropRight(drop)
+        val classPad = " ".repeat(classWidth - className.length).nn.tt
+        val method = frame.displayMethod
+        val methodPad = " ".repeat(methodWidth - method.s.length).nn.tt
+        val line = frame.line.let(_.show).or("?".tt)
+        val code = frame.source.let(_.code).lay("".tt)(code => s"\n       $code".tt)
+
+        s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line$code".tt
+
+    stack.cause.lay(root): cause => s"$root\ncaused by:\n$cause".tt
 
   trait Palette extends iridescence.Palette:
     type Form = Srgb

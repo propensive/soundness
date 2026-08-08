@@ -30,12 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tarantula
 
-export
-  legerdemain
-  . { Checkbox, Combobox, Dropdown, edit, elicit, Elicitable, Elicitable2, Field, Formulaic,
-      Formulation, RadioGroup, Widget }
+import anticipation.*
+import gesticulate.*
+import hallucination.*
+import monotonous.*
+import prepositional.*
+import contingency.*
+import telekinesis.*
+import turbulence.*
 
-package formulations:
-  export legerdemain.formulations.defaultFormulation
+// The same ambient strategy the method had as a member of `Element`.
+import strategies.throwUnsafely
+
+// The decoded form of `Element.screenshotData()`. This lives outside `tarantula.core` so that
+// browser automation does not depend on `hallucination` and its image-codec closure; the
+// method's name and result type are unchanged from when it was a member of `Element`.
+extension (element: WebDriver#Session#Element)
+  def screenshot(): Raster in Png logs HttpEvent = element.screenshotData().read[Raster in Png]

@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
-import escapade.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
@@ -57,9 +56,6 @@ object Url:
     t"${url.scheme}:$auth${url.location}$rest"
 
   given encodable: [scheme <: Label] => Url[scheme] is Encodable in Text = _.show
-
-  given teletype: [scheme <: Label] => (palette: UrlPalette) => Url[scheme] is Teletypeable =
-    url => e"$Underline(${Fg(palette.link)}(${url.show}))"
 
   given decodable: [scheme <: Label] => (tactic: Tactic[UrlError])
   =>  ((Url[scheme] is Decodable in Text)^{tactic}) =

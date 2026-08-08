@@ -30,12 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package turbulence
 
-export
-  legerdemain
-  . { Checkbox, Combobox, Dropdown, edit, elicit, Elicitable, Elicitable2, Field, Formulaic,
-      Formulation, RadioGroup, Widget }
+import java.lang as jl
+import java.io as ji
 
-package formulations:
-  export legerdemain.formulations.defaultFormulation
+import anticipation.*
+
+package stdios:
+  given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+
+  given systemStdio: (termcap: Termcap) => Stdio =
+    Stdio
+      ( jl.System.out.nn,
+        jl.System.err.nn,
+        jl.System.in.nn,
+        termcap )
+
+  given virtualMachineStdio: (termcap: Termcap) => Stdio =
+    Stdio
+      ( ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out)),
+        ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err)),
+        ji.FileInputStream(ji.FileDescriptor.in),
+        termcap )

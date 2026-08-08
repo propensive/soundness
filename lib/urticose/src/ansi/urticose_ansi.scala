@@ -30,15 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package urticose
 
+import anticipation.*
+import escapade.*
+import iridescence.*
 import prepositional.*
+import spectacular.*
 
-object Legible:
-  given text: Text is Legible = identity(_)
-  given string: String is Legible = _.tt
+type UrlPalette = Palette:
+  type Form = Srgb
+  def link: Color in Srgb
 
-trait Legible extends Typeclass:
-  def text(value: Self): Text
-  def contramap[self2](lambda: self2 => Self): (self2 is Legible)^{this, lambda} =
-    value => text(lambda(value))
+// Styling for `Url`s, kept out of `urticose.url` so that parsing and rendering URLs does not
+// draw in the ANSI stack. Note that `escapade` supplies a generic `Teletypeable` fallback for
+// any `Showable` type, so a call site which does not import this given still compiles — and
+// renders the URL unstyled.
+given urlTeletype: [scheme <: Label] => (palette: UrlPalette) => Url[scheme] is Teletypeable =
+  url => e"$Underline(${Fg(palette.link)}(${url.show}))"

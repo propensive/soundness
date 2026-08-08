@@ -46,7 +46,6 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
-import turbulence.*
 import zephyrine.*
 import vacuous.*
 
@@ -65,24 +64,6 @@ object Teletype:
   given concatenable: Teletype is Concatenable:
     type Operand = Teletype
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
-
-  // Teletype values are records, so their streams travel on the boxed medium
-  // (windows of `Array[Teletype]^{}`); each record prints as it arrives.
-  given out: Stdio => Out.type is Writable by (Array[Teletype]^{}) = new Writable:
-    type Self = Out.type
-    type Operand = Array[Teletype]^{}
-
-    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
-      . records.each(Out.print(_))
-
-  given err: Stdio => Err.type is Writable by (Array[Teletype]^{}) = new Writable:
-    type Self = Err.type
-    type Operand = Array[Teletype]^{}
-
-    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
-      . records.each(Err.print(_))
 
   // In `Teletype`'s companion (implicit scope for `Teletype is Reversible`), delegating to gossamer's
   // shared textual reversal so `teletype.reverse` resolves through the single `rudiments` `reverse`.

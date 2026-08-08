@@ -30,6 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package fulminate
 
-sealed trait HtmlContent
+import anticipation.*
+
+// `Message`'s `Printable` instance, kept out of `fulminate.core` so that the error vocabulary —
+// which every module in the tree depends on — does not also carry `anticipation.print`. It is
+// not in `Message`'s implicit scope from here, so it must be imported; `Printable` has no
+// generic fallback, so a call site which forgets fails to compile rather than degrading.
+given messagePrintable: Message is Printable = (message, termcap) => message.text

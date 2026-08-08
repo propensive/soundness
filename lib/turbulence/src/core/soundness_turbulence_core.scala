@@ -35,13 +35,10 @@ package soundness
 export
   turbulence
   . { Aggregable, deduplicate,
-      delineate, Document, Documentary, drop, Eof, Err, In, inputStream,
-      Io, Line, LineSeparation, load, Loadable, more, Out, read, Relay, shred, source,
-      Confluence, Divergence, Readable, Sink, Stdio, Streamable, StreamError,
+      delineate, Document, Documentary, drop, Eof, inputStream,
+      Line, LineSeparation, load, Loadable, more, read, Relay, shred, source,
+      Confluence, Divergence, Readable, Sink, Streamable, StreamError,
       StreamOutputStream, strict, take, Writable, writeTo, flow }
-
-package stdios:
-  export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}
 
 package lineSeparation:
   export

@@ -56,7 +56,7 @@ export Probing.nominative
 // A real trait, not a structural refinement of `Palette`: structural member selection goes
 // through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
 // support — whereas these are ordinary virtual calls.
-trait TestPalette extends Juxtaposition.JuxtapositionPalette:
+trait TestPalette extends JuxtapositionPalette:
   type Form = Srgb
   def warning: Color in Srgb
   def critical: Color in Srgb
@@ -78,36 +78,10 @@ trait TestPalette extends Juxtaposition.JuxtapositionPalette:
   def positive: Color in Srgb
   def negative: Color in Srgb
 
-extension [left](left: left)
-  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    checkable.check(left, right)
-
-  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    !checkable.check(left, right)
-
-extension [value](value: value)
-  @targetName("plusOrMinus")
-  inline infix def +/- (tolerance: value)
-  ( using inline commensurable: value is Commensurable against value,
-          addable:              value is Addable by value,
-          equality:             addable.Result =:= value,
-          subtractable:         value is Subtractable by value,
-          equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
-
-    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
-
-
-  @targetName("plusOrMinus2")
-  inline infix def ± (tolerance: value)
-    ( using inline commensurable: value is Commensurable against value,
-            addable:              value is Addable by value,
-            equality:             addable.Result =:= value,
-            subtractable:         value is Subtractable by value,
-            equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
-
-    value +/- (tolerance)
+// The checking vocabulary now lives in `anticipation.check`, so that modules which only need to
+// compare values (notably `quantitative`) do not depend on the test framework. It is re-exported
+// here so that `import probably.*` still provides it.
+export anticipation.{!==, +/-, ===, Checkable, Tolerance, ±}
 
 
 def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =

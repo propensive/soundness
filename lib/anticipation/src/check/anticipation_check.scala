@@ -30,12 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anticipation
 
-export
-  legerdemain
-  . { Checkbox, Combobox, Dropdown, edit, elicit, Elicitable, Elicitable2, Field, Formulaic,
-      Formulation, RadioGroup, Widget }
+import scala.annotation.*
 
-package formulations:
-  export legerdemain.formulations.defaultFormulation
+import hypotenuse.*
+import prepositional.*
+import symbolism.*
+
+extension [left](left: left)
+  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
+    checkable.check(left, right)
+
+  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
+    !checkable.check(left, right)
+
+extension [value](value: value)
+  @targetName("plusOrMinus")
+  inline infix def +/- (tolerance: value)
+  ( using inline commensurable: value is Commensurable against value,
+          addable:              value is Addable by value,
+          equality:             addable.Result =:= value,
+          subtractable:         value is Subtractable by value,
+          equality2:            subtractable.Result =:= value )
+  :   Tolerance[value] =
+
+    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
+
+
+  @targetName("plusOrMinus2")
+  inline infix def ± (tolerance: value)
+    ( using inline commensurable: value is Commensurable against value,
+            addable:              value is Addable by value,
+            equality:             addable.Result =:= value,
+            subtractable:         value is Subtractable by value,
+            equality2:            subtractable.Result =:= value )
+  :   Tolerance[value] =
+
+    value +/- (tolerance)

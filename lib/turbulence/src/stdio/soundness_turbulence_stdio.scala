@@ -30,46 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package probably
+package soundness
 
-import hypotenuse.*
-import prepositional.*
-import rudiments.*
-import proscenium.compat.*
+export turbulence.{Err, In, Io, Out, Stdio}
 
-object Checkable:
-  // The cast fixes the invariant element type only: `sameElements` compares via `equals`,
-  // which is safe across element types.
-  given iarray: [left, right] => (Array[left]^{}) is Checkable against (Array[right]^{}) =
-    (left, right) => left.sameElements(right.asInstanceOf[Array[left]^{}])
-
-  given stream: [left, right] => (left is Checkable against right)
-  =>  Chain[left] is Checkable against Chain[right] =
-
-    _.zip(_).all(_ === _)
-
-  given tolerance2: [value] => value is Checkable against Tolerance[value] =
-    (value, tolerance) => tolerance.covers(value)
-
-  inline given commensurable: [value: Commensurable against value]
-  =>  value is Checkable against value =
-
-    apply[value, value]: (left, right) => left <= right && right <= left
-
-
-  def apply[self, contrast](lambda: (self, contrast) -> Boolean)
-  :   self is Checkable against contrast =
-
-    new Checkable:
-      type Self = self
-      type Contrast = contrast
-
-      def check(self: Self, contrast: Contrast): Boolean = lambda(self, contrast)
-
-
-trait Checkable extends Typeclass, Contrastive:
-  def check(left: Self, right: Contrast): Boolean
-
-  def contramap[self2](lambda: self2 => Self)
-  :   (self2 is Checkable against Contrast)^{this, lambda} =
-    (left, right) => check(lambda(left), right)
+package stdios:
+  export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}

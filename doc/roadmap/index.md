@@ -3,7 +3,7 @@
 Soundness is being built towards a single destination: the point at which a serious team can
 adopt it for real applications. Not a version number, and not a ceremony — a set of measurable
 conditions, listed at the bottom of this page as [the gate](#the-gate). This roadmap describes
-the route: eight parallel tracks, each with its own end-state, phased across three horizons.
+the route: nine parallel tracks, each with its own end-state, phased across three horizons.
 
 ## The vision
 
@@ -106,6 +106,9 @@ The rules that keep this document trustworthy:
    Maven Central.
 8. **[Standards breadth](breadth.md)** (`brd`) — the remaining standards a production team
    expects: JOSE, TOML, WebAuthn, QUIC, IMAP.
+9. **[Module boundaries](modularity.md)** (`mod`) — every module contains only code serving
+   its stated purpose; duplicated algorithms have one implementation; hard dependencies are
+   severed with lightweight typeclass interfaces; the build is shallower and wider.
 
 ## Dependencies
 

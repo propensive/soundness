@@ -30,47 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package soundness
 
-import scala.caps
-
-import scala.language.dynamics
-
-import anticipation.*
-import contingency.*
-import fulminate.Hazard
-import distillate.*
-import honeycomb.*
-import legerdemain.*
-import prepositional.*
-import vacuous.*
-
-import doms.html.whatwg, whatwg.*
-
-// An `Orchestrate` is a capability: it retains the caller's `process`/`render` function, which
-// may itself capture capabilities — a value constructed from capabilities is a capability
-// (Jon, 2026-07-06; see rep/DECISIONS.md).
-class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = Unset)
-  ( process: (form: Text => Html of Flow) => Optional[value] ->{form, caps.any} result )
-extends caps.ExclusiveCapability:
-  def otherwise(validate: (query: Query) ?=> Validation)(using Formulation, value is Formulaic)
-    ( using decodable: Tactic[Hazard] ?=> value is Decodable in Query )
-    ( using request: Http.Request, tactic: Tactic[QueryError] )
-  :   result =
-
-    request.method match
-      case Http.Post =>
-        val result: Optional[value] = safely(decodable.decoded(request.query))
-        val validation = if result.absent then validate(using request.query) else Validation()
-
-        process(elicit[value](request.query, validation, _))(result)
-
-      case _ =>
-        process(elicit[value](initial.let(_.encode).or(Query()), Validation(), _))(Unset)
-
-
-def orchestrate[value: Encodable in Query](initial: Optional[value] = Unset)[result]
-  ( render: (form: Text => Html of Flow) ?=> (value: Optional[value]) => result )
-:   Orchestrate[value, result]^{render, caps.any} =
-
-  new Orchestrate[value, result](initial)(render(using _))
+export escapade.graphical

@@ -30,12 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package escapade
 
-export
-  legerdemain
-  . { Checkbox, Combobox, Dropdown, edit, elicit, Elicitable, Elicitable2, Field, Formulaic,
-      Formulation, RadioGroup, Widget }
+import anticipation.*
+import prepositional.*
+import proscenium.compat.*
+import rudiments.*
+import symbolism.*
+import turbulence.*
+import vacuous.*
+import zephyrine.*
 
-package formulations:
-  export legerdemain.formulations.defaultFormulation
+// Teletype values are records, so their streams travel on the boxed medium
+// (windows of `Array[Teletype]^{}`); each record prints as it arrives.
+given out: Stdio => Out.type is Writable by (Array[Teletype]^{}) = new Writable:
+  type Self = Out.type
+  type Operand = Array[Teletype]^{}
+
+  def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
+    . records.each(Out.print(_))
+
+given err: Stdio => Err.type is Writable by (Array[Teletype]^{}) = new Writable:
+  type Self = Err.type
+  type Operand = Array[Teletype]^{}
+
+  def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
+    . records.each(Err.print(_))

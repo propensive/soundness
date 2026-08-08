@@ -36,12 +36,10 @@ import anticipation.*
 import contingency.*
 import fulminate.Hazard
 import distillate.*
-import honeycomb.*
 import legerdemain.*
 import prepositional.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
 
 case class Submission[value](query: Optional[Query]):
   def fresh: Boolean = query.absent
@@ -52,15 +50,3 @@ case class Submission[value](query: Optional[Query]):
   def submitted: Boolean = query.present
   def valid(using Tactic[Hazard] ?=> value is Decodable in Query): Boolean = optional.present
   def value(using value is Decodable in Query): Optional[value] = query.let(_.as[value])
-
-
-  def form
-    ( submit:     Optional[Text]       = Unset,
-      value:      Optional[value]      = Unset,
-      validation: Optional[Validation] = Unset )
-    ( using value is Formulaic, value is Encodable in Query, Formulation )
-  :   Html of Flow =
-
-    // FIXME: Check why `data` isn't used
-    val data: Optional[Query] = query.or(value.let(_.encode))
-    elicit[value](query, validation.or(Validation()), submit)

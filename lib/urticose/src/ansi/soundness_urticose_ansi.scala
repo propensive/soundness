@@ -30,10 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package soundness
 
-enum Sgml:
-  case Textual(text: Text)
-  case Element(name: Text, attributes: Map[Text, Text], children: List[Sgml])
-  case Comment(text: Text)
-  case ProcessingInstruction(target: Text, data: Text)
+export urticose.{urlTeletype, UrlPalette}
