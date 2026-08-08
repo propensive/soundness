@@ -205,7 +205,14 @@ Horizon: near–mid
   matter of adjusting call sites. Note also that `Bcd.fromContent15` is `private[jacinta]` and
   its only caller is `jacinta.Json.Parser`, so any move makes that member public.
 
-  The YamlPath half of this leg is independent of `Bcd` and was not attempted.
+  The YamlPath half of this leg is independent of `Bcd`, and is **also blocked**, for the
+  reason that blocked ethereal.dist: YamlPath is indeed the sole importer of serpentine,
+  urticose, beneficence and symbolism in ypsiloid, but `ypsiloid.core` uses it pervasively —
+  `Yaml.Focus` carries a `pointer: YamlPath`, there is a `Yaml is Positionable by YamlPath`
+  given, and the `yp"…"` interpolator and its macro are in core — so it cannot move to a
+  component above core, and moving it below core would leave core's dependency closure
+  unchanged. Cutting those four dependencies means separating the Yaml AST from its pointer
+  type, which is a much larger change than this leg described.
 - **jacinta.optics and JsonPointer de-URL-ing** (after the ypsiloid leg; public API, so the
   largest care): the panopticon lens givens leave jacinta.Json.scala for `jacinta.optics`;
   JsonPointer's document-registry key changes from `HttpUrl` to Text or
@@ -215,12 +222,49 @@ Horizon: near–mid
 - **stratiform splits** (two PRs): (a) `stratiform.base256` is a general binary-to-text
   codec and moves into **monotonous** (extending `Serializable` to non-ASCII alphabets);
   stratiform.binary and revolution retarget; bitumen's hand-rolled `decodeOctal` adopts
-  monotonous.Octal; the turbulence-facing givens move to `stratiform.io`. (b) the
+  monotonous.Octal; the turbulence-facing givens move to `stratiform.io`.
+
+  **(a) is mod-5 work, not a module split, and the parenthesis is the whole job.**
+  `monotonous.Alphabet` is not itself ASCII-bound — it derives bits per character as
+  `log2(chars.length)`, which gives 8 for a 256-character alphabet — but
+  `Serializable.base` is: it precomputes `Array.tabulate(1 << bits)(alphabet(_).toByte)`, an
+  ASCII *byte* lookup table, and its comment states the invariant plainly ("Every alphabet
+  character is ASCII, so decoding the output as Latin-1 yields identical text"), which is what
+  lets it build the result from Latin-1 bytes with no per-character boxing. `Base256`'s alphabet
+  is emphatically not ASCII (`ḀḁЂЃĄą…`), so `.toByte` would truncate every character in it.
+  Integrating the codec therefore means changing monotonous's documented fast path, which is
+  performance-sensitive and belongs with mod-5's codec work, gated on equivalence tests against
+  the present `Base256.encode`/`decode` and on the benchmarks. It also moves 13 consumer files
+  in stratiform and reliquary from `Base256.encode(data)` to the `serialize`/`deserialize`
+  vocabulary. A verbatim relocation of `Base256` into package `monotonous` would churn those
+  same 13 files without achieving the unification, so it is the worst of both options and was
+  not done. (b) the
   presentation-preserving editing layer (Mutation, Revision, TelHandle, ~1,607 lines, plus
   the telOpenable givens) becomes `stratiform.editing`, cutting aperture; the lens givens
   (Tel2.scala:107–137) become `stratiform.optics`, cutting panopticon; the schema layer
   (Tels.scala, Tels2.scala) becomes `stratiform.schema`, mirroring jacinta.schema's bundle
   placement.
+
+  **Status:** `stratiform.optics` is **done** — the three lens/optic givens were members of
+  `trait Tel2` (and so inherited into `Tel`'s implicit scope) and are now toplevel givens
+  `telLens`, `telOrdinalOptical` and `telEachOptical`, cutting panopticon from stratiform.core.
+  `Tel` is a plain class, not a `Product`, so panopticon's generic `deref` lens cannot silently
+  substitute for a missing import.
+
+  `stratiform.schema` is **blocked**: `Tel.scala` has 51 code references to `Tels` — `assign`,
+  `resolveType`, `keywordMap` and friends — so the schema layer is woven into the core AST and
+  cannot move above it. Unlike jacinta, whose core does not use its schema, stratiform's does.
+
+  `stratiform.editing` is **partly analysed and not attempted**. A useful finding: `Tel.scala`'s
+  `import aperture.*` is dead — the file references nothing from it — so the aperture edge rests
+  entirely on `TelHandle.scala` plus two `Openable` givens. Those two are the obstacle: `Tel`'s
+  `telOpenable` (Tel.scala:83) deliberately outranks `Tel2`'s `telViewOpenable` (Tel2.scala:100)
+  because a given in the object beats one inherited from the trait, and that is what makes a
+  writable source resolve to the write-back instance. Flattening both into toplevel givens in a
+  new component destroys the ordering and makes them ambiguous for a source that is both
+  `Readable` and `Writable`. Doing this leg means reconstructing the object-extends-trait
+  layering inside `stratiform.editing`, deliberately, with a test that pins which instance a
+  read-write source selects.
 - **turbulence.stdio** — the concrete answer to "turbulence needs a clearer purpose":
   *streams* and *the standard streams* are different modules. Verified: Stdio, Io, In, Out
   and Err never touch the streaming algebra (they import only java.io, anticipation.print,
@@ -249,10 +293,34 @@ Horizon: near–mid
   The confined-indexing cluster (Scribe, Grouping, Lattice, Surveyor, Deindex, Segmentable,
   Populated, ~730 lines, all sitting directly on denominative — the shape that ypsiloid,
   stratiform, facsimile and escapade converged on) becomes a new library (placeholder name
-  **`concordance`** — rename at will) between denominative and rudiments. Mutex, Counter
+  **`concordance`**) between denominative and rudiments. Mutex, Counter
   and Loop (JVM concurrency) move to parasite; Exit to imperial or ambience;
   DecimalConverter to gossamer (rejoining Decimalizer, and cutting beneficence); Bijection
   to murmuration once correction 2 is decided.
+
+  The `concordance` extraction is **done**, with one decision worth keeping: its sources keep
+  `package rudiments`. Repackaging was tried first and abandoned — `Deindex`'s `apply`, `at`
+  and `prim` extensions are the tree's indexing vocabulary, so a new package forces an import
+  into nearly every file that indexes anything; the cascade reached sixty-odd components over
+  six rounds and was still spreading. Keeping the package made the split invisible: no source
+  file changed at all. `Bijection` went with the cluster rather than to murmuration, because
+  its only consumer is `Deindex.bijection` and it needs denominative, which murmuration lacks.
+
+  The **remaining re-homings are not worth doing as specified**, and the measurements say why:
+  none of them reduces any dependency closure, because none of the code involved depends on
+  anything that is not already universal. `Mutex`, `Counter` and `Loop` import only
+  `java.util.concurrent`; `Exit` (48 lines) imports nothing at all; `DecimalConverter` imports
+  only anticipation and beneficence. In particular the claim that moving `DecimalConverter`
+  cuts beneficence from rudiments is wrong: beneficence is on the compile classpath of *every*
+  one of rudiments' dependencies, `vacuous` and `denominative` included, so it stays regardless.
+  Against that nil benefit, the moves cost import sweeps of the consumers, which number 4 for
+  `DecimalConverter`, 9 for `Mutex`, 23 for `Exit` and 32 for `Loop`/`loop` (code uses, comments
+  excluded) — `loop` being control-flow vocabulary in the same way `apply` is indexing
+  vocabulary. They are worth doing only if the goal is rudiments' *description* rather than the
+  build graph, and then only by moving the module while keeping the package, as `concordance`
+  does. Note also that parasite.core already depends on rudiments.core, so anything moving into
+  parasite must leave rudiments with no reference to it (true today of Loop, whose only mention
+  in rudiments is the `loop` extension that defines it).
 - **gossamer.lexicon**: Dictionary.scala (434 lines) moves to a submodule; check overlap
   with nomenclature.lexicon first.
 

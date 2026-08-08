@@ -49,6 +49,10 @@ import gastronomy.*
 import gossamer.*
 import hieroglyph.*
 import panopticon.*
+
+// The `Tel` lens and optic instances live in `stratiform.optics` now, outside `Tel`'s implicit
+// scope, so they must be imported by name.
+import stratiform.{telEachOptical, telLens, telOrdinalOptical}
 import prepositional.*
 import probably.*
 import rudiments.*

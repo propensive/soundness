@@ -30,37 +30,48 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package stratiform
 
-export
-  gossamer
-  . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank, BoundsError,
-      broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, chomp,
-      contains, count, cut, Cuttable, Decimalizer, ends, erase, extract, fill, fit,
-      from,
-      fuzzy, Grapheme, init, join, Joinable, kebab, keep, length, lines, lower,
-      Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
-      RangeError, reversibleTextual, Rtl, search, offsetOf, SimpleTExtractor, skip, slices, snake, snip,
-      spaced, starts, sub, subscripts, superscripts, sysData, t, tail, text, textDecodable,
-      TextBuilder,
-      Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,
-      urlEncode, utf16, utf8, pinpoint, words, Writing, WritingBuilder, a, justify, punch }
+import anticipation.*
+import contingency.*
+import denominative.*
+import panopticon.*
+import prepositional.*
+import proscenium.compat.*
+import vacuous.*
 
-package decimalConverters:
-  export gossamer.decimalConverters.javaDecimalConverter
+// The panopticon lens and optic instances for `Tel`. These were members of `trait Tel2`, and so
+// inherited into `Tel`'s implicit scope; they are the only reason `stratiform.core` needed
+// panopticon, so they live here as toplevel givens instead. As with jacinta's equivalents, a
+// call site that fails to import them cannot silently degrade: panopticon's generic `deref`
+// lens applies only to `Product` types, and `Tel` is a plain class.
 
-package enumIdentification:
-  export gossamer.enumIdentification.kebabCaseIdentifiable
-  export gossamer.enumIdentification.pascalCaseIdentifiable
-  export gossamer.enumIdentification.snakeCaseIdentifiable
-  export gossamer.enumIdentification.camelCaseIdentifiable
+// Field-keyed lens: a name `<: Label` resolves to a Lens from `Tel`
+// onto `Tel`. The getter delegates to `selectDynamic`; the setter
+// routes through `Tel.modify`, which replaces an existing child
+// compound with the same kebab-case keyword in place or appends a
+// new one. Mirrors jacinta's lens given.
+given telLens: [name <: Label: ValueOf] => (erased dynamicTelEnabler: DynamicTelEnabler) => Tactic[TelError]
+=>  name is Lens from Tel onto Tel =
+  Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
 
-package proximities:
-  export gossamer.proximities.jaroProximity
-  export gossamer.proximities.jaroWinklerProximity
-  export gossamer.proximities.prefixProximity
-  export gossamer.proximities.levenshteinProximity
-  export gossamer.proximities.normalizedLevenshteinProximity
+// Positional optics over a node's child compounds (TEL has no positional arrays,
+// but a compound's children are ordered — this mirrors the read-side
+// `applyDynamic(field)(index)`). `Ordinal` addresses the n-th child; `Each` every
+// child. The transform's result keeps the original child's keyword, so a positional
+// update preserves the field identity while replacing its value/children.
+// (`rewrap`/`rebuild` are package-level pure helpers — see `stratiform_core.scala`.)
 
-package caseSensitivity:
-  export gossamer.caseSensitivity.{caseInsensitive, caseSensitive, smartCase}
+given telOrdinalOptical: [element] => Ordinal is Optical from Tel onto Tel = ordinal =>
+  Optic: (origin, lambda) =>
+    if ordinal.n0 < 0 || ordinal.n0 >= origin.childCompounds.length then origin
+    else rebuild
+      ( origin,
+        Tel.withChildCompound
+         ( origin.subtree.children, ordinal.n0, c => rewrap(c, lambda(Tel.make(c))) ) )
+
+given telEachOptical: Each.type is Optical from Tel onto Tel = _ =>
+  Optic: (origin, lambda) =>
+    rebuild
+      ( origin,
+        Tel.mapChildCompounds(origin.subtree.children, c => rewrap(c, lambda(Tel.make(c)))) )

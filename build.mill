@@ -726,13 +726,14 @@ object soundness extends Toolchain:
   object base extends Bundle(ambience.core, aperture.core, aviation.core, contextual.core,
     contingency.core, denominative.core, digression.core, diuretic.core, fulminate.core,
     hieroglyph.core, adversaria.core, turbulence.core, turbulence.stdio, eucalyptus.core,
-    gossamer.core,
+    gossamer.core, gossamer.lexicon,
     fulminate.print,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
     parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
     pneumatic.core, pneumatic.flate,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
+    concordance.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
     prophesy.core, murmuration.core, beneficence.core, proscenium.core, prescience.core,
     prescience.leaves,
@@ -786,10 +787,11 @@ object soundness extends Toolchain:
     honeycomb.core, urticose.core, urticose.url, urticose.ansi, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
-    legerdemain.core, legerdemain.query, telekinesis.forms, caduceus.core, caduceus.resend,
+    legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
+    caduceus.resend,
     orthodoxy.core,
     jacinta.http,
-    stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
+    stratiform.http, stratiform.optics, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
     xenophile.wit, xenophile.cffi, xenophile.scalanative, xenophile.kotlin, telekinesis.core,
@@ -1387,7 +1389,7 @@ object cardinality extends Library:
       settings.sep(super.scalacOptions())
 
 object cataclysm extends Library:
-  object core extends Component(zephyrine.core, gossamer.core, turbulence.core,
+  object core extends Component(zephyrine.core, gossamer.core, gossamer.lexicon, turbulence.core,
       contingency.core, vacuous.core, fulminate.core, denominative.core, hellenism.core,
       jacinta.core, quantitative.units, iridescence.core, gesticulate.core, rudiments.core,
       contextual.core, nomenclature.core):
@@ -1456,6 +1458,19 @@ object prophesy extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+
+object concordance extends Library:
+  // Confined indexing: `Deindex`, `Segmentable`, `Populated` and `Bijection`, with the `Scribe`,
+  // `Surveyor`, `Grouping` and `Lattice` combinators. These sit directly on `denominative` — the
+  // shape ypsiloid, stratiform, facsimile and escapade converged on — so they belong below
+  // `rudiments` rather than inside it. The sources keep `package rudiments`: `Deindex`'s `apply`,
+  // `at` and `prim` extensions are the whole tree's indexing vocabulary, and repackaging them
+  // would force an import into almost every file that indexes anything, for no benefit — the
+  // point of the split is the build graph, not the namespace.
+  object core extends Component(anticipation.text, denominative.core, prepositional.core,
+      vacuous.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
 object contextual extends Library:
   object core extends Component(rudiments.core):
@@ -1684,7 +1699,7 @@ object escritoire extends Library:
       settings.sep(super.scalacOptions())
 
 object polysyllabic extends Library:
-  object core extends Component(gossamer.core):
+  object core extends Component(gossamer.core, gossamer.lexicon):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -1964,7 +1979,13 @@ object gossamer extends Library:
   object core extends Component(hieroglyph.core, kaleidoscope.core, spectacular.core, hypotenuse.core, distillate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, mercator.core, serpentine.core):
+  // Word-lookup structures — an Aho-Corasick `Dictionary` and a fuzzy-search `Lexicon` — which
+  // gossamer's own text machinery never uses. Kept out of `core` so that the highest fan-in
+  // module in the tree stays smaller.
+  object lexicon extends Component(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, lexicon, mercator.core, serpentine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2042,7 +2063,7 @@ object hellenism extends Library:
 
 object honeycomb extends Library:
   object core extends Component(panopticon.core, gesticulate.core, xylophone.core, anticipation.url,
-      nomenclature.core, hellenism.core):
+      nomenclature.core, hellenism.core, gossamer.lexicon):
     override def scalaNative = false // loads its HTML entity tables from classpath resources at
                                      // runtime via hellenism's classloaders (JVM/JS-only)
     override def scalacOptions = Task:
@@ -2119,7 +2140,11 @@ object iridescence extends Library:
       settings.sep(super.scalacOptions())
 
 object jacinta extends Library:
-  object core extends Component(zephyrine.core, turbulence.core, urticose.url, panopticon.core, adversaria.core):
+  object core extends Component(zephyrine.core, turbulence.core, urticose.url, adversaria.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The panopticon lens/optic instances for `Json`, and jacinta's only use of panopticon.
+  object optics extends Component(core, panopticon.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object time extends Component(core, aviation.core):
@@ -2147,8 +2172,8 @@ object jacinta extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
-  object test extends Tests(time, http, schema, records, staged, sedentary.core, diuretic.core,
-    galilei.jvm, octogenarian.core, eucalyptus.core)
+  object test extends Tests(time, http, schema, records, staged, optics, sedentary.core,
+    diuretic.core, galilei.jvm, octogenarian.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"org.typelevel::jawn-ast:1.6.0",
@@ -2541,6 +2566,7 @@ object murmuration extends Library:
 object rudiments extends Library:
   object core extends Component(
       anticipation.codec,
+      concordance.core,
       vacuous.core,
       denominative.core,
       murmuration.core
@@ -2629,7 +2655,13 @@ object stenography extends Library:
       settings.sep(super.scalacOptions())
 
 object stratiform extends Library:
-  object core extends Component(zephyrine.core, turbulence.core, panopticon.core, gossamer.core, contingency.core, anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core, gigantism.core, fulminate.core, adversaria.core, aperture.core):
+  object core extends Component(zephyrine.core, turbulence.core, gossamer.core, contingency.core,
+      anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core,
+      gigantism.core, fulminate.core, adversaria.core, aperture.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The panopticon lens/optic instances for `Tel`, and stratiform's only use of panopticon.
+  object optics extends Component(core, panopticon.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object base256 extends Component(gossamer.core, contingency.core, fulminate.core, anticipation.codec, vacuous.core):
@@ -2671,7 +2703,7 @@ object stratiform extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, base256, binary, binaryStaged, records, staged, time, http,
+  object test extends Tests(core, base256, binary, binaryStaged, records, staged, optics, time, http,
       eucalyptus.core, galilei.jvm)
   object bench extends Benchmarks(core, base256, binary, binaryStaged, quantitative.units,
       hellenism.core, ambience.core)
@@ -2964,7 +2996,7 @@ object xenophile extends Library:
   object wit extends Component(core, hypotenuse.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object webidl extends Component(core, hypotenuse.core):
+  object webidl extends Component(core, hypotenuse.core, gossamer.lexicon):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The JVM/Kotlin ecosystem: resolves foreign definitions on demand from the `@Metadata`
@@ -3005,7 +3037,8 @@ object querencia extends Library:
       settings.sep(super.scalacOptions())
 
 object xylophone extends Library:
-  object core extends Component(zephyrine.core, adversaria.core, typonym.core, wisteria.core, panopticon.core, turbulence.core, serpentine.core):
+  object core extends Component(zephyrine.core, adversaria.core, typonym.core, wisteria.core,
+      panopticon.core, turbulence.core, serpentine.core, gossamer.lexicon):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Expr-level `Inlinable` typeclass and its expansion-time instance
@@ -3113,7 +3146,7 @@ val allLibraries: Seq[Library] = Seq(
   breviloquence,
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
-  charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
+  charisma, chiaroscuro, coaxial, concordance, contextual, contingency, cosmopolite,
   degustation, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton, facsimile,

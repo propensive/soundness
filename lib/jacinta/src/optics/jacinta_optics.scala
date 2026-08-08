@@ -30,37 +30,89 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package jacinta
 
-export
-  gossamer
-  . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank, BoundsError,
-      broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, chomp,
-      contains, count, cut, Cuttable, Decimalizer, ends, erase, extract, fill, fit,
-      from,
-      fuzzy, Grapheme, init, join, Joinable, kebab, keep, length, lines, lower,
-      Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
-      RangeError, reversibleTextual, Rtl, search, offsetOf, SimpleTExtractor, skip, slices, snake, snip,
-      spaced, starts, sub, subscripts, superscripts, sysData, t, tail, text, textDecodable,
-      TextBuilder,
-      Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,
-      urlEncode, utf16, utf8, pinpoint, words, Writing, WritingBuilder, a, justify, punch }
+import scala.caps
 
-package decimalConverters:
-  export gossamer.decimalConverters.javaDecimalConverter
+import anticipation.*
+import contingency.*
+import denominative.*
+import panopticon.*
+import prepositional.*
+import proscenium.compat.*
+import vacuous.*
 
-package enumIdentification:
-  export gossamer.enumIdentification.kebabCaseIdentifiable
-  export gossamer.enumIdentification.pascalCaseIdentifiable
-  export gossamer.enumIdentification.snakeCaseIdentifiable
-  export gossamer.enumIdentification.camelCaseIdentifiable
+// The panopticon lens and optic instances for `Json`. These are the only reason `jacinta.core`
+// needed panopticon, so they live here instead of in `Json`'s companion. That takes them out of
+// `Json`'s implicit scope, so a call site using `json.lens(…)` must import them; panopticon's
+// generic `deref` lens only applies to `Product` types, and `Json` is not one, so a missing
+// import is a compile error rather than a silent change of behaviour.
 
-package proximities:
-  export gossamer.proximities.jaroProximity
-  export gossamer.proximities.jaroWinklerProximity
-  export gossamer.proximities.prefixProximity
-  export gossamer.proximities.levenshteinProximity
-  export gossamer.proximities.normalizedLevenshteinProximity
+given jsonLens: [name <: Label: ValueOf] => (erased dynamicJsonEnabler: DynamicJsonEnabler) => (tactic: Tactic[JsonError])
+=>  ((name is Lens from Json onto Json)^{tactic}) =
 
-package caseSensitivity:
-  export gossamer.caseSensitivity.{caseInsensitive, caseSensitive, smartCase}
+  Lens(_.selectField(valueOf[name]), (json, value) => json.modify(valueOf[name], value))
+
+given jsonOrdinalOptical: [element] => Ordinal is Optical from Json onto Json =
+  ordinal =>
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.arrayLength
+
+        if n <= ordinal.n0 then origin else Json.ast:
+          val updated = Array[Any](n)
+          var i = 0
+
+          while i < n do
+            updated(i) =
+              if i == ordinal.n0
+              then lambda(Json.ast(origin.root.arrayElement(i))).root
+              else origin.root.arrayElement(i)
+
+            i += 1
+
+          Json.Ast.arr(Array.freeze(updated))
+      else
+        origin
+
+// `Each` applies the transform to every array element; `Filter` to those matching
+// its predicate. Both rebuild the array immutably and no-op on non-arrays.
+given jsonEachOptical: Each.type is Optical from Json onto Json = _ =>
+  Optic: (origin, lambda) =>
+    if origin.root.isArray then
+      val n = origin.root.arrayLength
+
+      Json.ast:
+        val updated = Array[Any](n)
+        var i = 0
+
+        while i < n do
+          updated(i) = lambda(Json.ast(origin.root.arrayElement(i))).root
+          i += 1
+
+        Json.Ast.arr(Array.freeze(updated))
+    else
+      origin
+
+// The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM
+// pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
+// pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
+given jsonFilterOptical: Filter[Json] is Optical from Json onto Json = filter =>
+  val predicate: Json -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+
+  Optic: (origin, lambda) =>
+    if origin.root.isArray then
+      val n = origin.root.arrayLength
+
+      Json.ast:
+        val updated = Array[Any](n)
+        var i = 0
+
+        while i < n do
+          val element = Json.ast(origin.root.arrayElement(i))
+          updated(i) = (if predicate(element) then lambda(element) else element).root
+          i += 1
+
+        Json.Ast.arr(Array.freeze(updated))
+    else
+      origin

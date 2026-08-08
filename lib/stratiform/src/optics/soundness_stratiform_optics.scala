@@ -32,35 +32,4 @@
                                                                                                   */
 package soundness
 
-export
-  gossamer
-  . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank, BoundsError,
-      broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, chomp,
-      contains, count, cut, Cuttable, Decimalizer, ends, erase, extract, fill, fit,
-      from,
-      fuzzy, Grapheme, init, join, Joinable, kebab, keep, length, lines, lower,
-      Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
-      RangeError, reversibleTextual, Rtl, search, offsetOf, SimpleTExtractor, skip, slices, snake, snip,
-      spaced, starts, sub, subscripts, superscripts, sysData, t, tail, text, textDecodable,
-      TextBuilder,
-      Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,
-      urlEncode, utf16, utf8, pinpoint, words, Writing, WritingBuilder, a, justify, punch }
-
-package decimalConverters:
-  export gossamer.decimalConverters.javaDecimalConverter
-
-package enumIdentification:
-  export gossamer.enumIdentification.kebabCaseIdentifiable
-  export gossamer.enumIdentification.pascalCaseIdentifiable
-  export gossamer.enumIdentification.snakeCaseIdentifiable
-  export gossamer.enumIdentification.camelCaseIdentifiable
-
-package proximities:
-  export gossamer.proximities.jaroProximity
-  export gossamer.proximities.jaroWinklerProximity
-  export gossamer.proximities.prefixProximity
-  export gossamer.proximities.levenshteinProximity
-  export gossamer.proximities.normalizedLevenshteinProximity
-
-package caseSensitivity:
-  export gossamer.caseSensitivity.{caseInsensitive, caseSensitive, smartCase}
+export stratiform.{telEachOptical, telLens, telOrdinalOptical}

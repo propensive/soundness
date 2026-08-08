@@ -55,7 +55,6 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import panopticon.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -2018,75 +2017,6 @@ object Json extends Json2, Dynamic:
 
       ${jacinta.internal.extractor[parts, origins]('scrutinee)}
 
-
-  given lens: [name <: Label: ValueOf] => (erased dynamicJsonEnabler: DynamicJsonEnabler) => (tactic: Tactic[JsonError])
-  =>  ((name is Lens from Json onto Json)^{tactic}) =
-
-    Lens(_.selectField(valueOf[name]), (json, value) => json.modify(valueOf[name], value))
-
-  given ordinalOptical: [element] => Ordinal is Optical from Json onto Json =
-    ordinal =>
-      Optic: (origin, lambda) =>
-        if origin.root.isArray then
-          val n = origin.root.arrayLength
-
-          if n <= ordinal.n0 then origin else Json.ast:
-            val updated = Array[Any](n)
-            var i = 0
-
-            while i < n do
-              updated(i) =
-                if i == ordinal.n0
-                then lambda(Json.ast(origin.root.arrayElement(i))).root
-                else origin.root.arrayElement(i)
-
-              i += 1
-
-            Json.Ast.arr(Array.freeze(updated))
-        else
-          origin
-
-  // `Each` applies the transform to every array element; `Filter` to those matching
-  // its predicate. Both rebuild the array immutably and no-op on non-arrays.
-  given eachOptical: Each.type is Optical from Json onto Json = _ =>
-    Optic: (origin, lambda) =>
-      if origin.root.isArray then
-        val n = origin.root.arrayLength
-
-        Json.ast:
-          val updated = Array[Any](n)
-          var i = 0
-
-          while i < n do
-            updated(i) = lambda(Json.ast(origin.root.arrayElement(i))).root
-            i += 1
-
-          Json.Ast.arr(Array.freeze(updated))
-      else
-        origin
-
-  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM
-  // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
-  // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
-  given filterOptical: Filter[Json] is Optical from Json onto Json = filter =>
-    val predicate: Json -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
-
-    Optic: (origin, lambda) =>
-      if origin.root.isArray then
-        val n = origin.root.arrayLength
-
-        Json.ast:
-          val updated = Array[Any](n)
-          var i = 0
-
-          while i < n do
-            val element = Json.ast(origin.root.arrayElement(i))
-            updated(i) = (if predicate(element) then lambda(element) else element).root
-            i += 1
-
-          Json.Ast.arr(Array.freeze(updated))
-      else
-        origin
 
   // A `Json` value decodes to itself. Typed as the plain `Decodable in Json` (not
   // the `Json.Decodable` carrier) so it is *exactly* the queried type and strictly
