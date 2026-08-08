@@ -66,9 +66,12 @@ object Bufferable extends ProductDerivable[Bufferable]:
     def sextant(sextant: Sextant, value: derivation): Unit = buffer0(sextant, value)
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Bufferable =
+    // The sextant parameter is ascribed for the same reason as Debufferable.conjunction's:
+    // an inferred type adopts a memoized root capability from the unit's first expansion,
+    // failing any second expansion (upstream #26547).
     Join[derivation]
       ( contexts[derivation]() { [field] => _.width }.sum,
-        (sextant, value) => fields(value) { [field] => field => contextual.sextant(sextant, field) } )
+        (sextant: Sextant, value) => fields(value) { [field] => field => contextual.sextant(sextant, field) } )
 
 trait Bufferable extends Typeclass:
   def width: Int
