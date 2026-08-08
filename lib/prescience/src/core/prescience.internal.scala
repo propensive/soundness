@@ -130,7 +130,7 @@ object internal:
       val run = ctx.run
 
       if run == null then false else
-        val sources = run.nn.units.map(_.source.file.path).toSet
+        val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
         position.exists { position => sources.contains(position.sourceFile.path) }
     catch case _: Exception => false
