@@ -64,7 +64,7 @@ object ScalacSession:
   // artifacts, and `save` materializes them under a directory, only if the caller wants
   // them on disk. Since session compiles run synchronously, the result is already complete
   // by the time the process is returned.
-  class Process private[anthology] (output: dtio.VirtualDirectory) extends CompileProcess():
+  class Process private[anthology] (output: dtio.AbstractFile) extends CompileProcess():
     // Every artifact the compile emitted — classfiles, TASTy, `.sjsir`, `.nir` — keyed by
     // its location on the classpath this output constitutes. Empty if the compile failed
     // before the back-end ran.
@@ -124,7 +124,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
     baseContext = driver.baseContext(arguments).getOrElse(abort(CompilerError()))
 
   update def compile(sources: Map[Text, Text]): ScalacSession.Process^{this, caps.any} =
-    val output = dtio.VirtualDirectory("<session output>")
+    val output = dtio.virtualDirectory("<session output>")
     val process = ScalacSession.Process(output)
     val reporter = processReporter(process)
 

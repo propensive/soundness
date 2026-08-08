@@ -96,8 +96,12 @@ object scalacEdges:
         CompileEvents.relay(using linkEvents)
 
       mitigate:
-        case CompilerError() => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
-        case AsyncError(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
+        // A type test, not `CompilerError()`: when the mitigation macro re-splices these
+        // cases, one compiler stream mis-retypes a nullary case-class pattern (its
+        // `Boolean` unapply) while a type test — identical in meaning for an empty case
+        // class — retypes correctly on both.
+        case _: CompilerError => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
+        case AsyncError(_)    => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
 
       . protect:
           val process = scalac(classpath)(sources, out)

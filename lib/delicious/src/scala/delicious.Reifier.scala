@@ -34,13 +34,15 @@ package delicious
 
 import dotty.tools.dotc as dtd
 import dotty.tools.dotc.ast.tpd.TreeOps
+import dotty.tools.dotc.core.CompilationUnitInfo
 import dotty.tools.dotc.core.Contexts
 import dotty.tools.dotc.core.tasty.DottyUnpickler
+import dotty.tools.dotc.core.tasty.TastyUnpickler
 import dotty.tools.dotc.quoted.QuotesCache
 import dotty.tools.dotc.core.tasty.TreeUnpickler.UnpickleMode
 import dotty.tools.dotc.reporting.Reporter
 import dotty.tools.dotc.util.SourceFile
-import dotty.tools.io.NoAbstractFile
+import dotty.tools.io.VirtualFile
 
 import java.util as ju
 
@@ -141,13 +143,33 @@ class Reifier(classpath: LocalClasspath):
         // The decode is inlined at the argument: the Java decoder's fluid result adapts to
         // the unpickler's pure formal, where a named array value would charge its read
         // capability.
+        // `DottyUnpickler`'s constructor differs between the compiler streams (one reads the
+        // bytes from the file, the other takes them separately), so the same unpickling is
+        // spelled out through the section unpicklers, whose surface both streams share.
         val unpickler =
-          DottyUnpickler
-            ( NoAbstractFile, ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[scala.Array[Byte]],
-              isBestEffortTasty = false, UnpickleMode.TypeTree )
+          TastyUnpickler
+            ( ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[scala.Array[Byte]],
+              false )
 
-        unpickler.enter(scala.collection.immutable.Set.empty)
-        val tree = unpickler.tree
+        // The file exists only to give the compilation unit an associated name: its
+        // contents are never read (the unpickler above already has the bytes), but the
+        // decode is repeated inline because only a fluid Java result adapts to the pure
+        // formal, as above.
+        val info =
+          CompilationUnitInfo
+            ( VirtualFile
+                ( "<delicious>",
+                  ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[scala.Array[Byte]] ) )
+          . nn
+        val positions = unpickler.unpickle(DottyUnpickler.PositionsSectionUnpickler())
+        val comments = unpickler.unpickle(DottyUnpickler.CommentsSectionUnpickler())
+
+        val treeUnpickler =
+          unpickler.unpickle(DottyUnpickler.TreeSectionUnpickler(info, positions, comments, false))
+          . get
+
+        treeUnpickler.enter(scala.collection.immutable.Set.empty)
+        val tree = treeUnpickler.unpickle(UnpickleMode.TypeTree).head
         tree.foreachSubTree { _ => () } // force trees and positions
 
         val quotes = scala.quoted.runtime.impl.QuotesImpl()
