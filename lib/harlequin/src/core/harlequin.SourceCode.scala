@@ -143,7 +143,7 @@ object SourceCode:
     context0.setSetting(context0.settings.source, "future")
 
     given context: Contexts.Context =
-      context0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using context0))
+      context0.setCompilationUnit(CompilationUnit(source, false)(using context0))
 
     val trees = Trees()
     val parser = Parsers.Parser(source)
