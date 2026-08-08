@@ -423,6 +423,16 @@ Horizon: mid — after mod-4, so nothing moves twice.
   would be a performance regression for no benefit. The same is true of pneumatic on the JVM,
   whose `FlateBackend` uses `JavaCrc32`; its pure `Crc32` is the JS/native path only.
 
+  That asymmetry is itself worth resolving, and is recorded here as an open decision. pneumatic
+  picks its checksum per platform — `flate-jvm` supplies `JavaCrc32`, `flate-native` the pure
+  one — whereas zeppelin and gastronomy reach for `java.util.zip` unconditionally. For zeppelin
+  that choice is part of why it is pinned to the JVM (`scalaJs = false`, "zip archives
+  (`java.util.zip`, `galilei`)"): a ZIP library that cross-compiled would need the pure
+  checksum, which `corpuscular` now provides. So the wiring is possible, and pneumatic's
+  `<name>-jvm`/`<name>-native` source-directory split is the precedent for it. The decision is
+  whether to adopt it — either make the platform choice consistent everywhere, or state plainly
+  which libraries are JVM-only by design and stop paying for the abstraction elsewhere.
+
   **pneumatic's migration is blocked on capture checking.** `corpuscular`'s checksums are
   `caps.Mutable` with `update def` methods, which is where the codebase is heading (XzCheck's
   own checkers are already written that way), but adapting `FlateChecksum` to that shape fails:
