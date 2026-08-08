@@ -267,13 +267,9 @@ extension [value](iterables: Iterable[Iterable[value]])
     if iterables.nil then Iterable() else iterables.reduceLeft(_ ++ between ++ _)
 
 extension [value](iterable: Iterable[value])
-  // The `Result` of each numeric typeclass below is bound as an inferred type parameter (e.g.
-  // `to result` + `result =:= value`) rather than referenced path-dependently (`addable.Result =:=
-  // value`). Under capture checking the path-dependent form fails at the cross-package `export`
-  // forwarder (#1411); binding it as a type parameter keeps call sites unchanged.
-  transparent inline def total[result]
-    ( using addable:  value is Addable by value to result,
-            equality: result =:= value )
+  transparent inline def total
+    ( using addable:  value is Addable by value,
+            equality: addable.Result =:= value )
   :   Optional[value] =
 
     compiletime.summonFrom:
@@ -283,23 +279,23 @@ extension [value](iterable: Iterable[value])
         if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
 
 
-  transparent inline def mean[addResult, divResult]
-    ( using addable:   value is Addable by value to addResult,
-            equality:  addResult =:= value,
-            divisible: value is Divisible by Double to divResult,
-            eqality2:  divResult =:= value )
+  transparent inline def mean
+    ( using addable:   value is Addable by value,
+            equality:  addable.Result =:= value,
+            divisible: value is Divisible by Double,
+            eqality2:  divisible.Result =:= value )
   :   Optional[value] =
 
     iterable.total.let(_/iterable.size.toDouble)
 
-  inline def mean2[subResult, addResult, divResult, add2Result]
-    ( using subtractable: value is Subtractable by value to subResult,
-            addable:      subResult is Addable by subResult to addResult,
-            equality:     addResult =:= subResult,
-            divisible:    subResult is Divisible by Double to divResult,
-            equality2:    divResult =:= subResult,
-            addable2:     value is Addable by divResult to add2Result,
-            equality3:    add2Result =:= value )
+  inline def mean2
+    ( using subtractable: value is Subtractable by value,
+            addable:      subtractable.Result is Addable by subtractable.Result,
+            equality:     addable.Result =:= subtractable.Result,
+            divisible:    subtractable.Result is Divisible by Double,
+            equality2:    divisible.Result =:= subtractable.Result,
+            addable2:     value is Addable by divisible.Result,
+            equality3:    addable2.Result =:= value )
   :   Optional[value] =
 
     if iterable.nil then Unset else
@@ -307,32 +303,32 @@ extension [value](iterable: Iterable[value])
 
       iterable.map(_ - arbitrary).total.let: total => arbitrary + total/iterable.size.toDouble
 
-  def variance[addResult, divResult, subResult, mulResult, add2Result, div2Result]
-    ( using addable:       value is Addable by value to addResult,
-            equality:      addResult =:= value,
-            divisible:     value is Divisible by Double to divResult,
-            equality2:     divResult =:= value,
-            subtractable:  value is Subtractable by value to subResult,
-            multiplicable: subResult is Multiplicable by subResult to mulResult,
-            addable2:      mulResult is Addable by mulResult to add2Result,
-            zeroic2:       mulResult is Zeroic,
-            equality3:     add2Result =:= mulResult,
-            divisible2:    mulResult is Divisible by Double to div2Result )
-  :   Optional[div2Result] =
+  def variance
+    ( using addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            equality2:     divisible.Result =:= value,
+            subtractable:  value is Subtractable by value,
+            multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
+            addable2:      multiplicable.Result is Addable by multiplicable.Result,
+            zeroic2:       multiplicable.Result is Zeroic,
+            equality3:     addable2.Result =:= multiplicable.Result,
+            divisible2:    multiplicable.Result is Divisible by Double )
+  :   Optional[divisible2.Result] =
 
     iterable.mean.let: mean =>
       iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
 
 
-  def std[addResult, divResult, div2Result, mulResult]
-    ( using addable:       value is Addable by value to addResult,
-            equality:      addResult =:= value,
-            divisible:     value is Divisible by Double to divResult,
-            equality2:     divResult =:= value,
-            divisible2:    value is Divisible by value to div2Result,
-            equality3:     div2Result =:= Double,
-            multiplicable: value is Multiplicable by Double to mulResult,
-            equality4:     mulResult =:= value )
+  def std
+    ( using addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            equality2:     divisible.Result =:= value,
+            divisible2:    value is Divisible by value,
+            equality3:     divisible2.Result =:= Double,
+            multiplicable: value is Multiplicable by Double,
+            equality4:     multiplicable.Result =:= value )
   :   Optional[value] =
 
     iterable.mean.let: mean0 =>
@@ -349,10 +345,10 @@ extension [value](iterable: Iterable[value])
       divisor*math.sqrt(sum/iterable.size.toDouble)
 
 
-  def product[mulResult]
+  def product
     ( using unital:        value is Unital,
-            multiplicable: value is Multiplicable by value to mulResult,
-            equality:      mulResult =:= value )
+            multiplicable: value is Multiplicable by value,
+            equality:      multiplicable.Result =:= value )
   :   value =
 
     iterable.foldLeft(unital.one)(multiplicable.multiply)
