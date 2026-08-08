@@ -532,8 +532,11 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
       val luma = plane(y*stride + x) & 0xffL
       (luma << 16) | (luma << 8) | luma
 
-  private def colorRaster
-    ( frame: JpegFrame, planes: scala.Array[scala.Array[Byte]], width: Int, height: Int )
+  private def colorRaster[planeCaps^ <: {caps.any.only[caps.Unscoped]}]
+    ( frame:  JpegFrame,
+      planes: scala.Array[scala.Array[Byte]^{planeCaps}],
+      width:  Int,
+      height: Int )
     ( using Tactic[RasterError] )
   :   Raster =
 

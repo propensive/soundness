@@ -32,6 +32,8 @@
                                                                                                   */
 package hallucination
 
+import scala.caps
+
 import contingency.*
 import proscenium.compat.*
 
@@ -145,8 +147,8 @@ private[hallucination] final class JpegUpsampler private
     lineBuffers0.asInstanceOf[scala.Array[scala.Array[Byte]]](index)
 
   // Upsamples row `row` of every component to full width and interleaves via `colorConvert`.
-  def upsampleAndInterleaveRow
-    ( componentData: scala.Array[scala.Array[Byte]],
+  def upsampleAndInterleaveRow[componentCaps^ <: {caps.any.only[caps.Unscoped]}]
+    ( componentData: scala.Array[scala.Array[Byte]^{componentCaps}],
       row:           Int,
       output:        scala.Array[Byte],
       colorConvert:  JpegColorConverter )
@@ -163,9 +165,9 @@ private[hallucination] final class JpegUpsampler private
 
     colorConvert.convert(lineBuffers0, output)
 
-  private def upsampleRow
+  private def upsampleRow[inputCaps^ <: {caps.any.only[caps.Unscoped]}]
     ( kind:      Int,
-      input:     scala.Array[Byte],
+      input:     scala.Array[Byte]^{inputCaps},
       width:     Int,
       height:    Int,
       rowStride: Int,
