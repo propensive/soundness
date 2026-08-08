@@ -316,10 +316,7 @@ object Honeycomb:
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
                     case Some('{$renderable: Renderable}) =>
-                      // Widened eagerly: joining the branch types under capture
-                      // checking decorates the summoned evidence's skolem, which
-                      // then fails to unify (the macro only needs `Expr[Any]`).
-                      ('{$renderable.render($expr)}: Expr[Any])
+                      '{$renderable.render($expr)}
 
                     case _ => halt:
                       m"""
@@ -331,10 +328,7 @@ object Honeycomb:
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
                     case Some('{$renderable: Renderable}) =>
-                      // Widened eagerly: joining the branch types under capture
-                      // checking decorates the summoned evidence's skolem, which
-                      // then fails to unify (the macro only needs `Expr[Any]`).
-                      ('{$renderable.render($expr)}: Expr[Any])
+                      '{$renderable.render($expr)}
 
                     case _ =>
                       Expr.summon[(? >: value) is Showable] match
