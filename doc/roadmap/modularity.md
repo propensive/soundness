@@ -162,12 +162,25 @@ Horizon: near–mid
   splits into a honeycomb-free `legerdemain.query`; telekinesis.core retargets it, cutting
   the whole HTML/XML stack off the HTTP-client path. Check platform flags: query becomes
   fully cross-platform.
-- **ethereal.dist**: Runners, Assembler, Installer and Upgrade (~525 lines — the
-  download/verify/package/self-update toolchain) split from the daemon, taking
-  telekinesis.jvm, urticose.url, gastronomy and zeppelin with them; ethereal.core keeps
-  surveillance, eucalyptus.syslog, hellenism, exoskeleton and coaxial.jvm. The two
-  `quantitative.units` duration literals (e.g. the six-hour idleTimeout) are replaced,
-  cutting that dep too. ziggurat.packager retargets ethereal.dist.
+- **ethereal.dist** — **blocked as specified; needs a design decision before it is attempted
+  again.** The intent was to split Runners, Assembler, Installer and Upgrade (the
+  download/verify/package/self-update toolchain) from the daemon, taking telekinesis.jvm,
+  urticose.url, gastronomy and zeppelin with them. On inspection the daemon and the toolchain
+  are not separable along that line: `cli` (ethereal_core.scala:88) spans the rest of the file
+  and *is* the daemon, and its `name` resolution recovers from a missing `ethereal.name`
+  property by running the whole build-an-executable path, which calls `Runners.version`,
+  `Runners.download`, `Assembler.PublicKeyLength` and `Assembler.assemble`. So core cannot shed
+  Runners or Assembler, and those two need all four heavy dependencies between them; moving
+  only Installer and Upgrade (which core does not reference) cuts nothing, since they need only
+  zeppelin, which Assembler needs anyway. Putting `cli` in the new component instead would
+  leave `core` holding little but the daemon's supporting types, and the two real external
+  consumers — anthology.xeq (`Runners`) and ziggurat.packager (`Assembler`) — would take the
+  new component regardless, so the split would buy nothing for them either. Doing this properly
+  means extracting the build-an-executable branch behind an interface that `ethereal.dist`
+  supplies, which changes how that path is reached and so crosses the no-semantic-change line.
+  The `quantitative.units` observation does stand on its own: there is one such literal, not
+  two — `val idleTimeout = Quantity[Hours[1]](6.0)` at ethereal_core.scala:266 — and
+  `Long is Abstractable across Durations to Long` would replace it exactly.
 - **ypsiloid de-jacinta**: `Bcd` (jacinta.internal.scala:284+, an opaque over
   `IArray[Double]` whose runtime representation is erased, so the move is bit-identical)
   moves to **hypotenuse**, severing ypsiloid → jacinta — a YAML library depending on a JSON
