@@ -787,7 +787,8 @@ object soundness extends Toolchain:
     honeycomb.core, urticose.core, urticose.url, urticose.ansi, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
-    legerdemain.core, legerdemain.query, telekinesis.forms, caduceus.core, caduceus.resend,
+    legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
+    caduceus.resend,
     orthodoxy.core,
     jacinta.http,
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
@@ -2139,7 +2140,11 @@ object iridescence extends Library:
       settings.sep(super.scalacOptions())
 
 object jacinta extends Library:
-  object core extends Component(zephyrine.core, turbulence.core, urticose.url, panopticon.core, adversaria.core):
+  object core extends Component(zephyrine.core, turbulence.core, urticose.url, adversaria.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The panopticon lens/optic instances for `Json`, and jacinta's only use of panopticon.
+  object optics extends Component(core, panopticon.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object time extends Component(core, aviation.core):
@@ -2167,8 +2172,8 @@ object jacinta extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
-  object test extends Tests(time, http, schema, records, staged, sedentary.core, diuretic.core,
-    galilei.jvm, octogenarian.core, eucalyptus.core)
+  object test extends Tests(time, http, schema, records, staged, optics, sedentary.core,
+    diuretic.core, galilei.jvm, octogenarian.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"org.typelevel::jawn-ast:1.6.0",

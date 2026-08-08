@@ -33,6 +33,10 @@
 package jacinta
 
 import soundness.*
+
+// The `Json` lens and optic instances live in `jacinta.optics` now, outside `Json`'s implicit
+// scope, so they must be imported by name.
+import jacinta.{jsonEachOptical, jsonFilterOptical, jsonLens, jsonOrdinalOptical}
 import proscenium.compat.*
 
 import scala.language.dynamics
