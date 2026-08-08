@@ -222,7 +222,23 @@ Horizon: near–mid
 - **stratiform splits** (two PRs): (a) `stratiform.base256` is a general binary-to-text
   codec and moves into **monotonous** (extending `Serializable` to non-ASCII alphabets);
   stratiform.binary and revolution retarget; bitumen's hand-rolled `decodeOctal` adopts
-  monotonous.Octal; the turbulence-facing givens move to `stratiform.io`. (b) the
+  monotonous.Octal; the turbulence-facing givens move to `stratiform.io`.
+
+  **(a) is mod-5 work, not a module split, and the parenthesis is the whole job.**
+  `monotonous.Alphabet` is not itself ASCII-bound — it derives bits per character as
+  `log2(chars.length)`, which gives 8 for a 256-character alphabet — but
+  `Serializable.base` is: it precomputes `Array.tabulate(1 << bits)(alphabet(_).toByte)`, an
+  ASCII *byte* lookup table, and its comment states the invariant plainly ("Every alphabet
+  character is ASCII, so decoding the output as Latin-1 yields identical text"), which is what
+  lets it build the result from Latin-1 bytes with no per-character boxing. `Base256`'s alphabet
+  is emphatically not ASCII (`ḀḁЂЃĄą…`), so `.toByte` would truncate every character in it.
+  Integrating the codec therefore means changing monotonous's documented fast path, which is
+  performance-sensitive and belongs with mod-5's codec work, gated on equivalence tests against
+  the present `Base256.encode`/`decode` and on the benchmarks. It also moves 13 consumer files
+  in stratiform and reliquary from `Base256.encode(data)` to the `serialize`/`deserialize`
+  vocabulary. A verbatim relocation of `Base256` into package `monotonous` would churn those
+  same 13 files without achieving the unification, so it is the worst of both options and was
+  not done. (b) the
   presentation-preserving editing layer (Mutation, Revision, TelHandle, ~1,607 lines, plus
   the telOpenable givens) becomes `stratiform.editing`, cutting aperture; the lens givens
   (Tel2.scala:107–137) become `stratiform.optics`, cutting panopticon; the schema layer
