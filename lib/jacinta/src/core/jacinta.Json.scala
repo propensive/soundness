@@ -1795,14 +1795,12 @@ object Json extends Json2, Dynamic:
     def parseTracked(source: Data)(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
-      val (raw, ints) = Parser.parseTracked(source, mode)
-      (raw.asInstanceOf[Json.Ast], Json.PositionIndex(ints))
+      Parser.parseTracked(source, mode)
 
     def parseTracked(input: Iterator[Data])(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
-      val (raw, ints) = Parser.parseTracked(input, mode)
-      (raw.asInstanceOf[Json.Ast], Json.PositionIndex(ints))
+      Parser.parseTracked(input, mode)
 
     private[jacinta] def parse(consume input: (Stream[Data] over Credit)^)
       ( using mode: NumberMode, tactic: Tactic[ParseError] )
@@ -1814,8 +1812,7 @@ object Json extends Json2, Dynamic:
       ( using mode: NumberMode, tactic: Tactic[ParseError] )
     :   (Json.Ast, Json.PositionIndex) =
 
-      val (raw, ints) = Parser.parseTracked(input, mode)
-      (raw.asInstanceOf[Json.Ast], Json.PositionIndex(ints))
+      Parser.parseTracked(input, mode)
 
   def ast(value: Json.Ast): Json = new Json(value)
 

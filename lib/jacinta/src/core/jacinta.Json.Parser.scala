@@ -59,9 +59,9 @@ private[jacinta] object Parser:
   // arrays are filled once during the parse and never mutated after, and typing them
   // immutable keeps `Raw` free of stateful members under separation checking.
   private[jacinta] type Raw =
-    Long | Int | Double | Bcd | String | Array[Any]^{} |
-      Array[Long]^{} | Array[Int]^{} |
-      Boolean | Json.JsonNull.type | Unset
+    ( Long | Int | Double | Bcd | String | Array[Any] |
+        Array[Long] | Array[Int] |
+        Boolean | Json.JsonNull.type | Unset )^{}
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1
@@ -197,7 +197,7 @@ private[jacinta] object Parser:
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(source: Data, mode: NumberMode = NumberMode.Full)
-  :   (Raw, Array[Int]^{}) raises ParseError =
+  :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
     val parser = borrow()
     parser.tracking = true
@@ -205,10 +205,10 @@ private[jacinta] object Parser:
     parser.holes = false
     parser.numberMode = mode
     val raw = caps.unsafe.unsafeAssumePure(parser.parse())
-    (raw, parser.rootIndex.nn)
+    (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
   def parseTracked(input: Iterator[Data], mode: NumberMode)
-  :   (Raw, Array[Int]^{}) raises ParseError =
+  :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
     val parser = borrow()
     parser.tracking = true
@@ -216,7 +216,7 @@ private[jacinta] object Parser:
     parser.holes = false
     parser.numberMode = mode
     val raw = caps.unsafe.unsafeAssumePure(parser.parse())
-    (raw, parser.rootIndex.nn)
+    (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
   def parse(consume input: (Stream[Data] over Credit)^, mode: NumberMode): Raw raises ParseError =
     val parser = borrow()
@@ -229,7 +229,7 @@ private[jacinta] object Parser:
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
-  :   (Raw, Array[Int]^{}) raises ParseError =
+  :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
     val parser = borrow()
     parser.tracking = true
@@ -239,7 +239,7 @@ private[jacinta] object Parser:
     parser.holes = false
     parser.numberMode = mode
     val raw = caps.unsafe.unsafeAssumePure(parser.parse())
-    (raw, parser.rootIndex.nn)
+    (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
 // The parser is a stateful capability: one exclusive owner per instance (guaranteed by
 // the per-thread pool), with every state-mutating method classified `update`. This unit
