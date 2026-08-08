@@ -405,9 +405,32 @@ Horizon: mid — after mod-4, so nothing moves twice.
   readers/writers in LSB- and MSB-first variants, and a canonical-Huffman table builder
   (seeded from pneumatic.BrotliDecoder's, the cleanest of four). It lands with tests
   replicating every donor's edge cases *before* any consumer migrates.
-- **Checksums into gastronomy**: a fast non-`Digestion` CRC-32/CRC-64/Adler-32 API;
-  pneumatic.Flate, hallucination's png component, zeppelin and pneumatic's XzCheck migrate,
-  gated by golden-vector tests. Four hand-rolled CRC-32s become one.
+- **Checksums into ~~gastronomy~~ `corpuscular`**: a fast non-`Digestion` CRC-32/CRC-64/Adler-32
+  API. **Partly done.** The shared implementations and their golden-vector tests have landed in
+  `corpuscular`, and hallucination's PNG codec has migrated.
+
+  Not gastronomy: `gastronomy.core` sits on 45 modules where `pneumatic.core` sits on 24, and
+  neither pneumatic nor hallucination depends on gastronomy, so putting fast checksums there
+  would nearly double their closures to save a table and a loop. `corpuscular` sits below them
+  on `anticipation.codec` alone.
+
+  The count of "four hand-rolled CRC-32s" needs correcting in both directions. There are five
+  implementations of three algorithms — pneumatic's streaming `Crc32` and `Adler32` (JZlib
+  ports), pneumatic's `Crc64` in the XZ layer, hallucination's one-shot `Crc32`, and zeppelin's
+  `crc32` — but **two of them should not be deduplicated at all**: zeppelin's delegates to
+  `java.util.zip.CRC32`, and gastronomy's `Digestion` CRC-32 likewise goes through
+  `JavaStdlibHashing`. Both are JVM intrinsics; replacing them with a table-driven Scala loop
+  would be a performance regression for no benefit. The same is true of pneumatic on the JVM,
+  whose `FlateBackend` uses `JavaCrc32`; its pure `Crc32` is the JS/native path only.
+
+  **pneumatic's migration is blocked on capture checking.** `corpuscular`'s checksums are
+  `caps.Mutable` with `update def` methods, which is where the codebase is heading (XzCheck's
+  own checkers are already written that way), but adapting `FlateChecksum` to that shape fails:
+  `Deflater` holds its `adler` field read-only, so it may not call an update method on it, and
+  the same applies throughout the JZlib port. pneumatic's build comment already records that
+  this code "does not (yet) satisfy the stricter ruleset". Either the port adopts the capture
+  discipline, or `corpuscular` grows a plain-`def` variant for it; that is a decision, not a
+  detail.
 - **Consumer migration** onto the binary-primitives library, split by consumer:
   (a) pneumatic and hallucination codecs; (b) telekinesis.http2's Hpack and FrameReader;
   (c) stratiform, locomotion (which has two internal varint copies), mandible,
