@@ -63,7 +63,8 @@ private[facsimile] object FontEmbedder:
 
     val baseFont = subset.lay(baseName): chars => t"${tag(baseName, chars)}+$baseName"
 
-    val unitsPerEm = safely(program.head.unitsPerEm.int).or(1000).max(1)
+    val units: Optional[Int] = safely(program.head.unitsPerEm.int)
+    val unitsPerEm = units.or(1000).max(1)
     def scaled(units: Int): Long = units.toLong*1000/unitsPerEm
 
     val fontFile =

@@ -563,7 +563,8 @@ extends caps.ExclusiveCapability:
             pipeline(steps, Stream(List(data).iterator))
 
   // Interprets a streaming plan, minting each duct at its `via` call site.
-  private def pipeline(steps: List[Filter.Step^], consume stream: (Stream[Data] over Credit)^)
+  private def pipeline[plan^]
+    ( steps: List[Filter.Step^{plan}], consume stream: (Stream[Data] over Credit)^ )
   :   (Stream[Data] over Credit)^ =
 
     steps match
