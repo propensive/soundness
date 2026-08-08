@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export pneumatic.{compress, Compression, Compressor, decompress}
+export pneumatic.{Brotli}
