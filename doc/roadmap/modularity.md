@@ -467,8 +467,27 @@ Horizon: mid — after mod-4, so nothing moves twice.
   escapade.csi replaces yossarian.Pty's and profanity.Keyboard's private escape-sequence
   state machines (yossarian's tests are the gate); a `SecureEntropy` capability in
   capricious replaces the direct `SecureRandom`/`UUID.randomUUID` uses in perihelion,
-  enigmatic and inimitable (restoring wasi parity); telekinesis exports its byte-level
+  enigmatic and inimitable (restoring wasi parity) — **needs a decision; see below**; telekinesis exports its byte-level
   header-block scanner for obligatory.ContentLength and scintillate (correction 3 applies).
+
+**SecureEntropy.** The list of sites needs correcting before this is attempted. enigmatic's
+`SecureRandom` uses are all in `core-jvm`, its JVM backend, alongside a `core-native` twin and an
+OpenSSL provider — that is the platform-backend pattern working as intended, not a parity gap, and
+they should stay. perihelion is `scalaJs = false`, so its per-connection `SecureRandom` for
+WebSocket masking keys is JVM-only by construction. The real site is inimitable's `Uuid.apply()`,
+which calls `ju.UUID.randomUUID()` in a library that cross-compiles to every platform.
+
+capricious is a viable home — `capricious.core` cross-compiles (the `scalaNative = false` is on
+`capricious.wasi`), and capricious already has exactly the right precedent: a `wasi` component
+supplying a `Randomization` backed by a `wasi:random/random` import.
+
+What makes this a decision rather than a change is the shape. `Uuid()` has around 28 call sites
+across the tree, so `def apply()(using SecureEntropy)` is a public API change requiring the
+capability in scope everywhere. The alternative is `core-jvm`/`core-native` backends inside
+inimitable, as galilei and pneumatic do, which fixes parity with no API change. Choosing between
+them depends on whether `java.util.UUID.randomUUID` is actually deficient on JS, Native and WASI —
+it compiles on all of them, so this is a question about entropy quality, and wants measuring on
+those platforms rather than assuming.
 
 Done when: each algorithm has exactly one implementation, verified by grep for the
 signature patterns (CRC tables, Huffman builders, varint loops).
