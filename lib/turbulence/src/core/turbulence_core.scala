@@ -254,23 +254,6 @@ extension (body: HttpStreams.Body)
                 limit0 = data.length
                 if limit0 == 0 then refill(demand) else limit0
 
-package stdios:
-  given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-
-  given systemStdio: (termcap: Termcap) => Stdio =
-    Stdio
-      ( jl.System.out.nn,
-        jl.System.err.nn,
-        jl.System.in.nn,
-        termcap )
-
-  given virtualMachineStdio: (termcap: Termcap) => Stdio =
-    Stdio
-      ( ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out)),
-        ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err)),
-        ji.FileInputStream(ji.FileDescriptor.in),
-        termcap )
-
 package lineSeparation:
   given carriageReturnLineSeparation
   :   LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Skip, Action.Nl, Action.Nl)

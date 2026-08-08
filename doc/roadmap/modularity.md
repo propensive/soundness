@@ -206,13 +206,25 @@ Horizon: near–mid
   and Err never touch the streaming algebra (they import only java.io, anticipation.print,
   rudiments and beneficence). They move to a module **below** turbulence
   (`Component(anticipation.print, rudiments.core, beneficence.core)`, ~290 lines including
-  the `stdios` givens); six stdio-only consumers (burdock, camouflage, dendrology,
-  escritoire, **probably**, ultimatum) drop the whole streaming closure; turbulence.wasi
-  retargets the new module, which is exactly what it exists to substitute. The `Stdio` and
-  `stdios` toplevel exports move in the same commit. Also in this leg: `shred` (turbulence's
-  only capricious use — a fuzzing helper) moves to test scope, and `Document`/`Documentary`
-  (consumed only by format modules) move to a new `anticipation.document`. Sequence this
-  before the rudiments leg (Out uses rudiments.Mutex).
+  the `stdios` givens); turbulence.wasi retargets the new module, which is exactly what it
+  exists to substitute. The `Stdio` and `stdios` toplevel exports move in the same commit.
+  **Done**, with corrections. The predicted six stdio-only consumers were wrong: camouflage
+  names no stdio type at all, dendrology and escritoire never had turbulence on their
+  classpath, and burdock, probably and ultimatum reach the streaming algebra genuinely,
+  through zeppelin, eucalyptus and profanity respectively — retargeting them changes nothing.
+  Enumerating every component that *declares* turbulence.core and uses no streaming name gives
+  exactly two: `pneumatic.core` and `dendrology.demo`. Retargeting pneumatic.core (which also
+  had to declare the contingency and zephyrine it was getting through turbulence) takes its
+  compile classpath from 42 modules to 23, dropping turbulence.core, parasite, capricious and
+  hieroglyph.
+
+  Two sub-items are **deferred, and need a decision**: `shred` cannot simply move to
+  turbulence's test scope, because zephyrine's tests use it too and reach it transitively
+  through probably; its natural home is `capricious` (it is a random-data generator over
+  zephyrine's `Chain`), which would mean capricious depending on zephyrine. Until it moves,
+  turbulence.core keeps its capricious dependency. `Document`/`Documentary` still want to move
+  to a new `anticipation.document`; their consumers are wider than "format modules" (caduceus,
+  exegesis and archimedes among them), so that is its own leg.
 - **rudiments slimming** — the widest sweep in the programme; keep it purely mechanical.
   The confined-indexing cluster (Scribe, Grouping, Lattice, Surveyor, Deindex, Segmentable,
   Populated, ~730 lines, all sitting directly on denominative — the shape that ypsiloid,

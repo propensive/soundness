@@ -725,7 +725,8 @@ object soundness extends Toolchain:
   // contents are what gets packaged, they have to be in one.
   object base extends Bundle(ambience.core, aperture.core, aviation.core, contextual.core,
     contingency.core, denominative.core, digression.core, diuretic.core, fulminate.core,
-    hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
+    hieroglyph.core, adversaria.core, turbulence.core, turbulence.stdio, eucalyptus.core,
+    gossamer.core,
     fulminate.print,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
@@ -1486,7 +1487,7 @@ object dendrology extends Library:
   object dag extends Component(acyclicity.core, anticipation.print):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object demo extends Internal(dag, turbulence.core, ambience.core):
+  object demo extends Internal(dag, turbulence.stdio, ambience.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(tree, dag):
@@ -2376,7 +2377,7 @@ object pneumatic extends Library:
   // ported from JZlib), and the engine interfaces the `flate` formats compile against. Compiled
   // with capture checking (not separation checking): the faithfully-ported, aliasing-heavy zlib
   // machinery does not (yet) satisfy the stricter ruleset.
-  object core extends Component(turbulence.core):
+  object core extends Component(turbulence.stdio, contingency.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The `Deflate`/`Gzip`/`Zlib` formats, compiled twice against platform backends: over
@@ -2787,15 +2788,21 @@ object telekinesis extends Library:
       settings.sep(super.scalacOptions())
 
 object turbulence extends Library:
+  // The standard streams. `Stdio`, `Io`, `In`, `Out` and `Err` never touch the streaming
+  // algebra, so they sit *below* it: a module that only prints to stdout need not compile
+  // turbulence's streams. `turbulence.wasi` substitutes exactly this component.
+  object stdio extends Component(anticipation.print, rudiments.core, beneficence.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core
   extends Component(anticipation.http, anticipation.print, hieroglyph.core, parasite.core,
-      capricious.core, zephyrine.core):
+      capricious.core, zephyrine.core, stdio):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // WASI-backed standard streams: a `Stdio` whose output writes through the `wasi:io/streams`
   // `output-stream` resource, materialized by xenophile's `invoke` at the downstream (Wasm-linked)
   // summoning site. Target-neutral `.sjsir` here; only meaningful linked as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
+  object wasi extends Component(stdio, xenophile.wasm, xenophile.wit, hellenism.core):
     override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")

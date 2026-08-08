@@ -30,20 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package turbulence
 
-export
-  turbulence
-  . { Aggregable, deduplicate,
-      delineate, Document, Documentary, drop, Eof, inputStream,
-      Line, LineSeparation, load, Loadable, more, read, Relay, shred, source,
-      Confluence, Divergence, Readable, Sink, Streamable, StreamError,
-      StreamOutputStream, strict, take, Writable, writeTo, flow }
+import java.lang as jl
+import java.io as ji
 
-package lineSeparation:
-  export
-    turbulence.lineSeparation
-    . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
-        carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
-        strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
-        virtualMachineLineSeparation }
+import anticipation.*
+
+package stdios:
+  given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+
+  given systemStdio: (termcap: Termcap) => Stdio =
+    Stdio
+      ( jl.System.out.nn,
+        jl.System.err.nn,
+        jl.System.in.nn,
+        termcap )
+
+  given virtualMachineStdio: (termcap: Termcap) => Stdio =
+    Stdio
+      ( ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out)),
+        ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err)),
+        ji.FileInputStream(ji.FileDescriptor.in),
+        termcap )
