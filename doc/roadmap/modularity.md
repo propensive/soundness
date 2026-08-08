@@ -182,10 +182,30 @@ Horizon: near–mid
   two — `val idleTimeout = Quantity[Hours[1]](6.0)` at ethereal_core.scala:266 — and
   `Long is Abstractable across Durations to Long` would replace it exactly.
 - **ypsiloid de-jacinta**: `Bcd` (jacinta.internal.scala:284+, an opaque over
-  `IArray[Double]` whose runtime representation is erased, so the move is bit-identical)
-  moves to **hypotenuse**, severing ypsiloid → jacinta — a YAML library depending on a JSON
-  library is the single most wrong edge in the graph. YamlPath (the sole importer of
-  serpentine, urticose, beneficence and symbolism in ypsiloid) moves to `ypsiloid.pointer`.
+  `IArray[Double]`) moves to **hypotenuse**, severing ypsiloid → jacinta — a YAML library
+  depending on a JSON library is the single most wrong edge in the graph. YamlPath (the sole
+  importer of serpentine, urticose, beneficence and symbolism in ypsiloid) moves to
+  `ypsiloid.pointer`.
+
+  **Attempted and reverted; blocked on capture checking.** The mechanical part works: the
+  351-line `Bcd` block (the opaque type and its companion) moves to `hypotenuse.Bcd`, jacinta
+  re-exports it so every file in package `jacinta` still sees it unqualified, ypsiloid imports
+  it from hypotenuse, and the ypsiloid → jacinta edge is gone. What does not survive is the
+  premise that "the runtime representation is erased, so the move is bit-identical": that is
+  true of the *runtime* representation and false of the *capture* behaviour, which is what the
+  compiler enforces. Inside `object internal`, `Bcd`'s constructors were inferred to return a
+  value carrying a fresh `any.rd` capability, and jacinta's parser launders it with
+  `unsafeAssumePure`; across a module boundary that inference does not survive pickling, and
+  the results arrive pure. Declaring the capture explicitly (`def apply(…): Bcd^`) fixes
+  jacinta's laundering sites but then hands ypsiloid a fresh value where it expects a pure one,
+  and laundering *there* in turn fails with `Found: Bcd^ / Required: Bcd^²` — a different root
+  capability, exactly the read-only case the block's own comment warns `unsafeAssumePure`
+  cannot launder. Getting this right needs someone fluent in the fork's capture rules to choose
+  the capture signature `Bcd`'s constructors should present at a module boundary; it is not a
+  matter of adjusting call sites. Note also that `Bcd.fromContent15` is `private[jacinta]` and
+  its only caller is `jacinta.Json.Parser`, so any move makes that member public.
+
+  The YamlPath half of this leg is independent of `Bcd` and was not attempted.
 - **jacinta.optics and JsonPointer de-URL-ing** (after the ypsiloid leg; public API, so the
   largest care): the panopticon lens givens leave jacinta.Json.scala for `jacinta.optics`;
   JsonPointer's document-registry key changes from `HttpUrl` to Text or
