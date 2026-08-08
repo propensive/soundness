@@ -205,7 +205,14 @@ Horizon: near–mid
   matter of adjusting call sites. Note also that `Bcd.fromContent15` is `private[jacinta]` and
   its only caller is `jacinta.Json.Parser`, so any move makes that member public.
 
-  The YamlPath half of this leg is independent of `Bcd` and was not attempted.
+  The YamlPath half of this leg is independent of `Bcd`, and is **also blocked**, for the
+  reason that blocked ethereal.dist: YamlPath is indeed the sole importer of serpentine,
+  urticose, beneficence and symbolism in ypsiloid, but `ypsiloid.core` uses it pervasively —
+  `Yaml.Focus` carries a `pointer: YamlPath`, there is a `Yaml is Positionable by YamlPath`
+  given, and the `yp"…"` interpolator and its macro are in core — so it cannot move to a
+  component above core, and moving it below core would leave core's dependency closure
+  unchanged. Cutting those four dependencies means separating the Yaml AST from its pointer
+  type, which is a much larger change than this leg described.
 - **jacinta.optics and JsonPointer de-URL-ing** (after the ypsiloid leg; public API, so the
   largest care): the panopticon lens givens leave jacinta.Json.scala for `jacinta.optics`;
   JsonPointer's document-registry key changes from `HttpUrl` to Text or
