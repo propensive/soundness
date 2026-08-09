@@ -2165,7 +2165,7 @@ object iridescence extends Library:
       settings.sep(super.scalacOptions())
 
 object jacinta extends Library:
-  object core extends Component(zephyrine.core, turbulence.core, urticose.url, adversaria.core):
+  object core extends Component(zephyrine.core, turbulence.core, urticose.url, adversaria.core, hypotenuse.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The panopticon lens/optic instances for `Json`, and jacinta's only use of panopticon.
@@ -3107,7 +3107,7 @@ object yossarian extends Library:
       settings.sep(super.scalacOptions())
 
 object ypsiloid extends Library:
-  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, jacinta.core, adversaria.core):
+  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, hypotenuse.core, adversaria.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 

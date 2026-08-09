@@ -187,23 +187,24 @@ Horizon: near–mid
   importer of serpentine, urticose, beneficence and symbolism in ypsiloid) moves to
   `ypsiloid.pointer`.
 
-  **Attempted and reverted; blocked on capture checking.** The mechanical part works: the
-  351-line `Bcd` block (the opaque type and its companion) moves to `hypotenuse.Bcd`, jacinta
-  re-exports it so every file in package `jacinta` still sees it unqualified, ypsiloid imports
-  it from hypotenuse, and the ypsiloid → jacinta edge is gone. What does not survive is the
-  premise that "the runtime representation is erased, so the move is bit-identical": that is
-  true of the *runtime* representation and false of the *capture* behaviour, which is what the
-  compiler enforces. Inside `object internal`, `Bcd`'s constructors were inferred to return a
-  value carrying a fresh `any.rd` capability, and jacinta's parser launders it with
-  `unsafeAssumePure`; across a module boundary that inference does not survive pickling, and
-  the results arrive pure. Declaring the capture explicitly (`def apply(…): Bcd^`) fixes
-  jacinta's laundering sites but then hands ypsiloid a fresh value where it expects a pure one,
-  and laundering *there* in turn fails with `Found: Bcd^ / Required: Bcd^²` — a different root
-  capability, exactly the read-only case the block's own comment warns `unsafeAssumePure`
-  cannot launder. Getting this right needs someone fluent in the fork's capture rules to choose
-  the capture signature `Bcd`'s constructors should present at a module boundary; it is not a
-  matter of adjusting call sites. Note also that `Bcd.fromContent15` is `private[jacinta]` and
-  its only caller is `jacinta.Json.Parser`, so any move makes that member public.
+  **Done.** The 351-line `Bcd` block moves to `hypotenuse.Bcd`, and ypsiloid no longer has
+  jacinta on its compile classpath at all.
+
+  The earlier attempt failed because it tried to preserve the capture behaviour `Bcd`'s
+  constructors had been *inferred* to have inside `object internal`, where every result carried
+  a fresh `any.rd` capability that jacinta's parser laundered away with `unsafeAssumePure`.
+  Declaring that explicitly fixed jacinta and broke ypsiloid, and vice versa. The resolution is
+  that `Bcd` is simply a pure value — it is an opaque alias for an immutable `IArray[Double]` —
+  so the constructors return it pure, every `unsafeAssumePure` around them disappears, and the
+  one genuinely impure step, adopting a freshly-built mutable array, is discharged once by
+  `Bcd.adopt` in the companion instead of at each call site.
+
+  Two traps worth recording. `Bcd.fromContent15` was `private[jacinta]` and its only caller,
+  `jacinta.Json.Parser`, is now in another library, so it is public — the one access widening
+  the move requires. And re-exporting the type (`export hypotenuse.Bcd` in package `jacinta`)
+  is *not* equivalent to importing it: the alias does not carry the companion's implicit scope,
+  so `bcd.toLong` and `bcd.toDouble` stopped resolving until the files that use them imported
+  `hypotenuse.Bcd` directly.
 
   The YamlPath half of this leg is independent of `Bcd`, and is **also blocked**, for the
   reason that blocked ethereal.dist: YamlPath is indeed the sole importer of serpentine,

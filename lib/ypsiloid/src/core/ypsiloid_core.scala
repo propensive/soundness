@@ -39,6 +39,7 @@ import anticipation.*
 import contextual.*
 import denominative.*
 import gossamer.*
+import hypotenuse.Bcd
 import prepositional.*
 import spectacular.{Showable, show}
 import wisteria.*
@@ -51,7 +52,7 @@ import zephyrine.*
 // `.inf`/`-.inf`/`.nan`, booleans as `true`/`false`, null as `null`); a string is a plain scalar
 // only when unambiguously a string, else double-quoted; mappings/sequences are 2-space-indented
 // block collections, empty ones the flow forms `{}` / `[]`. `Yaml.Ast` node shapes: scalars are
-// boxed JVM values; a high-precision number is a `jacinta.Bcd` (`Array[Double]`); a mapping is an
+// boxed JVM values; a high-precision number is a `Bcd` (`Array[Double]`); a mapping is an
 // even-length `Array[Any]^{}` of alternating key/value; a sequence is an odd-length `Array[Any]^{}`
 // (trailing `arrayPad` sentinel when the item count is even). Mirrors jacinta's `Json.Ast`
 // `Showable`. Bring a `Yaml.Formatting` into scope to enable `.show` and HTTP encoding.
@@ -131,7 +132,7 @@ given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml 
 
     // Emit a scalar (or an empty collection) with no surrounding newlines.
     def scalar(ast: Yaml.Ast): Unit = ast.asMatchable match
-      case bcd: scala.Array[Double] @unchecked => producer.put(bcd.asInstanceOf[jacinta.Bcd].text.tt)
+      case bcd: scala.Array[Double] @unchecked => producer.put(Bcd.adopt(bcd).text.tt)
       case n: Long                       => producer.put(n.toString.tt)
 
       case d: Double =>
