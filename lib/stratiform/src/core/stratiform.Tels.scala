@@ -626,7 +626,7 @@ object Tels extends Tels2:
 
           case "sigil" =>
             val s = firstAtomText(c)
-            sigil = if s.absent then Unset else Optional(s.vouch.s.charAt(0))
+            sigil = s.let { text => if text.s.isEmpty then Unset else text.s.charAt(0) }
 
           case "record"   => records  += parseRecord(c)
           case "scalar"   => scalars  += parseScalar(c)

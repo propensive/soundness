@@ -101,13 +101,15 @@ object Cell:
       val ascent = cells.stdlib.map(_.baseline).reduceLeft(max)
       val descent = cells.stdlib.map { cell => cell.height - 1 - cell.baseline }.reduceLeft(max)
       val framed = cells.stdlib.map(_.framed(ascent, descent))
-      val height = ascent + descent + 1
 
-      val lines = Sequence.from:
-        (0 until height).map: row =>
-          Writing(List.of(framed.map { cell => cell.lines((row).z).vouch.text }).join)
+      // Every framed cell has exactly `ascent + descent + 1` lines, so joining row-wise is an
+      // n-ary zip of the line sequences — no indexing, hence no bounds obligation to discharge.
+      val rows =
+        framed
+        . map { cell => cell.lines.stdlib.map(_.text) }
+        . reduceLeft { (left, right) => left.zip(right).map { (l, r) => t"$l$r" } }
 
-      Cell(lines, cells.stdlib.map(_.width).reduceLeft(_ + _), ascent)
+      Cell(Sequence.of(rows.map(Writing(_))), cells.stdlib.map(_.width).reduceLeft(_ + _), ascent)
 
   def fraction(numerator: Cell, denominator: Cell): Cell =
     val width = max(numerator.width, denominator.width) + 2
@@ -142,17 +144,17 @@ object Cell:
       (0 until height).map: row =>
         val left = slice(base, row - superscript.height)
 
-        val scripts =
-          if row < superscript.height then
-            val text = superscript.lines((row).z).vouch.text
-            val pad = spaces(right - superscript.width).text
-            t"$text$pad"
-          else if row >= middle then
-            val text = subscript.lines((row - middle).z).vouch.text
-            val pad = spaces(right - subscript.width).text
-            t"$text$pad"
-          else
-            spaces(right).text
+        // `confine` makes the branch guard and the bounds proof the same act: a confined
+        // ordinal indexes its own sequence bare, and an out-of-range row is simply `Unset`.
+        val fromSuperscript = superscript.lines.confine(row.z).let: ord =>
+          val pad = spaces(right - superscript.width).text
+          t"${superscript.lines(ord).text}$pad"
+
+        val fromSubscript = subscript.lines.confine((row - middle).z).let: ord =>
+          val pad = spaces(right - subscript.width).text
+          t"${subscript.lines(ord).text}$pad"
+
+        val scripts = fromSuperscript.or(fromSubscript.or(spaces(right).text))
 
         Writing(t"$left$scripts")
 
@@ -178,16 +180,17 @@ object Cell:
   def radical(inner: Cell): Cell =
     if inner.height > 1 then tallRadical(inner) else
       val overline = Writing(t"$Corner${repeat(Bar, inner.width).text}")
-      val body = Writing(t"$Radical${inner.lines((0).z).vouch.text}")
+      val body = Writing(t"$Radical${slice(inner, 0)}")
       Cell(Sequence(overline, body), inner.width + 1, 1)
 
   private def tallRadical(inner: Cell): Cell =
     val overline = Writing(t" $Corner${repeat(Bar, inner.width).text}")
 
-    val body = Sequence.from:
-      (0 until inner.height).map: row =>
-        val foot = if row == inner.height - 1 then Tick else ' '
-        Writing(t"$foot$Stem${inner.lines((row).z).vouch.text}")
+    // Traversing `inner`'s own lines directly, the row content needs no index at all; the
+    // index survives only to mark the last row with the radical's foot.
+    val body = inner.lines.zipWithIndex.map: (line, row) =>
+      val foot = if row == inner.height - 1 then Tick else ' '
+      Writing(t"$foot$Stem${line.text}")
 
     Cell(Sequence(overline) ::: body, inner.width + 2, inner.baseline + 1)
 
@@ -196,10 +199,10 @@ object Cell:
   def root(base: Cell, index: Cell): Cell =
     val radicand = tallRadical(base)
 
-    val lines = Sequence.from:
-      (0 until radicand.height).map: row =>
-        val prefix = if row < index.height then index.lines((row).z).vouch.text else spaces(index.width).text
-        Writing(t"$prefix${radicand.lines((row).z).vouch.text}")
+    // The radicand's rows come from traversing its own lines, so they need no proof; the
+    // (shorter) index cell is a checked lookup with a blank fallback — exactly `slice`.
+    val lines = radicand.lines.zipWithIndex.map: (line, row) =>
+      Writing(t"${slice(index, row)}${line.text}")
 
     Cell(lines, index.width + radicand.width, radicand.baseline)
 

@@ -65,6 +65,16 @@ extension [value](iterable: Iterable[Optional[value]])
   transparent inline def compact: Iterable[value] =
     iterable.filter(!_.absent).map(_.vouch)
 
+  // All-or-nothing: the whole list if every element is present, or `Unset` if any is
+  // absent. One presence sweep, recorded by the result's type.
+  def entire: Optional[List[value]] =
+    if iterable.exists(_.absent) then Unset else List.from(iterable.map(_.vouch))
+
+// As `compact` for a streaming source: absent elements are dropped as the iterator advances.
+extension [value](iterator: Iterator[Optional[value]])
+  transparent inline def compact: Iterator[value] =
+    iterator.filter(!_.absent).map(_.vouch)
+
 extension [value](option: Option[value])
   // Not `inline`: inlining a union `Optional[value]` result re-infers it per call site, where capture
   // checking stamps a spurious `^` when `value` is (or contains) a pure type such as `Text`.

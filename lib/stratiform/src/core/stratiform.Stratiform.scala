@@ -161,10 +161,10 @@ object Stratiform:
             case Some(member) =>
               val element = elementType(position.memberType(member))
 
-              if element.absent
-              then halt(m"the field $name of ${position.show} is not an indexable collection")
+              val elementTel = element.or:
+                halt(m"the field $name of ${position.show} is not an indexable collection")
 
-              telType(element.vouch, root).asType.absolve match
+              telType(elementTel, root).asType.absolve match
                 case '[type result <: Tel; result] =>
                   '{$self.selectRepeatedField(${Expr(name)}, $idx).asInstanceOf[result]}
 

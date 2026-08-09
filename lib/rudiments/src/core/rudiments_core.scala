@@ -221,6 +221,13 @@ extension [self](self: self)(using traversable: self is Traversable)
   inline def all(predicate: traversable.Operand => Boolean): Boolean =
     traversable.traverse(self).forall(predicate)
 
+// The `Populated` producer: one non-emptiness check, recorded in the type, so the operations
+// below are total on the result. The presence check *is* the proof, in the same way a confined
+// ordinal's range check is (`Ordinal in value.type`).
+extension [self](value: self)(using traversable: self is Traversable)
+  def occupied: Optional[self & Populated] =
+    if traversable.traverse(value).hasNext then value.asInstanceOf[self & Populated] else Unset
+
 // Operations that are partial on possibly-empty collections but *total* on receivers carrying a
 // `Populated` proof (obtained from `occupied`, whose bounds check is thereby discharged exactly
 // once). Stdlib members shadow these for stdlib receivers while the aliases remain transparent.

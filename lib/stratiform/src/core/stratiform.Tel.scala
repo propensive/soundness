@@ -4234,7 +4234,7 @@ object Tel extends Tel2:
               if tabulation.absent then parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces)
               else Unset
 
-            if extraAtom.present then pushAtom(extraAtom.vouch)
+            extraAtom.let(pushAtom(_))
 
             val children =
               if extraAtom.absent && tabulation.absent then parseChildren(indent) else EmptyBlocks
@@ -5525,7 +5525,7 @@ object Tel extends Tel2:
       val extraAtom: Optional[Tel.Atom] =
         if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
 
-      if extraAtom.present then pushAtom(extraAtom.vouch)
+      extraAtom.let(pushAtom(_))
 
       val children: Array[Tel.Block]^{} =
         if !tabulated && extraAtom.absent then parseChildren(indent)
