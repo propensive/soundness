@@ -33,14 +33,10 @@
 package hallucination
 
 import anticipation.*
-import gesticulate.*
+import contingency.*
+import proscenium.compat.*
 
-object Bmp:
-  def apply(): Rasterizable = rasterization
-
-  given rasterization: Bmp is Rasterizable:
-    def name: Text = "BMP".tt
-    def mediaType = media"image/bmp"
-    def alpha: Boolean = false
-
-sealed trait Bmp
+// PNG through the pure Scala codec, used wherever `javax.imageio` is unavailable (Scala.js and WASI).
+private[hallucination] object PngBackend:
+  def decode(format: Rasterizable, data: Data): Raster raises RasterError = PngCodec.decode(data)
+  def encode(format: Rasterizable, raster: Raster): Data = PngCodec.encode(raster)

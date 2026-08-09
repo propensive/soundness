@@ -34,32 +34,22 @@ package hallucination
 
 import anticipation.*
 import contingency.*
-import gesticulate.*
-import prepositional.*
-import turbulence.*
+import vacuous.*
 import proscenium.compat.*
 
-// A raster image format, and its codec. Each format supplies its own instance from its own
-// component -- `hallucination.png`, `hallucination.jpeg` and so on -- so a consumer compiles only
-// the formats it names. An instance also chooses its own implementation per platform: the
-// components with `-jvm` sources decode through `javax.imageio`, whose native codecs outperform
-// the pure ones, and fall back to the pure Scala codec everywhere else. Supplying an alternative
-// is an ordinary given.
-trait Rasterizable extends Typeclass:
-  rasterizable: Rasterizable =>
-    def name: Text
-    def mediaType: MediaType
+// The formats `Raster` will try when asked to decode data whose format it was not told. Because
+// each codec now lives in its own component, the candidates are whatever the caller has linked
+// and named, rather than every format the library implements: recognising a format you did not
+// compile is not something this can do. `hallucination.formats` supplies every format at once,
+// for consumers that want the old behaviour in a single import.
+case class RasterFormats(candidates: List[Rasterizable]):
+  def recognise(data: Data): Optional[Rasterizable] =
+    def next(remaining: List[Rasterizable]): Optional[Rasterizable] = remaining match
+      case head :: tail => if head.sniff(data) then head else next(tail)
+      case _            => Unset
 
-    // Whether the encoded form can carry an alpha channel.
-    def alpha: Boolean
+    next(candidates)
 
-    // Decode and encode this format. `sniff` reports whether `data` opens with this format's
-    // magic bytes, which is how `Raster` recognises a format it was not told.
-    def decode(data: Data): Raster raises RasterError
-    def encode(raster: Raster): Data
-    def sniff(data: Data): Boolean
-
-    def read[input: Streamable by Data over zephyrine.Credit](inputType: input)
-    :   Raster in Self raises RasterError =
-
-      decode(inputType.read[Data]).asInstanceOf[Raster in rasterizable.Self]
+object RasterFormats:
+  def apply(formats: Rasterizable*): RasterFormats =
+    RasterFormats(formats.to(List))

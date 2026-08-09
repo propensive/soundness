@@ -32,34 +32,22 @@
                                                                                                   */
 package hallucination
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gesticulate.*
-import prepositional.*
-import turbulence.*
-import proscenium.compat.*
 
-// A raster image format, and its codec. Each format supplies its own instance from its own
-// component -- `hallucination.png`, `hallucination.jpeg` and so on -- so a consumer compiles only
-// the formats it names. An instance also chooses its own implementation per platform: the
-// components with `-jvm` sources decode through `javax.imageio`, whose native codecs outperform
-// the pure ones, and fall back to the pure Scala codec everywhere else. Supplying an alternative
-// is an ordinary given.
-trait Rasterizable extends Typeclass:
-  rasterizable: Rasterizable =>
-    def name: Text
-    def mediaType: MediaType
+object Png:
+  def apply(): Rasterizable = rasterization
 
-    // Whether the encoded form can carry an alpha channel.
-    def alpha: Boolean
+  given rasterization: Png is Rasterizable:
+    def name: Text = "PNG".tt
+    def mediaType = media"image/png"
+    def alpha: Boolean = true
 
-    // Decode and encode this format. `sniff` reports whether `data` opens with this format's
-    // magic bytes, which is how `Raster` recognises a format it was not told.
-    def decode(data: Data): Raster raises RasterError
-    def encode(raster: Raster): Data
-    def sniff(data: Data): Boolean
+    def decode(data: Data): Raster raises RasterError = PngBackend.decode(this, data)
+    def encode(raster: Raster): Data = PngBackend.encode(this, raster)
+    def sniff(data: Data): Boolean = (data.length > 1 && (data(0)&0xff) == 0x89 && data(1) == 0x50)
 
-    def read[input: Streamable by Data over zephyrine.Credit](inputType: input)
-    :   Raster in Self raises RasterError =
-
-      decode(inputType.read[Data]).asInstanceOf[Raster in rasterizable.Self]
+sealed trait Png

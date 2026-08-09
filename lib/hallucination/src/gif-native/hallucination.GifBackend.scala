@@ -34,32 +34,9 @@ package hallucination
 
 import anticipation.*
 import contingency.*
-import gesticulate.*
-import prepositional.*
-import turbulence.*
 import proscenium.compat.*
 
-// A raster image format, and its codec. Each format supplies its own instance from its own
-// component -- `hallucination.png`, `hallucination.jpeg` and so on -- so a consumer compiles only
-// the formats it names. An instance also chooses its own implementation per platform: the
-// components with `-jvm` sources decode through `javax.imageio`, whose native codecs outperform
-// the pure ones, and fall back to the pure Scala codec everywhere else. Supplying an alternative
-// is an ordinary given.
-trait Rasterizable extends Typeclass:
-  rasterizable: Rasterizable =>
-    def name: Text
-    def mediaType: MediaType
-
-    // Whether the encoded form can carry an alpha channel.
-    def alpha: Boolean
-
-    // Decode and encode this format. `sniff` reports whether `data` opens with this format's
-    // magic bytes, which is how `Raster` recognises a format it was not told.
-    def decode(data: Data): Raster raises RasterError
-    def encode(raster: Raster): Data
-    def sniff(data: Data): Boolean
-
-    def read[input: Streamable by Data over zephyrine.Credit](inputType: input)
-    :   Raster in Self raises RasterError =
-
-      decode(inputType.read[Data]).asInstanceOf[Raster in rasterizable.Self]
+// GIF through the pure Scala codec, used wherever `javax.imageio` is unavailable (Scala.js and WASI).
+private[hallucination] object GifBackend:
+  def decode(format: Rasterizable, data: Data): Raster raises RasterError = GifCodec.decode(data)
+  def encode(format: Rasterizable, raster: Raster): Data = GifCodec.encode(raster)

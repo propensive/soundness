@@ -359,25 +359,28 @@ Horizon: mid — ordered: pneumatic, then hallucination, then facsimile.
   with `CanvasHandle` and `RasterOpenable`, which emptied `Canvas`'s companion, so the companion
   is gone and `Canvas` is now just the form phantom.
 
-  The **per-format split needs a redesign of the backend, not a move of files.** Classpath-
-  dependent format sniffing has been approved, which clears the first obstacle, but a second one
-  the roadmap did not identify remains: *both* platform backends reference codec implementations
-  directly, so a split that puts the codecs above core leaves core unable to see them.
+  **Done, as a redesign of the backend rather than a move of files.** `Rasterizable` is now the
+  codec interface, not just a descriptor: it carries `decode`, `encode` and `sniff` alongside
+  `name`, `mediaType` and `alpha`, and each format supplies its own instance from its own
+  component. The central `RasterBackend` is gone.
 
-  - `core-native/RasterBackend` dispatches to all five codecs by name, and its format-agnostic
-    `decode(data)` sniffs magic bytes by trying each in turn.
-  - `core-jvm/RasterBackend` decodes through `javax.imageio` — whose native codecs outperform the
-    pure ones — *except* for WebP, since no standard JRE ships a WebP reader, so it calls
-    `WebpCodec` directly.
+  Each format now chooses its own implementation per platform, using the `-jvm`/`-native`
+  source-directory pattern: PNG, JPEG, GIF and BMP decode through `javax.imageio` on the JVM and
+  through their pure codec on Scala.js and WASI, while WebP uses its pure codec everywhere,
+  because no standard JRE ships a WebP reader. That dissolves what looked like a core policy —
+  it was only a policy because core was making the choice. The pure codecs stay in each
+  component's shared directory, so they are still compiled and still differentially tested
+  against ImageIO on the JVM.
 
-  That second point is the awkward one: preferring ImageIO for four formats and the pure codec
-  for the fifth is a *core policy*, not a per-format fact, so it does not travel with the format
-  components on its own. Splitting therefore means inverting the dispatcher: `Rasterizable`
-  gains `decode`/`encode`, each format component supplies its own instance, each instance decides
-  its platform strategy, and the sniffing entry point takes its candidates from something the
-  caller assembles. That is a public API change to `Rasterizable` and to `Raster.decode(data)`,
-  and it wants designing rather than falling out of a file move. The four pure codecs that
-  ImageIO shadows on the JVM must also remain compiled and differentially tested against it.
+  Sniffing takes its candidates explicitly: `Raster(data)` and the `Aggregable` given now require
+  a `RasterFormats`, which lists the formats the caller has linked. `hallucination.formats`
+  depends on all five and supplies every format, so "decode anything" remains one import.
+  Supplying an alternative codec, or adding a new format, is now an ordinary given in a new
+  component; nothing in core changes.
+
+  Resulting sizes: core 1,055 lines (including `Quantization`, which GIF's palette encoder shares
+  with JPEG and which therefore stayed), webp 4,817, jpeg 2,767, gif 607, png 525, bmp 327.
+  tarantula's screenshot decoder now sees `hallucination.core` and `hallucination.png` only.
 - **facsimile splits**: Ascii85 moves to monotonous; Rc4 to enigmatic; Predictor (PNG/TIFF
   row filters, duplicating PngCodec logic) to the png component or pneumatic;
   `facsimile.crypto` takes Guard (cutting enigmatic and gastronomy from core);

@@ -42,6 +42,7 @@ import fulminate.*
 import iridescence.*
 import prepositional.*
 import turbulence.*
+import vacuous.*
 import zephyrine.*
 
 object Raster:
@@ -65,10 +66,14 @@ object Raster:
     build(width, height, descriptor) { index => Pixel.value(pixel(index%width, index/width)) }
     . asInstanceOf[Raster by layout]
 
+  // Recognises the format from its opening magic bytes, among the formats the caller has named.
+  // `hallucination.formats` supplies every format this library implements.
   def apply[streamable: Streamable by Data over zephyrine.Credit](input: streamable)
+    (using formats: RasterFormats)
   :   Raster raises RasterError =
 
-    RasterBackend.decode(input.read[Data])
+    val data = input.read[Data]
+    formats.recognise(data).lay(abort(RasterError(Unset)))(_.decode(data))
 
   private def fill(width: Int, height: Int)(set: (Int, Int, Int) => Unit): Unit =
     var index = 0
@@ -141,7 +146,7 @@ object Raster:
 
   given streamable: [form: Rasterizable as rasterizable]
   =>  (Raster in form) is Streamable by Data over zephyrine.Credit =
-    raster => zephyrine.Stream(RasterBackend.encode(rasterizable, raster))
+    raster => zephyrine.Stream(rasterizable.encode(raster))
 
   given abstractable: [format: Rasterizable] => (Raster in format) is Abstractable:
     type Domain = HttpStreams
@@ -160,7 +165,9 @@ object Raster:
 
     rasterizable.read(_)
 
-  given aggregable2: (tactic: Tactic[RasterError])
+  // Aggregating a stream into a `Raster` without naming its format recognises it by magic bytes,
+  // so it needs the candidate formats just as `Raster(data)` does.
+  given aggregable2: (tactic: Tactic[RasterError]) => (formats: RasterFormats)
   =>  ( (Raster is Aggregable by Data)^{tactic} ) = Raster(_)
 
 // A platform-neutral pixel store: `buffer`'s element type is the storage primitive of the

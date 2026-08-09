@@ -30,17 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hallucination
+package soundness
 
-import anticipation.*
-import gesticulate.*
-
-object Gif:
-  def apply(): Rasterizable = rasterization
-
-  given rasterization: Gif is Rasterizable:
-    def name: Text = "GIF".tt
-    def mediaType = media"image/gif"
-    def alpha: Boolean = true
-
-sealed trait Gif
+export hallucination.Gif

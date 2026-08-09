@@ -32,34 +32,60 @@
                                                                                                   */
 package hallucination
 
+import java.awt.image as jai
+import java.io as ji2
+import javax.imageio as ji
+
 import anticipation.*
 import contingency.*
-import gesticulate.*
-import prepositional.*
-import turbulence.*
-import proscenium.compat.*
+import rudiments.*
+import vacuous.*
 
-// A raster image format, and its codec. Each format supplies its own instance from its own
-// component -- `hallucination.png`, `hallucination.jpeg` and so on -- so a consumer compiles only
-// the formats it names. An instance also chooses its own implementation per platform: the
-// components with `-jvm` sources decode through `javax.imageio`, whose native codecs outperform
-// the pure ones, and fall back to the pure Scala codec everywhere else. Supplying an alternative
-// is an ordinary given.
-trait Rasterizable extends Typeclass:
-  rasterizable: Rasterizable =>
-    def name: Text
-    def mediaType: MediaType
 
-    // Whether the encoded form can carry an alpha channel.
-    def alpha: Boolean
+// The JVM backend: decoding and encoding through `javax.imageio`, whose native codecs outperform
+// any pure implementation. The pure-Scala codecs in `core` remain compiled (and tested) on the
+// JVM; they are simply not selected here.
+// The `javax.imageio` bridge, whose native codecs outperform any pure implementation. Each
+// format component's JVM backend calls this; the formats `javax.imageio` cannot read (WebP has no
+// reader on any standard JRE) simply do not, and use their pure codec on every platform.
+private[hallucination] object ImageIo:
+  def decode(format: Rasterizable, data: Data): Raster raises RasterError =
+    val reader: ji.ImageReader =
+      ji.ImageIO.getImageReadersByFormatName(format.name.s).nn.next().nn
 
-    // Decode and encode this format. `sniff` reports whether `data` opens with this format's
-    // magic bytes, which is how `Raster` recognises a format it was not told.
-    def decode(data: Data): Raster raises RasterError
-    def encode(raster: Raster): Data
-    def sniff(data: Data): Boolean
+    reader.setInput(ji.ImageIO.createImageInputStream(data.javaInputStream).nn)
+    val image = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(format))
 
-    def read[input: Streamable by Data over zephyrine.Credit](inputType: input)
-    :   Raster in Self raises RasterError =
+    convert(image).also(reader.dispose())
 
-      decode(inputType.read[Data]).asInstanceOf[Raster in rasterizable.Self]
+  def encode(format: Rasterizable, raster: Raster): Data =
+    val alpha = format.alpha && raster.descriptor.hasAlpha
+
+    val imageType =
+      if alpha then jai.BufferedImage.TYPE_INT_ARGB else jai.BufferedImage.TYPE_INT_RGB
+
+    val image = jai.BufferedImage(raster.width, raster.height, imageType)
+    val argb = new scala.Array[Int](raster.width*raster.height)
+
+    for index <- 0 until argb.length do
+      val word = raster.word(index)
+      val opacity = if alpha then (raster.descriptor.alpha(word)*255 + 0.5).toInt else 255
+      argb(index) = opacity << 24 | raster.descriptor.chroma(word).underlying
+
+    image.setRGB(0, 0, raster.width, raster.height, argb, 0, raster.width)
+    val out = ji2.ByteArrayOutputStream()
+    ji.ImageIO.write(image, format.name.s, out)
+
+    Array.unsafeFrozen(out.toByteArray.nn)
+
+  // Reads out the pixels in one bulk `getRGB`, as `Rgb` or `Rgba` according to the image's
+  // colour model.
+  private def convert(image: jai.BufferedImage): Raster =
+    val width = image.getWidth
+    val height = image.getHeight
+    val argb = image.getRGB(0, 0, width, height, null, 0, width).nn
+
+    if image.getColorModel.nn.hasAlpha
+    then Raster.build(width, height, Descriptor.rgba): index =>
+      (argb(index).toLong&0xffffff) << 8 | (argb(index) >>> 24)
+    else Raster.build(width, height, Descriptor.rgb)(argb(_).toLong&0xffffff)

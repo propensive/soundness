@@ -32,15 +32,7 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-import gesticulate.*
-
-object Webp:
-  def apply(): Rasterizable = rasterization
-
-  given rasterization: Webp is Rasterizable:
-    def name: Text = "WEBP".tt
-    def mediaType = media"image/webp"
-    def alpha: Boolean = true
-
-sealed trait Webp
+// Every format this library implements, for consumers that want `Raster(data)` to recognise any
+// of them. Depending on this component compiles all five codecs; a consumer that needs only one
+// should depend on that format's component and name it directly.
+given allRasterFormats: RasterFormats = RasterFormats(Bmp(), Gif(), Jpeg(), Png(), Webp())
