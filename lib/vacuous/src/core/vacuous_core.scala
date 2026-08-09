@@ -63,17 +63,18 @@ transparent inline def invite[entity]: Optional[entity] = summonFrom:
 
 extension [value](iterable: Iterable[Optional[value]])
   transparent inline def compact: Iterable[value] =
-    iterable.filter(!_.absent).map(_.vouch)
+    iterable.filter(!_.absent).map(_.or(panic(m"the absent elements were filtered out")))
 
   // All-or-nothing: the whole list if every element is present, or `Unset` if any is
   // absent. One presence sweep, recorded by the result's type.
   def entire: Optional[List[value]] =
-    if iterable.exists(_.absent) then Unset else List.from(iterable.map(_.vouch))
+    if iterable.exists(_.absent) then Unset
+    else List.from(iterable.map(_.or(panic(m"absence was excluded by the sweep above"))))
 
 // As `compact` for a streaming source: absent elements are dropped as the iterator advances.
 extension [value](iterator: Iterator[Optional[value]])
   transparent inline def compact: Iterator[value] =
-    iterator.filter(!_.absent).map(_.vouch)
+    iterator.filter(!_.absent).map(_.or(panic(m"the absent elements were filtered out")))
 
 extension [value](option: Option[value])
   // Not `inline`: inlining a union `Optional[value]` result re-infers it per call site, where capture
@@ -100,7 +101,12 @@ extension [value](optional: Optional[value])(using Optionality[optional.type])
   inline def absent: Boolean = optional == Unset
   inline def present: Boolean = optional != Unset
 
-  inline def vouch: value = optional.or(panic(m"a value was vouched but was absent"))
+  // The foundation extraction, private to these combinators: after an `absent` test, the
+  // union's only remaining inhabitant is a `value`, so the cast is a no-op at runtime. Every
+  // combinator below discharges absence through this one point; user code never needs it,
+  // since `or`/`let`/`lay` express every honest consumption.
+  private inline def unsafeGet: value = optional.asInstanceOf[value]
+
 
   inline def mask(predicate: value => Boolean): Optional[value] =
     optional.let: value => if predicate(value) then Unset else value
@@ -109,21 +115,21 @@ extension [value](optional: Optional[value])(using Optionality[optional.type])
     optional.lay(ju.Optional.empty[value].nn)(ju.Optional.of(_).nn)
 
   def presume(using default: Default[value]): value = optional.or(default())
-  def option: Option[value] = if absent then None else Some(vouch)
+  def option: Option[value] = if absent then None else Some(unsafeGet)
   def assume(using absentValue: CanThrow[UnsetError]): value = optional.or(throw UnsetError())
 
   inline def lay[value2](inline alternative: => value2)(inline lambda: value => value2): value2 =
 
-    if absent then alternative else lambda(vouch)
+    if absent then alternative else lambda(unsafeGet)
 
 
   inline def layGiven[value2](inline alternative: => value2)(inline block: value ?=> value2)
   :   value2 =
 
-    if absent then alternative else block(using vouch)
+    if absent then alternative else block(using unsafeGet)
 
   def let[value2](lambda: value => value2): Optional[value2] =
-    if absent then Unset else lambda(vouch)
+    if absent then Unset else lambda(unsafeGet)
 
   inline def letGiven[value2](inline block: value ?=> value2): Optional[value2] =
-    if absent then Unset else block(using vouch)
+    if absent then Unset else block(using unsafeGet)

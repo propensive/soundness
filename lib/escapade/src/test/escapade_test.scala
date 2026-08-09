@@ -60,6 +60,11 @@ object Tests extends Suite(m"Escapade tests"):
     def emulate(teletype: Teletype, width: Int = 80, height: Int = 4): Pty =
       Pty(width, height).consume(emit(teletype))
 
+    // Locates `text` in the PTY buffer and checks that every cell satisfies `predicate`;
+    // absence of the text fails the check honestly.
+    def styled(pty: Pty, text: Text)(predicate: Style => Boolean): Boolean =
+      pty.buffer.find(text).lay(false)(_.styles.all(predicate))
+
     // chroma values we'll reference repeatedly
     val red    = Red.chroma
     val yellow = Yellow.chroma
@@ -129,8 +134,8 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"teletype substitution preserves styling"):
         val inner: Teletype = e"$Bold(bold)"
-        emulate(e"x${inner}y").buffer.find(t"bold").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(e"x${inner}y"), t"bold")(_.bold)
+      . assert(identity(_))
 
       test(m"non-stylize substitution does not consume bracket"):
         val n = 42
@@ -150,32 +155,32 @@ object Tests extends Suite(m"Escapade tests"):
 
     suite(m"Interpolator: brackets"):
       test(m"parenthesis bracket"):
-        emulate(e"$Bold(bold)").buffer.find(t"bold").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(e"$Bold(bold)"), t"bold")(_.bold)
+      . assert(identity(_))
 
       test(m"square bracket"):
-        emulate(e"$Bold[bold]").buffer.find(t"bold").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(e"$Bold[bold]"), t"bold")(_.bold)
+      . assert(identity(_))
 
       test(m"curly bracket"):
-        emulate(e"$Bold{bold}").buffer.find(t"bold").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(e"$Bold{bold}"), t"bold")(_.bold)
+      . assert(identity(_))
 
       test(m"angle bracket"):
-        emulate(e"$Bold<bold>").buffer.find(t"bold").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(e"$Bold<bold>"), t"bold")(_.bold)
+      . assert(identity(_))
 
       test(m"guillemet bracket"):
-        emulate(e"$Bold«bold»").buffer.find(t"bold").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(e"$Bold«bold»"), t"bold")(_.bold)
+      . assert(identity(_))
 
       test(m"mismatched closing bracket type is ignored as text"):
-        emulate(e"$Bold(a]b)").buffer.find(t"a]b").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(e"$Bold(a]b)"), t"a]b")(_.bold)
+      . assert(identity(_))
 
       test(m"mismatched closing bracket inside parens does not close span"):
-        emulate(e"$Bold(a]b)c").buffer.find(t"c").vouch.styles
-      . assert(_.all(!_.bold))
+        styled(emulate(e"$Bold(a]b)c"), t"c")(!_.bold)
+      . assert(identity(_))
 
     // ─── interpolator: escapes ────────────────────────────────────────────
 
@@ -347,40 +352,40 @@ object Tests extends Suite(m"Escapade tests"):
 
     suite(m"Nesting: stack restoration"):
       test(m"inner color overrides outer"):
-        emulate(e"${Fg(red)}(${Fg(yellow)}(yellow))").buffer.find(t"yellow").vouch.styles
-      . assert(_.all(_.foreground == yellow))
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(yellow))"), t"yellow")(_.foreground == yellow)
+      . assert(identity(_))
 
       test(m"outer color restored after inner closes"):
-        emulate(e"${Fg(red)}(${Fg(yellow)}(yellow)red)").buffer.find(t"red").vouch.styles
-      . assert(_.all(_.foreground == red))
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(yellow)red)"), t"red")(_.foreground == red)
+      . assert(identity(_))
 
       test(m"default restored after outermost closes"):
-        emulate(e"${Fg(red)}(${Fg(yellow)}(yellow)red)tail").buffer.find(t"tail").vouch.styles
-      . assert(_.all(_.foreground == white))
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(yellow)red)tail"), t"tail")(_.foreground == white)
+      . assert(identity(_))
 
       test(m"three levels of nested color restore correctly"):
-        emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)x").buffer.find(t"x").vouch.styles
-      . assert(_.all(_.foreground == white))
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)x"), t"x")(_.foreground == white)
+      . assert(identity(_))
 
       test(m"middle color of three-deep stack restores correctly"):
-        emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)").buffer.find(t"y").vouch.styles
-      . assert(_.all(_.foreground == yellow))
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)"), t"y")(_.foreground == yellow)
+      . assert(identity(_))
 
       test(m"outer color of three-deep stack restores correctly"):
-        emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)").buffer.find(t"r").vouch.styles
-      . assert(_.all(_.foreground == red))
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)"), t"r")(_.foreground == red)
+      . assert(identity(_))
 
       test(m"nested bold and italic both apply"):
-        emulate(e"$Bold(b$Italic(bi)b)").buffer.find(t"bi").vouch.styles
-      . assert(_.all { s => s.bold && s.italic })
+        styled(emulate(e"$Bold(b$Italic(bi)b)"), t"bi") { s => s.bold && s.italic }
+      . assert(identity(_))
 
       test(m"italic removed after inner span ends but bold remains"):
-        emulate(e"$Bold(b$Italic(bi)b2)").buffer.find(t"b2").vouch.styles
-      . assert(_.all { s => s.bold && !s.italic })
+        styled(emulate(e"$Bold(b$Italic(bi)b2)"), t"b2") { s => s.bold && !s.italic }
+      . assert(identity(_))
 
       test(m"nested background restores outer background"):
-        emulate(e"${Bg(red)}(${Bg(blue)}(blue)red)").buffer.find(t"red").vouch.styles
-      . assert(_.all(_.background == red))
+        styled(emulate(e"${Bg(red)}(${Bg(blue)}(blue)red)"), t"red")(_.background == red)
+      . assert(identity(_))
 
       test(m"nested fg/bg combinations restore independently"):
         val out = emulate(e"${Fg(red)}(${Bg(blue)}(both)fg)tail")
@@ -445,13 +450,13 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"append teletype preserves left styling"):
         val left = e"$Bold(bold)"
-        emulate(left.append(e"plain")).buffer.find(t"bold").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(left.append(e"plain")), t"bold")(_.bold)
+      . assert(identity(_))
 
       test(m"append teletype preserves right styling"):
         val right = e"$Bold(bold)"
-        emulate(e"plain".append(right)).buffer.find(t"bold").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(e"plain".append(right)), t"bold")(_.bold)
+      . assert(identity(_))
 
       test(m"+ operator behaves as append"):
         (e"a" + e"b").plain
@@ -476,13 +481,13 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"dropChars preserves styling on remaining range"):
         val tt = e"$Bold(abcdef)".dropChars(2)
-        emulate(tt).buffer.find(t"cdef").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(tt), t"cdef")(_.bold)
+      . assert(identity(_))
 
       test(m"takeChars preserves styling on remaining range"):
         val tt = e"$Bold(abcdef)".takeChars(3)
-        emulate(tt).buffer.find(t"abc").vouch.styles
-      . assert(_.all(_.bold))
+        styled(emulate(tt), t"abc")(_.bold)
+      . assert(identity(_))
 
     // ─── Textual extension methods (from gossamer) ────────────────────────
 
@@ -759,7 +764,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == List(t""))
 
       test(m"cut preserves bold styling on parts"):
-        emulate(e"$Bold(a,b,c)").buffer.find(t"a,b,c").vouch.styles.all(_.bold)
+        styled(emulate(e"$Bold(a,b,c)"), t"a,b,c")(_.bold)
       . assert(_ == true)
 
     // ─── Joinable & Concatenable ──────────────────────────────────────────
@@ -775,7 +780,7 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"join preserves nested styling"):
         val parts = scala.collection.immutable.List(e"$Bold(a)", e"plain", e"$Italic(c)")
-        emulate(parts.join(e",")).buffer.find(t"a").vouch.styles.all(_.bold)
+        styled(emulate(parts.join(e",")), t"a")(_.bold)
       . assert(_ == true)
 
       test(m"empty list joins to empty"):
@@ -825,12 +830,12 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"first ribbon segment has correct background"):
         val pty = emulate(Ribbon(Bg(red), Bg(yellow)).fill(e"one", e"two"), width = 80)
-        pty.buffer.find(t"one").vouch.styles.all(_.background == red)
+        styled(pty, t"one")(_.background == red)
       . assert(_ == true)
 
       test(m"second ribbon segment has correct background"):
         val pty = emulate(Ribbon(Bg(red), Bg(yellow)).fill(e"one", e"two"), width = 80)
-        pty.buffer.find(t"two").vouch.styles.all(_.background == yellow)
+        styled(pty, t"two")(_.background == yellow)
       . assert(_ == true)
 
       test(m"zero-length ribbon with no parts is empty"):

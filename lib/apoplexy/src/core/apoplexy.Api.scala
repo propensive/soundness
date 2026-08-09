@@ -50,6 +50,7 @@ import spectacular.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
+import fulminate.*
 import vacuous.*
 import xylophone.*
 import zephyrine.*
@@ -108,7 +109,13 @@ object Api:
     val headers: List[Http.Header] = Http.Header(t"accept", accept) :: contentTypeHeader
 
     val httpRequest =
-      Http.Request(request.method, 1.1, url.host.vouch, url.requestTarget, headers, body)
+      Http.Request
+        ( request.method,
+          1.1,
+          url.host.or(panic(m"an http or https URL always has a host")),
+          url.requestTarget,
+          headers,
+          body )
 
     client.request(httpRequest, url.origin)
 

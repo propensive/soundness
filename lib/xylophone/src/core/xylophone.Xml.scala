@@ -1038,42 +1038,45 @@ object Xml extends Tag.Container
 
             index += 1
 
-          var label: Optional[Text] = reader.nextChild()
+          var scanning: Boolean = true
 
-          while label.present do
-            val found = indexOf(label.vouch)
+          while scanning do reader.nextChild() match
+            case Unset => scanning = false
 
-            if found < 0 then reader.skipElement()
-            else Xml.Parsable.unwrap(entries.readUnchecked(found)(1)) match
-              case gathering: Gathering if entries.readUnchecked(found)(1).repeatable =>
-                // Every occurrence of a repeatable field accumulates, in
-                // document order — the AST derivation's gather-all
-                // semantics.
-                val buffer = values(found) match
-                  case buffer: scm.ListBuffer[?] => buffer.asInstanceOf[scm.ListBuffer[Any]]
+            case label: Text =>
+              val found = indexOf(label)
 
-                  case _ =>
-                    val buffer = scm.ListBuffer.empty[Any]
-                    values(found) = buffer
-                    buffer
+              if found < 0 then reader.skipElement()
+              else Xml.Parsable.unwrap(entries.readUnchecked(found)(1)) match
+                case gathering: Gathering if entries.readUnchecked(found)(1).repeatable =>
+                  // Every occurrence of a repeatable field accumulates, in
+                  // document order — the AST derivation's gather-all
+                  // semantics.
+                  val buffer = values(found) match
+                    case buffer: scm.ListBuffer[?] => buffer.asInstanceOf[scm.ListBuffer[Any]]
 
-                buffer +=
-                  ( if focused
-                    then focus(descend(prior, keys.readUnchecked(found).tt))(gathering.parseElement(reader))
-                    else gathering.parseElement(reader) )
+                    case _ =>
+                      val buffer = scm.ListBuffer.empty[Any]
+                      values(found) = buffer
+                      buffer
 
-              case _ =>
-                // Unknown children are skipped, and a duplicate child keeps
-                // the first occurrence — the AST derivation's `HashMap`
-                // inserts only when the label is not yet present.
-                if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot)
-                then reader.skipElement()
-                else values(found) =
-                  if focused
-                  then focus(descend(prior, keys.readUnchecked(found).tt))(entries.readUnchecked(found)(1).parse(reader))
-                  else entries.readUnchecked(found)(1).parse(reader)
+                  buffer +=
+                    ( if focused
+                      then focus(descend(prior, keys.readUnchecked(found).tt))(gathering.parseElement(reader))
+                      else gathering.parseElement(reader) )
 
-            label = reader.nextChild()
+                case _ =>
+                  // Unknown children are skipped, and a duplicate child keeps
+                  // the first occurrence — the AST derivation's `HashMap`
+                  // inserts only when the label is not yet present.
+                  if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot)
+                  then reader.skipElement()
+                  else values(found) =
+                    if focused
+                    then focus(descend(prior, keys.readUnchecked(found).tt))(entries.readUnchecked(found)(1).parse(reader))
+                    else entries.readUnchecked(found)(1).parse(reader)
+
+
 
           index = 0
 
@@ -1954,8 +1957,9 @@ object Xml extends Tag.Container
                     val attrCount = data.readUnchecked(offset + 4)
                     val offSlot = offset + 6 + attrCount + childElementIndex
                     val childOff = data.readUnchecked(offSlot)
-                    val child = descendAst(element, name, ordinal).vouch
-                    walk(child, data, offset + childOff, segments, i + 1)
+
+                    descendAst(element, name, ordinal).let: child =>
+                      walk(child, data, offset + childOff, segments, i + 1)
 
                 case _ =>
                   Unset
@@ -2067,7 +2071,7 @@ object Xml extends Tag.Container
         case xml: Xml        => result.decoded(xml)
 
       val foci = summon[Foci[Xml.Focus]]
-      foci.supplement(foci.length, _.let(_.withPosition(document)).vouch)
+      foci.supplement(foci.length, _.let(_.withPosition(document)))
       decoded
 
   enum Hole:
@@ -3769,8 +3773,7 @@ object Xml extends Tag.Container
     private[xylophone] def directTextInt()(using Tactic[ParseError]): Optional[Int] =
       val value = directTextLong()
 
-      if value.absent then Unset else
-        val long = value.vouch
+      value.let: long =>
         if long >= Int.MinValue.toLong && long <= Int.MaxValue.toLong
         then Optional(long.toInt)
         else Unset

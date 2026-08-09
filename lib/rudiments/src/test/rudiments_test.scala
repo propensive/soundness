@@ -136,7 +136,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       val array = Array.of(10, 20, 30)
 
       test(m"Plain `at` returns Optional"):
-        text(Prim).vouch
+        text(Prim)
       . assert(_ == 'h')
 
       test(m"`within` + confined `at` returns a bare element"):
@@ -431,35 +431,35 @@ object Tests extends Suite(m"Rudiments Tests"):
 
     suite(m"Mean tests"):
       test(m"Simple median"):
-        Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).mean.vouch
-      . assert(_ === 12.454545 ± 0.00001)
+        Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).mean
+      . assert(_.lay(false)(_ === 12.454545 ± 0.00001))
 
       test(m"Simple median, different pivot"):
-        Iterable[Double](25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).mean.vouch
-      . assert(_ === 12.454545 ± 0.00001)
+        Iterable[Double](25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).mean
+      . assert(_.lay(false)(_ === 12.454545 ± 0.00001))
 
       test(m"Simple median, even items"):
-        Iterable[Double](25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7, 8).mean.vouch
-      . assert(_ === 12.1 ± 0.1)
+        Iterable[Double](25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7, 8).mean
+      . assert(_.lay(false)(_ === 12.1 ± 0.1))
 
       test(m"Simple median, even items, different order"):
-        Iterable[Double](8, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).mean.vouch
-      . assert(_ === 12.1 ± 0.1)
+        Iterable[Double](8, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).mean
+      . assert(_.lay(false)(_ === 12.1 ± 0.1))
 
       test(m"Simple median, even items, different elements"):
-        Iterable[Double](10, 125, -1, 124, -2, -3, 123, -4, 122, -5, 121, 9).mean.vouch
-      . assert(_ === 51.6 ± 0.1)
+        Iterable[Double](10, 125, -1, 124, -2, -3, 123, -4, 122, -5, 121, 9).mean
+      . assert(_.lay(false)(_ === 51.6 ± 0.1))
 
       test(m"Mean of temperatures"):
-        Iterable(Fahrenheit(10), Fahrenheit(10), Fahrenheit(40)).mean2.vouch
+        Iterable(Fahrenheit(10), Fahrenheit(10), Fahrenheit(40)).mean2
       . assert(_ == Fahrenheit(20))
 
       test(m"Mean of even number of temperatures"):
-        Iterable(Celsius(40), Celsius(35), Celsius(45), Celsius(75)).mean2.vouch
+        Iterable(Celsius(40), Celsius(35), Celsius(45), Celsius(75)).mean2
       . assert(_ == Celsius(48.75))
 
       test(m"Mean of quantities"):
-        Iterable(10*Metre/Second, 30*Metre/Second, 5*Metre/Second, 20*Metre/Second).mean.vouch
+        Iterable(10*Metre/Second, 30*Metre/Second, 5*Metre/Second, 20*Metre/Second).mean
       . assert(_ == 16.25*Metre/Second)
 
     suite(m"bin tests"):
@@ -645,8 +645,8 @@ object Tests extends Suite(m"Rudiments Tests"):
         setInt.absent
       . assert(_ == false)
 
-      test(m"Unsafely vouch a set value"):
-        val x: Int = setInt.vouch
+      test(m"Assume a set value is present"):
+        val x: Int = unsafely(setInt.assume)
         x
       . assert(_ == 42)
 

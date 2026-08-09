@@ -399,16 +399,16 @@ object Tests extends Suite(m"Quantitative Tests"):
       . assert(_ == 6*Second)
 
       test(m"Average some values"):
-        List(1*Second, 2*Second, 3*Second).mean.vouch
-      . assert(_ == 2*Second)
+        List(1*Second, 2*Second, 3*Second).mean
+      . assert(_.lay(false)(_ == 2*Second))
 
       test(m"Variance of some values"):
-        List(1*Second, 2*Second, 3*Second).variance.vouch
-      . assert(_ == (2/3.0)*Second*Second)
+        List(1*Second, 2*Second, 3*Second).variance
+      . assert(_.lay(false)(_ == (2/3.0)*Second*Second))
 
       test(m"Standard deviation of some values"):
-        List(1*Second, 2*Second, 3*Second).std.vouch
-      . assert(_ == (2/3.0).sqrt*Second)
+        List(1*Second, 2*Second, 3*Second).std
+      . assert(_.lay(false)(_ == (2/3.0).sqrt*Second))
 
     suite(m"Prefix-scaled rendering"):
       sealed trait Information extends Dimension
@@ -486,11 +486,10 @@ object Tests extends Suite(m"Quantitative Tests"):
     suite(m"Bytecode shape"):
       import classloaders.threadContextClassloader
 
-      def methodBytecode(method: Text)(using Classloader): Bytecode =
+      def methodBytecode(method: Text)(using Classloader): Optional[Bytecode] =
         Classfile[Probes.type]
         . let(_.methods.find(_.name == method).getOrElse(Unset))
         . let(_.bytecode)
-        . vouch
 
       // True when the bytecode contains a virtual / interface dispatch to a
       // typeclass operation (`negate`, `add`, etc.). Virtual calls to a
@@ -544,63 +543,63 @@ object Tests extends Suite(m"Quantitative Tests"):
             case _                    => false
 
       test(m"Quantity negation has no virtual call to `negate`"):
-        callsTypeclassOp(methodBytecode(t"viaQuantity_negate"))
+        methodBytecode(t"viaQuantity_negate").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity negation has no boxing"):
-        hasBoxing(methodBytecode(t"viaQuantity_negate"))
+        methodBytecode(t"viaQuantity_negate").lay(true)(hasBoxing)
       . assert(_ == false)
 
       test(m"Quantity negation contains the primitive `Dneg` instruction"):
-        containsDneg(methodBytecode(t"viaQuantity_negate"))
+        methodBytecode(t"viaQuantity_negate").lay(false)(containsDneg)
       . assert(_ == true)
 
       test(m"Quantity * Double contains the primitive `Dmul` instruction"):
-        containsDmul(methodBytecode(t"viaQuantity_mulScalar"))
+        methodBytecode(t"viaQuantity_mulScalar").lay(false)(containsDmul)
       . assert(_ == true)
 
       test(m"Quantity / Double contains the primitive `Ddiv` instruction"):
-        containsDdiv(methodBytecode(t"viaQuantity_divScalar"))
+        methodBytecode(t"viaQuantity_divScalar").lay(false)(containsDdiv)
       . assert(_ == true)
 
       test(m"Quantity * Double has no virtual call to `multiply`"):
-        callsTypeclassOp(methodBytecode(t"viaQuantity_mulScalar"))
+        methodBytecode(t"viaQuantity_mulScalar").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity / Double has no virtual call to `divide`"):
-        callsTypeclassOp(methodBytecode(t"viaQuantity_divScalar"))
+        methodBytecode(t"viaQuantity_divScalar").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity + Quantity contains the primitive `Dadd` instruction"):
-        containsDadd(methodBytecode(t"viaQuantity_addQ"))
+        methodBytecode(t"viaQuantity_addQ").lay(false)(containsDadd)
       . assert(_ == true)
 
       test(m"Quantity + Quantity has no virtual call to `add` or `op`"):
-        callsTypeclassOp(methodBytecode(t"viaQuantity_addQ"))
+        methodBytecode(t"viaQuantity_addQ").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity - Quantity contains the primitive `Dsub` instruction"):
-        containsDsub(methodBytecode(t"viaQuantity_subQ"))
+        methodBytecode(t"viaQuantity_subQ").lay(false)(containsDsub)
       . assert(_ == true)
 
       test(m"Quantity - Quantity has no virtual call to `subtract` or `op`"):
-        callsTypeclassOp(methodBytecode(t"viaQuantity_subQ"))
+        methodBytecode(t"viaQuantity_subQ").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity * Quantity contains the primitive `Dmul` instruction"):
-        containsDmul(methodBytecode(t"viaQuantity_mulQ"))
+        methodBytecode(t"viaQuantity_mulQ").lay(false)(containsDmul)
       . assert(_ == true)
 
       test(m"Quantity * Quantity has no virtual call to `multiply` or `op`"):
-        callsTypeclassOp(methodBytecode(t"viaQuantity_mulQ"))
+        methodBytecode(t"viaQuantity_mulQ").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity / Quantity contains the primitive `Ddiv` instruction"):
-        containsDdiv(methodBytecode(t"viaQuantity_divQ"))
+        methodBytecode(t"viaQuantity_divQ").lay(false)(containsDdiv)
       . assert(_ == true)
 
       test(m"Quantity / Quantity has no virtual call to `divide` or `op`"):
-        callsTypeclassOp(methodBytecode(t"viaQuantity_divQ"))
+        methodBytecode(t"viaQuantity_divQ").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
 

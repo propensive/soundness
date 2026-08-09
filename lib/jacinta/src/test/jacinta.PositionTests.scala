@@ -177,13 +177,14 @@ object PositionTests extends Suite(m"Jacinta position-index tests"):
     suite(m"Subsequence property"):
       test(m"A nested object's descriptor slice has length == slot 0"):
         val json = Json.parseTracked(t"""{"a":{"b":42}}""")
-        val data = json.positionIndex.vouch.ints
-        val firstEntryOff = data(5)
-        val valueDescOff = firstEntryOff + 3
-        val valueSize = data(valueDescOff)
-        val slice = data.slice(valueDescOff, valueDescOff + valueSize)
-        slice.length == valueSize
-      . assert(identity)
+        json.positionIndex.let: index =>
+          val data = index.ints
+          val firstEntryOff = data(5)
+          val valueDescOff = firstEntryOff + 3
+          val valueSize = data(valueDescOff)
+          val slice = data.slice(valueDescOff, valueDescOff + valueSize)
+          slice.length == valueSize
+      . assert(_ == true)
 
     suite(m"Non-tracking mode"):
       test(m"Plain parse leaves positionIndex Unset"):
@@ -192,13 +193,13 @@ object PositionTests extends Suite(m"Jacinta position-index tests"):
 
     suite(m"Span derivation"):
       test(m"a position's span carries its line as a 0-based ordinal"):
-        at(2, 8, 3).span.startLine.vouch
+        at(2, 8, 3).span.startLine
       . assert(_ == 1.z)
 
       test(m"a position's span carries its column as a 0-based ordinal"):
-        at(2, 8, 3).span.startColumn.vouch
+        at(2, 8, 3).span.startColumn
       . assert(_ == 7.z)
 
       test(m"a position's span carries its length"):
-        at(2, 8, 3).span.length.vouch
+        at(2, 8, 3).span.length
       . assert(_ == 3)

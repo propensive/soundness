@@ -82,7 +82,7 @@ object internal:
     // reverse-source order, so accumulating with cons gives source order
     // directly — no final reverse needed (mirrors jacinta.internal).
     def collectParts[tuple: Type](acc: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => collectParts[tail](TypeRepr.of[head].literal[String].vouch :: acc)
+      case '[head *: tail] => collectParts[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: acc)
       case _               => acc
 
     val parts = collectParts[parts](Nil)
@@ -247,7 +247,7 @@ object internal:
     import quotes.reflect.*
 
     def collectParts[tuple: Type](acc: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => collectParts[tail](TypeRepr.of[head].literal[String].vouch :: acc)
+      case '[head *: tail] => collectParts[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: acc)
       case _               => acc
 
     val parts = collectParts[parts](Nil)

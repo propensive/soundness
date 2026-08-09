@@ -194,7 +194,7 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
 
       test(m"a false Boolean is written, not omitted"):
         val doc = PFlags(false, false).encode
-        (doc.childCompounds.readable.length, doc.field(t"active").vouch.primaryAtom)
+        (doc.childCompounds.readable.length, doc.field(t"active").let(_.primaryAtom))
       . assert(_ == (2, t"false"))
 
       test(m"every Boolean combination round-trips through serialized text"):

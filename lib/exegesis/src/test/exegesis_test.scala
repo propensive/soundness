@@ -504,7 +504,7 @@ object Tests extends Suite(m"Exegesis Tests"):
       . assert(_ == TrafficFixture.request)
 
       test(m"an outbound message is observed as the response to the request"):
-        traffic.stdlib.last._2.as[Json].as[JsonRpc.Response].id.vouch.as[Int]
+        traffic.stdlib.last._2.as[Json].as[JsonRpc.Response].id.let(_.as[Int])
       . assert(_ == 0)
 
     suite(m"Client sessions"):

@@ -66,7 +66,13 @@ extends DecimalConverter:
 
       val norm: Double = abs*(10 ** -baseScale)
       val digits: Int = significantFigures.or(decimalPlaces.let(1 + scale + _)).or(3)
-      val sign = (negative || plusSign.present) && double != 0.0
+      // The sign character and its presence are one value: the flag previously implied
+      // plusSign's presence from sixty lines away, which the write below had to assert.
+      val signChar: Optional[Char] =
+        if double == 0.0 then Unset
+        else if negative then minusSign else plusSign
+
+      val sign = signChar.present
 
       @tailrec
       def write
@@ -140,7 +146,7 @@ extends DecimalConverter:
           recur(next, bcd2, index + 1)
 
       val chars: scala.Array[Char]^ = recur(norm, 0L, 1)
-      if sign then chars(0) = (if negative then minusSign else plusSign.vouch)
+      signChar.let(chars(0) = _)
 
       Text(new String(chars))
     else if double.isNaN then

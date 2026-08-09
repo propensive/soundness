@@ -102,26 +102,21 @@ object Tests extends Suite(m"Mandible tests"):
     classfileDisciplineTests()
     jvmProfileTests()
     test(m"Locate a known method on a classfile"):
-      val rewrite =
-        Classfile[StackTrace].let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset)).vouch
-    . assert()
+      Classfile[StackTrace].let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
+    . assert(_ != Unset)
 
     test(m"Disassemble a known method's bytecode"):
-      val bytecode =
-        Classfile[StackTrace]
-        . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
-        . let(_.bytecode)
-        . vouch
-      bytecode.instructions.size
+      Classfile[StackTrace]
+      . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
+      . let(_.bytecode)
+      . lay(0)(_.instructions.size)
     . assert(_ > 0)
 
     test(m"Bytecode carries declared maxStack and maxLocals"):
-      val bytecode =
-        Classfile[StackTrace]
-        . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
-        . let(_.bytecode)
-        . vouch
-      (bytecode.maxStack, bytecode.maxLocals)
+      Classfile[StackTrace]
+      . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
+      . let(_.bytecode)
+      . lay((-1, -1))(bytecode => (bytecode.maxStack, bytecode.maxLocals))
     . assert((s, l) => s >= 0 && l >= 0)
 
     test(m"Method descriptor parser handles primitives and references"):

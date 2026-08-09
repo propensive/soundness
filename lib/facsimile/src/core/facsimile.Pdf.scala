@@ -241,8 +241,8 @@ extends caps.ExclusiveCapability:
   // A reference to the page at a position in the flattened page sequence, for destinations.
   private[facsimile] def pageReference(ordinal: Ordinal)(using Tactic[PdfError]): Optional[Cos.Ref] =
     val entries = pageEntries
-    if ordinal.n0 < 0 || ordinal.n0 >= entries.length then Unset
-    else entries(ordinal.n0.z).vouch(0).let(Cos.Ref(_, 0))
+    // The bounds check and the lookup are the same act: a confined ordinal deindexes bare.
+    entries.confine(ordinal.n0.z).let { position => entries(position)(0).let(Cos.Ref(_, 0)) }
 
   def trailer: Map[Text, Cos] = xref.trailer
 

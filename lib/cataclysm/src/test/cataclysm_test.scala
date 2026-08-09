@@ -81,8 +81,8 @@ object Tests extends Suite(m"Cataclysm Tests"):
   def dim(n: Int, unit: Text): ValueToken = ValueToken.Dimension(n, unit, (n.toString+unit.s).tt)
 
   // ── value-matcher helpers ────────────────────────────────────────────────
-  def vm(property: Text, value: Text): Outcome =
-    SyntaxMatcher.check(PropertyDef.of(property).vouch, value)
+  def vm(property: Text, value: Text): Optional[Outcome] =
+    PropertyDef.of(property).let(SyntaxMatcher.check(_, value))
 
   def vmatch(grammar: Syntax, value: Text): Outcome = SyntaxMatcher.check(grammar, value)
 
@@ -325,7 +325,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == List(rule(t"a", decl(t"--my-color", t"red"))))
 
       test(m"a known property's value grammar is loaded"):
-        PropertyDef.of(t"color").vouch.syntax
+        PropertyDef.of(t"color").let(_.syntax)
       . assert(_ == t"<color>")
 
       test(m"an unknown property has no definition"):

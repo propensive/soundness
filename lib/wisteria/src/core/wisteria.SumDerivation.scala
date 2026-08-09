@@ -181,7 +181,7 @@ object SumDerivation:
         [variant <: derivation] =>
           lambda[variant](_)
 
-      . vouch
+      . or(panic(m"a fallible fold either yields a variant or raises for the bad label"))
 
 
     protected transparent inline def variant[derivation](sum: derivation)
@@ -202,7 +202,7 @@ object SumDerivation:
       fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
         [variant <: derivation] => variant => lambda[variant](variant)
 
-      . vouch
+      . or(panic(m"the sum's ordinal always identifies one of its variants"))
 
 
     private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]

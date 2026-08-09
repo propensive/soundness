@@ -808,7 +808,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"BadVersion error spans the malformed version phrase"):
         val span = capture[TelError](t"tel notaversion\n".read[Tel]).span
-        (span.startColumn.vouch.n1, span.length.vouch)
+        (span.startColumn.let(_.n1), span.length)
       . assert(_ == (5, 11))
 
       test(m"PragmaNotFirst error reports the misplaced pragma's line"):
@@ -825,7 +825,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"TrailingSpaces error spans exactly the trailing spaces"):
         val span = capture[TelError](t"good\nbad   \n".read[Tel]).span
-        (span.startColumn.vouch.n1, span.length.vouch)
+        (span.startColumn.let(_.n1), span.length)
       . assert(_ == (4, 3))
 
       test(m"Validation error (Type.assign) leaves the span empty"):
@@ -1981,7 +1981,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == t"name Alice\n")
 
       test(m"Metadata reports the line endings under the Read grant"):
-        t"name Alice\r\n".open[Tel]() { handle ?=> handle.metadata.vouch.lineEndings }
+        t"name Alice\r\n".open[Tel]() { handle ?=> handle.metadata.let(_.lineEndings) }
       . assert(_ == Tel.LineEndings.Crlf)
 
       test(m"Mutating through a writable handle writes back on close"):

@@ -319,16 +319,18 @@ object Tests extends Suite(m"Mosquito tests"):
 
       test(m"M times M-inverse is identity (2x2)"):
         val m = Matrix[2, 2]((4.0, 7.0), (2.0, 6.0))
-        val product = m*m.inverse.vouch
-        val target = Matrix[2, 2]((1.0, 0.0), (0.0, 1.0))
-        product.elements.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
+        m.inverse.lay(Double.MaxValue): inverse =>
+          val product = m*inverse
+          val target = Matrix[2, 2]((1.0, 0.0), (0.0, 1.0))
+          product.elements.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
       . assert(_ < 0.000001)
 
       test(m"M times M-inverse is identity (3x3)"):
         val m = Matrix[3, 3]((1.0, 2.0, 3.0), (0.0, 1.0, 4.0), (5.0, 6.0, 0.0))
-        val product = m*m.inverse.vouch
-        val target = Matrix[3, 3]((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
-        product.elements.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
+        m.inverse.lay(Double.MaxValue): inverse =>
+          val product = m*inverse
+          val target = Matrix[3, 3]((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+          product.elements.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
       . assert(_ < 0.000001)
 
       test(m"Inverse of singular 3x3 matrix is Unset"):
@@ -600,22 +602,20 @@ object Tests extends Suite(m"Mosquito tests"):
 
     suite(m"Eigenvalues and eigenvectors"):
       test(m"Eigenvalues of 2x2 diagonal matrix"):
-        val sorted =
-          Matrix[2, 2]((2.0, 0.0), (0.0, 3.0)).eigenvalues.let(_.list.stdlib.sorted).vouch
-
-        math.abs(sorted(0) - 2.0) + math.abs(sorted(1) - 3.0)
+        Matrix[2, 2]((2.0, 0.0), (0.0, 3.0)).eigenvalues.let(_.list.stdlib.sorted)
+        . lay(Double.MaxValue): sorted =>
+            math.abs(sorted(0) - 2.0) + math.abs(sorted(1) - 3.0)
       . assert(_ < 0.000001)
 
       test(m"Eigenvalues of [[2, 1], [1, 2]] are 1 and 3"):
-        val sorted =
-          Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.list.stdlib.sorted).vouch
-
-        math.abs(sorted(0) - 1.0) + math.abs(sorted(1) - 3.0)
+        Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.list.stdlib.sorted)
+        . lay(Double.MaxValue): sorted =>
+            math.abs(sorted(0) - 1.0) + math.abs(sorted(1) - 3.0)
       . assert(_ < 0.000001)
 
       test(m"Eigenvalues of identity are all 1"):
-        val list = Matrix.identity[Double, 3].eigenvalues.let(_.list).vouch
-        list.map(v => math.abs(v - 1.0)).max
+        Matrix.identity[Double, 3].eigenvalues.let(_.list).lay(Double.MaxValue): list =>
+          list.map(v => math.abs(v - 1.0)).max
       . assert(_ < 0.000001)
 
       test(m"Eigensystem of non-symmetric matrix is Unset"):
@@ -624,56 +624,55 @@ object Tests extends Suite(m"Mosquito tests"):
 
       test(m"M * v = lambda * v for each eigenvector"):
         val mat = Matrix[2, 2]((2.0, 1.0), (1.0, 2.0))
-        val pair = mat.eigensystem.vouch
-        val vals = pair(0)
-        val vecs = pair(1)
-        val v0 = vecs.column(0)
-        val v1 = vecs.column(1)
-        val lambda0 = vals(0)
-        val lambda1 = vals(1)
-        val mv0 = mat*v0
-        val mv1 = mat*v1
-        val d0 = math.abs(mv0(0) - lambda0*v0(0)) + math.abs(mv0(1) - lambda0*v0(1))
-        val d1 = math.abs(mv1(0) - lambda1*v1(0)) + math.abs(mv1(1) - lambda1*v1(1))
-        math.max(d0, d1)
+        mat.eigensystem.lay(Double.MaxValue): pair =>
+          val vals = pair(0)
+          val vecs = pair(1)
+          val v0 = vecs.column(0)
+          val v1 = vecs.column(1)
+          val lambda0 = vals(0)
+          val lambda1 = vals(1)
+          val mv0 = mat*v0
+          val mv1 = mat*v1
+          val d0 = math.abs(mv0(0) - lambda0*v0(0)) + math.abs(mv0(1) - lambda0*v0(1))
+          val d1 = math.abs(mv1(0) - lambda1*v1(0)) + math.abs(mv1(1) - lambda1*v1(1))
+          math.max(d0, d1)
       . assert(_ < 0.000001)
 
       test(m"Eigenvectors are unit vectors"):
         val mat = Matrix[3, 3]((4.0, 1.0, 2.0), (1.0, 5.0, 3.0), (2.0, 3.0, 6.0))
-        val vecs = mat.eigenvectors.vouch
-        val norms = (0 until 3).map: column =>
-          math.abs(vecs.column(column).norm - 1.0)
+        mat.eigenvectors.lay(Double.MaxValue): vecs =>
+          val norms = (0 until 3).map: column =>
+            math.abs(vecs.column(column).norm - 1.0)
 
-        norms.max
+          norms.max
       . assert(_ < 0.000001)
 
     suite(m"Solve linear system"):
       test(m"Solve 2x2 system"):
         val mat = Matrix[2, 2]((2.0, 1.0), (1.0, 3.0))
         val rhs = Vector(3.0, 4.0)
-        val solution = mat.solve(rhs).vouch
-        math.abs(solution(0) - 1.0) + math.abs(solution(1) - 1.0)
+        mat.solve(rhs).lay(Double.MaxValue): solution =>
+          math.abs(solution(0) - 1.0) + math.abs(solution(1) - 1.0)
       . assert(_ < 0.000001)
 
       test(m"Solve identity system returns RHS"):
-        val solution = Matrix.identity[Double, 3].solve(Vector(7.0, 8.0, 9.0)).vouch
-        solution
+        Matrix.identity[Double, 3].solve(Vector(7.0, 8.0, 9.0))
       . assert(_ == Vector(7.0, 8.0, 9.0))
 
       test(m"Solve 3x3 system"):
         val mat = Matrix[3, 3]((1.0, 1.0, 1.0), (0.0, 2.0, 5.0), (2.0, 5.0, -1.0))
         val rhs = Vector(6.0, -4.0, 27.0)
-        val solution = mat.solve(rhs).vouch
-        val expected = Vector(5.0, 3.0, -2.0)
-        (0 until 3).map(i => math.abs(solution(i) - expected(i))).max
+        mat.solve(rhs).lay(Double.MaxValue): solution =>
+          val expected = Vector(5.0, 3.0, -2.0)
+          (0 until 3).map(i => math.abs(solution(i) - expected(i))).max
       . assert(_ < 0.000001)
 
       test(m"Solve verifies A * x = b"):
         val mat = Matrix[3, 3]((4.0, 1.0, 2.0), (1.0, 5.0, 3.0), (2.0, 3.0, 6.0))
         val rhs = Vector(7.0, 8.0, 9.0)
-        val solution = mat.solve(rhs).vouch
-        val recovered = mat*solution
-        (0 until 3).map(i => math.abs(recovered(i) - rhs(i))).max
+        mat.solve(rhs).lay(Double.MaxValue): solution =>
+          val recovered = mat*solution
+          (0 until 3).map(i => math.abs(recovered(i) - rhs(i))).max
       . assert(_ < 0.000001)
 
       test(m"Solve singular system returns Unset"):
@@ -682,6 +681,6 @@ object Tests extends Suite(m"Mosquito tests"):
 
       test(m"Solve requires row swap (zero in pivot)"):
         val mat = Matrix[2, 2]((0.0, 1.0), (1.0, 0.0))
-        val solution = mat.solve(Vector(2.0, 3.0)).vouch
-        math.abs(solution(0) - 3.0) + math.abs(solution(1) - 2.0)
+        mat.solve(Vector(2.0, 3.0)).lay(Double.MaxValue): solution =>
+          math.abs(solution(0) - 3.0) + math.abs(solution(1) - 2.0)
       . assert(_ < 0.000001)

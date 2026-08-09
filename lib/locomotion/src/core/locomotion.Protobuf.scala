@@ -560,7 +560,9 @@ object Protobuf extends Protobuf2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Protobuf =
 
-      val numbers = fieldNumbers[derivation]
+      val annotated: Map[Text, Set[field]] = infer[derivation is Annotated by field] match
+        case annotated: Annotated.Fields => annotated.fields
+        case _                           => Map()
 
       value =>
         // The parameter ascription pins the lambda's type at each expansion site; without it,
@@ -568,7 +570,11 @@ object Protobuf extends Protobuf2:
         val bytes = printed: (printer: ProtobufPrinter^) =>
           fields(value):
             [field0] => fieldValue =>
-              printer.field(numbers(label).vouch, contextual.encode(fieldValue))
+              // The number is computed exactly as `fieldNumbers` would, from this field's own
+              // label and index — no map lookup whose totality would need asserting.
+              printer.field
+                ( annotated(label).let(_.head.number).or(index + 1),
+                  contextual.encode(fieldValue) )
 
         Protobuf.Wire(WireType.Len, bytes)
 
@@ -581,23 +587,14 @@ object Protobuf extends Protobuf2:
               printer.field(index + 1, contextual.encode(variantValue))
             Protobuf.Wire(WireType.Len, payload)
 
-    inline def fieldNumbers[derivation <: Product: ProductReflection]: Map[Text, Int] =
-      val annotated: Map[Text, Set[field]] = infer[derivation is Annotated by field] match
-        case annotated: Annotated.Fields => annotated.fields
-        case _                           => Map()
-
-      val pairs =
-        contexts[derivation]():
-          [field0] => context =>
-            (label, annotated(label).let(_.head.number).or(index + 1))
-
-      Map.from(pairs.readable.toSeq)
 
   object DecodableDerivation extends Derivable[Decodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   (derivation is Decodable in Protobuf)^ =
 
-      val numbers = fieldNumbers[derivation]
+      val annotated: Map[Text, Set[field]] = infer[derivation is Annotated by field] match
+        case annotated: Annotated.Fields => annotated.fields
+        case _                           => Map()
 
       // The decode lambda closes over the resolution-scoped `Tactic` that `provide` summons
       // at the derivation site, sharing the instance's given-resolution lifetime; the fresh
@@ -608,7 +605,8 @@ object Protobuf extends Protobuf2:
 
           build[derivation]:
             [field0] => context =>
-              map(numbers(label).vouch).lay(default.or(context.decoded(Protobuf.Absent))): values =>
+              map(annotated(label).let(_.head.number).or(index + 1))
+              . lay(default.or(context.decoded(Protobuf.Absent))): values =>
                 context.decoded(Protobuf.Repeated(values)) }
 
     inline def disjunction[derivation: SumReflection]: (derivation is Decodable in Protobuf)^ =
@@ -625,19 +623,9 @@ object Protobuf extends Protobuf2:
 
             delegate(labels.stdlib(index)):
               [variant <: derivation] => context =>
-                context.decoded(Protobuf.Repeated(map(index + 1).vouch)) }
+                map(index + 1).lay(abort(ProtobufError(Reason.MissingField(index + 1)))): values =>
+                  context.decoded(Protobuf.Repeated(values)) }
 
-    inline def fieldNumbers[derivation <: Product: ProductReflection]: Map[Text, Int] =
-      val annotated: Map[Text, Set[field]] = infer[derivation is Annotated by field] match
-        case annotated: Annotated.Fields => annotated.fields
-        case _                           => Map()
-
-      val pairs =
-        contexts[derivation]():
-          [field0] => context =>
-            (label, annotated(label).let(_.head.number).or(index + 1))
-
-      Map.from(pairs.readable.toSeq)
 
 // A single Protocol Buffers wire value, tagged with its wire type — the `Form` of
 // `Encodable`/`Decodable in Protobuf`. `Repeated` carries every occurrence of a

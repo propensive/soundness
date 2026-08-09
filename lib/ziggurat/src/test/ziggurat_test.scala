@@ -301,8 +301,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
     val winHost: Optional[Text] = safely(Environment.windowsHost[Text])
 
-    if winHost.present then
-      val host = winHost.vouch
+    winHost.let: host =>
       val winSshOk =
         safely(sh"ssh -o BatchMode=yes -o ConnectTimeout=5 $host echo ok".exec[Exit]()) == Exit.Ok
 

@@ -191,8 +191,8 @@ object Tests extends Suite(m"Aperture Tests"):
     test(m"Instantiation creates an empty artifact and returns the target"):
       val vault = Vault()
       val target = VaultRef(vault).create()
-      (target.vault.made, vault.committed.vouch)
-    . assert(_ == (true, Nil))
+      (target.vault.made, vault.committed.lay(true)(_ == Nil))
+    . assert(_ == (true, true))
 
     test(m"Scoped authoring commits at scope close"):
       val vault = Vault()
@@ -201,8 +201,8 @@ object Tests extends Suite(m"Aperture Tests"):
         scribe.append(t"first")
         scribe.append(t"second")
 
-      vault.committed.vouch
-    . assert(_ == List(t"first", t"second"))
+      vault.committed
+    . assert(_.lay(false)(_ == List(t"first", t"second")))
 
     test(m"An exception escaping the scope commits nothing"):
       val vault = Vault()

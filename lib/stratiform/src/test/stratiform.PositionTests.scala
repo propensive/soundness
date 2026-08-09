@@ -187,13 +187,13 @@ object PositionTests extends Suite(m"Stratiform position-index tests"):
 
     suite(m"Span derivation"):
       test(m"a position's span carries its line as a 0-based ordinal"):
-        at(2, 8, 3).span.startLine.vouch
+        at(2, 8, 3).span.startLine
       . assert(_ == 1.z)
 
       test(m"a position's span carries its column as a 0-based ordinal"):
-        at(2, 8, 3).span.startColumn.vouch
+        at(2, 8, 3).span.startColumn
       . assert(_ == 7.z)
 
       test(m"a position's span carries its length"):
-        at(2, 8, 3).span.length.vouch
+        at(2, 8, 3).span.length
       . assert(_ == 3)

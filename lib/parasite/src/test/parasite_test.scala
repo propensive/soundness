@@ -337,10 +337,10 @@ object Tests extends Suite(m"Parasite tests"):
           t.await()
 
           // Bound at a val: the deindexed reference's RC5 typer skolem otherwise
-          // intersects the Optional union and vouch no longer sees an Optional.
+          // intersects the Optional union and the equality no longer sees an Optional.
           val current: Optional[Name[Async]] = captured.get().nn
-          current.vouch
-        . assert(_ == t"named")
+          current
+        . assert(_.lay(false)(_ == t"named"))
 
       suite(m"Task error handling"):
         test(m"Awaiting a cancelled task raises Cancelled"):
@@ -1212,7 +1212,7 @@ object Tests extends Suite(m"Parasite tests"):
             captured.set(monitor.stack)
           task.await()
           val current: Optional[Text] = captured.get().nn
-          current.vouch.contains(t"virtual")
+          current.lay(false)(_.contains(t"virtual"))
         . assert(_ == true)
 
         test(m"Nested workers' stack reflects nesting"):
@@ -1223,7 +1223,7 @@ object Tests extends Suite(m"Parasite tests"):
             inner.await()
           task.await()
           val current: Optional[Text] = captured.get().nn
-          current.vouch.contains(t"//")
+          current.lay(false)(_.contains(t"//"))
         . assert(_ == true)
 
       suite(m"Async names"):

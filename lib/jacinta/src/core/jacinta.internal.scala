@@ -69,7 +69,7 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
       case _               => strings
 
     def firstOrigin[tuple: Type]: Int = Type.of[tuple] match
@@ -213,10 +213,10 @@ object internal:
         val root = root0.asInstanceOf[TypeRepr]
         val element = elementType(position)
 
-        if element.absent
-        then halt(m"the schema position ${position.show} is not an indexable array type")
+        val elementJson = element.or:
+          halt(m"the schema position ${position.show} is not an indexable array type")
 
-        jsonType(element.vouch, root).asType.absolve match
+        jsonType(elementJson, root).asType.absolve match
           case '[type result <: Json; result] =>
             '{$self.selectIndex($idx).asInstanceOf[result]}
 
@@ -261,10 +261,10 @@ object internal:
             case Some(member) =>
               val element = elementType(position.memberType(member))
 
-              if element.absent
-              then halt(m"the field $name of ${position.show} is not an indexable array")
+              val elementJson = element.or:
+                halt(m"the field $name of ${position.show} is not an indexable array")
 
-              jsonType(element.vouch, root).asType.absolve match
+              jsonType(elementJson, root).asType.absolve match
                 case '[type result <: Json; result] =>
                   '{$self.selectField(${Expr(name)}).selectIndex($idx).asInstanceOf[result]}
 
@@ -673,7 +673,7 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
       case _               => strings
 
     val parts = recur[parts](Nil)
@@ -1001,7 +1001,7 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
       case _               => strings
 
     val parts = recur[parts](Nil)

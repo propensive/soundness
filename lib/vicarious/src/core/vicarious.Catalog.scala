@@ -37,6 +37,7 @@ import proscenium.compat.*
 import scala.language.dynamics
 
 import beneficence.*
+import fulminate.*
 import vacuous.*
 
 object Catalog:
@@ -56,7 +57,7 @@ case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findab
   def size: Int = values.length
 
   inline def apply(accessor: (`*`: Proxy[key, value, 0]) ?=> Proxy[key, value, ?]): value =
-    values(accessor(using Proxy(0)).id.vouch)
+    values(accessor(using Proxy(0)).id.or(panic(m"the Proxy phantom always assigns an id")))
 
   def map[value2: ClassTag](lambda: value => value2): Catalog[key, value2] =
     Catalog(values.map(lambda))

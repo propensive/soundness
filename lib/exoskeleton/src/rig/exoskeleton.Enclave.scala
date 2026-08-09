@@ -41,6 +41,7 @@ import contingency.*
 import digression.*
 import distillate.*
 import eucalyptus.*
+import fulminate.*
 import galilei.*
 import gossamer.*
 import guillotine.*
@@ -113,7 +114,9 @@ extends Rig:
     unsafely:
       // `Fqcn.apply` rather than the `fqcn""` interpolator: the macro's synthesized tree
       // fails capture-variable unification when expanded in a capture-checked module.
-      val executor: Fqcn = safely(Fqcn(t"superlunary.Executor2")).vouch
+      val executor: Fqcn =
+        safely(Fqcn(t"superlunary.Executor2"))
+        . or(panic(m"the constant fully-qualified class name is well-formed"))
 
       val jarfile = supervise:
         unsafely:
