@@ -140,7 +140,10 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
     val nonce = new scala.Array[Byte](12)
     random.nextBytes(nonce)
 
-    val ciphertext = withKey: keyBytes =>
+    // Both `withKey` type arguments are explicit: inferring one on 3.10 instantiates `result`
+    // through the lambda's existential binder to a ResultCap-fresh array type, which the
+    // type-argument check rejects; an explicit argument takes the LocalCap path on both streams.
+    val ciphertext = withKey[scala.Array[Byte]]: keyBytes =>
       aes[scala.Array[Byte]](keyBytes, jc.Cipher.ENCRYPT_MODE, nonce)(_.doFinal(bytes).nn)
 
     ju.Arrays.fill(bytes, 0.toByte)
@@ -150,7 +153,7 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
     scala.caps.unsafe.unsafeAssumePure:
       new Secret:
         def uncloak[result](block: scala.Array[Byte] => result): result =
-          val cleartext = withKey: keyBytes =>
+          val cleartext = withKey[scala.Array[Byte]]: keyBytes =>
             aes[scala.Array[Byte]](keyBytes, jc.Cipher.DECRYPT_MODE, nonce)(_.doFinal(ciphertext).nn)
 
           try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)

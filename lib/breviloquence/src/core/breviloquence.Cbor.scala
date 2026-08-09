@@ -898,23 +898,27 @@ object Cbor extends Cbor2, Dynamic:
     @scala.caps.unsafe.untrackedCaptures
     var offset: Int = 0
 
-    private inline def expect(count: Int): Unit raises CborError =
+    // These inline helpers take an explicit `Tactic` clause rather than `raises` sugar: the
+    // context-function result the sugar expands to synthesizes a closure per inline expansion,
+    // and from the 2026-07-17 upstream nightlies (#26547) a second expansion in the same
+    // method fails cc root-visibility against the first expansion's memoized root capability.
+    private inline def expect(count: Int)(using Tactic[CborError]): Unit =
       if data.length - offset < count then abort(CborError(Reason.Truncated(offset.toLong)))
 
     private inline def readByte(): Int =
       (data(offset)&0xFF).also(offset += 1)
 
-    private inline def readUInt8(): Int raises CborError =
+    private inline def readUInt8()(using Tactic[CborError]): Int =
       expect(1)
       readByte()
 
-    private inline def readUInt16(): Int raises CborError =
+    private inline def readUInt16()(using Tactic[CborError]): Int =
       expect(2)
       val pos = offset
       offset = pos + 2
       ((data(pos) & 0xFF) << 8) | (data(pos + 1) & 0xFF)
 
-    private inline def readUInt32(): Long raises CborError =
+    private inline def readUInt32()(using Tactic[CborError]): Long =
       expect(4)
       val pos = offset
       offset = pos + 4
@@ -923,7 +927,7 @@ object Cbor extends Cbor2, Dynamic:
         ((data(pos + 2) & 0xFFL) << 8) |
         (data(pos + 3) & 0xFFL)
 
-    private inline def readUInt64(): Long raises CborError =
+    private inline def readUInt64()(using Tactic[CborError]): Long =
       expect(8)
       val pos = offset
       offset = pos + 8
@@ -943,7 +947,7 @@ object Cbor extends Cbor2, Dynamic:
     // dominates real-world workloads (small integers, short strings, small
     // arrays/maps). The remaining cases dispatch through a `match` so the JVM
     // can compile them to a tableswitch.
-    private inline def readLength(info: Int, headOffset: Long): Long raises CborError =
+    private inline def readLength(info: Int, headOffset: Long)(using Tactic[CborError]): Long =
       if info < 24 then info.toLong
       else info match
         case 24 => readUInt8().toLong
@@ -966,7 +970,7 @@ object Cbor extends Cbor2, Dynamic:
       offset += length
       Array.freeze(result)
 
-    private inline def boundedLength(length: Long, headOffset: Long): Int raises CborError =
+    private inline def boundedLength(length: Long, headOffset: Long)(using Tactic[CborError]): Int =
       if length < 0 || length > Int.MaxValue then abort(CborError(Reason.Overflow(headOffset)))
       val count = length.toInt
       expect(count)
@@ -1025,7 +1029,8 @@ object Cbor extends Cbor2, Dynamic:
 
     private inline def decodeUtf8
       ( bytes: scala.Array[Byte], start: Int, length: Int, errorOffset: Long )
-    :   String raises CborError =
+      ( using Tactic[CborError] )
+    :   String =
 
       try new String(bytes, start, length, java.nio.charset.StandardCharsets.UTF_8)
       catch case _: Throwable => abort(CborError(Reason.InvalidUtf8(errorOffset)))

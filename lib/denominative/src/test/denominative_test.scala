@@ -483,11 +483,11 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == Span.Mode.Offset)
 
       test(m"offset round-trips the start offset"):
-        span.offset.vouch
+        span.offset
       . assert(_ == 10.z)
 
       test(m"offset round-trips the length"):
-        span.length.vouch
+        span.length
       . assert(_ == 5)
 
       test(m"an offset span has no line"):
@@ -502,19 +502,19 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == Span.Mode.Line)
 
       test(m"line round-trips the line"):
-        span.startLine.vouch
+        span.startLine
       . assert(_ == 3.z)
 
       test(m"line round-trips the column"):
-        span.startColumn.vouch
+        span.startColumn
       . assert(_ == 7.z)
 
       test(m"line round-trips the length"):
-        span.length.vouch
+        span.length
       . assert(_ == 4)
 
       test(m"line end column is start column plus length"):
-        span.endColumn.vouch
+        span.endColumn
       . assert(_ == 11.z)
 
       test(m"a line span is single-line"):
@@ -522,7 +522,7 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(identity(_))
 
       test(m"a line span spans one line"):
-        span.lineCount.vouch
+        span.lineCount
       . assert(_ == 1)
 
     suite(m"Span lines-mode tests"):
@@ -533,15 +533,15 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == Span.Mode.Lines)
 
       test(m"lines round-trips the start line"):
-        span.startLine.vouch
+        span.startLine
       . assert(_ == 5.z)
 
       test(m"lines reports the inclusive end line"):
-        span.endLine.vouch
+        span.endLine
       . assert(_ == 7.z)
 
       test(m"lines round-trips the line count"):
-        span.lineCount.vouch
+        span.lineCount
       . assert(_ == 3)
 
       test(m"a lines span has no columns"):
@@ -556,19 +556,19 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == Span.Mode.Area)
 
       test(m"area round-trips the start line"):
-        span.startLine.vouch
+        span.startLine
       . assert(_ == 2.z)
 
       test(m"area round-trips the start column"):
-        span.startColumn.vouch
+        span.startColumn
       . assert(_ == 4.z)
 
       test(m"area round-trips the end line"):
-        span.endLine.vouch
+        span.endLine
       . assert(_ == 6.z)
 
       test(m"area round-trips the end column"):
-        span.endColumn.vouch
+        span.endColumn
       . assert(_ == 9.z)
 
       test(m"a multi-line area is not single-line"):
@@ -576,7 +576,7 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == false)
 
       test(m"area line count is inclusive"):
-        Span.area(10.z, 0.z, 13.z, 0.z).lineCount.vouch
+        Span.area(10.z, 0.z, 13.z, 0.z).lineCount
       . assert(_ == 4)
 
     suite(m"Span empty-mode tests"):
@@ -597,5 +597,5 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(identity(_))
 
       test(m"a large line number round-trips in line mode"):
-        Span.line(1000000.z, Prim, 0).startLine.vouch
+        Span.line(1000000.z, Prim, 0).startLine
       . assert(_ == 1000000.z)

@@ -56,9 +56,10 @@ object Patch:
 
     files.to(List)
 
-  // Flattens every hunk's edits into a single Dissonance Diff[Text].
-  def asDiff(file: FileDiff): Diff[Text] =
-    Diff(file.hunks.stdlib.flatMap(_.edits.stdlib)*)
+  // Flattens every hunk's edits into a single Dissonance Diff[Text]. Assembled exclusively from
+  // `Retained` edits, so the `Diff` carries the proof.
+  def asDiff(file: FileDiff): Diff[Text] & Retained =
+    Diff(file.hunks.stdlib.flatMap(_.edits.stdlib)*).retained
 
   private def parseHunkRange(text: Text): (Int, Int) = text.cut(t",") match
     case List(start)        => (start.s.toInt, 1)
@@ -67,21 +68,21 @@ object Patch:
 
   private def parseFile(header: Text, body: List[Text]): FileDiff =
     case class State
-      ( oldPath:    Optional[Text]    = Unset,
-        newPath:    Optional[Text]    = Unset,
-        changeKind: ChangeKind        = ChangeKind.Modified,
-        hunks:      List[Hunk]        = Nil,
+      ( oldPath:    Optional[Text]               = Unset,
+        newPath:    Optional[Text]               = Unset,
+        changeKind: ChangeKind                   = ChangeKind.Modified,
+        hunks:      List[Hunk]                   = Nil,
         // Current hunk being read (with running line counters), if any.
-        hunk:       Optional[Hunk]    = Unset,
-        edits:      List[Edit[Text]]  = Nil,
-        oldLine:    Int               = 0,
-        newLine:    Int               = 0 ):
+        hunk:       Optional[Hunk]               = Unset,
+        edits:      List[Edit[Text] & Retained]  = Nil,
+        oldLine:    Int                          = 0,
+        newLine:    Int                          = 0 ):
 
       def closeHunk(): State =
         hunk.lay(this): h =>
           copy(hunks = h.copy(edits = edits.reverse) :: hunks, hunk = Unset, edits = Nil)
 
-      def push(edit: Edit[Text]): State = copy(edits = edit :: edits)
+      def push(edit: Edit[Text] & Retained): State = copy(edits = edit :: edits)
 
     val initial = header match
       case r"diff --git a/$old(.*) b/$nu(.*)" =>
@@ -131,14 +132,14 @@ object Patch:
       case other if state.hunk.present =>
         if other.starts(t"+") then
           val text = other.skip(1)
-          state.push(Ins(state.newLine, text)).copy(newLine = state.newLine + 1)
+          state.push(Ins(state.newLine, text).retained).copy(newLine = state.newLine + 1)
         else if other.starts(t"-") then
           val text = other.skip(1)
-          state.push(Del(state.oldLine, text)).copy(oldLine = state.oldLine + 1)
+          state.push(Del(state.oldLine, text).retained).copy(oldLine = state.oldLine + 1)
         else if other.starts(t" ") then
           val text = other.skip(1)
           val advanced = state.copy(oldLine = state.oldLine + 1, newLine = state.newLine + 1)
-          advanced.push(Par(state.oldLine, state.newLine, text))
+          advanced.push(Par(state.oldLine, state.newLine, text).retained)
         else
           state  // "\ No newline at end of file" or stray
 

@@ -334,8 +334,7 @@ trait Tel2 extends Tel3:
                       val match0 = telVal.field(keyword)
 
                       if positional.isEmpty then
-                        if match0.absent then default.or(ctx.absent())
-                        else ctx.decoded(match0.vouch)
+                        match0.lay(default.or(ctx.absent()))(ctx.decoded(_))
                       else
                         // §20.2 step 5c: an inline atom plus a same-keyword
                         // child fills a non-repeatable member twice (E308).

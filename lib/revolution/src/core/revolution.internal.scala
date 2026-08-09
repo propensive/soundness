@@ -56,4 +56,4 @@ object internal:
     // components, which the opaque `List` alias makes awkward inside a quote.
     safely(versionText.tt.as[Semver]).or(halt(m"invalid semantic version"))
 
-    '{safely(${Expr(versionText)}.tt.as[Semver]).vouch}
+    '{safely(${Expr(versionText)}.tt.as[Semver]).or(panic(m"the version literal was validated at expansion"))}

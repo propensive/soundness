@@ -491,11 +491,7 @@ extends caps.Mutable:
     var loaded = false
 
     while !loaded && !ended do
-      val chunk = load()
-
-      if chunk.absent then ended = true
-      else
-        val data = chunk.vouch
+      load().lay({ ended = true }): data =>
         val len = addressable.length(data)
 
         if len > 0 then

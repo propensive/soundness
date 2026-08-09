@@ -134,26 +134,25 @@ object Pem:
   :   Pem =
 
     val body = jl.StringBuilder()
-    var data: Optional[Data] = Unset
 
-    while data.absent do
+    def recur(): Data =
       nextLine(cursor).lay(abort(PemError(PemError.Reason.EndMissing))): line =>
         line.trim match
           case r"-----* *END $endLabel([ A-Z]+) *-----*" =>
-            data =
-              mitigate:
-                case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
+            mitigate:
+              case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
 
-              // `[Data]` stated, not inferred: the conformance check on a macro expansion
-              // dealiases opaque types, and `Data` is a transparent alias over an opaque one.
-              // Inferred, the two sides of the check were spelled differently — `Data` against
-              // its own dealiasing, `scala.Array[Byte]` — and did not match.
-              . protect[Data](body.toString.tt.deserialize[Base64])
+            // `[Data]` stated, not inferred: the conformance check on a macro expansion
+            // dealiases opaque types, and `Data` is a transparent alias over an opaque one.
+            // Inferred, the two sides of the check were spelled differently — `Data` against
+            // its own dealiasing, `scala.Array[Byte]` — and did not match.
+            . protect[Data](body.toString.tt.deserialize[Base64])
 
           case _ =>
             body.append(line.s)
+            recur()
 
-    Pem(label, data.vouch)
+    Pem(label, recur())
 
   // The next line of the input (excluding its terminator), or `Unset` at
   // end-of-stream. Only `\n` terminates a line, as the legacy `cut(t"\n")`

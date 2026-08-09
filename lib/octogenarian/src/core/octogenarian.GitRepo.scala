@@ -217,17 +217,23 @@ case class GitRepo(gitDir: Path on Linux):
     var signature: List[Text]        = Nil
     var body:      List[Text] = Nil
 
+    // A commit is emitted only once all four mandatory headers have arrived; the
+    // nested `let`s both check and name them, so the emission reads bare values.
     def flush(): Unit =
-      if hash.present && tree.present && author.present && committer.present then unsafely:
-        commits +=
-          Commit
-            ( hash.vouch,
-              tree.vouch,
-              parents.reverse,
-              author.vouch,
-              committer.vouch,
-              parsePem(signature.join(t"\n")),
-              body.reverse )
+      hash.let: hash =>
+        tree.let: tree =>
+          author.let: author =>
+            committer.let: committer =>
+              unsafely:
+                commits +=
+                  Commit
+                    ( hash,
+                      tree,
+                      parents.reverse,
+                      author,
+                      committer,
+                      parsePem(signature.join(t"\n")),
+                      body.reverse )
 
     // A gpgsig block continues on the following one-space-indented lines.
     def indented(): List[Text] =

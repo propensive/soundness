@@ -164,18 +164,18 @@ components:
     test(m"JSON and YAML specs decode to the same model")(fromYaml).assert(_ == fromJson)
 
     test(m"the operationId of GET /pets is read"):
-      fromJson.paths(t"/pets").vouch.get.vouch.operationId.vouch
+      fromJson.paths(t"/pets").let(_.get).let(_.operationId)
     .assert(_ == t"listPets")
 
     test(m"the path parameter location is decoded as Path"):
-      fromJson.paths(t"/pets/{id}").vouch.get.vouch.parameters.head.in
+      fromJson.paths(t"/pets/{id}").let(_.get).let(_.parameters.head.in)
     .assert(_ == OpenApi.Parameter.In.Path)
 
     test(m"a reference property is kept lazy"):
-      fromJson.components.vouch.schemas(t"Pet").vouch
+      fromJson.components.let(_.schemas(t"Pet"))
     .assert:
       case JsonSchema.Object(_, properties, _, _, _, _, _) =>
-        properties(t"owner").vouch match
+        properties(t"owner") match
           case JsonSchema.Ref(pointer, _, _) => pointer.encode == t"#/components/schemas/Owner"
           case _                             => false
       case _ => false

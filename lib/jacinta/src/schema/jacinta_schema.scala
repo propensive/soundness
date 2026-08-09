@@ -112,8 +112,7 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
 
     case array: JsonSchema.Array =>
       if !ast.isArray then mismatch(JsonPrimitive.Array)
-      else if array.items.present then
-        val items = array.items.vouch
+      else array.items.lay(()): items =>
         var index = 0
         val length = ast.arrayLength
 

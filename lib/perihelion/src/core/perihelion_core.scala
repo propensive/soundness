@@ -154,10 +154,8 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
     recur(0)
 
   val demand = zephyrine.Credit(buffering.capacity(zephyrine.Substrate.Bytes))
-  var acc: Data = Data()
-  var result: Optional[Data] = Unset
 
-  while result.absent do input.refill(demand) match
+  def recur(acc: Data): Data = input.refill(demand) match
     case count: Int =>
       if count > 0 then
         val window = input.lend { region => range => region.materialize(range.capped(count)) }
@@ -166,15 +164,16 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
 
         if marker >= 0 then
           input.skip(marker + 4 - acc.length)
-          result = caps.unsafe.unsafeAssumePure(acc2.take(marker + 4))
+          acc2.take(marker + 4)
         else
           input.skip(count)
-          acc = acc2
+          recur(acc2)
+      else recur(acc)
 
     case _ =>
-      result = acc
+      acc
 
-  result.vouch
+  recur(Data())
 
 // Makes a `WsUrl` a Coaxial client transport, so a WebSocket client is just Coaxial's
 // own client loop: `url.react(initialState) { message => … }`, symmetric with the

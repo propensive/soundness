@@ -740,7 +740,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").vouch.embedded.let(_.data.to[List])
+          pdf.page(Prim).fonts(t"F1").let(_.embedded).let(_.data.to[List])
       . assert(_ == fontProgram.to[List])
 
       test(m"content using an embedded font extracts as text"):
@@ -769,7 +769,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").vouch match
+          pdf.page(Prim).fonts(t"F1") match
             case _: PdfFont.TrueType => true
             case _                   => false
       . assert(_ == true)
@@ -782,7 +782,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").vouch.baseFont
+          pdf.page(Prim).fonts(t"F1").let(_.baseFont)
       . assert(_ == t"TestSans")
 
       test(m"the font descriptor carries the font's real metrics"):
@@ -822,8 +822,8 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").vouch.baseFont
-      . assert(_.s.matches("[A-Z]{6}\\+TestSans"))
+          pdf.page(Prim).fonts(t"F1").let(_.baseFont)
+      . assert(_.lay(false)(_.s.matches("[A-Z]{6}\\+TestSans")))
 
       test(m"a subset program keeps used outlines and drops the rest"):
         val path = tempPdf(blankPage)
@@ -833,7 +833,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").vouch.embedded.let: ttf =>
+          pdf.page(Prim).fonts(t"F1").let(_.embedded).let: ttf =>
             (ttf.glyf(1).empty, ttf.glyf(2).empty)
       . assert(_ == (false, true))
 
@@ -845,7 +845,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").vouch.embedded.let: ttf =>
+          pdf.page(Prim).fonts(t"F1").let(_.embedded).let: ttf =>
             (ttf.glyf(1).empty, ttf.glyf(2).empty, ttf.glyf(3).composite)
       . assert(_ == (false, false, true))
 
@@ -1151,8 +1151,8 @@ object Tests extends Suite(m"Facsimile tests"):
     suite(m"Fonts"):
       test(m"a standard-14 font is recognized with its metrics"):
         PdfFile(contentPage(t"")).open():
-          val font = pdf.page(Prim).fonts(t"F1").vouch
-          (font.standard, font.width('A'))
+          pdf.page(Prim).fonts(t"F1").let: font =>
+            (font.standard, font.width('A'))
       . assert(_ == (PdfFont.Standard.Helvetica, 667.0))
 
       test(m"declared widths override standard metrics"):
@@ -1164,8 +1164,8 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          val font = pdf.page(Prim).fonts(t"F1").vouch
-          (font.width('A'), font.width('B'))
+          pdf.page(Prim).fonts(t"F1").let: font =>
+            (font.width('A'), font.width('B'))
       . assert(_ == (800.0, 667.0))
 
       test(m"differences remap codes through glyph names"):
@@ -1177,7 +1177,7 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).fonts(t"F1").vouch.decode(data('A', 'B', 0x93))
+          pdf.page(Prim).fonts(t"F1").let(_.decode(data('A', 'B', 0x93)))
       . assert(_ == t"éB“")
 
       test(m"a ToUnicode map takes precedence"):
@@ -1191,7 +1191,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Length ${cmap.length} >>\nstream\n$cmap\nendstream".in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).fonts(t"F1").vouch.decode(data('A', 0x60, 0x61, 0x62))
+          pdf.page(Prim).fonts(t"F1").let(_.decode(data('A', 0x60, 0x61, 0x62)))
       . assert(_ == t"Bpqr")
 
       test(m"a Type0 font reads two-byte codes and CID widths"):
@@ -1205,8 +1205,8 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          val font = pdf.page(Prim).fonts(t"F1").vouch
-          (font.codes(data(0, 10, 0, 11)), font.width(10), font.width(21), font.width(99))
+          pdf.page(Prim).fonts(t"F1").let: font =>
+            (font.codes(data(0, 10, 0, 11)), font.width(10), font.width(21), font.width(99))
       . assert(_ == (List(10, 11), 600.0, 500.0, 750.0))
 
     suite(m"Text extraction"):

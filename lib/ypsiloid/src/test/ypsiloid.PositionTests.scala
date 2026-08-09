@@ -165,17 +165,18 @@ object PositionTests extends Suite(m"Ypsiloid position-index tests"):
     suite(m"Subsequence property"):
       test(m"A nested mapping's descriptor slice has length == slot 0"):
         val yaml = t"{a: {b: 42}}".read[Yaml]
-        val data = yaml.positionIndex.vouch.ints
-        // Root composite header: [size, line, col, len, n=1, off_0, ...]
-        // The single entry's offset is at data(5), entry = [keyLine,
-        // keyColumn, keyLength, <valueDescriptor>]. The value descriptor
-        // starts at offset(0) + 3 from the root descriptor.
-        val firstEntryOff = data(5)
-        val valueDescOff = firstEntryOff + 3
-        val valueSize = data(valueDescOff)
-        val slice = data.slice(valueDescOff, valueDescOff + valueSize)
-        slice.length == valueSize
-      . assert(identity)
+        yaml.positionIndex.let: index =>
+          val data = index.ints
+          // Root composite header: [size, line, col, len, n=1, off_0, ...]
+          // The single entry's offset is at data(5), entry = [keyLine,
+          // keyColumn, keyLength, <valueDescriptor>]. The value descriptor
+          // starts at offset(0) + 3 from the root descriptor.
+          val firstEntryOff = data(5)
+          val valueDescOff = firstEntryOff + 3
+          val valueSize = data(valueDescOff)
+          val slice = data.slice(valueDescOff, valueDescOff + valueSize)
+          slice.length == valueSize
+      . assert(_ == true)
 
     suite(m"Non-tracking mode"):
       test(m"Default Tracking.Off leaves positionIndex Unset"):

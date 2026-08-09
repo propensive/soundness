@@ -72,9 +72,13 @@ object Debufferable extends ProductDerivable[Debufferable]:
     def debuffer(sextant: Sextant): derivation = debuffer0(sextant)
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Debufferable =
+    // The lambda parameter is ascribed so its type is not inferred from the expected arrow:
+    // inferred, it adopts a memoized root capability minted by the unit's first expansion of
+    // this derivation, and any second expansion in the same unit fails the root-visibility
+    // check (upstream #26547, from 2026-07-17 nightlies).
     Join[derivation]
       ( contexts[derivation]() { [field] => _.width }.sum,
-        sextant => build { [field] => context => context.debuffer(sextant) } )
+        (sextant: Sextant) => build { [field] => context => context.debuffer(sextant) } )
 
 trait Debufferable extends Typeclass:
   def width: Int

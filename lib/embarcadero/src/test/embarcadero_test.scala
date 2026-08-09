@@ -87,7 +87,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == List(t"hello.txt"))
 
     suite(m"Image config"):
-      val imageConfig = image.imageConfig.vouch
+      val imageConfig = image.imageConfig.or(panic(m"the fixture image always has a config"))
 
       test(m"an image built with layers carries an image config, not a wasm one"):
         (image.imageConfig.present, image.wasmConfig.present)
@@ -191,7 +191,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"the image config round-trips"):
         archiveData.open[Image]() { handle ?=> handle.imageConfig }
-      . assert(_ == image.imageConfig.vouch)
+      . assert(_ == image.imageConfig)
 
       test(m"a layer's stored blob streams verbatim"):
         archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.head).memoize.to[List] }
@@ -253,7 +253,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
             imports = List(t"wasi:io/streams@0.2.0"),
             target  = t"wasi:http/proxy@0.2.0" )
 
-      val wasmConfig = artifact.wasmConfig.vouch
+      val wasmConfig = artifact.wasmConfig.or(panic(m"the fixture artifact always has a wasm config"))
       val wasmLayer  = artifact.layers.head
 
       test(m"the artifact carries a wasm config, not an image config"):
@@ -285,7 +285,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == List(wasmLayer.digest))
 
       test(m"the component's exports, imports and target are recorded"):
-        wasmConfig.component.vouch
+        wasmConfig.component
       . assert:
           _ == WasmComponent
                 ( List(t"wasi:http/incoming-handler@0.2.0"),

@@ -52,7 +52,7 @@ object Foci:
       initial
 
 
-    def supplement(count: Int, transform: Optional[focus] => focus): Unit = ()
+    def supplement(count: Int, transform: Optional[focus] => Optional[focus]): Unit = ()
 
 trait Foci[focus] extends Findable:
   // False only for the inert default instance, whose `register` and
@@ -67,7 +67,9 @@ trait Foci[focus] extends Findable:
   def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
   :   accrual
 
-  def supplement(count: Int, transform: Optional[focus] => focus): Unit
+  // The transform returns `Optional`: the slots are themselves `Optional`, so demanding a
+  // bare focus forced partial callers to assert presence they could not prove.
+  def supplement(count: Int, transform: Optional[focus] => Optional[focus]): Unit
   def tainted: Boolean = length > 0
 
 class TrackFoci[focus]() extends Foci[focus]:
@@ -88,5 +90,5 @@ class TrackFoci[focus]() extends Foci[focus]:
     (0 until errors.length).fuse(initial)(lambda(focuses(next), state)(errors(next)))
 
 
-  def supplement(count: Int, transform: Optional[focus] => focus): Unit =
+  def supplement(count: Int, transform: Optional[focus] => Optional[focus]): Unit =
     for i <- (errors.length - count) until errors.length do focuses(i) = transform(focuses(i))

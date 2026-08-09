@@ -66,7 +66,8 @@ object Tests extends Suite(m"Ziggurat tests"):
     val tempDirs = scala.collection.mutable.ListBuffer.empty[Path on Linux]
 
     def tempDir(): Path on Linux =
-      val dir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
+      val name: Text = Uuid().show
+      val dir: Path on Linux = temporaryDirectory[Path on Linux] / name
       dir.create[Directory]()
       tempDirs += dir
       dir
@@ -300,8 +301,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
     val winHost: Optional[Text] = safely(Environment.windowsHost[Text])
 
-    if winHost.present then
-      val host = winHost.vouch
+    winHost.let: host =>
       val winSshOk =
         safely(sh"ssh -o BatchMode=yes -o ConnectTimeout=5 $host echo ok".exec[Exit]()) == Exit.Ok
 

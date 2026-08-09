@@ -264,7 +264,7 @@ trait Vernacular:
   protected final def durations(span: Timespan): List[Text] = Vernacular.components(span).map(quantity)
 
   protected final def dayPhrase(entry: (Optional[Int], Text)): Text =
-    if entry(0).absent then entry(1) else t"${position(entry(0).vouch)} ${entry(1)}"
+    entry(0).lay(entry(1))(ordinal => t"${position(ordinal)} ${entry(1)}")
 
   final def relativeTimespan(span: Timespan): Text = Vernacular.components(span) match
     case Nil => justNow

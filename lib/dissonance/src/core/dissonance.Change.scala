@@ -47,6 +47,10 @@ sealed trait Change[+element] extends Product:
 sealed trait Edit[+element] extends Change[element]:
   def value: Optional[element]
 
+  // Mapping preserves presence (`let` maps a present value to a present value), but not the
+  // `Retained` brand: expressing `this.type & Retained`-conditional results here would entangle
+  // the ADT with the marker, so a mapped edit must be re-minted (`retained`) where the brand is
+  // still needed.
   override def map[element2](lambda: element => element2): Edit[element2] = this match
     case Par(left, right, value) => Par(left, right, value.let(lambda))
     case Del(left, value)        => Del(left, value.let(lambda))

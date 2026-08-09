@@ -1795,14 +1795,12 @@ object Json extends Json2, Dynamic:
     def parseTracked(source: Data)(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
-      val (raw, ints) = Parser.parseTracked(source, mode)
-      (raw.asInstanceOf[Json.Ast], Json.PositionIndex(ints))
+      Parser.parseTracked(source, mode)
 
     def parseTracked(input: Iterator[Data])(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
-      val (raw, ints) = Parser.parseTracked(input, mode)
-      (raw.asInstanceOf[Json.Ast], Json.PositionIndex(ints))
+      Parser.parseTracked(input, mode)
 
     private[jacinta] def parse(consume input: (Stream[Data] over Credit)^)
       ( using mode: NumberMode, tactic: Tactic[ParseError] )
@@ -1814,8 +1812,7 @@ object Json extends Json2, Dynamic:
       ( using mode: NumberMode, tactic: Tactic[ParseError] )
     :   (Json.Ast, Json.PositionIndex) =
 
-      val (raw, ints) = Parser.parseTracked(input, mode)
-      (raw.asInstanceOf[Json.Ast], Json.PositionIndex(ints))
+      Parser.parseTracked(input, mode)
 
   def ast(value: Json.Ast): Json = new Json(value)
 
@@ -2721,8 +2718,8 @@ extends Dynamic, Topical, Original derives CanEqual:
             rightMap = rightMap.updated(rightAst.objectKey(i), rightAst.objectValue(i))
             i += 1
 
-          leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
-            recur(leftMap(key).vouch, rightMap(key).vouch)
+          leftMap.stdlib.size == rightMap.stdlib.size && leftMap.stdlib.forall: (key, leftValue) =>
+            rightMap(key).lay(false)(recur(leftValue, _))
 
       def recur(left: Json.Ast, right: Json.Ast): Boolean = right.asMatchable match
         case right: Long => left.asMatchable match
@@ -2843,5 +2840,5 @@ extends Dynamic, Topical, Original derives CanEqual:
 
     val result = decodable.decoded(this)
     val foci = summon[Foci[Json.Focus]]
-    foci.supplement(foci.length, _.let(decodable.position(this, _)).vouch)
+    foci.supplement(foci.length, _.let(decodable.position(this, _)))
     result

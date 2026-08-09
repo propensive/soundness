@@ -335,8 +335,12 @@ object Tests extends Suite(m"Parasite tests"):
           val captured = juca.AtomicReference[Optional[Name[Async]]](Unset)
           val t = task(n"named")(captured.set(monitor.name))
           t.await()
-          captured.get().nn.vouch
-        . assert(_ == t"named")
+
+          // Bound at a val: the deindexed reference's RC5 typer skolem otherwise
+          // intersects the Optional union and the equality no longer sees an Optional.
+          val current: Optional[Name[Async]] = captured.get().nn
+          current
+        . assert(_.lay(false)(_ == t"named"))
 
       suite(m"Task error handling"):
         test(m"Awaiting a cancelled task raises Cancelled"):
@@ -1207,7 +1211,8 @@ object Tests extends Suite(m"Parasite tests"):
           val task = async:
             captured.set(monitor.stack)
           task.await()
-          captured.get().nn.vouch.contains(t"virtual")
+          val current: Optional[Text] = captured.get().nn
+          current.lay(false)(_.contains(t"virtual"))
         . assert(_ == true)
 
         test(m"Nested workers' stack reflects nesting"):
@@ -1217,7 +1222,8 @@ object Tests extends Suite(m"Parasite tests"):
               captured.set(monitor.stack)
             inner.await()
           task.await()
-          captured.get().nn.vouch.contains(t"//")
+          val current: Optional[Text] = captured.get().nn
+          current.lay(false)(_.contains(t"//"))
         . assert(_ == true)
 
       suite(m"Async names"):

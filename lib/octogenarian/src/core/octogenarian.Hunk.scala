@@ -35,10 +35,12 @@ package octogenarian
 import anticipation.*
 import dissonance.*
 
+// Edits are `Retained`: every hunk line carries its text, so `Patch.parse` mints the proof at
+// construction and `Patch.asDiff`'s result supports value-demanding operations (`redraft`).
 case class Hunk
   ( oldStart: Int,
     oldLines: Int,
     newStart: Int,
     newLines: Int,
     section:  Text,
-    edits:    List[Edit[Text]] )
+    edits:    List[Edit[Text] & Retained] )

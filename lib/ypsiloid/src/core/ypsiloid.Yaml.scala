@@ -5936,7 +5936,7 @@ extends Dynamic derives CanEqual:
     // `Tracked#as` (PR #1151).
     val foci = summon[Foci[Yaml.Focus]]
     val yaml = this
-    foci.supplement(foci.length, _.let(_.withPosition(yaml)).vouch)
+    foci.supplement(foci.length, _.let(_.withPosition(yaml)))
     result
 
   // Sequence indexing: `yaml(0)` returns the first element of a sequence,

@@ -41,9 +41,9 @@ import parsing.trackPositions
 
 object PositionTests extends Suite(m"Xylophone position-index tests"):
 
-  private def line(p: Optional[Xml.Position]): Int = p.vouch.line.n1
-  private def col(p: Optional[Xml.Position]): Int = p.vouch.column.n1
-  private def len(p: Optional[Xml.Position]): Int = p.vouch.length.vouch
+  private def line(p: Optional[Xml.Position]): Optional[Int] = p.let(_.line.n1)
+  private def col(p: Optional[Xml.Position]): Optional[Int] = p.let(_.column.n1)
+  private def len(p: Optional[Xml.Position]): Optional[Int] = p.let(_.length)
 
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform

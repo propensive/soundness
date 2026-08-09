@@ -247,18 +247,28 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
       if quantTables(components(check).quantizationTableIndex).absent then bad()
       check += 1
 
+    // The Huffman tables this scan reads, resolved once from the `Optional`-holding
+    // registries: the presence checks that formerly only validated the indices now surrender
+    // the tables themselves, so the per-block decoders receive proven values instead of
+    // re-deriving them. A slot is filled exactly when the scan's spectral band can read it —
+    // DC iff `spectralStart == 0`, AC iff `spectralEnd > 1`, which covers every AC read
+    // because `parseSos` guarantees `spectralStart < spectralEnd` (exclusive) — so an
+    // unfilled slot is never dereferenced.
+    val dcResolved = new scala.Array[JpegHuffmanTable](count)
+    val acResolved = new scala.Array[JpegHuffmanTable](count)
+
     if scan.spectralStart == 0 then
       var index = 0
 
       while index < count do
-        if dcTables(scan.dcTableIndices(index)).absent then bad()
+        dcResolved(index) = dcTables(scan.dcTableIndices(index)).lay(bad())(identity)
         index += 1
 
     if scan.spectralEnd > 1 then
       var index = 0
 
       while index < count do
-        if acTables(scan.acTableIndices(index)).absent then bad()
+        acResolved(index) = acTables(scan.acTableIndices(index)).lay(bad())(identity)
         index += 1
 
     val isInterleaved = count > 1
@@ -320,12 +330,12 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
 
                   if scan.successiveHigh == 0 then
                     decodeBlock
-                      ( huffman, plane, base, scan.dcTableIndices(i), scan.acTableIndices(i),
+                      ( huffman, plane, base, dcResolved(i), acResolved(i),
                         scan.spectralStart, scan.spectralEnd, scan.successiveLow, eobRun,
                         dcPredictors, i )
                   else
                     decodeBlockRefine
-                      ( huffman, plane, base, scan.acTableIndices(i), scan.spectralStart,
+                      ( huffman, plane, base, acResolved(i), scan.spectralStart,
                         scan.spectralEnd, scan.successiveLow, eobRun )
 
                   hPos += 1
@@ -345,12 +355,14 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
     marker
 
   // Section F.2.2: decodes the coefficients of one block on the first pass over its spectral band.
+  // `dcTable`/`acTable` were resolved by `decodeScan` for exactly the spectral bands that read
+  // them, and are touched only within those bands.
   private update def decodeBlock
     ( huffman:       JpegHuffmanDecoder^,
       coeff:         scala.Array[Int],
       base:          Int,
-      dcTableIndex:  Int,
-      acTableIndex:  Int,
+      dcTable:       JpegHuffmanTable,
+      acTable:       JpegHuffmanTable,
       spectralStart: Int,
       spectralEnd:   Int,
       successiveLow: Int,
@@ -361,7 +373,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
   :   Unit =
 
     if spectralStart == 0 then
-      val value = huffman.decode(reader, dcTables(dcTableIndex).vouch)
+      val value = huffman.decode(reader, dcTable)
 
       val diff =
         if value == 0 then 0
@@ -375,7 +387,6 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
 
     if index < spectralEnd && eobRun(0) > 0 then writable(eobRun)(0) -= 1
     else if index < spectralEnd then
-      val acTable = acTables(acTableIndex).vouch
       var continue = true
 
       while continue && index < spectralEnd do
@@ -403,12 +414,14 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
               writable(coeff)(base + Unzigzag(index)) = huffman.receiveExtend(reader, s) << successiveLow
               index += 1
 
-  // Section G.1.2: refines coefficients on later (successive-approximation) passes.
+  // Section G.1.2: refines coefficients on later (successive-approximation) passes. `acTable`
+  // was resolved by `decodeScan` (an AC refinement scan always has `spectralEnd > 1`) and is
+  // read only on the AC branch.
   private update def decodeBlockRefine
     ( huffman:       JpegHuffmanDecoder^,
       coeff:         scala.Array[Int],
       base:          Int,
-      acTableIndex:  Int,
+      acTable:       JpegHuffmanTable,
       spectralStart: Int,
       spectralEnd:   Int,
       successiveLow: Int,
@@ -421,8 +434,6 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
     if spectralStart == 0 then
       if huffman.getBits(reader, 1) == 1 then writable(coeff)(base) |= bit
     else
-      val acTable = acTables(acTableIndex).vouch
-
       if eobRun(0) > 0 then
         writable(eobRun)(0) -= 1
         refineNonZeroes(huffman, coeff, base, acTable, spectralStart, spectralEnd, 64, bit)
@@ -493,7 +504,15 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
     var index = 0
 
     while index < frame.components.length do
-      planes(index) = renderPlane(frame.components(index), coefficients0.asInstanceOf[scala.Array[scala.Array[Int]]](index))
+      val component = frame.components(index)
+
+      // Each *scanned* component's quantization table was proven present by `decodeScan`; a
+      // frame component that no scan ever covered may still lack one, so resolve here, where
+      // the error convention is available.
+      val quant = quantTables(component.quantizationTableIndex).lay(bad())(identity)
+
+      val coeff = coefficients0.asInstanceOf[scala.Array[scala.Array[Int]]](index)
+      planes(index) = renderPlane(component, quant, coeff)
       index += 1
 
     val width = frame.imageWidth
@@ -503,8 +522,10 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
     then grayscaleRaster(frame.components(0), planes(0), width, height)
     else colorRaster(frame, planes, width, height)
 
-  private update def renderPlane(component: JpegComponent, coeff: scala.Array[Int]): scala.Array[Byte] =
-    val quant = quantTables(component.quantizationTableIndex).vouch
+  private update def renderPlane
+    ( component: JpegComponent, quant: scala.Array[Int], coeff: scala.Array[Int] )
+  :   scala.Array[Byte] =
+
     val stride = component.blockWidth*8
     val plane = new scala.Array[Byte](stride*component.blockHeight*8)
     var blockY = 0
@@ -532,8 +553,11 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
       val luma = plane(y*stride + x) & 0xffL
       (luma << 16) | (luma << 8) | luma
 
-  private def colorRaster
-    ( frame: JpegFrame, planes: scala.Array[scala.Array[Byte]], width: Int, height: Int )
+  private def colorRaster[planeCaps^ <: {caps.any.only[caps.Unscoped]}]
+    ( frame:  JpegFrame,
+      planes: scala.Array[scala.Array[Byte]^{planeCaps}],
+      width:  Int,
+      height: Int )
     ( using Tactic[RasterError] )
   :   Raster =
 
@@ -599,13 +623,15 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
     else if count == 3 && matchesIdentifiers(frame, 1, 2, 3) then JpegColor.YCbCr
     else if count == 3 && matchesIdentifiers(frame, 82, 71, 66) then JpegColor.Rgb
     else if count == 3 && isJfif then JpegColor.YCbCr
-    else if adobeTransform.present then adobeColor(count)
-    else if count == 4 then JpegColor.Cmyk
-    else if count == 3 then JpegColor.YCbCr
-    else JpegColor.Unknown
+    else
+      adobeTransform.lay
+        ( if count == 4 then JpegColor.Cmyk
+          else if count == 3 then JpegColor.YCbCr
+          else JpegColor.Unknown )
+        ( adobeColor(count, _) )
 
   // The colour transform indicated by an Adobe APP14 marker.
-  private def adobeColor(count: Int): JpegColor = adobeTransform.vouch match
+  private def adobeColor(count: Int, transform: Int): JpegColor = transform match
     case 0 => if count == 3 then JpegColor.Rgb else JpegColor.Cmyk
     case 1 => JpegColor.YCbCr
     case _ => JpegColor.Ycck

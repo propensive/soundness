@@ -73,11 +73,18 @@ case class Argument
       suggestion2
 
   def apply(): Text = format match
-    case Argument.Format.Full            => value
-    case Argument.Format.FlagSuffix      => value.skip(2)
-    case Argument.Format.CharFlag(index) => t"-${value(index + 1).or('-')}"
-    case Argument.Format.EqualityPrefix  => value.before(value.offsetOf("=").or(Prim))
-    case Argument.Format.EqualitySuffix  => value.after(value.offsetOf("=").or(Prim))
+    case Argument.Format.Full       => value
+    case Argument.Format.FlagSuffix => value.skip(2)
+
+    // The `val` gives the deindexing's skolem-dependent type a single widening point (`Char`):
+    // inlined directly into the interpolation, the `t` macro's resplice retypes the deindexing
+    // and mints a fresh, non-identical skolem (upstream #26563, from 3.9.0-RC5).
+    case Argument.Format.CharFlag(index) =>
+      val flag = value(index + 1).or('-')
+      t"-$flag"
+
+    case Argument.Format.EqualityPrefix => value.before(value.offsetOf("=").or(Prim))
+    case Argument.Format.EqualitySuffix => value.after(value.offsetOf("=").or(Prim))
 
   def prefix: Optional[Text] = cursor.let(value.keep(_))
   def suffix: Optional[Text] = cursor.let(value.skip(_))

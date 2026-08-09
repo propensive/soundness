@@ -418,7 +418,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       // E308 is a property of a member's whole run, not of one node, so it is
       // raised outside every `focus` block: the entry has no focus at all and
       // takes the root one. `supplementPositions` must tolerate that rather
-      // than `vouch` on it.
+      // than assume it is present.
       test(m"A run-level E308 accrues at the root without panicking"):
         assignPositions(t"name Alice\nname Bob\nemail e\n", twoRequiredSchema).items
         . map { case (p, span) => (p.s, span.exists) }.to[Set]

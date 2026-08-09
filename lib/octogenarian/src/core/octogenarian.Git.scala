@@ -68,7 +68,7 @@ object Git:
     // observationally pure.
     caps.unsafe.unsafeAssumePure:
       iterator.filter: progress =>
-        (previous.absent || previous.vouch != progress).also { previous = progress }
+        previous.lay(true)(_ != progress).also { previous = progress }
 
   def progress(process: Job[?, ?]): Iterator[Progress] =
     import hieroglyph.charDecoders.utf8Decoder, hieroglyph.textSanitizers.substituteSanitizer

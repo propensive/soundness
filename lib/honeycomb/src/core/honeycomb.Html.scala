@@ -1535,14 +1535,10 @@ object Html extends Tag.Container
 
               inline def infer(inline tag: Tag): Unit =
                 reset(mark)
-                // Use a direct `if inferred.absent` check rather than
-                // `dom.infer(...).let { ... }.or { ... }`: `Optional.let` is
-                // not inline, so the lambda body would capture the surrounding
-                // `focus` and `level` `var`s as `ObjectRef`s on every `<`
-                // entry, allocating two refs per element open.
-                val inferred: Optional[Tag] = dom.infer(parent, tag)
-
-                if inferred.absent then
+                // `lay` is inline, so neither branch closes over the
+                // surrounding `focus` and `level` `var`s: no `ObjectRef`
+                // allocation per `<` entry.
+                dom.infer(parent, tag).lay:
                   if parent.autoclose then close()
                   else if permissive then
                     warn(InadmissibleTag(content, parent.label))
@@ -1551,9 +1547,10 @@ object Html extends Tag.Container
                     if parent == root then empty() else close()
                   else
                     fail(InadmissibleTag(content, parent.label), mark)
-                else
-                  focus = inferred.vouch
-                  level = Level.Descend
+
+                . apply: inferred =>
+                    focus = inferred
+                    level = Level.Descend
 
               next()
 
@@ -1585,9 +1582,7 @@ object Html extends Tag.Container
                   focus = if parent.foreign then Tag.foreign(content, extra) else openTag
 
                   if !admit(content) then
-                    val inferred = dom.infer(parent, focus)
-
-                    if inferred.absent then
+                    dom.infer(parent, focus).lay:
                       if parent.autoclose then
                         reset(mark)
                         close()
@@ -1606,10 +1601,11 @@ object Html extends Tag.Container
                       else
                         reset(mark)
                         fail(InadmissibleTag(content, parent.label), mark)
-                    else
-                      reset(mark)
-                      focus = inferred.vouch
-                      level = Level.Descend
+
+                    . apply: inferred =>
+                        reset(mark)
+                        focus = inferred
+                        level = Level.Descend
                   else if focus.void then
                     empty()
                   else if (content == t"a" || content == t"nobr") &&
@@ -1677,10 +1673,8 @@ object Html extends Tag.Container
                 while i < pendingCount do
                   val label = state.pendingFormattingLabels(i)
                   val attrs = state.pendingFormattingAttrs(i)
-                  val cloneTag: Optional[Tag] = dom.elements(label)
 
-                  if cloneTag.present then
-                    val tag = cloneTag.vouch
+                  dom.elements(label).let: tag =>
                     state.push(tag)
                     val cloneChild = descend(tag, admissible, attrs)
                     state.pop()

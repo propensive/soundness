@@ -79,11 +79,11 @@ object CaptureTests extends Suite(m"Handle confinement tests"):
 
     test(m"the registry cannot escape the registration block"):
       demilitarize:
-        def attempt()(using Stdio, Monitor, Probate): LspRegistry =
+        def attempt()(using Stdio, Monitor, Probate): Optional[LspRegistry] =
           var stash: Optional[LspRegistry] = Unset
           Lsp.listen(t"escape"):
             stash = summon[LspRegistry]
-          stash.vouch
+          stash
     . assert(_.nonEmpty)
 
     // A pure snapshot taken from a handle may escape by design: only the handle is confined.

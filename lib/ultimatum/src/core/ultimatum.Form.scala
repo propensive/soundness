@@ -35,9 +35,29 @@ package ultimatum
 import proscenium.compat.*
 
 import denominative.*
+import prepositional.*
 import profanity.*
 import rudiments.*
 import vacuous.*
+
+object Form:
+  // One derived leaf of the live pane tree: the pane itself, the rectangle the last solve
+  // assigned it, and its focusable widget (present only for a `Pane.Widget`). Every
+  // per-leaf datum lives together, so per-entry access needs no agreement between
+  // parallel sequences.
+  private[ultimatum] case class Entry(pane: Pane, rect: Rect, focus: Optional[Focus])
+
+  // An immutable snapshot of one solved layout: the entries in frame order. A `Layout` is
+  // only ever constructed whole (and the `Form` re-assigns its single `layout` var
+  // atomically), so an index confined to `entries` (an `Ordinal in entries.type`) is
+  // proof of bounds for exactly the values it will access.
+  private[ultimatum] case class Layout(entries: Sequence[Entry]):
+    // The indices of the focusable entries, in leaf order, each already confined to
+    // `entries` — minted once at construction, sound because `entries` is immutable.
+    val focusables: Sequence[Ordinal in entries.type] =
+      val builder = scala.collection.immutable.Vector.newBuilder[Ordinal in entries.type]
+      entries.iterate { index => if entries(index).focus.present then builder += index }
+      Sequence.of(builder.result())
 
 // Drives an interactive layout. The pane tree is re-derived from its live
 // containers on every frame, so panes appended or inserted while the form runs
@@ -57,16 +77,16 @@ class Form
     throttle:     Long         = 0,
     debounce:     Long         = 0,
     scheduleWake: Long => Unit = _ => () ):
+  // The one immutable snapshot of the derived layout, re-assigned atomically by `refresh`.
   @scala.caps.unsafe.untrackedCaptures
-  private var leaves: Sequence[Pane] = Sequence()
-  @scala.caps.unsafe.untrackedCaptures
-  private var focuses: Sequence[Focus] = Sequence()
-  @scala.caps.unsafe.untrackedCaptures
-  private var focusLeaf: Sequence[Int] = Sequence()
+  private var layout: Form.Layout = Form.Layout(Sequence())
   @scala.caps.unsafe.untrackedCaptures
   private var focused: Optional[Focus] = Unset
+
+  // Whether `layout`'s geometry no longer describes the terminal (set by a resize): the
+  // next refresh must re-measure at the root width and repaint in full.
   @scala.caps.unsafe.untrackedCaptures
-  private var rects: Sequence[Rect] = Sequence()
+  private var staleGeometry: Boolean = false
   @scala.caps.unsafe.untrackedCaptures
   private var lastRedraw: Long = 0
   @scala.caps.unsafe.untrackedCaptures
@@ -98,43 +118,52 @@ class Form
     case _ =>
       ()
 
-  // Snapshot the live tree's leaves and focusables; keep focus on the same widget
-  // if it still exists, else fall back to the first.
-  private def rederive(): Unit =
+  // Snapshot the live tree's leaves; keep focus on the same widget if it still
+  // exists, else fall back to the first focusable.
+  private def rederive(): Sequence[Pane] =
     bind(pane)
-    leaves = Sequence.from(pane.leaves.stdlib)
-    focuses = leaves.collect { case Pane.Widget(_, focus) => focus }
+    val panes = Sequence.from(pane.leaves.stdlib)
 
-    focusLeaf = Sequence.from:
-      (0 until leaves.length).collect:
-        case i if leaves(i.z).vouch.isInstanceOf[Pane.Widget] => i
+    val stays = focused.lay(false): widget =>
+      panes.stdlib.exists:
+        case Pane.Widget(_, focus) => focus eq widget
+        case _                     => false
 
-    val stays = focused.lay(false): widget => focuses.indexWhere(_ eq widget) >= 0
+    if !stays then
+      focused = panes.stdlib.collectFirst { case Pane.Widget(_, focus) => focus }.optional
 
-    if !stays then focused = if focuses.isEmpty then Unset else focuses.prim.vouch
+    panes
 
-  private def focusIndex: Int = focused.lay(0): widget =>
-    val index = focuses.indexWhere(_ eq widget)
-    if index < 0 then 0 else index
+  // The position, within `layout.focusables`, of the focused widget (matched by
+  // identity, so focus survives insertions), defaulting to the first.
+  private def focusPosition(layout: Form.Layout): Int = focused.lay(0): widget =>
+    val position = layout.focusables.indexWhere: ordinal =>
+      layout.entries(ordinal).focus.lay(false)(_ eq widget)
+
+    if position < 0 then 0 else position
 
   // Project the panes to a frame, overriding each widget's minimum with the live
   // size its content needs at the width it last occupied (the root width on the
-  // first solve).
-  private def liveFrame: Frame =
-    val widths = if rects.nil then leaves.map(_ => root.width) else rects.map(_.width)
-    var index = -1
+  // first solve, or when the previous geometry is stale). The widths are threaded
+  // as an iterator aligned with the leaf walk, so no leaf count has to agree with
+  // any sequence: a source that runs dry (the live tree grew mid-frame) degrades
+  // to the root width.
+  private def liveFrame(previous: Form.Layout, stale: Boolean): Frame =
+    val widths: Iterator[Int] =
+      if stale then Iterator.empty else previous.entries.stdlib.iterator.map(_.rect.width)
+
+    def nextWidth(): Int = if widths.hasNext then widths.next() else root.width
 
     def project(node: Pane): Frame = node match
       case Pane.Branch(sizing, axis, panes) =>
         Frame.Split(sizing, axis, panes.contents.map(project).to[List])
 
       case Pane.Leaf(sizing, _) =>
-        index += 1
+        nextWidth()
         Frame.Cell(sizing)
 
       case Pane.Widget(sizing, widget) =>
-        index += 1
-        val (minWidth, minHeight) = widget.measure(widths(index.z).vouch)
+        val (minWidth, minHeight) = widget.measure(nextWidth())
 
         val grown = sizing.copy(minWidth = sizing.minWidth.max(minWidth),
             minHeight = sizing.minHeight.max(minHeight))
@@ -143,8 +172,14 @@ class Form
 
     project(pane)
 
-  private def solve(): Sequence[Rect] =
-    val frame = liveFrame
+  // Solve the snapshot's panes against the live root, pairing each pane with its
+  // solved rectangle (and its focus, for widgets) in one immutable `Layout`. The
+  // `zip` makes the pairing total by construction: there are no separate sequences
+  // whose lengths must silently agree.
+  private def solve(panes: Sequence[Pane], previous: Form.Layout, stale: Boolean)
+  :   Form.Layout =
+
+    val frame = liveFrame(previous, stale)
 
     val height = mode match
       case Occupancy.Fullscreen => root.height
@@ -155,49 +190,66 @@ class Form
       case screen: ScreenRoot => screen.reframe()
       case _                  => ()
 
-    Sequence.from(frame.arrange(Rect(0, 0, root.width, height)).cells.stdlib)
+    val rects = frame.arrange(Rect(0, 0, root.width, height)).cells
 
-  private def paint(index: Int): Unit =
-    val extent = FlowExtent(root, rects(index.z).vouch)
+    Form.Layout:
+      Sequence.from:
+        panes.stdlib.zip(rects.stdlib).map: (leaf, rect) =>
+          val focus: Optional[Focus] = leaf match
+            case Pane.Widget(_, focus) => focus
+            case _                     => Unset
 
-    leaves(index.z).vouch match
+          Form.Entry(leaf, rect, focus)
+
+  // Paint one leaf of a solved layout. The index is confined to `layout.entries`, so
+  // callers prove it in bounds (via `iterate`, `confine` or `focusables`) before it
+  // crosses this boundary; both accesses below are then total.
+  private def paint(layout: Form.Layout)(index: Ordinal in layout.entries.type): Unit =
+    val entry = layout.entries(index)
+    val extent = FlowExtent(root, entry.rect)
+
+    entry.pane match
       case Pane.Leaf(_, content) =>
         content(extent)
         extent.flush()
 
       case Pane.Widget(_, widget) =>
-        widget.render(extent, focusLeaf.indexOf(index) == focusIndex)
+        widget.render(extent, layout.focusables.indexOf(index) == focusPosition(layout))
 
       case _ =>
         ()
 
   // Re-derive, re-solve and repaint, then present. A change in the number of
-  // leaves (a pane was added or removed) forces a full repaint, clearing the
-  // screen in fullscreen so a removed panel leaves no residue; otherwise
-  // fullscreen repaints only the dirty cells and inline re-presents the block.
+  // leaves (a pane was added or removed) or stale geometry (a resize) forces a
+  // full repaint, clearing the screen in fullscreen so a removed panel leaves no
+  // residue; otherwise fullscreen repaints only the dirty cells and inline
+  // re-presents the block.
   private def refresh(changed: Set[Int]): Unit =
-    rederive()
+    val panes = rederive()
+    val previous = layout
+    val stale = staleGeometry || panes.length != previous.entries.length
+    staleGeometry = false
 
-    if leaves.length != rects.length then
+    if stale then
       mode match
         case Occupancy.Fullscreen => root.clear()
         case Occupancy.Inline     => ()
 
-      rects = Sequence()
-
-    val updated = solve()
+    val updated = solve(panes, previous, stale)
+    layout = updated
 
     mode match
       case Occupancy.Inline =>
-        rects = updated
-        (0 until rects.length).each(paint(_))
+        updated.entries.iterate(paint(updated)(_))
 
       case Occupancy.Fullscreen =>
-        val dirty = dirtyCells(rects, updated, changed)
-        rects = updated
-        dirty.each(paint(_))
+        val previousRects = if stale then Sequence() else previous.entries.map(_.rect)
+        val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed)
+        dirty.each { index => updated.entries.confine(index.z).let(paint(updated)(_)) }
 
-    if focuses.nonEmpty then paint(focusLeaf(focusIndex.z).vouch)
+    updated.focusables.confine(focusPosition(updated).z).let: position =>
+      paint(updated)(updated.focusables(position))
+
     root.flush()
 
   // Repaint immediately, folding in any coalesced or pending-resize work. Used for
@@ -272,12 +324,20 @@ class Form
 
     while running && events.hasNext do events.next() match
       case Keypress.Tab =>
-        if focuses.nonEmpty then
+        val current = layout
+
+        if current.focusables.nonEmpty then
           // Repaint the panel losing focus too, so its focus indicator updates;
-          // the panel gaining focus is repainted by `refresh` (focused last).
-          val vacated = focusLeaf(focusIndex.z).vouch
-          focused = focuses(((focusIndex + 1)%focuses.length).z).vouch
-          requestRefresh(Set(vacated))
+          // the panel gaining focus is repainted by `refresh` (focused last). The
+          // wrap-around stays plain `Int` arithmetic until it is re-confined.
+          val position = focusPosition(current)
+          val next = (position + 1)%current.focusables.length
+
+          current.focusables.confine(position.z).let: vacated =>
+            current.focusables.confine(next.z).let: gaining =>
+              focused = current.entries(current.focusables(gaining)).focus
+              val vacatedEntry: Ordinal = current.focusables(vacated)
+              requestRefresh(Set(vacatedEntry.n0))
 
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
         running = false
@@ -302,12 +362,13 @@ class Form
       case TerminalInfo.CursorPosition(row, column) =>
         anchor = (row, column)
 
-      // A resize re-tiles to the new size; reset the rects so the whole layout is
-      // repainted against the live dimensions, and mark the resize so the next
-      // repaint clears the moved block (using the anchor reply, when one arrived).
-      // The repaint is debounced until the drag pauses; typing is unaffected.
+      // A resize re-tiles to the new size; mark the geometry stale so the whole
+      // layout is repainted against the live dimensions, and mark the resize so the
+      // next repaint clears the moved block (using the anchor reply, when one
+      // arrived). The repaint is debounced until the drag pauses; typing is
+      // unaffected.
       case _: TerminalInfo.WindowSize =>
-        rects = Sequence()
+        staleGeometry = true
         resizePending = true
         requestResizeRefresh()
 
@@ -324,16 +385,22 @@ class Form
         ()
 
       case event =>
-        if focuses.nonEmpty then
-          focuses(focusIndex.z).vouch.handle(event)
-          val changed = Set(focusLeaf(focusIndex.z).vouch)
+        val current = layout
 
-          // During a pending resize the widget's state updates immediately, but its
-          // repaint coalesces into the debounced resize flush: presenting now would
-          // draw against stale geometry and move the parked cursor out from under
-          // the anchor recovery. (A wake is always scheduled while `resizePending`.)
-          if resizePending then deferred = deferred.lay(changed)(_ ++ changed)
-          else requestRefresh(changed)
+        if current.focusables.nonEmpty then
+          current.focusables.confine(focusPosition(current).z).let: position =>
+            val ordinal = current.focusables(position)
+
+            current.entries(ordinal).focus.let: widget =>
+              widget.handle(event)
+              val changed = Set((ordinal: Ordinal).n0)
+
+              // During a pending resize the widget's state updates immediately, but its
+              // repaint coalesces into the debounced resize flush: presenting now would
+              // draw against stale geometry and move the parked cursor out from under
+              // the anchor recovery. (A wake is always scheduled while `resizePending`.)
+              if resizePending then deferred = deferred.lay(changed)(_ ++ changed)
+              else requestRefresh(changed)
 
     root match
       case inline: InlineRoot => inline.finish()

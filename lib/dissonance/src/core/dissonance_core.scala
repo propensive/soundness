@@ -128,12 +128,15 @@ def diff[element]
   ( leftSeries:  Sequence[element],
     rightSeries: Sequence[element],
     compare:     (element, element) => Boolean = { (a: element, b: element) => a == b } )
-:   Diff[element] =
+:   Diff[element] & Retained =
 
   val left = leftSeries.stdlib
   val right = rightSeries.stdlib
 
-  type Edits = List[Edit[element]]
+  // Every edit the backtrack constructs carries its element (`left(position)` or
+  // `right(rightPosition)`), so each is minted `Retained` at construction and the assembled
+  // `Diff` carries the proof.
+  type Edits = List[Edit[element] & Retained]
 
   @tailrec
   def count(position: Int, offset: Int): Int =
@@ -145,14 +148,14 @@ def diff[element]
 
   @tailrec
   def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]^{}])
-  :   Diff[element] =
+  :   Diff[element] & Retained =
 
     val delPos = if deletes == 0 then 0 else count(rows.head.readable(deletes - 1) + 1, inserts - deletes)
     val insPos = if inserts == 0 then 0 else count(rows.head.readable(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 
     if best == left.length && (best - deletes + inserts) == right.length
-    then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
+    then Diff(backtrack(left.length - 1, deletes, rows, Nil)*).retained
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
     else trace(0, deletes + 1, Nil, Array.from(focus.stdlib.reverse :+ best) :: rows)
 
@@ -166,7 +169,7 @@ def diff[element]
     then
       backtrack
         ( position - 1, deletes, rows,
-          List.of(Par(position, rightPosition, left(position)) :: edits.stdlib) )
+          List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
 
     else if deletes < rows.length && (deletes == 0 || ins >= del)
     then
@@ -174,20 +177,20 @@ def diff[element]
       then
         backtrack
           ( position, deletes, rows.tail,
-            List.of(Ins(rightPosition, right(rightPosition)) :: edits.stdlib) )
+            List.of(Ins(rightPosition, right(rightPosition)).retained :: edits.stdlib) )
       else
         backtrack
           ( position - 1, deletes, rows,
-          List.of(Par(position, rightPosition, left(position)) :: edits.stdlib) )
+          List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
     else
       if position == del
       then
         backtrack
           ( del - 1, deletes - 1, rows.tail,
-            List.of(Del(position, left(position)) :: edits.stdlib) )
+            List.of(Del(position, left(position)).retained :: edits.stdlib) )
       else
         backtrack
           ( position - 1, deletes, rows,
-          List.of(Par(position, rightPosition, left(position)) :: edits.stdlib) )
+          List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
 
   trace(0, 0, Nil, Nil)

@@ -239,10 +239,12 @@ extends GridSurface(widthFn(), 0):
     // growth, shrink-clearing and resize-clearing.
     val dockTop = if topAnchored then 1 else (rows - h + 1).max(1)
 
-    if !invalidated && started && h == presentedRows && columns == presentedColumns
-      && dockTop == presentedTop && snapshotValid(dockTop, columns, h)
-    then presentDiff(dockTop, columns, h)
-    else flushDockedFull(rows, columns, h)
+    val validated =
+      if !invalidated && started && h == presentedRows && columns == presentedColumns
+        && dockTop == presentedTop
+      then snapshotValid(dockTop, columns, h) else Unset
+
+    validated.let(presentDiff(dockTop, columns, h, _)).or(flushDockedFull(rows, columns, h))
 
   private def flushDockedFull(rows: Int, columns: Int, h: Int): Unit =
     val resized = invalidated

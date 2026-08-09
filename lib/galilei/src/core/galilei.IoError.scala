@@ -86,14 +86,24 @@ object IoError:
     case Operation.Delete   => m"delete"
     case Operation.Metadata => m"metadata"
 
+  private def describe
+    ( path:       Path,
+      operation:  Operation,
+      reason:     Reason,
+      filesystem: path.Plane is Filesystem )
+    ( using Diagnostics )
+  :   Message =
+
+    given path.Plane is Filesystem = filesystem
+    m"the $operation operation at ${path.encode} on ${filesystem.name} failed because $reason"
+
 case class IoError
   ( path:       Path,
     operation:  IoError.Operation,
     reason:     IoError.Reason,
     filesystem: path.Plane is Filesystem )
   ( using Diagnostics )
-extends Error
-  ( {
-      given path.Plane is Filesystem = filesystem
-      m"the $operation operation at ${path.encode} on ${filesystem.name} failed because $reason"
-    } )
+// The message is computed in a companion method: a local `given` alias in the super-argument
+// block is a lazy val whose initialization references `this` before the super constructor,
+// which the Scala.js linker rejects (the JVM tolerates it).
+extends Error(IoError.describe(path, operation, reason, filesystem))

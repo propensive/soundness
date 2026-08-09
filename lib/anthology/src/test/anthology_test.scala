@@ -584,10 +584,13 @@ object Tests extends Suite(m"Anthology Tests"):
           val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
           test(m"Linking natively produces a runnable binary"):
+            val host =
+              Triple.host.or(panic(m"the host triple always resolves on a supported platform"))
+
             Toolchain(edges).produce
               ( Deliverable.Emission(out, classpath),
                 Universe.Nir,
-                Binary(Triple.host.vouch),
+                Binary(host),
                 linked,
                 Nil,
                 List(EntryPoint(Fqcn(t"Main"))) )

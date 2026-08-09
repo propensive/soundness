@@ -287,21 +287,9 @@ object WasmInvoke extends Materializer:
           (arrayCarrier, decode)
 
         case _ =>
-          val payloadWit = optionPayload(witType)
-          val payloadScala = scalaPayload(scala)
-
-          if payloadWit.present && payloadScala.present then
-            val (innerCarrier, innerDecode) = decodeFor(payloadWit.vouch, payloadScala.vouch)
-
-            // `java.util.Optional` is nameable here, so ordinary quotes suffice; an absent
-            // value becomes `Unset`.
-            val decode: Expr[Any] => Expr[Any] = call =>
-              '{  val option = $call.asInstanceOf[java.util.Optional[Any]]
-                  if option.isPresent then ${innerDecode('{option.get})} else Unset  }
-
-            (optionClass.typeRef.appliedTo(List(innerCarrier)), decode)
-          else
-            witType match
+          // A def, not a closure: the alternative is shared by two absence paths below, and a
+          // tuple-resulted lambda here trips capture checking's freshness in the macro context.
+          def opaque(): (TypeRepr, Expr[Any] => Expr[Any]) = witType match
               case Foreign.Type.Named(name) if isHandle(scala) =>
                 handleDecode(name, scala)
 
@@ -329,6 +317,21 @@ object WasmInvoke extends Materializer:
                 then halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` or void function")
                 else scala.asType.absolve match
                   case '[scala] => deriveResult[scala]
+
+          optionPayload(witType) match
+            case Unset => opaque()
+
+            case payloadWit: Foreign.Type =>
+              scalaPayload(scala).lay(opaque()): payloadScala =>
+                val (innerCarrier, innerDecode) = decodeFor(payloadWit, payloadScala)
+
+                // `java.util.Optional` is nameable here, so ordinary quotes suffice; an absent
+                // value becomes `Unset`.
+                val decode: Expr[Any] => Expr[Any] = call =>
+                  '{  val option = $call.asInstanceOf[java.util.Optional[Any]]
+                      if option.isPresent then ${innerDecode('{option.get})} else Unset  }
+
+                (optionClass.typeRef.appliedTo(List(innerCarrier)), decode)
 
     val (carrier, decode) = decodeFor(prototype.result, TypeRepr.of[result].dealias)
 
@@ -555,42 +558,8 @@ object WasmInvoke extends Materializer:
       (facade.typeRef, Apply(Select.unique(Ref(child.companionModule), "apply"), List(built)))
 
     def encodedArgument(value: Term, parameter: Foreign.Type): (TypeRepr, Term) =
-      val (carrier, encoded, alreadyOption) = value.tpe.widen.dealias match
-        // A `tuple<…>` (or a record, whose ABI it shares) argument with a matching Scala tuple:
-        // element-wise recursion, constructed as the scala-wasm `TupleN` of the element carriers —
-        // the mirror of the decode path. Nested tuples, `option<T>` and `WitCase` elements are
-        // handled by the per-element recursion into `encodedArgument`.
-        case valueType
-        if parameterTuple(parameter).let { es => isTuple(valueType, es.length) }.or(false) =>
-          val elements = parameterTuple(parameter).vouch
-
-          // Explicit loop, not a mapping lambda: minted quote capabilities must not leak into a
-          // closure's capture set (macro-under-cc precedent, rep/DECISIONS.md).
-          val encodedBuffer = List.newBuilder[(TypeRepr, Term)]
-          val indexed = elements.iterator.zipWithIndex
-
-          while indexed.hasNext do
-            val (element, index) = indexed.next()
-            val field = Select.unique(value, "_" + (index + 1).toString)
-            encodedBuffer += encodedArgument(field, element)
-
-          val encodedElements = encodedBuffer.result()
-          val carriers = encodedElements.map(_(0))
-
-          val tupleClass =
-            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.length.toString)
-
-          val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
-
-          val constructed =
-            Apply
-              ( TypeApply
-                  ( Select.unique(Ref(tupleClass.companionModule), "apply"),
-                    carriers.map(Inferred(_)) ),
-                encodedElements.map(_(1)) )
-
-          (tupleCarrier, constructed, false)
-
+      // The non-tuple encodings, by the argument's Scala type.
+      def nonTuple(valueType: TypeRepr): (TypeRepr, Term, Boolean) = valueType match
         // A statically-absent argument (a bare `Unset` against an `option<T>` parameter, e.g. the
         // `option<request-options>` of `wasi:http`'s `handle`) needs no payload codec at all.
         case tpe if tpe =:= TypeRepr.of[Unset] =>
@@ -649,6 +618,42 @@ object WasmInvoke extends Materializer:
 
             val encoded = '{$encodable.encoded(${value.asExprOf[argument]}).value}.asTerm
             (carrierType(encodable), encoded, false)
+
+      val (carrier, encoded, alreadyOption) = parameterTuple(parameter) match
+        // A `tuple<…>` (or a record, whose ABI it shares) parameter with a matching Scala tuple:
+        // element-wise recursion, constructed as the scala-wasm `TupleN` of the element carriers —
+        // the mirror of the decode path. Nested tuples, `option<T>` and `WitCase` elements are
+        // handled by the per-element recursion into `encodedArgument`.
+        case elements: List[Foreign.Type] if isTuple(value.tpe.widen.dealias, elements.length) =>
+          // Explicit loop, not a mapping lambda: minted quote capabilities must not leak into a
+          // closure's capture set (macro-under-cc precedent, rep/DECISIONS.md).
+          val encodedBuffer = List.newBuilder[(TypeRepr, Term)]
+          val indexed = elements.iterator.zipWithIndex
+
+          while indexed.hasNext do
+            val (element, index) = indexed.next()
+            val field = Select.unique(value, "_" + (index + 1).toString)
+            encodedBuffer += encodedArgument(field, element)
+
+          val encodedElements = encodedBuffer.result()
+          val carriers = encodedElements.map(_(0))
+
+          val tupleClass =
+            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.length.toString)
+
+          val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
+
+          val constructed =
+            Apply
+              ( TypeApply
+                  ( Select.unique(Ref(tupleClass.companionModule), "apply"),
+                    carriers.map(Inferred(_)) ),
+                encodedElements.map(_(1)) )
+
+          (tupleCarrier, constructed, false)
+
+        case _ =>
+          nonTuple(value.tpe.widen.dealias)
 
       // A plain (always-present) value against an `option<T>` parameter crosses as a present
       // `java.util.Optional`, and one against a `result<T, E>` parameter as an `Ok` (used by

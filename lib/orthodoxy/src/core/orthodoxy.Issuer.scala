@@ -115,10 +115,16 @@ class Issuer
               val response: Optional[Http.Response] = if state.expired then Unset else
                 exchange.submit(Http.Post)(query.per(secret)(_.client_secret = _))
 
-              val json: Json = response.let(_.status) match
-                case Http.Ok           => response.vouch.receive[Json]
+              val json: Json = response match
+                case response: Http.Response if response.status == Http.Ok =>
+                  response.receive[Json]
 
-                case Http.Unauthorized | Unset =>
+                case response: Http.Response if response.status != Http.Unauthorized =>
+                  abort(OAuthError(OAuthError.Reason.Other))
+
+                // The token expired (no request was made) or was rejected: try the refresh
+                // token.
+                case _ =>
                   state.refresh.let: refresh =>
                     val query = Query.make(grant_type = t"refresh_token", refresh_token = refresh)
 
@@ -130,8 +136,6 @@ class Issuer
                       case _       => abort(OAuthError(OAuthError.Reason.Unauthorized))
 
                   . lest(OAuthError(OAuthError.Reason.Unauthorized))
-
-                case status            => abort(OAuthError(OAuthError.Reason.Other))
 
               import dynamicJsonAccess.enabled
 

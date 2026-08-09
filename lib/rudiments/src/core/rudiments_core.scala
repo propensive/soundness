@@ -54,10 +54,19 @@ import vacuous.*
 
 export rudiments.internal.{Bytes, Digit}
 
-// `fixpoint` was removed: it does not yet type-check under capture checking (the recursive
-// context function trips "Reference `recur` is not included in the allowed capture set") and
-// was unused. Issue #1412 tracks a capture-correct reformulation; the old definition is in
-// that issue and the git history.
+// The SAM trait names the knot's true aliasing: the recursion passed as `recur` captures the
+// recurrence itself (`->{this}`), and the result arrow declares its dependency on `recur`
+// rather than claiming purity (#1412). A context-function formal cannot express this (it
+// cannot name the function value inside its own type), so separation checking rightly rejects
+// that shape. Call sites still write `fixpoint(init) { recur ?=> ... }`: the context lambda
+// SAM-converts. The knot is tied eta-delayed, so `fn` is only re-entered when the recursion
+// is applied (the old eager knot recursed unconditionally).
+trait Fixpoint[value]:
+  def apply(using recur: value ->{this} value): value ->{recur} value
+
+def fixpoint[value](initial: value)(fn: Fixpoint[value]^): value =
+  def recurrence(v: value): value = fn(using recurrence)(v)
+  recurrence(initial)
 
 inline def probe[target]: Nothing = ${rudiments.internal.probe[target]}
 inline def typeName[target]: Text = ${rudiments.internal.name[target]}
@@ -212,6 +221,13 @@ extension [self](self: self)(using traversable: self is Traversable)
   inline def all(predicate: traversable.Operand => Boolean): Boolean =
     traversable.traverse(self).forall(predicate)
 
+// The `Populated` producer: one non-emptiness check, recorded in the type, so the operations
+// below are total on the result. The presence check *is* the proof, in the same way a confined
+// ordinal's range check is (`Ordinal in value.type`).
+extension [self](value: self)(using traversable: self is Traversable)
+  def occupied: Optional[self & Populated] =
+    if traversable.traverse(value).hasNext then value.asInstanceOf[self & Populated] else Unset
+
 // Operations that are partial on possibly-empty collections but *total* on receivers carrying a
 // `Populated` proof (obtained from `occupied`, whose bounds check is thereby discharged exactly
 // once). Stdlib members shadow these for stdlib receivers while the aliases remain transparent.
@@ -258,13 +274,9 @@ extension [value](iterables: Iterable[Iterable[value]])
     if iterables.nil then Iterable() else iterables.reduceLeft(_ ++ between ++ _)
 
 extension [value](iterable: Iterable[value])
-  // The `Result` of each numeric typeclass below is bound as an inferred type parameter (e.g.
-  // `to result` + `result =:= value`) rather than referenced path-dependently (`addable.Result =:=
-  // value`). Under capture checking the path-dependent form fails at the cross-package `export`
-  // forwarder (#1411); binding it as a type parameter keeps call sites unchanged.
-  transparent inline def total[result]
-    ( using addable:  value is Addable by value to result,
-            equality: result =:= value )
+  transparent inline def total
+    ( using addable:  value is Addable by value,
+            equality: addable.Result =:= value )
   :   Optional[value] =
 
     compiletime.summonFrom:
@@ -274,23 +286,23 @@ extension [value](iterable: Iterable[value])
         if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
 
 
-  transparent inline def mean[addResult, divResult]
-    ( using addable:   value is Addable by value to addResult,
-            equality:  addResult =:= value,
-            divisible: value is Divisible by Double to divResult,
-            eqality2:  divResult =:= value )
+  transparent inline def mean
+    ( using addable:   value is Addable by value,
+            equality:  addable.Result =:= value,
+            divisible: value is Divisible by Double,
+            eqality2:  divisible.Result =:= value )
   :   Optional[value] =
 
     iterable.total.let(_/iterable.size.toDouble)
 
-  inline def mean2[subResult, addResult, divResult, add2Result]
-    ( using subtractable: value is Subtractable by value to subResult,
-            addable:      subResult is Addable by subResult to addResult,
-            equality:     addResult =:= subResult,
-            divisible:    subResult is Divisible by Double to divResult,
-            equality2:    divResult =:= subResult,
-            addable2:     value is Addable by divResult to add2Result,
-            equality3:    add2Result =:= value )
+  inline def mean2
+    ( using subtractable: value is Subtractable by value,
+            addable:      subtractable.Result is Addable by subtractable.Result,
+            equality:     addable.Result =:= subtractable.Result,
+            divisible:    subtractable.Result is Divisible by Double,
+            equality2:    divisible.Result =:= subtractable.Result,
+            addable2:     value is Addable by divisible.Result,
+            equality3:    addable2.Result =:= value )
   :   Optional[value] =
 
     if iterable.nil then Unset else
@@ -298,32 +310,32 @@ extension [value](iterable: Iterable[value])
 
       iterable.map(_ - arbitrary).total.let: total => arbitrary + total/iterable.size.toDouble
 
-  def variance[addResult, divResult, subResult, mulResult, add2Result, div2Result]
-    ( using addable:       value is Addable by value to addResult,
-            equality:      addResult =:= value,
-            divisible:     value is Divisible by Double to divResult,
-            equality2:     divResult =:= value,
-            subtractable:  value is Subtractable by value to subResult,
-            multiplicable: subResult is Multiplicable by subResult to mulResult,
-            addable2:      mulResult is Addable by mulResult to add2Result,
-            zeroic2:       mulResult is Zeroic,
-            equality3:     add2Result =:= mulResult,
-            divisible2:    mulResult is Divisible by Double to div2Result )
-  :   Optional[div2Result] =
+  def variance
+    ( using addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            equality2:     divisible.Result =:= value,
+            subtractable:  value is Subtractable by value,
+            multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
+            addable2:      multiplicable.Result is Addable by multiplicable.Result,
+            zeroic2:       multiplicable.Result is Zeroic,
+            equality3:     addable2.Result =:= multiplicable.Result,
+            divisible2:    multiplicable.Result is Divisible by Double )
+  :   Optional[divisible2.Result] =
 
     iterable.mean.let: mean =>
       iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
 
 
-  def std[addResult, divResult, div2Result, mulResult]
-    ( using addable:       value is Addable by value to addResult,
-            equality:      addResult =:= value,
-            divisible:     value is Divisible by Double to divResult,
-            equality2:     divResult =:= value,
-            divisible2:    value is Divisible by value to div2Result,
-            equality3:     div2Result =:= Double,
-            multiplicable: value is Multiplicable by Double to mulResult,
-            equality4:     mulResult =:= value )
+  def std
+    ( using addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            equality2:     divisible.Result =:= value,
+            divisible2:    value is Divisible by value,
+            equality3:     divisible2.Result =:= Double,
+            multiplicable: value is Multiplicable by Double,
+            equality4:     multiplicable.Result =:= value )
   :   Optional[value] =
 
     iterable.mean.let: mean0 =>
@@ -340,10 +352,10 @@ extension [value](iterable: Iterable[value])
       divisor*math.sqrt(sum/iterable.size.toDouble)
 
 
-  def product[mulResult]
+  def product
     ( using unital:        value is Unital,
-            multiplicable: value is Multiplicable by value to mulResult,
-            equality:      mulResult =:= value )
+            multiplicable: value is Multiplicable by value,
+            equality:      multiplicable.Result =:= value )
   :   value =
 
     iterable.foldLeft(unital.one)(multiplicable.multiply)

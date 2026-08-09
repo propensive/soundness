@@ -207,10 +207,19 @@ def dirtyCells
     changed:  Set[Int] )
 :   Set[Int] =
 
-  val moved = (0 until current.length).filter: i =>
-    i >= previous.length || previous(i.z).vouch != current(i.z).vouch
+  // A hot per-frame path: iterate `current` with confined ordinals (`iterate` proves each
+  // index against `current`; `confine` re-proves it against `previous`, whose length may
+  // legitimately differ), so both reads are bare and nothing is bounds-checked twice. An
+  // index beyond `previous` is moved by definition.
+  val moved = scala.collection.immutable.Set.newBuilder[Int]
 
-  Set.from(moved) ++ changed
+  current.iterate: index =>
+    val dirty = previous.confine(index).lay(true): ordinal =>
+      previous(ordinal) != current(index)
+
+    if dirty then moved += (index: Ordinal).n0
+
+  Set.of(moved.result()) ++ changed
 
 // Solve `pane` against `root` once and paint each leaf's content into its
 // rectangle (no event loop). An `InlineRoot` is sized to the height its content

@@ -60,6 +60,8 @@ class Cache[value](lifetime: Optional[Long]):
   def establish(block: => value): value = mutex:
     if expiry < jl.System.currentTimeMillis then value = Promise()
 
-    if value.ready then value().vouch else block.tap: result =>
-      value.offer(result)
-      expiry = lifetime.lay(Long.MaxValue)(_ + jl.System.currentTimeMillis)
+    // A present result is a completed promise; otherwise compute, offer and return it.
+    value().or:
+      block.tap: result =>
+        value.offer(result)
+        expiry = lifetime.lay(Long.MaxValue)(_ + jl.System.currentTimeMillis)

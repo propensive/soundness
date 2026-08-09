@@ -58,7 +58,7 @@ import termcaps.environmentTermcap
 import themes.solarizedTheme
 
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
-  val suiteIo = safely(stdios.virtualMachineStdio).vouch
+  val suiteIo = safely(stdios.virtualMachineStdio).or(panic(m"the JVM stdio is always available"))
 
   private def makeRunner(selection: Selection): Runner[Report] =
     given stdio: Stdio = suiteIo

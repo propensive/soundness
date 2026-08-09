@@ -62,7 +62,7 @@ object Honeycomb:
     import doms.html.whatwg
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
       case _               => strings
 
     val parts = recur[parts](Nil)
@@ -267,7 +267,7 @@ object Honeycomb:
     import Html.Hole
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
       case _               => strings
 
     val parts = recur[parts](Nil)
@@ -316,10 +316,7 @@ object Honeycomb:
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
                     case Some('{$renderable: Renderable}) =>
-                      // Widened eagerly: joining the branch types under capture
-                      // checking decorates the summoned evidence's skolem, which
-                      // then fails to unify (the macro only needs `Expr[Any]`).
-                      ('{$renderable.render($expr)}: Expr[Any])
+                      '{$renderable.render($expr)}
 
                     case _ => halt:
                       m"""
@@ -331,10 +328,7 @@ object Honeycomb:
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
                     case Some('{$renderable: Renderable}) =>
-                      // Widened eagerly: joining the branch types under capture
-                      // checking decorates the summoned evidence's skolem, which
-                      // then fails to unify (the macro only needs `Expr[Any]`).
-                      ('{$renderable.render($expr)}: Expr[Any])
+                      '{$renderable.render($expr)}
 
                     case _ =>
                       Expr.summon[(? >: value) is Showable] match

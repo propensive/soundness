@@ -145,8 +145,11 @@ object Multipart:
           parts.drop(1).map: param =>
             param.cut(t"=", 2) match
               case List(key, value) =>
+                // `pen` is present only when `value` has at least two characters, so a lone
+                // `"` (which starts and ends with a quote) is left unstripped rather than
+                // miscomputed.
                 if value.starts(t"\"") && value.ends(t"\"")
-                then key -> value.segment(Sec thru value.pen.vouch)
+                then key -> value.pen.lay(value)((pen: Ordinal) => value.segment(Sec thru pen))
                 else key -> value
 
               case _ =>

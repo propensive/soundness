@@ -30,123 +30,54 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package dissonance
 
-import scala.caps
+import scala.compiletime.*
 
-import ambience.*
-import anthology.*
-import anticipation.*
-import contingency.*
-import digression.*
-import distillate.*
-import eucalyptus.*
-import fulminate.*
-import galilei.*
-import gossamer.*
-import guillotine.*
-import hellenism.*
-import jacinta.*
-import parasite.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import superlunary.*
-import symbolism.*
+import proscenium.compat.*
+
 import vacuous.*
 
-import filesystemOptions.deleteRecursively.disabled
-import logging.silentLogging
-import probates.cancelProbate
-import systems.javaSystem
-import threading.platformThreading
-import workingDirectories.javaWorkingDirectory
+// A phantom marker recording a *proof of retention* in a value's type: producers which populate
+// every edit's `value` by construction (the Myers walk, redraft analysis) mint `& Retained` at
+// the construction site, and `kept` narrows `value` from `Optional[element]` to a bare `element`
+// on any edit whose type carries the proof, so absence-handling is discharged at compile time:
+//
+//     statically-proven `Retained` edits access their values directly
+//
+// A *structural refinement*, not a trait: refinements are erasure-transparent, so
+// `Edit[Text] & Retained` still erases to `Edit`. A nominal marker would erase intersections and
+// `self <: Retained` bounds to the marker's own class, inserting checkcasts that fail at
+// runtime — the underlying value never actually implements it. (The same technique as
+// rudiments' `Populated`, the non-emptiness proof.)
+type Retained = Any { type Retain = true }
 
-import filesystemBackends.virtualMachine
+extension [element](edit: Edit[element])
+  // The `Retained` producer for a single edit: the cast *is* the mint, used only at a site where
+  // presence is established by construction — an edit whose `value` was just supplied. (The same
+  // discipline as `occupied`: one check, here construction itself, recorded in the type.)
+  def retained: edit.type & Retained = edit.asInstanceOf[edit.type & Retained]
 
-object Enclave:
-  // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime
-  // is the `sandbox` block that spawns it (killed, and its files deleted, after the block).
-  case class Tool(path: Path on Linux, pid: Pid) extends caps.ExclusiveCapability:
-    def command: Text = path.name
+// A single accessor that dispatches at compile time on the edit's type: an edit statically
+// known to be `Retained` returns a bare `element` with no absence-handling; any other edit
+// returns its `Optional` value unchanged. The declared return type is `Optional`, so
+// non-reducing (e.g. generic) call sites are safe; a `Retained` edit narrows to a bare
+// `element`. The receiver's precise type is carried by the `editType` parameter (the same
+// shape as deindexing's `apply`): a term-singleton `edit.type` in the summonFrom pattern
+// sends implicit-scope computation through `wildApprox`, which crashes on the intersection.
+extension [element, editType <: Edit[element]](edit: editType)
+  transparent inline def kept: Optional[element] = summonFrom:
+    case _: (`editType` <:< Retained) => edit.value.asInstanceOf[element]
+    case _                            => edit.value
 
-    def completions(using Monitor)[result](block: => Unit): Optional[Text] =
-      val promise = Promise[Text]()
+extension [element](diff: Diff[element])
+  // The `Retained` producer for a whole `Diff`, sanctioned only where every edit passed to the
+  // constructor was itself `Retained` (the varargs field cannot carry the brand through, so it
+  // is re-established on the assembled value).
+  def retained: diff.type & Retained = diff.asInstanceOf[diff.type & Retained]
 
-      async:
-        promise.offer(safely(sh"$path '{admin}' await".exec[Text]()).or(t"failed"))
-
-      block
-      safely(promise.await())
-
-  case class Launcher(path: Path on Linux):
-    // Explicit `using` evidence instead of `raises` sugar: a context-function result would
-    // hide the `block` parameter, which the separation checker rejects.
-    def sandbox[result](block: (tool: Tool) ?=> result)
-      ( using Tactic[ExecError], Tactic[NumberError], Tactic[PathError] )
-    :   result =
-
-      val completionScripts = sh"$path '{admin}' install".exec[Text]()
-      val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.as[Int])
-      val tool = Tool(path, pid)
-
-      block(using tool).also:
-        sh"$path '{admin}' kill".exec[Exit]()
-
-        completionScripts.trim.lines.stdlib.map(_.as[Path on Linux]).foreach: (item: Path on Linux) =>
-          safely(item.delete())
-
-
-case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)
-extends Rig:
-  type Result[output] = Enclave.Launcher
-  type Form = Text
-  type Target = Path on Linux
-  type Transport = Json
-
-  def stage(out: Path on Linux): Path on Linux =
-    // Children of the per-stage `out` directory (not `peer` siblings): each staged build's
-    // artifacts must stay in its own directory, or two builds of the same tool name — an
-    // upgrade test's v1 and v2 — would collide at the same path.
-    val target = unsafely(out / name)
-
-    unsafely:
-      // `Fqcn.apply` rather than the `fqcn""` interpolator: the macro's synthesized tree
-      // fails capture-variable unification when expanded in a capture-checked module.
-      val executor: Fqcn =
-        safely(Fqcn(t"superlunary.Executor2"))
-        . or(panic(m"the constant fully-qualified class name is well-formed"))
-
-      val jarfile = supervise:
-        unsafely:
-          Toolchain(jarEdges()).produce
-            ( Deliverable.Emission(out, Bundler.applicationClasspath),
-              Universe.Classfile,
-              Jar,
-              out,
-              List(jarOptions.name(t"$name.jar")),
-              List(EntryPoint(executor)) )
-
-      val cmd = (buildId: @unchecked) match
-        case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"
-        case Unset   => sh"java -Dbuild.executable=$target -jar $jarfile '[]'"
-
-      cmd.exec[Exit]() match
-        case Exit.Ok         => target
-        case Exit.Fail(fail) => ???
-
-  protected val scalac: Scalac[3.8, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
-
-
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux])
-  :   Enclave.Launcher =
-
-    stage.remote: input =>
-      unsafely:
-        variables(inputParameters = input):
-          sh"${stage.target}".exec[Exit]()
-
-      t"""[""]"""
-
-    Enclave.Launcher(stage.target)
+extension [element](diff: Diff[element] & Retained)
+  // Transfers a `Diff`'s retention proof back to its edits: a `Diff & Retained` was assembled
+  // exclusively from retained edits, so re-minting each one discharges no new obligation.
+  def retentions: List[Edit[element] & Retained] =
+    diff.edits.to(List).asInstanceOf[List[Edit[element] & Retained]]

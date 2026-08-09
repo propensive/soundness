@@ -118,10 +118,14 @@ object Diff:
 
     recur(lines, 1, Nil, 0, 0, 0)
 
-  extension (diff: Diff[Text])
+  // Rendering a redraft reproduces every kept and deleted line verbatim, so it demands a `Diff`
+  // whose edits provably carry their values: `parse`d diffs (whose `Par`s are `Unset`) do not
+  // qualify; diffs from the Myers walk or a previous `resolve` do.
+  extension (diff: Diff[Text] & Retained)
     def redraft(context: Redraft.Context = Redraft.Context.Minimal): Redraft =
       Redraft.render(diff, context)
 
+  extension (diff: Diff[Text])
     def serialize: Chain[Text] = diff.chunks.flatMap:
       case Chunk(left, right, dels, inss) =>
         def range(start: Int, end: Int): Text =
@@ -184,10 +188,16 @@ case class Diff[element](edits: Edit[element]*):
 
           (subs: List[Change[element]])
         else
-          val delsSeq = Sequence.from(dels.stdlib.map(_.value.vouch))
-          val inssSeq = Sequence.from(inss.stdlib.map(_.value))
+          // This `Diff` may have been parsed, in which case its deletions carry no values; an
+          // absent value simply never compares similar, honestly degrading that pairing to a
+          // plain deletion and insertion instead of vouching for a value that is not there.
+          val delsSeq = Sequence.from(dels.stdlib.map(_.value))
+          val inssSeq = Sequence.from(inss.stdlib.map { ins => ins.value: Optional[element] })
 
-          val subs = dissonance.diff(delsSeq, inssSeq, similar).edits.toList.map:
+          val similar2: (Optional[element], Optional[element]) ->{similar} Boolean =
+            (left, right) => left.lay(false) { l => right.lay(false) { r => similar(l, r) } }
+
+          val subs = dissonance.diff(delsSeq, inssSeq, similar2).edits.toList.map:
             case Del(index, _) => Del(dels.stdlib(index).left, dels.stdlib(index).value)
             case Ins(index, _) => Ins(inss.stdlib(index).right, inss.stdlib(index).value)
 

@@ -416,7 +416,9 @@ case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
   def render(using escapes: TerminalEscapes): Text =
     Text.build:
       def recur(current: AnsiStyle, index: Ordinal): Unit =
-        if index.n0 < plain.length then
+        // The presence of the character at `index` is the loop's bounds check; `ansi` shares
+        // `plain`'s extent by construction.
+        plain(index).lay(()): char =>
           val style = ansi.readUnchecked(index.n0)
 
           if style.changed then
@@ -430,7 +432,7 @@ case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
 
             val current2 = current.update(style)
 
-            append(plain(index).vouch)
+            append(char)
             recur(current2, index + 1)
           else
             recur(current, index + 1)

@@ -913,51 +913,56 @@ object Tel extends Tel2:
 
               slot += 1
 
-          var next: Optional[Text] = reader.keyword(indent)
+          // The keyword loop is match-driven: the concrete-scrutinee match on the
+          // freshly-read keyword both ends the loop (on `Unset`) and names the
+          // `Text` once per iteration — no re-read of the slot, and no closure
+          // allocated per iteration.
+          var scanning = true
 
-          while next.present do
-            val found = indexOf(next.vouch)
+          while scanning do reader.keyword(indent) match
+            case Unset => scanning = false
 
-            if found < 0 then reader.skipEntry(indent)
-            else
-              val parsing = unwrap(entries.readUnchecked(found)(1))
+            case keyword: Text =>
+              val found = indexOf(keyword)
 
-              parsing match
-                case gathering: Gathering if parsing.repeatable =>
-                  // Every occurrence of a repeatable field accumulates, in
-                  // document order — the AST's gather-all semantics.
-                  val buffer = values(found) match
-                    case buffer: scala.collection.mutable.ListBuffer[?] =>
-                      buffer.asInstanceOf[scala.collection.mutable.ListBuffer[Any]]
+              if found < 0 then reader.skipEntry(indent)
+              else
+                val parsing = unwrap(entries.readUnchecked(found)(1))
 
-                    case _ =>
-                      val buffer = scala.collection.mutable.ListBuffer.empty[Any]
-                      values(found) = buffer
-                      buffer
+                parsing match
+                  case gathering: Gathering if parsing.repeatable =>
+                    // Every occurrence of a repeatable field accumulates, in
+                    // document order — the AST's gather-all semantics.
+                    val buffer = values(found) match
+                      case buffer: scala.collection.mutable.ListBuffer[?] =>
+                        buffer.asInstanceOf[scala.collection.mutable.ListBuffer[Any]]
 
-                  buffer +=
-                    ( if focused
+                      case _ =>
+                        val buffer = scala.collection.mutable.ListBuffer.empty[Any]
+                        values(found) = buffer
+                        buffer
+
+                    buffer +=
+                      ( if focused
+                        then focusing(foci, reader, Text(keys.readUnchecked(found))):
+                          gathering.parseElement(reader, indent)
+                        else gathering.parseElement(reader, indent) )
+
+                  case _ =>
+                    // A non-repeatable field keeps its first occurrence — the
+                    // AST's `field()` semantics — and skips the rest. When the
+                    // first fill came from a positional atom, the duplicate is
+                    // §20.2 step 5c's E308 (the atom wins).
+                    if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot) then
+                      if atomFilled(found)
+                      then raise(TelError(TelError.Reason.NonRepeatableTooMany))(using tactic)
+
+                      reader.skipEntry(indent)
+                    else values(found) =
+                      if focused
                       then focusing(foci, reader, Text(keys.readUnchecked(found))):
-                        gathering.parseElement(reader, indent)
-                      else gathering.parseElement(reader, indent) )
-
-                case _ =>
-                  // A non-repeatable field keeps its first occurrence — the
-                  // AST's `field()` semantics — and skips the rest. When the
-                  // first fill came from a positional atom, the duplicate is
-                  // §20.2 step 5c's E308 (the atom wins).
-                  if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot) then
-                    if atomFilled(found)
-                    then raise(TelError(TelError.Reason.NonRepeatableTooMany))(using tactic)
-
-                    reader.skipEntry(indent)
-                  else values(found) =
-                    if focused
-                    then focusing(foci, reader, Text(keys.readUnchecked(found))):
-                      entries.readUnchecked(found)(1).parse(reader, indent)
-                    else entries.readUnchecked(found)(1).parse(reader, indent)
-
-            next = reader.keyword(indent)
+                        entries.readUnchecked(found)(1).parse(reader, indent)
+                      else entries.readUnchecked(found)(1).parse(reader, indent)
 
           index = 0
 
@@ -4176,6 +4181,13 @@ object Tel extends Tel2:
         else
           Unset
 
+      // Hoisted from the row loop below: the header is fixed for the whole
+      // compound run, so the Optional is resolved once here and each row tests
+      // a bare reference (flow typing narrows it past the null check).
+      val tabulationHeader: Tel.Tabulation | Null = tabulation match
+        case tabulation: Tel.Tabulation => tabulation
+        case _                          => null
+
       // Compound loop.
       var keepLoop = true
       while keepLoop && !head.eof && !head.separator && !head.blank && head.indentLevels == indent
@@ -4187,8 +4199,8 @@ object Tel extends Tel2:
           // §16.2: validate tabulated rows BEFORE parseCompoundLine consumes
           // the row's bytes. validateTabulatedRowInline uses mark + cue so the
           // cursor remains parked at the row start for parseCompoundLine.
-          if tabulation.present then
-            validateTabulatedRowInline(compoundLeadingSpaces, tabulation.vouch, compoundLine)
+          if tabulationHeader != null then
+            validateTabulatedRowInline(compoundLeadingSpaces, tabulationHeader, compoundLine)
 
           // parseCompoundLine pushes the compound's inline atoms onto
           // scratchAtoms and deposits keyword + remark into the parser's
@@ -4234,7 +4246,7 @@ object Tel extends Tel2:
               if tabulation.absent then parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces)
               else Unset
 
-            if extraAtom.present then pushAtom(extraAtom.vouch)
+            extraAtom.let(pushAtom(_))
 
             val children =
               if extraAtom.absent && tabulation.absent then parseChildren(indent) else EmptyBlocks
@@ -5525,7 +5537,7 @@ object Tel extends Tel2:
       val extraAtom: Optional[Tel.Atom] =
         if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
 
-      if extraAtom.present then pushAtom(extraAtom.vouch)
+      extraAtom.let(pushAtom(_))
 
       val children: Array[Tel.Block]^{} =
         if !tabulated && extraAtom.absent then parseChildren(indent)

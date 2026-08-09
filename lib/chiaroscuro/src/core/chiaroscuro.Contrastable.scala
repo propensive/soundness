@@ -169,10 +169,16 @@ object Contrastable:
       case (Decomposition.Product(leftName, left, _), Decomposition.Product(rightName, right, _)) =>
         val name = if leftName == rightName then leftName else t"$leftName/$rightName"
 
+        // Products of different types may have differing field sets; a field absent on one
+        // side is compared against a blank placeholder (as in the sum case below), so it
+        // registers as a difference.
+        val keys = left.keys ++ right.keys
+        val missing = Decomposition.Primitive(t"", t"", Unset)
+
         Juxtaposition.Collation
           ( name,
-            left.keys.to(List).map: key =>
-              key -> juxtaposition(t"", left(key).vouch, right(key).vouch),
+            keys.to(List).map: key =>
+              key -> juxtaposition(t"", left(key).or(missing), right(key).or(missing)),
             leftName,
             rightName )
 

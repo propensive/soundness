@@ -349,19 +349,23 @@ object Http:
       def frame(data: Data): Iterator[Data] =
         Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
-      if second.absent then
-        val data = first.or(Array.empty[Byte])
-        val text = head(t"Content-Length: ${data.length}")
-        Stream(if data.length == 0 then Iterator(text.in[Data]) else Iterator(text.in[Data], data))
-      else
-        val text = head(t"Transfer-Encoding: chunked")
+      (first, second) match
+        case (first: Data, second: Data) =>
+          val text = head(t"Transfer-Encoding: chunked")
 
-        Stream
-          ( Iterator(text.in[Data])
-            ++ frame(first.vouch)
-            ++ frame(second.vouch)
-            ++ Iterator.continually(pull()).takeWhile(_.present).flatMap { data => frame(data.vouch) }
-            ++ Iterator(t"0\r\n\r\n".in[Data]) )
+          Stream
+            ( Iterator(text.in[Data])
+              ++ frame(first)
+              ++ frame(second)
+              ++ Iterator.continually(pull()).takeWhile(_.present).flatMap(_.lay(Iterator())(frame))
+              ++ Iterator(t"0\r\n\r\n".in[Data]) )
+
+        case _ =>
+          val data = first.or(Array.empty[Byte])
+          val text = head(t"Content-Length: ${data.length}")
+
+          Stream:
+            if data.length == 0 then Iterator(text.in[Data]) else Iterator(text.in[Data], data)
 
     case class Head
       ( method: Method, version: Version, host: Host, target: Text, headers: List[Header] )
@@ -810,8 +814,7 @@ object Http:
 
           result
 
-        . takeWhile(_.present).map(_.vouch)
-
+        . takeWhile(_.present).flatMap(_.lay(Iterator())(Iterator(_)))
       def frame(data: Data): Iterator[Data] =
         Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 

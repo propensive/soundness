@@ -81,7 +81,8 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
       val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
       staging.run(code)
       val classfile: Classfile = new Classfile(file.read[Data].readable)
-      classfile.methods.stdlib.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
+      classfile.methods.stdlib.find(_.name == t"_code$$1").optional.let(_.bytecode)
+      . lay(abort(BytecodeError(BytecodeError.Reason.ClassfileUnreadable)))(_.embed(codepoint))
 
 
 type BytecodePalette = Palette:

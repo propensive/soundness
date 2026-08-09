@@ -38,12 +38,12 @@ export
   // dependent-typed inline extensions, which synthesized export forwarders break (the same
   // policy as zephyrine's `Region`/`Slate`). Consumers import them from `rudiments` directly.
   . { !!, &, all, also, and, annex, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
-      DecimalConverter, Defaulting, Defaulting2, Digit, each, establish, Exit,
+      DecimalConverter, Defaulting, Defaulting2, Digit, each, establish, Exit, fixpoint,
       fuse, gib,
       give, immutable, indexBy, intercalate, javaInputStream, kib,
       longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
-      prior, probe, product, reflectClass, repeat, runs, runsBy, segment, Segmentable,
+      prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
       indexed, least, most, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, where,

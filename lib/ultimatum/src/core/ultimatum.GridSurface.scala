@@ -232,14 +232,17 @@ extends Board:
     snapshotTop = top
     snapshotColumns = columns
 
-  // Whether the snapshot really describes the screen region about to be presented: the
+  // The snapshot, when it really describes the screen region about to be presented: the
   // same absolute top, the same column clip and the same grid dimensions. Any geometry
-  // change means the diff would be against the wrong cells, so the caller must fall
-  // back to a full redraw.
-  protected def snapshotValid(top: Int, columns: Int, h: Int): Boolean =
-    snapshot.lay(false): snap =>
-      snapshotTop == top && snapshotColumns == columns
+  // change means a diff would be against the wrong cells, so the caller gets `Unset` and
+  // must fall back to a full redraw. The validator returns the validated screen itself
+  // (rather than a `Boolean`), so the caller threads the proof into the diffing present
+  // as a non-Optional parameter.
+  protected def snapshotValid(top: Int, columns: Int, h: Int): Optional[Screen[StyleWord]] =
+    snapshot.let: snap =>
+      if snapshotTop == top && snapshotColumns == columns
         && snap.height == h && snap.width == gridWidth
+      then snap else Unset
 
   // Whether the cell at `(c, r)` differs from the snapshot's. A cell is one grapheme
   // with one style; links never reach the grid (`putCell` always writes `t""`), so the
@@ -249,7 +252,8 @@ extends Board:
       || screen.style(c.z, r.z).raw != snap.style(c.z, r.z).raw
 
   // Diff the grid (drawn at absolute rows `top..top + h - 1`, clipped to `columns`)
-  // against the snapshot, appending one absolutely-addressed run per contiguous patch
+  // against `snap` — the validated snapshot, threaded in by the caller from
+  // `snapshotValid` — appending one absolutely-addressed run per contiguous patch
   // of changed cells: `cup` to the patch, its cells as SGR, and a style reset after any
   // run that emitted SGR (each run renders self-contained, like a full row today).
   // Returns the number of runs, so a caller can skip the write when nothing changed.
@@ -257,10 +261,10 @@ extends Board:
   // leading cell's style, so the two cells always change (or not) together; backing a
   // run up off a sentinel start is a defensive backstop.
   protected def emitDiffRuns
-    ( frame: StringBuilder, top: Int, columns: Int, h: Int, termcap: Termcap )
+    ( frame: StringBuilder, top: Int, columns: Int, h: Int, termcap: Termcap,
+      snap: Screen[StyleWord] )
   :   Int =
 
-    val snap = snapshot.vouch
     var runs = 0
     var r = 0
 
@@ -289,10 +293,13 @@ extends Board:
   // NOTHING is written — an identical frame is a true no-op. Otherwise the patches
   // land in one single write with the cursor hidden, so it never flashes across the
   // screen between runs (and nothing can interleave mid-frame).
-  protected def presentDiff(top: Int, columns: Int, h: Int)(using Stdio): Unit =
+  protected def presentDiff(top: Int, columns: Int, h: Int, snap: Screen[StyleWord])
+    ( using Stdio )
+  :   Unit =
+
     val termcap = summon[Stdio].termcap
     val body = StringBuilder()
-    val runs = emitDiffRuns(body, top, columns, h, termcap)
+    val runs = emitDiffRuns(body, top, columns, h, termcap, snap)
 
     val caretRow2 = (top + caretRow.min(h - 1)).max(1)
     val caretColumn2 = caretColumn.min(columns - 1).max(0) + 1

@@ -387,12 +387,21 @@ object internal:
             case '[result] => (Expr.summon[result is Json.Decodable], Expr.summon[Monitor]) match
               case (Some(decoder), Some(monitor)) =>
                 Some:
+                  // The tactic is constructed and passed explicitly rather than through
+                  // `unsafely: …`, whose block is a context function; each generated method would
+                  // re-elaborate that context-function type, and the fresh root capabilities minted
+                  // for its `ThrowTactic^`/`CanThrow` parameters are memoized from the first
+                  // method's expansion, so a later method's block fails to conform (upstream
+                  // #26547). A `ThrowTactic` throws in place — exactly `unsafely`'s behaviour for
+                  // a throwing tactic — so the semantics are unchanged.
                   ' {
-                      unsafely:
-                        val response =
-                          JsonRpc.outcome(JsonRpc.call($rpc, $methodName, $payload))(using $monitor)
+                      val tactic: ThrowTactic[JsonRpcError, result]^ = ThrowTactic()
 
-                        $decoder.decoded(response)
+                      val response =
+                        JsonRpc.outcome(JsonRpc.call($rpc, $methodName, $payload))
+                          ( using $monitor, tactic )
+
+                      $decoder.decoded(response)
                     }
 
                   . asTerm

@@ -273,11 +273,11 @@ object LaneDagDiagram:
     val widths = scala.Array.fill(maxCol)(2)
 
     rows.foreach: (tiles, optNode) =>
-      if optNode.present then
+      optNode.let: node =>
         val nodeIdx = tiles.indexOf(Node)
 
         if nodeIdx >= 0 then
-          val w = style.width(glyph(optNode.vouch))
+          val w = style.width(glyph(node))
           if w > widths(nodeIdx) then widths(nodeIdx) = w
 
     widths.iterator.to(List)

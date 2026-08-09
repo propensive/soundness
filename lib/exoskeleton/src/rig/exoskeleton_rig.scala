@@ -56,7 +56,9 @@ extension (shell: Shell)
     . protect:
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
 
-        val path = summon[Enclave.Tool].path.parent.vouch.encode
+        val path =
+          summon[Enclave.Tool].path.parent
+          . lay(abort(TmuxError(TmuxError.Reason.ExecFailed)))(_.encode)
 
         var psFile: Optional[Path on Linux] = Unset
 
