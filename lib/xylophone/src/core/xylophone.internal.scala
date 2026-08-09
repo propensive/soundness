@@ -1325,49 +1325,49 @@ object internal:
           case '[fieldType] =>
             val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
 
-            val valueSymbol =
-              Symbol.newVal(owner, "attr"+index, TypeRepr.of[Optional[Text]], Flags.EmptyFlags,
-                Symbol.noSymbol)
+            // The generated code tests presence and names the value with a single
+            // concrete-scrutinee match (the sanctioned check-then-extract shape),
+            // so each per-kind reader below takes the bound `Text` directly — no
+            // per-arm re-read of the slot. The match is inside the quote (runtime
+            // code), so no inline Optional combinator runs in macro position, and
+            // no closure is allocated on the parse path.
+            def step(value: Expr[Text]): Expr[Unit] =
+              val read: Expr[fieldType] = kinds(index) match
+                case IntK     => '{ Xml.intParsable.attribute($value)(using $tactic, $foci) }
+                                 . asExprOf[fieldType]
+                case LongK    => '{ Xml.longParsable.attribute($value)(using $tactic, $foci) }
+                                 . asExprOf[fieldType]
+                case DoubleK  => '{ Xml.doubleParsable.attribute($value)(using $tactic, $foci) }
+                                 . asExprOf[fieldType]
+                case FloatK   => '{ Xml.floatParsable.attribute($value)(using $tactic, $foci) }
+                                 . asExprOf[fieldType]
+                case BooleanK => '{ Xml.booleanParsable.attribute($value)(using $tactic, $foci) }
+                                 . asExprOf[fieldType]
+                case TextK    => value.asExprOf[fieldType]
+                case StringK  => '{ $value.s }.asExprOf[fieldType]
 
-            val valueDef =
-              ValDef(valueSymbol, Some('{ Attributes.fetch($attributes)($keyText) }.asTerm))
+                case InstanceK =>
+                  '{
+                    $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                    . attribute($value)(using $tactic, $foci)
+                  }
 
-            val valueRef = Ref(valueSymbol).asExprOf[Optional[Text]]
+              val focused: Term =
+                '{ Xml.Parsable.focusing($foci, $keyText)($read) }.asTerm
 
-            val read: Expr[fieldType] = kinds(index) match
-              case IntK     => '{ Xml.intParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
-                               . asExprOf[fieldType]
-              case LongK    => '{ Xml.longParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
-                               . asExprOf[fieldType]
-              case DoubleK  => '{ Xml.doubleParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
-                               . asExprOf[fieldType]
-              case FloatK   => '{ Xml.floatParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
-                               . asExprOf[fieldType]
-              case BooleanK => '{ Xml.booleanParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
-                               . asExprOf[fieldType]
-              case TextK    => '{ $valueRef.vouch }.asExprOf[fieldType]
-              case StringK  => '{ $valueRef.vouch.s }.asExprOf[fieldType]
-
-              case InstanceK =>
-                '{
-                  $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
-                  . attribute($valueRef.vouch)(using $tactic, $foci)
-                }
-
-            val focused: Term =
-              '{ Xml.Parsable.focusing($foci, $keyText)($read) }.asTerm
+              Block
+                ( List
+                    ( Assign(Ref(slots(index)), focused),
+                      Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
+                  unit )
+              . asExprOf[Unit]
 
             Some:
-              Block
-                ( List(valueDef),
-                  If
-                    ( '{ $valueRef.present }.asTerm,
-                      Block
-                        ( List
-                            ( Assign(Ref(slots(index)), focused),
-                              Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
-                          unit ),
-                      unit ) )
+              '{
+                Attributes.fetch($attributes)($keyText) match
+                  case value: Text => ${ step('{ value }) }
+                  case _           => ()
+              }.asTerm
 
       // One dispatch arm per child-matching field: read the value (with
       // focus bookkeeping), honoring the derived engine's semantics — a

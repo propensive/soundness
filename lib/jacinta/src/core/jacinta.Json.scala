@@ -2840,5 +2840,5 @@ extends Dynamic, Topical, Original derives CanEqual:
 
     val result = decodable.decoded(this)
     val foci = summon[Foci[Json.Focus]]
-    foci.supplement(foci.length, _.let(decodable.position(this, _)).vouch)
+    foci.supplement(foci.length, _.let(decodable.position(this, _)))
     result

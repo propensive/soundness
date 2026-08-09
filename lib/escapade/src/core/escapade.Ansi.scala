@@ -203,7 +203,14 @@ object Ansi extends Ansi2:
 
   object Runtime:
     import unsafeExceptions.canThrowAny
-    private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
+    // Total over the closed set of opening brackets admitted by the branches below.
+    private def complement(bracket: Char): Char = bracket match
+      case '[' => ']'
+      case '(' => ')'
+      case '{' => '}'
+      case '<' => '>'
+      case '«' => '»'
+      case _   => panic(m"the complement function covers every opening bracket")
 
     def initial: State = State()
 
@@ -218,8 +225,8 @@ object Ansi extends Ansi2:
               state.last = Unset
               closures(state, text.skip(1))
 
-            case '[' | '(' | '<' | '«' | '{' =>
-              state.pushStyleFrame(complement(text(Prim).vouch).vouch, transform)
+            case char @ ('[' | '(' | '<' | '«' | '{') =>
+              state.pushStyleFrame(complement(char), transform)
               state.last = Unset
               closures(state, text.skip(1))
 
@@ -234,8 +241,8 @@ object Ansi extends Ansi2:
               state.last = Unset
               closures(state, text.skip(1))
 
-            case '[' | '(' | '<' | '«' | '{' =>
-              state.pushLinkFrame(complement(text(Prim).vouch).vouch, url)
+            case char @ ('[' | '(' | '<' | '«' | '{') =>
+              state.pushLinkFrame(complement(char), url)
               state.last = Unset
               closures(state, text.skip(1))
 
@@ -249,8 +256,8 @@ object Ansi extends Ansi2:
               state.last = Unset
               closures(state, text.skip(1))
 
-            case '[' | '(' | '<' | '«' | '{' =>
-              state.pushEscapeFrame(complement(text(Prim).vouch).vouch, on, off)
+            case char @ ('[' | '(' | '<' | '«' | '{') =>
+              state.pushEscapeFrame(complement(char), on, off)
               state.last = Unset
               closures(state, text.skip(1))
 

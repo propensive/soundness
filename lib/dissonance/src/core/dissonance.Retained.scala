@@ -30,65 +30,51 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package contingency
+package dissonance
 
-import scala.collection.mutable as scm
+import scala.compiletime.*
 
-import beneficence.*
-import rudiments.*
+import proscenium.compat.*
+
 import vacuous.*
 
-object Foci:
-  given default: [focus] => Foci[focus]:
-    override def active: Boolean = false
-    def length: Int = 0
-    def success: Boolean = false
-    def register(error: Exception): Unit = ()
+// A phantom marker recording a *proof of retention* in a value's type: producers which populate
+// every edit's `value` by construction (the Myers walk, redraft analysis) mint `& Retained` at
+// the construction site, and `kept` narrows `value` from `Optional[element]` to a bare `element`
+// on any edit whose type carries the proof, so absence-handling is discharged at compile time:
+//
+//     statically-proven `Retained` edits access their values directly
+//
+// A *structural refinement*, not a trait: refinements are erasure-transparent, so
+// `Edit[Text] & Retained` still erases to `Edit`. A nominal marker would erase intersections and
+// `self <: Retained` bounds to the marker's own class, inserting checkcasts that fail at
+// runtime — the underlying value never actually implements it. (The same technique as
+// rudiments' `Populated`, the non-emptiness proof.)
+type Retained = Any { type Retain = true }
 
+extension [element](edit: Edit[element])
+  // The `Retained` producer for a single edit: the cast *is* the mint, used only at a site where
+  // presence is established by construction — an edit whose `value` was just supplied. (The same
+  // discipline as `occupied`: one check, here construction itself, recorded in the type.)
+  def retained: edit.type & Retained = edit.asInstanceOf[edit.type & Retained]
 
-    def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
-    :   accrual =
+  // A single accessor that dispatches at compile time on the edit's type: an edit statically
+  // known to be `Retained` returns a bare `element` with no absence-handling; any other edit
+  // returns its `Optional` value unchanged. The declared return type is `Optional`, so
+  // non-reducing (e.g. generic) call sites are safe; a `Retained` edit narrows to a bare
+  // `element`.
+  transparent inline def kept: Optional[element] = summonFrom:
+    case _: (edit.type <:< Retained) => edit.value.asInstanceOf[element]
+    case _                           => edit.value
 
-      initial
+extension [element](diff: Diff[element])
+  // The `Retained` producer for a whole `Diff`, sanctioned only where every edit passed to the
+  // constructor was itself `Retained` (the varargs field cannot carry the brand through, so it
+  // is re-established on the assembled value).
+  def retained: diff.type & Retained = diff.asInstanceOf[diff.type & Retained]
 
-
-    def supplement(count: Int, transform: Optional[focus] => Optional[focus]): Unit = ()
-
-trait Foci[focus] extends Findable:
-  // False only for the inert default instance, whose `register` and
-  // `supplement` discard everything: a hot decode loop may then skip its
-  // per-field `focus` wrapping (and the closure each wrap allocates)
-  // entirely, since no focus would ever be observed.
-  def active: Boolean = true
-  def length: Int
-  def success: Boolean
-  def register(error: Exception): Unit
-
-  def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
-  :   accrual
-
-  // The transform returns `Optional`: the slots are themselves `Optional`, so demanding a
-  // bare focus forced partial callers to assert presence they could not prove.
-  def supplement(count: Int, transform: Optional[focus] => Optional[focus]): Unit
-  def tainted: Boolean = length > 0
-
-class TrackFoci[focus]() extends Foci[focus]:
-  private val errors: scm.ArrayBuffer[Exception] = scm.ArrayBuffer()
-  private val focuses: scm.ArrayBuffer[Optional[focus]] = scm.ArrayBuffer()
-
-  def length: Int = errors.length
-  def success: Boolean = length == 0
-
-  def register(error: Exception): Unit =
-    errors.append(error)
-    focuses.append(Unset)
-
-
-  def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
-  :   accrual =
-
-    (0 until errors.length).fuse(initial)(lambda(focuses(next), state)(errors(next)))
-
-
-  def supplement(count: Int, transform: Optional[focus] => Optional[focus]): Unit =
-    for i <- (errors.length - count) until errors.length do focuses(i) = transform(focuses(i))
+extension [element](diff: Diff[element] & Retained)
+  // Transfers a `Diff`'s retention proof back to its edits: a `Diff & Retained` was assembled
+  // exclusively from retained edits, so re-minting each one discharges no new obligation.
+  def retentions: List[Edit[element] & Retained] =
+    diff.edits.to(List).asInstanceOf[List[Edit[element] & Retained]]
