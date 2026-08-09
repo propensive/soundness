@@ -45,6 +45,9 @@ import vacuous.*
 extension [countable: Countable](inline value: countable)
   inline def limit: Ordinal = countable.size(value).z
 
+// The receiver is not `inline`: an inline parameter is not an immutable path, so it cannot
+// brand `Ordinal in value.type` (the same constraint as `confine` and `within`).
+extension [countable: Countable](value: countable)
   inline def ult: Optional[Ordinal in value.type] =
     if countable.size(value) >= 1
     then (countable.size(value) - 1).z.asInstanceOf[Ordinal in value.type] else Unset

@@ -327,24 +327,16 @@ private[punctuation] object InlineParser:
       InlineSupport.parseRefLabel(s, after, end) match
         case r: InlineSupport.RefLabelMatch =>
           val label = if r.label.s.isEmpty then bracketContent else r.label
-          val resolved = refs.lookup(label)
 
-          if resolved.present then
-            val ref = resolved.vouch
-            return LinkResolution(ref.destination, ref.title, r.end)
           // Per spec: when the `[label]` parses but the label doesn't
           // resolve, the link attempt fails entirely — don't fall back to
           // shortcut. The full-ref `[label]` is consumed by this attempt.
-          return Unset
+          return refs.lookup(label).let: ref =>
+            LinkResolution(ref.destination, ref.title, r.end)
 
         case _ =>
           ()  // fall through to shortcut
 
     // 3. Shortcut reference
-    val resolved = refs.lookup(bracketContent)
-
-    if resolved.present then
-      val ref = resolved.vouch
+    refs.lookup(bracketContent).let: ref =>
       LinkResolution(ref.destination, ref.title, after)
-    else
-      Unset

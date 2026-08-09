@@ -99,7 +99,9 @@ given stackTraceTeletype: (Text is Measurable) => (palette: StackTrace.Palette)
     val frame = row.frame
     val obj = frame.displaySegment.starts(t"Ξ")
     val methodCls = if obj then frame.displaySegment.skip(1) else frame.displaySegment
-    val color = packages(frame.method.prefix).vouch
+    // Every row's prefix was registered when `packages` was built from the same frames; an
+    // unregistered prefix falls back to the first accent colour.
+    val color = packages(frame.method.prefix).or(accent(0))
 
     if row.sameClass || plumbing(row)
     then e"${palette.subdue(color, 0.85)}(${frame.displayPrefix}.$methodCls)"

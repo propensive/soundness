@@ -93,8 +93,7 @@ object internal:
     // First Char of the cell's grapheme, or ' ' for trailing-half cells.
     // Convenience accessor for narrow-ASCII assertions.
     def char(x: Ordinal, y: Ordinal): Char =
-      val grapheme = graphemeBuffer(offset(x, y)).text
-      if grapheme.nil then ' ' else grapheme(Prim).vouch
+      graphemeBuffer(offset(x, y)).text.prim.or(' ')
 
     // True if this cell is the trailing half of a wide grapheme stored in the
     // cell to the left.

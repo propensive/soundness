@@ -57,7 +57,11 @@ object internal:
     def serialize(tree: TastyTree): Expr[TastyTree] = tree match
       case TastyTree(tag, typeName, name, expr, source, nodes, param, term, definitional) =>
         val nodes2 = nodes.map(serialize(_))
-        val param2 = if param.absent then '{Unset} else Expr(param.vouch)
+        // A concrete-scrutinee match, not an Optional combinator: an inline lambda whose
+        // arms are quote literals crashes pickleQuotes (the aviation.internal caveat).
+        val param2 = param match
+          case Unset       => '{Unset}
+          case param: Text => Expr(param)
 
         ' {
             TastyTree

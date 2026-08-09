@@ -72,11 +72,9 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
     def recur(remaining: List[(Segment, Int)]): Optional[Date] = remaining match
       case (segment, upper) :: tail =>
         val candidate: Optional[Date] = safely(segment.calendar.jdn(year, month, day))
-        val jdn: Optional[Int] = candidate.let(_.jdn)
 
-        if jdn.present && segment.from.jdn <= jdn.vouch && jdn.vouch <= upper
-        then candidate
-        else recur(tail)
+        candidate.lay(recur(tail)): date =>
+          if segment.from.jdn <= date.jdn && date.jdn <= upper then date else recur(tail)
 
       case Nil =>
         Unset

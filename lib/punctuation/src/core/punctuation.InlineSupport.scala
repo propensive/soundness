@@ -246,9 +246,11 @@ private[punctuation] object InlineSupport:
     while i < n && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
     if i >= n then return Unset
 
-    val destResult = parseLinkDestination(s, i, n)
-    if destResult.absent then return Unset
-    val (destination, afterDest) = (destResult.vouch.dest, destResult.vouch.end)
+    val destMatch = parseLinkDestination(s, i, n) match
+      case dest: DestMatch => dest
+      case Unset           => return Unset
+
+    val (destination, afterDest) = (destMatch.dest, destMatch.end)
     i = afterDest
 
     val beforeWs = i
@@ -625,9 +627,11 @@ private[punctuation] object InlineSupport:
     i = skipLinkWhitespace(s, i, end)
     if i >= end then return Unset
 
-    val destResult = parseLinkDestination(s, i, end)
-    if destResult.absent then return Unset
-    val (destination, afterDest) = (destResult.vouch.dest, destResult.vouch.end)
+    val destMatch = parseLinkDestination(s, i, end) match
+      case dest: DestMatch => dest
+      case Unset           => return Unset
+
+    val (destination, afterDest) = (destMatch.dest, destMatch.end)
 
     // Compute both options up front: dest-only (no title) and dest+title.
     // Prefer dest+title if its trailing content is valid; otherwise fall

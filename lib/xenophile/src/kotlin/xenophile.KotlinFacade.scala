@@ -536,10 +536,11 @@ object KotlinFacade:
 
             // Skip a property whose name a refined method already occupies.
             if propertyNames.contains(property.s) then accumulated else
-              val function = samFunctionType(parameter).vouch
-              val getter = Refinement(accumulated, property.s, function)
-              val signature = MethodType(List("value"))(_ => List(function), _ => TypeRepr.of[Unit])
-              Refinement(getter, s"${property.s}_=", signature)
+              samFunctionType(parameter).lay(accumulated): function =>
+                val getter = Refinement(accumulated, property.s, function)
+                val signature =
+                  MethodType(List("value"))(_ => List(function), _ => TypeRepr.of[Unit])
+                Refinement(getter, s"${property.s}_=", signature)
 
           case _ =>
             accumulated
@@ -875,12 +876,16 @@ object KotlinFacade:
       case parameter :: Nil => parameter
       case _                => Unset
 
-    val candidates = classSymbol.methodMember(setterName.s).filter(parameterOf(_).present)
+    // Find the setter and its parameter type in one pass, so the parameter accompanying the
+    // matched method is the very one the match examined.
+    def search(remaining: List[Symbol]): (Symbol, TypeRepr) = remaining match
+      case Nil => halt(m"xenophile: $className has no mutable property $property")
 
-    val method = candidates.find { m => parameterOf(m).lay(false)(satisfies(value, _)) }.getOrElse:
-      halt(m"xenophile: $className has no mutable property $property")
+      case method :: rest =>
+        parameterOf(method).lay(search(rest)): parameter =>
+          if satisfies(value, parameter) then (method, parameter) else search(rest)
 
-    val parameter = parameterOf(method).vouch
+    val (method, parameter) = search(classSymbol.methodMember(setterName.s))
     val call = Apply(Select(receiver(self, repr), method), List(adapted(value, parameter)))
 
     '{${call.asExpr}; ()}
@@ -1326,12 +1331,11 @@ object KotlinFacade:
 
       assign(pairs, 0, Map())
 
-    val absent = proscenium.List.of((0 until member.arity).filter(!provided.stdlib.contains(_)).toList)
+    // All-or-nothing: `entire` is present exactly when every position was provided.
+    (0 until member.arity).map(provided(_)).entire.lay:
+      val absent =
+        proscenium.List.of((0 until member.arity).filter(!provided.stdlib.contains(_)).toList)
 
-    if absent.isEmpty then
-      val ordered = (0 until member.arity).to(List).map { index => provided(index).vouch }
-      invocation(self, repr, className, field, ordered, prototype)
-    else
       val undefaulted = absent.filter: index =>
         !member.defaults.stdlib.lift(index).getOrElse(false)
 
@@ -1340,6 +1344,9 @@ object KotlinFacade:
         halt(m"xenophile: $className.$field requires arguments for: $names")
 
       bridgeCall(self, repr, className, member, provided, prototype)
+
+    . apply: ordered =>
+        invocation(self, repr, className, field, ordered.stdlib, prototype)
 
   // The facade of an `enum class` entry, a static field of the enum's own type.
   def enumEntry[kotlinType: Type](name: Expr[String])(using Quotes): Expr[Any] =
@@ -1430,8 +1437,11 @@ object KotlinFacade:
   def unwrapped(self: Expr[Facade])(using Quotes): Expr[Any] =
     import quotes.reflect.*
 
-    val transport = Map.of(Xenophile.refinements(self.asTerm.tpe.widen))(t"Transport")
+    // A concrete-scrutinee match rather than an Optional combinator: an inline lambda
+    // whose arms are quote literals crashes pickleQuotes (the aviation.internal caveat).
+    Xenophile.refinements(self.asTerm.tpe.widen).get(t"Transport") match
+      case scala.None => '{$self.raw}
 
-    if transport.absent then '{$self.raw} else
-      transport.vouch.asType.absolve match
-        case '[u] => '{$self.raw.asInstanceOf[u]}
+      case scala.Some(transport) =>
+        transport.asType.absolve match
+          case '[u] => '{$self.raw.asInstanceOf[u]}

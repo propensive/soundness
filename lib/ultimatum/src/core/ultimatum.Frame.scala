@@ -34,7 +34,6 @@ package ultimatum
 
 import proscenium.compat.*
 
-import denominative.*
 import rudiments.*
 import vacuous.*
 
@@ -76,10 +75,31 @@ object Frame:
   // to exactly `available`.
   def distribute(fractions: List[Double], limits: List[Limits], available: Int): Sequence[Int] =
     val n = fractions.stdlib.length
-    val frac = Sequence.from(fractions.stdlib)
-    val min = Sequence.from(limits.stdlib.map(_.min))
-    val max = Sequence.from(limits.stdlib.map(_.max))
+
+    // The working state, hoisted once into index-aligned local arrays so every read in
+    // the fixed-point loops below is total `Array` indexing (`i` ranges over `0 until n`
+    // throughout). A `limits` list shorter than `fractions` (a violated caller contract)
+    // degrades to zero minima and unbounded maxima rather than a panic.
+    val frac = scala.Array.fill(n)(0.0)
+    val min = scala.Array.fill(n)(0)
+    val max = scala.Array.fill[Optional[Int]](n)(Unset)
     val pinned = scala.Array.fill[Optional[Int]](n)(Unset)
+
+    var index = 0
+    val fractionCells = fractions.stdlib.iterator
+
+    while index < n && fractionCells.hasNext do
+      frac(index) = fractionCells.next()
+      index += 1
+
+    index = 0
+    val limitCells = limits.stdlib.iterator
+
+    while index < n && limitCells.hasNext do
+      val limit = limitCells.next()
+      min(index) = limit.min
+      max(index) = limit.max
+      index += 1
 
     def poolAndWeight(): (Int, Double) =
       var used = 0
@@ -87,7 +107,7 @@ object Frame:
       var i = 0
 
       while i < n do
-        if pinned(i).present then used += pinned(i).vouch else weight += frac(i.z).vouch
+        pinned(i).let(used += _).or(weight += frac(i))
         i += 1
 
       ((available - used).max(0), weight)
@@ -101,13 +121,13 @@ object Frame:
 
       while i < n do
         if pinned(i).absent then
-          val ideal = if weight <= 0.0 then 0.0 else pool*frac(i.z).vouch/weight
+          val ideal = if weight <= 0.0 then 0.0 else pool*frac(i)/weight
 
-          if ideal < min(i.z).vouch then
-            pinned(i) = min(i.z).vouch
+          if ideal < min(i) then
+            pinned(i) = min(i)
             changed = true
           else
-            max(i.z).let: hi =>
+            max(i).let: hi =>
               if ideal > hi then
                 pinned(i) = hi
                 changed = true
@@ -121,9 +141,8 @@ object Frame:
     var i = 0
 
     while i < n do
-      if pinned(i).present then sizes(i) = pinned(i).vouch
-      else
-        val raw = if weight <= 0.0 then 0.0 else pool*frac(i.z).vouch/weight
+      pinned(i).let { size => sizes(i) = size }.or:
+        val raw = if weight <= 0.0 then 0.0 else pool*frac(i)/weight
         val floor = raw.toInt
         sizes(i) = floor
         remainders(i) = raw - floor
@@ -199,13 +218,16 @@ enum Frame:
         case Axis.File => rect.left
         case Axis.Rank => rect.top
 
-      val offsets = Sequence.from(sizes.stdlib.scanLeft(start)(_ + _))
+      val offsets = sizes.stdlib.scanLeft(start)(_ + _)
 
-      val placements = children.stdlib.zipWithIndex.map: (child, i) =>
-        val childRect = axis match
-          case Axis.File => Rect(offsets(i.z).vouch, rect.top, sizes(i.z).vouch, rect.height)
-          case Axis.Rank => Rect(rect.left, offsets(i.z).vouch, rect.width, sizes(i.z).vouch)
+      // Zip each child directly with its solved size and offset (`scanLeft` yields n + 1
+      // offsets; the zip truncates to the n children), so no re-indexing is needed.
+      val placements = children.stdlib.lazyZip(sizes.stdlib).lazyZip(offsets).map:
+        (child, size, offset) =>
+          val childRect = axis match
+            case Axis.File => Rect(offset, rect.top, size, rect.height)
+            case Axis.Rank => Rect(rect.left, offset, rect.width, size)
 
-        child.arrange(childRect)
+          child.arrange(childRect)
 
       Placement.Split(rect, List.of(placements))

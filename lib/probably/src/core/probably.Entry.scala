@@ -101,8 +101,11 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
       if !seen.has(value) then ticks0 = ticks0.updated(axis, seen :+ value)
 
     val address = coordinates.map(_(1))
-    if !cells0.defines(address) then cells0 = cells0.updated(address, Tally())
-    cells0(address).vouch
+
+    cells0(address).or:
+      val tally = Tally()
+      cells0 = cells0.updated(address, tally)
+      tally
 
   // The coordinate values of one axis in presentation order: first-appearance order for
   // discrete axes, numeric order for integral and decimal axes.

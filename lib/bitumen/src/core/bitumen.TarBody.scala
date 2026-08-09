@@ -73,15 +73,14 @@ class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
   // Extend the memo by one chunk, or record exhaustion.
   private def fetch(): Boolean =
     if exhausted then false else
-      val next = pull()
+      pull() match
+        case Unset =>
+          exhausted = true
+          false
 
-      if next.absent then
-        exhausted = true
-        false
-      else
-        val chunk = next.vouch
-        if chunk.length > 0 then memo += chunk
-        chunk.length > 0 || fetch()
+        case chunk: Data =>
+          if chunk.length > 0 then memo += chunk
+          chunk.length > 0 || fetch()
 
   // Read the remainder of the body from its producer, so the producer may move
   // past it. Memoized chunks are never re-read.

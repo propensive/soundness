@@ -555,17 +555,16 @@ object internal:
     strip(leftTree) match
       case Apply(fn, scala.collection.immutable.List(yearArg, monthArg))
       if fn.symbol.name == "apply" || fn.symbol.name == "<init>" =>
-        val year = constInt(yearArg)
-        val month = monthOrdinal(monthArg)
-        val day = constInt(rightTree)
+        (constInt(yearArg), monthOrdinal(monthArg), constInt(rightTree)) match
+          case (year: Int, month: Int, day: Int) =>
+            staticCalendar match
+              case calendar: RomanCalendar =>
+                jdnOf(calendar, year, month + 1, day) match
+                  case Right(jdn)  => '{Date.julianDay(${Expr(jdn)})}
+                  case Left(error) => halt(error)
 
-        val literal = year.present && month.present && day.present
-
-        if !literal then runtime else staticCalendar match
-          case calendar: RomanCalendar =>
-            jdnOf(calendar, year.vouch, month.vouch + 1, day.vouch) match
-              case Right(jdn)  => '{Date.julianDay(${Expr(jdn)})}
-              case Left(error) => halt(error)
+              case _ =>
+                runtime
 
           case _ =>
             runtime

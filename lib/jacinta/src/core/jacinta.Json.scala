@@ -2718,8 +2718,8 @@ extends Dynamic, Topical, Original derives CanEqual:
             rightMap = rightMap.updated(rightAst.objectKey(i), rightAst.objectValue(i))
             i += 1
 
-          leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
-            recur(leftMap(key).vouch, rightMap(key).vouch)
+          leftMap.stdlib.size == rightMap.stdlib.size && leftMap.stdlib.forall: (key, leftValue) =>
+            rightMap(key).lay(false)(recur(leftValue, _))
 
       def recur(left: Json.Ast, right: Json.Ast): Boolean = right.asMatchable match
         case right: Long => left.asMatchable match

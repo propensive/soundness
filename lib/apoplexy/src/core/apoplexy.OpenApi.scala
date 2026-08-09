@@ -156,7 +156,7 @@ object OpenApi:
             Http.Trace -> trace )
 
       verbs
-      . stdlib.collect { case (method, operation) if operation.present => method -> operation.vouch }
+      . stdlib.collect { case (method, operation: Operation) => method -> operation }
       . pipe(Map.from(_))
 
   object Components:
@@ -210,67 +210,67 @@ object OpenApi:
     def field[value: Decodable in Yaml](name: Text): Optional[value] =
       yaml(name).as[Optional[value]]
 
-    val reference = field[Text]("$ref".tt)
+    field[Text]("$ref".tt).let: reference =>
+      JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
 
-    if !reference.absent
-    then JsonSchema.Ref(reference.vouch.as[JsonPointer], field[Text](t"description"))
-    else field[Text](t"type") match
-      case t"array" =>
-        JsonSchema.Array
-          ( field[Text](t"description"),
-            field[JsonSchema](t"items"),
-            field[Int](t"minItems"),
-            field[Int](t"maxItems"),
-            false,
-            field[Int](t"maxContains"),
-            field[Int](t"minContains") )
+    . or:
+        field[Text](t"type") match
+          case t"array" =>
+            JsonSchema.Array
+              ( field[Text](t"description"),
+                field[JsonSchema](t"items"),
+                field[Int](t"minItems"),
+                field[Int](t"maxItems"),
+                false,
+                field[Int](t"maxContains"),
+                field[Int](t"minContains") )
 
-      case t"string" =>
-        JsonSchema.String
-          ( field[Text](t"description"),
-            field[Int](t"minLength"),
-            field[Int](t"maxLength"),
-            field[Text](t"pattern"),
-            field[JsonSchema.Format](t"format"),
-            false )
+          case t"string" =>
+            JsonSchema.String
+              ( field[Text](t"description"),
+                field[Int](t"minLength"),
+                field[Int](t"maxLength"),
+                field[Text](t"pattern"),
+                field[JsonSchema.Format](t"format"),
+                false )
 
-      case t"number" =>
-        JsonSchema.Number
-          ( field[Text](t"description"),
-            field[Double](t"multipleOf"),
-            field[Double](t"maximum"),
-            field[Double](t"minimum"),
-            field[Double](t"exclusiveMinimum"),
-            field[Double](t"exclusiveMaximum"),
-            false )
+          case t"number" =>
+            JsonSchema.Number
+              ( field[Text](t"description"),
+                field[Double](t"multipleOf"),
+                field[Double](t"maximum"),
+                field[Double](t"minimum"),
+                field[Double](t"exclusiveMinimum"),
+                field[Double](t"exclusiveMaximum"),
+                false )
 
-      case t"integer" =>
-        JsonSchema.Integer
-          ( field[Text](t"description"),
-            field[Int](t"maximum"),
-            field[Int](t"minimum"),
-            field[Int](t"exclusiveMinimum"),
-            field[Int](t"exclusiveMaximum"),
-            false )
+          case t"integer" =>
+            JsonSchema.Integer
+              ( field[Text](t"description"),
+                field[Int](t"maximum"),
+                field[Int](t"minimum"),
+                field[Int](t"exclusiveMinimum"),
+                field[Int](t"exclusiveMaximum"),
+                false )
 
-      case t"boolean" =>
-        JsonSchema.Boolean(field[Text](t"description"), false)
+          case t"boolean" =>
+            JsonSchema.Boolean(field[Text](t"description"), false)
 
-      case t"null" =>
-        JsonSchema.Null(field[Text](t"description"), false)
+          case t"null" =>
+            JsonSchema.Null(field[Text](t"description"), false)
 
-      case _ =>
-        JsonSchema.Object
-          ( field[Text](t"description"),
-            field[Map[Text, JsonSchema]](t"properties").or(Map()),
-            false,
-            field[List[Text]](t"required"),
-            // `enum` holds raw `Json` values, and there is no `Yaml`->`Json`
-            // bridge, so enum constraint values are not carried through the YAML
-            // path; they do not affect endpoint structure.
-            Unset,
-            yaml(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
-            field[List[JsonSchema]](t"oneOf") )
+          case _ =>
+            JsonSchema.Object
+              ( field[Text](t"description"),
+                field[Map[Text, JsonSchema]](t"properties").or(Map()),
+                false,
+                field[List[Text]](t"required"),
+                // `enum` holds raw `Json` values, and there is no `Yaml`->`Json`
+                // bridge, so enum constraint values are not carried through the YAML
+                // path; they do not affect endpoint structure.
+                Unset,
+                yaml(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
+                field[List[JsonSchema]](t"oneOf") )
 
   // Anchor the top-level model so `as[OpenApi]` (below) materialises its decoder
   // once — with each nested type resolving to its own anchor — rather than inlining

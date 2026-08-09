@@ -120,7 +120,9 @@ def repackage(): Unit = application(scala.collection.immutable.Nil):
 
           . stdlib.to(List)
 
-      val tmpFile: Path on Linux = inputJar.parent.vouch/t"${inputJar.name}.tmp"
+      val tmpFile: Path on Linux =
+        inputJar.parent.or(panic(m"a jar file always has a parent directory"))
+        / t"${inputJar.name}.tmp"
 
       // Only animate on a real terminal; when stdout is redirected the carriage-return redraws
       // and cursor escapes would garble the output, so we suppress them and let the final summary

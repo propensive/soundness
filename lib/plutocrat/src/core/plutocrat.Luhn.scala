@@ -41,14 +41,21 @@ import vacuous.*
 
 object Luhn:
   def digit(number: Text): Int =
-    def recur(index: Int, sum: Int, odd: Boolean): Int =
-      if index < 0 then (10 - sum%10)%10 else
-        val n: Int = ((if odd then 2 else 1)*(number(index.z).vouch - '0')).toInt
-        recur(index - 1, sum + (if n > 9 then n - 9 else n), !odd)
+    var sum: Int = 0
+    var odd: Boolean = true
 
-    recur(number.length - 1, 0, true)
+    // `retrace` drives the last-to-first walk with ordinals confined to `number`, so each
+    // access is bare and the loop allocates nothing.
+    number.retrace: index =>
+      val n: Int = ((if odd then 2 else 1)*(number(index) - '0')).toInt
+      sum += (if n > 9 then n - 9 else n)
+      odd = !odd
 
+    (10 - sum%10)%10
+
+  // False for empty input: a last digit to check against is the first requirement.
   def check(number: Text): Boolean =
-    digit(number.skip(1, Rtl)) == number((number.length - 1).z).vouch - '0'
+    number.ult.lay(false): ult =>
+      digit(number.skip(1, Rtl)) == number(ult) - '0'
 
   def check(number: Long): Boolean = check(number.show)

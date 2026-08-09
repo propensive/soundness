@@ -38,6 +38,7 @@ import escapade.*
 import gossamer.*
 import profanity.*
 import turbulence.*
+import vacuous.*
 
 object ScreenRoot:
   // Build a fullscreen root covering the whole terminal, reading its size live (so a
@@ -88,9 +89,12 @@ extends GridSurface(widthFn(), heightFn()):
   def flush(): Unit =
     val columns = gridWidth
     val h       = gridHeight
+    val validated = if invalidated then Unset else snapshotValid(1, columns, h)
 
-    if !invalidated && snapshotValid(1, columns, h) then presentDiff(1, columns, h)
-    else
+    validated.let: snap =>
+      presentDiff(1, columns, h, snap)
+
+    . or:
       invalidated = false
 
       val frame = StringBuilder()

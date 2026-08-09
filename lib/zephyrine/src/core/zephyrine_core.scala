@@ -442,10 +442,10 @@ private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
           false
 
       def next(): medium =
-        if !hasNext then panic(m"the stream is exhausted")
-        val result = chunk.vouch
-        chunk = Unset
-        result
+        chunk
+        . lay(if !done && advance() then next() else panic(m"the stream is exhausted")): result =>
+            chunk = Unset
+            result
 
 private def recordIterator[record]
   ( consume stream: (Stream[Array[record]^{}] over Credit)^ )

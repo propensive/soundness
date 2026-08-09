@@ -303,8 +303,10 @@ object Apoplexy:
 
     val reqWire = operation.requestBody.let: body => wireOf(body.content)
 
-    if respWire.present && reqWire.present && respWire.vouch != reqWire.vouch
-    then halt(m"apoplexy: $verb $locus mixes request and response media types")
+    respWire.let: resp =>
+      reqWire.let: req =>
+        if resp != req
+        then halt(m"apoplexy: $verb $locus mixes request and response media types")
 
     val wire = respWire.or(reqWire.or(Wire.Json))
 

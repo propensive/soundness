@@ -571,14 +571,15 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
         writeGrapheme(Grapheme(input.segment(index.z till end.z).s))
         recur(end, Normal)
 
-      if index >= input.length
-      then Pty(buffer2,
-          state2.copy(cursor = cursor(), style = style, link = link, scrollTop = scrollTop,
-              scrollBottom = scrollBottom, pendingWrap = pendingWrap),
-          output = output)
-      else
-        val current: Char = input(index.z).vouch
+      // The presence of a character at `index` is the loop's bounds check; past the end of
+      // the input, the walk is complete.
+      input(index.z).lay:
+        Pty(buffer2,
+            state2.copy(cursor = cursor(), style = style, link = link, scrollTop = scrollTop,
+                scrollBottom = scrollBottom, pendingWrap = pendingWrap),
+            output = output)
 
+      . apply: current =>
         context match
           case Normal =>
             (current: @switch) match

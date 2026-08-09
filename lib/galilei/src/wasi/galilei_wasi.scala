@@ -209,7 +209,7 @@ package filesystemBackends:
 
               while !done do
                 val entry = stream.`read-directory-entry`.call[Optional[(U8, Text)]]()
-                if entry.absent then done = true else names = entry.vouch(1) :: names
+                entry.lay({ done = true })(pair => names = pair(1) :: names)
 
               streamHandle.dispose()
               names.stdlib.reverse.to(Chain)

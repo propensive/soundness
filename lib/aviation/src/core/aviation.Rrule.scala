@@ -96,11 +96,14 @@ object Rrule:
     def part(condition: Boolean, text: => Text): List[Text] =
       if condition then List(text) else List()
 
+    def partOf[value](optional: Optional[value])(text: value => Text): List[Text] =
+      optional.lay(List())(value => List(text(value)))
+
     val parts =
       part(true, t"FREQ=${rule.frequency.toString.tt.upper}") :::
         part(rule.interval != 1, t"INTERVAL=${rule.interval}") :::
-        part(rule.count.present, t"COUNT=${rule.count.vouch}") :::
-        part(rule.until.present, t"UNTIL=${rule.until.vouch.encode}") :::
+        partOf(rule.count) { count => t"COUNT=$count" } :::
+        partOf(rule.until) { until => t"UNTIL=${until.encode}" } :::
         part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") :::
         part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") :::
         part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") :::
@@ -326,19 +329,16 @@ object Rrule:
 
     val byDayDates: Optional[List[Date]] =
       if rule.byDay.isEmpty then Unset else rule.byDay.bind: (entry: WeekdayOrdinal) =>
-        if entry.ordinal.absent then weekdaysOfMonth(year, month, entry.weekday)
-        else list(nthWeekday(year, month, entry.weekday, entry.ordinal.vouch))
+        entry.ordinal.lay(weekdaysOfMonth(year, month, entry.weekday)): ordinal =>
+          list(nthWeekday(year, month, entry.weekday, ordinal))
 
     val byMonthDayDates: Optional[List[Date]] =
       if rule.byMonthDay.isEmpty then Unset else rule.byMonthDay.bind: (day: Int) =>
         list(monthDay(year, month, day))
 
     val candidates =
-      if byDayDates.present && byMonthDayDates.present
-      then byDayDates.vouch.filter(byMonthDayDates.vouch.has(_))
-      else if byDayDates.present then byDayDates.vouch
-      else if byMonthDayDates.present then byMonthDayDates.vouch
-      else list(monthDay(year, month, dayOf(start)))
+      byDayDates.lay(byMonthDayDates.or(list(monthDay(year, month, dayOf(start))))): byDay =>
+        byMonthDayDates.lay(byDay)(monthDays => byDay.filter(monthDays.has(_)))
 
     candidates.distinct.sort(_.jdn)
 

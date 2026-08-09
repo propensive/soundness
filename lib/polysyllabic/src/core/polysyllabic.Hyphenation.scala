@@ -125,10 +125,7 @@ object Hyphenation:
       padded(i + 1) = if c >= 'A' && c <= 'Z' then (c + 32).toChar else c
       i += 1
 
-    val exception = hyphenation.exceptions(padded.raw, 1, length)
-
-    if !exception.absent then
-      val offsets: Array[Int]^{} = exception.vouch
+    hyphenation.exceptions(padded.raw, 1, length).let: offsets =>
       val filtered = Array[Int](offsets.length)
       var count = 0
 
@@ -140,22 +137,23 @@ object Hyphenation:
           count += 1
 
       exactCopy(filtered, count)
-    else
-      val scores = Array[Byte](paddedLength + 1)
-      walkCompact(padded.raw, paddedLength, hyphenation.patterns, scores.raw)
-      val breaks = Array[Int](length)
-      var count = 0
-      var p = if leftMin > 1 then leftMin else 1
-      val lastBreak = length - (if rightMin > 1 then rightMin else 1)
 
-      while p <= lastBreak do
-        if (scores(p + 1) & 1) == 1 then
-          breaks(count) = p
-          count += 1
+    . or:
+        val scores = Array[Byte](paddedLength + 1)
+        walkCompact(padded.raw, paddedLength, hyphenation.patterns, scores.raw)
+        val breaks = Array[Int](length)
+        var count = 0
+        var p = if leftMin > 1 then leftMin else 1
+        val lastBreak = length - (if rightMin > 1 then rightMin else 1)
 
-        p += 1
+        while p <= lastBreak do
+          if (scores(p + 1) & 1) == 1 then
+            breaks(count) = p
+            count += 1
 
-      exactCopy(breaks, count)
+          p += 1
+
+        exactCopy(breaks, count)
 
   // Walk the compact pattern trie from every starting position in `padded`,
   // merging each matched pattern's score array into `scores` via `max`. Uses
@@ -251,10 +249,7 @@ object Hyphenation:
       padded(i + 1) = if c >= 'A' && c <= 'Z' then (c + 32).toChar else c
       i += 1
 
-    val exception = hyphenation.exceptions(padded, 1, length)
-
-    if !exception.absent then
-      val offsets: Array[Int]^{} = exception.vouch
+    hyphenation.exceptions(padded, 1, length).let: offsets =>
       var count = 0
 
       offsets.iterate: index =>
@@ -265,11 +260,12 @@ object Hyphenation:
           count += 1
 
       count
-    else
-      // Zero the active prefix of the scores buffer so the running maxima
-      // start from 0 each call. `Arrays.fill` is a JIT intrinsic.
-      java.util.Arrays.fill(scores, 0, paddedLength + 1, 0.toByte)
-      trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
+
+    . or:
+        // Zero the active prefix of the scores buffer so the running maxima
+        // start from 0 each call. `Arrays.fill` is a JIT intrinsic.
+        java.util.Arrays.fill(scores, 0, paddedLength + 1, 0.toByte)
+        trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
 
   private inline def mergePattern
     ( scores: scala.Array[Byte]^, base: Int, pattern: Array[Byte]^{} )

@@ -137,11 +137,13 @@ object Tarfile:
 
       def hasNext: Boolean = !lookahead.absent || (!finished && advance())
 
-      def next(): Tar.Entry =
-        if !hasNext then panic(m"the archive has no more entries")
-        val entry = lookahead.vouch
-        lookahead = Unset
-        entry
+      def next(): Tar.Entry = lookahead match
+        case entry: Tar.Entry =>
+          lookahead = Unset
+          entry
+
+        case Unset =>
+          if !finished && advance() then next() else panic(m"the archive has no more entries")
 
       // Parse forward to the next real entry, first draining whatever of the
       // previous entry's body was not yet read, so the cursor stands at the
@@ -156,15 +158,15 @@ object Tarfile:
         var longLink: Optional[Text] = Unset
 
         while lookahead.absent && !finished do
-          val block = takeBlock(cursor)
+          takeBlock(cursor) match
+            case Unset =>
+              // The archive ended without its terminating zero blocks.
+              raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
+              finished = true
 
-          if block.absent then
-            // The archive ended without its terminating zero blocks.
-            raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
-            finished = true
-          else
-            val head = block.vouch
-            if TarHeader.isZeroBlock(head) then finished = true else
+            case head: Data if TarHeader.isZeroBlock(head) => finished = true
+
+            case head: Data =>
               val header = TarHeader.parse(head)
               val checksum = TarHeader.decodeOctal(header.checksum, t"checksum")
               TarHeader.verifyChecksum(head, checksum)
@@ -343,14 +345,12 @@ object Tarfile:
     ( using Tactic[TarError] )
   :   List[SparseSegment] =
 
-    if !hasMore then Nil else
-      val block = takeBlock(cursor)
-
-      if block.absent then
+    if !hasMore then Nil else takeBlock(cursor) match
+      case Unset =>
         raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
         Nil
-      else
-        val head = block.vouch
+
+      case head: Data =>
         val builder = scala.collection.immutable.List.newBuilder[SparseSegment]
         var pos = 0
         var i = 0

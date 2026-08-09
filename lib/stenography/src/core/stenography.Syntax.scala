@@ -230,10 +230,9 @@ object Syntax:
     . group(_(0).name)
     . stdlib
     . view
-    . mapValues: bounds =>
-        bounds.length match
-          case 1 => bounds.prim.vouch(1)
-          case _ => Sequence('{', bounds.map(_(1)))
+    . mapValues:
+        case List(bound) => bound(1)
+        case bounds      => Sequence('{', bounds.map(_(1)))
 
     . to(scala.collection.immutable.Map)
 

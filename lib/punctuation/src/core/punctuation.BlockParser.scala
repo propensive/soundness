@@ -238,11 +238,8 @@ private[punctuation] final class BlockParser:
     while idx < openStack.length && continueLoop do
       openStack(idx) match
         case container: ContainerBuilder =>
-          val cont = container.tryContinue(remaining)
-
-          if cont.absent then continueLoop = false
-          else
-            remaining = cont.vouch
+          container.tryContinue(remaining).lay({ continueLoop = false }): cont =>
+            remaining = cont
             idx += 1
 
         case _: LeafBuilder => continueLoop = false

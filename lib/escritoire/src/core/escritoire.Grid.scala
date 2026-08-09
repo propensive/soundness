@@ -85,19 +85,19 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
         case _ =>
           Chain()
 
-    def rule(above: Optional[Array[Int]^{}], below: Optional[Array[Int]^{}]): text =
-      val width = above.or(below).vouch.pipe: widths =>
-        widths.sum + style.cost(widths.length)
+    // Every rule adjoins at least one row of columns, whose shared `widths` it takes
+    // unconditionally; `above`/`below` say which side(s) those columns are on.
+    def rule(widths: Array[Int]^{}, above: Boolean, below: Boolean): text =
+      val width = widths.sum + style.cost(widths.length)
 
-      val ascenders =
-        above.let(_.readable.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+      def joints: sci.BitSet = widths.readable.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)
 
-      val descenders =
-        below.let(_.readable.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+      val ascenders = if above then joints else sci.BitSet()
+      val descenders = if below then joints else sci.BitSet()
 
       val horizontal =
-        if above.absent then style.topLine
-        else if below.absent then style.bottomLine
+        if !above then style.topLine
+        else if !below then style.bottomLine
         else style.titleLine
 
       Textual:
@@ -126,13 +126,13 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
 
     val topLine =
       if style.topLine.absent then Chain() else
-        Chain(rule(Unset, sections.stdlib.head.widths))
+        Chain(rule(sections.stdlib.head.widths, above = false, below = true))
 
-    val midRule = rule(sections.stdlib.head.widths, sections.stdlib.head.widths)
+    val midRule = rule(sections.stdlib.head.widths, above = true, below = true)
 
     val bottomLine =
       if style.bottomLine.absent then Chain() else
-        Chain(rule(sections.stdlib.head.widths, Unset))
+        Chain(rule(sections.stdlib.head.widths, above = true, below = false))
 
     val body =
       sections.stdlib.to(Chain).bind: section =>
