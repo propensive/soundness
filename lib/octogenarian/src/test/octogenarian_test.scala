@@ -68,7 +68,8 @@ object Tests extends Suite(m"Octogenarian Tests"):
     // ----- Shared helpers -------------------------------------------------
 
     def freshDir(): Path on Linux =
-      val dir = temporaryDirectory[Path on Linux] / Uuid().show
+      val name: Text = Uuid().show
+      val dir = temporaryDirectory[Path on Linux] / name
       dir.create[Directory]()
       dir
 

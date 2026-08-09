@@ -2080,7 +2080,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       import galilei.filesystemOptions.deleteRecursively.enabled
 
       test(m"A file path opened Read & Write writes the mutation back"):
-        val dest: Path on Linux = (% / "tmp" / Uuid().show).on[Linux]
+        val name: Text = Uuid().show
+        val dest: Path on Linux = (% / "tmp" / name).on[Linux]
         dest.write(t"name Alice\n")
 
         dest.open[Tel](Read & Write): handle ?=>
