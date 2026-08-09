@@ -63,7 +63,13 @@ abstract class References():
   private var allocations: List[Transport] = Nil
 
   def update(expr: Expr[scala.Array[Object]]): Unit = ref = expr
-  def array: Expr[scala.Array[Object]] = ref.vouch
+
+  // A protocol invariant of the rig, not a local check: `references() = array` is always
+  // assigned inside the staged lambda before any `$value` conversion splices `array`. The
+  // binding happens in quote scope, so it cannot be a constructor argument without
+  // restructuring the staging protocol.
+  def array: Expr[scala.Array[Object]] =
+    ref.or(panic(m"the reference array is bound by the rig before any value is spliced"))
   def current: Int = allocations.length
   def allocate(value: => Transport): Int = allocations.length.also { allocations ::= value }
   inline def apply(): scala.Array[Object] = scala.Array.from[Object](allocations.reverse.toSeq)

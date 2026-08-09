@@ -169,7 +169,7 @@ def diff[element]
     then
       backtrack
         ( position - 1, deletes, rows,
-          List.of(Par(position, rightPosition, left(position)) :: edits.stdlib) )
+          List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
 
     else if deletes < rows.length && (deletes == 0 || ins >= del)
     then
@@ -177,20 +177,20 @@ def diff[element]
       then
         backtrack
           ( position, deletes, rows.tail,
-            List.of(Ins(rightPosition, right(rightPosition)) :: edits.stdlib) )
+            List.of(Ins(rightPosition, right(rightPosition)).retained :: edits.stdlib) )
       else
         backtrack
           ( position - 1, deletes, rows,
-          List.of(Par(position, rightPosition, left(position)) :: edits.stdlib) )
+          List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
     else
       if position == del
       then
         backtrack
           ( del - 1, deletes - 1, rows.tail,
-            List.of(Del(position, left(position)) :: edits.stdlib) )
+            List.of(Del(position, left(position)).retained :: edits.stdlib) )
       else
         backtrack
           ( position - 1, deletes, rows,
-          List.of(Par(position, rightPosition, left(position)) :: edits.stdlib) )
+          List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
 
   trace(0, 0, Nil, Nil)

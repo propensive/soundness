@@ -58,14 +58,17 @@ extension [element](edit: Edit[element])
   // discipline as `occupied`: one check, here construction itself, recorded in the type.)
   def retained: edit.type & Retained = edit.asInstanceOf[edit.type & Retained]
 
-  // A single accessor that dispatches at compile time on the edit's type: an edit statically
-  // known to be `Retained` returns a bare `element` with no absence-handling; any other edit
-  // returns its `Optional` value unchanged. The declared return type is `Optional`, so
-  // non-reducing (e.g. generic) call sites are safe; a `Retained` edit narrows to a bare
-  // `element`.
+// A single accessor that dispatches at compile time on the edit's type: an edit statically
+// known to be `Retained` returns a bare `element` with no absence-handling; any other edit
+// returns its `Optional` value unchanged. The declared return type is `Optional`, so
+// non-reducing (e.g. generic) call sites are safe; a `Retained` edit narrows to a bare
+// `element`. The receiver's precise type is carried by the `editType` parameter (the same
+// shape as deindexing's `apply`): a term-singleton `edit.type` in the summonFrom pattern
+// sends implicit-scope computation through `wildApprox`, which crashes on the intersection.
+extension [element, editType <: Edit[element]](edit: editType)
   transparent inline def kept: Optional[element] = summonFrom:
-    case _: (edit.type <:< Retained) => edit.value.asInstanceOf[element]
-    case _                           => edit.value
+    case _: (`editType` <:< Retained) => edit.value.asInstanceOf[element]
+    case _                            => edit.value
 
 extension [element](diff: Diff[element])
   // The `Retained` producer for a whole `Diff`, sanctioned only where every edit passed to the
