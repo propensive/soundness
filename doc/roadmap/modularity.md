@@ -307,21 +307,31 @@ Horizon: near–mid
   file changed at all. `Bijection` went with the cluster rather than to murmuration, because
   its only consumer is `Deindex.bijection` and it needs denominative, which murmuration lacks.
 
-  The **remaining re-homings are not worth doing as specified**, and the measurements say why:
-  none of them reduces any dependency closure, because none of the code involved depends on
-  anything that is not already universal. `Mutex`, `Counter` and `Loop` import only
-  `java.util.concurrent`; `Exit` (48 lines) imports nothing at all; `DecimalConverter` imports
-  only anticipation and beneficence. In particular the claim that moving `DecimalConverter`
-  cuts beneficence from rudiments is wrong: beneficence is on the compile classpath of *every*
-  one of rudiments' dependencies, `vacuous` and `denominative` included, so it stays regardless.
-  Against that nil benefit, the moves cost import sweeps of the consumers, which number 4 for
-  `DecimalConverter`, 9 for `Mutex`, 23 for `Exit` and 32 for `Loop`/`loop` (code uses, comments
-  excluded) — `loop` being control-flow vocabulary in the same way `apply` is indexing
-  vocabulary. They are worth doing only if the goal is rudiments' *description* rather than the
-  build graph, and then only by moving the module while keeping the package, as `concordance`
-  does. Note also that parasite.core already depends on rudiments.core, so anything moving into
-  parasite must leave rudiments with no reference to it (true today of Loop, whose only mention
-  in rudiments is the `loop` extension that defines it).
+  The **remaining re-homings cannot be done as specified**, and the reason is structural rather
+  than a matter of effort: each proposed home sits *above* a module that already uses the code.
+  Approved for doing, attempted, and found blocked:
+
+  - **`Loop` to parasite** — a cycle. `fulminate.internal` and `wisteria.internal` both use
+    `loop`, and parasite depends on each of them transitively (parasite → digression →
+    spectacular → wisteria; fulminate likewise).
+  - **`Exit` to imperial or ambience** — a cycle. `contingency.Fatal` uses `Exit`, and imperial
+    depends on contingency, not the reverse.
+  - **`DecimalConverter` to gossamer** — a cycle. `spectacular.Showable` uses it, and gossamer
+    depends on spectacular.
+  - **`Mutex` to parasite** — possible, but harmful. `turbulence.Out` and `turbulence.Err` use
+    it, and `turbulence.stdio` is the deliberately minimal component this track created, with 16
+    modules on its classpath. parasite's closure is 37. Moving `Mutex` there would take the
+    standard-streams module from 16 modules to at least 37, undoing most of what splitting it
+    off achieved.
+  - **`Counter` to parasite** — free, since nothing outside rudiments uses it, and pointless on
+    its own.
+
+  So rudiments holds these utilities precisely *because* they are used from below the topics
+  they belong to. Re-homing them by subject means first moving their low-level consumers, which
+  is a much larger change than this item describes. The earlier measurement stands too: none of
+  these moves would shrink any closure.
+
+
 - **gossamer.lexicon**: Dictionary.scala (434 lines) moves to a submodule; check overlap
   with nomenclature.lexicon first.
 
