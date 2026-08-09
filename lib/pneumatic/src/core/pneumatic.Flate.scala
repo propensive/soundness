@@ -101,97 +101,28 @@ private[pneumatic] trait InflateEngine extends caps.Mutable:
 
 // The running checksums of the two zlib framings: Adler-32 for the zlib wrapper and CRC-32 for
 // gzip, ported from JZlib's `Adler32` and `CRC32`.
-private[pneumatic] trait FlateChecksum:
-  def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit
-  def reset(): Unit
+private[pneumatic] trait FlateChecksum extends caps.Mutable:
+  update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit
+  update def reset(): Unit
   def value: Long
 
+// `Adler32` and `Crc32` delegate to `corpuscular`'s implementations. The pure-Scala versions
+// lived here, ported from JZlib, until they were shared; the JVM backend still supplies its own
+// `java.util.zip`-backed `FlateChecksum`, which is faster than any of them.
 private[pneumatic] final class Adler32 extends FlateChecksum:
-  private final val Base = 65521 // largest prime smaller than 65536
-  private final val NMax = 5552  // largest n with 255n(n+1)/2 + (n+1)(Base-1) <= 2^32-1
+  private val adler: corpuscular.Adler32^ = corpuscular.Adler32()
 
-  @scala.caps.unsafe.untrackedCaptures
-  private var s1: Long = 1L
+  update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit =
+    adler.update(buffer, index, length)
 
-  @scala.caps.unsafe.untrackedCaptures
-  private var s2: Long = 0L
-
-  def reset(): Unit =
-    s1 = 1L
-    s2 = 0L
-
-  def value: Long = (s2 << 16) | s1
-
-  def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length: Int): Unit =
-    var index = index0
-
-    if length == 1 then
-      s1 += buffer(index) & 0xff
-      s2 += s1
-      s1 %= Base
-      s2 %= Base
-    else
-      var len1 = length/NMax
-      val len2 = length%NMax
-
-      while len1 > 0 do
-        len1 -= 1
-        var k = NMax
-
-        while k > 0 do
-          k -= 1
-          s1 += buffer(index) & 0xff
-          s2 += s1
-          index += 1
-
-        s1 %= Base
-        s2 %= Base
-
-      var k = len2
-
-      while k > 0 do
-        k -= 1
-        s1 += buffer(index) & 0xff
-        s2 += s1
-        index += 1
-
-      s1 %= Base
-      s2 %= Base
-
-private[pneumatic] object Crc32:
-  val table: Array[Int]^{} =
-    val result = Array[Int](256)
-    var n = 0
-
-    while n < 256 do
-      var c = n
-      var k = 8
-
-      while k > 0 do
-        k -= 1
-        c = if (c & 1) != 0 then 0xedb88320 ^ (c >>> 1) else c >>> 1
-
-      result(n) = c
-      n += 1
-
-    Array.freeze(result)
+  update def reset(): Unit = adler.reset()
+  def value: Long = adler.value
 
 private[pneumatic] final class Crc32 extends FlateChecksum:
-  @scala.caps.unsafe.untrackedCaptures
-  private var v: Int = 0
+  private val crc: corpuscular.Crc32^ = corpuscular.Crc32()
 
-  def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length0: Int): Unit =
-    var index = index0
-    var length = length0
-    var c = ~v
+  update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit =
+    crc.update(buffer, index, length)
 
-    while length > 0 do
-      length -= 1
-      c = Crc32.table((c ^ buffer(index)) & 0xff) ^ (c >>> 8)
-      index += 1
-
-    v = ~c
-
-  def reset(): Unit = v = 0
-
-  def value: Long = v.toLong & 0xffffffffL
+  update def reset(): Unit = crc.reset()
+  def value: Long = crc.value

@@ -39,7 +39,6 @@ import scala.collection.mutable as scm
 import scala.math
 
 import anticipation.*
-import corpuscular.*
 import contingency.*
 import pneumatic.*
 import rudiments.*
@@ -82,7 +81,7 @@ private[hallucination] object PngCodec:
 
         val storedCrc = u32be(data, position + 8 + length)
 
-        if Crc32.checksum(data.slice(position + 4, position + 8), body) != storedCrc
+        if corpuscular.Crc32.checksum(data.slice(position + 4, position + 8), body) != storedCrc
         then abort(RasterError(Png(), Reason.BadCrc))
 
         chunkType match
@@ -358,7 +357,7 @@ private[hallucination] object PngCodec:
       val typeBytes = chunkType.getBytes("UTF-8").nn
       output.write(typeBytes)
       output.write(Array.unsafeJvm(body))
-      writeInt(output, Crc32.checksum(Array.unsafeFrozen(typeBytes), body))
+      writeInt(output, corpuscular.Crc32.checksum(Array.unsafeFrozen(typeBytes), body))
 
     val header = Array[Byte](13)
     header(0) = (width >> 24).toByte

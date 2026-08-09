@@ -2423,11 +2423,15 @@ object plutocrat extends Library:
 // Compression: the `Compression` typeclass and the Lzw, Brotli, Deflate, Gzip and Zlib formats,
 // atop zephyrine's streaming kernel.
 object pneumatic extends Library:
-  // The typeclasses, the pure-Scala implementations (LZW, Brotli, and the DEFLATE machinery
-  // ported from JZlib), and the engine interfaces the `flate` formats compile against. Compiled
-  // with capture checking (not separation checking): the faithfully-ported, aliasing-heavy zlib
-  // machinery does not (yet) satisfy the stricter ruleset.
-  object core extends Component(turbulence.stdio, contingency.core, zephyrine.core):
+  // The typeclasses, the DEFLATE machinery ported from JZlib, and the engine interfaces the
+  // `flate` formats compile against. Compiled with capture *and* separation checking, like
+  // everything else routed through `settings.sep`: the comment that used to stand here said the
+  // aliasing-heavy zlib port did not satisfy the stricter ruleset, but the build had long since
+  // enabled it. `FlateChecksum` is now a `caps.Mutable` trait whose implementations delegate to
+  // `corpuscular`, which needed the fields holding one to be declared `FlateChecksum^` and two
+  // reads in `Inflater` to be marked separate by hand.
+  object core extends Component(turbulence.stdio, contingency.core, corpuscular.core,
+      zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The `Deflate`/`Gzip`/`Zlib` formats, compiled twice against platform backends: over

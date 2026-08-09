@@ -450,14 +450,19 @@ Horizon: mid — after mod-4, so nothing moves twice.
   whether to adopt it — either make the platform choice consistent everywhere, or state plainly
   which libraries are JVM-only by design and stop paying for the abstraction elsewhere.
 
-  **pneumatic's migration is blocked on capture checking.** `corpuscular`'s checksums are
-  `caps.Mutable` with `update def` methods, which is where the codebase is heading (XzCheck's
-  own checkers are already written that way), but adapting `FlateChecksum` to that shape fails:
-  `Deflater` holds its `adler` field read-only, so it may not call an update method on it, and
-  the same applies throughout the JZlib port. pneumatic's build comment already records that
-  this code "does not (yet) satisfy the stricter ruleset". Either the port adopts the capture
-  discipline, or `corpuscular` grows a plain-`def` variant for it; that is a decision, not a
-  detail.
+  **pneumatic's migration is done**, and the capture discipline it needed turned out to be
+  three small things rather than a rewrite. `FlateChecksum` is now a `caps.Mutable` trait with
+  `update def` methods, matching XzCheck's checkers and `corpuscular`'s. Making that compile
+  required: declaring the fields that hold one as `FlateChecksum^` (a plain `val` hides the
+  freshness, so the reference is read-only and no update method may be called on it), the same
+  on the `crc32()` factories in both flate backends, and marking two reads in `Inflater`
+  separate by hand — `window` and `adler` are both reached through `this`, which the separation
+  checker rejects even though `update` takes its buffer read-only and keeps no reference to it.
+
+  The build comment claiming pneumatic was "compiled with capture checking (not separation
+  checking)" because "the faithfully-ported, aliasing-heavy zlib machinery does not (yet)
+  satisfy the stricter ruleset" was stale: `settings.sep` applies both, and had been applied to
+  this module all along. It is corrected.
 - **Consumer migration** onto the binary-primitives library, split by consumer:
   (a) pneumatic and hallucination codecs; (b) telekinesis.http2's Hpack and FrameReader;
   (c) stratiform, locomotion (which has two internal varint copies), mandible,

@@ -1200,7 +1200,10 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
     totalOut += n
 
     // update check information
-    if wrap != 0 && n > 0 then adler.update(window, q, n)
+    // `window` and `adler` are both reached through `this`, which the separation checker
+    // rejects even though the checksum only reads the window. The read is genuinely
+    // non-overlapping: `update` takes its buffer read-only and keeps no reference to it.
+    if wrap != 0 && n > 0 then scala.caps.unsafe.unsafeAssumeSeparate(adler.update(window, q, n))
 
     // copy as far as windowEnd of window
     System.arraycopy(window, q, target, p, n)
@@ -1223,7 +1226,10 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
       totalOut += n
 
       // update check information
-      if wrap != 0 && n > 0 then adler.update(window, q, n)
+      // `window` and `adler` are both reached through `this`, which the separation checker
+      // rejects even though the checksum only reads the window. The read is genuinely
+      // non-overlapping: `update` takes its buffer read-only and keeps no reference to it.
+      if wrap != 0 && n > 0 then scala.caps.unsafe.unsafeAssumeSeparate(adler.update(window, q, n))
 
       // copy
       System.arraycopy(window, q, target, p, n)
@@ -1244,7 +1250,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   private[pneumatic] var availOut: Int = 0
   private[pneumatic] var totalOut: Long = 0
   private[pneumatic] var msg: String = ""
-  private var adler: FlateChecksum = Adler32()
+  private var adler: FlateChecksum^ = Adler32()
 
   private var mode: Int = Inflater.Head
   private var method: Int = 0

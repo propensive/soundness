@@ -37,4 +37,4 @@ package pneumatic
 private[pneumatic] object FlateBackend:
   def deflater(level: Int, nowrap: Boolean): DeflateEngine^ = Deflater(level, nowrap)
   def inflater(nowrap: Boolean): InflateEngine^ = Inflater(nowrap)
-  def crc32(): FlateChecksum = Crc32()
+  def crc32(): FlateChecksum^ = Crc32()
