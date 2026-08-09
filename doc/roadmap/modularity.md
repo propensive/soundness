@@ -359,18 +359,25 @@ Horizon: mid — ordered: pneumatic, then hallucination, then facsimile.
   with `CanvasHandle` and `RasterOpenable`, which emptied `Canvas`'s companion, so the companion
   is gone and `Canvas` is now just the form phantom.
 
-  The **per-format split is blocked on a semantic question, not a mechanical one**. The
-  pure-Scala backend (`core-native/RasterBackend.scala`) is a hard-coded dispatcher over all
-  five codecs, and its format-agnostic `decode(data)` sniffs magic bytes by trying PNG, GIF,
-  BMP, JPEG and WebP in turn. Splitting the codecs into separate components means that method
-  can only recognise the formats actually linked in, so `decode(data)` becomes
-  classpath-dependent where today it always recognises all five. That is arguably the point of
-  the split, but it is an observable behaviour change and needs sign-off; the alternative is to
-  invert the dispatcher into a registry each format component contributes to, which is a design
-  change of its own. Worth noting while deciding: on the JVM the backend uses `javax.imageio`
-  for PNG, JPEG, GIF and BMP and only the pure-Scala `WebpCodec`, so the four other pure codecs
-  are compiled but unused at runtime there — they exist to be differentially tested against
-  ImageIO, which any split has to keep possible.
+  The **per-format split needs a redesign of the backend, not a move of files.** Classpath-
+  dependent format sniffing has been approved, which clears the first obstacle, but a second one
+  the roadmap did not identify remains: *both* platform backends reference codec implementations
+  directly, so a split that puts the codecs above core leaves core unable to see them.
+
+  - `core-native/RasterBackend` dispatches to all five codecs by name, and its format-agnostic
+    `decode(data)` sniffs magic bytes by trying each in turn.
+  - `core-jvm/RasterBackend` decodes through `javax.imageio` — whose native codecs outperform the
+    pure ones — *except* for WebP, since no standard JRE ships a WebP reader, so it calls
+    `WebpCodec` directly.
+
+  That second point is the awkward one: preferring ImageIO for four formats and the pure codec
+  for the fifth is a *core policy*, not a per-format fact, so it does not travel with the format
+  components on its own. Splitting therefore means inverting the dispatcher: `Rasterizable`
+  gains `decode`/`encode`, each format component supplies its own instance, each instance decides
+  its platform strategy, and the sniffing entry point takes its candidates from something the
+  caller assembles. That is a public API change to `Rasterizable` and to `Raster.decode(data)`,
+  and it wants designing rather than falling out of a file move. The four pure codecs that
+  ImageIO shadows on the JVM must also remain compiled and differentially tested against it.
 - **facsimile splits**: Ascii85 moves to monotonous; Rc4 to enigmatic; Predictor (PNG/TIFF
   row filters, duplicating PngCodec logic) to the png component or pneumatic;
   `facsimile.crypto` takes Guard (cutting enigmatic and gastronomy from core);
