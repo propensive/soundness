@@ -165,7 +165,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   private[pneumatic] var availOut: Int = 0
   private[pneumatic] var totalOut: Long = 0
   private[pneumatic] var msg: String = ""
-  private val adler: FlateChecksum = Adler32()
+  private val adler: FlateChecksum^ = Adler32()
 
   private val level: Int = if level0 == -1 then 6 else level0
   private val strategy: Int = 0 // Z_DEFAULT_STRATEGY

@@ -54,6 +54,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import hypotenuse.Bcd
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
@@ -1704,26 +1705,25 @@ object Json extends Json2, Dynamic:
         case value: Double                   => value
         case value: Long                     => value.toDouble
         case value: Int                      => Bcd.bcdIntToDouble(value)
-        case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd].toDouble
+        case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toDouble
         case _                               => expected(JsonPrimitive.Number) yet 0.0
 
       def bcd: Bcd raises JsonError = json.asMatchable match
-        case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd]
-        case value: Long                     => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
-        case value: Double                   => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
+        case value: scala.Array[Double] @unchecked => Bcd.adopt(value)
+        case value: Long                     => Bcd(BigDecimal(value))
+        case value: Double                   => Bcd(BigDecimal(value))
 
         case value: Int =>
-          caps.unsafe.unsafeAssumePure:
-            Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
+          Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
 
         case _ =>
-          expected(JsonPrimitive.Number) yet caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(0L)))
+          expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
 
       def long: Long raises JsonError = json.asMatchable match
         case value: Long                     => value
         case value: Double                   => value.toLong
         case value: Int                      => Bcd.bcdIntToDouble(value).toLong
-        case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
+        case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toLong.or(0L)
         case _                               => expected(JsonPrimitive.Number) yet 0L
 
       def primitive: JsonPrimitive =
@@ -2636,7 +2636,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         // High-precision number (`Bcd`) — hash via the BigDecimal
         // projection so a Bcd whose value equals a BigDecimal literal has
         // a consistent hash.
-        value.asInstanceOf[Bcd].toBigDecimal.hashCode
+        Bcd.adopt(value).toBigDecimal.hashCode
 
       case value: scala.Array[Int] @unchecked =>
         // Number array in single-Int small-BCD form — recurse per element

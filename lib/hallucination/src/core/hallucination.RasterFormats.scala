@@ -30,11 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package pneumatic
+package hallucination
 
-// The backend for every platform without `java.util.zip` (Scala.js and WASI): the pure-Scala
-// DEFLATE implementation ported from JZlib in `core`.
-private[pneumatic] object FlateBackend:
-  def deflater(level: Int, nowrap: Boolean): DeflateEngine^ = Deflater(level, nowrap)
-  def inflater(nowrap: Boolean): InflateEngine^ = Inflater(nowrap)
-  def crc32(): FlateChecksum^ = Crc32()
+import anticipation.*
+import contingency.*
+import vacuous.*
+import proscenium.compat.*
+
+// The formats `Raster` will try when asked to decode data whose format it was not told. Because
+// each codec now lives in its own component, the candidates are whatever the caller has linked
+// and named, rather than every format the library implements: recognising a format you did not
+// compile is not something this can do. `hallucination.formats` supplies every format at once,
+// for consumers that want the old behaviour in a single import.
+case class RasterFormats(candidates: List[Rasterizable]):
+  def recognise(data: Data): Optional[Rasterizable] =
+    def next(remaining: List[Rasterizable]): Optional[Rasterizable] = remaining match
+      case head :: tail => if head.sniff(data) then head else next(tail)
+      case _            => Unset
+
+    next(candidates)
+
+object RasterFormats:
+  def apply(formats: Rasterizable*): RasterFormats =
+    RasterFormats(formats.to(List))

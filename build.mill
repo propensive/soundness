@@ -748,6 +748,8 @@ object soundness extends Toolchain:
     eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, escapade.io,
     escapade.graphics, digression.ansi, imperial.core, profanity.core,
     surveillance.core, punctuation.ansi, hallucination.ansi, hallucination.canvas,
+    hallucination.bmp, hallucination.gif, hallucination.jpeg, hallucination.png,
+    hallucination.webp, hallucination.formats,
     ziggurat.core, ziggurat.packager,
     ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
@@ -2036,6 +2038,38 @@ object hallucination extends Library:
     override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // One component per format, each choosing its own implementation per platform: `javax.imageio`
+  // on the JVM, whose native codecs outperform the pure ones, and the pure Scala codec on
+  // Scala.js and WASI. WebP has no `javax.imageio` reader on any standard JRE, so it uses its
+  // pure codec everywhere and needs no platform split.
+  object bmp extends Component(core):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "bmp-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "bmp-native")
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object gif extends Component(core):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "gif-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "gif-native")
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object jpeg extends Component(core):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "jpeg-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "jpeg-native")
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object png extends Component(core):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "png-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "png-native")
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object webp extends Component(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Every format at once, supplying the `RasterFormats` that `Raster(data)` needs to recognise a
+  // format it was not told. Opt-in, because it compiles all five codecs.
+  object formats extends Component(bmp, gif, jpeg, png, webp):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Opening a raster as a scoped `Canvas`: hallucination's only use of aperture. (Named for
   // `Canvas` rather than for the dependency, which a nested `aperture` object would shadow.)
   object canvas extends Component(core, aperture.core):
@@ -2044,7 +2078,7 @@ object hallucination extends Library:
   object ansi extends Component(escapade.core, core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(ansi, canvas):
+  object test extends Tests(ansi, canvas, formats):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2165,7 +2199,7 @@ object iridescence extends Library:
       settings.sep(super.scalacOptions())
 
 object jacinta extends Library:
-  object core extends Component(zephyrine.core, turbulence.core, urticose.url, adversaria.core):
+  object core extends Component(zephyrine.core, turbulence.core, urticose.url, adversaria.core, hypotenuse.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The panopticon lens/optic instances for `Json`, and jacinta's only use of panopticon.
@@ -2423,11 +2457,15 @@ object plutocrat extends Library:
 // Compression: the `Compression` typeclass and the Lzw, Brotli, Deflate, Gzip and Zlib formats,
 // atop zephyrine's streaming kernel.
 object pneumatic extends Library:
-  // The typeclasses, the pure-Scala implementations (LZW, Brotli, and the DEFLATE machinery
-  // ported from JZlib), and the engine interfaces the `flate` formats compile against. Compiled
-  // with capture checking (not separation checking): the faithfully-ported, aliasing-heavy zlib
-  // machinery does not (yet) satisfy the stricter ruleset.
-  object core extends Component(turbulence.stdio, contingency.core, zephyrine.core):
+  // The typeclasses, the DEFLATE machinery ported from JZlib, and the engine interfaces the
+  // `flate` formats compile against. Compiled with capture *and* separation checking, like
+  // everything else routed through `settings.sep`: the comment that used to stand here said the
+  // aliasing-heavy zlib port did not satisfy the stricter ruleset, but the build had long since
+  // enabled it. `FlateChecksum` is now a `caps.Mutable` trait whose implementations delegate to
+  // `corpuscular`, which needed the fields holding one to be declared `FlateChecksum^` and two
+  // reads in `Inflater` to be marked separate by hand.
+  object core extends Component(turbulence.stdio, contingency.core, corpuscular.core,
+      zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The `Deflate`/`Gzip`/`Zlib` formats, compiled twice against platform backends: over
@@ -2805,7 +2843,8 @@ object tarantula extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Decoding a screenshot into a `Raster in Png`, which is all that browser automation needed
   // `hallucination` (and its gesticulate/pneumatic.flate/iridescence closure) for.
-  object image extends Component(core, hallucination.core):
+  // Screenshots are PNG, so only that format's codec is needed.
+  object image extends Component(core, hallucination.core, hallucination.png):
     override def scalaJs = false // extends `tarantula.core`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3103,7 +3142,7 @@ object yossarian extends Library:
       settings.sep(super.scalacOptions())
 
 object ypsiloid extends Library:
-  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, jacinta.core, adversaria.core):
+  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, hypotenuse.core, adversaria.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 

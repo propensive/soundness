@@ -30,11 +30,62 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package pneumatic
+package hallucination
 
-// The backend for every platform without `java.util.zip` (Scala.js and WASI): the pure-Scala
-// DEFLATE implementation ported from JZlib in `core`.
-private[pneumatic] object FlateBackend:
-  def deflater(level: Int, nowrap: Boolean): DeflateEngine^ = Deflater(level, nowrap)
-  def inflater(nowrap: Boolean): InflateEngine^ = Inflater(nowrap)
-  def crc32(): FlateChecksum^ = Crc32()
+import java.awt.image as jai
+import java.io as ji2
+import javax.imageio as ji
+
+import anticipation.*
+import contingency.*
+import rudiments.*
+import vacuous.*
+
+
+// The JVM backend: decoding and encoding through `javax.imageio`, whose native codecs outperform
+// any pure implementation. The pure-Scala codecs in `core` remain compiled (and tested) on the
+// JVM; they are simply not selected here.
+// The `javax.imageio` bridge, whose native codecs outperform any pure implementation. Each
+// format component's JVM backend calls this; the formats `javax.imageio` cannot read (WebP has no
+// reader on any standard JRE) simply do not, and use their pure codec on every platform.
+private[hallucination] object ImageIo:
+  def decode(format: Rasterizable, data: Data): Raster raises RasterError =
+    val reader: ji.ImageReader =
+      ji.ImageIO.getImageReadersByFormatName(format.name.s).nn.next().nn
+
+    reader.setInput(ji.ImageIO.createImageInputStream(data.javaInputStream).nn)
+    val image = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(format))
+
+    convert(image).also(reader.dispose())
+
+  def encode(format: Rasterizable, raster: Raster): Data =
+    val alpha = format.alpha && raster.descriptor.hasAlpha
+
+    val imageType =
+      if alpha then jai.BufferedImage.TYPE_INT_ARGB else jai.BufferedImage.TYPE_INT_RGB
+
+    val image = jai.BufferedImage(raster.width, raster.height, imageType)
+    val argb = new scala.Array[Int](raster.width*raster.height)
+
+    for index <- 0 until argb.length do
+      val word = raster.word(index)
+      val opacity = if alpha then (raster.descriptor.alpha(word)*255 + 0.5).toInt else 255
+      argb(index) = opacity << 24 | raster.descriptor.chroma(word).underlying
+
+    image.setRGB(0, 0, raster.width, raster.height, argb, 0, raster.width)
+    val out = ji2.ByteArrayOutputStream()
+    ji.ImageIO.write(image, format.name.s, out)
+
+    Array.unsafeFrozen(out.toByteArray.nn)
+
+  // Reads out the pixels in one bulk `getRGB`, as `Rgb` or `Rgba` according to the image's
+  // colour model.
+  private def convert(image: jai.BufferedImage): Raster =
+    val width = image.getWidth
+    val height = image.getHeight
+    val argb = image.getRGB(0, 0, width, height, null, 0, width).nn
+
+    if image.getColorModel.nn.hasAlpha
+    then Raster.build(width, height, Descriptor.rgba): index =>
+      (argb(index).toLong&0xffffff) << 8 | (argb(index) >>> 24)
+    else Raster.build(width, height, Descriptor.rgb)(argb(_).toLong&0xffffff)

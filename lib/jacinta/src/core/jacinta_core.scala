@@ -47,7 +47,8 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
-export jacinta.internal.Bcd
+// `Bcd` lives in hypotenuse now; re-exported so every file in package `jacinta` still sees it.
+export hypotenuse.Bcd
 
 extension (inline context: StringContext)
   transparent inline def j: Interpolation = interpolation[Json](context)

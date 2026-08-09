@@ -42,7 +42,7 @@ import scala.caps
 private[pneumatic] object FlateBackend:
   def deflater(level: Int, nowrap: Boolean): DeflateEngine^ = JavaDeflateEngine(level, nowrap)
   def inflater(nowrap: Boolean): InflateEngine^ = JavaInflateEngine(nowrap)
-  def crc32(): FlateChecksum = JavaCrc32()
+  def crc32(): FlateChecksum^ = JavaCrc32()
 
 private final class JavaDeflateEngine(level: Int, nowrap: Boolean) extends DeflateEngine:
   private val deflater: juz.Deflater = juz.Deflater(level, nowrap)
@@ -89,8 +89,8 @@ private final class JavaInflateEngine(nowrap: Boolean) extends InflateEngine:
 private final class JavaCrc32 extends FlateChecksum:
   private val crc: juz.CRC32 = juz.CRC32()
 
-  def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit =
+  update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit =
     crc.update(buffer.asInstanceOf[scala.Array[Byte]], index, length)
 
-  def reset(): Unit = crc.reset()
+  update def reset(): Unit = crc.reset()
   def value: Long = crc.getValue

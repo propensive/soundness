@@ -52,7 +52,7 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.CharEncoder
-import jacinta.Bcd
+import hypotenuse.Bcd
 import panopticon.*
 import prepositional.*
 import rudiments.*
@@ -789,7 +789,7 @@ object Yaml extends Yaml2, Dynamic:
     // value that overflowed `Long`/`Double` precision during parsing.
     object BcdValue:
       def unapply(ast: Yaml.Ast): Option[Bcd] = ast match
-        case b: scala.Array[Double] @unchecked => Some(b.asInstanceOf[Bcd])
+        case b: scala.Array[Double] @unchecked => Some(Bcd.adopt(b))
         case _                           => None
 
     object Str:
@@ -841,7 +841,7 @@ object Yaml extends Yaml2, Dynamic:
         // to a `Long`, `Double`, or another `Bcd`, when their canonical
         // BigDecimal projections compare equal.
         case (a: scala.Array[Double] @unchecked, b: scala.Array[Double] @unchecked) =>
-          a.asInstanceOf[Bcd].toBigDecimal == b.asInstanceOf[Bcd].toBigDecimal
+          a.asInstanceOf[Bcd].toBigDecimal == Bcd.adopt(b).toBigDecimal
 
         case (a: scala.Array[Double] @unchecked, b: Long) =>
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
@@ -850,10 +850,10 @@ object Yaml extends Yaml2, Dynamic:
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
 
         case (a: Long, b: scala.Array[Double] @unchecked) =>
-          BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
+          BigDecimal(a) == Bcd.adopt(b).toBigDecimal
 
         case (a: Double, b: scala.Array[Double] @unchecked) =>
-          BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
+          BigDecimal(a) == Bcd.adopt(b).toBigDecimal
 
         case (a: scala.Array[AnyRef] @unchecked, b: scala.Array[AnyRef] @unchecked) =>
           a.length == b.length && {
@@ -885,7 +885,7 @@ object Yaml extends Yaml2, Dynamic:
       case b: scala.Array[Double] @unchecked =>
         // Hash via the BigDecimal projection so a `Bcd` whose value equals
         // a numeric `Long`/`Double` literal has a consistent hash.
-        b.asInstanceOf[Bcd].toBigDecimal.hashCode
+        Bcd.adopt(b).toBigDecimal.hashCode
 
       case xs: scala.Array[AnyRef] @unchecked =>
         var h = xs.length
@@ -976,22 +976,22 @@ object Yaml extends Yaml2, Dynamic:
       def double(using Tactic[YamlError]): Double = yaml.asInstanceOf[Matchable] match
         case value: Double                   => value
         case value: Long                     => value.toDouble
-        case value: scala.Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toDouble
+        case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toDouble
         case _                               => expected(YamlPrimitive.Decimal) yet 0.0
 
       def long(using Tactic[YamlError]): Long = yaml.asInstanceOf[Matchable] match
         case value: Long                     => value
         case value: Double                   => value.toLong
-        case value: scala.Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toLong.or(0L)
+        case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toLong.or(0L)
         case _                               => expected(YamlPrimitive.Integer) yet 0L
 
-      def bcd(using Tactic[YamlError]): jacinta.Bcd = yaml.asInstanceOf[Matchable] match
-        case value: scala.Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd]
-        case value: Long                     => jacinta.Bcd(BigDecimal(value))
-        case value: Double                   => jacinta.Bcd(BigDecimal(value))
+      def bcd(using Tactic[YamlError]): Bcd = yaml.asInstanceOf[Matchable] match
+        case value: scala.Array[Double] @unchecked => Bcd.adopt(value)
+        case value: Long                     => Bcd(BigDecimal(value))
+        case value: Double                   => Bcd(BigDecimal(value))
 
         case _ =>
-          expected(YamlPrimitive.Decimal) yet jacinta.Bcd(BigDecimal(0))
+          expected(YamlPrimitive.Decimal) yet Bcd(BigDecimal(0))
 
       def string(using Tactic[YamlError]): Text =
         if isString then yaml.asInstanceOf[String].tt else expected(YamlPrimitive.Str) yet t""

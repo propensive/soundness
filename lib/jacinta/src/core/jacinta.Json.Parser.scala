@@ -47,6 +47,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import hypotenuse.Bcd
 import hieroglyph.*
 import prepositional.*
 import proscenium.*
@@ -2402,7 +2403,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       case value: Long                     => value
       case value: Double                   => value.toLong
       case value: Int                      => Bcd.bcdIntToDouble(value).toLong
-      case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
+      case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toLong.or(0L)
       case _                               => 0L // unreachable: only number forms are produced
 
   // Buffer-local fast path for the overwhelmingly common double shape:
@@ -2509,23 +2510,22 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       case value: Double                   => value
       case value: Long                     => value.toDouble
       case value: Int                      => Bcd.bcdIntToDouble(value)
-      case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd].toDouble
+      case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toDouble
       case _                               => 0.0 // unreachable: only number forms are produced
 
   private[jacinta] update def directBcd()(using Tactic[ParseError]): Bcd =
     val raw: Any = directNumber()
 
     raw.asMatchable match
-      case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd]
-      case value: Long                     => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
-      case value: Double                   => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
+      case value: scala.Array[Double] @unchecked => Bcd.adopt(value)
+      case value: Long                     => Bcd(BigDecimal(value))
+      case value: Double                   => Bcd(BigDecimal(value))
 
       case value: Int =>
-        caps.unsafe.unsafeAssumePure:
-          Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
+        Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
 
       case _ =>
-        caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(0L))) // unreachable
+        Bcd(BigDecimal(0L)) // unreachable
 
   update def directOpenObject()(using Tactic[ParseError]): Unit =
     skip()

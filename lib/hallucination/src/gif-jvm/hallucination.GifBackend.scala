@@ -30,11 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package pneumatic
+package hallucination
 
-// The backend for every platform without `java.util.zip` (Scala.js and WASI): the pure-Scala
-// DEFLATE implementation ported from JZlib in `core`.
-private[pneumatic] object FlateBackend:
-  def deflater(level: Int, nowrap: Boolean): DeflateEngine^ = Deflater(level, nowrap)
-  def inflater(nowrap: Boolean): InflateEngine^ = Inflater(nowrap)
-  def crc32(): FlateChecksum^ = Crc32()
+import anticipation.*
+import contingency.*
+import proscenium.compat.*
+
+// GIF through `javax.imageio`, whose native codec outperforms the pure one. The pure codec beside this
+// remains compiled on the JVM, and is differentially tested against this backend.
+private[hallucination] object GifBackend:
+  def decode(format: Rasterizable, data: Data): Raster raises RasterError = ImageIo.decode(format, data)
+  def encode(format: Rasterizable, raster: Raster): Data = ImageIo.encode(format, raster)

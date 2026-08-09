@@ -187,23 +187,24 @@ Horizon: near–mid
   importer of serpentine, urticose, beneficence and symbolism in ypsiloid) moves to
   `ypsiloid.pointer`.
 
-  **Attempted and reverted; blocked on capture checking.** The mechanical part works: the
-  351-line `Bcd` block (the opaque type and its companion) moves to `hypotenuse.Bcd`, jacinta
-  re-exports it so every file in package `jacinta` still sees it unqualified, ypsiloid imports
-  it from hypotenuse, and the ypsiloid → jacinta edge is gone. What does not survive is the
-  premise that "the runtime representation is erased, so the move is bit-identical": that is
-  true of the *runtime* representation and false of the *capture* behaviour, which is what the
-  compiler enforces. Inside `object internal`, `Bcd`'s constructors were inferred to return a
-  value carrying a fresh `any.rd` capability, and jacinta's parser launders it with
-  `unsafeAssumePure`; across a module boundary that inference does not survive pickling, and
-  the results arrive pure. Declaring the capture explicitly (`def apply(…): Bcd^`) fixes
-  jacinta's laundering sites but then hands ypsiloid a fresh value where it expects a pure one,
-  and laundering *there* in turn fails with `Found: Bcd^ / Required: Bcd^²` — a different root
-  capability, exactly the read-only case the block's own comment warns `unsafeAssumePure`
-  cannot launder. Getting this right needs someone fluent in the fork's capture rules to choose
-  the capture signature `Bcd`'s constructors should present at a module boundary; it is not a
-  matter of adjusting call sites. Note also that `Bcd.fromContent15` is `private[jacinta]` and
-  its only caller is `jacinta.Json.Parser`, so any move makes that member public.
+  **Done.** The 351-line `Bcd` block moves to `hypotenuse.Bcd`, and ypsiloid no longer has
+  jacinta on its compile classpath at all.
+
+  The earlier attempt failed because it tried to preserve the capture behaviour `Bcd`'s
+  constructors had been *inferred* to have inside `object internal`, where every result carried
+  a fresh `any.rd` capability that jacinta's parser laundered away with `unsafeAssumePure`.
+  Declaring that explicitly fixed jacinta and broke ypsiloid, and vice versa. The resolution is
+  that `Bcd` is simply a pure value — it is an opaque alias for an immutable `IArray[Double]` —
+  so the constructors return it pure, every `unsafeAssumePure` around them disappears, and the
+  one genuinely impure step, adopting a freshly-built mutable array, is discharged once by
+  `Bcd.adopt` in the companion instead of at each call site.
+
+  Two traps worth recording. `Bcd.fromContent15` was `private[jacinta]` and its only caller,
+  `jacinta.Json.Parser`, is now in another library, so it is public — the one access widening
+  the move requires. And re-exporting the type (`export hypotenuse.Bcd` in package `jacinta`)
+  is *not* equivalent to importing it: the alias does not carry the companion's implicit scope,
+  so `bcd.toLong` and `bcd.toDouble` stopped resolving until the files that use them imported
+  `hypotenuse.Bcd` directly.
 
   The YamlPath half of this leg is independent of `Bcd`, and is **also blocked**, for the
   reason that blocked ethereal.dist: YamlPath is indeed the sole importer of serpentine,
@@ -306,21 +307,31 @@ Horizon: near–mid
   file changed at all. `Bijection` went with the cluster rather than to murmuration, because
   its only consumer is `Deindex.bijection` and it needs denominative, which murmuration lacks.
 
-  The **remaining re-homings are not worth doing as specified**, and the measurements say why:
-  none of them reduces any dependency closure, because none of the code involved depends on
-  anything that is not already universal. `Mutex`, `Counter` and `Loop` import only
-  `java.util.concurrent`; `Exit` (48 lines) imports nothing at all; `DecimalConverter` imports
-  only anticipation and beneficence. In particular the claim that moving `DecimalConverter`
-  cuts beneficence from rudiments is wrong: beneficence is on the compile classpath of *every*
-  one of rudiments' dependencies, `vacuous` and `denominative` included, so it stays regardless.
-  Against that nil benefit, the moves cost import sweeps of the consumers, which number 4 for
-  `DecimalConverter`, 9 for `Mutex`, 23 for `Exit` and 32 for `Loop`/`loop` (code uses, comments
-  excluded) — `loop` being control-flow vocabulary in the same way `apply` is indexing
-  vocabulary. They are worth doing only if the goal is rudiments' *description* rather than the
-  build graph, and then only by moving the module while keeping the package, as `concordance`
-  does. Note also that parasite.core already depends on rudiments.core, so anything moving into
-  parasite must leave rudiments with no reference to it (true today of Loop, whose only mention
-  in rudiments is the `loop` extension that defines it).
+  The **remaining re-homings cannot be done as specified**, and the reason is structural rather
+  than a matter of effort: each proposed home sits *above* a module that already uses the code.
+  Approved for doing, attempted, and found blocked:
+
+  - **`Loop` to parasite** — a cycle. `fulminate.internal` and `wisteria.internal` both use
+    `loop`, and parasite depends on each of them transitively (parasite → digression →
+    spectacular → wisteria; fulminate likewise).
+  - **`Exit` to imperial or ambience** — a cycle. `contingency.Fatal` uses `Exit`, and imperial
+    depends on contingency, not the reverse.
+  - **`DecimalConverter` to gossamer** — a cycle. `spectacular.Showable` uses it, and gossamer
+    depends on spectacular.
+  - **`Mutex` to parasite** — possible, but harmful. `turbulence.Out` and `turbulence.Err` use
+    it, and `turbulence.stdio` is the deliberately minimal component this track created, with 16
+    modules on its classpath. parasite's closure is 37. Moving `Mutex` there would take the
+    standard-streams module from 16 modules to at least 37, undoing most of what splitting it
+    off achieved.
+  - **`Counter` to parasite** — free, since nothing outside rudiments uses it, and pointless on
+    its own.
+
+  So rudiments holds these utilities precisely *because* they are used from below the topics
+  they belong to. Re-homing them by subject means first moving their low-level consumers, which
+  is a much larger change than this item describes. The earlier measurement stands too: none of
+  these moves would shrink any closure.
+
+
 - **gossamer.lexicon**: Dictionary.scala (434 lines) moves to a submodule; check overlap
   with nomenclature.lexicon first.
 
@@ -348,18 +359,28 @@ Horizon: mid — ordered: pneumatic, then hallucination, then facsimile.
   with `CanvasHandle` and `RasterOpenable`, which emptied `Canvas`'s companion, so the companion
   is gone and `Canvas` is now just the form phantom.
 
-  The **per-format split is blocked on a semantic question, not a mechanical one**. The
-  pure-Scala backend (`core-native/RasterBackend.scala`) is a hard-coded dispatcher over all
-  five codecs, and its format-agnostic `decode(data)` sniffs magic bytes by trying PNG, GIF,
-  BMP, JPEG and WebP in turn. Splitting the codecs into separate components means that method
-  can only recognise the formats actually linked in, so `decode(data)` becomes
-  classpath-dependent where today it always recognises all five. That is arguably the point of
-  the split, but it is an observable behaviour change and needs sign-off; the alternative is to
-  invert the dispatcher into a registry each format component contributes to, which is a design
-  change of its own. Worth noting while deciding: on the JVM the backend uses `javax.imageio`
-  for PNG, JPEG, GIF and BMP and only the pure-Scala `WebpCodec`, so the four other pure codecs
-  are compiled but unused at runtime there — they exist to be differentially tested against
-  ImageIO, which any split has to keep possible.
+  **Done, as a redesign of the backend rather than a move of files.** `Rasterizable` is now the
+  codec interface, not just a descriptor: it carries `decode`, `encode` and `sniff` alongside
+  `name`, `mediaType` and `alpha`, and each format supplies its own instance from its own
+  component. The central `RasterBackend` is gone.
+
+  Each format now chooses its own implementation per platform, using the `-jvm`/`-native`
+  source-directory pattern: PNG, JPEG, GIF and BMP decode through `javax.imageio` on the JVM and
+  through their pure codec on Scala.js and WASI, while WebP uses its pure codec everywhere,
+  because no standard JRE ships a WebP reader. That dissolves what looked like a core policy —
+  it was only a policy because core was making the choice. The pure codecs stay in each
+  component's shared directory, so they are still compiled and still differentially tested
+  against ImageIO on the JVM.
+
+  Sniffing takes its candidates explicitly: `Raster(data)` and the `Aggregable` given now require
+  a `RasterFormats`, which lists the formats the caller has linked. `hallucination.formats`
+  depends on all five and supplies every format, so "decode anything" remains one import.
+  Supplying an alternative codec, or adding a new format, is now an ordinary given in a new
+  component; nothing in core changes.
+
+  Resulting sizes: core 1,055 lines (including `Quantization`, which GIF's palette encoder shares
+  with JPEG and which therefore stayed), webp 4,817, jpeg 2,767, gif 607, png 525, bmp 327.
+  tarantula's screenshot decoder now sees `hallucination.core` and `hallucination.png` only.
 - **facsimile splits**: Ascii85 moves to monotonous; Rc4 to enigmatic; Predictor (PNG/TIFF
   row filters, duplicating PngCodec logic) to the png component or pneumatic;
   `facsimile.crypto` takes Guard (cutting enigmatic and gastronomy from core);
@@ -450,14 +471,19 @@ Horizon: mid — after mod-4, so nothing moves twice.
   whether to adopt it — either make the platform choice consistent everywhere, or state plainly
   which libraries are JVM-only by design and stop paying for the abstraction elsewhere.
 
-  **pneumatic's migration is blocked on capture checking.** `corpuscular`'s checksums are
-  `caps.Mutable` with `update def` methods, which is where the codebase is heading (XzCheck's
-  own checkers are already written that way), but adapting `FlateChecksum` to that shape fails:
-  `Deflater` holds its `adler` field read-only, so it may not call an update method on it, and
-  the same applies throughout the JZlib port. pneumatic's build comment already records that
-  this code "does not (yet) satisfy the stricter ruleset". Either the port adopts the capture
-  discipline, or `corpuscular` grows a plain-`def` variant for it; that is a decision, not a
-  detail.
+  **pneumatic's migration is done**, and the capture discipline it needed turned out to be
+  three small things rather than a rewrite. `FlateChecksum` is now a `caps.Mutable` trait with
+  `update def` methods, matching XzCheck's checkers and `corpuscular`'s. Making that compile
+  required: declaring the fields that hold one as `FlateChecksum^` (a plain `val` hides the
+  freshness, so the reference is read-only and no update method may be called on it), the same
+  on the `crc32()` factories in both flate backends, and marking two reads in `Inflater`
+  separate by hand — `window` and `adler` are both reached through `this`, which the separation
+  checker rejects even though `update` takes its buffer read-only and keeps no reference to it.
+
+  The build comment claiming pneumatic was "compiled with capture checking (not separation
+  checking)" because "the faithfully-ported, aliasing-heavy zlib machinery does not (yet)
+  satisfy the stricter ruleset" was stale: `settings.sep` applies both, and had been applied to
+  this module all along. It is corrected.
 - **Consumer migration** onto the binary-primitives library, split by consumer:
   (a) pneumatic and hallucination codecs; (b) telekinesis.http2's Hpack and FrameReader;
   (c) stratiform, locomotion (which has two internal varint copies), mandible,

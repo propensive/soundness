@@ -56,7 +56,7 @@ extends Duct[Data, Data]:
 
   private val deflater: DeflateEngine^ = FlateBackend.deflater(-1, nowrap || gzip)
 
-  private val crc: FlateChecksum = FlateBackend.crc32()
+  private val crc: FlateChecksum^ = FlateBackend.crc32()
   private val empty: scala.Array[Byte] = new scala.Array[Byte](0)
   private var headerDone: Boolean = !gzip
   private var size: Long = 0

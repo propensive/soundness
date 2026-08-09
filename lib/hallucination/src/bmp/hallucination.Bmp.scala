@@ -32,15 +32,22 @@
                                                                                                   */
 package hallucination
 
+import proscenium.compat.*
+
 import anticipation.*
+import contingency.*
 import gesticulate.*
 
-object Jpeg:
+object Bmp:
   def apply(): Rasterizable = rasterization
 
-  given rasterization: Jpeg is Rasterizable:
-    def name: Text = "JPEG".tt
-    def mediaType: MediaType = media"image/jpeg"
+  given rasterization: Bmp is Rasterizable:
+    def name: Text = "BMP".tt
+    def mediaType = media"image/bmp"
     def alpha: Boolean = false
 
-sealed trait Jpeg
+    def decode(data: Data): Raster raises RasterError = BmpBackend.decode(this, data)
+    def encode(raster: Raster): Data = BmpBackend.encode(this, raster)
+    def sniff(data: Data): Boolean = (data.length > 1 && data(0) == 0x42 && data(1) == 0x4d)
+
+sealed trait Bmp

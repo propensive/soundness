@@ -30,11 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package pneumatic
+package soundness
 
-// The backend for every platform without `java.util.zip` (Scala.js and WASI): the pure-Scala
-// DEFLATE implementation ported from JZlib in `core`.
-private[pneumatic] object FlateBackend:
-  def deflater(level: Int, nowrap: Boolean): DeflateEngine^ = Deflater(level, nowrap)
-  def inflater(nowrap: Boolean): InflateEngine^ = Inflater(nowrap)
-  def crc32(): FlateChecksum^ = Crc32()
+export hallucination.allRasterFormats

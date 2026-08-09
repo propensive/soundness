@@ -30,11 +30,24 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package pneumatic
+package hallucination
 
-// The backend for every platform without `java.util.zip` (Scala.js and WASI): the pure-Scala
-// DEFLATE implementation ported from JZlib in `core`.
-private[pneumatic] object FlateBackend:
-  def deflater(level: Int, nowrap: Boolean): DeflateEngine^ = Deflater(level, nowrap)
-  def inflater(nowrap: Boolean): InflateEngine^ = Inflater(nowrap)
-  def crc32(): FlateChecksum^ = Crc32()
+import proscenium.compat.*
+
+import anticipation.*
+import contingency.*
+import gesticulate.*
+
+object Webp:
+  def apply(): Rasterizable = rasterization
+
+  given rasterization: Webp is Rasterizable:
+    def name: Text = "WEBP".tt
+    def mediaType = media"image/webp"
+    def alpha: Boolean = true
+
+    def decode(data: Data): Raster raises RasterError = WebpCodec.decode(data)
+    def encode(raster: Raster): Data = WebpCodec.encode(raster)
+    def sniff(data: Data): Boolean = WebpCodec.isWebp(data)
+
+sealed trait Webp
