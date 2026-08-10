@@ -612,3 +612,227 @@ and rudiments and turbulence — the two modules the issue singles out — get c
 one-sentence purposes: "extension-method utilities on core types" and "the pull-streaming
 algebra", with the standard streams, concurrency primitives, process exit and confined
 indexing each living where they belong.
+
+# The second audit (2026-08-09)
+
+With mod-1 through mod-5 landed (or blocked with recorded reasons), the graph was re-measured
+at the tip of `modularity/decided-items` and swept again. Method: the component graph was
+parsed out of `build.mill` and depth, fan-in and closure computed per *component* (the first
+baseline counted libraries, so the two depth figures are not comparable); every declared
+dependency whose package name never appears in the consumer's sources was flagged; and each
+flag was then verified by hand against the dependency's `soundness_*.scala` export file (for
+toplevel names usable without naming the package) and against implicit scope (givens in the
+companions of mentioned types). File and line references are snapshots from this audit and
+must be re-verified at implementation time. A grep verdict is evidence, not proof: the
+definitive check for every removal below is compiling the component (and its dependents)
+without the edge.
+
+## The re-measured baseline
+
+- Critical path, 27 components deep: exegesis.core → obligatory.json → hyperbole.core →
+  harlequin.ansi → harlequin.core → hellenism.jvm → galilei.jvm → galilei.core →
+  turbulence.core → parasite.core → nomenclature.core → gossamer.core → distillate.core →
+  digression.core → iridescence.core → geodesy.angle → hypotenuse.core → contingency.core →
+  rudiments.core → concordance.core → denominative.core → vacuous.core → fulminate.core →
+  anticipation.log → anticipation.text → symbolism.core → prepositional.core.
+- Highest fan-in: gossamer.core (44), turbulence.core (31), hypotenuse.core (23),
+  hellenism.core and zephyrine.core (18), prepositional.core and contingency.core (16).
+- Largest closures: exegesis.core (99 components), anthology.xeq (94), burdock.core (90),
+  ziggurat.packager (89), ethereal.core (87).
+- Simulating every leg below applied at once: critical path 27 → 23, exegesis.core's closure
+  99 → 59, gossamer.core's closure → 23, pneumatic.core's → 21. The residual spine is
+  anthology → hellenism.jvm → galilei → turbulence → parasite → nomenclature → gossamer →
+  the foundations, whose one hard link is recorded at the end.
+
+Both ends of the measured path turned out to be soft: the head (exegesis/obligatory down to
+harlequin) is held together largely by dead edges, and the tail below gossamer hangs on a
+handful of relocatable givens.
+
+## mod-8: dead edges, round two — and the misdeclarations they hide
+
+Horizon: near. One PR, deletions and dependency-list corrections only.
+
+The scan surfaced two things the first audit's mod-1 did not: a second round of genuinely
+dead edges, and — more urgent — components using dependencies they never declared, reaching
+them through *someone else's* dead edge. The misdeclarations are correctness debt (one
+classpath reorder from a build break) and go first, in the same PR:
+
+- **hallucination.png** uses `corpuscular.Crc32.checksum`
+  (hallucination.PngCodec.scala:84, 360) but declares only `core`, whose own corpuscular
+  edge is otherwise dead. Move the `corpuscular.core` declaration from core to png.
+- **obligatory.grpc** imports spectacular (obligatory.Grpc.scala:44,
+  obligatory.GrpcChannel.scala:47) without declaring it, reaching it through
+  locomotion.core's dead spectacular edge. Declare it before that edge is cut.
+- **ziggurat.packager** uses `digest[Sha2[256]]` (ziggurat.Packager.scala:133) with
+  gastronomy undeclared, currently supplied via telekinesis.jvm → coaxial.jvm. Declare it.
+- **degustation.lira** imports rudiments (degustation.Tasty.scala:40) undeclared, reached
+  through a chain of dead edges (reliquary → stratiform → contextual → rudiments). Declare
+  it before cutting `contextual.core → rudiments.core`.
+
+**Conduit edges** — name-dead, but the sole supplier of a module the consumer genuinely
+imports. These are misdeclared dependency lists, not cuttable edges: declare what is really
+used, and then decide per case whether the conduit drops:
+
+- breviloquence.core → urticose.url (really needs gossamer.core; its sources import
+  gossamer, spectacular, distillate and wisteria, none declared).
+- revolution.core → serpentine.core (sole path to gossamer.core).
+- serpentine.core → ambience.core (sole path to anticipation.path and anticipation.print;
+  the `textPath` given in anticipation_serpentine_core.scala needs `Paths`).
+- profanity.core → eucalyptus.core (sole path to turbulence.core and parasite.core) and
+  → frontier.core (sole path to escapade.core; profanity's declared escapade.csi does not
+  contain `Teletype`).
+- honeycomb.core → xylophone.core (sole supplier of typonym.core, adversaria.core and
+  wisteria.core, all imported by honeycomb).
+
+**Confirmed dead** (no exported name used, no implicit-scope route, closure re-supplied by
+other declared deps): hypotenuse.core → cardinality.core; iridescence.core →
+contextual.core; zephyrine.core → hypotenuse.core (verify anticipation.opaque still
+arrives); pneumatic.core → contingency.core; enigmatic.asn1 → gossamer.core;
+facsimile.core → eucalyptus.core; probably.core → eucalyptus.core; profanity.core →
+diuretic.core; tarantula.core → diuretic.core and → gastronomy.core; burdock.core →
+gastronomy.core; apoplexy.core → legerdemain.core (it reaches legerdemain.query through
+telekinesis.core, which is all it needs); denominative.core → fulminate.core;
+contextual.core → rudiments.core; degustation.core → rudiments.core; polyvinyl.core →
+rudiments.core; coaxial.core → frontier.core; punctuation.core → frontier.core;
+austronesian.core → hellenism.core; locomotion.core → spectacular.core; typonym.core →
+anticipation.text; vexillology.core → hypotenuse.core; yossarian.core → iridescence.core;
+xenophile.js → gossamer.core; ziggurat.core → gastronomy.core; ziggurat.packager →
+guillotine.core; telekinesis.http2 → hypotenuse.core; legerdemain.query → anamnesis.core;
+stratiform.base256 → gossamer.core and → vacuous.core; embarcadero.containerd →
+coaxial.core (redundant: re-supplied via telekinesis.http2 → coaxial.jvm);
+surveillance.core → eucalyptus.core; prescience.core → fulminate.core and → gossamer.core.
+
+Two scan traps, recorded so the next sweep does not repeat them: telekinesis.http2's
+sources live in `package cordillera`, so a package-name grep calls the edge dead when it is
+genuinely used (embarcadero.containerd imports `cordillera.*`); and components with
+`override def sources` pull in sibling directories the per-component scan misses —
+enigmatic.core → aperture.core looked dead but is used in `core-jvm`
+(enigmatic.Keystore.scala).
+
+Done when: each misdeclaration is fixed, each dead edge is deleted, and every affected
+component and its dependents compile (`make attest`, `make build`).
+
+## mod-9: the critical-path head
+
+Horizon: near. The chain exegesis → obligatory.json → hyperbole → harlequin → anthology is
+held together by dead edges at its top links; severing them detaches the LSP and JSON-RPC
+stack from the compiler stack entirely.
+
+- **obligatory.json** drops scintillate.server, hyperbole.core and revolution.core — all
+  three dead. obligatory.json is a JSON-RPC peer plus SSE codec: it never serves HTTP
+  (its `Servable` is telekinesis's, reached via jacinta.http; `httpBackends.virtualMachine`
+  comes from telekinesis.jvm via jacinta.schema), never introspects TASTy, and never touches
+  a manifest. The hyperbole edge is what put the whole harlequin/anthology stack under
+  exegesis; deleting it collapses the measured deepest path. (eucalyptus.core is genuinely
+  used — obligatory.JsonRpc.scala:42.)
+- **exegesis.core** → ethereal.core and → exoskeleton.completions move to **exegesis.demo**,
+  their only real consumer (exegesis_demoserver.scala:38–53, exegesis_demoproxy.scala:39–59;
+  nothing under src/core references either). ethereal was the stated reason for exegesis's
+  `scalaJs = false` (build.mill), so core may gain a platform — a deliberate flag change per
+  the mod-mechanics rules, gated on obligatory.json's own closure.
+- **hyperbole.core** retargets harlequin.ansi → harlequin.core plus escapade.core. Nothing
+  in hyperbole names `ScalaSyntaxPalette` or `syntaxHighlighting` (harlequin.ansi's entire
+  content, and package-scoped, so it cannot be reached through implicit scope); what
+  hyperbole uses is `SourceCode`/`Scala.highlight` (hyperbole.internal.scala:85, 93) and
+  escapade directly (TastySymbol.scala:36, TastyTree.scala:39). escritoire and
+  dendrology.tree are genuinely used and stay.
+- **mandible.core** replaces its hyperbole.core dep with the four modules it actually
+  imports — anthology.scala (mandible_core.scala:68), hellenism.jvm
+  (mandible.Classfile.scala:43), escritoire.core (mandible.Bytecode.scala:48–57) and
+  escapade.core. hyperbole was a conduit; nothing in mandible uses it.
+- **perihelion.core** replaces scintillate.server with telekinesis.core (only `Servable`,
+  `Http` and friends are used — perihelion.Websocket.scala:201–202; telekinesis.http2 and
+  hellenism.core, which rode along, are unused) and drops eucalyptus.core outright (logging
+  goes through anticipation's `Log`, perihelion.WebsocketEvent.scala:35).
+
+**harlequin.scala (design item, approval needed before starting).** Scalac/LocalClasspath
+usage in harlequin is confined to `Highlight`, `Diagnostic` (which needs only
+anthology.core's `Importance`) and ~300 lines of `SourceCode`
+(harlequin.SourceCode.scala:376–689: `resolveTypes`, `frontend`, the completion machinery).
+A `harlequin.scala` component would free harlequin.core — and with it harlequin.md and every
+Markdown-rendering consumer — from anthology.scala, hellenism.jvm and galilei.jvm. It would
+*not* free them from the scala3-compiler jar itself: the tokenizer imports
+`dotty.tools.dotc.parsing` directly (harlequin.SourceCode.scala:41–46). The blocker to
+design around: `SourceCode.apply` takes `using Highlight` and pattern-matches on its
+`scalac`/`classpath` fields (harlequin.SourceCode.scala:73–90), so `Highlight` must be
+abstracted into a resolver interface that `harlequin.scala` supplies, with the tokenized
+path as core's default. Also cheap and independent: harlequin.core's explicit hellenism.jvm
+dep is already implied by anthology.scala → anthology.core.
+
+Done when: exegesis.core's closure contains no compiler-stack module, and the deepest chain
+through obligatory.json ends at jacinta.
+
+## mod-10: the spine givens
+
+Horizon: near. gossamer.core has fan-in 44, so everything below it taxes nearly the whole
+tree — and what sits below it hangs on single-digit numbers of givens. These are mod-2-style
+integration-submodule moves, with the same traps mod-2 recorded: a given moved out of a
+companion (or out of the package's toplevel) leaves implicit scope, so each move needs a
+downstream import sweep, a `soundness`-toplevel export, and where a silent generic fallback
+exists, a test pinning the resolved instance.
+
+- **gossamer.core → distillate.core** rests on five givens in one file: `textDecodable`
+  (gossamer_core.scala:124) and the four `enumIdentification` case-style `Identifiable`
+  givens (gossamer_core.scala:614–625) — the latter already opt-in behind an explicit
+  import, so relocation costs their users nothing. Move them to a `gossamer.codec`-style
+  submodule. Cutting this single edge is worth three levels of critical path (it removes
+  distillate → digression → iridescence → geodesy.angle from under the fan-in-44 node).
+- **distillate.core → digression.core** is one two-line given (`fqcn` Decodable,
+  distillate.Decodable.scala:62). Invert it: `Fqcn` is digression's type, so the given
+  belongs in a digression-side component that depends on distillate.
+- **distillate.core → inimitable.core** is the identical shape (`uuid` Decodable,
+  distillate.Decodable.scala:64) and takes the identical inversion.
+- **distillate.core → wisteria.core** uses only `VariantError` as the error type of the
+  `enumeration` given (distillate.Decodable.scala:108–114). Relocate the error class (a
+  plain fulminate `Error` in wisteria.VariantError.scala) to a component both can see;
+  the `enumeration` given itself stays in companion scope. Note wisteria remains in the
+  closure via spectacular.core regardless — this cut is for distillate's own dependents.
+- **digression.core → iridescence.core** is `StackTrace.Palette`, `hex` and
+  `defaultPalette` (digression.StackTrace.scala:135–163), ~30 lines of pure colour. They
+  move to **digression.ansi**, which gains iridescence.core; both existing consumers
+  (digression_ansi.scala, probably.AnsiRenderer.scala:137, 355) are already downstream of
+  it. This severs iridescence → geodesy.angle from the spine in one move.
+- **digression.core → spectacular.core** is one given (`showable`,
+  digression.StackTrace.scala:111–133) plus one `.show` on an `Int` (line 128, trivially
+  `.toString.tt`). Movable to a `digression.show`, but rank it below the others: the given
+  sits in `StackTrace`'s companion, so moving it costs implicit-scope resolution for every
+  downstream `stackTrace.show`, and spectacular's own closure (stenography, wisteria) is
+  modules the spine keeps anyway.
+- **parasite.core → mercator.core** is one given, `Monad[Task]`
+  (parasite.Task.scala:90–99). A `parasite.monad` component severs it; the caveat is the
+  usual one (for-comprehensions over `Task` currently resolve import-free from the
+  companion).
+- **turbulence.core → capricious.core** is confirmed to be exactly the deferred `shred`
+  item (turbulence_core.scala:319–324) and nothing else; mod-3's open decision on `shred`'s
+  home is unchanged, only now it is the whole of the edge.
+
+**Acquitted in the second audit, so they are not re-litigated:** gossamer.core →
+kaleidoscope.core (`Scanner` is inside the interpolator macro expansion,
+gossamer.internal.scala:239–292, and kaleidoscope's own closure is contingency alone);
+digression.core → contingency.core (`raises` is in `Fqcn.apply`'s signature);
+parasite.core → anticipation.time (~17 signature sites, and the dep is depth-2 with no text
+stack — free); iridescence.core → geodesy.angle (`Angle` is in `Hsl`/`Hsv`'s public fields,
+and iridescence already depends on hypotenuse directly, so the edge adds one shallow node);
+turbulence.core → anticipation.http (three sites, but the `import zephyrine.{stream as _, *}`
+shadowing arrangement in turbulence.Streamable.scala:48–50 depends on `HttpStreams.Body.stream`
+being a same-module sibling, and the dep is depth-3 and off the spine — not worth the
+friction).
+
+**The one hard edge: parasite.core → nomenclature.core → gossamer.core.** `Name[Async]` is
+in the public signatures of `task` (parasite_core.scala:150), `Task.apply`, `Monitor` and
+both platform supervisors (~20 sites), and `Async is Nominative under Rules`
+(parasite.Async.scala:47) puts nomenclature in the implicit machinery. There is no
+relocation that severs this: the choice is between validated names and `Text` in the
+concurrency API, which is a design decision of mod-7 class. Until it is made, gossamer and
+everything beneath it remain in the closure of parasite, turbulence, and most of the tree.
+After mod-8/9/10, this is the residual spine's only soft point.
+
+## Second-audit shape
+
+Three PRs: mod-8 (misdeclarations first, then the dead edges), mod-9 (the critical-path
+head, including the cheap retargets; harlequin.scala stays out until its design is
+approved), mod-10 (the spine givens, one integration submodule per leg, each with its
+import sweep and pinning tests). Expected outcomes, by simulation: critical path 27 → 23
+components; exegesis.core's closure 99 → 59; gossamer.core's closure → 23; and the
+remaining depth concentrated in the one genuinely open question, parasite's validated task
+names.
