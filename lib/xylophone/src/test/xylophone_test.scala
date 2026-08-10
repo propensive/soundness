@@ -40,7 +40,7 @@ import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import threading.virtualThreading
 import probates.cancelProbate
-import xylophone.optics.*
+import xylophone.optics.{xmlEachOptical, xmlLens, xmlOrdinalOptical}
 
 case class Worker(name: Text, age: Int)
 case class Firm(name: Text, ceo: Worker)

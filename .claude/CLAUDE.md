@@ -45,6 +45,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Test assertions use fluent pattern (`. assert(_ == expectedValue)`)
 - Strong emphasis on compile-time type safety and immutability
 
+### Given placement (issue #1632)
+
+- A `given` goes in the **companion of its subject type** (or, failing that, the typeclass's
+  companion) whenever module layering permits, so it resolves through implicit scope with no
+  import. Companion-to-companion placement is equivalent for resolution; pick the companion
+  that avoids the unwanted dependency edge.
+- A given that **selects an implementation** (a policy, backend, format or style) goes in a
+  carefully-named package (`strategies`, `logging`, `alphabets`, `optics`, `teletypeables`,
+  `wasiApis`, …) and is imported decisively by name. Mirror the package as a `package <name>:`
+  block in the component's `soundness_*.scala` export file; blocks of the same name from
+  different libraries merge in the umbrella, so member names must be globally distinct.
+- A given that is single-canonical but structurally un-anchorable (subject owned elsewhere,
+  union/alias subject, or a platform component whose subject's companion is platform-neutral)
+  stays at package top level with a **unique, library-qualified name** (`tarPathOpenable`,
+  `terminalStdio`) and a comment explaining why; never a bare generic name, and never
+  anonymous — an unnameable given cannot be selectively imported or disambiguated.
+- Traps: `import p.*` does NOT import givens (use by-name imports or `given` selectors — a
+  sweep that replaces a by-name given import with a wildcard silently drops the given);
+  synthesized export forwarders lose capture-annotated refinements (hand-write delegating
+  givens, as `soundness_scintillate_server.scala` does); and a lexically-scoped given
+  (imported or same-package toplevel) outranks any companion given, which is what makes the
+  choice-package pattern override defaults.
+
 ## Workflow
 
 ### Before the first commit of any task

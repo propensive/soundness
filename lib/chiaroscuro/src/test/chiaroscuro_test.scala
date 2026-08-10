@@ -36,6 +36,7 @@ import soundness.*
 
 import proscenium.compat.*
 import textMetrics.uniformMetric
+import chiaroscuro.teletypeables.juxtapositionTeletype
 
 case class Person(name: Text, age: Int)
 case class Organization(name: Text, ceo: Person, staff: List[Person])
