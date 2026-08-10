@@ -83,7 +83,7 @@ extension (markdown: Markdown of Layout)
 // `termcapDefinitions` leave the default `Int.MaxValue`, which would otherwise
 // produce mile-wide thematic-break rules), renders to a `Teletype`, then
 // emits ANSI escapes through the existing `Teletype is Printable` given.
-given (Hyphenation, Every[TeletypeFormattable], MarkdownPalette)
+given markdownPrintable: (Hyphenation, Every[TeletypeFormattable], MarkdownPalette)
 =>  (Markdown of Layout) is Printable =
 
   (markdown, termcap) =>

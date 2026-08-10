@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export cataclysm.{Css, CssError, CssErrors, cssAggregable, SelectorList, Selector, Compound,
+export cataclysm.{Css, CssError, CssErrors, SelectorList, Selector, Compound,
     Simple, Combinator, AttributeMatcher, AttributeTest, Prefix, PseudoArgument,
     CssConvertible, Outcome, PropertyDef, SyntaxMatcher, ValueToken, Pixels, Rems, Exs, Chs,
     ViewportWidths,

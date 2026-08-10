@@ -37,7 +37,7 @@ import soundness.*
 import proscenium.compat.*
 import fulminate.errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
-import urticose.urlTeletype
+import urticose.teletypeables.urlTeletype
 
 object Tests extends Suite(m"Urticose tests"):
   given palette: UrlPalette = new Palette:

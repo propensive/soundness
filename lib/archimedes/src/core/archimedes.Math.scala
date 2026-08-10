@@ -50,6 +50,7 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
+import contextual.*
 import xylophone.*
 import zephyrine.ParseError
 
@@ -170,6 +171,16 @@ object Math:
   private def fenced(inner: Mathml, open: Text, close: Text): Mathml =
     val stretchy = List(t"stretchy" -> t"true")
     Mrow(List(Mo(open, stretchy), inner, Mo(close, stretchy)))
+
+  // The `ergo""` interpolator: `ergo"(x↗y)"` parses an ergo shorthand literal into
+  // a `Math` value, checking it at compile time (see `internal.ergoInterpolator`). In the
+  // companion, so it is in `Math`'s implicit scope with no import.
+  inline given interpolable: Math is Interpolable:
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      ( inline insertions: Any* )
+    :   Math =
+
+      ${archimedes.internal.ergoInterpolator[parts]('insertions)}
 
 case class Math
   ( contents:   List[Mathml],

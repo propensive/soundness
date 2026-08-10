@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export stratiform.{telEachOptical, telLens, telOrdinalOptical}
+package optics:
+  export stratiform.optics.{telEachOptical, telLens, telOrdinalOptical}

@@ -50,17 +50,6 @@ import vacuous.*
 extension (inline context: StringContext)
   transparent inline def css: Interpolation = interpolation[Css | Css.Style](context)
 
-// Reading a stylesheet accumulates every `CssError` (unknown property, invalid
-// or unsupported value, …) instead of stopping at the first: the parse runs
-// inside a `track`, and any errors are folded into a single `CssErrors` raised
-// at the end. A fully-valid stylesheet yields the `Css` with nothing raised.
-given cssAggregable: (Tactic[CssErrors], Diagnostics) => Css is Aggregable by Text = source =>
-  track[Text](CssErrors(Nil)):
-    case error: CssError => accrual + error
-
-  . protect:
-      CssParser.parse(source.iterator)
-
 // The class and id names referenced anywhere in a stylesheet, including inside
 // nested rules and the selector-list arguments of `:is()`/`:not()`/`:nth-…(of)`.
 extension (css: Css)

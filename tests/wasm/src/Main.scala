@@ -22,12 +22,12 @@ import strategies.throwUnsafely
 object Main extends Run:
 
   private def scenarioEnv(): ambience.Environment =
-    import ambience.wasiEnvironmentApi
+    import ambience.wasiApis.wasiEnvironmentApi
     import ambience.environments.wasiEnvironment
     summon[ambience.Environment]
 
   private def stdio(scenario: Text): Unit =
-    import turbulence.{Stdio, wasiCliApi}
+    import turbulence.Stdio, turbulence.wasiApis.wasiCliApi
     import turbulence.stdios.wasiStdio
     import anticipation.termcapDefinitions.basicTermcap
 
@@ -39,7 +39,7 @@ object Main extends Run:
     io.printErr(("stderr: " + received + "\n").tt)
 
   private def clock(): Unit =
-    import aviation.{monotonic, wasiClockApi}
+    import aviation.monotonic, aviation.wasiApis.wasiClockApi
     import aviation.clocks.wasiMonotonicClock
 
     val first = monotonic()
@@ -47,7 +47,7 @@ object Main extends Run:
     System.out.nn.println("clock: ok")
 
   private def random(): Unit =
-    import capricious.{arbitrary, stochastic, wasiRandomApi}
+    import capricious.{arbitrary, stochastic}, capricious.wasiApis.wasiRandomApi
     import capricious.randomization.wasiRandomization
 
     stochastic:
@@ -56,7 +56,7 @@ object Main extends Run:
       System.out.nn.println(if first != second then "random: ok" else "random: suspicious")
 
   private def fs(): Unit =
-    import galilei.{FilesystemBackend, Linux, OpenFlag, wasiFilesystemApi}
+    import galilei.{FilesystemBackend, Linux, OpenFlag}, galilei.wasiApis.wasiFilesystemApi
     import galilei.filesystemBackends.wasi
     import serpentine.*
 
@@ -77,7 +77,7 @@ object Main extends Run:
     System.out.nn.println("fs: " + content.s)
 
   private def tcp(environment: ambience.Environment): Unit =
-    import coaxial.{SocketBackend, wasiSocketsApi}
+    import coaxial.SocketBackend, coaxial.wasiApis.wasiSocketsApi
     import coaxial.socketBackends.wasi
     import urticose.{Endpoint, Port, Tcp}
 
@@ -90,7 +90,7 @@ object Main extends Run:
     backend.hangUp(exchange)
 
   private def http(environment: ambience.Environment): Unit =
-    import telekinesis.{Http, wasiHttpApi}
+    import telekinesis.Http, telekinesis.wasiApis.wasiHttpApi
     import telekinesis.httpBackends.wasi
     import zephyrine.Stream
 

@@ -32,7 +32,10 @@
                                                                                                   */
 package soundness
 
-export turbulence.{WasiCliApi, wasiCliApi}
+export turbulence.{WasiCliApi}
 
 package stdios:
   export turbulence.stdios.wasiStdio
+
+package wasiApis:
+  export turbulence.wasiApis.wasiCliApi

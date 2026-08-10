@@ -98,7 +98,13 @@ object Query extends Dynamic:
     case given ProductReflection[`value` & Product] =>
       EncodableDerivation.conjunction[value & Product].asInstanceOf[value is Encodable in Query]
 
-  given showable: Query is Showable =
+  // The URL-encoded form, agreeing with `encodable` and `queryString`: `Query.show` must
+  // not disagree with `Query.encode` (#1500). The debug rendering lives in `inspectable`.
+  given showable: Query is Showable = _.queryString
+
+  // Declared explicitly because `Inspectable`'s derivation prefers `Encodable in Text`
+  // over `Showable`, which would otherwise render `.inspect` URL-encoded too.
+  given inspectable: Query is Inspectable =
     _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
 
   inline given decodable: [value] => value is Decodable in Query =

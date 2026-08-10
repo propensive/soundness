@@ -56,7 +56,7 @@ import hypotenuse.Bcd
 import panopticon.*
 import prepositional.*
 import rudiments.*
-import spectacular.show
+import spectacular.{show, Showable}
 import turbulence.*
 import vacuous.*
 import wisteria.*
@@ -295,6 +295,9 @@ trait Yaml2:
           discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
 object Yaml extends Yaml2, Dynamic:
+  // In the companion (implicit scope), delegating to the block emitter in the package.
+  given showable: Formatting => Yaml is Showable = unseal(_).show
+
   // Controls how a `Yaml` value is serialized. YAML's block style is fixed and round-trip-
   // constrained, so this currently carries no options; importing `formatting.blockYamlFormatting`
   // enables `.show` and HTTP encoding, and this is the place to add options later.
@@ -375,6 +378,10 @@ object Yaml extends Yaml2, Dynamic:
     def withPosition(yaml: Yaml): Focus = copy(position = yaml.locate(pointer))
 
   object Ast extends Format:
+    // In `Ast`'s companion (implicit scope), delegating to the block emitter in the
+    // package; bring a `Yaml.Formatting` into scope to enable `.show`.
+    given showable: (formatting: Formatting) => Ast is Showable = renderAst(_)
+
     def name: Text = "YAML"
 
     case class Position

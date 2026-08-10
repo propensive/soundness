@@ -38,6 +38,9 @@ import guillotine.*
 import profanity.*
 
 object DaemonLogEvent:
+  // In the companion, so transcription resolves through implicit scope with no import.
+  given transcribable: Message transcribes DaemonLogEvent = _.communicate
+
   given communicable: DaemonLogEvent is Communicable =
     case WriteExecutable(location) => m"writing the executable to $location"
     case Shutdown                  => m"shutting down"

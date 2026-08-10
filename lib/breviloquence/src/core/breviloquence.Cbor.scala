@@ -226,6 +226,11 @@ object Cbor extends Cbor2, Dynamic:
   opaque type Ast = CborTypes
 
   object Ast:
+    // In the companion (implicit scope), so aggregating a CBOR stream needs no import.
+    given aggregable: (tactic: Tactic[CborError])
+    =>  ((Ast is Aggregable by Data)^{tactic}) =
+      source => Ast.parse(source.read[Data])
+
     val Sentinel: AnyRef = new Object
 
     // Reinterpret a pre-boxed reference as `Ast` without unbox/rebox. Safe

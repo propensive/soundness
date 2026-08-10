@@ -32,4 +32,7 @@
                                                                                                   */
 package soundness
 
-export chiaroscuro.{juxtapositionTeletype, JuxtapositionPalette}
+export chiaroscuro.{JuxtapositionPalette}
+
+package teletypeables:
+  export chiaroscuro.teletypeables.{juxtapositionTeletype}

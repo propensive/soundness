@@ -35,7 +35,7 @@ package soundness
 export
   profanity
   . { Board, Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
-      Keypress, LineEditor, Question, SelectMenu, Interrupt, SignalResponse, stdio,
+      Keypress, LineEditor, Question, SelectMenu, Interrupt, SignalResponse,
       Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalBoard,
       InlineBoard, UnixSignal, WindowsSignal }
 
@@ -47,3 +47,5 @@ package terminalFeatures:
     profanity.terminalFeatures
     . { bracketedPasteFeature, focusReportingFeature, mouseTrackingFeature, alternateScreenFeature,
         kittyKeyboardFeature, backgroundColorFeature, terminalSizeFeature }
+
+export profanity.terminalStdio

@@ -62,13 +62,6 @@ import alphabets.base64Standard
 import crypto.permitDeprecatedCrypto
 import providers.javaStdlibProvider
 
-// A formal `Message is Ingressive`, so the raw `Message` type satisfies the
-// `Ingressive` requirement `webSocket` places on its message type. A `Message`
-// channel is decoded by identity — the reader already produced the `Message` — so
-// this is never actually applied; it could not recover the Text/Binary distinction
-// from raw bytes anyway.
-given messageIngressive: Message is Ingressive = Message.Binary(_)
-
 // `true` exactly when the message type is the raw `Message`. A match type reduces
 // by subtyping — `Message` matches the first case, any other (e.g. `Ping over Json`)
 // falls through to `false` — and `constValue` reads it back as a literal at the
@@ -106,7 +99,7 @@ inline def webSocket[state](initial: state = ())[message]
 // Text frame. Every `Transmissible` in perihelion yields a complete frame, so the
 // send path is uniform: the server spools it verbatim; a client masks it once at the
 // `Channel` boundary.
-given transmissible: [transport, value]
+given overTransmissible: [transport, value]
 =>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
 =>  CharEncoder
 =>  (value over transport) is Transmissible =
@@ -116,7 +109,7 @@ given transmissible: [transport, value]
 // `Tactic`-conditional and don't resolve as nested given constraints, so we
 // require a `Tactic[Hazard]` directly (satisfied by `strategies.throwUnsafely`;
 // `Tactic` is contravariant) and summon them in the body, where it is in scope.
-given ingressive: [transport, value]
+given overIngressive: [transport, value]
 =>  ( format: transport is Decodable in Text, codec: value is Decodable in transport )
 =>  ( CharDecoder, Tactic[Hazard] )
 =>  (value over transport) is Ingressive =

@@ -34,7 +34,7 @@ package soundness
 
 export
   ethereal
-  . { Assembler, cli, Client, DaemonEvent, DaemonLogEvent, daemonLogEvent, DaemonService, Installer,
+  . { Assembler, cli, Client, DaemonEvent, DaemonLogEvent, DaemonService, Installer,
       LazyEnvironment, Runners, service, Stdin, TerminalMode, Upgrade, UpgradeError }
 
 package workingDirectories:

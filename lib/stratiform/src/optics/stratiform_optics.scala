@@ -51,27 +51,29 @@ import vacuous.*
 // routes through `Tel.modify`, which replaces an existing child
 // compound with the same kebab-case keyword in place or appends a
 // new one. Mirrors jacinta's lens given.
-given telLens: [name <: Label: ValueOf] => (erased dynamicTelEnabler: DynamicTelEnabler) => Tactic[TelError]
-=>  name is Lens from Tel onto Tel =
-  Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
+package optics:
+  given telLens: [name <: Label: ValueOf] => (erased dynamicTelEnabler: DynamicTelEnabler) => Tactic[TelError]
+  =>  name is Lens from Tel onto Tel =
+    Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
 
-// Positional optics over a node's child compounds (TEL has no positional arrays,
-// but a compound's children are ordered — this mirrors the read-side
-// `applyDynamic(field)(index)`). `Ordinal` addresses the n-th child; `Each` every
-// child. The transform's result keeps the original child's keyword, so a positional
-// update preserves the field identity while replacing its value/children.
-// (`rewrap`/`rebuild` are package-level pure helpers — see `stratiform_core.scala`.)
+  // Positional optics over a node's child compounds (TEL has no positional arrays,
+  // but a compound's children are ordered — this mirrors the read-side
+  // `applyDynamic(field)(index)`). `Ordinal` addresses the n-th child; `Each` every
+  // child. The transform's result keeps the original child's keyword, so a positional
+  // update preserves the field identity while replacing its value/children.
+  // (`rewrap`/`rebuild` are package-level pure helpers — see `stratiform_core.scala`.)
 
-given telOrdinalOptical: [element] => Ordinal is Optical from Tel onto Tel = ordinal =>
-  Optic: (origin, lambda) =>
-    if ordinal.n0 < 0 || ordinal.n0 >= origin.childCompounds.length then origin
-    else rebuild
-      ( origin,
-        Tel.withChildCompound
-         ( origin.subtree.children, ordinal.n0, c => rewrap(c, lambda(Tel.make(c))) ) )
+  given telOrdinalOptical: [element] => Ordinal is Optical from Tel onto Tel = ordinal =>
+    Optic: (origin, lambda) =>
+      if ordinal.n0 < 0 || ordinal.n0 >= origin.childCompounds.length then origin
+      else rebuild
+        ( origin,
+          Tel.withChildCompound
+           ( origin.subtree.children, ordinal.n0, c => rewrap(c, lambda(Tel.make(c))) ) )
 
-given telEachOptical: Each.type is Optical from Tel onto Tel = _ =>
-  Optic: (origin, lambda) =>
-    rebuild
-      ( origin,
-        Tel.mapChildCompounds(origin.subtree.children, c => rewrap(c, lambda(Tel.make(c)))) )
+  given telEachOptical: Each.type is Optical from Tel onto Tel = _ =>
+    Optic: (origin, lambda) =>
+      rebuild
+        ( origin,
+          Tel.mapChildCompounds(origin.subtree.children, c => rewrap(c, lambda(Tel.make(c)))) )
+

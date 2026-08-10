@@ -43,7 +43,10 @@ import nomenclature.*
 import prepositional.*
 import symbolism.*
 
-given decimalizer: Decimalizer = Decimalizer(4)
+// The default four-decimal-place rendering for numeric comparisons, imported
+// decisively rather than silently supplied by `import probably.*`.
+package decimalizers:
+  given fourDecimalPlaces: Decimalizer = Decimalizer(4)
 
 export Baseline.Compare.{Min, Mean, Max}
 export Baseline.Metric.{Cadential, Temporal}
@@ -53,9 +56,11 @@ export Baseline.Mode.{Arithmetic, Geometric}
 // imported, without a separate `import Probing.nominative` in every suite.
 export Probing.nominative
 
-// A real trait, not a structural refinement of `Palette`: structural member selection goes
-// through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
-// support — whereas these are ordinary virtual calls.
+  // A real trait, not a structural refinement of `Palette`: structural member selection goes
+  // through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
+  // support — whereas these are ordinary virtual calls.
+
+
 trait TestPalette extends JuxtapositionPalette:
   type Form = Srgb
   def warning: Color in Srgb

@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export escapade.{err, out}
+
+package writables:
+  export escapade.writables.{err, out}

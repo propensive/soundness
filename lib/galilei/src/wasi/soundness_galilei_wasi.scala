@@ -32,7 +32,10 @@
                                                                                                   */
 package soundness
 
-export galilei.{WasiFilesystemApi, wasiFilesystemApi}
+export galilei.{WasiFilesystemApi}
 
 package filesystemBackends:
   export galilei.filesystemBackends.wasi
+
+package wasiApis:
+  export galilei.wasiApis.wasiFilesystemApi

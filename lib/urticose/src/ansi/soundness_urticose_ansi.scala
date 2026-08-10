@@ -32,4 +32,7 @@
                                                                                                   */
 package soundness
 
-export urticose.{urlTeletype, UrlPalette}
+export urticose.{UrlPalette}
+
+package teletypeables:
+  export urticose.teletypeables.{urlTeletype}

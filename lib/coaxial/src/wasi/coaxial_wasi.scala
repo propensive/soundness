@@ -58,10 +58,12 @@ import xenophile.*
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
 // parameter types.
 type WasiSocketsApi = Interface in Wit at "/coaxial/sockets.wit"
-given wasiSocketsApi: WasiSocketsApi = Interface[Wit](cp"/coaxial/sockets.wit")
+package wasiApis:
+  given wasiSocketsApi: WasiSocketsApi = Interface[Wit](cp"/coaxial/sockets.wit")
 
 // The handles a connected TCP socket threads back to the backend: the readable and writable halves
 // of the connection, and the socket itself (kept so it can be shut down and dropped).
+
 private case class WasiExchange
   ( input:  WitHandle of "input-stream",
     output: WitHandle of "output-stream",

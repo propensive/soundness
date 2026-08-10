@@ -32,7 +32,10 @@
                                                                                                   */
 package soundness
 
-export capricious.{WasiRandom, WasiRandomApi, wasiRandomApi}
+export capricious.{WasiRandom, WasiRandomApi}
 
 package randomization:
   export capricious.randomization.wasiRandomization
+
+package wasiApis:
+  export capricious.wasiApis.wasiRandomApi

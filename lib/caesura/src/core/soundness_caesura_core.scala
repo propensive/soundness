@@ -46,3 +46,6 @@ package dsvRedesignations:
     caesura.dsvRedesignations
     . { capitalizedWordsRedesignation, lowerDottedRedesignation, lowerSlashedRedesignation,
         lowerWordsRedesignation, unchangedRedesignation }
+
+package optics:
+  export caesura.optics.{cellLens, rowEach, rowFilter, rowOptical}

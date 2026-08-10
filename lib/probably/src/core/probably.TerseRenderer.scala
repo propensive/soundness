@@ -53,6 +53,8 @@ import vacuous.*
 import Format.measurable
 import tableStyles.minimalTableStyle
 
+import probably.decimalizers.fourDecimalPlaces
+
 // The plain-text renderer, for machine-adjacent environments (Claude Code): the same
 // document as the colour renderer, with word statuses, minimal tables and no banner.
 private[probably] object TerseRenderer:

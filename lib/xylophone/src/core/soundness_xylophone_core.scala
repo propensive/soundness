@@ -41,3 +41,6 @@ export
 
 package formatting:
   export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}
+
+package optics:
+  export xylophone.optics.{xmlEachOptical, xmlLens, xmlOrdinalOptical}

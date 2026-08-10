@@ -50,7 +50,8 @@ import xenophile.*
 // The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for module ids and resource methods.
 type WasiCliApi = Interface in Wit at "/turbulence/cli.wit"
-given wasiCliApi: WasiCliApi = Interface[Wit](cp"/turbulence/cli.wit")
+package wasiApis:
+  given wasiCliApi: WasiCliApi = Interface[Wit](cp"/turbulence/cli.wit")
 
 package stdios:
   // A `Stdio` whose standard streams go through the WASI stream resources: each write obtains the
