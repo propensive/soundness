@@ -36,6 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import caesura.optics.*
 
 given decimalizer: Decimalizer = Decimalizer(1)
 

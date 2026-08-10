@@ -44,75 +44,79 @@ import vacuous.*
 
 // The panopticon lens and optic instances for `Json`. These are the only reason `jacinta.core`
 // needed panopticon, so they live here instead of in `Json`'s companion. That takes them out of
-// `Json`'s implicit scope, so a call site using `json.lens(…)` must import them; panopticon's
-// generic `deref` lens only applies to `Product` types, and `Json` is not one, so a missing
-// import is a compile error rather than a silent change of behaviour.
+// `Json`'s implicit scope, so a call site using `json.lens(…)` must import them — decisively,
+// from the `optics` package (`import jacinta.optics.*`, or `import soundness.optics.*`, where
+// every library's optics merge); panopticon's generic `deref` lens only applies to `Product`
+// types, and `Json` is not one, so a missing import is a compile error rather than a silent
+// change of behaviour.
 
-given jsonLens: [name <: Label: ValueOf] => (erased dynamicJsonEnabler: DynamicJsonEnabler) => (tactic: Tactic[JsonError])
-=>  ((name is Lens from Json onto Json)^{tactic}) =
+package optics:
+  given jsonLens: [name <: Label: ValueOf] => (erased dynamicJsonEnabler: DynamicJsonEnabler) => (tactic: Tactic[JsonError])
+  =>  ((name is Lens from Json onto Json)^{tactic}) =
 
-  Lens(_.selectField(valueOf[name]), (json, value) => json.modify(valueOf[name], value))
+    Lens(_.selectField(valueOf[name]), (json, value) => json.modify(valueOf[name], value))
 
-given jsonOrdinalOptical: [element] => Ordinal is Optical from Json onto Json =
-  ordinal =>
+  given jsonOrdinalOptical: [element] => Ordinal is Optical from Json onto Json =
+    ordinal =>
+      Optic: (origin, lambda) =>
+        if origin.root.isArray then
+          val n = origin.root.arrayLength
+
+          if n <= ordinal.n0 then origin else Json.ast:
+            val updated = Array[Any](n)
+            var i = 0
+
+            while i < n do
+              updated(i) =
+                if i == ordinal.n0
+                then lambda(Json.ast(origin.root.arrayElement(i))).root
+                else origin.root.arrayElement(i)
+
+              i += 1
+
+            Json.Ast.arr(Array.freeze(updated))
+        else
+          origin
+
+  // `Each` applies the transform to every array element; `Filter` to those matching
+  // its predicate. Both rebuild the array immutably and no-op on non-arrays.
+  given jsonEachOptical: Each.type is Optical from Json onto Json = _ =>
     Optic: (origin, lambda) =>
       if origin.root.isArray then
         val n = origin.root.arrayLength
 
-        if n <= ordinal.n0 then origin else Json.ast:
+        Json.ast:
           val updated = Array[Any](n)
           var i = 0
 
           while i < n do
-            updated(i) =
-              if i == ordinal.n0
-              then lambda(Json.ast(origin.root.arrayElement(i))).root
-              else origin.root.arrayElement(i)
-
+            updated(i) = lambda(Json.ast(origin.root.arrayElement(i))).root
             i += 1
 
           Json.Ast.arr(Array.freeze(updated))
       else
         origin
 
-// `Each` applies the transform to every array element; `Filter` to those matching
-// its predicate. Both rebuild the array immutably and no-op on non-arrays.
-given jsonEachOptical: Each.type is Optical from Json onto Json = _ =>
-  Optic: (origin, lambda) =>
-    if origin.root.isArray then
-      val n = origin.root.arrayLength
+  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM
+  // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
+  // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
+  given jsonFilterOptical: Filter[Json] is Optical from Json onto Json = filter =>
+    val predicate: Json -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
-      Json.ast:
-        val updated = Array[Any](n)
-        var i = 0
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.arrayLength
 
-        while i < n do
-          updated(i) = lambda(Json.ast(origin.root.arrayElement(i))).root
-          i += 1
+        Json.ast:
+          val updated = Array[Any](n)
+          var i = 0
 
-        Json.Ast.arr(Array.freeze(updated))
-    else
-      origin
+          while i < n do
+            val element = Json.ast(origin.root.arrayElement(i))
+            updated(i) = (if predicate(element) then lambda(element) else element).root
+            i += 1
 
-// The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM
-// pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
-// pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
-given jsonFilterOptical: Filter[Json] is Optical from Json onto Json = filter =>
-  val predicate: Json -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+          Json.Ast.arr(Array.freeze(updated))
+      else
+        origin
 
-  Optic: (origin, lambda) =>
-    if origin.root.isArray then
-      val n = origin.root.arrayLength
-
-      Json.ast:
-        val updated = Array[Any](n)
-        var i = 0
-
-        while i < n do
-          val element = Json.ast(origin.root.arrayElement(i))
-          updated(i) = (if predicate(element) then lambda(element) else element).root
-          i += 1
-
-        Json.Ast.arr(Array.freeze(updated))
-    else
-      origin

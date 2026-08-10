@@ -10,7 +10,7 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
 import prepositional.*
 import spectacular.*
-import telekinesis.*, telekinesis.wasiHttpApi
+import telekinesis.*, telekinesis.wasiApis.wasiHttpApi
 import vacuous.*
 import zephyrine.*
 

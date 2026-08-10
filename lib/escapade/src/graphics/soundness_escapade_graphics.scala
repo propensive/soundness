@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export escapade.graphical
+package teletypeables:
+  export escapade.teletypeables.{graphical}

@@ -46,5 +46,7 @@ type UrlPalette = Palette:
 // draw in the ANSI stack. Note that `escapade` supplies a generic `Teletypeable` fallback for
 // any `Showable` type, so a call site which does not import this given still compiles — and
 // renders the URL unstyled.
-given urlTeletype: [scheme <: Label] => (palette: UrlPalette) => Url[scheme] is Teletypeable =
-  url => e"$Underline(${Fg(palette.link)}(${url.show}))"
+package teletypeables:
+  given urlTeletype: [scheme <: Label] => (palette: UrlPalette) => Url[scheme] is Teletypeable =
+    url => e"$Underline(${Fg(palette.link)}(${url.show}))"
+

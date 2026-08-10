@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export fulminate.messagePrintable
+package printables:
+  export fulminate.printables.{messagePrintable}

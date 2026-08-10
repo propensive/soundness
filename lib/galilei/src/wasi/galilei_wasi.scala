@@ -54,7 +54,8 @@ import IoError.{Operation, Reason}
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
 // parameter types.
 type WasiFilesystemApi = Interface in Wit at "/galilei/filesystem.wit"
-given wasiFilesystemApi: WasiFilesystemApi = Interface[Wit](cp"/galilei/filesystem.wit")
+package wasiApis:
+  given wasiFilesystemApi: WasiFilesystemApi = Interface[Wit](cp"/galilei/filesystem.wit")
 
 package filesystemBackends:
   // A `FilesystemBackend` over `wasi:filesystem`. WASI filesystems are capability-based: the host

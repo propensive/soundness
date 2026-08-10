@@ -42,6 +42,8 @@ import distillate.*
 import gossamer.*
 import prepositional.*
 import spectacular.*
+
+import decimalizers.fourDecimalPlaces
 import vacuous.*
 
 object Axable:

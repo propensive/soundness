@@ -117,15 +117,16 @@ private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml =>
     case other =>
       other
 
-given lens: [name <: Label: ValueOf] => (erased dynamicXmlEnabler: DynamicXmlEnabler)
-=>  name is Lens from Xml onto Xml =
-  Lens(_.applyDynamic(valueOf[name])(Prim), replaceNamedChild(_, valueOf[name], _))
+package optics:
+  given xmlLens: [name <: Label: ValueOf] => (erased dynamicXmlEnabler: DynamicXmlEnabler)
+  =>  name is Lens from Xml onto Xml =
+    Lens(_.applyDynamic(valueOf[name])(Prim), replaceNamedChild(_, valueOf[name], _))
 
-given ordinalOptical: [element] => Ordinal is Optical from Xml onto Xml = ordinal =>
-  Optic: (origin, lambda) => updateChildElements(origin, _ == ordinal.n0, lambda)
+  given xmlOrdinalOptical: [element] => Ordinal is Optical from Xml onto Xml = ordinal =>
+    Optic: (origin, lambda) => updateChildElements(origin, _ == ordinal.n0, lambda)
 
-given eachOptical: Each.type is Optical from Xml onto Xml = _ =>
-  Optic: (origin, lambda) => updateChildElements(origin, _ => true, lambda)
+  given xmlEachOptical: Each.type is Optical from Xml onto Xml = _ =>
+    Optic: (origin, lambda) => updateChildElements(origin, _ => true, lambda)
 
 package formatting:
   given compactXmlFormatting: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)

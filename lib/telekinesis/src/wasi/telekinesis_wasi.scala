@@ -55,7 +55,8 @@ import zephyrine.*
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
 // parameter types.
 type WasiHttpApi = Interface in Wit at "/telekinesis/http.wit"
-given wasiHttpApi: WasiHttpApi = Interface[Wit](cp"/telekinesis/http.wit")
+package wasiApis:
+  given wasiHttpApi: WasiHttpApi = Interface[Wit](cp"/telekinesis/http.wit")
 
 package httpBackends:
   // An `Http.Backend` over `wasi:http/outgoing-handler`: the request is assembled from

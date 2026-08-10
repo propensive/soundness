@@ -32,10 +32,13 @@
                                                                                                   */
 package soundness
 
-export ambience.{WasiEnvironmentApi, wasiEnvironmentApi}
+export ambience.{WasiEnvironmentApi}
 
 package environments:
   export ambience.environments.wasiEnvironment
 
 package workingDirectories:
   export ambience.workingDirectories.wasiWorkingDirectory
+
+package wasiApis:
+  export ambience.wasiApis.wasiEnvironmentApi

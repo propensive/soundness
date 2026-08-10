@@ -43,14 +43,16 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-given graphical: [graphical: Graphical] => graphical is Teletypeable = graphic =>
-  TeletypeBuilder().build:
-    for y <- 0 until (graphical.height(graphic) - 1) by 2 do
-      for x <- 0 until graphical.width(graphic)
-      do
-        val fg = graphical.pixel(graphic, x, y)
-        val bg = graphical.pixel(graphic, x, y + 1)
-        val styled = TextStyle(fg, bg).styleWord
-        append(Teletype(t"▀", Array.of(styled, 0L)))
+package teletypeables:
+  given graphical: [graphical: Graphical] => graphical is Teletypeable = graphic =>
+    TeletypeBuilder().build:
+      for y <- 0 until (graphical.height(graphic) - 1) by 2 do
+        for x <- 0 until graphical.width(graphic)
+        do
+          val fg = graphical.pixel(graphic, x, y)
+          val bg = graphical.pixel(graphic, x, y + 1)
+          val styled = TextStyle(fg, bg).styleWord
+          append(Teletype(t"▀", Array.of(styled, 0L)))
 
-      append(e"\n")
+        append(e"\n")
+

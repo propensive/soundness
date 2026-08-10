@@ -112,31 +112,33 @@ private def parsedIterator[value](consume reader: DsvReader^, parsable: value is
 // name within a row; the `Sheet` opticals address the n-th row (`Ordinal`), every
 // row (`Each`), or rows matching a predicate (`Filter`). So
 // `sheet.lens(_(Sec).name = t"…")` updates the "name" column of the second row.
-private def cell(row: Dsv, name: String): Text =
-  row.columns.let(_(name.tt)).let: index => row.data.at(index.z)
-  . or(t"")
+package optics:
+  private def cell(row: Dsv, name: String): Text =
+    row.columns.let(_(name.tt)).let: index => row.data.at(index.z)
+    . or(t"")
 
-private def withCell(row: Dsv, name: String, value: Text): Dsv =
-  row.columns.let(_(name.tt)).lay(row): index => row.copy(data = row.data.updated(index, value))
+  private def withCell(row: Dsv, name: String, value: Text): Dsv =
+    row.columns.let(_(name.tt)).lay(row): index => row.copy(data = row.data.updated(index, value))
 
-given cellLens: [name <: Label: ValueOf] => (erased dynamicDsvEnabler: DynamicDsvEnabler)
-=>  name is Lens from Dsv onto Text =
-  Lens(cell(_, valueOf[name]), withCell(_, valueOf[name], _))
+  given cellLens: [name <: Label: ValueOf] => (erased dynamicDsvEnabler: DynamicDsvEnabler)
+  =>  name is Lens from Dsv onto Text =
+    Lens(cell(_, valueOf[name]), withCell(_, valueOf[name], _))
 
-given rowOptical: [element] => Ordinal is Optical from Sheet onto Dsv = ordinal =>
-  Optic: (origin, lambda) =>
-    origin.copy(rows = origin.rows.zipWithIndex.map: (row, index) =>
-      if index == ordinal.n0 then lambda(row) else row)
+  given rowOptical: [element] => Ordinal is Optical from Sheet onto Dsv = ordinal =>
+    Optic: (origin, lambda) =>
+      origin.copy(rows = origin.rows.zipWithIndex.map: (row, index) =>
+        if index == ordinal.n0 then lambda(row) else row)
 
-given rowEach: Each.type is Optical from Sheet onto Dsv = _ =>
-  Optic: (origin, lambda) => origin.copy(rows = origin.rows.map(lambda))
+  given rowEach: Each.type is Optical from Sheet onto Dsv = _ =>
+    Optic: (origin, lambda) => origin.copy(rows = origin.rows.map(lambda))
 
-// The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM pipeline —
-// rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.
-// (Compiler divergence; see #1520 and the identical laundering in `panopticon.Optical.filter`.)
-given rowFilter: Filter[Dsv] is Optical from Sheet onto Dsv = filter =>
-  val predicate: Dsv -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM pipeline —
+  // rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.
+  // (Compiler divergence; see #1520 and the identical laundering in `panopticon.Optical.filter`.)
+  given rowFilter: Filter[Dsv] is Optical from Sheet onto Dsv = filter =>
+    val predicate: Dsv -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
-  Optic: (origin, lambda) =>
-    origin.copy
-      ( rows = origin.rows.map { row => if predicate(row) then lambda(row) else row } )
+    Optic: (origin, lambda) =>
+      origin.copy
+        ( rows = origin.rows.map { row => if predicate(row) then lambda(row) else row } )
+

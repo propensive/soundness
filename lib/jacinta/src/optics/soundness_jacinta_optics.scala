@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export jacinta.{jsonEachOptical, jsonFilterOptical, jsonLens, jsonOrdinalOptical}
+package optics:
+  export jacinta.optics.{jsonEachOptical, jsonFilterOptical, jsonLens, jsonOrdinalOptical}
