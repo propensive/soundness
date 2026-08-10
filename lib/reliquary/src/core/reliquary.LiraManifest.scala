@@ -252,11 +252,11 @@ object LiraManifest:
           label = field(fields, t"label") )
 
     val section = top.filter(_.keyword == t"section").map: compound =>
-      val world = texts(compound) match
-        case scala.collection.immutable.Vector(world) => world
+      val realm = texts(compound) match
+        case scala.collection.immutable.Vector(realm) => realm
 
         case _ =>
-          abort(bad(t"a section needs exactly one world"))
+          abort(bad(t"a section needs exactly one realm"))
 
       val fields = children(compound)
 
@@ -270,7 +270,7 @@ object LiraManifest:
             uses    = field(subfields, t"uses").let(hash(_)) )
 
       Section
-        ( world       = world,
+        ( realm       = realm,
           integration = field(fields, t"integration"),
           tree        = hash(required(fields, t"tree")),
           delete      = List.from(repeated(fields, t"delete").map(TreePath(_))),
@@ -342,7 +342,7 @@ case class LiraManifest
 
   // A release carrying a `host` section is a host contract (§9.4, hosts.md §4) — recognizable
   // from its manifest alone, which is what makes L137 checkable at resolution time.
-  def hostContract: Boolean = section.stdlib.exists(_.world == t"host")
+  def hostContract: Boolean = section.stdlib.exists(_.realm == t"host")
 
   // The canonical text of the whole file's manifest part: directive, pragma, one blank line,
   // then the compounds in schema order, LF-terminated. Deterministic; `Lira.read` accepts any
@@ -409,7 +409,7 @@ case class LiraManifest
     delta.let: delta => lines += s"delta ${LiraHash.text(delta)}"
 
     section.stdlib.foreach: section =>
-      lines += s"section ${section.world}"
+      lines += s"section ${section.realm}"
       section.integration.let: id => lines += s"  integration $id"
       lines += s"  tree ${LiraHash.text(section.tree)}"
       section.delete.stdlib.foreach: path => lines += s"  delete ${path.text}"

@@ -265,7 +265,7 @@ case class Buildpath(releases: List[LiraManifest]):
             if target != universe && !joins.stdlib.contains(target)
             then abort(LiraError(Reason.AbsentDependency(dependency.module)))
 
-            if !candidate.section.stdlib.exists(_.world == target)
+            if !candidate.section.stdlib.exists(_.realm == target)
             then abort(LiraError(Reason.AbsentDependency(dependency.module)))
 
           if !requirementMet(dependency, candidate)
@@ -289,7 +289,7 @@ case class Buildpath(releases: List[LiraManifest]):
       val served = serving(universe, manifest.module)
 
       manifest.section.stdlib.filter: section =>
-        section.world == served
+        section.realm == served
         && section.integration.option == assignment(manifest.module).option
 
   // The host-contract modules the selected sections' `requires` records name — the modules rule

@@ -57,7 +57,7 @@ object Verification:
 
     def tree(universe: Text, integration: Optional[Text]): Optional[LiraTree] =
       materialized.stdlib.find: pair =>
-        pair(0).world == universe && pair(0).integration.option == integration.option
+        pair(0).realm == universe && pair(0).integration.option == integration.option
 
       . map(_(1)).getOrElse(Unset)
 
@@ -190,7 +190,7 @@ object Verification:
         abort(LiraError(Reason.UnimplementedClaim(id)))
 
     val registry = Discipline.Registry(List.from(resolved), manifest.resource)
-    val universes = manifest.section.stdlib.map(_.world).toSet
+    val universes = manifest.section.stdlib.map(_.realm).toSet
 
     resolved.foreach: discipline =>
       if !universes.exists(discipline.domain.covers)
@@ -216,7 +216,7 @@ object Verification:
 
       val context =
         Discipline.Context
-          (section.world, section.integration, classpath(section.world,
+          (section.realm, section.integration, classpath(section.realm,
               section.integration))
 
       (section, summary(registry.atomize(content, context)))
@@ -228,7 +228,7 @@ object Verification:
 
       computed.drop(1).foreach: (section, other) =>
         if other != root
-        then abort(LiraError(Reason.ApiDivergence(t"${section.world} differs from the root")))
+        then abort(LiraError(Reason.ApiDivergence(t"${section.realm} differs from the root")))
 
   // Step 4's sibling for profiles (§11.6, L128/L130). `install` stays language-blind, exactly as
   // it does for re-atomization and lineage-step grading, and this recovers the per-section
@@ -246,7 +246,7 @@ object Verification:
         (entry.path, report.blobstore.resolve(entry.blob))
 
       EcosystemProfile.Section
-        (section.world, content, section.integration, classpath(section.world,
+        (section.realm, content, section.integration, classpath(section.realm,
             section.integration))
 
     EcosystemProfile.Evidence(List.from(sections), manifest)

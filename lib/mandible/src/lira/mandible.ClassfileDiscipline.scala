@@ -59,7 +59,7 @@ object ClassfileDiscipline extends Discipline:
   // Classfiles exist in the `jvm` universe alone; `sjsir` and `nir` have no counterpart to
   // compare against, so the cross-section invariant (§9.6) is vacuous here and correctly so. A
   // single-universe domain is exactly the case §11.2 requirement 1 exempts from it.
-  def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"jvm"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"jvm"))
 
   // §11.2 requirement 4: a JVM call site names the receiver, not the declarer, so a type's
   // linkage surface includes members it inherits. Declaration keying would be unsound for a

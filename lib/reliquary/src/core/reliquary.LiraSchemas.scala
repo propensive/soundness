@@ -43,9 +43,9 @@ import vacuous.*
 // canonical `.tel` document (at `res/test/reliquary/`) verbatim; the test suite asserts the two
 // stay in agreement and pins each schema's signature as a golden value.
 //
-// The schemas encode the LIRA specification's §14: worlds are `jvm | sjsir | nir | host` — the
-// three universes of the motivating ecosystem, and the one world that is not a universe, which
-// holds a host contract's content (hosts.md); a `Section` is keyed by world and integration
+// The schemas encode the LIRA specification's §14: realms are `jvm | sjsir | nir | host` — the
+// three universes of the motivating ecosystem, and the one realm that is not a universe, which
+// holds a host contract's content (hosts.md); a `Section` is keyed by realm and integration
 // (§9.5), may carry a `derivative` hash (its canonical derived JAR), and may carry `requires`
 // records naming the host contracts its code assumes; a `version` is optional (a release
 // without one is a development release) and strictly numeric; a `Dependency` may be scoped to
@@ -167,7 +167,7 @@ object LiraSchemas:
         field("uses", hash, required = Loose)),
 
       record("Section",
-        selectRef("World"),
+        selectRef("Realm"),
         field("integration", identifier, required = Loose),
         field("tree", hash),
         field("delete", string, required = Loose, repeatable = Loose),
@@ -196,7 +196,7 @@ object LiraSchemas:
       scalar("TreePath", "tree-path"),
       scalar("Guarantee", "guarantee")),
     selects  = Array.of(
-      select("World",
+      select("Realm",
         variant("jvm"),
         variant("sjsir"),
         variant("nir"),
@@ -293,7 +293,7 @@ object LiraSchemas:
   // The BASE-256 schema signatures of the six canonical documents, pinned as golden values (the
   // test suite recomputes each from its `res/test/reliquary/*.tel` mirror and checks agreement).
   // A conforming document of each schema carries its signature on the pragma line.
-  val liraSignature:  Text = t"ϗƤҚЂЫǑmӪwUKΎ5ύ9ẈGÅЖӸψðΩȦӂSẓῩҚӂЊHk"
+  val liraSignature:  Text = t"ῘΔìẅḍβlίZOǒžAζȉḠẌLŠῺẃȕЊTȧGƜ2ДNΫΫA"
   val treeSignature:  Text = t"ǨẙơẗỵclϋẁЫĥᾸMôĮẍOώżӯάǢЗĆӸkҚțȐωǢέӫ"
   val atomsSignature: Text = t"2ӪççÃ5AḟǑXϋƤzᾱĺHϕЂẌǒEẂẁĮί9ḀẘΊÐιЪp"
   val usesSignature:  Text = t"şşCȧOӖGҐΪḍḋjΊӁῚƟȐЌĥέȦЬƜδĻĘ1Ȑḟ6ӟÔḍ"

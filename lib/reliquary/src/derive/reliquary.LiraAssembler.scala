@@ -49,12 +49,12 @@ import errorDiagnostics.emptyDiagnostics
 // assembles the complete `.lira` file. Everything here is deterministic for fixed inputs.
 object LiraAssembler:
 
-  // One cell of the (world × integration) matrix (§9.5). `integration` is absent where the
+  // One cell of the (realm × integration) matrix (§9.5). `integration` is absent where the
   // release declares none, which is its single implicit integration. `requires` names the host
   // contracts this section's code assumes (hosts.md §6) — authorial, so it arrives as input
   // rather than being computed.
   case class SectionInput
-    ( world:       Text,
+    ( realm:       Text,
       content:     List[(TreePath, Data)],
       integration: Optional[Text] = Unset,
       requires:    List[LiraManifest.Requires] = List() )
@@ -100,8 +100,8 @@ object LiraAssembler:
     val registry = Discipline.Registry(disciplines.declared, resource)
 
     val atomized = inputs.map: input =>
-      val context = Discipline.Context(input.world, input.integration, classpath(input))
-      (input.world, registry.atomize(input.content, context))
+      val context = Discipline.Context(input.realm, input.integration, classpath(input))
+      (input.realm, registry.atomize(input.content, context))
 
     // The same per-section view a discipline is given, for the profile predicates below. Built
     // here so that a profile checking structural invariants over a universe's content (§11.6,
@@ -109,7 +109,7 @@ object LiraAssembler:
     val profileSections = List.from:
       inputs.map: input =>
         EcosystemProfile.Section
-          (input.world, input.content, input.integration, classpath(input))
+          (input.realm, input.content, input.integration, classpath(input))
 
     // L125: an `export` or `track` declaration must be effective — a declared path that resolves
     // to no item in any section, or that some other discipline claims, is an assembly-time
@@ -136,7 +136,7 @@ object LiraAssembler:
     // atomization of nothing is not a claim about anything. The rule quantifies over the
     // *declared* disciplines: `resource/1` and `opaque/1` are the registry's own and universal,
     // so the question never arises for them.
-    val universes = inputs.map(_.world).toSet
+    val universes = inputs.map(_.realm).toSet
 
     registry.declared.stdlib.foreach: discipline =>
       if !universes.exists(discipline.domain.covers)
@@ -185,7 +185,7 @@ object LiraAssembler:
 
       val section =
         Section
-          ( world       = input.world,
+          ( realm       = input.realm,
             integration = input.integration,
             tree        = LiraHash(LiraHash.Domain.Blob, tree.encode),
             delete      = delete,

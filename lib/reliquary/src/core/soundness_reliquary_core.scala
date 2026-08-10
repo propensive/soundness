@@ -36,5 +36,5 @@ export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, 
     Blobstore, Buildpath, CapabilityDiscipline, Discipline, DisciplineError, EcosystemProfile,
     Grade, Lineage, Lira, LiraAdvisory,
     LiraDelta, LiraError, LiraHash, LiraManifest, LiraPayload, LiraSchemas, LiraTree,
-    LiraValidators, LiraWorld, ManifestSigning, OpaqueDiscipline, Overlay, Publication,
+    LiraValidators, LiraRealm, ManifestSigning, OpaqueDiscipline, Overlay, Publication,
     Replacement, Section, Snapshot, TreeEntry, TreePath, UsesBlob, Verification, Versioning}

@@ -43,17 +43,17 @@ import errorDiagnostics.emptyDiagnostics
 
 // The `cheader/1` discipline, adapted to reliquary's SPI: the declared surface of an
 // environment-supplied shared library, carried as C headers and atomized per `cheader.md`. Its
-// domain is the single world `{host}` — FFI is a host assumption, and the header describes what
+// domain is the single realm `{host}` — FFI is a host assumption, and the header describes what
 // the environment provides, never what a library on the buildpath supplies.
 object CHeaderDiscipline extends Discipline:
   def id: Text = t"cheader/1"
 
   def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".h")
 
-  def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"host"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"host"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
-  def guarantees(world: Text): Set[Discipline.Guarantee] =
+  def guarantees(realm: Text): Set[Discipline.Guarantee] =
     Set(Discipline.Guarantee.Recompilation)
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)

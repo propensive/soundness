@@ -55,13 +55,13 @@ object JsigDiscipline extends Discipline:
 
   // Host contracts carried as signature stubs are the motivating case; the `jvm` inclusion
   // admits a library whose interface carrier genuinely is Java signatures.
-  def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"jvm", t"host"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"jvm", t"host"))
 
   // A call site names the receiver, so a type's contract surface includes what it presents —
   // sound here as it is for `classfile/1`, and required for the same reason.
   def keying: Discipline.Keying = Discipline.Keying.Membership
 
-  def guarantees(world: Text): Set[Discipline.Guarantee] =
+  def guarantees(realm: Text): Set[Discipline.Guarantee] =
     Set(Discipline.Guarantee.Recompilation)
 
   // `.sig` is the JDK's own spelling for signature classfiles; the format is the classfile

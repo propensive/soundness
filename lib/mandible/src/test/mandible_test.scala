@@ -509,7 +509,7 @@ object Tests extends Suite(m"Mandible tests"):
 
     // --- jsig/1 and host contracts ------------------------------------------------------------
 
-    test(m"jsig claims signature files and classfiles in both its worlds"):
+    test(m"jsig claims signature files and classfiles in both its realms"):
       val data = Array.freeze(Array[Byte](0))
 
       (JsigDiscipline.claims(TreePath(t"java.base/java/lang/Object.sig"), data),
