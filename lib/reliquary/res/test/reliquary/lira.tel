@@ -1,8 +1,8 @@
 tel 1.0
 
-# The `lira` manifest schema (LIRA specification §14: `jvm | sjsir | nir | host` worlds,
+# The `lira` manifest schema (LIRA specification §14: `jvm | sjsir | nir | host` realms,
 # optional numeric-only `version`, dependencies scoped by universe and integration or
-# `build`-pinned, sections keyed by world and integration with `derivative` hashes and host
+# `build`-pinned, sections keyed by realm and integration with `derivative` hashes and host
 # `requires` records, `resource` claims for the resource/1 discipline, and ecosystem `profile`
 # claims). This document is the canonical mirror of the hand-encoded `LiraSchemas.lira`;
 # reliquary's test suite asserts the two are structurally identical and pins this document's
@@ -50,7 +50,7 @@ record Requires
   field uses Hash optional
 
 record Section
-  select World
+  select Realm
   field integration Identifier optional
   field tree Hash
   field delete String optional repeatable
@@ -98,7 +98,7 @@ scalar TreePath
 scalar Guarantee
   validate guarantee
 
-select World
+select Realm
   variant jvm Flag
   variant sjsir Flag
   variant nir Flag

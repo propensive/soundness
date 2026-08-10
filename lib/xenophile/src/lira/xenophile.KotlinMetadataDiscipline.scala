@@ -62,12 +62,12 @@ object KotlinMetadataDiscipline extends Discipline:
 
   // `{jvm, host}`: the metadata rides in JVM classfiles, and the `host` inclusion admits
   // contracts carried as API-stub classfiles — the anticipated Android surface (hosts.md §3).
-  def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"jvm", t"host"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"jvm", t"host"))
 
   // Membership, as `classfile.md` §6: a Kotlin call site resolves members through the receiver.
   def keying: Discipline.Keying = Discipline.Keying.Membership
 
-  def guarantees(world: Text): Set[Discipline.Guarantee] =
+  def guarantees(realm: Text): Set[Discipline.Guarantee] =
     Set(Discipline.Guarantee.Recompilation)
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)

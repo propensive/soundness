@@ -35,22 +35,22 @@ package reliquary
 import anticipation.*
 import vacuous.*
 
-// One compiled view of a release (§9), keyed by world and integration: a world keyword (kept
+// One compiled view of a release (§9), keyed by realm and integration: a realm keyword (kept
 // textual so sections of unknown, layered universes survive as opaque data), the integration
 // realized (§9.5; absent where the release declares none, which is the single implicit
 // integration), the tree blob's hash, the overlay-delete list, the canonical derivative
 // artifact's hash (§13.6), and the host requirements this section's code assumes of its
 // environment (hosts.md §6).
 case class Section
-  ( world:       Text,
+  ( realm:       Text,
     integration: Optional[Text] = Unset,
     tree:        Data,
     delete:      List[TreePath] = List(),
     derivative:  Optional[Data] = Unset,
     requires:    List[LiraManifest.Requires] = List() ):
 
-  def known: Optional[LiraWorld] = LiraWorld.parse(world)
+  def known: Optional[LiraRealm] = LiraRealm.parse(realm)
 
   // The key that must be unique within a release (L131), and by which a consumer selects a
   // section once an assignment has chosen an integration (§13.5).
-  def key: (Text, Optional[Text]) = (world, integration)
+  def key: (Text, Optional[Text]) = (realm, integration)

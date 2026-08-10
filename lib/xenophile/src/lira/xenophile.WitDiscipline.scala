@@ -49,10 +49,10 @@ object WitDiscipline extends Discipline:
 
   def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".wit")
 
-  def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"host", t"component"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"host", t"component"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
-  def guarantees(world: Text): Set[Discipline.Guarantee] =
+  def guarantees(realm: Text): Set[Discipline.Guarantee] =
     Set(Discipline.Guarantee.Recompilation)
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)

@@ -59,14 +59,14 @@ object CapabilityDiscipline extends Discipline:
 
   def claims(path: TreePath, data: Data): Boolean = path.text == t"capabilities"
 
-  // The single world `{host}`: capability listings describe environments, never libraries, and
+  // The single realm `{host}`: capability listings describe environments, never libraries, and
   // L127 rejects a library release that declares this discipline.
-  def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"host"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"host"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
   // Presence, on the same terms as `resource/1` — the recompilation level for content addressed
   // by name, and the only level "the command exists" can mean.
-  def guarantees(world: Text): Set[Discipline.Guarantee] =
+  def guarantees(realm: Text): Set[Discipline.Guarantee] =
     Set(Discipline.Guarantee.Recompilation)
 
   private def malformed(detail: Text): DisciplineError =

@@ -724,7 +724,7 @@ object Tests extends Suite(m"Reliquary Tests"):
     suite(m"Container and verification"):
       test(m"an assembled lira reads back and verifies"):
         val report = Verification.install(Lira.read(makeLira()))
-        report.materialized.stdlib.map { pair => pair(0).world }
+        report.materialized.stdlib.map { pair => pair(0).realm }
       . assert(_ == scala.List(t"jvm", t"sjsir"))
 
       test(m"resource/1 atomizes exports by name and tracks content"):
@@ -981,7 +981,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       test(m"the sjsir overlay materializes without the deleted classfile"):
         val report = Verification.install(Lira.read(makeLira()))
-        val sjsir = report.materialized.stdlib.find { pair => pair(0).world == t"sjsir" }
+        val sjsir = report.materialized.stdlib.find { pair => pair(0).realm == t"sjsir" }
 
         sjsir.map { pair => pair(1).entries.map(_.path.text).stdlib }
       . assert(_ == scala.Some(scala.List(t"a/A.sjsir", t"a/A.tasty")))
@@ -1877,7 +1877,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         val evidence = Verification.evidence(lira.manifest, report)
 
         evidence.sections.stdlib.map: section =>
-          (section.world, section.content.stdlib.map(_(0).text))
+          (section.realm, section.content.stdlib.map(_(0).text))
 
       . assert(_ == scala.List(
           (t"jvm", scala.List(t"a/A.class", t"a/A.special")),
@@ -1887,7 +1887,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         val scoped = new Discipline:
           def id: Text = t"scoped/1"
           def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".class")
-          def domain: Discipline.Domain = Discipline.Domain.Worlds(Set(t"jvm"))
+          def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"jvm"))
           def keying: Discipline.Keying = Discipline.Keying.Membership
 
           def guarantees(universe: Text): Set[Discipline.Guarantee] =
@@ -1965,7 +1965,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
         val lira = Lira.read(bytes)
         Verification.install(lira)
-        (lira.manifest.hostContract, lira.manifest.section.stdlib.map(_.world))
+        (lira.manifest.hostContract, lira.manifest.section.stdlib.map(_.realm))
       . assert(_ == (true, scala.List(t"host")))
 
       // L135's four exclusions, each on a hand-built manifest, since the assembler itself
