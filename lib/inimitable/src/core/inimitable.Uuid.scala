@@ -34,8 +34,11 @@ package inimitable
 
 import java.util as ju
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
@@ -43,6 +46,12 @@ import spectacular.*
 import vacuous.*
 
 object Uuid extends Extractor[Text, Uuid]:
+  // Decoding a `Uuid` from `Text`, kept in `Uuid`'s companion for the same reason as
+  // `Fqcn.decodable`: distillate need not depend on inimitable.
+  given decodable: (tactic: Tactic[UuidError]^)
+  =>  ((Uuid is Decodable in Text)^{tactic, caps.any}) =
+    Uuid.parse(_)
+
   // In `Uuid`'s own companion rather than `Showable`'s, so that `spectacular` need not depend on
   // `inimitable`; being companion-to-companion, this is the same implicit scope as before.
   given showable: Uuid is Showable = _.text

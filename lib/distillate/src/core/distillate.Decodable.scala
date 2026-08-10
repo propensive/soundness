@@ -40,8 +40,6 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
-import digression.*
-import inimitable.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -58,11 +56,6 @@ object Decodable extends Decodable2:
     text =>
       try Integer.parseInt(text.s) catch case _: NumberFormatException =>
         abort(NumberError(text, Int, NumberError.Reason.Unparseable))
-
-  given fqcn: (tactic: Tactic[FqcnError]^) => ((Fqcn is Decodable in Text)^{tactic, caps.any}) =
-    Fqcn(_)
-  given uuid: (tactic: Tactic[UuidError]^) => ((Uuid is Decodable in Text)^{tactic, caps.any}) =
-    Uuid.parse(_)
 
   given byte: (tactic: Tactic[NumberError]^)
   =>  ((Byte is Decodable in Text)^{tactic, caps.any}) =

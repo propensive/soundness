@@ -34,14 +34,23 @@ package digression
 
 import proscenium.compat.*
 
+import scala.caps
+
 import anticipation.*
 import denominative.*
 import contingency.*
+import distillate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
 
 object Fqcn:
+  // Decoding a `Fqcn` from `Text`, in `Fqcn`'s own companion rather than distillate's
+  // `Decodable`, so that distillate need not depend on digression.
+  given decodable: (tactic: Tactic[FqcnError]^)
+  =>  ((Fqcn is Decodable in Text)^{tactic, caps.any}) =
+    Fqcn(_)
+
   def valid(char: Char): Boolean =
     char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9' ||
       char == '_' || char == '$'

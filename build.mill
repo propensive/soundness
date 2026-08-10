@@ -1578,7 +1578,7 @@ object denominative extends Library:
       settings.sep(super.scalacOptions())
 
 object digression extends Library:
-  object core extends Component(contingency.core, spectacular.core):
+  object core extends Component(contingency.core, spectacular.core, distillate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Rendering stack traces as ANSI tables, which is why `escapade.core` used to need both
@@ -1599,7 +1599,7 @@ object dissonance extends Library:
       settings.sep(super.scalacOptions())
 
 object distillate extends Library:
-  object core extends Component(digression.core, inimitable.core, wisteria.core):
+  object core extends Component(wisteria.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, urticose.url)
@@ -1674,7 +1674,7 @@ object enigmatic extends Library:
     override def nativeModuleDeps = super.nativeModuleDeps :+ xenophile.scalanative.native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, cose, openssl, x509):
+  object test extends Tests(core, cose, openssl, x509, gossamer.codec):
     // Not `settings.cc`: the suite's `NoPadding` tests trip the tactic-capturing
     // padding given (pure `using cipher` params can't accept capturing evidence
     // yet); `CaptureTests` opts into capture checking per-file instead. `-Ycc-new`
@@ -2193,7 +2193,7 @@ object imperial extends Library:
       settings.sep(super.scalacOptions())
 
 object inimitable extends Library:
-  object core extends Component(contingency.core, spectacular.core):
+  object core extends Component(distillate.core, contingency.core, spectacular.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2717,7 +2717,8 @@ object sedentary extends Library:
       settings.sep(super.scalacOptions())
 
 object serpentine extends Library:
-  object core extends Component(nomenclature.core, anticipation.path, anticipation.print):
+  object core extends Component(nomenclature.core, anticipation.path, anticipation.print,
+      inimitable.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The platform types (`Linux`, `Windows`, …) that the path-algebra tests exercise now live in
