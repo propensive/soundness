@@ -32,9 +32,9 @@
                                                                                                   */
 package soundness
 
-// The MathML element types (`Mi`, `Mrow`, `Token`, `Layout`, `Ms`, …) are nested inside the
-// `Mathml` object (as `Mathml.Mi`, `Mathml.Mrow`, …) rather than exported flat, so their generic
-// names do not collide with unrelated modules in the `soundness` namespace. Import
-// `soundness.Mathml.*` for the bare element names where MathML is being authored by hand.
-export archimedes.{Math, Mathml, Display, MathmlError, MathmlParser, MathmlReader, mathmlNamespace,
-    Ergo, ErgoError, ergo, mathml, math, Cell, cell, draw}
+export perihelion.{Frame, Masking, Message, Websocket, WebsocketError, WebsocketEvent,
+    WsConnection, WsSessional, WsUrl, overIngressive, overTransmissible, webSocket}
+
+// `wsClient` and `wsSessional` are deliberately not exported: their types carry
+// capture-annotated refinements, which synthesized export forwarders lose (see the note in
+// soundness_scintillate_server.scala). Import them by name: `import perihelion.wsClient`.

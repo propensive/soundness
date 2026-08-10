@@ -34,8 +34,12 @@ package cataclysm
 
 import scala.language.dynamics
 
+import proscenium.compat.iterator
+
 import anticipation.*
 import contextual.*
+import contingency.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import parasite.*
@@ -47,6 +51,18 @@ import vacuous.*
 import zephyrine.*
 
 object Css:
+  // Reading a stylesheet accumulates every `CssError` (unknown property, invalid
+  // or unsupported value, …) instead of stopping at the first: the parse runs
+  // inside a `track`, and any errors are folded into a single `CssErrors` raised
+  // at the end. A fully-valid stylesheet yields the `Css` with nothing raised. In
+  // the companion, so aggregation resolves through implicit scope with no import.
+  given aggregable: (Tactic[CssErrors], Diagnostics) => Css is Aggregable by Text = source =>
+    track[Text](CssErrors(Nil)):
+      case error: CssError => accrual + error
+
+    . protect:
+        CssParser.parse(source.iterator)
+
   // Controls how a `Css` tree is serialized. `newlines` puts each rule and declaration on its own
   // indented line; `spaces` adds the cosmetic spaces (after `:` and before `{`). Bundled as
   // `formatting.standardCssFormatting` and `formatting.compactCssFormatting`.

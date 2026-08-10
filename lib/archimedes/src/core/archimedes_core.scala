@@ -53,15 +53,6 @@ extension [ValueType: Encodable in Math as encodable](value: ValueType)
 
   def mathml: Mathml = Mathml.atom(encodable.encoded(value))
 
-// The `ergo""` interpolator: `ergo"(x↗y)"` parses an ergo shorthand literal into
-// a `Math` value, checking it at compile time (see `internal.ergoInterpolator`).
-inline given ergoInterpolable: Math is Interpolable:
-  transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
-    ( inline insertions: Any* )
-  :   Math =
-
-    ${archimedes.internal.ergoInterpolator[parts]('insertions)}
-
 extension (inline context: StringContext)
   transparent inline def ergo: Interpolation = interpolation[Math](context)
 

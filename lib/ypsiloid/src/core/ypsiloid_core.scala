@@ -56,7 +56,9 @@ import zephyrine.*
 // even-length `Array[Any]^{}` of alternating key/value; a sequence is an odd-length `Array[Any]^{}`
 // (trailing `arrayPad` sentinel when the item count is even). Mirrors jacinta's `Json.Ast`
 // `Showable`. Bring a `Yaml.Formatting` into scope to enable `.show` and HTTP encoding.
-given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml =>
+// The `Showable` instances themselves live in the `Yaml` and `Yaml.Ast` companions, in
+// implicit scope; this is only the emitter.
+private[ypsiloid] def renderAst(yaml: Yaml.Ast)(using formatting: Yaml.Formatting): Text =
   val spaces: Text =
     t"                                                                "
 
@@ -196,8 +198,6 @@ given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml 
       producer.put("\n")
     else
       block(yaml, 0)
-
-given showable: Yaml.Formatting => Yaml is Showable = Yaml.unseal(_).show
 
 extension (inline context: StringContext)
   transparent inline def y: Interpolation = interpolation[Yaml](context)

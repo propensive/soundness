@@ -80,8 +80,6 @@ import filesystemOptions.dereferenceSymlinks.enabled
 
 import filesystemBackends.virtualMachine
 
-given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
-
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus]^{service} =
   service
 

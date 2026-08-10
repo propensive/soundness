@@ -58,6 +58,13 @@ import crypto.permitDeprecatedCrypto
 import providers.javaStdlibProvider
 
 object Message:
+  // A formal `Message is Ingressive`, so the raw `Message` type satisfies the
+  // `Ingressive` requirement `webSocket` places on its message type. A `Message`
+  // channel is decoded by identity — the reader already produced the `Message` — so
+  // this is never actually applied; it could not recover the Text/Binary distinction
+  // from raw bytes anyway. In the companion, so it resolves with no import.
+  given ingressive: Message is Ingressive = Message.Binary(_)
+
   // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can
   // flow through Coaxial's `Control.Reply`/`Conclude` and be written verbatim.
   given transmissible: Message is Transmissible =
