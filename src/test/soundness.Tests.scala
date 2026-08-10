@@ -143,6 +143,7 @@ object Tests extends Suite(m"Soundness tests"):
     synesthesia.Tests()
     symbolism.Tests()
     tarantula.Tests()
+    telekinesis.Tests()
     typonym.Tests()
     ultimatum.Tests()
     ulysses.Tests()
@@ -164,5 +165,5 @@ object Tests extends Suite(m"Soundness tests"):
 
 object FailingTests extends Suite(m"Failing tests"):
   def run(): Unit =
-    telekinesis.Tests()
     // turbulence.Tests() - deadlock
+    ()
