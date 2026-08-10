@@ -1833,13 +1833,12 @@ object eucalyptus extends Library:
       settings.sep(super.scalacOptions())
 
 object exegesis extends Library:
-  object core extends Component(obligatory.json, ethereal.core, exoskeleton.completions,
-      guillotine.core, aperture.core):
-    override def scalaJs = false // LSP server; depends on JVM-only `ethereal`/`exoskeleton`
+  object core extends Component(obligatory.json, guillotine.core, aperture.core):
+    override def scalaJs = false // transitively JVM-only through `obligatory.json`
     override def scalacOptions = Task:
       settings.maxInlines(settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")), "48")
 
-  object demo extends Internal(core):
+  object demo extends Internal(core, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
       settings.maxInlines(settings.sep(super.scalacOptions() ++ Seq("-Yno-predef",
         "-Yimports:java.lang,proscenium")), "48")
@@ -2147,8 +2146,9 @@ object hieroglyph extends Library:
       settings.sep(super.scalacOptions())
 
 object hyperbole extends Library:
-  object core extends Component(harlequin.ansi, escritoire.core, dendrology.tree):
-    override def scalaJs = false // depends on JVM-only `harlequin.ansi`
+  object core extends Component(harlequin.core, escapade.core, escritoire.core,
+      dendrology.tree):
+    override def scalaJs = false // depends on JVM-only `harlequin.core`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
@@ -2278,8 +2278,9 @@ object legerdemain extends Library:
     override def enabled = false
 
 object mandible extends Library:
-  object core extends Component(hyperbole.core, galilei.core):
-    override def scalaJs = false // depends on JVM-only `hyperbole`
+  object core extends Component(anthology.`scala`, hellenism.jvm, escritoire.core,
+      escapade.core, galilei.core):
+    override def scalaJs = false // depends on JVM-only `anthology`/`hellenism`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
@@ -2402,7 +2403,7 @@ object obligatory extends Library:
   object core extends Component(zephyrine.core, gossamer.core, contingency.core, anticipation.codec, fulminate.core, prepositional.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object json extends Component(core, scintillate.server, hyperbole.core, eucalyptus.core, revolution.core, jacinta.schema, jacinta.http):
+  object json extends Component(core, eucalyptus.core, jacinta.schema, jacinta.http):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2438,12 +2439,12 @@ object parasite extends Library:
   object test extends Tests(core, jvm, quantitative.units)
 
 object perihelion extends Library:
-  object core extends Component(scintillate.server, coaxial.jvm, gastronomy.core, monotonous.core,
-      hypotenuse.core, contingency.core, parasite.core, eucalyptus.core):
+  object core extends Component(telekinesis.core, coaxial.jvm, gastronomy.core, monotonous.core,
+      hypotenuse.core, contingency.core, parasite.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jacinta.core)
+  object test extends Tests(core, jacinta.core, scintillate.server, eucalyptus.core)
 
 object phoenicia extends Library:
   object core extends Component(quantitative.units, polaris.core, turbulence.core):
@@ -2830,7 +2831,7 @@ object symbolism extends Library:
       settings.sep(super.scalacOptions())
 
 object synesthesia extends Library:
-  object core extends Component(obligatory.json):
+  object core extends Component(obligatory.json, scintillate.server, revolution.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"), "48")
