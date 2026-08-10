@@ -50,7 +50,6 @@ import scala.reflect.*
 
 import anticipation.*
 import denominative.*
-import distillate.*
 import fulminate.*
 import hieroglyph.*
 import hypotenuse.*
@@ -118,10 +117,6 @@ extension (inline context: StringContext)
 
 extension (context: StringContext)
   def t = SimpleTExtractor(context.parts.head.tt)
-
-// Character decoding as a `Decodable`, so `data.as[Text]` decodes bytes to text through the
-// `CharDecoder` in scope — the counterpart of `Text is Encodable in Data` (a `CharEncoder`).
-given textDecodable: (decoder: CharDecoder) => Text is Decodable in Data = decoder.decoded(_)
 
 extension (bytes: Data)
   def utf8: Text = String(Array.unsafeJvm(bytes), "UTF-8").tt
@@ -610,19 +605,6 @@ extension (builder: StringBuilder)
 package decimalConverters:
   given javaDecimalConverter: DecimalConverter:
     def decimalize(double: Double): Text = double.toString.tt
-
-package enumIdentification:
-  given kebabCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.stdlib.kebab, _.unkebab.stdlib.pascal)
-
-  given snakeCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.stdlib.snake, _.unsnake.stdlib.pascal)
-
-  given pascalCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(identity(_), identity(_))
-
-  given camelCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.stdlib.camel, _.unsnake.stdlib.pascal)
 
 package caseSensitivity:
   given caseSensitive: CaseSensitivity = _ == _
