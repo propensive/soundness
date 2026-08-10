@@ -45,10 +45,41 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
+trait StackTracePalette extends iridescence.Palette:
+  type Form = Srgb
+  def message:   Color in Srgb
+  def file:      Color in Srgb
+  def method:    Color in Srgb
+  def line:      Color in Srgb
+  def separator: Color in Srgb
+  def accent1:   Color in Srgb
+  def accent2:   Color in Srgb
+  def accent3:   Color in Srgb
+  def accent4:   Color in Srgb
+  def accent5:   Color in Srgb
+
+object StackTracePalette:
+  private def hex(n: Int): Color in Srgb =
+    Srgb(((n >> 16) & 255)/255.0, ((n >> 8) & 255)/255.0, (n & 255)/255.0)
+
+  given default: StackTracePalette = new StackTracePalette:
+    def background: Color in Srgb = hex(0x000000)
+    def foreground: Color in Srgb = hex(0xffffff)
+    def message:    Color in Srgb = hex(0xffffff)
+    def file:       Color in Srgb = hex(0x5f9e9f)
+    def method:     Color in Srgb = hex(0xabcfdf)
+    def line:       Color in Srgb = hex(0x47d1cc)
+    def separator:  Color in Srgb = hex(0x808080)
+    def accent1:    Color in Srgb = hex(0xf84020)
+    def accent2:    Color in Srgb = hex(0xd88600)
+    def accent3:    Color in Srgb = hex(0xfefe00)
+    def accent4:    Color in Srgb = hex(0xfeae00)
+    def accent5:    Color in Srgb = hex(0xaefe00)
+
 given exceptionTeletype: (Text is Measurable, StackTrace.Resolver) => Exception is Teletypeable =
   exception => summon[StackTrace is Teletypeable].teletype(StackTrace(exception))
 
-given stackTraceTeletype: (Text is Measurable) => (palette: StackTrace.Palette)
+given stackTraceTeletype: (Text is Measurable) => (palette: StackTracePalette)
 =>  StackTrace is Teletypeable = stack =>
 
   // A static match, not `selectDynamic(s"accent$n")`: structural selection reflects through
@@ -163,7 +194,7 @@ given stackTraceTeletype: (Text is Measurable) => (palette: StackTrace.Palette)
 
   stack.cause.lay(root): cause => e"$root\n${palette.message}(caused by:)\n$cause"
 
-given frameTeletype: (Text is Measurable) => (palette: StackTrace.Palette)
+given frameTeletype: (Text is Measurable) => (palette: StackTracePalette)
 =>  StackTrace.Frame is Teletypeable = frame =>
 
   val className = e"${palette.method}(${frame.displayClass.fit(40, Rtl)})"
@@ -172,7 +203,7 @@ given frameTeletype: (Text is Measurable) => (palette: StackTrace.Palette)
   val line = e"${palette.line}(${frame.line.let(_.show).or(t"?")})"
   e"$className${palette.separator}( ⌗ )$method $file${palette.separator}(:)$line"
 
-given methodTeletype: (palette: StackTrace.Palette) => StackTrace.Method is Teletypeable = method =>
+given methodTeletype: (palette: StackTracePalette) => StackTrace.Method is Teletypeable = method =>
   val className = e"${palette.method}(${method.className})"
   val methodName = e"${palette.method}(${method.method})"
   e"$className${palette.separator}( ⌗ )$methodName"

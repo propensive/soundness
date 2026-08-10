@@ -726,7 +726,7 @@ object soundness extends Toolchain:
   object base extends Bundle(ambience.core, aperture.core, aviation.core, contextual.core,
     contingency.core, denominative.core, digression.core, diuretic.core, fulminate.core,
     hieroglyph.core, adversaria.core, turbulence.core, turbulence.stdio, eucalyptus.core,
-    gossamer.core, gossamer.lexicon,
+    gossamer.core, gossamer.codec, gossamer.lexicon,
     fulminate.print,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
@@ -1059,7 +1059,8 @@ object adversaria extends Library:
       settings.sep(super.scalacOptions())
 
 object ambience extends Library:
-  object core extends Component(anticipation.path, anticipation.print, gossamer.core):
+  object core extends Component(anticipation.path, anticipation.print, gossamer.core,
+      distillate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // WASI-backed environment: an `Environment` given whose variables come from a Wasm Component
@@ -1233,7 +1234,8 @@ object austronesian extends Library:
   object test extends Tests(core)
 
 object aviation extends Library:
-  object core extends Component(abacist.core, quantitative.units, cosmopolite.core):
+  object core extends Component(abacist.core, quantitative.units, cosmopolite.core,
+      contextual.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   // WASI-backed monotonic clock: a `MonotonicClock` given whose reading is a Wasm Component Model
@@ -1504,7 +1506,7 @@ object corpuscular extends Library:
       settings.sep(super.scalacOptions())
 
 object cosmopolite extends Library:
-  object core extends Component(gossamer.core):
+  object core extends Component(distillate.core, gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -1576,13 +1578,12 @@ object denominative extends Library:
       settings.sep(super.scalacOptions())
 
 object digression extends Library:
-  object core extends Component(contingency.core, iridescence.core,
-      spectacular.core):
+  object core extends Component(contingency.core, spectacular.core, distillate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Rendering stack traces as ANSI tables, which is why `escapade.core` used to need both
   // `escritoire` and `digression`.
-  object ansi extends Component(core, escapade.core, escritoire.core):
+  object ansi extends Component(core, escapade.core, escritoire.core, iridescence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, ansi):
@@ -1598,7 +1599,7 @@ object dissonance extends Library:
       settings.sep(super.scalacOptions())
 
 object distillate extends Library:
-  object core extends Component(digression.core, inimitable.core, wisteria.core):
+  object core extends Component(wisteria.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, urticose.url)
@@ -1673,7 +1674,7 @@ object enigmatic extends Library:
     override def nativeModuleDeps = super.nativeModuleDeps :+ xenophile.scalanative.native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, cose, openssl, x509):
+  object test extends Tests(core, cose, openssl, x509, gossamer.codec):
     // Not `settings.cc`: the suite's `NoPadding` tests trip the tactic-capturing
     // padding given (pure `using cipher` params can't accept capturing evidence
     // yet); `CaptureTests` opts into capture checking per-file instead. `-Ycc-new`
@@ -1963,7 +1964,7 @@ object geodesy extends Library:
   object angle extends Component(hypotenuse.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object core extends Component(angle, gossamer.core):
+  object core extends Component(distillate.core, angle, gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, angle):
@@ -1971,7 +1972,8 @@ object geodesy extends Library:
       settings.sep(super.scalacOptions())
 
 object gesticulate extends Library:
-  object core extends Component(gossamer.core, anticipation.html, anticipation.path,
+  object core extends Component(gossamer.core, contextual.core, anticipation.html,
+      anticipation.path,
     turbulence.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -1998,7 +2000,14 @@ object gnossienne extends Library:
       settings.sep(super.scalacOptions())
 
 object gossamer extends Library:
-  object core extends Component(hieroglyph.core, kaleidoscope.core, spectacular.core, hypotenuse.core, distillate.core):
+  object core extends Component(hieroglyph.core, kaleidoscope.core, spectacular.core,
+      hypotenuse.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Decoding `Text` from bytes and naming enum cases: gossamer's only uses of distillate,
+  // and so the component that keeps distillate (with digression, inimitable and wisteria
+  // behind it) out of the closure of everything that merely handles text.
+  object codec extends Component(core, distillate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Word-lookup structures — an Aho-Corasick `Dictionary` and a fuzzy-search `Lexicon` — which
@@ -2021,7 +2030,7 @@ object graffiti extends Library:
       settings.sep(super.scalacOptions())
 
 object guillotine extends Library:
-  object core extends Component(turbulence.core, ambience.core):
+  object core extends Component(turbulence.core, ambience.core, contextual.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2184,7 +2193,7 @@ object imperial extends Library:
       settings.sep(super.scalacOptions())
 
 object inimitable extends Library:
-  object core extends Component(contingency.core, spectacular.core):
+  object core extends Component(distillate.core, contingency.core, spectacular.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2265,7 +2274,7 @@ object legerdemain extends Library:
   // The `Query` type and its `Parametric` typeclass: the form-encoded half of the library, with
   // no HTML in it. `telekinesis` needs only this, so keeping it out of `core` takes the whole
   // HTML/XML stack off the HTTP-client path.
-  object query extends Component(gossamer.core):
+  object query extends Component(gossamer.core, distillate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core extends Component(honeycomb.core, anamnesis.core, query):
@@ -2353,10 +2362,10 @@ object mosquito extends Library:
       settings.sep(super.scalacOptions())
 
 object urticose extends Library:
-  object core extends Component(gossamer.core):
+  object core extends Component(distillate.core, gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object url extends Component(anticipation.url, serpentine.core, core):
+  object url extends Component(anticipation.url, serpentine.core, contextual.core, core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // `Url` styling, which is all that `urticose` needed `escapade` (and hence `iridescence`) for.
@@ -2368,7 +2377,7 @@ object urticose extends Library:
       settings.sep(super.scalacOptions())
 
 object nomenclature extends Library:
-  object core extends Component(gossamer.core):
+  object core extends Component(gossamer.core, distillate.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2566,7 +2575,7 @@ object probably extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The scoverage `Invoker`'s initializer needs `SecureRandom` (absent on Scala Native), so
   // the measurement-file lookup is split by platform (`coverage-jvm`/`coverage-native`).
-  object coverage extends Component(dendrology.tree):
+  object coverage extends Component(distillate.core, digression.core, dendrology.tree):
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "coverage-jvm")
     override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "coverage-native")
     override def scalacOptions = Task:
@@ -2708,7 +2717,8 @@ object sedentary extends Library:
       settings.sep(super.scalacOptions())
 
 object serpentine extends Library:
-  object core extends Component(nomenclature.core, anticipation.path, anticipation.print):
+  object core extends Component(nomenclature.core, anticipation.path, anticipation.print,
+      inimitable.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The platform types (`Linux`, `Windows`, …) that the path-algebra tests exercise now live in
@@ -3120,6 +3130,7 @@ object querencia extends Library:
 
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, wisteria.core,
+      contextual.core,
       panopticon.core, turbulence.core, serpentine.core, gossamer.lexicon):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3140,7 +3151,7 @@ object xylophone extends Library:
     def mvnDeps = Seq(mvn"org.scala-lang.modules::scala-xml:2.4.0")
 
 object yossarian extends Library:
-  object core extends Component(gossamer.core, turbulence.core):
+  object core extends Component(gossamer.core, turbulence.core, anticipation.color):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

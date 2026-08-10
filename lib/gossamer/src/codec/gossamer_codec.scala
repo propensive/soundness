@@ -30,31 +30,35 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package gossamer
 
-export
-  gossamer
-  . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank, BoundsError,
-      broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, chomp,
-      contains, count, cut, Cuttable, Decimalizer, ends, erase, extract, fill, fit,
-      from,
-      fuzzy, Grapheme, init, join, Joinable, kebab, keep, length, lines, lower,
-      Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
-      RangeError, reversibleTextual, Rtl, search, offsetOf, SimpleTExtractor, skip, slices, snake, snip,
-      spaced, starts, sub, subscripts, superscripts, sysData, t, tail, text,
-      TextBuilder,
-      Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,
-      urlEncode, utf16, utf8, pinpoint, words, Writing, WritingBuilder, a, justify, punch }
+import proscenium.compat.*
 
-package decimalConverters:
-  export gossamer.decimalConverters.javaDecimalConverter
+import scala.reflect
 
-package proximities:
-  export gossamer.proximities.jaroProximity
-  export gossamer.proximities.jaroWinklerProximity
-  export gossamer.proximities.prefixProximity
-  export gossamer.proximities.levenshteinProximity
-  export gossamer.proximities.normalizedLevenshteinProximity
+import anticipation.*
+import distillate.*
+import hieroglyph.*
+import prepositional.*
 
-package caseSensitivity:
-  export gossamer.caseSensitivity.{caseInsensitive, caseSensitive, smartCase}
+// The distillate-facing half of gossamer: decoding `Text` from bytes, and naming enum cases
+// in the usual capitalisation styles. Splitting it out is what keeps `distillate` — and with
+// it digression, inimitable and wisteria — out of the closure of every module that only needs
+// text.
+
+// Character decoding as a `Decodable`, so `data.as[Text]` decodes bytes to text through the
+// `CharDecoder` in scope — the counterpart of `Text is Encodable in Data` (a `CharEncoder`).
+given textDecodable: (decoder: CharDecoder) => Text is Decodable in Data = decoder.decoded(_)
+
+package enumIdentification:
+  given kebabCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+    Identifiable(_.uncamel.stdlib.kebab, _.unkebab.stdlib.pascal)
+
+  given snakeCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+    Identifiable(_.uncamel.stdlib.snake, _.unsnake.stdlib.pascal)
+
+  given pascalCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+    Identifiable(identity(_), identity(_))
+
+  given camelCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+    Identifiable(_.uncamel.stdlib.camel, _.unsnake.stdlib.pascal)

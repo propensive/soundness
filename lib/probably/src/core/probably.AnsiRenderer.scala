@@ -134,7 +134,7 @@ private[probably] object AnsiRenderer:
       e"$sign${datum(inner)}"
 
   private def accent(level: Int): Color in Srgb =
-    val stackPalette = summon[StackTrace.Palette]
+    val stackPalette = summon[StackTracePalette]
 
     (level%5) + 1 match
       case 1 => stackPalette.accent1
@@ -352,7 +352,7 @@ private[probably] object AnsiRenderer:
         title.let: id => Out.println(e"$Bold(${Fg(palette.foreground)}(${id.name}))")
 
         val max = frames.stdlib.map(_.samples).maxOption.getOrElse(0L)
-        val stackPalette = summon[StackTrace.Palette]
+        val stackPalette = summon[StackTracePalette]
 
         // The digression convention: packages in first-appearance order take the accent
         // colours cyclically, exactly as coloured stack traces do.
