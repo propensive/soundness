@@ -34,7 +34,6 @@ package digression
 
 import anticipation.*
 import fulminate.*
-import iridescence.*
 import prepositional.*
 import proscenium.compat.*
 import rudiments.*
@@ -131,36 +130,6 @@ object StackTrace:
         s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line$code".tt
 
     stack.cause.lay(root): cause => s"$root\ncaused by:\n$cause".tt
-
-  trait Palette extends iridescence.Palette:
-    type Form = Srgb
-    def message:   Color in Srgb
-    def file:      Color in Srgb
-    def method:    Color in Srgb
-    def line:      Color in Srgb
-    def separator: Color in Srgb
-    def accent1:   Color in Srgb
-    def accent2:   Color in Srgb
-    def accent3:   Color in Srgb
-    def accent4:   Color in Srgb
-    def accent5:   Color in Srgb
-
-  private def hex(n: Int): Color in Srgb =
-    Srgb(((n >> 16) & 255)/255.0, ((n >> 8) & 255)/255.0, (n & 255)/255.0)
-
-  given defaultPalette: StackTrace.Palette = new Palette:
-    def background: Color in Srgb = hex(0x000000)
-    def foreground: Color in Srgb = hex(0xffffff)
-    def message:    Color in Srgb = hex(0xffffff)
-    def file:       Color in Srgb = hex(0x5f9e9f)
-    def method:     Color in Srgb = hex(0xabcfdf)
-    def line:       Color in Srgb = hex(0x47d1cc)
-    def separator:  Color in Srgb = hex(0x808080)
-    def accent1:    Color in Srgb = hex(0xf84020)
-    def accent2:    Color in Srgb = hex(0xd88600)
-    def accent3:    Color in Srgb = hex(0xfefe00)
-    def accent4:    Color in Srgb = hex(0xfeae00)
-    def accent5:    Color in Srgb = hex(0xaefe00)
 
   val legend: Map[Text, Text] =
     Map

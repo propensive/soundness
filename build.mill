@@ -1233,7 +1233,8 @@ object austronesian extends Library:
   object test extends Tests(core)
 
 object aviation extends Library:
-  object core extends Component(abacist.core, quantitative.units, cosmopolite.core):
+  object core extends Component(abacist.core, quantitative.units, cosmopolite.core,
+      contextual.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   // WASI-backed monotonic clock: a `MonotonicClock` given whose reading is a Wasm Component Model
@@ -1576,13 +1577,12 @@ object denominative extends Library:
       settings.sep(super.scalacOptions())
 
 object digression extends Library:
-  object core extends Component(contingency.core, iridescence.core,
-      spectacular.core):
+  object core extends Component(contingency.core, spectacular.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Rendering stack traces as ANSI tables, which is why `escapade.core` used to need both
   // `escritoire` and `digression`.
-  object ansi extends Component(core, escapade.core, escritoire.core):
+  object ansi extends Component(core, escapade.core, escritoire.core, iridescence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, ansi):
@@ -1971,7 +1971,8 @@ object geodesy extends Library:
       settings.sep(super.scalacOptions())
 
 object gesticulate extends Library:
-  object core extends Component(gossamer.core, anticipation.html, anticipation.path,
+  object core extends Component(gossamer.core, contextual.core, anticipation.html,
+      anticipation.path,
     turbulence.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2021,7 +2022,7 @@ object graffiti extends Library:
       settings.sep(super.scalacOptions())
 
 object guillotine extends Library:
-  object core extends Component(turbulence.core, ambience.core):
+  object core extends Component(turbulence.core, ambience.core, contextual.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2356,7 +2357,7 @@ object urticose extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object url extends Component(anticipation.url, serpentine.core, core):
+  object url extends Component(anticipation.url, serpentine.core, contextual.core, core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // `Url` styling, which is all that `urticose` needed `escapade` (and hence `iridescence`) for.
@@ -3120,6 +3121,7 @@ object querencia extends Library:
 
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, wisteria.core,
+      contextual.core,
       panopticon.core, turbulence.core, serpentine.core, gossamer.lexicon):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3140,7 +3142,7 @@ object xylophone extends Library:
     def mvnDeps = Seq(mvn"org.scala-lang.modules::scala-xml:2.4.0")
 
 object yossarian extends Library:
-  object core extends Component(gossamer.core, turbulence.core):
+  object core extends Component(gossamer.core, turbulence.core, anticipation.color):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

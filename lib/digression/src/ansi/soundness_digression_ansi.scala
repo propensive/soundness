@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export digression.{exceptionTeletype, frameTeletype, methodTeletype, stackTraceTeletype}
+export digression.{exceptionTeletype, frameTeletype, methodTeletype, StackTracePalette,
+    stackTraceTeletype}
