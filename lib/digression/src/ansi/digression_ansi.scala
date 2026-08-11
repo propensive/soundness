@@ -112,7 +112,13 @@ package teletypeables:
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${palette.message}($fullClass): ${stack.message}"
 
-    case class Row(frame: StackTrace.Frame, sameClass: Boolean, sameFile: Boolean)
+    // A row is a frame, or one level of inlining beneath it when the frame's classfile carried an
+    // SMAP: extra detail about the frame above, not a frame of its own.
+    case class Row
+      ( frame:     StackTrace.Frame,
+        sameClass: Boolean,
+        sameFile:  Boolean,
+        inlined:   Optional[StackTrace.Frame.Inlined] = Unset )
 
     val rows: List[Row] =
       List.of:
@@ -120,7 +126,8 @@ package teletypeables:
           case ((acc, lastClass, lastFile), frame) =>
             val sameClass = frame.displayClass == lastClass
             val sameFile = frame.file == lastFile
-            (Row(frame, sameClass, sameFile) :: acc, frame.displayClass, frame.file)
+            val subRows = frame.inlined.map(Row(frame, true, false, _)).reverse.stdlib
+            (subRows ::: Row(frame, sameClass, sameFile) :: acc, frame.displayClass, frame.file)
 
         . _1.reverse
 
@@ -128,43 +135,56 @@ package teletypeables:
     // reader is looking for, so it stays legible but recedes.
     def plumbing(row: Row): Boolean = row.frame.source.lay(false)(_.kind.plumbing)
 
-    def classCell(row: Row): Teletype =
-      val frame = row.frame
-      val obj = frame.displaySegment.starts(t"Ξ")
-      val methodCls = if obj then frame.displaySegment.skip(1) else frame.displaySegment
-      // Every row's prefix was registered when `packages` was built from the same frames; an
-      // unregistered prefix falls back to the first accent colour.
-      val color = packages(frame.method.prefix).or(accent(0))
+    import StackTrace.Frame.Inlined
 
-      if row.sameClass || plumbing(row)
-      then e"${palette.subdue(color, 0.85)}(${frame.displayPrefix}.$methodCls)"
-      else
-        e"${palette.subdue(color, 0.5)}(${frame.displayPrefix}.$Bold($color($methodCls)))"
+    def classCell(row: Row): Teletype = row.inlined match
+      case origin: Inlined => e""
+      case _ =>
+        val frame = row.frame
+        val obj = frame.displaySegment.starts(t"Ξ")
+        val methodCls = if obj then frame.displaySegment.skip(1) else frame.displaySegment
+        // Every row's prefix was registered when `packages` was built from the same frames; an
+        // unregistered prefix falls back to the first accent colour.
+        val color = packages(frame.method.prefix).or(accent(0))
 
-    def dotCell(row: Row): Teletype =
-      // A resolved frame names a chain of source definitions, which is joined with dots however
-      // the chain happens to have been compiled.
-      val resolved = row.frame.source.present
-      val ch = if resolved || row.frame.displaySegment.starts(t"Ξ") then t"." else t"⌗"
-      e"${palette.separator}($ch)"
+        if row.sameClass || plumbing(row)
+        then e"${palette.subdue(color, 0.85)}(${frame.displayPrefix}.$methodCls)"
+        else
+          e"${palette.subdue(color, 0.5)}(${frame.displayPrefix}.$Bold($color($methodCls)))"
 
-    def methodCell(row: Row): Teletype =
-      val color = if plumbing(row) then palette.subdue(palette.method, 0.85) else palette.method
-      e"$color(${row.frame.displayMethod})"
+    def dotCell(row: Row): Teletype = row.inlined match
+      case origin: Inlined => e""
+      case _ =>
+        // A resolved frame names a chain of source definitions, which is joined with dots however
+        // the chain happens to have been compiled.
+        val resolved = row.frame.source.present
+        val ch = if resolved || row.frame.displaySegment.starts(t"Ξ") then t"." else t"⌗"
+        e"${palette.separator}($ch)"
 
-    def codeCell(row: Row): Teletype =
-      e"${palette.subdue(palette.file, 0.7)}(${row.frame.source.let(_.code).or(t"")})"
+    def methodCell(row: Row): Teletype = row.inlined match
+      case origin: Inlined => e"${palette.subdue(palette.method, 0.85)}(inlined from)"
+      case _ =>
+        val color = if plumbing(row) then palette.subdue(palette.method, 0.85) else palette.method
+        e"$color(${row.frame.displayMethod})"
 
-    def fileCell(row: Row): Teletype =
-      val color = if row.sameFile then palette.subdue(palette.file, 0.85) else palette.file
-      e"$color(${row.frame.file})"
+    def codeCell(row: Row): Teletype = row.inlined match
+      case origin: Inlined => e""
+      case _ =>
+        e"${palette.subdue(palette.file, 0.7)}(${row.frame.source.let(_.code).or(t"")})"
 
-    def lineCell(row: Row): Teletype =
-      e"${palette.line}(${row.frame.line.let(_.show).or(t"")})"
+    def fileCell(row: Row): Teletype = row.inlined match
+      case origin: Inlined => e"${palette.subdue(palette.file, 0.5)}(${origin.file})"
+      case _ =>
+        val color = if row.sameFile then palette.subdue(palette.file, 0.85) else palette.file
+        e"$color(${row.frame.file})"
+
+    def lineCell(row: Row): Teletype = row.inlined match
+      case origin: Inlined => e"${palette.subdue(palette.line, 0.5)}(${origin.line})"
+      case _ => e"${palette.line}(${row.frame.line.let(_.show).or(t"")})"
 
     val scaffold =
       Scaffold[Row]
-        ( Column(e"")(_ => e"${palette.separator}(at)"),
+        ( Column(e"")(row => e"${palette.separator}(${if row.inlined.present then t" ↳" else t"at"})"),
           Column(e"", textAlign = TextAlignment.Right)(classCell),
           Column(e"")(dotCell),
           Column(e"")(methodCell),

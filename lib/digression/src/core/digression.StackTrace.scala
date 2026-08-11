@@ -69,6 +69,12 @@ object StackTrace:
 
       def definition: Text = if owner.s.isEmpty then name else (owner.s+"."+name.s).tt
 
+    // Where a frame's code was written, when the classfile's SMAP (the JSR-45
+    // `SourceDebugExtension` attribute) records that it was inlined from another source file: one
+    // entry per level of inlining, innermost first. `path` is the full source path, of which
+    // `file` is the last segment.
+    case class Inlined(file: Text, path: Text, line: Int)
+
   case class Frame
     ( method:    Method,
       file:      Text,
@@ -76,7 +82,8 @@ object StackTrace:
       native:    Boolean,
       jvmClass:  Text = "".tt,
       jvmMethod: Text = "".tt,
-      source:    Optional[Frame.Source] = Unset ):
+      source:    Optional[Frame.Source] = Unset,
+      inlined:   List[Frame.Inlined] = Nil ):
 
     // What to show for the frame's owner: the chain of source definitions it sits inside, when
     // that is known, and otherwise the demangled class name.
@@ -127,7 +134,12 @@ object StackTrace:
         val line = frame.line.let(_.show).or("?".tt)
         val code = frame.source.let(_.code).lay("".tt)(code => s"\n       $code".tt)
 
-        s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line$code".tt
+        // Each level of inlining the SMAP recorded, innermost first: extra detail about the same
+        // frame, so it is indented beneath it like a quoted line of source.
+        val inlined = frame.inlined.fold(""):
+          case (text, origin) => s"$text\n       ↳ inlined from ${origin.file}:${origin.line}"
+
+        s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line$code$inlined".tt
 
     stack.cause.lay(root): cause => s"$root\ncaused by:\n$cause".tt
 
@@ -417,7 +429,12 @@ object StackTrace:
         case Unset => "?".tt
         case value => value.toString.tt
 
-      s"$state\n\n${nbsp*2}at$nbsp$classPad$className$dot$method$methodPad$nbsp$file:$line".tt
+      val inlined = next.inlined.fold(""):
+        case (text, origin) =>
+          s"$text\n${nbsp*7}↳$nbsp"+s"inlined$nbsp"+s"from$nbsp${origin.file}:${origin.line}"
+
+      s"$state\n\n${nbsp*2}at$nbsp$classPad$className$dot$method$methodPad$nbsp$file:$line$inlined"
+      . tt
 
     Message:
       stack.cause.lay(root): cause => s"$root\ncaused by:\n\n$cause".tt
