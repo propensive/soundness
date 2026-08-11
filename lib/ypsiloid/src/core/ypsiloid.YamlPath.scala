@@ -40,6 +40,7 @@ import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -91,14 +92,14 @@ object YamlPath extends Root(""):
   // Parses a same-document YAML path (`#`, `#/`, `#/a/b`), reporting the offset
   // of any error. Modelled on `jacinta.JsonPointer`'s decoder, with the same
   // RFC 6901 escaping.
-  given decodable: (tactic: Tactic[YamlPathError])
+  given decodable: (tactic: Tactic[YamlPath.Error])
   =>  ((YamlPath is Decodable in Text)^{tactic}) = text =>
     val string = text.s
 
     if string.isEmpty || string.charAt(0) != '#'
-    then abort(YamlPathError(YamlPathError.Reason.ExpectedHash, 0))
+    then abort(YamlPath.Error(YamlPath.Error.Reason.ExpectedHash, 0))
     else if string.length > 1 && string.charAt(1) != '/'
-    then abort(YamlPathError(YamlPathError.Reason.ExpectedSlash, 1))
+    then abort(YamlPath.Error(YamlPath.Error.Reason.ExpectedSlash, 1))
     else
       var index = 1
 
@@ -107,7 +108,7 @@ object YamlPath extends Root(""):
           val next = if index + 1 < string.length then string.charAt(index + 1) else ' '
 
           if next != '0' && next != '1'
-          then abort(YamlPathError(YamlPathError.Reason.BadEscape, index))
+          then abort(YamlPath.Error(YamlPath.Error.Reason.BadEscape, index))
 
         index += 1
 
@@ -137,9 +138,29 @@ object YamlPath extends Root(""):
       def divide(path: YamlPath, segment: Ordinal): YamlPath =
         YamlPath(path.url, path.path / segment)
 
+  // YamlPathError → YamlPath.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case UnknownDocument extends Reason(1)
+      case ExpectedHash    extends Reason(2)
+      case ExpectedSlash   extends Reason(3)
+      case BadEscape       extends Reason(4)
+
+    given communicable: Reason is Communicable =
+      case Reason.UnknownDocument => m"the registry contains no document at the path's URL"
+      case Reason.ExpectedHash    => m"a YAML path must begin with '#'"
+      case Reason.ExpectedSlash   => m"a YAML path fragment must begin with '/'"
+      case Reason.BadEscape       => m"a '~' in a YAML path must be followed by '0' or '1'"
+
+  // `offset` is the character index, within the path text, where the error was
+  // detected; consumers (e.g. the `yp"…"` interpolator) use it to position a
+  // compile-time error precisely.
+  case class Error(reason: YamlPath.Error.Reason, offset: Int)(using Diagnostics)
+  extends fulminate.Error(546, reason.number)(m"the YAML path was not valid because $reason")
+
 case class YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath):
-  def apply(using registry: YamlPath.Registry)(document: Yaml): Yaml raises YamlPathError =
-    url.let(registry(_).lest(YamlPathError(YamlPathError.Reason.UnknownDocument, 0)))
+  def apply(using registry: YamlPath.Registry)(document: Yaml): Yaml raises YamlPath.Error =
+    url.let(registry(_).lest(YamlPath.Error(YamlPath.Error.Reason.UnknownDocument, 0)))
     . or(document)
 
   def apply(ordinal: Ordinal): YamlPath = YamlPath(url, path / ordinal)

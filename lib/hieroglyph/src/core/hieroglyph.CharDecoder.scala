@@ -39,6 +39,7 @@ import java.nio as jn, jn.charset as jnc
 import anticipation.*
 import beneficence.*
 import denominative.*
+import fulminate.*
 import proscenium.compat.*
 import rudiments.*
 import vacuous.*
@@ -51,6 +52,11 @@ object CharDecoder:
 
   def unapply(name: Text)(using sanitizer: TextSanitizer): Option[CharDecoder] =
     Encoding.unapply(name).map(CharDecoder(_))
+
+  // CharDecodeError → CharDecoder.Error
+  case class Error(position: Int, encoding: Encoding)(using Diagnostics)
+  extends fulminate.Error
+    ( m"The byte sequence at position $position could not be decoded with the encoding $encoding" )
 
 class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) extends Findable:
   type Self = Text

@@ -67,7 +67,7 @@ import Mathml.*
 
 object Math:
   given aggregable: (schema: XmlSchema)
-  =>  (parseTactic: Tactic[ParseError], xmlTactic: Tactic[XmlError], mathmlTactic: Tactic[MathmlError])
+  =>  (parseTactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[MathmlError])
   =>  ((Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
 
     source =>
@@ -76,7 +76,7 @@ object Math:
 
   given loadable: (XmlSchema)
   =>  (parseTactic: Tactic[ParseError])
-  =>  (xmlTactic: Tactic[XmlError])
+  =>  (xmlTactic: Tactic[Xml.Error])
   =>  (mathmlTactic: Tactic[MathmlError])
   =>  ((Math is Loadable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
 

@@ -47,9 +47,9 @@ enum DShape derives CanEqual:
   case Circle(radius: Int)
   case Square(side: Int)
 
-case class XmlIssues(items: List[(Text, XmlError)] = Nil)(using Diagnostics)
+case class XmlIssues(items: List[(Text, Xml.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} XML decoding issues"):
-  def +(focus: Text, error: XmlError): XmlIssues = XmlIssues(items :+ (focus, error))
+  def +(focus: Text, error: Xml.Error): XmlIssues = XmlIssues(items :+ (focus, error))
 
 // Wrapped in an object so the `given Default[DPerson]` is in lexical scope
 // *at the conjunction call site* — the `summonFrom` inside the inlined
@@ -62,7 +62,7 @@ object DefaultPersonScope:
   def run(): Set[String] =
     val xml = x"<root><company>Acme</company></root>"
     validate[Xml.Focus](XmlIssues()):
-      case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
+      case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error)
     . protect(xml.as[DContact]).items.map(_(0).s).to[Set]
 
 case class DDrawing(shape: DShape, label: Text) derives CanEqual
@@ -79,7 +79,7 @@ object DefaultShapeScope:
   def run(): (Set[String], Int) =
     val xml = x"<Triangle><foo>bar</foo></Triangle>"
     val accrued = validate[Xml.Focus](XmlIssues()):
-      case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
+      case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error)
     . protect(xml.as[DShape])
 
     (accrued.items.map(_(0).s).to[Set], accrued.items.length)
@@ -92,11 +92,11 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
   // function, an unimplemented compiler restriction), so the decode lambda must beta-reduce
   // away into `protect`'s inline position. See rep/DECISIONS.md.
   private inline def validateXml[result](xml: Xml)
-    (inline decode: Xml => result raises XmlError tracks Xml.Focus)
+    (inline decode: Xml => result raises Xml.Error tracks Xml.Focus)
   :   XmlIssues =
-    Validate[XmlIssues, [r] =>> r raises XmlError, Xml.Focus]
+    Validate[XmlIssues, [r] =>> r raises Xml.Error, Xml.Focus]
       ( XmlIssues(),
-        { case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error) } )
+        { case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error) } )
     . protect(decode(xml))
 
   def run(): Unit =
@@ -235,11 +235,11 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
       inline def validateWithPositions[result]
         ( document: Document[Xml] )
-        ( inline decode: Document[Xml] => result raises XmlError tracks Xml.Focus )
+        ( inline decode: Document[Xml] => result raises Xml.Error tracks Xml.Focus )
       :   List[(Text, Optional[Int], Optional[Int])] =
-        Validate[Tagged, [r] =>> r raises XmlError, Xml.Focus]
+        Validate[Tagged, [r] =>> r raises Xml.Error, Xml.Focus]
           ( Tagged(),
-            { case error: XmlError =>
+            { case error: Xml.Error =>
                 val position = prior.let(_.position)
                 accrual + ( prior.let(_.path.encode).or(t"#"),
                             position.let(_.line.n1),
@@ -261,7 +261,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
         val lines: List[Optional[Int]] =
           validate[Xml.Focus](Tagged()):
-            case error: XmlError =>
+            case error: Xml.Error =>
               accrual + prior.let(_.position).let(_.line.n1)
           . protect(xml.as[DPerson]).items
 

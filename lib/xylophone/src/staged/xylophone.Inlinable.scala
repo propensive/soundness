@@ -64,11 +64,11 @@ trait Inlinable extends Typeclass:
   // What a field of this type yields when no child element carries its
   // name, mirroring the runtime instances: an abort unless overridden (the
   // primitive instances raise and continue with a sentinel).
-  def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+  def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
     (using Quotes, Type[Self])
   :   Expr[Self] =
 
-    '{ abort(XmlError())(using $tactic) }
+    '{ abort(Xml.Error())(using $tactic) }
 
 object Inlinable:
   // Generates a monomorphic `Xml.Parsable` for a case class at compile
@@ -95,7 +95,7 @@ object Inlinable:
     def parse(reader: Expr[XmlReader])(using Quotes, Type[value]): Expr[value] =
       delegate0.parse(reader)
 
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[value])
     :   Expr[value] =
 
@@ -113,7 +113,7 @@ object Inlinable:
     // A missing (or wrong-shape) record: one raise at the current focus,
     // then a user-supplied `Default` sentinel or a per-sub-field absent
     // build — the derived engine's `absent()` exactly.
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[product])
     :   Expr[product] =
 
@@ -133,7 +133,7 @@ object Inlinable:
 
     // A missing sum field: the AST disjunction over the `Absent` sentinel —
     // no discriminator, so a raise-plus-`Default` or an abort.
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[sum])
     :   Expr[sum] =
 
@@ -153,7 +153,7 @@ object Inlinable:
       stagedInternal.iterableBody[Iterable[element]](reader, element0)
 
     // A missing collection field is the empty collection on both paths.
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[Iterable[element]])
     :   Expr[Iterable[element]] =
 
@@ -170,7 +170,7 @@ object Inlinable:
     def parse(reader: Expr[XmlReader])(using Quotes, Type[Int]): Expr[Int] =
       '{ Xml.intParsable.parse($reader) }
 
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[Int])
     :   Expr[Int] =
 
@@ -182,7 +182,7 @@ object Inlinable:
     def parse(reader: Expr[XmlReader])(using Quotes, Type[Long]): Expr[Long] =
       '{ Xml.longParsable.parse($reader) }
 
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[Long])
     :   Expr[Long] =
 
@@ -194,7 +194,7 @@ object Inlinable:
     def parse(reader: Expr[XmlReader])(using Quotes, Type[Double]): Expr[Double] =
       '{ Xml.doubleParsable.parse($reader) }
 
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[Double])
     :   Expr[Double] =
 
@@ -206,7 +206,7 @@ object Inlinable:
     def parse(reader: Expr[XmlReader])(using Quotes, Type[Float]): Expr[Float] =
       '{ Xml.floatParsable.parse($reader) }
 
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[Float])
     :   Expr[Float] =
 
@@ -218,7 +218,7 @@ object Inlinable:
     def parse(reader: Expr[XmlReader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{ Xml.booleanParsable.parse($reader) }
 
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[Boolean])
     :   Expr[Boolean] =
 
@@ -230,7 +230,7 @@ object Inlinable:
     def parse(reader: Expr[XmlReader])(using Quotes, Type[Text]): Expr[Text] =
       '{ $reader.text().or { $reader.fault(); t"" } }
 
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[Text])
     :   Expr[Text] =
 
@@ -242,7 +242,7 @@ object Inlinable:
     def parse(reader: Expr[XmlReader])(using Quotes, Type[String]): Expr[String] =
       '{ ($reader.text().or { $reader.fault(); t"" }).s }
 
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[String])
     :   Expr[String] =
 

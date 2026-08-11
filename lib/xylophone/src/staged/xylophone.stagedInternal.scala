@@ -301,7 +301,7 @@ object stagedInternal:
           ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
       }
 
-    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[value])
     :   Expr[value] =
 
@@ -616,7 +616,7 @@ object stagedInternal:
     ( reader:  Expr[XmlReader],
       foci:    Expr[Foci[Xml.Focus]],
       focused: Expr[Boolean],
-      tactic:  Expr[Tactic[XmlError]],
+      tactic:  Expr[Tactic[Xml.Error]],
       cache:   Cache )
     (using Quotes)
   :   Expr[product] =
@@ -1048,14 +1048,14 @@ object stagedInternal:
   // sub-field takes its declared default or raises at its own focus —
   // exactly the derived engine's `absent()`.
   private[xylophone] def productAbsent[product: Type]
-    (tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    (tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
     (using Quotes)
   :   Expr[product] =
 
     productAbsent[product](tactic, foci, Cache())
 
   private[xylophone] def productAbsent[product: Type]
-    (tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]], cache: Cache)
+    (tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]], cache: Cache)
     (using Quotes)
   :   Expr[product] =
 
@@ -1118,13 +1118,13 @@ object stagedInternal:
     Expr.summon[Default[product]] match
       case Some(default) =>
         '{
-          raise(XmlError())(using $tactic)
+          raise(Xml.Error())(using $tactic)
           $default()
         }
 
       case None =>
         '{
-          raise(XmlError())(using $tactic)
+          raise(Xml.Error())(using $tactic)
           ${ build() }
         }
 
@@ -1165,19 +1165,19 @@ object stagedInternal:
 
     val arity = variants.length
 
-    def fallback(tactic: Expr[Tactic[XmlError]]): Expr[sum] =
+    def fallback(tactic: Expr[Tactic[Xml.Error]]): Expr[sum] =
       Expr.summon[Default[sum]] match
         case Some(default) =>
           '{
             $reader.skipElement()
-            raise(XmlError())(using $tactic)
+            raise(Xml.Error())(using $tactic)
             $default()
           }
 
         case None =>
-          '{ abort(XmlError())(using $tactic) }
+          '{ abort(Xml.Error())(using $tactic) }
 
-    def dispatch(index: Int, wire: Expr[String], tactic: Expr[Tactic[XmlError]]): Expr[sum] =
+    def dispatch(index: Int, wire: Expr[String], tactic: Expr[Tactic[Xml.Error]]): Expr[sum] =
       if index == arity then fallback(tactic)
       else variants(index)(1).asType match
         case '[type variantType <: sum; variantType] =>
@@ -1201,18 +1201,18 @@ object stagedInternal:
 
   // A missing sum field: no discriminator, so the AST disjunction's
   // fallback — a raise-plus-`Default` or an abort.
-  private[xylophone] def sumAbsent[sum: Type](tactic: Expr[Tactic[XmlError]])(using Quotes)
+  private[xylophone] def sumAbsent[sum: Type](tactic: Expr[Tactic[Xml.Error]])(using Quotes)
   :   Expr[sum] =
 
     Expr.summon[Default[sum]] match
       case Some(default) =>
         '{
-          raise(XmlError())(using $tactic)
+          raise(Xml.Error())(using $tactic)
           $default()
         }
 
       case None =>
-        '{ abort(XmlError())(using $tactic) }
+        '{ abort(Xml.Error())(using $tactic) }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Xml.Parsable] =
@@ -1237,6 +1237,6 @@ object stagedInternal:
             // every use casts from the neutral carrier afresh.
             ${ productFields[value]('{ reader0.asInstanceOf[XmlReader] }, cache) }
 
-          override def absent()(using tactic: Tactic[XmlError], foci: Foci[Xml.Focus]): value =
+          override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
             ${ productAbsent[value]('tactic, 'foci, cache) }
     }

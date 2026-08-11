@@ -293,7 +293,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
 
   def makeClient(connection: Connection)(using Monitor, Stdio, Probate)
-    ( using Tactic[StreamError], Tactic[CharDecodeError], Tactic[NumberError],
+    ( using Tactic[StreamError], Tactic[CharDecoder.Error], Tactic[NumberError],
             (DaemonLogEvent is Loggable)^ )
   :   Unit =
 

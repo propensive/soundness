@@ -65,9 +65,9 @@ case class PPlaylist(name: Text, songs: List[Text]) derives CanEqual
 case class PTree(value: Text, children: List[PTree]) derives CanEqual
 case class PTeam(name: Text, members: List[PWorker]) derives CanEqual
 
-case class PIssues(items: List[(Text, XmlError)] = Nil)(using Diagnostics)
+case class PIssues(items: List[(Text, Xml.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} XML decoding issues"):
-  def +(focus: Text, error: XmlError): PIssues = PIssues(items :+ (focus, error))
+  def +(focus: Text, error: Xml.Error): PIssues = PIssues(items :+ (focus, error))
 
 // Wrapped in an object so the `given Default[PWorker]` is in lexical scope at
 // the conjunction call site, as in `DecoderTests.DefaultPersonScope` — here
@@ -81,7 +81,7 @@ object DirectDefaultScope:
   def run(): Set[String] =
     val input = t"<root><title>Acme</title></root>"
     validate[Xml.Focus](PIssues()):
-      case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
+      case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error)
     . protect(input.read[PFirm in Xml]).items.map(_(0).s).to[Set]
 
 object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
@@ -91,11 +91,11 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
   // be typed under capture checking, so the decode expression must
   // beta-reduce into `protect`'s inline position.
   private inline def issues[result]
-    (inline decode: => result raises XmlError tracks Xml.Focus)
+    (inline decode: => result raises Xml.Error tracks Xml.Focus)
   :   Set[String] =
-    Validate[PIssues, [r] =>> r raises XmlError, Xml.Focus]
+    Validate[PIssues, [r] =>> r raises Xml.Error, Xml.Focus]
       ( PIssues(),
-        { case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error) } )
+        { case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error) } )
     . protect(decode).items.map(_(0).s).to[Set]
 
   def run(): Unit =
@@ -156,8 +156,8 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         t"<root><name>Kid</name></root>".read[PDefaulted in Xml]
       . assert(_ == PDefaulted(t"Kid", 18))
 
-      test(m"A missing required field raises XmlError"):
-        capture[XmlError](t"<root><age>30</age></root>".read[PWorker in Xml])
+      test(m"A missing required field raises Xml.Error"):
+        capture[Xml.Error](t"<root><age>30</age></root>".read[PWorker in Xml])
         true
       . assert(identity)
 
@@ -203,8 +203,8 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         (input.read[Int in Xml], parity[Int](input))
       . assert(_ == (1, true))
 
-      test(m"A bad primitive root raises XmlError on both paths"):
-        capture[XmlError](t"<message>ABC</message>".read[Int in Xml])
+      test(m"A bad primitive root raises Xml.Error on both paths"):
+        capture[Xml.Error](t"<message>ABC</message>".read[Int in Xml])
         true
       . assert(identity)
 
@@ -241,7 +241,7 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
       . assert(_ == (PShape.Square(4), true))
 
       test(m"An unknown variant aborts on both paths"):
-        capture[XmlError](t"<Triangle><foo>1</foo></Triangle>".read[PShape in Xml])
+        capture[Xml.Error](t"<Triangle><foo>1</foo></Triangle>".read[PShape in Xml])
         true
       . assert(identity)
 
