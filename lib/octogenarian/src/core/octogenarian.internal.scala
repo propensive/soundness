@@ -48,7 +48,7 @@ object internal:
   // `Refspec` is the umbrella type for anything that can be passed to git
   // as a revision argument: branch names, tag names, commit hashes,
   // `HEAD~N`, `master..feature`, …  It used to be `opaque type Refspec =
-  // Text`; making it a trait lets `GitHash` extend Serpentine's `Root`
+  // Text`; making it a trait lets `Git.Hash` extend Serpentine's `Root`
   // (and therefore `Path`) while still flowing into every
   // `repo.foo(refspec: Refspec)` call site that previously accepted
   // opaque-typed hashes.
@@ -56,18 +56,18 @@ object internal:
     def head(n: Int = 0): Refspec = unsafe(t"HEAD~$n")
     def unsafe(text: Text): Refspec = RawRef(text)
 
-    def parse(text: Text)(using Tactic[GitRefError]): Text =
-      def fail(reason: GitRefError.Reason): Text = abort(GitRefError(text, reason))
+    def parse(text: Text)(using Tactic[Git.RefError]): Text =
+      def fail(reason: Git.RefError.Reason): Text = abort(Git.RefError(text, reason))
 
       text.cut(t"/").each: part =>
-        if part.starts(t".") || part.ends(t".") then fail(GitRefError.Reason.LeadingOrTrailingDot)
-        if part.ends(t".lock")                  then fail(GitRefError.Reason.ReservedSuffix)
-        if part.contains(t"@{")                 then fail(GitRefError.Reason.ReservedSequence)
-        if part.contains(t"..")                 then fail(GitRefError.Reason.DoubleDot)
-        if part.length == 0                     then fail(GitRefError.Reason.EmptySegment)
+        if part.starts(t".") || part.ends(t".") then fail(Git.RefError.Reason.LeadingOrTrailingDot)
+        if part.ends(t".lock")                  then fail(Git.RefError.Reason.ReservedSuffix)
+        if part.contains(t"@{")                 then fail(Git.RefError.Reason.ReservedSequence)
+        if part.contains(t"..")                 then fail(Git.RefError.Reason.DoubleDot)
+        if part.length == 0                     then fail(Git.RefError.Reason.EmptySegment)
 
         for char <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
-        do if part.contains(char) then fail(GitRefError.Reason.InvalidCharacter)
+        do if part.contains(char) then fail(Git.RefError.Reason.InvalidCharacter)
 
       text
 
@@ -82,47 +82,3 @@ object internal:
   // `HEAD~N`, `master..feature`, raw revspecs decoded from text, etc.
   private case class RawRef(text: Text) extends Refspec
 
-  object GitTag:
-    def unsafe(text: Text): GitTag = new GitTag(text)
-    def parse(text: Text)(using Tactic[GitRefError]): GitTag = new GitTag(Refspec.parse(text))
-
-    given decoder: (tactic: Tactic[GitRefError])
-    =>  ((GitTag is Decodable in Text)^{tactic}) = parse(_)
-    given showable: GitTag is Showable = _.text
-
-  case class GitTag(text: Text) extends Refspec
-
-  object GitBranch:
-    def unsafe(text: Text): GitBranch = new GitBranch(text)
-    def parse(text: Text)(using Tactic[GitRefError]): GitBranch = new GitBranch(Refspec.parse(text))
-
-    given decoder: (tactic: Tactic[GitRefError])
-    =>  ((GitBranch is Decodable in Text)^{tactic}) = parse(_)
-    given showable: GitBranch is Showable = _.text
-
-  case class GitBranch(text: Text) extends Refspec
-
-  // `GitHash` extends Serpentine's `Root` (and therefore `Path`), so a hash
-  // IS a notes-plane path root: `hash / t"foo" / t"bar"` invokes Serpentine's
-  // own `Path.def /` directly, with no Conversion or entry-point extension
-  // needed.  Equality is by hash (Drive-style override).
-  object GitHash:
-    def apply(text: Text)(using Tactic[GitRefError]): GitHash = text match
-      case r"[a-f0-9]{40}" => new GitHash(text)
-      case _               => abort(GitRefError(text, GitRefError.Reason.BadHash))
-
-    def unsafe(text: Text): GitHash = new GitHash(text)
-
-    given decoder: (tactic: Tactic[GitRefError])
-    =>  ((GitHash is Decodable in Text)^{tactic}) = apply(_)
-    given showable: GitHash is Showable = _.text
-
-  class GitHash(val text: Text) extends Root(t"$text/"), Refspec:
-    type Plane = Notes
-    type Limit = GitHash
-
-    override def hashCode: Int = text.hashCode
-
-    override def equals(any: Any): Boolean = any match
-      case other: GitHash => text == other.text
-      case _              => false

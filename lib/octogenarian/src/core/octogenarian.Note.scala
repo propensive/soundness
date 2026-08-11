@@ -36,4 +36,4 @@ import anticipation.*
 import prepositional.*
 import serpentine.*
 
-case class Note(target: GitHash, body: Text, ref: Path on GitRefs)
+case class Note(target: Git.Hash, body: Text, ref: Path on Git.Refs)

@@ -48,186 +48,186 @@ import serpentine.*
 import urticose.*
 import vacuous.*
 
-import GitError.Reason.*
+import Git.Error.Reason.*
 
 import filesystemBackends.virtualMachine
 
 object Worktree:
   def apply[abstractable: Abstractable across Paths to Text](path: abstractable)
-    ( using Tactic[PathError], Tactic[NameError], Tactic[GitError], Tactic[IoError] )
+    ( using Tactic[PathError], Tactic[NameError], Tactic[Git.Error], Tactic[IoError] )
   :   Worktree =
 
     unsafely(path.generic.as[Path on Linux]).pipe: path =>
-      if !path.existent() then abort(GitError(RepoDoesNotExist))
+      if !path.existent() then abort(Git.Error(RepoDoesNotExist))
 
-      if (path / ".git").existent() then Worktree(GitRepo((path / ".git")), path)
-      else abort(GitError(NoWorkTree))
+      if (path / ".git").existent() then Worktree(Git.Repo((path / ".git")), path)
+      else abort(Git.Error(NoWorkTree))
 
 
-case class Worktree(repo: GitRepo, path: Path on Linux):
+case class Worktree(repo: Git.Repo, path: Path on Linux):
   val repoOptions = sh"--git-dir=${repo.gitDir} --work-tree=$path"
 
 
   @targetName("checkoutTag")
-  def checkout(tag: GitTag)
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+  def checkout(tag: Git.Tag)
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     sh"$git $repoOptions checkout $tag".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(CheckoutFailed))
+      case failure => abort(Git.Error(CheckoutFailed))
 
 
   @targetName("checkoutBranch")
-  def checkout(branch: GitBranch)
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+  def checkout(branch: Git.Branch)
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     sh"$git $repoOptions checkout $branch".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(CheckoutFailed))
+      case failure => abort(Git.Error(CheckoutFailed))
 
 
   @targetName("checkoutGitHash")
-  def checkout(commit: GitHash)
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+  def checkout(commit: Git.Hash)
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     sh"$git $repoOptions checkout $commit".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(CheckoutFailed))
+      case failure => abort(Git.Error(CheckoutFailed))
 
 
-  def switch(branch: GitBranch)
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+  def switch(branch: Git.Branch)
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     sh"$git $repoOptions switch $branch".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(CannotSwitchBranch))
+      case failure => abort(Git.Error(CannotSwitchBranch))
 
 
-  def pull()(using GitCommand, Internet, WorkingDirectory)
-    ( using gitError: Tactic[GitError], exec: Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
-  :   GitProcess[Unit] =
+  def pull()(using Git.Command, Internet, WorkingDirectory)
+    ( using gitError: Tactic[Git.Error], exec: Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
+  :   Git.Process[Unit] =
 
     val process = sh"$git $repoOptions pull --progress".fork[Exit]()
 
-    GitProcess[Unit](Git.progress(process)):
+    Git.Process[Unit](Git.progress(process)):
       process.await() match
         case Exit.Ok => ()
-        case failure => abort(GitError(PullFailed))
+        case failure => abort(Git.Error(PullFailed))
 
 
-  def commit(message: Text)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  ( using (GitEvent is Loggable)^ )
+  def commit(message: Text)(using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError])
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     sh"$git $repoOptions commit -m $message".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(CommitFailed))
+      case failure => abort(Git.Error(CommitFailed))
 
 
-  def branches()(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  ( using (GitEvent is Loggable)^ )
-  :   List[GitBranch] =
+  def branches()(using Git.Command, WorkingDirectory, Tactic[ExecError])
+  ( using (Git.Event is Loggable)^ )
+  :   List[Git.Branch] =
 
     sh"$git $repoOptions branch"
     . exec[Iterator[Text]]()
     . map(_.skip(2))
     . to(List)
-    . map(GitBranch.unsafe(_))
+    . map(Git.Branch.unsafe(_))
 
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
-  def branch()(using GitCommand, WorkingDirectory, Tactic[ExecError])
-    ( using (GitEvent is Loggable)^ )
-  :   GitBranch =
-    GitBranch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt.trim)
+  def branch()(using Git.Command, WorkingDirectory, Tactic[ExecError])
+    ( using (Git.Event is Loggable)^ )
+  :   Git.Branch =
+    Git.Branch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt.trim)
 
 
-  def makeBranch(branch: GitBranch)
-    ( using GitCommand, WorkingDirectory, Tactic[ExecError], Tactic[GitError] )
-  ( using (GitEvent is Loggable)^ )
+  def makeBranch(branch: Git.Branch)
+    ( using Git.Command, WorkingDirectory, Tactic[ExecError], Tactic[Git.Error] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     sh"$git $repoOptions checkout -b $branch".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(BranchFailed))
+      case failure => abort(Git.Error(BranchFailed))
 
 
   def add[path: Abstractable across Paths to Text](file: path)
-    ( using GitCommand, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
-            Tactic[GitError] )
-  ( using (GitEvent is Loggable)^ )
+    ( using Git.Command, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
+            Tactic[Git.Error] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     val relativePath =
       safely(this.path.toward(file.generic.as[Path on Linux])).or:
-        abort(GitError(AddFailed))
+        abort(Git.Error(AddFailed))
 
     val command = sh"$git $repoOptions add $relativePath"
 
     command.exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(AddFailed))
+      case failure => abort(Git.Error(AddFailed))
 
 
   def reset(mode: ResetMode = ResetMode.Mixed, ref: Refspec = Refspec.head())
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     sh"$git $repoOptions reset $mode $ref".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(ResetFailed))
+      case failure => abort(Git.Error(ResetFailed))
 
 
   def unstage[path: Abstractable across Paths to Text](file: path)
-    ( using GitCommand, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
-            Tactic[GitError] )
-  ( using (GitEvent is Loggable)^ )
+    ( using Git.Command, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
+            Tactic[Git.Error] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     val relativePath =
       safely(this.path.toward(file.generic.as[Path on Linux])).or:
-        abort(GitError(ResetFailed))
+        abort(Git.Error(ResetFailed))
 
     sh"$git $repoOptions reset HEAD -- $relativePath".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(ResetFailed))
+      case failure => abort(Git.Error(ResetFailed))
 
 
   def mv
     [ fromPath: Abstractable across Paths to Text,
       toPath:   Abstractable across Paths to Text ]
     ( from: fromPath, to: toPath )
-    ( using GitCommand, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
-            Tactic[GitError] )
-  ( using (GitEvent is Loggable)^ )
+    ( using Git.Command, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
+            Tactic[Git.Error] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     val fromRel = safely(this.path.toward(from.generic.as[Path on Linux])).or:
-      abort(GitError(MvFailed))
+      abort(Git.Error(MvFailed))
 
     val toRel = safely(this.path.toward(to.generic.as[Path on Linux])).or:
-      abort(GitError(MvFailed))
+      abort(Git.Error(MvFailed))
 
     sh"$git $repoOptions mv $fromRel $toRel".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(MvFailed))
+      case failure => abort(Git.Error(MvFailed))
 
 
   // diff(): worktree vs index. diff(staged = true): index vs HEAD.
   // diff(ref): full tree-vs-ref diff (working tree relative to ref).
   def diff(staged: Boolean = false)
-    ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+    ( using Git.Command, WorkingDirectory, Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   List[FileDiff] =
 
     val stagedOpt = if staged then sh"--staged" else sh""
@@ -235,8 +235,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
 
   def diff(ref: Refspec)
-    ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+    ( using Git.Command, WorkingDirectory, Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   List[FileDiff] =
 
     Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[Iterator[Text]]())
@@ -244,8 +244,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   def merge
     ( ref: Refspec, ff: FastForward = FastForward.Auto, message: Optional[Text] = Unset )
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     val ffOpt = ff match
@@ -257,81 +257,81 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
     sh"$git $repoOptions merge $ffOpt $msgOpt $ref".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(MergeFailed))
+      case failure => abort(Git.Error(MergeFailed))
 
 
-  def cherryPick(commit: GitHash)
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+  def cherryPick(commit: Git.Hash)
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     sh"$git $repoOptions cherry-pick $commit".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(CherryPickFailed))
+      case failure => abort(Git.Error(CherryPickFailed))
 
 
-  def revert(commit: GitHash, noCommit: Boolean = false)
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+  def revert(commit: Git.Hash, noCommit: Boolean = false)
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     val noCommitOpt = if noCommit then sh"-n" else sh""
 
     sh"$git $repoOptions revert --no-edit $noCommitOpt $commit".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(RevertFailed))
+      case failure => abort(Git.Error(RevertFailed))
 
 
   def lock(reason: Optional[Text] = Unset)
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     val reasonOpt = reason.lay(sh""): reason => sh"--reason=$reason"
 
     sh"$git $repoOptions worktree lock $reasonOpt $path".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(WorktreeFailed))
+      case failure => abort(Git.Error(WorktreeFailed))
 
 
-  def unlock()(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  ( using (GitEvent is Loggable)^ )
+  def unlock()(using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError])
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     sh"$git $repoOptions worktree unlock $path".exec[Exit]() match
       case Exit.Ok => ()
-      case failure => abort(GitError(WorktreeFailed))
+      case failure => abort(Git.Error(WorktreeFailed))
 
 
   def move[path: Abstractable across Paths to Text](newPath: path)
-    ( using GitCommand,
+    ( using Git.Command,
             WorkingDirectory,
-            Tactic[GitError],
+            Tactic[Git.Error],
             Tactic[ExecError],
             ((Path on Linux) is Decodable in Text)^ )
-  ( using Tactic[NameError], Tactic[PathError], (GitEvent is Loggable)^ )
+  ( using Tactic[NameError], Tactic[PathError], (Git.Event is Loggable)^ )
   :   Worktree =
 
     val target: Path on Linux =
       try newPath.generic.as[Path on Linux]
-      catch case error: PathError => abort(GitError(WorktreeFailed))
+      catch case error: PathError => abort(Git.Error(WorktreeFailed))
 
     sh"$git $repoOptions worktree move ${this.path} $target".exec[Exit]() match
       case Exit.Ok => Worktree(repo, target)
-      case failure => abort(GitError(WorktreeFailed))
+      case failure => abort(Git.Error(WorktreeFailed))
 
 
   def remove(force: Boolean = false)
-    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  ( using (GitEvent is Loggable)^ )
+    ( using Git.Command, WorkingDirectory, Tactic[Git.Error], Tactic[ExecError] )
+  ( using (Git.Event is Loggable)^ )
   :   Unit =
 
     repo.removeWorktree(this, force)
 
 
-  def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  ( using (GitEvent is Loggable)^ )
-  :   List[GitPathStatus] =
+  def status(ignored: Boolean = false)(using Git.Command, WorkingDirectory, Tactic[ExecError])
+  ( using (Git.Event is Loggable)^ )
+  :   List[Git.PathStatus] =
 
     val ignoredParam = if ignored then sh"--ignored" else sh""
 
@@ -354,22 +354,22 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
       recur(1, false)
 
-    def key(character: Text): Optional[GitStatus] = character match
+    def key(character: Text): Optional[Git.Status] = character match
       case t" " => Unset
-      case t"M" => GitStatus.Updated
-      case t"A" => GitStatus.Added
-      case t"D" => GitStatus.Deleted
-      case t"R" => GitStatus.Renamed
-      case t"C" => GitStatus.Copied
-      case t"U" => GitStatus.Unmerged
-      case t"?" => GitStatus.Untracked
-      case t"!" => GitStatus.Ignored
+      case t"M" => Git.Status.Updated
+      case t"A" => Git.Status.Added
+      case t"D" => Git.Status.Deleted
+      case t"R" => Git.Status.Renamed
+      case t"C" => Git.Status.Copied
+      case t"U" => Git.Status.Unmerged
+      case t"?" => Git.Status.Untracked
+      case t"!" => Git.Status.Ignored
       case _    => Unset
 
     sh"$git $repoOptions status --porcelain $ignoredParam".exec[List[Text]]().bind:
       case r"$key1([ ACDMRU?!])$key2([ ADMU?!]) $path(.*)$path2( -> (.*))?" =>
         val optionalPath = path2.let(_.skip(4)).let(unescape)
-        List(GitPathStatus(key(key1), key(key2), unescape(path), optionalPath))
+        List(Git.PathStatus(key(key1), key(key2), unescape(path), optionalPath))
 
       case _ =>
         Nil
