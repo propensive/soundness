@@ -66,7 +66,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | anthology.java | `JavacOption→Javac.Option` |
 | apoplexy.core | `ApiError→Api.Error`, `OpenApiError→OpenApi.Error` |
 | aviation.core | `TimezoneError→Timezone.Error`, `TzdbError→Tzdb.Error` |
-| bitumen.core | `TarError→Tar.Error`, `TarHeader→Tar.Header`, `TarCompression→Tar.Compression`, `TarBody→Tar.Body`, `TarFlag→Tar.Flag`, `TarHandle→Tar.Handle`, `TarRef→Tar.Ref` |
+| bitumen.core | `TarError→Tar.Error`, `TarCompression→Tar.Compression`, `TarBody→Tar.Body`, `TarFlag→Tar.Flag`, `TarHandle→Tar.Handle`, `TarRef→Tar.Ref` |
 | cacophony.core | `AudioError→Audio.Error`, `FeedError→Feed.Error`, `OutletError→Outlet.Error` |
 | caduceus.core | `CourierError→Courier.Error` |
 | caesura.core | `DsvError→Dsv.Error`, `DsvFormat→Dsv.Format`, `DsvRedesignation→Dsv.Redesignation` |
@@ -91,7 +91,6 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | hallucination.core | `RasterError→Raster.Error`, `RasterFormats→Raster.Formats` |
 | hellenism.core | `ClasspathEntry→Classpath.Entry`, `ClasspathError→Classpath.Error`, `ClasspathEvent→Classpath.Event` |
 | hieroglyph.core | `CharDecodeError→CharDecoder.Error`, `CharEncodeError→CharEncoder.Error` (nesting under the typeclass that raises them) |
-| imperial.core | `BaseLayout→Base.Layout` |
 | inimitable.core | `UuidError→Uuid.Error` |
 | jacinta.core | `JsonError→Json.Error`, `JsonPrimitive→Json.Primitive`, `JsonPointerError→JsonPointer.Error` |
 | jacinta.records | `JsonBlueprintDoc→JsonBlueprint.Doc`, `JsonBlueprintError→JsonBlueprint.Error` |
@@ -113,7 +112,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | probably.core | `TestId→Test.Id` |
 | profanity.core | `TerminalError→Terminal.Error`, `TerminalEvent→Terminal.Event`, `TerminalFeature→Terminal.Feature`, `TerminalInfo→Terminal.Info` (`TerminalBoard`/`InlineBoard` stay: they are `Board` variants, not Terminal satellites) |
 | revolution.core | `ManifestAttribute→Manifest.Attribute`, `ManifestEntry→Manifest.Entry`, `SemverError→Semver.Error` |
-| savagery.core | `SvgError→Svg.Error`, `SvgId→Svg.Id`, `SvgDef→Svg.Def`, `SvgParser→Svg.Parser` |
+| savagery.core | `SvgError→Svg.Error`, `SvgParser→Svg.Parser` |
 | scintillate.server | `HttpServerEvent→HttpServer.Event` (new companion for `HttpServer`) |
 | scintillate.servlet | `JavaServletFn→JavaServlet.Fn` |
 | sedentary.core | `BenchError→Bench.Error` |
@@ -132,7 +131,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | xylophone.core | `XmlError→Xml.Error`, `XPathError→XPath.Error` |
 | yossarian.core | `PtyEscapeError→Pty.EscapeError`, `PtyState→Pty.State` |
 | ypsiloid.core | `YamlError→Yaml.Error`, `YamlPrimitive→Yaml.Primitive`, `YamlPath→Yaml.Path`, `YamlPathError→Yaml.Path.Error` |
-| zeppelin.core | `ZipError→Zip.Error`, `ZipEvent→Zip.Event`, `ZipHandle→Zip.Handle` |
+| zeppelin.core | `ZipError→Zip.Error`, `ZipEvent→Zip.Event`, `ZipHandle→Zip.Handle` (deferred: `ZipOpenable`/`ZipDataOpenable` share `ZipHandle`'s file — hoist first) |
 
 ## Kept whole after verification — no outer concept exists as a type
 
@@ -231,6 +230,44 @@ July C3b list plus the carriers the modularity work created:
   classpath order); the nested member is reachable through the exported outer name.
 - **Enum cases** resolve unqualified inside a nested companion exactly as at top level.
 - Always `grep -a` when sweeping (eleven source files contain literal NUL bytes).
+
+## Corrections from the first implementation pass (2026-08-11)
+
+Seventy of these renames are done (octogenarian, and the single-namespace, Tar, Css,
+Raster, Classpath, MediaType, Svg and Pty families). Five proposed entries did not
+survive contact, and the reasons generalise:
+
+- **`BaseLayout` is not a satellite.** `object Base extends BaseLayout(…)`, so the layout
+  is Base's *supertype*; nesting makes the object extend its own member. A shared prefix is
+  not by itself evidence of a satellite relationship — check the inheritance direction.
+- **`TarHeader` fails capture inference.** Its block-parsing code infers `Array[Byte]^{}`
+  where the new enclosing scope requires `^{any}`; `Array` is invariant, so those are
+  unrelated types rather than merely imprecise. Moving capture-sensitive code between
+  enclosing objects can change inferred captures, and fixing it by annotation is a
+  semantic change.
+- **A sealed trait pins its subtypes to its file.** Nesting `SvgDef` drags the exported
+  `LinearGradient` in with it. Check for `sealed` before proposing a move.
+- **Opaque types and aliases in package files** (`SvgId`, `TarRef`, `GitHash`) are not in
+  their own donor files. An alias moves easily (`TarRef` → `Tar.Ref`); an opaque type whose
+  companion carries its operations is better left alone.
+- **A second top-level type sharing a donor's file** travels with it (`TarDataOpenable` in
+  `TarHandle.scala`, `ZipOpenable`/`ZipDataOpenable` in `ZipHandle.scala`). Hoist it to its
+  own file first — which also fixes the pre-existing L2 violation — then nest.
+
+Three further mechanical hazards, beyond the pilot's:
+
+- The self-referential-base problem has **three** syntactic forms: `extends Error(`,
+  `extends` and `Error(` on separate lines, and a bare `extends Error` with no arguments.
+- A brace-enclosed import selector cannot hold a dotted path, so
+  `import parasite.{async, AsyncError}` must split — and splitting it to
+  `import parasite.Async.Error` then shadows `fulminate.Error` in files that extend it.
+  Import the outer name instead.
+- Two anonymous givens whose types differed only in the names being nested
+  (`Tactic[AsyncError]`, `Tactic[ProtobufError]`) now synthesise the same name and collide;
+  they need naming explicitly.
+
+The reference rename must run over the **whole repository**, not the library being changed:
+`Path.Error` alone is named by galilei, hellenism and imperial.
 
 ## Execution shape (when implementation is approved)
 
