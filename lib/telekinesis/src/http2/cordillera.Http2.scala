@@ -398,7 +398,7 @@ object Http2:
   // is torn down and the transport closed — no parked daemon holds the loan open,
   // because the loan and the scope coincide. `result` is quantified outside the
   // lambda, so a value borrowing the connection — a lazily-streaming response
-  // body, an open `Http2Stream` — cannot escape the scope; memoized values may.
+  // body, an open `Http2.Stream` — cannot escape the scope; memoized values may.
   // Concurrent `fetch`es within the scope multiplex on the one connection.
   // A named instance class rather than an anonymous given: an anonymous
   // subclass would freshen the capability types in its inferred `Result`
@@ -570,7 +570,7 @@ object Http2:
   class Connection(duplex: Duplex)(using Monitor, Probate):
     import Http2.Connection.*
 
-    private val streams: scc.TrieMap[Int, Http2Stream] = scc.TrieMap()
+    private val streams: scc.TrieMap[Int, Http2.Stream] = scc.TrieMap()
     private val nextId: juca.AtomicInteger = juca.AtomicInteger(1)
     private val outbound: Relay[Frame] = Relay()
     private val started: Promise[Unit] = Promise()
@@ -639,9 +639,9 @@ object Http2:
 
     // Open a new client stream, send its header block (and optional body), and return
     // the stream handle whose promises/spool the reader will populate.
-    def request(headerBlock: List[HpackEntry], body: Optional[Bytes]): Http2Stream =
+    def request(headerBlock: List[HpackEntry], body: Optional[Bytes]): Http2.Stream =
       val id = nextId.getAndAdd(2)
-      val stream = Http2Stream(id)
+      val stream = Http2.Stream(id)
       streams(id) = stream
       val encoder = Hpack()
       val noBody = body.absent
@@ -659,7 +659,7 @@ object Http2:
     // available afterwards via `stream.trailers`.
     def fetch(request: Http.Request, scheme: Text, authority: Text)
       ( using Tactic[Http2.Error], Tactic[Async.Error] )
-    :   (Http2Stream, Http.Response) =
+    :   (Http2.Stream, Http.Response) =
 
       Log.fine(Http2.Event.RequestSent(authority))
       val headerBlock = PseudoHeaders.request(request, scheme, authority)
@@ -678,4 +678,30 @@ object Http2:
       reader.cancel()
       writer.cancel()
       duplex.close()
+
+  // Http2.Stream -> Http2.Stream
+  class Stream(val id: Int):
+    val headers: Promise[List[HpackEntry]] = Promise()
+    val trailers: Promise[List[HpackEntry]] = Promise()
+    val body: Relay[Bytes] = Relay()
+    // Untracked: written only by the connection's single reader daemon.
+    @caps.unsafe.untrackedCaptures
+    private var headersSeen: Boolean = false
+
+    // Record an incoming HEADERS block: the first becomes the response headers, a
+    // subsequent one (always end-stream) becomes the trailers.
+    def acceptHeaders(block: List[HpackEntry]): Unit =
+      if !headersSeen then
+        headersSeen = true
+        headers.offer(block)
+      else
+        trailers.offer(block)
+
+    def acceptData(data: Bytes): Unit = body.put(data)
+
+    // Close the receive side; resolve any unfulfilled promises so awaiters don't hang.
+    def end(): Unit =
+      if !headers.ready then headers.offer(Nil)
+      if !trailers.ready then trailers.offer(Nil)
+      body.stop()
 

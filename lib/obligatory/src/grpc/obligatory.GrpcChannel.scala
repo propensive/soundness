@@ -129,7 +129,7 @@ class GrpcChannel
   // carries the status in the headers). Raise unless the status is `Ok`.
   // Declared with explicit tactics rather than stacked `raises`: see `bintelDocument`
   // in stratiform (capture checking cannot unify cross-level tactic captures, 3.10).
-  private def expectStatus(stream: Http2Stream)
+  private def expectStatus(stream: Http2.Stream)
     ( using Monitor^, Tactic[GrpcError], Tactic[Async.Error] )
   :   Unit =
 

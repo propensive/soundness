@@ -37,7 +37,8 @@ import soundness.*
 import proscenium.compat.*
 
 import strategies.throwUnsafely
-import Http2.*
+import Http2.{Client, Connection, Endpoint, ErrorCode, Flags, Frame, FrameType, Setting,
+    SettingId}
 
 object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
   def run(): Unit =
