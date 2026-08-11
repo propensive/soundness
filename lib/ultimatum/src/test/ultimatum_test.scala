@@ -133,12 +133,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
       def strip(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Strip, children.to(List))
       def stack(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Stack, children.to(List))
 
-      test(m"fractions divide the axis proportionally"):
+      test(m"fractions divide the arrangement proportionally"):
         val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
         frame.arrange(Rect(0, 0, 90, 10)).cells
       . assert(_ == List(Rect(0, 0, 20, 10), Rect(20, 0, 30, 10), Rect(50, 0, 40, 10)))
 
-      test(m"largest-remainder rounding fills the axis exactly"):
+      test(m"largest-remainder rounding fills the arrangement exactly"):
         val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
         frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width)
       . assert(_ == List(22, 33, 45))
@@ -163,7 +163,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         frame.measure(ultimatum.Arrangement.Strip)
       . assert(_ == Limits(10, Unset))
 
-      test(m"file children fill the cross axis (full height)"):
+      test(m"file children fill the cross arrangement (full height)"):
         val frame = strip(cell(Sizing(1.0)), cell(Sizing(1.0)))
         frame.arrange(Rect(0, 0, 8, 4)).cells
       . assert(_ == List(Rect(0, 0, 4, 4), Rect(4, 0, 4, 4)))
@@ -1015,6 +1015,267 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val bordered = border()(panel(minWidth = 3, minHeight = 2)(())).frame
         (bordered.measure(ultimatum.Arrangement.Strip).min, bordered.measure(ultimatum.Arrangement.Stack).min)
       . assert(_ == (5, 4))
+
+    suite(m"Gauge designs"):
+      import gaugeGlyphs.unicodeGlyphs
+      import palettes.emberGaugePalette
+      import textMetrics.uniformMetric
+
+      // A design's plain text is what it draws; the styling is the palette's business and is
+      // asserted separately.
+      def draw[status: Gaugeable as design](status: status, width: Int, tick: Tick = Tick.zero)
+      :   Text =
+
+        design.rows(status, tick, width).stdlib.map(_.plain).mkString("\n").tt
+
+      test(m"a half-full smooth bar fills exactly half its cells"):
+        draw(Fraction(0.5), 10)(using bars.smoothBar)
+      . assert(_ == t"█████     ")
+
+      test(m"an eighth-block bar advances by a fraction of a cell"):
+        draw(Fraction(0.05), 10)(using bars.smoothBar)
+      . assert(_ == t"▌         ")
+
+      test(m"a full bar leaves no empty cells"):
+        draw(Fraction(1.0), 8)(using bars.smoothBar)
+      . assert(_ == t"████████")
+
+      test(m"an empty bar draws no filled cells"):
+        draw(Fraction(0.0), 8)(using bars.smoothBar)
+      . assert(_ == t"        ")
+
+      test(m"a block bar draws its own track glyph"):
+        draw(Fraction(0.5), 8)(using bars.blockBar)
+      . assert(_ == t"████░░░░")
+
+      test(m"an ASCII bar keeps its caps and fills between them"):
+        draw(Fraction(0.5), 10)(using bars.asciiBar)
+      . assert(_ == t"[####----]")
+
+      test(m"an arrowhead bar puts the boundary cell at the head of the fill"):
+        draw(Fraction(0.5), 10)(using bars.arrowheadBar)
+      . assert(_ == t"[===>    ]")
+
+      test(m"a segmented bar lights whole pips"):
+        draw(Fraction(0.5), 20)(using bars.segmentedBar)
+      . assert(_ == t"▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱")
+
+      test(m"a marker bar shows a position, with nothing filled behind it"):
+        draw(Fraction(0.5), 9)(using bars.markerBar)
+      . assert(_ == t"────◆────")
+
+      test(m"a bar too narrow for caps drops them and still fills"):
+        draw(Fraction(0.5), 6)(using bars.asciiBar)
+      . assert(_ == t"###---")
+
+      test(m"a bar degrades to a percentage when it cannot be drawn"):
+        draw(Fraction(0.42), 3)(using bars.smoothBar)
+      . assert(_ == t"42%")
+
+      test(m"a bar degrades to a single shade glyph at one cell"):
+        draw(Fraction(0.9), 1)(using bars.smoothBar)
+      . assert(_ == t"█")
+
+      test(m"the percentage design pads to a stable width as it fills"):
+        (draw(Fraction(0.07), 4)(using bars.percentageBar),
+            draw(Fraction(1.0), 4)(using bars.percentageBar))
+      . assert(_ == (t"  7%", t"100%"))
+
+      test(m"a spinner advances one frame per period"):
+        (0 to 3).map(index => draw(Busy(), 1, Tick.at(index*80, 80))(using
+            spinners.brailleDotsSpinner)).mkString.tt
+      . assert(_ == t"⠋⠙⠹⠸")
+
+      test(m"a spinner cycles back to its first frame"):
+        draw(Busy(), 1, Tick.at(10*80, 80))(using spinners.brailleDotsSpinner)
+      . assert(_ == t"⠋")
+
+      test(m"the status's own counter advances the spinner too"):
+        draw(Busy(2), 1, Tick.zero)(using spinners.brailleDotsSpinner)
+      . assert(_ == t"⠹")
+
+      test(m"a spinner declares its frame interval as its animation period"):
+        summon[Busy is Gaugeable](using spinners.brailleDotsSpinner).period
+      . assert(_ == 80)
+
+      test(m"a bar declares no animation period"):
+        summon[Fraction is Gaugeable](using bars.smoothBar).period
+      . assert(_ == Unset)
+
+      test(m"a wide spinner falls back to a narrower design in a narrow column"):
+        draw(Busy(), 1, Tick.zero)(using spinners.bouncingBarSpinner)
+      . assert(_ == t"-")
+
+      test(m"a multi-cell spinner draws at its full width when it fits"):
+        draw(Busy(1), 6, Tick.zero)(using spinners.bouncingBarSpinner)
+      . assert(_ == t"[=   ]")
+
+    suite(m"Gauge glyph repertoires"):
+      import palettes.emberGaugePalette
+      import textMetrics.uniformMetric
+
+      def draw[status: Gaugeable as design](status: status, width: Int): Text =
+        design.rows(status, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+
+      test(m"an emoji spinner renders as emoji when they are permitted"):
+        import gaugeGlyphs.emojiGlyphs
+        draw(Busy(), 2)(using spinners.moonPhaseSpinner)
+      . assert(_ == t"🌑")
+
+      test(m"an emoji spinner falls back to its BMP sibling when they are not"):
+        import gaugeGlyphs.unicodeGlyphs
+        draw(Busy(), 2)(using spinners.moonPhaseSpinner)
+      . assert(_ == t"◌ ")
+
+      test(m"under ASCII glyphs every spinner degrades to seven-bit output"):
+        import gaugeGlyphs.asciiGlyphs
+        draw(Busy(), 2)(using spinners.brailleDotsSpinner).s.forall(_ < 128)
+      . assert(_ == true)
+
+      test(m"under ASCII glyphs a bar degrades to seven-bit output"):
+        import gaugeGlyphs.asciiGlyphs
+        draw(Fraction(0.5), 1)(using bars.smoothBar).s.forall(_ < 128)
+      . assert(_ == true)
+
+    suite(m"Gauge width invariants"):
+      import gaugeGlyphs.unicodeGlyphs
+      import palettes.emberGaugePalette
+      import textMetrics.uniformMetric
+
+      // Every design must render exactly the width it was given, at every width: a design that is
+      // one cell out corrupts the row beside it, and there is no other way to catch that across a
+      // catalogue this size.
+      val designs: scala.List[(Text, Int => Text)] =
+        scala.List
+         ( (t"smoothBar", width => bars.smoothBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"blockBar", width => bars.blockBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"shadedBar", width => bars.shadedBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"risingBar", width => bars.risingBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"fineBar", width => bars.fineBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"dotBar", width => bars.dotBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"railBar", width => bars.railBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"squareBar", width => bars.squareBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"brailleBar", width => bars.brailleBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"capsuleBar", width => bars.capsuleBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"asciiBar", width => bars.asciiBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"equalsBar", width => bars.equalsBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"arrowheadBar", width => bars.arrowheadBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"gradientBar", width => bars.gradientBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"segmentedBar", width => bars.segmentedBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"pipBar", width => bars.pipBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"markerBar", width => bars.markerBar.rows(Fraction(0.37), Tick.zero, width)),
+           (t"percentageBar", width => bars.percentageBar.rows(Fraction(0.37), Tick.zero, width)) )
+        . map: (name, render) =>
+            (name, (width: Int) => render(width).stdlib.head.plain)
+
+      test(m"every bar renders exactly the width it is given, from 1 to 120 cells"):
+        designs.flatMap: (name, render) =>
+          (1 to 120).flatMap: width =>
+            val drawn = render(width)
+            if drawn.length == width then scala.Nil else scala.List((name, width, drawn.length))
+      . assert(_ == scala.Nil)
+
+      test(m"every bar renders one row"):
+        scala.List
+         ( bars.smoothBar.rows(Fraction(0.5), Tick.zero, 20).stdlib.length,
+           bars.segmentedBar.rows(Fraction(0.5), Tick.zero, 20).stdlib.length,
+           bars.percentageBar.rows(Fraction(0.5), Tick.zero, 20).stdlib.length )
+      . assert(_ == scala.List(1, 1, 1))
+
+      test(m"a bar's output is stable for a fixed tick"):
+        val once = bars.smoothBar.rows(Fraction(0.37), Tick.zero, 30).stdlib.head.plain
+        val twice = bars.smoothBar.rows(Fraction(0.37), Tick.zero, 30).stdlib.head.plain
+        (once, twice)
+      . assert((a, b) => a == b)
+
+    suite(m"Facet shedding"):
+      import gaugeGlyphs.unicodeGlyphs
+      import palettes.emberGaugePalette
+      import textMetrics.uniformMetric
+
+      // A caption that goes first, a bar that stretches, and a figure that goes last.
+      def row(width: Int): Text =
+        Facet.solve
+         ( List
+            ( Facet.fixed(2, Teletype(t"compiling")),
+              Facet.flexible(4)(w => Teletype(t"="*w)),
+              Facet.fixed(1, Teletype(t"42%")) ),
+           width )
+        . plain
+
+      test(m"a wide row keeps every facet and stretches the flexible one"):
+        row(24)
+      . assert(_ == t"compiling ========== 42%")
+
+      test(m"a narrower row sheds the most expendable facet first"):
+        row(12)
+      . assert(_ == t"======== 42%")
+
+      test(m"a narrower row still sheds in shed order"):
+        row(8)
+      . assert(_ == t"==== 42%")
+
+      test(m"the flexible facet is never shed"):
+        row(4)
+      . assert(_ == t"====")
+
+      test(m"a row below every minimum is blank rather than corrupt"):
+        row(2)
+      . assert(_ == t"  ")
+
+      test(m"a solved row is always exactly the width it was given"):
+        (1 to 60).map(row(_).length).toList.filter(_ != 0)
+      . assert(_ == (1 to 60).toList)
+
+    suite(m"Gauges in a layout"):
+      def render(width: Int, height: Int)(pane: Pane): Text =
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+        val root = FlowExtent(TerminalBoard(width, height), Rect(0, 0, width, height))
+        paint(root, pane)
+        root.render
+
+      import gaugeGlyphs.unicodeGlyphs
+      import palettes.emberGaugePalette
+      import textMetrics.uniformMetric
+
+      test(m"a gauge fixture paints its bar into the rectangle it is given"):
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+        val flow = FlowExtent(TerminalBoard(10, 1), Rect(0, 0, 10, 1))
+        Gaugeable.Fixture(Reading(Fraction(0.3)))(using bars.blockBar).render(flow, false)
+        flow.render
+      . assert(_ == t"███░░░░░░░")
+
+      test(m"a gauge reports its design's preferred width to the solver"):
+        Gaugeable.Fixture(Reading(Fraction(0.5)))(using bars.smoothBar).measure(80)
+      . assert(_ == (40, 1))
+
+      test(m"a spinner reports a single cell and does not stretch"):
+        Gaugeable.Fixture(Reading(Busy()))(using spinners.brailleDotsSpinner).measure(80)
+      . assert(_ == (1, 1))
+
+      test(m"a gauge is not focusable, so it stays out of the focus cycle"):
+        Gaugeable.Fixture(Reading(Busy()))(using spinners.brailleDotsSpinner)
+        . isInstanceOf[Focus]
+      . assert(_ == false)
+
+      test(m"an updated reading is what the next paint draws"):
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+        val reading = Reading(Fraction(0.0))
+        val fixture = Gaugeable.Fixture(reading)(using bars.blockBar)
+        val flow = FlowExtent(TerminalBoard(8, 1), Rect(0, 0, 8, 1))
+        reading() = Fraction(0.5)
+        fixture.render(flow, false)
+        flow.render
+      . assert(_ == t"████░░░░")
+
+      test(m"a bar in a stack is painted at the width the solver gave it"):
+        render(8, 2):
+          stack
+           ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"job")),
+             Pane.Widget
+              ( Sizing(minHeight = 1, maxHeight = 1),
+                Gaugeable.Fixture(Reading(Fraction(0.5)))(using bars.blockBar) ) )
+      . assert(_ == t"job     \n████░░░░")
 
 // A test-only root `Board` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and

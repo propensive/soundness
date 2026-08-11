@@ -2961,7 +2961,14 @@ object ultimatum extends Library:
   object core extends Component(profanity.core, escapade.core, yossarian.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object demo extends Internal(core, ethereal.core, exoskeleton.completions):
+  // Gauges — spinners, progress bars, meters and step indicators — are a separate component so
+  // that the durations and byte quantities the transfer statuses need (`aviation`, `quantitative`)
+  // are not imposed on every `ultimatum.core` user. Only the `Fixture` and `Tick` hooks live in
+  // core.
+  object gauges extends Component(core, aviation.core, quantitative.units):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object demo extends Internal(core, gauges, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("ultimatum.demo")
@@ -2995,7 +3002,7 @@ object ultimatum extends Library:
 
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
-  object test extends Tests(core):
+  object test extends Tests(core, gauges):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
