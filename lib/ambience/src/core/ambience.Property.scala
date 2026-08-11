@@ -72,10 +72,10 @@ object Property:
       lambda(value.or(panic(m"the system property $property was unavailable")))
 
 
-  given generic: [label <: String & Singleton] => (tactic: Tactic[PropertyError])
+  given generic: [label <: String & Singleton] => (tactic: Tactic[Property.Error])
   =>  ((label is Property of Text)^{tactic}) =
 
-    (value, property) => value.lest(PropertyError(property))
+    (value, property) => value.lest(Property.Error(property))
 
   given javaHome: [path: Instantiable across Paths from Text]
   =>  ( "java.home" is Property of path ) =
@@ -83,13 +83,13 @@ object Property:
     Property(path(_))
 
   // given javaLibraryPath: [path: Instantiable across Paths from Text]
-  //       => (system: System, property: Tactic[PropertyError])
+  //       => (system: System, property: Tactic[Property.Error])
   //       =>  Property["java.library.path", List[path]] =
 
   //   _.cut(system(t"path.separator").or(t":")).to[List].map(path(_))
 
   // given javaClassPath: [path: Instantiable across Paths from Text]
-  //       => (system: System, property: Tactic[PropertyError])
+  //       => (system: System, property: Tactic[Property.Error])
   //       =>  Property["java.class.path", List[path]] =
 
   //   _.cut(system(t"path.separator").or(t":")).to[List].map(path(_))
@@ -98,10 +98,10 @@ object Property:
   given javaVendor: ("java.vendor" is Property of Text) = Property(identity)
   given javaVendorUrl: ("java.vendor.url" is Property of Text) = Property(identity)
 
-  given javaRuntimeVersion: (tactic: Tactic[PropertyError])
+  given javaRuntimeVersion: (tactic: Tactic[Property.Error])
   =>  (("java.runtime.version" is Property of Text)^{tactic}) =
 
-    (value, name) => value.lest(PropertyError(name))
+    (value, name) => value.lest(Property.Error(name))
 
   given javaClassVersion: ("java.runtime.version" is Property of Int) =
     // Decoded under `unsafely`, whose unscoped tactic is minted per call: the lambda captures
@@ -109,7 +109,7 @@ object Property:
     Property(text => unsafely(text.as[Int]))
 
   // given javaExtDirs: [path: Instantiable across Paths from Text]
-  // =>  ( system: System, property: Tactic[PropertyError] )
+  // =>  ( system: System, property: Tactic[Property.Error] )
   // =>  Property["java.ext.dirs", List[path]] =
 
   //   _.cut(system(t"path.separator").or(t":")).to[List].map(path(_))
@@ -136,11 +136,15 @@ object Property:
     Property(_.as[Architecture])
 
   given decoder: [label <: Label, property] => (decoder: (property is Decodable in Text)^)
-  =>  (tactic: Tactic[PropertyError])
+  =>  (tactic: Tactic[Property.Error])
   =>  ((label is Property of property)^{decoder, tactic}) =
 
     (value, name) =>
-      decoder.decoded(value.lest(PropertyError(name)))
+      decoder.decoded(value.lest(Property.Error(name)))
+
+  // Property.Error → Property.Error
+  case class Error(property: Text)(using Diagnostics)
+  extends fulminate.Error(815, 0)(m"the system property $property was not defined")
 
 trait Property extends Typeclass, Topical:
   type Self <: String

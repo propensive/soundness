@@ -47,9 +47,9 @@ enum DShape derives CanEqual:
   case Circle(radius: Int)
   case Square(side: Int)
 
-case class Issues2(items: List[(Text, YamlError)] = Nil)(using Diagnostics)
+case class Issues2(items: List[(Text, Yaml.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} validation issues"):
-  def +(focus: Text, error: YamlError): Issues2 = Issues2(items :+ (focus, error))
+  def +(focus: Text, error: Yaml.Error): Issues2 = Issues2(items :+ (focus, error))
 
 object DefaultPersonScope:
   given Default[DPerson] = () => DPerson(t"", 0, t"")
@@ -57,7 +57,7 @@ object DefaultPersonScope:
   def run(): Set[String] =
     val yaml = t"company: Acme\n".read[Yaml]
     validate[Yaml.Focus](Issues2()):
-      case error: YamlError =>
+      case error: Yaml.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . protect(yaml.as[DContact]).items.map(_(0).s).to[Set]
 
@@ -67,7 +67,7 @@ object DefaultShapeScope:
   def runIssues(): (Set[String], Int) =
     val yaml = t"type: Triangle\nfoo: bar\n".read[Yaml]
     val issues = validate[Yaml.Focus](Issues2()):
-      case error: YamlError =>
+      case error: Yaml.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . protect(yaml.as[DShape])
     (issues.items.map(_(0).s).to[Set], issues.items.length)
@@ -76,11 +76,11 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
 
   // Inline + direct `Validate` construction; see ypsiloid.AccrualTests and rep/DECISIONS.md.
   private inline def validateYaml[result](yaml: Yaml)
-    (inline decode: Yaml => result raises YamlError tracks Yaml.Focus)
+    (inline decode: Yaml => result raises Yaml.Error tracks Yaml.Focus)
   :   Issues2 =
-    Validate[Issues2, [r] =>> r raises YamlError, Yaml.Focus]
+    Validate[Issues2, [r] =>> r raises Yaml.Error, Yaml.Focus]
       ( Issues2(),
-        { case error: YamlError =>
+        { case error: Yaml.Error =>
             accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
     . protect(decode(yaml))
 

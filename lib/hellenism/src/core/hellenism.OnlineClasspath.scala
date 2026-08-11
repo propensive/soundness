@@ -32,4 +32,4 @@
                                                                                                   */
 package hellenism
 
-case class OnlineClasspath(entries: List[ClasspathEntry]) extends Classpath
+case class OnlineClasspath(entries: List[Classpath.Entry]) extends Classpath

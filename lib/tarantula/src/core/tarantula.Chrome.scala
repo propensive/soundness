@@ -49,5 +49,5 @@ object Chrome extends Navigator(t"chrome"):
     sleep(100L)
     Server(port, server)
 
-  def stop(server: Server)(using (HttpEvent is Loggable)^, (ExecEvent is Loggable)^): Unit =
+  def stop(server: Server)(using (Http.Event is Loggable)^, (ExecEvent is Loggable)^): Unit =
     server.value.abort()

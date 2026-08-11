@@ -50,7 +50,7 @@ import vacuous.*
 // of a partial function’s range charges an unusable reach capability, whereas this field
 // reads as an ordinary path capability, exactly like `Test.action`.
 case class Spread[value, result]
-  ( id: TestId, axis: Axis[value], action: Harness => (value ~> result) )
+  ( id: Test.Id, axis: Axis[value], action: Harness => (value ~> result) )
 
 object Spread:
   extension [value, result](spread: Spread[value, result]^)
@@ -87,7 +87,7 @@ object Spread:
       run(spread.id, spread.axis, spread.action, predicate, true)
 
   private def run[value, result, report]
-    ( id:           TestId,
+    ( id:           Test.Id,
       axis:         Axis[value],
       action:       (Harness => (value ~> result))^,
       predicate:    (value, result) => Boolean,
@@ -128,7 +128,7 @@ object Spread:
 // A test spread over the domains of two axes: one cell per combination the body defines,
 // rendered as a grid with gaps at undefined combinations.
 case class Spread2[left, right, result]
-  ( id:     TestId,
+  ( id:     Test.Id,
     first:  Axis[left],
     second: Axis[right],
     action: Harness => (((left, right)) ~> result) )
@@ -174,7 +174,7 @@ object Spread2:
       run(spread.id, spread.first, spread.second, spread.action, predicate, true)
 
   private def run[left, right, result, report]
-    ( id:           TestId,
+    ( id:           Test.Id,
       first:        Axis[left],
       second:       Axis[right],
       action:       (Harness => (((left, right)) ~> result))^,

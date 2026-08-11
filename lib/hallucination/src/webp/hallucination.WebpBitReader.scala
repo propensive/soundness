@@ -38,7 +38,7 @@ import proscenium.compat.*
 
 import scala.caps
 
-import RasterError.Reason
+import Raster.Error.Reason
 
 // A little-endian bit reader for the VP8L lossless bitstream, ported from image-rs/image-webp
 // (`src/lossless/decoder/mod.rs`, MIT/Apache-2.0). Bits are consumed least-significant first; the
@@ -81,13 +81,13 @@ extends caps.Mutable:
   // The whole buffer without consuming.
   def peekFull: Long = buffer
 
-  update def consume(num: Int)(using Tactic[RasterError]): Unit =
-    if available < num then abort(RasterError(Webp(), Reason.Truncated))
+  update def consume(num: Int)(using Tactic[Raster.Error]): Unit =
+    if available < num then abort(Raster.Error(Webp(), Reason.Truncated))
     buffer >>>= num
     available -= num
 
   // Reads `num` bits (at most 32), refilling if necessary.
-  update def readBits(num: Int)(using Tactic[RasterError]): Int =
+  update def readBits(num: Int)(using Tactic[Raster.Error]): Int =
     if available < num then fill()
     val value = peek(num)
     consume(num)

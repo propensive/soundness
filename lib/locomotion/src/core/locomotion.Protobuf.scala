@@ -62,7 +62,8 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
-import ProtobufError.Reason
+import Protobuf.Error.Reason
+import fulminate.*
 
 trait Protobuf2:
   this: Protobuf.type =>
@@ -119,7 +120,7 @@ trait Protobuf2:
     listDecodable[Vector, element]
     . asInstanceOf[(sequence[element] is Decodable in Protobuf)^]
 
-  given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[ProtobufError])
+  given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[Protobuf.Error])
   =>  (((value in Protobuf) is Aggregable by Data)^{tactic}) =
     bytes => Protobuf.message(bytes.read[Data]).as[value].asInstanceOf[value in Protobuf]
 
@@ -218,7 +219,7 @@ object Protobuf extends Protobuf2:
   // `ProtobufReader`, its window set to the whole message.
   private def parseDirect[value]
     ( input: Data, parsable: (value is Protobuf.Parsable)^ )
-    ( using tactic: Tactic[ProtobufError] )
+    ( using tactic: Tactic[Protobuf.Error] )
   :   value =
 
     parsable.parse(ProtobufReader(ProtobufParser(input), tactic))
@@ -231,7 +232,7 @@ object Protobuf extends Protobuf2:
   // the instance retains the resolution-scoped parsable and tactic.
   given aggregableParsed: [value]
   =>  (parsable: (value is Protobuf.Parsable)^)
-  =>  (tactic: Tactic[ProtobufError])
+  =>  (tactic: Tactic[Protobuf.Error])
   =>  ((value in Protobuf) is Aggregable by Data) =
 
     caps.unsafe.unsafeAssumePure:
@@ -243,7 +244,7 @@ object Protobuf extends Protobuf2:
   // Sealed like `aggregableParsed` above.
   given readableParsed: [value]
   =>  (parsable: (value is Protobuf.Parsable)^)
-  =>  (tactic: Tactic[ProtobufError])
+  =>  (tactic: Tactic[Protobuf.Error])
   =>  (Data is Readable to (value in Protobuf)) =
 
     caps.unsafe.unsafeAssumePure:
@@ -311,13 +312,13 @@ object Protobuf extends Protobuf2:
 
     producer.iterator
 
-  private def readVarint(protobuf: Protobuf)(using Tactic[ProtobufError]): Long =
+  private def readVarint(protobuf: Protobuf)(using Tactic[Protobuf.Error]): Long =
     if protobuf.isAbsent then 0L else ProtobufParser(protobuf.payload).varint()
 
-  private def readFixed32(protobuf: Protobuf)(using Tactic[ProtobufError]): Int =
+  private def readFixed32(protobuf: Protobuf)(using Tactic[Protobuf.Error]): Int =
     if protobuf.isAbsent then 0 else ProtobufParser(protobuf.payload).fixed32()
 
-  private def readFixed64(protobuf: Protobuf)(using Tactic[ProtobufError]): Long =
+  private def readFixed64(protobuf: Protobuf)(using Tactic[Protobuf.Error]): Long =
     if protobuf.isAbsent then 0L else ProtobufParser(protobuf.payload).fixed64()
 
   // Zig-zag maps signed integers to unsigned so small-magnitude negatives stay
@@ -345,25 +346,25 @@ object Protobuf extends Protobuf2:
   given textEncodable: Text is Encodable in Protobuf = text => Wire(WireType.Len, utf8(text))
   given dataEncodable: Data is Encodable in Protobuf = bytes => Wire(WireType.Len, bytes)
 
-  given intDecodable: (tactic: Tactic[ProtobufError])
+  given intDecodable: (tactic: Tactic[Protobuf.Error])
   =>  ((Int is Decodable in Protobuf)^{tactic, caps.any}) =
     readVarint(_).toInt
 
-  given longDecodable: (tactic: Tactic[ProtobufError])
+  given longDecodable: (tactic: Tactic[Protobuf.Error])
   =>  ((Long is Decodable in Protobuf)^{tactic, caps.any}) =
     readVarint(_)
 
-  given booleanDecodable: (tactic: Tactic[ProtobufError])
+  given booleanDecodable: (tactic: Tactic[Protobuf.Error])
   =>  ((Boolean is Decodable in Protobuf)^{tactic, caps.any}) =
     readVarint(_) != 0
 
-  given doubleDecodable: (tactic: Tactic[ProtobufError])
+  given doubleDecodable: (tactic: Tactic[Protobuf.Error])
   =>  ((Double is Decodable in Protobuf)^{tactic, caps.any}) =
     protobuf =>
       if protobuf.isAbsent then 0.0
       else jl.Double.longBitsToDouble(ProtobufParser(protobuf.payload).fixed64())
 
-  given floatDecodable: (tactic: Tactic[ProtobufError])
+  given floatDecodable: (tactic: Tactic[Protobuf.Error])
   =>  ((Float is Decodable in Protobuf)^{tactic, caps.any}) =
     protobuf =>
       if protobuf.isAbsent then 0.0f
@@ -396,27 +397,27 @@ object Protobuf extends Protobuf2:
   given b64Encodable: B64 is Encodable in Protobuf =
     b64 => Wire(WireType.I64, printed(_.fixed64(b64.s64.long)))
 
-  given u32Decodable: (tactic: Tactic[ProtobufError])
+  given u32Decodable: (tactic: Tactic[Protobuf.Error])
   =>  ((U32 is Decodable in Protobuf)^{tactic, caps.any}) =
     readVarint(_).toInt.bits.u32
 
-  given u64Decodable: (tactic: Tactic[ProtobufError])
+  given u64Decodable: (tactic: Tactic[Protobuf.Error])
   =>  ((U64 is Decodable in Protobuf)^{tactic, caps.any}) =
     readVarint(_).bits.u64
 
-  given s32Decodable: (tactic: Tactic[ProtobufError])
+  given s32Decodable: (tactic: Tactic[Protobuf.Error])
   =>  ((S32 is Decodable in Protobuf)^{tactic, caps.any}) =
     protobuf => unzigzag(readVarint(protobuf)).toInt.bits.s32
 
-  given s64Decodable: (tactic: Tactic[ProtobufError])
+  given s64Decodable: (tactic: Tactic[Protobuf.Error])
   =>  ((S64 is Decodable in Protobuf)^{tactic, caps.any}) =
     protobuf => unzigzag(readVarint(protobuf)).bits.s64
 
-  given b32Decodable: (tactic: Tactic[ProtobufError])
+  given b32Decodable: (tactic: Tactic[Protobuf.Error])
   =>  ((B32 is Decodable in Protobuf)^{tactic, caps.any}) =
     readFixed32(_).bits
 
-  given b64Decodable: (tactic: Tactic[ProtobufError])
+  given b64Decodable: (tactic: Tactic[Protobuf.Error])
   =>  ((B64 is Decodable in Protobuf)^{tactic, caps.any}) =
     readFixed64(_).bits
 
@@ -462,7 +463,7 @@ object Protobuf extends Protobuf2:
   =>  ( factory:   Factory[element, collection[element]],
         decodable: => (element is Decodable in Protobuf)^,
         packable:  element is Packable )
-  =>  ( tactic: Tactic[ProtobufError] )
+  =>  ( tactic: Tactic[Protobuf.Error] )
   =>  ((collection[element] is Decodable in Protobuf)^{tactic, decodable}) =
     // An honest capability, as `listEncodable` above.
     protobuf =>
@@ -491,7 +492,7 @@ object Protobuf extends Protobuf2:
 
   given packedListDecodable: [list <: List, element]
   =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
-  =>  ( tactic: Tactic[ProtobufError] )
+  =>  ( tactic: Tactic[Protobuf.Error] )
   =>  ((list[element] is Decodable in Protobuf)^{tactic, caps.any}) =
     packedDecodable[scala.collection.immutable.List, element]
     . asInstanceOf[(list[element] is Decodable in Protobuf)^{tactic, caps.any}]
@@ -504,7 +505,7 @@ object Protobuf extends Protobuf2:
 
   given packedSetDecodable: [set <: Set, element]
   =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
-  =>  ( tactic: Tactic[ProtobufError] )
+  =>  ( tactic: Tactic[Protobuf.Error] )
   =>  ((set[element] is Decodable in Protobuf)^{tactic, caps.any}) =
     packedDecodable[scala.collection.immutable.Set, element]
     . asInstanceOf[(set[element] is Decodable in Protobuf)^{tactic, caps.any}]
@@ -517,7 +518,7 @@ object Protobuf extends Protobuf2:
 
   given packedSeriesDecodable: [sequence <: Sequence, element]
   =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
-  =>  ( tactic: Tactic[ProtobufError] )
+  =>  ( tactic: Tactic[Protobuf.Error] )
   =>  ((sequence[element] is Decodable in Protobuf)^{tactic, caps.any}) =
     packedDecodable[Vector, element]
     . asInstanceOf[(sequence[element] is Decodable in Protobuf)^{tactic, caps.any}]
@@ -544,7 +545,7 @@ object Protobuf extends Protobuf2:
   given mapDecodable: [key, value]
   =>  ( keyDecodable:   => (key is Decodable in Protobuf)^,
         valueDecodable: => (value is Decodable in Protobuf)^ )
-  =>  ( tactic: Tactic[ProtobufError] )
+  =>  ( tactic: Tactic[Protobuf.Error] )
   =>  ((Map[key, value] is Decodable in Protobuf)^{tactic, keyDecodable, valueDecodable}) =
     // An honest capability, as `listEncodable` above.
     protobuf =>
@@ -600,7 +601,7 @@ object Protobuf extends Protobuf2:
       // at the derivation site, sharing the instance's given-resolution lifetime; the fresh
       // (`^`) trait result honestly admits the capture — no seal.
       { protobuf =>
-        provide[Tactic[ProtobufError]]:
+        provide[Tactic[Protobuf.Error]]:
           val map = ProtobufParser(protobuf.payload).fields()
 
           build[derivation]:
@@ -612,20 +613,49 @@ object Protobuf extends Protobuf2:
     inline def disjunction[derivation: SumReflection]: (derivation is Decodable in Protobuf)^ =
       // A fresh (`^`) result honestly admitting the capture, as for `conjunction` above.
       { protobuf =>
-        provide[Tactic[ProtobufError]]:
+        provide[Tactic[Protobuf.Error]]:
           provide[Tactic[VariantError]]:
             val map = ProtobufParser(protobuf.payload).fields()
             val labels = variantLabels
 
             var index = 0
             while index < labels.length && !map.defines(index + 1) do index += 1
-            if index >= labels.length then abort(ProtobufError(Reason.MissingField(0)))
+            if index >= labels.length then abort(Protobuf.Error(Reason.MissingField(0)))
 
             delegate(labels.stdlib(index)):
               [variant <: derivation] => context =>
-                map(index + 1).lay(abort(ProtobufError(Reason.MissingField(index + 1)))): values =>
+                map(index + 1).lay(abort(Protobuf.Error(Reason.MissingField(index + 1)))): values =>
                   context.decoded(Protobuf.Repeated(values)) }
 
+  // ProtobufError → Protobuf.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case Truncated(offset)       => m"the protobuf data ended unexpectedly at offset $offset"
+        case MalformedVarint(offset) => m"a varint was malformed at offset $offset"
+        case MissingField(number)    => m"the required field number $number was missing"
+
+        case UnexpectedWireType(found, offset) =>
+          m"an unexpected wire type, $found, was encountered at offset $offset"
+
+        case Overflow(offset) =>
+          m"a numeric value was too large for its type at offset $offset"
+
+    // The `offset` on the byte-level reasons is the position, in bytes, within the
+    // protobuf message (or sub-message payload) currently being parsed — not an
+    // absolute offset into the original input. Scalar fields and nested messages are
+    // each decoded with a fresh parser over their own payload slice, so only the
+    // top-level message's offsets are absolute. `MissingField` is a semantic
+    // (decode-level) failure and carries no offset.
+    enum Reason:
+      case Truncated(offset: Int)
+      case MalformedVarint(offset: Int)
+      case UnexpectedWireType(found: Int, offset: Int)
+      case Overflow(offset: Int)
+      case MissingField(number: Int)
+
+  case class Error(reason: Protobuf.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(700, 0)(m"the protobuf data was not valid: $reason")
 
 // A single Protocol Buffers wire value, tagged with its wire type — the `Form` of
 // `Encodable`/`Decodable in Protobuf`. `Repeated` carries every occurrence of a
@@ -662,4 +692,4 @@ enum Protobuf:
     case Repeated(Nil) => true
     case _             => false
 
-  def as[value: Decodable in Protobuf]: value raises ProtobufError = value.decoded(this)
+  def as[value: Decodable in Protobuf]: value raises Protobuf.Error = value.decoded(this)

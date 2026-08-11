@@ -75,7 +75,7 @@ object javacEdges:
 
       mitigate:
         case CompilerError() => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
-        case AsyncError(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
+        case Async.Error(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
 
       . protect:
           val process = javac(classpath)(sources, out)

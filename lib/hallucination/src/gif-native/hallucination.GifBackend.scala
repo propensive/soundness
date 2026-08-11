@@ -38,5 +38,5 @@ import proscenium.compat.*
 
 // GIF through the pure Scala codec, used wherever `javax.imageio` is unavailable (Scala.js and WASI).
 private[hallucination] object GifBackend:
-  def decode(format: Rasterizable, data: Data): Raster raises RasterError = GifCodec.decode(data)
+  def decode(format: Rasterizable, data: Data): Raster raises Raster.Error = GifCodec.decode(data)
   def encode(format: Rasterizable, raster: Raster): Data = GifCodec.encode(raster)

@@ -55,6 +55,8 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
+import beneficence.*
+import Lsp.*
 
 object Lsp:
   // Basic geometry. LSP and `Span` are both 0-based, so conversions are direct.
@@ -911,7 +913,7 @@ object Lsp:
     def folders: List[Folder] = session.folders0
     def clientCapabilities: Json = session.clientCapabilities0
     def trace: Optional[Text] = session.trace0
-    def client: LspClient^{this} = session.client0
+    def client: Lsp.Client^{this} = session.client0
 
   // Handler context shapes. A document-scoped (`Focused`) handler is lent the current document,
   // the workspace and an error emitter; a workspace-scoped (`Ambient`) handler gets no single
@@ -919,10 +921,10 @@ object Lsp:
   // bodies through the accessors below. Each shape is a single context-parameter clause: results
   // are pure, so nothing lent to a handler can leave it — by return value, closure or task.
   type Focused[result] =
-    (document: Document^, workspace: Workspace^, emit: Emit[LspError]^) ?=> result
+    (document: Document^, workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result
 
   type Focused1[payload, result] =
-    (payload: payload, document: Document^, workspace: Workspace^, emit: Emit[LspError]^)
+    (payload: payload, document: Document^, workspace: Workspace^, emit: Emit[Lsp.Error]^)
     ?=> result
 
   type Focused2[payload1, payload2, result] =
@@ -930,7 +932,7 @@ object Lsp:
       payload2:  payload2,
       document:  Document^,
       workspace: Workspace^,
-      emit:      Emit[LspError]^ )
+      emit:      Emit[Lsp.Error]^ )
     ?=> result
 
   type Focused3[payload1, payload2, payload3, result] =
@@ -939,13 +941,13 @@ object Lsp:
       payload3:  payload3,
       document:  Document^,
       workspace: Workspace^,
-      emit:      Emit[LspError]^ )
+      emit:      Emit[Lsp.Error]^ )
     ?=> result
 
-  type Ambient[result] = (workspace: Workspace^, emit: Emit[LspError]^) ?=> result
+  type Ambient[result] = (workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result
 
   type Ambient1[payload, result] =
-    (payload: payload, workspace: Workspace^, emit: Emit[LspError]^) ?=> result
+    (payload: payload, workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result
 
   // The handler signature of each feature, named for its registration combinator.
 
@@ -1044,7 +1046,7 @@ object Lsp:
 
   transparent inline def document(using document: Document^): document.type = document
   transparent inline def workspace(using workspace: Workspace^): workspace.type = workspace
-  inline def client(using workspace: Workspace^): LspClient^{workspace} = workspace.client
+  inline def client(using workspace: Workspace^): Lsp.Client^{workspace} = workspace.client
 
   // Contextual accessors for tagged request payloads.
 
@@ -1099,339 +1101,339 @@ object Lsp:
   inline def files[files](using files: files aka "files"): files = files()
 
   // Registration combinators, callable only where a registry is in scope: within the block given
-  // to `listen`, or a helper method that takes `(using LspRegistry^)`. Each records its handler
+  // to `listen`, or a helper method that takes `(using Lsp.Registry^)`. Each records its handler
   // in the registry, from which the server's capabilities are derived; options a capability needs
   // beyond mere presence (trigger characters, legends, diagnostic options) are parameters of the
   // registration, never guessed. Inline, so the registry capability flows from the use site
   // rather than into a fresh root minted by a method boundary.
 
-  transparent inline def ready(handler: ReadyHandler)(using registry: LspRegistry^): Unit =
-    registry.ready0 = LspRegistry.Slot[ReadyHandler](handler)
+  transparent inline def ready(handler: ReadyHandler)(using registry: Lsp.Registry^): Unit =
+    registry.ready0 = Lsp.Registry.Slot[ReadyHandler](handler)
 
-  transparent inline def terminating(handler: TerminatingHandler)(using registry: LspRegistry^)
+  transparent inline def terminating(handler: TerminatingHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.terminating0 = LspRegistry.Slot[TerminatingHandler](handler)
+    registry.terminating0 = Lsp.Registry.Slot[TerminatingHandler](handler)
 
-  transparent inline def opened(handler: OpenedHandler)(using registry: LspRegistry^): Unit =
-    registry.opened0 = LspRegistry.Slot[OpenedHandler](handler)
+  transparent inline def opened(handler: OpenedHandler)(using registry: Lsp.Registry^): Unit =
+    registry.opened0 = Lsp.Registry.Slot[OpenedHandler](handler)
 
-  transparent inline def changed(handler: ChangedHandler)(using registry: LspRegistry^): Unit =
-    registry.changed0 = LspRegistry.Slot[ChangedHandler](handler)
+  transparent inline def changed(handler: ChangedHandler)(using registry: Lsp.Registry^): Unit =
+    registry.changed0 = Lsp.Registry.Slot[ChangedHandler](handler)
 
-  transparent inline def saved(handler: SavedHandler)(using registry: LspRegistry^): Unit =
-    registry.saved0 = LspRegistry.Slot[SavedHandler](handler)
+  transparent inline def saved(handler: SavedHandler)(using registry: Lsp.Registry^): Unit =
+    registry.saved0 = Lsp.Registry.Slot[SavedHandler](handler)
 
-  transparent inline def closed(handler: ClosedHandler)(using registry: LspRegistry^): Unit =
-    registry.closed0 = LspRegistry.Slot[ClosedHandler](handler)
+  transparent inline def closed(handler: ClosedHandler)(using registry: Lsp.Registry^): Unit =
+    registry.closed0 = Lsp.Registry.Slot[ClosedHandler](handler)
 
-  transparent inline def saving(handler: SavingHandler)(using registry: LspRegistry^): Unit =
-    registry.saving0 = LspRegistry.Slot[SavingHandler](handler)
+  transparent inline def saving(handler: SavingHandler)(using registry: Lsp.Registry^): Unit =
+    registry.saving0 = Lsp.Registry.Slot[SavingHandler](handler)
 
-  transparent inline def savingEdits(handler: SavingEditsHandler)(using registry: LspRegistry^)
+  transparent inline def savingEdits(handler: SavingEditsHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.savingEdits0 = LspRegistry.Slot[SavingEditsHandler](handler)
+    registry.savingEdits0 = Lsp.Registry.Slot[SavingEditsHandler](handler)
 
-  transparent inline def hover(handler: HoverHandler)(using registry: LspRegistry^): Unit =
-    registry.hover0 = LspRegistry.Slot[HoverHandler](handler)
+  transparent inline def hover(handler: HoverHandler)(using registry: Lsp.Registry^): Unit =
+    registry.hover0 = Lsp.Registry.Slot[HoverHandler](handler)
 
   transparent inline def complete(triggers: Text*)(handler: CompleteHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.complete0 = LspRegistry.Slot[CompleteHandler](handler)
+    registry.complete0 = Lsp.Registry.Slot[CompleteHandler](handler)
     registry.completeTriggers0 = triggers.to(List)
 
-  transparent inline def definition(handler: DefinitionHandler)(using registry: LspRegistry^)
+  transparent inline def definition(handler: DefinitionHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.definition0 = LspRegistry.Slot[DefinitionHandler](handler)
+    registry.definition0 = Lsp.Registry.Slot[DefinitionHandler](handler)
 
-  transparent inline def references(handler: ReferencesHandler)(using registry: LspRegistry^)
+  transparent inline def references(handler: ReferencesHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.references0 = LspRegistry.Slot[ReferencesHandler](handler)
+    registry.references0 = Lsp.Registry.Slot[ReferencesHandler](handler)
 
   transparent inline def documentSymbols(handler: DocumentSymbolsHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.documentSymbols0 = LspRegistry.Slot[DocumentSymbolsHandler](handler)
+    registry.documentSymbols0 = Lsp.Registry.Slot[DocumentSymbolsHandler](handler)
 
-  transparent inline def format(handler: FormatHandler)(using registry: LspRegistry^): Unit =
-    registry.format0 = LspRegistry.Slot[FormatHandler](handler)
+  transparent inline def format(handler: FormatHandler)(using registry: Lsp.Registry^): Unit =
+    registry.format0 = Lsp.Registry.Slot[FormatHandler](handler)
 
-  transparent inline def rename(handler: RenameHandler)(using registry: LspRegistry^): Unit =
-    registry.rename0 = LspRegistry.Slot[RenameHandler](handler)
+  transparent inline def rename(handler: RenameHandler)(using registry: Lsp.Registry^): Unit =
+    registry.rename0 = Lsp.Registry.Slot[RenameHandler](handler)
 
-  transparent inline def codeActions(handler: CodeActionsHandler)(using registry: LspRegistry^)
+  transparent inline def codeActions(handler: CodeActionsHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.codeActions0 = LspRegistry.Slot[CodeActionsHandler](handler)
+    registry.codeActions0 = Lsp.Registry.Slot[CodeActionsHandler](handler)
 
   transparent inline def signatureHelp(triggers: Text*)(handler: SignatureHelpHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.signatureHelp0 = LspRegistry.Slot[SignatureHelpHandler](handler)
+    registry.signatureHelp0 = Lsp.Registry.Slot[SignatureHelpHandler](handler)
     registry.signatureHelpTriggers0 = triggers.to(List)
 
-  transparent inline def declaration(handler: DeclarationHandler)(using registry: LspRegistry^)
+  transparent inline def declaration(handler: DeclarationHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.declaration0 = LspRegistry.Slot[DeclarationHandler](handler)
+    registry.declaration0 = Lsp.Registry.Slot[DeclarationHandler](handler)
 
   transparent inline def typeDefinition(handler: TypeDefinitionHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.typeDefinition0 = LspRegistry.Slot[TypeDefinitionHandler](handler)
+    registry.typeDefinition0 = Lsp.Registry.Slot[TypeDefinitionHandler](handler)
 
   transparent inline def implementation(handler: ImplementationHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.implementation0 = LspRegistry.Slot[ImplementationHandler](handler)
+    registry.implementation0 = Lsp.Registry.Slot[ImplementationHandler](handler)
 
   transparent inline def documentHighlights(handler: DocumentHighlightsHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.documentHighlights0 = LspRegistry.Slot[DocumentHighlightsHandler](handler)
+    registry.documentHighlights0 = Lsp.Registry.Slot[DocumentHighlightsHandler](handler)
 
   transparent inline def foldingRanges(handler: FoldingRangesHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.foldingRanges0 = LspRegistry.Slot[FoldingRangesHandler](handler)
+    registry.foldingRanges0 = Lsp.Registry.Slot[FoldingRangesHandler](handler)
 
   transparent inline def selectionRanges(handler: SelectionRangesHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.selectionRanges0 = LspRegistry.Slot[SelectionRangesHandler](handler)
+    registry.selectionRanges0 = Lsp.Registry.Slot[SelectionRangesHandler](handler)
 
   transparent inline def documentLinks(handler: DocumentLinksHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.documentLinks0 = LspRegistry.Slot[DocumentLinksHandler](handler)
+    registry.documentLinks0 = Lsp.Registry.Slot[DocumentLinksHandler](handler)
 
-  transparent inline def codeLenses(handler: CodeLensesHandler)(using registry: LspRegistry^)
+  transparent inline def codeLenses(handler: CodeLensesHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.codeLenses0 = LspRegistry.Slot[CodeLensesHandler](handler)
+    registry.codeLenses0 = Lsp.Registry.Slot[CodeLensesHandler](handler)
 
   transparent inline def documentColors(handler: DocumentColorsHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.documentColors0 = LspRegistry.Slot[DocumentColorsHandler](handler)
+    registry.documentColors0 = Lsp.Registry.Slot[DocumentColorsHandler](handler)
 
   transparent inline def colorPresentations(handler: ColorPresentationsHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.colorPresentations0 = LspRegistry.Slot[ColorPresentationsHandler](handler)
+    registry.colorPresentations0 = Lsp.Registry.Slot[ColorPresentationsHandler](handler)
 
-  transparent inline def formatRange(handler: FormatRangeHandler)(using registry: LspRegistry^)
+  transparent inline def formatRange(handler: FormatRangeHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.formatRange0 = LspRegistry.Slot[FormatRangeHandler](handler)
+    registry.formatRange0 = Lsp.Registry.Slot[FormatRangeHandler](handler)
 
   transparent inline def formatOnType(first: Text, more: Text*)(handler: FormatOnTypeHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.formatOnType0 = LspRegistry.Slot[FormatOnTypeHandler](handler)
+    registry.formatOnType0 = Lsp.Registry.Slot[FormatOnTypeHandler](handler)
     registry.formatOnTypeFirst0 = first
     registry.formatOnTypeMore0 = more.to(List)
 
   transparent inline def prepareRename(handler: PrepareRenameHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.prepareRename0 = LspRegistry.Slot[PrepareRenameHandler](handler)
+    registry.prepareRename0 = Lsp.Registry.Slot[PrepareRenameHandler](handler)
 
   // The three call-hierarchy handlers are registered together, so the capability is atomic.
   transparent inline def callHierarchy(prepare: CallHierarchyHandler)
     ( incoming: IncomingCallsHandler, outgoing: OutgoingCallsHandler )
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.prepareCallHierarchy0 = LspRegistry.Slot[CallHierarchyHandler](prepare)
-    registry.incomingCalls0 = LspRegistry.Slot[IncomingCallsHandler](incoming)
-    registry.outgoingCalls0 = LspRegistry.Slot[OutgoingCallsHandler](outgoing)
+    registry.prepareCallHierarchy0 = Lsp.Registry.Slot[CallHierarchyHandler](prepare)
+    registry.incomingCalls0 = Lsp.Registry.Slot[IncomingCallsHandler](incoming)
+    registry.outgoingCalls0 = Lsp.Registry.Slot[OutgoingCallsHandler](outgoing)
 
   transparent inline def typeHierarchy(prepare: TypeHierarchyHandler)
     ( supertypes: SupertypesHandler, subtypes: SubtypesHandler )
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.prepareTypeHierarchy0 = LspRegistry.Slot[TypeHierarchyHandler](prepare)
-    registry.supertypes0 = LspRegistry.Slot[SupertypesHandler](supertypes)
-    registry.subtypes0 = LspRegistry.Slot[SubtypesHandler](subtypes)
+    registry.prepareTypeHierarchy0 = Lsp.Registry.Slot[TypeHierarchyHandler](prepare)
+    registry.supertypes0 = Lsp.Registry.Slot[SupertypesHandler](supertypes)
+    registry.subtypes0 = Lsp.Registry.Slot[SubtypesHandler](subtypes)
 
   transparent inline def semanticTokens(legend: SemanticTokensLegend)
     ( handler: SemanticTokensHandler )
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.semanticTokens0 = LspRegistry.Slot[SemanticTokensHandler](handler)
+    registry.semanticTokens0 = Lsp.Registry.Slot[SemanticTokensHandler](handler)
     registry.semanticTokensLegend0 = legend
 
   transparent inline def semanticTokensDelta(handler: SemanticTokensDeltaHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.semanticTokensDelta0 = LspRegistry.Slot[SemanticTokensDeltaHandler](handler)
+    registry.semanticTokensDelta0 = Lsp.Registry.Slot[SemanticTokensDeltaHandler](handler)
 
   transparent inline def semanticTokensRange(handler: SemanticTokensRangeHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.semanticTokensRange0 = LspRegistry.Slot[SemanticTokensRangeHandler](handler)
+    registry.semanticTokensRange0 = Lsp.Registry.Slot[SemanticTokensRangeHandler](handler)
 
-  transparent inline def inlayHints(handler: InlayHintsHandler)(using registry: LspRegistry^)
+  transparent inline def inlayHints(handler: InlayHintsHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.inlayHints0 = LspRegistry.Slot[InlayHintsHandler](handler)
+    registry.inlayHints0 = Lsp.Registry.Slot[InlayHintsHandler](handler)
 
-  transparent inline def inlineValues(handler: InlineValuesHandler)(using registry: LspRegistry^)
+  transparent inline def inlineValues(handler: InlineValuesHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.inlineValues0 = LspRegistry.Slot[InlineValuesHandler](handler)
+    registry.inlineValues0 = Lsp.Registry.Slot[InlineValuesHandler](handler)
 
   transparent inline def linkedEditingRange(handler: LinkedEditingRangeHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.linkedEditingRange0 = LspRegistry.Slot[LinkedEditingRangeHandler](handler)
+    registry.linkedEditingRange0 = Lsp.Registry.Slot[LinkedEditingRangeHandler](handler)
 
-  transparent inline def monikers(handler: MonikersHandler)(using registry: LspRegistry^): Unit =
-    registry.monikers0 = LspRegistry.Slot[MonikersHandler](handler)
+  transparent inline def monikers(handler: MonikersHandler)(using registry: Lsp.Registry^): Unit =
+    registry.monikers0 = Lsp.Registry.Slot[MonikersHandler](handler)
 
   transparent inline def diagnostics(options: DiagnosticOptions)(handler: DiagnosticsHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.diagnostics0 = LspRegistry.Slot[DiagnosticsHandler](handler)
+    registry.diagnostics0 = Lsp.Registry.Slot[DiagnosticsHandler](handler)
     registry.diagnosticOptions0 = options
 
   transparent inline def workspaceSymbols(handler: WorkspaceSymbolsHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.workspaceSymbols0 = LspRegistry.Slot[WorkspaceSymbolsHandler](handler)
+    registry.workspaceSymbols0 = Lsp.Registry.Slot[WorkspaceSymbolsHandler](handler)
 
   // Each command is registered under its own name; `workspace/executeCommand` requests are
   // multiplexed across them, and an unregistered command yields an `InvalidParams` error
   // response.
   transparent inline def command(name: Text)(handler: CommandHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
     registry.commands0 =
-      (name, LspRegistry.Slot[CommandHandler](handler): AnyRef) :: registry.commands0
+      (name, Lsp.Registry.Slot[CommandHandler](handler): AnyRef) :: registry.commands0
     registry.commandNames0 = name :: registry.commandNames0
 
   transparent inline def configuration(handler: ConfigurationHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.configuration0 = LspRegistry.Slot[ConfigurationHandler](handler)
+    registry.configuration0 = Lsp.Registry.Slot[ConfigurationHandler](handler)
 
-  transparent inline def watchedFiles(handler: WatchedFilesHandler)(using registry: LspRegistry^)
+  transparent inline def watchedFiles(handler: WatchedFilesHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.watchedFiles0 = LspRegistry.Slot[WatchedFilesHandler](handler)
+    registry.watchedFiles0 = Lsp.Registry.Slot[WatchedFilesHandler](handler)
 
   transparent inline def foldersChanged(handler: FoldersChangedHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.foldersChanged0 = LspRegistry.Slot[FoldersChangedHandler](handler)
+    registry.foldersChanged0 = Lsp.Registry.Slot[FoldersChangedHandler](handler)
 
   transparent inline def creatingFiles(handler: CreatingFilesHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.creatingFiles0 = LspRegistry.Slot[CreatingFilesHandler](handler)
+    registry.creatingFiles0 = Lsp.Registry.Slot[CreatingFilesHandler](handler)
 
-  transparent inline def createdFiles(handler: CreatedFilesHandler)(using registry: LspRegistry^)
+  transparent inline def createdFiles(handler: CreatedFilesHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.createdFiles0 = LspRegistry.Slot[CreatedFilesHandler](handler)
+    registry.createdFiles0 = Lsp.Registry.Slot[CreatedFilesHandler](handler)
 
   transparent inline def renamingFiles(handler: RenamingFilesHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.renamingFiles0 = LspRegistry.Slot[RenamingFilesHandler](handler)
+    registry.renamingFiles0 = Lsp.Registry.Slot[RenamingFilesHandler](handler)
 
-  transparent inline def renamedFiles(handler: RenamedFilesHandler)(using registry: LspRegistry^)
+  transparent inline def renamedFiles(handler: RenamedFilesHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.renamedFiles0 = LspRegistry.Slot[RenamedFilesHandler](handler)
+    registry.renamedFiles0 = Lsp.Registry.Slot[RenamedFilesHandler](handler)
 
   transparent inline def deletingFiles(handler: DeletingFilesHandler)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.deletingFiles0 = LspRegistry.Slot[DeletingFilesHandler](handler)
+    registry.deletingFiles0 = Lsp.Registry.Slot[DeletingFilesHandler](handler)
 
-  transparent inline def deletedFiles(handler: DeletedFilesHandler)(using registry: LspRegistry^)
+  transparent inline def deletedFiles(handler: DeletedFilesHandler)(using registry: Lsp.Registry^)
   :   Unit =
 
-    registry.deletedFiles0 = LspRegistry.Slot[DeletedFilesHandler](handler)
+    registry.deletedFiles0 = Lsp.Registry.Slot[DeletedFilesHandler](handler)
 
   transparent inline def resolveCompletion(handler: ResolveHandler[CompletionItem])
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.resolveCompletion0 = LspRegistry.Slot[ResolveHandler[CompletionItem]](handler)
+    registry.resolveCompletion0 = Lsp.Registry.Slot[ResolveHandler[CompletionItem]](handler)
 
   transparent inline def resolveCodeAction(handler: ResolveHandler[CodeAction])
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.resolveCodeAction0 = LspRegistry.Slot[ResolveHandler[CodeAction]](handler)
+    registry.resolveCodeAction0 = Lsp.Registry.Slot[ResolveHandler[CodeAction]](handler)
 
   transparent inline def resolveCodeLens(handler: ResolveHandler[CodeLens])
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.resolveCodeLens0 = LspRegistry.Slot[ResolveHandler[CodeLens]](handler)
+    registry.resolveCodeLens0 = Lsp.Registry.Slot[ResolveHandler[CodeLens]](handler)
 
   transparent inline def resolveDocumentLink(handler: ResolveHandler[DocumentLink])
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.resolveDocumentLink0 = LspRegistry.Slot[ResolveHandler[DocumentLink]](handler)
+    registry.resolveDocumentLink0 = Lsp.Registry.Slot[ResolveHandler[DocumentLink]](handler)
 
   transparent inline def resolveInlayHint(handler: ResolveHandler[InlayHint])
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.resolveInlayHint0 = LspRegistry.Slot[ResolveHandler[InlayHint]](handler)
+    registry.resolveInlayHint0 = Lsp.Registry.Slot[ResolveHandler[InlayHint]](handler)
 
   transparent inline def resolveWorkspaceSymbol(handler: ResolveHandler[WorkspaceSymbol])
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
-    registry.resolveWorkspaceSymbol0 = LspRegistry.Slot[ResolveHandler[WorkspaceSymbol]](handler)
+    registry.resolveWorkspaceSymbol0 = Lsp.Registry.Slot[ResolveHandler[WorkspaceSymbol]](handler)
 
   // An escape hatch: adjusts the derived capabilities, applied last, at initialization.
   transparent inline def capabilities(adjust: ServerCapabilities => ServerCapabilities)
-    ( using registry: LspRegistry^ )
+    ( using registry: Lsp.Registry^ )
   :   Unit =
 
     registry.adjust0 = adjust
 
   // The JSON-RPC dispatcher for an arbitrary implementation of the `Lsp` trait: the low-level
   // escape hatch, and the routing used by `listen`.
-  def dispatcher(server: Lsp): Json => Optional[Json] = LspDispatch(server)
+  def dispatcher(server: Lsp): Json => Optional[Json] = Lsp.Dispatch(server)
 
   // The method a message names, or `Unset` if it names none — which marks it a response.
   private[exegesis] def method(json: Json): Optional[Text] = envelope(json).method
@@ -1592,7 +1594,7 @@ object Lsp:
   // nothing capability-carrying is ever stored in an application-lifetime object. `observer`, if
   // given, sees every message in both directions as it crosses the transport.
   def listen(name: Text, version: Optional[Text] = Unset, observer: Observer^ = Observer.Silent)
-    ( register: (registry: LspRegistry^) ?=> Unit )
+    ( register: (registry: Lsp.Registry^) ?=> Unit )
     ( using Stdio^, Monitor, Probate )
   :   Unit =
 
@@ -1600,7 +1602,7 @@ object Lsp:
     import strategies.throwUnsafely
     import Json.jsonEncodableInText
 
-    val registry: LspRegistry^ = LspRegistry()
+    val registry: Lsp.Registry^ = Lsp.Registry()
     register(using registry)
 
     val session: LspSession^ = LspSession(registry, name, version)
@@ -1608,7 +1610,7 @@ object Lsp:
     // The session is confined by its own type and the dispatch closures are locals of this
     // method, so sealing the reference the generated dispatchers hold is sound; the macro cannot
     // take a capability-typed splice.
-    val dispatch: Json => Optional[Json] = LspDispatch(caps.unsafe.unsafeAssumePure(session))
+    val dispatch: Json => Optional[Json] = Lsp.Dispatch(caps.unsafe.unsafeAssumePure(session))
 
     // The writer drains the channel and frames each message onto stdout. The observer sees the
     // encoded body, not the framing, so both directions read alike in a log.
@@ -1633,6 +1635,674 @@ object Lsp:
           session.conclude(json, response).let(session.put)
 
     writer.cancel()
+
+  // LspClient → Lsp.Client
+  // The methods a Language Server may call back on its client. As with synesthesia's `Mcp.Client`,
+  // these are the server-to-client half of the protocol; the implementation is generated by the
+  // `JsonRpc` `client` macro. Only notifications are exposed (no requests), since a request handler
+  // runs on the same thread that reads the client's responses, and a synchronous round-trip from
+  // within a handler would deadlock.
+  //
+  // The wire methods are public, not protected, because the trait serves both directions: a server
+  // *calls* them through the generated proxy, and a client *implements* them to receive them,
+  // dispatched by `JsonRpc.serve` — which selects them from generated code outside this class. The
+  // named wrappers below remain the calling convention worth reading.
+  //
+  // An `Lsp.Client` is a *shared* capability: notifications are deliberately multi-producer (the
+  // outgoing channel is a multi-producer rim by design, so publishing diagnostics from a task
+  // spawned in a handler is legitimate), but scoping still confines it to the serving scope that
+  // minted it — a client handle cannot be stashed for use after the session ends.
+  trait Client extends Findable, caps.SharedCapability:
+    import Lsp.*
+
+    @rpc
+    def `textDocument/publishDiagnostics`
+      ( uri: Text, version: Optional[Int], diagnostics: List[Diagnostic] )
+    :   Unit
+
+    @rpc
+    def `window/showMessage`(`type`: MessageType, message: Text): Unit
+
+    @rpc
+    def `window/logMessage`(`type`: MessageType, message: Text): Unit
+
+    @rpc
+    def `telemetry/event`(params: Json): Unit
+
+    @rpc
+    def `$/logTrace`(message: Text, verbose: Optional[Text]): Unit
+
+    // A `ProgressToken` is a string or integer, and a progress `value` is protocol-specific, so both
+    // are passed as raw JSON.
+    @rpc
+    def `$/progress`(token: Json, value: Json): Unit
+
+    @rpc
+    def `$/cancelRequest`(id: Json): Unit
+
+    def publishDiagnostics(uri: Text, diagnostics: List[Diagnostic]): Unit =
+      `textDocument/publishDiagnostics`(uri, Unset, diagnostics)
+
+    def showMessage(message: Text): Unit = `window/showMessage`(MessageType.Info, message)
+    def logMessage(message: Text): Unit = `window/logMessage`(MessageType.Log, message)
+    def telemetry(params: Json): Unit = `telemetry/event`(params)
+    def logTrace(message: Text): Unit = `$/logTrace`(message, Unset)
+    def progress(token: Json, value: Json): Unit = `$/progress`(token, value)
+    def cancelRequest(id: Json): Unit = `$/cancelRequest`(id)
+
+  // LspConnection → Lsp.Connection
+  // The client's half of a Language Server exchange: the handle an editor — or a proxy — holds on a
+  // running server. It is the mirror of `LspSession`, and it is a capability, lent by `Lsp.Server`'s
+  // `session` for the duration of a lambda and disposed of afterwards, so it cannot outlive the
+  // server it speaks to.
+  //
+  // Outbound messages are put on the inherited `JsonRpc` channel, which the session's writer drains
+  // onto the transport; inbound messages are read by the session's reader and routed here. A request
+  // blocks the caller until its response arrives, but never blocks the reader, so several requests
+  // may be in flight at once and may be answered out of order.
+  class Connection private[exegesis] ()(using Monitor, Diagnostics)
+  extends JsonRpc, caps.ExclusiveCapability:
+    type Origin = Lsp
+
+    import strategies.throwUnsafely
+
+    // One proxy module per sub-interface, all sharing this instance's outgoing channel. The split
+    // mirrors `Lsp.Dispatch`: a single proxy for the whole protocol would inline a codec per method
+    // into one class and overflow the JVM constant-pool limit.
+    // The connection is confined by its own type and each proxy is a member of it, so sealing the
+    // reference the generated modules hold is sound; the macro cannot take a capability-typed splice
+    // (as in `LspSession.client0`).
+    private val channel: JsonRpc = caps.unsafe.unsafeAssumePure(this)
+
+    // The same confinement argument seals each proxy: the generated module's only capabilities
+    // are this connection and the Lsp object, both already reachable through the member that
+    // holds it, so the pure interface type loses nothing that is not confined here anyway.
+    val lifecycle:  LspLifecycle  = caps.unsafe.unsafeAssumePure(channel.proxy[LspLifecycle])
+    val language:   LspLanguage   = caps.unsafe.unsafeAssumePure(channel.proxy[LspLanguage])
+    val navigation: LspNavigation = caps.unsafe.unsafeAssumePure(channel.proxy[LspNavigation])
+    val editing:    LspEditing    = caps.unsafe.unsafeAssumePure(channel.proxy[LspEditing])
+    val advanced:   LspAdvanced   = caps.unsafe.unsafeAssumePure(channel.proxy[LspAdvanced])
+    val workspace:  LspWorkspace  = caps.unsafe.unsafeAssumePure(channel.proxy[LspWorkspace])
+    val resolve:    LspResolve    = caps.unsafe.unsafeAssumePure(channel.proxy[LspResolve])
+
+    // A fault the server reports as an error response arrives as a `JsonRpcError` carrying the wire
+    // code, which is exactly the vocabulary of `Lsp.Error.Reason`; a code outside the standard set is
+    // reported as `Internal`, with the server's own message as the detail.
+    private def ask[result](block: => result)(using Tactic[Lsp.Error]): result =
+      try block catch case error: JsonRpcError =>
+        abort(Lsp.Error(error.code.let(Lsp.Error.reason(_)).or(Lsp.Error.Reason.Internal), error.detail))
+
+    // The raw seam: sends a message exactly as given, without minting an id or awaiting an answer.
+    // A proxy forwards through it, so that the editor's own request ids — and the methods this
+    // library does not model — cross unchanged.
+    def send(message: Json): Unit = put(message)
+
+    // Lifecycle
+
+    def initialize
+       ( root:         Optional[Text]        = Unset,
+         name:         Text                  = t"soundness",
+         version:      Optional[Text]        = Unset,
+         folders:      List[Lsp.Folder]      = Nil,
+         capabilities: Json                  = Map[Text, Json]().in[Json] )
+       ( using Tactic[Lsp.Error] )
+    :   Lsp.InitializeResult =
+
+      ask:
+        lifecycle.initialize
+         ( processId        = Unset,
+           clientInfo       = Lsp.ClientInfo(name, version),
+           locale           = Unset,
+           rootUri          = root,
+           capabilities     = capabilities,
+           workspaceFolders = folders )
+
+    def initialized(): Unit = lifecycle.initialized()
+    def shutdown()(using Tactic[Lsp.Error]): Unit = ask(lifecycle.shutdown()) yet ()
+    def exit(): Unit = lifecycle.exit()
+
+    // Documents
+
+    def open(uri: Text, language0: Text, text: Text, version: Int = 1): Unit =
+      lifecycle.`textDocument/didOpen`(Lsp.TextDocumentItem(uri, language0, version, text))
+
+    def edit(uri: Text, version: Int, changes: List[Lsp.TextDocumentContentChangeEvent]): Unit =
+      lifecycle.`textDocument/didChange`
+       ( Lsp.VersionedTextDocumentIdentifier(uri, version), changes )
+
+    // The whole-document form of `edit`: an unranged change replaces the document's content.
+    def replace(uri: Text, version: Int, text: Text): Unit =
+      edit(uri, version, List(Lsp.TextDocumentContentChangeEvent(Unset, text)))
+
+    def save(uri: Text, text: Optional[Text] = Unset): Unit =
+      lifecycle.`textDocument/didSave`(Lsp.TextDocumentIdentifier(uri), text)
+
+    def close(uri: Text): Unit =
+      lifecycle.`textDocument/didClose`(Lsp.TextDocumentIdentifier(uri))
+
+    // Language features
+
+    def hover(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error]): Optional[Lsp.Hover] =
+      ask(language.`textDocument/hover`(Lsp.TextDocumentIdentifier(uri), position))
+
+    def complete(uri: Text, position: Lsp.Position, context: Optional[Lsp.CompletionContext] = Unset)
+       ( using Tactic[Lsp.Error] )
+    :   Lsp.CompletionList =
+
+      ask(language.`textDocument/completion`(Lsp.TextDocumentIdentifier(uri), position, context))
+
+    def definition(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error]): List[Lsp.Location] =
+      ask(language.`textDocument/definition`(Lsp.TextDocumentIdentifier(uri), position))
+
+    def references(uri: Text, position: Lsp.Position, declaration: Boolean = true)
+       ( using Tactic[Lsp.Error] )
+    :   List[Lsp.Location] =
+
+      ask:
+        language.`textDocument/references`
+         ( Lsp.TextDocumentIdentifier(uri), position, Lsp.ReferenceContext(declaration) )
+
+    def symbols(uri: Text)(using Tactic[Lsp.Error]): List[Lsp.DocumentSymbol] =
+      ask(language.`textDocument/documentSymbol`(Lsp.TextDocumentIdentifier(uri)))
+
+    def format(uri: Text, options: Lsp.FormattingOptions)(using Tactic[Lsp.Error])
+    :   List[Lsp.TextEdit] =
+
+      ask(language.`textDocument/formatting`(Lsp.TextDocumentIdentifier(uri), options))
+
+    def rename(uri: Text, position: Lsp.Position, name: Text)(using Tactic[Lsp.Error])
+    :   Lsp.WorkspaceEdit =
+
+      ask(language.`textDocument/rename`(Lsp.TextDocumentIdentifier(uri), position, name))
+
+    def codeActions(uri: Text, range: Lsp.Range, context: Lsp.CodeActionContext)
+       ( using Tactic[Lsp.Error] )
+    :   List[Lsp.CodeAction] =
+
+      ask(language.`textDocument/codeAction`(Lsp.TextDocumentIdentifier(uri), range, context))
+
+    def signatureHelp(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error])
+    :   Optional[Lsp.SignatureHelp] =
+
+      ask(language.`textDocument/signatureHelp`(Lsp.TextDocumentIdentifier(uri), position))
+
+    // Navigation
+
+    def declaration(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error]): List[Lsp.Location] =
+      ask(navigation.`textDocument/declaration`(Lsp.TextDocumentIdentifier(uri), position))
+
+    def typeDefinition(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error])
+    :   List[Lsp.Location] =
+
+      ask(navigation.`textDocument/typeDefinition`(Lsp.TextDocumentIdentifier(uri), position))
+
+    def implementation(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error])
+    :   List[Lsp.Location] =
+
+      ask(navigation.`textDocument/implementation`(Lsp.TextDocumentIdentifier(uri), position))
+
+    def highlights(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error])
+    :   List[Lsp.DocumentHighlight] =
+
+      ask(navigation.`textDocument/documentHighlight`(Lsp.TextDocumentIdentifier(uri), position))
+
+    def foldingRanges(uri: Text)(using Tactic[Lsp.Error]): List[Lsp.FoldingRange] =
+      ask(navigation.`textDocument/foldingRange`(Lsp.TextDocumentIdentifier(uri)))
+
+    def documentLinks(uri: Text)(using Tactic[Lsp.Error]): List[Lsp.DocumentLink] =
+      ask(navigation.`textDocument/documentLink`(Lsp.TextDocumentIdentifier(uri)))
+
+    def codeLenses(uri: Text)(using Tactic[Lsp.Error]): List[Lsp.CodeLens] =
+      ask(navigation.`textDocument/codeLens`(Lsp.TextDocumentIdentifier(uri)))
+
+    // Advanced
+
+    def semanticTokens(uri: Text)(using Tactic[Lsp.Error]): Lsp.SemanticTokens =
+      ask(advanced.`textDocument/semanticTokens/full`(Lsp.TextDocumentIdentifier(uri)))
+
+    def inlayHints(uri: Text, range: Lsp.Range)(using Tactic[Lsp.Error]): List[Lsp.InlayHint] =
+      ask(advanced.`textDocument/inlayHint`(Lsp.TextDocumentIdentifier(uri), range))
+
+    def diagnostics(uri: Text)(using Tactic[Lsp.Error]): Lsp.DocumentDiagnosticReport =
+      ask(advanced.`textDocument/diagnostic`(Lsp.TextDocumentIdentifier(uri), Unset, Unset))
+
+    // Workspace
+
+    def search(query: Text)(using Tactic[Lsp.Error]): List[Lsp.WorkspaceSymbol] =
+      ask(workspace.`workspace/symbol`(query))
+
+    def execute(command: Text, arguments: List[Json] = Nil)(using Tactic[Lsp.Error]): Optional[Json] =
+      ask(workspace.`workspace/executeCommand`(command, arguments))
+
+    def configure(settings: Json): Unit = workspace.`workspace/didChangeConfiguration`(settings)
+
+  // LspDispatch → Lsp.Dispatch
+  // The JSON-RPC dispatch is generated split across one dispatcher per `Lsp` sub-interface, rather
+  // than as a single `serve[Lsp]`: `JsonRpc.serve` inlines a schema-carrying codec for every method
+  // it covers, so one dispatcher for the whole protocol would overflow the JVM per-class
+  // constant-pool limit. Each sub-dispatcher is expanded in its own object, so it compiles into its
+  // own small class; `apply` routes an incoming request to the one whose interface declares its
+  // method (a JSON-RPC response, which carries no method, is handled by any dispatcher, so the
+  // first suffices).
+  object Dispatch:
+    private object lifecycleRoute:
+      def apply(server: Lsp): Json => Optional[Json] =
+        import strategies.throwUnsafely
+        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspLifecycle](server))
+
+    // Materialized here because the `JsonRpc.serve` macro's `Expr.summon` cannot
+    // expand jacinta's inline `encodable` given for the opaque `List` alias.
+    private given documentSymbolList: (List[Lsp.DocumentSymbol] is Encodable in Json) =
+      scala.compiletime.summonInline[List[Lsp.DocumentSymbol] is Encodable in Json]
+
+    private given selectionRangeList: (List[Lsp.SelectionRange] is Encodable in Json) =
+      scala.compiletime.summonInline[List[Lsp.SelectionRange] is Encodable in Json]
+
+    private object languageRoute:
+      def apply(server: Lsp): Json => Optional[Json] =
+        import strategies.throwUnsafely
+        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspLanguage](server))
+
+    private object navigationRoute:
+      def apply(server: Lsp): Json => Optional[Json] =
+        import strategies.throwUnsafely
+        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspNavigation](server))
+
+    private object editingRoute:
+      def apply(server: Lsp): Json => Optional[Json] =
+        import strategies.throwUnsafely
+        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspEditing](server))
+
+    private object advancedRoute:
+      def apply(server: Lsp): Json => Optional[Json] =
+        import strategies.throwUnsafely
+        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspAdvanced](server))
+
+    private object workspaceRoute:
+      def apply(server: Lsp): Json => Optional[Json] =
+        import strategies.throwUnsafely
+        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspWorkspace](server))
+
+    private object resolveRoute:
+      def apply(server: Lsp): Json => Optional[Json] =
+        import strategies.throwUnsafely
+        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspResolve](server))
+
+    def apply(server: Lsp): Json => Optional[Json] =
+      import dynamicJsonAccess.enabled
+      import strategies.throwUnsafely
+
+      // Each expansion is bound to a bare local, and the routing is an if-chain over locals
+      // rather than a list of tuples: an expected type at the expansion site freshens the opaque
+      // `Text` inside the result, and function values in an invariant container hit boxed-capture
+      // mismatches under capture checking.
+      val lifecycleMethods = JsonRpc.methods[LspLifecycle]
+      val languageMethods = JsonRpc.methods[LspLanguage]
+      val navigationMethods = JsonRpc.methods[LspNavigation]
+      val editingMethods = JsonRpc.methods[LspEditing]
+      val advancedMethods = JsonRpc.methods[LspAdvanced]
+      val workspaceMethods = JsonRpc.methods[LspWorkspace]
+      val resolveMethods = JsonRpc.methods[LspResolve]
+
+      val lifecycle = lifecycleRoute(server)
+      val language = languageRoute(server)
+      val navigation = navigationRoute(server)
+      val editing = editingRoute(server)
+      val advanced = advancedRoute(server)
+      val workspace = workspaceRoute(server)
+      val resolve = resolveRoute(server)
+
+      json =>
+        val method: Optional[Text] = try json.method.as[Text] catch case _: Exception => Unset
+
+        // A message with no method is a response, which any dispatcher handles; an unknown
+        // method is dropped.
+        method.lay(lifecycle(json)): method =>
+          if lifecycleMethods.has(method) then lifecycle(json)
+          else if languageMethods.has(method) then language(json)
+          else if navigationMethods.has(method) then navigation(json)
+          else if editingMethods.has(method) then editing(json)
+          else if advancedMethods.has(method) then advanced(json)
+          else if workspaceMethods.has(method) then workspace(json)
+          else if resolveMethods.has(method) then resolve(json)
+          else Unset
+
+  // LspError → Lsp.Error
+  object Error:
+    // Each reason carries its JSON-RPC wire code (`code`), alongside the sequential `number` used
+    // for the SN-147 diagnostic. A fault raised in a handler is converted by `Lsp.listen` into an
+    // error response whose `error.code` is the reason's wire code.
+    enum Reason(val number: Int, val code: Int) extends Clarification:
+      case Parse                extends Reason(1, -32700)
+      case InvalidRequest       extends Reason(2, -32600)
+      case MethodNotFound       extends Reason(3, -32601)
+      case InvalidParams        extends Reason(4, -32602)
+      case Internal             extends Reason(5, -32603)
+      case ServerNotInitialized extends Reason(6, -32002)
+      case RequestCancelled     extends Reason(7, -32800)
+      case ContentModified      extends Reason(8, -32801)
+      case ServerCancelled      extends Reason(9, -32802)
+      case RequestFailed        extends Reason(10, -32803)
+
+    // The inverse of `code`: recovers the reason from an error response's wire code, for a client
+    // reading a fault a server sent it. A server may answer with a code outside the standard set —
+    // the protocol reserves a range for implementation-defined errors — which is `Unset` here, and
+    // reported as `Internal` by the caller.
+    def reason(code: Int): Optional[Reason] =
+      var found: Optional[Reason] = Unset
+      var index: Int = 0
+
+      while index < Reason.values.length do
+        val reason = Reason.values(index)
+        if reason.code == code then found = reason
+        index += 1
+
+      found
+
+    given communicable: Reason is Communicable =
+      case Reason.Parse                => m"the message could not be parsed as JSON"
+      case Reason.InvalidRequest       => m"the message was not a valid JSON-RPC request"
+      case Reason.MethodNotFound       => m"the method name was not recognised by the server"
+      case Reason.InvalidParams        => m"the parameters were not valid for the requested method"
+      case Reason.Internal             => m"an internal error occurred"
+      case Reason.ServerNotInitialized => m"the server has not been initialized"
+      case Reason.RequestCancelled     => m"the request was cancelled"
+      case Reason.ContentModified      => m"the document content was modified during the request"
+      case Reason.ServerCancelled      => m"the request was cancelled by the server"
+      case Reason.RequestFailed        => m"the request failed"
+
+  case class Error(reason: Lsp.Error.Reason, details: Optional[Text] = Unset)(using Diagnostics)
+  extends fulminate.Error(147, reason.number)(m"the LSP operation failed because $reason"):
+    // The message sent to the client in the error response: the given details, or the reason's
+    // standard description.
+    def response: Text = details.or(reason.communicate.text)
+
+  // LspRegistry → Lsp.Registry
+  object Registry:
+    // A context-function value adapts to any non-context-function expected type by being applied,
+    // so a handler cannot inhabit an `Optional[...]` union directly: the box holds it intact.
+    case class Slot[handler](value: handler)
+
+  // The target of the registration combinators, lent to the block given to `Lsp.listen` for its
+  // duration, then consumed by the session it configures: registration after the server begins
+  // serving is impossible by construction. An exclusive capability, so it cannot escape the block;
+  // its slots are public untracked vars — the combinators are inline, assigning from their
+  // expansion sites. The slots are an erased rim (`AnyRef | Null`): a union mentioning a
+  // context-function type freshens its capture sets at every adaptation, so the typed boundary is
+  // the combinator (whose parameter is the pure handler type — a handler closing over the registry
+  // is rejected there) and the session's invocation helpers, which restore the type by cast.
+  class Registry private[exegesis] () extends caps.ExclusiveCapability:
+
+    @scala.caps.unsafe.untrackedCaptures
+    var ready0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var terminating0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var opened0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var changed0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var saved0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var closed0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var saving0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var savingEdits0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var hover0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var complete0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var completeTriggers0: List[Text] = Nil
+
+    @scala.caps.unsafe.untrackedCaptures
+    var definition0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var references0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var documentSymbols0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var format0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var rename0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var codeActions0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var signatureHelp0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var signatureHelpTriggers0: List[Text] = Nil
+
+    @scala.caps.unsafe.untrackedCaptures
+    var declaration0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var typeDefinition0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var implementation0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var documentHighlights0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var foldingRanges0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var selectionRanges0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var documentLinks0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var codeLenses0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var documentColors0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var colorPresentations0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var formatRange0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var formatOnType0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var formatOnTypeFirst0: Optional[Text] = Unset
+
+    @scala.caps.unsafe.untrackedCaptures
+    var formatOnTypeMore0: List[Text] = Nil
+
+    @scala.caps.unsafe.untrackedCaptures
+    var prepareRename0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var prepareCallHierarchy0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var incomingCalls0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var outgoingCalls0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var prepareTypeHierarchy0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var supertypes0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var subtypes0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var semanticTokens0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var semanticTokensLegend0: Optional[SemanticTokensLegend] = Unset
+
+    @scala.caps.unsafe.untrackedCaptures
+    var semanticTokensDelta0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var semanticTokensRange0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var inlayHints0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var inlineValues0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var linkedEditingRange0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var monikers0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var diagnostics0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var diagnosticOptions0: Optional[DiagnosticOptions] = Unset
+
+    @scala.caps.unsafe.untrackedCaptures
+    var workspaceSymbols0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var commands0: List[(Text, AnyRef)] = Nil
+
+    // The registered command names, tracked apart from the handlers: the capability derivation
+    // and lookup paths must not traverse a list whose element type mentions a context function.
+    @scala.caps.unsafe.untrackedCaptures
+    var commandNames0: List[Text] = Nil
+
+    @scala.caps.unsafe.untrackedCaptures
+    var configuration0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var watchedFiles0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var foldersChanged0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var creatingFiles0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var createdFiles0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var renamingFiles0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var renamedFiles0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var deletingFiles0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var deletedFiles0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var resolveCompletion0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var resolveCodeAction0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var resolveCodeLens0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var resolveDocumentLink0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var resolveInlayHint0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var resolveWorkspaceSymbol0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var adjust0: Optional[ServerCapabilities => ServerCapabilities] = Unset
+
+    private def flag(registered: AnyRef | Null): Optional[Boolean] =
+      if registered == null then Unset else true
+
+    private def triggers(list: List[Text]): Optional[List[Text]] =
+      if list.stdlib.isEmpty then Unset else list
+
+    private def commandOptions: Optional[ExecuteCommandOptions] =
+      if commandNames0.stdlib.isEmpty then Unset else ExecuteCommandOptions(commandNames0)
+
+    private def adjusted(derived: ServerCapabilities): ServerCapabilities =
+      adjust0.lay(derived)(_(derived))
+
+    // The server capabilities implied by the registrations: each capability is advertised exactly
+    // when its handler was registered, so the declaration can never disagree with the
+    // implementation. Options a capability needs beyond mere presence were given at registration.
+    // The `adjust` escape hatch, if registered, is applied last.
+    def capabilities: ServerCapabilities = adjusted:
+      ServerCapabilities
+        ( textDocumentSync                 = TextDocumentSyncKind.Incremental,
+          completionProvider               = flag(complete0).let: _ =>
+                                               CompletionOptions
+                                                ( triggerCharacters = triggers(completeTriggers0),
+                                                  resolveProvider = flag(resolveCompletion0) ),
+          hoverProvider                    = flag(hover0),
+          definitionProvider               = flag(definition0),
+          referencesProvider               = flag(references0),
+          documentSymbolProvider           = flag(documentSymbols0),
+          documentFormattingProvider       = flag(format0),
+          renameProvider                   = flag(rename0),
+          codeActionProvider               = flag(codeActions0),
+          signatureHelpProvider            = flag(signatureHelp0).let: _ =>
+                                               SignatureHelpOptions(triggers(signatureHelpTriggers0)),
+          declarationProvider              = flag(declaration0),
+          typeDefinitionProvider          = flag(typeDefinition0),
+          implementationProvider           = flag(implementation0),
+          documentHighlightProvider        = flag(documentHighlights0),
+          foldingRangeProvider             = flag(foldingRanges0),
+          selectionRangeProvider           = flag(selectionRanges0),
+          colorProvider                    = flag(documentColors0),
+          documentRangeFormattingProvider  = flag(formatRange0),
+          documentLinkProvider             = flag(documentLinks0).let: _ =>
+                                               DocumentLinkOptions(flag(resolveDocumentLink0)),
+          codeLensProvider                 = flag(codeLenses0).let: _ =>
+                                               CodeLensOptions(flag(resolveCodeLens0)),
+          documentOnTypeFormattingProvider = formatOnTypeFirst0.let: first =>
+                                               DocumentOnTypeFormattingOptions
+                                                ( first, triggers(formatOnTypeMore0) ),
+          callHierarchyProvider            = flag(prepareCallHierarchy0),
+          typeHierarchyProvider            = flag(prepareTypeHierarchy0),
+          semanticTokensProvider           = semanticTokensLegend0.let: legend =>
+                                               SemanticTokensOptions
+                                                ( legend,
+                                                  range = flag(semanticTokensRange0),
+                                                  full  = flag(semanticTokens0) ),
+          inlayHintProvider                = flag(inlayHints0),
+          inlineValueProvider              = flag(inlineValues0),
+          linkedEditingRangeProvider       = flag(linkedEditingRange0),
+          monikerProvider                  = flag(monikers0),
+          diagnosticProvider               = flag(diagnostics0).let(_ => diagnosticOptions0),
+          workspaceSymbolProvider          = flag(workspaceSymbols0),
+          executeCommandProvider           = commandOptions )
 
 // The Language Server Protocol request/notification surface. It is split into several sub-traits
 // purely so that each can be compiled into its own JSON-RPC dispatcher class: `JsonRpc.serve`
@@ -1933,7 +2603,7 @@ trait LspResolve:
   @rpc
   def `workspaceSymbol/resolve`(@bare workspaceSymbol: Lsp.WorkspaceSymbol): Lsp.WorkspaceSymbol
 
-// The full protocol: the union of every sub-interface, fixing `Origin` to `LspClient`. `LspServer`
+// The full protocol: the union of every sub-interface, fixing `Origin` to `Lsp.Client`. `LspServer`
 // implements this; `LspServer.dispatcher` serves each sub-interface separately, routing by method.
 //
 // `JsonRpc` is mixed in here rather than into each sub-interface, because a sub-interface is also
@@ -1949,4 +2619,4 @@ extends LspLifecycle,
         LspWorkspace,
         LspResolve,
         JsonRpc:
-  type Origin = LspClient
+  type Origin = Lsp.Client

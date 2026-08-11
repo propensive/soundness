@@ -48,4 +48,4 @@ import strategies.throwUnsafely
 // browser automation does not depend on `hallucination` and its image-codec closure; the
 // method's name and result type are unchanged from when it was a member of `Element`.
 extension (element: WebDriver#Session#Element)
-  def screenshot(): Raster in Png logs HttpEvent = element.screenshotData().read[Raster in Png]
+  def screenshot(): Raster in Png logs Http.Event = element.screenshotData().read[Raster in Png]

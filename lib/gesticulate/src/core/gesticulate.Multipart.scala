@@ -47,7 +47,6 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-import MultipartError.Reason
 
 object Multipart:
   enum Disposition:
@@ -55,12 +54,12 @@ object Multipart:
 
 
   def parse[input: Streamable by Data over Credit](input: input, boundary0: Optional[Text] = Unset)
-  :   Multipart raises MultipartError =
+  :   Multipart raises Multipart.Error =
 
     val cursor = Cursor[Data](input.source[Data])
 
-    inline def expected(char: Char): Diagnostics ?=> MultipartError =
-      MultipartError(Reason.Expected(char))
+    inline def expected(char: Char): Diagnostics ?=> Multipart.Error =
+      Multipart.Error(Multipart.Error.Reason.Expected(char))
 
     val boundary: Data = cursor.hold:
       val start = cursor.mark
@@ -153,7 +152,7 @@ object Multipart:
                 else key -> value
 
               case _ =>
-                abort(MultipartError(Reason.BadDisposition))
+                abort(Multipart.Error(Multipart.Error.Reason.BadDisposition))
 
           . toMap
 
@@ -163,7 +162,7 @@ object Multipart:
           case t"attachment" => Multipart.Disposition.Attachment
 
           case _ =>
-            abort(MultipartError(Reason.BadDisposition))
+            abort(Multipart.Error(Multipart.Error.Reason.BadDisposition))
 
         val filename = params.get(t"filename").optional
         val name = params.get(t"name").optional
@@ -199,6 +198,26 @@ object Multipart:
 
     Multipart(parts())
 
+  // MultipartError → Multipart.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Expected(char: Char) extends Reason(1)
+      case StreamContinues      extends Reason(2)
+      case BadBoundaryEnding    extends Reason(3)
+      case MediaType            extends Reason(4)
+      case BadDisposition       extends Reason(5)
+
+    given communicable: Reason is Communicable =
+      case Multipart.Error.Reason.Expected(char)    => m"the character '$char' was expected"
+      case Multipart.Error.Reason.StreamContinues   => m"the stream continues beyond the last part"
+      case Multipart.Error.Reason.BadBoundaryEnding => m"unexpected content followed the boundary"
+      case Multipart.Error.Reason.MediaType         => m"the media type is invalid"
+      case Multipart.Error.Reason.BadDisposition    => m"the `Content-Disposition` header has the wrong format"
+
+  import Multipart.Error.Reason
+
+  case class Error(reason: Multipart.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(937, reason.number)(m"multipart data could not be read because $reason")
 
 case class Multipart(parts: Chain[Part]):
   def at(name: Text): Optional[Part] = parts.stdlib.find(_.name == name).getOrElse(Unset)

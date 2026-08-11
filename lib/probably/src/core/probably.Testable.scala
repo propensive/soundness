@@ -52,4 +52,4 @@ extends Findable:
 
   override def hashCode: Int = name.hashCode + parent.lay(0)(_.hashCode)
 
-  val id: TestId = TestId(name, parent, codepoint, moniker)
+  val id: Test.Id = Test.Id(name, parent, codepoint, moniker)

@@ -53,7 +53,7 @@ import symbolism.*
 import vacuous.*
 
 import Async.nominative
-import AsyncError.Reason
+import Async.Error.Reason
 import Fulfillment.*
 import beneficence.*
 import unsafeExceptions.canThrowAny
@@ -210,7 +210,7 @@ private object Preload:
     touch(Remedy.Accept)
     touch(Remedy.Reject)
     touch(Remedy.Escalate(Error(Exception())))
-    touch(AsyncError(Reason.Cancelled)(using Diagnostics.omit))
+    touch(Async.Error(Reason.Cancelled)(using Diagnostics.omit))
 
     // Both settlement paths, which reach `Promise.State.Cancelled` — the counterpart inside
     // `Promise`, equally unloaded until the first cancellation, and reached only as a strand dies.
@@ -269,13 +269,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
 
   def map[result2](lambda: Result => result2)(using monitor: Monitor^, probate: Probate^)
-  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate} =
+  :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()))
 
 
   def bind[result2](lambda: Result => Task[result2])(using monitor: Monitor^, probate: Probate^)
-  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate} =
+  :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()).join())
 
@@ -299,25 +299,25 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
       case Cancelled => strand.join()
       case _         => ()
 
-  def result()(using cancel: Tactic[AsyncError]^): Result =
+  def result()(using cancel: Tactic[Async.Error]^): Result =
     state.get() match
       case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
       case _ =>
         state.updateAndGet:
-          case null                        => abort(AsyncError(Reason.Incomplete))
-          case Initializing                => abort(AsyncError(Reason.Incomplete))
-          case Active(_)                   => abort(AsyncError(Reason.Incomplete))
+          case null                        => abort(Async.Error(Reason.Incomplete))
+          case Initializing                => abort(Async.Error(Reason.Incomplete))
+          case Active(_)                   => abort(Async.Error(Reason.Incomplete))
           case Completed(duration, result) => Delivered(duration, result)
           case state@Delivered(_, _)       => state
           case Failed(error)               => throw error
-          case Cancelled                   => abort(AsyncError(Reason.Cancelled))
+          case Cancelled                   => abort(Async.Error(Reason.Cancelled))
 
         . match
           case Delivered(_, result) => result
           case other                => panic(m"impossible state")
 
   // The raw, untyped join: the original exception of a `Failed` worker is rethrown verbatim (under
-  // `canThrowAny`), so the static error is only `AsyncError`. Used internally (`map`/`bind`/
+  // `canThrowAny`), so the static error is only `Async.Error`. Used internally (`map`/`bind`/
   // `sequence`/`race`) where the body's error type is not tracked. Public callers go via the typed
   // `Task#await`, which routes through `deliver` instead.
   // No `strand.join()`: the promise is settled in the worker strand's `finally` block, strictly
@@ -326,38 +326,38 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // the timed variants' deadline.)
   def join[abstractable: Abstractable across Durations to Long](duration: abstractable)
     ( using monitor: Monitor^ )
-  :   (Tactic[AsyncError]^) ?->{this, monitor} Result =
+  :   (Tactic[Async.Error]^) ?->{this, monitor} Result =
 
     promise.attend(duration)
-    if !promise.ready then abort(AsyncError(Reason.Timeout))
+    if !promise.ready then abort(Async.Error(Reason.Timeout))
     result()
 
 
-  def join()(using monitor: Monitor^): (Tactic[AsyncError]^) ?->{this, monitor} Result =
+  def join()(using monitor: Monitor^): (Tactic[Async.Error]^) ?->{this, monitor} Result =
     promise.attend()
     result()
 
   // The typed join. A `Failed` worker carries a pure exception; rather than rethrowing it raw
   // (which would bypass a non-throwing `Tactic`), we `abort` it through the caller's in-scope
-  // `Tactic[error | AsyncError]`. `error` is reconstructed by an unchecked cast that is sound for
+  // `Tactic[error | Async.Error]`. `error` is reconstructed by an unchecked cast that is sound for
   // any failure raised through the body's `AsyncTactic` (the only typed-error path); a genuinely
   // unchecked throwable from the body flows through as the raw `join` would have rethrown it.
-  def deliver[error <: Hazard]()(using Monitor^, Tactic[error | AsyncError]^): Result =
+  def deliver[error <: Hazard]()(using Monitor^, Tactic[error | Async.Error]^): Result =
     promise.attend()
     fulfilment()
 
 
   def deliver[error <: Hazard, abstractable: Abstractable across Durations to Long]
     ( duration: abstractable )
-    ( using Monitor^, Tactic[error | AsyncError]^ )
+    ( using Monitor^, Tactic[error | Async.Error]^ )
   :   Result =
 
     promise.attend(duration)
-    if !promise.ready then abort(AsyncError(Reason.Timeout))
+    if !promise.ready then abort(Async.Error(Reason.Timeout))
     fulfilment()
 
 
-  private def fulfilment[error <: Hazard]()(using Tactic[error | AsyncError]^): Result =
+  private def fulfilment[error <: Hazard]()(using Tactic[error | Async.Error]^): Result =
     state.get() match
       case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
       case _ =>
@@ -369,11 +369,11 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
         . match
           case Completed(_, result)        => result
           case Delivered(_, result)        => result
-          case Failed(failure: AsyncError) => abort(failure)
+          case Failed(failure: Async.Error) => abort(failure)
           case Failed(failure: Exception)  => abort(failure.asInstanceOf[error])
           case Failed(failure)             => throw failure
-          case Cancelled                   => abort(AsyncError(Reason.Cancelled))
-          case _                           => abort(AsyncError(Reason.Incomplete))
+          case Cancelled                   => abort(Async.Error(Reason.Cancelled))
+          case _                           => abort(Async.Error(Reason.Incomplete))
 
   private lazy val strand: Strand = parent.supervisor.fork(() => stack):
     val started: Boolean = state.updateAndGet:
@@ -464,7 +464,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
         // The transition is pure — `updateAndGet` may re-run it under contention — and the promise
         // is settled exactly once afterwards, from the installed state. Ordering matters: the state
         // must be terminal before the promise wakes any joiner. If even that fails, cancelling is
-        // the last resort: a joiner woken with an `AsyncError` beats a joiner never woken at all.
+        // the last resort: a joiner woken with an `Async.Error` beats a joiner never woken at all.
         try
           state.updateAndGet:
             case null | Initializing | Active(_) => Cancelled

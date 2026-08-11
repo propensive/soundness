@@ -98,7 +98,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
   val name: Text =
     recover:
-      case PropertyError(_) =>
+      case Property.Error(_) =>
         val jarFile: Path on Linux = System.properties.java.`class`.path[Text]().pipe: jarFile =>
           safely(jarFile.as[Path on Linux]).or:
             val work: Path on Linux = workingDirectory

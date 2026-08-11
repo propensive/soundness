@@ -124,9 +124,9 @@ object grpcInternal:
                       ' {
                           given Monitor = ${monitorExpr}
                           given Tactic[GrpcError] = ${tactic[GrpcError]}
-                          given Tactic[Http2Error] = ${tactic[Http2Error]}
-                          given Tactic[AsyncError] = ${tactic[AsyncError]}
-                          given Tactic[ProtobufError] = ${tactic[ProtobufError]}
+                          given Tactic[Http2.Error] = ${tactic[Http2.Error]}
+                          given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
+                          given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
 
                           $channel.serverStreaming[request, response]
                             (Grpc.Method($service, $name), $req)(using $enc, $dec)
@@ -141,9 +141,9 @@ object grpcInternal:
                       ' {
                           given Monitor = ${monitorExpr}
                           given Tactic[GrpcError] = ${tactic[GrpcError]}
-                          given Tactic[Http2Error] = ${tactic[Http2Error]}
-                          given Tactic[AsyncError] = ${tactic[AsyncError]}
-                          given Tactic[ProtobufError] = ${tactic[ProtobufError]}
+                          given Tactic[Http2.Error] = ${tactic[Http2.Error]}
+                          given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
+                          given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
 
                           $channel.unary[request, response]
                             (Grpc.Method($service, $name), $req)(using $enc, $dec)

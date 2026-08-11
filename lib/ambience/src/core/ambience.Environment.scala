@@ -38,26 +38,31 @@ import anticipation.*
 import beneficence.*
 import contingency.*
 import vacuous.*
+import fulminate.*
 
 object Environment extends Dynamic:
   def apply[variable]
     ( variable: Text )
     ( using environment: Environment, reader: Variable[Label, variable] )
-  :   variable raises EnvironmentError =
+  :   variable raises Environment.Error =
 
     environment.variable(variable).let(reader.read).or:
-      abort(EnvironmentError(variable))
+      abort(Environment.Error(variable))
 
 
   inline def selectDynamic[variable](key: String)
     ( using environment:      Environment,
             reader:           Variable[key.type, variable],
-            environmentError: Tactic[EnvironmentError] )
+            environmentError: Tactic[Environment.Error] )
   :   variable =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
       // The error message reads only the reader's name; no aliased writer.
-      scala.caps.unsafe.unsafeAssumeSeparate(abort(EnvironmentError(reader.defaultName)))
+      scala.caps.unsafe.unsafeAssumeSeparate(abort(Environment.Error(reader.defaultName)))
+
+  // Environment.Error → Environment.Error
+  case class Error(variable: Text)(using Diagnostics)
+  extends fulminate.Error(869, 0)(m"the environment variable ${variable} was not defined")
 
 trait Environment extends Findable:
   def variable(name: Text): Optional[Text]

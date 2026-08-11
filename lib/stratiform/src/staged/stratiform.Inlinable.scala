@@ -65,8 +65,8 @@ trait Inlinable extends Typeclass:
   // What a field of this type yields when its keyword never arrives,
   // mirroring the runtime instances: an abort unless overridden (the
   // primitive instances raise and continue with a sentinel).
-  def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Self]): Expr[Self] =
-    '{ abort(TelError(TelError.Reason.Absent))(using $tactic) }
+  def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Self]): Expr[Self] =
+    '{ abort(Tel.Error(Tel.Error.Reason.Absent))(using $tactic) }
 
 object Inlinable:
   // Generates a monomorphic `Tel.Parsable` for a case class at compile
@@ -95,7 +95,7 @@ object Inlinable:
 
       delegate0.parse(reader, indent)
 
-    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[value])
+    override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
       delegate0.absent(tactic)
@@ -153,7 +153,7 @@ object Inlinable:
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Int]): Expr[Int] =
       '{ $reader.int().lay(Tel.Parsable.scalarFault($reader, t"Int", 0)) { value => value } }
 
-    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Int]): Expr[Int] =
+    override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Int]): Expr[Int] =
       '{ Tel.Parsable.missing[Int](0)(using $tactic) }
 
   given long: (Long is Inlinable) = new Inlinable:
@@ -162,7 +162,7 @@ object Inlinable:
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Long]): Expr[Long] =
       '{ $reader.long().lay(Tel.Parsable.scalarFault($reader, t"Long", 0L)) { value => value } }
 
-    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Long]): Expr[Long] =
+    override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Long]): Expr[Long] =
       '{ Tel.Parsable.missing[Long](0L)(using $tactic) }
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
@@ -176,7 +176,7 @@ object Inlinable:
           value => value
       }
 
-    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Boolean])
+    override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Boolean])
     :   Expr[Boolean] =
 
       '{ Tel.Parsable.missing[Boolean](false)(using $tactic) }
@@ -188,14 +188,14 @@ object Inlinable:
     :   Expr[Double] =
 
       '{
-        $reader.atom().lay({ $reader.fault(TelError.Reason.Absent); 0.0 }): atom =>
+        $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); 0.0 }): atom =>
           try java.lang.Double.parseDouble(atom.s)
           catch case _: NumberFormatException =>
-            $reader.fault(TelError.Reason.NotScalar(atom, t"Double"))
+            $reader.fault(Tel.Error.Reason.NotScalar(atom, t"Double"))
             0.0
       }
 
-    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Double])
+    override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Double])
     :   Expr[Double] =
 
       '{ Tel.Parsable.missing[Double](0.0)(using $tactic) }
@@ -204,9 +204,9 @@ object Inlinable:
     type Self = Text
 
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.atom().lay({ $reader.fault(TelError.Reason.Absent); t"" }) { atom => atom } }
+      '{ $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); t"" }) { atom => atom } }
 
-    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Text]): Expr[Text] =
+    override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Text]): Expr[Text] =
       '{ Tel.Parsable.missing[Text](t"")(using $tactic) }
 
   given string: (String is Inlinable) = new Inlinable:
@@ -215,9 +215,9 @@ object Inlinable:
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[String])
     :   Expr[String] =
 
-      '{ $reader.atom().lay({ $reader.fault(TelError.Reason.Absent); "" }) { atom => atom.s } }
+      '{ $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); "" }) { atom => atom.s } }
 
-    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[String])
+    override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[String])
     :   Expr[String] =
 
       '{ Tel.Parsable.missing[String]("")(using $tactic) }

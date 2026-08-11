@@ -80,21 +80,21 @@ object Pcm:
     // Public: called from the grant-gated `play` extension, where a `private` member's
     // inline-accessor bridge would fail capture checking. Each call opens a line for the
     // audio's own format, plays it to completion, and closes it.
-    def playAudio(audio: Audio)(using Tactic[OutletError]): Unit =
+    def playAudio(audio: Audio)(using Tactic[Outlet.Error]): Unit =
       val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
       val info = jss.DataLine.Info(classOf[jss.SourceDataLine], audio.format)
 
       if !mixer.isLineSupported(info)
-      then abort(OutletError(name, OutletError.Reason.UnsupportedConfiguration))
+      then abort(Outlet.Error(name, Outlet.Error.Reason.UnsupportedConfiguration))
 
       val line: jss.SourceDataLine =
         try mixer.getLine(info).nn.asInstanceOf[jss.SourceDataLine]
         catch case _: jss.LineUnavailableException =>
-          abort(OutletError(name, OutletError.Reason.Unavailable))
+          abort(Outlet.Error(name, Outlet.Error.Reason.Unavailable))
 
       try line.open(audio.format)
       catch case _: jss.LineUnavailableException =>
-        abort(OutletError(name, OutletError.Reason.Unavailable))
+        abort(Outlet.Error(name, Outlet.Error.Reason.Unavailable))
 
       try
         line.start()
@@ -112,12 +112,12 @@ object Pcm:
         line.close()
 
   extension (output: (PcmOutput & Granting[Grant.Write])^)
-    transparent inline def play(audio: Audio)(using Tactic[OutletError]): Unit =
+    transparent inline def play(audio: Audio)(using Tactic[Outlet.Error]): Unit =
       output.playAudio(audio)
 
   // Named classes rather than anonymous given instances, for the reasons documented on
   // galilei's `FileOpenable`.
-  class FeedOpenable[layout: ChannelLayout as channelLayout](using Tactic[FeedError])
+  class FeedOpenable[layout: ChannelLayout as channelLayout](using Tactic[Feed.Error])
   extends Openable:
 
     type Self = Feed
@@ -150,16 +150,16 @@ object Pcm:
       val info = jss.DataLine.Info(classOf[jss.TargetDataLine], format)
 
       if !mixer.isLineSupported(info)
-      then abort(FeedError(value.name, FeedError.Reason.UnsupportedConfiguration))
+      then abort(Feed.Error(value.name, Feed.Error.Reason.UnsupportedConfiguration))
 
       val line: jss.TargetDataLine =
         try mixer.getLine(info).nn.asInstanceOf[jss.TargetDataLine]
         catch case _: jss.LineUnavailableException =>
-          abort(FeedError(value.name, FeedError.Reason.Unavailable))
+          abort(Feed.Error(value.name, Feed.Error.Reason.Unavailable))
 
       try line.open(format)
       catch case _: jss.LineUnavailableException =>
-        abort(FeedError(value.name, FeedError.Reason.Unavailable))
+        abort(Feed.Error(value.name, Feed.Error.Reason.Unavailable))
 
       line.start()
 
@@ -168,7 +168,7 @@ object Pcm:
         line.stop()
         line.close()
 
-  class OutletOpenable(using Tactic[OutletError]) extends Openable:
+  class OutletOpenable(using Tactic[Outlet.Error]) extends Openable:
     type Self = Outlet
     type Form = Pcm
     type Operand = PcmFlag
@@ -183,9 +183,9 @@ object Pcm:
       block(using new PcmOutput(value.mixerInfo, value.name, chunk) with Granting[grants] {})
 
   given feedOpenable: [layout: ChannelLayout]
-  =>  (tactic: Tactic[FeedError])
+  =>  (tactic: Tactic[Feed.Error])
   =>  ( FeedOpenable[layout]^{tactic} ) =
     FeedOpenable[layout]
 
-  given outletOpenable: (tactic: Tactic[OutletError]) => ( OutletOpenable^{tactic} ) =
+  given outletOpenable: (tactic: Tactic[Outlet.Error]) => ( OutletOpenable^{tactic} ) =
     OutletOpenable()

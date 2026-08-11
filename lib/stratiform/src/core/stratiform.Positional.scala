@@ -65,7 +65,7 @@ private[stratiform] object Positional:
   // `Tel.Type.assignAtoms`: an unassignable atom is dropped and later atoms
   // still assign.
   def assign(atoms: Array[Tel.Atom]^{}, profiles: Array[Profile]^{})
-    ( using Tactic[TelError] )
+    ( using Tactic[Tel.Error] )
   :   Array[List[Tel.Atom]]^{} =
 
     val assigned = new scala.Array[List[Tel.Atom]](profiles.length)
@@ -100,7 +100,7 @@ private[stratiform] object Positional:
       if position >= profiles.length then
         // Step 3b: more atoms than assignable member positions (E302).
         // Recovery drops the whole excess run, reported once.
-        raise(TelError(TelError.Reason.TooManyAtoms))
+        raise(Tel.Error(Tel.Error.Reason.TooManyAtoms))
         index = atoms.length
       else
         val profile = profiles(position)
@@ -109,7 +109,7 @@ private[stratiform] object Positional:
           case Tel.Nature.Struct =>
             // Step 3c: an atom at a required member only fillable by a
             // keyword child (E303). The atom is dropped.
-            raise(TelError(TelError.Reason.AtomAtNonAssignablePos))
+            raise(Tel.Error(Tel.Error.Reason.AtomAtNonAssignablePos))
 
           case Tel.Nature.Flag =>
             if value == profile.keyword then
@@ -118,7 +118,7 @@ private[stratiform] object Positional:
             else
               // Step 3d: a required Flag member's atom must match its
               // keyword (E305). The atom is dropped.
-              raise(TelError(TelError.Reason.AtomFlagKeywordMismatch))
+              raise(Tel.Error(Tel.Error.Reason.AtomFlagKeywordMismatch))
 
           case Tel.Nature.Scalar =>
             assigned(position) = assigned(position) :+ atoms(index)

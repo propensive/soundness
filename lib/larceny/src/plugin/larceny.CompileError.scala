@@ -279,6 +279,10 @@ object CompileError:
     case IllegalIdentifier
     case ConcreteClassHasUnimplementedMethods
 
+  // CompileErrorId → CompileError.Id
+  object Id:
+    def unapply(compileError: CompileError): Some[CompileError.Reason] = Some(compileError.reason)
+
 case class CompileError
   ( reason: CompileError.Reason, message: String, focus: String, start: Int, offset: Int ):
 

@@ -80,7 +80,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
     // `master`).
     def freshWorktree(): Worktree =
       val dir = freshDir()
-      val worktree = Git.init(dir, initialBranch = GitBranch(t"main"))
+      val worktree = Git.init(dir, initialBranch = Git.Branch(t"main"))
       sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
       sh"git -C $dir config user.name Octogenarian".exec[Exit]()
       sh"git -C $dir config commit.gpgsign false".exec[Exit]()
@@ -92,7 +92,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
       path.open[File](Write): handle ?=>
         handle.write(Chain(content.in[Data]))
 
-    def commitFile(worktree: Worktree, name: Text, content: Text, message: Text): GitHash =
+    def commitFile(worktree: Worktree, name: Text, content: Text, message: Text): Git.Hash =
       writeFile(worktree.path / name, content)
       worktree.add(worktree.path / name)
       worktree.commit(message)
@@ -169,20 +169,20 @@ object Tests extends Suite(m"Octogenarian Tests"):
         safely(Refspec.parse(t"a[b"))
       .assert(_.absent)
 
-      test(m"GitHash accepts a valid 40-char lowercase hex string"):
-        GitHash(t"0123456789abcdef0123456789abcdef01234567").show
+      test(m"Git.Hash accepts a valid 40-char lowercase hex string"):
+        Git.Hash(t"0123456789abcdef0123456789abcdef01234567").show
       .assert(_ == t"0123456789abcdef0123456789abcdef01234567")
 
-      test(m"GitHash rejects a string that is too short"):
-        safely(GitHash(t"abc123"))
+      test(m"Git.Hash rejects a string that is too short"):
+        safely(Git.Hash(t"abc123"))
       .assert(_.absent)
 
-      test(m"GitHash rejects a string with uppercase hex"):
-        safely(GitHash(t"0123456789ABCDEF0123456789abcdef01234567"))
+      test(m"Git.Hash rejects a string with uppercase hex"):
+        safely(Git.Hash(t"0123456789ABCDEF0123456789abcdef01234567"))
       .assert(_.absent)
 
-      test(m"GitHash rejects a string with non-hex characters"):
-        safely(GitHash(t"zzzzz6789abcdef0123456789abcdef01234567"))
+      test(m"Git.Hash rejects a string with non-hex characters"):
+        safely(Git.Hash(t"zzzzz6789abcdef0123456789abcdef01234567"))
       .assert(_.absent)
 
       test(m"Refspec.head defaults to HEAD~0"):
@@ -417,7 +417,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         w.repo.gitDir == dir/".git"
       .assert(_ == true)
 
-      test(m"Git.initBare returns a GitRepo at the requested path"):
+      test(m"Git.initBare returns a Git.Repo at the requested path"):
         val dir = freshDir()
         Git.initBare(dir).gitDir == dir
       .assert(_ == true)
@@ -474,14 +474,14 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"revParse on a tag resolves to the tagged commit"):
         val worktree = freshWorktree()
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.repo.tag(GitTag(t"v1"))
-        worktree.repo.revParse(GitTag(t"v1")) == hash
+        worktree.repo.tag(Git.Tag(t"v1"))
+        worktree.repo.revParse(Git.Tag(t"v1")) == hash
       .assert(_ == true)
 
       test(m"revParse on a branch resolves to the branch's tip"):
         val worktree = freshWorktree()
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.repo.revParse(GitBranch(t"main")) == hash
+        worktree.repo.revParse(Git.Branch(t"main")) == hash
       .assert(_ == true)
 
     // ----- status ---------------------------------------------------------
@@ -499,7 +499,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"first")
         writeFile(worktree.path / t"new.txt", t"new\n")
         worktree.status().stdlib.exists: e =>
-          e.path1 == t"new.txt" && e.status1 == GitStatus.Untracked
+          e.path1 == t"new.txt" && e.status1 == Git.Status.Untracked
       .assert(_ == true)
 
       test(m"an added file shows as Added"):
@@ -508,7 +508,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         writeFile(worktree.path / t"new.txt", t"new\n")
         worktree.add(worktree.path / t"new.txt")
         worktree.status().stdlib.exists: e =>
-          e.path1 == t"new.txt" && e.status1 == GitStatus.Added
+          e.path1 == t"new.txt" && e.status1 == Git.Status.Added
       .assert(_ == true)
 
       test(m"a modified-but-not-staged file shows as Updated in slot 2"):
@@ -516,7 +516,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"first")
         writeFile(worktree.path / t"a", t"a-changed\n")
         worktree.status().stdlib.exists: e =>
-          e.path1 == t"a" && e.status2 == GitStatus.Updated
+          e.path1 == t"a" && e.status2 == Git.Status.Updated
       .assert(_ == true)
 
       test(m"a deleted-but-not-staged file shows as Deleted"):
@@ -524,7 +524,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"first")
         sh"rm ${worktree.path}/a".exec[Exit]()
         worktree.status().stdlib.exists: e =>
-          e.path1 == t"a" && e.status2 == GitStatus.Deleted
+          e.path1 == t"a" && e.status2 == Git.Status.Deleted
       .assert(_ == true)
 
       test(m"status() with ignored = true shows ignored files"):
@@ -536,7 +536,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         writeFile(worktree.path / t"ignored.txt", t"x\n")
 
         worktree.status(ignored = true).stdlib.exists: e =>
-          e.path1 == t"ignored.txt" && e.status1 == GitStatus.Ignored
+          e.path1 == t"ignored.txt" && e.status1 == Git.Status.Ignored
       .assert(_ == true)
 
     // ----- add / commit / unstage / mv ------------------------------------
@@ -558,7 +558,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.add(worktree.path / t"new.txt")
         worktree.unstage(worktree.path / t"new.txt")
         worktree.status().stdlib.exists: e =>
-          e.path1 == t"new.txt" && e.status1 == GitStatus.Untracked
+          e.path1 == t"new.txt" && e.status1 == Git.Status.Untracked
       .assert(_ == true)
 
       test(m"mv renames a tracked file"):
@@ -595,7 +595,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.reset(ResetMode.Soft, Refspec.head(1))
         // After --soft, file b is staged as Added.
         worktree.status().stdlib.exists: e =>
-          e.path1 == t"b" && e.status1 == GitStatus.Added
+          e.path1 == t"b" && e.status1 == Git.Status.Added
       .assert(_ == true)
 
       test(m"reset --mixed moves HEAD and unstages, but keeps the working tree"):
@@ -605,7 +605,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.reset(ResetMode.Mixed, Refspec.head(1))
         // b.txt still on disk, but no longer staged (Untracked).
         worktree.status().stdlib.exists: e =>
-          e.path1 == t"b" && e.status1 == GitStatus.Untracked
+          e.path1 == t"b" && e.status1 == Git.Status.Untracked
       .assert(_ == true)
 
       test(m"reset --hard discards both index and working tree"):
@@ -630,50 +630,50 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"makeBranch adds a new branch"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
         worktree.branches().map(_.show).to[Set]
       .assert(_ == Set(t"main", t"feature"))
 
       test(m"branch() returns the currently checked-out branch"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
         worktree.branch().show
       .assert(_ == t"feature")
 
       test(m"switch moves HEAD to the named branch"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.makeBranch(GitBranch(t"feature"))
-        worktree.switch(GitBranch(t"main"))
+        worktree.makeBranch(Git.Branch(t"feature"))
+        worktree.switch(Git.Branch(t"main"))
         worktree.branch().show
       .assert(_ == t"main")
 
       test(m"deleteBranch removes a branch from the listing"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.makeBranch(GitBranch(t"feature"))
-        worktree.checkout(GitBranch(t"main"))
-        worktree.repo.deleteBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
+        worktree.checkout(Git.Branch(t"main"))
+        worktree.repo.deleteBranch(Git.Branch(t"feature"))
         worktree.branches().map(_.show)
       .assert(_ == List(t"main"))
 
       test(m"deleteBranch with force removes an unmerged branch"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
         commitFile(worktree, t"b", t"b\n", t"feature work")
-        worktree.checkout(GitBranch(t"main"))
+        worktree.checkout(Git.Branch(t"main"))
         // Feature is ahead of main, so unforced delete would refuse.
-        worktree.repo.deleteBranch(GitBranch(t"feature"), force = true)
+        worktree.repo.deleteBranch(Git.Branch(t"feature"), force = true)
         worktree.branches().map(_.show)
       .assert(_ == List(t"main"))
 
       test(m"renameBranch updates the branch name"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.makeBranch(GitBranch(t"oldname"))
-        worktree.repo.renameBranch(GitBranch(t"oldname"), GitBranch(t"newname"))
+        worktree.makeBranch(Git.Branch(t"oldname"))
+        worktree.repo.renameBranch(Git.Branch(t"oldname"), Git.Branch(t"newname"))
         val names = worktree.branches().map(_.show).to[Set]
         names.has(t"newname") && !names.has(t"oldname")
       .assert(_ == true)
@@ -687,24 +687,24 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"tag(name) creates a tag at HEAD"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.repo.tag(GitTag(t"v1"))
+        worktree.repo.tag(Git.Tag(t"v1"))
         worktree.repo.tags().map(_.show)
       .assert(_ == List(t"v1"))
 
       test(m"deleteTag removes a tag"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.repo.tag(GitTag(t"v1"))
-        worktree.repo.deleteTag(GitTag(t"v1"))
+        worktree.repo.tag(Git.Tag(t"v1"))
+        worktree.repo.deleteTag(Git.Tag(t"v1"))
         worktree.repo.tags()
       .assert(_.isEmpty)
 
       test(m"multiple tags are reported in lexicographic order"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.repo.tag(GitTag(t"v3"))
-        worktree.repo.tag(GitTag(t"v1"))
-        worktree.repo.tag(GitTag(t"v2"))
+        worktree.repo.tag(Git.Tag(t"v3"))
+        worktree.repo.tag(Git.Tag(t"v1"))
+        worktree.repo.tag(Git.Tag(t"v2"))
         worktree.repo.tags().map(_.show)
       .assert(_ == List(t"v1", t"v2", t"v3"))
 
@@ -779,7 +779,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.diff(first).length
       .assert(_ == 1)
 
-      test(m"GitRepo.diff(refA, refB) shows changes between two commits"):
+      test(m"Git.Repo.diff(refA, refB) shows changes between two commits"):
         val worktree = freshWorktree()
         val first  = commitFile(worktree, t"a", t"v1\n", t"v1")
         val second = commitFile(worktree, t"a", t"v2\n", t"v2")
@@ -804,49 +804,49 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"merge fast-forwards onto a branch ahead of HEAD"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"base")
-        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
         commitFile(worktree, t"b", t"b\n", t"feature")
-        worktree.checkout(GitBranch(t"main"))
-        worktree.merge(GitBranch(t"feature"), ff = FastForward.Only)
+        worktree.checkout(Git.Branch(t"main"))
+        worktree.merge(Git.Branch(t"feature"), ff = FastForward.Only)
         worktree.repo.log().length
       .assert(_ == 2)
 
       test(m"merge with FastForward.Auto fast-forwards a clean lineage"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"base")
-        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
         commitFile(worktree, t"b", t"b\n", t"feature")
-        worktree.checkout(GitBranch(t"main"))
-        worktree.merge(GitBranch(t"feature"))
+        worktree.checkout(Git.Branch(t"main"))
+        worktree.merge(Git.Branch(t"feature"))
         worktree.repo.log().map(_.parent.length)
       .assert(_ == List(1, 0))
 
       test(m"merge with FastForward.Never creates a merge commit"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"base")
-        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
         commitFile(worktree, t"b", t"b\n", t"feature")
-        worktree.checkout(GitBranch(t"main"))
-        worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"merge")
+        worktree.checkout(Git.Branch(t"main"))
+        worktree.merge(Git.Branch(t"feature"), ff = FastForward.Never, message = t"merge")
         worktree.repo.log().head.parent.length
       .assert(_ == 2)
 
       test(m"merge with FastForward.Only refuses a non-fast-forward"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"base")
-        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
         commitFile(worktree, t"b", t"b\n", t"feature")
-        worktree.checkout(GitBranch(t"main"))
+        worktree.checkout(Git.Branch(t"main"))
         commitFile(worktree, t"c", t"c\n", t"main work")  // diverge
-        capture[GitError](worktree.merge(GitBranch(t"feature"), ff = FastForward.Only)).reason
-      .assert(_ == GitError.Reason.MergeFailed)
+        capture[Git.Error](worktree.merge(Git.Branch(t"feature"), ff = FastForward.Only)).reason
+      .assert(_ == Git.Error.Reason.MergeFailed)
 
       test(m"cherryPick replays a commit on the current branch"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"base")
-        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
         val featureHash = commitFile(worktree, t"b", t"b\n", t"feature")
-        worktree.checkout(GitBranch(t"main"))
+        worktree.checkout(Git.Branch(t"main"))
         worktree.cherryPick(featureHash)
         (worktree.path / t"b").existent()
       .assert(_ == true)
@@ -854,9 +854,9 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"cherryPick advances HEAD by one commit"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"base")
-        worktree.makeBranch(GitBranch(t"feature"))
+        worktree.makeBranch(Git.Branch(t"feature"))
         val source = commitFile(worktree, t"b", t"b\n", t"feature")
-        worktree.checkout(GitBranch(t"main"))
+        worktree.checkout(Git.Branch(t"main"))
 
         val before = worktree.repo.log().length
         worktree.cherryPick(source)
@@ -880,7 +880,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         // History unchanged (still 2), but b is staged for deletion.
         worktree.repo.log().length == 2
           && worktree.status().stdlib.exists: e =>
-              e.path1 == t"b" && e.status1 == GitStatus.Deleted
+              e.path1 == t"b" && e.status1 == Git.Status.Deleted
       .assert(_ == true)
 
     // ----- worktree management --------------------------------------------
@@ -898,7 +898,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(primary, t"a", t"a\n", t"first")
         val secondaryPath = freshDir()
         sh"rm -rf $secondaryPath".exec[Exit]()  // git worktree add wants a fresh path
-        val secondary = primary.repo.addWorktree(secondaryPath, GitBranch(t"main"), detach = true)
+        val secondary = primary.repo.addWorktree(secondaryPath, Git.Branch(t"main"), detach = true)
         primary.repo.log().length == 1
           && secondary.repo.log().length == 1
           && primary.repo.worktrees().length == 2
@@ -919,7 +919,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(primary, t"a", t"a\n", t"first")
         val secondaryPath = freshDir()
         sh"rm -rf $secondaryPath".exec[Exit]()
-        val secondary = primary.repo.addWorktree(secondaryPath, GitBranch(t"main"), detach = true)
+        val secondary = primary.repo.addWorktree(secondaryPath, Git.Branch(t"main"), detach = true)
         secondary.remove()
         primary.repo.worktrees().length
       .assert(_ == 1)
@@ -936,7 +936,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(primary, t"a", t"a\n", t"first")
         val secondaryPath = freshDir()
         sh"rm -rf $secondaryPath".exec[Exit]()
-        val secondary = primary.repo.addWorktree(secondaryPath, GitBranch(t"main"), detach = true)
+        val secondary = primary.repo.addWorktree(secondaryPath, Git.Branch(t"main"), detach = true)
         secondary.lock(reason = t"running CI")
         secondary.unlock()
         // After unlock, removeWorktree should succeed without --force.
@@ -991,7 +991,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         // Create a bare mirror with main as its initial branch so its HEAD
         // resolves correctly after the source pushes.
         val bareDir = freshDir()
-        Git.initBare(bareDir, initialBranch = GitBranch(t"main"))
+        Git.initBare(bareDir, initialBranch = Git.Branch(t"main"))
         source.repo.addRemote(t"mirror", bareDir.encode)
         sh"git -C ${source.path} push mirror main".exec[Exit]()
 
@@ -1001,56 +1001,56 @@ object Tests extends Suite(m"Octogenarian Tests"):
         cloned.repo.log().length
       .assert(_ == 1)
 
-    // ----- GitRefs (Serpentine ref paths) ---------------------------------
+    // ----- Git.Refs (Serpentine ref paths) ---------------------------------
 
-    suite(m"GitRefs (Serpentine ref paths)"):
+    suite(m"Git.Refs (Serpentine ref paths)"):
 
       test(m"a branch ref path encodes as refs/heads/<name>"):
-        (GitRefs / t"heads" / t"main").encode
+        (Git.Refs / t"heads" / t"main").encode
       .assert(_ == t"refs/heads/main")
 
       test(m"a notes ref path encodes as refs/notes/<namespace>"):
-        GitRefs.notes(t"ci-attestation").encode
+        Git.Refs.notes(t"ci-attestation").encode
       .assert(_ == t"refs/notes/ci-attestation")
 
-      test(m"GitRefs.heads(name) matches manual construction"):
-        GitRefs.heads(t"main").encode
+      test(m"Git.Refs.heads(name) matches manual construction"):
+        Git.Refs.heads(t"main").encode
       .assert(_ == t"refs/heads/main")
 
-      test(m"GitRefs.tags(name) encodes as refs/tags/<name>"):
-        GitRefs.tags(t"v1").encode
+      test(m"Git.Refs.tags(name) encodes as refs/tags/<name>"):
+        Git.Refs.tags(t"v1").encode
       .assert(_ == t"refs/tags/v1")
 
       test(m"the default notes ref is refs/notes/commits"):
-        GitRefs.defaultNotes.encode
+        Git.Refs.defaultNotes.encode
       .assert(_ == t"refs/notes/commits")
 
-      test(m"GitRefs.heads rejects a segment containing .."):
-        safely(GitRefs.heads(t"foo..bar")).let(_.encode)
+      test(m"Git.Refs.heads rejects a segment containing .."):
+        safely(Git.Refs.heads(t"foo..bar")).let(_.encode)
       .assert(_.absent)
 
-      test(m"GitRefs.heads rejects a segment ending in .lock"):
-        safely(GitRefs.heads(t"main.lock")).let(_.encode)
+      test(m"Git.Refs.heads rejects a segment ending in .lock"):
+        safely(Git.Refs.heads(t"main.lock")).let(_.encode)
       .assert(_.absent)
 
-      test(m"GitRefs.heads rejects a segment containing a space"):
-        safely(GitRefs.heads(t"two words")).let(_.encode)
+      test(m"Git.Refs.heads rejects a segment containing a space"):
+        safely(Git.Refs.heads(t"two words")).let(_.encode)
       .assert(_.absent)
 
-      test(m"GitRefs.heads rejects a segment containing a colon"):
-        safely(GitRefs.heads(t"a:b")).let(_.encode)
+      test(m"Git.Refs.heads rejects a segment containing a colon"):
+        safely(Git.Refs.heads(t"a:b")).let(_.encode)
       .assert(_.absent)
 
-      test(m"GitRefs.heads rejects an empty segment"):
-        safely(GitRefs.heads(t"")).let(_.encode)
+      test(m"Git.Refs.heads rejects an empty segment"):
+        safely(Git.Refs.heads(t"")).let(_.encode)
       .assert(_.absent)
 
-      test(m"GitRefs.notes rejects a segment containing @{"):
-        safely(GitRefs.notes(t"name@{0}")).let(_.encode)
+      test(m"Git.Refs.notes rejects a segment containing @{"):
+        safely(Git.Refs.notes(t"name@{0}")).let(_.encode)
       .assert(_.absent)
 
-      test(m"a GitRefs path is usable as a Refspec via implicit conversion"):
-        val ref: Refspec = GitRefs.heads(t"main")
+      test(m"a Git.Refs path is usable as a Refspec via implicit conversion"):
+        val ref: Refspec = Git.Refs.heads(t"main")
         ref.show
       .assert(_ == t"refs/heads/main")
 
@@ -1074,7 +1074,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"add then show in a custom namespace"):
         val worktree = freshWorktree()
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        val ref  = GitRefs.notes(t"ci-attestation")
+        val ref  = Git.Refs.notes(t"ci-attestation")
         worktree.repo.notes.add(hash, t"signed envelope", ref = ref)
         worktree.repo.notes.show(hash, ref = ref)
       .assert(_ == t"signed envelope")
@@ -1083,16 +1083,16 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
         worktree.repo.notes.add(hash, t"default note")
-        worktree.repo.notes.add(hash, t"custom note", ref = GitRefs.notes(t"alt"))
-        (worktree.repo.notes.show(hash), worktree.repo.notes.show(hash, GitRefs.notes(t"alt")))
+        worktree.repo.notes.add(hash, t"custom note", ref = Git.Refs.notes(t"alt"))
+        (worktree.repo.notes.show(hash), worktree.repo.notes.show(hash, Git.Refs.notes(t"alt")))
       .assert(_ == ((t"default note", t"custom note")))
 
       test(m"add without force on an existing note aborts NotesFailed"):
         val worktree = freshWorktree()
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
         worktree.repo.notes.add(hash, t"first body")
-        capture[GitError](worktree.repo.notes.add(hash, t"second body")).reason
-      .assert(_ == GitError.Reason.NotesFailed)
+        capture[Git.Error](worktree.repo.notes.add(hash, t"second body")).reason
+      .assert(_ == Git.Error.Reason.NotesFailed)
 
       test(m"add with force overwrites an existing note"):
         val worktree = freshWorktree()
@@ -1143,12 +1143,12 @@ object Tests extends Suite(m"Octogenarian Tests"):
         worktree.repo.notes.show(second)
       .assert(_ == t"shared body")
 
-      test(m"a Path on GitRefs is usable as a Refspec for revParse"):
+      test(m"a Path on Git.Refs is usable as a Refspec for revParse"):
         val worktree = freshWorktree()
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.repo.notes.add(hash, t"body", ref = GitRefs.notes(t"custom"))
+        worktree.repo.notes.add(hash, t"body", ref = Git.Refs.notes(t"custom"))
         // refs/notes/custom now exists; revParse via the path resolves to a hash.
-        val noteRefHash = worktree.repo.revParse(GitRefs.notes(t"custom"))
+        val noteRefHash = worktree.repo.revParse(Git.Refs.notes(t"custom"))
         noteRefHash.show.length
       .assert(_ == 40)
 
@@ -1176,18 +1176,18 @@ object Tests extends Suite(m"Octogenarian Tests"):
 
       test(m"(commit / namespace).content[Text] returns the note body"):
         val worktree = freshWorktree()
-        given GitRepo = worktree.repo
+        given Git.Repo = worktree.repo
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.repo.notes.add(hash, t"hello", ref = GitRefs.notes(t"greeting"))
+        worktree.repo.notes.add(hash, t"hello", ref = Git.Refs.notes(t"greeting"))
         (hash / t"greeting").content[Text]
       .assert(_ == t"hello")
 
       test(m"content aborts NoteNotFound when no note exists"):
         val worktree = freshWorktree()
-        given GitRepo = worktree.repo
+        given Git.Repo = worktree.repo
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        capture[GitError]((hash / t"missing").content[Text]).reason
-      .assert(_ == GitError.Reason.NoteNotFound)
+        capture[Git.Error]((hash / t"missing").content[Text]).reason
+      .assert(_ == Git.Error.Reason.NoteNotFound)
 
       test(m"namespace validation rejects an invalid segment"):
         val worktree = freshWorktree()

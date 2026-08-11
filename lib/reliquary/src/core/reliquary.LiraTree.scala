@@ -72,7 +72,7 @@ object LiraTree:
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case TelError(reason, _) =>
+        case Tel.Error(reason, _) =>
           LiraError(Reason.InvalidTree(t"the document is invalid: $reason"))
 
       . protect:
@@ -97,7 +97,7 @@ object LiraTree:
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case Base256Error(_) => LiraError(Reason.InvalidTree(t"a blob hash is malformed"))
+          case Base256.Error(_) => LiraError(Reason.InvalidTree(t"a blob hash is malformed"))
 
         . protect(Base256.decodeStrict(atoms(1)))
 

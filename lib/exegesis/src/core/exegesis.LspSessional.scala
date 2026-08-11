@@ -55,10 +55,10 @@ import vacuous.*
 import zephyrine.*
 
 // Adapts an `Lsp.Listener` — whose methods are named for what they mean — to the wire methods
-// `JsonRpc.serve` dispatches. `LspClient` is the server-to-client half of the protocol written for
+// `JsonRpc.serve` dispatches. `Lsp.Client` is the server-to-client half of the protocol written for
 // the server that *calls* it; this is the client that *receives* it. Keeping the two apart leaves
-// `LspClient`'s named wrappers free to read as the calling convention they are.
-private[exegesis] class LspInbound(listener: Lsp.Listener) extends LspClient:
+// `Lsp.Client`'s named wrappers free to read as the calling convention they are.
+private[exegesis] class LspInbound(listener: Lsp.Listener) extends Lsp.Client:
   import Lsp.*
 
   def `textDocument/publishDiagnostics`
@@ -84,7 +84,7 @@ private[exegesis] class LspInbound(listener: Lsp.Listener) extends LspClient:
 // The reader is its own task, which is what lets a caller block on a response: a request awaits
 // its promise while the reader goes on reading, so several requests may be in flight at once and
 // may be answered out of order. (A server, whose handlers run on the thread reading its input,
-// cannot do the same — hence the notifications-only restriction documented on `LspClient`, which
+// cannot do the same — hence the notifications-only restriction documented on `Lsp.Client`, which
 // does not apply in this direction.)
 object LspSessional:
   // A free function, not a method: the reader is supplied as a partly-applied `pump`, whose
@@ -95,7 +95,7 @@ object LspSessional:
        observer: Lsp.Observer,
        sink:     (Intake[Data] over Credit)^,
        read:     (Text => Unit) => Unit )
-     ( lambda: LspConnection => result )
+     ( lambda: Lsp.Connection => result )
      ( using Monitor, Probate, Diagnostics )
   :   result =
 
@@ -103,17 +103,17 @@ object LspSessional:
     import Json.jsonEncodableInText
 
     // Sealed: the connection captures this session's monitor and diagnostics, and an honest
-    // `LspConnection^` would hide them from the writer and reader that serve it. It is a local of
+    // `Lsp.Connection^` would hide them from the writer and reader that serve it. It is a local of
     // this method, lent to `lambda` and dead once `lambda` returns.
-    val connection: LspConnection = caps.unsafe.unsafeAssumePure(LspConnection())
-    val inbound: LspClient = LspInbound(listener)
+    val connection: Lsp.Connection = caps.unsafe.unsafeAssumePure(Lsp.Connection())
+    val inbound: Lsp.Client = LspInbound(listener)
 
     // As in `Lsp.listen`, the dispatch closure is a local of this method and its target is
     // confined to it, so sealing the reference the generated dispatcher holds is sound.
     val dispatch: Json => Optional[Json] =
-      caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspClient](inbound))
+      caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[Lsp.Client](inbound))
 
-    val notifications: List[Text] = JsonRpc.methods[LspClient]
+    val notifications: List[Text] = JsonRpc.methods[Lsp.Client]
 
     // A single writer, so writes never interleave. The observer sees the encoded body, not the
     // framing, matching `listen`.
@@ -151,7 +151,7 @@ class LspSessional
    ( using Monitor, Probate, Diagnostics, WorkingDirectory )
 extends Sessional:
   type Self = Lsp.Server
-  type Result = LspConnection^
+  type Result = Lsp.Connection^
 
   def session[result](target: Lsp.Server)(lambda: (session: Result) ?=> result): result =
     import strategies.throwUnsafely

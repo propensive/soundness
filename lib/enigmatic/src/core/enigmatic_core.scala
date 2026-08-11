@@ -67,7 +67,7 @@ package blockCipherPadding:
   export Pkcs7.padding as pkcs7
   export Iso10126.padding as iso10126
   // `NoPadding` is not re-exported for import-based inference: its `given` takes a
-  // `Tactic[CryptoError]`, and re-exporting a context-function given trips a
+  // `Tactic[Crypto.Error]`, and re-exporting a context-function given trips a
   // compiler assertion ("bad adapt"). Use `against NoPadding` explicitly instead.
 
 // The initialization vector is now supplied explicitly at the encryption site —
@@ -107,7 +107,7 @@ type Authentication[cipher] = cipher match
   case _           => Concession.Acceptable
 
 // Matches a JCE exception by class name, walking superclasses, so the platform-neutral core can
-// map the failures a JVM provider throws to `CryptoError`s without referencing `javax.crypto` or
+// map the failures a JVM provider throws to `Crypto.Error`s without referencing `javax.crypto` or
 // `java.security` types — which do not exist on Scala Native, whose providers throw none of them.
 private[enigmatic] def securityException(error: Throwable, name: String): Boolean =
   def recur(cls: Class[?] | Null): Boolean =

@@ -58,7 +58,7 @@ import zephyrine.*
 
 // Build the underlying Java client with redirect-following disabled — the
 // redirect-following telekinesis given runs its own loop so it can honour
-// `HttpRedirection` exactly. Java's `NORMAL` policy has its own hard-coded
+// `Http.Redirection` exactly. Java's `NORMAL` policy has its own hard-coded
 // cap and would shadow the limit we summon. Java clients are immutable per
 // SSL configuration, so one is built and cached for each distinct
 // `TlsAcceptance` in use.
@@ -369,8 +369,8 @@ private def httpsExchange
             finally connection.close()
 
       catch
-        case error: Http2Error  => abort(ConnectError(Unknown))
-        case error: AsyncError  => abort(ConnectError(Unknown))
+        case error: Http2.Error  => abort(ConnectError(Unknown))
+        case error: Async.Error  => abort(ConnectError(Unknown))
         case error: StreamError => abort(ConnectError(Unknown))
 
     case _ =>
@@ -428,11 +428,11 @@ given domainSocketFetchable: DomainSocketEndpoint is Fetchable onto DomainSocket
     def text(endpoint: DomainSocketEndpoint): Text = endpoint.path
     def hostname(endpoint: DomainSocketEndpoint): Host = Localhost
 
-given domainSocketHttpClient: Tactic[StreamError] => HttpClient onto DomainSocket =
-  new HttpClient:
+given domainSocketHttpClient: Tactic[StreamError] => Http.Client onto DomainSocket =
+  new Http.Client:
     type Target = DomainSocket
 
-    def request(request: Http.Request, socket: DomainSocket)(using HttpEvent is Loggable)
+    def request(request: Http.Request, socket: DomainSocket)(using Http.Event is Loggable)
     :   Http.Response =
       unsafely:
         // Typed binding: `transmit` and `parse` are both overloaded (lazy-list and

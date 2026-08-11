@@ -207,7 +207,7 @@ private[facsimile] object Guard:
           val intermediate = hash6(passwordBytes, keySalt, Array.empty[Byte])
 
           // AES-256-CBC with a zero IV and no padding. This stays on the JDK cipher:
-          // enigmatic's `NoPadding` given captures a `Tactic[CryptoError]`, and the only
+          // enigmatic's `NoPadding` given captures a `Tactic[Crypto.Error]`, and the only
           // available strategy (`throwUnsafely`) yields a root `{any}` capability that
           // capture checking cannot confine here — unlike the `Pkcs7` object ciphers below.
           // See the module notes.

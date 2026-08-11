@@ -54,11 +54,11 @@ object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
 
   // Inline + direct `Validate` construction; see ypsiloid.AccrualTests and rep/DECISIONS.md.
   private inline def captureFoci[result](yaml: Yaml)
-    (inline decode: Yaml => result raises YamlError tracks Yaml.Focus)
+    (inline decode: Yaml => result raises Yaml.Error tracks Yaml.Focus)
   :   List[(Text, Optional[Int], Optional[Int])] =
-    Validate[Captured, [r] =>> r raises YamlError, Yaml.Focus]
+    Validate[Captured, [r] =>> r raises Yaml.Error, Yaml.Focus]
       ( Captured(),
-        { case error: YamlError =>
+        { case error: Yaml.Error =>
             val position = prior.let(_.position)
             accrual + ( prior.let(_.pointer.encode).or(t"#"),
                         position.let(_.line),

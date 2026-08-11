@@ -42,17 +42,18 @@ import contingency.*
 import distillate.*
 import prepositional.*
 import rudiments.*
+import fulminate.*
 
 object Timezone:
   private val ids: Set[Text] =
     Set.from(ju.TimeZone.getAvailableIDs.nn.iterator.map(_.nn).map(Text(_)))
 
-  def apply(name: Text): Timezone raises TimezoneError = name.as[Timezone]
+  def apply(name: Text): Timezone raises Timezone.Error = name.as[Timezone]
 
-  given decodable: Tactic[TimezoneError] => Timezone is Decodable in Text = name =>
+  given decodable: Tactic[Timezone.Error] => Timezone is Decodable in Text = name =>
     try jt.ZoneId.of(name.s) yet new Timezone(name)
     catch case _: jt.zone.ZoneRulesException =>
-      abort(TimezoneError(name))
+      abort(Timezone.Error(name))
 
   given interpolable: Timezone is Interpolable:
     inline def interpolate[parts <: Tuple, origins <: Tuple]
@@ -60,6 +61,10 @@ object Timezone:
     :   Timezone =
 
       ${aviation.internal.tzInterpolator[parts]('insertions)}
+
+  // Timezone.Error → Timezone.Error
+  case class Error(name: Text)(using Diagnostics)
+  extends fulminate.Error(929, 0)(m"the name $name does not refer to a known timezone")
 
 case class Timezone private(name: Text) extends Findable:
   def stdlib: jt.ZoneId = jt.ZoneId.of(name.s).nn

@@ -66,7 +66,7 @@ object DepsDev:
     val base64: Text = sha256Hex.deserialize[Hex].serialize[Base64]
     val query: HttpUrl = url"https://api.deps.dev/v3/query?hash.type=SHA256&hash.value=$base64"
     Log.fine(DepsEvent.Querying(sha256Hex))
-    val result: QueryResult = mute[HttpEvent](query.fetch().receive[Json]).as[QueryResult]
+    val result: QueryResult = mute[Http.Event](query.fetch().receive[Json]).as[QueryResult]
 
     val key: VersionKey =
       result.results.map(_.version.versionKey).seek(_.system == t"MAVEN")

@@ -38,7 +38,7 @@ import proscenium.compat.*
 import anticipation.*
 import contingency.*
 
-import RasterError.Reason
+import Raster.Error.Reason
 
 // The GIF variant of LZW: codes packed least-significant-bit first, with a variable code width
 // growing from `minimum + 1` to 12 bits, and `clear`/`end` control codes. (This differs from
@@ -47,7 +47,7 @@ import RasterError.Reason
 private[hallucination] object GifLzw:
   // Decodes to one palette index per pixel; `length` bounds the output (trailing data beyond
   // the frame's pixel count is ignored, as decoders conventionally do).
-  def decode(minimum: Int, data: Data, length: Int): scala.Array[Byte] raises RasterError =
+  def decode(minimum: Int, data: Data, length: Int): scala.Array[Byte] raises Raster.Error =
     val clear = 1 << minimum
     val end = clear + 1
     val prefix = new scala.Array[Int](4096)
@@ -72,7 +72,7 @@ private[hallucination] object GifLzw:
         bits += 8
         index += 1
 
-      if bits < codeSize then abort(RasterError(Gif(), Reason.Truncated))
+      if bits < codeSize then abort(Raster.Error(Gif(), Reason.Truncated))
 
       var code = accumulator&((1 << codeSize) - 1)
       accumulator >>>= codeSize

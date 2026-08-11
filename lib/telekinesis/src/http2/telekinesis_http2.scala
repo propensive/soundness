@@ -116,8 +116,8 @@ extends Sessional:
                   finally connection.close()
 
             catch
-              case error: Http2Error => abort(ConnectError(Unknown))
-              case error: AsyncError => abort(ConnectError(Unknown))
+              case error: Http2.Error => abort(ConnectError(Unknown))
+              case error: Async.Error => abort(ConnectError(Unknown))
 
           case _ =>
             lambda(using HttpSession.Sequential(duplex))

@@ -35,7 +35,7 @@ package octogenarian
 import anticipation.*
 
 case class ReflogEntry
-  ( hash:      GitHash,
+  ( hash:      Git.Hash,
     selector:  Text,
     timestamp: Long,
     message:   Text )

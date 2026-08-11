@@ -78,7 +78,7 @@ object BlobStream:
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case _: VarintError =>
+          case _: Varint.Error =>
             LiraError(Reason.MalformedPayload(t"a record length is malformed"))
 
         . protect(Varint.decode(data, offset))

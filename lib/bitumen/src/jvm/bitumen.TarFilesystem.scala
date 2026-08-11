@@ -54,7 +54,7 @@ import filesystemBackends.virtualMachine
 private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]
     ( root: Path on plane, path: Path on plane )
-    ( using DereferenceSymlinks, Tactic[IoError], Tactic[TarError] )
+    ( using DereferenceSymlinks, Tactic[IoError], Tactic[Tar.Error] )
   :   Tar.Entry =
 
     val ref = relativize(root, path)
@@ -67,7 +67,7 @@ private[bitumen] object TarFilesystem:
     path.entry() match
       case galilei.File =>
         val bytes = Array.unsafeFrozen(jnf.Files.readAllBytes(path.javaPath).nn)
-        Tar.Entry.File(ref, mode, user, group, mtime, TarBody(bytes))
+        Tar.Entry.File(ref, mode, user, group, mtime, Tar.Body(bytes))
 
       case galilei.Directory =>
         Tar.Entry.Directory(ref, mode, user, group, mtime)
@@ -88,7 +88,7 @@ private[bitumen] object TarFilesystem:
         Tar.Entry.BlockSpecial(ref, mode, user, group, mtime, (major.bits.u32, minor.bits.u32))
 
       case _ =>
-        raise(TarError(TarError.Reason.DeviceCreationUnsupported(path.show)))
+        raise(Tar.Error(Tar.Error.Reason.DeviceCreationUnsupported(path.show)))
         Tar.Entry.Fifo(ref, mode, user, group, mtime)
 
   def applyEntry[plane <: Posix: Filesystem]
@@ -96,7 +96,7 @@ private[bitumen] object TarFilesystem:
     ( using CreateNonexistentParents on plane,
             OverwritePreexisting on plane,
             Tactic[IoError],
-            Tactic[TarError] )
+            Tactic[Tar.Error] )
   :   Unit =
 
     (entry: @scala.unchecked) match
@@ -129,14 +129,14 @@ private[bitumen] object TarFilesystem:
         jnf.Files.createLink(path.javaPath, target.javaPath)
 
       case _: Tar.Entry.Fifo | _: Tar.Entry.CharSpecial | _: Tar.Entry.BlockSpecial =>
-        raise(TarError(TarError.Reason.DeviceCreationUnsupported(entry.entryName)))
+        raise(Tar.Error(Tar.Error.Reason.DeviceCreationUnsupported(entry.entryName)))
 
       case _: Tar.Entry.Pax | _: Tar.Entry.GnuLong => ()
 
   private def relativize[plane <: Posix: Filesystem]
     ( root: Path on plane, child: Path on plane )
-    ( using Tactic[TarError] )
-  :   TarRef =
+    ( using Tactic[Tar.Error] )
+  :   Tar.Ref =
 
     val rootText = root.encode.s
     val childText = child.encode.s
@@ -149,15 +149,15 @@ private[bitumen] object TarFilesystem:
     decodePath(relText)
 
   private def absolutize[plane <: Posix: Filesystem]
-    ( root: Path on plane, ref: TarRef )
-    ( using Tactic[TarError] )
+    ( root: Path on plane, ref: Tar.Ref )
+    ( using Tactic[Tar.Error] )
   :   Path on plane =
 
     decodeAbsolute(root.encode.s+"/"+ref.show.s, root)
 
   private def decodeAbsolute[plane <: Posix: Filesystem]
     ( text: String, base: Path on plane )
-    ( using Tactic[TarError] )
+    ( using Tactic[Tar.Error] )
   :   Path on plane =
 
     import errorDiagnostics.emptyDiagnostics
@@ -165,7 +165,7 @@ private[bitumen] object TarFilesystem:
     base + rel
 
   private def relativeFromPath(rootText: String, fullText: String)
-    ( using Tactic[TarError] )
+    ( using Tactic[Tar.Error] )
   :   Relative on Posix =
 
     import errorDiagnostics.emptyDiagnostics
@@ -175,15 +175,15 @@ private[bitumen] object TarFilesystem:
       if fullText.startsWith(prefix) then fullText.substring(prefix.length).nn.tt else fullText.tt
 
     mitigate:
-      case PathError(_, _) => TarError(TarError.Reason.BadName(relText))
+      case Path.Error(_, _) => Tar.Error(Tar.Error.Reason.BadName(relText))
 
     . protect(relText.as[Relative on Posix])
 
-  private def decodePath(text: Text)(using Tactic[TarError]): TarRef =
+  private def decodePath(text: Text)(using Tactic[Tar.Error]): Tar.Ref =
     import errorDiagnostics.emptyDiagnostics
 
     mitigate:
-      case PathError(_, _) => TarError(TarError.Reason.BadName(text))
+      case Path.Error(_, _) => Tar.Error(Tar.Error.Reason.BadName(text))
 
     . protect(text.as[Relative on Tar])
 

@@ -90,7 +90,7 @@ object LiraDelta:
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case TelError(reason, _) =>
+        case Tel.Error(reason, _) =>
           LiraError(Reason.InvalidManifest(t"the delta blob is invalid: $reason"))
 
       . protect:
@@ -106,7 +106,7 @@ object LiraDelta:
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case Base256Error(_) => bad(t"a hash is malformed")
+        case Base256.Error(_) => bad(t"a hash is malformed")
 
       . protect(Base256.decodeStrict(text))
 

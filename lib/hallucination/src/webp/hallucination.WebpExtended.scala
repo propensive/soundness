@@ -40,7 +40,7 @@ import proscenium.compat.*
 import scala.caps
 
 import Binary.*
-import RasterError.Reason
+import Raster.Error.Reason
 
 // The extended (VP8X) WebP container, ported from image-rs/image-webp (`src/extended.rs` and
 // `src/decoder.rs`, MIT/Apache-2.0). Handles alpha for lossy images (the ALPH chunk, filtered and
@@ -53,7 +53,7 @@ private[hallucination] object WebpExtended:
       var anmf: Optional[(Int, Int)] )
   extends caps.Mutable
 
-  def decode(data: Data, start: Int, end: Int, riffEnd: Int): Raster raises RasterError =
+  def decode(data: Data, start: Int, end: Int, riffEnd: Int): Raster raises Raster.Error =
     val flags = u8(data, start)
     val hasAlpha = (flags & 0x10) != 0
     val animation = (flags & 0x02) != 0
@@ -66,7 +66,7 @@ private[hallucination] object WebpExtended:
 
     if animation then
       val (frameStart, frameEnd) =
-        chunks.anmf.or(abort(RasterError(Webp(), Reason.UnsupportedVariant)))
+        chunks.anmf.or(abort(Raster.Error(Webp(), Reason.UnsupportedVariant)))
 
       decodeAnmf(data, frameStart, frameEnd, canvasWidth, canvasHeight)
     else
@@ -96,10 +96,10 @@ private[hallucination] object WebpExtended:
 
   // Decodes a lossy VP8 image, applying the ALPH alpha channel if present.
   private def decodeLossy(data: Data, chunks: Chunks^, hasAlpha: Boolean)
-    ( using Tactic[RasterError] )
+    ( using Tactic[Raster.Error] )
   :   Raster =
 
-    val (vp8Start, vp8End) = chunks.vp8.or(abort(RasterError(Webp(), Reason.UnsupportedVariant)))
+    val (vp8Start, vp8End) = chunks.vp8.or(abort(Raster.Error(Webp(), Reason.UnsupportedVariant)))
     val frame = Vp8Decoder.decode(data, vp8Start, vp8End)
     val rgb = Vp8Yuv.toRgb(frame)
 
@@ -107,14 +107,14 @@ private[hallucination] object WebpExtended:
       Raster.build(frame.width, frame.height, Descriptor.rgb)(rgb(_).toLong & 0xffffff)
     else
       val (alphStart, alphEnd) =
-        chunks.alph.or(abort(RasterError(Webp(), Reason.UnsupportedVariant)))
+        chunks.alph.or(abort(Raster.Error(Webp(), Reason.UnsupportedVariant)))
 
       val alpha = readAlpha(data, alphStart, alphEnd, frame.width, frame.height)
       combine(frame.width, frame.height, rgb, alpha)
 
   // Reads and un-filters the ALPH chunk into one alpha byte per pixel.
   private def readAlpha(data: Data, start: Int, end: Int, width: Int, height: Int)
-  :   scala.Array[Int] raises RasterError =
+  :   scala.Array[Int] raises Raster.Error =
 
     val info = u8(data, start)
     val filtering = (info & 0x0c) >> 2
@@ -133,7 +133,7 @@ private[hallucination] object WebpExtended:
         scala.Array.tabulate(width*height): i =>
           u8(data, start + 1 + i)
       else
-        abort(RasterError(Webp(), Reason.UnsupportedVariant))
+        abort(Raster.Error(Webp(), Reason.UnsupportedVariant))
 
     // Un-filter: each sample is added to its predictor (from already-decoded neighbours).
     val alpha = new scala.Array[Int](width*height)
@@ -175,7 +175,7 @@ private[hallucination] object WebpExtended:
       case _ => 0 // none
 
   private def decodeAnmf(data: Data, start: Int, end: Int, canvasWidth: Int, canvasHeight: Int)
-  :   Raster raises RasterError =
+  :   Raster raises Raster.Error =
 
     // The 16-byte ANMF frame header: x, y, width−1, height−1 (all ×2 for x/y), duration, flags.
     val frameX = read3(data, start)*2

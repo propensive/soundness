@@ -256,7 +256,7 @@ object Bench:
               codepoint: Codepoint )
     :   Unit raises CompilerError raises RemoteError =
 
-      val testId = TestId(name, suite, codepoint)
+      val testId = Test.Id(name, suite, codepoint)
 
       if !runner.skip(testId, Entry.Kind.Bench, Nil) then
         val results0 = bench.dispatch(Bench.measured(iterations, warmups, target)(body0))
@@ -279,7 +279,7 @@ object Bench:
               codepoint: Codepoint )
     :   Unit raises CompilerError raises RemoteError =
 
-      val testId = TestId(name, suite, codepoint)
+      val testId = Test.Id(name, suite, codepoint)
       val values = axis.values
 
       // Definedness may not depend on the staging context, so gaps are probed under a
@@ -338,7 +338,7 @@ object Bench:
               codepoint: Codepoint )
     :   Unit raises CompilerError raises RemoteError =
 
-      val testId = TestId(name, suite, codepoint)
+      val testId = Test.Id(name, suite, codepoint)
       val lefts = first.values
       val rights = second.values
 
@@ -425,3 +425,8 @@ object Bench:
     :   Unit raises CompilerError raises RemoteError =
 
       over(Axis(first), Axis(second))(body)
+
+  // BenchError → Bench.Error
+  case class Error()(using Diagnostics)
+  extends fulminate.Error(794, 0)(m"unable to run benchmarks")
+

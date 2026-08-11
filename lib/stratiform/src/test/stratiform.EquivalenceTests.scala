@@ -48,13 +48,13 @@ import Tel.given
 // element tree and comparing it against a hand-written oracle.
 object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence tests"):
 
-  case class Issues(items: List[(Text, TelError)] = Nil)(using Diagnostics)
+  case class Issues(items: List[(Text, Tel.Error)] = Nil)(using Diagnostics)
   extends Error(m"${items.length} validation issues"):
-    def +(focus: Text, error: TelError): Issues = Issues(items :+ (focus, error))
+    def +(focus: Text, error: Tel.Error): Issues = Issues(items :+ (focus, error))
 
   private def validateAssign(tel: Tel, schema: Tels): Issues =
     validate[Tel.Focus](Issues()):
-      case error: TelError =>
+      case error: Tel.Error =>
         // Explicit: `Tel.given` is in scope, whose blanket Tel encodable
         // would otherwise beat `TelPath`'s text form under `.encode`.
         accrual + (prior.let { focus => TelPath.encodable.encoded(focus.pointer) }.or(t"#"), error)
@@ -149,9 +149,9 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
         val doc = t"recipient a b c\n"
         val schema = Tels.tels[PDelivery](t"delivery")
         val schemaReasons = validateAssign(doc.read[Tel], schema).items.map(_(1).reason).to[Set]
-        val codecReason = capture[TelError](doc.read[Tel].as[PDelivery]).reason
+        val codecReason = capture[Tel.Error](doc.read[Tel].as[PDelivery]).reason
         (schemaReasons, codecReason)
-      . assert(_ == (Set(TelError.Reason.TooManyAtoms), TelError.Reason.TooManyAtoms))
+      . assert(_ == (Set(Tel.Error.Reason.TooManyAtoms), Tel.Error.Reason.TooManyAtoms))
 
     suite(m"Encoded values validate against their derived schema"):
       // The invariant the benchmarks caught breaking: whatever the encoder

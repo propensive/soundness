@@ -98,7 +98,7 @@ object Lira:
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case TelError(reason, _) => LiraError(Reason.InvalidManifest(t"$reason"))
+        case Tel.Error(reason, _) => LiraError(Reason.InvalidManifest(t"$reason"))
 
       . protect(manifestData.utf8.load[Tel])
 
@@ -113,7 +113,7 @@ object Lira:
     import errorDiagnostics.emptyDiagnostics
 
     mitigate:
-      case TelError(reason, _) => LiraError(Reason.InvalidManifest(t"$reason"))
+      case Tel.Error(reason, _) => LiraError(Reason.InvalidManifest(t"$reason"))
 
     . protect(tel.validate(using LiraSchemas.lira, LiraValidators.registry))
 

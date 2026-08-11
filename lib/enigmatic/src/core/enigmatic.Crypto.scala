@@ -34,6 +34,7 @@ package enigmatic
 
 import anticipation.*
 import vacuous.*
+import fulminate.*
 
 // A pluggable cryptographic provider: it supplies the raw algorithmic
 // implementations (the JDK's JCE, BouncyCastle, OpenSSL, …) that the typed
@@ -91,6 +92,26 @@ object Crypto:
   // single provider import enables both hashing (in gastronomy) and cryptography.
   given javaStdlibCrypto(using gastronomy.Provider.JavaStdlib.type): JavaStdlibCrypto.type =
     JavaStdlibCrypto
+
+  // CryptoError → Crypto.Error
+  object Error:
+    given communicable: Reason is Communicable =
+      case Reason.BadPadding       => m"the ciphertext was corrupted or the key was wrong"
+      case Reason.IllegalBlockSize => m"the input length was not valid for the cipher"
+      case Reason.InvalidKey       => m"the key was not valid for the cipher"
+      case Reason.InvalidAlgorithm => m"the algorithm was not available"
+      case Reason.IoFailure        => m"data could not be read or written"
+
+    enum Reason(val number: Int) extends Clarification:
+      case BadPadding       extends Reason(1)
+      case IllegalBlockSize extends Reason(2)
+      case InvalidKey       extends Reason(3)
+      case InvalidAlgorithm extends Reason(4)
+      case IoFailure        extends Reason(5)
+
+  case class Error(reason: Crypto.Error.Reason, detail: Optional[Text] = Unset)
+    ( using Diagnostics )
+  extends fulminate.Error(521, reason.number)(m"could not decrypt the data because $reason")
 
 trait Crypto:
   def random: Crypto.Random

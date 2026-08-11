@@ -39,7 +39,7 @@ import anticipation.*
 import denominative.*
 import rudiments.*
 
-// The membership test for the `DotIdentifier` rule: a DOT identifier is any
+// The membership test for the `Dot.Identifier` rule: a DOT identifier is any
 // non-empty text containing neither a double-quote nor a newline.
 private[acyclicity] def dotIdentifierValid(name: Text): Boolean =
   val text = name.s

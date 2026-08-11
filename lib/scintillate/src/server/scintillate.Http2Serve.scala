@@ -67,7 +67,7 @@ object Http2Serve:
     ( using Monitor, Probate, (HttpServerEvent is Loggable)^ )
   :   Unit =
 
-    given Tactic[Http2Error] = strategies.throwUnsafely
+    given Tactic[Http2.Error] = strategies.throwUnsafely
     given Tactic[StreamError] = strategies.throwUnsafely
 
     val connectionRef: AnyRef = connection.asInstanceOf[AnyRef]
@@ -154,7 +154,7 @@ object Http2Serve:
      // capturing the caller's `Probate` capability would make this call — and so
      // the accept-daemon body — impure.
      import probates.cancelProbate
-     given Tactic[AsyncError] = strategies.throwUnsafely
+     given Tactic[Async.Error] = strategies.throwUnsafely
      given Tactic[StreamError] = strategies.throwUnsafely
      val connection = Http2ServerConnection(StreamDuplex(in, out))
      connection.start()

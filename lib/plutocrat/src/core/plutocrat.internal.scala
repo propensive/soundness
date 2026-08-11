@@ -132,7 +132,7 @@ object internal:
     def apply[currency <: Label: ValueOf](value: Long): Money in currency =
       apply(valueOf[currency], value).to[currency]
 
-    given showable: [currency: Currency] => (currencyStyle: CurrencyStyle)
+    given showable: [currency: Currency] => (currencyStyle: Currency.Style)
     =>  Money in currency is Showable =
 
       money =>

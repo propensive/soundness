@@ -37,6 +37,7 @@ import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 
 // §4 of the BinTEL spec: variable-length unsigned integer encoding.
 // Seven payload bits per byte; bit 7 set marks a continuation byte;
@@ -68,22 +69,22 @@ object Varint:
     out.asInstanceOf[Array[Byte]^{}]
 
   // Decode a varint from `data` starting at `offset`. Returns the decoded
-  // value and the next read position. Raises `Base256Error.Reason` is not
+  // value and the next read position. Raises `Base256.Error.Reason` is not
   // applicable here — the equivalent failure for varint truncation /
   // overflow lives in the BinTEL-level error type which this module does
   // not yet introduce; we use a single dedicated exception for the
   // foundational codec and let callers wrap it.
-  def decode(data: Data, offset: Int): Decoded raises VarintError =
+  def decode(data: Data, offset: Int): Decoded raises Varint.Error =
     var shift = 0
     var acc = 0L
     var i = offset
 
     while true do
-      if i >= data.length then abort(VarintError(VarintError.Reason.Truncated))
+      if i >= data.length then abort(Varint.Error(Varint.Error.Reason.Truncated))
       val b = data(i) & 0xff
 
       if shift >= 64 || (shift == 63 && (b & 0x7f) > 1)
-      then abort(VarintError(VarintError.Reason.Overflow))
+      then abort(Varint.Error(Varint.Error.Reason.Overflow))
 
       acc |= (b & 0x7fL) << shift
       i += 1
@@ -91,3 +92,19 @@ object Varint:
       shift += 7
 
     Decoded(0L, offset)
+
+  // VarintError → Varint.Error
+  object Error:
+
+    object Reason:
+      given communicable: Reason is Communicable =
+        case Truncated => m"the varint is truncated — a continuation byte was expected"
+        case Overflow  => m"the varint encodes a value that does not fit in 64 bits"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Truncated extends Reason(1)
+      case Overflow  extends Reason(2)
+
+  case class Error(reason: Varint.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(608, reason.number)(m"the varint is invalid because $reason")
+

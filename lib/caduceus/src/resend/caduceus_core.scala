@@ -62,8 +62,8 @@ import termcaps.environmentTermcap
 
 package couriers:
   given resend
-  :   ( courierTactic: Tactic[CourierError], online: Online, loggable: HttpEvent is Loggable,
-        client: HttpClient )
+  :   ( courierTactic: Tactic[Courier.Error], online: Online, loggable: Http.Event is Loggable,
+        client: Http.Client )
   =>  ( apiKey: Resend.ApiKey )
   =>  (Courier^{courierTactic, online}) =
     // The instance's own fresh capability is laundered; the declared result tracks its
@@ -109,14 +109,14 @@ package couriers:
               email.text,
               attachments )
 
-        def error = CourierError(envelope.from, envelope.to.stdlib.head, envelope.subject)
+        def error = Courier.Error(envelope.from, envelope.to.stdlib.head, envelope.subject)
 
         mitigate:
           case ConnectError(reason)     => Out.println(reason.communicate) yet error
           case ParseError(_, _, reason) => Out.println(reason.describe) yet error
-          case HttpError(status, _)     => Out.println(status.communicate) yet error
+          case Http.Error(status, _)     => Out.println(status.communicate) yet error
           case JsonError(reason)        => Out.println(reason.communicate) yet error
-          case MediaTypeError(_, _)     => error
+          case MediaType.Error(_, _)     => error
 
         . protect:
            // The request and its decoding share only the resolution-scoped tactic.

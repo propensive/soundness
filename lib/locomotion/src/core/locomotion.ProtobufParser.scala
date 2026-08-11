@@ -39,7 +39,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 
-import ProtobufError.Reason
+import Protobuf.Error.Reason
 
 // Reads Protocol Buffers wire bytes. `fields` parses a whole message payload into a
 // number-keyed map of (one or more) raw wire values, preserving repeats and unknown
@@ -51,28 +51,28 @@ class ProtobufParser(data: Data):
 
   def atEnd: Boolean = pos >= data.length
 
-  def varint(): Long raises ProtobufError =
+  def varint(): Long raises Protobuf.Error =
     val start = pos
     var result = 0L
     var shift = 0
     var continue = true
 
     while continue do
-      if pos >= data.length then abort(ProtobufError(Reason.Truncated(pos)))
-      if shift >= 70 then abort(ProtobufError(Reason.MalformedVarint(start)))
+      if pos >= data.length then abort(Protobuf.Error(Reason.Truncated(pos)))
+      if shift >= 70 then abort(Protobuf.Error(Reason.MalformedVarint(start)))
       val byte = data.readable(pos) & 0xff
       pos += 1
       // The 10th byte (shift == 63) may only contribute bit 63; any higher bit set
       // means the value does not fit in 64 bits.
-      if shift == 63 && (byte & 0x7f) > 1 then abort(ProtobufError(Reason.Overflow(start)))
+      if shift == 63 && (byte & 0x7f) > 1 then abort(Protobuf.Error(Reason.Overflow(start)))
       if shift < 64 then result |= (byte.toLong & 0x7f) << shift
       shift += 7
       if (byte & 0x80) == 0 then continue = false
 
     result
 
-  def fixed32(): Int raises ProtobufError =
-    if pos + 4 > data.length then abort(ProtobufError(Reason.Truncated(pos)))
+  def fixed32(): Int raises Protobuf.Error =
+    if pos + 4 > data.length then abort(Protobuf.Error(Reason.Truncated(pos)))
     var result = 0
     var i = 0
 
@@ -83,8 +83,8 @@ class ProtobufParser(data: Data):
     pos += 4
     result
 
-  def fixed64(): Long raises ProtobufError =
-    if pos + 8 > data.length then abort(ProtobufError(Reason.Truncated(pos)))
+  def fixed64(): Long raises Protobuf.Error =
+    if pos + 8 > data.length then abort(Protobuf.Error(Reason.Truncated(pos)))
     var result = 0L
     var i = 0
 
@@ -95,13 +95,13 @@ class ProtobufParser(data: Data):
     pos += 8
     result
 
-  def slice(length: Int): Data raises ProtobufError =
-    if length < 0 || pos + length > data.length then abort(ProtobufError(Reason.Truncated(pos)))
+  def slice(length: Int): Data raises Protobuf.Error =
+    if length < 0 || pos + length > data.length then abort(Protobuf.Error(Reason.Truncated(pos)))
     val result = data.slice(pos, pos + length)
     pos += length
     result
 
-  def fields(): Map[Int, List[Protobuf]] raises ProtobufError =
+  def fields(): Map[Int, List[Protobuf]] raises Protobuf.Error =
     val accumulator = scm.LinkedHashMap.empty[Int, scm.ListBuffer[Protobuf]]
 
     while !atEnd do
@@ -111,7 +111,7 @@ class ProtobufParser(data: Data):
       val code = tag & 0x7
 
       val wireType =
-        WireType.fromId(code).lest(ProtobufError(Reason.UnexpectedWireType(code, tagStart)))
+        WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, tagStart)))
 
       val value = wireType match
         case WireType.Varint =>
@@ -145,31 +145,31 @@ class ProtobufParser(data: Data):
 
   // The next field tag: `(number << 3) | code`. Only called below the
   // window's limit.
-  def directTag()(using Tactic[ProtobufError]): Int = directVarint().toInt
+  def directTag()(using Tactic[Protobuf.Error]): Int = directVarint().toInt
 
   // A limit-bounded `varint()`: identical semantics against the window
   // rather than the whole input.
-  def directVarint()(using Tactic[ProtobufError]): Long =
+  def directVarint()(using Tactic[Protobuf.Error]): Long =
     val start = pos
     var result = 0L
     var shift = 0
     var continue = true
 
     while continue do
-      if pos >= boundary then abort(ProtobufError(Reason.Truncated(pos)))
-      if shift >= 70 then abort(ProtobufError(Reason.MalformedVarint(start)))
+      if pos >= boundary then abort(Protobuf.Error(Reason.Truncated(pos)))
+      if shift >= 70 then abort(Protobuf.Error(Reason.MalformedVarint(start)))
       val byte = data.readable(pos) & 0xff
       pos += 1
 
-      if shift == 63 && (byte & 0x7f) > 1 then abort(ProtobufError(Reason.Overflow(start)))
+      if shift == 63 && (byte & 0x7f) > 1 then abort(Protobuf.Error(Reason.Overflow(start)))
       if shift < 64 then result |= (byte.toLong & 0x7f) << shift
       shift += 7
       if (byte & 0x80) == 0 then continue = false
 
     result
 
-  def directFixed32()(using Tactic[ProtobufError]): Int =
-    if pos + 4 > boundary then abort(ProtobufError(Reason.Truncated(pos)))
+  def directFixed32()(using Tactic[Protobuf.Error]): Int =
+    if pos + 4 > boundary then abort(Protobuf.Error(Reason.Truncated(pos)))
     var result = 0
     var i = 0
 
@@ -180,8 +180,8 @@ class ProtobufParser(data: Data):
     pos += 4
     result
 
-  def directFixed64()(using Tactic[ProtobufError]): Long =
-    if pos + 8 > boundary then abort(ProtobufError(Reason.Truncated(pos)))
+  def directFixed64()(using Tactic[Protobuf.Error]): Long =
+    if pos + 8 > boundary then abort(Protobuf.Error(Reason.Truncated(pos)))
     var result = 0L
     var i = 0
 
@@ -197,7 +197,7 @@ class ProtobufParser(data: Data):
   // limit for `directLeaveField`. For a length-delimited field the length
   // prefix is consumed; for a varint field the window covers the varint's
   // own bytes, mirroring the `data.slice(start, pos)` payload.
-  def directEnterField(code: Int)(using Tactic[ProtobufError]): Int =
+  def directEnterField(code: Int)(using Tactic[Protobuf.Error]): Int =
     val saved = boundary
 
     code match
@@ -208,22 +208,22 @@ class ProtobufParser(data: Data):
         pos = start
 
       case 1 =>
-        if pos + 8 > boundary then abort(ProtobufError(Reason.Truncated(pos)))
+        if pos + 8 > boundary then abort(Protobuf.Error(Reason.Truncated(pos)))
         boundary = pos + 8
 
       case 2 =>
         val length = directVarint().toInt
 
-        if length < 0 || pos + length > boundary then abort(ProtobufError(Reason.Truncated(pos)))
+        if length < 0 || pos + length > boundary then abort(Protobuf.Error(Reason.Truncated(pos)))
 
         boundary = pos + length
 
       case 5 =>
-        if pos + 4 > boundary then abort(ProtobufError(Reason.Truncated(pos)))
+        if pos + 4 > boundary then abort(Protobuf.Error(Reason.Truncated(pos)))
         boundary = pos + 4
 
       case other =>
-        abort(ProtobufError(Reason.UnexpectedWireType(other, pos)))
+        abort(Protobuf.Error(Reason.UnexpectedWireType(other, pos)))
 
     saved
 
@@ -234,7 +234,7 @@ class ProtobufParser(data: Data):
     pos = boundary
     boundary = saved
 
-  def directSkipField(code: Int)(using Tactic[ProtobufError]): Unit =
+  def directSkipField(code: Int)(using Tactic[Protobuf.Error]): Unit =
     directLeaveField(directEnterField(code))
 
   // ── Scalar field reads, dispatching on the tag's wire code. The fast
@@ -242,28 +242,28 @@ class ProtobufParser(data: Data):
   // field's payload window and interprets it exactly as the AST accessor
   // interprets the recorded payload. ──
 
-  def directLong(code: Int)(using Tactic[ProtobufError]): Long =
+  def directLong(code: Int)(using Tactic[Protobuf.Error]): Long =
     if code == 0 then directVarint() else
       val saved = directEnterField(code)
       val result = directVarint()
       directLeaveField(saved)
       result
 
-  def directDouble(code: Int)(using Tactic[ProtobufError]): Double =
+  def directDouble(code: Int)(using Tactic[Protobuf.Error]): Double =
     if code == 1 then java.lang.Double.longBitsToDouble(directFixed64()) else
       val saved = directEnterField(code)
       val result = java.lang.Double.longBitsToDouble(directFixed64())
       directLeaveField(saved)
       result
 
-  def directFloat(code: Int)(using Tactic[ProtobufError]): Float =
+  def directFloat(code: Int)(using Tactic[Protobuf.Error]): Float =
     if code == 5 then java.lang.Float.intBitsToFloat(directFixed32()) else
       val saved = directEnterField(code)
       val result = java.lang.Float.intBitsToFloat(directFixed32())
       directLeaveField(saved)
       result
 
-  def directString(code: Int)(using Tactic[ProtobufError]): String =
+  def directString(code: Int)(using Tactic[Protobuf.Error]): String =
     val saved = directEnterField(code)
 
     val result =
@@ -274,7 +274,7 @@ class ProtobufParser(data: Data):
     directLeaveField(saved)
     result
 
-  def directData(code: Int)(using Tactic[ProtobufError]): Data =
+  def directData(code: Int)(using Tactic[Protobuf.Error]): Data =
     val saved = directEnterField(code)
     val result = data.slice(pos, boundary)
     directLeaveField(saved)
@@ -283,9 +283,9 @@ class ProtobufParser(data: Data):
   // One field's wire value, materialized — the runtime seam for field types
   // without an `Inlinable`, gathered per occurrence and decoded through the
   // field's `Decodable in Protobuf` exactly as the AST path.
-  def directWire(code: Int)(using Tactic[ProtobufError]): Protobuf =
+  def directWire(code: Int)(using Tactic[Protobuf.Error]): Protobuf =
     val wireType =
-      WireType.fromId(code).lest(ProtobufError(Reason.UnexpectedWireType(code, pos)))
+      WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, pos)))
 
     val saved = directEnterField(code)
     val result = Protobuf.Wire(wireType, data.slice(pos, boundary))
@@ -334,7 +334,7 @@ class ProtobufParser(data: Data):
   // Splits a packed `repeated` payload (a single length-delimited field holding
   // concatenated scalar values) into one wire value per element. `wireType` is the
   // element encoding, supplied by the element's `Packable` instance.
-  def packed(wireType: WireType): List[Protobuf] raises ProtobufError =
+  def packed(wireType: WireType): List[Protobuf] raises Protobuf.Error =
     val builder = scala.collection.immutable.List.newBuilder[Protobuf]
 
     while !atEnd do

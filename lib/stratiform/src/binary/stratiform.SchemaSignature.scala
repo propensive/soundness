@@ -73,7 +73,7 @@ object SchemaSignature:
   // header or as the textual schema identifier on a TEL pragma after
   // BASE-256 encoding.
   def fromDocument(doc: Tel, axiom: Tels)
-    ( using Tactic[BintelError], Tactic[TelError] )
+    ( using Tactic[Bintel.Error], Tactic[Tel.Error] )
   :   Data =
 
     fromElement(Tel.Type.assign(doc, axiom).asInstanceOf[Tel.Element.Node], axiom)
@@ -82,7 +82,7 @@ object SchemaSignature:
   // root — used when recomputing the signature of an embedded schema body
   // decoded from a self-contained BinTEL document (§6.2, B11).
   def fromElement(root: Tel.Element.Node, axiom: Tels)
-    ( using Tactic[BintelError], Tactic[TelError] )
+    ( using Tactic[Bintel.Error], Tactic[Tel.Error] )
   :   Data =
 
     val (baseHash, layerHashes) = componentsOf(root, axiom)
@@ -94,13 +94,13 @@ object SchemaSignature:
   // layer hashes and re-encoding — `encode(baseHash :: chosen)` — yields the palimpsest of the base
   // composed with just those layers.
   def componentHashes(doc: Tel, axiom: Tels)
-    ( using Tactic[BintelError], Tactic[TelError] )
+    ( using Tactic[Bintel.Error], Tactic[Tel.Error] )
   :   (Data, List[Data]) =
 
     componentsOf(Tel.Type.assign(doc, axiom).asInstanceOf[Tel.Element.Node], axiom)
 
   private def componentsOf(root: Tel.Element.Node, axiom: Tels)
-    ( using Tactic[BintelError], Tactic[TelError] )
+    ( using Tactic[Bintel.Error], Tactic[Tel.Error] )
   :   (Data, List[Data]) =
 
     // Resolve the flat keyword index of "layer" and the Layer
@@ -174,15 +174,15 @@ object SchemaSignature:
   // the BinTEL-pinned `cadence`. Every hash must be `cadence.hashSize`
   // (32) bytes long; an empty list, or any mis-sized hash, raises
   // `BadSignatureLength`.
-  def encode(hashes: List[Data]): Data raises BintelError =
-    if hashes.nil then abort(BintelError(BintelError.Reason.BadSignatureLength))
+  def encode(hashes: List[Data]): Data raises Bintel.Error =
+    if hashes.nil then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     val it = hashes.stdlib.iterator
     var bad = false
 
     while it.hasNext && !bad do if it.next().length != cadence.hashSize then bad = true
 
-    if bad then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    if bad then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     Palimpsest(Sequence.from(hashes.stdlib)).data
 
@@ -191,9 +191,9 @@ object SchemaSignature:
   // (§4.2 of the palimpsest spec); a byte length inconsistent with any
   // valid cadence raises `BadSignatureLength`. Failure to reconstruct
   // the ordered hash sequence raises `BadSignature`.
-  def decode(signature: Data, library: List[Data]): List[Data] raises BintelError =
+  def decode(signature: Data, library: List[Data]): List[Data] raises Bintel.Error =
     val total = signature.length
-    if total < 2 then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    if total < 2 then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     var xor = 0
     var i   = 0
@@ -203,11 +203,11 @@ object SchemaSignature:
       i += 1
 
     val cadence: Cadence = Cadence.unpack(xor.toByte).or:
-      abort(BintelError(BintelError.Reason.BadSignatureLength))
+      abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     val n: Int = cadence.hashCount(total - 1).or:
-      abort(BintelError(BintelError.Reason.BadSignatureLength))
+      abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     given Bibliography = Bibliography(library.stdlib)
 
-    Palimpsest(signature, n).resolve.or(abort(BintelError(BintelError.Reason.BadSignature)))
+    Palimpsest(signature, n).resolve.or(abort(Bintel.Error(Bintel.Error.Reason.BadSignature)))

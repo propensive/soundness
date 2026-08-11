@@ -82,8 +82,8 @@ object Installer:
   :   List[Path on Linux] =
 
     mitigate:
-      case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
-      case EnvironmentError(_) => InstallError(InstallError.Reason.Environment)
+      case Path.Error(_, _)     => InstallError(InstallError.Reason.Environment)
+      case Environment.Error(_) => InstallError(InstallError.Reason.Environment)
       case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
       case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
 
@@ -117,8 +117,8 @@ object Installer:
     import systems.javaSystem
 
     mitigate:
-      case PathError(_, _)      => InstallError(InstallError.Reason.Environment)
-      case PropertyError(_)     => InstallError(InstallError.Reason.Environment)
+      case Path.Error(_, _)      => InstallError(InstallError.Reason.Environment)
+      case Property.Error(_)     => InstallError(InstallError.Reason.Environment)
       case NumberError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case IoError(_, _, _, _)  => InstallError(InstallError.Reason.Io)
       case NameError(_, _, _)   => InstallError(InstallError.Reason.Io)

@@ -303,7 +303,7 @@ object stagedInternal:
           ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef], $indent)
       }
 
-    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[value])
+    override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
       '{ Tel.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic) }
@@ -520,7 +520,7 @@ object stagedInternal:
     '{
       val foci = infer[Foci[Tel.Focus]]
       val focused = foci.active
-      val tactic = infer[Tactic[TelError]]
+      val tactic = infer[Tactic[Tel.Error]]
       ${ fieldLoop[product](reader, indent, 'foci, 'focused, 'tactic, cache) }
     }
 
@@ -538,7 +538,7 @@ object stagedInternal:
       indent:  Expr[Int],
       foci:    Expr[Foci[Tel.Focus]],
       focused: Expr[Boolean],
-      tactic:  Expr[Tactic[TelError]],
+      tactic:  Expr[Tactic[Tel.Error]],
       cache:   Cache )
     (using Quotes)
   :   Expr[product] =
@@ -1030,13 +1030,13 @@ object stagedInternal:
           }
 
     '{
-      val tactic = infer[Tactic[TelError]]
+      val tactic = infer[Tactic[Tel.Error]]
       $reader.finishLine()
       val indent1 = $indent + 1
       val word = $reader.keywordWord(indent1)
 
       if word == TelReader.KeywordEnd
-      then abort(TelError(TelError.Reason.Absent))(using tactic)
+      then abort(Tel.Error(Tel.Error.Reason.Absent))(using tactic)
       else
         val result: sum = ${ dispatch(0, 'word, 'indent1) }
         var next = $reader.keywordWord(indent1)

@@ -102,12 +102,12 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
       . assert(_ == PPairBox(PPair(t"hello", t"world")))
 
       test(m"an atom plus a same-keyword child raises E308"):
-        capture[TelError](t"log lbl\n  label dup\n".read[Tel].as[PLogBook]).reason
-      . assert(_ == TelError.Reason.NonRepeatableTooMany)
+        capture[Tel.Error](t"log lbl\n  label dup\n".read[Tel].as[PLogBook]).reason
+      . assert(_ == Tel.Error.Reason.NonRepeatableTooMany)
 
       test(m"excess atoms raise E302"):
-        capture[TelError](t"item a b c\n".read[Tel].as[PHolder]).reason
-      . assert(_ == TelError.Reason.TooManyAtoms)
+        capture[Tel.Error](t"item a b c\n".read[Tel].as[PHolder]).reason
+      . assert(_ == Tel.Error.Reason.TooManyAtoms)
 
     suite(m"Positional atom decoding (§19.2, direct path)"):
       given PRecipient is Tel.Parsable = Tel.Parsable.derived
@@ -156,12 +156,12 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
       . assert(_ == (PPairBox(PPair(t"hello", t"world")), true))
 
       test(m"an atom plus a same-keyword child raises E308 on the direct path"):
-        capture[TelError](t"log lbl\n  label dup\n".read[PLogBook in Tel]).reason
-      . assert(_ == TelError.Reason.NonRepeatableTooMany)
+        capture[Tel.Error](t"log lbl\n  label dup\n".read[PLogBook in Tel]).reason
+      . assert(_ == Tel.Error.Reason.NonRepeatableTooMany)
 
       test(m"excess atoms raise E302 on the direct path"):
-        capture[TelError](t"item a b c\n".read[PHolder in Tel]).reason
-      . assert(_ == TelError.Reason.TooManyAtoms)
+        capture[Tel.Error](t"item a b c\n".read[PHolder in Tel]).reason
+      . assert(_ == Tel.Error.Reason.TooManyAtoms)
 
     suite(m"Encoder atom forms and flags (§22.3)"):
       given PNote is Tel.Parsable = Tel.Parsable.derived
@@ -266,16 +266,16 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
       . assert(_ == (PNote(t"line one\nline two"), true))
 
       test(m"an atom plus a same-keyword child raises E308 on the staged path"):
-        capture[TelError](t"log lbl\n  label dup\n".read[PLogBook in Tel]).reason
-      . assert(_ == TelError.Reason.NonRepeatableTooMany)
+        capture[Tel.Error](t"log lbl\n  label dup\n".read[PLogBook in Tel]).reason
+      . assert(_ == Tel.Error.Reason.NonRepeatableTooMany)
 
       test(m"excess atoms raise E302 on the staged path"):
-        capture[TelError](t"item a b c\n".read[PHolder in Tel]).reason
-      . assert(_ == TelError.Reason.TooManyAtoms)
+        capture[Tel.Error](t"item a b c\n".read[PHolder in Tel]).reason
+      . assert(_ == Tel.Error.Reason.TooManyAtoms)
 
       test(m"an unparseable positional atom raises NotScalar"):
-        capture[TelError](t"log lbl notanumber\n".read[PLogBook in Tel]).reason match
-          case TelError.Reason.NotScalar(_, expected) => expected
+        capture[Tel.Error](t"log lbl notanumber\n".read[PLogBook in Tel]).reason match
+          case Tel.Error.Reason.NotScalar(_, expected) => expected
           case _                                      => t"?"
       . assert(_ == t"Int")
 

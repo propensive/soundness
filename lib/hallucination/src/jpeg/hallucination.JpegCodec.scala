@@ -37,7 +37,7 @@ import contingency.*
 import vacuous.*
 import proscenium.compat.*
 
-import RasterError.Reason
+import Raster.Error.Reason
 
 import scala.caps
 
@@ -52,10 +52,10 @@ private[hallucination] object JpegCodec:
     data.length >= 3 && (data(0) & 0xff) == 0xff && (data(1) & 0xff) == 0xd8 &&
       (data(2) & 0xff) == 0xff
 
-  def decode(data: Data): Raster raises RasterError =
+  def decode(data: Data): Raster raises Raster.Error =
     try JpegDecoder(data.readable).decode()
     catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
-      abort(RasterError(Jpeg(), Reason.Truncated))
+      abort(Raster.Error(Jpeg(), Reason.Truncated))
 
 private[hallucination] enum JpegColor:
   case Grayscale, Rgb, YCbCr, Cmyk, Ycck, Unknown
@@ -119,10 +119,10 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
     58, 59, 52, 45, 38, 31, 39, 46,
     53, 60, 61, 54, 47, 55, 62, 63).asInstanceOf[Array[Int]^{}]
 
-  private def bad()(using Tactic[RasterError]): Nothing =
-    abort(RasterError(Jpeg(), Reason.Bitstream))
+  private def bad()(using Tactic[Raster.Error]): Nothing =
+    abort(Raster.Error(Jpeg(), Reason.Bitstream))
 
-  update def decode()(using Tactic[RasterError]): Raster =
+  update def decode()(using Tactic[Raster.Error]): Raster =
     if reader.u8() != 0xff || reader.u8() != JpegMarker.Soi then bad()
 
     var previousMarker = JpegMarker.Soi
@@ -138,7 +138,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
           next
 
       if JpegMarker.isSof(marker) then
-        if frame.present then abort(RasterError(Jpeg(), Reason.UnsupportedVariant))
+        if frame.present then abort(Raster.Error(Jpeg(), Reason.UnsupportedVariant))
         val parsed = JpegParser.parseSof(reader, marker)
         // The freshly-parsed frame has no other alias; laundered so the loop-consumption
         // check does not reject the assignment.
@@ -171,7 +171,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
         restartInterval = JpegParser.parseDri(reader)
 
       else if marker == JpegMarker.Dac then
-        abort(RasterError(Jpeg(), Reason.UnsupportedVariant))
+        abort(Raster.Error(Jpeg(), Reason.UnsupportedVariant))
 
       else if marker == JpegMarker.Com then
         JpegParser.skipSegment(reader)
@@ -190,7 +190,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
         running = false
 
       else if marker == JpegMarker.Dnl || marker == JpegMarker.Dhp || marker == JpegMarker.Exp then
-        abort(RasterError(Jpeg(), Reason.UnsupportedVariant))
+        abort(Raster.Error(Jpeg(), Reason.UnsupportedVariant))
 
       else
         bad()
@@ -211,7 +211,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
 
     marker
 
-  private update def loadQuantizationTables()(using Tactic[RasterError]): Unit =
+  private update def loadQuantizationTables()(using Tactic[Raster.Error]): Unit =
     // A pure view of the parser's freshly-built result, for the `Optional` reads below.
     val tables = JpegParser.parseDqt(reader).asInstanceOf[scala.Array[Optional[scala.Array[Int]]]]
     var index = 0
@@ -225,7 +225,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
 
       index += 1
 
-  private update def loadHuffmanTables()(using Tactic[RasterError]): Unit =
+  private update def loadHuffmanTables()(using Tactic[Raster.Error]): Unit =
     val baseline = frame.lay(false)(_.isBaseline)
     val (dc, ac) = JpegParser.parseDht(reader, baseline)
     var index = 0
@@ -237,7 +237,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
 
   // Decodes one scan's entropy-coded data into the coefficient planes; returns the marker that
   // terminated it (or -1).
-  private update def decodeScan(frame: JpegFrame, scan: JpegScan)(using Tactic[RasterError])
+  private update def decodeScan(frame: JpegFrame, scan: JpegScan)(using Tactic[Raster.Error])
   :   Int =
     val count = scan.componentIndices.length
     val components = scan.componentIndices.map(frame.components(_))
@@ -369,7 +369,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
       eobRun:        scala.Array[Int],
       dcPredictors:  scala.Array[Int],
       predIndex:     Int )
-    ( using Tactic[RasterError] )
+    ( using Tactic[Raster.Error] )
   :   Unit =
 
     if spectralStart == 0 then
@@ -426,7 +426,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
       spectralEnd:   Int,
       successiveLow: Int,
       eobRun:        scala.Array[Int] )
-    ( using Tactic[RasterError] )
+    ( using Tactic[Raster.Error] )
   :   Unit =
 
     val bit = 1 << successiveLow
@@ -472,7 +472,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
       end:         Int,
       zrl:         Int,
       bit:         Int )
-    ( using Tactic[RasterError] )
+    ( using Tactic[Raster.Error] )
   :   Int =
 
     var zeroRun = zrl
@@ -499,7 +499,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
 
   // Dequantizes and inverse-transforms every coefficient plane, then assembles the interleaved,
   // colour-converted image and wraps it as a `Raster`.
-  private update def render(frame: JpegFrame)(using Tactic[RasterError]): Raster =
+  private update def render(frame: JpegFrame)(using Tactic[Raster.Error]): Raster =
     val planes = new scala.Array[scala.Array[Byte]](frame.components.length)
     var index = 0
 
@@ -558,7 +558,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
       planes: scala.Array[scala.Array[Byte]^{planeCaps}],
       width:  Int,
       height: Int )
-    ( using Tactic[RasterError] )
+    ( using Tactic[Raster.Error] )
   :   Raster =
 
     val transform = determineColorTransform(frame)

@@ -58,34 +58,34 @@ trait LowPriorityConformant:
   // A 2xx JSON body decoded to any JSON-decodable type. Resolving `Decodable in
   // Json` here, at the concrete call site, lets jacinta pick the collection
   // decoder for `List[T]` etc.
-  given jsonDecodable: [value: Decodable in Json] => Tactic[ApiError]
+  given jsonDecodable: [value: Decodable in Json] => Tactic[Api.Error]
   =>  (value is Conformant) over Json =
     response =>
       Conformant.successful(response)
 
       mitigate:
-        case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
-        case JsonError(_)        => ApiError(ApiError.Reason.Malformed)
+        case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
+        case JsonError(_)        => Api.Error(Api.Error.Reason.Malformed)
 
       . protect(response.body.stream.memoize.read[Json].as[value])
 
   // A 2xx XML body decoded to any XML-decodable type.
   given xmlDecodable: [value: Decodable in Xml]
-  =>  ( CharDecoder, XmlSchema, Tactic[ApiError] ) => (value is Conformant) over Xml =
+  =>  ( CharDecoder, XmlSchema, Tactic[Api.Error] ) => (value is Conformant) over Xml =
     response =>
       Conformant.successful(response)
 
       mitigate:
-        case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
-        case _: XmlError         => ApiError(ApiError.Reason.Malformed)
+        case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
+        case _: XmlError         => Api.Error(Api.Error.Reason.Malformed)
 
       . protect(summon[CharDecoder].decoded(response.body.stream.memoize).read[Xml].as[value])
 
 object Conformant extends LowPriorityConformant:
-  // Raise `ApiError` unless the response status is in the 2xx range.
-  def successful(response: Http.Response)(using Tactic[ApiError]): Unit =
+  // Raise `Api.Error` unless the response status is in the 2xx range.
+  def successful(response: Http.Response)(using Tactic[Api.Error]): Unit =
     if response.status.category != Http.Status.Category.Successful
-    then abort(ApiError(ApiError.Reason.Status(response.status.code)))
+    then abort(Api.Error(Api.Error.Reason.Status(response.status.code)))
 
   // The escape hatch: the raw response, with no status check (any transport).
   given response: [transport] => (Http.Response is Conformant) over transport =
@@ -94,26 +94,26 @@ object Conformant extends LowPriorityConformant:
   // Just check for success and discard the body — for no-content (204) endpoints
   // such as `delete`, and the default target of a bare `.call()`. Never reads the
   // body, so an empty one is fine; transport-agnostic.
-  given unit: [transport] => Tactic[ApiError] => (Unit is Conformant) over transport =
+  given unit: [transport] => Tactic[Api.Error] => (Unit is Conformant) over transport =
     response => successful(response)
 
   // The raw 2xx body as JSON.
-  given json: Tactic[ApiError] => (Json is Conformant) over Json = response =>
+  given json: Tactic[Api.Error] => (Json is Conformant) over Json = response =>
     successful(response)
 
     mitigate:
-      case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
+      case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
 
     . protect(response.body.stream.memoize.read[Json])
 
   // The raw 2xx body as XML. The body bytes are decoded to `Text` (via the
   // `CharDecoder`) before xylophone parses them.
-  given xml: (CharDecoder, XmlSchema, Tactic[ApiError]) => (Xml is Conformant) over Xml =
+  given xml: (CharDecoder, XmlSchema, Tactic[Api.Error]) => (Xml is Conformant) over Xml =
     response =>
       successful(response)
 
       mitigate:
-        case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
+        case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
 
       . protect(summon[CharDecoder].decoded(response.body.stream.memoize).read[Xml])
 

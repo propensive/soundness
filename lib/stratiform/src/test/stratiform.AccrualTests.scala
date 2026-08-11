@@ -46,26 +46,26 @@ case class APair(width: Int, height: Int) derives CanEqual
 
 object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
-  case class Issues(items: List[(Text, TelError)] = Nil)(using Diagnostics)
+  case class Issues(items: List[(Text, Tel.Error)] = Nil)(using Diagnostics)
   extends Error(m"${items.length} decoding issues"):
-    def +(focus: Text, error: TelError): Issues = Issues(items :+ (focus, error))
+    def +(focus: Text, error: Tel.Error): Issues = Issues(items :+ (focus, error))
 
   // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
   // cannot be typed under capture checking (its honest type is a curried dependent context
   // function, an unimplemented compiler restriction), so the decode lambda must beta-reduce
   // away into `protect`'s inline position. See rep/DECISIONS.md.
   private inline def validateTel[result](tel: Tel)
-                                 (inline decode: Tel => result raises TelError tracks Tel.Focus)
+                                 (inline decode: Tel => result raises Tel.Error tracks Tel.Focus)
   :   Issues =
-    Validate[Issues, [r] =>> r raises TelError, Tel.Focus]
+    Validate[Issues, [r] =>> r raises Tel.Error, Tel.Focus]
       ( Issues(),
-        { case error: TelError =>
+        { case error: Tel.Error =>
             accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
     . protect(decode(tel))
 
   private def validateAssign(tel: Tel, schema: Tels): Issues =
     validate[Tel.Focus](Issues()):
-      case error: TelError =>
+      case error: Tel.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . protect(Tel.Type.assign(tel, schema))
 
@@ -81,21 +81,21 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     val tel = text.read[Tel]
 
     validate[Tel.Focus](Located()):
-      case error: TelError =>
+      case error: Tel.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), prior.lay(Span.empty)(_.span))
     . protect(Tel.Type.assign(tel, schema))
 
   // The decode-path counterpart: `Tel#as` locates its per-field foci against
   // the same tracked root. Inline for the same reason as `validateTel`.
   private inline def decodePositions[result](text: Text)
-                                    (inline decode: Tel => result raises TelError tracks Tel.Focus)
+                                    (inline decode: Tel => result raises Tel.Error tracks Tel.Focus)
   :   Located =
     import parsing.trackPositions
     val tel = text.read[Tel]
 
-    Validate[Located, [r] =>> r raises TelError, Tel.Focus]
+    Validate[Located, [r] =>> r raises Tel.Error, Tel.Focus]
       ( Located(),
-        { case error: TelError =>
+        { case error: Tel.Error =>
             accrual + (prior.let(_.pointer.encode).or(t"#"),
                        prior.lay(Span.empty)(_.span)) } )
     . protect(decode(tel))
@@ -116,9 +116,9 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   private def directPerson(text: Text): Located =
     import parsing.trackPositions
 
-    Validate[Located, [r] =>> r raises TelError, Tel.Focus]
+    Validate[Located, [r] =>> r raises Tel.Error, Tel.Focus]
       ( Located(),
-        { case error: TelError =>
+        { case error: Tel.Error =>
             accrual + (prior.let(_.pointer.encode).or(t"#"),
                        prior.lay(Span.empty)(_.span)) } )
     . protect:
@@ -128,9 +128,9 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   private def directContact(text: Text): Located =
     import parsing.trackPositions
 
-    Validate[Located, [r] =>> r raises TelError, Tel.Focus]
+    Validate[Located, [r] =>> r raises Tel.Error, Tel.Focus]
       ( Located(),
-        { case error: TelError =>
+        { case error: Tel.Error =>
             accrual + (prior.let(_.pointer.encode).or(t"#"),
                        prior.lay(Span.empty)(_.span)) } )
     . protect:
@@ -143,7 +143,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   // through the installed `TrackTactic`.
   private def validateRead(text: Text): Issues =
     validate[Tel.Focus](Issues()):
-      case error: TelError =>
+      case error: Tel.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . protect(text.read[Tel])
 
@@ -260,7 +260,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Each missing-field error has reason Absent"):
         val tel = t"name Alice\n".read[Tel]
         validateTel(tel)(_.as[APerson]).items.all:
-          case (_, err) => err.reason == TelError.Reason.Absent
+          case (_, err) => err.reason == Tel.Error.Reason.Absent
       . assert(identity)
 
     suite(m"Multiple wrong-type fields"):
@@ -278,7 +278,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         val tel = t"width wide\nheight tall\n".read[Tel]
         validateTel(tel)(_.as[APair]).items.all:
           case (_, err) => err.reason match
-            case TelError.Reason.NotScalar(_, _) => true
+            case Tel.Error.Reason.NotScalar(_, _) => true
             case _                               => false
       . assert(identity)
 
@@ -307,7 +307,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Both missing-member errors have reason RequiredMemberAbsent"):
         val doc = t"".read[Tel]
         validateAssign(doc, twoRequiredSchema).items.all:
-          case (_, err) => err.reason == TelError.Reason.RequiredMemberAbsent
+          case (_, err) => err.reason == Tel.Error.Reason.RequiredMemberAbsent
       . assert(identity)
 
       test(m"Two unknown keywords accrue two errors"):
@@ -318,27 +318,27 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Both unknown-keyword errors have reason UnknownKeyword"):
         val doc = t"foo a\nbar b\n".read[Tel]
         validateAssign(doc, optionalFieldSchema).items.all:
-          case (_, err) => err.reason == TelError.Reason.UnknownKeyword
+          case (_, err) => err.reason == Tel.Error.Reason.UnknownKeyword
       . assert(identity)
 
     suite(m"Type-assignment accrual (atom phase and constraints)"):
       test(m"An excess atom and a missing member accrue together"):
         val doc = t"item x y\n".read[Tel]
         validateAssign(doc, atomAccrualSchema).items.map(_(1).reason).to[Set]
-      . assert(_ == Set(TelError.Reason.TooManyAtoms, TelError.Reason.RequiredMemberAbsent))
+      . assert(_ == Set(Tel.Error.Reason.TooManyAtoms, Tel.Error.Reason.RequiredMemberAbsent))
 
       test(m"A mismatched flag atom accrues E305 and the flag reports absent"):
         val doc = t"item xyz\nname n\n".read[Tel]
         validateAssign(doc, flagAccrualSchema).items.map(_(1).reason).to[Set]
       . assert: reasons =>
           reasons == Set
-           ( TelError.Reason.AtomFlagKeywordMismatch,
-             TelError.Reason.RequiredMemberAbsent )
+           ( Tel.Error.Reason.AtomFlagKeywordMismatch,
+             Tel.Error.Reason.RequiredMemberAbsent )
 
       test(m"A duplicated non-repeatable member accrues a single E308"):
         val doc = t"name Alice\nname Bob\nemail e\n".read[Tel]
         validateAssign(doc, twoRequiredSchema).items.map(_(1).reason).to[Set]
-      . assert(_ == Set(TelError.Reason.NonRepeatableTooMany))
+      . assert(_ == Set(Tel.Error.Reason.NonRepeatableTooMany))
 
     suite(m"Parser-recovery accrual (E1xx)"):
       test(m"Two trailing-space lines accrue two errors"):
@@ -347,7 +347,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       test(m"Both are TrailingSpaces errors"):
         validateRead(t"good \nbad \n").items.all:
-          case (_, err) => err.reason == TelError.Reason.TrailingSpaces
+          case (_, err) => err.reason == Tel.Error.Reason.TrailingSpaces
       . assert(identity)
 
       test(m"A single recoverable defect still accrues one error"):
@@ -360,27 +360,27 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       test(m"The accrued reasons span the pragma and the body"):
         validateRead(t"tel bad\ngood \n").items.map(_(1).reason).to[Set]
-      . assert(_ == Set(TelError.Reason.BadVersion, TelError.Reason.TrailingSpaces))
+      . assert(_ == Set(Tel.Error.Reason.BadVersion, Tel.Error.Reason.TrailingSpaces))
 
       test(m"A bad schema identifier recovers and the body still accrues"):
         validateRead(t"tel 1.0 bad!id\ngood \n").items.map(_(1).reason).to[Set]
-      . assert(_ == Set(TelError.Reason.BadSchemaIdentifier, TelError.Reason.TrailingSpaces))
+      . assert(_ == Set(Tel.Error.Reason.BadSchemaIdentifier, Tel.Error.Reason.TrailingSpaces))
 
       test(m"Two odd-indented lines accrue two OddIndentation errors"):
         validateRead(t"a\n b\n c\n").items.stdlib.map(_(1).reason).to(List)
-      . assert(_ == List(TelError.Reason.OddIndentation, TelError.Reason.OddIndentation))
+      . assert(_ == List(Tel.Error.Reason.OddIndentation, Tel.Error.Reason.OddIndentation))
 
       test(m"An over-indented line recovers and a later defect still accrues"):
         validateRead(t"parent\n        too-deep\nc \n").items.map(_(1).reason).to[Set]
-      . assert(_ == Set(TelError.Reason.OverIndentation, TelError.Reason.TrailingSpaces))
+      . assert(_ == Set(Tel.Error.Reason.OverIndentation, Tel.Error.Reason.TrailingSpaces))
 
       test(m"Many defects across a document all accrue (LSP scenario)"):
         validateRead(t"tel bad\nparent\n        too-deep\ntail \n").items.map(_(1).reason).to[Set]
       . assert: reasons =>
           reasons == Set
-           ( TelError.Reason.BadVersion,
-             TelError.Reason.OverIndentation,
-             TelError.Reason.TrailingSpaces )
+           ( Tel.Error.Reason.BadVersion,
+             Tel.Error.Reason.OverIndentation,
+             Tel.Error.Reason.TrailingSpaces )
 
     suite(m"Located schema-validation errors (LSP diagnostics)"):
       test(m"Unknown-keyword errors carry their keyword pointer"):
@@ -389,14 +389,14 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       test(m"Unknown-keyword errors are located at the offending compound"):
         assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(1)).to[Set]
-      . assert(_ == Set(TelError.spanAt(1, 1, 3), TelError.spanAt(2, 1, 3)))
+      . assert(_ == Set(Tel.Error.spanAt(1, 1, 3), Tel.Error.spanAt(2, 1, 3)))
 
       test(m"An unlocated (untracked) validation still accrues without a position"):
         val tel = t"foo a\n".read[Tel]
 
         validate[Tel.Focus](Issues()):
-          case error: TelError =>
-            accrual + (prior.lay(t"")(f => if f.span.vacant then t"" else TelError.describe(f.span)),
+          case error: Tel.Error =>
+            accrual + (prior.lay(t"")(f => if f.span.vacant then t"" else Tel.Error.describe(f.span)),
                        error)
         . protect(Tel.Type.assign(tel, optionalFieldSchema))
         . items.map(_(0).s).to[Set]
@@ -433,7 +433,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A malformed field is located at its value, not its keyword"):
         decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
         . items.map(_(1)).to[Set]
-      . assert(_ == Set(TelError.spanAt(2, 5, 10)))
+      . assert(_ == Set(Tel.Error.spanAt(2, 5, 10)))
 
     // A value with any fallible scalar field can only be read through the direct
     // path, so the spans it accrues have to be as good as the AST path's. There
@@ -447,7 +447,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       test(m"A malformed field is located at its value, as on the AST path"):
         directPerson(t"name Alice\nage notanumber\nemail e\n").items.map(_(1)).to[Set]
-      . assert(_ == Set(TelError.spanAt(2, 5, 10)))
+      . assert(_ == Set(Tel.Error.spanAt(2, 5, 10)))
 
       // The acceptance criterion for issue #1726: same document, both decode
       // paths, identical (pointer, span) pairs. `PositionalTests`' own parity
@@ -470,7 +470,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A nested field is located at its own value, not its parent's keyword"):
         directContact(t"person\n  name Alice\n  age nope\n  email e\ncompany Acme\n")
         . items.map { case (pointer, span) => (pointer.s, span) }.to[Set]
-      . assert(_ == Set(("#/person/age", TelError.spanAt(3, 7, 4))))
+      . assert(_ == Set(("#/person/age", Tel.Error.spanAt(3, 7, 4))))
 
       // With no `Foci` at all, the focus machinery is inert and the span has to
       // ride on the error itself — the common fail-fast read, and the reason
@@ -479,5 +479,5 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A fail-fast direct read carries the span on the error itself"):
         import parsing.trackPositions
         given APerson is Tel.Parsable = Tel.Parsable.derived
-        capture[TelError](t"name Alice\nage notanumber\nemail e\n".read[APerson in Tel]).span
-      . assert(_ == TelError.spanAt(2, 5, 10))
+        capture[Tel.Error](t"name Alice\nage notanumber\nemail e\n".read[APerson in Tel]).span
+      . assert(_ == Tel.Error.spanAt(2, 5, 10))

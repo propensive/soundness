@@ -134,12 +134,12 @@ object Tests extends Suite(m"Caesura tests"):
       . assert(_ == Dsv(t"""hello"world"""))
 
       test(m"misplaced quote"):
-        capture[DsvError](t"""hello,wo"rld""".read[Sheet])
-      . assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote, Prim, Sec, 8))
+        capture[Dsv.Error](t"""hello,wo"rld""".read[Sheet])
+      . assert(_ == Dsv.Error(summon[Dsv.Format], Dsv.Error.Reason.MisplacedQuote, Prim, Sec, 8))
 
       test(m"misplaced quote reports row and offset on a later row"):
-        capture[DsvError](t"""a,b\nc,d\nef,g"h""".read[Sheet].rows.to[List])
-      . assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote, Prim.next.next, Sec, 12))
+        capture[Dsv.Error](t"""a,b\nc,d\nef,g"h""".read[Sheet].rows.to[List])
+      . assert(_ == Dsv.Error(summon[Dsv.Format], Dsv.Error.Reason.MisplacedQuote, Prim.next.next, Sec, 12))
 
       test(m"multi-line CSV without trailing newline"):
         t"""foo,bar\nbaz,quux""".read[Sheet].rows.to[List]
@@ -379,17 +379,17 @@ object Tests extends Suite(m"Caesura tests"):
     suite(m"Field renaming"):
       test(m"unchanged redesignation preserves the field name"):
         import dsvRedesignations.unchangedRedesignation
-        summon[DsvRedesignation].transform(t"targetPerson")
+        summon[Dsv.Redesignation].transform(t"targetPerson")
       . assert(_ == t"targetPerson")
 
       test(m"capitalizedWords redesignation maps to capitalised words"):
         import dsvRedesignations.capitalizedWordsRedesignation
-        summon[DsvRedesignation].transform(t"targetPerson")
+        summon[Dsv.Redesignation].transform(t"targetPerson")
       . assert(_ == t"Target Person")
 
       test(m"lowerWords redesignation maps to lower-case words"):
         import dsvRedesignations.lowerWordsRedesignation
-        summon[DsvRedesignation].transform(t"targetPerson")
+        summon[Dsv.Redesignation].transform(t"targetPerson")
       . assert(_ == t"target person")
 
     AccrualTests()

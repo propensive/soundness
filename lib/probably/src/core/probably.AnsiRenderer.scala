@@ -414,7 +414,7 @@ private[probably] object AnsiRenderer:
       t"Test failed"
 
   private def annotations(document: Document)(using Stdio): Unit =
-    val details: Map[TestId, List[Verdict.Detail]] = document.failures.to[Map]
+    val details: Map[Test.Id, List[Verdict.Detail]] = document.failures.to[Map]
 
     document.results.each: row =>
       row.status match

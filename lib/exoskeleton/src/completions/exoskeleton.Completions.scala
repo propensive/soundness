@@ -133,7 +133,7 @@ object Completions:
   :   Installation =
 
     mitigate:
-      case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
+      case Path.Error(_, _)    => InstallError(InstallError.Reason.Environment)
       case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
 
@@ -217,7 +217,7 @@ object Completions:
     mitigate:
       case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
       case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
-      case PathError(_, _)     => InstallError(InstallError.Reason.Io)
+      case Path.Error(_, _)     => InstallError(InstallError.Reason.Io)
       case StreamError(_)      => InstallError(InstallError.Reason.Io)
 
     . protect:

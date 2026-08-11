@@ -55,6 +55,10 @@ object Currency:
       val symbol: Text = valueOf[form].tt
       val modulus: Int = valueOf[transport]
 
+  // CurrencyStyle → Currency.Style
+  trait Style:
+    def format(code: Text, symbol: Text, unit: Text, subunit: Text): Text
+
 trait Currency:
   type Self <: Label
   type Topic <: Label

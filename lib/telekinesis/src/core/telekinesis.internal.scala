@@ -121,10 +121,10 @@ object internal:
     ( submit:   Expr[Http.Submit[target]],
       headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
       online:   Expr[Online],
-      loggable: Expr[HttpEvent is Loggable],
+      loggable: Expr[Http.Event is Loggable],
       payload:  Expr[payload],
       postable: Expr[(payload is Postable)^],
-      client:   Expr[HttpClient onto target] )
+      client:   Expr[Http.Client onto target] )
   :   Macro[Http.Response] =
 
     headers.absolve match
@@ -148,7 +148,7 @@ object internal:
               caps.unsafe.unsafeAssumePure($postable)
 
             // Staging-boundary seal, like `postable0` below: quoted types must stay pure.
-            given loggable0: HttpEvent is Loggable =
+            given loggable0: Http.Event is Loggable =
               caps.unsafe.unsafeAssumePure($loggable)
             val host: Host = $submit.host
             val path = $submit.originForm
@@ -171,8 +171,8 @@ object internal:
     ( fetch:    Expr[Http.Fetch[target]],
       headers:  Expr[Seq[Any]],
       online:   Expr[Online],
-      loggable: Expr[HttpEvent is Loggable],
-      client:   Expr[HttpClient onto target] )
+      loggable: Expr[Http.Event is Loggable],
+      client:   Expr[Http.Client onto target] )
   :   Macro[Http.Response] =
 
     headers.absolve match
@@ -186,7 +186,7 @@ object internal:
         ' {
             // No `Online` binding, as in `submit` above.
             // Staging-boundary seal, like `postable0` below: quoted types must stay pure.
-            given loggable0: HttpEvent is Loggable =
+            given loggable0: Http.Event is Loggable =
               caps.unsafe.unsafeAssumePure($loggable)
 
             val path = $fetch.originForm

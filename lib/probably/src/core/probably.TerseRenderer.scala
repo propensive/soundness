@@ -185,7 +185,7 @@ private[probably] object TerseRenderer:
 
       Out.println(t"")
 
-      val details: Map[TestId, List[Verdict.Detail]] = document.failures.to[Map]
+      val details: Map[Test.Id, List[Verdict.Detail]] = document.failures.to[Map]
 
       failures.stdlib.foreach: row =>
         val location = t"${row.id.codepoint.source}:${row.id.codepoint.line}"

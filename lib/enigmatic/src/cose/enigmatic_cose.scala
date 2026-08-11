@@ -45,10 +45,10 @@ import turbulence.*
 final class CoseVerify[source](val source: source):
   inline def apply[K]
     ( key: K )
-    ( using verifier: K is CoseVerifier,
+    ( using verifier: K is Cose.Verifier,
             cborTactic: Tactic[CborError],
             readable: source is Readable to Data )
-  :   Boolean raises CoseError =
+  :   Boolean raises Cose.Error =
 
     val bytes: Data = source.read[Data]
     Cose.parse(bytes).verifyWith(key)

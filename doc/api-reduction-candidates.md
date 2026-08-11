@@ -1,326 +1,206 @@
-# Public API surface — reduction candidate inventory
+# Public API surface — multi-word names remaining
 
-> **Partially superseded (2026-08-11):** the C1 (multi-word nesting), C3 and C3b
-> (typeclass-backing entities) sections are replaced by `api-nesting-proposal.md`,
-> which re-inventories the surface post-modularity (823 multi-word type names, vs the
-> 163 examined here), applies semantic rather than lexical split points, and verifies
-> per-component feasibility. C2 and C4 remain current.
+Regenerated from the `soundness_*` re-export files on 2026-08-11, after the nesting pass
+(97 renames across 34 libraries). This lists what is **still** exported into `package
+soundness` under a multi-word name; it replaces the earlier candidate inventory, whose C1,
+C3 and C3b sections are superseded by `api-nesting-proposal.md` and whose C2 and C4
+sections are folded in below.
 
-Generated read-only from the `soundness_*` re-export files and `module.TypeName.scala` declarations. Categories C1–C4 per the plan. **Identification only** — no fixes applied here.
+- multi-word type-level names exported: **698**, across 162 components (was 823)
+- of those, 466 sit in a prefix family of two or more; 232 are singletons
+- names inside `package <name>:` blocks (choice packages such as `alphabets`,
+  `manifestAttributes`, `constants`) are excluded: they are already namespaced
 
-- modules scanned: 126
-- distinct public identifiers exported into `soundness`: 2789
-- top-level type declarations (incl. tests): 1377
+Most of what remains is **deliberate**, and falls into the categories the proposal records.
+Before treating any row below as a candidate, check it against those rules — in particular
+R2 (an established concept keeps its compound name: `JsonPointer`, `YamlPath`, `MediaType`,
+`SymmetricKey`), R5 (excluded buckets) and R6 (component-blocked).
 
+## What is deliberately excluded, and why
 
-**Reading the tables (heuristic output — confirm before acting):**
-- C1 `→ suggested` nests under the *longest* same-module type that prefixes the name; a few split points still need a human eye (e.g. `Git.RefError` could be `GitRef.Error`).
-- C3b lists every `object … extends …Derivable/Derivation`. Those suffixed `*Derivation` are pure backing instances (demote/anonymise). Those named like a public typeclass (`Spannable`, `Tabulable`, `Digestible`, `JsonSchema`, …) *are* the typeclass companion self-deriving — keep the type, the note just flags where derivation lives.
-- 'exported' = appears in a `soundness_*` re-export; 'internal' = compiles but not in the `soundness` namespace (already invisible to `import soundness.*`).
-
-
-## C4-homonym — one name, two meanings (declared in ≥2 modules)
-
-| name | modules | both/which exported |
+| bucket | examples | reason |
 |---|---|---|
-| `Attributive` | honeycomb, xylophone | only honeycomb exported |
-| `Benchmarks` | breviloquence, caesura, escapade, gossamer, honeycomb, jacinta, locomotion, panopticon, polysyllabic, punctuation, scintillate, serpentine, stratiform, xylophone, ypsiloid, zephyrine | neither exported |
-| `Completion` | exoskeleton, harlequin | only exoskeleton exported |
-| `Diagnostic` | frontier, harlequin | only harlequin exported |
-| `Executor` | apoplexy, superlunary | only superlunary exported |
-| `Extensions` | decorum, gesticulate | only gesticulate exported |
-| `Frame` | perihelion, ultimatum | only ultimatum exported |
-| `Imports` | decorum, stenography | only stenography exported |
-| `Manifest` | embarcadero, revolution | only revolution exported |
-| `Proxy` | austronesian, vicarious | only vicarious exported |
-| `Renderable` | honeycomb, xylophone | only honeycomb exported |
-| `Syntax` | cataclysm, stenography | only stenography exported |
-| `Tag` | honeycomb, xylophone | only honeycomb exported |
-| `Timestamp` | aviation, embarcadero | only aviation exported |
-| `TimingMain` | breviloquence, locomotion | neither exported |
+| stdlib mirrors (proscenium) | `ClassTag`, `TreeMap`, `ArrowAssoc`, `*HasAsScala` | compatibility surface; the names are the stdlib's |
+| protocol mirrors (embarcadero.containerd) | `CreateContainerRequest`, `ListImagesResponse`, … | mirror the containerd gRPC schema |
+| calendar vocabulary (aviation) | `CopticCalendar`, `HebrewMonth`, `LeapMode` | established domain terms |
+| foreign interop (diuretic) | `JavaIoFile`, `JavaNioPath`, `JavaUtilDate` | deliberately name the foreign type |
+| platform interfaces | `Wasi*Api` | one per library, loaded as a unit |
+| render palettes | `MarkdownPalette`, `StackTracePalette`, `TestPalette`, … | cross-component by design: subject in core, palette in the ansi/render component |
+| specification concepts (R2) | `JsonPointer`, `YamlPath`, `TelPath`, `JsonSchema`, `XmlSchema`, `MediaType`, `SymmetricKey`, `HttpServer`, `BlockCipher`, `CompileError` | the compound names a thing with its own specification |
+| reflectively-loaded (new) | `TypescriptDialect`, `WebIdlDialect`, `WitDialect` | xenophile loads these by fully-qualified name; a name used as data cannot be renamed |
+| component-blocked (R6) | `TarOpenable`, `PdfFile`, `ImageRecord`, `HmacCipher`, `ClasspathJvm`, … | outer companion lives in another component |
 
-## C4-synonym — competing terms for one role (role-suffix families)
+## Blocked by shape, not by policy
 
-- **`*Builder`** (4): `AsciiBuilder`(gossamer), `BlockBuilder`(punctuation), `TeletypeBuilder`(escapade), `TextBuilder`(gossamer)
-- **`*Decoder`** (1): `CharDecoder`(hieroglyph)
-- **`*Derivation`** (2): `ProductDerivation`(wisteria), `SumDerivation`(wisteria)
-- **`*Encoder`** (1): `CharEncoder`(hieroglyph)
-- **`*Parser`** (11): `BlockParser`(punctuation), `CborParser`(breviloquence), `CssParser`(cataclysm), `InlineParser`(punctuation), `JsonParser`(jacinta), `ProtobufParser`(locomotion), `SelectorParser`(cataclysm), `SvgParser`(savagery), `SyntaxParser`(cataclysm), `TelParser`(stratiform), `YamlParser`(ypsiloid)
-- **`*Printer`** (1): `ProtobufPrinter`(locomotion)
-- **`*Reader`** (1): `FrameReader`(cordillera)
-- **`*Tokenizer`** (1): `ValueTokenizer`(cataclysm)
-- **`*Writer`** (1): `GivensWriter`(beneficence)
+These would nest, but their files resist it; each needs preparatory work first, and the
+proposal's corrections section explains the shapes:
 
-## C3 — typeclass-backing entities (candidates to demote/inline/de-export)
+- **file-mates**: `HpackTable`/`HpackEntry`, `Http2Connection`/`Http2Stream`,
+  `CoseStructure` (shares a file with eight types), `WitDeclaration`, `WebIdlDefinition`,
+  `TelHandle`/`TelOpenable`, `ZipOpenable`/`ZipDataOpenable`, `McpServer`/`McpSession`,
+  `LspProxy` — hoist the siblings into their own files first.
+- **capture-sensitive**: `TarHeader` (infers `Array[Byte]^{}` where the new scope needs
+  `^{any}`, and `Array` is invariant).
+- **sealed**: `SvgDef` (subtypes pinned to its file).
+- **name already taken**: `McpError` (`object Mcp` has its own nested `Error`).
+- **supertype, not satellite**: `BaseLayout` (`object Base extends BaseLayout`).
+- **opaque/alias in a package file**: `SvgId`, `GitHash`-style declarations.
 
-| name | module | kind | visibility |
+## Remaining names by prefix family
+
+| prefix | libraries | n | names |
 |---|---|---|---|
-| `FrameReader` | cordillera | class | exported |
-| `Tokenizer` | decorum | object | exported |
-| `TeletypeBuilder` | escapade | class | exported |
-| `AsciiBuilder` | gossamer | class | exported |
-| `Builder` | gossamer | class | exported |
-| `TextBuilder` | gossamer | class | exported |
-| `CharDecoder` | hieroglyph | object | exported |
-| `CharEncoder` | hieroglyph | object | exported |
-| `Parser` | punctuation | object | exported |
-| `Renderer` | punctuation | object | exported |
-| `SvgParser` | savagery | object | exported |
-| `Derivation` | wisteria | trait | exported |
-| `ProductDerivation` | wisteria | object | exported |
-| `SumDerivation` | wisteria | object | exported |
-| `GivensWriter` | beneficence | class | internal |
-| `CborParser` | breviloquence | ? | internal |
-| `CssParser` | cataclysm | ? | internal |
-| `SelectorParser` | cataclysm | ? | internal |
-| `SyntaxParser` | cataclysm | ? | internal |
-| `ValueTokenizer` | cataclysm | ? | internal |
-| `JsonParser` | jacinta | type | internal |
-| `ProtobufParser` | locomotion | ? | internal |
-| `ProtobufPrinter` | locomotion | ? | internal |
-| `BlockBuilder` | punctuation | trait | internal |
-| `BlockParser` | punctuation | ? | internal |
-| `InlineParser` | punctuation | ? | internal |
-| `Serializer` | punctuation | class | internal |
-| `TelParser` | stratiform | ? | internal |
-| `YamlParser` | ypsiloid | ? | internal |
+| `Apk*` | anthology | 3 | `ApkConfiguration`, `ApkManifest`, `ApkSigner` |
+| `Arc*` | geodesy | 2 | `ArcMinute`, `ArcSecond` |
+| `Atom*` | reliquary | 2 | `AtomClass`, `AtomReference` |
+| `Attribute*` | cataclysm | 2 | `AttributeMatcher`, `AttributeTest` |
+| `Block*` | enigmatic, galilei | 4 | `BlockCipher`, `BlockCipherMode`, `BlockCipherPadding`, `BlockDevice` |
+| `Box*` | escritoire | 2 | `BoxDrawing`, `BoxLine` |
+| `Cbor*` | breviloquence | 2 | `CborError`, `CborReader` |
+| `Char*` | escapade, galilei, hieroglyph | 6 | `CharDecodeError`, `CharDecoder`, `CharDevice`, `CharEncodeError`, `CharEncoder`, `CharSpan` |
+| `Chemical*` | charisma | 3 | `ChemicalElement`, `ChemicalEquation`, `ChemicalFormula` |
+| `Class*` | honeycomb, mandible, proscenium | 3 | `ClassList`, `ClassSurface`, `ClassTag` |
+| `Classfile*` | mandible | 2 | `ClassfileAtomizer`, `ClassfileDiscipline` |
+| `Compile*` | anthology, larceny | 7 | `CompileError`, `CompileEvent`, `CompileEvents`, `CompileFlag`, `CompileProcess`, `CompileProgress`, `CompileResult` |
+| `Content*` | embarcadero, obligatory | 2 | `ContentDescriptor`, `ContentLength` |
+| `Coptic*` | aviation | 2 | `CopticCalendar`, `CopticMonth` |
+| `Cose*` | enigmatic | 5 | `CoseContext`, `CoseMaced`, `CoseSigned`, `CoseStructure`, `CoseTag` |
+| `Create*` | embarcadero, galilei | 8 | `CreateContainerRequest`, `CreateContainerResponse`, `CreateFlag`, `CreateNamespaceRequest`, `CreateNamespaceResponse`, `CreateNonexistentParents`, `CreateTaskRequest`, `CreateTaskResponse` |
+| `Css*` | nomenclature | 2 | `CssClass`, `CssIdentifier` |
+| `Daemon*` | ethereal | 3 | `DaemonEvent`, `DaemonLogEvent`, `DaemonService` |
+| `Dag*` | dendrology | 3 | `DagDiagram`, `DagStyle`, `DagTile` |
+| `Date*` | aviation | 2 | `DateNumerics`, `DateSeparation` |
+| `Decimal*` | hypotenuse, rudiments | 2 | `DecimalConverter`, `DecimalError` |
+| `Delete*` | embarcadero, galilei | 6 | `DeleteContainerRequest`, `DeleteImageRequest`, `DeleteNamespaceRequest`, `DeleteRecursively`, `DeleteTaskRequest`, `DeleteTaskResponse` |
+| `Deps*` | burdock | 2 | `DepsDev`, `DepsEvent` |
+| `Directory*` | galilei | 2 | `DirectoryHandle`, `DirectoryOpenable` |
+| `Division*` | hypotenuse | 2 | `DivisionByZero`, `DivisionError` |
+| `Dom*` | nomenclature | 2 | `DomId`, `DomIdentifier` |
+| `Domain*` | coaxial | 2 | `DomainSocket`, `DomainSocketEndpoint` |
+| `Dts*` | xenophile | 2 | `DtsAtomizer`, `DtsDiscipline` |
+| `Dynamic*` | breviloquence, caesura, jacinta, stratiform, xylophone, ypsiloid | 6 | `DynamicCborEnabler`, `DynamicDsvEnabler`, `DynamicJsonEnabler`, `DynamicTelEnabler`, `DynamicXmlEnabler`, `DynamicYamlEnabler` |
+| `East*` | geodesy | 2 | `EastNortheast`, `EastSoutheast` |
+| `Email*` | urticose | 2 | `EmailAddress`, `EmailAddressError` |
+| `Ethiopian*` | aviation | 2 | `EthiopianCalendar`, `EthiopianMonth` |
+| `Exec*` | guillotine | 2 | `ExecError`, `ExecEvent` |
+| `File*` | galilei, octogenarian | 2 | `FileDiff`, `FileOpenable` |
+| `Filesystem*` | galilei | 2 | `FilesystemAttribute`, `FilesystemBackend` |
+| `Foreign*` | xenophile | 2 | `ForeignBuffer`, `ForeignLibrary` |
+| `Frame*` | obligatory, telekinesis | 2 | `FrameError`, `FrameReader` |
+| `French*` | aviation | 2 | `FrenchRepublicanCalendar`, `FrenchRepublicanMonth` |
+| `Get*` | embarcadero | 6 | `GetContainerRequest`, `GetContainerResponse`, `GetImageRequest`, `GetImageResponse`, `GetTaskRequest`, `GetTaskResponse` |
+| `Grpc*` | obligatory | 4 | `GrpcChannel`, `GrpcError`, `GrpcFraming`, `GrpcSessional` |
+| `Hebrew*` | aviation | 2 | `HebrewCalendar`, `HebrewMonth` |
+| `Host*` | mandible | 3 | `HostArchive`, `HostContracts`, `HostRelease` |
+| `Hpack*` | telekinesis | 2 | `HpackEntry`, `HpackTable` |
+| `Http*` | anticipation, honeycomb, scintillate, telekinesis, urticose | 10 | `HttpConnection`, `HttpEquiv`, `HttpRequestError`, `HttpRequests`, `HttpResponseError`, `HttpServer`, `HttpServerEvent`, `HttpSession`, `HttpStreams`, `HttpUrl` |
+| `Http2*` | telekinesis | 3 | `Http2Connection`, `Http2ServerConnection`, `Http2Stream` |
+| `Image*` | embarcadero | 5 | `ImageConfig`, `ImageDataOpenable`, `ImageHandle`, `ImageOpenable`, `ImageRecord` |
+| `Indian*` | aviation | 2 | `IndianCalendar`, `IndianMonth` |
+| `Inline*` | profanity, ultimatum | 5 | `InlineAnchoring`, `InlineBoard`, `InlineGrowth`, `InlineRoot`, `InlineShrink` |
+| `Io*` | galilei | 2 | `IoError`, `IoEvent` |
+| `Islamic*` | aviation | 2 | `IslamicCalendar`, `IslamicMonth` |
+| `Java*` | anthology, diuretic, enigmatic, gastronomy, scintillate | 12 | `JavaIoFile`, `JavaLongDuration`, `JavaLongInstant`, `JavaNetUrl`, `JavaNioPath`, `JavaServlet`, `JavaServletFn`, `JavaStdlibCrypto`, `JavaStdlibHashing`, `JavaTimeInstant`, `JavaUtilDate`, `JavaVersion` |
+| `Json*` | jacinta, obligatory | 11 | `JsonBlueprint`, `JsonBlueprintDoc`, `JsonBlueprintError`, `JsonError`, `JsonPointer`, `JsonPointerError`, `JsonPrimitive`, `JsonReader`, `JsonRpc`, `JsonRpcError`, `JsonSchema` |
+| `Kotlin*` | xenophile | 6 | `KotlinDialect`, `KotlinFacade`, `KotlinInvoke`, `KotlinMetadataAtomizer`, `KotlinMetadataDiscipline`, `KotlinRuntime` |
+| `Lane*` | dendrology | 2 | `LaneDagDiagram`, `LaneDagStyle` |
+| `Larceny*` | larceny | 2 | `LarcenyPlugin`, `LarcenyTransformer` |
+| `Leap*` | aviation | 2 | `LeapMode`, `LeapSeconds` |
+| `Line*` | escritoire, profanity, turbulence | 3 | `LineCharset`, `LineEditor`, `LineSeparation` |
+| `Linear*` | denominative, savagery | 3 | `LinearAccessComplexity`, `LinearGradient`, `LinearSizeComplexity` |
+| `Link*` | anthology | 2 | `LinkError`, `LinkEvent` |
+| `Lira*` | anthology, reliquary | 12 | `LiraAdvisory`, `LiraAssembler`, `LiraBundle`, `LiraDelta`, `LiraError`, `LiraHash`, `LiraManifest`, `LiraPayload`, `LiraRealm`, `LiraSchemas`, `LiraTree`, `LiraValidators` |
+| `List*` | embarcadero, proscenium | 9 | `ListContainersRequest`, `ListContainersResponse`, `ListHasAsScala`, `ListImagesRequest`, `ListImagesResponse`, `ListNamespacesRequest`, `ListNamespacesResponse`, `ListTasksRequest`, `ListTasksResponse` |
+| `Local*` | hellenism, urticose | 2 | `LocalClasspath`, `LocalPart` |
+| `Log*` | anticipation, eucalyptus | 2 | `LogPalette`, `LogSink` |
+| `Lsp*` | exegesis | 2 | `LspProxy`, `LspSessional` |
+| `Mac*` | galilei, urticose | 3 | `MacAddress`, `MacAddressError`, `MacOs` |
+| `Manifest*` | reliquary, revolution | 3 | `ManifestAttribute`, `ManifestEntry`, `ManifestSigning` |
+| `Map*` | proscenium | 2 | `MapHasAsJava`, `MapHasAsScala` |
+| `Mathml*` | archimedes | 3 | `MathmlError`, `MathmlParser`, `MathmlReader` |
+| `Mcp*` | synesthesia | 3 | `McpError`, `McpServer`, `McpSession` |
+| `Metric*` | quantitative | 2 | `MetricPrefix`, `MetricUnit` |
+| `Must*` | nomenclature | 9 | `MustContain`, `MustEnd`, `MustMatch`, `MustNotContain`, `MustNotEnd`, `MustNotEqual`, `MustNotMatch`, `MustNotStart`, `MustStart` |
+| `Name*` | nomenclature | 2 | `NameError`, `NameExtractor` |
+| `Native*` | surveillance, xenophile | 2 | `NativeInvoke`, `NativeWatcher` |
+| `Nautical*` | quantitative | 2 | `NauticalMile`, `NauticalMiles` |
+| `Network*` | sedentary, urticose | 4 | `NetworkDevice`, `NetworkDeviceSessional`, `NetworkInterface`, `NetworkInterfaceError` |
+| `No*` | enigmatic, quantitative, scintillate | 3 | `NoCache`, `NoPadding`, `NoPrefix` |
+| `North*` | geodesy | 2 | `NorthNortheast`, `NorthNorthwest` |
+| `Number*` | distillate, jacinta | 2 | `NumberError`, `NumberMode` |
+| `Oci*` | anthology, embarcadero | 3 | `OciConfiguration`, `OciError`, `OciImage` |
+| `Open*` | apoplexy, galilei | 2 | `OpenApi`, `OpenFlag` |
+| `Pdf*` | facsimile | 7 | `PdfError`, `PdfFile`, `PdfFont`, `PdfInfo`, `PdfMatrix`, `PdfOperator`, `PdfRect` |
+| `Pem*` | enigmatic | 2 | `PemError`, `PemLabel` |
+| `Persian*` | aviation | 2 | `PersianCalendar`, `PersianMonth` |
+| `Port*` | urticose | 2 | `PortError`, `PortType` |
+| `Process*` | embarcadero, guillotine | 3 | `ProcessInput`, `ProcessRef`, `ProcessStatus` |
+| `Product*` | wisteria | 3 | `ProductDerivable`, `ProductDerivation`, `ProductReflection` |
+| `Pseudo*` | cataclysm, telekinesis | 2 | `PseudoArgument`, `PseudoHeaders` |
+| `Recurrence*` | aviation | 3 | `RecurrenceError`, `RecurrenceLiteral`, `RecurrenceSet` |
+| `Scala*` | degustation, harlequin | 3 | `ScalaAtom`, `ScalaReference`, `ScalaSyntaxPalette` |
+| `Scalac*` | anthology | 2 | `ScalacSession`, `ScalacSessional` |
+| `Signature*` | enigmatic | 2 | `SignatureAlgorithm`, `SignatureDigest` |
+| `Socket*` | coaxial, scintillate | 5 | `SocketBackend`, `SocketEvent`, `SocketOption`, `SocketServer`, `SocketService` |
+| `South*` | geodesy | 2 | `SouthSoutheast`, `SouthSouthwest` |
+| `Sse*` | obligatory | 2 | `SseError`, `SseSource` |
+| `Stack*` | digression, hyperbole | 3 | `StackResolver`, `StackTrace`, `StackTracePalette` |
+| `Start*` | embarcadero | 2 | `StartRequest`, `StartResponse` |
+| `Stream*` | turbulence | 2 | `StreamError`, `StreamOutputStream` |
+| `Sum*` | wisteria | 2 | `SumDerivation`, `SumReflection` |
+| `Table*` | escritoire, phoenicia | 7 | `TableCell`, `TableError`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle`, `TableTag` |
+| `Tar*` | bitumen | 4 | `TarBuilder`, `TarDataOpenable`, `TarHeader`, `TarOpenable` |
+| `Tasty*` | hyperbole | 5 | `TastyDefinition`, `TastyFile`, `TastyPalette`, `TastySymbol`, `TastyTree` |
+| `Tel*` | stratiform | 7 | `TelBlueprint`, `TelFlag`, `TelHandle`, `TelOpenable`, `TelPath`, `TelReader`, `TelViewOpenable` |
+| `Teletype*` | escapade, punctuation | 2 | `TeletypeBuilder`, `TeletypeFormattable` |
+| `Terminal*` | escapade, ethereal, profanity | 7 | `TerminalBoard`, `TerminalError`, `TerminalEscapes`, `TerminalEvent`, `TerminalFeature`, `TerminalInfo`, `TerminalMode` |
+| `Text*` | escapade, escritoire, facsimile, fulminate, gossamer, hieroglyph, honeycomb | 7 | `TextAlignment`, `TextBuilder`, `TextEscapes`, `TextNode`, `TextRun`, `TextSanitizer`, `TextStyle` |
+| `Textual*` | dendrology | 3 | `TextualDagStyle`, `TextualLaneDagStyle`, `TextualTreeStyle` |
+| `Time*` | abacist, aviation | 8 | `TimeError`, `TimeEvent`, `TimeFormat`, `TimeMinutes`, `TimeNumerics`, `TimeSeconds`, `TimeSeparation`, `TimeSpecificity` |
+| `Track*` | contingency | 2 | `TrackFoci`, `TrackTactic` |
+| `Tree*` | dendrology, proscenium, reliquary | 7 | `TreeDiagram`, `TreeEntry`, `TreeMap`, `TreePath`, `TreeSet`, `TreeStyle`, `TreeTile` |
+| `Type*` | bitumen, typonym | 5 | `TypeElement`, `TypeFlag`, `TypeList`, `TypeMap`, `TypeSet` |
+| `Typescript*` | xenophile | 6 | `TypescriptDeclaration`, `TypescriptDialect`, `TypescriptError`, `TypescriptMember`, `TypescriptParser`, `TypescriptType` |
+| `Udp*` | coaxial, urticose | 2 | `UdpPort`, `UdpResponse` |
+| `Unix*` | bitumen, galilei, profanity | 5 | `UnixEntry`, `UnixGroup`, `UnixMode`, `UnixSignal`, `UnixUser` |
+| `Url*` | urticose | 3 | `UrlError`, `UrlFragment`, `UrlPalette` |
+| `Variant*` | wisteria | 2 | `VariantError`, `VariantIndex` |
+| `Viewport*` | cataclysm | 4 | `ViewportHeights`, `ViewportMaxes`, `ViewportMins`, `ViewportWidths` |
+| `Wait*` | embarcadero | 2 | `WaitRequest`, `WaitResponse` |
+| `Wasi*` | ambience, anthology, aviation, capricious, coaxial, galilei, telekinesis, turbulence | 9 | `WasiCliApi`, `WasiClockApi`, `WasiEnvironmentApi`, `WasiFilesystemApi`, `WasiHttpApi`, `WasiRandom`, `WasiRandomApi`, `WasiSocketsApi`, `WasiToolchain` |
+| `Wasm*` | anthology, embarcadero, xenophile | 4 | `WasmComponent`, `WasmConfig`, `WasmInvoke`, `WasmObject` |
+| `Watch*` | surveillance | 5 | `WatchAllOpenable`, `WatchError`, `WatchEvent`, `WatchHandle`, `WatchOpenable` |
+| `Web*` | iridescence, tarantula, xenophile | 8 | `WebColors`, `WebDriver`, `WebDriverError`, `WebIdl`, `WebIdlAtomizer`, `WebIdlDialect`, `WebIdlDiscipline`, `WebSocket` |
+| `Websocket*` | perihelion | 2 | `WebsocketError`, `WebsocketEvent` |
+| `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
+| `Windows*` | galilei, profanity | 2 | `WindowsEntry`, `WindowsSignal` |
+| `Wit*` | anthology, xenophile | 8 | `WitAtomizer`, `WitCase`, `WitDialect`, `WitDiscipline`, `WitError`, `WitHandle`, `WitVariant`, `WitWorld` |
+| `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
+| `Workload*` | embarcadero | 3 | `WorkloadGrant`, `WorkloadHandle`, `WorkloadOpenable` |
+| `Ws*` | perihelion | 3 | `WsConnection`, `WsSessional`, `WsUrl` |
+| `Xml*` | xylophone | 3 | `XmlError`, `XmlReader`, `XmlSchema` |
+| `Zip*` | zeppelin | 6 | `ZipBuilder`, `ZipDataOpenable`, `ZipError`, `ZipEvent`, `ZipHandle`, `ZipOpenable` |
 
-### C3 triage outcome (the role-suffix heuristic over-captures — verified by hand)
+### Singletons (232)
 
-- **KEEP (false positives — public framework or user-facing, not backing engines):** `wisteria.{Derivation,ProductDerivation,SumDerivation}` (the derivation framework users `extends`), `gossamer.{Builder,TextBuilder,AsciiBuilder}` + `escapade.TeletypeBuilder` (user-instantiated builders), `punctuation.{Parser,Renderer}` and `savagery.SvgParser` (documented public entry points), `hieroglyph.{CharDecoder,CharEncoder}` (these *are* the summoned typeclass, named in `using` clauses across modules), `decorum.Tokenizer`, `cordillera.FrameReader` (plain utilities, no typeclass).
-- **GENUINE but already `private[module]`** (not in the `soundness` surface — legitimately separate, often thread-local-pooled engines reached from several factory methods; folding them away buys nothing): `jacinta.JsonParser`, `ypsiloid.YamlParser`, `stratiform.TelParser`, `breviloquence.CborParser`, the cataclysm parsers/tokenizer, the punctuation internal cascade (`BlockParser`/`InlineParser`/`BlockBuilder`/`Serializer`), `beneficence.GivensWriter`.
-- **ELIMINATED from the surface:** `locomotion.{ProtobufParser,ProtobufPrinter}` — pure codec engines used only inside the Protobuf typeclass givens, yet exported. Marked `@unexported` and dropped from the `soundness` export (kept public, *not* `private[locomotion]`: a private modifier leaks into the inferred type of the public Protobuf givens and breaks downstream `List` derivation). Net: two fewer top-level names in `soundness`.
+`AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`, `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`, `AuthError`, `BaseLayout`, `BenchmarkDevice`, `BeneficencePlugin`, `BindError`, `BlobStream`, `BloomFilter`, `BorderStyle`, `BoundsError`, `BytecodePalette`, `CanonicalCbor`, `CanvasHandle`, `CapabilityDiscipline`, `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `CertificateError`, `ChangeKind`, `ChannelLayout`, `CheckOverflow`, `CipherSession`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`, `ColorDepth`, `CommonFormattable`, `CompilerError`, `ConnectError`, `ConnectionError`, `ContainerConfig`, `CopyAttributes`, `CrLf`, `CtSym`, `CtrlChar`, `DataError`, `DecodableManifest`, `DegustationError`, `DereferenceSymlinks`, `DisciplineError`, `DismissError`, `DivOp`, `DnsLabel`, `DockerEvent`, `DummyImplicit`, `EcosystemProfile`, `EditorField`, `EitherTactic`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`, `ErgoError`, `EscapeError`, `EucalyptusGcp`, `ExpectationError`, `FastForward`, `FieldIndex`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `FontError`, `GapPolicy`, `GarbageCollection`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`, `GraphemeBreak`, `HalfWind`, `HaltTactic`, `HmacCipher`, `HostnameError`, `Html4Transitional`, `InitializationVector`, `InstallError`, `IntercardinalWind`, `InterfaceAddress`, `IpAddressError`, `Ipv4Subnet`, `Ipv6Subnet`, `IsinError`, `IteratorHasAsScala`, `JarBuilder`, `JavacOption`, `JsInvoke`, `JsigDiscipline`, `JuxtapositionPalette`, `JvmProfile`, `KeyStore`, `KeystoreError`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LocalhostDevice`, `LongNameFormat`, `LruCache`, `MarkdownPalette`, `MathML`, `MediaType`, `MenuField`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NotFound`, `NoteRef`, `NumericRange`, `OfflineError`, `OffsetCalendar`, `OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`, `OtfTag`, `OverflowError`, `OverwritePreexisting`, `PanamaInvoke`, `ParseError`, `PartiallyOrdered`, `PcmFlag`, `PeriodicTable`, `PhysicalState`, `PidError`, `PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PojoError`, `PolarGaussian`, `PollingWatcher`, `PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RangeError`, `RasterOpenable`, `RectoPanel`, `ReferenceError`, `ReflogEntry`, `RemoteError`, `RequestServable`, `ResetMode`, `RetryError`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `RpcError`, `RruleError`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SemverError`, `SeqHasAsJava`, `SerializationError`, `ServerError`, `ShaderPlugin`, `SiderealDays`, `SignalResponse`, `SimpleTExtractor`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`, `StaticAnnotation`, `SubOp`, `SvgDef`, `SymmetricKey`, `SyntaxMatcher`, `TcpPort`, `TemperatureScale`, `TemporaryDirectory`, `TestPalette`, `ThemeColor`, `ThrowTactic`, `TimestampError`, `TlsAcceptance`, `ToolchainError`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`, `TripleDes`, `TtfTag`, `UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnsetError`, `UnusedFeature`, `UsedSets`, `UsesBlob`, `ValueToken`, `VersionResponse`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WritingBuilder`, `XeqConfiguration`, `YamlPathError`
 
+## Retained from the earlier inventory
 
-## C3b — nested derivation objects (generically summoned; need not be named)
+**C2 — non-established abbreviations** (still current): `AddOp` (symbolism), `CellRef`
+(caesura), `Err` (turbulence), `ProcessRef` (guillotine — now `Process.Ref`).
+`GitRefError` is resolved: it is `Git.RefError`.
 
-These `object …Derivation extends Derivable/…` instances back a typeclass and are reached only via derivation — candidates to make anonymous/private.
+**C4-homonym — one name, two meanings** (still current, and worth watching as nesting
+proceeds, since nesting can resolve a homonym by qualifying one of the pair):
+`Attributive` (honeycomb, xylophone), `Completion` (exoskeleton, harlequin), `Diagnostic`
+(frontier, harlequin), `Executor` (apoplexy, superlunary), `Extensions` (decorum,
+gesticulate), `Frame` (perihelion, ultimatum), `Imports` (decorum, stenography),
+`Manifest` (embarcadero, revolution), `Proxy` (austronesian, vicarious), `Renderable`
+(honeycomb, xylophone), `Syntax` (cataclysm, stenography), `Tag` (honeycomb, xylophone),
+`Timestamp` (aviation, embarcadero).
 
-| object | module | file |
-|---|---|---|
-| `AddableDerivation` | wisteria | `lib/wisteria/src/core/wisteria_core.scala` |
-| `Bufferable` | polaris | `lib/polaris/src/core/polaris.Bufferable.scala` |
-| `Debufferable` | polaris | `lib/polaris/src/core/polaris.Debufferable.scala` |
-| `DecodableDerivation` | austronesian | `lib/austronesian/src/core/austronesian.protointernal.scala` |
-| `DecodableDerivation` | breviloquence | `lib/breviloquence/src/core/breviloquence.Cbor.scala` |
-| `DecodableDerivation` | caesura | `lib/caesura/src/core/caesura.Dsv.scala` |
-| `DecodableDerivation` | jacinta | `lib/jacinta/src/core/jacinta.Json.scala` |
-| `DecodableDerivation` | legerdemain | `lib/legerdemain/src/core/legerdemain.Query.scala` |
-| `DecodableDerivation` | locomotion | `lib/locomotion/src/core/locomotion.Protobuf.scala` |
-| `DecodableDerivation` | stratiform | `lib/stratiform/src/core/stratiform.Tel2.scala` |
-| `DecodableDerivation` | xylophone | `lib/xylophone/src/core/xylophone.Xml.scala` |
-| `DecodableDerivation` | ypsiloid | `lib/ypsiloid/src/core/ypsiloid.Yaml.scala` |
-| `Derivation` | chiaroscuro | `lib/chiaroscuro/src/core/chiaroscuro.Contrastable.scala` |
-| `Derivation` | chiaroscuro | `lib/chiaroscuro/src/core/chiaroscuro.Decomposable.scala` |
-| `Derivation` | spectacular | `lib/spectacular/src/core/spectacular.Inspectable.scala` |
-| `Digestible` | gastronomy | `lib/gastronomy/src/core/gastronomy.Digestible.scala` |
-| `DivisibleDerivation` | wisteria | `lib/wisteria/src/core/wisteria_core.scala` |
-| `EncodableDerivation` | austronesian | `lib/austronesian/src/core/austronesian.protointernal.scala` |
-| `EncodableDerivation` | breviloquence | `lib/breviloquence/src/core/breviloquence.Cbor.scala` |
-| `EncodableDerivation` | caesura | `lib/caesura/src/core/caesura.Dsv.scala` |
-| `EncodableDerivation` | jacinta | `lib/jacinta/src/core/jacinta.Json.scala` |
-| `EncodableDerivation` | legerdemain | `lib/legerdemain/src/core/legerdemain.Query.scala` |
-| `EncodableDerivation` | locomotion | `lib/locomotion/src/core/locomotion.Protobuf.scala` |
-| `EncodableDerivation` | stratiform | `lib/stratiform/src/core/stratiform.Tel2.scala` |
-| `EncodableDerivation` | xylophone | `lib/xylophone/src/core/xylophone.Xml.scala` |
-| `EncodableDerivation` | ypsiloid | `lib/ypsiloid/src/core/ypsiloid.Yaml.scala` |
-| `Formulaic` | legerdemain | `lib/legerdemain/src/core/legerdemain.Formulaic.scala` |
-| `JsonSchema` | jacinta | `lib/jacinta/src/schema/jacinta.JsonSchema.scala` |
-| `MultiplicableDerivation` | wisteria | `lib/wisteria/src/core/wisteria_core.scala` |
-| `Randomizable` | capricious | `lib/capricious/src/core/capricious.Randomizable.scala` |
-| `Restorable` | austronesian | `lib/austronesian/src/core/austronesian.Restorable.scala` |
-| `Spannable` | caesura | `lib/caesura/src/core/caesura.Spannable.scala` |
-| `SubtractableDerivation` | wisteria | `lib/wisteria/src/core/wisteria_core.scala` |
-| `Tabulable` | escritoire | `lib/escritoire/src/core/escritoire.Tabulable.scala` |
-| `TelsDerivation` | stratiform | `lib/stratiform/src/core/stratiform.Tels2.scala` |
-
-## C2 — non-established abbreviations
-
-| name | module | kind | visibility |
-|---|---|---|---|
-| `AddOp` | symbolism | trait | exported |
-| `CellRef` | caesura | class | exported |
-| `Err` | turbulence | object | exported |
-| `GitRefError` | octogenarian | object | exported |
-| `ProcessRef` | guillotine | trait | exported |
-
-## C1 — multi-word names → `Foo.Bar` (strong: prefix already names a same-module type)
-
-| name | module | → suggested | kind | visibility | prefix is local namespace |
-|---|---|---|---|---|---|
-| `DagError` | acyclicity | `Dag.Error` | object | exported | yes |
-| `DotId` | acyclicity | `Dot.Id` | object | exported | yes |
-| `DotIdentifier` | acyclicity | `Dot.Identifier` | object | exported | yes |
-| `EnvironmentError` | ambience | `Environment.Error` | class | exported | yes |
-| `PropertyError` | ambience | `Property.Error` | class | exported | yes |
-| `WorkingDirectoryError` | ambience | `WorkingDirectory.Error` | class | exported | yes |
-| `CompilerError` | anthology | `Compiler.Error` | class | exported | yes |
-| `JavacOption` | anthology | `Javac.Option` | class | exported | yes |
-| `UnusedFeature` | anthology | `Unused.Feature` | enum | exported | yes |
-| `ApiError` | apoplexy | `Api.Error` | object | exported | yes |
-| `OpenApiError` | apoplexy | `OpenApi.Error` | object | exported | yes |
-| `TimestampError` | aviation | `Timestamp.Error` | object | exported | yes |
-| `TimezoneError` | aviation | `Timezone.Error` | class | exported | yes |
-| `TzdbError` | aviation | `Tzdb.Error` | object | exported | yes |
-| `TarCompression` | bitumen | `Tar.Compression` | object | exported | yes |
-| `TarError` | bitumen | `Tar.Error` | object | exported | yes |
-| `TarHeader` | bitumen | `Tar.Header` | object | exported | yes |
-| `AudioError` | cacophony | `Audio.Error` | class | exported | yes |
-| `FeedError` | cacophony | `Feed.Error` | object | exported | yes |
-| `OutletError` | cacophony | `Outlet.Error` | object | exported | yes |
-| `CourierError` | caduceus | `Courier.Error` | class | exported | yes |
-| `DsvError` | caesura | `Dsv.Error` | object | exported | yes |
-| `DsvFormat` | caesura | `Dsv.Format` | class | exported | yes |
-| `DsvRedesignation` | caesura | `Dsv.Redesignation` | trait | exported | yes |
-| `RandomSize` | capricious | `Random.Size` | trait | exported | yes |
-| `CssConvertible` | cataclysm | `Css.Convertible` | object | exported | yes |
-| `CssError` | cataclysm | `Css.Error` | object | exported | yes |
-| `CssErrors` | cataclysm | `Css.Errors` | class | exported | yes |
-| `SyntaxMatcher` | cataclysm | `Syntax.Matcher` | object | exported | yes |
-| `ConnectionError` | coaxial | `Connection.Error` | object | exported | yes |
-| `DomainSocketEndpoint` | coaxial | `DomainSocket.Endpoint` | class | exported | yes |
-| `AttemptTactic` | contingency | `Attempt.Tactic` | class | exported | yes |
-| `HpackTable` | cordillera | `Hpack.Table` | class | exported | yes |
-| `Http2Connection` | cordillera | `Http2.Connection` | object | exported | yes |
-| `Http2Error` | cordillera | `Http2.Error` | object | exported | yes |
-| `Http2Event` | cordillera | `Http2.Event` | object | exported | yes |
-| `FqcnError` | digression | `Fqcn.Error` | object | exported | yes |
-| `DiffError` | dissonance | `Diff.Error` | class | exported | yes |
-| `RedraftError` | dissonance | `Redraft.Error` | object | exported | yes |
-| `ImageRecord` | embarcadero | `Image.Record` | class | exported | yes |
-| `BlockCipherMode` | enigmatic | `BlockCipher.Mode` | object | exported | yes |
-| `BlockCipherPadding` | enigmatic | `BlockCipher.Padding` | object | exported | yes |
-| `CipherSession` | enigmatic | `Cipher.Session` | trait | exported | yes |
-| `CoseAlgorithm` | enigmatic | `Cose.Algorithm` | object | exported | yes |
-| `CoseAuthenticator` | enigmatic | `Cose.Authenticator` | object | exported | yes |
-| `CoseError` | enigmatic | `Cose.Error` | object | exported | yes |
-| `CoseRecipient` | enigmatic | `Cose.Recipient` | class | exported | yes |
-| `CoseStructure` | enigmatic | `Cose.Structure` | trait | exported | yes |
-| `CoseVerifier` | enigmatic | `Cose.Verifier` | object | exported | yes |
-| `CryptoError` | enigmatic | `Crypto.Error` | object | exported | yes |
-| `HmacCipher` | enigmatic | `Hmac.Cipher` | object | exported | yes |
-| `PemError` | enigmatic | `Pem.Error` | object | exported | yes |
-| `PemLabel` | enigmatic | `Pem.Label` | object | exported | yes |
-| `SymmetricKey` | enigmatic | `Symmetric.Key` | object | exported | yes |
-| `ColumnAlignment` | escritoire | `Column.Alignment` | object | exported | yes |
-| `UpgradeError` | ethereal | `Upgrade.Error` | object | exported | yes |
-| `LspClient` | exegesis | `Lsp.Client` | trait | exported | yes |
-| `LspError` | exegesis | `Lsp.Error` | object | exported | yes |
-| `LspServer` | exegesis | `Lsp.Server` | trait | exported | yes |
-| `CreateNonexistentParents` | galilei | `CreateNonexistent.Parents` | trait | exported | yes |
-| `GeolocationError` | geodesy | `Geolocation.Error` | object | exported | yes |
-| `MediaType` | gesticulate | `Media.Type` | object | exported | yes |
-| `MediaTypeError` | gesticulate | `MediaType.Error` | object | exported | yes |
-| `MultipartError` | gesticulate | `Multipart.Error` | object | exported | yes |
-| `ReferenceError` | gnossienne | `Reference.Error` | object | exported | yes |
-| `PidError` | guillotine | `Pid.Error` | class | exported | yes |
-| `ProcessRef` | guillotine | `Process.Ref` | trait | exported | yes |
-| `RasterError` | hallucination | `Raster.Error` | class | exported | yes |
-| `ClasspathEntry` | hellenism | `Classpath.Entry` | object | exported | yes |
-| `ClasspathError` | hellenism | `Classpath.Error` | class | exported | yes |
-| `ClasspathEvent` | hellenism | `Classpath.Event` | object | exported | yes |
-| `BaseLayout` | imperial | `Base.Layout` | object | exported | yes |
-| `UuidError` | inimitable | `Uuid.Error` | class | exported | yes |
-| `JsonBlueprint` | jacinta | `Json.Blueprint` | object | exported | yes |
-| `JsonBlueprintDoc` | jacinta | `JsonBlueprint.Doc` | class | exported | yes |
-| `JsonBlueprintError` | jacinta | `JsonBlueprint.Error` | object | exported | yes |
-| `JsonError` | jacinta | `Json.Error` | object | exported | yes |
-| `JsonPointer` | jacinta | `Json.Pointer` | object | exported | yes |
-| `JsonPointerError` | jacinta | `JsonPointer.Error` | object | exported | yes |
-| `JsonPrimitive` | jacinta | `Json.Primitive` | object | exported | yes |
-| `JsonSchema` | jacinta | `Json.Schema` | object | exported | yes |
-| `GlobToken` | kaleidoscope | `Glob.Token` | object | exported | yes |
-| `RegexError` | kaleidoscope | `Regex.Error` | object | exported | yes |
-| `CompileErrorId` | larceny | `CompileError.Id` | object | exported | yes |
-| `QueryError` | legerdemain | `Query.Error` | object | exported | yes |
-| `ProtobufError` | locomotion | `Protobuf.Error` | object | exported | yes |
-| `PermutationError` | metamorphose | `Permutation.Error` | object | exported | yes |
-| `SerializationError` | monotonous | `Serialization.Error` | class | exported | yes |
-| `MonikerError` | nomenclature | `Moniker.Error` | object | exported | yes |
-| `GrpcChannel` | obligatory | `Grpc.Channel` | object | exported | yes |
-| `GrpcError` | obligatory | `Grpc.Error` | class | exported | yes |
-| `GrpcFraming` | obligatory | `Grpc.Framing` | object | exported | yes |
-| `JsonRpcError` | obligatory | `JsonRpc.Error` | object | exported | yes |
-| `SseError` | obligatory | `Sse.Error` | object | exported | yes |
-| `SseSource` | obligatory | `Sse.Source` | class | exported | yes |
-| `GitCommand` | octogenarian | `Git.Command` | object | exported | yes |
-| `GitError` | octogenarian | `Git.Error` | object | exported | yes |
-| `GitEvent` | octogenarian | `Git.Event` | object | exported | yes |
-| `GitPathStatus` | octogenarian | `Git.PathStatus` | class | exported | yes |
-| `GitProcess` | octogenarian | `Git.Process` | class | exported | yes |
-| `GitRefError` | octogenarian | `Git.RefError` | object | exported | yes |
-| `GitRefs` | octogenarian | `Git.Refs` | object | exported | yes |
-| `GitRepo` | octogenarian | `Git.Repo` | object | exported | yes |
-| `GitStatus` | octogenarian | `Git.Status` | enum | exported | yes |
-| `OAuthError` | orthodoxy | `OAuth.Error` | object | exported | yes |
-| `CurrencyStyle` | plutocrat | `Currency.Style` | trait | exported | yes |
-| `HyphenationError` | polysyllabic | `Hyphenation.Error` | class | exported | yes |
-| `TestId` | probably | `Test.Id` | object | exported | yes |
-| `TerminalCanvas` | profanity | `Terminal.Canvas` | object | exported | yes |
-| `TerminalError` | profanity | `Terminal.Error` | class | exported | yes |
-| `TerminalEvent` | profanity | `Terminal.Event` | trait | exported | yes |
-| `TerminalFeature` | profanity | `Terminal.Feature` | class | exported | yes |
-| `MarkdownPalette` | punctuation | `Markdown.Palette` | object | exported | yes |
-| `ManifestAttribute` | revolution | `Manifest.Attribute` | class | exported | yes |
-| `ManifestEntry` | revolution | `Manifest.Entry` | class | exported | yes |
-| `SemverError` | revolution | `Semver.Error` | object | exported | yes |
-| `SvgDef` | savagery | `Svg.Def` | trait | exported | yes |
-| `SvgError` | savagery | `Svg.Error` | object | exported | yes |
-| `HttpServerEvent` | scintillate | `HttpServer.Event` | object | exported | yes |
-| `JavaServletFn` | scintillate | `JavaServlet.Fn` | class | exported | yes |
-| `BenchError` | sedentary | `Bench.Error` | class | exported | yes |
-| `PathError` | serpentine | `Path.Error` | object | exported | yes |
-| `Base256Error` | stratiform | `Base256.Error` | object | exported | yes |
-| `BintelError` | stratiform | `Bintel.Error` | object | exported | yes |
-| `MutationError` | stratiform | `Mutation.Error` | object | exported | yes |
-| `TelError` | stratiform | `Tel.Error` | object | exported | yes |
-| `TelPath` | stratiform | `Tel.Path` | object | exported | yes |
-| `VarintError` | stratiform | `Varint.Error` | object | exported | yes |
-| `WatchError` | surveillance | `Watch.Error` | object | exported | yes |
-| `WatchEvent` | surveillance | `Watch.Event` | enum | exported | yes |
-| `McpClient` | synesthesia | `Mcp.Client` | trait | exported | yes |
-| `McpError` | synesthesia | `Mcp.Error` | object | exported | yes |
-| `McpServer` | synesthesia | `Mcp.Server` | trait | exported | yes |
-| `McpSpecification` | synesthesia | `Mcp.Specification` | object | exported | yes |
-| `WebDriverError` | tarantula | `WebDriver.Error` | object | exported | yes |
-| `AuthError` | telekinesis | `Auth.Error` | class | exported | yes |
-| `HttpClient` | telekinesis | `Http.Client` | object | exported | yes |
-| `HttpError` | telekinesis | `Http.Error` | class | exported | yes |
-| `HttpEvent` | telekinesis | `Http.Event` | object | exported | yes |
-| `HttpRedirection` | telekinesis | `Http.Redirection` | object | exported | yes |
-| `HttpRequestError` | telekinesis | `Http.RequestError` | object | exported | yes |
-| `HttpResponseError` | telekinesis | `Http.ResponseError` | object | exported | yes |
-| `LineSeparation` | turbulence | `Line.Separation` | object | exported | yes |
-| `ShaderPlugin` | umbrageous | `Shader.Plugin` | class | exported | yes |
-| `EmailAddressError` | urticose | `EmailAddress.Error` | object | exported | yes |
-| `HostnameError` | urticose | `Hostname.Error` | object | exported | yes |
-| `UrlError` | urticose | `Url.Error` | object | exported | yes |
-| `UrlFragment` | urticose | `Url.Fragment` | object | exported | yes |
-| `ForeignLibrary` | xenophile | `Foreign.Library` | object | exported | yes |
-| `TypescriptDialect` | xenophile | `Typescript.Dialect` | object | exported | yes |
-| `WebIdlDialect` | xenophile | `WebIdl.Dialect` | object | exported | yes |
-| `WitDialect` | xenophile | `Wit.Dialect` | object | exported | yes |
-| `XPathError` | xylophone | `XPath.Error` | object | exported | yes |
-| `XmlError` | xylophone | `Xml.Error` | class | exported | yes |
-| `XmlSchema` | xylophone | `Xml.Schema` | object | exported | yes |
-| `PtyEscapeError` | yossarian | `Pty.EscapeError` | object | exported | yes |
-| `PtyState` | yossarian | `Pty.State` | class | exported | yes |
-| `YamlError` | ypsiloid | `Yaml.Error` | object | exported | yes |
-| `YamlPath` | ypsiloid | `Yaml.Path` | object | exported | yes |
-| `YamlPathError` | ypsiloid | `YamlPath.Error` | object | exported | yes |
-| `YamlPrimitive` | ypsiloid | `Yaml.Primitive` | object | exported | yes |
-| `ZipError` | zeppelin | `Zip.Error` | object | exported | yes |
-| `ZipEvent` | zeppelin | `Zip.Event` | object | exported | yes |
-
-_(163 strong; 490 total exported multi-word)_
-
-
-## Pilot (enigmatic) — done, and gotchas for the fix step
-
-Executed as the reference transformation: `PemError → Pem.Error`, `PemLabel → Pem.Label` (folded into the existing `object Pem`, the two `enigmatic.Pem{Error,Label}.scala` files deleted, both names dropped from the `soundness` export). `enigmatic.{core,cose,openssl,test}` compile clean; all 51 tests pass. Net: two fewer top-level names in `soundness`.
-
-Gotchas observed (apply to every C1 rename):
-- **`XxxError → Xxx.Error` shadows the base.** A nested `case class Error` makes the bare `Error` in its own `extends` clause self-referential — qualify the base as `extends fulminate.Error(...)`. This bites *every* error-nesting (the largest C1 sub-cluster).
-- **Move imports with the body.** Nesting `PemLabel` pulled `spectacular.*` (its `Showable`) into `Pem.scala`; check the donor file's imports when folding a type in.
-- **L2**: deleting the old `module.Xxx.scala` file is required (the type is no longer top-level); the receiving `module.Foo.scala` already satisfies the rule. L3 ordering (companion `object` before its `class`/`enum`) must hold for the *nested* pair too.
-- **Enum cases** (`Proprietary`, `fromOrdinal`) resolve unqualified inside the nested companion object exactly as they did at top level — no change needed there.
+**C4-synonym — competing terms for one role**: the `*Parser` family remains the largest
+(`CborParser`, `CssParser`, `JsonParser`, `ProtobufParser`, `TelParser`, `YamlParser`, …).
+Most are `private[lib]` engines rather than exported names; `Svg.Parser` shows the shape
+the exported ones take once nested.

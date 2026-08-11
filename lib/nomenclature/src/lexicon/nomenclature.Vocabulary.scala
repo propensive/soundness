@@ -65,21 +65,21 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
 
   def size: Int = adjectiveArray.length*animalCount
 
-  def name(ordinal: Int)(using Tactic[MonikerError]): Text =
+  def name(ordinal: Int)(using Tactic[Moniker.Error]): Text =
     if ordinal < 0 || ordinal >= size
-    then abort(MonikerError(MonikerError.Reason.OutOfRange(ordinal)))
+    then abort(Moniker.Error(Moniker.Error.Reason.OutOfRange(ordinal)))
     else t"${adjectiveArray(ordinal/animalCount)}-${animalArray(ordinal%animalCount)}"
 
-  def number(moniker: Text)(using Tactic[MonikerError]): Int =
+  def number(moniker: Text)(using Tactic[Moniker.Error]): Int =
     moniker.cut(t"-") match
       case List(adjective, animal) =>
         val first = adjectiveIndex.get(adjective).getOrElse:
-          abort(MonikerError(MonikerError.Reason.UnknownWord(adjective)))
+          abort(Moniker.Error(Moniker.Error.Reason.UnknownWord(adjective)))
 
         val second = animalIndex.get(animal).getOrElse:
-          abort(MonikerError(MonikerError.Reason.UnknownWord(animal)))
+          abort(Moniker.Error(Moniker.Error.Reason.UnknownWord(animal)))
 
         first*animalCount + second
 
       case _ =>
-        abort(MonikerError(MonikerError.Reason.Malformed(moniker)))
+        abort(Moniker.Error(Moniker.Error.Reason.Malformed(moniker)))

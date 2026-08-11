@@ -68,15 +68,15 @@ object Api:
   // substituted path + query), serialize the request body to bytes in its wire
   // format, set the `content-type` (from the body) and `accept` (the response
   // format the caller passes) headers, and dispatch through the telekinesis
-  // `HttpClient` — which uses whichever `Http.Backend` is in scope. The body
+  // `Http.Client` — which uses whichever `Http.Backend` is in scope. The body
   // printers/encoders are fixed internal defaults (minimal JSON, UTF-8), resolved
   // here, so callers never supply them.
   def send(request: Api.Request, accept: Text)
     ( using Online,
-            HttpEvent is Loggable,
+            Http.Event is Loggable,
             Tactic[ConnectError],
             Tactic[UrlError] )
-    ( using client: HttpClient onto Origin["http" | "https"] )
+    ( using client: Http.Client onto Origin["http" | "https"] )
   :   Http.Response =
 
     import jacinta.formatting.compactJsonFormatting
@@ -167,10 +167,10 @@ object Api:
     transparent inline def call[value]()
       ( using erased default: value is Defaulting to Unit )
       ( using online:   Online,
-              loggable: HttpEvent is Loggable,
+              loggable: Http.Event is Loggable,
               connect:  Tactic[ConnectError],
               urlError: Tactic[UrlError],
-              client:   HttpClient onto Origin["http" | "https"] )
+              client:   Http.Client onto Origin["http" | "https"] )
     :   value =
 
       Apoplexy.check[value](this)
@@ -186,6 +186,20 @@ object Api:
         case _: xylophone.Xml =>
           val response = dispatch(t"application/xml")
           compiletime.summonInline[(value is Conformant) over xylophone.Xml].read(response)
+
+  // Api.Error → Api.Error
+  object Error:
+    object Reason:
+      given Reason is Communicable =
+        case Status(code) => m"the server responded with an unsuccessful status, $code"
+        case Malformed    => m"the response body was not valid JSON"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Status(code: Int) extends Reason(1)
+      case Malformed         extends Reason(2)
+
+  case class Error(reason: Api.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(914, reason.number)(m"the API request was not successful because $reason")
 
 trait Api extends Dynamic, Locative, Transportive:
   def request: Api.Request

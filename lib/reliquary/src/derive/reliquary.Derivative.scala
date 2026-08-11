@@ -70,7 +70,7 @@ object Derivative:
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case _: PathError => LiraError(Reason.InvalidTree(t"the path is not a zip path"))
+          case _: Path.Error => LiraError(Reason.InvalidTree(t"the path is not a zip path"))
 
         . protect(entry.path.text.as[Path on Zip])
 

@@ -56,17 +56,17 @@ import errorDiagnostics.stackTracesDiagnostics
 private[exegesis] object LspSession:
   private[exegesis] class Cell:
     @scala.caps.unsafe.untrackedCaptures
-    private[exegesis] var fault: Optional[LspError] = Unset
+    private[exegesis] var fault: Optional[Lsp.Error] = Unset
 
   // Building the session consumes the registry: nothing can register once serving begins.
   private[exegesis] def apply
-    ( consume registry: LspRegistry^, name: Text, version: Optional[Text] )
+    ( consume registry: Lsp.Registry^, name: Text, version: Optional[Text] )
   :   LspSession^ =
 
     new LspSession(registry, name, version)
 
 private[exegesis] class LspSession private
-  ( handlers: LspRegistry^, name: Text, version: Optional[Text] )
+  ( handlers: Lsp.Registry^, name: Text, version: Optional[Text] )
 extends Lsp, caps.ExclusiveCapability:
   import Lsp.*
 
@@ -107,9 +107,9 @@ extends Lsp, caps.ExclusiveCapability:
   // The generated proxy captures the session; the macro splices `this` at a pure `JsonRpc`
   // hole, so the receiver is sealed at the staging boundary. The proxy never leaves the
   // session's scope: it is lent to handlers through the workspace handle.
-  private[exegesis] val client0: LspClient = caps.unsafe.unsafeAssumePure(this).client
+  private[exegesis] val client0: Lsp.Client = caps.unsafe.unsafeAssumePure(this).client
 
-  private[exegesis] def fault(): Optional[LspError] =
+  private[exegesis] def fault(): Optional[Lsp.Error] =
     val result = fault0.fault
     fault0.fault = Unset
     result
@@ -133,13 +133,13 @@ extends Lsp, caps.ExclusiveCapability:
 
   private def space(): Workspace^{this, caps.any} = Workspace(this)
 
-  private def emitter(): Emit[LspError]^{caps.any} =
+  private def emitter(): Emit[Lsp.Error]^{caps.any} =
     val cell = fault0
 
-    Emit[LspError]: fault => cell.fault = fault
+    Emit[Lsp.Error]: fault => cell.fault = fault
 
   private def missing[result](uri: Text, default: result): result =
-    fault0.fault = LspError(LspError.Reason.InvalidParams, t"the document $uri is not open")
+    fault0.fault = Lsp.Error(Lsp.Error.Reason.InvalidParams, t"the document $uri is not open")
     default
 
   // Invocation helpers: one per handler shape. Each looks up the handler (`null` means
@@ -152,7 +152,7 @@ extends Lsp, caps.ExclusiveCapability:
   private def focused0[result](uri: Text)(default: result)(handler: AnyRef | Null): result =
     if handler == null then default else
       val invoke: Focused[result] =
-        handler.asInstanceOf[LspRegistry.Slot[Focused[result]]].value
+        handler.asInstanceOf[Lsp.Registry.Slot[Focused[result]]].value
 
       states.at(uri).lay(missing(uri, default)): state =>
         invoke(using Document(state), space(), emitter())
@@ -163,7 +163,7 @@ extends Lsp, caps.ExclusiveCapability:
 
     if handler == null then default else
       val invoke: Focused1[payload, result] =
-        handler.asInstanceOf[LspRegistry.Slot[Focused1[payload, result]]].value
+        handler.asInstanceOf[Lsp.Registry.Slot[Focused1[payload, result]]].value
 
       states.at(uri).lay(missing(uri, default)): state =>
         invoke(using payload, Document(state), space(), emitter())
@@ -175,7 +175,7 @@ extends Lsp, caps.ExclusiveCapability:
 
     if handler == null then default else
       val invoke: Focused2[payload1, payload2, result] =
-        handler.asInstanceOf[LspRegistry.Slot[Focused2[payload1, payload2, result]]].value
+        handler.asInstanceOf[Lsp.Registry.Slot[Focused2[payload1, payload2, result]]].value
 
       states.at(uri).lay(missing(uri, default)): state =>
         invoke(using payload1, payload2, Document(state), space(), emitter())
@@ -187,7 +187,7 @@ extends Lsp, caps.ExclusiveCapability:
 
     if handler == null then default else
       val invoke: Focused3[payload1, payload2, payload3, result] =
-        handler.asInstanceOf[LspRegistry.Slot[Focused3[payload1, payload2, payload3, result]]]
+        handler.asInstanceOf[Lsp.Registry.Slot[Focused3[payload1, payload2, payload3, result]]]
         . value
 
       states.at(uri).lay(missing(uri, default)): state =>
@@ -196,7 +196,7 @@ extends Lsp, caps.ExclusiveCapability:
   private def ambient0[result](default: result)(handler: AnyRef | Null): result =
     if handler == null then default else
       val invoke: Ambient[result] =
-        handler.asInstanceOf[LspRegistry.Slot[Ambient[result]]].value
+        handler.asInstanceOf[Lsp.Registry.Slot[Ambient[result]]].value
 
       invoke(using space(), emitter())
 
@@ -206,11 +206,11 @@ extends Lsp, caps.ExclusiveCapability:
 
     if handler == null then default else
       val invoke: Ambient1[payload, result] =
-        handler.asInstanceOf[LspRegistry.Slot[Ambient1[payload, result]]].value
+        handler.asInstanceOf[Lsp.Registry.Slot[Ambient1[payload, result]]].value
 
       invoke(using payload, space(), emitter())
 
-  // The JSON-RPC wire methods, dispatched by `LspDispatch`.
+  // The JSON-RPC wire methods, dispatched by `Lsp.Dispatch`.
 
   def initialize
     ( processId:        Optional[Int],
@@ -559,7 +559,7 @@ extends Lsp, caps.ExclusiveCapability:
 
     if slot != null then ambient1(Unset)(slot)(arguments0) else
       fault0.fault =
-        LspError(LspError.Reason.InvalidParams, t"the command $command is not registered")
+        Lsp.Error(Lsp.Error.Reason.InvalidParams, t"the command $command is not registered")
 
       Unset
 

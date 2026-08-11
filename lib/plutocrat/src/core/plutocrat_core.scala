@@ -36,10 +36,10 @@ import gossamer.*
 import prepositional.*
 
 package currencyStyles:
-  given localCurrencyStyle: CurrencyStyle =
+  given localCurrencyStyle: Currency.Style =
     (code, symbol, unit, subunit) => t"$symbol$unit.$subunit"
 
-  given genericCurrencyStyle: CurrencyStyle =
+  given genericCurrencyStyle: Currency.Style =
     (code, symbol, unit, subunit) => t"$unit.$subunit $code"
 
 extension (inline context: StringContext)

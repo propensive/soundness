@@ -69,11 +69,11 @@ object Raster:
   // Recognises the format from its opening magic bytes, among the formats the caller has named.
   // `hallucination.formats` supplies every format this library implements.
   def apply[streamable: Streamable by Data over zephyrine.Credit](input: streamable)
-    (using formats: RasterFormats)
-  :   Raster raises RasterError =
+    (using formats: Raster.Formats)
+  :   Raster raises Raster.Error =
 
     val data = input.read[Data]
-    formats.recognise(data).lay(abort(RasterError(Unset)))(_.decode(data))
+    formats.recognise(data).lay(abort(Raster.Error(Unset)))(_.decode(data))
 
   private def fill(width: Int, height: Int)(set: (Int, Int, Int) => Unit): Unit =
     var index = 0
@@ -160,15 +160,44 @@ object Raster:
     def width(raster: Raster): Int = raster.width
     def height(raster: Raster): Int = raster.height
 
-  given aggregable: [format: Rasterizable as rasterizable] => (tactic: Tactic[RasterError])
+  given aggregable: [format: Rasterizable as rasterizable] => (tactic: Tactic[Raster.Error])
   =>  ( ((Raster in format) is Aggregable by Data)^{tactic} ) =
 
     rasterizable.read(_)
 
   // Aggregating a stream into a `Raster` without naming its format recognises it by magic bytes,
   // so it needs the candidate formats just as `Raster(data)` does.
-  given aggregable2: (tactic: Tactic[RasterError]) => (formats: RasterFormats)
+  given aggregable2: (tactic: Tactic[Raster.Error]) => (formats: Raster.Formats)
   =>  ( (Raster is Aggregable by Data)^{tactic} ) = Raster(_)
+
+  // RasterError → Raster.Error
+  object Error:
+    enum Reason:
+      case BadSignature, BadCrc, Truncated, UnsupportedVariant, Bitstream, Huffman, InvalidTransform
+
+  case class Error
+    ( rasterizable: Optional[Rasterizable], reason: Optional[Raster.Error.Reason] = Unset )
+    ( using Diagnostics )
+  extends fulminate.Error
+    ( m"unable to read the raster image in ${rasterizable.lay("unspecified".tt)(_.name)} format" )
+
+  // RasterFormats → Raster.Formats
+  // The formats `Raster` will try when asked to decode data whose format it was not told. Because
+  // each codec now lives in its own component, the candidates are whatever the caller has linked
+  // and named, rather than every format the library implements: recognising a format you did not
+  // compile is not something this can do. `hallucination.formats` supplies every format at once,
+  // for consumers that want the old behaviour in a single import.
+  case class Formats(candidates: List[Rasterizable]):
+    def recognise(data: Data): Optional[Rasterizable] =
+      def next(remaining: List[Rasterizable]): Optional[Rasterizable] = remaining match
+        case head :: tail => if head.sniff(data) then head else next(tail)
+        case _            => Unset
+
+      next(candidates)
+
+  object Formats:
+    def apply(formats: Rasterizable*): Raster.Formats =
+      Raster.Formats(formats.to(List))
 
 // A platform-neutral pixel store: `buffer`'s element type is the storage primitive of the
 // raster's layout (`Channel.Storage[Operand]`), held unparameterised and recovered statically at

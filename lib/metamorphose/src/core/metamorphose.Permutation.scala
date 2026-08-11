@@ -42,12 +42,13 @@ import contingency.*
 import denominative.*
 import rudiments.*
 import vacuous.*
+import fulminate.*
 
 object Permutation:
   def bySize(n: Int): Chain[Permutation] = Chain.range[BigInt](0, Factorial(n)).map: i =>
     Permutation(Factoradic(i))
 
-  def apply(sequence: Sequence[Int]): Permutation raises PermutationError =
+  def apply(sequence: Sequence[Int]): Permutation raises Permutation.Error =
     val elements = sequence.stdlib
     val array: scala.Array[Int]^ = new scala.Array(elements.length)
     val seen: BitSet = BitSet()
@@ -60,15 +61,41 @@ object Permutation:
       if element >= elements.length || element < 0
       then
         raise
-          ( PermutationError(PermutationError.Reason.InvalidIndex(element, elements.length - 1)) )
+          ( Permutation.Error(Permutation.Error.Reason.InvalidIndex(element, elements.length - 1)) )
 
       if seen.has(element)
-      then raise(PermutationError(PermutationError.Reason.DuplicateIndex(element, index)))
+      then raise(Permutation.Error(Permutation.Error.Reason.DuplicateIndex(element, index)))
 
       seen(element) = true
       index += 1
 
     Permutation(Factoradic(array.iterator.to(List)))
+
+  // PermutationError → Permutation.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case BaseRange(value: Int, base: Int)        extends Reason(1)
+      case DuplicateIndex(index: Int, element: Int) extends Reason(2)
+      case InvalidIndex(last: Int, max: Int)       extends Reason(3)
+      case TooShort(length: Int, min: Int)         extends Reason(4)
+
+    import Reason.*
+
+    given communicable: Reason is Communicable =
+      case BaseRange(value, base) =>
+        m"the value $value is too large for its positional base $base"
+
+      case DuplicateIndex(element, index) =>
+        m"the index $element was duplicated at $index"
+
+      case InvalidIndex(index, max) =>
+        m"the index $index appears, but every index should be in the range 0-$max"
+
+      case TooShort(size, min) =>
+        m"the input, of size $size, is too short for the permutation of size $min"
+
+  case class Error(reason: Permutation.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(427, reason.number)(m"could not construct permutation because $reason")
 
 case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand
@@ -81,9 +108,9 @@ case class Permutation(factoradic: Factoradic):
     import denominative.asymptotics.linearAccessComplexity
     expansion(Ordinal.zerary(n)).or(n)
 
-  def apply[element](sequence: List[element]): List[element] raises PermutationError =
+  def apply[element](sequence: List[element]): List[element] raises Permutation.Error =
     if sequence.length < lehmer.length then
-      raise(PermutationError(PermutationError.Reason.TooShort(sequence.length, lehmer.length)))
+      raise(Permutation.Error(Permutation.Error.Reason.TooShort(sequence.length, lehmer.length)))
 
 
     def recur

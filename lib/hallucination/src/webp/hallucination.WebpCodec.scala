@@ -39,7 +39,7 @@ import anticipation.*
 import contingency.*
 
 import Binary.*
-import RasterError.Reason
+import Raster.Error.Reason
 
 // A pure-Scala WebP codec, ported from image-rs/image-webp (MIT/Apache-2.0). This phase decodes
 // simple (non-extended) lossless VP8L images; lossy VP8 and extended VP8X images raise
@@ -73,10 +73,10 @@ private[hallucination] object WebpCodec:
     if (frame.length & 1) == 1 then out.write(0)
     Array.unsafeFrozen(out.toByteArray.nn)
 
-  def decode(data: Data): Raster raises RasterError =
+  def decode(data: Data): Raster raises Raster.Error =
     try
       if data.length < 12 || fourcc(data, 0) != "RIFF" || fourcc(data, 8) != "WEBP"
-      then abort(RasterError(Webp(), Reason.BadSignature))
+      then abort(Raster.Error(Webp(), Reason.BadSignature))
 
       // The first chunk after the "WEBP" fourcc determines the image kind.
       val chunk = fourcc(data, 12)
@@ -99,10 +99,10 @@ private[hallucination] object WebpCodec:
           WebpExtended.decode(data, chunkStart, chunkStart + chunkSize, riffEnd)
 
         case _ =>
-          abort(RasterError(Webp(), Reason.BadSignature))
+          abort(Raster.Error(Webp(), Reason.BadSignature))
 
     catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
-      abort(RasterError(Webp(), Reason.Truncated))
+      abort(Raster.Error(Webp(), Reason.Truncated))
 
   // Builds an opaque RGB raster from a decoded VP8 lossy frame.
   private def lossy(frame: Vp8Frame): Raster =

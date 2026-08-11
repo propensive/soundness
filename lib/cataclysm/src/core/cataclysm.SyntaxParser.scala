@@ -43,12 +43,12 @@ import zephyrine.*
 // loosest to tightest, is: `|`, `||`, `&&`, juxtaposition, then the multipliers
 // (`?`, `*`, `+`, `{m,n}`, `#`, `!`) which bind to the preceding term.
 private[cataclysm] object SyntaxParser:
-  def parse(text: Text)(using Tactic[CssError]): Syntax =
+  def parse(text: Text)(using Tactic[Css.Error]): Syntax =
     import zephyrine.lineation.linefeedChars
 
     Parser(Cursor[Text](text)).document()
 
-  private class Parser(cursor: Cursor[Text, ?])(using Tactic[CssError]):
+  private class Parser(cursor: Cursor[Text, ?])(using Tactic[Css.Error]):
     def document(): Syntax =
       ws()
       val result = oneOf()
@@ -58,14 +58,14 @@ private[cataclysm] object SyntaxParser:
 
     // ── primitives ──────────────────────────────────────────────────────────
 
-    private def fail(reason: CssError.Reason): Nothing =
-      abort(CssError(reason, cursor.line, cursor.column))
+    private def fail(reason: Css.Error.Reason): Nothing =
+      abort(Css.Error(reason, cursor.line, cursor.column))
 
     private def unexpected(): Nothing =
       val datum = cursor.peek
 
-      if datum.isEnd then fail(CssError.Reason.UnexpectedEnd)
-      else fail(CssError.Reason.UnexpectedChar(datum.asInt.toChar))
+      if datum.isEnd then fail(Css.Error.Reason.UnexpectedEnd)
+      else fail(Css.Error.Reason.UnexpectedChar(datum.asInt.toChar))
 
     private def whitespaceChar(datum: Datum): Boolean =
       datum == ' ' || datum == '\t' || datum == '\n' || datum == '\r'

@@ -95,7 +95,7 @@ extends Rig:
             codepoint: Codepoint )
   :   Unit raises CompilerError raises RemoteError =
 
-    val testId = TestId(name, suite, codepoint)
+    val testId = Test.Id(name, suite, codepoint)
     val frames0: Optional[Int] = frames
     val frames2: Int = frames0.or(25)
 

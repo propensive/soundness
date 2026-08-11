@@ -39,6 +39,6 @@ import prepositional.*
 // The platform `Radical` instances (POSIX/Linux/macOS/Windows-drive/local roots) live with the
 // OS platform types in galilei; `Radical` itself is generic path-algebra and stays here.
 trait Radical extends Typeclass, Planar:
-  def decode(text: Text): Self raises PathError
-  def length(text: Text): Int raises PathError
+  def decode(text: Text): Self raises Path.Error
+  def length(text: Text): Int raises Path.Error
   def encode(self: Self): Text

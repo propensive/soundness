@@ -60,7 +60,7 @@ extends caps.ExclusiveCapability:
 
   // The body of the blob addressed by a canonical `sha256:<hex>` digest: its stored
   // (for layers: compressed) chunks — undecoded and unverified.
-  private def body(digest: Text)(using Tactic[OciError]): TarBody =
+  private def body(digest: Text)(using Tactic[OciError]): Tar.Body =
     if !digest.s.startsWith("sha256:")
     then abort(OciError(OciError.Reason.UnsupportedDigest(digest.cut(t":").stdlib.head)))
 
@@ -188,7 +188,7 @@ private[embarcadero] case class OciLayout(imageLayoutVersion: Text)
 // A named class rather than an anonymous given instance, for the reasons documented on
 // galilei's `FileOpenable`. Opening in-memory `Data` as an OCI image; opening a filesystem
 // *path* (`ImageOpenable`) lives in the JVM-only source set. Read-only for now.
-class ImageDataOpenable(using Tactic[OciError], Tactic[TarError], Tactic[StreamError])
+class ImageDataOpenable(using Tactic[OciError], Tactic[Tar.Error], Tactic[StreamError])
 extends Openable:
 
   type Self = Data

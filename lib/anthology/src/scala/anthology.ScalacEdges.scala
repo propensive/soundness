@@ -97,7 +97,7 @@ object scalacEdges:
 
       mitigate:
         case CompilerError() => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
-        case AsyncError(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
+        case Async.Error(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
 
       . protect:
           val process = scalac(classpath)(sources, out)

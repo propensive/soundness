@@ -50,8 +50,16 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
+import fulminate.*
+import hypotenuse.*
+import scala.caps
+import aperture.*
+import pneumatic.*
 
 object Tar:
+  // TarRef → Tar.Ref
+  type Ref = Relative on Tar
+
   type Rules =
     MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
@@ -69,13 +77,13 @@ object Tar:
 
   // Anchored here so `data.open[Tar](...)` resolves with no import. Opening a filesystem
   // *path* as TAR (`path.open[Tar]`) lives in `bitumen.jvm`, alongside the disk backend.
-  given dataOpenable: (tarTactic: Tactic[TarError], streamTactic: Tactic[StreamError])
+  given dataOpenable: (tarTactic: Tactic[Tar.Error], streamTactic: Tactic[StreamError])
   =>  (TarDataOpenable^{tarTactic, streamTactic}) =
     TarDataOpenable()
 
   object Entry:
     def apply[data: Streamable by Data over Credit, instant: Abstractable across Instants to Long]
-      ( name:  TarRef,
+      ( name:  Tar.Ref,
         data:  data,
         mode:  UnixMode          = UnixMode(),
         user:  UnixUser          = UnixUser(0),
@@ -86,9 +94,9 @@ object Tar:
       val mtimeU32: U32 =
         (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
-      Entry.File(name, mode, user, group, mtimeU32, TarBody(data.source[Data].memoize))
+      Entry.File(name, mode, user, group, mtimeU32, Tar.Body(data.source[Data].memoize))
 
-    private[bitumen] val paxRef: TarRef =
+    private[bitumen] val paxRef: Tar.Ref =
       import strategies.throwUnsafely
       t"PaxHeaders/0".as[Relative on Tar]
 
@@ -146,19 +154,19 @@ object Tar:
 
           Array.freeze(block)
 
-  enum Entry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
+  enum Entry(path: Tar.Ref, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
     case File
-      ( path:  TarRef,
+      ( path:  Tar.Ref,
         mode:  UnixMode,
         user:  UnixUser,
         group: UnixGroup,
         mtime: U32,
-        data:  TarBody,
+        data:  Tar.Body,
         pax:   Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
     case Directory
-      ( path:  TarRef,
+      ( path:  Tar.Ref,
         mode:  UnixMode,
         user:  UnixUser,
         group: UnixGroup,
@@ -167,7 +175,7 @@ object Tar:
     extends Entry(path, mode, user, group, mtime)
 
     case Link
-      ( path:   TarRef,
+      ( path:   Tar.Ref,
         mode:   UnixMode,
         user:   UnixUser,
         group:  UnixGroup,
@@ -177,7 +185,7 @@ object Tar:
     extends Entry(path, mode, user, group, mtime)
 
     case Symlink
-      ( path:   TarRef,
+      ( path:   Tar.Ref,
         mode:   UnixMode,
         user:   UnixUser,
         group:  UnixGroup,
@@ -187,7 +195,7 @@ object Tar:
     extends Entry(path, mode, user, group, mtime)
 
     case CharSpecial
-      ( path:   TarRef,
+      ( path:   Tar.Ref,
         mode:   UnixMode,
         user:   UnixUser,
         group:  UnixGroup,
@@ -197,7 +205,7 @@ object Tar:
     extends Entry(path, mode, user, group, mtime)
 
     case BlockSpecial
-      ( path:   TarRef,
+      ( path:   Tar.Ref,
         mode:   UnixMode,
         user:   UnixUser,
         group:  UnixGroup,
@@ -207,7 +215,7 @@ object Tar:
     extends Entry(path, mode, user, group, mtime)
 
     case Fifo
-      ( path:  TarRef,
+      ( path:  Tar.Ref,
         mode:  UnixMode,
         user:  UnixUser,
         group: UnixGroup,
@@ -222,14 +230,14 @@ object Tar:
     extends Entry(Entry.paxRef, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32)
 
     case Sparse
-      ( path:     TarRef,
+      ( path:     Tar.Ref,
         mode:     UnixMode,
         user:     UnixUser,
         group:    UnixGroup,
         mtime:    U32,
         realSize: Long,
         segments: List[SparseSegment],
-        data:     TarBody,
+        data:     Tar.Body,
         pax:      Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
@@ -344,6 +352,186 @@ object Tar:
 
       case _ =>
         Iterator(header) ++ dataBlocks
+
+  // TarError → Tar.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case NameTooLong(field: Text, length: Int, maximum: Int) extends Reason(1)
+      case BadMagic(actual: Data) extends Reason(2)
+      case BadChecksum(expected: U32, actual: U32) extends Reason(3)
+      case UnknownTypeFlag(byte: Byte) extends Reason(4)
+      case TruncatedStream(needed: Int, got: Int) extends Reason(5)
+      case BadOctal(field: Text, data: Data) extends Reason(6)
+      case BadPaxRecord(data: Data) extends Reason(7)
+      case BadName(text: Text) extends Reason(8)
+      case BadSparseMap(text: Text) extends Reason(9)
+      case DeviceCreationUnsupported(path: Text) extends Reason(10)
+      case WriteUnsupported extends Reason(11)
+      case AlreadyExists extends Reason(12)
+      case CannotWrite(detail: Text) extends Reason(13)
+
+    given communicable: Reason is Communicable =
+      case Reason.NameTooLong(field, length, maximum) =>
+        m"the $field field is $length bytes, exceeding the USTAR limit of $maximum bytes"
+
+      case Reason.BadMagic(actual) =>
+        m"the USTAR magic bytes are not valid (got ${actual.length} bytes)"
+
+      case Reason.BadChecksum(expected, actual) =>
+        m"""
+          the header checksum did not match (header recorded $expected but the recomputed value is
+          $actual)
+        """
+
+      case Reason.UnknownTypeFlag(byte) =>
+        val code: Int = byte.toInt & 0xff
+        m"the entry type flag $code is not recognised"
+
+      case Reason.TruncatedStream(needed, got) =>
+        m"the archive stream ended unexpectedly (needed $needed bytes, got $got)"
+
+      case Reason.BadOctal(field, _) =>
+        m"the $field field did not contain a valid octal value"
+
+      case Reason.BadPaxRecord(_) =>
+        m"a PAX extended-header record could not be parsed"
+
+      case Reason.BadName(text) =>
+        m"the entry name $text is not a valid POSIX relative path"
+
+      case Reason.BadSparseMap(text) =>
+        m"the GNU sparse map $text could not be parsed"
+
+      case Reason.DeviceCreationUnsupported(path) =>
+        m"the special device entry at $path could not be created on this filesystem"
+
+      case Reason.WriteUnsupported =>
+        m"TAR archives cannot yet be opened for writing"
+
+      case Reason.AlreadyExists =>
+        m"an archive already exists at this path"
+
+      case Reason.CannotWrite(detail) =>
+        m"the archive could not be written: $detail"
+
+  case class Error(reason: Tar.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(284, reason.number)(m"the TAR archive could not be read or written because $reason")
+
+  // TarCompression → Tar.Compression
+  object Compression
+
+  // TarBody → Tar.Body
+  object Body:
+    // An in-memory body: its chunks are given up front, and nothing pulls lazily.
+    def apply(chunks: Data*): Tar.Body =
+      new Tar.Body(chunks.filter(_.length > 0).to(List), () => Unset)
+
+    val empty: Tar.Body = Tar.Body()
+
+    // A body fed lazily from a source the producer still owns (the shared cursor
+    // of a streaming read, or an unread source stream): `pull` yields the next
+    // chunk, or `Unset` when the body is complete. The producer's captures are
+    // erased at this audited point — exactly the laundering the memoizing
+    // `LazyList` chain this replaces performed implicitly through its cells —
+    // and the producer must remain valid until the body is drained.
+    private[bitumen] def deferred(pull: () => Optional[Data]): Tar.Body =
+      new Tar.Body(Nil, caps.unsafe.unsafeAssumePure(pull))
+
+  // The replayable body of an archive entry. Chunks pull lazily from the
+  // producer and memoize, so the underlying region is read exactly once however
+  // many consumers stream it, and each `stream` replays from the first chunk.
+  // An in-order consumer of a streaming read holds memory bounded by the entries
+  // it retains: a body's memoized chunks are reclaimed with its entry.
+  class Body private (initial: List[Data], pull: () -> Optional[Data]):
+    private val memo: scala.collection.mutable.ArrayBuffer[Data] =
+      scala.collection.mutable.ArrayBuffer.from(initial.stdlib)
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var exhausted: Boolean = false
+
+    // Extend the memo by one chunk, or record exhaustion.
+    private def fetch(): Boolean =
+      if exhausted then false else
+        pull() match
+          case Unset =>
+            exhausted = true
+            false
+
+          case chunk: Data =>
+            if chunk.length > 0 then memo += chunk
+            chunk.length > 0 || fetch()
+
+    // Read the remainder of the body from its producer, so the producer may move
+    // past it. Memoized chunks are never re-read.
+    private[bitumen] def drain(): Unit = while fetch() do ()
+
+    def size: Long =
+      drain()
+      memo.foldLeft(0L)(_ + _.length)
+
+    // The body's chunks, replayed from the start; unread chunks pull from the
+    // producer as the iterator advances.
+    def chunks: Iterator[Data] = new Iterator[Data]:
+      @scala.caps.unsafe.untrackedCaptures
+      private var index: Int = 0
+
+      def hasNext: Boolean = index < memo.length || fetch()
+
+      def next(): Data =
+        val chunk = memo(index)
+        index += 1
+        chunk
+
+    // A fresh stream over the body's chunks, replayed from the start.
+    def stream: (Stream[Data] over Credit)^ = Stream(chunks)
+
+    // The whole body as a single value.
+    def memoize: Data =
+      drain()
+
+      if memo.length == 1 then memo(0) else
+        val whole = Array[Byte](size.toInt)
+        var offset = 0
+
+        memo.each: chunk =>
+          whole.copyFrom(chunk, 0, offset, chunk.length)
+          offset += chunk.length
+
+        Array.freeze(whole)
+
+  // TarFlag → Tar.Flag
+  // Flags for opening a TAR archive: the compression wrapping the archive, if any. TAR has no
+  // self-identifying magic for its compression layer at the API level, so the caller states it:
+  // `path.open[Tar](Tar.Flag.Gzip)`.
+  enum Flag:
+    case Gzip, Zlib, Deflate
+
+  // TarHandle → Tar.Handle
+  // The scoped capability provided by opening an archive as `Tar`: `path.open[Tar]()`. TAR is a
+  // sequential format, so `entries` parses lazily from the underlying source, one entry per
+  // step; payloads must be consumed within the scope, while the source remains open. The
+  // iterator is single-pass: an entry passed over remains readable (its body memoizes when the
+  // iterator advances), but the sequence itself is not replayable within the scope.
+  class Handle private[bitumen] (entries0: Iterator[Tar.Entry]^)
+  extends caps.ExclusiveCapability:
+
+    // Reached only through this exclusive handle, which scopes it; its capture
+    // of the underlying source is erased here, as the memoizing `LazyList` it
+    // replaces erased it implicitly through its pure cells.
+    @caps.unsafe.untrackedCaptures
+    val entries: Iterator[Tar.Entry] = caps.unsafe.unsafeAssumePure(entries0)
+
+  object Handle:
+    private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[Tar.Flag])
+      ( using tarTactic: Tactic[Tar.Error], streamTactic: Tactic[StreamError], buffering: Buffering )
+    :   Iterator[Tar.Entry]^{tarTactic, streamTactic} =
+
+      Tarfile.read:
+        flags.headOption match
+          case Some(Tar.Flag.Gzip)    => stream.decompress[Gzip]
+          case Some(Tar.Flag.Zlib)    => stream.decompress[Zlib]
+          case Some(Tar.Flag.Deflate) => stream.decompress[Deflate]
+          case _                     => stream
 
 case class SparseSegment(offset: Long, length: Long)
 

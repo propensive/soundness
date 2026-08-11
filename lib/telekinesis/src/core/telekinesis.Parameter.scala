@@ -51,7 +51,7 @@ trait Parameter(val name: Text) extends Topical:
   def encode(value: Topic): Query
   def apply(value: Topic): Query = encode(value)
 
-  inline def apply()(using request: Http.Request): Topic raises QueryError =
+  inline def apply()(using request: Http.Request): Topic raises Query.Error =
     decode(request.query(name))
 
   def unapply(scrutinee: Http.Request): Option[Topic] =

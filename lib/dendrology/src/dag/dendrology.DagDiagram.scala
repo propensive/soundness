@@ -44,7 +44,7 @@ import gossamer.*
 import spectacular.*
 
 object DagDiagram:
-  def apply[node](dag: Dag[node]): DagDiagram[node] raises DagError =
+  def apply[node](dag: Dag[node]): DagDiagram[node] raises Dag.Error =
     val nodes = dag.sorted.to(Vector)
     val indexes: scala.collection.immutable.Map[node, Int] = nodes.zipWithIndex.toMap
 

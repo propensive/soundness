@@ -44,16 +44,16 @@ case class ARecord(name: Text, age: Int, height: Int) derives CanEqual
 
 object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
 
-  case class Issues(items: List[(Text, DsvError)] = Nil)(using Diagnostics)
+  case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
   extends Error(m"${items.length} decoding issues"):
-    def +(focus: Text, error: DsvError): Issues = Issues(items :+ (focus, error))
+    def +(focus: Text, error: Dsv.Error): Issues = Issues(items :+ (focus, error))
 
   private inline def validateDsv[result](dsv: Dsv)
-                                 (inline decode: Dsv => result raises DsvError tracks CellRef)
+                                 (inline decode: Dsv => result raises Dsv.Error tracks CellRef)
   :   Issues =
-    Validate[Issues, [r] =>> r raises DsvError, CellRef]
+    Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
       ( Issues(),
-        { case error: DsvError =>
+        { case error: Dsv.Error =>
             accrual + (prior.let(_.column).or(t"#"), error) } )
     . protect(decode(dsv))
 
@@ -86,7 +86,7 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
       test(m"Each unparseable error has reason Unparseable"):
         validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord]).items.all:
           case (_, err) => err.reason match
-            case DsvError.Reason.Unparseable(_, _) => true
+            case Dsv.Error.Reason.Unparseable(_, _) => true
             case _                                 => false
       . assert(identity)
 
@@ -101,7 +101,7 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
 
       test(m"Each missing-cell error has reason Absent"):
         validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.all:
-          case (_, err) => err.reason == DsvError.Reason.Absent
+          case (_, err) => err.reason == Dsv.Error.Reason.Absent
       . assert(identity)
 
     suite(m"Missing + unparseable mixed"):

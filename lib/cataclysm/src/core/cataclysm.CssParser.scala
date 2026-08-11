@@ -46,16 +46,16 @@ import Css.Node
 // single space, then the result is trimmed. Nested rules are supported: a rule
 // body is itself a list of nodes.
 private[cataclysm] object CssParser:
-  def parse(input: Iterator[Text], validating: Boolean = true)(using Tactic[CssError]): Css =
+  def parse(input: Iterator[Text], validating: Boolean = true)(using Tactic[Css.Error]): Css =
     import zephyrine.lineation.linefeedChars
 
     Parser(Cursor[Text](input), validating).document()
 
-  private class Parser(cursor: Cursor[Text, ?], validating: Boolean)(using Tactic[CssError]):
+  private class Parser(cursor: Cursor[Text, ?], validating: Boolean)(using Tactic[Css.Error]):
     def document(): Css = Css(nodes())
 
-    private def fail(reason: CssError.Reason): Nothing =
-      abort(CssError(reason, cursor.line, cursor.column))
+    private def fail(reason: Css.Error.Reason): Nothing =
+      abort(Css.Error(reason, cursor.line, cursor.column))
 
     // Parse a list of nodes until end-of-input or an unconsumed `}`.
     private def nodes(): List[Node] =
@@ -146,7 +146,7 @@ private[cataclysm] object CssParser:
 
       if block then
         val body = nodes()
-        if cursor.peek == '}' then cursor.advance() else fail(CssError.Reason.UnexpectedEnd)
+        if cursor.peek == '}' then cursor.advance() else fail(Css.Error.Reason.UnexpectedEnd)
 
         if text.starts(t"@") then
           val (name, prelude) = atRule(text)
@@ -177,14 +177,14 @@ private[cataclysm] object CssParser:
               ()
 
             case Outcome.Invalid =>
-              raise(CssError(CssError.Reason.BadValue(property, value), cursor.line, cursor.column))
+              raise(Css.Error(Css.Error.Reason.BadValue(property, value), cursor.line, cursor.column))
 
             case Outcome.Unsupported(types) =>
-              val reason = CssError.Reason.UnsupportedValue(property, types)
-              raise(CssError(reason, cursor.line, cursor.column))
+              val reason = Css.Error.Reason.UnsupportedValue(property, types)
+              raise(Css.Error(reason, cursor.line, cursor.column))
 
         case _ =>
-          raise(CssError(CssError.Reason.UnknownProperty(property), cursor.line, cursor.column))
+          raise(Css.Error(Css.Error.Reason.UnknownProperty(property), cursor.line, cursor.column))
 
     // Split an `@…` prelude into its identifier and the remaining prelude text.
     private def atRule(text: Text): (Text, Text) =
@@ -201,12 +201,12 @@ private[cataclysm] object CssParser:
       while scanning do
         val datum = cursor.peek
 
-        if datum.isEnd then fail(CssError.Reason.UnterminatedComment)
+        if datum.isEnd then fail(Css.Error.Reason.UnterminatedComment)
         else if datum == '*' then
           cursor.advance()
           val next = cursor.peek
 
-          if next.isEnd then fail(CssError.Reason.UnterminatedComment)
+          if next.isEnd then fail(Css.Error.Reason.UnterminatedComment)
           else if next == '/' then
             cursor.advance()
             scanning = false
@@ -221,7 +221,7 @@ private[cataclysm] object CssParser:
       while scanning do
         val datum = cursor.peek
 
-        if datum.isEnd then fail(CssError.Reason.UnterminatedString)
+        if datum.isEnd then fail(Css.Error.Reason.UnterminatedString)
         else
           val char = datum.asInt.toChar
 
@@ -230,7 +230,7 @@ private[cataclysm] object CssParser:
             cursor.advance()
             val escaped = cursor.peek
 
-            if escaped.isEnd then fail(CssError.Reason.UnterminatedString)
+            if escaped.isEnd then fail(Css.Error.Reason.UnterminatedString)
             else
               buf.append(escaped.asInt.toChar)
               cursor.advance()

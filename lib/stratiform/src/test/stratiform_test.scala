@@ -166,7 +166,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
           test(m"streaming raises an expected E1xx error on ${testcase.stem}"):
             codes.has:
-              capture[TelError](Tel.Parser.parse(Cursor[Data](testcase.source)))
+              capture[Tel.Error](Tel.Parser.parse(Cursor[Data](testcase.source)))
               .reason.number
           . assert(_ == true)
 
@@ -228,7 +228,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"a malformed document in a stream raises (fail-fast)"):
         // The second document has an odd indentation (E107); reading the whole
         // list eagerly surfaces it.
-        capture[TelError](t"a 1\n##\nparent\n   bad".read[List[Tel]]).reason.number
+        capture[Tel.Error](t"a 1\n##\nparent\n   bad".read[List[Tel]]).reason.number
       . assert(_ == 107)
 
       test(m"read[Chain[Tel]] is lazy past a malformed later document"):
@@ -308,8 +308,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Tests.Shape2.Dot)
 
       test(m"decoding a sum from an empty node raises Absent, not a crash"):
-        capture[TelError](t"\n".read[Tel].as[Tests.Shape2]).reason
-      . assert(_ == TelError.Reason.Absent)
+        capture[Tel.Error](t"\n".read[Tel].as[Tests.Shape2]).reason
+      . assert(_ == Tel.Error.Reason.Absent)
 
       val tree =
         Tests.Tree(t"root", List(Tests.Tree(t"a", Nil),
@@ -393,9 +393,9 @@ object Tests extends Suite(m"Stratiform Tests"):
         t"name Kid\n".read[Tests.WithDefault in Tel]
       . assert(_ == Tests.WithDefault(t"Kid", 18))
 
-      test(m"A missing required field raises TelError Absent"):
-        capture[TelError](t"age 30\n".read[Tests.Person in Tel]).reason
-      . assert(_ == TelError.Reason.Absent)
+      test(m"A missing required field raises Tel.Error Absent"):
+        capture[Tel.Error](t"age 30\n".read[Tests.Person in Tel]).reason
+      . assert(_ == Tel.Error.Reason.Absent)
 
       test(m"A repeatable field gathers scattered occurrences, as on the AST path"):
         val doc = t"members\n  name Amy\n  age 1\nname Alpha\nmembers\n  name Bea\n  age 2\n"
@@ -519,9 +519,9 @@ object Tests extends Suite(m"Stratiform Tests"):
         t"name Kid\n".read[Tests.WithDefault in Tel]
       . assert(_ == Tests.WithDefault(t"Kid", 18))
 
-      test(m"A staged parser raises TelError Absent for missing required fields"):
-        capture[TelError](t"age 30\n".read[Tests.Person in Tel]).reason
-      . assert(_ == TelError.Reason.Absent)
+      test(m"A staged parser raises Tel.Error Absent for missing required fields"):
+        capture[Tel.Error](t"age 30\n".read[Tests.Person in Tel]).reason
+      . assert(_ == Tel.Error.Reason.Absent)
 
       test(m"A staged parser gathers a repeatable field's scattered occurrences"):
         val doc = t"members\n  name Amy\n  age 1\nname Alpha\nmembers\n  name Bea\n  age 2\n"
@@ -678,7 +678,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         try
           Tel.Type.assign(doc, Tels.Axiom.tels)
           "ok"
-        catch case e: TelError => s"failed-with-${e.reason}"
+        catch case e: Tel.Error => s"failed-with-${e.reason}"
       . assert(_ == "ok")
 
       test(m"canonical tel-schema.tel reconstructs structurally equal to the axiom"):
@@ -781,8 +781,8 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"without schema, original shallower-wins still raises E107"):
         // The schema-independent parse path still aborts on odd indent.
-        capture[TelError](t"parent\n child Alice\n".read[Tel]).reason
-      . assert(_ == TelError.Reason.OddIndentation)
+        capture[Tel.Error](t"parent\n child Alice\n".read[Tel]).reason
+      . assert(_ == Tel.Error.Reason.OddIndentation)
 
     suite(m"Error spans"):
       // Parse-time errors carry a `Span` covering the offending text, so callers
@@ -791,40 +791,40 @@ object Tests extends Suite(m"Stratiform Tests"):
       // rather than source bytes. `Span`'s coordinates are 0-based.
 
       test(m"BOM error is at line 1, column 1"):
-        capture[TelError](t"﻿tel 1.0\n".read[Tel]).span
-      . assert(_ == TelError.spanAt(1, 1, 1))
+        capture[Tel.Error](t"﻿tel 1.0\n".read[Tel]).span
+      . assert(_ == Tel.Error.spanAt(1, 1, 1))
 
       test(m"OddIndentation error reports the offending line"):
-        capture[TelError](t"parent\n child Alice\n".read[Tel]).span.startLine
+        capture[Tel.Error](t"parent\n child Alice\n".read[Tel]).span.startLine
       . assert(_ == 1.z)
 
       test(m"OddIndentation error spans the odd indent"):
-        capture[TelError](t"parent\n child Alice\n".read[Tel]).span.length
+        capture[Tel.Error](t"parent\n child Alice\n".read[Tel]).span.length
       . assert(_ == 1)
 
       test(m"BadVersion error reports the pragma line"):
-        capture[TelError](t"tel notaversion\n".read[Tel]).span.startLine
+        capture[Tel.Error](t"tel notaversion\n".read[Tel]).span.startLine
       . assert(_ == 0.z)
 
       test(m"BadVersion error spans the malformed version phrase"):
-        val span = capture[TelError](t"tel notaversion\n".read[Tel]).span
+        val span = capture[Tel.Error](t"tel notaversion\n".read[Tel]).span
         (span.startColumn.let(_.n1), span.length)
       . assert(_ == (5, 11))
 
       test(m"PragmaNotFirst error reports the misplaced pragma's line"):
-        capture[TelError](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).span.startLine
+        capture[Tel.Error](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).span.startLine
       . assert(_ == 1.z)
 
       test(m"PragmaNotFirst error spans the `tel` keyword"):
-        capture[TelError](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).span.length
+        capture[Tel.Error](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).span.length
       . assert(_ == 3)
 
       test(m"TrailingSpaces error reports the offending line"):
-        capture[TelError](t"good\nbad   \n".read[Tel]).span.startLine
+        capture[Tel.Error](t"good\nbad   \n".read[Tel]).span.startLine
       . assert(_ == 1.z)
 
       test(m"TrailingSpaces error spans exactly the trailing spaces"):
-        val span = capture[TelError](t"good\nbad   \n".read[Tel]).span
+        val span = capture[Tel.Error](t"good\nbad   \n".read[Tel]).span
         (span.startColumn.let(_.n1), span.length)
       . assert(_ == (4, 3))
 
@@ -843,7 +843,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           scalars  = Array.empty,
           selects  = Array.empty)
         val doc = t"age 30\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, schema)).span
+        capture[Tel.Error](Tel.Type.assign(doc, schema)).span
       . assert(_ == Span.empty)
 
     suite(m"Type assignment"):
@@ -880,8 +880,8 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"raises E307 when required scalar field is missing"):
         val doc = t"age 30\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
-      . assert(_ == TelError.Reason.RequiredMemberAbsent)
+        capture[Tel.Error](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == Tel.Error.Reason.RequiredMemberAbsent)
 
       // A schema with a Status SelectRef whose variants are all Flag,
       // exercising sum-type handling.
@@ -914,23 +914,23 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"unknown SelectRef variant raises E306"):
         val doc = t"unknown\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
-      . assert(_ == TelError.Reason.UnknownKeyword)
+        capture[Tel.Error](Tel.Type.assign(doc, statusSchema)).reason
+      . assert(_ == Tel.Error.Reason.UnknownKeyword)
 
       test(m"scalar compound with two atoms raises E302"):
         val doc = t"name Alice Bob\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
-      . assert(_ == TelError.Reason.TooManyAtoms)
+        capture[Tel.Error](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == Tel.Error.Reason.TooManyAtoms)
 
       test(m"scalar compound with a child raises E301"):
         val doc = t"name Alice\n  extra x\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
-      . assert(_ == TelError.Reason.NonStructCompound)
+        capture[Tel.Error](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == Tel.Error.Reason.NonStructCompound)
 
       test(m"flag compound with an atom raises E311"):
         val doc = t"active foo\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
-      . assert(_ == TelError.Reason.FlagWithContent)
+        capture[Tel.Error](Tel.Type.assign(doc, statusSchema)).reason
+      . assert(_ == Tel.Error.Reason.FlagWithContent)
 
       // Two repeatable scalar members, for the §20.2 step 4c contiguity rule.
       val contiguitySchema = Tels(
@@ -952,8 +952,8 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"non-contiguous member children raise E309"):
         val doc = t"a x\na y\nb z\na w\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, contiguitySchema)).reason
-      . assert(_ == TelError.Reason.MembersNonContiguous)
+        capture[Tel.Error](Tel.Type.assign(doc, contiguitySchema)).reason
+      . assert(_ == Tel.Error.Reason.MembersNonContiguous)
 
       test(m"contiguous runs of repeatable members do not raise E309"):
         val doc = t"a x\na y\nb z\n".read[Tel]
@@ -992,8 +992,8 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"non-repeatable member filled twice raises E308"):
         val doc = t"name Alice\nname Bob\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
-      . assert(_ == TelError.Reason.NonRepeatableTooMany)
+        capture[Tel.Error](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == Tel.Error.Reason.NonRepeatableTooMany)
 
       test(m"repeatable member filled three times is accepted"):
         val doc = t"a x\na y\na z\nb w\n".read[Tel]
@@ -1004,8 +1004,8 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"absent required SelectRef raises E307"):
         val doc = t"\n".read[Tel]
-        capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
-      . assert(_ == TelError.Reason.RequiredMemberAbsent)
+        capture[Tel.Error](Tel.Type.assign(doc, statusSchema)).reason
+      . assert(_ == Tel.Error.Reason.RequiredMemberAbsent)
 
       // A self-referential schema describing arbitrarily deep nesting, for
       // the §20.2 recursion-depth limit.
@@ -1044,8 +1044,8 @@ object Tests extends Suite(m"Stratiform Tests"):
         sb.toString.tt.read[Tel]
 
       test(m"nesting beyond 256 levels fail-stops type assignment"):
-        capture[TelError](Tel.Type.assign(deepDocument(300), treeSchema)).reason
-      . assert(_ == TelError.Reason.NestingLimitExceeded)
+        capture[Tel.Error](Tel.Type.assign(deepDocument(300), treeSchema)).reason
+      . assert(_ == Tel.Error.Reason.NestingLimitExceeded)
 
       test(m"nesting within the depth limit assigns"):
         Tel.Type.assign(deepDocument(10), treeSchema) match
@@ -1140,8 +1140,8 @@ object Tests extends Suite(m"Stratiform Tests"):
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
              t"only", Tels.Scalar(Array.of(t"string")), Unset )))
 
-        capture[TelError](Tel.Type.assign(t"item x y\n".read[Tel], schema)).reason
-      . assert(_ == TelError.Reason.TooManyAtoms)
+        capture[Tel.Error](Tel.Type.assign(t"item x y\n".read[Tel], schema)).reason
+      . assert(_ == Tel.Error.Reason.TooManyAtoms)
 
       test(m"atom at required struct-typed member raises E303"):
         val schema = itemSchema(Array.of(
@@ -1149,8 +1149,8 @@ object Tests extends Suite(m"Stratiform Tests"):
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
              t"address", Tels.Struct(Array.empty, Array.empty), Unset )))
 
-        capture[TelError](Tel.Type.assign(t"item x\n".read[Tel], schema)).reason
-      . assert(_ == TelError.Reason.AtomAtNonAssignablePos)
+        capture[Tel.Error](Tel.Type.assign(t"item x\n".read[Tel], schema)).reason
+      . assert(_ == Tel.Error.Reason.AtomAtNonAssignablePos)
 
       test(m"unmatched variant at required SelectRef raises E304"):
         val schema = itemSchema(
@@ -1165,15 +1165,15 @@ object Tests extends Suite(m"Stratiform Tests"):
               Tels.Variant(t"archived", Tels.Flag)),
             validators = Array.empty)))
 
-        capture[TelError](Tel.Type.assign(t"item pending\n".read[Tel], schema)).reason
-      . assert(_ == TelError.Reason.AtomVariantUnmatched)
+        capture[Tel.Error](Tel.Type.assign(t"item pending\n".read[Tel], schema)).reason
+      . assert(_ == Tel.Error.Reason.AtomVariantUnmatched)
 
       test(m"mismatched atom at required flag raises E305"):
         val schema = itemSchema(Array.of(
           Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset)))
 
-        capture[TelError](Tel.Type.assign(t"item xyz\n".read[Tel], schema)).reason
-      . assert(_ == TelError.Reason.AtomFlagKeywordMismatch)
+        capture[Tel.Error](Tel.Type.assign(t"item xyz\n".read[Tel], schema)).reason
+      . assert(_ == Tel.Error.Reason.AtomFlagKeywordMismatch)
 
       test(m"atom plus child for a non-repeatable member raises E308"):
         val schema = itemSchema(Array.of(
@@ -1181,8 +1181,8 @@ object Tests extends Suite(m"Stratiform Tests"):
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
              t"only", Tels.Scalar(Array.of(t"string")), Unset )))
 
-        capture[TelError](Tel.Type.assign(t"item x\n  only y\n".read[Tel], schema)).reason
-      . assert(_ == TelError.Reason.NonRepeatableTooMany)
+        capture[Tel.Error](Tel.Type.assign(t"item x\n  only y\n".read[Tel], schema)).reason
+      . assert(_ == Tel.Error.Reason.NonRepeatableTooMany)
 
     suite(m"Schema default-field"):
       // Like `personSchema`, but the required `name` field carries a default,
@@ -1280,10 +1280,10 @@ object Tests extends Suite(m"Stratiform Tests"):
           selects = Array.empty)
 
         val doc = t"name -bad\n".read[Tel]
-        capture[TelError]:
+        capture[Tel.Error]:
           Tel.Type.assign(doc, schemaWithValidator, Tel.Validator.Registry.builtins)
         .reason
-      . assert(_ == TelError.Reason.ValidatorRejected)
+      . assert(_ == Tel.Error.Reason.ValidatorRejected)
 
     suite(m"Layer composition"):
       test(m"a layer adding a field extends the document Struct"):
@@ -1353,8 +1353,8 @@ object Tests extends Suite(m"Stratiform Tests"):
           sigil = Unset,
           records = Array.empty, scalars = Array.empty, selects = Array.empty)
 
-        capture[TelError](Tels.Layers.compose(base)).reason
-      . assert(_ == TelError.Reason.DuplicateLayerName)
+        capture[Tel.Error](Tels.Layers.compose(base)).reason
+      . assert(_ == Tel.Error.Reason.DuplicateLayerName)
 
     suite(m"Dynamic access"):
       import dynamicTelAccess.enabled
@@ -1464,8 +1464,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"SetFlag rejects a flag already present as an inline atom"):
         val tel = doc("opts fast\n")
         val ptr = Tel.Pointer.of(t"opts")
-        capture[MutationError](Mutation(tel, Mutation.Op.SetFlag(ptr, t"fast"))).reason
-      . assert(_ == MutationError.Reason.FlagAlreadySet)
+        capture[Mutation.Error](Mutation(tel, Mutation.Op.SetFlag(ptr, t"fast"))).reason
+      . assert(_ == Mutation.Error.Reason.FlagAlreadySet)
 
       test(m"UnsetFlag removes a previously set flag"):
         val tel    = doc("opt\n  enabled\n")
@@ -1508,8 +1508,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"pointer with no match raises PointerNotFound"):
         val tel = doc("name Alice\n")
         val ptr = Tel.Pointer.of(t"missing")
-        capture[MutationError](Mutation(tel, Mutation.Op.Delete(ptr))).reason
-      . assert(_ == MutationError.Reason.PointerNotFound)
+        capture[Mutation.Error](Mutation(tel, Mutation.Op.Delete(ptr))).reason
+      . assert(_ == Mutation.Error.Reason.PointerNotFound)
 
       test(m"ReorderWithinGroup moves a same-keyword sibling"):
         val tel = doc("item a\nitem b\nitem c\n")
@@ -1526,8 +1526,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"ReorderWithinGroup with out-of-range index raises"):
         val tel = doc("item a\nitem b\n")
         val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, t"item", 0, 5)
-        capture[MutationError](Mutation(tel, op)).reason
-      . assert(_ == MutationError.Reason.PointerNotFound)
+        capture[Mutation.Error](Mutation(tel, op)).reason
+      . assert(_ == Mutation.Error.Reason.PointerNotFound)
 
       test(m"ReorderGroups moves a group after another within a shared block"):
         val tel = doc("name Alice\nname Bob\nage 30\nage 31\n")
@@ -1546,8 +1546,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"ReorderGroups raises when a group is missing"):
         val tel = doc("name Alice\n")
         val op  = Mutation.Op.ReorderGroups(Tel.Pointer.Empty, t"name", t"age")
-        capture[MutationError](Mutation(tel, op)).reason
-      . assert(_ == MutationError.Reason.PointerNotFound)
+        capture[Mutation.Error](Mutation(tel, op)).reason
+      . assert(_ == Mutation.Error.Reason.PointerNotFound)
 
       test(m"Construct picks inline atoms for simple values"):
         val c = Mutation.construct(t"name", t"Alice")
@@ -1744,9 +1744,9 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"InsertIntoBlock rejects a row exceeding column capacity"):
         val tel = doc("# Name  # Age\nAlice   30\n")
         val row = Revision.compound(t"Christopher", t"40")
-        capture[MutationError]
+        capture[Mutation.Error]
           (Mutation(tel, Mutation.Op.InsertIntoBlock(Tel.Pointer.Empty, 0, row))).reason
-      . assert(_ == MutationError.Reason.TabulationOverflow)
+      . assert(_ == Mutation.Error.Reason.TabulationOverflow)
 
       test(m"ResizeTabulation shrinks offsets to the normative minimum (§22.2)"):
         val tel    = doc("# Name    # Age\nAl        30\n")
@@ -1775,9 +1775,9 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"ResizeTabulation of a block without a tabulation is rejected"):
         val tel = doc("a 1\n")
-        capture[MutationError]
+        capture[Mutation.Error]
           (Mutation(tel, Mutation.Op.ResizeTabulation(Tel.Pointer.Empty, 0))).reason
-      . assert(_ == MutationError.Reason.PointerNotFound)
+      . assert(_ == Mutation.Error.Reason.PointerNotFound)
 
       test(m"ReorderGroups moves whole blocks with their comments (§22.2)"):
         val tel = doc("# emails\ne 1\n\n# phones\np 2\n")
@@ -2017,14 +2017,14 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source = cell("name Alice\n")
 
         source.open[Tel](Read & Write): handle ?=>
-          capture[MutationError](handle.remove(Tel.Pointer.of(t"missing"))).reason
-      . assert(_ == MutationError.Reason.PointerNotFound)
+          capture[Mutation.Error](handle.remove(Tel.Pointer.of(t"missing"))).reason
+      . assert(_ == Mutation.Error.Reason.PointerNotFound)
 
       test(m"A rejected operation leaves the document intact for further edits"):
         val source = cell("name Alice\n")
 
         source.open[Tel](Read & Write): handle ?=>
-          capture[MutationError](handle.remove(Tel.Pointer.of(t"missing")))
+          capture[Mutation.Error](handle.remove(Tel.Pointer.of(t"missing")))
           handle.update(Tel.Pointer.of(t"name"), t"Bob")
 
         source.content
@@ -2055,8 +2055,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == (t"name Alice\n", 0))
 
       test(m"Write mode on an unwritable source is refused"):
-        capture[MutationError](t"name Alice\n".open[Tel](Write) { () }).reason
-      . assert(_ == MutationError.Reason.WriteUnsupported)
+        capture[Mutation.Error](t"name Alice\n".open[Tel](Write) { () }).reason
+      . assert(_ == Mutation.Error.Reason.WriteUnsupported)
 
       test(m"Mutation without the Write grant does not compile"):
         demilitarize:
@@ -2111,7 +2111,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // parser surfaces a different code first (e.g. e118 → E117).
         if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
           test(m"raises an expected E1xx error on ${testcase.stem}"):
-            codes.has(capture[TelError](testcase.source.read[Tel]).reason.number)
+            codes.has(capture[Tel.Error](testcase.source.read[Tel]).reason.number)
           . assert(_ == true)
 
     suite(m"BASE-256 codec"):
@@ -2167,8 +2167,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == (0 to 255).map(_.toByte))
 
       test(m"strict decode rejects a non-alphabet char"):
-        capture[Base256Error](Base256.decodeStrict(t"A B")).reason match
-          case Base256Error.Reason.NotInAlphabet(pos, ch) => (pos, ch)
+        capture[Base256.Error](Base256.decodeStrict(t"A B")).reason match
+          case Base256.Error.Reason.NotInAlphabet(pos, ch) => (pos, ch)
       . assert(_ == (1, ' '))
 
     suite(m"BinTEL §4 varint"):
@@ -2219,8 +2219,8 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"decode raises on truncated continuation"):
         val data: Data = scala.Array[Byte](0x80.toByte).asInstanceOf[Array[Byte]]
-        capture[VarintError](Varint.decode(data, 0)).reason
-      . assert(_ == VarintError.Reason.Truncated)
+        capture[Varint.Error](Varint.decode(data, 0)).reason
+      . assert(_ == Varint.Error.Reason.Truncated)
 
       test(m"encode rejects negative input"):
         try
@@ -2491,25 +2491,25 @@ object Tests extends Suite(m"Stratiform Tests"):
           case _ => Nil
       . assert(_ == List(t"example.com"))
 
-      test(m"trailing bytes after document root raise BintelError"):
+      test(m"trailing bytes after document root raise Bintel.Error"):
         val original = t"name Alice\n".read[Tel]
         val bytes = original.bintel(nameSchema)
         val padded = (bytes.readable.toList :+ 0xff.toByte).toArray.asInstanceOf[Array[Byte]]
-        capture[BintelError](Bintel.decode(padded, nameSchema)).reason
-      . assert(_ == BintelError.Reason.TrailingBytes)
+        capture[Bintel.Error](Bintel.decode(padded, nameSchema)).reason
+      . assert(_ == Bintel.Error.Reason.TrailingBytes)
 
-      test(m"truncated input raises BintelError"):
+      test(m"truncated input raises Bintel.Error"):
         val original = t"name Alice\n".read[Tel]
         val bytes = original.bintel(nameSchema)
         val truncated = Array.frozen(bytes.readable.slice(0, bytes.readable.length - 1))
         // Either UnexpectedEoi or ValueTruncated depending on where the
         // truncation lands; both are valid framing errors.
-        val reason = capture[BintelError](Bintel.decode(truncated, nameSchema)).reason
-        reason == BintelError.Reason.UnexpectedEoi ||
-          reason == BintelError.Reason.ValueTruncated
+        val reason = capture[Bintel.Error](Bintel.decode(truncated, nameSchema)).reason
+        reason == Bintel.Error.Reason.UnexpectedEoi ||
+          reason == Bintel.Error.Reason.ValueTruncated
       . assert(identity)
 
-      test(m"out-of-range keyword index raises BintelError"):
+      test(m"out-of-range keyword index raises Bintel.Error"):
         // Manually craft a body with one child whose keyword index is
         // out of range for the schema. nameSchema has 1 flat-keyword
         // entry (index 0); we use index 5.
@@ -2519,8 +2519,8 @@ object Tests extends Suite(m"Stratiform Tests"):
             0x05,                   // keyword index 5 (out of range)
             0x00                    // scalar length 0
           ).asInstanceOf[Array[Byte]]
-        capture[BintelError](Bintel.decode(bytes, nameSchema)).reason
-      . assert(_ == BintelError.Reason.BadKeywordIndex)
+        capture[Bintel.Error](Bintel.decode(bytes, nameSchema)).reason
+      . assert(_ == Bintel.Error.Reason.BadKeywordIndex)
 
     suite(m"BinTEL §6 file framing"):
       val sig32: Data = scala.Array.fill[Byte](32)(0x55.toByte).asInstanceOf[Array[Byte]]
@@ -2546,15 +2546,15 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"frame rejects too-short signature"):
         val tooShort: Data = scala.Array.fill[Byte](1)(0).asInstanceOf[Array[Byte]]
         val body: Data     = Array.empty[Byte]
-        capture[BintelError](Bintel.frame(body, tooShort)).reason
-      . assert(_ == BintelError.Reason.BadSignatureLength)
+        capture[Bintel.Error](Bintel.frame(body, tooShort)).reason
+      . assert(_ == Bintel.Error.Reason.BadSignatureLength)
 
       test(m"frame rejects signature with reserved hash-size index"):
         // XOR-fold ⇒ 0xA0, naming reserved s = 10
         val bad: Data = scala.Array[Byte](0xA0.toByte, 0, 0, 0, 0).asInstanceOf[Array[Byte]]
         val body: Data = Array.empty[Byte]
-        capture[BintelError](Bintel.frame(body, bad)).reason
-      . assert(_ == BintelError.Reason.BadSignatureLength)
+        capture[Bintel.Error](Bintel.frame(body, bad)).reason
+      . assert(_ == Bintel.Error.Reason.BadSignatureLength)
 
       test(m"unframe recovers signature and body"):
         val body: Data = scala.Array[Byte](0x01, 0x02, 0x03).asInstanceOf[Array[Byte]]
@@ -2565,15 +2565,15 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"unframe rejects bad magic"):
         val bytes: Data = scala.Array.fill[Byte](40)(0).asInstanceOf[Array[Byte]]
-        capture[BintelError](Bintel.unframe(bytes)).reason
-      . assert(_ == BintelError.Reason.BadMagic)
+        capture[Bintel.Error](Bintel.unframe(bytes)).reason
+      . assert(_ == Bintel.Error.Reason.BadMagic)
 
       test(m"unframe rejects truncated input"):
         val bytes: Data =
           scala.Array[Byte](0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x20.toByte)
             .asInstanceOf[Array[Byte]]
-        capture[BintelError](Bintel.unframe(bytes)).reason
-      . assert(_ == BintelError.Reason.UnexpectedEoi)
+        capture[Bintel.Error](Bintel.unframe(bytes)).reason
+      . assert(_ == Bintel.Error.Reason.UnexpectedEoi)
 
       test(m"larger signatures of permitted lengths are accepted"):
         val body: Data = scala.Array[Byte](0x01).asInstanceOf[Array[Byte]]
@@ -2649,13 +2649,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == 39)
 
       test(m"empty hash list raises BadSignatureLength"):
-        capture[BintelError](SchemaSignature.encode(Nil)).reason
-      . assert(_ == BintelError.Reason.BadSignatureLength)
+        capture[Bintel.Error](SchemaSignature.encode(Nil)).reason
+      . assert(_ == Bintel.Error.Reason.BadSignatureLength)
 
       test(m"wrong-size hash raises BadSignatureLength"):
         val bad: Data = scala.Array.fill[Byte](16)(0).asInstanceOf[Array[Byte]]
-        capture[BintelError](SchemaSignature.encode(List(bad))).reason
-      . assert(_ == BintelError.Reason.BadSignatureLength)
+        capture[Bintel.Error](SchemaSignature.encode(List(bad))).reason
+      . assert(_ == Bintel.Error.Reason.BadSignatureLength)
 
       test(m"single-component signature decodes back to the hash"):
         val sig = SchemaSignature.encode(List(h0))
@@ -2678,13 +2678,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"decode with reserved hash-size index raises BadSignatureLength"):
         // XOR-fold ⇒ 0xA0, naming reserved s = 10
         val bad: Data = scala.Array[Byte](0xA0.toByte, 0, 0, 0, 0).asInstanceOf[Array[Byte]]
-        capture[BintelError](SchemaSignature.decode(bad, List(h0))).reason
-      . assert(_ == BintelError.Reason.BadSignatureLength)
+        capture[Bintel.Error](SchemaSignature.decode(bad, List(h0))).reason
+      . assert(_ == Bintel.Error.Reason.BadSignatureLength)
 
       test(m"decode raises BadSignature when library is missing components"):
         val sig = SchemaSignature.encode(List(h0, h1))
-        capture[BintelError](SchemaSignature.decode(sig, List(h2))).reason
-      . assert(_ == BintelError.Reason.BadSignature)
+        capture[Bintel.Error](SchemaSignature.decode(sig, List(h2))).reason
+      . assert(_ == Bintel.Error.Reason.BadSignature)
 
     suite(m"BinTEL §8.1 schema signature from document"):
       test(m"single-component signature for a no-layer schema is 33 bytes"):
@@ -2855,8 +2855,8 @@ object Tests extends Suite(m"Stratiform Tests"):
         wrong(0) = (wrong(0) ^ 0x01).toByte
         wrong(wrong.length - 1) = (wrong(wrong.length - 1) ^ 0x01).toByte
         val bytes = Bintel.frameSelfContained(wrong.asInstanceOf[Array[Byte]], schemaBody, docBody)
-        capture[BintelError](Bintel.decodeDocumentSelfContained(bytes)).reason
-      . assert(_ == BintelError.Reason.EmbeddedSignatureMismatch)
+        capture[Bintel.Error](Bintel.decodeDocumentSelfContained(bytes)).reason
+      . assert(_ == Bintel.Error.Reason.EmbeddedSignatureMismatch)
 
       test(m"undecodable embedded schema raises B12"):
         val axiom   = Tels.Axiom.tels
@@ -2866,8 +2866,8 @@ object Tests extends Suite(m"Stratiform Tests"):
         val sig     = SchemaSignature.fromDocument(sd, axiom)
         val garbage: Data = Array.of[Byte](0x7f, 0x7f, 0x7f, 0x7f)
         val bytes = Bintel.frameSelfContained(sig, garbage, docBody)
-        capture[BintelError](Bintel.decodeDocumentSelfContained(bytes)).reason
-      . assert(_ == BintelError.Reason.EmbeddedSchemaUndecodable)
+        capture[Bintel.Error](Bintel.decodeDocumentSelfContained(bytes)).reason
+      . assert(_ == Bintel.Error.Reason.EmbeddedSchemaUndecodable)
 
     RecordsTests()
     VerifyTests()
@@ -2956,16 +2956,16 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"a missing required field raises Absent with its sentinel"):
         // One child, index 1 ("age"), scalar "9" — "name" is missing.
         val bytes = Array.of[Byte](0x01, 0x01, 0x01, '9'.toByte)
-        capture[TelError](Bintel.parse[Tests.Person](bytes)).reason
-      . assert(_ == TelError.Reason.Absent)
+        capture[Tel.Error](Bintel.parse[Tests.Person](bytes)).reason
+      . assert(_ == Tel.Error.Reason.Absent)
 
       test(m"an unparseable scalar raises NotScalar"):
         // Two children: name "x", then age "abc".
         val bytes = Array.of[Byte]
           (0x02, 0x00, 0x01, 'x'.toByte, 0x01, 0x03, 'a'.toByte, 'b'.toByte, 'c'.toByte)
 
-        capture[TelError](Bintel.parse[Tests.Person](bytes)).reason match
-          case TelError.Reason.NotScalar(atom, expected) => (atom.s, expected.s)
+        capture[Tel.Error](Bintel.parse[Tests.Person](bytes)).reason match
+          case Tel.Error.Reason.NotScalar(atom, expected) => (atom.s, expected.s)
           case other                                     => (other.toString, "")
       . assert(_ == ("abc", "Int"))
 
@@ -2982,14 +2982,14 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"an out-of-range keyword index aborts"):
         // One child with index 9 in a two-field struct.
         val bytes = Array.of[Byte](0x01, 0x09, 0x01, 'x'.toByte)
-        capture[BintelError](Bintel.parse[Tests.Person](bytes)).reason
-      . assert(_ == BintelError.Reason.BadKeywordIndex)
+        capture[Bintel.Error](Bintel.parse[Tests.Person](bytes)).reason
+      . assert(_ == Bintel.Error.Reason.BadKeywordIndex)
 
       test(m"trailing bytes are rejected"):
         val good = Tests.Person(t"Alice", 30).bintel
         val padded = Array.from(good.to[List].stdlib :+ 0.toByte)
-        capture[BintelError](Bintel.parse[Tests.Person](padded)).reason
-      . assert(_ == BintelError.Reason.TrailingBytes)
+        capture[Bintel.Error](Bintel.parse[Tests.Person](padded)).reason
+      . assert(_ == Bintel.Error.Reason.TrailingBytes)
 
     suite(m"TEL direct parsing recursion"):
       test(m"an inlined recursive type ties through its own nominal Parsable"):

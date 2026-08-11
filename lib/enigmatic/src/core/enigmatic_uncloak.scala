@@ -43,7 +43,7 @@ import vacuous.*
 // Encryption is total: a valid transformation is guaranteed by the static types
 // (see `Permits`), so `encrypt` cannot fail. Only `decrypt` can fail at runtime —
 // from a wrong key, corrupted ciphertext, or malformed input — and those JCE
-// failures are surfaced as a `CryptoError`.
+// failures are surfaced as a `Crypto.Error`.
 
 extension [value: Encodable in Data](value: value)
   def encrypt[cipher <: Cipher](iv: InitializationVector)
@@ -92,7 +92,7 @@ extension (consume stream: (zephyrine.Stream[Data] over zephyrine.Credit)^)
     ( using decryptor:  Decryptor[cipher],
             algorithm:  cipher & Encryption,
             buffering:  zephyrine.Buffering,
-            tactic:     Tactic[CryptoError],
+            tactic:     Tactic[Crypto.Error],
             erased weakness: ProcessingPermit[Weakness[cipher]],
             erased authentication: ProcessingPermit[Authentication[cipher]] )
   :   (zephyrine.Stream[Data] over zephyrine.Credit)^ =
@@ -105,7 +105,7 @@ extension (data: Data)
             algorithm: cipher & Encryption,
             erased weakness: ProcessingPermit[Weakness[cipher]],
             erased authentication: ProcessingPermit[Authentication[cipher]] )
-  :   decodable raises CryptoError =
+  :   decodable raises Crypto.Error =
 
     def detail(error: Throwable): Optional[Text] = error.getMessage match
       case null         => Unset
@@ -120,13 +120,13 @@ extension (data: Data)
         // match.)
         import unsafeExceptions.canThrowAny
         if securityException(error, "javax.crypto.BadPaddingException")
-        then abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+        then abort(Crypto.Error(Crypto.Error.Reason.BadPadding, detail(error)))
         else if securityException(error, "javax.crypto.IllegalBlockSizeException")
-        then abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
+        then abort(Crypto.Error(Crypto.Error.Reason.IllegalBlockSize, detail(error)))
         else if securityException(error, "java.security.InvalidKeyException")
-        then abort(CryptoError(CryptoError.Reason.InvalidKey, detail(error)))
+        then abort(Crypto.Error(Crypto.Error.Reason.InvalidKey, detail(error)))
         else if securityException(error, "java.security.GeneralSecurityException")
-        then abort(CryptoError(CryptoError.Reason.IoFailure, detail(error)))
+        then abort(Crypto.Error(Crypto.Error.Reason.IoFailure, detail(error)))
         else throw error
 
     decodable.decoded(plaintext)

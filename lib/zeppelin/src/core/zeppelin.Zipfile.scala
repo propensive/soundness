@@ -313,7 +313,7 @@ object Zipfile:
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case PathError(_, _)    => ZipError(ZipError.Reason.InvalidName(cleanName))
+          case Path.Error(_, _)    => ZipError(ZipError.Reason.InvalidName(cleanName))
           case NameError(_, _, _) => ZipError(ZipError.Reason.InvalidName(cleanName))
 
         . protect:

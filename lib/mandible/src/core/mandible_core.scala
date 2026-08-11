@@ -91,9 +91,6 @@ type BytecodePalette = Palette:
   def sourceCode: Color in Srgb
   def outline: Color in Srgb
 
-case class ClassfileError()(using Diagnostics)
-extends Error(293, 0)(m"there was an error reading the classfile")
-
 object BytecodeError:
   enum Reason(val number: Int) extends Clarification:
     case ClassfileMissing    extends Reason(1)

@@ -84,7 +84,7 @@ object internal:
     if human then '{Human($result.tt)} else '{Agent($result.tt)}
 
 
-  def spec[interface: Type]: Macro[interface is McpSpecification] =
+  def spec[interface: Type]: Macro[interface is Mcp.Specification] =
     import quotes.reflect.*
 
     val toolType = TypeRepr.of[tool].typeSymbol
@@ -112,11 +112,11 @@ object internal:
 
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
-    val toolInvocation: Expr[interface ~> ((Text, Json, McpClient) => Json)] =
+    val toolInvocation: Expr[interface ~> ((Text, Json, Mcp.Client) => Json)] =
       ' {
           {
             case target: `interface` =>
-              (method: Text, input: Json, client: McpClient) =>
+              (method: Text, input: Json, client: Mcp.Client) =>
                 given Tactic[JsonError] = $jsonErrors
 
                 val request = input.as[Map[Text, Json]]
@@ -196,12 +196,12 @@ object internal:
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
     val promptInvocation
-    :   Expr[interface ~> ((Text, Map[Text, Text], McpClient) => List[Discourse])] =
+    :   Expr[interface ~> ((Text, Map[Text, Text], Mcp.Client) => List[Discourse])] =
 
       ' {
           {
             case target: `interface` =>
-              (method: Text, input: Map[Text, Text], client: McpClient) =>
+              (method: Text, input: Map[Text, Text], client: Mcp.Client) =>
                 given Tactic[JsonError] = $jsonErrors
 
                 $ {
@@ -513,17 +513,17 @@ object internal:
                 """
 
     ' {
-        new McpSpecification:
+        new Mcp.Specification:
           type Self = interface
           def tools(): List[Mcp.Tool] = List.of(${Expr.ofList(toolEntries)})
           def resources(): List[Mcp.Resource] = List.of(${Expr.ofList(resourceEntries)})
           def prompts(): List[Mcp.Prompt] = List.of(${Expr.ofList(promptEntries)})
 
-          def invokeTool(server: interface, client: McpClient, method: Text, input: Json): Json =
+          def invokeTool(server: interface, client: Mcp.Client, method: Text, input: Json): Json =
             $toolInvocation(server)(method, input, client)
 
           def invokePrompt
-            ( server: interface, client: McpClient, method: Text, input: Map[Text, Text] )
+            ( server: interface, client: Mcp.Client, method: Text, input: Map[Text, Text] )
           :   List[Discourse] =
 
             $promptInvocation(server)(method, input, client)

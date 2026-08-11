@@ -518,11 +518,11 @@ object bintelInternal:
       fieldNames.map { name => Tel.camelToKebab(name).s }
 
     def body
-      ( tactic:  Expr[Tactic[TelError]],
+      ( tactic:  Expr[Tactic[Tel.Error]],
         foci:    Expr[Foci[Tel.Focus]],
         focused: Expr[Boolean],
         parser:  Expr[BintelParser],
-        btactic: Expr[Tactic[BintelError]] )
+        btactic: Expr[Tactic[Bintel.Error]] )
     :   Expr[product] =
 
       val owner = Symbol.spliceOwner
@@ -557,7 +557,7 @@ object bintelInternal:
             val atom = Text($parser.directScalar()(using $btactic))
 
             try atom.s.toInt catch case _: NumberFormatException =>
-              raise(TelError(TelError.Reason.NotScalar(atom, t"Int")))(using $tactic)
+              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Int")))(using $tactic)
               0
           }
 
@@ -566,7 +566,7 @@ object bintelInternal:
             val atom = Text($parser.directScalar()(using $btactic))
 
             try atom.s.toLong catch case _: NumberFormatException =>
-              raise(TelError(TelError.Reason.NotScalar(atom, t"Long")))(using $tactic)
+              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Long")))(using $tactic)
               0L
           }
 
@@ -579,7 +579,7 @@ object bintelInternal:
               case "false" => false
 
               case _ =>
-                raise(TelError(TelError.Reason.NotScalar(atom, t"Boolean")))(using $tactic)
+                raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Boolean")))(using $tactic)
                 false
           }
 
@@ -588,7 +588,7 @@ object bintelInternal:
             val atom = Text($parser.directScalar()(using $btactic))
 
             try atom.s.toDouble catch case _: NumberFormatException =>
-              raise(TelError(TelError.Reason.NotScalar(atom, t"Double")))(using $tactic)
+              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Double")))(using $tactic)
               0.0
           }
 
@@ -759,7 +759,7 @@ object bintelInternal:
       def badIndex =
         CaseDef
           ( Wildcard(), None,
-            '{ abort(BintelError(BintelError.Reason.BadKeywordIndex))(using $btactic) }.asTerm )
+            '{ abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))(using $btactic) }.asTerm )
 
       val total = Symbol.newVal(owner, "total", TypeRepr.of[Int], Flags.EmptyFlags, Symbol.noSymbol)
       val i = Symbol.newVal(owner, "i", TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
@@ -801,7 +801,7 @@ object bintelInternal:
                 . absent(tactic)
 
               case Plan.SeamText(_) =>
-                '{ abort(TelError(TelError.Reason.Absent))(using $tactic) }
+                '{ abort(Tel.Error(Tel.Error.Reason.Absent))(using $tactic) }
 
               case Plan.Gather(_, _) =>
                 '{ ${ Ref(builders(index)).asExpr }
@@ -837,11 +837,11 @@ object bintelInternal:
       . asExprOf[product]
 
     '{
-      val tactic = infer[Tactic[TelError]]
+      val tactic = infer[Tactic[Tel.Error]]
       val foci = infer[Foci[Tel.Focus]]
       val focused = foci.active
       val parser = $reader.rawParser.asInstanceOf[BintelParser]
-      val btactic = $reader.rawTactic.asInstanceOf[Tactic[BintelError]]
+      val btactic = $reader.rawTactic.asInstanceOf[Tactic[Bintel.Error]]
       ${ body('tactic, 'foci, 'focused, 'parser, 'btactic) }
     }
 
@@ -885,9 +885,9 @@ object bintelInternal:
 
           (Type.of[variantType], instance)
 
-    def dispatch(index: Int, kidx: Expr[Int], btactic: Expr[Tactic[BintelError]]): Expr[sum] =
+    def dispatch(index: Int, kidx: Expr[Int], btactic: Expr[Tactic[Bintel.Error]]): Expr[sum] =
       if index == arity then
-        '{ abort(BintelError(BintelError.Reason.BadKeywordIndex))(using $btactic) }
+        '{ abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))(using $btactic) }
       else variants(index)(1).asType match
         case '[type variantType <: sum; variantType] =>
           val instance = resolve[variantType](cache).getOrElse:
@@ -902,9 +902,9 @@ object bintelInternal:
             else ${ dispatch(index + 1, kidx, btactic) }
           }
 
-    def discard(index: Int, kidx: Expr[Int], btactic: Expr[Tactic[BintelError]]): Expr[Unit] =
+    def discard(index: Int, kidx: Expr[Int], btactic: Expr[Tactic[Bintel.Error]]): Expr[Unit] =
       if index == arity then
-        '{ abort(BintelError(BintelError.Reason.BadKeywordIndex))(using $btactic) }
+        '{ abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))(using $btactic) }
       else variants(index)(1).asType match
         case '[type variantType <: sum; variantType] =>
           val instance = resolve[variantType](cache).getOrElse:
@@ -921,12 +921,12 @@ object bintelInternal:
           }
 
     '{
-      val tactic = infer[Tactic[TelError]]
+      val tactic = infer[Tactic[Tel.Error]]
       val parser = $reader.rawParser.asInstanceOf[BintelParser]
-      val btactic = $reader.rawTactic.asInstanceOf[Tactic[BintelError]]
+      val btactic = $reader.rawTactic.asInstanceOf[Tactic[Bintel.Error]]
       val total = parser.directCount()(using btactic)
 
-      if total == 0 then abort(TelError(TelError.Reason.Absent))(using tactic)
+      if total == 0 then abort(Tel.Error(Tel.Error.Reason.Absent))(using tactic)
       else
         val kidx = parser.directCount()(using btactic)
         val result: sum = ${ dispatch(0, 'kidx, 'btactic) }

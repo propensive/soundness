@@ -57,10 +57,10 @@ object Linux:
   given radical: %.type is Radical:
     type Plane = Linux
 
-    def length(text: Text): Int raises PathError = 1
+    def length(text: Text): Int raises Path.Error = 1
 
-    def decode(text: Text): %.type raises PathError =
-      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
+    def decode(text: Text): %.type raises Path.Error =
+      if text.starts(t"/") then % else abort(Path.Error(_.InvalidRoot))
 
     def encode(root: %.type): Text = t"/"
 

@@ -34,5 +34,5 @@ package soundness
 
 export
   serpentine
-  . { %, ?, ^, Admissible, Ascent, Case, Compliant, Filesystem, Navigable, Path, PathError, Radical,
+  . { %, ?, ^, Admissible, Ascent, Case, Compliant, Filesystem, Navigable, Path, Radical,
       Relative, Root, Submissible }

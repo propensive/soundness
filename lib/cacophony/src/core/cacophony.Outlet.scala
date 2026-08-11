@@ -41,6 +41,7 @@ import contingency.*
 import quantitative.*
 import symbolism.*
 import vacuous.*
+import fulminate.*
 
 object Outlet:
   def list: List[Outlet] =
@@ -55,6 +56,21 @@ object Outlet:
 
         if canPlay then scala.collection.immutable.List(Outlet(info))
         else scala.collection.immutable.Nil
+
+  // Outlet.Error → Outlet.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Unavailable              extends Reason(1)
+      case UnsupportedConfiguration extends Reason(2)
+      case Closed                   extends Reason(3)
+
+    given Reason is Communicable =
+      case Reason.Unavailable              => m"the audio line could not be opened"
+      case Reason.UnsupportedConfiguration => m"the requested configuration is not supported"
+      case Reason.Closed                   => m"the playback has already been stopped"
+
+  case class Error(outlet: Text, reason: Outlet.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(374, reason.number)(m"could not play to outlet $outlet because $reason")
 
 case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def name:        Text = mixerInfo.getName.nn.tt
@@ -98,21 +114,21 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
     mixer.isLineSupported(jss.DataLine.Info(classOf[jss.SourceDataLine], format))
 
-  def play(audio: Audio, chunkBytes: Int = 65536): Playback raises OutletError =
+  def play(audio: Audio, chunkBytes: Int = 65536): Playback raises Outlet.Error =
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
     val info = jss.DataLine.Info(classOf[jss.SourceDataLine], audio.format)
 
     if !mixer.isLineSupported(info)
-    then abort(OutletError(name, OutletError.Reason.UnsupportedConfiguration))
+    then abort(Outlet.Error(name, Outlet.Error.Reason.UnsupportedConfiguration))
 
     val line: jss.SourceDataLine =
       try mixer.getLine(info).nn.asInstanceOf[jss.SourceDataLine]
       catch case _: jss.LineUnavailableException =>
-        abort(OutletError(name, OutletError.Reason.Unavailable))
+        abort(Outlet.Error(name, Outlet.Error.Reason.Unavailable))
 
     try line.open(audio.format)
     catch case _: jss.LineUnavailableException =>
-      abort(OutletError(name, OutletError.Reason.Unavailable))
+      abort(Outlet.Error(name, Outlet.Error.Reason.Unavailable))
 
     line.start()
 

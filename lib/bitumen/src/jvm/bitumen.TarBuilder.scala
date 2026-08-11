@@ -78,28 +78,28 @@ class TarEntryWriter private[bitumen] (put0: Data => Unit) extends caps.Exclusiv
 // did. Either way the target appears atomically, or not at all.
 class TarBuilder private[bitumen]
   ( sink: Optional[ji.RandomAccessFile], format: LongNameFormat )
-  ( using Tactic[TarError] )
+  ( using Tactic[Tar.Error] )
 extends caps.ExclusiveCapability:
   @scala.caps.unsafe.untrackedCaptures
   private var stack: List[Tar.Entry] = Nil
 
   def insert(entry: Tar.Entry): Unit = sink.lay(stack ::= entry)(writeEntry(_, entry))
 
-  def insert[data: Streamable by Data over Credit as streamable](name: TarRef, data: data)
+  def insert[data: Streamable by Data over Credit as streamable](name: Tar.Ref, data: data)
   :   Unit =
 
     val iterator = streamable.stream(data).chunks
 
     insert(Tar.Entry.File
       ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
-        TarBody.deferred(() => if iterator.hasNext then iterator.next() else Unset) ))
+        Tar.Body.deferred(() => if iterator.hasNext then iterator.next() else Unset) ))
 
   // Author one entry with a streamed, unknown-length body: the block writes
   // chunks through the lent `TarEntryWriter`. On an uncompressed target the
   // body goes straight to disk and the header is backpatched; on a compressed
   // target the body is buffered and inserted whole when the block returns.
   def file[result]
-    ( name:  TarRef,
+    ( name:  Tar.Ref,
       mode:  UnixMode  = UnixMode(),
       user:  UnixUser  = UnixUser(0),
       group: UnixGroup = UnixGroup(0),
@@ -110,11 +110,11 @@ extends caps.ExclusiveCapability:
     sink.lay:
       val buffer = scm.ArrayBuffer[Data]()
       val outcome = block(using TarEntryWriter(buffer += _))
-      insert(Tar.Entry.File(name, mode, user, group, mtime, TarBody(buffer.toSeq*)))
+      insert(Tar.Entry.File(name, mode, user, group, mtime, Tar.Body(buffer.toSeq*)))
       outcome
 
     . apply: out =>
-        val probe = Tar.Entry.File(name, mode, user, group, mtime, TarBody.empty)
+        val probe = Tar.Entry.File(name, mode, user, group, mtime, Tar.Body.empty)
         Tarfile.preamble(probe, format).each { chunk => write(out, chunk) }
 
         val headerPosition = out.getFilePointer
@@ -159,7 +159,7 @@ extends caps.ExclusiveCapability:
   private def write(out: ji.RandomAccessFile, chunk: Data): Unit =
     try out.write(Array.unsafeJvm(chunk))
     catch case error: ji.IOException =>
-      abort(TarError(TarError.Reason.CannotWrite(error.getMessage.nn.tt)))
+      abort(Tar.Error(Tar.Error.Reason.CannotWrite(error.getMessage.nn.tt)))
 
   // The two terminating zero blocks, in streaming mode.
   private[bitumen] def finish(): Unit = sink.let: out =>
@@ -170,24 +170,24 @@ extends caps.ExclusiveCapability:
     Tarfile(stack.reverse, format)
 
 object TarBuilder:
-  class TarCreatable[path: Abstractable across Paths to Text](using Tactic[TarError])
+  class TarCreatable[path: Abstractable across Paths to Text](using Tactic[Tar.Error])
   extends Creatable:
 
     type Self = path
     type Form = Tar
-    type Operand = CreateFlag | TarFlag | LongNameFormat
+    type Operand = CreateFlag | Tar.Flag | LongNameFormat
     type Grants = Grant.Read & Grant.Write
     type Result = TarBuilder
 
     def create[result]
-      ( value: path, flags: List[CreateFlag | TarFlag | LongNameFormat] )
+      ( value: path, flags: List[CreateFlag | Tar.Flag | LongNameFormat] )
       ( block: ((TarBuilder & Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
       val format = flags.stdlib.collectFirst { case format: LongNameFormat => format }
         . getOrElse(LongNameFormat.Pax)
 
-      val compression = flags.stdlib.collectFirst { case flag: TarFlag => flag }
+      val compression = flags.stdlib.collectFirst { case flag: Tar.Flag => flag }
       val createFlags = flags.stdlib.collect { case flag: CreateFlag => flag }
 
       compression match
@@ -199,9 +199,9 @@ object TarBuilder:
           val tarfile = builder.tarfile(format)
 
           commit(value.generic, List.of(createFlags), tarFlag match
-            case TarFlag.Gzip    => tarfile.gzip
-            case TarFlag.Zlib    => tarfile.zlib
-            case TarFlag.Deflate => tarfile.deflate)
+            case Tar.Flag.Gzip    => tarfile.gzip
+            case Tar.Flag.Zlib    => tarfile.zlib
+            case Tar.Flag.Deflate => tarfile.deflate)
 
           outcome
 
@@ -213,7 +213,7 @@ object TarBuilder:
           val target = jnf.Path.of(filename.s).nn
 
           if !createFlags.has(CreateFlag.Replace) && jnf.Files.exists(target)
-          then abort(TarError(TarError.Reason.AlreadyExists))
+          then abort(Tar.Error(Tar.Error.Reason.AlreadyExists))
 
           try
             if createFlags.has(CreateFlag.Parents) then
@@ -244,18 +244,18 @@ object TarBuilder:
               throw throwable
           catch
             case error: ji.IOException =>
-              abort(TarError(TarError.Reason.CannotWrite(error.getMessage.nn.tt)))
+              abort(Tar.Error(Tar.Error.Reason.CannotWrite(error.getMessage.nn.tt)))
 
   // Serialize to a hidden temporary sibling, then move atomically onto the target.
   private def commit
     ( filename: Text, flags: List[CreateFlag], consume stream: (Stream[Data] over Credit)^ )
-    ( using Tactic[TarError] )
+    ( using Tactic[Tar.Error] )
   :   Unit =
 
     val target = jnf.Path.of(filename.s).nn
 
     if !flags.has(CreateFlag.Replace) && jnf.Files.exists(target)
-    then abort(TarError(TarError.Reason.AlreadyExists))
+    then abort(Tar.Error(Tar.Error.Reason.AlreadyExists))
 
     try
       if flags.has(CreateFlag.Parents) then
@@ -281,4 +281,4 @@ object TarBuilder:
         throw throwable
     catch
       case error: ji.IOException =>
-        abort(TarError(TarError.Reason.CannotWrite(error.getMessage.nn.tt)))
+        abort(Tar.Error(Tar.Error.Reason.CannotWrite(error.getMessage.nn.tt)))

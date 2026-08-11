@@ -52,7 +52,7 @@ import vacuous.*
 // compound with the same kebab-case keyword in place or appends a
 // new one. Mirrors jacinta's lens given.
 package optics:
-  given telLens: [name <: Label: ValueOf] => (erased dynamicTelEnabler: DynamicTelEnabler) => Tactic[TelError]
+  given telLens: [name <: Label: ValueOf] => (erased dynamicTelEnabler: DynamicTelEnabler) => Tactic[Tel.Error]
   =>  name is Lens from Tel onto Tel =
     Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
 

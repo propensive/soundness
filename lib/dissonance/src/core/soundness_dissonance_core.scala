@@ -34,5 +34,5 @@ package soundness
 
 export
   dissonance
-  . { Change, Chunk, Del, Diff, diff, DiffError, Edit, Evolution, evolve, Ins, kept, Par, RDiff,
-      Redraft, RedraftError, retained, Retained, retentions, Sub, Tract }
+  . { Change, Chunk, Del, Diff, diff, Edit, Evolution, evolve, Ins, kept, Par, RDiff,
+      Redraft, retained, Retained, retentions, Sub, Tract }

@@ -37,7 +37,7 @@ import scala.caps
 import contingency.*
 import proscenium.compat.*
 
-import RasterError.Reason
+import Raster.Error.Reason
 
 // Chroma upsampling and row interleaving, ported from image-rs/jpeg-decoder (`src/upsampler.rs`,
 // MIT/Apache-2.0). Each component plane is upsampled to the full image width with the fancy
@@ -55,7 +55,7 @@ private[hallucination] object JpegUpsampler:
   // Derives the per-component upsampling parameters into fresh arrays, frozen zero-copy into
   // the fully-initialized upsampler.
   def apply(components: scala.IArray[JpegComponent], outputWidth: Int, outputHeight: Int)
-    ( using Tactic[RasterError] )
+    ( using Tactic[Raster.Error] )
   :   JpegUpsampler =
 
     val count = components.length
@@ -91,7 +91,7 @@ private[hallucination] object JpegUpsampler:
         else if h1 && v2 then H1V2
         else if h2 && v2 then H2V2
         else if hMax % h != 0 || vMax % v != 0 then
-          abort(RasterError(Jpeg(), Reason.UnsupportedVariant))
+          abort(Raster.Error(Jpeg(), Reason.UnsupportedVariant))
         else
           Generic
 

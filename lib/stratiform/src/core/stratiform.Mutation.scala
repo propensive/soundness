@@ -40,7 +40,8 @@ import contingency.*
 import gossamer.*
 import vacuous.*
 
-import MutationError.Reason
+import Mutation.Error.Reason
+import fulminate.*
 
 // Primitive presentation-preserving mutations per §22.2. Each op is a
 // local rewrite addressed by a Tel.Pointer; surrounding atoms, comments,
@@ -168,7 +169,7 @@ object Mutation:
     case Op.ReorderGroups(p, _, _, _)      => p
     case Op.ResizeTabulation(p, _, _)      => p
 
-  def apply(tel: Tel, op: Op): Tel raises MutationError =
+  def apply(tel: Tel, op: Op): Tel raises Mutation.Error =
     // The document's resolved sigil (§8.3) feeds the inline-safe predicate
     // used by `update-value` form escalation; defaults to `#`.
     val sigil = tel.subtree match
@@ -177,7 +178,7 @@ object Mutation:
 
     Tel.make(transform(tel.subtree, pointerOf(op).steps, 0, op, sigil))
 
-  def apply(tel: Tel, ops: List[Op]): Tel raises MutationError =
+  def apply(tel: Tel, ops: List[Op]): Tel raises Mutation.Error =
     var current = tel
     val ops2 = ops.stdlib
     var i = 0
@@ -201,7 +202,7 @@ object Mutation:
       idx:      Int,
       op:       Op,
       sigil:    Char )
-  :   Tel.Subtree raises MutationError =
+  :   Tel.Subtree raises Mutation.Error =
 
     if idx >= steps.length then op match
       case Op.Insert(_, compound) =>
@@ -219,7 +220,7 @@ object Mutation:
       case Op.ResizeTabulation(_, blockIndex, plannedRows) =>
         rewrap(subtree, resizeTabulation(subtree.children, blockIndex, plannedRows, idx))
 
-      case _ => abort(MutationError(Reason.PointerNotFound))
+      case _ => abort(Mutation.Error(Reason.PointerNotFound))
 
     else
       val step = steps(idx)
@@ -273,7 +274,7 @@ object Mutation:
   // Counting walks all blocks in order so siblings with the same keyword
   // spread across multiple blocks remain addressable.
   private def findTarget(blocks: Array[Tel.Block]^{}, step: Tel.Pointer.Step)
-  :   (Int, Int) raises MutationError =
+  :   (Int, Int) raises Mutation.Error =
 
     val want = step.index.or(0)
     var seen = 0
@@ -297,7 +298,7 @@ object Mutation:
 
       b += 1
 
-    if foundBlock < 0 then abort(MutationError(Reason.PointerNotFound))
+    if foundBlock < 0 then abort(Mutation.Error(Reason.PointerNotFound))
     (foundBlock, foundLocal)
 
   // Apply a target-addressed op to the compound at `localIdx` within
@@ -306,7 +307,7 @@ object Mutation:
   // its attached comments), one for an in-place rewrite, or two when a
   // sibling is inserted next to a tabulated block.
   private def applyToTarget(block: Tel.Block, localIdx: Int, op: Op, sigil: Char)
-  :   Array[Tel.Block]^{} raises MutationError =
+  :   Array[Tel.Block]^{} raises Mutation.Error =
 
     val target = block.compounds(localIdx)
 
@@ -364,7 +365,7 @@ object Mutation:
           case _                        => false
 
         val childPresent = target.children.flatMap(_.compounds).exists(_.keyword == keyword)
-        if inlinePresent || childPresent then abort(MutationError(Reason.FlagAlreadySet))
+        if inlinePresent || childPresent then abort(Mutation.Error(Reason.FlagAlreadySet))
 
         // §22.2 placement conditions (a) and (b) reference schema member
         // order; the schema-free sufficient condition is that the target
@@ -445,7 +446,7 @@ object Mutation:
       case Op.Insert(_, _) | Op.InsertIntoBlock(_, _, _) | Op.ReorderWithinGroup(_, _, _, _)
         | Op.ReorderGroups(_, _, _, _) | Op.ResizeTabulation(_, _, _) =>
         // unreachable: handled in transform's container-mode arm
-        abort(MutationError(Reason.PointerNotFound))
+        abort(Mutation.Error(Reason.PointerNotFound))
 
   // §22.3 `update-value` — replace the atomIndex-th atom's text (counting
   // every atom form). The atom's *form* is subject to the §22.2 Atom-form
@@ -456,10 +457,10 @@ object Mutation:
   // value leaves it a literal atom). Preceding spaces follow the §22.3
   // hard-space rule; a kept literal atom reuses its delimiter when safe.
   private def updateAtomAt(compound: Tel.Compound, atomIndex: Int, text: Text, sigil: Char)
-  :   Tel.Compound raises MutationError =
+  :   Tel.Compound raises Mutation.Error =
 
     if atomIndex < 0 || atomIndex >= compound.atoms.length
-    then abort(MutationError(Reason.AtomIndexOutOfRange))
+    then abort(Mutation.Error(Reason.AtomIndexOutOfRange))
 
     val updated = escalateAtom(compound.atoms(atomIndex), text, sigil)
     compound.copy(atoms = compound.atoms.updated(atomIndex, updated))
@@ -571,10 +572,10 @@ object Mutation:
   // value starts exactly at its marker offset (§16.2 E117).
   private def insertIntoBlock
     ( blocks: Array[Tel.Block]^{}, blockIndex: Int, compound: Tel.Compound, indent: Int )
-  :   Array[Tel.Block]^{} raises MutationError =
+  :   Array[Tel.Block]^{} raises Mutation.Error =
 
     if blockIndex < 0 || blockIndex >= blocks.length
-    then abort(MutationError(Reason.PointerNotFound))
+    then abort(Mutation.Error(Reason.PointerNotFound))
 
     val block = blocks(blockIndex)
 
@@ -585,7 +586,7 @@ object Mutation:
 
       while col < offsets.length - 1 do
         if vs(col) > offsets(col + 1) - offsets(col) - 2
-        then abort(MutationError(Reason.TabulationOverflow))
+        then abort(Mutation.Error(Reason.TabulationOverflow))
 
         col += 1
 
@@ -709,7 +710,7 @@ object Mutation:
   // affected blocks. Compounds with other keywords stay in place.
   private def reorderWithinGroup
     ( blocks: Array[Tel.Block]^{}, keyword: Text, oldIndex: Int, newIndex: Int )
-  :   Array[Tel.Block]^{} raises MutationError =
+  :   Array[Tel.Block]^{} raises Mutation.Error =
 
     val positions = scala.collection.mutable.ArrayBuffer.empty[(Int, Int)]
     var b = 0
@@ -725,7 +726,7 @@ object Mutation:
       b += 1
 
     if oldIndex < 0 || oldIndex >= positions.length || newIndex < 0 || newIndex >= positions.length
-    then abort(MutationError(Reason.PointerNotFound))
+    then abort(Mutation.Error(Reason.PointerNotFound))
 
     if oldIndex == newIndex then blocks
     else
@@ -767,7 +768,7 @@ object Mutation:
   // block-level interleaving and is rejected.
   private def reorderGroups
     ( blocks: Array[Tel.Block]^{}, keyword: Text, otherKeyword: Text, placement: Placement )
-  :   Array[Tel.Block]^{} raises MutationError =
+  :   Array[Tel.Block]^{} raises Mutation.Error =
 
     // Verify flat contiguity of a group and report the block indices it
     // touches and whether every touched block holds only this group.
@@ -799,7 +800,7 @@ object Mutation:
 
         b += 1
 
-      if !present || interleaved then abort(MutationError(Reason.PointerNotFound))
+      if !present || interleaved then abort(Mutation.Error(Reason.PointerNotFound))
       (touched.toList, homogeneous)
 
     val (movingBlocks, movingHomogeneous) = survey(keyword)
@@ -838,7 +839,7 @@ object Mutation:
       blocks.updated(blockIdx, block.copy(compounds = compounds))
 
     else if movingBlocks.exists(otherBlocks.contains) || !movingHomogeneous
-    then abort(MutationError(Reason.PointerNotFound))
+    then abort(Mutation.Error(Reason.PointerNotFound))
     else
       // Disjoint block sets: move the whole blocks of the `keyword`
       // group. Each seam created by the move gets at least one blank
@@ -924,13 +925,13 @@ object Mutation:
       blockIndex:  Int,
       plannedRows: Array[Tel.Compound]^{},
       indent:      Int )
-  :   Array[Tel.Block]^{} raises MutationError =
+  :   Array[Tel.Block]^{} raises Mutation.Error =
 
     if blockIndex < 0 || blockIndex >= blocks.length
-    then abort(MutationError(Reason.PointerNotFound))
+    then abort(Mutation.Error(Reason.PointerNotFound))
 
     val block = blocks(blockIndex)
-    val tab = block.tabulation.or(abort(MutationError(Reason.PointerNotFound)))
+    val tab = block.tabulation.or(abort(Mutation.Error(Reason.PointerNotFound)))
     val n = tab.markerOffsets.length
     val widths = new scala.Array[Int](n)
     var col = 0
@@ -1153,3 +1154,27 @@ object Mutation:
       start = if nl < 0 then s.length + 1 else nl + 1
 
     found
+
+  // MutationError → Mutation.Error
+  // Errors raised by the Mutation interpreter (§22). These describe failed
+  // pointer resolutions and invariant violations of primitive operations.
+
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case PointerNotFound       => m"the pointer does not resolve to a compound"
+        case AtomIndexOutOfRange   => m"the atom index is out of range for the target compound"
+        case FlagAlreadySet        => m"the flag is already set on the target compound"
+        case TabulationOverflow    => m"the tabulation has insufficient column capacity for the row"
+        case WriteUnsupported      => m"the source of the document does not support writing"
+
+    enum Reason(val number: Int) extends Clarification:
+      case PointerNotFound     extends Reason(1)
+      case AtomIndexOutOfRange extends Reason(2)
+      case FlagAlreadySet      extends Reason(3)
+      case TabulationOverflow  extends Reason(4)
+      case WriteUnsupported    extends Reason(5)
+
+  case class Error(reason: Mutation.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(606, reason.ordinal)(m"the mutation failed because $reason")
+

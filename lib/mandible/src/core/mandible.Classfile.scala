@@ -48,6 +48,10 @@ import turbulence.*
 import vacuous.*
 
 object Classfile:
+  // Classfile.Error → Classfile.Error
+  case class Error()(using Diagnostics)
+  extends fulminate.Error(293, 0)(m"there was an error reading the classfile")
+
   given aggregable: Classfile is Aggregable by Data = stream => new Classfile(stream.read[Data].readable)
 
   def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =

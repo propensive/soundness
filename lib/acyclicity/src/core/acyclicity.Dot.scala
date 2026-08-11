@@ -41,34 +41,36 @@ import scala.collection.immutable.List
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import prepositional.*
+import fulminate.*
 
 object Dot:
-  case class Target(directed: Boolean, dest: Name[DotId] | Statement.Subgraph, link: Option[Target])
+  case class Target(directed: Boolean, dest: Name[Dot.Id] | Statement.Subgraph, link: Option[Target])
   case class Property(key: Text, value: Text)
 
-  // The DOT graph DSL is built from `Name[DotId]` identifiers. An identifier acts
+  // The DOT graph DSL is built from `Name[Dot.Id]` identifiers. An identifier acts
   // as an edge endpoint (`a -- b`, `a --> b`), an assignment left-hand side
   // (`a := b`) or a node declaration carrying attributes (`a("color" -> "red")`).
-  extension (id: Name[DotId])
+  extension (id: Name[Dot.Id])
     @targetName("joinTo")
-    infix def -- (dest: Name[DotId] | Statement.Subgraph): Statement.Edge =
+    infix def -- (dest: Name[Dot.Id] | Statement.Subgraph): Statement.Edge =
       Statement.Edge(id, Target(false, dest, None))
 
     @targetName("mapTo")
-    infix def --> (dest: Name[DotId] | Statement.Subgraph): Statement.Edge =
+    infix def --> (dest: Name[Dot.Id] | Statement.Subgraph): Statement.Edge =
       Statement.Edge(id, Target(true, dest, None))
 
     @targetName("assign")
-    infix def := (id2: Name[DotId]): Statement.Assignment = Statement.Assignment(id, id2)
+    infix def := (id2: Name[Dot.Id]): Statement.Assignment = Statement.Assignment(id, id2)
 
     def apply(attributes: (Text, Text)*): Statement.Node =
       Statement.Node(id, attributes.map { (key, value) => Property(key, value) }*)
 
   enum Statement:
-    case Node(id: Name[DotId], attrs: Property*)
-    case Edge(id: Name[DotId], rhs: Target, attrs: Property*)
-    case Assignment(id: Name[DotId], id2: Name[DotId])
-    case Subgraph(id: Option[Name[DotId]], statements: Statement*)
+    case Node(id: Name[Dot.Id], attrs: Property*)
+    case Edge(id: Name[Dot.Id], rhs: Target, attrs: Property*)
+    case Assignment(id: Name[Dot.Id], id2: Name[Dot.Id])
+    case Subgraph(id: Option[Name[Dot.Id]], statements: Statement*)
 
   def serialize(tokens: List[Text]): Text = Text.build:
     var level: Int = 0
@@ -143,9 +145,28 @@ object Dot:
         List(t"}")
       ).flatten
 
+  // Dot.Id → Dot.Id
+  // The naming plane for GraphViz DOT identifiers: `Name[Dot.Id]` is used for node
+  // identifiers, edge endpoints, assignment targets and (sub)graph names alike.
+  object Id:
+    inline given nominative: Dot.Id is Nominative under Dot.Identifier["a valid DOT identifier"] = !!
+
+  sealed trait Id
+
+  // Dot.Identifier → Dot.Identifier
+  // A name usable as a GraphViz DOT identifier. Because identifiers are always
+  // emitted as double-quoted strings, the rule is permissive: any non-empty text
+  // that contains neither a double-quote nor a newline (so it serializes safely
+  // without escaping). The `description` type parameter is the phrasing used in
+  // error messages.
+  object Identifier
+  extends Rule({ description => m"must be $description" }, { (name, _) => dotIdentifierValid(name) })
+
+  sealed trait Identifier[description <: Label] extends Check[description]
+
 enum Dot:
-  case Graph(id: Option[Name[DotId]], strict: Boolean, statements: Dot.Statement*)
-  case Digraph(id: Option[Name[DotId]], strict: Boolean, statements: Dot.Statement*)
+  case Graph(id: Option[Name[Dot.Id]], strict: Boolean, statements: Dot.Statement*)
+  case Digraph(id: Option[Name[Dot.Id]], strict: Boolean, statements: Dot.Statement*)
 
   def serialize: Text = Dot.serialize(Dot.tokenize(this))
 

@@ -43,7 +43,7 @@ object VariantError:
         wisteria.internal.variantLabelList[derivation] )
 
 case class VariantError(inputLabel: Text, sum: Text, validVariants: List[Text])(using Diagnostics)
-extends Error
+extends fulminate.Error
   ( m"""
       the specified variant ($inputLabel) is not one of the valid variants
       (${validVariants.stdlib.mkString(", ").tt}) of sum type $sum

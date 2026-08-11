@@ -33,4 +33,4 @@
 package soundness
 
 export cordillera.{Http2, Hpack, HpackEntry, HpackTable, Huffman, Http2Connection,
-    Http2ServerConnection, Http2Stream, Http2Error, Http2Event, FrameReader, PseudoHeaders}
+    Http2ServerConnection, Http2Stream, FrameReader, PseudoHeaders}

@@ -116,7 +116,7 @@ extends Cipher, Encryption, Symmetric:
   // streaming decryption of AEAD input bounds no memory; it is offered for
   // API uniformity only.
   def decrypt(consume stream: (Stream[Data] over Credit)^, key: Data)
-    (using buffering: Buffering, tactic: Tactic[CryptoError])
+    (using buffering: Buffering, tactic: Tactic[Crypto.Error])
   :   (Stream[Data] over Credit)^ =
 
     val ivSize = if mode.usesIv then cipher.blockSize(transformation) else 0
@@ -212,13 +212,13 @@ extends Duct[Data, Data]:
 // with the truncated prefix, and the provider raises its own (accurate)
 // invalid-parameter error.
 private[enigmatic] final class DecipherDuct
-  ( start: Data => CipherSession, ivSize: Int, tactic: Tactic[CryptoError] )
+  ( start: Data => CipherSession, ivSize: Int, tactic: Tactic[Crypto.Error] )
 extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
 
   // Turn the provider's end-of-stream verification failure (an AEAD tag
-  // mismatch, or corrupt padding on a block mode) into a typed `CryptoError`
+  // mismatch, or corrupt padding on a block mode) into a typed `Crypto.Error`
   // as the final window is pulled, rather than leaking the JCE exception.
   private def detail(error: Throwable): Optional[Text] = error.getMessage match
     case null         => Unset
@@ -273,10 +273,10 @@ extends Duct[Data, Data]:
           // render the detail text; there is no aliased writer.
           if securityException(error, "javax.crypto.BadPaddingException")
           then scala.caps.unsafe.unsafeAssumeSeparate:
-            tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+            tactic.abort(Crypto.Error(Crypto.Error.Reason.BadPadding, detail(error)))
           else if securityException(error, "javax.crypto.IllegalBlockSizeException")
           then scala.caps.unsafe.unsafeAssumeSeparate:
-            tactic.abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
+            tactic.abort(Crypto.Error(Crypto.Error.Reason.IllegalBlockSize, detail(error)))
           else throw error
 
       case null =>

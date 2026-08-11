@@ -50,23 +50,23 @@ trait Audible extends Typeclass:
     def mediaType: MediaType
 
     def read[input: Streamable by Data over Credit](source: input)
-    :   Audio in Self raises AudioError =
+    :   Audio in Self raises Audio.Error =
       // `ByteArrayInputStream` only reads the array it wraps.
       val rawBytes: scala.Array[Byte] = Array.unsafeJvm(source.read[Data])
 
       val fileFormat: jss.AudioFileFormat =
         try jss.AudioSystem.getAudioFileFormat(ji.ByteArrayInputStream(rawBytes)).nn
         catch
-          case _: jss.UnsupportedAudioFileException => abort(AudioError(this))
-          case _: ji.IOException                    => abort(AudioError(this))
+          case _: jss.UnsupportedAudioFileException => abort(Audio.Error(this))
+          case _: ji.IOException                    => abort(Audio.Error(this))
 
-      if fileFormat.getType.nn.toString != name.s then abort(AudioError(this))
+      if fileFormat.getType.nn.toString != name.s then abort(Audio.Error(this))
 
       val raw: jss.AudioInputStream =
         try jss.AudioSystem.getAudioInputStream(ji.ByteArrayInputStream(rawBytes)).nn
         catch
-          case _: jss.UnsupportedAudioFileException => abort(AudioError(this))
-          case _: ji.IOException                    => abort(AudioError(this))
+          case _: jss.UnsupportedAudioFileException => abort(Audio.Error(this))
+          case _: ji.IOException                    => abort(Audio.Error(this))
 
       val encoding = raw.getFormat.nn.getEncoding.nn
 
@@ -88,7 +88,7 @@ trait Audible extends Typeclass:
                 false )
 
           try jss.AudioSystem.getAudioInputStream(target, raw).nn
-          catch case _: IllegalArgumentException => abort(AudioError(this))
+          catch case _: IllegalArgumentException => abort(Audio.Error(this))
 
       val readBytes = pcm.readAllBytes.nn
       val pcmFormat: jss.AudioFormat = pcm.getFormat.nn

@@ -52,6 +52,10 @@ object Random:
   def apply(seed: Seed)(using randomization: Randomization): Random =
     new Random(randomization.initialize())
 
+  // Random.Size → Random.Size
+  trait Size:
+    def generate(random: Random): Int
+
 // A `Random` is a *capability*: drawing from a pseudorandom generator is an effect (the
 // generator's state advances), so code that consumes randomness carries `{random}` in its
 // capture set. `caps.Unscoped` (like contingency's ambient strategies) rather than

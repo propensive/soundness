@@ -32,9 +32,9 @@
                                                                                                   */
 package soundness
 
-export cataclysm.{Css, CssError, CssErrors, SelectorList, Selector, Compound,
+export cataclysm.{Css, SelectorList, Selector, Compound,
     Simple, Combinator, AttributeMatcher, AttributeTest, Prefix, PseudoArgument,
-    CssConvertible, Outcome, PropertyDef, SyntaxMatcher, ValueToken, Pixels, Rems, Exs, Chs,
+    Outcome, PropertyDef, SyntaxMatcher, ValueToken, Pixels, Rems, Exs, Chs,
     ViewportWidths,
     ViewportHeights, ViewportMins, ViewportMaxes, Percents, Degrees, Radians, Turns, Flexes, Px,
     Rem, Ex, Ch, Vw, Vh, Vmin, Vmax, Cm, Mm, Pt, Pc, Pct, S, Ms, Deg, Rad, Turn, Fr, css, classes,

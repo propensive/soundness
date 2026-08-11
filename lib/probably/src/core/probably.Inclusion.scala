@@ -38,8 +38,8 @@ package probably
 // may ignore them.
 trait Inclusion[report, data]:
   def include
-    ( report: report, testId: TestId, coordinates: List[(Axis.Spec, Value)], data: data )
+    ( report: report, testId: Test.Id, coordinates: List[(Axis.Spec, Value)], data: data )
   :   report
 
-  def include(report: report, testId: TestId, data: data): report =
+  def include(report: report, testId: Test.Id, data: data): report =
     include(report, testId, Nil, data)

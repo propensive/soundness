@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export yossarian.{Pty, PtyEscapeError, PtyState, Screen, Style}
+export yossarian.{Pty, Screen, Style}

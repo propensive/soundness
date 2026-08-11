@@ -30,58 +30,42 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package synesthesia
+package bitumen
 
-import scala.annotation.*
-
+import proscenium.compat.*
 import anticipation.*
-import beneficence.*
+import contingency.*
+import denominative.*
+import distillate.*
+import galilei.*
 import gossamer.*
-import jacinta.*
-import obligatory.*
+import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
+import hypotenuse.*, arithmeticOptions.overflow.unchecked
+import nomenclature.*
 import prepositional.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import turbulence.*
 import vacuous.*
+import zephyrine.*
+import fulminate.*
+import hypotenuse.*
+import scala.caps
+import aperture.*
+import pneumatic.*
 
-trait McpClient extends Findable:
-  import Mcp.*
+class TarDataOpenable(using Tactic[Tar.Error], Tactic[StreamError]) extends Openable:
+  type Self = Data
+  type Form = Tar
+  type Operand = Tar.Flag
+  type Result = Tar.Handle
 
-  @rpc
-  protected def ping(): Unit
+  def open[grants <: Grant, result]
+    ( value: Data, mode: Mode granting grants, flags: List[Tar.Flag] )
+    ( block: ((Tar.Handle & Granting[grants])^) ?=> result )
+  :   result =
 
-  // @rpc
-  // protected def `sampling/createMessage`
-  //   ( task:             Optional[TaskMetadata],
-  //     messages:         List[SamplingMessage],
-  //     modelPreferences: Optional[ModelPreferences],
-  //     systemPrompt:     Optional[Text],
-  //     includeContext:   Optional[Text],
-  //     temperature:      Optional[Double],
-  //     maxTokens:        Optional[Int],
-  //     stopSequences:    Optional[List[Text]],
-  //     metadata:         Optional[Json],
-  //     tools:            Optional[List[Tool]],
-  //     toolChoice:       Optional[ToolChoice] )
-  // : CreateMessage
-
-  // @rpc
-  // protected def `roots/list`(): ListRoots
-
-  @rpc
-  protected def `notifications/message`
-    ( level: LoggingLevel, logger: Optional[Text], data: Json )
-  :   Unit
-
-  @rpc
-  protected def `elicitation/create`
-    ( mode:            Optional[Text],
-      message:         Text,
-      requestedSchema: Json )
-  :   Json
-
-  def log(message: Text): Unit =
-    `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).in[Json])
-
-  def elicit[result: Schematic over JsonSchema](message: Text): Json =
-    `elicitation/create`(t"form", message, result.schema().in[Json])
-
-  def sample(message: Text): Unit = ???
+    if mode.atoms.has(Write) then abort(Tar.Error(Tar.Error.Reason.WriteUnsupported))
+    val entries = Tar.Handle.entries(value.stream, flags)
+    block(using new Tar.Handle(entries) with Granting[grants] {})

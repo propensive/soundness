@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export polysyllabic.{Hyphenation, HyphenationError, breakPoints, hyphenate, syllables}
+export polysyllabic.{Hyphenation, breakPoints, hyphenate, syllables}
 
 package hyphenations:
   export polysyllabic.hyphenations.englishHyphenation

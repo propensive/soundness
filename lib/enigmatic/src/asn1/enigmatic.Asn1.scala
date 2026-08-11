@@ -47,7 +47,8 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-import Asn1Error.Reason
+import Asn1.Error.Reason
+import fulminate.*
 
 // An ASN.1 value, in the subset of the universal types that PKIX uses, plus two escape hatches for
 // everything else.
@@ -89,10 +90,10 @@ object Asn1:
 
   given encodable: Asn1 is Encodable in Der = value => Der(render(value))
 
-  given decodable: (tactic: Tactic[Asn1Error]^) => ((Asn1 is Decodable in Der)^{tactic, caps.any}) =
+  given decodable: (tactic: Tactic[Asn1.Error]^) => ((Asn1 is Decodable in Der)^{tactic, caps.any}) =
     der => Parser.parse(der.data)
 
-  given aggregable: (tactic: Tactic[Asn1Error]^)
+  given aggregable: (tactic: Tactic[Asn1.Error]^)
   =>  ( ((Asn1 in Der) is Aggregable by Data)^{tactic, caps.any} ) =
     bytes => Parser.parse(bytes.read[Data]).asInstanceOf[Asn1 in Der]
 
@@ -313,12 +314,12 @@ object Asn1:
       case _                           => if leap then 29 else 28
 
   private[enigmatic] object Parser:
-    def parse(source: Data): Asn1 raises Asn1Error =
+    def parse(source: Data): Asn1 raises Asn1.Error =
       val parser = new Parser(source)
       val result = parser.value(parser.data.length)
 
       if parser.offset < parser.data.length
-      then abort(Asn1Error(Reason.Trailing(parser.offset.toLong)))
+      then abort(Asn1.Error(Reason.Trailing(parser.offset.toLong)))
 
       result
 
@@ -331,8 +332,8 @@ object Asn1:
     // Exposed to the `parse` entry point only, so that it can detect trailing bytes.
     var offset: Int = 0
 
-    private inline def need(count: Int, limit: Int): Unit raises Asn1Error =
-      if limit - offset < count then abort(Asn1Error(Reason.Truncated(offset.toLong)))
+    private inline def need(count: Int, limit: Int): Unit raises Asn1.Error =
+      if limit - offset < count then abort(Asn1.Error(Reason.Truncated(offset.toLong)))
 
     private inline update def readByte(): Int = (data.readUnchecked(offset) & 0xff).also(offset += 1)
 
@@ -345,7 +346,7 @@ object Asn1:
 
     private update def readBytes(end: Int): Data = Array.unsafeFrozen(readRaw(end))
 
-    update def value(limit: Int)(using Tactic[Asn1Error]): Asn1 =
+    update def value(limit: Int)(using Tactic[Asn1.Error]): Asn1 =
       val start = offset
       need(1, limit)
       val head = readByte()
@@ -363,50 +364,50 @@ object Asn1:
 
     private update def universal
       ( start: Int, end: Int, tag: Int, constructed: scala.Boolean, size: Int )
-      ( using Tactic[Asn1Error] )
+      ( using Tactic[Asn1.Error] )
     :   Asn1 =
 
       inline def primitive(): Unit =
-        if constructed then abort(Asn1Error(Reason.NotPrimitive(start.toLong, tag)))
+        if constructed then abort(Asn1.Error(Reason.NotPrimitive(start.toLong, tag)))
 
       inline def aggregate(): Unit =
-        if !constructed then abort(Asn1Error(Reason.NotConstructed(start.toLong, tag)))
+        if !constructed then abort(Asn1.Error(Reason.NotConstructed(start.toLong, tag)))
 
       tag match
-        case 0 => abort(Asn1Error(Reason.ReservedTag(start.toLong)))
+        case 0 => abort(Asn1.Error(Reason.ReservedTag(start.toLong)))
 
         case BooleanTag =>
           primitive()
-          if size != 1 then abort(Asn1Error(Reason.BadLength(start.toLong, tag, size)))
+          if size != 1 then abort(Asn1.Error(Reason.BadLength(start.toLong, tag, size)))
           val byte = readByte()
 
           if byte == 0x00 then Asn1.Boolean(false)
           else if byte == 0xff then Asn1.Boolean(true)
-          else abort(Asn1Error(Reason.BadBoolean(start.toLong, byte)))
+          else abort(Asn1.Error(Reason.BadBoolean(start.toLong, byte)))
 
         case IntegerTag =>
           primitive()
-          if size == 0 then abort(Asn1Error(Reason.EmptyInteger(start.toLong)))
+          if size == 0 then abort(Asn1.Error(Reason.EmptyInteger(start.toLong)))
 
           if size > 1 then
             val first = data.readUnchecked(offset) & 0xff
             val second = data.readUnchecked(offset + 1) & 0xff
 
             if (first == 0x00 && (second & 0x80) == 0) || (first == 0xff && (second & 0x80) != 0)
-            then abort(Asn1Error(Reason.NonMinimalInteger(start.toLong)))
+            then abort(Asn1.Error(Reason.NonMinimalInteger(start.toLong)))
 
           Asn1.Integer(BigInt(new java.math.BigInteger(Array.unsafeJvm(readBytes(end)))))
 
         case BitStringTag =>
           primitive()
-          if size == 0 then abort(Asn1Error(Reason.BadLength(start.toLong, tag, size)))
+          if size == 0 then abort(Asn1.Error(Reason.BadLength(start.toLong, tag, size)))
           val unusedBits = readByte()
 
           if unusedBits > 7 || (size == 1 && unusedBits != 0)
-          then abort(Asn1Error(Reason.BadUnusedBits(start.toLong, unusedBits)))
+          then abort(Asn1.Error(Reason.BadUnusedBits(start.toLong, unusedBits)))
 
           if unusedBits > 0 && (data.readUnchecked(end - 1) & ((1 << unusedBits) - 1)) != 0
-          then abort(Asn1Error(Reason.BadUnusedBits(start.toLong, unusedBits)))
+          then abort(Asn1.Error(Reason.BadUnusedBits(start.toLong, unusedBits)))
 
           Asn1.BitString(readBytes(end), unusedBits)
 
@@ -416,7 +417,7 @@ object Asn1:
 
         case NullTag =>
           primitive()
-          if size != 0 then abort(Asn1Error(Reason.BadLength(start.toLong, tag, size)))
+          if size != 0 then abort(Asn1.Error(Reason.BadLength(start.toLong, tag, size)))
           Asn1.Null
 
         case ObjectIdTag =>
@@ -453,13 +454,13 @@ object Asn1:
 
         case _ => Asn1.Unknown(Universal, tag, constructed, readBytes(end))
 
-    private update def elements(end: Int)(using Tactic[Asn1Error]): List[Asn1] =
+    private update def elements(end: Int)(using Tactic[Asn1.Error]): List[Asn1] =
       val builder = scm.ListBuffer[Asn1]()
       while offset < end do builder += value(end)
 
       builder.to(List)
 
-    private update def members(end: Int)(using Tactic[Asn1Error]): List[Asn1] =
+    private update def members(end: Int)(using Tactic[Asn1.Error]): List[Asn1] =
       val builder = scm.ListBuffer[Asn1]()
       var previous = -1
       var previousEnd = -1
@@ -469,7 +470,7 @@ object Asn1:
         builder += value(end)
 
         if previous >= 0 && !ordered(previous, previousEnd, start, offset)
-        then abort(Asn1Error(Reason.UnsortedSet(start.toLong)))
+        then abort(Asn1.Error(Reason.UnsortedSet(start.toLong)))
 
         previous = start
         previousEnd = offset
@@ -495,10 +496,10 @@ object Asn1:
 
       result.tt
 
-    private update def readTag(limit: Int)(using Tactic[Asn1Error]): Int =
+    private update def readTag(limit: Int)(using Tactic[Asn1.Error]): Int =
       val start = offset
       need(1, limit)
-      if (data.readUnchecked(offset) & 0xff) == 0x80 then abort(Asn1Error(Reason.NonMinimalTag(start.toLong)))
+      if (data.readUnchecked(offset) & 0xff) == 0x80 then abort(Asn1.Error(Reason.NonMinimalTag(start.toLong)))
       var result = 0
       var reading = true
 
@@ -506,57 +507,57 @@ object Asn1:
         need(1, limit)
         val byte = readByte()
 
-        if (result >>> 24) != 0 then abort(Asn1Error(Reason.Overflow(start.toLong)))
+        if (result >>> 24) != 0 then abort(Asn1.Error(Reason.Overflow(start.toLong)))
         result = (result << 7) | (byte & 0x7f)
         if (byte & 0x80) == 0 then reading = false
 
-      if result < 0x1f then abort(Asn1Error(Reason.NonMinimalTag(start.toLong)))
+      if result < 0x1f then abort(Asn1.Error(Reason.NonMinimalTag(start.toLong)))
 
       result
 
-    private update def readLength(limit: Int)(using Tactic[Asn1Error]): Int =
+    private update def readLength(limit: Int)(using Tactic[Asn1.Error]): Int =
       val start = offset
       need(1, limit)
       val first = readByte()
 
       if first < 0x80 then first
-      else if first == 0x80 then abort(Asn1Error(Reason.IndefiniteLength(start.toLong)))
+      else if first == 0x80 then abort(Asn1.Error(Reason.IndefiniteLength(start.toLong)))
       else
         val count = first & 0x7f
-        if count == 0x7f then abort(Asn1Error(Reason.NonMinimalLength(start.toLong)))
-        if count > 4 then abort(Asn1Error(Reason.Overflow(start.toLong)))
+        if count == 0x7f then abort(Asn1.Error(Reason.NonMinimalLength(start.toLong)))
+        if count > 4 then abort(Asn1.Error(Reason.Overflow(start.toLong)))
         need(count, limit)
         var result = 0L
         var index = 0
 
         while index < count do
           val byte = readByte()
-          if index == 0 && byte == 0 then abort(Asn1Error(Reason.NonMinimalLength(start.toLong)))
+          if index == 0 && byte == 0 then abort(Asn1.Error(Reason.NonMinimalLength(start.toLong)))
           result = (result << 8) | byte
           index += 1
 
-        if result < 0x80 then abort(Asn1Error(Reason.NonMinimalLength(start.toLong)))
-        if result > Int.MaxValue then abort(Asn1Error(Reason.Overflow(start.toLong)))
+        if result < 0x80 then abort(Asn1.Error(Reason.NonMinimalLength(start.toLong)))
+        if result > Int.MaxValue then abort(Asn1.Error(Reason.Overflow(start.toLong)))
 
         result.toInt
 
-    private update def objectId(start: Int, end: Int)(using Tactic[Asn1Error]): List[Int] =
-      if offset >= end then abort(Asn1Error(Reason.BadOid(start.toLong)))
+    private update def objectId(start: Int, end: Int)(using Tactic[Asn1.Error]): List[Int] =
+      if offset >= end then abort(Asn1.Error(Reason.BadOid(start.toLong)))
       val builder = scm.ListBuffer[Int]()
       var first = true
 
       while offset < end do
         val subidentifier = offset
-        if (data.readUnchecked(offset) & 0xff) == 0x80 then abort(Asn1Error(Reason.BadOid(subidentifier.toLong)))
+        if (data.readUnchecked(offset) & 0xff) == 0x80 then abort(Asn1.Error(Reason.BadOid(subidentifier.toLong)))
         var accumulated = 0
         var reading = true
 
         while reading do
-          if offset >= end then abort(Asn1Error(Reason.BadOid(subidentifier.toLong)))
+          if offset >= end then abort(Asn1.Error(Reason.BadOid(subidentifier.toLong)))
           val byte = readByte()
 
           if (accumulated >>> 24) != 0
-          then abort(Asn1Error(Reason.OidArcOverflow(subidentifier.toLong)))
+          then abort(Asn1.Error(Reason.OidArcOverflow(subidentifier.toLong)))
 
           accumulated = (accumulated << 7) | (byte & 0x7f)
           if (byte & 0x80) == 0 then reading = false
@@ -579,16 +580,16 @@ object Asn1:
     // DER admits exactly one form for each of the two time types: `YYMMDDHHMMSSZ` and
     // `YYYYMMDDHHMMSSZ`, with no fractional seconds and no offset from UTC. `UTCTime`'s two-digit
     // year runs from 1950 to 2049 (RFC 5280 §4.1.2.5.1).
-    private update def timestamp(start: Int, end: Int, generalized: scala.Boolean)(using Tactic[Asn1Error])
+    private update def timestamp(start: Int, end: Int, generalized: scala.Boolean)(using Tactic[Asn1.Error])
     :   Long =
 
       val size = end - offset
       val expected = if generalized then 15 else 13
-      if size != expected then abort(Asn1Error(Reason.BadTime(start.toLong)))
+      if size != expected then abort(Asn1.Error(Reason.BadTime(start.toLong)))
 
       def digit(index: Int): Int =
         val byte = data.readUnchecked(offset + index) & 0xff
-        if byte < '0' || byte > '9' then abort(Asn1Error(Reason.BadTime(start.toLong)))
+        if byte < '0' || byte > '9' then abort(Asn1.Error(Reason.BadTime(start.toLong)))
 
         byte - '0'
 
@@ -602,7 +603,7 @@ object Asn1:
 
         result
 
-      if (data.readUnchecked(end - 1) & 0xff) != 'Z' then abort(Asn1Error(Reason.BadTime(start.toLong)))
+      if (data.readUnchecked(end - 1) & 0xff) != 'Z' then abort(Asn1.Error(Reason.BadTime(start.toLong)))
 
       val year =
         if generalized then number(0, 4)
@@ -619,7 +620,7 @@ object Asn1:
 
       if month < 1 || month > 12 || day < 1 || day > monthLength(year, month) || hour > 23 ||
         minute > 59 || second > 59
-      then abort(Asn1Error(Reason.BadTime(start.toLong)))
+      then abort(Asn1.Error(Reason.BadTime(start.toLong)))
 
       offset = end
 
@@ -656,6 +657,64 @@ object Asn1:
           index += 1
 
         if size > limit - position then -1 else position + size.toInt
+
+  // Asn1Error → Asn1.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case Truncated(offset)         => m"the input was truncated at byte $offset"
+        case IndefiniteLength(offset)  => m"an indefinite length was found at byte $offset"
+        case NonMinimalLength(offset)  => m"an overlong length was found at byte $offset"
+        case NonMinimalTag(offset)     => m"an overlong tag number was found at byte $offset"
+        case NonMinimalInteger(offset) => m"an overlong integer was found at byte $offset"
+        case EmptyInteger(offset)      => m"an integer with no content was found at byte $offset"
+        case Overflow(offset)          => m"an unrepresentable length was found at byte $offset"
+        case Trailing(offset)          => m"unexpected trailing bytes were found from byte $offset"
+        case InvalidUtf8(offset)       => m"invalid UTF-8 was found at byte $offset"
+        case ReservedTag(offset)       => m"the reserved tag number 0 was found at byte $offset"
+        case BadOid(offset)            => m"a malformed object identifier was found at byte $offset"
+        case OidArcOverflow(offset)    => m"an arc too large for Int was found at byte $offset"
+        case UnsortedSet(offset)       => m"the set at byte $offset was not in ascending order"
+        case BadTime(offset)           => m"a malformed time value was found at byte $offset"
+
+        case BadBoolean(offset, byte) =>
+          m"a boolean with the content byte ${byte.toString} was found at byte $offset"
+
+        case BadLength(offset, tag, length) =>
+          m"the tag ${tag.toString} had the invalid length ${length.toString} at byte $offset"
+
+        case BadUnusedBits(offset, count) =>
+          m"a bit string declaring ${count.toString} unused bits was found at byte $offset"
+
+        case NotPrimitive(offset, tag) =>
+          m"the tag ${tag.toString} was encoded in constructed form at byte $offset"
+
+        case NotConstructed(offset, tag) =>
+          m"the tag ${tag.toString} was encoded in primitive form at byte $offset"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Truncated(offset: Long) extends Reason(1)
+      case IndefiniteLength(offset: Long) extends Reason(2)
+      case NonMinimalLength(offset: Long) extends Reason(3)
+      case NonMinimalTag(offset: Long) extends Reason(4)
+      case NonMinimalInteger(offset: Long) extends Reason(5)
+      case EmptyInteger(offset: Long) extends Reason(6)
+      case Overflow(offset: Long) extends Reason(7)
+      case Trailing(offset: Long) extends Reason(8)
+      case InvalidUtf8(offset: Long) extends Reason(9)
+      case ReservedTag(offset: Long) extends Reason(10)
+      case BadOid(offset: Long) extends Reason(11)
+      case OidArcOverflow(offset: Long) extends Reason(12)
+      case UnsortedSet(offset: Long) extends Reason(13)
+      case BadTime(offset: Long) extends Reason(14)
+      case BadBoolean(offset: Long, byte: Int) extends Reason(15)
+      case BadLength(offset: Long, tag: Int, length: Int) extends Reason(16)
+      case BadUnusedBits(offset: Long, count: Int) extends Reason(17)
+      case NotPrimitive(offset: Long, tag: Int) extends Reason(18)
+      case NotConstructed(offset: Long, tag: Int) extends Reason(19)
+
+  case class Error(reason: Asn1.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(523, reason.number)(m"could not process the ASN.1 value because $reason")
 
 enum Asn1 derives CanEqual:
   case Boolean(value: scala.Boolean)

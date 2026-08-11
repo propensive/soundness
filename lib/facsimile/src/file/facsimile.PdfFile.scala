@@ -78,7 +78,7 @@ object PdfFile:
   :   Unit =
 
     mitigate:
-      case PathError(_, _)     => PdfError(PdfError.Reason.Io(t"the path is invalid"))
+      case Path.Error(_, _)     => PdfError(PdfError.Reason.Io(t"the path is invalid"))
       case NameError(_, _, _)  => PdfError(PdfError.Reason.Io(t"the path is invalid"))
       case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be written"))
 
@@ -206,7 +206,7 @@ class PdfFile private (origin: PdfFile.Origin):
 
       case Origin.OnDisk(filename) =>
         mitigate:
-          case PathError(_, _)     => PdfError(PdfError.Reason.Io(t"the path is invalid"))
+          case Path.Error(_, _)     => PdfError(PdfError.Reason.Io(t"the path is invalid"))
           case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be opened"))
 
         . protect:

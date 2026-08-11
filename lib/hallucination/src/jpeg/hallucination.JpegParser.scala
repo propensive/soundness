@@ -36,7 +36,7 @@ import contingency.*
 import proscenium.compat.*
 import vacuous.*
 
-import RasterError.Reason
+import Raster.Error.Reason
 
 // JPEG marker codes (the byte following an `0xFF`), from Table B.1. Only the subset needed to
 // decode baseline and progressive Huffman-coded images is named here.
@@ -113,21 +113,21 @@ private[hallucination] enum JpegApp:
   case Adobe(transform: Int)
 
 private[hallucination] object JpegParser:
-  private def bad(): Nothing raises RasterError =
-    abort(RasterError(Jpeg(), Reason.Bitstream))
+  private def bad(): Nothing raises Raster.Error =
+    abort(Raster.Error(Jpeg(), Reason.Bitstream))
 
-  private def unsupported(): Nothing raises RasterError =
-    abort(RasterError(Jpeg(), Reason.UnsupportedVariant))
+  private def unsupported(): Nothing raises Raster.Error =
+    abort(Raster.Error(Jpeg(), Reason.UnsupportedVariant))
 
-  private def readLength(reader: JpegReader^)(using Tactic[RasterError]): Int =
+  private def readLength(reader: JpegReader^)(using Tactic[Raster.Error]): Int =
     val length = reader.u16()
     if length < 2 then bad() else length - 2
 
-  private def ceilDiv(x: Int, y: Int): Int raises RasterError =
+  private def ceilDiv(x: Int, y: Int): Int raises Raster.Error =
     if x <= 0 || y <= 0 then bad() else 1 + (x - 1)/y
 
   // Section B.2.2: the Start Of Frame header.
-  def parseSof(reader: JpegReader^, code: Int)(using Tactic[RasterError]): JpegFrame =
+  def parseSof(reader: JpegReader^, code: Int)(using Tactic[Raster.Error]): JpegFrame =
     val length = readLength(reader)
     if length <= 6 then bad()
 
@@ -218,7 +218,7 @@ private[hallucination] object JpegParser:
         components.asInstanceOf[scala.IArray[JpegComponent]] )
 
   // Section B.2.3: the Start Of Scan header.
-  def parseSos(reader: JpegReader^, frame: JpegFrame)(using Tactic[RasterError]): JpegScan =
+  def parseSos(reader: JpegReader^, frame: JpegFrame)(using Tactic[Raster.Error]): JpegScan =
     val length = readLength(reader)
     if length == 0 then bad()
 
@@ -286,7 +286,7 @@ private[hallucination] object JpegParser:
 
   // Section B.2.4.1: quantization tables, each returned in the file's zigzag order (unzigzagged by
   // the decoder). The four slots are indexed by the table's destination identifier.
-  def parseDqt(reader: JpegReader^)(using Tactic[RasterError]): scala.Array[Optional[scala.Array[Int]]] =
+  def parseDqt(reader: JpegReader^)(using Tactic[Raster.Error]): scala.Array[Optional[scala.Array[Int]]] =
     var length = readLength(reader)
     val tables: scala.Array[Optional[scala.Array[Int]]] = scala.Array(Unset, Unset, Unset, Unset)
 
@@ -312,7 +312,7 @@ private[hallucination] object JpegParser:
     tables
 
   // Section B.2.4.2: Huffman tables. Returns the DC tables then the AC tables, four slots each.
-  def parseDht(reader: JpegReader^, isBaseline: Boolean)(using Tactic[RasterError])
+  def parseDht(reader: JpegReader^, isBaseline: Boolean)(using Tactic[Raster.Error])
   :   (scala.Array[Optional[JpegHuffmanTable]], scala.Array[Optional[JpegHuffmanTable]]) =
 
     var length = readLength(reader)
@@ -358,18 +358,18 @@ private[hallucination] object JpegParser:
     scala.caps.unsafe.unsafeAssumePure((dcTables, acTables))
 
   // Skips a length-prefixed segment whose contents are not needed (e.g. a comment).
-  def skipSegment(reader: JpegReader^)(using Tactic[RasterError]): Unit =
+  def skipSegment(reader: JpegReader^)(using Tactic[Raster.Error]): Unit =
     reader.skip(readLength(reader))
 
   // Section B.2.4.4: the restart interval.
-  def parseDri(reader: JpegReader^)(using Tactic[RasterError]): Int =
+  def parseDri(reader: JpegReader^)(using Tactic[Raster.Error]): Int =
     val length = readLength(reader)
     if length != 2 then bad()
     reader.u16()
 
   // Section B.2.4.6: application data. Only the JFIF, AVI1 and Adobe segments, which influence
   // colour interpretation, are recognised; the rest are skipped.
-  def parseApp(reader: JpegReader^, code: Int)(using Tactic[RasterError]): JpegApp =
+  def parseApp(reader: JpegReader^, code: Int)(using Tactic[Raster.Error]): JpegApp =
     val length = readLength(reader)
     val buffer = new scala.Array[Byte](length)
     reader.readExact(buffer)

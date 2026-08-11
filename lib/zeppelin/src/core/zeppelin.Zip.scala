@@ -71,8 +71,8 @@ object Zip:
   given radical: %.type is Radical:
     type Plane = Zip
 
-    def length(text: Text): Int raises PathError = 0
-    def decode(text: Text): %.type raises PathError = %
+    def length(text: Text): Int raises Path.Error = 0
+    def decode(text: Text): %.type raises Path.Error = %
     def encode(root: %.type): Text = t""
 
   // Anchored here so `path.open[Zip]()` and `data.open[Zip]()` resolve with no import.

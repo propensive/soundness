@@ -117,7 +117,7 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
         if Terminal.dark(hex(red), hex(green), hex(blue)) then Brightness.Dark else Brightness.Light
 
       case _ =>
-        abort(EnvironmentError(t"TERMINAL_BG"))
+        abort(Environment.Error(t"TERMINAL_BG"))
 
   metrics.rows = safely(Environment.lines.as[Int])
   metrics.columns = safely(Environment.columns.as[Int])

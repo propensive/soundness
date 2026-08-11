@@ -350,21 +350,21 @@ object Tests extends Suite(m"Enigmatic tests"):
       val wrongKey = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val ciphertext = key.uncloak(t"Hello world".encrypt(InitializationVector.random))
 
-      attempt[CryptoError](wrongKey.uncloak(ciphertext.decrypt.as[Text])) match
-        case Attempt.Failure(error) => error.reason == CryptoError.Reason.BadPadding
+      attempt[Crypto.Error](wrongKey.uncloak(ciphertext.decrypt.as[Text])) match
+        case Attempt.Failure(error) => error.reason == Crypto.Error.Reason.BadPadding
         case Attempt.Success(text)  => text != t"Hello world"
 
     . assert(_ == true)
 
     test(m"Streaming decryption with the wrong key never recovers the plaintext"):
       // The provider's tag/padding failure surfaces at end-of-stream as a typed
-      // `CryptoError`, not the raw JCE exception, when the final window is pulled.
+      // `Crypto.Error`, not the raw JCE exception, when the final window is pulled.
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val wrongKey = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val ciphertext = key.uncloak(t"Hello world".encrypt(InitializationVector.random))
 
-      attempt[CryptoError](wrongKey.uncloak(ciphertext.stream.decrypt.memoize)) match
-        case Attempt.Failure(error) => error.reason == CryptoError.Reason.BadPadding
+      attempt[Crypto.Error](wrongKey.uncloak(ciphertext.stream.decrypt.memoize)) match
+        case Attempt.Failure(error) => error.reason == Crypto.Error.Reason.BadPadding
 
         case Attempt.Success(data) =>
           data.serialize[Hex] != t"Hello world".in[Data].serialize[Hex]
@@ -377,10 +377,10 @@ object Tests extends Suite(m"Enigmatic tests"):
         t"0123456789abcdef".encrypt(InitializationVector.random).decrypt.as[Text]
     . assert(_ == t"0123456789abcdef")
 
-    test(m"AES/CBC/NoPadding rejects misaligned input with a CryptoError"):
+    test(m"AES/CBC/NoPadding rejects misaligned input with a Crypto.Error"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
-      capture[CryptoError](key.uncloak(t"Hello world".encrypt(InitializationVector.random))).reason
-    . assert(_ == CryptoError.Reason.IllegalBlockSize)
+      capture[Crypto.Error](key.uncloak(t"Hello world".encrypt(InitializationVector.random))).reason
+    . assert(_ == Crypto.Error.Reason.IllegalBlockSize)
 
     test(m"Invalid PKCS7 padding is reported as BadPadding"):
       val bytes: Data = t"a-32-byte-key-for-aes-256-cbc!!!".in[Data]
@@ -390,8 +390,8 @@ object Tests extends Suite(m"Enigmatic tests"):
       // The recovered final block ends in `f` (0x66), which is never a valid PKCS7 pad
       // length, so unpadding fails for every run rather than for 255 runs in 256.
       val ciphertext = rawKey.uncloak(t"0123456789abcdef".encrypt(InitializationVector.random))
-      capture[CryptoError](paddedKey.uncloak(ciphertext.decrypt.as[Text])).reason
-    . assert(_ == CryptoError.Reason.BadPadding)
+      capture[Crypto.Error](paddedKey.uncloak(ciphertext.decrypt.as[Text])).reason
+    . assert(_ == Crypto.Error.Reason.BadPadding)
 
     test(m"AES/CTR/NoPadding (stream mode) accepts any length"):
       val key = SymmetricKey.generate[Aes[256] over Ctr against NoPadding]()
@@ -958,7 +958,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       def der(value: Asn1): Text = value.in[Der].data.serialize[Hex]
       def decode(hex: Text): Asn1 = Der(hex.deserialize[Hex]).as[Asn1]
       def roundtrip(hex: Text): Text = hex.deserialize[Hex].read[Der].as[Asn1].in[Der].data.serialize[Hex]
-      def reason(hex: Text): Asn1Error.Reason = capture[Asn1Error](decode(hex)).reason
+      def reason(hex: Text): Asn1.Error.Reason = capture[Asn1.Error](decode(hex)).reason
 
       // Every vector below was generated with `openssl asn1parse -genstr`/`-genconf`, except the
       // `BIT STRING`, which is X.690 §8.6.4.2's worked example.
@@ -1053,58 +1053,58 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"Indefinite lengths are rejected"):
         reason(t"0480")
-      . assert(_ == Asn1Error.Reason.IndefiniteLength(1))
+      . assert(_ == Asn1.Error.Reason.IndefiniteLength(1))
 
       test(m"Overlong lengths and tags are rejected"):
         List(reason(t"018101FF"), reason(t"1F1E00"))
-      . assert(_ == List(Asn1Error.Reason.NonMinimalLength(1), Asn1Error.Reason.NonMinimalTag(1)))
+      . assert(_ == List(Asn1.Error.Reason.NonMinimalLength(1), Asn1.Error.Reason.NonMinimalTag(1)))
 
       test(m"A length needing more than four bytes is rejected"):
         reason(t"048501010101010101")
-      . assert(_ == Asn1Error.Reason.Overflow(1))
+      . assert(_ == Asn1.Error.Reason.Overflow(1))
 
       test(m"Non-minimal and empty integers are rejected"):
         List(reason(t"02020001"), reason(t"0200"))
-      . assert(_ == List(Asn1Error.Reason.NonMinimalInteger(0),
-          Asn1Error.Reason.EmptyInteger(0)))
+      . assert(_ == List(Asn1.Error.Reason.NonMinimalInteger(0),
+          Asn1.Error.Reason.EmptyInteger(0)))
 
       test(m"A boolean other than 0x00 or 0xFF is rejected"):
         reason(t"010101")
-      . assert(_ == Asn1Error.Reason.BadBoolean(0, 1))
+      . assert(_ == Asn1.Error.Reason.BadBoolean(0, 1))
 
       test(m"A null with content is rejected"):
         reason(t"050100")
-      . assert(_ == Asn1Error.Reason.BadLength(0, 5, 1))
+      . assert(_ == Asn1.Error.Reason.BadLength(0, 5, 1))
 
       test(m"Invalid bit-string padding is rejected"):
         List(reason(t"03020801"), reason(t"03020103"))
-      . assert(_ == List(Asn1Error.Reason.BadUnusedBits(0, 8),
-          Asn1Error.Reason.BadUnusedBits(0, 1)))
+      . assert(_ == List(Asn1.Error.Reason.BadUnusedBits(0, 8),
+          Asn1.Error.Reason.BadUnusedBits(0, 1)))
 
       test(m"Constructed strings and primitive sequences are rejected"):
         List(reason(t"240404020102"), reason(t"1003020101"))
-      . assert(_ == List(Asn1Error.Reason.NotPrimitive(0, 4),
-          Asn1Error.Reason.NotConstructed(0, 16)))
+      . assert(_ == List(Asn1.Error.Reason.NotPrimitive(0, 4),
+          Asn1.Error.Reason.NotConstructed(0, 16)))
 
       test(m"Malformed object identifiers are rejected"):
         List(reason(t"06022A80"), reason(t"06062A8FFFFFFF7F"))
-      . assert(_ == List(Asn1Error.Reason.BadOid(3), Asn1Error.Reason.OidArcOverflow(3)))
+      . assert(_ == List(Asn1.Error.Reason.BadOid(3), Asn1.Error.Reason.OidArcOverflow(3)))
 
       test(m"An unsorted set is rejected"):
         reason(t"3106040102040101")
-      . assert(_ == Asn1Error.Reason.UnsortedSet(5))
+      . assert(_ == Asn1.Error.Reason.UnsortedSet(5))
 
       test(m"An impossible date is rejected"):
         reason(t"170D3730303233303030303030305A")
-      . assert(_ == Asn1Error.Reason.BadTime(0))
+      . assert(_ == Asn1.Error.Reason.BadTime(0))
 
       test(m"Truncated input and trailing bytes are rejected"):
         List(reason(t"0101"), reason(t"05000500"))
-      . assert(_ == List(Asn1Error.Reason.Truncated(2), Asn1Error.Reason.Trailing(2)))
+      . assert(_ == List(Asn1.Error.Reason.Truncated(2), Asn1.Error.Reason.Trailing(2)))
 
       test(m"The reserved tag number zero is rejected"):
         reason(t"0000")
-      . assert(_ == Asn1Error.Reason.ReservedTag(0))
+      . assert(_ == Asn1.Error.Reason.ReservedTag(0))
 
       test(m"A real X.509 certificate round-trips byte-exactly"):
         val value: Asn1 = certificate.read[Asn1 in Pem]

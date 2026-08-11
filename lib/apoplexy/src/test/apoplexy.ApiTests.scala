@@ -239,10 +239,10 @@ object ApiTests extends Suite(m"Api client tests"):
         (recorder.lastMethod, recorder.lastBody.present)
       . assert(_ == (Http.Post, true))
 
-      test(m"a non-2xx response raises ApiError"):
+      test(m"a non-2xx response raises Api.Error"):
         given Http.Backend = Recorder(() => Http.Response(Http.NotFound)(t"{}"))
-        capture[ApiError](api.pets(42).get.call[Pet]()).reason
-      . assert(_ == ApiError.Reason.Status(404))
+        capture[Api.Error](api.pets(42).get.call[Pet]()).reason
+      . assert(_ == Api.Error.Reason.Status(404))
 
       test(m"a type that does not conform to the schema is rejected"):
         demilitarize:

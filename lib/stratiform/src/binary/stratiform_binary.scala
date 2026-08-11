@@ -60,26 +60,26 @@ import prepositional.*
 extension (tel: Tel)
   // Encode this document's semantic model to BinTEL body bytes (no
   // magic number, no schema signature). Type-assigns `tel` against
-  // `schema` first; raises `TelError` on type-assignment failures.
-  def bintel(schema: Tels): Data raises TelError =
+  // `schema` first; raises `Tel.Error` on type-assignment failures.
+  def bintel(schema: Tels): Data raises Tel.Error =
     Bintel.encode(Tel.Type.assign(tel, schema), schema)
 
   // BLAKE3 digest of this document's BinTEL body (§3 value hash). The
   // hash is taken over the body bytes only — no magic number, no
   // schema signature — and is therefore a function of the semantic
   // model and the schema alone, independent of presentation form.
-  def valueHash(schema: Tels): Digest in Blake3 raises TelError =
+  def valueHash(schema: Tels): Digest in Blake3 raises Tel.Error =
     tel.bintel(schema).digest[Blake3]
 
   // Encode this document as a complete §6 BinTEL byte sequence —
   // magic + signature length + signature + body. The signature length
   // must be a valid palimpsest length under some `(H, k_i, k_r)`;
-  // otherwise raises `BintelError(BadSignatureLength)`.
+  // otherwise raises `Bintel.Error(BadSignatureLength)`.
   // Declared with explicit tactics rather than stacked `raises`: under capture checking
   // a stacked context-function result whose inner level uses the outer tactic cannot
   // unify its capture with the declared result capability (3.10 toolchain).
   def bintelDocument(schema: Tels, signature: Data)
-    ( using Tactic[TelError], Tactic[BintelError] )
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Data =
 
     Bintel.frame(tel.bintel(schema), signature)
@@ -98,5 +98,5 @@ extension [value: Tel.Encodable](value: value)
   // `value.bintel` is `value.encode.bintel(Tels.tels[value](…))`. The schema name is
   // internal (a BinTEL body never embeds it), so a decoder that derives the schema from
   // the same type agrees on the layout regardless of the chosen name.
-  def bintel(using value is TelSchematic over Tels.Type): Data raises TelError =
+  def bintel(using value is TelSchematic over Tels.Type): Data raises Tel.Error =
     value.encode.bintel(Tels.tels[value](Text("root")))

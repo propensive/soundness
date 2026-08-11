@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export kaleidoscope.{g, Glob, GlobToken, r, Regex, RegexError, Scanner}
+export kaleidoscope.{g, Glob, r, Regex, Scanner}

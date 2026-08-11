@@ -34,6 +34,8 @@ package escritoire
 
 import gossamer.*
 import vacuous.*
+import anticipation.*
+import beneficence.*
 
 object Column:
   def apply[row, cell, text: Textual]
@@ -42,7 +44,7 @@ object Column:
       verticalAlign: Optional[VerticalAlignment] = Unset,
       sizing:        Columnar                    = columnar.Paragraph )
     ( get: row -> cell )
-    ( using columnAlignment: ColumnAlignment[cell] = ColumnAlignment.topLeft )
+    ( using columnAlignment: Column.Alignment[cell] = Column.Alignment.topLeft )
     ( using text.Show[cell] )
   :   Column[row, text] =
 
@@ -55,6 +57,18 @@ object Column:
         verticalAlign.or(columnAlignment.vertical),
         sizing )
 
+  // ColumnAlignment → Column.Alignment
+  object Alignment:
+    val topLeft: Column.Alignment[Any] = Column.Alignment(TextAlignment.Left, VerticalAlignment.Top)
+
+    given byte: Column.Alignment[Byte] = Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
+    given short: Column.Alignment[Short] = Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
+    given int: Column.Alignment[Int] = Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
+    given long: Column.Alignment[Long] = Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
+    given text: Column.Alignment[Text] = Column.Alignment(TextAlignment.Left, VerticalAlignment.Top)
+
+  case class Alignment[-column](text: TextAlignment, vertical: VerticalAlignment)
+  extends Findable
 
 case class Column[row, text: Textual]
   ( title:         text,

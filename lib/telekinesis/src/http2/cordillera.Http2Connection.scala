@@ -69,7 +69,7 @@ object Http2Connection:
   // plain parameter — so the reader daemon's body stays free of `this` captures.
   // The tactic is a plain using-parameter: a context-function result may not hide it.
   private def dispatch(conn: Http2Connection, frame: Frame, decoder: Hpack)
-    ( using Tactic[Http2Error] )
+    ( using Tactic[Http2.Error] )
   :   Boolean =
     frame match
       case Frame.Settings(_, ack) =>
@@ -84,7 +84,7 @@ object Http2Connection:
         true
 
       case Frame.GoAway(lastStreamId, _, _) =>
-        Log.warn(Http2Event.GoAway(lastStreamId))
+        Log.warn(Http2.Event.GoAway(lastStreamId))
         false
 
       case Frame.Headers(id, block, endStream, _) =>
@@ -207,7 +207,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
         val reader = daemon:
           // A protocol error tears down just this connection; throw it to the enclosing
           // `contain`, which runs `tearDown()` and stops the reader.
-          given Tactic[Http2Error] = AsyncTactic()
+          given Tactic[Http2.Error] = AsyncTactic()
 
           val frameReader = frameReaderRef.asInstanceOf[FrameReader^]
           val decoder = Hpack()
@@ -223,7 +223,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   // Perform the connection handshake: emit our SETTINGS and await the peer's.
   // Plain using-parameters, de-sugared from `raises`: a context-function result may
   // not hide `this`.
-  def start()(using Tactic[AsyncError]): Unit =
+  def start()(using Tactic[Async.Error]): Unit =
     send(Frame.Settings(initialSettings, ack = false))
     started.await()
 
@@ -248,10 +248,10 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   // pseudo-headers the request type doesn't carry. Trailers (e.g. gRPC status) are
   // available afterwards via `stream.trailers`.
   def fetch(request: Http.Request, scheme: Text, authority: Text)
-    ( using Tactic[Http2Error], Tactic[AsyncError] )
+    ( using Tactic[Http2.Error], Tactic[Async.Error] )
   :   (Http2Stream, Http.Response) =
 
-    Log.fine(Http2Event.RequestSent(authority))
+    Log.fine(Http2.Event.RequestSent(authority))
     val headerBlock = PseudoHeaders.request(request, scheme, authority)
     val data = request.body().memoize
 

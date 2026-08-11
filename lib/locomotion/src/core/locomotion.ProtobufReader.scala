@@ -44,7 +44,7 @@ object ProtobufReader:
   // as a neutral carrier (jacinta's `JsonReader` pattern): the field stays
   // pure, and each accessor reasserts the type at the rim — the audited
   // point.
-  private[locomotion] def apply(parser: ProtobufParser, tactic: Tactic[ProtobufError])
+  private[locomotion] def apply(parser: ProtobufParser, tactic: Tactic[Protobuf.Error])
   :   ProtobufReader^ =
 
     new ProtobufReader(parser, tactic.asInstanceOf[AnyRef])
@@ -55,7 +55,7 @@ object ProtobufReader:
 // receives the reader with its *window* set to the value's payload (the
 // whole input at the top level; one field's wire value in a field position)
 // and must consume to the window's end. The reader carries its own
-// `Tactic[ProtobufError]`, so instance `parse` bodies need no error
+// `Tactic[Protobuf.Error]`, so instance `parse` bodies need no error
 // vocabulary: malformed input aborts through the read call's ambient tactic.
 //
 // An exclusive, stateful capability, like the parser it wraps: it is owned
@@ -73,7 +73,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // without this class's per-field forwarders.
   private[locomotion] def rawParser: AnyRef = parser0
   private[locomotion] def rawTactic: AnyRef = tactic0
-  private inline def tactic: Tactic[ProtobufError] = tactic0.asInstanceOf[Tactic[ProtobufError]]
+  private inline def tactic: Tactic[Protobuf.Error] = tactic0.asInstanceOf[Tactic[Protobuf.Error]]
 
   // ── The message steps: the next field's tag while the window has
   // content, then per-field reads. `enterField` narrows the window to one

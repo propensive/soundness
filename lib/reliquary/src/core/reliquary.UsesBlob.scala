@@ -72,7 +72,7 @@ object UsesBlob:
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case TelError(reason, _) =>
+        case Tel.Error(reason, _) =>
           LiraError(Reason.InvalidManifest(t"the uses blob is invalid: $reason"))
 
       . protect:
@@ -101,7 +101,7 @@ object UsesBlob:
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case _: Base256Error => bad(t"an atom hash is malformed")
+          case _: Base256.Error => bad(t"an atom hash is malformed")
 
         . protect(Base256.decodeStrict(row(0)))
 

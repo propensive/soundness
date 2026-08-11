@@ -67,7 +67,7 @@ private[probably] object Documenting:
 
     val failures = List.of:
       report.details.toList.sortBy(_(0).timestamp).map:
-        (pair: (TestId, scala.collection.mutable.ArrayBuffer[Verdict.Detail])) =>
+        (pair: (Test.Id, scala.collection.mutable.ArrayBuffer[Verdict.Detail])) =>
           (pair(0), pair(1).to(List))
 
     Document

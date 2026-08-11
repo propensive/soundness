@@ -35,23 +35,24 @@ package kaleidoscope
 import proscenium.compat.*
 
 import anticipation.*
+import rudiments.*
 
 object Glob:
-  import GlobToken.*
+  import Glob.Token.*
 
   def parse(text: Text): Glob =
-    def range(text: String): GlobToken =
+    def range(text: String): Glob.Token =
       val inverse = text.startsWith("!")
       val text2 = if inverse then text.drop(1) else text
 
-      if text2.length == 3 && text2(1) == '-' then GlobToken.Range(text2(0), text2(2), inverse)
-      else GlobToken.Specific(text2, inverse)
+      if text2.length == 3 && text2(1) == '-' then Glob.Token.Range(text2(0), text2(2), inverse)
+      else Glob.Token.Specific(text2, inverse)
 
-    def recur(index: Int, tokens: List[GlobToken]): Glob =
+    def recur(index: Int, tokens: List[Glob.Token]): Glob =
       if index >= text.s.length then Glob(tokens.stdlib.reverse*) else text.s(index) match
         case '*' =>
           tokens match
-            case Star :: tail => recur(index + 1, Globstar :: (tail: List[GlobToken]))
+            case Star :: tail => recur(index + 1, Globstar :: (tail: List[Glob.Token]))
             case _            => recur(index + 1, Star :: tokens)
 
         case '?' =>
@@ -66,5 +67,34 @@ object Glob:
 
     recur(0, Nil)
 
-case class Glob(tokens: GlobToken*):
+  // Glob.Token → Glob.Token
+  object Token:
+    private val needsEscaping: Set[Char] = Set.from("\\.[]{}()<>*+-=!?^$|".iterator)
+
+  enum Token:
+    case Star, Globstar, OneChar
+    case Exact(char: Char)
+    case Range(start: Char, end: Char, inverse: Boolean)
+    case Specific(chars: String, inverse: Boolean)
+
+    def regex: String = this match
+      case Exact(char) =>
+        (if Glob.Token.needsEscaping.has(char) then "\\" else "")+char
+
+      case Star =>
+        "[^/\\\\]*"
+
+      case OneChar =>
+        "[^/\\\\]"
+
+      case Globstar =>
+        ".*"
+
+      case Range(start, end, inverse) =>
+        s"[${if inverse then "^" else ""}${Exact(start).regex}-${Exact(end).regex}]"
+
+      case Specific(chars, inverse) =>
+        chars.flatMap(Exact(_).regex).mkString(s"[${if inverse then "^" else ""}", "", "]")
+
+case class Glob(tokens: Glob.Token*):
   def regex: Text = Text(tokens.map(_.regex).mkString)

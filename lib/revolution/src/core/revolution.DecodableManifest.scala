@@ -38,7 +38,7 @@ import digression.*
 import prepositional.*
 
 object DecodableManifest:
-  given mainClass: (tactic: Tactic[FqcnError])
+  given mainClass: (tactic: Tactic[Fqcn.Error])
   =>  (("Main-Class" is DecodableManifest of Fqcn)^{tactic}) =
     Fqcn(_)
   given createdBy: ("Created-By" is DecodableManifest of Text) = identity(_)

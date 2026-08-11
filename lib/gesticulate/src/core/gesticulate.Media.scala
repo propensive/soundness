@@ -93,11 +93,11 @@ object Media:
       case CborSeq => t"cbor-seq"
       case other   => other.toString.tt.uncamel.kebab
 
-  def parse(string: Text)(using Tactic[MediaTypeError]^): MediaType =
+  def parse(string: Text)(using Tactic[MediaType.Error]^): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       ps match
         case List(t"") =>
-          raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
+          raise(MediaType.Error(string, MediaType.Error.Reason.MissingParam))
 
         case _ =>
           ()
@@ -108,7 +108,7 @@ object Media:
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
       suffixes.map(_.lower.capitalize).bind: suffix =>
         try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
-          abort(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix)))
+          abort(MediaType.Error(string, MediaType.Error.Reason.InvalidSuffix(suffix)))
 
     def parseInit(string: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = string.cut(t"+")
@@ -120,12 +120,12 @@ object Media:
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
 
       case _ =>
-        raise(MediaTypeError(string, MediaTypeError.Reason.NotOneSlash))
+        raise(MediaType.Error(string, MediaType.Error.Reason.NotOneSlash))
         Group.Text *: parseInit(string)
 
     def parseGroup(string: Text): Group =
       try Group.valueOf(string.lower.capitalize.s) catch IllegalArgumentException =>
-        abort(MediaTypeError(string, MediaTypeError.Reason.InvalidGroup))
+        abort(MediaType.Error(string, MediaType.Error.Reason.InvalidGroup))
 
     def parseSubtype(string: Text): Subtype =
       def notAllowed(char: Char): Boolean =
@@ -134,7 +134,7 @@ object Media:
       val chars = string.chars.toSeq
 
       chars.find(notAllowed(_)).map: char =>
-        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))
+        raise(MediaType.Error(string, MediaType.Error.Reason.InvalidChar(char)))
         Subtype.X(Array.from(chars.filter(!notAllowed(_))).text)
 
       . getOrElse:

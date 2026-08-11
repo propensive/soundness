@@ -122,7 +122,7 @@ object JsonRpc:
     import fulminate.errorDiagnostics.stackTracesDiagnostics
 
     try unsafely(pending.promise.await())
-    catch case async: AsyncError => faults.remove(pending.id) match
+    catch case async: Async.Error => faults.remove(pending.id) match
       case null =>
         abort(JsonRpcError(JsonRpcError.Reason.Abandoned))
 
@@ -165,11 +165,11 @@ object JsonRpc:
 
     async:
       recover:
-        case MediaTypeError(_, _)   => promise.cancel()
+        case MediaType.Error(_, _)   => promise.cancel()
         case ConnectError(_)        => promise.cancel()
         case ParseError(_, _, _)    => promise.cancel()
-        case HttpError(_, _)        => promise.cancel()
-        case AsyncError(_)          => promise.cancel()
+        case Http.Error(_, _)        => promise.cancel()
+        case Async.Error(_)          => promise.cancel()
 
       . protect:
           promise.fulfill(target.submit(Http.Post)(request).receive[Json])
@@ -188,9 +188,9 @@ object JsonRpc:
     val request = Request("2.0", method, payload, Unset).in[Json]
 
     recover:
-      case MediaTypeError(_, _) => ()
+      case MediaType.Error(_, _) => ()
       case ConnectError(_)      => ()
-      case HttpError(_, _)      => ()
+      case Http.Error(_, _)      => ()
 
     . protect:
         target.submit(Http.Post)(request).receive[Text]

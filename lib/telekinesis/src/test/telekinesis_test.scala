@@ -832,15 +832,15 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . aspire(_ == Http.Ok)
 
-      test(m"Strict mode surfaces the 3xx as HttpError"):
+      test(m"Strict mode surfaces the 3xx as Http.Error"):
         import httpRedirections.doNotFollowRedirects
-        capture[HttpError](url"https://httpbin.org/redirect/1".fetch().receive[Text]).status
+        capture[Http.Error](url"https://httpbin.org/redirect/1".fetch().receive[Text]).status
 
       . aspire(_ == Http.Found)
 
-      test(m"HttpRedirection caps the redirect chain"):
-        given HttpRedirection = HttpRedirection(1)
-        capture[HttpError](url"https://httpbin.org/redirect/3".fetch().receive[Text]).status
+      test(m"Http.Redirection caps the redirect chain"):
+        given Http.Redirection = Http.Redirection(1)
+        capture[Http.Error](url"https://httpbin.org/redirect/3".fetch().receive[Text]).status
 
       . aspire(_ == Http.Found)
 

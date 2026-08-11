@@ -42,7 +42,7 @@ import zephyrine.*
 
 trait Receivable2:
   given instantiable: [content: Instantiable across HttpRequests from Text]
-  =>  (tactic: Tactic[HttpError])
+  =>  (tactic: Tactic[Http.Error])
   =>  ((content is Receivable)^{tactic}) =
 
     Receivable:
@@ -60,19 +60,19 @@ object Receivable extends Receivable2:
 
   // The reader receives the response body as a single-owner pull endpoint;
   // whole-value consumers go through their `Aggregable`'s `accept`.
-  def apply[result](lambda: Reader[result]^)(using tactic: Tactic[HttpError])
+  def apply[result](lambda: Reader[result]^)(using tactic: Tactic[Http.Error])
   :   ((result is Receivable)^{lambda, tactic}) =
     response =>
       if response.status.category != Http.Status.Category.Successful
-      then abort(HttpError(response.status, response.textHeaders))
+      then abort(Http.Error(response.status, response.textHeaders))
       else lambda.read(response.body.stream)
 
-  given text: (tactic: Tactic[HttpError])
+  given text: (tactic: Tactic[Http.Error])
   =>  ((Text is Receivable)^{tactic}) =
     Receivable(_.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
 
   given streamable: [stream] => (aggregable: (stream is Aggregable by Data)^)
-  =>  (tactic: Tactic[HttpError])
+  =>  (tactic: Tactic[Http.Error])
   =>  ((stream is Receivable)^{aggregable, tactic}) =
     Receivable(aggregable.accept(_))
 

@@ -45,7 +45,7 @@ object BintelReader:
   // travels as a neutral carrier (jacinta's `JsonReader` pattern): the
   // field stays pure, and each accessor reasserts the type at the rim —
   // the audited point.
-  private[stratiform] def apply(parser: BintelParser, tactic: Tactic[BintelError])
+  private[stratiform] def apply(parser: BintelParser, tactic: Tactic[Bintel.Error])
   :   BintelReader^ =
 
     new BintelReader(parser, tactic.asInstanceOf[AnyRef])
@@ -56,10 +56,10 @@ object BintelReader:
 // presentation, or the text-format decode that follows. The structure is
 // count-driven: a `parse` call is invoked positioned at a struct body (a
 // child count, then that many `keyword-index`-prefixed elements) and must
-// consume it in full. The reader carries its own `Tactic[BintelError]`, so
+// consume it in full. The reader carries its own `Tactic[Bintel.Error]`, so
 // malformed input aborts through the read call's ambient tactic; *decode*
 // errors (mistyped or absent values) accrue through the read site's
-// `Tactic[TelError]` and `Foci`, exactly as the AST path's text-format
+// `Tactic[Tel.Error]` and `Foci`, exactly as the AST path's text-format
 // decode.
 //
 // An exclusive, stateful capability, like the parser it wraps: it is owned
@@ -77,7 +77,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // without this class's per-step forwarders.
   private[stratiform] def rawParser: AnyRef = parser0
   private[stratiform] def rawTactic: AnyRef = tactic0
-  private inline def tactic: Tactic[BintelError] = tactic0.asInstanceOf[Tactic[BintelError]]
+  private inline def tactic: Tactic[Bintel.Error] = tactic0.asInstanceOf[Tactic[Bintel.Error]]
 
   // ── The struct-body steps: the child count, then per child a keyword
   // index — the flat position of the member it fills, matching the

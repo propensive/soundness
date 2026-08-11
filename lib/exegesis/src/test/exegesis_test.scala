@@ -59,8 +59,8 @@ object TestServer:
   // Built once and stored behind an erased rim: a live session may not inhabit an object field,
   // and these tests drive the dispatcher synchronously, confining nothing.
   private val fixture: AnyRef =
-    val registry: LspRegistry^ = LspRegistry()
-    given registry0: (LspRegistry^{registry}) = registry
+    val registry: Lsp.Registry^ = Lsp.Registry()
+    given registry0: (Lsp.Registry^{registry}) = registry
 
     opened:
       client.publishDiagnostics
@@ -90,13 +90,13 @@ object TestServer:
     command(t"do.thing")(t"do.thing".in[Json])
 
     command(t"test.fail"):
-      raise(LspError(LspError.Reason.RequestFailed, t"deliberate"))
+      raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, t"deliberate"))
       Unset
 
     resolveCompletion(item[CompletionItem].copy(detail = t"resolved"))
     LspSession(registry, t"Test", t"1.0").asInstanceOf[AnyRef]
 
-  private val dispatch0: AnyRef = LspDispatch(fixture.asInstanceOf[Lsp]).asInstanceOf[AnyRef]
+  private val dispatch0: AnyRef = Lsp.Dispatch(fixture.asInstanceOf[Lsp]).asInstanceOf[AnyRef]
 
   def session: LspSession^ = fixture.asInstanceOf[LspSession]
 
@@ -167,7 +167,7 @@ object LoopbackFixture:
     override def message(kind: MessageType, text: Text): Unit =
       log.synchronized(log.append(t"message:$text"))
 
-  def connect[result](using listener: Lsp.Listener^)(lambda: (session: LspConnection^) ?=> result)
+  def connect[result](using listener: Lsp.Listener^)(lambda: (session: Lsp.Connection^) ?=> result)
   :   result =
 
     val toServer: ji.PipedOutputStream = ji.PipedOutputStream()
@@ -196,7 +196,7 @@ object LoopbackFixture:
             CompletionList(items = List(CompletionItem(label = t"loopback")))
 
           command(t"test.fail"):
-            raise(LspError(LspError.Reason.RequestFailed, t"deliberate"))
+            raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, t"deliberate"))
             Unset
 
       Lsp.Server.streams(clientIn, toServer).session: connection ?=>
@@ -217,7 +217,7 @@ object ProxyFixture:
     try Lsp.params(message).command.as[Text] catch case _: Exception => t""
 
   def connect[result](using listener: Lsp.Listener^)
-     ( lambda: (session: LspConnection^) ?=> result )
+     ( lambda: (session: Lsp.Connection^) ?=> result )
   :   result =
 
     val toServer: ji.PipedOutputStream = ji.PipedOutputStream()
@@ -559,16 +559,16 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       . assert(_ == List("diagnostics:file:///a.scala:opened"))
 
-      test(m"an error response is raised as an LspError, not awaited forever"):
+      test(m"an error response is raised as an Lsp.Error, not awaited forever"):
         val record = LoopbackFixture.Record()
         given listener: (LoopbackFixture.Record^) = record
 
         LoopbackFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          capture[LspError](server.execute(t"test.fail")).reason
+          capture[Lsp.Error](server.execute(t"test.fail")).reason
 
-      . assert(_ == LspError.Reason.RequestFailed)
+      . assert(_ == Lsp.Error.Reason.RequestFailed)
 
     suite(m"Proxying"):
       test(m"the proxy amends the capabilities the upstream server advertised"):

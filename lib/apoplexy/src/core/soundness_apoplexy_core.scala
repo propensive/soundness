@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export apoplexy.{Api, ApiError, Conformant, OpenApi, OpenApiError}
+export apoplexy.{Api, Conformant, OpenApi}

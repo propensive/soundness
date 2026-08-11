@@ -53,8 +53,8 @@ object internal extends Hellenism2:
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)
 
-    def classpathEntry: Optional[ClasspathEntry] =
-      ClasspathEntry(classRef.getProtectionDomain.nn.getCodeSource.nn.getLocation.nn)
+    def classpathEntry: Optional[Classpath.Entry] =
+      Classpath.Entry(classRef.getProtectionDomain.nn.getCodeSource.nn.getLocation.nn)
 
   def classpath(context: Expr[StringContext]): Macro[Resource] =
     import quotes.reflect.*

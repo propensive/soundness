@@ -52,7 +52,7 @@ import workingDirectories.javaWorkingDirectory
 import beneficence.*
 
 trait BenchmarkDevice extends Findable:
-  def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError
+  def deploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error
 
   // `heap` overrides the measurement JVM's fixed heap size (both `-Xms` and `-Xmx`), in
   // `-Xmx` syntax, e.g. `t"256m"`; when unset, the default of `1g` applies. Constrained-heap
@@ -67,12 +67,12 @@ trait BenchmarkDevice extends Findable:
   def invoke
     ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
       cpus: Optional[Int] = Unset )
-  :   Text raises BenchError
+  :   Text raises Bench.Error
 
-  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError
+  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error
 
 object NetworkDevice:
-  given sessional: (error: Tactic[BenchError]) => NetworkDeviceSessional =
+  given sessional: (error: Tactic[Bench.Error]) => NetworkDeviceSessional =
     NetworkDeviceSessional()
 
   // The measurement JVM's invocation, shared by the per-call and session forms; see
@@ -106,60 +106,60 @@ object NetworkDevice:
   // SSH handshake the plain `NetworkDevice` pays.
   class Session private[sedentary] (device: NetworkDevice, socket: Text)
   extends BenchmarkDevice:
-    def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+    def deploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error =
       val user = device.user
       val host = device.host
 
       safely(sh"scp -o ControlPath=$socket $path $user@$host:$uuid.jar".exec[Exit]())
-      . lest(BenchError())
+      . lest(Bench.Error())
 
     def invoke
       ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
         cpus: Optional[Int] = Unset )
-    :   Text raises BenchError =
+    :   Text raises Bench.Error =
 
       val user = device.user
       val host = device.host
       val command = NetworkDevice.measurement(path, input, heap, cpus)
 
       safely(sh"""ssh -o ControlPath=$socket $user@$host ${command.escape}""".exec[Text]())
-      . lest(BenchError())
+      . lest(Bench.Error())
 
-    def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+    def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error =
       val user = device.user
       val host = device.host
 
       safely(sh"ssh -o ControlPath=$socket $user@$host rm $path".exec[Text]())
-      . lest(BenchError())
+      . lest(Bench.Error())
 
 class NetworkDevice(val user: Text, val host: Hostname) extends BenchmarkDevice:
-  def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+  def deploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error =
     val user = this.user
     val host = this.host
-    safely(sh"scp $path $user@$host:$uuid.jar".exec[Exit]()).lest(BenchError())
+    safely(sh"scp $path $user@$host:$uuid.jar".exec[Exit]()).lest(Bench.Error())
 
   def invoke
     ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
       cpus: Optional[Int] = Unset )
-  :   Text raises BenchError =
+  :   Text raises Bench.Error =
 
     val user = this.user
     val host = this.host
     val command = NetworkDevice.measurement(path, input, heap, cpus)
 
-    safely(sh"""ssh $user@$host ${command.escape}""".exec[Text]()).lest(BenchError())
+    safely(sh"""ssh $user@$host ${command.escape}""".exec[Text]()).lest(Bench.Error())
 
-  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error =
     val user = this.user
     val host = this.host
-    safely(sh"ssh $user@$host rm $path".exec[Text]()).lest(BenchError())
+    safely(sh"ssh $user@$host rm $path".exec[Text]()).lest(Bench.Error())
 
 // A scoped session on a `NetworkDevice`: an OpenSSH ControlMaster connection is opened
 // (and authenticated) once, the multiplexing `Session` device is lent to the lambda, and
 // the master connection is closed when the scope ends. A named instance class rather than
 // an anonymous given, matching the capture-checked instances elsewhere; this module is
 // not yet capture-checked, so the handle carries no capability annotations here.
-class NetworkDeviceSessional(using error: Tactic[BenchError]) extends Sessional:
+class NetworkDeviceSessional(using error: Tactic[Bench.Error]) extends Sessional:
   type Self = NetworkDevice
   type Result = NetworkDevice.Session
 
@@ -169,18 +169,18 @@ class NetworkDeviceSessional(using error: Tactic[BenchError]) extends Sessional:
     val socket: Text = t"/tmp/sedentary-${Uuid()}.ssh"
 
     safely(sh"ssh -M -N -f -o ControlPath=$socket $user@$host".exec[Exit]())
-    . lest(BenchError())
+    . lest(Bench.Error())
 
     try lambda(using NetworkDevice.Session(target, socket))
     finally safely(sh"ssh -O exit -o ControlPath=$socket $user@$host".exec[Exit]()).let(_ => ())
 
 object LocalhostDevice extends BenchmarkDevice:
-  def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError = ()
+  def deploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error = ()
 
   def invoke
     ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
       cpus: Optional[Int] = Unset )
-  :   Text raises BenchError =
+  :   Text raises Bench.Error =
 
     val size = heap.or(t"1g")
 
@@ -188,6 +188,6 @@ object LocalhostDevice extends BenchmarkDevice:
 
     val opts = sh"-XX:+AlwaysPreTouch -Xms$size -Xmx$size -XX:CICompilerCount=2 -XX:+UseSerialGC"
     val cmd = sh"java $opts $processors -jar $path $input"
-    safely(cmd.exec[Text]()).lest(BenchError())
+    safely(cmd.exec[Text]()).lest(Bench.Error())
 
-  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError = ()
+  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error = ()

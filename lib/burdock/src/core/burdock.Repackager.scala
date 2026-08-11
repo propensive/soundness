@@ -41,7 +41,8 @@ import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*
-import parasite.{async, supervise, AsyncError}
+import parasite.{async, supervise}
+import parasite.Async
 import prepositional.*
 import revolution.*
 import rudiments.*
@@ -128,7 +129,7 @@ object Repackager:
     // Classify a single hash. Pure (no shared mutable state), so many hashes can be classified
     // concurrently. It never raises — a hash that is neither published nor cached is returned as
     // `Unset` and raised (with the offending hash) on the main thread after the join — so the async
-    // task's only failure mode is `AsyncError`, which keeps `await`'s error type concrete.
+    // task's only failure mode is `Async.Error`, which keeps `await`'s error type concrete.
     def classify(hash: Text): Optional[(List[Requirement], List[Zip.Entry])] =
       (resolve(hash): @unchecked) match
         case url: HttpUrl => (List(Requirement(url, hash)), Nil)
@@ -139,7 +140,7 @@ object Repackager:
     // await each group in order on this thread (keeping the builders single-threaded) and advance
     // the progress bar once per group, so terminal writes never race across worker threads.
     mitigate:
-      case AsyncError(_) =>
+      case Async.Error(_) =>
         RepackageError(m"a concurrency error occurred while resolving dependencies")
 
     . protect:
@@ -176,9 +177,9 @@ object Repackager:
       case IoError(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
       case StreamError(_)       => RepackageError(m"a stream error occurred while repackaging")
       case ZipError(reason)     => RepackageError(m"the JAR could not be read or written ($reason)")
-      case PathError(_, _)      => RepackageError(m"a path could not be resolved while repackaging")
+      case Path.Error(_, _)      => RepackageError(m"a path could not be resolved while repackaging")
       case NumberError(_, _, _) => RepackageError(m"the manifest contained malformed data")
-      case FqcnError(_, _)      => RepackageError(m"the Main-Class is not a valid class name")
+      case Fqcn.Error(_, _)      => RepackageError(m"the Main-Class is not a valid class name")
 
     . protect:
         val resource: Text = burdock.internal.ResourcePath.tt

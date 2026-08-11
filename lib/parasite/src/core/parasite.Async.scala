@@ -35,6 +35,7 @@ package parasite
 import nomenclature.*
 import prepositional.*
 import rudiments.*
+import fulminate.*
 
 // The naming plane for parasite's nested async structures (supervisors, workers,
 // tasks, daemons): `Name[Async]`. A name must start with a letter and otherwise
@@ -45,5 +46,20 @@ import rudiments.*
 object Async:
   type Rules = MustMatch["[A-Za-z][A-Za-z0-9_-]*"]
   inline given nominative: Async is Nominative under Rules = !!
+
+  // AsyncError → Async.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case Cancelled       => m"the operation was cancelled"
+        case Incomplete      => m"the task was not completed"
+        case AlreadyComplete => m"the promise was already completed"
+        case Timeout         => m"the operation timed out"
+
+    enum Reason:
+      case Cancelled, Incomplete, AlreadyComplete, Timeout
+
+  case class Error(reason: Async.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(reason.communicate)
 
 sealed trait Async

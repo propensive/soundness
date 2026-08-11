@@ -44,10 +44,10 @@ import turbulence.*
 import vacuous.*
 
 object Diff:
-  given aggregable: (tactic: Tactic[DiffError])
+  given aggregable: (tactic: Tactic[Diff.Error])
   =>  ((Diff[Text] is Aggregable by Text)^{tactic}) = parse(_)
 
-  private def parse(lines: Chain[Text]): Diff[Text] raises DiffError =
+  private def parse(lines: Chain[Text]): Diff[Text] raises Diff.Error =
     def recur
       ( todo:          Chain[Text],
         line:          Int,
@@ -96,8 +96,8 @@ object Diff:
               try string.split(",").nn.iterator.to(List) match
                 case List(start, end) => (start.nn.toInt - 1, end.nn.toInt)
                 case List(start)      => (start.nn.toInt - 1, start.nn.toInt)
-                case _                => abort(DiffError(line, head))
-              catch case error: NumberFormatException => abort(DiffError(line, head))
+                case _                => abort(Diff.Error(line, head))
+              catch case error: NumberFormatException => abort(Diff.Error(line, head))
 
             val pairs =
               head.s.split("[acd]").nn.iterator.to(List) match
@@ -109,7 +109,7 @@ object Diff:
                 recur(tail, line + 1, edits, position, rightPosition, leftStart)
 
               case None =>
-                raise(DiffError(line, head))
+                raise(Diff.Error(line, head))
                 recur(tail, line + 1, edits, position, rightPosition, 0)
 
         case _ =>
@@ -142,6 +142,10 @@ object Diff:
         val insSeq = inss.map: ins => Text("> "+ins.value)
 
         List(command) ::: delSeq ::: sep ::: insSeq
+
+  // Diff.Error → Diff.Error
+  case class Error(lineNo: Int, line: Text)(using Diagnostics)
+  extends fulminate.Error(39, 0)(m"could not read the diff at line $lineNo: $line")
 
 case class Diff[element](edits: Edit[element]*):
   def size: Int = edits.count:

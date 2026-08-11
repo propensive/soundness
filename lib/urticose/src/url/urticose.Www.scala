@@ -46,9 +46,9 @@ object Www:
   given radical: %.type is Radical:
     type Plane = Www
 
-    def length(text: Text): Int raises PathError = if text.starts(t"/") then 1 else 0
+    def length(text: Text): Int raises Path.Error = if text.starts(t"/") then 1 else 0
     def encode(root: %.type): Text = "/"
-    def decode(text: Text): %.type raises PathError = %
+    def decode(text: Text): %.type raises Path.Error = %
 
   given filesystem: Www is Filesystem:
     type UniqueRoot = false

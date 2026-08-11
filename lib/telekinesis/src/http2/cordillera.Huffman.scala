@@ -40,7 +40,7 @@ import contingency.*
 import rudiments.*
 import vacuous.*
 
-import Http2Error.Reason
+import Http2.Error.Reason
 
 // The canonical HPACK Huffman code (RFC 7541, Appendix B): for each of the 256
 // byte values plus the EOS symbol (index 256), the right-aligned code and its bit
@@ -146,7 +146,7 @@ object Huffman:
   // Decodes an HPACK Huffman string. Walks the code bit-by-bit against the table;
   // the trailing padding (all 1-bits, fewer than 8) is accepted and discarded.
   // The tactic is a plain using-parameter, de-sugared from `raises`.
-  def decode(data: Data)(using Tactic[Http2Error]): Data =
+  def decode(data: Data)(using Tactic[Http2.Error]): Data =
     val buf: ByteBuf^ = ByteBuf()
     var current = 0
     var bits = 0
@@ -173,12 +173,12 @@ object Huffman:
 
           symbol += 1
 
-        if bits > 30 then abort(Http2Error(Reason.BadHuffman))
+        if bits > 30 then abort(Http2.Error(Reason.BadHuffman))
         bit -= 1
 
       i += 1
 
     // Any leftover bits must be the EOS padding: all ones, fewer than 8 bits.
-    if bits >= 8 || (current != ((1 << bits) - 1)) then abort(Http2Error(Reason.BadHuffman))
+    if bits >= 8 || (current != ((1 << bits) - 1)) then abort(Http2.Error(Reason.BadHuffman))
 
     buf.data

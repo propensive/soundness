@@ -429,7 +429,7 @@ extends Rig:
     // Every step lands under the SAME test id: the probed concurrency is a coordinate on
     // the test's emergent `N` axis (supplied by `Strain`'s inclusion), so a sweep's steps
     // accumulate as cells of one entry rather than as separately-named tests.
-    val testId = TestId(name, suite, codepoint)
+    val testId = Test.Id(name, suite, codepoint)
 
     if !runner.skip(testId, Entry.Kind.Stress, Nil) then
       dispatch(body).stdlib.grouped(14).toList.foreach: step =>

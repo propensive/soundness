@@ -74,7 +74,7 @@ trait Flexes[Power <: Nat] extends Units[Power, CssFlex]
 // One unit of each CSS dimension, to be multiplied by a number, e.g. `4.0*Px`,
 // `50.0*Pct` or `200.0*Ms`. Physical lengths and times reuse Quantitative's own
 // `Metres` and `Seconds`, rendered respectively as `mm` and `ms` (see
-// `CssConvertible`), so `Cm`/`Mm`/`S`/`Ms` are convenient magnitudes, not new
+// `Css.Convertible`), so `Cm`/`Mm`/`S`/`Ms` are convenient magnitudes, not new
 // types — `Inch`, `Centi(Metre)`, `Milli(Second)` etc. work just as well.
 val Px: Quantity[Pixels[1]] = Quantity(1.0)
 val Rem: Quantity[Rems[1]] = Quantity(1.0)

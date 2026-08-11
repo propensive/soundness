@@ -41,20 +41,21 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import fulminate.*
 
 object Geolocation:
-  import GeolocationError.Reason.*
+  import Geolocation.Error.Reason.*
 
   private given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 6)
 
-  private def parseParams(text: Text): List[(Text, Text)] raises GeolocationError =
+  private def parseParams(text: Text): List[(Text, Text)] raises Geolocation.Error =
     text.cut(t";").map: parameter =>
       parameter.cut(t"=") match
         case List(key, value) => (key, value)
-        case Nil | List(_)    => abort(GeolocationError(MissingEquals))
-        case _                => abort(GeolocationError(MultipleEquals))
+        case Nil | List(_)    => abort(Geolocation.Error(MissingEquals))
+        case _                => abort(Geolocation.Error(MultipleEquals))
 
-  given decoder: (tactic: Tactic[GeolocationError])
+  given decoder: (tactic: Tactic[Geolocation.Error])
   =>  ((Geolocation is Decodable in Text)^{tactic}) =
     case r"geo:$latitude(-?[0-9]+(\.[0-9]+)?),$longitude(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
       val location =
@@ -79,7 +80,7 @@ object Geolocation:
                 val (uncertainty, params) = params0 match
                   case (t"u", u) :: params =>
                     val uncertainty = safely(u.as[Double]).or:
-                      raise(GeolocationError(BadUncertainty))
+                      raise(Geolocation.Error(BadUncertainty))
                       Unset
 
                     (uncertainty, params)
@@ -90,23 +91,23 @@ object Geolocation:
                 Geolocation(location, altitude, crs, uncertainty, Map.from(params.stdlib))
 
               case other =>
-                raise(GeolocationError(ExpectedSemicolon))
+                raise(Geolocation.Error(ExpectedSemicolon))
                 Geolocation(location, altitude)
 
           case other =>
-            raise(GeolocationError(UnexpectedSuffix))
+            raise(Geolocation.Error(UnexpectedSuffix))
             Geolocation(location)
 
         case other =>
-          raise(GeolocationError(UnexpectedSuffix))
+          raise(Geolocation.Error(UnexpectedSuffix))
           Geolocation(location)
 
     case r"geo:.*" =>
-      raise(GeolocationError(ExpectedCoordinates))
+      raise(Geolocation.Error(ExpectedCoordinates))
       Geolocation(Location(0.deg, 0.deg))
 
     case value =>
-      raise(GeolocationError(BadScheme))
+      raise(Geolocation.Error(BadScheme))
       Geolocation(Location(0.deg, 0.deg))
 
   given encodable: Geolocation is Encodable in Text = geolocation =>
@@ -114,6 +115,30 @@ object Geolocation:
 
     val alt = altitude.lay(t""): a => t",$a"
     t"geo:${location.encode}$alt${uncertainty.lay(t"") { u => t";u=$u" }}"
+
+  // Geolocation.Error → Geolocation.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case MissingEquals       extends Reason(1)
+      case MultipleEquals      extends Reason(2)
+      case BadScheme           extends Reason(3)
+      case ExpectedSemicolon   extends Reason(4)
+      case UnexpectedSuffix    extends Reason(5)
+      case ExpectedCoordinates extends Reason(6)
+      case BadUncertainty      extends Reason(7)
+
+    given communicable: Reason is Communicable =
+      case Reason.MissingEquals       => m"the parameter does not contain an `=`"
+      case Reason.MultipleEquals      => m"the parameter contains more than one `=`"
+      case Reason.BadScheme           => m"the value does not begin with the `geo:` URI scheme"
+      case Reason.ExpectedSemicolon   => m"a `;` was expected after the altitude value"
+      case Reason.UnexpectedSuffix    => m"a `,` or `;` was expected"
+      case Reason.ExpectedCoordinates => m"latitude and longitude coordinates were expected"
+      case Reason.BadUncertainty      => m"the `uncertainty` parameter vas not a valid number"
+
+  case class Error(reason: Geolocation.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(420, reason.number)
+    ( m"the geo URI is not in the correct format because $reason" )
 
 case class Geolocation
   ( location:    Location,

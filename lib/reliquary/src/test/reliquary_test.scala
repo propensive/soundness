@@ -128,7 +128,7 @@ object Tests extends Suite(m"Reliquary Tests"):
           try
             Tel.Type.assign(doc, Tels.Axiom.tels)
             t"ok"
-          catch case error: TelError => t"failed with ${error.reason}"
+          catch case error: Tel.Error => t"failed with ${error.reason}"
         . assert(_ == t"ok")
 
         test(m"$name.tel reconstructs equal to the hand-encoded value"):

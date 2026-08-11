@@ -70,13 +70,13 @@ object Task:
         def evaluate(worker: Worker): Result = evaluate0(worker)
 
         def await()(using monitor: Monitor^)
-        :   (Tactic[error | AsyncError]^) ?->{this, monitor} result =
+        :   (Tactic[error | Async.Error]^) ?->{this, monitor} result =
 
           deliver[error]()
 
         def await[duration: Abstractable across Durations to Long](duration: duration)
           ( using monitor: Monitor^ )
-        :   (Tactic[error | AsyncError]^) ?->{this, monitor} result =
+        :   (Tactic[error | Async.Error]^) ?->{this, monitor} result =
 
           deliver[error, duration](duration)
 
@@ -101,19 +101,19 @@ object Task:
   // with `bind`/`map` without suspending the calling strand.
   def sleep[duration: Abstractable across Durations to Long](duration: duration)
     ( using monitor: Monitor^, probate: Probate^, codepoint: Codepoint )
-  :   (Task[Unit] emits AsyncError)^{monitor, probate} =
+  :   (Task[Unit] emits Async.Error)^{monitor, probate} =
 
     async(snooze(duration))
 
 
   extension [result](tasks: List[Task[result]])
     // Part of the pure façade (see `monad` above): the fresh handle is sealed once here.
-    def sequence(using Monitor^, Probate^): Task[List[result]] emits AsyncError =
+    def sequence(using Monitor^, Probate^): Task[List[result]] emits Async.Error =
       caps.unsafe.unsafeAssumePure(async(List.of(tasks.stdlib.map(_.join()))))
 
   extension [result](tasks: Iterable[Task[result]])
     def race()(using monitor: Monitor^, probate: Probate^)
-    :   (Tactic[AsyncError]^) ?->{monitor, probate} result =
+    :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
       val promise: Promise[result] = Promise()
 
       tasks.foreach: task =>
@@ -124,7 +124,7 @@ object Task:
 
 // A task carries the error type its body may raise as the `Error` member, refined by the `emits`
 // alias (`Task[result] emits error` = `Task[result] { type Error <: error }`). It is preserved to
-// `await`, where it is delivered through the caller's in-scope `Tactic`. `AsyncError` (cancellation
+// `await`, where it is delivered through the caller's in-scope `Tactic`. `Async.Error` (cancellation
 // or timeout) is always a possible outcome, so it is added at the `await` site, not the member.
 trait Task[+result]:
   type Error <: Hazard
@@ -133,22 +133,22 @@ trait Task[+result]:
   def attend()(using Monitor^): Unit
   def cancel(): Unit
 
-  def await()(using monitor: Monitor^): (Tactic[Error | AsyncError]^) ?->{this, monitor} result
+  def await()(using monitor: Monitor^): (Tactic[Error | Async.Error]^) ?->{this, monitor} result
 
   def await[duration: Abstractable across Durations to Long](duration: duration)
     ( using monitor: Monitor^ )
-  :   (Tactic[Error | AsyncError]^) ?->{this, monitor} result
+  :   (Tactic[Error | Async.Error]^) ?->{this, monitor} result
 
   // The raw join, for parasite-internal combinators that do not track the error type.
   protected[parasite] def join()(using monitor: Monitor^)
-  :   (Tactic[AsyncError]^) ?->{this, monitor} result
+  :   (Tactic[Async.Error]^) ?->{this, monitor} result
 
   protected[parasite] def join[duration: Abstractable across Durations to Long](duration: duration)
     ( using monitor: Monitor^ )
-  :   (Tactic[AsyncError]^) ?->{this, monitor} result
+  :   (Tactic[Async.Error]^) ?->{this, monitor} result
 
   def bind[result2](lambda: result => Task[result2])(using monitor: Monitor^, probate: Probate^)
-  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate}
+  :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}
 
   def map[result2](lambda: result => result2)(using monitor: Monitor^, probate: Probate^)
-  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate}
+  :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}

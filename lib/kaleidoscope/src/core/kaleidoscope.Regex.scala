@@ -47,7 +47,7 @@ import denominative.*
 import rudiments.*
 import vacuous.*
 
-import RegexError.Reason.*
+import Regex.Error.Reason.*
 
 object Regex:
   private val cache: TrieMap[String, jur.Pattern] = TrieMap()
@@ -119,9 +119,9 @@ object Regex:
     given tactic: (ThrowTactic[Hazard, Any]^) = strategies.throwUnsafely
     parse(parts.map(_.tt))
 
-  def apply(text: Text): Regex raises RegexError = parse(List(text))
+  def apply(text: Text): Regex raises Regex.Error = parse(List(text))
 
-  def parse(parts: List[Text]): Regex raises RegexError =
+  def parse(parts: List[Text]): Regex raises Regex.Error =
     def validStart(part: Text): Boolean =
       val str = part.s
       str.startsWith("(") || str.startsWith("[") || str.startsWith(".") ||
@@ -129,7 +129,7 @@ object Regex:
 
     parts.absolve match
       case head :: tail =>
-        if !tail.all(validStart) then abort(RegexError(0, ExpectedGroup))
+        if !tail.all(validStart) then abort(Regex.Error(0, ExpectedGroup))
 
     def captures(todo: List[Text], last: Int, done: Set[Int]): Set[Int] = todo match
       case Nil          => done
@@ -171,36 +171,36 @@ object Regex:
             if current() == '}' then Quantifier.AtLeast(n)
             else number(false) match
               case 0 =>
-                abort(RegexError(index - 1, ZeroMaximum))
+                abort(Regex.Error(index - 1, ZeroMaximum))
 
               case m =>
-                if m < n then abort(RegexError(index - 1, BadRepetition))
+                if m < n then abort(Regex.Error(index - 1, BadRepetition))
                 else Quantifier.Between(n, m)
 
           case _ =>
-            abort(RegexError(index, UnexpectedChar))
+            abort(Regex.Error(index, UnexpectedChar))
 
-        if current() != '}' then abort(RegexError(index, UnexpectedChar)) else quantifier.adv()
+        if current() != '}' then abort(Regex.Error(index, UnexpectedChar)) else quantifier.adv()
 
       case _ =>
         Quantifier.Exactly(1)
 
     @tailrec
     def number(required: Boolean, count: Int = 0, first: Boolean = true): Int = current() match
-      case '\u0000' => abort(RegexError(index, IncompleteRepetition))
+      case '\u0000' => abort(Regex.Error(index, IncompleteRepetition))
 
       case ch if ch.isDigit =>
         index += 1
         number(required, count*10 + (ch - '0').toInt, false)
 
       case ',' =>
-        if !required then abort(RegexError(index, UnexpectedChar)) else count
+        if !required then abort(Regex.Error(index, UnexpectedChar)) else count
 
       case '}' =>
-        if first && required then abort(RegexError(index, UnexpectedChar)) else count
+        if first && required then abort(Regex.Error(index, UnexpectedChar)) else count
 
       case other =>
-        abort(RegexError(index, UnexpectedChar))
+        abort(Regex.Error(index, UnexpectedChar))
 
 
     def group(start: Int, children: List[Group], top: Boolean, escape: Boolean, charClass: Boolean)
@@ -208,7 +208,7 @@ object Regex:
 
       current() match
         case '\u0000' =>
-          if !top then abort(RegexError(index, UnclosedGroup))
+          if !top then abort(Regex.Error(index, UnclosedGroup))
 
           Group(start, index, (index + 1).min(text.s.length), children.reverse,
               Quantifier.Exactly(1), Greed.Greedy, captured.has(start - 1), false)
@@ -249,9 +249,9 @@ object Regex:
           group(start, group(index, Nil, false, false, true) :: children, top, false, false)
 
         case ']' if charClass =>
-          if index - 1 == start then abort(RegexError(index, EmptyCharClass))
+          if index - 1 == start then abort(Regex.Error(index, EmptyCharClass))
           index += 1
-          if top then abort(RegexError(index - 1, NotInGroup))
+          if top then abort(Regex.Error(index - 1, NotInGroup))
           val end = index - 1
           val quantifier2 = quantifier()
           val greed2 = greed()
@@ -268,7 +268,7 @@ object Regex:
 
         case ')' =>
           index += 1
-          if top then abort(RegexError(index - 1, NotInGroup))
+          if top then abort(Regex.Error(index - 1, NotInGroup))
           val end = index - 1
           val quantifier2 = quantifier()
           val greed2 = greed()
@@ -292,7 +292,7 @@ object Regex:
 
     def check(groups: List[Group], canCapture: Boolean): Unit =
       groups.each: group =>
-        if !canCapture && group.capture then abort(RegexError(group.start - 1, Uncapturable))
+        if !canCapture && group.capture then abort(Regex.Error(group.start - 1, Uncapturable))
         check(group.groups, canCapture && group.quantifier.unitary)
 
     check(mainGroup.groups, true)
@@ -313,6 +313,58 @@ object Regex:
 
         makePattern(pattern, tail, head.outerEnd, partial.tt, end, index3)
 
+  // Regex.Error → Regex.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case UnclosedGroup => m"a capturing group was not closed"
+
+        case ExpectedGroup =>
+          m"a capturing group was expected immediately following an extractor"
+
+        case BadRepetition =>
+          m"the maximum number of repetitions is less than the minimum"
+
+        case Uncapturable =>
+          m"a capturing group inside a repeating group can not be extracted"
+
+        case UnexpectedChar =>
+          m"the repetition range contained an unexpected character"
+
+        case NotInGroup =>
+          m"a closing parenthesis was found without a corresponding opening parenthesis"
+
+        case IncompleteRepetition =>
+          m"the repetition range was not closed"
+
+        case InvalidPattern =>
+          m"the pattern was invalid"
+
+        case UnclosedEscape =>
+          m"nothing followed the escape character `\\`"
+
+        case EmptyCharClass =>
+          m"the character class is empty"
+
+        case ZeroMaximum =>
+          m"the maximum number of repetitions must be greater than zero"
+
+    enum Reason(val number: Int) extends Clarification:
+      case UnclosedGroup       extends Reason(1)
+      case ExpectedGroup       extends Reason(2)
+      case BadRepetition       extends Reason(3)
+      case Uncapturable        extends Reason(4)
+      case UnexpectedChar      extends Reason(5)
+      case NotInGroup          extends Reason(6)
+      case IncompleteRepetition extends Reason(7)
+      case InvalidPattern      extends Reason(8)
+      case UnclosedEscape      extends Reason(9)
+      case EmptyCharClass      extends Reason(10)
+      case ZeroMaximum         extends Reason(11)
+
+  case class Error(index: Int, reason: Regex.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(397, reason.number)
+    ( m"the regular expression could not be parsed because $reason at $index" )
 
 case class Regex(pattern: Text, groups: List[Regex.Group]):
   def unapply(text: Text): Boolean = text.s.matches(pattern.s)

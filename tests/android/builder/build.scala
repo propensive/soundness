@@ -55,11 +55,11 @@ import java.nio.file.{Files, Paths}
 object build:
   // The runtime classpath (facade machinery + Scala/Kotlin standard libraries) the app both
   // compiles against and is dexed with; the platform stubs are added for compilation only.
-  def runtime(classpathFile: String): List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
+  def runtime(classpathFile: String): List[Classpath.Entry.Directory | Classpath.Entry.Jar] =
     Files.readAllLines(Paths.get(classpathFile)).nn.toArray.nn.to[List].map(_.toString).map:
       entry =>
-        if entry.endsWith(".jar") then ClasspathEntry.Jar(entry.tt)
-        else ClasspathEntry.Directory(entry.tt)
+        if entry.endsWith(".jar") then Classpath.Entry.Jar(entry.tt)
+        else Classpath.Entry.Directory(entry.tt)
 
   // Compiles every `.scala` source in `sourceDir` and returns the compilation to link. The
   // platform stubs join the compile classpath but must not be dexed: on the device, the
@@ -77,7 +77,7 @@ object build:
       . to[Map]
 
     val entries = runtime(classpathFile)
-    val platform: ClasspathEntry.Jar = ClasspathEntry.Jar(androidJar.tt)
+    val platform: Classpath.Entry.Jar = Classpath.Entry.Jar(androidJar.tt)
     val compileClasspath = LocalClasspath((platform :: entries)*)
 
     val classes = Paths.get(outDir, "classes").nn

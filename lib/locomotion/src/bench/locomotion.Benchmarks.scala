@@ -211,7 +211,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   lazy val raw6: scala.Array[Byte] = bytes6.asInstanceOf[scala.Array[Byte]]
 
   // The benchmark bodies are staged and recompiled by superlunary, so the
-  // contextual `Tactic[ProtobufError]` and the derived codec instances must be
+  // contextual `Tactic[Protobuf.Error]` and the derived codec instances must be
   // resolved here (where the imports are in scope) rather than inside the quoted
   // body. Each operation therefore goes through a fully-qualified helper method
   // the quote simply invokes.

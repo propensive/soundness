@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export stratiform.{Base256, Base256Error}
+export stratiform.{Base256}

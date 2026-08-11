@@ -44,7 +44,7 @@ import vacuous.*
 import contingency.*
 
 import Binary.*
-import RasterError.Reason
+import Raster.Error.Reason
 
 // A pure-Scala GIF codec. Decoding reads GIF87a and GIF89a, with global and local colour
 // tables, interlacing and transparency, compositing the first frame onto the logical screen
@@ -52,10 +52,10 @@ import RasterError.Reason
 // most 256 colours by median cut when necessary, with one palette slot reserved for
 // transparency when the raster's layout has alpha.
 private[hallucination] object GifCodec:
-  def decode(data: Data): Raster raises RasterError =
+  def decode(data: Data): Raster raises Raster.Error =
     try
       if data.length < 13 || u8(data, 0) != 'G' || u8(data, 1) != 'I' || u8(data, 2) != 'F'
-      then abort(RasterError(Gif(), Reason.BadSignature))
+      then abort(Raster.Error(Gif(), Reason.BadSignature))
 
       val width = u16le(data, 6)
       val height = u16le(data, 8)
@@ -189,11 +189,11 @@ private[hallucination] object GifCodec:
             finished = true
 
           case _ =>
-            abort(RasterError(Gif(), Reason.UnsupportedVariant))
+            abort(Raster.Error(Gif(), Reason.UnsupportedVariant))
 
       Raster.build(width, height, Descriptor.rgba)(screen(_))
 
-    catch case _: IndexOutOfBoundsException => abort(RasterError(Gif(), Reason.Truncated))
+    catch case _: IndexOutOfBoundsException => abort(Raster.Error(Gif(), Reason.Truncated))
 
   private def readTable(data: Data, position: Int, size: Int): Array[Int]^{} =
     Array.tabulate(size): index =>

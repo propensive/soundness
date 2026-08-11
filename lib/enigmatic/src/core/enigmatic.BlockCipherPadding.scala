@@ -44,9 +44,9 @@ object BlockCipherPadding:
 
 // `verify` is a no-op for paddings that accept any input length. `NoPadding`
 // overrides it to reject misaligned input (for block-structured modes), raising a
-// `CryptoError` through the `Tactic` its `given` captures — which is why
+// `Crypto.Error` through the `Tactic` its `given` captures — which is why
 // constructing a `NoPadding` cipher, and hence encrypting with one, demands a
-// `Tactic[CryptoError]` in scope while all other paddings remain total.
+// `Tactic[Crypto.Error]` in scope while all other paddings remain total.
 
 trait BlockCipherPadding extends Findable:
   type Self
@@ -65,13 +65,13 @@ object Iso10126:
 sealed trait Iso10126
 
 object NoPadding:
-  given padding: (tactic: Tactic[CryptoError]) => ((NoPadding is BlockCipherPadding)^{tactic}) =
+  given padding: (tactic: Tactic[Crypto.Error]) => ((NoPadding is BlockCipherPadding)^{tactic}) =
     new BlockCipherPadding:
       type Self = NoPadding
       val name: Text = t"NoPadding"
 
       override def verify(length: Int, blockSize: Int, blockAligned: Boolean): Unit =
         if blockAligned && length%blockSize != 0
-        then abort(CryptoError(CryptoError.Reason.IllegalBlockSize))
+        then abort(Crypto.Error(Crypto.Error.Reason.IllegalBlockSize))
 
 sealed trait NoPadding

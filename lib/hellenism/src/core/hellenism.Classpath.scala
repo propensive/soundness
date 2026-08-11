@@ -47,6 +47,8 @@ import serpentine.*
 import turbulence.*
 import zephyrine.*
 import vacuous.*
+import java.io as ji
+import fulminate.*
 
 object Classpath extends Root(t""):
   type Plane = Classpath
@@ -57,20 +59,20 @@ object Classpath extends Root(t""):
   given radical: Classpath.type is Radical:
     type Plane = Classpath
 
-    def length(text: Text): Int raises PathError = 1
+    def length(text: Text): Int raises Path.Error = 1
 
-    def decode(text: Text): Classpath.type raises PathError =
-      if text.starts(t"/") then Classpath else abort(PathError(_.InvalidRoot))
+    def decode(text: Text): Classpath.type raises Path.Error =
+      if text.starts(t"/") then Classpath else abort(Path.Error(_.InvalidRoot))
 
     def encode(root: Classpath.type): Text = t""
 
   object Directory:
-    def apply[path: Abstractable across Paths to Text](path: path): ClasspathEntry.Directory =
-      ClasspathEntry.Directory(path.generic)
+    def apply[path: Abstractable across Paths to Text](path: path): Classpath.Entry.Directory =
+      Classpath.Entry.Directory(path.generic)
 
   object Jar:
-    def apply[path: Abstractable across Paths to Text](path: path): ClasspathEntry.Jar =
-      ClasspathEntry.Jar(path.generic)
+    def apply[path: Abstractable across Paths to Text](path: path): Classpath.Entry.Jar =
+      Classpath.Entry.Jar(path.generic)
 
   given filesystem: Classpath is Filesystem:
     type UniqueRoot = true
@@ -80,7 +82,7 @@ object Classpath extends Root(t""):
     val self: Text = "."
     val parent: Text = ".."
 
-  given streamable: [path <: Path on Classpath] => Tactic[ClasspathError]
+  given streamable: [path <: Path on Classpath] => Tactic[Classpath.Error]
   =>  ( classloader: Classloader )
   =>  path is Streamable by Data =
 
@@ -91,7 +93,7 @@ object Classpath extends Root(t""):
 
       Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
-  given source: [path <: Path on Classpath] => Tactic[ClasspathError]
+  given source: [path <: Path on Classpath] => Tactic[Classpath.Error]
   =>  ( classloader: Classloader, buffering: Buffering )
   =>  path is Streamable by Data over Credit =
 
@@ -106,7 +108,7 @@ object Classpath extends Root(t""):
 
     val urls: scala.Array[jn.URL | Null] =
       scala.Array.from(classpath.entries.stdlib.flatMap:
-        case ClasspathEntry.JavaRuntime => Nil.stdlib
+        case Classpath.Entry.JavaRuntime => Nil.stdlib
         case other                      => List(other.javaUrl).stdlib)
 
     val loader = jn.URLClassLoader(urls, parent)
@@ -133,9 +135,53 @@ object Classpath extends Root(t""):
         try findClass(name) catch case error: ClassNotFoundException =>
           super.loadClass(name, resolve)
 
+  // ClasspathEntry → Classpath.Entry
+  object Entry:
+    case class Directory(path: Text) extends Classpath.Entry:
+      def apply[directory: Instantiable across Paths from Text](): directory = directory(path)
+
+    case class Jar(path: Text) extends Classpath.Entry:
+      def apply[file: Instantiable across Paths from Text](): file = file(path)
+
+    case class Url(url: Text) extends Classpath.Entry:
+      def apply[instantiable: Instantiable across Urls from Text](): instantiable = instantiable(url)
+
+    case object JavaRuntime extends Classpath.Entry
+
+    def apply(url: jn.URL): Optional[Classpath.Entry] = url.getProtocol.nn.tt match
+      case t"jrt"             => Classpath.Entry.JavaRuntime
+      case t"http" | t"https" => Classpath.Entry.Url(url.toString.tt)
+
+      case t"file" =>
+        val path: Text = url.getPath.nn.tt
+        if path.ends(t"/") then Classpath.Entry.Directory(path) else Classpath.Entry.Jar(path)
+
+      case _ =>
+        Unset
+
+  sealed trait Entry:
+    def javaUrl: jn.URL = this match
+      case Classpath.Entry.Directory(path) => ji.File(path.s).toURI.nn.toURL.nn
+      case Classpath.Entry.Jar(path)       => ji.File(path.s).toURI.nn.toURL.nn
+      case Classpath.Entry.Url(url)        => jn.URI(url.s).toURL().nn
+      case Classpath.Entry.JavaRuntime     => jn.URI("jrt:/").toURL().nn
+
+  // ClasspathError → Classpath.Error
+  case class Error(resource: Text)(using Diagnostics)
+  extends fulminate.Error(540, 0)(m"the resource $resource was not on the classpath")
+
+  // ClasspathEvent → Classpath.Event
+  object Event:
+    given communicable: Classpath.Event is Communicable =
+      case ResourceLoaded(path)  => m"loaded the classpath resource $path"
+      case ResourceMissing(path) => m"the classpath resource $path was not found"
+
+  enum Event:
+    case ResourceLoaded(path: Text) extends Classpath.Event, Log.Runtime, Log.Resource
+    case ResourceMissing(path: Text) extends Classpath.Event, Log.Runtime, Log.Resource
 
 trait Classpath:
-  def entries: List[ClasspathEntry]
+  def entries: List[Classpath.Entry]
   private def array: scala.Array[jn.URL | Null] = scala.Array.from(entries.stdlib.map(_.javaUrl))
 
   def classloader(parent: Classloader = classloaders.platformClassloader): Classloader =
@@ -143,7 +189,7 @@ trait Classpath:
 
   def classloader: Classloader =
     val urls = entries.stdlib.flatMap:
-      case ClasspathEntry.JavaRuntime => Nil.stdlib
+      case Classpath.Entry.JavaRuntime => Nil.stdlib
       case other                      => List(other.javaUrl).stdlib
 
     new Classloader

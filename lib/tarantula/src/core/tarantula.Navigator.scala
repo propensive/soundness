@@ -47,18 +47,18 @@ trait Navigator(name: Text):
   // reaches back to the defining `Navigator`, declared by the `uses` clause.
   case class Server(port: Int, value: Job[Label, Text]) extends caps.ExclusiveCapability
   uses Navigator.this:
-    def stop()(using (ExecEvent is Loggable)^, (HttpEvent is Loggable)^): Unit =
+    def stop()(using (ExecEvent is Loggable)^, (Http.Event is Loggable)^): Unit =
       browser.stop(this)
 
   def launch(using WorkingDirectory, Monitor)(using (ExecEvent is Loggable)^)(port: Int): Server^
-  def stop(server: Server)(using (HttpEvent is Loggable)^, (ExecEvent is Loggable)^): Unit
+  def stop(server: Server)(using (Http.Event is Loggable)^, (ExecEvent is Loggable)^): Unit
 
   // Explicit `using` evidence instead of stacked `logs` sugar: the fresh `Server` capability
   // bound in the body cannot cross the nested context-function results the sugar desugars to
   // (the stacked-raises convention; see rep/DECISIONS.md).
   def session[result](port: Int = 4444)(block: (session: WebDriver#Session) ?=> result)
     ( using WorkingDirectory, Monitor )
-    ( using (HttpEvent is Loggable)^, (ExecEvent is Loggable)^ )
+    ( using (Http.Event is Loggable)^, (ExecEvent is Loggable)^ )
   :   result =
 
     // The fresh `Server` capability stays confined to this method; the `WebDriver` passed to

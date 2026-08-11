@@ -52,7 +52,7 @@ import zephyrine.*
 // grant-gated operations below expose the §22.2 machine-operation set: a
 // handle with the Read grant offers the current document snapshot, and one
 // with the Write grant offers the mutation operations, each applied
-// eagerly — a rejected operation aborts `MutationError` at its call site
+// eagerly — a rejected operation aborts `Mutation.Error` at its call site
 // and provably leaves the document unchanged. On normal completion of a
 // writable open, the document is serialized (preserving the interpreter
 // directive, pragma, and line endings) and written back to the source; an
@@ -78,36 +78,36 @@ object TelHandle:
   extension (handle: (TelHandle & Granting[Grant.Write])^)
     // The general seam: apply any §22.2 machine operation, or a composed
     // `Revision` op-log, to the document.
-    transparent inline def mutate(op: Mutation.Op)(using Tactic[MutationError]): Unit =
+    transparent inline def mutate(op: Mutation.Op)(using Tactic[Mutation.Error]): Unit =
       handle.mutate0(op)
 
-    transparent inline def revise(revision: Revision)(using Tactic[MutationError]): Unit =
+    transparent inline def revise(revision: Revision)(using Tactic[Mutation.Error]): Unit =
       handle.revise0(revision)
 
     // §22.2 `update-value` — rewrite the primary (or `atomIndex`-th) atom.
     transparent inline def update(pointer: Tel.Pointer, text: Text)
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.UpdateAtom(pointer, 0, text))
 
     transparent inline def update(pointer: Tel.Pointer, atomIndex: Int, text: Text)
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.UpdateAtom(pointer, atomIndex, text))
 
     // §22.2 `insert` — natural-position insertion under the parent at `pointer`.
     transparent inline def insert(pointer: Tel.Pointer, compound: Tel.Compound)
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.Insert(pointer, compound))
 
     transparent inline def insertBefore(pointer: Tel.Pointer, compound: Tel.Compound)
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.InsertBefore(pointer, compound))
 
     transparent inline def insertAfter(pointer: Tel.Pointer, compound: Tel.Compound)
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.InsertAfter(pointer, compound))
 
@@ -115,40 +115,40 @@ object TelHandle:
     // block of the parent at `pointer`.
     transparent inline def insertIntoBlock
       ( pointer: Tel.Pointer, blockIndex: Int, compound: Tel.Compound )
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.InsertIntoBlock(pointer, blockIndex, compound))
 
     // §22.2 `delete` — named `remove` because galilei claims `delete`.
-    transparent inline def remove(pointer: Tel.Pointer)(using Tactic[MutationError]): Unit =
+    transparent inline def remove(pointer: Tel.Pointer)(using Tactic[Mutation.Error]): Unit =
       handle.mutate0(Mutation.Op.Delete(pointer))
 
     transparent inline def replace(pointer: Tel.Pointer, compound: Tel.Compound)
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.Replace(pointer, compound))
 
     transparent inline def attachRemark(pointer: Tel.Pointer, text: Text)
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.AttachRemark(pointer, text))
 
-    transparent inline def removeRemark(pointer: Tel.Pointer)(using Tactic[MutationError]): Unit =
+    transparent inline def removeRemark(pointer: Tel.Pointer)(using Tactic[Mutation.Error]): Unit =
       handle.mutate0(Mutation.Op.RemoveRemark(pointer))
 
     transparent inline def setFlag(pointer: Tel.Pointer, keyword: Text)
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.SetFlag(pointer, keyword))
 
     transparent inline def unsetFlag(pointer: Tel.Pointer, keyword: Text)
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.UnsetFlag(pointer, keyword))
 
     transparent inline def reorderWithinGroup
       ( pointer: Tel.Pointer, keyword: Text, oldIndex: Int, newIndex: Int )
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.ReorderWithinGroup(pointer, keyword, oldIndex, newIndex))
 
@@ -157,13 +157,13 @@ object TelHandle:
         keyword:      Text,
         otherKeyword: Text,
         placement:    Mutation.Placement )
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0(Mutation.Op.ReorderGroups(pointer, keyword, otherKeyword, placement))
 
     transparent inline def resizeTabulation
       ( pointer: Tel.Pointer, blockIndex: Int, plannedRows: Tel.Compound* )
-      ( using Tactic[MutationError] )
+      ( using Tactic[Mutation.Error] )
     :   Unit =
       handle.mutate0
         (Mutation.Op.ResizeTabulation(pointer, blockIndex, Array.from(plannedRows)))
@@ -186,11 +186,11 @@ class TelHandle private[stratiform] (initial: Tel) extends caps.ExclusiveCapabil
 
   // `Mutation` is pure and assignment happens only on success, so a
   // rejected operation cannot leave a partially-applied document.
-  def mutate0(op: Mutation.Op)(using Tactic[MutationError]): Unit =
+  def mutate0(op: Mutation.Op)(using Tactic[Mutation.Error]): Unit =
     current0 = Mutation(current0, op)
     dirty0 = true
 
-  def revise0(revision: Revision)(using Tactic[MutationError]): Unit =
+  def revise0(revision: Revision)(using Tactic[Mutation.Error]): Unit =
     current0 = revision(current0)
     dirty0 = true
 
@@ -230,7 +230,7 @@ extends Openable:
 // The read-only counterpart, for sources that can be parsed but offer no
 // write-back: a `Write` mode is refused at open time.
 class TelViewOpenable[source]
-  ( using readable: (source is Readable to Tel)^, mutationError: Tactic[MutationError] )
+  ( using readable: (source is Readable to Tel)^, mutationError: Tactic[Mutation.Error] )
 extends Openable:
   type Self = source
   type Form = Tel
@@ -243,6 +243,6 @@ extends Openable:
   :   result =
 
     if mode.atoms.has(Write)
-    then abort(MutationError(MutationError.Reason.WriteUnsupported))
+    then abort(Mutation.Error(Mutation.Error.Reason.WriteUnsupported))
 
     block(using new TelHandle(readable.read(value)) with Granting[grants] {})

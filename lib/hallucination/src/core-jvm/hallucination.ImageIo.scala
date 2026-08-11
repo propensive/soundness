@@ -49,12 +49,12 @@ import vacuous.*
 // format component's JVM backend calls this; the formats `javax.imageio` cannot read (WebP has no
 // reader on any standard JRE) simply do not, and use their pure codec on every platform.
 private[hallucination] object ImageIo:
-  def decode(format: Rasterizable, data: Data): Raster raises RasterError =
+  def decode(format: Rasterizable, data: Data): Raster raises Raster.Error =
     val reader: ji.ImageReader =
       ji.ImageIO.getImageReadersByFormatName(format.name.s).nn.next().nn
 
     reader.setInput(ji.ImageIO.createImageInputStream(data.javaInputStream).nn)
-    val image = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(format))
+    val image = try reader.read(0).nn catch case _: ji.IIOException => abort(Raster.Error(format))
 
     convert(image).also(reader.dispose())
 
