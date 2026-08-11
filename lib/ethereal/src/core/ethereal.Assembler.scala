@@ -175,7 +175,7 @@ object Assembler:
     // which is physical, and which only exists at all once the JAR holds more than 0xffff entries.
     // Left stale, the JVM declines to open the executable and the daemon dies mute (#1680).
     mitigate:
-      case ZipError(_) =>
+      case Zip.Error(_) =>
         AssemblyError(m"The appended JAR's ZIP64 metadata could not be rebased")
 
     . protect:

@@ -54,6 +54,9 @@ import vacuous.*
 import zephyrine.*
 import beneficence.*
 import fulminate.*
+import inimitable.*
+import scintillate.*
+import wisteria.*
 
 object Mcp:
   val version = t"2025-11-25"
@@ -133,7 +136,7 @@ object Mcp:
     given BlobResourceContents is Json.Encodable = Json.EncodableDerivation.derived
 
 
-  def send[interface <: McpServer](id: Text, server: interface, mcpInterface: Interface)
+  def send[interface <: Mcp.Server](id: Text, server: interface, mcpInterface: Interface)
     ( dispatch: Json => Optional[Json] )
     ( using request: Http.Request )
     ( using Monitor, Probate, Online )
@@ -806,7 +809,7 @@ object Mcp:
       interface => zephyrine.Stream(interface.stream.stdlib.iterator.map(Array.of(_)))
 
 
-    inline def apply(sessionId: Text, server: McpServer from Mcp.Client)
+    inline def apply(sessionId: Text, server: Mcp.Server from Mcp.Client)
       ( using spec: server.type is Mcp.Specification )
     :   Interface =
 
@@ -815,7 +818,7 @@ object Mcp:
 
   class Interface
     (     sessionId: Text,
-      val server:    McpServer from Mcp.Client,
+      val server:    Mcp.Server from Mcp.Client,
       val spec:      server.type is Mcp.Specification )
   extends Api:
 
@@ -994,7 +997,7 @@ object Mcp:
 
   // McpSpecification → Mcp.Specification
   object Specification:
-    inline given mcpSpecification: [server <: McpServer] => server is Mcp.Specification =
+    inline given mcpSpecification: [server <: Mcp.Server] => server is Mcp.Specification =
       ${synesthesia.internal.spec[server]}
 
   trait Specification extends Typeclass:
@@ -1006,4 +1009,39 @@ object Mcp:
 
     def invokePrompt(target: Self, client: Mcp.Client, method: Text, params: Map[Text, Text])
     :   List[Discourse]
+
+  // McpServer -> Mcp.Server
+  trait Server():
+    import Mcp.*
+
+    private val sessions: scm.HashMap[Text, Session] = scm.HashMap()
+
+    type Session <: Mcp.Session
+    type Origin = Mcp.Client
+
+    def session(id: Text): Session = sessions.establish(id)(initialize())
+    def initialize(): Session
+
+    private given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
+
+    def serve(using this.type is Mcp.Specification, Monitor, Probate, Online, Http.Request)
+    :   Http.Response =
+
+      recover:
+        case error @ JsonRpcError(_, _, _) =>
+          import hieroglyph.charEncoders.utf8Encoder
+          Http.Response(Unfulfilled(t"JSON-RPC error: ${error.message.text}"))
+
+      . protect:
+          val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
+          val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
+          Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
+
+    def name: Text
+    def description: Text
+    def version: Semver
+    def prompts: List[Prompt]
+
+  // McpSession -> Mcp.Session
+  trait Session
 

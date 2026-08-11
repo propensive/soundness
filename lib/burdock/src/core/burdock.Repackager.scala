@@ -176,7 +176,7 @@ object Repackager:
     mitigate:
       case IoError(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
       case StreamError(_)       => RepackageError(m"a stream error occurred while repackaging")
-      case ZipError(reason)     => RepackageError(m"the JAR could not be read or written ($reason)")
+      case Zip.Error(reason)     => RepackageError(m"the JAR could not be read or written ($reason)")
       case Path.Error(_, _)      => RepackageError(m"a path could not be resolved while repackaging")
       case NumberError(_, _, _) => RepackageError(m"the manifest contained malformed data")
       case Fqcn.Error(_, _)      => RepackageError(m"the Main-Class is not a valid class name")

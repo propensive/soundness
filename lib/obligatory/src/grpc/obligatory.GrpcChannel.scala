@@ -95,7 +95,7 @@ object GrpcChannel:
 // The channel retains its connection — a capability holding the ambient `Monitor` —
 // so a channel is itself a capability.
 class GrpcChannel
-  ( connection: Http2Connection^, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
+  ( connection: Http2.Connection^, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
   // The `:authority` pseudo-header is supplied to `fetch` separately; the request's
   // `Host` is unused by the HTTP/2 transport, so the hostname is parsed leniently.
   private val host: Host = unsafely(authority.cut(t":").prim.or(authority).as[Host])
@@ -129,7 +129,7 @@ class GrpcChannel
   // carries the status in the headers). Raise unless the status is `Ok`.
   // Declared with explicit tactics rather than stacked `raises`: see `bintelDocument`
   // in stratiform (capture checking cannot unify cross-level tactic captures, 3.10).
-  private def expectStatus(stream: Http2Stream)
+  private def expectStatus(stream: Http2.Stream)
     ( using Monitor^, Tactic[GrpcError], Tactic[Async.Error] )
   :   Unit =
 

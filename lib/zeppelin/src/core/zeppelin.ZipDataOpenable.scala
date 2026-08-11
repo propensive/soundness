@@ -32,14 +32,38 @@
                                                                                                   */
 package zeppelin
 
+import java.io as ji
+import java.util.zip as juz
+import proscenium.compat.*
 import anticipation.*
+import contingency.*
+import galilei.*
+import gossamer.*
+import nomenclature.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import pneumatic.*
+import turbulence.*
+import zephyrine.*
+import vacuous.*
 import fulminate.*
+import scala.caps
+import java.nio as jn
+import java.nio.channels as jnc
+import java.nio.file as jnf
+import aperture.*
 
-object ZipEvent:
-  given communicable: ZipEvent is Communicable =
-    case Wrote(path, entries) => m"wrote $entries entries to the zip archive $path"
-    case Read(path, entries)  => m"read $entries entries from the zip archive $path"
+class ZipDataOpenable(using Tactic[Zip.Error]) extends Openable:
+  type Self = Data
+  type Form = Zip
+  type Operand = Nothing
+  type Result = Zip.Handle
 
-enum ZipEvent:
-  case Wrote(path: Text, entries: Int) extends ZipEvent, Log.Serialization
-  case Read(path: Text, entries: Int) extends ZipEvent, Log.Serialization
+  def open[grants <: Grant, result]
+    ( value: Data, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: (Zip.Handle & Granting[grants]) ?=> result )
+  :   result =
+
+    if mode.atoms.has(Write) then abort(Zip.Error(Zip.Error.Reason.WriteUnsupported))
+    block(using new Zip.Handle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})

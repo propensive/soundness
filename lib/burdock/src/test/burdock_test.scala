@@ -248,7 +248,7 @@ object Tests extends Suite(m"Burdock Tests"):
       // already present among the application's own entries; and an inlined (unpublished, e.g.
       // locally-published) burdock dependency's cached JAR also carries `burdock/Bootstrap.class`.
       // None of these must produce a duplicate entry in the output (which fails as a
-      // `ZipError`). See issue #1333.
+      // `Zip.Error`). See issue #1333.
       val tmp: Path on Linux = temporaryDirectory[Path on Linux]
       val inputJar: Path on Linux = tmp/t"burdock-dup-in-${Uuid().show}.jar"
       val outputJar: Path on Linux = tmp/t"burdock-dup-out-${Uuid().show}.jar"

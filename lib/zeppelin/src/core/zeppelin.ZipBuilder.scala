@@ -58,7 +58,7 @@ import zephyrine.*
 // at the offending `insert`, not at commit. The archive is serialized only when the creation
 // scope closes, to a temporary sibling moved atomically onto the target, so an exception
 // escaping the scope leaves nothing behind.
-class ZipBuilder private[zeppelin] (using Tactic[ZipError])
+class ZipBuilder private[zeppelin] (using Tactic[Zip.Error])
 extends caps.ExclusiveCapability:
 
   private var stack: List[Zip.Entry] = Nil
@@ -67,7 +67,7 @@ extends caps.ExclusiveCapability:
 
   def insert(entry: Zip.Entry): Unit =
     if names.has(entry.ref.encode)
-    then abort(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
+    then abort(Zip.Error(Zip.Error.Reason.DuplicateEntry(entry.ref)))
 
     names = Set.of(names.stdlib + entry.ref.encode)
     stack ::= entry
@@ -82,7 +82,7 @@ extends caps.ExclusiveCapability:
 
   private[zeppelin] def zipfile: Zipfile = Zipfile(stack.reverse, remark, Unset)
 
-class JarBuilder private[zeppelin] (using Tactic[ZipError]) extends ZipBuilder:
+class JarBuilder private[zeppelin] (using Tactic[Zip.Error]) extends ZipBuilder:
 
   // Writes `META-INF/MANIFEST.MF` from the given attributes, with values wrapped at 72 bytes
   // per the JAR specification. Call it first if the manifest should lead the archive, as
@@ -102,7 +102,7 @@ object ZipBuilder:
   // Creation instances for the `Zip` and `Jar` forms. The default `make` (a discarded
   // builder) writes a valid empty archive. `CreateFlag.Parents` and `CreateFlag.Replace`
   // govern the destination as they do for filesystem entries.
-  class ZipCreatable[path: Abstractable across Paths to Text](using Tactic[ZipError])
+  class ZipCreatable[path: Abstractable across Paths to Text](using Tactic[Zip.Error])
   extends Creatable:
 
     type Self = path
@@ -121,7 +121,7 @@ object ZipBuilder:
       commit(value.generic, flags, builder.zipfile)
       outcome
 
-  class JarCreatable[path: Abstractable across Paths to Text](using Tactic[ZipError])
+  class JarCreatable[path: Abstractable across Paths to Text](using Tactic[Zip.Error])
   extends Creatable:
 
     type Self = path
@@ -142,13 +142,13 @@ object ZipBuilder:
 
   // Serialize to a hidden temporary sibling, then move atomically onto the target.
   private def commit(filename: Text, flags: List[CreateFlag], zipfile: Zipfile)
-    ( using Tactic[ZipError] )
+    ( using Tactic[Zip.Error] )
   :   Unit =
 
     val target = jnf.Path.of(filename.s).nn
 
     if !flags.has(CreateFlag.Replace) && jnf.Files.exists(target)
-    then abort(ZipError(ZipError.Reason.AlreadyExists))
+    then abort(Zip.Error(Zip.Error.Reason.AlreadyExists))
 
     try
       if flags.has(CreateFlag.Parents) then
@@ -175,4 +175,4 @@ object ZipBuilder:
         throw throwable
     catch
       case error: ji.IOException =>
-        abort(ZipError(ZipError.Reason.CannotWrite(error.getMessage.nn.tt)))
+        abort(Zip.Error(Zip.Error.Reason.CannotWrite(error.getMessage.nn.tt)))

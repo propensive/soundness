@@ -51,6 +51,13 @@ import vacuous.*
 
 import Http2.Error.Reason
 import anticipation.*
+import java.util.concurrent.atomic as juca
+import scala.collection.concurrent as scc
+import hieroglyph.*, charEncoders.asciiEncoder
+import proscenium.*
+import turbulence.*
+import zephyrine.*
+import Http2.*
 
 // The HTTP/2 wire vocabulary (RFC 7540): frames, frame types, flag bits, error
 // codes and settings. Grouped under `Http2` so its deliberately generic names —
@@ -367,7 +374,7 @@ object Http2:
     // Named using-parameters, de-sugared from `raises`: the result retains the
     // connection's capabilities, so it must name its evidence rather than hide it.
     def connect()(using monitor: Monitor, probate: Probate, asyncError: Tactic[Async.Error])
-    :   Http2Connection^{monitor, caps.any} =
+    :   Http2.Connection^{monitor, caps.any} =
 
       // A neutral carrier: the connection (a capability) crosses the daemon and the
       // promise as an `AnyRef`.
@@ -376,22 +383,22 @@ object Http2:
       daemon:
         try
           endpoint.duplex: duplex =>
-            val connection = Http2Connection(duplex)
+            val connection = Http2.Connection(duplex)
             connection.start()
             ready.offer(connection.asInstanceOf[AnyRef])
             Promise[Unit]().await()
 
         finally if !ready.ready then ready.cancel()
 
-      ready.await().asInstanceOf[Http2Connection^{monitor, caps.any}]
+      ready.await().asInstanceOf[Http2.Connection^{monitor, caps.any}]
 
   // A scoped session on an `Http2.Endpoint`: the multiplexed connection is opened
-  // and its handshake completed, then the live `Http2Connection` is lent to the
+  // and its handshake completed, then the live `Http2.Connection` is lent to the
   // lambda; when the lambda ends, the connection (with its reader/writer daemons)
   // is torn down and the transport closed — no parked daemon holds the loan open,
   // because the loan and the scope coincide. `result` is quantified outside the
   // lambda, so a value borrowing the connection — a lazily-streaming response
-  // body, an open `Http2Stream` — cannot escape the scope; memoized values may.
+  // body, an open `Http2.Stream` — cannot escape the scope; memoized values may.
   // Concurrent `fetch`es within the scope multiplex on the one connection.
   // A named instance class rather than an anonymous given: an anonymous
   // subclass would freshen the capability types in its inferred `Result`
@@ -403,13 +410,13 @@ object Http2:
             loggable:   (SocketEvent is Loggable)^ )
   extends Sessional:
     type Self = Endpoint[endpoint]
-    type Result = Http2Connection^{caps.any}
+    type Result = Http2.Connection^{caps.any}
 
     def session[result](target: Endpoint[endpoint])(lambda: (session: Result) ?=> result)
     :   result =
 
       target.endpoint.duplex: duplex =>
-        val connection = Http2Connection(duplex)
+        val connection = Http2.Connection(duplex)
         connection.start()
         try lambda(using connection) finally connection.close()
 
@@ -481,4 +488,220 @@ object Http2:
   enum Event:
     case RequestSent(authority: Text) extends Http2.Event, Log.Network, Log.Protocol
     case GoAway(lastStream: Int) extends Http2.Event, Log.Network, Log.Protocol
+
+  // Http2Connection -> Http2.Connection
+  object Connection:
+    // The client connection preface (RFC 7540 §3.5): a fixed octet sequence that
+    // precedes the first SETTINGS frame in prior-knowledge h2c.
+    private[cordillera] val connectionPreface: Bytes = t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".in[Bytes]
+
+    // Our advertised SETTINGS: disable server push; a generous stream window.
+    private[cordillera] val initialSettings: List[Setting] =
+      List
+        ( Setting(SettingId.EnablePush.id, 0),
+          Setting(SettingId.InitialWindowSize.id, 0x7fffffff) )
+
+    // Dispatch one decoded frame. Lives on the companion — taking the connection as a
+    // plain parameter — so the reader daemon's body stays free of `this` captures.
+    // The tactic is a plain using-parameter: a context-function result may not hide it.
+    private def dispatch(conn: Http2.Connection, frame: Frame, decoder: Hpack)
+      ( using Tactic[Http2.Error] )
+    :   Boolean =
+      frame match
+        case Frame.Settings(_, ack) =>
+          if !ack then
+            conn.send(Frame.Settings(Nil, ack = true))
+            conn.started.offer(())
+
+          true
+
+        case Frame.Ping(opaque, ack) =>
+          if !ack then conn.send(Frame.Ping(opaque, ack = true))
+          true
+
+        case Frame.GoAway(lastStreamId, _, _) =>
+          Log.warn(Http2.Event.GoAway(lastStreamId))
+          false
+
+        case Frame.Headers(id, block, endStream, _) =>
+          conn.streams.get(id).foreach: stream =>
+            stream.acceptHeaders(decoder.decode(block))
+
+            if endStream then
+              stream.end()
+              conn.streams.remove(id)
+
+          true
+
+        case Frame.Data(id, payload, endStream) =>
+          conn.streams.get(id).foreach: stream =>
+            stream.acceptData(payload)
+            // Replenish the peer's flow-control window for what we consumed.
+            if payload.length > 0 then
+              conn.send(Frame.WindowUpdate(0, payload.length))
+              conn.send(Frame.WindowUpdate(id, payload.length))
+
+            if endStream then
+              stream.end()
+              conn.streams.remove(id)
+
+          true
+
+        case Frame.RstStream(id, _) =>
+          conn.streams.get(id).foreach: stream =>
+            stream.end()
+            conn.streams.remove(id)
+
+          true
+
+        case Frame.WindowUpdate(_, _) | Frame.Continuation(_, _, _) | Frame.Ignored(_, _) =>
+          true
+
+  // One outbound request stream's receive side: a promise for its response header
+  // block (resolved on the first HEADERS frame), a spool feeding the response body
+  // (fed by DATA frames), and a promise for trailers (resolved on a second, end-stream
+  // HEADERS frame — gRPC's status). The reader daemon populates these; the caller
+  // awaits `headers` and consumes `body.stream`.
+  // A multiplexed HTTP/2 connection over a persistent `Duplex` (cleartext h2c, with
+  // prior knowledge — no upgrade, no TLS). A single writer daemon drains an outbound
+  // `Spool[Frame]` to the socket, serialising all writes (so no lock is needed); a
+  // reader daemon parses inbound frames and dispatches them by stream id. Must be
+  // created within a `supervise`-provided `Monitor`.
+  class Connection(duplex: Duplex)(using Monitor, Probate):
+    import Http2.Connection.*
+
+    private val streams: scc.TrieMap[Int, Http2.Stream] = scc.TrieMap()
+    private val nextId: juca.AtomicInteger = juca.AtomicInteger(1)
+    private val outbound: Relay[Frame] = Relay()
+    private val started: Promise[Unit] = Promise()
+
+    private def send(frame: Frame): Unit = outbound.put(frame)
+
+    // Tear the connection down after an unrecoverable reader/writer failure: unblock a
+    // pending handshake, end every open stream so awaiters of its headers/body/trailers
+    // don't hang on a connection that can no longer make progress, and stop the outbound
+    // spool so the writer exits.
+    private def tearDown(): Unit =
+      started.cancel()
+      streams.values.each(_.end())
+      outbound.stop()
+
+    // The writer drains the outbound spool to the socket, serialising all writes (so no
+    // lock is needed); the reader decodes inbound frames and dispatches them until the
+    // socket ends, a GOAWAY arrives, or a protocol error occurs. Both run under a `trap`
+    // that tears the connection down on failure, so a write, parse or HPACK error is
+    // isolated to this connection — it neither escalates nor leaves a request awaiter
+    // hanging — rather than being swallowed or escaping the daemon.
+    private val (writer, reader): (Daemon, Daemon) =
+      // The containment and its protected body share only this connection's own state; no
+      // aliased writer.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+       contain:
+        case _ => tearDown(); Remedy.Accept
+
+       . protect:
+          // Everything the fibers touch is bound to locals (or neutral carriers)
+          // before they spawn: a daemon body may not capture the instance under
+          // construction, and its context function must stay pure.
+          val duplex0: Duplex = duplex
+          val outbound0: Relay[Frame] = outbound
+          val self: AnyRef = this.asInstanceOf[AnyRef]
+
+          val writer = daemon:
+            duplex0.send(zephyrine.Stream(connectionPreface))
+
+            outbound0.stream.records.each: frame => duplex0.send(zephyrine.Stream(frame.serialize))
+
+          val frameReaderRef: AnyRef = FrameReader(duplex0.source).asInstanceOf[AnyRef]
+
+          val reader = daemon:
+            // A protocol error tears down just this connection; throw it to the enclosing
+            // `contain`, which runs `tearDown()` and stops the reader.
+            given Tactic[Http2.Error] = AsyncTactic()
+
+            val frameReader = frameReaderRef.asInstanceOf[FrameReader^]
+            val decoder = Hpack()
+            var continue = true
+
+            while continue do (frameReader.next(): @unchecked) match
+              case Unset        => continue = false
+              case frame: Frame =>
+                continue = dispatch(self.asInstanceOf[Http2.Connection], frame, decoder)
+
+          (writer, reader)
+
+    // Perform the connection handshake: emit our SETTINGS and await the peer's.
+    // Plain using-parameters, de-sugared from `raises`: a context-function result may
+    // not hide `this`.
+    def start()(using Tactic[Async.Error]): Unit =
+      send(Frame.Settings(initialSettings, ack = false))
+      started.await()
+
+    // Open a new client stream, send its header block (and optional body), and return
+    // the stream handle whose promises/spool the reader will populate.
+    def request(headerBlock: List[HpackEntry], body: Optional[Bytes]): Http2.Stream =
+      val id = nextId.getAndAdd(2)
+      val stream = Http2.Stream(id)
+      streams(id) = stream
+      val encoder = Hpack()
+      val noBody = body.absent
+
+      send(Frame.Headers(id, encoder.encode(headerBlock), endStream = noBody, endHeaders = true))
+
+      body.let: payload => send(Frame.Data(id, payload, endStream = true))
+
+      stream
+
+    // Issue a telekinesis `Http.Request` over this connection and return the
+    // `Http.Response`, blocking only until the response HEADERS arrive; the body
+    // streams lazily from the stream's spool. `scheme`/`authority` supply the
+    // pseudo-headers the request type doesn't carry. Trailers (e.g. gRPC status) are
+    // available afterwards via `stream.trailers`.
+    def fetch(request: Http.Request, scheme: Text, authority: Text)
+      ( using Tactic[Http2.Error], Tactic[Async.Error] )
+    :   (Http2.Stream, Http.Response) =
+
+      Log.fine(Http2.Event.RequestSent(authority))
+      val headerBlock = PseudoHeaders.request(request, scheme, authority)
+      val data = request.body().memoize
+
+      val payload: Optional[Bytes] = if data.isEmpty then Unset else data
+
+      val stream = this.request(headerBlock, payload)
+      val responseHeaders = stream.headers.await()
+
+      (stream, PseudoHeaders.response(responseHeaders, Chain.from(stream.body.stream.records)))
+
+    def close(): Unit =
+      send(Frame.GoAway(0, ErrorCode.NoError.code, Array.empty[Byte]))
+      outbound.stop()
+      reader.cancel()
+      writer.cancel()
+      duplex.close()
+
+  // Http2Stream -> Http2.Stream
+  class Stream(val id: Int):
+    val headers: Promise[List[HpackEntry]] = Promise()
+    val trailers: Promise[List[HpackEntry]] = Promise()
+    val body: Relay[Bytes] = Relay()
+    // Untracked: written only by the connection's single reader daemon.
+    @caps.unsafe.untrackedCaptures
+    private var headersSeen: Boolean = false
+
+    // Record an incoming HEADERS block: the first becomes the response headers, a
+    // subsequent one (always end-stream) becomes the trailers.
+    def acceptHeaders(block: List[HpackEntry]): Unit =
+      if !headersSeen then
+        headersSeen = true
+        headers.offer(block)
+      else
+        trailers.offer(block)
+
+    def acceptData(data: Bytes): Unit = body.put(data)
+
+    // Close the receive side; resolve any unfulfilled promises so awaiters don't hang.
+    def end(): Unit =
+      if !headers.ready then headers.offer(Nil)
+      if !trailers.ready then trailers.offer(Nil)
+      body.stop()
 

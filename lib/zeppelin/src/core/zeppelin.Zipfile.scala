@@ -66,7 +66,7 @@ object Zipfile:
 
   def write[path: Abstractable across Paths to Text]
     (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])
-  :   Unit logs ZipEvent raises ZipError =
+  :   Unit logs Zip.Event raises Zip.Error =
 
     checkDuplicates(entries)
     val out = ji.FileOutputStream(ji.File(path.generic.s))
@@ -79,16 +79,16 @@ object Zipfile:
               interval.size)
     finally out.close()
 
-    Log.info(ZipEvent.Wrote(path.generic, entries.size))
+    Log.info(Zip.Event.Wrote(path.generic, entries.size))
 
   def read[path: Abstractable across Paths to Text](path: path)
-  :   Zipfile logs ZipEvent raises ZipError =
+  :   Zipfile logs Zip.Event raises Zip.Error =
 
     val zipfile = parse(FileSource(path.generic))
-    Log.info(ZipEvent.Read(path.generic, zipfile.entries.size))
+    Log.info(Zip.Event.Read(path.generic, zipfile.entries.size))
     zipfile
 
-  def read(data: Data): Zipfile raises ZipError = parse(DataSource(data))
+  def read(data: Data): Zipfile raises Zip.Error = parse(DataSource(data))
 
   // Every offset a ZIP archive records is central-directory-relative: a reader derives the shift
   // from the difference between the recorded and the physical position of the central directory,
@@ -100,7 +100,7 @@ object Zipfile:
   // archive at all, with no diagnostic. `rebase` shifts the pointer by `delta`; an archive with no
   // ZIP64 locator — anything under 0xffff entries, which is nearly everything — is left untouched.
   def rebase[path: Abstractable across Paths to Text](path: path, delta: Long)
-  :   Unit raises ZipError =
+  :   Unit raises Zip.Error =
 
     val filename: Text = path.generic
     val source = FileSource(filename)
@@ -113,7 +113,7 @@ object Zipfile:
         val rebased = Zip.u64(locator, 8) + delta
 
         if rebased < 0 || rebased + 56 > source.size
-        then raise(ZipError(ZipError.Reason.Zip64Error))
+        then raise(Zip.Error(Zip.Error.Reason.Zip64Error))
         else
           val update: Data = Data.build(8): array =>
             Zip.putU64(array, 0, rebased)
@@ -126,11 +126,11 @@ object Zipfile:
             while buffer.hasRemaining do channel.write(buffer, eocdOffset - 12 + buffer.position)
           finally channel.close()
 
-  private def checkDuplicates(entries: Iterable[Zip.Entry]): Unit raises ZipError =
+  private def checkDuplicates(entries: Iterable[Zip.Entry]): Unit raises Zip.Error =
     val seen = scala.collection.mutable.HashSet[Text]()
 
     entries.foreach: entry =>
-      if !seen.add(entry.ref.encode) then raise(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
+      if !seen.add(entry.ref.encode) then raise(Zip.Error(Zip.Error.Reason.DuplicateEntry(entry.ref)))
 
   // Sources implement zephyrine's shared `Expanse`, the random-access view of the bytes
   // backing an archive, so other positional consumers (and future ones, such as ranged HTTP)
@@ -164,7 +164,7 @@ object Zipfile:
           Array.unsafeFrozen(buffer.array.nn)
         finally channel.close()
 
-  // Positional reads against a channel held open for the lifetime of a `ZipHandle`'s scope —
+  // Positional reads against a channel held open for the lifetime of a `Zip.Handle`'s scope —
   // unlike `FileSource`, which re-opens per read so detached `Zipfile` entries stay usable
   // beyond it.
   private[zeppelin] class ChannelSource(channel: jnc.FileChannel) extends Expanse:
@@ -185,9 +185,9 @@ object Zipfile:
   // The end-of-central-directory trailer is the archive's last record, but a comment of up to
   // 0xffff bytes may follow it, so it is found by scanning back for its signature. Returns the
   // window scanned, the trailer's index within it, and its absolute offset in the archive.
-  private def findEocd(source: Expanse): (Data, Int, Long) raises ZipError =
+  private def findEocd(source: Expanse): (Data, Int, Long) raises Zip.Error =
     val size = source.size
-    if size < 22 then raise(ZipError(ZipError.Reason.MissingEocd))
+    if size < 22 then raise(Zip.Error(Zip.Error.Reason.MissingEocd))
 
     val windowSize = math.min(size, 22L + u16Max).toInt
     val windowStart = size - windowSize
@@ -195,11 +195,11 @@ object Zipfile:
 
     var i = window.length - 22
     while i >= 0 && Zip.u32(window, i) != Zip.eocdSig.toLong do i -= 1
-    if i < 0 then raise(ZipError(ZipError.Reason.MissingEocd))
+    if i < 0 then raise(Zip.Error(Zip.Error.Reason.MissingEocd))
 
     (window, i, windowStart + i)
 
-  private[zeppelin] def parse(source: Expanse): Zipfile raises ZipError =
+  private[zeppelin] def parse(source: Expanse): Zipfile raises Zip.Error =
     val size = source.size
     val (window, i, eocdOffset) = findEocd(source)
     var entryCount = Zip.u16(window, i + 10).toLong
@@ -239,13 +239,13 @@ object Zipfile:
             cdOffset = Zip.u64(record, 48)
             cdEnd = recordOffset
           else
-            raise(ZipError(ZipError.Reason.Zip64Error))
+            raise(Zip.Error(Zip.Error.Reason.Zip64Error))
 
     // The central directory physically precedes the trailer; any gap between its actual start
     // and the recorded offset is data prepended before the archive (a binary/self-extracting
     // prefix), and every recorded offset must be shifted by that delta.
     val cdActualStart = cdEnd - cdSize
-    if cdActualStart < 0 then raise(ZipError(ZipError.Reason.TruncatedArchive))
+    if cdActualStart < 0 then raise(Zip.Error(Zip.Error.Reason.TruncatedArchive))
     val prefixDelta = cdActualStart - cdOffset
 
     val central = source.read(cdActualStart, cdSize.toInt)
@@ -256,7 +256,7 @@ object Zipfile:
 
     while count < entryCount && p + 46 <= central.length do
       if Zip.u32(central, p) != (Zip.centralHeaderSig.toLong & 0xffffffffL)
-      then raise(ZipError(ZipError.Reason.BadSignature(Zip.centralHeaderSig)))
+      then raise(Zip.Error(Zip.Error.Reason.BadSignature(Zip.centralHeaderSig)))
 
       val methodId = Zip.u16(central, p + 10)
       val dosTime = Zip.u16(central, p + 12)
@@ -307,14 +307,14 @@ object Zipfile:
       val method = methodId match
         case 0     => Zip.Method.Stored
         case 8     => Zip.Method.Deflate
-        case other => abort(ZipError(ZipError.Reason.UnsupportedMethod(other)))
+        case other => abort(Zip.Error(Zip.Error.Reason.UnsupportedMethod(other)))
 
       val ref: Path on Zip =
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case Path.Error(_, _)    => ZipError(ZipError.Reason.InvalidName(cleanName))
-          case NameError(_, _, _) => ZipError(ZipError.Reason.InvalidName(cleanName))
+          case Path.Error(_, _)    => Zip.Error(Zip.Error.Reason.InvalidName(cleanName))
+          case NameError(_, _, _) => Zip.Error(Zip.Error.Reason.InvalidName(cleanName))
 
         . protect:
           // `decode` performs no per-segment validation, so check each name component
@@ -506,8 +506,8 @@ object Zipfile:
 
 case class Zipfile
   ( entries: List[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset ):
-  def entry(ref: Path on Zip): Zip.Entry raises ZipError =
-    entries.find(_.ref == ref).getOrElse(abort(ZipError(ZipError.Reason.NotFound(ref))))
+  def entry(ref: Path on Zip): Zip.Entry raises Zip.Error =
+    entries.find(_.ref == ref).getOrElse(abort(Zip.Error(Zip.Error.Reason.NotFound(ref))))
 
   def serialize: Stream[Data] over Credit =
     // Emit the prefix first; all subsequent offsets are absolute (they include the prefix), so

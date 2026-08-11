@@ -34,8 +34,8 @@ package synesthesia
 
 import soundness.*
 
-object TestMcpServer extends McpServer():
-  class Session() extends McpSession
+object TestMcpServer extends Mcp.Server():
+  class Session() extends Mcp.Session
   import Mcp.*
 
   def initialize(): Session = new Session()

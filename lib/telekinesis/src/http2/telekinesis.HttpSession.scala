@@ -127,13 +127,13 @@ object HttpSession:
 
         head.status(head.headers, Http.Body.Flowing(spring))
 
-  // The multiplexed HTTP/2 form, over a live `Http2Connection`, presented
+  // The multiplexed HTTP/2 form, over a live `Http2.Connection`, presented
   // behind the sequential contract (the URL session cannot know before the
   // handshake which protocol ALPN will select, so it promises only sequential
   // use; the `Http2.Endpoint` session lends the connection itself, whose
   // fetches may run concurrently). The body is drained within the fetch, so
   // the response is pure and the borrow ends immediately.
-  class Multiplexed private[telekinesis] (connection: Http2Connection^, authority: Text)
+  class Multiplexed private[telekinesis] (connection: Http2.Connection^, authority: Text)
   extends HttpSession:
     update def fetch(request: Http.Request)(using Tactic[ConnectError])
     :   Http.Response^{this, caps.any} =
