@@ -491,7 +491,7 @@ object Tests extends Suite(m"Profanity Tests"):
 
         test(m"a by-name imported feature is collected by Every"):
           import terminalFeatures.kittyKeyboardFeature
-          summon[Every[TerminalFeature]].values.map(_.enable)
+          summon[Every[Terminal.Feature]].values.map(_.enable)
         . assert(_.contains(t"\e[>1u"))
 
       suite(m"Keypress rendering"):

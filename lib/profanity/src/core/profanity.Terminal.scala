@@ -38,6 +38,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import iridescence.*
 import parasite.*
@@ -89,6 +90,27 @@ object Terminal:
     // (signal thread), consumed by the pump daemon — hence a concurrent queue.
     val reports: java.util.concurrent.ConcurrentLinkedQueue[Report] =
       java.util.concurrent.ConcurrentLinkedQueue()
+
+  // TerminalError → Terminal.Error
+  case class Error()(using Diagnostics)
+  extends fulminate.Error(493, 0)(m"STDIN is not attached to a TTY")
+
+  // TerminalFeature → Terminal.Feature
+  // A terminal mode that can be turned on and off with a pair of escape sequences —
+  // for example bracketed paste, mouse tracking, the alternative screen buffer, or
+  // the kitty keyboard protocol. Instances are summoned collectively (as an
+  // `Every[Terminal.Feature]`) and applied for the duration of an `interactive`
+  // session; a feature can also be applied around a block in isolation with `apply`.
+  // One-shot queries (a background-colour or size report) are modelled with an empty
+  // `disable` sequence.
+  case class Feature(enable: Text, disable: Text):
+    // Emits the turn-on sequence, runs `body`, and always emits the turn-off sequence
+    // afterwards. Requires a `Terminal`, so a feature can only be applied inside a
+    // terminal session; the `Stdio` for writing the sequences is taken from it.
+    def apply[result](body: => result)(using terminal: Terminal): result =
+      given Stdio = terminal.stdio
+      Out.print(enable)
+      try body finally Out.print(disable)
 
 // A `Terminal` is a *capability*: it holds the live raw-mode tty session — the `Monitor` and
 // `Probate` of its input-pump daemon, the event spool, and mutable size/brightness state —

@@ -53,8 +53,8 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
           monitor:     Monitor,
           probate:     Probate,
           environment: Environment )
-  ( using features: Every[TerminalFeature] )
-  ( using Tactic[TerminalError] )
+  ( using features: Every[Terminal.Feature] )
+  ( using Tactic[Terminal.Error] )
 :   result =
 
   // The session terminal retains the ambient monitor; the checker cannot see that the
@@ -69,7 +69,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
           ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
 
         processBuilder.inheritIO()
-        if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
+        if processBuilder.start().nn.waitFor() != 0 then abort(Terminal.Error())
 
         // Learn the real terminal size at session start: shells do not export
         // `LINES`/`COLUMNS` by default, and without this probe the session would run
@@ -86,9 +86,9 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
       terminal.events.stop()
       terminal.pumpInput.attend()
 
-  // Apply every in-scope `TerminalFeature` around the session, nested so that each
+  // Apply every in-scope `Terminal.Feature` around the session, nested so that each
   // turns off (in its own try/finally) in the reverse of the order it turned on.
-  def applyFeatures(remaining: List[TerminalFeature]): result = remaining match
+  def applyFeatures(remaining: List[Terminal.Feature]): result = remaining match
     case Nil             => session
     case feature :: rest =>
       // Each feature wraps the session around the same single-owner terminal.
@@ -118,16 +118,16 @@ package keyboards:
 // `interactive` applies every imported feature. The two queries (`backgroundColor`,
 // `terminalSize`) have no turn-off, so their `disable` sequence is empty.
 package terminalFeatures:
-  given bracketedPasteFeature: TerminalFeature = TerminalFeature(t"\e[?2004h", t"\e[?2004l")
-  given focusReportingFeature: TerminalFeature = TerminalFeature(t"\e[?1004h", t"\e[?1004l")
+  given bracketedPasteFeature: Terminal.Feature = Terminal.Feature(t"\e[?2004h", t"\e[?2004l")
+  given focusReportingFeature: Terminal.Feature = Terminal.Feature(t"\e[?1004h", t"\e[?1004l")
 
-  given mouseTrackingFeature: TerminalFeature =
-    TerminalFeature(t"\e[?1000h\e[?1006h", t"\e[?1006l\e[?1000l")
+  given mouseTrackingFeature: Terminal.Feature =
+    Terminal.Feature(t"\e[?1000h\e[?1006h", t"\e[?1006l\e[?1000l")
 
-  given alternateScreenFeature: TerminalFeature = TerminalFeature(t"\e[?1049h", t"\e[?1049l")
-  given kittyKeyboardFeature: TerminalFeature = TerminalFeature(t"\e[>1u", t"\e[<u")
-  given backgroundColorFeature: TerminalFeature = TerminalFeature(t"\e]11;?\e\\", t"")
-  given terminalSizeFeature: TerminalFeature = TerminalFeature(Terminal.reportSize, t"")
+  given alternateScreenFeature: Terminal.Feature = Terminal.Feature(t"\e[?1049h", t"\e[?1049l")
+  given kittyKeyboardFeature: Terminal.Feature = Terminal.Feature(t"\e[>1u", t"\e[<u")
+  given backgroundColorFeature: Terminal.Feature = Terminal.Feature(t"\e]11;?\e\\", t"")
+  given terminalSizeFeature: Terminal.Feature = Terminal.Feature(Terminal.reportSize, t"")
 
 type UnixSignal = Interrupt
 
