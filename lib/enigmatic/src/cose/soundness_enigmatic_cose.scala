@@ -33,5 +33,4 @@
 package soundness
 
 export enigmatic
-  . { Cose, CoseStructure, CoseSigned, CoseMaced, Sign, Sign1, Mac, Mac0, HmacCipher, CoseTag, CoseContext,
-      authenticate, CanonicalCbor }
+  . { Cose, HmacCipher, authenticate, CanonicalCbor }
