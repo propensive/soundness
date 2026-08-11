@@ -1,5 +1,11 @@
 # Public API surface — reduction candidate inventory
 
+> **Partially superseded (2026-08-11):** the C1 (multi-word nesting), C3 and C3b
+> (typeclass-backing entities) sections are replaced by `api-nesting-proposal.md`,
+> which re-inventories the surface post-modularity (823 multi-word type names, vs the
+> 163 examined here), applies semantic rather than lexical split points, and verifies
+> per-component feasibility. C2 and C4 remain current.
+
 Generated read-only from the `soundness_*` re-export files and `module.TypeName.scala` declarations. Categories C1–C4 per the plan. **Identification only** — no fixes applied here.
 
 - modules scanned: 126
