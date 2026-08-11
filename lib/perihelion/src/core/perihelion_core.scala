@@ -121,13 +121,6 @@ given overIngressive: [transport, value]
 extension [self](value: self)
   def over[transport]: self over transport = value.asInstanceOf[self over transport]
 
-// A `ws://` or `wss://` URL. `Url` decoding is scheme-generic, so a `WsUrl` parses with
-// no bespoke scheme machinery; the port defaults to 80 (`ws`) or 443 (`wss`) when the
-// authority omits it. A `wss://` connection is opened over TLS (via Coaxial's
-// `SecureEndpoint`), configured by the `Tls` capability in scope (system trust store and
-// hostname verification by default).
-type WsUrl = Url["ws" | "wss"]
-
 // Reads the handshake header block — up to and including the CRLFCRLF terminator —
 // from the connection's pull endpoint, consuming *exactly* the header bytes: anything
 // after the terminator stays unread in the endpoint's window, so this never reads past
@@ -168,7 +161,7 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
 
   recur(Data())
 
-// Makes a `WsUrl` a Coaxial client transport, so a WebSocket client is just Coaxial's
+// Makes a `Websocket.Url` a Coaxial client transport, so a WebSocket client is just Coaxial's
 // own client loop: `url.react(initialState) { message => … }`, symmetric with the
 // server's `webSocket(initial) { … }`. It is a `Duplexable` (not merely a `Serviceable`)
 // because its `transmit` spools through a thread-safe `Channel`, so Coaxial's `exchange`
@@ -184,25 +177,25 @@ given wsClient: ( online:            Online,
                   probate:           Probate,
                   options:           Every[SocketOption.Tcp],
                   tls:               Tls,
-                  websocketError:    Tactic[WebsocketError],
+                  websocketError:    Tactic[Websocket.Error],
                   httpResponseError: Tactic[HttpResponseError],
                   portError:         Tactic[PortError] )
-=>  (((WsUrl is Duplexable) { type Output = Data; type Connection = WsConnection })
+=>  (((Websocket.Url is Duplexable) { type Output = Data; type Connection = Websocket.Connection })
       ^{online, monitor, websocketError, httpResponseError, portError}) =
   // The client retains its `Monitor` (the frame pump daemon) and tactics, so the instance
   // is a capability — a given constructed from capabilities produces a capability (see
   // rep/DECISIONS.md).
   new Duplexable:
-    type Self = WsUrl
+    type Self = Websocket.Url
 
     type Output = Data
-    type Connection = WsConnection
+    type Connection = Websocket.Connection
 
-    def connect(url: WsUrl, interface: Optional[MacAddress]): WsConnection =
+    def connect(url: Websocket.Url, interface: Optional[MacAddress]): Websocket.Connection =
       val secure: Boolean = url.scheme.name == t"wss"
 
       val host: Host = url.host.or:
-        abort(WebsocketError(WebsocketError.Reason.Handshake(t"the URL had no host")))
+        abort(Websocket.Error(Websocket.Error.Reason.Handshake(t"the URL had no host")))
 
       val defaultPort: Int = if secure then 443 else 80
       val portNumber: Int = url.authority.lay(defaultPort)(_.port.or(defaultPort))
@@ -257,13 +250,13 @@ given wsClient: ( online:            Online,
       val response: Http.Response = Http.Response.parse(Chain(headerBytes))
 
       if response.status != Http.SwitchingProtocols then
-        abort(WebsocketError(WebsocketError.Reason.Handshake(t"the server did not upgrade")))
+        abort(Websocket.Error(Websocket.Error.Reason.Handshake(t"the server did not upgrade")))
 
       given accept: ("secWebsocketAccept" is Directive of Text) = identity(_)
       val expected: Text = t"$key${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)
 
       if response.headers.secWebsocketAccept.prim != expected then
-        abort(WebsocketError(WebsocketError.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong")))
+        abort(Websocket.Error(Websocket.Error.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong")))
 
       val masking: Masking = Masking.Client()
       given Masking = masking
@@ -273,15 +266,15 @@ given wsClient: ( online:            Online,
       // reader (`receive`, over `inbound`) share the connection.
       val pump: Daemon = daemon(duplex.send(channel.stream))
 
-      WsConnection(duplex, channel, masking, inboundRef, pump)
+      Websocket.Connection(duplex, channel, masking, inboundRef, pump)
 
-    def receive(connection: WsConnection)
+    def receive(connection: Websocket.Connection)
     :   (zephyrine.Stream[Data] over zephyrine.Credit)^{this, caps.any} =
 
       connection.messages
 
     def transmit
-      ( connection: WsConnection,
+      ( connection: Websocket.Connection,
         consume input: (zephyrine.Stream[Data] over zephyrine.Credit)^ )
     :   Unit =
 
@@ -289,7 +282,7 @@ given wsClient: ( online:            Online,
       // `Channel` boundary; see `Transmissible`.
       connection.send(input)
 
-    def close(connection: WsConnection): Unit = connection.close()
+    def close(connection: Websocket.Connection): Unit = connection.close()
 
 // A scoped WebSocket session: the connection — handshake completed, frame pump running —
 // is lent to the lambda for free-form `send`/`messages` use, and closed (with a `1000`
@@ -298,23 +291,23 @@ given wsClient: ( online:            Online,
 // fit a per-message handler. A named instance class rather than an anonymous given: an
 // anonymous subclass would freshen the capability types in its inferred `Result` member.
 class WsSessional
-  ( using duplexable: ((WsUrl is Duplexable) { type Output = Data
-                                               type Connection = WsConnection })^,
+  ( using duplexable: ((Websocket.Url is Duplexable) { type Output = Data
+                                               type Connection = Websocket.Connection })^,
           monitor:    Monitor )
 extends Sessional:
-  type Self = WsUrl
+  type Self = Websocket.Url
 
   // A fresh capability (`^`, not `^{caps.any}`): each `session` call's handle is its own
   // existential, so returning it (or anything capturing it) from the block is a level
   // violation the capture checker rejects.
-  type Result = WsConnection^
+  type Result = Websocket.Connection^
 
-  def session[result](target: WsUrl)(lambda: (session: Result) ?=> result): result =
+  def session[result](target: Websocket.Url)(lambda: (session: Result) ?=> result): result =
     val connection = duplexable.connect(target, Unset)
     try lambda(using connection) finally connection.close()
 
-given wsSessional: ( duplexable: ((WsUrl is Duplexable) { type Output = Data
-                                                          type Connection = WsConnection })^,
+given wsSessional: ( duplexable: ((Websocket.Url is Duplexable) { type Output = Data
+                                                          type Connection = Websocket.Connection })^,
                      monitor:    Monitor )
 =>  (WsSessional^{duplexable, monitor, caps.any}) =
 

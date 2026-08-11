@@ -60,15 +60,15 @@ object AutobahnClient:
 
     supervise:
       // Open one connection, hand each inbound message to `consume`, and always close cleanly;
-      // a protocol violation surfaces as a `WebsocketError` and is answered with its close code.
+      // a protocol violation surfaces as a `Websocket.Error` and is answered with its close code.
       def session(path: Text)(consume: Channel => perihelion.Message => Unit): Unit =
-        val url = t"ws://$host:$port$path".as[WsUrl]
-        val connection = summon[WsUrl is Duplexable].connect(url, Unset)
+        val url = t"ws://$host:$port$path".as[Websocket.Url]
+        val connection = summon[Websocket.Url is Duplexable].connect(url, Unset)
         given Masking = connection.masking
 
         try
           recover:
-            case error: WebsocketError =>
+            case error: Websocket.Error =>
               safely(connection.channel.close(error.reason.closeCode))
 
           . protect:

@@ -69,7 +69,7 @@ object Frame:
   // stall the completed frame until the peer happened to send another (issue #1301).
   // Blocking is intended only at the head of a frame — the `finished` guard below.
   def parse(cursor: Cursor[Data, {}]^)(using masking: Masking)
-    ( using Tactic[WebsocketError] )
+    ( using Tactic[Websocket.Error] )
   :   Optional[Frame] =
     if cursor.finished then Unset else
       val byte0 = cursor.peek.asInt
@@ -78,7 +78,7 @@ object Frame:
 
       // RFC 6455 §5.2: RSV1/2/3 must be zero unless an extension negotiated them,
       // and we negotiate none.
-      if (byte0 & 0x70) != 0 then abort(WebsocketError(WebsocketError.Reason.ReservedBits))
+      if (byte0 & 0x70) != 0 then abort(Websocket.Error(Websocket.Error.Reason.ReservedBits))
 
       val opcode = byte0 & 0x0f
 
@@ -88,8 +88,8 @@ object Frame:
 
       // RFC 6455 §5.1: a server must reject an unmasked client frame; a client must
       // likewise reject a masked server frame.
-      if masking.inbound && !masked then abort(WebsocketError(WebsocketError.Reason.Unmasked))
-      if !masking.inbound && masked then abort(WebsocketError(WebsocketError.Reason.Masked))
+      if masking.inbound && !masked then abort(Websocket.Error(Websocket.Error.Reason.Unmasked))
+      if !masking.inbound && masked then abort(Websocket.Error(Websocket.Error.Reason.Masked))
 
       val length: Long = (byte1 & 0x7f) match
         case 126 => B16(cursor.take(Data())(2)).u16.long
@@ -99,11 +99,11 @@ object Frame:
       // A 64-bit length with the high bit set decodes negative; treat it, and any
       // length past the cap, as too large to buffer.
       if length < 0 || length > maxPayload
-      then abort(WebsocketError(WebsocketError.Reason.TooLarge(length)))
+      then abort(Websocket.Error(Websocket.Error.Reason.TooLarge(length)))
 
       // Control frames must not be fragmented and carry at most 125 bytes.
       if opcode >= 0x8 && (!fin || length > maxControlPayload)
-      then abort(WebsocketError(WebsocketError.Reason.BadControl))
+      then abort(Websocket.Error(Websocket.Error.Reason.BadControl))
 
       val mask = if masked then cursor.take(Data())(4) else Data()
       val payload = unmask(cursor.take(Data())(length.toInt), mask)
@@ -119,17 +119,17 @@ object Frame:
           // A close payload is either empty or a 2-byte code plus an optional
           // reason; a lone byte is malformed. `1005` is the internal "no code
           // present" sentinel and must never travel on the wire.
-          if payload.length == 1 then abort(WebsocketError(WebsocketError.Reason.BadClose))
+          if payload.length == 1 then abort(Websocket.Error(Websocket.Error.Reason.BadClose))
           val code =
             if payload.length >= 2 then B16(payload.take(2)).u16.int else 1005
 
           if payload.length >= 2 && !validCloseCode(code)
-          then abort(WebsocketError(WebsocketError.Reason.BadClose))
+          then abort(Websocket.Error(Websocket.Error.Reason.BadClose))
 
           val reason = if payload.length > 2 then payload.drop(2) else Data()
           Close(code, reason)
 
-        case other => abort(WebsocketError(WebsocketError.Reason.BadOpcode(other)))
+        case other => abort(Websocket.Error(Websocket.Error.Reason.BadOpcode(other)))
 
   def unmask(bytes: Data, mask: Data): Data =
     if mask.length == 0 then bytes
