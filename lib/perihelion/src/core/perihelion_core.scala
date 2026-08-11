@@ -178,7 +178,7 @@ given wsClient: ( online:            Online,
                   options:           Every[SocketOption.Tcp],
                   tls:               Tls,
                   websocketError:    Tactic[Websocket.Error],
-                  httpResponseError: Tactic[HttpResponseError],
+                  httpResponseError: Tactic[Http.Response.Error],
                   portError:         Tactic[PortError] )
 =>  (((Websocket.Url is Duplexable) { type Output = Data; type Connection = Websocket.Connection })
       ^{online, monitor, websocketError, httpResponseError, portError}) =

@@ -191,7 +191,7 @@ object Tests extends Suite(m"Coaxial tests"):
     suite(m"DomainSocket"):
       test(m"A DomainSocket endpoint pairs a socket with a path"):
         val socket = DomainSocket(t"/var/run/docker.sock")
-        socket.at(t"/info") == DomainSocketEndpoint(socket, t"/info")
+        socket.at(t"/info") == DomainSocket.Endpoint(socket, t"/info")
       . assert(_ == true)
 
     suite(m"BindError"):

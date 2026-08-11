@@ -308,7 +308,7 @@ private def plaintextExchange
     val duplex = connect()
 
     try attempt(duplex) catch
-      case error: HttpResponseError => duplex.close(); abort(ConnectError(Unknown))
+      case error: Http.Response.Error => duplex.close(); abort(ConnectError(Unknown))
       case error: StreamError       => duplex.close(); abort(ConnectError(Unknown))
       case error: ji.IOException    => duplex.close(); abort(ConnectError(Unknown))
 
@@ -317,7 +317,7 @@ private def plaintextExchange
 
     case duplex: Duplex =>
       try attempt(duplex) catch
-        case error: HttpResponseError => duplex.close(); fresh()
+        case error: Http.Response.Error => duplex.close(); fresh()
         case error: StreamError       => duplex.close(); fresh()
         case error: ji.IOException    => duplex.close(); fresh()
 
@@ -410,7 +410,7 @@ private def sequentialFetch(duplex: Duplex, request: Http.Request)
     repackage(response, unsafely(response.body.stream.memoize))
 
   catch
-    case error: HttpResponseError => abort(ConnectError(Unknown))
+    case error: Http.Response.Error => abort(ConnectError(Unknown))
     case error: StreamError       => abort(ConnectError(Unknown))
     case error: ji.IOException    => abort(ConnectError(Unknown))
 
@@ -419,14 +419,14 @@ given requestTransmissible: Http.Request is Transmissible = Http.Request.seriali
 
 // Fetch from a Unix domain socket, speaking HTTP/1.1 directly over the socket
 // (e.g. the Docker daemon's API). The request's `Host` is `localhost`.
-given domainSocketFetchable: DomainSocketEndpoint is Fetchable onto DomainSocket =
+given domainSocketFetchable: DomainSocket.Endpoint is Fetchable onto DomainSocket =
   new Fetchable:
-    type Self = DomainSocketEndpoint
+    type Self = DomainSocket.Endpoint
     type Target = DomainSocket
 
-    def target(endpoint: DomainSocketEndpoint): DomainSocket = endpoint.socket
-    def text(endpoint: DomainSocketEndpoint): Text = endpoint.path
-    def hostname(endpoint: DomainSocketEndpoint): Host = Localhost
+    def target(endpoint: DomainSocket.Endpoint): DomainSocket = endpoint.socket
+    def text(endpoint: DomainSocket.Endpoint): Text = endpoint.path
+    def hostname(endpoint: DomainSocket.Endpoint): Host = Localhost
 
 given domainSocketHttpClient: Tactic[StreamError] => Http.Client onto DomainSocket =
   new Http.Client:

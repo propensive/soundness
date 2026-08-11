@@ -51,9 +51,14 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
+object JavaServlet:
+  // JavaServletFn → JavaServlet.Fn
+  open class Fn(handle: HttpConnection => Http.Response)
+  extends JavaServlet(handle)
+
 // `handle` is a plain function (not a context function): with `HttpConnection` a capability,
 // a context-function class parameter cannot be applied from the synthesized superclass
-// argument of subclasses like `JavaServletFn` (capture-root unification).
+// argument of subclasses like `JavaServlet.Fn` (capture-root unification).
 open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest)
     ( using Tactic[StreamError] )

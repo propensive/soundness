@@ -42,6 +42,9 @@ object DomainSocket:
   def apply[path: Abstractable across Paths to Text](path: path): DomainSocket =
     DomainSocket(path.generic)
 
+  // DomainSocketEndpoint → DomainSocket.Endpoint
+  case class Endpoint(socket: DomainSocket, path: Text)
+
 case class DomainSocket(private[coaxial] val address: Text):
   def path[path: Instantiable across Paths from Text] = path(address)
-  def at(path: Text): DomainSocketEndpoint = DomainSocketEndpoint(this, path)
+  def at(path: Text): DomainSocket.Endpoint = DomainSocket.Endpoint(this, path)

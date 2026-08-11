@@ -64,7 +64,7 @@ object Http2Serve:
   // all streams.
   private def runStreams
     ( connection: Http2ServerConnection^, handler0: AnyRef, port: Int )
-    ( using Monitor, Probate, (HttpServerEvent is Loggable)^ )
+    ( using Monitor, Probate, (HttpServer.Event is Loggable)^ )
   :   Unit =
 
     given Tactic[Http2.Error] = strategies.throwUnsafely
@@ -162,7 +162,7 @@ object Http2Serve:
 
   def serve
     ( handler: AnyRef => AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
-    ( using Monitor, (HttpServerEvent is Loggable)^ )
+    ( using Monitor, (HttpServer.Event is Loggable)^ )
   :   Unit =
 
     val connection = open(in, out)
@@ -179,7 +179,7 @@ object Http2Serve:
   // `AnyRef => Unit` rim (a session-scope function value re-hides otherwise).
   def serveSession
     ( scope0: AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
-    ( using Monitor, (HttpServerEvent is Loggable)^ )
+    ( using Monitor, (HttpServer.Event is Loggable)^ )
   :   Unit =
 
     val connection = open(in, out)

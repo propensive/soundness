@@ -92,7 +92,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             properties: System,
             directory:  TemporaryDirectory,
             stageable:  Stageable over Transport in Form )
-  :   Result[output] raises CompilerError raises RemoteError =
+  :   Result[output] raises Compiler.Error raises RemoteError =
 
     val references: References over Transport = References[Transport]()
 

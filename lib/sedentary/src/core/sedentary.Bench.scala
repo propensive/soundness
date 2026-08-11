@@ -254,7 +254,7 @@ object Bench:
               inclusion: Inclusion[report, Benchmark],
               suite:     Testable,
               codepoint: Codepoint )
-    :   Unit raises CompilerError raises RemoteError =
+    :   Unit raises Compiler.Error raises RemoteError =
 
       val testId = Test.Id(name, suite, codepoint)
 
@@ -277,7 +277,7 @@ object Bench:
               anchors:   Inclusion[report, Anchor],
               suite:     Testable,
               codepoint: Codepoint )
-    :   Unit raises CompilerError raises RemoteError =
+    :   Unit raises Compiler.Error raises RemoteError =
 
       val testId = Test.Id(name, suite, codepoint)
       val values = axis.values
@@ -323,7 +323,7 @@ object Bench:
               anchors:   Inclusion[report, Anchor],
               suite:     Testable,
               codepoint: Codepoint )
-    :   Unit raises CompilerError raises RemoteError =
+    :   Unit raises Compiler.Error raises RemoteError =
 
       over(Axis(companion))(body)
 
@@ -336,7 +336,7 @@ object Bench:
               anchors:   Inclusion[report, Anchor],
               suite:     Testable,
               codepoint: Codepoint )
-    :   Unit raises CompilerError raises RemoteError =
+    :   Unit raises Compiler.Error raises RemoteError =
 
       val testId = Test.Id(name, suite, codepoint)
       val lefts = first.values
@@ -396,7 +396,7 @@ object Bench:
               anchors:   Inclusion[report, Anchor],
               suite:     Testable,
               codepoint: Codepoint )
-    :   Unit raises CompilerError raises RemoteError =
+    :   Unit raises Compiler.Error raises RemoteError =
 
       over(Axis(first), second)(body)
 
@@ -409,7 +409,7 @@ object Bench:
               anchors:   Inclusion[report, Anchor],
               suite:     Testable,
               codepoint: Codepoint )
-    :   Unit raises CompilerError raises RemoteError =
+    :   Unit raises Compiler.Error raises RemoteError =
 
       over(first, Axis(second))(body)
 
@@ -422,7 +422,7 @@ object Bench:
               anchors:   Inclusion[report, Anchor],
               suite:     Testable,
               codepoint: Codepoint )
-    :   Unit raises CompilerError raises RemoteError =
+    :   Unit raises Compiler.Error raises RemoteError =
 
       over(Axis(first), Axis(second))(body)
 

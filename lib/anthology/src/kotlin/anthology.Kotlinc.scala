@@ -80,7 +80,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Probate )
-  :   CompileProcess logs CompileEvent raises CompilerError =
+  :   CompileProcess logs CompileEvent raises Compiler.Error =
 
     Log.info(CompileEvent.Start)
     val process: CompileProcess = CompileProcess()

@@ -75,7 +75,7 @@ object kotlincEdges:
       given compileEvents: (CompileEvent is Loggable) = CompileEvents.relay(using linkEvents)
 
       mitigate:
-        case CompilerError() => LinkError(LinkError.Reason.CompilerUnusable(t"kotlinc"))
+        case Compiler.Error() => LinkError(LinkError.Reason.CompilerUnusable(t"kotlinc"))
         case Async.Error(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"kotlinc"))
 
       . protect:

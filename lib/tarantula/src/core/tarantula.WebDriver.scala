@@ -35,6 +35,7 @@ package tarantula
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder
@@ -50,6 +51,34 @@ import urticose.*
 import httpBackends.virtualMachine
 import strategies.throwUnsafely
 
+object WebDriver:
+  // WebDriverError → WebDriver.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case NoSuchElement     extends Reason(1)
+      case StaleElement      extends Reason(2)
+      case NoSuchWindow      extends Reason(3)
+      case JavascriptError   extends Reason(4)
+      case ScriptTimeout     extends Reason(5)
+      case Timeout           extends Reason(6)
+      case UnknownCommand    extends Reason(7)
+      case Other(code: Text) extends Reason(8)
+
+    given communicable: Reason is Communicable =
+      case Reason.NoSuchElement   => m"the requested element was not found"
+      case Reason.StaleElement    => m"the element is no longer attached to the page"
+      case Reason.NoSuchWindow    => m"the requested window was not found"
+      case Reason.JavascriptError => m"a JavaScript error occurred while evaluating the request"
+      case Reason.ScriptTimeout   => m"the asynchronous script did not complete in time"
+      case Reason.Timeout         => m"the operation timed out"
+      case Reason.UnknownCommand  => m"the WebDriver does not recognise the command"
+      case Reason.Other(code)     => m"the WebDriver reported the error code $code"
+
+  case class Error
+    ( reason: WebDriver.Error.Reason, detail: Text, browserStacktrace: List[Text] )
+    ( using Diagnostics )
+  extends fulminate.Error(589, reason.number)(m"the WebDriver action failed because $reason: $detail")
+
 // A `WebDriver` and its `Session`/`Element` values are pure ID-holders over the automation
 // server's port: the live resource is the `Server` capability, confined to the `session`
 // block that launches it. (A leaked `Session` after the block is a dangling ID over a
@@ -63,7 +92,7 @@ case class WebDriver(port: Int):
     private def safe[result](block: => result): result = block
       // try block catch case error: Http.Error => error match
       //   case Http.Error(status, body) => error.read[Json]
-      //     throw WebDriverError(json.error.as[Text], json.message.as[Text],
+      //     throw WebDriver.Error(json.error.as[Text], json.message.as[Text],
       //         json.stacktrace.as[Text].cut(t"\n"))
 
     final private val Wei: Text = t"element-6066-11e4-a52e-4f735466cecf"
