@@ -30,9 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package stratiform
 
-export
-  stratiform
-  . { DynamicTelEnabler, dynamicTelAccess, Revision, Mutation, Stratiform, Tel, TelPath, Tel2,
-      Tel3, telConversion, TelFlag, TelReader, Tels, Tels2, tel }
+import proscenium.compat.*
+
+// Flags for `open[Tel]`.
+enum TelFlag:
+  // Serialize and write back on scope close even when no mutation was
+  // applied: a canonicalizing rewrite of the source.
+  case Force

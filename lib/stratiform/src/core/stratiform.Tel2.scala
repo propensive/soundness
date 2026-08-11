@@ -100,8 +100,8 @@ trait Tel2 extends Tel3:
   given telViewOpenable: [source]
   =>  ( readable: (source is Readable to Tel)^,
         mutationError: Tactic[Mutation.Error] )
-  =>  (TelViewOpenable[source]^{readable, mutationError}) =
-    TelViewOpenable[source]()
+  =>  (Tel.ViewOpenable[source]^{readable, mutationError}) =
+    Tel.ViewOpenable[source]()
 
   // `tel"…"` interpolator: parses at compile time and substitutes typed
   // holes via Encodable in Tel.
