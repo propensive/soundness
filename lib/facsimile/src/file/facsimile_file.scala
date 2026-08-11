@@ -45,15 +45,15 @@ import proscenium.compat.*
 // opening a PDF from a path needs these imported. `Openable` has no generic fallback, so a call
 // site that forgets fails to compile.
 given pdfPathOpenable: [path: Abstractable across Paths to Text]
-=>  (tactic: Tactic[PdfError])
+=>  (tactic: Tactic[Pdf.Error])
 =>  ( PdfFile.PdfPathOpenable[path]^{tactic} ) =
   PdfFile.PdfPathOpenable[path]
 
-given pdfDataOpenable: (tactic: Tactic[PdfError]) => ( PdfFile.PdfDataOpenable^{tactic} ) =
+given pdfDataOpenable: (tactic: Tactic[Pdf.Error]) => ( PdfFile.PdfDataOpenable^{tactic} ) =
   PdfFile.PdfDataOpenable()
 
 // Anchored here so `path.create[Pdf](): doc ?=> …` resolves the `Pdf` form with no import.
 given pdfCreatable: [path: Abstractable across Paths to Text]
-=>  (tactic: Tactic[PdfError])
+=>  (tactic: Tactic[Pdf.Error])
 =>  ( PdfFile.PdfCreatable[path]^{tactic} ) =
   PdfFile.PdfCreatable[path]

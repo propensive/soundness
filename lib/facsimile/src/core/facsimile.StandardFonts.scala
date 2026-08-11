@@ -44,7 +44,7 @@ import vacuous.*
 // overwhelming majority of standard-font text — are tabulated here for extraction; other
 // codes fall back to a nominal width. Obliqued variants share their upright metrics.
 private[facsimile] object StandardFonts:
-  import PdfFont.Standard
+  import Pdf.Font.Standard
 
   def recognize(baseFont: Text): Optional[Standard] =
     // Subsetted fonts carry a six-letter prefix, e.g. `ABCDEF+Helvetica`.

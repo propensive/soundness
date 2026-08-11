@@ -75,7 +75,7 @@ private[facsimile] object Filter:
   // `/DecodeParms` (a dictionary, an array with nulls, or absent) into a decoding plan. Both
   // values must already be resolved: indirect references are the caller's concern.
   def chain(filter: Optional[Cos], parms: Optional[Cos])
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   List[(Id, Map[Text, Cos])] =
 
     val names: List[Text] = filter.lay(List()):
@@ -84,10 +84,10 @@ private[facsimile] object Filter:
 
       case Cos.Sequence(elements) =>
         elements.map: element =>
-          element.name.or(abort(PdfError(PdfError.Reason.TypeMismatch(t"Filter", t"a name"))))
+          element.name.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"Filter", t"a name"))))
 
       case _ =>
-        abort(PdfError(PdfError.Reason.TypeMismatch(t"Filter", t"a name or array of names")))
+        abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"Filter", t"a name or array of names")))
 
     val parameters: List[Map[Text, Cos]] = parms.lay(List()):
       case Cos.Dictionary(entries) =>
@@ -100,14 +100,14 @@ private[facsimile] object Filter:
             case Cos.Nil                 => Map()
 
             case _ =>
-              abort(PdfError(PdfError.Reason.TypeMismatch(t"DecodeParms", t"a dictionary")))
+              abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"DecodeParms", t"a dictionary")))
 
       case _ =>
-        abort(PdfError(PdfError.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
+        abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
 
     List.of:
       names.stdlib.zipWithIndex.map: (name, index) =>
-        val id = Id.parse(name).or(abort(PdfError(PdfError.Reason.UnknownFilter(name))))
+        val id = Id.parse(name).or(abort(Pdf.Error(Pdf.Error.Reason.UnknownFilter(name))))
         (id, if index < parameters.stdlib.length then parameters.stdlib(index) else Map())
 
   // A streaming plan is plain data — closures at most — because ducts, being scoped
@@ -122,7 +122,7 @@ private[facsimile] object Filter:
   // streams incrementally through turbulence's zlib duct (without the eager path's
   // raw-deflate retry, which is impossible mid-stream); the textual filters gather their
   // input and decode on flush, which is immaterial at their typical sizes.
-  def steps(chain: List[(Id, Map[Text, Cos])])(using tactic: Tactic[PdfError])
+  def steps(chain: List[(Id, Map[Text, Cos])])(using tactic: Tactic[Pdf.Error])
   :   List[Step^{tactic}] =
     // The steps capture `tactic`, and capture-carrying elements do not flow through the
     // opaque `List` combinators (boxing), so the interior stays stdlib inside one `List.of`.
@@ -149,7 +149,7 @@ private[facsimile] object Filter:
             scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
 
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.
-  def decode(data: Data, chain: List[(Id, Map[Text, Cos])])(using Tactic[PdfError]): Data =
+  def decode(data: Data, chain: List[(Id, Map[Text, Cos])])(using Tactic[Pdf.Error]): Data =
     chain match
       case (id, parms) :: rest =>
         if id.terminal then data else decode(stage(data, id, parms), rest)
@@ -157,7 +157,7 @@ private[facsimile] object Filter:
       case _ =>
         data
 
-  private def stage(data: Data, id: Id, parms: Map[Text, Cos])(using Tactic[PdfError]): Data = id match
+  private def stage(data: Data, id: Id, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data = id match
     case Id.Flate     => predict(flate(data), parms)
     case Id.Lzw       => predict(lzw(data, parms), parms)
     case Id.Ascii85   => Ascii85.decode(data)
@@ -166,15 +166,15 @@ private[facsimile] object Filter:
     case Id.Crypt     => data // `Identity` until encryption arrives; `Guard` will slot in here
     case _            => data
 
-  private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[PdfError]): Data =
+  private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
     try Lzw.decompress(Chain(data), earlyChange(parms)).foldLeft(Array.empty[Byte])(_ ++ _)
     catch case _: IllegalStateException =>
-      abort(PdfError(PdfError.Reason.CorruptStream(t"LZWDecode")))
+      abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"LZWDecode")))
 
   private def earlyChange(parms: Map[Text, Cos]): Boolean =
     parms(t"EarlyChange").let(_.long).or(1L) == 1L
 
-  private def predict(data: Data, parms: Map[Text, Cos])(using Tactic[PdfError]): Data =
+  private def predict(data: Data, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
     val predictor = parms(t"Predictor").let(_.long).or(1L).toInt
 
     if predictor <= 1 then data else
@@ -185,9 +185,9 @@ private[facsimile] object Filter:
 
   // FlateDecode is zlib-framed deflate, but raw streams occur in the wild: on a zlib failure,
   // retry nowrap before giving up.
-  private def flate(data: Data)(using Tactic[PdfError]): Data =
+  private def flate(data: Data)(using Tactic[Pdf.Error]): Data =
     inflate(data, nowrap = false).or(inflate(data, nowrap = true))
-    . or(abort(PdfError(PdfError.Reason.CorruptStream(t"FlateDecode"))))
+    . or(abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"FlateDecode"))))
 
   private def inflate(data: Data, nowrap: Boolean): Optional[Data] =
     val builder = DataBuilder()
@@ -206,7 +206,7 @@ private[facsimile] object Filter:
     val result = builder.result()
     if result.length == 0 && data.length > 0 then Unset else result
 
-  private def asciiHex(data: Data)(using Tactic[PdfError]): Data =
+  private def asciiHex(data: Data)(using Tactic[Pdf.Error]): Data =
     val bytes = DataBuilder()
     var high = -1
     var done = false
@@ -220,7 +220,7 @@ private[facsimile] object Filter:
           else if !CosLexer.whitespace(byte) then
             val value = CosLexer.hexadecimal(byte)
 
-            if value < 0 then abort(PdfError(PdfError.Reason.CorruptStream(t"ASCIIHexDecode")))
+            if value < 0 then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ASCIIHexDecode")))
             else if high < 0 then high = value
             else
               bytes += ((high << 4) + value).toByte
@@ -229,7 +229,7 @@ private[facsimile] object Filter:
     if high >= 0 then bytes += (high << 4).toByte
     bytes.result()
 
-  private def runLength(data: Data)(using Tactic[PdfError]): Data =
+  private def runLength(data: Data)(using Tactic[Pdf.Error]): Data =
     val bytes = DataBuilder()
     var done = false
 
@@ -245,12 +245,12 @@ private[facsimile] object Filter:
             val run = surveyor.take(length + 1)
 
             if (run: Interval).size <= length
-            then abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))
+            then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"RunLengthDecode")))
 
             data.iterate(run) { index => bytes += data.at(index) }
           else
             // One byte, repeated `257 - length` times.
-            surveyor.next(abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))):
+            surveyor.next(abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"RunLengthDecode")))):
               byte =>
                 var j = 0
 

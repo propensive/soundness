@@ -49,7 +49,7 @@ private[facsimile] object PdfWriter:
   // A complete PDF file for a freshly-authored document: a header, every live object, one
   // cross-reference table and a trailer with no `/Prev`. Used by `create`, where there is no
   // original file to append to.
-  def full(pdf: Pdf)(using Tactic[PdfError]): Data =
+  def full(pdf: Pdf)(using Tactic[Pdf.Error]): Data =
     val builder = DataBuilder()
     var length = 0L
 
@@ -97,7 +97,7 @@ private[facsimile] object PdfWriter:
 
   // The bytes to append after `baseOffset` (the original file's length) to record the
   // overlay. Object offsets in the new section are absolute, so they include `baseOffset`.
-  def increment(pdf: Pdf, baseOffset: Long)(using Tactic[PdfError]): Data =
+  def increment(pdf: Pdf, baseOffset: Long)(using Tactic[Pdf.Error]): Data =
     val builder = DataBuilder()
     var length = 0L
 
@@ -202,7 +202,7 @@ private[facsimile] object PdfWriter:
       numbers: List[Int],
       offsets: scala.collection.mutable.HashMap[Int, Long],
       entries: List[(Text, Cos)] )
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   Unit =
 
     val number = pdf.nextNumber
@@ -254,7 +254,7 @@ private[facsimile] object PdfWriter:
   private def appendObject
     ( pdf: Pdf, raw: Data => Unit, ascii: Text => Unit, cos: Cos,
       encryption: Optional[(Guard, Int, Int)] = Unset )
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   Unit =
 
     cos match

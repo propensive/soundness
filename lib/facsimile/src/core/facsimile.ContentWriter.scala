@@ -46,19 +46,19 @@ import rudiments.*
 import vacuous.*
 
 // Serialises a content-stream operator list back to its byte form, the inverse of
-// `PdfOperator.read`: each instruction is its operands followed by its operator, one per
+// `Pdf.Operator.read`: each instruction is its operands followed by its operator, one per
 // line. Numbers are written as plain decimals; show-text operands are re-escaped literal
 // strings; names re-escape through the same rules as the object writer.
 // The `uses` clause licenses the ArrayBuilder reads inside `write`.
 private[facsimile] object ContentWriter:
-  import PdfOperator.*
+  import Pdf.Operator.*
 
-  def write(operators: List[PdfOperator]): Data =
+  def write(operators: List[Pdf.Operator]): Data =
     val builder = DataBuilder()
     operators.each { operator => line(builder, operator) }
     builder.result()
 
-  private def line(builder: DataBuilder, operator: PdfOperator)
+  private def line(builder: DataBuilder, operator: Pdf.Operator)
   :   Unit =
 
     def out(text: Text): Unit =
@@ -73,7 +73,7 @@ private[facsimile] object ContentWriter:
     def nums(values: Double*): Text = values.map(num).join(t" ")
     def string(data: Data): Unit = builder.addAll(CosWriter.write(Cos.Chars(data)))
     def name(text: Text): Unit = builder.addAll(CosWriter.write(Cos.Name(text)))
-    def matrix(m: PdfMatrix): Text = nums(m.a, m.b, m.c, m.d, m.e, m.f)
+    def matrix(m: Pdf.Matrix): Text = nums(m.a, m.b, m.c, m.d, m.e, m.f)
 
     operator match
       case Save                     => out(t"q\n")

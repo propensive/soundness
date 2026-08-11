@@ -71,7 +71,7 @@ private[facsimile] class CosLexer(scan: Scan):
 
   def offset: Long = scan.offset
 
-  def next()(using Tactic[PdfError]): CosToken =
+  def next()(using Tactic[Pdf.Error]): CosToken =
     skipInterstice()
     val start = scan.offset
 
@@ -94,10 +94,10 @@ private[facsimile] class CosLexer(scan: Scan):
           scan.take()
           CosToken.DictEnd
         else
-          abort(PdfError(PdfError.Reason.Unparseable(start, t"a second '>'")))
+          abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"a second '>'")))
 
       case ')' =>
-        abort(PdfError(PdfError.Reason.Unparseable(start, t"anything but an unmatched ')'")))
+        abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"anything but an unmatched ')'")))
 
       case byte if numeric(byte) => number(byte, start)
       case byte                  => keyword(byte)
@@ -115,7 +115,7 @@ private[facsimile] class CosLexer(scan: Scan):
   // The binary payload of an inline image, between `ID` and `EI` (ISO 32000-2 §8.9.7): a
   // known length (`/L`) is read exactly; otherwise the data runs to the next standalone
   // `EI`, found by byte-level scanning — the one lexical construct tokens cannot express.
-  def imageData(length: Optional[Int])(using Tactic[PdfError]): Data =
+  def imageData(length: Optional[Int])(using Tactic[Pdf.Error]): Data =
     if whitespace(scan.peek) then scan.take() // a single whitespace byte follows `ID`
 
     length.let(scan.read(_)).or:
@@ -126,7 +126,7 @@ private[facsimile] class CosLexer(scan: Scan):
         whitespace(scan.peek) && scan.peek(1) == 'E' && scan.peek(2) == 'I' && standalone
 
       while scan.peek != -1 && !boundary do bytes += scan.take().toByte
-      if scan.peek == -1 then abort(PdfError(PdfError.Reason.Truncated))
+      if scan.peek == -1 then abort(Pdf.Error(Pdf.Error.Reason.Truncated))
       scan.take() // the whitespace before `EI`, which is not payload
       bytes.result()
 
@@ -143,7 +143,7 @@ private[facsimile] class CosLexer(scan: Scan):
         false
     do ()
 
-  private def number(first: Int, start: Long)(using Tactic[PdfError]): CosToken =
+  private def number(first: Int, start: Long)(using Tactic[Pdf.Error]): CosToken =
     val text = StringBuilder()
     text.append(first.toChar)
 
@@ -161,10 +161,10 @@ private[facsimile] class CosLexer(scan: Scan):
       val corrected: Text = if content == "." then t"0" else content.tt
 
       safely(CosToken.Real(corrected.as[Double]))
-      . or(abort(PdfError(PdfError.Reason.Unparseable(start, t"a numeric object"))))
+      . or(abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"a numeric object"))))
     else
       safely(CosToken.Integral(content.tt.as[Long]))
-      . or(abort(PdfError(PdfError.Reason.Unparseable(start, t"a numeric object"))))
+      . or(abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"a numeric object"))))
 
   private def name(): CosToken =
     val bytes = DataBuilder()
@@ -184,13 +184,13 @@ private[facsimile] class CosLexer(scan: Scan):
     while regular(scan.peek) do bytes += scan.take().toByte
     CosToken.Keyword(decode(bytes.result()))
 
-  private def literal(start: Long)(using Tactic[PdfError]): CosToken =
+  private def literal(start: Long)(using Tactic[Pdf.Error]): CosToken =
     val bytes = DataBuilder()
     var depth = 1
 
     while depth > 0 do scan.take() match
       case -1 =>
-        abort(PdfError(PdfError.Reason.Truncated))
+        abort(Pdf.Error(Pdf.Error.Reason.Truncated))
 
       case '(' =>
         depth += 1
@@ -229,7 +229,7 @@ private[facsimile] class CosLexer(scan: Scan):
 
           bytes += (value & 0xff).toByte
 
-        case -1    => abort(PdfError(PdfError.Reason.Truncated))
+        case -1    => abort(Pdf.Error(Pdf.Error.Reason.Truncated))
         case other => bytes += other.toByte // an unknown escape drops the reverse solidus
 
       case byte =>
@@ -237,19 +237,19 @@ private[facsimile] class CosLexer(scan: Scan):
 
     CosToken.Chars(bytes.result())
 
-  private def hexadecimalChars(start: Long)(using Tactic[PdfError]): CosToken =
+  private def hexadecimalChars(start: Long)(using Tactic[Pdf.Error]): CosToken =
     val bytes = DataBuilder()
     var high: Int = -1
 
     while scan.peek != '>' do
       val byte = scan.take()
 
-      if byte == -1 then abort(PdfError(PdfError.Reason.Truncated))
+      if byte == -1 then abort(Pdf.Error(Pdf.Error.Reason.Truncated))
       else if !whitespace(byte) then
         val value = hexadecimal(byte)
 
         if value < 0
-        then abort(PdfError(PdfError.Reason.Unparseable(start, t"a hexadecimal digit")))
+        then abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"a hexadecimal digit")))
         else if high < 0 then high = value
         else
           bytes += ((high << 4) + value).toByte

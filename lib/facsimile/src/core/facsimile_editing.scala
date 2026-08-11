@@ -68,7 +68,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 
   // Replaces a page's content with the given operators: they are serialised to a fresh
   // content stream, and the page's `/Contents` is pointed at it.
-  def setContents(page: Page^, operators: List[PdfOperator])(using Tactic[PdfError]): Unit =
+  def setContents(page: Page^, operators: List[Pdf.Operator])(using Tactic[Pdf.Error]): Unit =
     val stream = pdf.allocate(pdf.newBody(Map(), ContentWriter.write(operators)))
 
     // The edit reads and rewrites the same single-owner document.
@@ -77,7 +77,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
       entries.updated(t"Contents", stream)
 
   // Sets a page's rotation.
-  def setRotation(page: Page^, rotation: Page.Rotation)(using Tactic[PdfError]): Unit =
+  def setRotation(page: Page^, rotation: Page.Rotation)(using Tactic[Pdf.Error]): Unit =
     val degrees = rotation match
       case Page.Rotation.None          => 0L
       case Page.Rotation.Quarter       => 90L
@@ -87,7 +87,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     editPage(pdf, page)(_.updated(t"Rotate", Cos.Integral(degrees)))
 
   // Sets a page box (`/MediaBox`, `/CropBox`, …) to a rectangle in points.
-  def setBox(page: Page^, box: Text, rect: PdfRect)(using Tactic[PdfError]): Unit =
+  def setBox(page: Page^, box: Text, rect: Pdf.Rect)(using Tactic[Pdf.Error]): Unit =
     val array =
       Cos.Sequence:
         List(rect.left, rect.bottom, rect.right, rect.top).map(_.value).map(number(_))
@@ -95,13 +95,13 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     editPage(pdf, page)(_.updated(box, array))
 
   // Sets an arbitrary entry in a page's dictionary.
-  def setPageEntry(page: Page^, key: Text, value: Cos)(using Tactic[PdfError]): Unit =
+  def setPageEntry(page: Page^, key: Text, value: Cos)(using Tactic[Pdf.Error]): Unit =
     editPage(pdf, page)(_.updated(key, value))
 
   // Replaces the document information dictionary. The existing `/Info` object is edited if
   // there is one, else a fresh object is created and linked from the trailer.
-  def setInfo(info: PdfInfo)(using Tactic[PdfError]): Unit =
-    val dict = Cos.Dictionary(PdfInfo.dictionary(info))
+  def setInfo(info: Pdf.Info)(using Tactic[Pdf.Error]): Unit =
+    val dict = Cos.Dictionary(Pdf.Info.dictionary(info))
 
     pdf.trailer(t"Info") match
       case ref: Cos.Ref =>
@@ -116,7 +116,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   // only the glyphs the given text needs are embedded, under a tagged name per the PDF
   // convention.
   def embedFont(font: Ttf, name: Optional[Text] = Unset, subset: Optional[Text] = Unset)
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   Cos.Ref =
 
     FontEmbedder.embed(pdf, font, name, subset)
@@ -124,7 +124,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   // Registers a resource (a font, XObject, …) in a page's `/Resources` under a category and
   // name — the name content operators refer to, e.g. `/F1` for a font used by `Tf`.
   def addResource(page: Page^, category: Text, name: Text, resource: Cos.Ref)
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   Unit =
 
     // The edit reads and rewrites the same single-owner document.
@@ -141,16 +141,16 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 
   // Sets a page's annotations from raw annotation dictionaries: each becomes an indirect
   // object, and the page's `/Annots` is set to the array of references.
-  def setAnnotations(page: Page^, annotations: List[Cos])(using Tactic[PdfError]): Unit =
+  def setAnnotations(page: Page^, annotations: List[Cos])(using Tactic[Pdf.Error]): Unit =
     val refs = annotations.map(pdf.allocate(_))
     editPage(pdf, page)(_.updated(t"Annots", Cos.Sequence(refs)))
 
   // Adds a link annotation over a rectangle, targeting either a URI or an in-document
   // destination, appending it to the page's existing annotations.
   def addLink
-    ( page: Page^, rect: PdfRect, uri: Optional[Text] = Unset,
+    ( page: Page^, rect: Pdf.Rect, uri: Optional[Text] = Unset,
       destination: Optional[Destination] = Unset )
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   Unit =
 
     val box =
@@ -179,7 +179,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   // Replaces the document outline (bookmarks). The tree is rebuilt as fresh objects with the
   // full `/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count` linkage, and the catalog's
   // `/Outlines` is pointed at the new root.
-  def setBookmarks(bookmarks: List[Bookmark])(using Tactic[PdfError]): Unit =
+  def setBookmarks(bookmarks: List[Bookmark])(using Tactic[Pdf.Error]): Unit =
     val rootRef = pdf.allocate(Cos.Nil)
     val (first, last, total) = buildOutline(pdf, bookmarks, rootRef)
 
@@ -198,16 +198,16 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   // returning a reference to it. The page tree's single-level `/Kids` grows and `/Count`
   // increments; deeper trees are handled by appending to the root's kids.
   def appendPage
-    ( mediaBox: PdfRect, operators: List[PdfOperator] = Nil,
+    ( mediaBox: Pdf.Rect, operators: List[Pdf.Operator] = Nil,
       resources: Optional[Cos] = Unset )
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   Cos.Ref =
 
-    val root = pdf.catalog(t"Pages").or(abort(PdfError(PdfError.Reason.MissingEntry(t"Pages"))))
+    val root = pdf.catalog(t"Pages").or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Pages"))))
 
     val rootRef = root match
       case ref: Cos.Ref => ref
-      case _            => abort(PdfError(PdfError.Reason.TypeMismatch(t"Pages", t"a reference")))
+      case _            => abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"Pages", t"a reference")))
 
     val box =
       Cos.Sequence:
@@ -238,7 +238,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   // Removes a page: unlinked from its parent's `/Kids`, `/Count` decremented, and its object
   // freed. Only single-level page trees are handled (the common case); a page nested deeper
   // is left in place.
-  def removePage(page: Page^)(using Tactic[PdfError]): Unit =
+  def removePage(page: Page^)(using Tactic[Pdf.Error]): Unit =
     page.number.let: pageNumber =>
       val parent = page.entries(t"Parent")
 
@@ -265,7 +265,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 private def editPage
   ( pdf: (Pdf & Granting[Grant.Write])^, page: Page^ )
   ( transform: Map[Text, Cos] => Map[Text, Cos] )
-( using Tactic[PdfError] )
+( using Tactic[Pdf.Error] )
 :   Unit =
 
   page.number.let(pdf.editDictionary(_)(transform))
@@ -282,7 +282,7 @@ def winAnsi(text: Text): Data = PdfEncoding.winAnsiEncode(text)
 // descendant count (used for `/Count`).
 private def buildOutline
   ( pdf: (Pdf & Granting[Grant.Write])^, items: List[Bookmark], parent: Cos.Ref )
-( using Tactic[PdfError] )
+( using Tactic[Pdf.Error] )
 :   (Optional[Cos.Ref], Optional[Cos.Ref], Int) =
 
   if items.isEmpty then (Unset, Unset, 0) else
@@ -314,7 +314,7 @@ private def buildOutline
 
 // A destination as its explicit `[page /Mode …]` array.
 private def destinationArray(pdf: (Pdf & Granting[Grant.Write])^, dest: Destination)
-( using Tactic[PdfError] )
+( using Tactic[Pdf.Error] )
 :   Cos =
 
   val page: Cos = pdf.pageReference(dest.page).or(Cos.Nil)

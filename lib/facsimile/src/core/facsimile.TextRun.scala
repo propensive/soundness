@@ -43,7 +43,7 @@ import quantitative.*
 // all in typesafe points. A `TextRun` is a pure value and escapes the `open` scope.
 case class TextRun
   ( text:  Text,
-    font:  PdfFont,
+    font:  Pdf.Font,
     size:  Quantity[Points[1]],
     x:     Quantity[Points[1]],
     y:     Quantity[Points[1]],

@@ -349,8 +349,8 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == List(1, 2, 3, 4, 5, 6))
 
       test(m"an unknown filter name is an error"):
-        capture[PdfError](Filter.chain(Cos.Name(t"BogusDecode"), Unset)).reason
-      . assert(_ == PdfError.Reason.UnknownFilter(t"BogusDecode"))
+        capture[Pdf.Error](Filter.chain(Cos.Name(t"BogusDecode"), Unset)).reason
+      . assert(_ == Pdf.Error.Reason.UnknownFilter(t"BogusDecode"))
 
     suite(m"Whole documents"):
       test(m"the version comes from the header"):
@@ -447,12 +447,12 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == Cos.Name(t"2.0"))
 
       test(m"garbage input is not a PDF"):
-        capture[PdfError](PdfFile(t"not a pdf at all".in[Data]).open()(pdf.version)).reason
-      . assert(_ == PdfError.Reason.NotPdf)
+        capture[Pdf.Error](PdfFile(t"not a pdf at all".in[Data]).open()(pdf.version)).reason
+      . assert(_ == Pdf.Error.Reason.NotPdf)
 
       test(m"opening a PDF for writing is refused"):
-        capture[PdfError](PdfFile(document(catalog)).open(Write) { () }).reason
-      . assert(_ == PdfError.Reason.WriteUnsupported)
+        capture[Pdf.Error](PdfFile(document(catalog)).open(Write) { () }).reason
+      . assert(_ == Pdf.Error.Reason.WriteUnsupported)
 
       test(m"in-memory data opens directly in Pdf form"):
         document(catalog).open[Pdf]():
@@ -461,8 +461,8 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"a public-key security handler is unsupported"):
         val doc = documentWith(t"/Encrypt << /Filter /Adobe.PubSec /V 4 >>", catalog)
-        capture[PdfError](PdfFile(doc).open()(pdf.version)).reason
-      . assert(_ == PdfError.Reason.UnsupportedEncryption(0))
+        capture[Pdf.Error](PdfFile(doc).open()(pdf.version)).reason
+      . assert(_ == Pdf.Error.Reason.UnsupportedEncryption(0))
 
     suite(m"Writing"):
       // A document with a catalog (obj 1), a note object (obj 2), and a page tree, for editing.
@@ -547,8 +547,8 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == editable.length)
 
       test(m"opening in-memory data for writing is refused"):
-        capture[PdfError](PdfFile(editable).open(Read & Write) { doc ?=> () }).reason
-      . assert(_ == PdfError.Reason.WriteUnsupported)
+        capture[Pdf.Error](PdfFile(editable).open(Read & Write) { doc ?=> () }).reason
+      . assert(_ == Pdf.Error.Reason.WriteUnsupported)
 
       // A one-page A4 document with Helvetica, for page and content edits.
       def onePage: Data = document
@@ -562,9 +562,9 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val operators = List
-            ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
-              PdfOperator.Offset(72, 720), PdfOperator.ShowText(t"Written".in[Data]),
-              PdfOperator.EndText )
+            ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+              Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(t"Written".in[Data]),
+              Pdf.Operator.EndText )
 
           scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.page(Prim), operators))
 
@@ -585,7 +585,7 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"setting a page box round-trips"):
         val path = tempPdf(onePage)
 
-        val target = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+        val target = Pdf.Rect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
             Quantity[Points[1]](200.0), Quantity[Points[1]](400.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
@@ -598,7 +598,7 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"an appended page increases the page count"):
         val path = tempPdf(onePage)
 
-        val a4 = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+        val a4 = Pdf.Rect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
             Quantity[Points[1]](595.0), Quantity[Points[1]](842.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
@@ -611,7 +611,7 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"an appended page's content extracts as text"):
         val path = tempPdf(onePage)
 
-        val a4 = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+        val a4 = Pdf.Rect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
             Quantity[Points[1]](595.0), Quantity[Points[1]](842.0))
 
         val helvetica = Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Font"),
@@ -621,9 +621,9 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val operators = List
-            ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
-              PdfOperator.Offset(72, 720), PdfOperator.ShowText(t"Second".in[Data]),
-              PdfOperator.EndText )
+            ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+              Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(t"Second".in[Data]),
+              Pdf.Operator.EndText )
 
           doc.appendPage(a4, operators, resources)
 
@@ -651,7 +651,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(editable)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.setInfo(PdfInfo(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
+          doc.setInfo(Pdf.Info(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           (pdf.info.title, pdf.info.author)
@@ -665,8 +665,8 @@ object Tests extends Suite(m"Facsimile tests"):
           val moment = Timestamp(Date(Year(2026), Month(7), Day(17)),
               Clockface(Base24(9), Base60(30), Base60(0)))
 
-          val info = PdfInfo(Unset, Unset, Unset, Unset, Unset, Unset,
-              PdfInfo.Timing(moment, Unset), Unset)
+          val info = Pdf.Info(Unset, Unset, Unset, Unset, Unset, Unset,
+              Pdf.Info.Timing(moment, Unset), Unset)
 
           doc.setInfo(info)
 
@@ -709,7 +709,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         val path = tempPdf(onePage)
 
-        val rect = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+        val rect = Pdf.Rect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
             Quantity[Points[1]](50.0), Quantity[Points[1]](20.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
@@ -751,9 +751,9 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
           val operators = List
-            ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
-              PdfOperator.Offset(72, 720), PdfOperator.ShowText(winAnsi(t"Embedded text")),
-              PdfOperator.EndText )
+            ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+              Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Embedded text")),
+              Pdf.Operator.EndText )
 
           scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.page(Prim), operators))
 
@@ -770,7 +770,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).fonts(t"F1") match
-            case _: PdfFont.TrueType => true
+            case _: Pdf.Font.TrueType => true
             case _                   => false
       . assert(_ == true)
 
@@ -859,7 +859,7 @@ object Tests extends Suite(m"Facsimile tests"):
         jnf.Files.delete(path)
         path.toString.tt
 
-      val a4 = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+      val a4 = Pdf.Rect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
           Quantity[Points[1]](595.0), Quantity[Points[1]](842.0))
 
       test(m"a created document is a valid, openable PDF"):
@@ -890,9 +890,9 @@ object Tests extends Suite(m"Facsimile tests"):
 
         path.create[Pdf](): doc ?=>
           val operators = List
-            ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
-              PdfOperator.Offset(72, 720), PdfOperator.ShowText(t"From scratch".in[Data]),
-              PdfOperator.EndText )
+            ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+              Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(t"From scratch".in[Data]),
+              Pdf.Operator.EndText )
 
           doc.appendPage(a4, operators, resources)
 
@@ -904,7 +904,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = freshPath
         path.create[Pdf](): doc ?=>
           doc.appendPage(a4)
-          doc.setInfo(PdfInfo(t"Made", Unset, Unset, Unset, Unset, Unset, Unset, Unset))
+          doc.setInfo(Pdf.Info(t"Made", Unset, Unset, Unset, Unset, Unset, Unset, Unset))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.info.title
@@ -915,11 +915,11 @@ object Tests extends Suite(m"Facsimile tests"):
         path.create[Pdf](): doc ?=>
           doc.appendPage(a4)
 
-        capture[PdfError]:
+        capture[Pdf.Error]:
           // Overlap false positive: `doc` is chained through `create`'s own result.
           scala.caps.unsafe.unsafeAssumeSeparate(path.create[Pdf]() { doc ?=> doc.appendPage(a4) })
         . reason
-      . assert(_ == PdfError.Reason.Io(t"the file already exists"))
+      . assert(_ == Pdf.Error.Reason.Io(t"the file already exists"))
 
     suite(m"Damaged-file recovery"):
       // A minimal well-formed document whose objects can be found by scanning, used as the
@@ -1085,38 +1085,38 @@ object Tests extends Suite(m"Facsimile tests"):
           t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".in[Data] )
 
     suite(m"Content operators"):
-      def operators(content: Text): List[PdfOperator] =
+      def operators(content: Text): List[Pdf.Operator] =
         PdfFile(contentPage(content)).open():
           pdf.page(Prim).operators
 
       test(m"a graphics-state and text block parses to typed operators"):
         operators(t"q 1 0 0 1 50 60 cm BT /F1 12 Tf 72 720 Td (Hi) Tj ET Q").map(_.ordinal)
       . assert: ordinals =>
-          ordinals == proscenium.List(PdfOperator.Save, PdfOperator.Concat(PdfMatrix.Identity),
-              PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12), PdfOperator.Offset(72, 720),
-              PdfOperator.ShowText(Array.of[Byte]()), PdfOperator.EndText, PdfOperator.Restore)
+          ordinals == proscenium.List(Pdf.Operator.Save, Pdf.Operator.Concat(Pdf.Matrix.Identity),
+              Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12), Pdf.Operator.Offset(72, 720),
+              Pdf.Operator.ShowText(Array.of[Byte]()), Pdf.Operator.EndText, Pdf.Operator.Restore)
             . map(_.ordinal)
 
       test(m"cm carries its matrix"):
         operators(t"2 0 0 2 10 20 cm")
-      . assert(_ == List(PdfOperator.Concat(PdfMatrix(2, 0, 0, 2, 10, 20))))
+      . assert(_ == List(Pdf.Operator.Concat(Pdf.Matrix(2, 0, 0, 2, 10, 20))))
 
       test(m"re carries its rectangle"):
         operators(t"1 2 30 40 re f")
-      . assert(_ == List(PdfOperator.Rectangle(1, 2, 30, 40),
-          PdfOperator.Fill(PdfOperator.FillRule.NonZero)))
+      . assert(_ == List(Pdf.Operator.Rectangle(1, 2, 30, 40),
+          Pdf.Operator.Fill(Pdf.Operator.FillRule.NonZero)))
 
       test(m"rg becomes an Srgb colour"):
         operators(t"1 0 0.5 rg")
-      . assert(_ == List(PdfOperator.FillRgb(Srgb(1.0, 0.0, 0.5))))
+      . assert(_ == List(Pdf.Operator.FillRgb(Srgb(1.0, 0.0, 0.5))))
 
       test(m"a dash pattern parses"):
         operators(t"[2 1] 0 d")
-      . assert(_ == List(PdfOperator.SetDashPattern(List(2.0, 1.0), 0.0)))
+      . assert(_ == List(Pdf.Operator.SetDashPattern(List(2.0, 1.0), 0.0)))
 
       test(m"TJ mixes strings and kerning adjustments"):
         operators(t"BT [(A) -500 (B)] TJ ET").stdlib match
-          case List(_, PdfOperator.ShowTexts(elements), _) =>
+          case List(_, Pdf.Operator.ShowTexts(elements), _) =>
             // Via the stdlib list and a `Double`-first match: the frozen-array union member
             // takes a reach capture under pattern binding that `Mappable` rejects.
             elements.stdlib.map: element =>
@@ -1131,17 +1131,17 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"unknown operators survive as Unrecognized"):
         operators(t"BX /x 7 fancyNewOp EX")
-      . assert(_ == List(PdfOperator.BeginCompatibility,
-          PdfOperator.Unrecognized(t"fancyNewOp", List(Cos.Name(t"x"), Cos.Integral(7))),
-          PdfOperator.EndCompatibility))
+      . assert(_ == List(Pdf.Operator.BeginCompatibility,
+          Pdf.Operator.Unrecognized(t"fancyNewOp", List(Cos.Name(t"x"), Cos.Integral(7))),
+          Pdf.Operator.EndCompatibility))
 
       test(m"a known operator with missing operands is an error"):
-        capture[PdfError](operators(t"w")).reason
-      . assert(_ == PdfError.Reason.MalformedOperator(t"w"))
+        capture[Pdf.Error](operators(t"w")).reason
+      . assert(_ == Pdf.Error.Reason.MalformedOperator(t"w"))
 
       test(m"an inline image folds into one operator"):
         operators(t"BI /W 2 /H 2 /L 4 ID  EI").stdlib match
-          case List(PdfOperator.InlineImage(parameters, data)) =>
+          case List(Pdf.Operator.InlineImage(parameters, data)) =>
             (parameters(t"W"), data.length)
 
           case _ =>
@@ -1153,7 +1153,7 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(contentPage(t"")).open():
           pdf.page(Prim).fonts(t"F1").let: font =>
             (font.standard, font.width('A'))
-      . assert(_ == (PdfFont.Standard.Helvetica, 667.0))
+      . assert(_ == (Pdf.Font.Standard.Helvetica, 667.0))
 
       test(m"declared widths override standard metrics"):
         val doc = document
@@ -1590,10 +1590,10 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == t"encrypted stream")
 
       test(m"a wrong password is rejected at open"):
-        capture[PdfError]:
+        capture[Pdf.Error]:
           PdfFile(aes256Document(t"open sesame")).open(Password(t"wrong"))(pdf.version)
         . reason
-      . assert(_ == PdfError.Reason.BadPassword)
+      . assert(_ == Pdf.Error.Reason.BadPassword)
 
       test(m"an edit to an RC4 document is encrypted on write and decrypts on re-read"):
         val path = tempPdf(rc4Document(3))
@@ -1694,11 +1694,11 @@ object Tests extends Suite(m"Facsimile tests"):
           ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
             t"<< /Type /Pages /Kids [2 0 R] /Count 1 >>".in[Data] )
 
-        capture[PdfError]:
+        capture[Pdf.Error]:
           // Overlap false positive: the opened document is chained through `open`'s result.
           scala.caps.unsafe.unsafeAssumeSeparate(PdfFile(doc).open()(pdf.pageCount))
         . reason
-      . assert(_ == PdfError.Reason.CircularPageTree)
+      . assert(_ == Pdf.Error.Reason.CircularPageTree)
 
     suite(m"Document information"):
       def informed(info: Text): Data =

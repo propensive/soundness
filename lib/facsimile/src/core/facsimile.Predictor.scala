@@ -45,16 +45,16 @@ import vacuous.*
 // so this sits on the critical path of opening a file.
 private[facsimile] object Predictor:
   def apply(data: Data, predictor: Int, colors: Int, bits: Int, columns: Int)
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   Data =
 
     if predictor <= 1 then data
     else if predictor == 2 then tiff(data, colors, bits, columns)
     else if predictor >= 10 && predictor <= 15 then png(data, colors, bits, columns)
-    else abort(PdfError(PdfError.Reason.CorruptStream(t"Predictor")))
+    else abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"Predictor")))
 
-  private def tiff(data: Data, colors: Int, bits: Int, columns: Int)(using Tactic[PdfError]): Data =
-    if bits != 8 then abort(PdfError(PdfError.Reason.CorruptStream(t"Predictor"))) else
+  private def tiff(data: Data, colors: Int, bits: Int, columns: Int)(using Tactic[Pdf.Error]): Data =
+    if bits != 8 then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"Predictor"))) else
       val rowLength = colors*columns
       // The row decorrelation is undone in place, so the working copy is built exclusively
       // and frozen once at the end rather than thawed out of `data`.
@@ -74,7 +74,7 @@ private[facsimile] object Predictor:
 
       Array.freeze(out)
 
-  private def png(data: Data, colors: Int, bits: Int, columns: Int)(using Tactic[PdfError]): Data =
+  private def png(data: Data, colors: Int, bits: Int, columns: Int)(using Tactic[Pdf.Error]): Data =
     val bytesPerPixel = ((colors*bits + 7)/8).max(1)
     val rowLength = (columns*colors*bits + 7)/8
     val out = DataBuilder()
@@ -141,7 +141,7 @@ private[facsimile] object Predictor:
             i += 1
 
         case _ =>
-          abort(PdfError(PdfError.Reason.CorruptStream(t"Predictor")))
+          abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"Predictor")))
 
       // A truncated final row yields only the bytes that were present.
       i = 0

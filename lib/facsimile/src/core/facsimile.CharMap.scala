@@ -47,7 +47,7 @@ import vacuous.*
 // are UTF-16BE without a byte-order mark; a range destination increments its final code
 // unit across the range.
 private[facsimile] object CharMap:
-  def parse(data: Data)(using Tactic[PdfError]): CharMap =
+  def parse(data: Data)(using Tactic[Pdf.Error]): CharMap =
     val parser = CosParser(CosLexer(Scan(data)), references = false)
     val entries = scala.collection.immutable.Map.newBuilder[Int, Text]
     var codeBytes = 1

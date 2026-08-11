@@ -43,7 +43,7 @@ import vacuous.*
 
 object Annotation:
   extension (annotation: Annotation)
-    def rect: PdfRect = annotation match
+    def rect: Pdf.Rect = annotation match
       case Link(rect, _, _, _)  => rect
       case Note(rect, _, _, _)  => rect
       case Widget(rect, _, _)   => rect
@@ -58,12 +58,12 @@ object Annotation:
   private[facsimile] def read
     ( value: Cos, pages: Map[Int, Ordinal], named: Text => Optional[Cos], scale: Double )
     ( using pdf: Pdf )
-    ( using Tactic[PdfError] )
+    ( using Tactic[Pdf.Error] )
   :   Optional[Annotation] =
 
     pdf.resolved(value) match
       case Cos.Dictionary(entries) =>
-        PdfRect.read(entries(t"Rect").or(Cos.Nil), scale).let: rect =>
+        Pdf.Rect.read(entries(t"Rect").or(Cos.Nil), scale).let: rect =>
           val action = pdf.resolved(entries(t"A").or(Cos.Nil))
           val kind = action(t"S").let(_.name).or(t"")
 
@@ -98,16 +98,16 @@ object Annotation:
 // as an escape hatch.
 enum Annotation:
   case Link
-    ( rect:        PdfRect,
+    ( rect:        Pdf.Rect,
       destination: Optional[Destination],
       uri:         Optional[Text],
       dictionary:  Map[Text, Cos] )
 
   case Note
-    ( rect:       PdfRect,
+    ( rect:       Pdf.Rect,
       contents:   Optional[Text],
       open:       Boolean,
       dictionary: Map[Text, Cos] )
 
-  case Widget(rect: PdfRect, fieldName: Optional[Text], dictionary: Map[Text, Cos])
-  case Other(subtype: Text, rect: PdfRect, dictionary: Map[Text, Cos])
+  case Widget(rect: Pdf.Rect, fieldName: Optional[Text], dictionary: Map[Text, Cos])
+  case Other(subtype: Text, rect: Pdf.Rect, dictionary: Map[Text, Cos])
