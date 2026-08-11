@@ -46,7 +46,7 @@ import vacuous.*
 
 // The WIT grammar for foreign navigation: a *projection* of `Wit.Parser`'s declaration model
 // onto the flat form the wasm backend marshals against — one reader per language, two views,
-// exactly as `TypescriptDialect` projects from `TypescriptParser`.
+// exactly as `TypescriptDialect` projects from `Typescript.Parser`.
 //
 // The parser retains the declared surface faithfully — enum and variant cases, package
 // structure, `use` clauses — and this projection deliberately erases what an invocation cannot

@@ -46,7 +46,7 @@ import vacuous.*
 
 // The C grammar for foreign navigation: a *projection* of `CHeaderParser`'s declaration model
 // onto the flat form the FFI backends marshal against — one reader per language, two views,
-// exactly as `TypescriptDialect` projects from `TypescriptParser`.
+// exactly as `TypescriptDialect` projects from `Typescript.Parser`.
 //
 // The parser retains the declared surface faithfully — exact arithmetic spellings, pointer
 // structure, enumerators — and this projection deliberately erases what a downcall cannot use:

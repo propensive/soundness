@@ -83,10 +83,10 @@ object DtsDiscipline extends Discipline:
 
       val declarations =
         mitigate:
-          case TypescriptError(reason) =>
+          case Typescript.Error(reason) =>
             DisciplineError(id, DisciplineError.Reason.Malformed(t"${path.text}: $reason"))
 
-        . protect(TypescriptParser.parse(source))
+        . protect(Typescript.Parser.parse(source))
 
       // A declaration a consumer of the module cannot name is not part of its contract. In a
       // module that is the unexported declarations; in a global script there are none.

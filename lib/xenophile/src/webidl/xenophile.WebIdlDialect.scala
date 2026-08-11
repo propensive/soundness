@@ -47,7 +47,7 @@ import vacuous.*
 
 // The WebIDL grammar for foreign navigation: a *projection* of `WebIdl.Parser`'s declaration
 // model onto the flat form the JS backend marshals against — one reader per language, two
-// views, exactly as `TypescriptDialect` projects from `TypescriptParser`.
+// views, exactly as `TypescriptDialect` projects from `Typescript.Parser`.
 //
 // The parser retains the declared surface faithfully — partiality, mixin identity, `[Exposed]`
 // scopes, required-versus-optional dictionary members, enumeration values — and this

@@ -197,7 +197,7 @@ object WebIdl:
       case Reason.Duplicate(name) => m"the definition $name appears twice"
 
   // A WebIDL fragment could not be read. `Unsupported` is deliberately an error and not a silent
-  // skip, for the reason `TypescriptError` records: a capability contract read partially is a
+  // skip, for the reason `Typescript.Error` records: a capability contract read partially is a
   // smaller contract than the file declares, and every claim computed from it would be unsound.
   case class Error(reason: WebIdl.Error.Reason)(using Diagnostics)
   extends fulminate.Error(644, reason.number)(m"the WebIDL could not be read because $reason")

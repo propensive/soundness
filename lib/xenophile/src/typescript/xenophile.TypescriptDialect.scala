@@ -38,7 +38,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-// The `Dialect` adapter over `TypescriptParser`: it projects the parsed declarations onto the
+// The `Dialect` adapter over `Typescript.Parser`: it projects the parsed declarations onto the
 // `Foreign` model the foreign-function macro reads.
 //
 // The projection is lossy by design — `Foreign.Type` describes only what a call site needs to
@@ -49,20 +49,20 @@ object TypescriptDialect extends Dialect:
 
   // `Dialect.parse` is total: it cannot report an error, and the macro that calls it reports
   // "the foreign type is not defined" from the empty result. A discipline computing a
-  // compatibility claim must never take that path — it calls `TypescriptParser.parse` directly,
+  // compatibility claim must never take that path — it calls `Typescript.Parser.parse` directly,
   // where an unreadable declaration is an error rather than an absent contract.
   def parse(source: Text): Map[Text, Map[Text, Prototype]] =
-    safely(project(TypescriptParser.parse(source))).or(Map())
+    safely(project(Typescript.Parser.parse(source))).or(Map())
 
-  private def project(declarations: List[TypescriptDeclaration])
+  private def project(declarations: List[Typescript.Declaration])
   :   Map[Text, Map[Text, Prototype]] =
 
-    val byName = scala.collection.mutable.LinkedHashMap[Text, TypescriptDeclaration]()
+    val byName = scala.collection.mutable.LinkedHashMap[Text, Typescript.Declaration]()
 
     declarations.stdlib.foreach: declaration =>
       declaration match
-        case _: TypescriptDeclaration.Interface => byName.put(declaration.key, declaration)
-        case _: TypescriptDeclaration.Class     => byName.put(declaration.key, declaration)
+        case _: Typescript.Declaration.Interface => byName.put(declaration.key, declaration)
+        case _: Typescript.Declaration.Class     => byName.put(declaration.key, declaration)
         case _                                  => ()
 
     // Inherited members are resolved against the declarations of this same file. A base named by
@@ -77,9 +77,9 @@ object TypescriptDialect extends Dialect:
 
           case scala.Some(declaration) =>
             val bases = declaration match
-              case TypescriptDeclaration.Interface(_, _, _, extending, _, _) => extending.stdlib
+              case Typescript.Declaration.Interface(_, _, _, extending, _, _) => extending.stdlib
 
-              case TypescriptDeclaration.Class(_, _, _, extending, implements, _, _, _) =>
+              case Typescript.Declaration.Class(_, _, _, extending, implements, _, _, _) =>
                 extending.option.toList ++ implements.stdlib
 
               case _ => scala.Nil
@@ -87,7 +87,7 @@ object TypescriptDialect extends Dialect:
             val inherited = bases.foldLeft(scala.collection.immutable.Map[Text, Prototype]()):
               (accumulated, base) =>
                 base match
-                  case TypescriptType.Named(name, _) => accumulated ++ members(name, seen + key)
+                  case Typescript.Type.Named(name, _) => accumulated ++ members(name, seen + key)
                   case _                             => accumulated
 
             declaration.declaredMembers.stdlib.foldLeft(inherited): (accumulated, member) =>
@@ -98,27 +98,27 @@ object TypescriptDialect extends Dialect:
 
   // Index, call and construct signatures have no name a `Foreign` member selection could use,
   // and a private member is not the consumer's to call.
-  private def prototype(member: TypescriptMember): Optional[Prototype] =
+  private def prototype(member: Typescript.Member): Optional[Prototype] =
     if !member.visible then Unset else member.kind match
-      case TypescriptMember.Kind.Call | TypescriptMember.Kind.Construct
-         | TypescriptMember.Kind.Index => Unset
+      case Typescript.Member.Kind.Call | Typescript.Member.Kind.Construct
+         | Typescript.Member.Kind.Index => Unset
 
-      case TypescriptMember.Kind.Property | TypescriptMember.Kind.Getter =>
+      case Typescript.Member.Kind.Property | Typescript.Member.Kind.Getter =>
         member.signatures.stdlib.headOption.map: signature =>
           val result = signature match
-            case TypescriptType.Function(_, result, _, _) => foreign(result)
+            case Typescript.Type.Function(_, result, _, _) => foreign(result)
             case other                                    => foreign(other)
 
           Prototype(Unset, if member.optional then optional(result) else result)
 
         . getOrElse(Unset)
 
-      case TypescriptMember.Kind.Method | TypescriptMember.Kind.Setter =>
+      case Typescript.Member.Kind.Method | Typescript.Member.Kind.Setter =>
         // The first declared signature wins where a member is overloaded: `Prototype` records one
         // arity, and TypeScript resolves against the signatures in order.
         member.signatures.stdlib.headOption.map: signature =>
           signature match
-            case TypescriptType.Function(parameters, result, _, _) =>
+            case Typescript.Type.Function(parameters, result, _, _) =>
               val arguments = parameters.map: parameter =>
                 val typed = parameter.typed.lay(Foreign.Type.Named(t"any"))(foreign(_))
                 if parameter.optional then optional(typed) else typed
@@ -135,16 +135,16 @@ object TypescriptDialect extends Dialect:
   // The projection onto `Foreign.Type`. Constructs the foreign model cannot express are rendered
   // to a named type carrying their source shape, so they remain distinguishable from one another
   // and from anything that *is* expressible — they simply will not marshal.
-  private def foreign(typed: TypescriptType): Foreign.Type = typed match
-    case TypescriptType.Named(t"null" | t"undefined", _) => Foreign.Type.Named(t"undefined")
-    case TypescriptType.Named(name, Nil)                 => Foreign.Type.Named(name)
+  private def foreign(typed: Typescript.Type): Foreign.Type = typed match
+    case Typescript.Type.Named(t"null" | t"undefined", _) => Foreign.Type.Named(t"undefined")
+    case Typescript.Type.Named(name, Nil)                 => Foreign.Type.Named(name)
 
-    case TypescriptType.Named(name, arguments) =>
+    case Typescript.Type.Named(name, arguments) =>
       Foreign.Type.Applied(name, arguments.map(foreign(_)))
 
-    case TypescriptType.Array(element) =>
+    case Typescript.Type.Array(element) =>
       Foreign.Type.Applied(t"Array", List(foreign(element)))
 
-    case TypescriptType.Union(members)     => Foreign.Type.Union(members.map(foreign(_)))
-    case TypescriptType.Literal(value, _)  => Foreign.Type.Named(value)
+    case Typescript.Type.Union(members)     => Foreign.Type.Union(members.map(foreign(_)))
+    case Typescript.Type.Literal(value, _)  => Foreign.Type.Named(value)
     case other                             => Foreign.Type.Named(other.text)
