@@ -306,7 +306,7 @@ object JsonBlueprint:
         if regex.matches(value.as[Text]) then value.as[Text]
         else
           abort:
-            JsonBlueprintError(JsonBlueprintError.Reason.PatternMismatch(value.as[Text], regex))
+            JsonBlueprint.Error(JsonBlueprint.Error.Reason.PatternMismatch(value.as[Text], regex))
 
   given optionalPattern: ("pattern?" is Intensional):
     type Origin = Json
@@ -320,7 +320,7 @@ object JsonBlueprint:
         if regex.matches(value.as[Text]) then value.as[Text]
         else
           abort:
-            JsonBlueprintError(JsonBlueprintError.Reason.PatternMismatch(value.as[Text], regex))
+            JsonBlueprint.Error(JsonBlueprint.Error.Reason.PatternMismatch(value.as[Text], regex))
 
   def record(data0: Json, access0: Text => Json => Any): Record = new Record:
     type Origin = Json
@@ -387,7 +387,46 @@ object JsonBlueprint:
       case other =>
         Member.Value(if required then other else other+"?")
 
-abstract class JsonBlueprint(val doc: JsonBlueprintDoc) extends Specification:
+  // JsonBlueprintDoc → JsonBlueprint.Doc
+  case class Doc
+    ( `$schema`:  Text,
+      `$id`:      Text,
+      title:      Text,
+      `type`:     Text,
+      properties: Map[Text, JsonBlueprint.Property],
+      required:   Optional[List[Text]] ):
+
+    lazy val requiredFields: Set[Text] = Set.from(required.or(Nil).stdlib)
+
+    def fields: Map[Text, Member] = Map.from:
+      properties.stdlib.map: (key, value) => key -> value.field(requiredFields.has(key))
+
+  // JsonBlueprintError → JsonBlueprint.Error
+  object Error:
+    object Reason:
+      given Reason is Communicable =
+        case JsonType(expected, found) => m"expected JSON type $expected, but found $found"
+        case MissingValue              => m"the value was missing"
+
+        case IntOutOfRange(value, minimum, maximum) =>
+          if minimum.absent then m"the value was greater than the maximum, ${maximum.or(0)}"
+          else if maximum.absent then m"the value was less than the minimum, ${minimum.or(0)}"
+          else m"the value was not between ${minimum.or(0)} and ${maximum.or(0)}"
+
+        case PatternMismatch(value, pattern) =>
+          m"the value did not conform to the regular expression ${pattern.pattern}"
+
+    enum Reason(val number: Int) extends Clarification:
+      case JsonType(expected: Json.Primitive, found: Json.Primitive)                  extends Reason(1)
+      case MissingValue                                                             extends Reason(2)
+      case IntOutOfRange(value: Int, minimum: Optional[Int], maximum: Optional[Int]) extends Reason(3)
+      case PatternMismatch(value: Text, pattern: Regex)                             extends Reason(4)
+
+  case class Error(reason: JsonBlueprint.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(624, reason.number)
+    ( m"the JSON was not valid according to the schema because $reason" )
+
+abstract class JsonBlueprint(val doc: JsonBlueprint.Doc) extends Specification:
   type Origin = Json
   type Form = JsonBlueprint
 

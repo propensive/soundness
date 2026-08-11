@@ -73,6 +73,6 @@ object RecordsExampleSchema extends JsonBlueprint(t"""{
       }
     }
   }
-}""".read[Json].as[JsonBlueprintDoc]):
+}""".read[Json].as[JsonBlueprint.Doc]):
 
   transparent inline def record(json: Json): Record = ${build('json)}

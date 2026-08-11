@@ -765,27 +765,27 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"primitive of a string is String"):
         Json.unseal(t""""x"""".read[Json]).primitive
-      . assert(_ == JsonPrimitive.String)
+      . assert(_ == Json.Primitive.String)
 
       test(m"primitive of a number is Number"):
         Json.unseal(t"7".read[Json]).primitive
-      . assert(_ == JsonPrimitive.Number)
+      . assert(_ == Json.Primitive.Number)
 
       test(m"primitive of a boolean is Boolean"):
         Json.unseal(t"false".read[Json]).primitive
-      . assert(_ == JsonPrimitive.Boolean)
+      . assert(_ == Json.Primitive.Boolean)
 
       test(m"primitive of an array is Array"):
         Json.unseal(t"[]".read[Json]).primitive
-      . assert(_ == JsonPrimitive.Array)
+      . assert(_ == Json.Primitive.Array)
 
       test(m"primitive of an object is Object"):
         Json.unseal(t"{}".read[Json]).primitive
-      . assert(_ == JsonPrimitive.Object)
+      . assert(_ == Json.Primitive.Object)
 
       test(m"primitive of null is Null"):
         Json.unseal(t"null".read[Json]).primitive
-      . assert(_ == JsonPrimitive.Null)
+      . assert(_ == Json.Primitive.Null)
 
     suite(m"Direct parsing tests"):
       test(m"an inlined recursive type ties through its own nominal Parsable"):
@@ -919,10 +919,10 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"name": "Kid"}""".read[WithDefault in Json]
       . assert(_ == WithDefault(t"Kid", 18))
 
-      test(m"A missing required field raises JsonError Absent"):
-        capture[JsonError](t"""{"age": 50}""".read[Person in Json])
+      test(m"A missing required field raises Json.Error Absent"):
+        capture[Json.Error](t"""{"age": 50}""".read[Person in Json])
       . assert(_.reason match
-          case JsonError.Reason.Absent => true
+          case Json.Error.Reason.Absent => true
           case _                       => false)
 
       test(m"@name renames apply to direct parsing"):
@@ -991,7 +991,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == List(Person(t"Amy", 50), Person(t"Bea", 60)))
 
       test(m"A mistyped directly-parsed field raises ParseError"):
-        // On the AST path this is a `JsonError`; token-level readers report
+        // On the AST path this is a `Json.Error`; token-level readers report
         // type mismatches as parse errors, with source positions.
         capture[ParseError](t"""{"name": "Amy", "age": "x"}""".read[Person in Json])
       . assert(_.issue match
@@ -1066,8 +1066,8 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == WithDefault(t"Kid", 18))
 
       test(m"A staged parser raises Absent for missing required fields"):
-        capture[JsonError](t"""{"age": 50}""".read[Person in Json]).reason
-      . assert(_ == JsonError.Reason.Absent)
+        capture[Json.Error](t"""{"age": 50}""".read[Person in Json]).reason
+      . assert(_ == Json.Error.Reason.Absent)
 
       test(m"A staged parser honors @name renames"):
         agree[Renamed](t"""{"first_name": "Jon", "yob": 1983}""")
@@ -1122,8 +1122,8 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"A staged sum parser raises Absent for a missing discriminator"):
         given Shape is Json.Parsable = Json.Parsable.staged
-        capture[JsonError](t"""{"radius": 2.5}""".read[Shape in Json]).reason
-      . assert(_ == JsonError.Reason.Absent)
+        capture[Json.Error](t"""{"radius": 2.5}""".read[Shape in Json]).reason
+      . assert(_ == Json.Error.Reason.Absent)
 
       test(m"A staged sum parser raises VariantError for an unknown tag"):
         given Shape is Json.Parsable = Json.Parsable.staged
@@ -1154,14 +1154,14 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"Circle": {"radius": 2.5}}""".read[Shape in Json]
       . assert(_ == Shape.Circle(2.5))
 
-      test(m"A multi-key wrapper raises JsonError Absent on both paths"):
+      test(m"A multi-key wrapper raises Json.Error Absent on both paths"):
         given Shape is Discriminable in Json = Json.DiscriminantWrapper()
         given Shape is Json.Parsable = Json.Parsable.derived
         val json = t"""{"Circle": {"radius": 1.0}, "junk": 1}"""
 
-        ( capture[JsonError](json.read[Shape in Json]).reason,
-          capture[JsonError](json.read[Json].as[Shape]).reason )
-      . assert(_ == (JsonError.Reason.Absent, JsonError.Reason.Absent))
+        ( capture[Json.Error](json.read[Shape in Json]).reason,
+          capture[Json.Error](json.read[Json].as[Shape]).reason )
+      . assert(_ == (Json.Error.Reason.Absent, Json.Error.Reason.Absent))
 
       test(m"Envelope encoding writes tag and value fields"):
         given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
@@ -1197,8 +1197,8 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"An internal-field sum with a missing tag raises Absent directly"):
         given Status is Json.Parsable = Json.Parsable.derived
-        capture[JsonError](t"""{"since": 2020}""".read[Status in Json]).reason
-      . assert(_ == JsonError.Reason.Absent)
+        capture[Json.Error](t"""{"since": 2020}""".read[Status in Json]).reason
+      . assert(_ == Json.Error.Reason.Absent)
 
       test(m"A custom Discriminable falls back to the AST bridge"):
         given Shape is Discriminable in Json = new Discriminable:
@@ -1213,32 +1213,32 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Shape.Circle(4.5))
 
     suite(m"Json error handling"):
-      test(m"Decode wrong type raises JsonError NotType"):
-        capture[JsonError](t""""abc"""".read[Json].as[Int])
+      test(m"Decode wrong type raises Json.Error NotType"):
+        capture[Json.Error](t""""abc"""".read[Json].as[Int])
       . assert(_.reason match
-          case JsonError.Reason.NotType(_, _) => true
+          case Json.Error.Reason.NotType(_, _) => true
           case _                              => false)
 
-      test(m"Decode missing required field raises JsonError"):
-        capture[JsonError](t"""{}""".read[Json].as[Foo])
+      test(m"Decode missing required field raises Json.Error"):
+        capture[Json.Error](t"""{}""".read[Json].as[Foo])
       . assert(_.reason match
-          case JsonError.Reason.Absent => true
+          case Json.Error.Reason.Absent => true
           case _                       => false)
 
       test(m"Asking for a string when JSON is a number raises NotType"):
-        capture[JsonError](t"42".read[Json].as[Text])
+        capture[Json.Error](t"42".read[Json].as[Text])
       . assert(_.reason match
-          case JsonError.Reason.NotType(_, JsonPrimitive.String) => true
+          case Json.Error.Reason.NotType(_, Json.Primitive.String) => true
           case _                                                  => false)
 
       test(m"Asking for a boolean when JSON is null raises Absent or NotType"):
-        capture[JsonError](t"null".read[Json].as[Boolean])
+        capture[Json.Error](t"null".read[Json].as[Boolean])
       . assert(_.reason match
-          case JsonError.Reason.NotType(JsonPrimitive.Null, _) => true
+          case Json.Error.Reason.NotType(Json.Primitive.Null, _) => true
           case _                                                => false)
 
       test(m"NotType reason is communicable"):
-        JsonError(JsonError.Reason.NotType(JsonPrimitive.String, JsonPrimitive.Number)).message
+        Json.Error(Json.Error.Reason.NotType(Json.Primitive.String, Json.Primitive.Number)).message
       . assert(_.text.s.contains("could not access"))
 
     suite(m"Json printing"):
@@ -1320,8 +1320,8 @@ object Tests extends Suite(m"Jacinta Tests"):
         p.contains(t"0")
       . assert(identity)
 
-      test(m"JsonPointerError reason describes itself"):
-        val err = JsonPointerError(JsonPointerError.Reason.UnknownDocument, 0)
+      test(m"JsonPointer.Error reason describes itself"):
+        val err = JsonPointer.Error(JsonPointer.Error.Reason.UnknownDocument, 0)
         err.message.text.s.contains("registry")
       . assert(identity)
 

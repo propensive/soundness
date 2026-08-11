@@ -189,7 +189,7 @@ object Lsp:
   object CompletionItem:
     given decodable: CompletionItem is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -247,7 +247,7 @@ object Lsp:
   object WorkspaceEdit:
     given decodable: WorkspaceEdit is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -260,7 +260,7 @@ object Lsp:
   object CodeAction:
     given decodable: CodeAction is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -329,7 +329,7 @@ object Lsp:
   object CodeLens:
     given decodable: CodeLens is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -341,7 +341,7 @@ object Lsp:
   object DocumentLink:
     given decodable: DocumentLink is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -380,7 +380,7 @@ object Lsp:
   object CallHierarchyItem:
     given decodable: CallHierarchyItem is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -414,7 +414,7 @@ object Lsp:
   object TypeHierarchyItem:
     given decodable: TypeHierarchyItem is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -456,7 +456,7 @@ object Lsp:
   object InlayHint:
     given decodable: InlayHint is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -474,7 +474,7 @@ object Lsp:
   object InlineValueContext:
     given decodable: InlineValueContext is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -520,7 +520,7 @@ object Lsp:
   object WorkspaceSymbol:
     given decodable: WorkspaceSymbol is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -537,7 +537,7 @@ object Lsp:
   object FileEvent:
     given decodable: FileEvent is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -548,7 +548,7 @@ object Lsp:
   object WorkspaceFoldersChangeEvent:
     given decodable: WorkspaceFoldersChangeEvent is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -559,7 +559,7 @@ object Lsp:
   object FileCreate:
     given decodable: FileCreate is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -570,7 +570,7 @@ object Lsp:
   object FileRename:
     given decodable: FileRename is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -581,7 +581,7 @@ object Lsp:
   object FileDelete:
     given decodable: FileDelete is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -594,7 +594,7 @@ object Lsp:
   object Diagnostic:
     given decodable: Diagnostic is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -1626,7 +1626,7 @@ object Lsp:
         json =>
           val response: Optional[Json] =
             try dispatch(json) catch
-              case error: JsonError =>
+              case error: Json.Error =>
                 JsonRpc.failure(-32602, t"Invalid params", requestId(json))
 
               case error: Exception =>

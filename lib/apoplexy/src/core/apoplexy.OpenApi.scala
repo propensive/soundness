@@ -67,10 +67,10 @@ object OpenApi:
     // Typed as the carrier `Json.Decodable` (not the plain `Decodable in Json`):
     // the schema-carrying product derivation summons each field as `Json.Decodable`,
     // so a plain-typed anchor would be bypassed and the type re-derived inline.
-    given decodableJson: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given decodableJson: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Parameter is Json.Decodable = Json.DecodableDerivation.derived
 
-    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Parameter is Decodable in Yaml = Yaml.DecodableDerivation.derived
 
     enum In:
@@ -86,13 +86,13 @@ object OpenApi:
   // An OpenAPI "Media Type Object": the value of a `content` entry keyed by a
   // media-type string such as `application/json`.
   object MediaTypeObject:
-    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  MediaTypeObject is Json.Decodable = Json.DecodableDerivation.derived
 
   case class MediaTypeObject(schema: Optional[JsonSchema] = Unset)
 
   object RequestBody:
-    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  RequestBody is Json.Decodable = Json.DecodableDerivation.derived
 
   case class RequestBody
@@ -101,7 +101,7 @@ object OpenApi:
       content:     Map[Text, MediaTypeObject] = Map() )
 
   object Response:
-    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Response is Json.Decodable = Json.DecodableDerivation.derived
 
   case class Response
@@ -114,10 +114,10 @@ object OpenApi:
     // `-Xmax-inlines` (which surfaces, misleadingly, as a missing `Decodable`
     // instance). Anchoring `Operation` derives it once and lets `PathItem`
     // simply reference it.
-    given decodableJson: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given decodableJson: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Operation is Json.Decodable = Json.DecodableDerivation.derived
 
-    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Operation is Decodable in Yaml = Yaml.DecodableDerivation.derived
 
   case class Operation
@@ -129,7 +129,7 @@ object OpenApi:
       responses:   Map[Text, Response]   = Map() )
 
   object PathItem:
-    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  PathItem is Json.Decodable = Json.DecodableDerivation.derived
 
   // The path-item object mixes HTTP-method keys with non-method keys, so each
@@ -160,7 +160,7 @@ object OpenApi:
       . pipe(Map.from(_))
 
   object Components:
-    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Components is Json.Decodable = Json.DecodableDerivation.derived
 
   case class Components(schemas: Map[Text, JsonSchema] = Map())
@@ -201,10 +201,10 @@ object OpenApi:
   // private method so that recursive summons for nested schemas (`items`,
   // `properties`, …) resolve to this fully-defined given rather than to the
   // instance currently being initialised.
-  given jsonSchemaYaml: (Tactic[Yaml.Error], Tactic[JsonPointerError])
+  given jsonSchemaYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error])
   =>  JsonSchema is Decodable in Yaml = decodeYamlSchema(_)
 
-  private def decodeYamlSchema(yaml: Yaml)(using Tactic[Yaml.Error], Tactic[JsonPointerError])
+  private def decodeYamlSchema(yaml: Yaml)(using Tactic[Yaml.Error], Tactic[JsonPointer.Error])
   :   JsonSchema =
 
     def field[value: Decodable in Yaml](name: Text): Optional[value] =
@@ -276,7 +276,7 @@ object OpenApi:
   // once — with each nested type resolving to its own anchor — rather than inlining
   // the entire OpenAPI graph at the call site (which, with schema-carrying codecs,
   // overflows `-Xmax-inlines` and the JVM class-size limit).
-  given decodable: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+  given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
   =>  OpenApi is Json.Decodable = Json.DecodableDerivation.derived
 
   // `source.read[OpenApi]`: aggregate the source text, auto-detect JSON vs YAML
@@ -287,9 +287,9 @@ object OpenApi:
       val document =
         mitigate:
           case ParseError(_, _, _)    => OpenApi.Error(OpenApi.Error.Reason.Malformed)
-          case JsonError(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
+          case Json.Error(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
           case Yaml.Error(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
-          case JsonPointerError(_, _) => OpenApi.Error(OpenApi.Error.Reason.Malformed)
+          case JsonPointer.Error(_, _) => OpenApi.Error(OpenApi.Error.Reason.Malformed)
 
         . protect:
             if text.trim.starts(t"{") || text.trim.starts(t"[")

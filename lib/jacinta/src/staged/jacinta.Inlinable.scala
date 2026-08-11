@@ -60,7 +60,7 @@ trait Inlinable extends Typeclass:
 
   // What a field of this type yields when its key is absent from the object,
   // mirroring the runtime instances: an abort unless overridden.
-  def absent(tactic: Expr[Tactic[JsonError]])(using Quotes, Type[Self]): Expr[Self] =
+  def absent(tactic: Expr[Tactic[Json.Error]])(using Quotes, Type[Self]): Expr[Self] =
     '{ Json.Parsable.missing[Self]()(using $tactic) }
 
 object Inlinable:
@@ -88,7 +88,7 @@ object Inlinable:
     def parse(reader: Expr[JsonReader])(using Quotes, Type[value]): Expr[value] =
       delegate0.parse(reader)
 
-    override def absent(tactic: Expr[Tactic[JsonError]])(using Quotes, Type[value])
+    override def absent(tactic: Expr[Tactic[Json.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
       delegate0.absent(tactic)

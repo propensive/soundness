@@ -61,7 +61,7 @@ import zephyrine.*
 object internal:
 
   // Reuses `JsonPointer`'s own `Decodable` for validation: the literal is
-  // decoded at macro-expansion time and, if it fails, the `JsonPointerError`'s
+  // decoded at macro-expansion time and, if it fails, the `JsonPointer.Error`'s
   // offset is mapped back to a source position so the error points exactly at
   // the offending character.
   def jsonPointer[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
@@ -86,7 +86,7 @@ object internal:
     val start: Int = firstOrigin[origins]
 
     try unsafely(raw.tt.as[JsonPointer]) catch
-      case error: JsonPointerError =>
+      case error: JsonPointer.Error =>
         val sourceFile = Position.ofMacroExpansion.sourceFile
 
         val position = sourceFile.content match
@@ -221,15 +221,15 @@ object internal:
           case '[type result <: Json; result] =>
             '{$self.selectIndex($idx).asInstanceOf[result]}
 
-      case _ => Expr.summon[Tactic[JsonError]] match
+      case _ => Expr.summon[Tactic[Json.Error]] match
         case Some(tactic) =>
           '{$self.indexValue($idx)(using $tactic)}
 
         case None =>
           halt:
             m"""
-              indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]`
-              must be in scope (e.g. via `raises JsonError`)
+              indexing a `Json` array may raise `Json.Error`; a `Tactic[Json.Error]`
+              must be in scope (e.g. via `raises Json.Error`)
             """
 
   def applied(self: Expr[Json], field: Expr[String], idx: Expr[Int]): Macro[Json] =
@@ -242,14 +242,14 @@ object internal:
           (or verify the value against a schema first)
         """
 
-      Expr.summon[Tactic[JsonError]] match
+      Expr.summon[Tactic[Json.Error]] match
         case Some(tactic) => '{$self.selectField($field).indexValue($idx)(using $tactic)}
 
         case None =>
           halt:
             m"""
-              indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]` must be in scope
-              (e.g. via `raises JsonError`)
+              indexing a `Json` array may raise `Json.Error`; a `Tactic[Json.Error]` must be in scope
+              (e.g. via `raises Json.Error`)
             """
 
     receiver(self) match
@@ -1134,7 +1134,7 @@ object internal:
     def body
       ( reader:    Expr[JsonReader],
         foci:      Expr[Foci[Json.Focus]],
-        tactic:    Expr[Tactic[JsonError]],
+        tactic:    Expr[Tactic[Json.Error]],
         keys:      Expr[Array[String]^{}],
         table:     Expr[Json.KeyTable],
         instances: Expr[Array[Json.Field | Null]^{}],
@@ -1306,7 +1306,7 @@ object internal:
         report.errorAndAbort(s"jacinta: staged parsing needs a contextual $role")
 
     val fociExpr = summonOrAbort[Foci[Json.Focus]]("Foci[Json.Focus]")
-    val tacticExpr = summonOrAbort[Tactic[JsonError]]("Tactic[JsonError]")
+    val tacticExpr = summonOrAbort[Tactic[Json.Error]]("Tactic[Json.Error]")
     val nameExprs = fieldNames.map { name => Expr(name) }
     val instanceExprs = List.range(0, arity).map(summonField)
     val fallbackExprs = List.range(0, arity).map(declaredDefault)
@@ -1318,7 +1318,7 @@ object internal:
       // self-references stay deferred until the first parse.
       caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
         val foci: Foci[Json.Focus] = $fociExpr
-        val tactic: Tactic[JsonError] = $tacticExpr
+        val tactic: Tactic[Json.Error] = $tacticExpr
 
         val keys: Array[String]^{} =
           Json.Parsable.wireKeys(Array.of[String](${Varargs[String](nameExprs)}*), $renames)
@@ -1349,7 +1349,7 @@ object internal:
   // expansion, so a sibling staged given composes) — no per-occurrence map
   // building, no generic-equality dispatch, no `delegate` fold. A missing
   // tag and an unknown tag raise exactly as `ParsableDerivation.disjunction`
-  // does: `JsonError(Absent)` and wisteria's `VariantError`, each through
+  // does: `Json.Error(Absent)` and wisteria's `VariantError`, each through
   // the same deferred `provide` summons the derived engine uses.
   def stagedSum[value: Type](renames: Expr[Map[Text, Text]])(using Quotes)
   :   Expr[value is Json.Parsable] =
@@ -1443,9 +1443,9 @@ object internal:
           def shape(): Morphology = Morphology.Any
 
           def parse(reader: JsonReader^): value =
-            provide[Tactic[JsonError]]:
+            provide[Tactic[Json.Error]]:
               val wire: Text = reader.discriminant(tagField).or:
-                abort(JsonError(JsonError.Reason.Absent))
+                abort(Json.Error(Json.Error.Reason.Absent))
 
               val wireString: String = wire.s
 

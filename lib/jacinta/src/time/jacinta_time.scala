@@ -49,12 +49,12 @@ package encodables:
 package decodables:
   // Laundered pure like jacinta's primitive codecs (codec-thunk seal): as derived-product
   // field codecs these are summoned against pure expected types.
-  given instantJsonDecodable: (tactic: Tactic[JsonError])
+  given instantJsonDecodable: (tactic: Tactic[Json.Error])
   =>  (Instant over Unix) is Json.Decodable =
     caps.unsafe.unsafeAssumePure:
       Json.Decodable(Morphology.Whole): json => Instant.of[Unix](json.root.long)
 
-  given durationJsonDecodable: (tactic: Tactic[JsonError])
+  given durationJsonDecodable: (tactic: Tactic[Json.Error])
   =>  Duration is Json.Decodable =
     caps.unsafe.unsafeAssumePure:
       Json.Decodable(Morphology.Whole): json => Duration(json.root.long)
