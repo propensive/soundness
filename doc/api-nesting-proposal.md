@@ -289,6 +289,47 @@ Three further mechanical hazards, beyond the pilot's:
 The reference rename must run over the **whole repository**, not the library being changed:
 `Path.Error` alone is named by galilei, hellenism and imperial.
 
+## Corrections from the second implementation pass (2026-08-11)
+
+A further sixteen names nested (`Http2.Connection`, `Http2.Stream`, `Mcp.Server`,
+`Mcp.Session`, the three `Zip.*`, and the nine-name COSE taxonomy). Four more rules, none
+of which the first pass met:
+
+- **A name used as data cannot be renamed textually.** xenophile resolves a source
+  language's `Dialect` reflectively — `Class.forName(dialectType.typeSymbol.fullName)`,
+  relying on `fullName` already being the JVM binary name, which holds only for a
+  top-level object. Nesting `TypescriptDialect` makes the binary name
+  `Typescript$Dialect$` while `fullName` still reads `xenophile.Typescript.Dialect`, so
+  grammar loading fails at macro-expansion time. Nothing in `soundness.all` compiles the
+  call sites; only the full test suite catches it. **Leave `TypescriptDialect`,
+  `WebIdlDialect` and `WitDialect` alone**, and check for reflective lookup before nesting
+  anything whose name might be resolved at runtime.
+- **Check the outer object for a member of the target name.** `object Mcp` already had a
+  nested `Error` — the JSON-RPC error payload — so `McpError` cannot become `Mcp.Error`
+  and stays top-level.
+- **A wildcard import over a namespace object is what makes nesting fragile.** A consumer
+  writing `import Http2.*` alongside `import soundness.*` gets an ambiguity for any member
+  sharing a name with the umbrella; nesting `Http2Stream` collided with zephyrine's
+  `Stream` that way. Prefer fixing the import to abandoning the nesting — but for names
+  generic enough to collide widely, weigh whether the nesting is worth it. There are 45
+  such wildcards in the tree; the constant-table uses (`Vp8Tables`, `FlateTables`,
+  `PeriodicTable`) are legitimate, the type-holding ones (`Mathml`, `Binary`, `Control`)
+  are the fragile ones.
+- **`caps.Pure` fixes the cross-file capture failure, but not the nesting one.**
+  Declaring a genuinely pure type pure (`case class HpackEntry(…) extends caps.Pure`) lets
+  it be split into its own file, which is otherwise blocked because the element's capture
+  variable cannot be solved through a signature against an invariant `Array`. Nesting the
+  same type still fails, so the constraint is not only the file boundary. Useful for L2
+  compliance in its own right.
+
+Two shapes of donor file also emerged. A file holding a **taxonomy** — COSE's nine
+phantom markers — moves into the namespace whole, rather than being split N ways to
+satisfy one-type-per-file first. And a **reference rename can match more than types**: an
+enum case (`VarintError`, a constructor), an existing alias to the old name (`object Tel`
+carried `type Error`), and package-qualified references to our own nested types
+(`cordillera.Http2.Frame`, which a guard against rewriting foreign types like
+`jnh.HttpClient` will collapse if it only tests for a lowercase qualifier).
+
 ## Execution shape (when implementation is approved)
 
 One library per commit (the pilot shape), starting with the best-value targets:
