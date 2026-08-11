@@ -62,8 +62,8 @@ import termcaps.environmentTermcap
 
 package couriers:
   given resend
-  :   ( courierTactic: Tactic[Courier.Error], online: Online, loggable: HttpEvent is Loggable,
-        client: HttpClient )
+  :   ( courierTactic: Tactic[Courier.Error], online: Online, loggable: Http.Event is Loggable,
+        client: Http.Client )
   =>  ( apiKey: Resend.ApiKey )
   =>  (Courier^{courierTactic, online}) =
     // The instance's own fresh capability is laundered; the declared result tracks its
@@ -114,7 +114,7 @@ package couriers:
         mitigate:
           case ConnectError(reason)     => Out.println(reason.communicate) yet error
           case ParseError(_, _, reason) => Out.println(reason.describe) yet error
-          case HttpError(status, _)     => Out.println(status.communicate) yet error
+          case Http.Error(status, _)     => Out.println(status.communicate) yet error
           case JsonError(reason)        => Out.println(reason.communicate) yet error
           case MediaType.Error(_, _)     => error
 

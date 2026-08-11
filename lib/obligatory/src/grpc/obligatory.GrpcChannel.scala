@@ -163,7 +163,7 @@ class GrpcChannel
     ( method: Grpc.Method, value: request, metadata: Grpc.Metadata = Grpc.Metadata() )
     ( using request is Encodable in Protobuf, response is Decodable in Protobuf )
     ( using Monitor^ )
-    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
+    ( using Tactic[GrpcError], Tactic[Http2.Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   response =
 
     val (stream, response) =
@@ -187,7 +187,7 @@ class GrpcChannel
     ( method: Grpc.Method, value: request, metadata: Grpc.Metadata = Grpc.Metadata() )
     ( using request is Encodable in Protobuf, response is Decodable in Protobuf )
     ( using Monitor^ )
-    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
+    ( using Tactic[GrpcError], Tactic[Http2.Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Chain[response] =
 
     val (stream, response) =

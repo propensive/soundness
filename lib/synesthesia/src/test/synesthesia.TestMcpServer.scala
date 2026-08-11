@@ -50,7 +50,7 @@ object TestMcpServer extends McpServer():
 
   @tool
   // @ui("ui://html/content")
-  def encodeMagic(text: Text)(using client: McpClient): Text =
+  def encodeMagic(text: Text)(using client: Mcp.Client): Text =
     Thread.sleep(1500)
     client.log(t"Searching for $text in the magic book")
     Thread.sleep(1500)

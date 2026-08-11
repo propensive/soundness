@@ -54,7 +54,7 @@ import Lsp.*
 
 // The target of the proxy's registration combinators, lent to the block given to `Lsp.proxy` for
 // its duration. An exclusive capability, so it cannot escape the block; its slots are public and
-// untracked, as `LspRegistry`'s are, because the combinators are inline and assign from their
+// untracked, as `Lsp.Registry`'s are, because the combinators are inline and assign from their
 // expansion sites.
 //
 // Two layers of interception live here. The typed rewriters — `hover`, `capabilities`, and the
@@ -66,7 +66,7 @@ import Lsp.*
 // does, so a proxy may ask the server something the editor never asked for.
 class LspProxy private[exegesis] (private[exegesis] val session: LspProxy.Upstream)
 extends caps.ExclusiveCapability:
-  // The rewriters, by method: an erased rim like `LspRegistry`'s slots, for the same reason — a
+  // The rewriters, by method: an erased rim like `Lsp.Registry`'s slots, for the same reason — a
   // function value in an invariant container freshens its capture set at every adaptation.
   @scala.caps.unsafe.untrackedCaptures
   val results: scm.HashMap[Text, AnyRef] = scm.HashMap()
@@ -96,16 +96,16 @@ object LspProxy:
   // proxy again once registration is over.
   private[exegesis] class Upstream():
     @scala.caps.unsafe.untrackedCaptures
-    var connection: LspConnection | Null = null
+    var connection: Lsp.Connection | Null = null
 
     // Sealed on the way in and out, as the listener is: the connection is lent for the life of the
     // session, and every hook that reads it here runs within it.
-    def open(connection: LspConnection^): Unit =
+    def open(connection: Lsp.Connection^): Unit =
       this.connection = caps.unsafe.unsafeAssumePure(connection)
 
-    def apply(): Optional[LspConnection] = connection match
+    def apply(): Optional[Lsp.Connection] = connection match
       case null                      => Unset
-      case connection: LspConnection => caps.unsafe.unsafeAssumePure(connection)
+      case connection: Lsp.Connection => caps.unsafe.unsafeAssumePure(connection)
 
   // Runs the proxy: this process serves an editor over its own standard input and output while
   // holding a session with the server it forwards to.
@@ -258,7 +258,7 @@ object LspProxy:
 
     catch case _: Exception => json
 
-  // The slots are an erased rim, as `LspRegistry`'s are, and each is restored by a single
+  // The slots are an erased rim, as `Lsp.Registry`'s are, and each is restored by a single
   // annotated cast at the one place that reads it.
   // A rewriter read back out of the erased rim, restored by a single annotated cast.
   private def rule(slot: scala.Option[AnyRef]): Optional[Json => Json] =
@@ -266,23 +266,23 @@ object LspProxy:
       case null => Unset
 
       case value: AnyRef =>
-        val lambda: Json => Json = value.asInstanceOf[LspRegistry.Slot[Json => Json]].value
+        val lambda: Json => Json = value.asInstanceOf[Lsp.Registry.Slot[Json => Json]].value
         lambda
 
   private def outbound(hook: AnyRef | Null): Optional[OutboundHook] =
     if hook == null then Unset else
-      val relay: OutboundHook = hook.asInstanceOf[LspRegistry.Slot[OutboundHook]].value
+      val relay: OutboundHook = hook.asInstanceOf[Lsp.Registry.Slot[OutboundHook]].value
 
       relay
 
   private def inbound(hook: AnyRef | Null): Optional[InboundHook] =
     if hook == null then Unset else
-      val relay: InboundHook = hook.asInstanceOf[LspRegistry.Slot[InboundHook]].value
+      val relay: InboundHook = hook.asInstanceOf[Lsp.Registry.Slot[InboundHook]].value
 
       relay
 
   private def connected(block: AnyRef | Null): (() => Unit) | Null =
-    if block == null then null else block.asInstanceOf[LspRegistry.Slot[() => Unit]].value
+    if block == null then null else block.asInstanceOf[Lsp.Registry.Slot[() => Unit]].value
 
   // The id of a message, if the peer chose a string for it: the form `JsonRpc.call` mints, and so
   // the form a response to a request the proxy made itself comes back under.
@@ -303,7 +303,7 @@ object rewrite:
      ( using proxy: LspProxy^ )
   :   Unit =
 
-    proxy.results(t"initialize") = LspRegistry.Slot[Json => Json]: json =>
+    proxy.results(t"initialize") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       val result = json.as[InitializeResult]
 
@@ -313,7 +313,7 @@ object rewrite:
   // is the `null` a server sends when it has none, and is passed on as it stands, so a rewriter
   // never has to spell out the empty case.
   transparent inline def hover(inline lambda: Hover => Hover)(using proxy: LspProxy^): Unit =
-    proxy.results(t"textDocument/hover") = LspRegistry.Slot[Json => Json]: json =>
+    proxy.results(t"textDocument/hover") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       try lambda(json.as[Hover]).in[Json] catch case _: Exception => json
 
@@ -321,7 +321,7 @@ object rewrite:
      ( using proxy: LspProxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/completion") = LspRegistry.Slot[Json => Json]: json =>
+    proxy.results(t"textDocument/completion") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[CompletionList]).in[Json]
 
@@ -329,7 +329,7 @@ object rewrite:
      ( using proxy: LspProxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/definition") = LspRegistry.Slot[Json => Json]: json =>
+    proxy.results(t"textDocument/definition") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[Location]]).in[Json]
 
@@ -337,7 +337,7 @@ object rewrite:
      ( using proxy: LspProxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/documentSymbol") = LspRegistry.Slot[Json => Json]: json =>
+    proxy.results(t"textDocument/documentSymbol") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[DocumentSymbol]]).in[Json]
 
@@ -345,7 +345,7 @@ object rewrite:
      ( using proxy: LspProxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/codeAction") = LspRegistry.Slot[Json => Json]: json =>
+    proxy.results(t"textDocument/codeAction") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[CodeAction]]).in[Json]
 
@@ -353,7 +353,7 @@ object rewrite:
      ( using proxy: LspProxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/codeLens") = LspRegistry.Slot[Json => Json]: json =>
+    proxy.results(t"textDocument/codeLens") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[CodeLens]]).in[Json]
 
@@ -361,7 +361,7 @@ object rewrite:
      ( using proxy: LspProxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/inlayHint") = LspRegistry.Slot[Json => Json]: json =>
+    proxy.results(t"textDocument/inlayHint") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[InlayHint]]).in[Json]
 
@@ -369,7 +369,7 @@ object rewrite:
      ( using proxy: LspProxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/signatureHelp") = LspRegistry.Slot[Json => Json]: json =>
+    proxy.results(t"textDocument/signatureHelp") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       try lambda(json.as[SignatureHelp]).in[Json] catch case _: Exception => json
 
@@ -380,7 +380,7 @@ object rewrite:
      ( using proxy: LspProxy^ )
   :   Unit =
 
-    proxy.notices(t"textDocument/publishDiagnostics") = LspRegistry.Slot[Json => Json]: params =>
+    proxy.notices(t"textDocument/publishDiagnostics") = Lsp.Registry.Slot[Json => Json]: params =>
       import dynamicJsonAccess.enabled
       import strategies.throwUnsafely
 
@@ -397,12 +397,12 @@ object rewrite:
   transparent inline def result(method: Text)(inline lambda: Json => Json)
      ( using proxy: LspProxy^ )
   :   Unit =
-    proxy.results(method) = LspRegistry.Slot[Json => Json](lambda)
+    proxy.results(method) = Lsp.Registry.Slot[Json => Json](lambda)
 
   transparent inline def notification(method: Text)(inline lambda: Json => Json)
      ( using proxy: LspProxy^ )
   :   Unit =
-    proxy.notices(method) = LspRegistry.Slot[Json => Json](lambda)
+    proxy.notices(method) = Lsp.Registry.Slot[Json => Json](lambda)
 
   // The whole-message hooks: every message the editor sends, and every message the server sends
   // back, with the chance to forward it, amend it, drop it, or answer it here. Each may also ask
@@ -410,13 +410,13 @@ object rewrite:
   // `upstream` documents.
   transparent inline def outbound(inline hook: LspProxy.OutboundHook)(using proxy: LspProxy^)
   :   Unit =
-    proxy.outbound0 = LspRegistry.Slot[LspProxy.OutboundHook](hook)
+    proxy.outbound0 = Lsp.Registry.Slot[LspProxy.OutboundHook](hook)
 
   transparent inline def inbound(inline hook: LspProxy.InboundHook)(using proxy: LspProxy^): Unit =
-    proxy.inbound0 = LspRegistry.Slot[LspProxy.InboundHook](hook)
+    proxy.inbound0 = Lsp.Registry.Slot[LspProxy.InboundHook](hook)
 
   // Run once, on a task of its own, as soon as the proxy has a session with the server upstream:
   // the place for what a proxy must ask before it can amend anything, and the only hook free to
   // await an answer.
   transparent inline def connected(inline block: => Unit)(using proxy: LspProxy^): Unit =
-    proxy.connected0 = LspRegistry.Slot[() => Unit](() => block)
+    proxy.connected0 = Lsp.Registry.Slot[() => Unit](() => block)

@@ -61,15 +61,15 @@ case class WebDriver(port: Int):
     def webDriver: WebDriver = wd
 
     private def safe[result](block: => result): result = block
-      // try block catch case error: HttpError => error match
-      //   case HttpError(status, body) => error.read[Json]
+      // try block catch case error: Http.Error => error match
+      //   case Http.Error(status, body) => error.read[Json]
       //     throw WebDriverError(json.error.as[Text], json.message.as[Text],
       //         json.stacktrace.as[Text].cut(t"\n"))
 
     final private val Wei: Text = t"element-6066-11e4-a52e-4f735466cecf"
 
     case class Element(elementId: Text):
-      private def get(address: Text): Json logs HttpEvent = safe:
+      private def get(address: Text): Json logs Http.Event = safe:
         given online: Online = Online()
 
         val url: HttpUrl =
@@ -77,7 +77,7 @@ case class WebDriver(port: Int):
 
         url.fetch(contentType = media"application/json").receive[Json]
 
-      private def post(address: Text, content: Json): Json logs HttpEvent = safe:
+      private def post(address: Text, content: Json): Json logs Http.Event = safe:
         given online: Online = Online()
 
         url"http://localhost:${port}/session/$sessionId/element/$elementId/$address"
@@ -85,21 +85,21 @@ case class WebDriver(port: Int):
         . read[Text]
         . as[Json]
 
-      def click(): Unit logs HttpEvent = post(t"click", t"{}".read[Json])
-      def clear(): Unit logs HttpEvent = post(t"clear", t"{}".read[Json])
+      def click(): Unit logs Http.Event = post(t"click", t"{}".read[Json])
+      def clear(): Unit logs Http.Event = post(t"clear", t"{}".read[Json])
 
       // The raw PNG bytes. `screenshot()`, which decodes them into a `Raster in Png`, is an
       // extension method in `tarantula.image`, so that browser automation does not depend on
       // an image-codec library.
-      def screenshotData(): Data logs HttpEvent =
+      def screenshotData(): Data logs Http.Event =
         get(t"screenshot").value.as[Text].deserialize[Base64]
 
-      def value(text: Text): Unit logs HttpEvent =
+      def value(text: Text): Unit logs Http.Event =
         case class Data(text: Text)
         post(t"value", Data(text).in[Json])
 
       @targetName("at")
-      infix def / [element: Focusable](value: element): List[Element] logs HttpEvent =
+      infix def / [element: Focusable](value: element): List[Element] logs Http.Event =
         case class Data(`using`: Text, value: Text)
 
         List.of:
@@ -109,39 +109,39 @@ case class WebDriver(port: Int):
           . stdlib.map(_(Wei).as[Text])
           . map(Element(_))
 
-      def element[element: Focusable](value: element): Element logs HttpEvent =
+      def element[element: Focusable](value: element): Element logs Http.Event =
         case class Data(`using`: Text, value: Text)
 
         val e = post(t"element", Data(element.strategy, element.focus(value)).in[Json])
         Element(e.value.selectDynamic(Wei.s).as[Text])
 
-    private def get(address: Text): Json logs HttpEvent = safe:
+    private def get(address: Text): Json logs Http.Event = safe:
       given online: Online = Online()
 
       url"http://localhost:${port}/session/$sessionId/$address"
       . fetch(contentType = media"application/json")
       . receive[Json]
 
-    private def post(address: Text, content: Json): Json logs HttpEvent = safe:
+    private def post(address: Text, content: Json): Json logs Http.Event = safe:
       given online: Online = Online()
       url"http://localhost:${port}/session/$sessionId/$address".submit()(content)
       . read[Text]
       . as[Json]
 
-    def navigateTo[url: Abstractable across Urls to Text](url: url): Json logs HttpEvent =
+    def navigateTo[url: Abstractable across Urls to Text](url: url): Json logs Http.Event =
       case class Data(url: Text)
       post(t"url", Data(url.generic).in[Json])
 
-    def refresh(): Unit logs HttpEvent = post(t"refresh", t"{}".read[Json]).as[Json]
-    def forward(): Unit logs HttpEvent = post(t"forward", t"{}".read[Json]).as[Json]
-    def back(): Unit logs HttpEvent = post(t"back", t"{}".read[Json]).as[Json]
-    def title(): Text logs HttpEvent = get(t"title").as[Json].value.as[Text]
+    def refresh(): Unit logs Http.Event = post(t"refresh", t"{}".read[Json]).as[Json]
+    def forward(): Unit logs Http.Event = post(t"forward", t"{}".read[Json]).as[Json]
+    def back(): Unit logs Http.Event = post(t"back", t"{}".read[Json]).as[Json]
+    def title(): Text logs Http.Event = get(t"title").as[Json].value.as[Text]
 
-    def url[url: Instantiable across Urls from Text](): url logs HttpEvent =
+    def url[url: Instantiable across Urls from Text](): url logs Http.Event =
       url(get(t"url").url.as[Text])
 
     @targetName("at")
-    infix def / [element: Focusable](value: element): List[Element] logs HttpEvent =
+    infix def / [element: Focusable](value: element): List[Element] logs Http.Event =
 
       case class Data(`using`: Text, value: Text)
 
@@ -152,17 +152,17 @@ case class WebDriver(port: Int):
         . stdlib.map(_(Wei).as[Text])
         . map(Element(_))
 
-    def element[element: Focusable](value: element): Element logs HttpEvent =
+    def element[element: Focusable](value: element): Element logs Http.Event =
       case class Data(`using`: Text, value: Text)
 
       val e = post(t"element", Data(element.strategy, element.focus(value)).in[Json])
 
       Element(e.value.selectDynamic(Wei.s).as[Text])
 
-    def activeElement(): Element logs HttpEvent =
+    def activeElement(): Element logs Http.Event =
       Element(get(t"element/active").value.selectDynamic(Wei.s).as[Text])
 
-  def startSession(): Session logs HttpEvent =
+  def startSession(): Session logs Http.Event =
     given online: Online = Online()
 
     val url = url"http://localhost:${port}/session"

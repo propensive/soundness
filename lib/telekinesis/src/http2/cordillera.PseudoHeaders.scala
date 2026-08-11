@@ -45,7 +45,7 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-import Http2Error.Reason
+import Http2.Error.Reason
 
 // Translates between telekinesis's transport-agnostic HTTP model and HTTP/2's
 // HPACK header blocks. On the request side the pseudo-headers (`:method`, `:scheme`,
@@ -70,7 +70,7 @@ object PseudoHeaders:
   // Reconstruct an `Http.Response` from a decoded HEADERS block and the body stream.
   // `:status` selects the `Http.Status`; other fields become response headers.
   def response(headerBlock: List[HpackEntry], body: Chain[Data])
-  :   Http.Response raises Http2Error =
+  :   Http.Response raises Http2.Error =
 
     var statusText: Optional[Text] = Unset
     val headers = scm.ListBuffer[Http.Header]()
@@ -82,7 +82,7 @@ object PseudoHeaders:
     val code: Int = statusText.let { text => safely(Integer.parseInt(text.s)).or(0) }.or(0)
 
     val status: Http.Status =
-      Http.Status.unapply(code).optional.lest(Http2Error(Reason.Protocol(t"missing :status")))
+      Http.Status.unapply(code).optional.lest(Http2.Error(Reason.Protocol(t"missing :status")))
 
     status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body.stdlib.iterator)))
 
@@ -94,7 +94,7 @@ object PseudoHeaders:
   // Plain using-parameter, de-sugared from `raises`: a context-function result
   // may not hide the capturing request.
   def requestOf(headerBlock: List[HpackEntry], consume body: Spring[Data]^)
-    ( using Tactic[Http2Error] )
+    ( using Tactic[Http2.Error] )
   :   Http.Request^ =
 
     var methodText: Optional[Text] = Unset
@@ -109,15 +109,15 @@ object PseudoHeaders:
       else if !entry.name.starts(t":") then headers += Http.Header(entry.name, entry.value)
 
     val authority: Text =
-      authorityText.lest(Http2Error(Reason.Protocol(t"missing :authority")))
+      authorityText.lest(Http2.Error(Reason.Protocol(t"missing :authority")))
 
     val host: Host =
       safely(authority.as[Host]).or:
         safely(authority.cut(t":").prim.or(authority).as[Host]).or:
-          abort(Http2Error(Reason.Protocol(t"bad :authority")))
+          abort(Http2.Error(Reason.Protocol(t"bad :authority")))
 
-    val target: Text = pathText.lest(Http2Error(Reason.Protocol(t"missing :path")))
-    val method: Http.Method = methodText.lest(Http2Error(Reason.Protocol(t"missing :method"))).as
+    val target: Text = pathText.lest(Http2.Error(Reason.Protocol(t"missing :path")))
+    val method: Http.Method = methodText.lest(Http2.Error(Reason.Protocol(t"missing :method"))).as
 
     Http.Request(method, 2.0, host, target, headers.to(List), body)
 

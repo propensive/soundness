@@ -124,7 +124,7 @@ object grpcInternal:
                       ' {
                           given Monitor = ${monitorExpr}
                           given Tactic[GrpcError] = ${tactic[GrpcError]}
-                          given Tactic[Http2Error] = ${tactic[Http2Error]}
+                          given Tactic[Http2.Error] = ${tactic[Http2.Error]}
                           given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
                           given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
 
@@ -141,7 +141,7 @@ object grpcInternal:
                       ' {
                           given Monitor = ${monitorExpr}
                           given Tactic[GrpcError] = ${tactic[GrpcError]}
-                          given Tactic[Http2Error] = ${tactic[Http2Error]}
+                          given Tactic[Http2.Error] = ${tactic[Http2.Error]}
                           given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
                           given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
 

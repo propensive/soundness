@@ -45,7 +45,7 @@ import denominative.capped
 import zephyrine.{Slate, Stream, Credit, Buffering, Substrate}
 
 import Http2.Frame
-import Http2Error.Reason
+import Http2.Error.Reason
 
 // Pulls whole HTTP/2 frames from a connection's pull endpoint, whose bytes arrive
 // in arbitrary chunks (a socket). Buffers leftover bytes between reads and blocks
@@ -109,24 +109,24 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // Consume and validate the given connection preface (RFC 7540 §3.5) ahead of
   // the first frame — the server role's first read on a new connection. A
   // mismatch (or a stream ending mid-preface) is a protocol error.
-  update def expectPreface(preface: Bytes)(using Tactic[Http2Error]): Unit =
+  update def expectPreface(preface: Bytes)(using Tactic[Http2.Error]): Unit =
     if !ensure(preface.length)
-    then abort(Http2Error(Reason.Protocol(t"bad connection preface")))
+    then abort(Http2.Error(Reason.Protocol(t"bad connection preface")))
 
     val read: Bytes = slice(preface.length)
     var index: Int = 0
 
     while index < preface.length do
       if read.readUnchecked(index) != preface.readUnchecked(index)
-      then abort(Http2Error(Reason.Protocol(t"bad connection preface")))
+      then abort(Http2.Error(Reason.Protocol(t"bad connection preface")))
       index += 1
 
   // Read the next frame, or `Unset` at clean end of stream. The tactic is a plain
   // using-parameter: a context-function result may not hide `this`.
-  update def next()(using Tactic[Http2Error]): Optional[Frame] =
+  update def next()(using Tactic[Http2.Error]): Optional[Frame] =
     if !ensure(9) then Unset else
       val header = slice(9)
       val length = Frame.uint24(header, 0)
-      if !ensure(length) then abort(Http2Error(Reason.Truncated))
+      if !ensure(length) then abort(Http2.Error(Reason.Truncated))
       val whole: Bytes = header ++ slice(length)
       Frame.decode(whole, 0)(0)

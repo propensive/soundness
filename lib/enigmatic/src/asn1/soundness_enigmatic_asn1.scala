@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export enigmatic.{Asn1, Asn1Error, Der}
+export enigmatic.{Asn1, Der}

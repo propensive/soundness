@@ -53,7 +53,7 @@ object SymmetricKey:
   // Adopt externally-supplied key material — for example a key produced by a key-
   // derivation function — as a symmetric key, in contrast to `generate`'s fresh random
   // key. The bytes must be a valid key length for the cipher; an invalid length surfaces
-  // when the key is used (as a `CryptoError` on decryption). The input is immutable, so
+  // when the key is used (as a `Crypto.Error` on decryption). The input is immutable, so
   // the caller's copy cannot be zeroed: the cloak stores its own copy, and the caller
   // should prefer the `Array[Byte]` overload where the material is mutable. Defining
   // `apply` suppresses the synthetic constructor proxy, so these are the sole

@@ -54,7 +54,7 @@ import CertificateError.Reason
 object Certificate:
   given encodable: Certificate is Encodable in Der = _.asn1.in[Der]
 
-  given decodable: (tactic: Tactic[Asn1Error]^)
+  given decodable: (tactic: Tactic[Asn1.Error]^)
   =>  ( (Certificate is Decodable in Der)^{tactic, caps.any} ) =
     der => Certificate(der.as[Asn1])
 
@@ -89,7 +89,7 @@ object Certificate:
             digest:        SignatureDigest,
             hash:          Hash in Sha2[256],
             erased permit: Permit[Weakness[cipher]] )
-    ( using Tactic[CertificateError], Tactic[Asn1Error], Diagnostics )
+    ( using Tactic[CertificateError], Tactic[Asn1.Error], Diagnostics )
   :   Certificate =
 
     if serial <= 0 then abort(CertificateError(Reason.BadSerialNumber))

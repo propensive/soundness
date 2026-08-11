@@ -67,7 +67,7 @@ object Http2Serve:
     ( using Monitor, Probate, (HttpServerEvent is Loggable)^ )
   :   Unit =
 
-    given Tactic[Http2Error] = strategies.throwUnsafely
+    given Tactic[Http2.Error] = strategies.throwUnsafely
     given Tactic[StreamError] = strategies.throwUnsafely
 
     val connectionRef: AnyRef = connection.asInstanceOf[AnyRef]

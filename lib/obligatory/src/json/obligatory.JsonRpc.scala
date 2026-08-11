@@ -168,7 +168,7 @@ object JsonRpc:
         case MediaType.Error(_, _)   => promise.cancel()
         case ConnectError(_)        => promise.cancel()
         case ParseError(_, _, _)    => promise.cancel()
-        case HttpError(_, _)        => promise.cancel()
+        case Http.Error(_, _)        => promise.cancel()
         case Async.Error(_)          => promise.cancel()
 
       . protect:
@@ -190,7 +190,7 @@ object JsonRpc:
     recover:
       case MediaType.Error(_, _) => ()
       case ConnectError(_)      => ()
-      case HttpError(_, _)      => ()
+      case Http.Error(_, _)      => ()
 
     . protect:
         target.submit(Http.Post)(request).receive[Text]

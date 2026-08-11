@@ -103,7 +103,7 @@ object Http2ServerConnection:
   // connection as a plain parameter — so the reader daemon's body stays free of
   // `this` captures. Returns false to stop the reader.
   private def dispatch(conn: Http2ServerConnection, frame: Frame, decoder: Hpack)
-    ( using Tactic[Http2Error] )
+    ( using Tactic[Http2.Error] )
   :   Boolean =
     frame match
       case Frame.Settings(settings, ack) =>
@@ -124,7 +124,7 @@ object Http2ServerConnection:
         true
 
       case Frame.GoAway(lastStreamId, _, _) =>
-        Log.warn(Http2Event.GoAway(lastStreamId))
+        Log.warn(Http2.Event.GoAway(lastStreamId))
         false
 
       case Frame.Headers(id, block, endStream, _) =>
@@ -247,7 +247,7 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
         val reader = daemon:
           // A protocol error tears down just this connection; throw it to the
           // enclosing `contain`, which runs `tearDown()` and stops the reader.
-          given Tactic[Http2Error] = AsyncTactic()
+          given Tactic[Http2.Error] = AsyncTactic()
 
           val frameReader = frameReaderRef.asInstanceOf[FrameReader^]
 

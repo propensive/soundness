@@ -18,7 +18,7 @@ import zephyrine.*
 // this driver starts from an already-linked component, so the e2e can package exactly the bytes
 // the scenarios ran.
 //
-// The `component` metadata is read from the WIT world with `WitDialect.worlds`, so the artifact
+// The `component` metadata is read from the WIT world with `Wit.Dialect.worlds`, so the artifact
 // states which host capabilities the workload needs without anything disassembling the component.
 //
 // Arguments: <component.wasm> <wit-dir> <world> <out.tar>
@@ -38,13 +38,13 @@ object Package:
     // draws on, and none of them declares the world being linked.
     val files = witDir.toFile.nn.listFiles.nn
 
-    def search(index: Int): Optional[WitDialect.World] =
+    def search(index: Int): Optional[Wit.Dialect.World] =
       if index >= files.length then Unset else
         val file = files(index).nn
 
         if !file.getName.nn.endsWith(".wit") then search(index + 1) else
           val text = String(jnf.Files.readAllBytes(file.toPath).nn, "UTF-8").tt
-          WitDialect.worlds(text).stdlib.get(world).optional.or(search(index + 1))
+          Wit.Dialect.worlds(text).stdlib.get(world).optional.or(search(index + 1))
 
     val found = search(0).or:
       System.err.nn.println(s"wasm-e2e: no world `${world.s}` under ${witDir}")

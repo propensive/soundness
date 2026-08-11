@@ -55,6 +55,8 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
+import java.net as jn
+import scala.util.NotGiven
 
 object Http:
   object Version:
@@ -658,7 +660,7 @@ object Http:
 
   // The swappable transport that physically sends a single request and returns
   // its response. The URL is fully resolved (passed as `Text`) so non-JVM
-  // backends can parse it themselves; redirects are handled by `HttpClient`, not
+  // backends can parse it themselves; redirects are handled by `Http.Client`, not
   // the backend. Backends are platform-specific, so each is summoned by an
   // explicit import: `httpBackends.virtualMachine` (`java.net.http`, in
   // `telekinesis.jvm`) on the JVM; other platforms or implementations (e.g.
@@ -712,13 +714,13 @@ object Http:
             // discharges the field's capture-polymorphic declared type.
             caps.unsafe.unsafeAssumePure(response.body) )
 
-    given streamable: (tactic: Tactic[HttpError])
+    given streamable: (tactic: Tactic[Http.Error])
     =>  ((Response is Streamable by Data over Credit)^{tactic}) = response =>
       response.status.category match
         case Http.Status.Category.Successful => response.body.stream
 
         case _ =>
-          abort(HttpError(response.status, response.textHeaders))
+          abort(Http.Error(response.status, response.textHeaders))
 
     private[Http] def response(status: Status, headers: List[Header], body: Body^)
     :   Response^{body} =
@@ -1088,9 +1090,9 @@ object Http:
     inline def applyDynamicNamed[payload](id: "apply")(inline headers: (Label, Any)*)
       ( payload: payload )
       ( using online:   Online,
-              loggable: (HttpEvent is Loggable)^,
+              loggable: (Http.Event is Loggable)^,
               postable: (payload is Postable)^,
-              client:   HttpClient onto target )
+              client:   Http.Client onto target )
     :   Http.Response =
 
       $ {
@@ -1102,9 +1104,9 @@ object Http:
     inline def applyDynamic[payload](id: "apply")(inline headers: Any*)
       ( payload: payload )
       ( using online:   Online,
-              loggable: (HttpEvent is Loggable)^,
+              loggable: (Http.Event is Loggable)^,
               postable: (payload is Postable)^,
-              client:   HttpClient onto target )
+              client:   Http.Client onto target )
     :   Http.Response =
 
       $ {
@@ -1118,9 +1120,9 @@ object Http:
 
     inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
       ( using online:   Online,
-              loggable: (HttpEvent is Loggable)^,
+              loggable: (Http.Event is Loggable)^,
               postable: (Unit is Postable)^,
-              client:   HttpClient onto target )
+              client:   Http.Client onto target )
     :   Http.Response =
 
       ${telekinesis.internal.fetch('this, 'headers, 'online, 'loggable, 'client)}
@@ -1128,10 +1130,136 @@ object Http:
 
     inline def applyDynamic[payload](id: "apply")(inline headers: Any*)
       ( using online:   Online,
-              loggable: (HttpEvent is Loggable)^,
-              client:   HttpClient onto target )
+              loggable: (Http.Event is Loggable)^,
+              client:   Http.Client onto target )
     :   Http.Response =
 
       ${telekinesis.internal.fetch('this, 'headers, 'online, 'loggable, 'client)}
+
+  // HttpClient → Http.Client
+  object Client:
+    // Log a received response at a level reflecting its status: a server error is a `Fail`, a client
+    // error a `Warn`, and anything else (informational, success, redirect) routine `Fine` detail.
+    private def logResponse(response: Http.Response): Http.Response =
+      response.status.category match
+        case Http.Status.Category.ServerError => Log.fail(Http.Event.Response(response.status))
+        case Http.Status.Category.ClientError => Log.warn(Http.Event.Response(response.status))
+        case _                                => Log.fine(Http.Event.Response(response.status))
+
+      response
+
+    // 301/302/303 historically downgrade the method to GET and drop the body;
+    // 307/308 preserve both. Matches Java's `Redirect.NORMAL` and the WHATWG
+    // fetch spec.
+    private def redirectMethod(code: Int, original: Http.Method): Http.Method = code match
+      case 301 | 302 | 303 => Http.Get
+      case _               => original
+
+    private def isRedirect(code: Int): Boolean = code match
+      case 301 | 302 | 303 | 307 | 308 => true
+      case _                           => false
+
+    given httpStrict: (tactic: Tactic[ConnectError])
+    =>  Online
+    =>  Redirects.Disabled
+    =>  ( backend: Http.Backend )
+    =>  ( (Http.Client { type Target = Origin["http" | "https"] })^{tactic, caps.any} ) =
+      new Http.Client:
+        type Target = Origin["http" | "https"]
+
+        def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
+          ( using (Http.Event is Loggable)^ )
+        :   Http.Response =
+
+          val url = httpRequest.on(origin)
+          Log.info(Http.Event.Send(httpRequest.method, url, httpRequest.textHeaders))
+
+          logResponse:
+            backend.request(url.show, httpRequest.method, httpRequest.textHeaders, httpRequest.body)
+
+    given http: (tactic: Tactic[ConnectError])
+    =>  Online
+    =>  NotGiven[Redirects.Disabled]
+    =>  ( redirection: Http.Redirection )
+    =>  ( backend: Http.Backend )
+    =>  ( (Http.Client { type Target = Origin["http" | "https"] })^{tactic, caps.any} ) =
+      new Http.Client:
+        type Target = Origin["http" | "https"]
+
+        def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
+          ( using (Http.Event is Loggable)^ )
+        :   Http.Response =
+
+          val url = httpRequest.on(origin)
+          Log.info(Http.Event.Send(httpRequest.method, url, httpRequest.textHeaders))
+
+          // The spring crosses the recursion as a neutral reference: a
+          // capability-typed binding of a parameter would hide it from the
+          // recursive call under the statement rule.
+          def loop(uri: jn.URI, method: Http.Method, bodyRef: AnyRef, remaining: Int)
+          :   Http.Response =
+
+            val bodyFn = bodyRef.asInstanceOf[Spring[Data]^]
+            val response = backend.request(uri.toString.tt, method, httpRequest.textHeaders, bodyFn)
+            val code = response.status.code
+
+            if !isRedirect(code) || remaining <= 0 then response else
+              response.textHeaders.stdlib.find(_.key.lower == t"location") match
+                case None =>
+                  response
+
+                case Some(header) =>
+                  // Drain the discarded intermediate body to free its connection.
+                  safely(response.body.stream.sweep { _ => _ => () })
+
+                  val nextUri = uri.resolve(jn.URI.create(header.value.s).nn).nn
+                  Log.fine(Http.Event.Redirect(uri.toString.tt, nextUri.toString.tt))
+                  val nextMethod = redirectMethod(code, method)
+
+                  val nextBody: AnyRef =
+                    if nextMethod == method then bodyRef else
+                      val empty: Spring[Data] = () => Http.emptyBody()
+                      empty.asInstanceOf[AnyRef]
+
+                  loop(nextUri, nextMethod, nextBody, remaining - 1)
+
+          logResponse:
+            loop(jn.URI.create(url.show.s).nn, httpRequest.method,
+                httpRequest.body.asInstanceOf[AnyRef], redirection.value)
+
+  // An `Http.Client` is a capability: its instances are constructed from other capabilities (a
+  // `Tactic`, an `Online` token, a backend) which they retain — a given that takes capabilities
+  // as parameters produces a capability (Jon, 2026-07-06; see rep/DECISIONS.md).
+  trait Client extends Targetable, caps.ExclusiveCapability:
+    def request(request: Http.Request, target: Target)(using (Http.Event is Loggable)^): Http.Response
+
+  // HttpError → Http.Error
+  case class Error(status: Http.Status, headers: List[Http.Header])(using Diagnostics)
+  extends fulminate.Error(438, 0)(m"the HTTP request failed with status $status")
+
+  // HttpEvent → Http.Event
+  object Event:
+    given communicable: Http.Event is Communicable =
+      case Response(status)           => m"received a response with status $status"
+      case Request(preview)           => m"request [$preview]"
+      case Send(method, url, headers) => m"sending a $method request to $url"
+      case Redirect(from, to)         => m"following a redirect from $from to $to"
+
+  enum Event:
+    case Response(status: Http.Status) extends Http.Event, Log.Network
+    case Request(preview: Text) extends Http.Event, Log.Network
+
+    case Send(method: Http.Method, url: into[HttpUrl], headers: List[Http.Header])
+    extends Http.Event, Log.Network, Log.Protocol
+
+    case Redirect(from: Text, to: Text) extends Http.Event, Log.Network, Log.Protocol
+
+  // HttpRedirection → Http.Redirection
+  // Caps the number of 3xx redirects the HTTP client given will follow.
+  // Default = 10 (matches curl). Override with a local `given Http.Redirection(n)`.
+  object Redirection:
+    given default: Http.Redirection = Http.Redirection(10)
+
+  class Redirection(val value: Int)
 
 sealed trait Http

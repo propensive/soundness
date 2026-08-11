@@ -48,5 +48,5 @@ import vacuous.*
 // wait forever, and must be made in an `async` block. `rewrite.outbound` runs on the loop reading
 // the editor, which is not that task, so awaiting there is safe, though it holds up the editor
 // until the server answers. `rewrite.connected` has a task of its own and may await freely.
-def upstream(using proxy: LspProxy^): LspConnection =
+def upstream(using proxy: LspProxy^): Lsp.Connection =
   proxy.session().or(panic(m"the proxy has no session with a server upstream yet"))

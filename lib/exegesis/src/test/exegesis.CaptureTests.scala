@@ -45,7 +45,7 @@ object CaptureTests extends Suite(m"Handle confinement tests"):
   def run(): Unit =
     test(m"the document cannot be stashed in an outer variable"):
       demilitarize:
-        def attempt(using registry: LspRegistry^): Unit =
+        def attempt(using registry: Lsp.Registry^): Unit =
           var stash: () => Text = () => t""
 
           hover:
@@ -57,7 +57,7 @@ object CaptureTests extends Suite(m"Handle confinement tests"):
 
     test(m"the client cannot be stashed in an outer variable"):
       demilitarize:
-        def attempt(using registry: LspRegistry^): Unit =
+        def attempt(using registry: Lsp.Registry^): Unit =
           var stash: () => Unit = () => ()
 
           opened:
@@ -68,7 +68,7 @@ object CaptureTests extends Suite(m"Handle confinement tests"):
 
     test(m"the workspace handle cannot be stashed in an outer variable"):
       demilitarize:
-        def attempt(using registry: LspRegistry^): Unit =
+        def attempt(using registry: Lsp.Registry^): Unit =
           var stash: () => List[Text] = () => Nil
 
           opened:
@@ -79,17 +79,17 @@ object CaptureTests extends Suite(m"Handle confinement tests"):
 
     test(m"the registry cannot escape the registration block"):
       demilitarize:
-        def attempt()(using Stdio, Monitor, Probate): Optional[LspRegistry] =
-          var stash: Optional[LspRegistry] = Unset
+        def attempt()(using Stdio, Monitor, Probate): Optional[Lsp.Registry] =
+          var stash: Optional[Lsp.Registry] = Unset
           Lsp.listen(t"escape"):
-            stash = summon[LspRegistry]
+            stash = summon[Lsp.Registry]
           stash
     . assert(_.nonEmpty)
 
     // A pure snapshot taken from a handle may escape by design: only the handle is confined.
     test(m"a pure text snapshot may leave the handler"):
       demilitarize:
-        def attempt(using registry: LspRegistry^): Unit =
+        def attempt(using registry: Lsp.Registry^): Unit =
           var stash: Text = t""
 
           opened:

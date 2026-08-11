@@ -68,7 +68,7 @@ class Issuer
     secret:   Optional[Text] = Unset ):
   private val OAuthPath: Path on Www = redirect.path
 
-  def oauth(using Http.Request, Online, (HttpEvent is Loggable)^)
+  def oauth(using Http.Request, Online, (Http.Event is Loggable)^)
     ( lambda: (Issuer.Context of this.type) ?=> Http.Response )
     ( using store: OAuth, session: Session )
     ( using Tactic[OAuth.Error] )
@@ -86,7 +86,7 @@ class Issuer
           case error@ParseError(_, _, _) =>
             OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
 
-          case error@HttpError(status, _) =>
+          case error@Http.Error(status, _) =>
             OAuth.Error(OAuth.Error.Reason.UnexpectedHttpStatus(status))
 
           case error@Uuid.Error(_) =>

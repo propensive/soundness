@@ -52,6 +52,8 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
+import beneficence.*
+import fulminate.*
 
 object Mcp:
   val version = t"2025-11-25"
@@ -680,7 +682,7 @@ object Mcp:
   case class ElicitationComplete(elicitationId: Text)
 
   trait Api extends JsonRpc:
-    type Origin = McpClient
+    type Origin = Mcp.Client
 
     @rpc
     def ping(): Unit
@@ -804,8 +806,8 @@ object Mcp:
       interface => zephyrine.Stream(interface.stream.stdlib.iterator.map(Array.of(_)))
 
 
-    inline def apply(sessionId: Text, server: McpServer from McpClient)
-      ( using spec: server.type is McpSpecification )
+    inline def apply(sessionId: Text, server: McpServer from Mcp.Client)
+      ( using spec: server.type is Mcp.Specification )
     :   Interface =
 
       cache.establish(sessionId):
@@ -813,8 +815,8 @@ object Mcp:
 
   class Interface
     (     sessionId: Text,
-      val server:    McpServer from McpClient,
-      val spec:      server.type is McpSpecification )
+      val server:    McpServer from Mcp.Client,
+      val spec:      server.type is Mcp.Specification )
   extends Api:
 
     protected var loggingLevel: LoggingLevel = LoggingLevel.Info
@@ -944,3 +946,64 @@ object Mcp:
     :   Unit =
 
       ???
+
+  // McpClient → Mcp.Client
+  trait Client extends Findable:
+    import Mcp.*
+
+    @rpc
+    protected def ping(): Unit
+
+    // @rpc
+    // protected def `sampling/createMessage`
+    //   ( task:             Optional[TaskMetadata],
+    //     messages:         List[SamplingMessage],
+    //     modelPreferences: Optional[ModelPreferences],
+    //     systemPrompt:     Optional[Text],
+    //     includeContext:   Optional[Text],
+    //     temperature:      Optional[Double],
+    //     maxTokens:        Optional[Int],
+    //     stopSequences:    Optional[List[Text]],
+    //     metadata:         Optional[Json],
+    //     tools:            Optional[List[Tool]],
+    //     toolChoice:       Optional[ToolChoice] )
+    // : CreateMessage
+
+    // @rpc
+    // protected def `roots/list`(): ListRoots
+
+    @rpc
+    protected def `notifications/message`
+      ( level: LoggingLevel, logger: Optional[Text], data: Json )
+    :   Unit
+
+    @rpc
+    protected def `elicitation/create`
+      ( mode:            Optional[Text],
+        message:         Text,
+        requestedSchema: Json )
+    :   Json
+
+    def log(message: Text): Unit =
+      `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).in[Json])
+
+    def elicit[result: Schematic over JsonSchema](message: Text): Json =
+      `elicitation/create`(t"form", message, result.schema().in[Json])
+
+    def sample(message: Text): Unit = ???
+
+  // McpSpecification → Mcp.Specification
+  object Specification:
+    inline given mcpSpecification: [server <: McpServer] => server is Mcp.Specification =
+      ${synesthesia.internal.spec[server]}
+
+  trait Specification extends Typeclass:
+    def tools(): List[Mcp.Tool]
+    def resources(): List[Mcp.Resource]
+    def prompts(): List[Mcp.Prompt]
+    def invokeTool(target: Self, client: Mcp.Client, method: Text, params: Json): Json
+    def invokeResource(target: Self, method: Text): Mcp.Contents
+
+    def invokePrompt(target: Self, client: Mcp.Client, method: Text, params: Map[Text, Text])
+    :   List[Discourse]
+

@@ -49,7 +49,8 @@ import spectacular.*
 import telekinesis.*
 import vacuous.*
 
-import Http2Error.Reason
+import Http2.Error.Reason
+import anticipation.*
 
 // The HTTP/2 wire vocabulary (RFC 7540): frames, frame types, flag bits, error
 // codes and settings. Grouped under `Http2` so its deliberately generic names —
@@ -156,8 +157,8 @@ object Http2:
 
     // Decodes a single frame from `data` starting at `offset`; returns the frame and
     // the offset just past it. `data` must already contain the whole frame.
-    def decode(data: Bytes, offset: Int): (Frame, Int) raises Http2Error =
-      if offset + 9 > data.length then abort(Http2Error(Reason.Truncated))
+    def decode(data: Bytes, offset: Int): (Frame, Int) raises Http2.Error =
+      if offset + 9 > data.length then abort(Http2.Error(Reason.Truncated))
       val length = uint24(data, offset)
       val typeId = data.readUnchecked(offset + 3) & 0xff
       val flags = data.readUnchecked(offset + 4) & 0xff
@@ -165,7 +166,7 @@ object Http2:
       val start = offset + 9
       val end = start + length
 
-      if end > data.length then abort(Http2Error(Reason.Truncated))
+      if end > data.length then abort(Http2.Error(Reason.Truncated))
       val body: anticipation.Data = data.slice(start, end)
 
       // An unrecognised frame type — PRIORITY or PUSH_PROMISE (which this stack
@@ -219,15 +220,15 @@ object Http2:
 
     // DATA/HEADERS may carry a 1-byte pad length followed by that many trailing pad
     // bytes (RFC 7540 §6.1/§6.2); strip both when the PADDED flag is set.
-    private def stripPadding(payload: Bytes, flags: Int): Bytes raises Http2Error =
+    private def stripPadding(payload: Bytes, flags: Int): Bytes raises Http2.Error =
       if !Flags.set(flags, Flags.Padded) then payload else
-        if payload.length < 1 then abort(Http2Error(Reason.Truncated))
+        if payload.length < 1 then abort(Http2.Error(Reason.Truncated))
         val padLength = payload.readUnchecked(0) & 0xff
-        if 1 + padLength > payload.length then abort(Http2Error(Reason.Protocol(t"bad padding")))
+        if 1 + padLength > payload.length then abort(Http2.Error(Reason.Protocol(t"bad padding")))
         payload.slice(1, payload.length - padLength)
 
-    private def decodeSettings(payload: Bytes): List[Setting] raises Http2Error =
-      if payload.length%6 != 0 then abort(Http2Error(Reason.Protocol(t"bad SETTINGS length")))
+    private def decodeSettings(payload: Bytes): List[Setting] raises Http2.Error =
+      if payload.length%6 != 0 then abort(Http2.Error(Reason.Protocol(t"bad SETTINGS length")))
       val builder = scala.collection.immutable.List.newBuilder[Setting]
       var i = 0
 
@@ -353,7 +354,7 @@ object Http2:
     def serialize: Bytes = Frame.serializeFrame(this)
 
   // A cleartext-h2c endpoint: a connectable address plus the `:authority` to send.
-  // Used as the `Target` of the HTTP/2 `HttpClient` given, distinct from the
+  // Used as the `Target` of the HTTP/2 `Http.Client` given, distinct from the
   // `DomainSocket` target telekinesis binds to its HTTP/1.1 client.
   case class Endpoint[endpoint: {Connectable as connectable, Showable}]
     ( endpoint: endpoint, authority: Text ):
@@ -420,7 +421,7 @@ object Http2:
   =>  (EndpointSessional[endpoint]^{monitor, asyncError, loggable, caps.any}) =
     EndpointSessional[endpoint]()
 
-  // An `HttpClient` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
+  // An `Http.Client` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
   // It captures the ambient `Monitor`/`Probate` from this given's context — the
   // connection's daemons (and the scope-tied teardown) need them — so it can only be
   // summoned inside a `supervise` scope. A fresh connection is opened per request for
@@ -429,14 +430,55 @@ object Http2:
     given http2: [endpoint]
     =>  ( monitor:    Monitor,
           probate:    Probate,
-          http2Error: Tactic[Http2Error],
+          http2Error: Tactic[Http2.Error],
           asyncError: Tactic[Async.Error] )
-    =>  ((HttpClient onto Endpoint[endpoint])^{monitor, http2Error, asyncError, caps.any}) =
+    =>  ((Http.Client onto Endpoint[endpoint])^{monitor, http2Error, asyncError, caps.any}) =
 
-      new HttpClient:
+      new Http.Client:
         type Target = Endpoint[endpoint]
 
-        def request(request: Http.Request, target: Endpoint[endpoint])(using (HttpEvent is Loggable)^)
+        def request(request: Http.Request, target: Endpoint[endpoint])(using (Http.Event is Loggable)^)
         :   Http.Response =
 
           target.connect().fetch(request, t"http", target.authority)(1)
+
+  // Http2Error → Http2.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case Truncated         => m"the HTTP/2 data ended unexpectedly"
+        case BadPreface        => m"the connection preface was not valid"
+        case BadHuffman        => m"the Huffman-coded string was not valid"
+        case BadInteger        => m"an HPACK integer was malformed or too large"
+        case BadIndex(index)   => m"the HPACK table index $index was out of range"
+        case BadFrameType(id)  => m"the frame type $id was not recognized"
+        case FrameTooLarge     => m"a frame exceeded the maximum permitted size"
+        case FlowControl       => m"a flow-control window was exceeded"
+        case Protocol(message) => m"a protocol error occurred: $message"
+        case GoAway(code)      => m"the peer closed the connection with error code $code"
+
+    enum Reason:
+      case Truncated
+      case BadPreface
+      case BadHuffman
+      case BadInteger
+      case BadIndex(index: Int)
+      case BadFrameType(id: Int)
+      case FrameTooLarge
+      case FlowControl
+      case Protocol(message: Text)
+      case GoAway(code: Long)
+
+  case class Error(reason: Http2.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(m"the HTTP/2 operation failed because $reason")
+
+  // Http2Event → Http2.Event
+  object Event:
+    given communicable: Http2.Event is Communicable =
+      case RequestSent(authority) => m"sending an HTTP/2 request to $authority"
+      case GoAway(lastStream)     => m"received GOAWAY; the last processed stream was $lastStream"
+
+  enum Event:
+    case RequestSent(authority: Text) extends Http2.Event, Log.Network, Log.Protocol
+    case GoAway(lastStream: Int) extends Http2.Event, Log.Network, Log.Protocol
+

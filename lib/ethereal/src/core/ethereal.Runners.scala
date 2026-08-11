@@ -87,13 +87,13 @@ object Runners:
       hashes(label).lest(RunnerError(m"There is no published runner stub for platform $label"))
 
     mitigate:
-      case HttpError(_, _)   => RunnerError(m"Could not download the stub $name from $baseUrl")
+      case Http.Error(_, _)   => RunnerError(m"Could not download the stub $name from $baseUrl")
       case ConnectError(_)   => RunnerError(m"Could not connect to $baseUrl to download $name")
       case UrlError(_, _, _) => RunnerError(m"The runner stub URL for $name is not valid")
       case StreamError(_)    => RunnerError(m"The download of the stub $name was interrupted")
 
     . protect:
-        val runner: Data = mute[HttpEvent](t"$baseUrl/$name".as[HttpUrl].fetch().read[Data])
+        val runner: Data = mute[Http.Event](t"$baseUrl/$name".as[HttpUrl].fetch().read[Data])
         val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
         if actual != expected

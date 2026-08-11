@@ -35,7 +35,7 @@ package soundness
 export
   telekinesis
   . { Acceptance, Auth, AuthError, ConnectError, Context, Cookie, Directive, fetch, Fetchable, Http,
-      HttpClient, HttpError, HttpEvent, HttpRedirection, HttpRequestError, HttpResponseError,
+      HttpRequestError, HttpResponseError,
       Parameter, Postable, query, Receivable, Receivable2, Redirects,
       Servable, Session, Submission, submit, TransferEncoding }
 

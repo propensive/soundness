@@ -39,7 +39,7 @@ import prepositional.*
 import vacuous.*
 
 // The declaration model of a WebIDL fragment, as `webidl/1` atomizes it (`webidl.md`). Unlike
-// `WebIdlDialect`, which flattens inheritance and erases exactly the distinctions foreign
+// `WebIdl.Dialect`, which flattens inheritance and erases exactly the distinctions foreign
 // navigation does not need, this model retains what the compatibility algebra depends on:
 // partiality and mixin identity (resolved by the atomizer, not the parser), required-versus-
 // optional dictionary members, `[Exposed]` scopes, and enumeration values.
@@ -137,7 +137,7 @@ object WebIdlError:
     case Reason.Duplicate(name) => m"the definition $name appears twice"
 
 // A WebIDL fragment could not be read. `Unsupported` is deliberately an error and not a silent
-// skip, for the reason `TypescriptError` records: a capability contract read partially is a
+// skip, for the reason `Typescript.Error` records: a capability contract read partially is a
 // smaller contract than the file declares, and every claim computed from it would be unsound.
 case class WebIdlError(reason: WebIdlError.Reason)(using Diagnostics)
 extends Error(644, reason.number)(m"the WebIDL could not be read because $reason")

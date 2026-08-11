@@ -167,7 +167,7 @@ object HttpSession:
         response.status(response.textHeaders, body)
 
       catch
-        case error: Http2Error  => abort(ConnectError(Unknown))
+        case error: Http2.Error  => abort(ConnectError(Unknown))
         case error: Async.Error  => abort(ConnectError(Unknown))
         case error: StreamError => abort(ConnectError(Unknown))
 

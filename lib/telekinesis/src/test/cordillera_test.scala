@@ -175,7 +175,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       . assert(_ == t"000008060100000000 0102030405060708".sub(t" ", t""))
 
     suite(m"Frame codec — round-trips"):
-      def roundTrip(frame: Frame): Frame raises Http2Error =
+      def roundTrip(frame: Frame): Frame raises Http2.Error =
         Frame.decode(frame.serialize, 0)(0)
 
       test(m"SETTINGS with parameters round-trips"):
@@ -286,7 +286,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           (statusCode, bodyText, grpcStatus.getOrElse(t"?"))
       . assert(_ == (200, true, t"0"))
 
-      test(m"the HttpClient given resolves and drives a request over h2c"):
+      test(m"the Http.Client given resolves and drives a request over h2c"):
         supervise:
           val (clientSide, serverSide) = pair()
           runServer(serverSide)
@@ -295,7 +295,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           import logging.silentLogging
 
           // A `Connectable` whose connect() hands back the client side of the pair —
-          // lets the real `HttpClient` given (which calls `target.connect()`) run
+          // lets the real `Http.Client` given (which calls `target.connect()`) run
           // against the loopback without a socket.
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
@@ -304,7 +304,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           // Summon the HTTP/2 client given exactly as telekinesis's fetch machinery
           // would, and invoke its `request` — verifying it captures the ambient
           // Monitor/Probate and produces a telekinesis `Http.Response`.
-          val client = summon[HttpClient onto Http2.Endpoint[Loopback]]
+          val client = summon[Http.Client onto Http2.Endpoint[Loopback]]
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"unix")
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]),

@@ -58,7 +58,7 @@ object CompileChecks:
   val valid = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
 
   // Totality regression: `NoPadding` can fail on misaligned input, so its `given`
-  // demands a `Tactic[CryptoError]`. With no error-handling strategy in scope,
+  // demands a `Tactic[Crypto.Error]`. With no error-handling strategy in scope,
   // summoning a `NoPadding` cipher (and hence encrypting with one) does not
   // compile, whereas every padded cipher is total (verified manually — uncomment).
   //

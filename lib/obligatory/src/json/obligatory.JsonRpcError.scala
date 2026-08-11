@@ -49,7 +49,7 @@ object JsonRpcError:
 
 // `code` and `detail` carry the peer's `error.code` and `error.message` when the fault came back
 // over the wire, so a caller can map the failure onto its own protocol's vocabulary — an LSP
-// client, for instance, recovers an `LspError.Reason` from the code.
+// client, for instance, recovers an `Lsp.Error.Reason` from the code.
 case class JsonRpcError
    ( reason: JsonRpcError.Reason,
      code:   Optional[Int]  = Unset,

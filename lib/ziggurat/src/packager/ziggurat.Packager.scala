@@ -90,7 +90,7 @@ object Packager:
         ()
 
     mitigate:
-      case HttpError(_, _)       => PackageError(m"A runner stub could not be downloaded")
+      case Http.Error(_, _)       => PackageError(m"A runner stub could not be downloaded")
       case ConnectError(_)       => PackageError(m"Could not connect to download a runner stub")
       case UrlError(_, _, _)     => PackageError(m"A runner stub URL is invalid")
       case AssemblyError(detail) => PackageError(detail)
@@ -129,7 +129,7 @@ object Packager:
                 hashes(label).lest(PackageError(m"No runner hash given for $label"))
 
               val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
-              val runner: Data = mute[HttpEvent](t"$base$name".as[HttpUrl].fetch().read[Data])
+              val runner: Data = mute[Http.Event](t"$base$name".as[HttpUrl].fetch().read[Data])
               val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
               if actual != expected

@@ -59,7 +59,7 @@ trait McpServer():
   private val sessions: scm.HashMap[Text, Session] = scm.HashMap()
 
   type Session <: McpSession
-  type Origin = McpClient
+  type Origin = Mcp.Client
 
   def session(id: Text): Session = sessions.establish(id)(initialize())
   def initialize(): Session
@@ -67,7 +67,7 @@ trait McpServer():
   private given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
 
 
-  def serve(using this.type is McpSpecification, Monitor, Probate, Online, Http.Request)
+  def serve(using this.type is Mcp.Specification, Monitor, Probate, Online, Http.Request)
   :   Http.Response =
 
     recover:

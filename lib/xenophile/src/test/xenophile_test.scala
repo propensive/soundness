@@ -51,9 +51,9 @@ type WebIdlSample = Interface in WebIdl at "/xenophile/sample.idl"
 given webIdlSample: WebIdlSample = Interface[WebIdl](cp"/xenophile/sample.idl")
 
 // The real DOM source uses a second ecosystem so its `Interface` is summoned unambiguously
-// alongside the synthetic `sample.idl`; both share `WebIdlDialect` as their grammar.
+// alongside the synthetic `sample.idl`; both share `WebIdl.Dialect` as their grammar.
 trait WebIdlDom extends Ecosystem:
-  type Grammar = WebIdlDialect.type
+  type Grammar = WebIdl.Dialect.type
 
 type WebIdlDomSource = Interface in WebIdlDom at "/xenophile/dom.idl"
 given webIdlDom: WebIdlDomSource = Interface[WebIdlDom](cp"/xenophile/dom.idl")
@@ -800,7 +800,7 @@ object Tests extends Suite(m"Xenophile tests"):
   def typescriptParserTests(): Unit =
     import strategies.throwUnsafely
 
-    def declarations(source: Text): List[TypescriptDeclaration] = TypescriptParser.parse(source)
+    def declarations(source: Text): List[TypescriptDeclaration] = Typescript.Parser.parse(source)
 
     def names(source: Text): scala.List[Text] = declarations(source).stdlib.map(_.key)
 
@@ -914,42 +914,42 @@ object Tests extends Suite(m"Xenophile tests"):
       declarations(t"declare function f(...args: string[]): void;").stdlib
       . collect { case function: TypescriptDeclaration.Function => function }
       . flatMap(_.signatures.stdlib)
-      . collect { case TypescriptType.Function(parameters, _, _, _) => parameters.stdlib.map(_.rest) }
+      . collect { case Typescript.Type.Function(parameters, _, _, _) => parameters.stdlib.map(_.rest) }
     . assert(_ == scala.List(scala.List(true)))
 
     // Constructs outside the grammar are refused, never approximated. This is the property the
     // discipline depends on: a declaration file read as a smaller contract than it declares
     // would make every claim computed from it unsound.
 
-    def refuses(source: Text): Optional[TypescriptError.Reason] =
+    def refuses(source: Text): Optional[Typescript.Error.Reason] =
       import errorDiagnostics.stackTracesDiagnostics
-      capture[TypescriptError](TypescriptParser.parse(source)).reason
+      capture[Typescript.Error](Typescript.Parser.parse(source)).reason
 
     test(m"a conditional type is refused"):
       refuses(t"type T<A> = A extends string ? number : boolean;")
-    . assert(_ == TypescriptError.Reason.Unsupported(t"a conditional type"))
+    . assert(_ == Typescript.Error.Reason.Unsupported(t"a conditional type"))
 
     test(m"a template literal type is refused"):
       refuses(t"type T = `a${'$'}{B}c`;")
-    . assert(_ == TypescriptError.Reason.Unsupported(t"a template literal type"))
+    . assert(_ == Typescript.Error.Reason.Unsupported(t"a template literal type"))
 
     test(m"an infer binder is refused"):
       refuses(t"type T<A> = Array<infer B>;")
-    . assert(_ == TypescriptError.Reason.Unsupported(t"an `infer` binder"))
+    . assert(_ == Typescript.Error.Reason.Unsupported(t"an `infer` binder"))
 
     test(m"a mapped type is refused under its own name"):
       refuses(t"interface A { [K in B]: number; }")
-    . assert(_ == TypescriptError.Reason.Unsupported(t"a mapped type"))
+    . assert(_ == Typescript.Error.Reason.Unsupported(t"a mapped type"))
 
     test(m"an unterminated string literal is a syntax error"):
       refuses(t"""type T = "unterminated;""").let:
-        case TypescriptError.Reason.Syntax(_, _) => true
+        case Typescript.Error.Reason.Syntax(_, _) => true
         case _                                   => false
     . assert(_ == true)
 
     test(m"a duplicated class declaration is refused"):
       refuses(t"declare class A {}\ndeclare class A {}")
-    . assert(_ == TypescriptError.Reason.Duplicate(t"A"))
+    . assert(_ == Typescript.Error.Reason.Duplicate(t"A"))
 
     test(m"interfaces merge, so a repeated interface name is accepted"):
       names(t"interface A { x: number; }\ninterface A { y: number; }")
@@ -958,13 +958,13 @@ object Tests extends Suite(m"Xenophile tests"):
     // The dialect projection, which the foreign-function macro reads.
 
     test(m"the dialect resolves a member inherited through extends"):
-      TypescriptDialect.parse(t"interface A { x: number; }\ninterface B extends A { y: number; }")
+      Typescript.Dialect.parse(t"interface A { x: number; }\ninterface B extends A { y: number; }")
       . at(t"B").lay(scala.Nil) { members => members.stdlib.keys.toList }
       . sortBy(_.s)
     . assert(_ == scala.List(t"x", t"y"))
 
     test(m"the dialect reads a generic interface the old grammar dropped"):
-      TypescriptDialect.parse(t"interface Box<T> { value: T; }")
+      Typescript.Dialect.parse(t"interface Box<T> { value: T; }")
       . at(t"Box").lay(scala.Nil) { members => members.stdlib.keys.toList }
     . assert(_ == scala.List(t"value"))
 
