@@ -130,8 +130,8 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
     suite(m"Layout solver"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
-      def strip(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.File, children.to(List))
-      def stack(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.Rank, children.to(List))
+      def strip(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Strip, children.to(List))
+      def stack(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Stack, children.to(List))
 
       test(m"fractions divide the axis proportionally"):
         val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
@@ -160,7 +160,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a container's minimum is forced up to the sum of its children's"):
         val frame = strip(cell(Sizing(1.0, minWidth = 5)), cell(Sizing(1.0, minWidth = 5)))
-        frame.measure(ultimatum.Axis.File)
+        frame.measure(ultimatum.Arrangement.Strip)
       . assert(_ == Limits(10, Unset))
 
       test(m"file children fill the cross axis (full height)"):
@@ -1013,7 +1013,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a full border adds one cell on every side to the minimum size"):
         val bordered = border()(panel(minWidth = 3, minHeight = 2)(())).frame
-        (bordered.measure(ultimatum.Axis.File).min, bordered.measure(ultimatum.Axis.Rank).min)
+        (bordered.measure(ultimatum.Arrangement.Strip).min, bordered.measure(ultimatum.Arrangement.Stack).min)
       . assert(_ == (5, 4))
 
 // A test-only root `Board` that paints into a fixed in-memory grid but reports a

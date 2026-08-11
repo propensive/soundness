@@ -173,8 +173,8 @@ class Form
     def nextWidth(): Int = if widths.hasNext then widths.next() else root.width
 
     def project(node: Pane): Frame = node match
-      case Pane.Branch(sizing, axis, panes) =>
-        Frame.Split(sizing, axis, panes.contents.map(project).to[List])
+      case Pane.Branch(sizing, arrangement, panes) =>
+        Frame.Split(sizing, arrangement, panes.contents.map(project).to[List])
 
       case Pane.Leaf(sizing, _) =>
         nextWidth()
@@ -201,7 +201,7 @@ class Form
 
     val height = mode match
       case Occupancy.Fullscreen => root.height
-      case Occupancy.Inline     => frame.measure(Axis.Rank).min
+      case Occupancy.Inline     => frame.measure(Arrangement.Stack).min
 
     root match
       case inline: InlineRoot => inline.reframe(root.width, height)

@@ -32,9 +32,9 @@
                                                                                                   */
 package ultimatum
 
-// The direction in which a split divides its space. `File` places children side
-// by side as columns, distributing width; `Rank` stacks them as rows,
-// distributing height. (Chess terminology: files run vertically, ranks
-// horizontally.)
-enum Axis:
-  case Rank, File
+// How a split arranges its children, and so which axis it divides. `Strip` places them side by
+// side, distributing width; `Stack` puts them one above another, distributing height. The names
+// match the `strip` and `stack` constructors that build each, so the value a split carries and the
+// call that produced it read the same.
+enum Arrangement:
+  case Stack, Strip

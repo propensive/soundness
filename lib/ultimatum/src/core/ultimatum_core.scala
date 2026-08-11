@@ -87,16 +87,16 @@ def menu[item: Showable]
 
 // A split whose children sit side by side as columns (distributing width): a
 // strip of panes across the terminal, on the `File` axis.
-def strip(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.File, Panes(panes*))
+def strip(panes: Pane*): Pane = Pane.Branch(Sizing(), Arrangement.Strip, Panes(panes*))
 
 // A column split over a live container, whose children can change while running.
-def strip(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.File, panes)
+def strip(panes: Panes): Pane = Pane.Branch(Sizing(), Arrangement.Strip, panes)
 
 // A split whose children stack as rows (distributing height), on the `Rank` axis.
-def stack(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, Panes(panes*))
+def stack(panes: Pane*): Pane = Pane.Branch(Sizing(), Arrangement.Stack, Panes(panes*))
 
 // A row split over a live container, whose children can change while running.
-def stack(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.Rank, panes)
+def stack(panes: Panes): Pane = Pane.Branch(Sizing(), Arrangement.Stack, panes)
 
 // Wrap `child` in a box-drawing border. Each requested side becomes a thin leaf
 // panel whose content is regenerated from its solved size, so an edge always
@@ -231,7 +231,7 @@ def dirtyCells
 // needs and presented at the cursor; any other canvas fills its own height.
 def paint(root: Board^, pane: Pane): Unit =
   val height = root match
-    case _: InlineRoot => pane.frame.measure(Axis.Rank).min
+    case _: InlineRoot => pane.frame.measure(Arrangement.Stack).min
     case _             => root.height
 
   root match
