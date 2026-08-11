@@ -167,6 +167,16 @@ def form(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   // A container mutation wakes the loop by putting a redraw event on the spool.
   val wake = () => terminal.events.put(TerminalInfo.Redraw)
 
+  // A deferred repaint, woken after `delay` milliseconds (plus a small margin so it lands past the
+  // window it was waiting for). Both modes need one: inline mode uses it for the debounced resize
+  // repaint, and both use it as the animation tick for gauges.
+  val scheduleWake = (delay: Long) =>
+    async:
+      snooze((delay + 16).toDouble*Milli(Second))
+      terminal.events.put(TerminalInfo.Redraw)
+
+    ()
+
   mode match
     case Occupancy.Fullscreen =>
       // The feature body and its terminal argument are the same single-owner session.
@@ -180,18 +190,13 @@ def form(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
         val root = ScreenRoot(terminal)
         root.cursor(false)
 
-        try Form(root, mode, pane, wake).run(terminal.eventIterator()) finally root.finish()
+        // No throttle or debounce: a fullscreen resize repaints immediately (the alternate screen
+        // has no scrollback to protect), but the wake is still supplied, for the animation tick.
+        try
+          Form(root, mode, pane, wake, 0, 0, scheduleWake).run(terminal.eventIterator())
+        finally root.finish()
 
     case Occupancy.Inline =>
-      // A deferred resize repaint is woken by posting a `Redraw` after the remaining
-      // window (plus a small margin so it lands past it).
-      val scheduleWake = (delay: Long) =>
-        async:
-          snooze((delay + 16).toDouble*Milli(Second))
-          terminal.events.put(TerminalInfo.Redraw)
-
-        ()
-
       // Resize repaints are throttled to ~10/second and debounced by 50 ms of quiet,
       // so a drag must pause before the block is redrawn; typing stays immediate.
       Form(InlineRoot(terminal), mode, pane, wake, 100, 50, scheduleWake)

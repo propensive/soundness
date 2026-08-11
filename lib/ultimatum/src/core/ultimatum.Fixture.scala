@@ -32,77 +32,27 @@
                                                                                                   */
 package ultimatum
 
-import anticipation.*
-import denominative.*
-import gossamer.*
 import profanity.*
-import rudiments.*
-import spectacular.*
 import vacuous.*
 
-// A focusable element bound into an interactive layout. It owns mutable widget
-// state, renders itself onto whichever `Board` the driver gives it (so the
-// driver can move it to a new rectangle on re-layout), folds an event into its
-// state, and reports the intrinsic size its current content needs — the hook the
-// reactive layout uses to grow or shrink a panel.
-trait Focus extends Fixture:
-  def handle(event: TerminalEvent): Unit
+// Anything the layout can host as a live element: it owns mutable state, renders itself onto
+// whichever `Board` the driver gives it (so the driver can move it to a new rectangle on
+// re-layout), and reports the intrinsic size its current content needs — the hook the reactive
+// layout uses to grow or shrink a panel.
+// A fixture need not accept input; a gauge does not, and so stays out of the focus cycle. `Focus`
+// adds input handling on top.
+trait Fixture:
+  def render(canvas: Board^, focused: Boolean): Unit
+  def measure(width: Int): (Int, Int)
 
-// A focusable wrapping a `LineEditor`. Its intrinsic height is the number of
-// wrapped rows its current value occupies, so an editor that grows past one line
-// pushes the rest of the layout down.
-class EditorField(initial: LineEditor = LineEditor()) extends Focus:
-  @scala.caps.unsafe.untrackedCaptures
-  private var editor: LineEditor = initial
+  // How long, in milliseconds, until this fixture wants redrawing again irrespective of any change
+  // to its state; `Unset` for a fixture that changes only when its state does. A spinner returns
+  // its frame interval, and that is the whole of the animation contract: the driver takes the
+  // minimum over the live fixtures and arms one timer, or none at all when every fixture is
+  // static.
+  def period: Optional[Int] = Unset
 
-  def value: Text = editor.value
-
-  // The shared `Interaction` draws the editor and positions the caret; the
-  // hardware cursor is then shown only when this field has focus, so the caret
-  // appears in the focused editor and is hidden elsewhere.
-  def render(canvas: Board^, focused: Boolean): Unit =
-    given canvas0: (Board^{canvas}) = canvas
-    summon[Interaction[Text, LineEditor]].render(Unset, editor)
-    canvas.cursor(focused)
-
-  def handle(event: TerminalEvent): Unit = editor = editor.apply(event)
-
-  def measure(width: Int): (Int, Int) =
-    val rows = LineEditor.cursorPosition(editor.value, editor.value.length, width.max(1))._1 + 1
-    (0, rows)
-
-// A focusable wrapping a `SelectMenu`. Its intrinsic height is one row per
-// option.
-class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
-  @scala.caps.unsafe.untrackedCaptures
-  private var menu: SelectMenu[item] = initial
-
-  def value: item = menu.current
-
-  // Renders the options with a focus-aware marker on the current selection: a
-  // pointer (`>`) when this field has focus, a dot (`·`) when it does not, so the
-  // selection is always visible but the focused menu is distinguished. The
-  // hardware cursor is kept hidden — a menu has no text caret.
-  def render(canvas: Board^, focused: Boolean): Unit =
-    given canvas0: (Board^{canvas}) = canvas
-    val cols = canvas.width.max(1)
-    canvas.move(Prim, Prim)
-    canvas.clear()
-    var row = 0
-
-    menu.options.each: option =>
-      canvas.move(Prim, row.z)
-
-      val marker =
-        if option != menu.current then t"   " else if focused then t" > " else t" · "
-
-      val line = t"$marker${option.show}"
-      canvas.put(line)
-      row += (line.length - 1)/cols + 1
-
-    canvas.flush()
-    canvas.cursor(false)
-
-  def handle(event: TerminalEvent): Unit = menu = menu.apply(event)
-
-  def measure(width: Int): (Int, Int) = (0, menu.options.stdlib.length)
+  // Install the running form's repaint trigger, so that a background change to this fixture's
+  // state wakes the event loop and appears immediately. The same contract `Panes.bindWake` has,
+  // and a no-op for a fixture whose state only ever changes in response to an event it was given.
+  private[ultimatum] def bindWake(wake: () => Unit): Unit = ()

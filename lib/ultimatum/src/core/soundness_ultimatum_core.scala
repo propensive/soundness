@@ -34,6 +34,17 @@ package soundness
 
 export ultimatum.{Rect, Extent, FlowExtent, InlineRoot, ScreenRoot, Sizing, Limits, Frame,
     Placement, Pane, Panes, Occupancy, BorderStyle, panel, stack, strip, border, layout, paint,
-    Focus,
+    Fixture, Focus, Tick,
     EditorField, MenuField, Form, dirtyCells, editor, menu, form, InlineAnchoring, InlineGrowth,
     InlineShrink}
+
+package inlineAnchoring:
+  export
+    ultimatum.inlineAnchoring
+    . { bottomDocked, topAnchored, topAfterResize, fullscreen, inline }
+
+package inlineGrowth:
+  export ultimatum.inlineGrowth.{scrollIntoScrollback, clampToScreen}
+
+package inlineShrink:
+  export ultimatum.inlineShrink.{redockBottom, keepTop}

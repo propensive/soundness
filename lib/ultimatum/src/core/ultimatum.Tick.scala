@@ -32,77 +32,19 @@
                                                                                                   */
 package ultimatum
 
-import anticipation.*
-import denominative.*
-import gossamer.*
-import profanity.*
-import rudiments.*
-import spectacular.*
-import vacuous.*
+object Tick:
+  val zero: Tick = Tick(0, 0L)
 
-// A focusable element bound into an interactive layout. It owns mutable widget
-// state, renders itself onto whichever `Board` the driver gives it (so the
-// driver can move it to a new rectangle on re-layout), folds an event into its
-// state, and reports the intrinsic size its current content needs — the hook the
-// reactive layout uses to grow or shrink a panel.
-trait Focus extends Fixture:
-  def handle(event: TerminalEvent): Unit
+  def at(elapsed: Long, period: Int): Tick =
+    Tick(if period <= 0 then 0 else (elapsed/period).toInt, elapsed)
 
-// A focusable wrapping a `LineEditor`. Its intrinsic height is the number of
-// wrapped rows its current value occupies, so an editor that grows past one line
-// pushes the rest of the layout down.
-class EditorField(initial: LineEditor = LineEditor()) extends Focus:
-  @scala.caps.unsafe.untrackedCaptures
-  private var editor: LineEditor = initial
-
-  def value: Text = editor.value
-
-  // The shared `Interaction` draws the editor and positions the caret; the
-  // hardware cursor is then shown only when this field has focus, so the caret
-  // appears in the focused editor and is hidden elsewhere.
-  def render(canvas: Board^, focused: Boolean): Unit =
-    given canvas0: (Board^{canvas}) = canvas
-    summon[Interaction[Text, LineEditor]].render(Unset, editor)
-    canvas.cursor(focused)
-
-  def handle(event: TerminalEvent): Unit = editor = editor.apply(event)
-
-  def measure(width: Int): (Int, Int) =
-    val rows = LineEditor.cursorPosition(editor.value, editor.value.length, width.max(1))._1 + 1
-    (0, rows)
-
-// A focusable wrapping a `SelectMenu`. Its intrinsic height is one row per
-// option.
-class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
-  @scala.caps.unsafe.untrackedCaptures
-  private var menu: SelectMenu[item] = initial
-
-  def value: item = menu.current
-
-  // Renders the options with a focus-aware marker on the current selection: a
-  // pointer (`>`) when this field has focus, a dot (`·`) when it does not, so the
-  // selection is always visible but the focused menu is distinguished. The
-  // hardware cursor is kept hidden — a menu has no text caret.
-  def render(canvas: Board^, focused: Boolean): Unit =
-    given canvas0: (Board^{canvas}) = canvas
-    val cols = canvas.width.max(1)
-    canvas.move(Prim, Prim)
-    canvas.clear()
-    var row = 0
-
-    menu.options.each: option =>
-      canvas.move(Prim, row.z)
-
-      val marker =
-        if option != menu.current then t"   " else if focused then t" > " else t" · "
-
-      val line = t"$marker${option.show}"
-      canvas.put(line)
-      row += (line.length - 1)/cols + 1
-
-    canvas.flush()
-    canvas.cursor(false)
-
-  def handle(event: TerminalEvent): Unit = menu = menu.apply(event)
-
-  def measure(width: Int): (Int, Int) = (0, menu.options.stdlib.length)
+// The animation clock reading handed to a design each time it is drawn. `index` counts whole
+// animation periods since the gauge started — the frame number a spinner indexes its glyph cycle
+// with — and `elapsed` is monotonic milliseconds since it started.
+// Passing the reading in, rather than letting a design read a clock, is what keeps every design a
+// pure function of its status and its tick: a test drives one by handing it a literal `Tick`
+// instead of waiting.
+case class Tick(index: Int, elapsed: Long):
+  // Where this reading falls within the current period, as a fraction in `[0, 1)`; the dial a
+  // design uses when it wants a continuous sweep rather than a discrete frame.
+  def phase(period: Int): Double = if period <= 0 then 0.0 else (elapsed%period).toDouble/period
