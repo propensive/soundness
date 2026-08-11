@@ -1,50 +1,65 @@
 # Public API surface — multi-word names remaining
 
-Regenerated from the `soundness_*` re-export files on 2026-08-11, after the nesting pass
-(97 renames across 34 libraries). This lists what is **still** exported into `package
-soundness` under a multi-word name; it replaces the earlier candidate inventory, whose C1,
-C3 and C3b sections are superseded by `api-nesting-proposal.md` and whose C2 and C4
-sections are folded in below.
+Regenerated from the `soundness_*` re-export files after the nesting passes (#1764, #1765):
+113 renames across 36 libraries so far. This is the working list for the remainder.
 
-- multi-word type-level names exported: **698**, across 162 components (was 823)
-- of those, 466 sit in a prefix family of two or more; 232 are singletons
-- names inside `package <name>:` blocks (choice packages such as `alphabets`,
-  `manifestAttributes`, `constants`) are excluded: they are already namespaced
+- multi-word type-level names exported: **686**, across the umbrella (was 823 before #1764)
+- 452 sit in a prefix family of two or more; 234 are singletons
+- names inside `package <name>:` blocks (`alphabets`, `manifestAttributes`, `constants`, …)
+  are excluded: they are already namespaced
 
-Most of what remains is **deliberate**, and falls into the categories the proposal records.
-Before treating any row below as a candidate, check it against those rules — in particular
-R2 (an established concept keeps its compound name: `JsonPointer`, `YamlPath`, `MediaType`,
-`SymmetricKey`), R5 (excluded buckets) and R6 (component-blocked).
+**Read this with `api-nesting-proposal.md`**, which holds the rules (R1–R7) and the
+corrections the implementation passes produced. Most of what remains below is deliberate.
+Before treating any row as a candidate, check it against R2 (an established concept keeps
+its compound name), R5 (excluded buckets) and R6 (component-blocked).
 
-## What is deliberately excluded, and why
+## Next actions — the six candidates still worth attempting
+
+Each needs its file split first, and **the split must be verified on its own before the
+nesting is attempted**: splitting `HpackEntry` out of `HpackTable.scala` changed capture
+inference by itself, with no nesting involved. Either step can be the one that fails.
+
+| candidate | preparatory work | known risk |
+|---|---|---|
+| `TelHandle` → `Tel.Handle` | split `TelOpenable`, `TelViewOpenable`, `TelFlag` out of `stratiform.TelHandle.scala` | the openables are R7 inline candidates; consider inlining rather than splitting |
+| `LspProxy` → `Lsp.Proxy` | split `rewrite` out of `exegesis.LspProxy.scala` | none known |
+| `TypescriptDeclaration` → `Typescript.Declaration` | split `Declared` out | ⚠ do **not** touch `TypescriptDialect`: loaded reflectively by name |
+| `WebIdlDefinition` → `WebIdl.Definition` | split `WebIdlError`, `WebIdlArgument`, `WebIdlField`, `WebIdlMember` out | ⚠ same: leave `WebIdlDialect` alone |
+| `WitDeclaration` → `Wit.Declaration` | split `WitWorldModel`, `WitInterface`, `WitItem`, `WitParseError`, `WitFunction`, `WitDocument` out | ⚠ same: leave `WitDialect` alone; also, merging donor imports into `Wit.scala` previously re-pointed an existing `::` at the stdlib cons |
+| `TarHeader` → `Tar.Header` | none (own file) | capture inference: infers `Array[Byte]^{}` where the enclosing object needs `^{any}`; `caps.Pure` may help, but it did not rescue Hpack |
+
+Two independent pieces of work, neither requiring the above:
+
+- **`caps.Pure` where a split is wanted for its own sake.** Declaring a genuinely pure type
+  pure fixes the cross-file capture failure (verified on `HpackEntry`). Useful for L2
+  compliance regardless of nesting.
+- **Wildcard imports over namespace objects** — 45 in the tree. The constant-table uses
+  (`Vp8Tables`, `FlateTables`, `PeriodicTable`, `DagTile`) are legitimate; the type-holding
+  ones (`Mathml` ×6, `Binary` ×5, `Control` ×5) are what makes nesting fragile, since every
+  member lands in a scope that already has `import soundness.*`. Mechanically detectable,
+  so it may suit the Consequent linter better than a sweep.
+
+## Deliberately excluded — do not treat these as candidates
 
 | bucket | examples | reason |
 |---|---|---|
-| stdlib mirrors (proscenium) | `ClassTag`, `TreeMap`, `ArrowAssoc`, `*HasAsScala` | compatibility surface; the names are the stdlib's |
-| protocol mirrors (embarcadero.containerd) | `CreateContainerRequest`, `ListImagesResponse`, … | mirror the containerd gRPC schema |
+| stdlib mirrors (proscenium) | `ClassTag`, `TreeMap`, `ArrowAssoc`, `*HasAsScala` | the names are the stdlib's |
+| protocol mirrors (embarcadero.containerd) | `CreateContainerRequest`, `ListImagesResponse` | mirror the containerd gRPC schema |
 | calendar vocabulary (aviation) | `CopticCalendar`, `HebrewMonth`, `LeapMode` | established domain terms |
 | foreign interop (diuretic) | `JavaIoFile`, `JavaNioPath`, `JavaUtilDate` | deliberately name the foreign type |
 | platform interfaces | `Wasi*Api` | one per library, loaded as a unit |
-| render palettes | `MarkdownPalette`, `StackTracePalette`, `TestPalette`, … | cross-component by design: subject in core, palette in the ansi/render component |
-| specification concepts (R2) | `JsonPointer`, `YamlPath`, `TelPath`, `JsonSchema`, `XmlSchema`, `MediaType`, `SymmetricKey`, `HttpServer`, `BlockCipher`, `CompileError` | the compound names a thing with its own specification |
-| reflectively-loaded (new) | `TypescriptDialect`, `WebIdlDialect`, `WitDialect` | xenophile loads these by fully-qualified name; a name used as data cannot be renamed |
-| component-blocked (R6) | `TarOpenable`, `PdfFile`, `ImageRecord`, `HmacCipher`, `ClasspathJvm`, … | outer companion lives in another component |
+| render palettes | `MarkdownPalette`, `StackTracePalette`, `TestPalette` | cross-component by design |
+| specification concepts (R2) | `JsonPointer`, `YamlPath`, `TelPath`, `JsonSchema`, `XmlSchema`, `MediaType`, `SymmetricKey`, `HttpServer`, `BlockCipher`, `CompileError` | the compound names a thing with its own specification — the test is whether it would appear as a heading in a spec |
+| reflectively loaded | `TypescriptDialect`, `WebIdlDialect`, `WitDialect` | xenophile resolves these by fully-qualified name; a name used as data cannot be renamed |
+| component-blocked (R6) | `TarOpenable`, `PdfFile`, `ImageRecord`, `HmacCipher`, `ClasspathJvm`, `JsonSchema`, `JsonBlueprint` | outer companion is in another component |
 
-## Blocked by shape, not by policy
+## Tried and reverted, with the reason
 
-These would nest, but their files resist it; each needs preparatory work first, and the
-proposal's corrections section explains the shapes:
-
-- **file-mates**: `HpackTable`/`HpackEntry`, `Http2Connection`/`Http2Stream`,
-  `CoseStructure` (shares a file with eight types), `WitDeclaration`, `WebIdlDefinition`,
-  `TelHandle`/`TelOpenable`, `ZipOpenable`/`ZipDataOpenable`, `McpServer`/`McpSession`,
-  `LspProxy` — hoist the siblings into their own files first.
-- **capture-sensitive**: `TarHeader` (infers `Array[Byte]^{}` where the new scope needs
-  `^{any}`, and `Array` is invariant).
-- **sealed**: `SvgDef` (subtypes pinned to its file).
-- **name already taken**: `McpError` (`object Mcp` has its own nested `Error`).
-- **supertype, not satellite**: `BaseLayout` (`object Base extends BaseLayout`).
-- **opaque/alias in a package file**: `SvgId`, `GitHash`-style declarations.
+`BaseLayout` (a supertype, not a satellite — `object Base extends BaseLayout`); `SvgDef`
+(sealed, so its subtypes are pinned to its file, and `LinearGradient` is exported);
+`SvgId` (opaque type in a package file); `McpError` (`object Mcp` already has a nested
+`Error`); `ZipOpenable`/`ZipDataOpenable` (shadow the `Openable` they extend);
+`HpackTable`/`HpackEntry` (capture inference, twice).
 
 ## Remaining names by prefix family
 
@@ -64,7 +79,6 @@ proposal's corrections section explains the shapes:
 | `Compile*` | anthology, larceny | 7 | `CompileError`, `CompileEvent`, `CompileEvents`, `CompileFlag`, `CompileProcess`, `CompileProgress`, `CompileResult` |
 | `Content*` | embarcadero, obligatory | 2 | `ContentDescriptor`, `ContentLength` |
 | `Coptic*` | aviation | 2 | `CopticCalendar`, `CopticMonth` |
-| `Cose*` | enigmatic | 5 | `CoseContext`, `CoseMaced`, `CoseSigned`, `CoseStructure`, `CoseTag` |
 | `Create*` | embarcadero, galilei | 8 | `CreateContainerRequest`, `CreateContainerResponse`, `CreateFlag`, `CreateNamespaceRequest`, `CreateNamespaceResponse`, `CreateNonexistentParents`, `CreateTaskRequest`, `CreateTaskResponse` |
 | `Css*` | nomenclature | 2 | `CssClass`, `CssIdentifier` |
 | `Daemon*` | ethereal | 3 | `DaemonEvent`, `DaemonLogEvent`, `DaemonService` |
@@ -94,7 +108,6 @@ proposal's corrections section explains the shapes:
 | `Host*` | mandible | 3 | `HostArchive`, `HostContracts`, `HostRelease` |
 | `Hpack*` | telekinesis | 2 | `HpackEntry`, `HpackTable` |
 | `Http*` | anticipation, honeycomb, scintillate, telekinesis, urticose | 10 | `HttpConnection`, `HttpEquiv`, `HttpRequestError`, `HttpRequests`, `HttpResponseError`, `HttpServer`, `HttpServerEvent`, `HttpSession`, `HttpStreams`, `HttpUrl` |
-| `Http2*` | telekinesis | 3 | `Http2Connection`, `Http2ServerConnection`, `Http2Stream` |
 | `Image*` | embarcadero | 5 | `ImageConfig`, `ImageDataOpenable`, `ImageHandle`, `ImageOpenable`, `ImageRecord` |
 | `Indian*` | aviation | 2 | `IndianCalendar`, `IndianMonth` |
 | `Inline*` | profanity, ultimatum | 5 | `InlineAnchoring`, `InlineBoard`, `InlineGrowth`, `InlineRoot`, `InlineShrink` |
@@ -118,7 +131,6 @@ proposal's corrections section explains the shapes:
 | `Manifest*` | reliquary, revolution | 3 | `ManifestAttribute`, `ManifestEntry`, `ManifestSigning` |
 | `Map*` | proscenium | 2 | `MapHasAsJava`, `MapHasAsScala` |
 | `Mathml*` | archimedes | 3 | `MathmlError`, `MathmlParser`, `MathmlReader` |
-| `Mcp*` | synesthesia | 3 | `McpError`, `McpServer`, `McpSession` |
 | `Metric*` | quantitative | 2 | `MetricPrefix`, `MetricUnit` |
 | `Must*` | nomenclature | 9 | `MustContain`, `MustEnd`, `MustMatch`, `MustNotContain`, `MustNotEnd`, `MustNotEqual`, `MustNotMatch`, `MustNotStart`, `MustStart` |
 | `Name*` | nomenclature | 2 | `NameError`, `NameExtractor` |
@@ -179,28 +191,25 @@ proposal's corrections section explains the shapes:
 | `Workload*` | embarcadero | 3 | `WorkloadGrant`, `WorkloadHandle`, `WorkloadOpenable` |
 | `Ws*` | perihelion | 3 | `WsConnection`, `WsSessional`, `WsUrl` |
 | `Xml*` | xylophone | 3 | `XmlError`, `XmlReader`, `XmlSchema` |
-| `Zip*` | zeppelin | 6 | `ZipBuilder`, `ZipDataOpenable`, `ZipError`, `ZipEvent`, `ZipHandle`, `ZipOpenable` |
+| `Zip*` | zeppelin | 3 | `ZipBuilder`, `ZipDataOpenable`, `ZipOpenable` |
 
-### Singletons (232)
+### Singletons (234)
 
-`AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`, `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`, `AuthError`, `BaseLayout`, `BenchmarkDevice`, `BeneficencePlugin`, `BindError`, `BlobStream`, `BloomFilter`, `BorderStyle`, `BoundsError`, `BytecodePalette`, `CanonicalCbor`, `CanvasHandle`, `CapabilityDiscipline`, `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `CertificateError`, `ChangeKind`, `ChannelLayout`, `CheckOverflow`, `CipherSession`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`, `ColorDepth`, `CommonFormattable`, `CompilerError`, `ConnectError`, `ConnectionError`, `ContainerConfig`, `CopyAttributes`, `CrLf`, `CtSym`, `CtrlChar`, `DataError`, `DecodableManifest`, `DegustationError`, `DereferenceSymlinks`, `DisciplineError`, `DismissError`, `DivOp`, `DnsLabel`, `DockerEvent`, `DummyImplicit`, `EcosystemProfile`, `EditorField`, `EitherTactic`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`, `ErgoError`, `EscapeError`, `EucalyptusGcp`, `ExpectationError`, `FastForward`, `FieldIndex`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `FontError`, `GapPolicy`, `GarbageCollection`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`, `GraphemeBreak`, `HalfWind`, `HaltTactic`, `HmacCipher`, `HostnameError`, `Html4Transitional`, `InitializationVector`, `InstallError`, `IntercardinalWind`, `InterfaceAddress`, `IpAddressError`, `Ipv4Subnet`, `Ipv6Subnet`, `IsinError`, `IteratorHasAsScala`, `JarBuilder`, `JavacOption`, `JsInvoke`, `JsigDiscipline`, `JuxtapositionPalette`, `JvmProfile`, `KeyStore`, `KeystoreError`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LocalhostDevice`, `LongNameFormat`, `LruCache`, `MarkdownPalette`, `MathML`, `MediaType`, `MenuField`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NotFound`, `NoteRef`, `NumericRange`, `OfflineError`, `OffsetCalendar`, `OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`, `OtfTag`, `OverflowError`, `OverwritePreexisting`, `PanamaInvoke`, `ParseError`, `PartiallyOrdered`, `PcmFlag`, `PeriodicTable`, `PhysicalState`, `PidError`, `PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PojoError`, `PolarGaussian`, `PollingWatcher`, `PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RangeError`, `RasterOpenable`, `RectoPanel`, `ReferenceError`, `ReflogEntry`, `RemoteError`, `RequestServable`, `ResetMode`, `RetryError`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `RpcError`, `RruleError`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SemverError`, `SeqHasAsJava`, `SerializationError`, `ServerError`, `ShaderPlugin`, `SiderealDays`, `SignalResponse`, `SimpleTExtractor`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`, `StaticAnnotation`, `SubOp`, `SvgDef`, `SymmetricKey`, `SyntaxMatcher`, `TcpPort`, `TemperatureScale`, `TemporaryDirectory`, `TestPalette`, `ThemeColor`, `ThrowTactic`, `TimestampError`, `TlsAcceptance`, `ToolchainError`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`, `TripleDes`, `TtfTag`, `UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnsetError`, `UnusedFeature`, `UsedSets`, `UsesBlob`, `ValueToken`, `VersionResponse`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WritingBuilder`, `XeqConfiguration`, `YamlPathError`
+`AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`, `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`, `AuthError`, `BaseLayout`, `BenchmarkDevice`, `BeneficencePlugin`, `BindError`, `BlobStream`, `BloomFilter`, `BorderStyle`, `BoundsError`, `BytecodePalette`, `CanonicalCbor`, `CanvasHandle`, `CapabilityDiscipline`, `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `CertificateError`, `ChangeKind`, `ChannelLayout`, `CheckOverflow`, `CipherSession`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`, `ColorDepth`, `CommonFormattable`, `CompilerError`, `ConnectError`, `ConnectionError`, `ContainerConfig`, `CopyAttributes`, `CrLf`, `CtSym`, `CtrlChar`, `DataError`, `DecodableManifest`, `DegustationError`, `DereferenceSymlinks`, `DisciplineError`, `DismissError`, `DivOp`, `DnsLabel`, `DockerEvent`, `DummyImplicit`, `EcosystemProfile`, `EditorField`, `EitherTactic`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`, `ErgoError`, `EscapeError`, `EucalyptusGcp`, `ExpectationError`, `FastForward`, `FieldIndex`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `FontError`, `GapPolicy`, `GarbageCollection`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`, `GraphemeBreak`, `HalfWind`, `HaltTactic`, `HmacCipher`, `HostnameError`, `Html4Transitional`, `Http2ServerConnection`, `InitializationVector`, `InstallError`, `IntercardinalWind`, `InterfaceAddress`, `IpAddressError`, `Ipv4Subnet`, `Ipv6Subnet`, `IsinError`, `IteratorHasAsScala`, `JarBuilder`, `JavacOption`, `JsInvoke`, `JsigDiscipline`, `JuxtapositionPalette`, `JvmProfile`, `KeyStore`, `KeystoreError`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LocalhostDevice`, `LongNameFormat`, `LruCache`, `MarkdownPalette`, `MathML`, `McpError`, `MediaType`, `MenuField`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NotFound`, `NoteRef`, `NumericRange`, `OfflineError`, `OffsetCalendar`, `OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`, `OtfTag`, `OverflowError`, `OverwritePreexisting`, `PanamaInvoke`, `ParseError`, `PartiallyOrdered`, `PcmFlag`, `PeriodicTable`, `PhysicalState`, `PidError`, `PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PojoError`, `PolarGaussian`, `PollingWatcher`, `PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RangeError`, `RasterOpenable`, `RectoPanel`, `ReferenceError`, `ReflogEntry`, `RemoteError`, `RequestServable`, `ResetMode`, `RetryError`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `RpcError`, `RruleError`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SemverError`, `SeqHasAsJava`, `SerializationError`, `ServerError`, `ShaderPlugin`, `SiderealDays`, `SignalResponse`, `SimpleTExtractor`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`, `StaticAnnotation`, `SubOp`, `SvgDef`, `SymmetricKey`, `SyntaxMatcher`, `TcpPort`, `TemperatureScale`, `TemporaryDirectory`, `TestPalette`, `ThemeColor`, `ThrowTactic`, `TimestampError`, `TlsAcceptance`, `ToolchainError`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`, `TripleDes`, `TtfTag`, `UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnsetError`, `UnusedFeature`, `UsedSets`, `UsesBlob`, `ValueToken`, `VersionResponse`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WritingBuilder`, `XeqConfiguration`, `YamlPathError`
 
-## Retained from the earlier inventory
+## Retained from the original inventory
 
-**C2 — non-established abbreviations** (still current): `AddOp` (symbolism), `CellRef`
-(caesura), `Err` (turbulence), `ProcessRef` (guillotine — now `Process.Ref`).
-`GitRefError` is resolved: it is `Git.RefError`.
+**C2 — non-established abbreviations**: `AddOp` (symbolism), `CellRef` (caesura), `Err`
+(turbulence). `ProcessRef` and `GitRefError` are resolved (`Process.Ref`, `Git.RefError`).
 
-**C4-homonym — one name, two meanings** (still current, and worth watching as nesting
-proceeds, since nesting can resolve a homonym by qualifying one of the pair):
-`Attributive` (honeycomb, xylophone), `Completion` (exoskeleton, harlequin), `Diagnostic`
-(frontier, harlequin), `Executor` (apoplexy, superlunary), `Extensions` (decorum,
-gesticulate), `Frame` (perihelion, ultimatum), `Imports` (decorum, stenography),
-`Manifest` (embarcadero, revolution), `Proxy` (austronesian, vicarious), `Renderable`
-(honeycomb, xylophone), `Syntax` (cataclysm, stenography), `Tag` (honeycomb, xylophone),
-`Timestamp` (aviation, embarcadero).
+**C4-homonym — one name, two meanings**, worth watching as nesting proceeds, since nesting
+can resolve a homonym by qualifying one of the pair: `Attributive` (honeycomb, xylophone),
+`Completion` (exoskeleton, harlequin), `Diagnostic` (frontier, harlequin), `Executor`
+(apoplexy, superlunary), `Extensions` (decorum, gesticulate), `Frame` (perihelion,
+ultimatum), `Imports` (decorum, stenography), `Manifest` (embarcadero, revolution),
+`Proxy` (austronesian, vicarious), `Renderable` (honeycomb, xylophone), `Syntax`
+(cataclysm, stenography), `Tag` (honeycomb, xylophone), `Timestamp` (aviation,
+embarcadero).
 
-**C4-synonym — competing terms for one role**: the `*Parser` family remains the largest
-(`CborParser`, `CssParser`, `JsonParser`, `ProtobufParser`, `TelParser`, `YamlParser`, …).
-Most are `private[lib]` engines rather than exported names; `Svg.Parser` shows the shape
-the exported ones take once nested.
+**C4-synonym**: the `*Parser` family remains the largest; most are `private[lib]` engines
+rather than exported names.
