@@ -125,7 +125,7 @@ object WitAtomizer:
   private def function
     ( container: Text,
       resource:  Optional[Text],
-      fn:        WitFunction,
+      fn:        Wit.Function,
       scope:     SMap[Text, Text] )
   :   Atom raises DisciplineError =
 
@@ -149,7 +149,7 @@ object WitAtomizer:
 
   // --- atomization ----------------------------------------------------------------------------
 
-  def atomize(documents: List[WitDocument]): List[Atom] raises DisciplineError =
+  def atomize(documents: List[Wit.Document]): List[Atom] raises DisciplineError =
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
 
     documents.stdlib.foreach: document =>
@@ -167,10 +167,10 @@ object WitAtomizer:
         // (`wit.md` §6) — a re-export or rename carries no semantic content.
         val scope: SMap[Text, Text] =
           val local = interface.items.stdlib.collect:
-            case item if !item.isInstanceOf[WitItem.Use] => item.named -> t"$ifaceId#${item.named}"
+            case item if !item.isInstanceOf[Wit.Item.Use] => item.named -> t"$ifaceId#${item.named}"
 
           val imported = interface.items.stdlib.collect:
-            case WitItem.Use(from, names) =>
+            case Wit.Item.Use(from, names) =>
               names.stdlib.map: (original, alias) =>
                 alias -> t"${qualify(from)}#$original"
 
@@ -181,12 +181,12 @@ object WitAtomizer:
         val typeKeys = scala.collection.mutable.ListBuffer[Text]()
 
         interface.items.stdlib.foreach:
-          case WitItem.Use(_, _) => ()
+          case Wit.Item.Use(_, _) => ()
 
-          case WitItem.Function(fn) =>
+          case Wit.Item.Function(fn) =>
             atoms += function(ifaceId, Unset, fn, scope)
 
-          case WitItem.Alias(name, target) =>
+          case Wit.Item.Alias(name, target) =>
             typeKeys += t"$ifaceId#$name"
 
             atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
@@ -194,7 +194,7 @@ object WitAtomizer:
               utf8(out, t"$ifaceId#$name")
               encode(out, target, scope))
 
-          case WitItem.Record(name, fields) =>
+          case Wit.Item.Record(name, fields) =>
             typeKeys += t"$ifaceId#$name"
 
             // Fields fold in declaration order: the canonical ABI is positional (`wit.md` §6).
@@ -207,7 +207,7 @@ object WitAtomizer:
                 utf8(out, field)
                 encode(out, typed, scope))
 
-          case WitItem.Variant(name, cases) =>
+          case Wit.Item.Variant(name, cases) =>
             typeKeys += t"$ifaceId#$name"
 
             atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
@@ -219,7 +219,7 @@ object WitAtomizer:
                 utf8(out, label)
                 payload.lay(tag(out, '0')) { typed => tag(out, '1'); encode(out, typed, scope) })
 
-          case WitItem.Enumeration(name, cases) =>
+          case Wit.Item.Enumeration(name, cases) =>
             typeKeys += t"$ifaceId#$name"
 
             atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
@@ -228,7 +228,7 @@ object WitAtomizer:
               uvarint(out, cases.stdlib.length.toLong)
               cases.stdlib.foreach { label => utf8(out, label) })
 
-          case WitItem.Flags(name, names) =>
+          case Wit.Item.Flags(name, names) =>
             typeKeys += t"$ifaceId#$name"
 
             atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
@@ -237,7 +237,7 @@ object WitAtomizer:
               uvarint(out, names.stdlib.length.toLong)
               names.stdlib.foreach { label => utf8(out, label) })
 
-          case WitItem.Resource(name, methods) =>
+          case Wit.Item.Resource(name, methods) =>
             typeKeys += t"$ifaceId#$name"
 
             atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
