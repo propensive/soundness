@@ -1390,6 +1390,53 @@ object Tests extends Suite(m"Ultimatum Tests"):
         (processions.checklistProcession.period, processions.breadcrumbProcession.period)
       . assert(_ == (80, Unset))
 
+    suite(m"Elapsed time and countdowns"):
+      import gaugeGlyphs.unicodeGlyphs
+      import palettes.emberGaugePalette
+      import textMetrics.uniformMetric
+
+      // Monomorphic, as elsewhere in these suites: a generic helper infers the underlying
+      // `Duration` from a literal, because the opaque types are transparent in this package.
+      def spent(design: Elapsed is Gaugeable)(value: Elapsed, width: Int): Text =
+        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+
+      def left(design: Countdown is Gaugeable)(value: Countdown, width: Int): Text =
+        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+
+      test(m"a compact elapsed time gives the two largest useful units"):
+        spent(timers.compactElapsed)(Elapsed(161.0*Second), 5)
+      . assert(_ == t"2m41s")
+
+      test(m"a compact elapsed time under a minute is just seconds"):
+        spent(timers.compactElapsed)(Elapsed(41.0*Second), 3)
+      . assert(_ == t"41s")
+
+      test(m"a digital elapsed time keeps its shape as it crosses a minute"):
+        (spent(timers.digitalElapsed)(Elapsed(59.0*Second), 5),
+            spent(timers.digitalElapsed)(Elapsed(61.0*Second), 5))
+      . assert(_ == (t"00:59", t"01:01"))
+
+      test(m"a digital elapsed time grows an hours field only when there are hours"):
+        spent(timers.digitalElapsed)(Elapsed(3661.0*Second), 7)
+      . assert(_ == t"1:01:01")
+
+      // A countdown is clamped at zero, so a deadline that has passed reads as `0s`.
+      test(m"a countdown past its deadline reads as zero"):
+        left(timers.compactCountdown)(Countdown(-5.0*Second), 2)
+      . assert(_ == t"0s")
+
+      test(m"a narrow timer keeps the seconds, which are what is moving"):
+        spent(timers.compactElapsed)(Elapsed(161.0*Second), 3)
+      . assert(_ == t"41s")
+
+      test(m"a timer is inelastic, so it does not stretch across a row"):
+        timers.compactElapsed.columns(Elapsed(161.0*Second))
+      . assert(_ == 5)
+
+      test(m"neither timer animates: they change only when their reading does"):
+        (timers.compactElapsed.period, timers.urgentCountdown.period)
+      . assert(_ == (Unset, Unset))
+
     suite(m"Captioned gauges"):
       import gaugeGlyphs.unicodeGlyphs
       import palettes.emberGaugePalette

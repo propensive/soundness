@@ -42,6 +42,8 @@ object Countdown:
   def apply(duration: Duration): Countdown =
     if duration.value < 0 then 0.0*Second else duration
 
+  given gaugeable: Gauging => Countdown is Gaugeable = timers.compactCountdown
+
   extension (countdown: Countdown) def duration: Duration = countdown
 
 opaque type Countdown = Duration

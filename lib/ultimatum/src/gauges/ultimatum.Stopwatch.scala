@@ -30,80 +30,80 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export
-  ultimatum
-  . { Bar, Busy, Byte, Bytes, CaptionLayout, Captioned, Checklist, Countdown, Dial, Elapsed, Facet,
-      Fraction, gauge, Gaugeable, GaugePalette, gaugeLine, gaugeRows, Gauging, Gradient,
-      Information, Inlay, Magnitude, Meter, Procession, Reading, Reckoning, Series, Sparkline,
-      Spinner, Standing, Step, Stopwatch, Transfer, whilst }
+import anticipation.*
+import escapade.*
+import gossamer.*
+import iridescence.*
+import prepositional.*
+import spectacular.*
+import symbolism.*
 
-// Every given is exported by name: a wildcard would silently drop them, since `import p.*` does not
-// import givens.
+object Stopwatch:
+  // `hh:mm:ss`, dropping the hours until there are some. Padded, so the field does not change width
+  // from one second to the next.
+  private def digital(seconds: Long): Text =
+    val total = seconds.max(0L)
+    val minutes = total/60
+    val hours = minutes/60
 
-package spinners:
-  export
-    ultimatum.spinners
-    . { aestheticSpinner, arcSpinner, arrowDoubleSpinner, arrowSpinner, balloonSpinner,
-        binarySpinner, bounceSpinner, bouncingBallSpinner, bouncingBarSpinner, boxSpinner,
-        brailleDotsSpinner, brailleGrowSpinner, brailleSnakeSpinner, brailleWaveSpinner,
-        circleHalfSpinner, circlePulseSpinner, circleQuadrantSpinner, clockSpinner,
-        crossStarSpinner, dotsScrollSpinner, dqpbSpinner, earthSpinner, growingBarSpinner,
-        growingBlockSpinner, hamburgerSpinner, hourglassSpinner, hourglassThinSpinner, layerSpinner,
-        lineSpinner, moonPhaseSpinner, noiseSpinner, pipeSpinner, pointsSpinner, pulseSpinner,
-        shuttleSpinner, squareCornerSpinner, starSpinner, toggleRoundSpinner, toggleSpinner,
-        toggleSquareSpinner, triangleSpinner }
+    def pad(value: Long): Text = if value < 10 then t"0$value" else value.show
 
-package bars:
-  export
-    ultimatum.bars
-    . { arrowheadBar, asciiBar, blockBar, brailleBar, capsuleBar, dotBar, equalsBar, fineBar,
-        gradientBar, markerBar, percentageBar, pipBar, railBar, risingBar, segmentedBar, shadedBar,
-        smoothBar, squareBar }
+    if hours > 0 then t"$hours:${pad(minutes%60)}:${pad(total%60)}"
+    else t"${pad(minutes)}:${pad(total%60)}"
 
-package meters:
-  export
-    ultimatum.meters
-    . { asciiMeter, batteryMeter, bulletMeter, columnMeter, needleMeter, thermometerMeter }
+// How a duration is written. `Compact` gives the two largest units that carry information
+// (`2m41s`); `Digital` gives a clock face (`02:41`), which is wider but does not change shape as it
+// crosses a minute.
+// The same designs serve `Elapsed` and `Countdown`, but through separate givens: the two are
+// distinct types precisely so that a duration counting down can redden as it runs out while one
+// counting up stays quiet.
+enum Stopwatch:
+  case Compact, Digital
 
-package sparklines:
-  export ultimatum.sparklines.{asciiSparkline, blockSparkline, dotSparkline, tallSparkline}
+  def write(seconds: Double): Text = this match
+    case Compact => Magnitude.interval(seconds)
+    case Digital => Stopwatch.digital(seconds.toLong)
 
-package counters:
-  export
-    ultimatum.counters
-    . { decimalTransferCounter, paddedCounter, percentageCounter, plainCounter, rateTransferCounter,
-        scaledCounter, terseTransferCounter, transferCounter, wordCounter }
+  def columns(seconds: Double): Int = write(seconds).length
 
-package standings:
-  export
-    ultimatum.standings
-    . { asciiStanding, heavyStanding, squareStanding, tickStanding, wordStanding }
+  // Elapsed time is reference material, not a warning, so it is drawn in the muted role.
+  def elapsed(using gauging: Gauging): Elapsed is Gaugeable = new Gaugeable:
+    type Self = Elapsed
+    override def elastic: Boolean = false
+    override def minWidth(status: Elapsed): Int = 1
+    override def columns(status: Elapsed): Int = Stopwatch.this.columns(status.duration.value)
 
-package processions:
-  export
-    ultimatum.processions
-    . { beadProcession, breadcrumbProcession, checklistProcession, numberedProcession,
-        ribbonProcession }
+    def rows(status: Elapsed, tick: Tick, width: Int): List[Teletype] =
+      List(draw(status.duration.value, gauging.palette.muted, width, gauging))
 
-package palettes:
-  export
-    ultimatum.palettes
-    . { ansiSixteenGaugePalette, emberGaugePalette, monochromeGaugePalette, oceanicGaugePalette,
-        plumGaugePalette, signalGaugePalette, slateGaugePalette, solarizedDarkGaugePalette,
-        solarizedLightGaugePalette, verdantGaugePalette }
+  // A countdown, optionally colouring by how little is left: `urgent` reads the severity ramp
+  // backwards, so the figure passes through the warning colour and reddens as it approaches zero.
+  def countdown(urgent: Boolean)(using gauging: Gauging): Countdown is Gaugeable = new Gaugeable:
+    type Self = Countdown
+    override def elastic: Boolean = false
+    override def minWidth(status: Countdown): Int = 1
+    override def columns(status: Countdown): Int = Stopwatch.this.columns(status.duration.value)
 
-package timers:
-  export
-    ultimatum.timers
-    . { compactCountdown, compactElapsed, digitalCountdown, digitalElapsed, urgentCountdown }
+    def rows(status: Countdown, tick: Tick, width: Int): List[Teletype] =
+      val seconds = status.duration.value
 
-package captions:
-  export ultimatum.captions.{leadingCaption, spacedCaption, trailingCaption, truncatedCaption}
+      // Under a minute is where a countdown starts to matter; the ramp is read over that last
+      // minute, so anything longer sits at the calm end of it.
+      val color =
+        if !urgent then gauging.palette.caption
+        else gauging.palette.severity(1.0 - (seconds/60.0).min(1.0))
 
-package gaugeGlyphs:
-  export ultimatum.gaugeGlyphs.{asciiGlyphs, brailleGlyphs, emojiGlyphs, unicodeGlyphs}
+      List(draw(seconds, color, width, gauging))
 
-package informationPrefixes:
-  export ultimatum.informationPrefixes.{binaryBytes, decimalBytes}
+  private def draw(seconds: Double, color: Color in Srgb, width: Int, gauging: Gauging)
+  :   Teletype =
+
+    val text = write(seconds)
+    val used = gauging.cells(text)
+
+    // Too narrow for the figure: drop its leading characters, so the seconds — the part that is
+    // actually moving — are what survives.
+    if used > width then gauging.tint(color)(Teletype(text.skip(used - width)))
+    else gauging.tint(color)(Teletype(t"$text${t" "*(width - used)}"))

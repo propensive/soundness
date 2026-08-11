@@ -44,6 +44,9 @@ object Elapsed:
 
   // In the companion, so that it does not compete at the top level with `Countdown`'s identically
   // shaped accessor; the companion is in the opaque type's implicit scope, so it resolves anyway.
+  // Every candidate design is one row and says the same thing, so a default is safe here.
+  given gaugeable: Gauging => Elapsed is Gaugeable = timers.compactElapsed
+
   extension (elapsed: Elapsed) def duration: Duration = elapsed
 
 opaque type Elapsed = Duration

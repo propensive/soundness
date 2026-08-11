@@ -30,80 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export
-  ultimatum
-  . { Bar, Busy, Byte, Bytes, CaptionLayout, Captioned, Checklist, Countdown, Dial, Elapsed, Facet,
-      Fraction, gauge, Gaugeable, GaugePalette, gaugeLine, gaugeRows, Gauging, Gradient,
-      Information, Inlay, Magnitude, Meter, Procession, Reading, Reckoning, Series, Sparkline,
-      Spinner, Standing, Step, Stopwatch, Transfer, whilst }
-
-// Every given is exported by name: a wildcard would silently drop them, since `import p.*` does not
-// import givens.
-
-package spinners:
-  export
-    ultimatum.spinners
-    . { aestheticSpinner, arcSpinner, arrowDoubleSpinner, arrowSpinner, balloonSpinner,
-        binarySpinner, bounceSpinner, bouncingBallSpinner, bouncingBarSpinner, boxSpinner,
-        brailleDotsSpinner, brailleGrowSpinner, brailleSnakeSpinner, brailleWaveSpinner,
-        circleHalfSpinner, circlePulseSpinner, circleQuadrantSpinner, clockSpinner,
-        crossStarSpinner, dotsScrollSpinner, dqpbSpinner, earthSpinner, growingBarSpinner,
-        growingBlockSpinner, hamburgerSpinner, hourglassSpinner, hourglassThinSpinner, layerSpinner,
-        lineSpinner, moonPhaseSpinner, noiseSpinner, pipeSpinner, pointsSpinner, pulseSpinner,
-        shuttleSpinner, squareCornerSpinner, starSpinner, toggleRoundSpinner, toggleSpinner,
-        toggleSquareSpinner, triangleSpinner }
-
-package bars:
-  export
-    ultimatum.bars
-    . { arrowheadBar, asciiBar, blockBar, brailleBar, capsuleBar, dotBar, equalsBar, fineBar,
-        gradientBar, markerBar, percentageBar, pipBar, railBar, risingBar, segmentedBar, shadedBar,
-        smoothBar, squareBar }
-
-package meters:
-  export
-    ultimatum.meters
-    . { asciiMeter, batteryMeter, bulletMeter, columnMeter, needleMeter, thermometerMeter }
-
-package sparklines:
-  export ultimatum.sparklines.{asciiSparkline, blockSparkline, dotSparkline, tallSparkline}
-
-package counters:
-  export
-    ultimatum.counters
-    . { decimalTransferCounter, paddedCounter, percentageCounter, plainCounter, rateTransferCounter,
-        scaledCounter, terseTransferCounter, transferCounter, wordCounter }
-
-package standings:
-  export
-    ultimatum.standings
-    . { asciiStanding, heavyStanding, squareStanding, tickStanding, wordStanding }
-
-package processions:
-  export
-    ultimatum.processions
-    . { beadProcession, breadcrumbProcession, checklistProcession, numberedProcession,
-        ribbonProcession }
-
-package palettes:
-  export
-    ultimatum.palettes
-    . { ansiSixteenGaugePalette, emberGaugePalette, monochromeGaugePalette, oceanicGaugePalette,
-        plumGaugePalette, signalGaugePalette, slateGaugePalette, solarizedDarkGaugePalette,
-        solarizedLightGaugePalette, verdantGaugePalette }
-
+// Durations, written out. `Elapsed` counts up and `Countdown` counts down; they are separate types
+// so that each can have its own design, and the countdown ones can signal urgency.
 package timers:
-  export
-    ultimatum.timers
-    . { compactCountdown, compactElapsed, digitalCountdown, digitalElapsed, urgentCountdown }
+  given compactElapsed: Gauging => Elapsed is Gaugeable = Stopwatch.Compact.elapsed
+  given digitalElapsed: Gauging => Elapsed is Gaugeable = Stopwatch.Digital.elapsed
 
-package captions:
-  export ultimatum.captions.{leadingCaption, spacedCaption, trailingCaption, truncatedCaption}
+  given compactCountdown: Gauging => Countdown is Gaugeable =
+    Stopwatch.Compact.countdown(false)
 
-package gaugeGlyphs:
-  export ultimatum.gaugeGlyphs.{asciiGlyphs, brailleGlyphs, emojiGlyphs, unicodeGlyphs}
+  given digitalCountdown: Gauging => Countdown is Gaugeable =
+    Stopwatch.Digital.countdown(false)
 
-package informationPrefixes:
-  export ultimatum.informationPrefixes.{binaryBytes, decimalBytes}
+  // Reddens as the remaining time runs out.
+  given urgentCountdown: Gauging => Countdown is Gaugeable = Stopwatch.Compact.countdown(true)
