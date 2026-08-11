@@ -44,20 +44,20 @@ case class AContact(person: APerson, company: Text) derives CanEqual
 
 object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
 
-  case class Issues(items: List[(Text, YamlError)] = Nil)(using Diagnostics)
+  case class Issues(items: List[(Text, Yaml.Error)] = Nil)(using Diagnostics)
   extends Error(m"${items.length} validation issues"):
-    def +(focus: Text, error: YamlError): Issues = Issues(items :+ (focus, error))
+    def +(focus: Text, error: Yaml.Error): Issues = Issues(items :+ (focus, error))
 
   // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
   // cannot be typed under capture checking (its honest type is a curried dependent context
   // function, an unimplemented compiler restriction), so the decode lambda must beta-reduce
   // away into `protect`'s inline position. See rep/DECISIONS.md.
   private inline def validateYaml[result](yaml: Yaml)
-    (inline decode: Yaml => result raises YamlError tracks Yaml.Focus)
+    (inline decode: Yaml => result raises Yaml.Error tracks Yaml.Focus)
   :   Issues =
-    Validate[Issues, [r] =>> r raises YamlError, Yaml.Focus]
+    Validate[Issues, [r] =>> r raises Yaml.Error, Yaml.Focus]
       ( Issues(),
-        { case error: YamlError =>
+        { case error: Yaml.Error =>
             accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
     . protect(decode(yaml))
 
@@ -92,7 +92,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
       test(m"Each missing-field error has reason Absent"):
         val yaml = t"name: Alice\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.all:
-          case (_, err) => err.reason == YamlError.Reason.Absent
+          case (_, err) => err.reason == Yaml.Error.Reason.Absent
       . assert(identity)
 
       test(m"Three missing fields: three errors accrued"):
@@ -115,7 +115,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
         val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.all:
           case (_, err) => err.reason match
-            case YamlError.Reason.NotType(_, _) => true
+            case Yaml.Error.Reason.NotType(_, _) => true
             case _                              => false
       . assert(identity)
 

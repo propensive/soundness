@@ -51,7 +51,7 @@ object TelReader:
   // The wrapped capabilities travel as neutral carriers (jacinta's
   // `JsonReader` pattern): the fields stay pure, and each accessor reasserts
   // the type at the rim — the audited point.
-  private[stratiform] def apply(parser: Tel.Parser^, tactic: Tactic[TelError]): TelReader^ =
+  private[stratiform] def apply(parser: Tel.Parser^, tactic: Tactic[Tel.Error]): TelReader^ =
     new TelReader(parser.asInstanceOf[AnyRef], tactic.asInstanceOf[AnyRef])
 
   // The rim cast as a static helper: inlined forwarders on a capture-erased
@@ -66,7 +66,7 @@ object TelReader:
 // subtree; `keyword(indent)` steps to the next entry at the given indent
 // level (transparently consuming blanks, comments and tabulation headers),
 // and exactly one of the other methods must then consume that entry in
-// full. The reader carries its own `Tactic[TelError]`, so instance `parse`
+// full. The reader carries its own `Tactic[Tel.Error]`, so instance `parse`
 // bodies need no error vocabulary: malformed input aborts through the read
 // call's ambient tactic.
 //
@@ -77,8 +77,8 @@ final class TelReader private (parser0: AnyRef, tactic0: AnyRef)
 extends caps.ExclusiveCapability, caps.Stateful:
   private inline def parser: Tel.Parser^ = TelReader.reveal(parser0)
 
-  private[stratiform] inline def errorTactic: Tactic[TelError] =
-    tactic0.asInstanceOf[Tactic[TelError]]
+  private[stratiform] inline def errorTactic: Tactic[Tel.Error] =
+    tactic0.asInstanceOf[Tactic[Tel.Error]]
 
   // The next entry's keyword at exactly `indent`, with the reader left
   // positioned right after it, or `Unset` once the entry region ends (a
@@ -184,11 +184,11 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // accruing boundary exactly like the AST primitives. The error is located at
   // the entry's value, or at its keyword when it has none, so a direct-path
   // decode error carries a span just as a parse error does.
-  update def fault(reason: TelError.Reason): Unit =
-    raise(TelError(reason, parser.directEntrySpan))(using errorTactic)
+  update def fault(reason: Tel.Error.Reason): Unit =
+    raise(Tel.Error(reason, parser.directEntrySpan))(using errorTactic)
 
   // As `fault`, but for a field whose keyword never arrived: there is no entry
   // of its own to point at, so it carries no span, exactly as an unresolvable
   // pointer does on the AST path.
-  update def absentFault(reason: TelError.Reason): Unit =
-    raise(TelError(reason))(using errorTactic)
+  update def absentFault(reason: Tel.Error.Reason): Unit =
+    raise(Tel.Error(reason))(using errorTactic)

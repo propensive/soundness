@@ -160,7 +160,7 @@ object LiraManifest:
     import errorDiagnostics.emptyDiagnostics
 
     mitigate:
-      case Base256Error(_) => bad(t"a hash is malformed")
+      case Base256.Error(_) => bad(t"a hash is malformed")
 
     . protect(Base256.decodeStrict(text))
 

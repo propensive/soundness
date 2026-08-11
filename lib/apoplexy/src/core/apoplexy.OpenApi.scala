@@ -70,7 +70,7 @@ object OpenApi:
     given decodableJson: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
     =>  Parameter is Json.Decodable = Json.DecodableDerivation.derived
 
-    given decodableYaml: (Tactic[YamlError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointerError], Tactic[OpenApi.Error])
     =>  Parameter is Decodable in Yaml = Yaml.DecodableDerivation.derived
 
     enum In:
@@ -117,7 +117,7 @@ object OpenApi:
     given decodableJson: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
     =>  Operation is Json.Decodable = Json.DecodableDerivation.derived
 
-    given decodableYaml: (Tactic[YamlError], Tactic[JsonPointerError], Tactic[OpenApi.Error])
+    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointerError], Tactic[OpenApi.Error])
     =>  Operation is Decodable in Yaml = Yaml.DecodableDerivation.derived
 
   case class Operation
@@ -201,10 +201,10 @@ object OpenApi:
   // private method so that recursive summons for nested schemas (`items`,
   // `properties`, …) resolve to this fully-defined given rather than to the
   // instance currently being initialised.
-  given jsonSchemaYaml: (Tactic[YamlError], Tactic[JsonPointerError])
+  given jsonSchemaYaml: (Tactic[Yaml.Error], Tactic[JsonPointerError])
   =>  JsonSchema is Decodable in Yaml = decodeYamlSchema(_)
 
-  private def decodeYamlSchema(yaml: Yaml)(using Tactic[YamlError], Tactic[JsonPointerError])
+  private def decodeYamlSchema(yaml: Yaml)(using Tactic[Yaml.Error], Tactic[JsonPointerError])
   :   JsonSchema =
 
     def field[value: Decodable in Yaml](name: Text): Optional[value] =
@@ -288,7 +288,7 @@ object OpenApi:
         mitigate:
           case ParseError(_, _, _)    => OpenApi.Error(OpenApi.Error.Reason.Malformed)
           case JsonError(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
-          case YamlError(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
+          case Yaml.Error(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
           case JsonPointerError(_, _) => OpenApi.Error(OpenApi.Error.Reason.Malformed)
 
         . protect:

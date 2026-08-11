@@ -84,7 +84,7 @@ object CapabilityDiscipline extends Discipline:
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case TelError(reason, _) => malformed(t"the capability listing is invalid: $reason")
+        case Tel.Error(reason, _) => malformed(t"the capability listing is invalid: $reason")
 
       . protect:
           import Tels.Decoder.validate

@@ -40,6 +40,7 @@ import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 
 // BASE-256 binary-to-text codec. The alphabet of §4 of the spec assigns
 // each byte value `b` (0..255) a Unicode character `A[b]` whose code
@@ -136,18 +137,34 @@ object Base256:
     out.asInstanceOf[Array[Byte]^{}]
 
   // Strict decode (§9). Verifies every input character is a member of
-  // the alphabet; raises a `Base256Error` listing the first offending
+  // the alphabet; raises a `Base256.Error` listing the first offending
   // character's position and code point. Successful decoding behaves
   // identically to `decode`.
-  def decodeStrict(text: Text): Data raises Base256Error =
+  def decodeStrict(text: Text): Data raises Base256.Error =
     val s = text.s
     val out = new scala.Array[Byte](s.length)
     var i = 0
 
     while i < s.length do
       val c = s.charAt(i)
-      if !membership(c.toInt) then abort(Base256Error(Base256Error.Reason.NotInAlphabet(i, c)))
+      if !membership(c.toInt) then abort(Base256.Error(Base256.Error.Reason.NotInAlphabet(i, c)))
       out(i) = (c.toInt % 256).toByte
       i += 1
 
     out.asInstanceOf[Array[Byte]^{}]
+
+  // Base256Error → Base256.Error
+  object Error:
+
+    object Reason:
+      given communicable: Reason is Communicable =
+        case NotInAlphabet(position, character) =>
+          val cp = String.format("U+%04X", Integer.valueOf(character.toInt)).nn
+          m"the character `$character` ($cp) at position $position is not in the BASE-256 alphabet"
+
+    enum Reason(val number: Int) extends Clarification:
+      case NotInAlphabet(position: Int, character: Char) extends Reason(1)
+
+  case class Error(reason: Base256.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(607, reason.number)(m"the BASE-256 string is invalid because $reason")
+

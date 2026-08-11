@@ -709,12 +709,12 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(identity)
 
     suite(m"Type errors"):
-      test(m"Decoding a string as Int raises a YamlError"):
-        capture[YamlError](t"hello".read[Yaml].as[Int])
+      test(m"Decoding a string as Int raises a Yaml.Error"):
+        capture[Yaml.Error](t"hello".read[Yaml].as[Int])
       . assert(_ => true)
 
-      test(m"Decoding a number as Boolean raises a YamlError"):
-        capture[YamlError](t"42".read[Yaml].as[Boolean])
+      test(m"Decoding a number as Boolean raises a Yaml.Error"):
+        capture[Yaml.Error](t"42".read[Yaml].as[Boolean])
       . assert(_ => true)
 
     suite(m"Encodable derivation"):
@@ -864,9 +864,9 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         m(t"age").as[Option[Int]]
       . assert(_ == None)
 
-      test(m"Indexing a non-sequence raises a YamlError"):
+      test(m"Indexing a non-sequence raises a Yaml.Error"):
         val y = t"42".read[Yaml]
-        capture[YamlError](y(0))
+        capture[Yaml.Error](y(0))
       . assert(_ => true)
 
     suite(m"Dynamic access"):

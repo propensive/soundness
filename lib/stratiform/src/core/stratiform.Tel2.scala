@@ -85,12 +85,12 @@ private[stratiform] def bareCompound(tel: Tel): Boolean = tel.subtree match
 private[stratiform] def primitiveFault[value]
   ( tel: Tel, expected: Text, sentinel: value )
   ( parse: Text => Optional[value] )
-  ( using Tactic[TelError] )
+  ( using Tactic[Tel.Error] )
 :   value =
 
-  if tel.atomTexts.isEmpty then raise(TelError(TelError.Reason.Absent)) yet sentinel
+  if tel.atomTexts.isEmpty then raise(Tel.Error(Tel.Error.Reason.Absent)) yet sentinel
   else parse(tel.primaryAtom).or:
-    raise(TelError(TelError.Reason.NotScalar(tel.primaryAtom, expected))) yet sentinel
+    raise(Tel.Error(Tel.Error.Reason.NotScalar(tel.primaryAtom, expected))) yet sentinel
 
 trait Tel2 extends Tel3:
   // The read-only `Openable` instance: any source parseable as `Tel` may
@@ -99,7 +99,7 @@ trait Tel2 extends Tel3:
   // supports write-back.
   given telViewOpenable: [source]
   =>  ( readable: (source is Readable to Tel)^,
-        mutationError: Tactic[MutationError] )
+        mutationError: Tactic[Mutation.Error] )
   =>  (TelViewOpenable[source]^{readable, mutationError}) =
     TelViewOpenable[source]()
 
@@ -125,7 +125,7 @@ trait Tel2 extends Tel3:
   inline given decodable: [value] => value is Tel.Decodable = summonFrom:
     case given (`value` is Decodable in Text) =>
       Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar):
-        provide[Tactic[TelError]](_.primaryAtom.as[value])
+        provide[Tactic[Tel.Error]](_.primaryAtom.as[value])
 
     case given Reflection[`value`] => DecodableDerivation.derived
 
@@ -146,7 +146,7 @@ trait Tel2 extends Tel3:
   // exactly as the AST derivation collects all matching compounds.
   given fieldCollection: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]],
-        tactic:  Tactic[TelError] )
+        tactic:  Tactic[Tel.Error] )
   =>  ( field: => (element is Tel.Field)^ )
   =>  collection[element] is Tel.Field =
     Tel.Field(Tel.Parsable.iterable[collection, element](field))
@@ -155,21 +155,21 @@ trait Tel2 extends Tel3:
   // `Iterable`, so each gets its own instance built at the underlying stdlib
   // type and cast (a no-op at erasure).
   given fieldList: [list <: List, element]
-  =>  ( tactic: Tactic[TelError] )
+  =>  ( tactic: Tactic[Tel.Error] )
   =>  ( field: => (element is Tel.Field)^ )
   =>  list[element] is Tel.Field =
     Tel.Field(Tel.Parsable.iterable[scala.collection.immutable.List, element](field))
     . asInstanceOf[list[element] is Tel.Field]
 
   given fieldSet: [set <: Set, element]
-  =>  ( tactic: Tactic[TelError] )
+  =>  ( tactic: Tactic[Tel.Error] )
   =>  ( field: => (element is Tel.Field)^ )
   =>  set[element] is Tel.Field =
     Tel.Field(Tel.Parsable.iterable[scala.collection.immutable.Set, element](field))
     . asInstanceOf[set[element] is Tel.Field]
 
   given fieldSeries: [sequence <: Sequence, element]
-  =>  ( tactic: Tactic[TelError] )
+  =>  ( tactic: Tactic[Tel.Error] )
   =>  ( field: => (element is Tel.Field)^ )
   =>  sequence[element] is Tel.Field =
     Tel.Field(Tel.Parsable.iterable[Vector, element](field))
@@ -184,7 +184,7 @@ trait Tel2 extends Tel3:
   // the same specificity preference the AST derivation's `Tel.Decodable`
   // summon exhibits.
   given fieldOptional: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  ( tactic: Tactic[TelError] )
+  =>  ( tactic: Tactic[Tel.Error] )
   =>  ( field: => (inner is Tel.Field)^ )
   =>  value is Tel.Field =
     Tel.Field(Tel.Parsable.optionality[inner, value](field))
@@ -197,7 +197,7 @@ trait Tel2 extends Tel3:
   // `aggregableParsed` wins whenever the value has a `Tel.Parsable`; when it
   // does not (all pre-`Parsable` code), this resolves exactly as before.
   given aggregableIn: [value: distillate.Decodable in Tel]
-  =>  (tactic: Tactic[TelError], tracking: zephyrine.PositionTracking)
+  =>  (tactic: Tactic[Tel.Error], tracking: zephyrine.PositionTracking)
   =>  (((value in Tel) is Aggregable by Data)^{tactic}) =
     source => Tel.parseTracking(Tel.concatenate(source)).as[value].asInstanceOf[value in Tel]
 
@@ -226,7 +226,7 @@ trait Tel2 extends Tel3:
                   default[Optional[field]]: Any )
           },
           values => Tel.Parsable.assemble(reflection, values))
-          ( using infer[Foci[Tel.Focus]], infer[Tactic[TelError]] )
+          ( using infer[Foci[Tel.Focus]], infer[Tactic[Tel.Error]] )
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Field =
       // A sum's wire form is a single child compound keyed by the variant's
@@ -273,7 +273,7 @@ trait Tel2 extends Tel3:
       }):
         telVal =>
           provide[Foci[Tel.Focus]]:
-            provide[Tactic[TelError]]:
+            provide[Tactic[Tel.Error]]:
               // §19.2 positional pre-pass (issue #1694): the compound's own
               // atoms fill fields in declaration order, per the schema-free
               // §20.2 step 3. The dominant wire form has no atoms and skips
@@ -340,7 +340,7 @@ trait Tel2 extends Tel3:
                         // child fills a non-repeatable member twice (E308).
                         // The atom wins — atoms precede children.
                         if match0.present
-                        then raise(TelError(TelError.Reason.NonRepeatableTooMany))
+                        then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))
 
                         ctx.decoded:
                           Tel.make:
@@ -369,13 +369,13 @@ trait Tel2 extends Tel3:
       Tel.Decodable(() => Morphology.Any):
         telVal =>
           provide[Foci[Tel.Focus]]:
-            provide[Tactic[TelError]]:
+            provide[Tactic[Tel.Error]]:
               provide[Tactic[VariantError]]:
                 val compounds = telVal.childCompounds
 
                 // A sum position with no child compound carries no variant to
                 // dispatch on: a decode-layer absence, not a crash.
-                if compounds.nil then abort(TelError(TelError.Reason.Absent))
+                if compounds.nil then abort(Tel.Error(Tel.Error.Reason.Absent))
 
                 val variant: Tel = Tel.make(compounds.head)
                 val variantKeyword: Text = labels(variant.keyword).or(variant.keyword)
@@ -556,27 +556,27 @@ trait Tel2 extends Tel3:
   // (§18.3/§20.2 step 1: a Scalar's value is its atom of any form, or the
   // empty string if it has none); a keywordless empty node — the historical
   // absent-field fallback — still raises `Absent`.
-  given textDecodable: (tactic: Tactic[TelError]) => ((Text is Tel.Decodable)^{tactic}) =
+  given textDecodable: (tactic: Tactic[Tel.Error]) => ((Text is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
       if tel.atomTexts.isEmpty && bareCompound(tel) then t""
       else primitiveFault(tel, t"Text", t""): atom => atom
 
-  given stringDecodable: (tactic: Tactic[TelError]) => ((String is Tel.Decodable)^{tactic}) =
+  given stringDecodable: (tactic: Tactic[Tel.Error]) => ((String is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
       if tel.atomTexts.isEmpty && bareCompound(tel) then ""
       else primitiveFault(tel, t"String", ""): atom => atom.s
 
-  given intDecodable: (tactic: Tactic[TelError]) => ((Int is Tel.Decodable)^{tactic}) =
+  given intDecodable: (tactic: Tactic[Tel.Error]) => ((Int is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Int", 0): atom =>
         try atom.s.toInt catch case _: NumberFormatException => Unset
 
-  given longDecodable: (tactic: Tactic[TelError]) => ((Long is Tel.Decodable)^{tactic}) =
+  given longDecodable: (tactic: Tactic[Tel.Error]) => ((Long is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Long", 0L): atom =>
         try atom.s.toLong catch case _: NumberFormatException => Unset
 
-  given doubleDecodable: (tactic: Tactic[TelError]) => ((Double is Tel.Decodable)^{tactic}) =
+  given doubleDecodable: (tactic: Tactic[Tel.Error]) => ((Double is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Real, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Double", 0.0): atom =>
         try atom.s.toDouble catch case _: NumberFormatException => Unset
@@ -586,7 +586,7 @@ trait Tel2 extends Tel3:
   // — the mapping every layer agrees on, from the derived schema through
   // BinTEL. A codec may opt into `Tel.Nature.Flag` for a genuinely
   // flag-shaped type.
-  given booleanDecodable: (tactic: Tactic[TelError]) => ((Boolean is Tel.Decodable)^{tactic}) =
+  given booleanDecodable: (tactic: Tactic[Tel.Error]) => ((Boolean is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Bool, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Boolean", false): atom =>
         atom.s match
@@ -637,7 +637,7 @@ trait Tel2 extends Tel3:
         opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(encodable.constructed(_))
 
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  Tactic[TelError]
+  =>  Tactic[Tel.Error]
   =>  ( decodable0: -> (inner is Tel.Decodable) )
   =>  value is Tel.Decodable =
     new Tel.Decodable:
@@ -645,7 +645,7 @@ trait Tel2 extends Tel3:
       def shape(): Morphology = Morphology.Opt(decodable0.shape())
       override def nature: Tel.Nature = decodable0.nature
       override def optional: Boolean = true
-      override def absent()(using Tactic[TelError]): value = Unset
+      override def absent()(using Tactic[Tel.Error]): value = Unset
 
       def decoded(telVal: Tel): value =
         if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset
@@ -701,7 +701,7 @@ trait Tel2 extends Tel3:
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
         element0:  -> (element is Tel.Decodable) )
-  =>  Tactic[TelError]
+  =>  Tactic[Tel.Error]
   =>  collection[element] is Tel.Decodable =
     new Tel.Decodable:
       type Self = collection[element]
@@ -729,7 +729,7 @@ trait Tel2 extends Tel3:
   // captures `Tel2.this`, mirroring `collectionDecodable` above.
   given listDecodable: [list <: List, element]
   =>  ( element0: -> (element is Tel.Decodable) )
-  =>  Tactic[TelError]
+  =>  Tactic[Tel.Error]
   =>  list[element] is Tel.Decodable =
     new Tel.Decodable:
       type Self = list[element]
@@ -753,7 +753,7 @@ trait Tel2 extends Tel3:
 
   given setDecodable: [set <: Set, element]
   =>  ( element0: -> (element is Tel.Decodable) )
-  =>  Tactic[TelError]
+  =>  Tactic[Tel.Error]
   =>  set[element] is Tel.Decodable =
     new Tel.Decodable:
       type Self = set[element]
@@ -777,7 +777,7 @@ trait Tel2 extends Tel3:
 
   given seriesDecodable: [sequence <: Sequence, element]
   =>  ( element0: -> (element is Tel.Decodable) )
-  =>  Tactic[TelError]
+  =>  Tactic[Tel.Error]
   =>  sequence[element] is Tel.Decodable =
     new Tel.Decodable:
       type Self = sequence[element]
@@ -817,7 +817,7 @@ trait Tel2 extends Tel3:
   given mapDecodable: [key, value]
   =>  ( keyCodec:   key is Tel.Decodable,
         valueCodec: value is Tel.Decodable,
-        tactic:     Tactic[TelError] )
+        tactic:     Tactic[Tel.Error] )
   =>  ((Map[key, value] is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Dict(keyCodec.shape(), valueCodec.shape())): telVal =>
       var accumulator = Map.empty[key, value]

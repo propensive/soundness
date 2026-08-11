@@ -62,7 +62,12 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
-import YamlError.Reason
+import Yaml.Error.Reason
+import spectacular.*
+import beneficence.*
+import serpentine.*
+import symbolism.*
+import urticose.*
 
 // `Yaml2` is only ever mixed into the `Yaml` object; pinning its self type to `Yaml.type` makes
 // `this` a stable singleton, so the `provide`-wrapped decoder SAMs defined here do not capture an
@@ -82,7 +87,7 @@ trait Yaml2:
         . or(Yaml.ast(Yaml.Ast(Unset)))
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  ( tactic: Tactic[YamlError] )
+  =>  ( tactic: Tactic[Yaml.Error] )
   =>  ( decodable: => (inner is Decodable in Yaml)^ )
   =>  ((value is Decodable in Yaml)^{tactic, decodable}) =
     // An honest capability: the instance retains the resolution-scoped tactic and
@@ -94,20 +99,20 @@ trait Yaml2:
   // than re-summoned via `provide` inside the SAM (which would capture the `yaml` parameter).
   private inline def decodePrimitive[value]
     ( yaml: Yaml )
-    ( using value is Decodable in Text, Tactic[YamlError] )
+    ( using value is Decodable in Text, Tactic[Yaml.Error] )
   :   value =
 
     yaml.root.asMatchable match
       case s: String => s.tt.as[value]
 
       case _ =>
-        abort(YamlError(Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Str)))
+        abort(Yaml.Error(Reason.NotType(Yaml.primitive(yaml.root), Yaml.Primitive.Str)))
 
   inline given decodable: [value] => value is Decodable in Yaml = summonFrom:
     case given (`value` is Decodable in Text) =>
       yaml =>
         decodePrimitive[value](yaml)
-          (using infer[value is Decodable in Text], infer[Tactic[YamlError]])
+          (using infer[value is Decodable in Text], infer[Tactic[Yaml.Error]])
 
     case given Reflection[`value`] =>
       DecodableDerivation.derived
@@ -128,11 +133,11 @@ trait Yaml2:
         decodeMapping[derivation](yaml)
           ( using infer[ProductReflection[derivation]],
                   infer[Foci[Yaml.Focus]],
-                  infer[Tactic[YamlError]] )
+                  infer[Tactic[Yaml.Error]] )
 
     private inline def decodeMapping[derivation <: Product]
       ( yaml: Yaml )
-      ( using ProductReflection[derivation], Foci[Yaml.Focus], Tactic[YamlError] )
+      ( using ProductReflection[derivation], Foci[Yaml.Focus], Tactic[Yaml.Error] )
     :   derivation =
 
             val arr: Array[Any]^{} | Null = yaml.root.asMatchable match
@@ -164,16 +169,16 @@ trait Yaml2:
                 case derivationDefault: Default[`derivation`] =>
                   val reason =
                     if yaml.root.isAbsent then Reason.Absent
-                    else Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Mapping)
+                    else Reason.NotType(Yaml.primitive(yaml.root), Yaml.Primitive.Mapping)
 
-                  raise(YamlError(reason)) yet derivationDefault()
+                  raise(Yaml.Error(reason)) yet derivationDefault()
 
                 case _ =>
                   buildWith[derivation](null)
 
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( arr: Array[Any]^{} | Null )
-      ( using Foci[Yaml.Focus], Tactic[YamlError] )
+      ( using Foci[Yaml.Focus], Tactic[Yaml.Error] )
     :   derivation =
 
       // `@name[Yaml]` / bare `@name` renames: field name -> mapping key, read
@@ -228,7 +233,7 @@ trait Yaml2:
     // sentinel; without one we abort.
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Yaml = yaml =>
       provide[Foci[Yaml.Focus]]:
-        provide[Tactic[YamlError]]:
+        provide[Tactic[Yaml.Error]]:
           provide[Tactic[VariantError]]:
             val discriminable = infer[derivation is Discriminable in Yaml]
             val labels: List[Text] = variantLabels
@@ -251,10 +256,10 @@ trait Yaml2:
                 focus(prior.or(Yaml.Focus(YamlPath()))):
                   summonFrom:
                     case derivationDefault: Default[`derivation`] =>
-                      raise(YamlError(Reason.Absent)) yet derivationDefault()
+                      raise(Yaml.Error(Reason.Absent)) yet derivationDefault()
 
                     case _ =>
-                      abort(YamlError(Reason.Absent))
+                      abort(Yaml.Error(Reason.Absent))
 
   object EncodableDerivation extends Derivable[Encodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -934,9 +939,9 @@ object Yaml extends Yaml2, Dynamic:
         yaml.isInstanceOf[scala.Array[AnyRef]] &&
           (yaml.asInstanceOf[scala.Array[?]].length & 1) == 1
 
-      private def expected(yamlPrimitive: YamlPrimitive)(using Tactic[YamlError]): Unit =
+      private def expected(yamlPrimitive: Yaml.Primitive)(using Tactic[Yaml.Error]): Unit =
         raise:
-          YamlError(if isAbsent then Reason.Absent else Reason.NotType(primitive, yamlPrimitive))
+          Yaml.Error(if isAbsent then Reason.Absent else Reason.NotType(primitive, yamlPrimitive))
 
       inline def arrayLength: Int = Yaml.Ast.sequenceLength(yaml.asInstanceOf[Array[Any]^{}])
 
@@ -970,7 +975,7 @@ object Yaml extends Yaml2, Dynamic:
 
           hit
 
-      def array(using Tactic[YamlError]): Array[Yaml.Ast]^{} =
+      def array(using Tactic[Yaml.Error]): Array[Yaml.Ast]^{} =
         if isArray then
           val full = yaml.asInstanceOf[Array[Yaml.Ast]^{}]
           val n = arrayLength
@@ -978,35 +983,35 @@ object Yaml extends Yaml2, Dynamic:
           if n == full.length then full
           else Array.tabulate(n)(full.readUnchecked(_))
         else
-          expected(YamlPrimitive.Sequence) yet Array.of[Yaml.Ast]()
+          expected(Yaml.Primitive.Sequence) yet Array.of[Yaml.Ast]()
 
-      def double(using Tactic[YamlError]): Double = yaml.asInstanceOf[Matchable] match
+      def double(using Tactic[Yaml.Error]): Double = yaml.asInstanceOf[Matchable] match
         case value: Double                   => value
         case value: Long                     => value.toDouble
         case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toDouble
-        case _                               => expected(YamlPrimitive.Decimal) yet 0.0
+        case _                               => expected(Yaml.Primitive.Decimal) yet 0.0
 
-      def long(using Tactic[YamlError]): Long = yaml.asInstanceOf[Matchable] match
+      def long(using Tactic[Yaml.Error]): Long = yaml.asInstanceOf[Matchable] match
         case value: Long                     => value
         case value: Double                   => value.toLong
         case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toLong.or(0L)
-        case _                               => expected(YamlPrimitive.Integer) yet 0L
+        case _                               => expected(Yaml.Primitive.Integer) yet 0L
 
-      def bcd(using Tactic[YamlError]): Bcd = yaml.asInstanceOf[Matchable] match
+      def bcd(using Tactic[Yaml.Error]): Bcd = yaml.asInstanceOf[Matchable] match
         case value: scala.Array[Double] @unchecked => Bcd.adopt(value)
         case value: Long                     => Bcd(BigDecimal(value))
         case value: Double                   => Bcd(BigDecimal(value))
 
         case _ =>
-          expected(YamlPrimitive.Decimal) yet Bcd(BigDecimal(0))
+          expected(Yaml.Primitive.Decimal) yet Bcd(BigDecimal(0))
 
-      def string(using Tactic[YamlError]): Text =
-        if isString then yaml.asInstanceOf[String].tt else expected(YamlPrimitive.Str) yet t""
+      def string(using Tactic[Yaml.Error]): Text =
+        if isString then yaml.asInstanceOf[String].tt else expected(Yaml.Primitive.Str) yet t""
 
-      def boolean(using Tactic[YamlError]): Boolean =
-        if isBoolean then yaml.asInstanceOf[Boolean] else expected(YamlPrimitive.Bool) yet false
+      def boolean(using Tactic[Yaml.Error]): Boolean =
+        if isBoolean then yaml.asInstanceOf[Boolean] else expected(Yaml.Primitive.Bool) yet false
 
-      def primitive: YamlPrimitive = Yaml.primitive(yaml)
+      def primitive: Yaml.Primitive = Yaml.primitive(yaml)
 
   def ast(value: Yaml.Ast): Yaml = new Yaml(value)
 
@@ -1124,11 +1129,11 @@ object Yaml extends Yaml2, Dynamic:
   given yamlEncodable: Yaml is Encodable in Yaml = identity(_)
 
   // Laundered pure like the primitive codecs (codec-thunk seal; see rep/DECISIONS.md).
-  given bytes: (tactic: Tactic[YamlError])
+  given bytes: (tactic: Tactic[Yaml.Error])
   =>  ((Bytes is Decodable in Yaml)^{tactic, caps.any}) =
     _.root.long.b
 
-  given lens: [name <: Label: ValueOf] => (erased dynamicYamlEnabler: DynamicYamlEnabler) => (tactic: Tactic[YamlError])
+  given lens: [name <: Label: ValueOf] => (erased dynamicYamlEnabler: DynamicYamlEnabler) => (tactic: Tactic[Yaml.Error])
   =>  ((name is Lens from Yaml onto Yaml)^{tactic}) =
     Lens(_.selectDynamic(valueOf[name]), (yaml, value) => yaml.modify(valueOf[name], value))
 
@@ -1202,11 +1207,11 @@ object Yaml extends Yaml2, Dynamic:
   // so multi-error accrual can register each malformed field
   // independently.
   private inline def typeMismatch[T]
-    ( yaml: Yaml, expected: YamlPrimitive, default: T )
-    ( using Tactic[YamlError] )
+    ( yaml: Yaml, expected: Yaml.Primitive, default: T )
+    ( using Tactic[Yaml.Error] )
   :   T =
 
-    abort(YamlError(Reason.NotType(primitive(yaml.root), expected)))
+    abort(Yaml.Error(Reason.NotType(primitive(yaml.root), expected)))
 
   // Register a wrong-type / absent error and continue with `sentinel`
   // instead of aborting — the raise+yet pattern that lets sibling
@@ -1217,68 +1222,68 @@ object Yaml extends Yaml2, Dynamic:
   // so error reports distinguish "field missing" from "field had the
   // wrong shape".
   private inline def primitiveFault[T]
-    ( yaml: Yaml, expected: YamlPrimitive, sentinel: T )
-    ( using Tactic[YamlError] )
+    ( yaml: Yaml, expected: Yaml.Primitive, sentinel: T )
+    ( using Tactic[Yaml.Error] )
   :   T =
 
-    if yaml.root.isAbsent then raise(YamlError(Reason.Absent)) yet sentinel
-    else raise(YamlError(Reason.NotType(primitive(yaml.root), expected))) yet sentinel
+    if yaml.root.isAbsent then raise(Yaml.Error(Reason.Absent)) yet sentinel
+    else raise(Yaml.Error(Reason.NotType(primitive(yaml.root), expected))) yet sentinel
 
-  given int: (tactic: Tactic[YamlError])
+  given int: (tactic: Tactic[Yaml.Error])
   =>  ((Int is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case n: Long   => n.toInt
       case d: Double => d.toInt
-      case _         => primitiveFault(yaml, YamlPrimitive.Integer, 0)
+      case _         => primitiveFault(yaml, Yaml.Primitive.Integer, 0)
 
-  given long: (tactic: Tactic[YamlError])
+  given long: (tactic: Tactic[Yaml.Error])
   =>  ((Long is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case n: Long   => n
       case d: Double => d.toLong
-      case _         => primitiveFault(yaml, YamlPrimitive.Integer, 0L)
+      case _         => primitiveFault(yaml, Yaml.Primitive.Integer, 0L)
 
-  given double: (tactic: Tactic[YamlError])
+  given double: (tactic: Tactic[Yaml.Error])
   =>  ((Double is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case d: Double => d
       case n: Long   => n.toDouble
-      case _         => primitiveFault(yaml, YamlPrimitive.Decimal, 0.0)
+      case _         => primitiveFault(yaml, Yaml.Primitive.Decimal, 0.0)
 
-  given float: (tactic: Tactic[YamlError])
+  given float: (tactic: Tactic[Yaml.Error])
   =>  ((Float is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case d: Double => d.toFloat
       case n: Long   => n.toFloat
-      case _         => primitiveFault(yaml, YamlPrimitive.Decimal, 0.0f)
+      case _         => primitiveFault(yaml, Yaml.Primitive.Decimal, 0.0f)
 
-  given boolean: (tactic: Tactic[YamlError])
+  given boolean: (tactic: Tactic[Yaml.Error])
   =>  ((Boolean is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case b: Boolean => b
-      case _          => primitiveFault(yaml, YamlPrimitive.Bool, false)
+      case _          => primitiveFault(yaml, Yaml.Primitive.Bool, false)
 
-  given text: (tactic: Tactic[YamlError])
+  given text: (tactic: Tactic[Yaml.Error])
   =>  ((Text is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case s: String => s.tt
-      case _         => primitiveFault(yaml, YamlPrimitive.Str, t"")
+      case _         => primitiveFault(yaml, Yaml.Primitive.Str, t"")
 
-  given string: (tactic: Tactic[YamlError])
+  given string: (tactic: Tactic[Yaml.Error])
   =>  ((String is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case s: String => s
-      case _         => primitiveFault(yaml, YamlPrimitive.Str, "")
+      case _         => primitiveFault(yaml, Yaml.Primitive.Str, "")
 
-  given unit: (tactic: Tactic[YamlError])
+  given unit: (tactic: Tactic[Yaml.Error])
   =>  ((Unit is Decodable in Yaml)^{tactic}) = yaml =>
-    if yaml.root.isNull then () else primitiveFault(yaml, YamlPrimitive.Null, ())
+    if yaml.root.isNull then () else primitiveFault(yaml, Yaml.Primitive.Null, ())
 
   // Alias counterparts of `iterable`/`iterableEncodable`: the opaque prelude
   // collections do not conform to `Iterable`, so each alias gets its own
   // instance, built at the underlying stdlib type and cast (a no-op at erasure).
   given listDecodable: [list <: List, element]
-  =>  ( tactic: Tactic[YamlError],
+  =>  ( tactic: Tactic[Yaml.Error],
         foci:   Foci[Yaml.Focus] )
   =>  ( decodable: => (element is Decodable in Yaml)^ )
   =>  ((list[element] is Decodable in Yaml)^{tactic, caps.any}) =
@@ -1286,7 +1291,7 @@ object Yaml extends Yaml2, Dynamic:
     . asInstanceOf[(list[element] is Decodable in Yaml)^{tactic, caps.any}]
 
   given setDecodable: [set <: Set, element]
-  =>  ( tactic: Tactic[YamlError],
+  =>  ( tactic: Tactic[Yaml.Error],
         foci:   Foci[Yaml.Focus] )
   =>  ( decodable: => (element is Decodable in Yaml)^ )
   =>  ((set[element] is Decodable in Yaml)^{tactic, caps.any}) =
@@ -1294,7 +1299,7 @@ object Yaml extends Yaml2, Dynamic:
     . asInstanceOf[(set[element] is Decodable in Yaml)^{tactic, caps.any}]
 
   given seriesDecodable: [sequence <: Sequence, element]
-  =>  ( tactic: Tactic[YamlError],
+  =>  ( tactic: Tactic[Yaml.Error],
         foci:   Foci[Yaml.Focus] )
   =>  ( decodable: => (element is Decodable in Yaml)^ )
   =>  ((sequence[element] is Decodable in Yaml)^{tactic, caps.any}) =
@@ -1303,7 +1308,7 @@ object Yaml extends Yaml2, Dynamic:
 
   given iterable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
-        tactic:    Tactic[YamlError],
+        tactic:    Tactic[Yaml.Error],
         foci:      Foci[Yaml.Focus] )
   =>  ( decodable: => (element is Decodable in Yaml)^ )
   =>  ((collection[element] is Decodable in Yaml)^{tactic, decodable}) =
@@ -1334,12 +1339,12 @@ object Yaml extends Yaml2, Dynamic:
           builder.result()
 
         case other =>
-          raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
-                                         YamlPrimitive.Sequence)))
+          raise(Yaml.Error(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
+                                         Yaml.Primitive.Sequence)))
 
           factory.newBuilder.result()
 
-  given map: [value: Decodable in Yaml] => (tactic: Tactic[YamlError])
+  given map: [value: Decodable in Yaml] => (tactic: Tactic[Yaml.Error])
   =>  ((Map[Text, value] is Decodable in Yaml)^{tactic, caps.any}) =
     // An honest capability, as `optional` above.
     yaml =>
@@ -1363,8 +1368,8 @@ object Yaml extends Yaml2, Dynamic:
                 case k: Boolean => k.toString.tt
 
                 case other =>
-                  abort(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
-                                                 YamlPrimitive.Str)))
+                  abort(Yaml.Error(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
+                                                 Yaml.Primitive.Str)))
 
             result = result.updated(keyText, value.decoded(new Yaml(rawValue)))
             i += 1
@@ -1372,8 +1377,8 @@ object Yaml extends Yaml2, Dynamic:
           result
 
         case other =>
-          raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
-                                         YamlPrimitive.Mapping)))
+          raise(Yaml.Error(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
+                                         Yaml.Primitive.Mapping)))
 
           Map.empty
 
@@ -1689,7 +1694,7 @@ object Yaml extends Yaml2, Dynamic:
   // `asInstanceOf` cast — `value in Yaml` is just `value { type
   // Form = Yaml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Yaml]
-  =>  ( tactic: Tactic[ParseError], yamlTactic: Tactic[YamlError], tracking: Yaml.Tracking )
+  =>  ( tactic: Tactic[ParseError], yamlTactic: Tactic[Yaml.Error], tracking: Yaml.Tracking )
   =>  (((value in Yaml) is Aggregable by Text)^{tactic, yamlTactic}) =
 
     new Aggregable:
@@ -1705,21 +1710,21 @@ object Yaml extends Yaml2, Dynamic:
         fromStream(utf8Stream(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
         . as[value].asInstanceOf[value in Yaml]
 
-  def primitive(ast: Yaml.Ast): YamlPrimitive =
-    if ast.isNull then YamlPrimitive.Null
+  def primitive(ast: Yaml.Ast): Yaml.Primitive =
+    if ast.isNull then Yaml.Primitive.Null
     else ast.asMatchable match
-      case _: Boolean                   => YamlPrimitive.Bool
-      case _: Long                      => YamlPrimitive.Integer
-      case _: Double                    => YamlPrimitive.Decimal
+      case _: Boolean                   => Yaml.Primitive.Bool
+      case _: Long                      => Yaml.Primitive.Integer
+      case _: Double                    => Yaml.Primitive.Decimal
       // High-precision BCD numbers report as `Decimal`. The AST-level
       // distinction (`isBcd`) remains available for callers that care.
-      case _: scala.Array[Double] @unchecked  => YamlPrimitive.Decimal
-      case _: String                    => YamlPrimitive.Str
+      case _: scala.Array[Double] @unchecked  => Yaml.Primitive.Decimal
+      case _: String                    => Yaml.Primitive.Str
 
       case xs: scala.Array[AnyRef] @unchecked =>
-        if (xs.length & 1) == 0 then YamlPrimitive.Mapping else YamlPrimitive.Sequence
+        if (xs.length & 1) == 0 then Yaml.Primitive.Mapping else Yaml.Primitive.Sequence
 
-      case _ => YamlPrimitive.Null
+      case _ => Yaml.Primitive.Null
 
   private[ypsiloid] object Parser:
     // The pool is a checker-opaque boundary (jacinta's Parser pool precedent):
@@ -5922,6 +5927,26 @@ object Yaml extends Yaml2, Dynamic:
       inInlineMappingValue = savedInline
       result
 
+  // YamlError → Yaml.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case NotType(found, expected) => m"the YAML value had type $found instead of $expected"
+        case Absent                   => m"the YAML value was not present"
+
+    enum Reason(val number: Int) extends Clarification:
+      case NotType(found: Yaml.Primitive, expected: Yaml.Primitive) extends Reason(1)
+      case Absent extends Reason(2)
+
+  case class Error(reason: Yaml.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(31, reason.number)(m"could not access the YAML value because $reason")
+
+  // YamlPrimitive → Yaml.Primitive
+  object Primitive:
+    given communicable: Yaml.Primitive is Communicable = primitive => Message(primitive.show)
+
+  enum Primitive:
+    case Null, Bool, Integer, Decimal, Str, Sequence, Mapping
 
 class Yaml(rootValue: Yaml.Ast, positions: Optional[Yaml.PositionIndex] = Unset)
 extends Dynamic derives CanEqual:
@@ -5932,7 +5957,7 @@ extends Dynamic derives CanEqual:
   // and for any `Yaml` built from a decoded/computed value.
   def positionIndex: Optional[Yaml.PositionIndex] = positions
 
-  def as[value: Decodable in Yaml]: value raises YamlError tracks Yaml.Focus =
+  def as[value: Decodable in Yaml]: value raises Yaml.Error tracks Yaml.Focus =
     val result = value.decoded(this)
     // Auto-populate the source position on every accumulated focus so
     // error handlers can read both `.pointer` and `.position` without
@@ -5947,12 +5972,12 @@ extends Dynamic derives CanEqual:
     result
 
   // Sequence indexing: `yaml(0)` returns the first element of a sequence,
-  // raising `YamlError` (with `Reason.NotType`) if the root is not a
+  // raising `Yaml.Error` (with `Reason.NotType`) if the root is not a
   // sequence.
-  def apply(index: Int): Yaml raises YamlError =
+  def apply(index: Int): Yaml raises Yaml.Error =
     if root.isArray then new Yaml(root.arrayElement(index))
     else
-      raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Sequence)))
+      raise(Yaml.Error(Reason.NotType(Yaml.primitive(root), Yaml.Primitive.Sequence)))
       new Yaml(Yaml.Ast.Null)
 
   // Mapping field access by name: `yaml(t"foo")` returns the value
@@ -5970,17 +5995,17 @@ extends Dynamic derives CanEqual:
   def selectDynamic(field: String)(using erased dynamicYamlEnabler: DynamicYamlEnabler): Yaml = apply(field.tt)
 
   def applyDynamic(field: String)(index: Int)(using erased dynamicYamlEnabler: DynamicYamlEnabler)
-  :   Yaml raises YamlError =
+  :   Yaml raises Yaml.Error =
 
     apply(field.tt)(index)
 
   // Immutable update: `yaml(0) = newValue` desugars to `update(0, newValue)`.
   def update[value: Encodable in Yaml](index: Int, value: value)
     ( using erased dynamicYamlEnabler: DynamicYamlEnabler )
-  :   Yaml raises YamlError =
+  :   Yaml raises Yaml.Error =
 
     if !root.isArray then
-      raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Sequence)))
+      raise(Yaml.Error(Reason.NotType(Yaml.primitive(root), Yaml.Primitive.Sequence)))
 
     val n = root.arrayLength
     val updated = Array[Any](n)
@@ -5999,20 +6024,20 @@ extends Dynamic derives CanEqual:
   // entry. `yaml.foo = Unset` deletes the entry.
   def updateDynamic(field: String)[value: Encodable in Yaml](value: value)
     ( using erased dynamicYamlEnabler: DynamicYamlEnabler )
-  :   Yaml raises YamlError =
+  :   Yaml raises Yaml.Error =
 
     modify(field, value.encode)
 
   def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicYamlEnabler: DynamicYamlEnabler)
-  :   Yaml raises YamlError =
+  :   Yaml raises Yaml.Error =
 
     delete(field)
 
   // ── Internal mapping update helpers ─────────────────────────────────────
 
-  private[ypsiloid] def modify(field: String, value: Yaml): Yaml raises YamlError =
+  private[ypsiloid] def modify(field: String, value: Yaml): Yaml raises Yaml.Error =
     if !root.isObject then
-      raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Mapping)))
+      raise(Yaml.Error(Reason.NotType(Yaml.primitive(root), Yaml.Primitive.Mapping)))
       this
     else
       val arr = root.asInstanceOf[Array[Any]^{}]
@@ -6032,9 +6057,9 @@ extends Dynamic derives CanEqual:
           out(index*2 + 1) = value.root.asInstanceOf[Any]
           Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))
 
-  private[ypsiloid] def delete(field: String): Yaml raises YamlError =
+  private[ypsiloid] def delete(field: String): Yaml raises Yaml.Error =
     if !root.isObject then
-      raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Mapping)))
+      raise(Yaml.Error(Reason.NotType(Yaml.primitive(root), Yaml.Primitive.Mapping)))
       this
     else
       val arr = root.asInstanceOf[Array[Any]^{}]

@@ -55,6 +55,8 @@ import turbulence.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
+import denominative.*
+import fulminate.*
 
 // Presentation model from §17 of the TEL specification. The Scala AST is
 // structurally identical to the reference implementation's AST so that
@@ -68,11 +70,9 @@ import zephyrine.*
 
 object Tel extends Tel2:
 
-  // Consolidated names for the schema-related types. `TelError` lives
+  // Consolidated names for the schema-related types. `Tel.Error` lives
   // at the top level by design (the other types are defined inline in
   // `object Tel` below as their canonical location).
-  type Error = TelError
-  val Error: TelError.type = TelError
 
   // The `Openable` instance for a writable TEL source:
   // `source.open[Tel](Read & Write)` parses on entry, offers the §22.2
@@ -87,10 +87,10 @@ object Tel extends Tel2:
     TelOpenable[source]()
 
   // The source `Position` type located by `tel.locate(pointer)` and carried on a
-  // `Tel.Focus`. Defined canonically on `TelError` (where it also locates parse
+  // `Tel.Focus`. Defined canonically on `Tel.Error` (where it also locates parse
   // errors); aliased here for symmetry with `Json.Ast.Position` / `Yaml.Ast.Position`.
-  type Position = TelError.Position
-  val Position: TelError.Position.type = TelError.Position
+  type Position = Tel.Error.Position
+  val Position: Tel.Error.Position.type = Tel.Error.Position
 
   // The focus carried by `Tel#as[T]` for multi-error accrual: a keyword path
   // identifying the field being decoded, and the source `Span` of the text the
@@ -128,7 +128,7 @@ object Tel extends Tel2:
     foci.supplement(foci.length, _.let(_.withKeySpan(tel)).or(Tel.Focus()))
 
   extension (tel: Tel)
-    def edited(revision: Revision): Tel raises MutationError = revision(tel)
+    def edited(revision: Revision): Tel raises Mutation.Error = revision(tel)
 
     // Runtime-checks `tel` against `topic`, then re-types it as a schema-typed
     // `Tel of topic from topic`. The phantom `Topic` records the current position
@@ -138,13 +138,13 @@ object Tel extends Tel2:
     // import required.
     //
     // The runtime conformance check is a decode-and-discard against `topic`'s
-    // `Tel.Decodable` (a nonconformant value raises `TelError`): TEL scalars are
+    // `Tel.Decodable` (a nonconformant value raises `Tel.Error`): TEL scalars are
     // untyped text, so a structural walk over the schema cannot catch type mismatches
     // (e.g. a non-numeric `Int` field) that decoding does — hence decoding remains the
     // strict check. The carrying `Tel.Decodable` also supplies the schema for the
     // phantom anchor, so the schema is guaranteed coherent with the decoder used.
     def verify[topic](using topic is Tel.Decodable)
-    :   (Tel of topic from topic) raises TelError =
+    :   (Tel of topic from topic) raises Tel.Error =
 
       tel.as[topic]
       tel.asInstanceOf[Tel of topic from topic]
@@ -263,7 +263,7 @@ object Tel extends Tel2:
     // keyword — the AST counterpart of `Parsing.absent`. The default
     // replicates the derivation's historical fallback: decode an empty node
     // (primitives raise `Absent` from it).
-    def absent()(using Tactic[TelError]): Self = decoded(Tel.empty)
+    def absent()(using Tactic[Tel.Error]): Self = decoded(Tel.empty)
 
   // The shared substance of `Tel.Parsable` and `Tel.Field`, mirroring
   // jacinta's `Json.Parsing`. The two subtraits add nothing: they exist so
@@ -304,13 +304,13 @@ object Tel extends Tel2:
     // Parse one positionally-assigned atom as this field's value. Only
     // meaningful for `Scalar`-natured instances; the default reports the
     // §20.2 step 3c mismatch.
-    def parseAtom(text: Text)(using Tactic[TelError]): Self =
-      abort(TelError(TelError.Reason.AtomAtNonAssignablePos))
+    def parseAtom(text: Text)(using Tactic[Tel.Error]): Self =
+      abort(Tel.Error(Tel.Error.Reason.AtomAtNonAssignablePos))
 
     // The value of a `Flag`-natured field made present by a bare atom
     // matching its keyword.
-    def parseFlag()(using Tactic[TelError]): Self =
-      abort(TelError(TelError.Reason.AtomAtNonAssignablePos))
+    def parseFlag()(using Tactic[Tel.Error]): Self =
+      abort(Tel.Error(Tel.Error.Reason.AtomAtNonAssignablePos))
 
     def parse(reader: TelReader^, indent: Int): Self
 
@@ -320,7 +320,7 @@ object Tel extends Tel2:
     // keyword: an error unless overridden (the bridge delegates to its
     // decoder over an empty `Tel`, exactly like the AST derivation's
     // missing-field fallback).
-    def absent()(using Tactic[TelError]): Self = abort(TelError(TelError.Reason.Absent))
+    def absent()(using Tactic[Tel.Error]): Self = abort(Tel.Error(Tel.Error.Reason.Absent))
 
   object Parsable:
     // The base of generated parsers: generated code is capture-erased, so
@@ -350,7 +350,7 @@ object Tel extends Tel2:
     def parseField[value](parsing: AnyRef, reader: AnyRef, indent: Int): value =
       parsing.asInstanceOf[value is Tel.Parsing].parse(reader.asInstanceOf[TelReader^], indent)
 
-    def absentField[value](parsing: AnyRef)(using Tactic[TelError]): value =
+    def absentField[value](parsing: AnyRef)(using Tactic[Tel.Error]): value =
       parsing.asInstanceOf[value is Tel.Parsing].absent()
 
     def apply[value](shape0: => Morphology)(parser: (reader: TelReader^) => value)
@@ -388,12 +388,12 @@ object Tel extends Tel2:
             decodable.decoded(reader.value(indent))
 
           override def parse(reader: TelReader^): value = decodable.decoded(reader.document())
-          override def absent()(using Tactic[TelError]): value = decodable.absent()
+          override def absent()(using Tactic[Tel.Error]): value = decodable.absent()
           def parseElement(reader: TelReader^, indent: Int): Any = reader.value(indent)
 
           // A positional atom becomes a synthetic one-atom compound, exactly
           // the element form `gathered` re-assembles into its document.
-          def parseAtomElement(text: Text)(using Tactic[TelError]): Any =
+          def parseAtomElement(text: Text)(using Tactic[Tel.Error]): Any =
             Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
           def gathered(elements: List[Any]): value =
@@ -414,11 +414,11 @@ object Tel extends Tel2:
             decodable.decoded(reader.value(indent))
 
           override def parse(reader: TelReader^): value = decodable.decoded(reader.document())
-          override def absent()(using Tactic[TelError]): value = decodable.absent()
+          override def absent()(using Tactic[Tel.Error]): value = decodable.absent()
 
           // The AST bridge for a positional atom: decode a synthetic
           // one-atom compound, as the derived decoder hands one over.
-          override def parseAtom(text: Text)(using Tactic[TelError]): value =
+          override def parseAtom(text: Text)(using Tactic[Tel.Error]): value =
             decodable.decoded:
               Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
@@ -454,9 +454,9 @@ object Tel extends Tel2:
         override def repeatable: Boolean = field0.repeatable
         override def nature: Tel.Nature = field0.nature
         override def optional: Boolean = field0.optional
-        override def absent()(using Tactic[TelError]): value = field0.absent()
-        override def parseAtom(text: Text)(using Tactic[TelError]): value = field0.parseAtom(text)
-        override def parseFlag()(using Tactic[TelError]): value = field0.parseFlag()
+        override def absent()(using Tactic[Tel.Error]): value = field0.absent()
+        override def parseAtom(text: Text)(using Tactic[Tel.Error]): value = field0.parseAtom(text)
+        override def parseFlag()(using Tactic[Tel.Error]): value = field0.parseFlag()
 
     // The element-wise hooks of a repeatable (collection) parser. The
     // derived product parser gathers each same-keyword occurrence through
@@ -472,7 +472,7 @@ object Tel extends Tel2:
       // One element built from a positionally-assigned atom: §19.2 lets a
       // repeatable member's occurrences split between inline atoms on the
       // parent line and later same-keyword children.
-      def parseAtomElement(text: Text)(using Tactic[TelError]): Any
+      def parseAtomElement(text: Text)(using Tactic[Tel.Error]): Any
 
       def gathered(elements: List[Any]): Self
 
@@ -490,7 +490,7 @@ object Tel extends Tel2:
     // pattern: a by-name parameter cannot be named in a capture set.
     def iterable[collection <: Iterable, element]
       ( field: => (element is Tel.Parsing)^ )
-      ( using factory: Factory[element, collection[element]], tactic: Tactic[TelError] )
+      ( using factory: Factory[element, collection[element]], tactic: Tactic[Tel.Error] )
     :   collection[element] is Tel.Parsable =
 
       caps.unsafe.unsafeAssumePure:
@@ -503,7 +503,7 @@ object Tel extends Tel2:
 
           def parseElement(reader: TelReader^, indent: Int): Any = field.parse(reader, indent)
 
-          def parseAtomElement(text: Text)(using Tactic[TelError]): Any = field.parseAtom(text)
+          def parseAtomElement(text: Text)(using Tactic[Tel.Error]): Any = field.parseAtom(text)
 
           def gathered(elements: List[Any]): collection[element] =
             val builder = factory.newBuilder
@@ -538,7 +538,7 @@ object Tel extends Tel2:
     // pattern: a by-name parameter cannot be named in a capture set.
     def optionality[inner <: value, value >: Unset.type]
       ( field: => (inner is Tel.Parsing)^ )
-      ( using tactic: Tactic[TelError] )
+      ( using tactic: Tactic[Tel.Error] )
     :   value is Tel.Parsable =
 
       caps.unsafe.unsafeAssumePure:
@@ -554,12 +554,12 @@ object Tel extends Tel2:
               reader.skipEntry(indent)
               Unset
 
-          override def absent()(using Tactic[TelError]): value = Unset
+          override def absent()(using Tactic[Tel.Error]): value = Unset
 
-          override def parseAtom(text: Text)(using Tactic[TelError]): value =
+          override def parseAtom(text: Text)(using Tactic[Tel.Error]): value =
             field.parseAtom(text)
 
-          override def parseFlag()(using Tactic[TelError]): value = field.parseFlag()
+          override def parseFlag()(using Tactic[Tel.Error]): value = field.parseFlag()
 
     // Sentinel for the derived product parser's value buffer: a slot still
     // `AbsentSlot` after the entry loop had no matching keyword
@@ -609,8 +609,8 @@ object Tel extends Tel2:
     // `absent()` semantics — raise and continue with the sentinel. It carries no
     // span: the field is not in the source, so there is no text to point at,
     // exactly as an unresolvable pointer yields no span on the AST path.
-    def missing[value](sentinel: value)(using Tactic[TelError]): value =
-      raise(TelError(TelError.Reason.Absent)) yet sentinel
+    def missing[value](sentinel: value)(using Tactic[Tel.Error]): value =
+      raise(Tel.Error(Tel.Error.Reason.Absent)) yet sentinel
 
     // A present entry whose atom was missing or unparseable: the byte-parsed
     // primitives' fault split — a missing atom is `Absent`, a
@@ -618,9 +618,9 @@ object Tel extends Tel2:
     def scalarFault[value](reader: TelReader^, expected: Text, sentinel: value): value =
       if reader.primaryPresent
       then
-        reader.fault(TelError.Reason.NotScalar(reader.primaryText.or(t""), expected))
+        reader.fault(Tel.Error.Reason.NotScalar(reader.primaryText.or(t""), expected))
         sentinel
-      else reader.fault(TelError.Reason.Absent) yet sentinel
+      else reader.fault(Tel.Error.Reason.Absent) yet sentinel
 
     // Focus bookkeeping for one field read, compiled away when the ambient
     // `Foci` is the inert default — the same short-circuit as the derived
@@ -685,7 +685,7 @@ object Tel extends Tel2:
     // One element of a repeatable field built from a positionally-assigned
     // atom (§19.2): occurrences may split between inline atoms and later
     // same-keyword children.
-    def parseAtomElement(parsing: Tel.Parsing, text: Text)(using Tactic[TelError]): Any =
+    def parseAtomElement(parsing: Tel.Parsing, text: Text)(using Tactic[Tel.Error]): Any =
       (unwrap(parsing): @unchecked) match
         case gathering: Gathering => gathering.parseAtomElement(text)
 
@@ -740,7 +740,7 @@ object Tel extends Tel2:
       // same discipline as `takeAtoms` and `Field.Adapter`.
       profiles.asInstanceOf[AnyRef]
 
-    def positionalAssign(table: AnyRef, atoms: Array[Tel.Atom]^{})(using Tactic[TelError])
+    def positionalAssign(table: AnyRef, atoms: Array[Tel.Atom]^{})(using Tactic[Tel.Error])
     :   AnyRef =
 
       val profiles = table.asInstanceOf[scala.Array[Positional.Profile]]
@@ -772,23 +772,23 @@ object Tel extends Tel2:
 
     // §20.2 step 5c from a staged parser: a non-repeatable field filled by a
     // positional atom, then again by a same-keyword child.
-    def duplicateFill()(using Tactic[TelError]): Unit =
-      raise(TelError(TelError.Reason.NonRepeatableTooMany))
+    def duplicateFill()(using Tactic[Tel.Error]): Unit =
+      raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))
 
     // The byte-parsed primitives' `parseAtom` semantics, for a staged
     // parser's positionally-assigned atom: an unparseable value is
     // `NotScalar` with the offending text, as on both other paths.
-    def atomInt(text: Text)(using Tactic[TelError]): Int =
+    def atomInt(text: Text)(using Tactic[Tel.Error]): Int =
       val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
-      parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Int"))) yet 0)
+      parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Int"))) yet 0)
 
-    def atomLong(text: Text)(using Tactic[TelError]): Long =
+    def atomLong(text: Text)(using Tactic[Tel.Error]): Long =
       val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
-      parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Long"))) yet 0L)
+      parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Long"))) yet 0L)
 
-    def atomBoolean(text: Text)(using Tactic[TelError]): Boolean =
+    def atomBoolean(text: Text)(using Tactic[Tel.Error]): Boolean =
       if text == t"true" then true else if text == t"false" then false
-      else raise(TelError(TelError.Reason.NotScalar(text, t"Boolean"))) yet false
+      else raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Boolean"))) yet false
 
     // Field instances travel wrapped in the `Field.Adapter`; the engine
     // looks through it for repeatability and element hooks.
@@ -805,7 +805,7 @@ object Tel extends Tel2:
     def product[derivation]
       ( fields0: () => Array[(String, Tel.Parsing, Any)]^{},
         make:    Array[Any]^{} -> derivation )
-      ( using foci: Foci[Tel.Focus], tactic: Tactic[TelError] )
+      ( using foci: Foci[Tel.Focus], tactic: Tactic[Tel.Error] )
     :   ((derivation is Tel.Field)^{fields0, tactic}) =
 
       new Tel.Field:
@@ -955,7 +955,7 @@ object Tel extends Tel2:
                     // §20.2 step 5c's E308 (the atom wins).
                     if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot) then
                       if atomFilled(found)
-                      then raise(TelError(TelError.Reason.NonRepeatableTooMany))(using tactic)
+                      then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))(using tactic)
 
                       reader.skipEntry(indent)
                     else values(found) =
@@ -1025,9 +1025,9 @@ object Tel extends Tel2:
       override def repeatable: Boolean = source.repeatable
       override def nature: Tel.Nature = source.nature
       override def optional: Boolean = source.optional
-      override def absent()(using Tactic[TelError]): value = source.absent()
-      override def parseAtom(text: Text)(using Tactic[TelError]): value = source.parseAtom(text)
-      override def parseFlag()(using Tactic[TelError]): value = source.parseFlag()
+      override def absent()(using Tactic[Tel.Error]): value = source.absent()
+      override def parseAtom(text: Text)(using Tactic[Tel.Error]): value = source.parseAtom(text)
+      override def parseFlag()(using Tactic[Tel.Error]): value = source.parseFlag()
 
     def apply[value](parsing: (value is Tel.Parsing)^)
     :   ((value is Tel.Field)^{parsing}) =
@@ -1050,10 +1050,10 @@ object Tel extends Tel2:
   // errors (E210/E218) abort, because a malformed schema offers no document-
   // level recovery. Out of scope here: §20.1 schema-validity checking (E2xx
   // beyond reference resolution), tabulation-aware column assignment, and
-  // diagnostic spans — a TelError raised during assignment carries no
+  // diagnostic spans — a Tel.Error raised during assignment carries no
   // position.
   object Type:
-    import TelError.Reason
+    import Tel.Error.Reason
     import Tels.*
 
     // Record an E2xx/E3xx validation error and continue with `continuation` —
@@ -1062,10 +1062,10 @@ object Tel extends Tel2:
     // preserving fail-fast validation; under a `validate[Tel.Focus]` boundary's
     // `TrackTactic` it accrues and the continuation supplies the skipped value.
     private inline def recoverNode[value](reason: Reason)(continuation: => value)
-      ( using Tactic[TelError], Foci[Tel.Focus] )
+      ( using Tactic[Tel.Error], Foci[Tel.Focus] )
     :   value =
 
-      raise(TelError(reason)) yet continuation
+      raise(Tel.Error(reason)) yet continuation
 
     // §20.2 RECOMMENDED defence against pathologically deep documents: type
     // assignment fail-stops beyond this many levels of compound nesting. It
@@ -1073,7 +1073,7 @@ object Tel extends Tel2:
     // of the document.
     private val nestingLimit = 256
 
-    def assign(tel: Tel, schema: Tels): Tel.Element raises TelError tracks Tel.Focus =
+    def assign(tel: Tel, schema: Tels): Tel.Element raises Tel.Error tracks Tel.Focus =
       val compounds: Array[Tel.Compound]^{} = tel.subtree.children.bind(_.compounds)
       val rootChildren = assignChildren(compounds, schema.document, schema, 1)
 
@@ -1091,7 +1091,7 @@ object Tel extends Tel2:
       Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
     def assign(tel: Tel, schema: Tels, validators: Tel.Validator.Registry)
-    :   Tel.Element raises TelError tracks Tel.Focus =
+    :   Tel.Element raises Tel.Error tracks Tel.Focus =
 
       val element = assign(tel, schema)
       validateElement(element, validators)
@@ -1099,7 +1099,7 @@ object Tel extends Tel2:
 
     private def validateElement
       ( element: Tel.Element, registry: Tel.Validator.Registry )
-    :   Unit raises TelError tracks Tel.Focus =
+    :   Unit raises Tel.Error tracks Tel.Focus =
 
       element match
         case Tel.Element.Value(_, scalarType, text) =>
@@ -1126,7 +1126,7 @@ object Tel extends Tel2:
 
             case _ => ()
 
-    private def resolveType(t: Type, schema: Tels): Type raises TelError =
+    private def resolveType(t: Type, schema: Tels): Type raises Tel.Error =
       t match
         case Reference(name) =>
           schema.records.find(_.name == name) match
@@ -1138,8 +1138,8 @@ object Tel extends Tel2:
 
                 case None =>
                   schema.selects.find(_.name == name) match
-                    case Some(_) => abort(TelError(Reason.ReferenceKindMismatch))
-                    case None    => abort(TelError(Reason.UnresolvedReference))
+                    case Some(_) => abort(Tel.Error(Reason.ReferenceKindMismatch))
+                    case None    => abort(Tel.Error(Reason.UnresolvedReference))
 
         case other => other
 
@@ -1161,7 +1161,7 @@ object Tel extends Tel2:
     // it, which is what lets them interleave under the §20.2 step 4c
     // contiguity rule.
     private def keywordMap(parent: Struct, schema: Tels)
-    :   Map[Text, KeywordEntry] raises TelError =
+    :   Map[Text, KeywordEntry] raises Tel.Error =
 
       val builder = scala.collection.mutable.LinkedHashMap.empty[Text, KeywordEntry]
       var idx = 0
@@ -1175,7 +1175,7 @@ object Tel extends Tel2:
 
           case s: SelectRef =>
             val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
-              abort(TelError(Reason.UnresolvedReference))
+              abort(Tel.Error(Reason.UnresolvedReference))
 
             var v = 0
 
@@ -1195,7 +1195,7 @@ object Tel extends Tel2:
 
       Map.of(builder.toMap)
 
-    private def atomAssignable(member: Member, schema: Tels): Boolean raises TelError =
+    private def atomAssignable(member: Member, schema: Tels): Boolean raises Tel.Error =
       member match
         case f: Tels.Field =>
           resolveType(f.fieldType, schema) match
@@ -1205,7 +1205,7 @@ object Tel extends Tel2:
 
         case s: SelectRef =>
           val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
-            abort(TelError(Reason.UnresolvedReference))
+            abort(Tel.Error(Reason.UnresolvedReference))
 
           selectDef.variants.forall: v =>
             resolveType(v.variantType, schema) match
@@ -1215,10 +1215,10 @@ object Tel extends Tel2:
         case _: Exclude => false
 
     private def selectDefinitionOf(select: SelectRef, schema: Tels)
-    :   SelectDefinition raises TelError =
+    :   SelectDefinition raises Tel.Error =
 
       schema.selects.find(_.name == select.reference).getOrElse:
-        abort(TelError(Reason.UnresolvedReference))
+        abort(Tel.Error(Reason.UnresolvedReference))
 
     // Effective polarity per §20: `required` unless declared `Loose`.
     private def requiredOf(member: Member): Boolean = member match
@@ -1233,7 +1233,7 @@ object Tel extends Tel2:
 
     // Flag-shaped per §20.2 step 3a: a Field resolving to Flag, or a
     // SelectRef all of whose variants resolve to Flag.
-    private def flagShaped(member: Member, schema: Tels): Boolean raises TelError =
+    private def flagShaped(member: Member, schema: Tels): Boolean raises Tel.Error =
       member match
         case f: Tels.Field =>
           resolveType(f.fieldType, schema) match
@@ -1244,7 +1244,7 @@ object Tel extends Tel2:
         case _: Exclude   => false
 
     private def keywordMatches(member: Member, text: Text, schema: Tels)
-    :   Boolean raises TelError =
+    :   Boolean raises Tel.Error =
 
       member match
         case f: Tels.Field => f.keyword == text
@@ -1258,7 +1258,7 @@ object Tel extends Tel2:
       ( atoms:  Array[Tel.Atom]^{},
        parent: Struct,
        schema: Tels )
-    :   Array[Tel.Element]^{} raises TelError tracks Tel.Focus =
+    :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var pos = 0
@@ -1365,7 +1365,7 @@ object Tel extends Tel2:
        parent:    Struct,
        schema:    Tels,
        depth:     Int )
-    :   Array[Tel.Element]^{} raises TelError tracks Tel.Focus =
+    :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
 
       val km = keywordMap(parent, schema)
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -1415,7 +1415,7 @@ object Tel extends Tel2:
         atomElements:  Array[Tel.Element]^{},
         childElements: Array[Tel.Element]^{},
         schema:        Tels )
-    :   Array[Tel.Element]^{} raises TelError tracks Tel.Focus =
+    :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       results ++= atomElements.readable
@@ -1491,9 +1491,9 @@ object Tel extends Tel2:
        entry:    KeywordEntry,
        schema:   Tels,
        depth:    Int )
-    :   Tel.Element raises TelError tracks Tel.Focus =
+    :   Tel.Element raises Tel.Error tracks Tel.Focus =
 
-      if depth > nestingLimit then abort(TelError(Reason.NestingLimitExceeded))
+      if depth > nestingLimit then abort(Tel.Error(Reason.NestingLimitExceeded))
 
       val resolved = resolveType(entry.entryType, schema)
 
@@ -1802,24 +1802,24 @@ object Tel extends Tel2:
   // Parse a byte stream into a Tel value wrapping the document. Used
   // internally by the Aggregable and Loadable typeclasses; user code
   // should prefer `bytes.read[Tel]` or `text.load[Tel]`.
-  private[stratiform] def parse(bytes: Data): Tel raises TelError =
+  private[stratiform] def parse(bytes: Data): Tel raises Tel.Error =
     Tel(Tel.Parser.parse(bytes))
 
   // Schema-aware parse: the parser uses the §19.5 schema-aware E107
   // recovery rule when it encounters an odd-indented line. Useful
   // when the consumer wants tolerant parsing of indentation typos
   // against a known schema.
-  private[stratiform] def parse(bytes: Data, schema: Tels): Tel raises TelError =
+  private[stratiform] def parse(bytes: Data, schema: Tels): Tel raises Tel.Error =
     Tel(Tel.Parser.parse(bytes, schema))
 
   // Parse a multi-document source (§6.1) into its sequence of documents.
   // `parseAll` is eager; `parseStream` parses lazily on demand. Used internally
   // by the collection Aggregable typeclasses; user code should prefer
   // `bytes.read[List[Tel]]` or `bytes.read[Chain[Tel]]`.
-  private[stratiform] def parseAll(bytes: Data): List[Tel] raises TelError =
+  private[stratiform] def parseAll(bytes: Data): List[Tel] raises Tel.Error =
     Tel.Parser.parseDocuments(bytes).map(Tel(_))
 
-  private[stratiform] def parseStream(bytes: Data): Chain[Tel] raises TelError =
+  private[stratiform] def parseStream(bytes: Data): Chain[Tel] raises Tel.Error =
     Tel.Parser.parseStream(bytes).map(Tel(_))
 
   // ── Position tracking (editor / tooling support) ──────────────────────────
@@ -1875,12 +1875,12 @@ object Tel extends Tel2:
   // givens only when `parsing.trackPositions` is in scope; otherwise the
   // untracked `parse` runs and `positionIndex` is left Unset, so the throughput
   // path is unaffected.
-  private def parseTracked(bytes: Data): Tel raises TelError =
+  private def parseTracked(bytes: Data): Tel raises Tel.Error =
     val (document, triples) = Tel.Parser.parseTracked(bytes)
     Tel(document, Optional(PositionIndex(buildIndex(document, triples))))
 
   // Parse `bytes` honouring the in-scope `Tracking` toggle (`parsing.trackPositions`).
-  private[stratiform] def parseTracking(bytes: Data)(using PositionTracking): Tel raises TelError =
+  private[stratiform] def parseTracking(bytes: Data)(using PositionTracking): Tel raises Tel.Error =
     summon[PositionTracking] match
       case PositionTracking.On  => parseTracked(bytes)
       case PositionTracking.Off => parse(bytes)
@@ -1960,17 +1960,17 @@ object Tel extends Tel2:
   // through zephyrine's `Positionable`, matching `jacinta.Json` and `ypsiloid.Yaml`:
   // `locate` gives the value — the compound's inline atoms, falling back to the
   // keyword when it has none — and `locateKey` gives the keyword.
-  given positionable: Tel is Positionable by TelPath to TelError.Position =
+  given positionable: Tel is Positionable by TelPath to Tel.Error.Position =
     new Positionable:
       type Self    = Tel
       type Operand = TelPath
-      type Result  = TelError.Position
+      type Result  = Tel.Error.Position
 
-      def locate(value: Tel, path: TelPath): Optional[TelError.Position] =
+      def locate(value: Tel, path: TelPath): Optional[Tel.Error.Position] =
         value.positionIndex.let: index =>
           walkIndex(value.subtree, index.ints, 0, Sequence.from(path.keywords.stdlib), 0, false)
 
-      def locateKey(value: Tel, path: TelPath): Optional[TelError.Position] =
+      def locateKey(value: Tel, path: TelPath): Optional[Tel.Error.Position] =
         value.positionIndex.let: index =>
           walkIndex(value.subtree, index.ints, 0, Sequence.from(path.keywords.stdlib), 0, true)
 
@@ -1993,7 +1993,7 @@ object Tel extends Tel2:
       segments: Sequence[Text],
       i:        Int,
       keyMode:  Boolean )
-  :   Optional[TelError.Position] =
+  :   Optional[Tel.Error.Position] =
 
     if i >= segments.length then
       if keyMode && i == 0 then Unset
@@ -2001,11 +2001,11 @@ object Tel extends Tel2:
         val valueColumn = data.readUnchecked(offset + 4)
 
         if keyMode || valueColumn == 0
-        then TelError.Position
+        then Tel.Error.Position
               ( line   = data.readUnchecked(offset + 1),
                 column = data.readUnchecked(offset + 2),
                 length = Optional(data.readUnchecked(offset + 3)) )
-        else TelError.Position
+        else Tel.Error.Position
               ( line   = data.readUnchecked(offset + 1),
                 column = valueColumn,
                 length = Optional(data.readUnchecked(offset + 5)) )
@@ -2040,7 +2040,7 @@ object Tel extends Tel2:
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
   // recover those alongside the value. Per §6.1, single-document parsing
   // stops at the first document separator; content after it is ignored.
-  given aggregable: (tactic: Tactic[TelError], tracking: PositionTracking)
+  given aggregable: (tactic: Tactic[Tel.Error], tracking: PositionTracking)
   =>  ((Tel is Aggregable by Data)^{tactic}) =
     source => parseTracking(concatenate(source))
 
@@ -2051,7 +2051,7 @@ object Tel extends Tel2:
   // existing code resolves exactly as before.
   given aggregableParsed: [value]
   =>  ( parsable: (value is Tel.Parsable)^ )
-  =>  ( tactic: Tactic[TelError], tracking: PositionTracking )
+  =>  ( tactic: Tactic[Tel.Error], tracking: PositionTracking )
   =>  ( ((value in Tel) is Aggregable by Data)^{parsable, tactic} ) =
     source => parseDirect(concatenate(source), parsable).asInstanceOf[value in Tel]
 
@@ -2061,7 +2061,7 @@ object Tel extends Tel2:
   // the composed pipeline by specificity.
   given readableParsed: [value]
   =>  ( parsable: (value is Tel.Parsable)^ )
-  =>  ( tactic: Tactic[TelError], tracking: PositionTracking )
+  =>  ( tactic: Tactic[Tel.Error], tracking: PositionTracking )
   =>  ( (Data is Readable to (value in Tel))^{parsable, tactic} ) =
     data => parseDirect(data, parsable).asInstanceOf[value in Tel]
 
@@ -2075,7 +2075,7 @@ object Tel extends Tel2:
   // measurement, and each focus and error takes its span from the parser as it
   // goes. Without it the parse is exactly what it always was.
   private def parseDirect[value](input: Data, parsable: (value is Tel.Parsable)^)
-    ( using tactic: Tactic[TelError], tracking: PositionTracking )
+    ( using tactic: Tactic[Tel.Error], tracking: PositionTracking )
   :   value =
 
     import zephyrine.Lineation.untrackedData
@@ -2106,16 +2106,16 @@ object Tel extends Tel2:
       override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): value =
-        reader.atom().lay(reader.fault(TelError.Reason.Absent) yet sentinel): atom =>
+        reader.atom().lay(reader.fault(Tel.Error.Reason.Absent) yet sentinel): atom =>
           convert(atom).or:
-            reader.fault(TelError.Reason.NotScalar(atom, expected)) yet sentinel
+            reader.fault(Tel.Error.Reason.NotScalar(atom, expected)) yet sentinel
 
-      override def absent()(using Tactic[TelError]): value =
-        raise(TelError(TelError.Reason.Absent)) yet sentinel
+      override def absent()(using Tactic[Tel.Error]): value =
+        raise(Tel.Error(Tel.Error.Reason.Absent)) yet sentinel
 
-      override def parseAtom(text: Text)(using Tactic[TelError]): value =
+      override def parseAtom(text: Text)(using Tactic[Tel.Error]): value =
         convert(text).or:
-          raise(TelError(TelError.Reason.NotScalar(text, expected))) yet sentinel
+          raise(Tel.Error(Tel.Error.Reason.NotScalar(text, expected))) yet sentinel
 
   given textParsable: Text is Tel.Parsable =
     primitiveParsable(Morphology.Str, t"Text", t""): atom => atom
@@ -2144,12 +2144,12 @@ object Tel extends Tel2:
       def parse(reader: TelReader^, indent: Int): Int =
         reader.int().lay(Parsable.scalarFault(reader, t"Int", 0))(identity)
 
-      override def absent()(using Tactic[TelError]): Int =
-        raise(TelError(TelError.Reason.Absent)) yet 0
+      override def absent()(using Tactic[Tel.Error]): Int =
+        raise(Tel.Error(Tel.Error.Reason.Absent)) yet 0
 
-      override def parseAtom(text: Text)(using Tactic[TelError]): Int =
+      override def parseAtom(text: Text)(using Tactic[Tel.Error]): Int =
         val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
-        parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Int"))) yet 0)
+        parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Int"))) yet 0)
 
   given longParsable: Long is Tel.Parsable =
     new Tel.Parsable:
@@ -2160,12 +2160,12 @@ object Tel extends Tel2:
       def parse(reader: TelReader^, indent: Int): Long =
         reader.long().lay(Parsable.scalarFault(reader, t"Long", 0L))(identity)
 
-      override def absent()(using Tactic[TelError]): Long =
-        raise(TelError(TelError.Reason.Absent)) yet 0L
+      override def absent()(using Tactic[Tel.Error]): Long =
+        raise(Tel.Error(Tel.Error.Reason.Absent)) yet 0L
 
-      override def parseAtom(text: Text)(using Tactic[TelError]): Long =
+      override def parseAtom(text: Text)(using Tactic[Tel.Error]): Long =
         val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
-        parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Long"))) yet 0L)
+        parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Long"))) yet 0L)
 
   given doubleParsable: Double is Tel.Parsable =
     primitiveParsable(Morphology.Real, t"Double", 0.0): atom =>
@@ -2180,10 +2180,10 @@ object Tel extends Tel2:
       def parse(reader: TelReader^, indent: Int): Boolean =
         reader.boolean().lay(Parsable.scalarFault(reader, t"Boolean", false))(identity)
 
-      override def absent()(using Tactic[TelError]): Boolean =
-        raise(TelError(TelError.Reason.Absent)) yet false
+      override def absent()(using Tactic[Tel.Error]): Boolean =
+        raise(Tel.Error(Tel.Error.Reason.Absent)) yet false
 
-      override def parseAtom(text: Text)(using Tactic[TelError]): Boolean =
+      override def parseAtom(text: Text)(using Tactic[Tel.Error]): Boolean =
         Parsable.atomBoolean(text)
 
   // `Tel` reads itself directly through the AST bridge — the direct
@@ -2194,7 +2194,7 @@ object Tel extends Tel2:
   // Nominal counterpart of `Tel2.fieldCollection`: a collection reads
   // directly only when its element type has opted in.
   given iterableParsable: [collection <: Iterable, element]
-  =>  ( factory: Factory[element, collection[element]], tactic: Tactic[TelError] )
+  =>  ( factory: Factory[element, collection[element]], tactic: Tactic[Tel.Error] )
   =>  ( parsable: => (element is Tel.Parsable)^ )
   =>  collection[element] is Tel.Parsable =
     Tel.Parsable.iterable[collection, element](parsable)
@@ -2202,21 +2202,21 @@ object Tel extends Tel2:
   // Alias counterparts: the opaque prelude collections do not conform to
   // `Iterable`, so each parses at the underlying stdlib type and casts.
   given listParsable: [list <: List, element]
-  =>  ( tactic: Tactic[TelError] )
+  =>  ( tactic: Tactic[Tel.Error] )
   =>  ( parsable: => (element is Tel.Parsable)^ )
   =>  list[element] is Tel.Parsable =
     Tel.Parsable.iterable[scala.collection.immutable.List, element](parsable)
     . asInstanceOf[list[element] is Tel.Parsable]
 
   given setParsable: [set <: Set, element]
-  =>  ( tactic: Tactic[TelError] )
+  =>  ( tactic: Tactic[Tel.Error] )
   =>  ( parsable: => (element is Tel.Parsable)^ )
   =>  set[element] is Tel.Parsable =
     Tel.Parsable.iterable[scala.collection.immutable.Set, element](parsable)
     . asInstanceOf[set[element] is Tel.Parsable]
 
   given seriesParsable: [sequence <: Sequence, element]
-  =>  ( tactic: Tactic[TelError] )
+  =>  ( tactic: Tactic[Tel.Error] )
   =>  ( parsable: => (element is Tel.Parsable)^ )
   =>  sequence[element] is Tel.Parsable =
     Tel.Parsable.iterable[Vector, element](parsable)
@@ -2236,25 +2236,25 @@ object Tel extends Tel2:
       override def nature: Tel.Nature = Tel.Nature.Scalar
       def parse(reader: TelReader^, indent: Int): value = codec.decoded(reader.atom().or(t""))
       override def parse(reader: TelReader^): value = codec.decoded(t"")
-      override def absent()(using Tactic[TelError]): value = codec.decoded(t"")
-      override def parseAtom(text: Text)(using Tactic[TelError]): value = codec.decoded(text)
+      override def absent()(using Tactic[Tel.Error]): value = codec.decoded(t"")
+      override def parseAtom(text: Text)(using Tactic[Tel.Error]): value = codec.decoded(text)
 
   // `source.read[List[Tel]]` / `read[Chain[Tel]]` for a multi-document source
   // (§6.1). `List[Tel]` parses every document eagerly; `Chain[Tel]` parses
   // them lazily on demand (the more specific instance wins over turbulence's
   // generic `Chain` Aggregable, which would otherwise wrap the whole source as
   // a single element).
-  given listAggregable: (tactic: Tactic[TelError]) => ((List[Tel] is Aggregable by Data)^{tactic}) =
+  given listAggregable: (tactic: Tactic[Tel.Error]) => ((List[Tel] is Aggregable by Data)^{tactic}) =
     source => parseAll(concatenate(source))
 
-  given streamAggregable: (tactic: Tactic[TelError])
+  given streamAggregable: (tactic: Tactic[Tel.Error])
   =>  ((Chain[Tel] is Aggregable by Data)^{tactic}) =
     source => parseStream(concatenate(source))
 
   // `text.load[Tel]` for any Chain[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
-  given loadable: (tactic: Tactic[TelError], buffering: Buffering, tracking: PositionTracking)
+  given loadable: (tactic: Tactic[Tel.Error], buffering: Buffering, tracking: PositionTracking)
   =>  ((Tel is Loadable by Text)^{tactic}) = stream =>
     // The whole document materializes once (the parser is whole-input), but the
     // Text stream is transcoded to UTF-8 through the encoder duct and memoized
@@ -2522,16 +2522,16 @@ object Tel extends Tel2:
     // companion (not the parser) so no exclusive `Parser.this` is in scope,
     // each re-asserts the pool's per-thread exclusivity via `reveal`. Public
     // because staged parsers are generated into user modules.
-    def erasedDirectKeyword(parser: AnyRef, indent: Int)(using Tactic[TelError]): Text | Null =
+    def erasedDirectKeyword(parser: AnyRef, indent: Int)(using Tactic[Tel.Error]): Text | Null =
       reveal(parser).directKeyword(indent)
 
-    def erasedDirectValue(parser: AnyRef, indent: Int)(using Tactic[TelError]): Tel =
+    def erasedDirectValue(parser: AnyRef, indent: Int)(using Tactic[Tel.Error]): Tel =
       reveal(parser).directValue(indent)
 
-    def erasedDirectDocument(parser: AnyRef)(using Tactic[TelError]): Tel =
+    def erasedDirectDocument(parser: AnyRef)(using Tactic[Tel.Error]): Tel =
       reveal(parser).directDocument()
 
-    def erasedDirectEntrySubstance(parser: AnyRef)(using Tactic[TelError]): Boolean =
+    def erasedDirectEntrySubstance(parser: AnyRef)(using Tactic[Tel.Error]): Boolean =
       reveal(parser).directEntrySubstance()
 
     // Per-thread cached parser. The parser's mutable state (scratch buffers,
@@ -2553,13 +2553,13 @@ object Tel extends Tel2:
 
     private[stratiform] def borrow(): Parser^ = cached.get.nn.asInstanceOf[Parser^]
 
-    def parse(cursor: Cursor[Data, {}]^): (Tactic[TelError]^) ?->{cursor} Tel.Document =
+    def parse(cursor: Cursor[Data, {}]^): (Tactic[Tel.Error]^) ?->{cursor} Tel.Document =
       val p = borrow()
       p.reset(cursor, Unset)
       p.parse()
 
     def parse(cursor: Cursor[Data, {}]^, schema: Tels)
-    :   (Tactic[TelError]^) ?->{cursor} Tel.Document =
+    :   (Tactic[Tel.Error]^) ?->{cursor} Tel.Document =
 
       val p = borrow()
       p.reset(cursor, schema: Optional[Tels])
@@ -2573,13 +2573,13 @@ object Tel extends Tel2:
     // record (line, column) on every `cursor.mark` call — for a parser that
     // marks O(atoms + keywords + remarks + payloads) times per parse this is
     // significant wasted work, since the recorded offsets are never consulted.
-    def parse(input: Data): Tel.Document raises TelError =
+    def parse(input: Data): Tel.Document raises Tel.Error =
       import zephyrine.Lineation.untrackedData
       val p = borrow()
       p.reset(Cursor[Data](input), Unset)
       p.parse()
 
-    def parse(input: Data, schema: Tels): Tel.Document raises TelError =
+    def parse(input: Data, schema: Tels): Tel.Document raises Tel.Error =
       import zephyrine.Lineation.untrackedData
       val p = borrow()
       p.reset(Cursor[Data](input), schema: Optional[Tels])
@@ -2589,7 +2589,7 @@ object Tel extends Tel2:
     // triples backing `Tel.PositionIndex`. Uses `untrackedData` like the plain
     // path — coordinates come from the parser's own `lineNo` / `leadingSpaces`
     // bookkeeping, not the cursor's lineation.
-    def parseTracked(input: Data): (Tel.Document, Array[Int]^{}) raises TelError =
+    def parseTracked(input: Data): (Tel.Document, Array[Int]^{}) raises Tel.Error =
       import zephyrine.Lineation.untrackedData
       val p = borrow()
       p.reset(Cursor[Data](input), Unset)
@@ -2603,13 +2603,13 @@ object Tel extends Tel2:
 
     // Streaming parse (§6.1) of a multi-document source into the documents it
     // contains. `parseDocuments` is eager; `parseStream` parses lazily on demand.
-    def parseDocuments(input: Data): List[Tel.Document] raises TelError =
+    def parseDocuments(input: Data): List[Tel.Document] raises Tel.Error =
       import zephyrine.Lineation.untrackedData
       val p = borrow()
       p.reset(Cursor[Data](input), Unset)
       p.parseAllDocuments()
 
-    def parseStream(input: Data): Chain[Tel.Document] raises TelError =
+    def parseStream(input: Data): Chain[Tel.Document] raises Tel.Error =
       import zephyrine.Lineation.untrackedData
       // A dedicated parser instance, not the shared per-thread cache: the lazy
       // tail parses later document(s) on demand and must own its parser state.
@@ -2725,7 +2725,7 @@ object Tel extends Tel2:
     import scala.language.unsafeNulls
     import denominative.*
     import fulminate.*
-    import TelError.Reason
+    import Tel.Error.Reason
 
     import Parser.*
 
@@ -3300,17 +3300,17 @@ object Tel extends Tel2:
     // delimiter, an indent) pass it; the rest fall back to the single character
     // at the reported column.
     private update def errorHere(reason: Reason, length: Int = 1)
-    :   (Tactic[TelError]^) ?->{this} Nothing =
+    :   (Tactic[Tel.Error]^) ?->{this} Nothing =
 
       val column = columnForCurrentBytePos()
-      abort(TelError(reason, TelError.spanAt(lineNo, column, length)))
+      abort(Tel.Error(reason, Tel.Error.spanAt(lineNo, column, length)))
 
     // Direct line-number variant: callers pass the 1-indexed source line of
     // the offending location and its column.
     private update def errorAt(reason: Reason, line: Int, column: Int, length: Int = 1)
-    :   (Tactic[TelError]^) ?->{this} Nothing =
+    :   (Tactic[Tel.Error]^) ?->{this} Nothing =
 
-      abort(TelError(reason, TelError.spanAt(line, column, length)))
+      abort(Tel.Error(reason, Tel.Error.spanAt(line, column, length)))
 
     // Recoverable-error variants of `errorHere`/`errorAt`. They `raise` the error
     // (rather than `abort`) and continue with `continuation`, which realises the
@@ -3322,18 +3322,18 @@ object Tel extends Tel2:
     // surrounding flow must), otherwise an enclosing scan loop would not progress.
     private update inline def recoverHere[T](reason: Reason, length: Int = 1)
       ( continuation: => T )
-      ( using Tactic[TelError]^ )
+      ( using Tactic[Tel.Error]^ )
     :   T =
 
-      raise(TelError(reason, TelError.spanAt(lineNo, columnForCurrentBytePos(), length)))
+      raise(Tel.Error(reason, Tel.Error.spanAt(lineNo, columnForCurrentBytePos(), length)))
       continuation
 
     private update inline def recoverAt[T](reason: Reason, line: Int, column: Int, length: Int = 1)
       ( continuation: => T )
-      ( using Tactic[TelError]^ )
+      ( using Tactic[Tel.Error]^ )
     :   T =
 
-      raise(TelError(reason, TelError.spanAt(line, column, length)))
+      raise(Tel.Error(reason, Tel.Error.spanAt(line, column, length)))
       continuation
 
     // ── Mark / hold plumbing ──────────────────────────────────────────────────
@@ -3491,7 +3491,7 @@ object Tel extends Tel2:
     // Single-document parse (§6.1): reads exactly one document and stops at the
     // first document separator. Any content after the separator is left
     // unconsumed and need not be valid TEL.
-    update def parse(): (Tactic[TelError]^) ?->{this} Tel.Document =
+    update def parse(): (Tactic[Tel.Error]^) ?->{this} Tel.Document =
       syncFrom()
       checkBom()
       parseOneDocument()
@@ -3500,7 +3500,7 @@ object Tel extends Tel2:
     // document separator or at end of input. The caller has already synced from
     // the cursor and (for the first document only) checked the BOM. On return,
     // `head` is parked either on a separator (`head.separator`) or at EOF.
-    private update def parseOneDocument(): (Tactic[TelError]^) ?->{this} Tel.Document =
+    private update def parseOneDocument(): (Tactic[Tel.Error]^) ?->{this} Tel.Document =
       val directive = parseInterpreterDirective()
       val pragma = parsePragma()
       fillHead()  // park head at the next line
@@ -3519,11 +3519,11 @@ object Tel extends Tel2:
     // ── Document streams (§6.1) ────────────────────────────────────────────────
 
     // Streaming parse: yield each document of the source in order, parsed
-    // independently. Eager — all documents are parsed (and any TelError raised)
+    // independently. Eager — all documents are parsed (and any Tel.Error raised)
     // before returning. A separator followed only by blank lines or nothing
     // yields no trailing empty document; two consecutive separators yield one
     // empty document between them.
-    update def parseAllDocuments(): (Tactic[TelError]^) ?->{this} List[Tel.Document] =
+    update def parseAllDocuments(): (Tactic[Tel.Error]^) ?->{this} List[Tel.Document] =
       syncFrom()
       checkBom()
       val buffer = scala.collection.mutable.ListBuffer.empty[Tel.Document]
@@ -3548,11 +3548,11 @@ object Tel extends Tel2:
     // Lazy streaming parse: documents are parsed on demand as the returned
     // `Chain` is forced. Mirrors turbulence's deferred `Streamable` readers,
     // which likewise capture the error capability in the lazy tail; the consumer
-    // must drive the stream within the `raises TelError` handler's scope. Uses a
+    // must drive the stream within the `raises Tel.Error` handler's scope. Uses a
     // dedicated parser instance (never the shared per-thread cache) so the
     // parser state survives across element demands.
     private update def documentStream(first: Boolean)
-    :   (Tactic[TelError]^) ?->{this} Chain[Tel.Document] =
+    :   (Tactic[Tel.Error]^) ?->{this} Chain[Tel.Document] =
 
       if first then
         syncFrom()
@@ -3580,7 +3580,7 @@ object Tel extends Tel2:
     // Consume both sigil bytes and the terminating line-ending so the next
     // document begins on the following line. At true EOF the separator has no
     // line-ending and `consumeLineEnding` is a no-op.
-    private update def consumeSeparatorLine(): (Tactic[TelError]^) ?->{this} Unit = inHold:
+    private update def consumeSeparatorLine(): (Tactic[Tel.Error]^) ?->{this} Unit = inHold:
       ensureLookahead(2)
       advance()  // first sigil
       advance()  // second sigil
@@ -3589,7 +3589,7 @@ object Tel extends Tel2:
 
     // ── BOM ──────────────────────────────────────────────────────────────────
 
-    private update def checkBom(): (Tactic[TelError]^) ?->{this} Unit =
+    private update def checkBom(): (Tactic[Tel.Error]^) ?->{this} Unit =
       if more && peek == BOM0 then
         // §19.5 SkipBom: drop the byte-order mark and parse from the next byte.
         recoverHere(Reason.BomPresent):
@@ -3614,7 +3614,7 @@ object Tel extends Tel2:
 
     // Reads "#!..." line if present. The directive payload excludes the
     // "#!" prefix and the terminating LF.
-    private update def parseInterpreterDirective(): (Tactic[TelError]^) ?->{this} Optional[Text] = inHold:
+    private update def parseInterpreterDirective(): (Tactic[Tel.Error]^) ?->{this} Optional[Text] = inHold:
       // We can peek the first two bytes without consuming.
       if !more then Unset
       else if peek != '#'.toByte then Unset
@@ -3641,7 +3641,7 @@ object Tel extends Tel2:
     // the original position and the caller can run determineMargin from
     // scratch. The mark must survive the blank-line scan, so the entire
     // body runs inside one hold.
-    private update def parsePragma(): (Tactic[TelError]^) ?->{this} Optional[Tel.Pragma] = inHold:
+    private update def parsePragma(): (Tactic[Tel.Error]^) ?->{this} Optional[Tel.Pragma] = inHold:
       // `pragmaStartAbs` is the absolute byte position of the start of the
       // first non-blank line, used to check the 4096-byte pragma cap (§3.5)
       // against absolute stream position rather than the (possibly compacted)
@@ -3733,7 +3733,7 @@ object Tel extends Tel2:
     // the document — used by consumeTrailingBlanksFor to count the virtual
     // empty trailing line that Parser surfaces when its lines array ends
     // with a sentinel empty entry.
-    private update def consumeLineEnding()(using Tactic[TelError]): Unit =
+    private update def consumeLineEnding()(using Tactic[Tel.Error]): Unit =
       if !more then ()
       else if peek == LF then
         // §19.5 CollapseLineEndings: accept the inconsistent ending and carry on.
@@ -3777,7 +3777,7 @@ object Tel extends Tel2:
         false
 
     private update def parsePragmaContent(content: String, line: Int)
-    :   (Tactic[TelError]^) ?->{this} Tel.Pragma =
+    :   (Tactic[Tel.Error]^) ?->{this} Tel.Pragma =
 
       val (parts, offsets) = splitPragmaPhrases(content)
 
@@ -3832,7 +3832,7 @@ object Tel extends Tel2:
     // `column` is the 1-indexed column of the version phrase within the pragma
     // line, so a malformed version is spanned at the phrase itself.
     private update def parseVersion(s: String, line: Int, column: Int)
-    :   (Tactic[TelError]^) ?->{this} (Int, Int) =
+    :   (Tactic[Tel.Error]^) ?->{this} (Int, Int) =
 
       // §19.5 IgnoreVersion: a malformed version falls back to (0, 0) so the rest
       // of the document is still parsed (and its defects accrued).
@@ -3904,7 +3904,7 @@ object Tel extends Tel2:
     // Sets `margin` to the leadingSpaces of the first non-blank content line.
     // The caller's outer fillHead has already parked head at the first line;
     // we walk through blanks if needed.
-    private update def determineMargin(): (Tactic[TelError]^) ?->{this} Unit =
+    private update def determineMargin(): (Tactic[Tel.Error]^) ?->{this} Unit =
       while head.blank && !head.eof do fillHead()
 
       if !head.eof then
@@ -3916,7 +3916,7 @@ object Tel extends Tel2:
     // Peek the keyword of the line that head is currently parked at (i.e. read
     // it without advancing past the line). Uses mark + cue to restore the
     // cursor's byte position, lineation, and the parser's local snapshot.
-    private update def peekKeyword(): (Tactic[TelError]^) ?->{this} Text =
+    private update def peekKeyword(): (Tactic[Tel.Error]^) ?->{this} Text =
       val outerMark = beginMark()
       val kw = readKeyword()
       syncTo()
@@ -3941,7 +3941,7 @@ object Tel extends Tel2:
     // Returns the Struct type if the keyword names a child whose resolved
     // type is a Struct, or Unset otherwise.
     private update def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, s: Tels)
-    :   (Tactic[TelError]^) ?->{this} Optional[Tels.Struct] =
+    :   (Tactic[Tel.Error]^) ?->{this} Optional[Tels.Struct] =
 
       var found: Optional[Tels.Type] = Unset
       var i = 0
@@ -3984,7 +3984,7 @@ object Tel extends Tel2:
 
     // Push a child compound's resolved struct onto the ancestor stack. No-op
     // (records Unset for depth bookkeeping) without a schema.
-    private update def pushAncestor(keyword: Text): (Tactic[TelError]^) ?->{this} Unit =
+    private update def pushAncestor(keyword: Text): (Tactic[Tel.Error]^) ?->{this} Unit =
       schema.let: s =>
         val parent: Optional[Tels.Struct] =
           if ancestors.nil then s.document else ancestors(ancestors.length - 1)
@@ -4004,7 +4004,7 @@ object Tel extends Tel2:
     // compute admissibility at both candidate depths via the current ancestor
     // stack and pick deeper if and only if shallower is invalid AND deeper is
     // valid; tie-break favours shallower.
-    private update def recoverOddIndent(spaces: Int, line: Int): (Tactic[TelError]^) ?->{this} Int =
+    private update def recoverOddIndent(spaces: Int, line: Int): (Tactic[Tel.Error]^) ?->{this} Int =
       val rel = spaces - margin
 
       schema.let: s =>
@@ -4043,7 +4043,7 @@ object Tel extends Tel2:
     // intermediate `consumeLineEnding` (which calls `peekNext` → `ensureLookahead`,
     // a mark-using lookahead) and `recoverOddIndent` (which calls `peekKeyword`,
     // also mark-using) execute inside an active `cursor.hold` scope.
-    private update def fillHead()(using Tactic[TelError]): Unit = inHold:
+    private update def fillHead()(using Tactic[Tel.Error]): Unit = inHold:
       head.startLine = lineNo
       head.separator = false
 
@@ -4093,7 +4093,7 @@ object Tel extends Tel2:
 
     // ── parseChildren ────────────────────────────────────────────────────────
 
-    private update def parseChildren(parentIndent: Int): (Tactic[TelError]^) ?->{this} Array[Tel.Block]^{} =
+    private update def parseChildren(parentIndent: Int): (Tactic[Tel.Error]^) ?->{this} Array[Tel.Block]^{} =
       val expected = parentIndent + 1
 
       if head.eof || head.separator || head.indentLevels < expected
@@ -4137,7 +4137,7 @@ object Tel extends Tel2:
     // semantically belong to this block). Pushes the resulting Tel.Block
     // onto the parser's `scratchBlocks` stack; the caller (parseChildren)
     // takes a contiguous range when its loop completes.
-    private update def parseBlock(indent: Int): (Tactic[TelError]^) ?->{this} Unit =
+    private update def parseBlock(indent: Int): (Tactic[Tel.Error]^) ?->{this} Unit =
       val commentStart  = commentScratchIx
       val compoundStart = compoundScratchIx
 
@@ -4266,7 +4266,7 @@ object Tel extends Tel2:
     // the blanks for the enclosing block. Uses mark+cue. The hold spans the
     // entire probe so the mark survives every nested fillHead.
     private update def skipInteriorBlanksIfFollowedByContentAtIndent(indent: Int)
-    :   (Tactic[TelError]^) ?->{this} Unit =
+    :   (Tactic[Tel.Error]^) ?->{this} Unit =
 
       inHold:
         val mk = beginMark()
@@ -4303,7 +4303,7 @@ object Tel extends Tel2:
     // Consume blank lines that "belong" to the current block at `indent`. A
     // blank line belongs if the next non-blank line (if any) matches `indent`
     // or EOF.
-    private update def consumeTrailingBlanksFor(indent: Int): (Tactic[TelError]^) ?->{this} Int =
+    private update def consumeTrailingBlanksFor(indent: Int): (Tactic[Tel.Error]^) ?->{this} Int =
       if head.eof then
         // The first parseBlock to reach EOF after a document that ended with
         // LF claims the virtual sentinel trailing line that Parser emits.
@@ -4359,7 +4359,7 @@ object Tel extends Tel2:
     // True iff the parked head's first content byte is the sigil and the
     // line is a comment (sigil-only or sigil + soft space + text), as opposed
     // to a tabulation line or `#foo`-style keyword.
-    private update def isCommentBody(): (Tactic[TelError]^) ?->{this} Boolean = inHold:
+    private update def isCommentBody(): (Tactic[Tel.Error]^) ?->{this} Boolean = inHold:
       if !more || peek != sigil then false
       else
         // Peek the rest of the line to decide between comment and tabulation.
@@ -4379,7 +4379,7 @@ object Tel extends Tel2:
     // Returns true iff the parked head's line, when read forward from current
     // position, contains a 2-space-or-more run followed by sigil somewhere
     // before the next LF. Uses mark+cue.
-    private update def lineHasTabulationMarker(): (Tactic[TelError]^) ?->{this} Boolean = inHold:
+    private update def lineHasTabulationMarker(): (Tactic[Tel.Error]^) ?->{this} Boolean = inHold:
       val mk = beginMark()
       var found = false
       var done = false
@@ -4407,14 +4407,14 @@ object Tel extends Tel2:
       syncFrom()
       found
 
-    private update def isTabulationBody(): (Tactic[TelError]^) ?->{this} Boolean = inHold:
+    private update def isTabulationBody(): (Tactic[Tel.Error]^) ?->{this} Boolean = inHold:
       if !more || peek != sigil then false
       else lineHasTabulationMarker()
 
     // ── Comment parsing ──────────────────────────────────────────────────────
 
     // Cursor is at the sigil. Returns the comment text, advancing past LF.
-    private update def parseCommentLine(): (Tactic[TelError]^) ?->{this} Text = inHold:
+    private update def parseCommentLine(): (Tactic[Tel.Error]^) ?->{this} Text = inHold:
       // Consume the sigil.
       advance()
 
@@ -4442,7 +4442,7 @@ object Tel extends Tel2:
 
     // Cursor is at the sigil. Reads marker offsets + headings, advances past
     // LF.
-    private update def parseTabulationLine(): (Tactic[TelError]^) ?->{this} Tel.Tabulation = inHold:
+    private update def parseTabulationLine(): (Tactic[Tel.Error]^) ?->{this} Tel.Tabulation = inHold:
       val lineStartCol = head.leadingSpaces  // first marker offset (column 0 = sigil)
       val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
       val headings = scala.collection.mutable.ArrayBuffer.empty[Text]
@@ -4543,7 +4543,7 @@ object Tel extends Tel2:
     // parseCompoundLine call.
     private update def validateTabulatedRowInline
       ( rowLeadingSpaces: Int, tabulation: Tel.Tabulation, lineNumber: Int )
-    :   (Tactic[TelError]^) ?->{this} Unit =
+    :   (Tactic[Tel.Error]^) ?->{this} Unit =
 
       inHold:
         val markers = tabulation.markerOffsets
@@ -4613,7 +4613,7 @@ object Tel extends Tel2:
     // ── Source / literal atom dispatch ───────────────────────────────────────
 
     private update def parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces: Int)
-    :   (Tactic[TelError]^) ?->{this} Optional[Tel.Atom] =
+    :   (Tactic[Tel.Error]^) ?->{this} Optional[Tel.Atom] =
 
       if head.eof || head.blank then Unset
       else
@@ -4650,7 +4650,7 @@ object Tel extends Tel2:
     // followed by more source). Captured lines (first sourceIndent spaces
     // stripped, trailing spaces removed) are joined with LF as a separator
     // with no trailing LF; trailing blank lines are discarded (§14).
-    private update def parseSourceAtom(sourceIndent: Int): (Tactic[TelError]^) ?->{this} Tel.Atom.Source =
+    private update def parseSourceAtom(sourceIndent: Int): (Tactic[Tel.Error]^) ?->{this} Tel.Atom.Source =
       sb.setLength(0)
 
       // §14 "Convention A": the captured lines are joined with LF as a
@@ -4770,7 +4770,7 @@ object Tel extends Tel2:
     // everything between the next LF and the first line whose content is
     // byte-identical to the opening delimiter line (indentation included).
     private update def parseLiteralAtom(literalIndent: Int)
-    :   (Tactic[TelError]^) ?->{this} Tel.Atom.Literal =
+    :   (Tactic[Tel.Error]^) ?->{this} Tel.Atom.Literal =
 
       val openingLine = head.startLine
       // Read the delimiter — opening line, terminated by LF or CR per the
@@ -4880,7 +4880,7 @@ object Tel extends Tel2:
     // pushed onto the `scratchAtoms` stack; the caller (parseBlock) is
     // responsible for taking them — typically together with an optional
     // source/literal extra atom — and constructing the final Tel.Compound.
-    private update def parseCompoundLine(lineNumber: Int): (Tactic[TelError]^) ?->{this} Unit = inHold:
+    private update def parseCompoundLine(lineNumber: Int): (Tactic[Tel.Error]^) ?->{this} Unit = inHold:
       val isAtColumnZero = head.leadingSpaces == 0
       val mayBeMisplacedPragma = isAtColumnZero && hasConsumedNonBlankLine
 
@@ -4907,7 +4907,7 @@ object Tel extends Tel2:
     // the line ending. Factored out of `parseCompoundLine` so the direct
     // parsing rim, which reads the keyword itself (`directKeyword`), can
     // consume the rest of the line through the same scan.
-    private update def parseCompoundLineRest(lineNumber: Int)(using Tactic[TelError]): Unit = inHold:
+    private update def parseCompoundLineRest(lineNumber: Int)(using Tactic[Tel.Error]): Unit = inHold:
       var remark: Optional[Text] = Unset
       // The running column of the inline-atom run, advanced at each commit by
       // the space run that preceded the atom and then by the atom's own width.
@@ -5094,7 +5094,7 @@ object Tel extends Tel2:
     // runs has `holdStart > 0`, so a refill inside the loop can compact the
     // buffer and shift live content toward index 0 — the absolute-position
     // mark survives that, a buffer-offset would not.
-    private update def readKeyword()(using Tactic[TelError]): Text =
+    private update def readKeyword()(using Tactic[Tel.Error]): Text =
       val startMark = beginMark()
       var low:  Long = 0L
       var high: Long = 0L
@@ -5154,7 +5154,7 @@ object Tel extends Tel2:
     // outside printable ASCII, whose packed form could alias a shorter
     // keyword's or a sentinel — is sliced eagerly, exactly as `readKeyword`
     // would, and reported `KeywordOpaque`.
-    private update def readKeywordFast()(using Tactic[TelError]): Unit =
+    private update def readKeywordFast()(using Tactic[Tel.Error]): Unit =
       // Fused scan-and-pack: the word loaded to find the keyword's end *is*
       // its packed form, so a packable keyword costs one load. A keyword at
       // the window's edge, longer than eight bytes or carrying unpackable
@@ -5194,7 +5194,7 @@ object Tel extends Tel2:
 
       if slow then readKeywordSlow()
 
-    private update def readKeywordSlow()(using Tactic[TelError]): Unit =
+    private update def readKeywordSlow()(using Tactic[Tel.Error]): Unit =
       val startMark = beginMark()
       var low:  Long = 0L
       var high: Long = 0L
@@ -5338,7 +5338,7 @@ object Tel extends Tel2:
     // directive, pragma, and margin determination, leaving `head` parked on
     // the first content line (or EOF). The direct driver runs this before
     // handing the reader to a `Tel.Parsable`.
-    private[stratiform] update def directProlog()(using Tactic[TelError]): Unit =
+    private[stratiform] update def directProlog()(using Tactic[Tel.Error]): Unit =
       syncFrom()
       checkBom()
       val directive = parseInterpreterDirective()
@@ -5363,7 +5363,7 @@ object Tel extends Tel2:
     // record. On a compound line, consumes the keyword (leaving the parser
     // mid-line, right after it) and records the entry state for the
     // per-entry consumers.
-    private[stratiform] update def directKeyword(indent: Int)(using Tactic[TelError]): Text | Null =
+    private[stratiform] update def directKeyword(indent: Int)(using Tactic[Tel.Error]): Text | Null =
       if directKeywordAdvance(indent, textual = true) then directEntryKeyword else null
 
     // The step's shared line-classification loop. With `textual = true` the
@@ -5371,7 +5371,7 @@ object Tel extends Tel2:
     // pack-only fast scan (`readKeywordFast`), whose text materializes only
     // on demand. Returns whether an entry was found (false once the entry
     // region ends).
-    private update def directKeywordAdvance(indent: Int, textual: Boolean)(using Tactic[TelError])
+    private update def directKeywordAdvance(indent: Int, textual: Boolean)(using Tactic[Tel.Error])
     :   Boolean =
       var result = false
       var done = false
@@ -5478,7 +5478,7 @@ object Tel extends Tel2:
 
     // The current entry's keyword.
     private[stratiform] def directKeywordSpan: Span =
-      TelError.spanAt(directEntryLine, directEntrySpaces + 1, directEntryKeywordLen)
+      Tel.Error.spanAt(directEntryLine, directEntrySpaces + 1, directEntryKeywordLen)
 
     // The current entry's inline-atom run — but only if the extent on record was
     // measured for entry `ordinal`, and not for something read since. Empty
@@ -5486,7 +5486,7 @@ object Tel extends Tel2:
     // falls back to the keyword exactly as `walkIndex` does.
     private[stratiform] def directValueSpan(ordinal: Int): Span =
       if directValueSeq != ordinal || lineValueColumn == 0 then Span.empty
-      else TelError.spanAt(directEntryLine, lineValueColumn, lineValueLength)
+      else Tel.Error.spanAt(directEntryLine, lineValueColumn, lineValueLength)
 
     // The value span of the entry being read, falling back to its keyword — the
     // span a decode error raised from a leaf instance should carry.
@@ -5513,7 +5513,7 @@ object Tel extends Tel2:
     // ASCII, whose packed form could alias a shorter keyword's or a
     // sentinel). An opaque keyword is still consumed: `directKeywordText`
     // identifies it for the caller's general dispatch.
-    private[stratiform] update def directKeywordWord(indent: Int)(using Tactic[TelError]): Long =
+    private[stratiform] update def directKeywordWord(indent: Int)(using Tactic[Tel.Error]): Long =
       if !directKeywordAdvance(indent, textual = false) then TelReader.KeywordEnd
       else directKeywordPacked
 
@@ -5521,7 +5521,7 @@ object Tel extends Tel2:
     // continuation, and children — materializing it as the single compound
     // the AST path would have built. The direct seam for every consumer that
     // needs AST-identical semantics.
-    private update def directCompound(indent: Int)(using Tactic[TelError]): Tel.Compound =
+    private update def directCompound(indent: Int)(using Tactic[Tel.Error]): Tel.Compound =
       val spaces = directEntrySpaces
       val keyword = directKeywordText
       val tabulated = directTabulation.present
@@ -5560,7 +5560,7 @@ object Tel extends Tel2:
     // (`takeAtoms`) and no `Tel.Atom.Inline`: the first inline atom is consumed
     // straight into the slot, and the source/literal continuation and child
     // subtree are consumed (discarded) so the reader lands on the next sibling.
-    private update def consumeDirectEntry(mode: Int)(using Tactic[TelError]): Unit =
+    private update def consumeDirectEntry(mode: Int)(using Tactic[Tel.Error]): Unit =
       val spaces = directEntrySpaces
       val indent = directEntryIndent
       val tabulated = directTabulation.present
@@ -5667,7 +5667,7 @@ object Tel extends Tel2:
     // Inline with an inline `mode`, so each primitive reader expands its own
     // mode-specialized copy — the dead mode arms fold away and the hot
     // methods stay small enough to inline predictably.
-    private update def directLeafLine(mode: Int)(using Tactic[TelError]): Boolean = inHold:
+    private update def directLeafLine(mode: Int)(using Tactic[Tel.Error]): Boolean = inHold:
       val entry = beginMark()
 
       if !more then false
@@ -5806,7 +5806,7 @@ object Tel extends Tel2:
     // form (a source/literal atom supplies it when the line itself carries no
     // inline atom), mirroring `Tel#primaryAtom`. Backs the `Text`/text-codec
     // primitive readers.
-    private[stratiform] update def directAtomText()(using Tactic[TelError]): Optional[Text] =
+    private[stratiform] update def directAtomText()(using Tactic[Tel.Error]): Optional[Text] =
       consumeDirectEntry(PrimaryText)
       val captured = directPrimaryText
       if captured == null then Unset else Optional(Text(captured))
@@ -5814,25 +5814,25 @@ object Tel extends Tel2:
     // The entry's primary atom parsed straight from its bytes as an integer, or
     // Unset for a missing / non-integer atom — the `Int`/`Long` readers, saving
     // the value `String` the `Text` path would materialize only to re-scan.
-    private[stratiform] update def directAtomLong()(using Tactic[TelError]): Optional[Long] =
+    private[stratiform] update def directAtomLong()(using Tactic[Tel.Error]): Optional[Long] =
       consumeDirectEntry(PrimaryLong)
       if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal) else Unset
 
     // As `directAtomLong`, additionally requiring the value to fit `Int`.
-    private[stratiform] update def directAtomInt()(using Tactic[TelError]): Optional[Int] =
+    private[stratiform] update def directAtomInt()(using Tactic[Tel.Error]): Optional[Int] =
       consumeDirectEntry(PrimaryInt)
       if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal.toInt) else Unset
 
     // The entry's primary atom parsed straight from its bytes as a boolean, or
     // Unset for a missing atom or anything but `true` / `false`.
-    private[stratiform] update def directAtomBoolean()(using Tactic[TelError]): Optional[Boolean] =
+    private[stratiform] update def directAtomBoolean()(using Tactic[Tel.Error]): Optional[Boolean] =
       consumeDirectEntry(PrimaryBoolean)
       if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryBoolVal) else Unset
 
     // Consume the rest of the entry's own line (atoms, remark) and any
     // source/literal continuation, but not its child lines — the step before
     // a nested record parses those children one level deeper.
-    private[stratiform] update def directFinishLine()(using Tactic[TelError]): Unit =
+    private[stratiform] update def directFinishLine()(using Tactic[Tel.Error]): Unit =
       val spaces = directEntrySpaces
       val indent = directEntryIndent
       val tabulated = directTabulation.present
@@ -5866,7 +5866,7 @@ object Tel extends Tel2:
     // As `directFinishLine`, but capturing the entry line's atoms — including
     // the source/literal continuation, which §14/§15 append to the atom
     // sequence — for the derived record parser's §19.2 positional pre-pass.
-    private[stratiform] update def directFinishLineAtoms()(using Tactic[TelError])
+    private[stratiform] update def directFinishLineAtoms()(using Tactic[Tel.Error])
     :   Array[Tel.Atom]^{} =
 
       val spaces = directEntrySpaces
@@ -5907,17 +5907,17 @@ object Tel extends Tel2:
     // Skip the whole entry — line remainder, continuation and subtree —
     // discarding it. Used for unknown keywords and duplicate non-repeatable
     // fields (where the AST's `field()` keeps the first match).
-    private[stratiform] update def directSkipEntry(indent: Int)(using Tactic[TelError]): Unit =
+    private[stratiform] update def directSkipEntry(indent: Int)(using Tactic[Tel.Error]): Unit =
       directCompound(indent)
 
     // Materialize this one entry as a `Tel` — the AST bridge for field types
     // that only carry a `Tel.Decodable`.
-    private[stratiform] update def directValue(indent: Int)(using Tactic[TelError]): Tel =
+    private[stratiform] update def directValue(indent: Int)(using Tactic[Tel.Error]): Tel =
       Tel.make(directCompound(indent))
 
     // Materialize everything that remains as a document-rooted `Tel` — the
     // AST bridge for a whole-input read of a `Decodable`-only type.
-    private[stratiform] update def directDocument()(using Tactic[TelError]): Tel =
+    private[stratiform] update def directDocument()(using Tactic[Tel.Error]): Tel =
       Tel.make(Tel.Document(Unset, Unset, lineEndings, parseChildren(-1)))
 
     // Peek whether the current entry has substance — an atom of any
@@ -5926,7 +5926,7 @@ object Tel extends Tel2:
     // `optionalDecodable` performs. The entry is parsed in full under a mark
     // and then rewound, restoring every piece of parser state the parse
     // touched, so the caller can still consume the entry either way.
-    private[stratiform] update def directEntrySubstance()(using Tactic[TelError]): Boolean = inHold:
+    private[stratiform] update def directEntrySubstance()(using Tactic[Tel.Error]): Boolean = inHold:
       val mk = beginMark()
 
       val savedHead = (head.leadingSpaces, head.indentLevels, head.blank, head.eof,
@@ -5973,6 +5973,316 @@ object Tel extends Tel2:
       blockScratchIx = savedBlockIx
       substance
 
+  // TelError → Tel.Error
+  object Error:
+
+    object Position:
+      given communicable: Position is Communicable =
+        position => m"line ${position.line}, column ${position.column}"
+
+    // Render a `Line`-mode `Span` — the location carried by a `Tel.Error` — in the
+    // parser's own 1-indexed terms. A span wider than one character names its
+    // extent too, so a diagnostic reads "line 2, columns 5-8".
+    def describe(span: Span): Text =
+      val line   = span.startLine.lay(1)(_.n1)
+      val column = span.startColumn.lay(1)(_.n1)
+      val length = span.length.or(0)
+
+      if length > 1 then Text("line "+line+", columns "+column+"-"+(column + length - 1))
+      else Text("line "+line+", column "+column)
+
+    // The `Line`-mode `Span` for a token of `length` characters starting at the
+    // parser's 1-indexed `line`/`column`. `Span`'s own coordinates are 0-based, and
+    // its `Line` mode packs the column and length into 19 bits each (the line into
+    // 23), so each is clamped rather than allowed to wrap: a span into the far
+    // reaches of an implausibly long line saturates instead of pointing elsewhere.
+    def spanAt(line: Int, column: Int, length: Int): Span =
+      Span.line
+       ( (line - 1).max(0).min(0x7fffff).z,
+         (column - 1).max(0).min(0x7ffff).z,
+         length.max(0).min(0x7ffff) )
+
+    // 1-indexed source position attached to a `Tel.Error` raised by the
+    // TEL parser, so a caller capturing the error can point at the
+    // offending line in the source. `column = 1` refers to the first
+    // character of the line (including any leading spaces). Parse errors
+    // that pre-date the document body (e.g. `BomPresent` at offset 0)
+    // report `(1, 1)`. Post-parse / validation errors always leave the
+    // `Tel.Error`'s own `span` empty: their coordinates are carried on the
+    // accrued `Tel.Focus` instead, filled in from a tracked document's
+    // `PositionIndex` by `Tel.supplementPositions` / `Tel.Focus.withSpan`.
+    //
+    // Aliased as `Tel.Position`. This is also the `Positionable` `Result` for
+    // `tel.locate(pointer)`, so it
+    // extends zephyrine's `Format.Position` — `line`/`column` stay 1-based here
+    // while the uniform, public `span` is 0-based (mirrors `Json.Ast.Position` /
+    // `Yaml.Ast.Position`). `length` is the length in characters of the located
+    // token (a compound's keyword), enabling precise LSP ranges.
+    case class Position
+      ( line:                Int,
+        column:              Int,
+        override val offset: Optional[Int] = Unset,
+        override val length: Optional[Int] = Unset )
+    extends Format.Position derives CanEqual:
+      def describe: Text = Text("line "+line+", column "+column)
+
+      override def span: Span =
+        Span.line((line - 1).max(0).z, (column - 1).max(0).z, length.or(0))
+
+    // Recovery strategies prescribed by §19.5 of the TEL specification. Each
+    // reason carries the recovery strategy declared for its E-code.
+    enum Recovery:
+      case SkipBom
+      case RestartFromPragma
+      case AllowOversize
+      case IgnoreVersion
+      case UseDefaultSigil
+      case AdjustMargin
+      case ShallowerIndent
+      case StripTrailing
+      case AttachComment
+      case SkipOverIndented
+      case IgnoreDuplicateAtom
+      case PayloadToEof
+      case SuppressColumnAlignment
+      case CollapseLineEndings
+      case IgnoreSchemaId
+      case IgnoreExtraPragmaAtoms
+      case IgnoreErroneousNode
+
+    object Reason:
+      given communicable: Reason is Communicable =
+        case BomPresent     => m"the document begins with a byte-order mark"
+        case PragmaNotFirst => m"the pragma is not the first non-blank line"
+        case PragmaTooLong  => m"the pragma extends beyond the first 4096 bytes"
+        case BadVersion     => m"the pragma version is not of the form x.y"
+        case BadSigil       => m"the pragma sigil is not a permitted symbolic character"
+        case LessThanMargin => m"the line begins with fewer spaces than the document margin"
+        case OddIndentation => m"the relative indentation after the margin is odd"
+        case TrailingSpaces => m"the non-blank line has trailing spaces"
+
+        case CommentNotPreceded =>
+          m"the comment is not preceded by a blank line, comment, start, or lesser indent"
+
+        case UnmatchedDedent =>
+          m"the line indent does not match any open compound"
+
+        case OverIndentation =>
+          m"the line is indented more than one level deeper than the previous compound"
+
+        case ChildOfNonCompound =>
+          m"the line is a child of a comment, tabulation, or tabulated row"
+
+        case DuplicateSource =>
+          m"the compound already has a source or literal atom"
+
+        case DuplicateLiteral =>
+          m"the compound already has a source or literal atom"
+
+        case UnclosedLiteral =>
+          m"the literal atom reaches end of file before its closing delimiter"
+
+        case RowWrongIndent =>
+          m"the tabulated row has a different indent from its tabulation line"
+
+        case HardSpaceWrongPosition =>
+          m"a hard space on the tabulated row does not end at a column boundary"
+
+        case ConsecutiveSpacesInValue =>
+          m"consecutive spaces appear within a keyword or column value"
+
+        case ColumnValueTooWide =>
+          m"the column value exceeds the maximum width for its column"
+
+        case BadTabulationHeading =>
+          m"the tabulation line heading is malformed"
+
+        case BadLineEnding =>
+          m"line endings are inconsistent or a CR is not followed by an LF"
+
+        case BadSchemaIdentifier =>
+          m"the schema identifier is neither a valid URL nor a BASE-256 schema signature"
+
+        case ExtraPragmaContent =>
+          m"the pragma line has extra atoms or a remark"
+
+        case DuplicateKeywordInStruct => m"the same keyword appears more than once in a struct"
+        case EmptySelectVariants      => m"the SelectDefinition has an empty variants list"
+        case RootRequiredAtom         => m"the root struct has a required atom-assignable member"
+        case DefaultOnOptional        => m"a non-required member must not specify a default"
+        case DuplicateLayerName       => m"two or more layers share the same name"
+        case LayerKeywordCollision    => m"the layer introduces a keyword colliding with the base"
+        case LayerFieldTypeMismatch   => m"a layer Field's declared type conflicts with the base"
+        case BadSchemaSigil           => m"the schema sigil is not a permitted symbolic character"
+        case TelKeywordReserved       => m"the keyword `tel` is reserved in user schemas"
+        case UnresolvedReference      => m"a Reference or SelectRef names an undeclared TypeName"
+        case DuplicateDefinition      => m"two or more Definitions share the same name"
+        case ExcludeMissingVariant    => m"Exclude names a variant absent from the base"
+
+        case ExcludeEmptiesRequired =>
+          m"Exclude would empty a SelectDefinition that a required SelectRef references"
+
+        case LayerVariantAddition =>
+          m"a layer SelectDefinition introduces a variant absent from the base"
+
+        case LayerLoosenRequired =>
+          m"a layer cannot loosen the `required` axis"
+
+        case LayerLoosenRepeatable    => m"a layer cannot loosen the `repeatable` axis"
+        case ExcludeOutsideSelect     => m"Exclude appears outside a SelectDefinition body"
+
+        case ReferenceKindMismatch =>
+          m"a Reference / SelectRef resolves to a Definition of the wrong kind"
+
+        case NonStructCompound =>
+          m"the compound's type is not a Struct"
+
+        case TooManyAtoms             => m"more atoms than assignable member positions"
+        case AtomAtNonAssignablePos   => m"the atom is at a non-atom-assignable member position"
+        case AtomVariantUnmatched     => m"the atom text matches no variant keyword of the SelectRef"
+        case AtomFlagKeywordMismatch  => m"the atom text does not match the Flag member's keyword"
+        case UnknownKeyword           => m"the compound keyword is not recognised for the parent"
+        case RequiredMemberAbsent     => m"a required member is absent and has no default"
+        case NonRepeatableTooMany     => m"a non-repeatable member is filled more than once"
+        case MembersNonContiguous     => m"compound children of the same member are not contiguous"
+        case ValidatorRejected        => m"a scalar value or struct failed a named validator"
+        case FlagWithContent          => m"the Flag-typed compound has atoms or compound children"
+        case Absent                   => m"a required value was absent"
+
+        case NotScalar(value, expected) =>
+          m"the value $value could not be parsed as $expected"
+
+        case NestingLimitExceeded =>
+          m"the document nesting exceeds the supported limit of 256"
+
+      // The §19.5 recovery strategy for a parse/validation reason, or `Unset` for a
+      // decode reason (E4xx), which accrues through `Foci` rather than the parser's
+      // recovery model.
+      def recoveryOf(reason: Reason): Optional[Recovery] = reason match
+        case BomPresent               => Recovery.SkipBom
+        case PragmaNotFirst           => Recovery.RestartFromPragma
+        case PragmaTooLong            => Recovery.AllowOversize
+        case BadVersion               => Recovery.IgnoreVersion
+        case BadSigil                 => Recovery.UseDefaultSigil
+        case LessThanMargin           => Recovery.AdjustMargin
+        case OddIndentation           => Recovery.ShallowerIndent
+        case TrailingSpaces           => Recovery.StripTrailing
+        case CommentNotPreceded       => Recovery.AttachComment
+        case UnmatchedDedent          => Recovery.ShallowerIndent
+        case OverIndentation          => Recovery.SkipOverIndented
+        case ChildOfNonCompound       => Recovery.ShallowerIndent
+        case DuplicateSource          => Recovery.IgnoreDuplicateAtom
+        case DuplicateLiteral         => Recovery.IgnoreDuplicateAtom
+        case UnclosedLiteral          => Recovery.PayloadToEof
+        case RowWrongIndent           => Recovery.SuppressColumnAlignment
+        case HardSpaceWrongPosition   => Recovery.SuppressColumnAlignment
+        case ConsecutiveSpacesInValue => Recovery.SuppressColumnAlignment
+        case ColumnValueTooWide       => Recovery.SuppressColumnAlignment
+        case BadTabulationHeading     => Recovery.SuppressColumnAlignment
+        case BadLineEnding            => Recovery.CollapseLineEndings
+        case BadSchemaIdentifier      => Recovery.IgnoreSchemaId
+        case ExtraPragmaContent       => Recovery.IgnoreExtraPragmaAtoms
+
+        // E2xx and E3xx recoveries: discard the offending node and
+        // continue validation; the document is reported as invalid but
+        // remaining nodes are still inspected.
+        case DuplicateKeywordInStruct | EmptySelectVariants | RootRequiredAtom
+          | DefaultOnOptional | DuplicateLayerName | LayerKeywordCollision
+          | LayerFieldTypeMismatch | BadSchemaSigil | TelKeywordReserved
+          | UnresolvedReference | DuplicateDefinition | ExcludeMissingVariant
+          | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
+          | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
+          | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
+          | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
+          | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
+          | ValidatorRejected | FlagWithContent =>
+          Recovery.IgnoreErroneousNode
+
+        // E4xx decode reasons and implementation-reserved resource errors have
+        // no parser-level recovery.
+        case Absent | NotScalar(_, _) | NestingLimitExceeded =>
+          Unset
+
+    enum Reason(val number: Int) extends Clarification:
+      case BomPresent              extends Reason(101)
+      case PragmaNotFirst          extends Reason(102)
+      case PragmaTooLong           extends Reason(103)
+      case BadVersion              extends Reason(104)
+      case BadSigil                extends Reason(105)
+      case LessThanMargin          extends Reason(106)
+      case OddIndentation          extends Reason(107)
+      case TrailingSpaces          extends Reason(108)
+      case CommentNotPreceded      extends Reason(109)
+      case UnmatchedDedent         extends Reason(110)
+      case OverIndentation         extends Reason(111)
+      case ChildOfNonCompound      extends Reason(112)
+      case DuplicateSource         extends Reason(113)
+      case DuplicateLiteral        extends Reason(114)
+      case UnclosedLiteral         extends Reason(115)
+      case RowWrongIndent          extends Reason(116)
+      case HardSpaceWrongPosition  extends Reason(117)
+      case ConsecutiveSpacesInValue extends Reason(118)
+      case ColumnValueTooWide      extends Reason(119)
+      case BadTabulationHeading    extends Reason(120)
+      case BadLineEnding           extends Reason(121)
+      case BadSchemaIdentifier     extends Reason(122)
+      case ExtraPragmaContent      extends Reason(123)
+
+      // E2xx — schema validity errors per §20.1.
+      case DuplicateKeywordInStruct extends Reason(201)
+      case EmptySelectVariants     extends Reason(202)
+      case RootRequiredAtom        extends Reason(203)
+      case DefaultOnOptional       extends Reason(204)
+      case DuplicateLayerName      extends Reason(205)
+      case LayerKeywordCollision   extends Reason(206)
+      case LayerFieldTypeMismatch  extends Reason(207)
+      case BadSchemaSigil          extends Reason(208)
+      case TelKeywordReserved      extends Reason(209)
+      case UnresolvedReference     extends Reason(210)
+      case DuplicateDefinition     extends Reason(211)
+      case ExcludeMissingVariant   extends Reason(212)
+      case ExcludeEmptiesRequired  extends Reason(213)
+      case LayerVariantAddition    extends Reason(214)
+      case LayerLoosenRequired     extends Reason(215)
+      case LayerLoosenRepeatable   extends Reason(216)
+      case ExcludeOutsideSelect    extends Reason(217)
+      case ReferenceKindMismatch   extends Reason(218)
+
+      // E3xx — validation errors per §19.3 / §21.
+      case NonStructCompound       extends Reason(301)
+      case TooManyAtoms            extends Reason(302)
+      case AtomAtNonAssignablePos  extends Reason(303)
+      case AtomVariantUnmatched    extends Reason(304)
+      case AtomFlagKeywordMismatch extends Reason(305)
+      case UnknownKeyword          extends Reason(306)
+      case RequiredMemberAbsent    extends Reason(307)
+      case NonRepeatableTooMany    extends Reason(308)
+      case MembersNonContiguous    extends Reason(309)
+      case ValidatorRejected       extends Reason(310)
+      case FlagWithContent         extends Reason(311)
+
+      // E4xx — decode errors (mapping a TEL value onto a Scala type). Surfaced via
+      // `Foci`-based accrual at decode time, not the §19.5 parser/validation
+      // recovery model, so they carry no `Recovery` strategy.
+      case Absent                                 extends Reason(401)
+      case NotScalar(value: Text, expected: Text) extends Reason(402)
+
+      // Implementation-reserved (§20.2 assigns no TEL error code): resource
+      // limits that are properties of the implementation, not the document.
+      case NestingLimitExceeded                   extends Reason(501)
+
+  // `span` locates the offending text in the source: a `Line`-mode `Span` giving
+  // the 0-based line and column at which it starts and its extent in characters,
+  // so a caller can highlight the token itself and not merely the line. It is
+  // empty (`Span.empty` is in-band, so no `Optional` boxing) for post-parse and
+  // validation errors, whose coordinates apply to AST nodes rather than source
+  // bytes and are carried on the accrued `Tel.Focus`.
+  case class Error(reason: Tel.Error.Reason, span: Span = Span.empty)(using Diagnostics)
+  extends fulminate.Error
+    ( 605, reason.number )
+    ( if span.vacant then m"the TEL document is invalid because $reason"
+      else m"the TEL document is invalid at ${Tel.Error.describe(span)} because $reason" )
+
 class Tel private[stratiform]
   ( private[stratiform] val subtree:       Tel.Subtree,
     private[stratiform] val positionIndex: Optional[Tel.PositionIndex] = Unset )
@@ -5988,7 +6298,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // needs a `Locus`-fixing mixin and a lowest-priority adapter given; here the
   // focus type is already fixed by the `tracks Tel.Focus` clause, so the
   // enrichment is called directly.)
-  inline def as[value: Decodable in Tel]: value raises TelError tracks Tel.Focus =
+  inline def as[value: Decodable in Tel]: value raises Tel.Error tracks Tel.Focus =
     val result = value.decoded(this)
     Tel.supplementPositions(this)
     result

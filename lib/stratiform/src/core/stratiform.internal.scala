@@ -97,8 +97,8 @@ object internal:
     val document: Tel.Document =
       given Diagnostics = Diagnostics.omit
 
-      given HaltTactic[TelError, Tel.Document] = new HaltTactic[TelError, Tel.Document]:
-        override def abort(error: Diagnostics ?=> TelError): Nothing =
+      given HaltTactic[Tel.Error, Tel.Document] = new HaltTactic[Tel.Error, Tel.Document]:
+        override def abort(error: Diagnostics ?=> Tel.Error): Nothing =
           halt(m"the tel\"…\" literal is invalid: ${error.message}")
 
       Tel.Parser.parse(data)
@@ -259,8 +259,8 @@ object internal:
     locally:
       given Diagnostics = Diagnostics.omit
 
-      given HaltTactic[TelError, Tel.Document] = new HaltTactic[TelError, Tel.Document]:
-        override def abort(error: Diagnostics ?=> TelError): Nothing =
+      given HaltTactic[Tel.Error, Tel.Document] = new HaltTactic[Tel.Error, Tel.Document]:
+        override def abort(error: Diagnostics ?=> Tel.Error): Nothing =
           halt(m"the tel\"…\" pattern is invalid: ${error.message}")
 
       Tel.Parser.parse(Array.from(source.getBytes("UTF-8").nn.iterator))
@@ -577,7 +577,7 @@ object internal:
       ( reader:      Expr[TelReader],
         indent:      Expr[Int],
         foci:        Expr[Foci[Tel.Focus]],
-        tactic:      Expr[Tactic[TelError]],
+        tactic:      Expr[Tactic[Tel.Error]],
         keys:        Expr[Array[String]^{}],
         instances:   Expr[Array[Tel.Field | Null]^{}],
         repeatables: Expr[Array[Boolean]^{}],
@@ -674,7 +674,7 @@ object internal:
                   '{
                     Tel.Parsable.focusing($foci, $reader, $keyText):
                       $reader.atom()
-                      . lay { $reader.fault(TelError.Reason.Absent); t"" } (identity)
+                      . lay { $reader.fault(Tel.Error.Reason.Absent); t"" } (identity)
                   }.asTerm
 
               case StringK =>
@@ -682,7 +682,7 @@ object internal:
                   '{
                     Tel.Parsable.focusing($foci, $reader, $keyText):
                       $reader.atom()
-                      . lay { $reader.fault(TelError.Reason.Absent); "" } { atom => atom.s }
+                      . lay { $reader.fault(Tel.Error.Reason.Absent); "" } { atom => atom.s }
                   }.asTerm
 
               case InstanceK =>
@@ -967,7 +967,7 @@ object internal:
         report.errorAndAbort(s"stratiform: staged parsing needs a contextual $role")
 
     val fociExpr = summonOrAbort[Foci[Tel.Focus]]("Foci[Tel.Focus]")
-    val tacticExpr = summonOrAbort[Tactic[TelError]]("Tactic[TelError]")
+    val tacticExpr = summonOrAbort[Tactic[Tel.Error]]("Tactic[Tel.Error]")
     val nameExprs = fieldNames.map { name => Expr(name) }
     val instanceExprs = List.range(0, arity).map(summonField)
     val fallbackExprs = List.range(0, arity).map(declaredDefault)
@@ -987,7 +987,7 @@ object internal:
       // self-references stay deferred until the first parse.
       caps.unsafe.unsafeAssumePure:
         val foci: Foci[Tel.Focus] = $fociExpr
-        val tactic: Tactic[TelError] = $tacticExpr
+        val tactic: Tactic[Tel.Error] = $tacticExpr
 
         val keys: Array[String]^{} =
           Tel.Parsable.wireKeywords(Array.of[String](${Varargs(nameExprs)}*), $renames)

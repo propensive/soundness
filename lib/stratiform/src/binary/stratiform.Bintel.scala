@@ -98,9 +98,9 @@ object Bintel:
   // length MUST be a valid palimpsest length under some `(H, k_i, k_r)`,
   // recovered from the trailing cadence byte (§8.2 of bintel.md, §4.2
   // of palimpsest.md); otherwise raises `BadSignatureLength`.
-  def frame(body: Data, signature: Data): Data raises BintelError =
+  def frame(body: Data, signature: Data): Data raises Bintel.Error =
     if !validSignatureLength(signature)
-    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     val out = new ByteArrayOutputStream(magic.length + 10 + signature.length + body.length)
     out.write(magic.asInstanceOf[scala.Array[Byte]])
@@ -121,20 +121,20 @@ object Bintel:
   // signature bytes and body bytes. Validates the magic number (B01),
   // the signature length pattern (B03), and leaves trailing-byte (B08)
   // detection to the caller (typically `Bintel.decode` over the body).
-  def unframe(data: Data): Framed raises BintelError =
-    if data.length < magic.length then abort(BintelError(BintelError.Reason.BadMagic))
+  def unframe(data: Data): Framed raises Bintel.Error =
+    if data.length < magic.length then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
 
     var i = 0
 
     while i < magic.length do
-      if data(i) != magic(i) then abort(BintelError(BintelError.Reason.BadMagic))
+      if data(i) != magic(i) then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
       i += 1
 
     val sigLenDecoded =
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case _: VarintError => BintelError(BintelError.Reason.VarintError)
+        case _: Varint.Error => Bintel.Error(Bintel.Error.Reason.VarintError)
 
       . protect(Varint.decode(data, magic.length))
 
@@ -143,7 +143,7 @@ object Bintel:
     val sigStart = sigLenDecoded.next
     val sigEnd   = sigStart + sigLength
 
-    if sigEnd > data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
+    if sigEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
 
     val sigBytes = new scala.Array[Byte](sigLength)
     System.arraycopy(data.asInstanceOf[scala.Array[Byte]], sigStart, sigBytes, 0, sigLength)
@@ -152,7 +152,7 @@ object Bintel:
 
     val sig = sigBytes.asInstanceOf[Array[Byte]^{}]
 
-    if !validSignatureLength(sig) then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    if !validSignatureLength(sig) then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     Framed(sig, bodyBytes.asInstanceOf[Array[Byte]^{}])
 
@@ -161,7 +161,7 @@ object Bintel:
   // semantic-model `Tel.Element` tree under `schema`. This layer does
   // not verify the signature against the schema (§8.2 palimpsest
   // decoding is a follow-up).
-  def decodeDocument(data: Data, schema: Tels): Document raises BintelError =
+  def decodeDocument(data: Data, schema: Tels): Document raises Bintel.Error =
     val framed = unframe(data)
     Document(framed.signature, decode(framed.body, schema))
 
@@ -170,10 +170,10 @@ object Bintel:
   // The signature length MUST be a valid palimpsest length; otherwise
   // raises `BadSignatureLength`.
   def frameSelfContained(signature: Data, schemaBody: Data, body: Data)
-  :   Data raises BintelError =
+  :   Data raises Bintel.Error =
 
     if !validSignatureLength(signature)
-    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     val out = new ByteArrayOutputStream(
         magicSelfContained.length + 20 + signature.length + schemaBody.length + body.length)
@@ -191,7 +191,7 @@ object Bintel:
   // schema's signature and bintel body are embedded so that a receiver holding
   // only the axiom can decode the result with no external schema resolution.
   def selfContained(tel: Tel, schemaDoc: Tel)
-    ( using Tactic[TelError], Tactic[BintelError] )
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Data =
 
     val axiom      = Tels.Axiom.tels
@@ -206,36 +206,36 @@ object Bintel:
   // recomputed and verified byte-for-byte against the carried signature
   // (B11 on mismatch) before the document root is decoded under the
   // reconstructed schema.
-  def decodeDocumentSelfContained(data: Data): Document raises BintelError =
+  def decodeDocumentSelfContained(data: Data): Document raises Bintel.Error =
     import errorDiagnostics.emptyDiagnostics
 
-    if data.length < magicSelfContained.length then abort(BintelError(BintelError.Reason.BadMagic))
+    if data.length < magicSelfContained.length then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
 
     var i = 0
 
     while i < magicSelfContained.length do
-      if data(i) != magicSelfContained(i) then abort(BintelError(BintelError.Reason.BadMagic))
+      if data(i) != magicSelfContained(i) then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
       i += 1
 
     def varint(at: Int) =
       mitigate:
-        case _: VarintError => BintelError(BintelError.Reason.VarintError)
+        case _: Varint.Error => Bintel.Error(Bintel.Error.Reason.VarintError)
 
       . protect(Varint.decode(data, at))
 
     val sigLenD   = varint(magicSelfContained.length)
     val sigStart  = sigLenD.next
     val sigEnd    = sigStart + sigLenD.value.toInt
-    if sigEnd > data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
+    if sigEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
     val signature = data.slice(sigStart, sigEnd)
 
     if !validSignatureLength(signature)
-    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     val schLenD   = varint(sigEnd)
     val schStart  = schLenD.next
     val schEnd    = schStart + schLenD.value.toInt
-    if schEnd > data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
+    if schEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
     val schemaBody = data.slice(schStart, schEnd)
     val docBody    = data.slice(schEnd, data.length)
 
@@ -245,8 +245,8 @@ object Bintel:
     // any structural failure here is B12.
     val (composed, recomputed) =
       mitigate:
-        case _: TelError    => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
-        case _: BintelError => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
+        case _: Tel.Error    => Bintel.Error(Bintel.Error.Reason.EmbeddedSchemaUndecodable)
+        case _: Bintel.Error => Bintel.Error(Bintel.Error.Reason.EmbeddedSchemaUndecodable)
 
       . protect:
           val schemaRoot = decode(schemaBody, axiom).asInstanceOf[Tel.Element.Node]
@@ -255,7 +255,7 @@ object Bintel:
           (Tels.Layers.compose(baseTels), sig)
 
     if !bytesEqual(recomputed, signature)
-    then abort(BintelError(BintelError.Reason.EmbeddedSignatureMismatch))
+    then abort(Bintel.Error(Bintel.Error.Reason.EmbeddedSignatureMismatch))
 
     Document(signature, decode(docBody, composed))
 
@@ -286,17 +286,17 @@ object Bintel:
   // exactly what `encode` emits) under `schema`, recovering the
   // semantic-model `Tel.Element` tree. The schema must be the same
   // composed schema used at encode time. Any framing or schema
-  // mismatch raises `BintelError`.
-  def decode(data: Data, schema: Tels): Tel.Element raises BintelError =
+  // mismatch raises `Bintel.Error`.
+  def decode(data: Data, schema: Tels): Tel.Element raises Bintel.Error =
     val cursor = Cursor(data, 0)
     val root = decodeStructBody(cursor, schema.document, schema, keywordIndex = Unset)
-    if cursor.offset != data.length then abort(BintelError(BintelError.Reason.TrailingBytes))
+    if cursor.offset != data.length then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
     root
 
   private def decodeStructBody
     ( cursor: Cursor, struct: Tels.Struct, schema: Tels,
       keywordIndex: Optional[Int] )
-  :   Tel.Element raises BintelError =
+  :   Tel.Element raises Bintel.Error =
 
     val flat = flattenKeywords(struct, schema)
     val childCount = readVarint(cursor)
@@ -311,10 +311,10 @@ object Bintel:
 
   private def decodeElement
     ( cursor: Cursor, flat: Array[(Text, Tels.Type)]^{}, schema: Tels )
-  :   Tel.Element raises BintelError =
+  :   Tel.Element raises Bintel.Error =
 
     val kidx = readVarint(cursor)
-    if kidx < 0 || kidx >= flat.length then abort(BintelError(BintelError.Reason.BadKeywordIndex))
+    if kidx < 0 || kidx >= flat.length then abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))
     val (_, memberType) = flat(kidx.toInt)
     val resolved = resolveType(memberType, schema)
 
@@ -326,7 +326,7 @@ object Bintel:
         val len = readVarint(cursor)
 
         if cursor.offset + len > cursor.data.length
-        then abort(BintelError(BintelError.Reason.ValueTruncated))
+        then abort(Bintel.Error(Bintel.Error.Reason.ValueTruncated))
 
         val bytes = new scala.Array[Byte](len.toInt)
         var j = 0
@@ -339,7 +339,7 @@ object Bintel:
 
         val text =
           try Text(new String(bytes, "UTF-8"))
-          catch case _: Exception => abort(BintelError(BintelError.Reason.BadUtf8))
+          catch case _: Exception => abort(Bintel.Error(Bintel.Error.Reason.BadUtf8))
 
         Tel.Element.Value(kidx.toInt, s, text)
 
@@ -347,15 +347,15 @@ object Bintel:
         Tel.Element.Node(kidx.toInt, Tels.Flag, Array.empty)
 
       case _: Tels.Reference =>
-        abort(BintelError(BintelError.Reason.ReferenceUnresolved))
+        abort(Bintel.Error(Bintel.Error.Reason.ReferenceUnresolved))
 
-  private def readVarint(cursor: Cursor): Long raises BintelError =
+  private def readVarint(cursor: Cursor): Long raises Bintel.Error =
     import errorDiagnostics.emptyDiagnostics
 
-    if cursor.offset >= cursor.data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
+    if cursor.offset >= cursor.data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
 
     mitigate:
-      case _: VarintError => BintelError(BintelError.Reason.VarintError)
+      case _: Varint.Error => Bintel.Error(Bintel.Error.Reason.VarintError)
 
     . protect:
         val decoded = Varint.decode(cursor.data, cursor.offset)
@@ -461,19 +461,19 @@ object Bintel:
   // `Bintel.Parsable`. Trailing bytes are rejected exactly as `decode`.
   def parse[value](data: Data)
     ( using parsable: (value is Bintel.Parsable)^ )
-    ( using tactic: Tactic[BintelError] )
+    ( using tactic: Tactic[Bintel.Error] )
   :   value =
 
     val parser = BintelParser(data)
     val result = parsable.parse(BintelReader(parser, tactic))
-    if parser.offset != data.length then abort(BintelError(BintelError.Reason.TrailingBytes))
+    if parser.offset != data.length then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
     result
 
   // Decode BinTEL body bytes to a typed value, deriving the schema from the value's type
   // — the inverse of `value.bintel`.
   def read[value: Tel.Decodable](data: Data)
     ( using value is TelSchematic over Tels.Type )
-    ( using Tactic[BintelError], Tactic[TelError] )
+    ( using Tactic[Bintel.Error], Tactic[Tel.Error] )
   :   value =
 
     val schema = Tels.tels[value](Text("root"))
@@ -631,3 +631,53 @@ object Bintel:
   private def kidxOf(element: Tel.Element): Int = element match
     case Tel.Element.Node(idx, _, _)  => idx.or(0)
     case Tel.Element.Value(idx, _, _) => idx
+
+  // BintelError → Bintel.Error
+  object Error:
+
+    object Reason:
+      given communicable: Reason is Communicable =
+        case BadSignature        => m"the schema signature does not decode against the library"
+        case BadKeywordIndex     => m"a keyword index exceeds the parent's flat-keyword count"
+        case ValueTruncated      => m"a Scalar value's byte length extends beyond end of input"
+        case BadUtf8             => m"a Scalar value's bytes are not valid UTF-8"
+        case TrailingBytes       => m"the document root completed with input bytes remaining"
+        case UnexpectedEoi       => m"the decoder requested bytes beyond end of input"
+        case ReferenceUnresolved => m"a Reference type in the schema does not resolve"
+        case Varint.Error         => m"a variable-length integer in the stream is invalid"
+
+        case BadMagic =>
+          m"""
+            the magic number is missing or matches neither B2 C4 B5 BB (external mode) nor B2 C4 B5 BC
+            (self-contained mode)
+          """
+
+        case BadSignatureLength =>
+          m"the schema signature length is not a valid palimpsest length under any (H, k_i, k_r)"
+
+        case EmbeddedSignatureMismatch =>
+          m"""
+            the signature recomputed from the embedded schema body does not equal the carried
+            signature
+          """
+
+        case EmbeddedSchemaUndecodable =>
+          m"the embedded schema body does not decode as a valid TEL document under tel-schema"
+
+    enum Reason(val number: Int) extends Clarification:
+      case BadMagic            extends Reason(1)
+      case VarintError          extends Reason(2)
+      case BadSignatureLength  extends Reason(3)
+      case BadSignature        extends Reason(4)
+      case BadKeywordIndex     extends Reason(5)
+      case ValueTruncated      extends Reason(6)
+      case BadUtf8             extends Reason(7)
+      case TrailingBytes       extends Reason(8)
+      case UnexpectedEoi       extends Reason(9)
+      case ReferenceUnresolved extends Reason(10)
+      case EmbeddedSignatureMismatch extends Reason(11)
+      case EmbeddedSchemaUndecodable extends Reason(12)
+
+  case class Error(reason: Bintel.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(609, reason.number)(m"the BinTEL stream is invalid because $reason")
+
