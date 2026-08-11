@@ -29,6 +29,15 @@ does not split at all — it becomes a namespace for its own satellites.
   `JsonBlueprint`, `SymmetricKey` (parallel with `PrivateKey`/`PublicKey`; the
   `Symmetric` trait is a separate abstraction). This resolves July's internal conflict:
   it proposed both `MediaType → Media.Type` and `MediaTypeError → MediaType.Error`.
+
+  **The test is whether the compound names a thing with its own specification**, not
+  whether its prefix happens to be a type in the same library. `YamlPath` and `TelPath`
+  stay whole for exactly the reason `JsonPointer` does: a YAML path and a TEL path are
+  addressing languages defined in their own right, and a reader who knows the concept
+  knows it by the compound name. `Yaml.Error` is different — an error *of* the YAML
+  parser, meaningful only relative to `Yaml`. The distinction is subtle and cannot be
+  read off the syntax: ask whether the compound would appear as a heading in a
+  specification.
 - **R3 KEEP, NO NAMESPACE**: established compounds and sentence-like names with no
   satellites: `LineSeparation`, the filesystemOptions markers
   (`CreateNonexistentParents`, `DeleteRecursively`, …), `InitializationVector`,
@@ -117,7 +126,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | scintillate.servlet | `JavaServletFn→JavaServlet.Fn` |
 | sedentary.core | `BenchError→Bench.Error` |
 | serpentine.core | `PathError→Path.Error` |
-| stratiform.core | `MutationError→Mutation.Error`, `TelError→Tel.Error`, `TelPath→Tel.Path`, `TelFlag→Tel.Flag`, `TelHandle→Tel.Handle` |
+| stratiform.core | `MutationError→Mutation.Error`, `TelError→Tel.Error`, `TelFlag→Tel.Flag`, `TelHandle→Tel.Handle` |
 | stratiform.base256 | `Base256Error→Base256.Error` |
 | stratiform.binary | `BintelError→Bintel.Error`, `VarintError→Varint.Error` |
 | synesthesia.core | `McpClient→Mcp.Client`, `McpError→Mcp.Error`, `McpServer→Mcp.Server`, `McpSession→Mcp.Session`, `McpSpecification→Mcp.Specification` |
@@ -130,7 +139,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | xenophile.wit | `WitDeclaration→Wit.Declaration`, `WitDialect→Wit.Dialect`, `WitParser→Wit.Parser` |
 | xylophone.core | `XmlError→Xml.Error`, `XPathError→XPath.Error` |
 | yossarian.core | `PtyEscapeError→Pty.EscapeError`, `PtyState→Pty.State` |
-| ypsiloid.core | `YamlError→Yaml.Error`, `YamlPrimitive→Yaml.Primitive`, `YamlPath→Yaml.Path`, `YamlPathError→Yaml.Path.Error` |
+| ypsiloid.core | `YamlError→Yaml.Error`, `YamlPrimitive→Yaml.Primitive`, `YamlPathError→YamlPath.Error` (`YamlPath` stays whole, per R2) |
 | zeppelin.core | `ZipError→Zip.Error`, `ZipEvent→Zip.Event`, `ZipHandle→Zip.Handle` (deferred: `ZipOpenable`/`ZipDataOpenable` share `ZipHandle`'s file — hoist first) |
 
 ## Kept whole after verification — no outer concept exists as a type
@@ -247,6 +256,11 @@ survive contact, and the reasons generalise:
   semantic change.
 - **A sealed trait pins its subtypes to its file.** Nesting `SvgDef` drags the exported
   `LinearGradient` in with it. Check for `sealed` before proposing a move.
+- **`YamlPath` and `TelPath` stay whole on semantic grounds** (R2, above), not merely
+  because nesting them would shadow serpentine's `Path` — though it would, and both types
+  are declared in terms of it. Where a semantic reason and a mechanical obstacle point the
+  same way, record the semantic one: the mechanical obstacle might be removed later, and
+  the name should not then drift.
 - **Opaque types and aliases in package files** (`SvgId`, `TarRef`, `GitHash`) are not in
   their own donor files. An alias moves easily (`TarRef` → `Tar.Ref`); an opaque type whose
   companion carries its operations is better left alone.

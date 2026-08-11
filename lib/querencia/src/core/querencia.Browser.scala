@@ -42,7 +42,7 @@ import vacuous.*
 import xenophile.*
 
 // The `Browser` ecosystem: the web platform's foreign types, read from a WebIDL description of the
-// DOM (`/querencia/dom.idl`) with xenophile's `WebIdl.Dialect`. `Browser` is a distinct ecosystem
+// DOM (`/querencia/dom.idl`) with xenophile's `WebIdlDialect`. `Browser` is a distinct ecosystem
 // from the general `WebIdl` one so it owns the DOM's `Interface` (and so its `Foreign` values may
 // render to JavaScript and serve as Honeycomb event handlers) without monopolising `WebIdl`.
 //
@@ -111,4 +111,4 @@ object Browser:
     . asInstanceOf[Foreign of "Window" from Browser]
 
 trait Browser extends Ecosystem:
-  type Grammar = WebIdl.Dialect.type
+  type Grammar = WebIdlDialect.type

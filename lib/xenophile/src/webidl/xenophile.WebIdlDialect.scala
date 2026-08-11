@@ -34,6 +34,7 @@ package xenophile
 
 // The dialect works with ordinary Scala collections internally; the single `parse` boundary
 // re-wraps as the opaque `Map` (erasure-identical cast).
+import scala.collection.immutable.List as SList
 import scala.collection.immutable.Map
 
 import proscenium.compat.*
@@ -44,110 +45,108 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-// The C grammar for foreign navigation: a *projection* of `CHeaderParser`'s declaration model
-// onto the flat form the FFI backends marshal against — one reader per language, two views,
-// exactly as `TypescriptDialect` projects from `TypescriptParser`.
+// The WebIDL grammar for foreign navigation: a *projection* of `WebIdlParser`'s declaration
+// model onto the flat form the JS backend marshals against — one reader per language, two
+// views, exactly as `TypescriptDialect` projects from `TypescriptParser`.
 //
-// The parser retains the declared surface faithfully — exact arithmetic spellings, pointer
-// structure, enumerators — and this projection deliberately erases what a downcall cannot use:
-// `struct`/`union` definitions become navigable foreign types whose members are their fields,
-// top-level prototypes become members of a synthetic `"library"` type, `enum`s are treated as
-// `int`, `typedef` aliases are resolved transitively, signedness and pointer depth collapse to
-// keep the FFM layouts correct, and a plain `char*` is the C-string type. Array fields,
-// function-pointer typedefs and opaque tags are outside the marshalling vocabulary and are not
-// navigable.
-object CHeaderDialect extends Dialect:
-  val library: Text = t"library"
+// The parser retains the declared surface faithfully — partiality, mixin identity, `[Exposed]`
+// scopes, required-versus-optional dictionary members, enumeration values — and this
+// projection deliberately erases what a navigation cannot use. An `interface` becomes a
+// navigable foreign type whose members are its attributes, constants and named operations; a
+// `dictionary` a record; an `enum` a `string`. Inheritance is flattened, so an inherited
+// member (`Node`'s `nodeName` on an `HTMLElement`) resolves: each type's members include its
+// base chain's and those of every mixin applied by `includes`, with its own overriding.
+// `partial` bodies merge into the type they extend, and `typedef`/`enum` aliases resolve
+// transitively. Constructors, special operations and intrinsic declarations are not navigable.
+object WebIdlDialect extends Dialect:
 
   def parse(source: Text): proscenium.Map[Text, proscenium.Map[Text, Prototype]] =
     parse0(source).asInstanceOf[proscenium.Map[Text, proscenium.Map[Text, Prototype]]]
 
   private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
     import strategies.throwUnsafely
-    val declarations = CHeaderParser.parse(source).stdlib
+    val definitions = WebIdlParser.parse(source).stdlib
 
-    val typedefs: Map[Text, Foreign.Type] =
-      declarations.collect:
-        case CDeclaration.Enumeration(name, _) => name -> Foreign.Type.Named(t"int")
+    var types = Map[Text, Map[Text, Prototype]]()
+    var parents = Map[Text, Text]()
+    var includes = Map[Text, SList[Text]]()
+    var typedefs = Map[Text, Foreign.Type]()
 
-        case CDeclaration.Alias(name, target) if !functionPointer(target) =>
-          name -> project(target)
+    def record(name: Text, parent: Optional[Text], members: Map[Text, Prototype]): Unit =
+      val merged = types.get(name).optional.lay(members)(_ ++ members)
+      types = types.updated(name, merged)
+      parent.let { base => parents = parents.updated(name, base) }
+
+    def navigable(members: List[WebIdlMember]): Map[Text, Prototype] =
+      members.stdlib.flatMap: member =>
+        member.kind match
+          case WebIdlMember.Kind.Attribute | WebIdlMember.Kind.Constant =>
+            SList(member.name -> Prototype(Unset, member.typed))
+
+          case WebIdlMember.Kind.Operation =>
+            if member.special.present || member.name.s.isEmpty then SList()
+            else
+              val parameters = List.from(member.arguments.stdlib.map(_.typed))
+              SList(member.name -> Prototype(parameters, member.typed))
+
+          case WebIdlMember.Kind.Constructor => SList()
 
       . toMap
 
-    val structs: Map[Text, Map[Text, Prototype]] =
-      declarations.collect:
-        case CDeclaration.Structure(name, _, fields, false) =>
-          val members = fields.stdlib.filter { (_, typed) => !array(typed) }.map:
-            (field, typed) => field -> Prototype(Unset, project(typed))
+    definitions.foreach:
+      case WebIdlDefinition.Interface(name, parent, _, members, _, _, _, _) =>
+        record(name, parent, navigable(members))
 
-          name -> members.toMap
+      case WebIdlDefinition.Dictionary(name, parent, fields, _) =>
+        val members = fields.stdlib.map: field =>
+          field.name -> Prototype(Unset, field.typed)
 
-      . toMap
+        record(name, parent, members.toMap)
 
-    val functions: Map[Text, Prototype] =
-      declarations.collect:
-        case CDeclaration.Function(name, result, parameters, _) =>
-          name -> Prototype(List.from(parameters.stdlib.map(project(_))), project(result))
+      case WebIdlDefinition.Namespace(name, _, members, _) =>
+        record(name, Unset, navigable(members))
 
-      . toMap
+      case WebIdlDefinition.Enumeration(name, _) =>
+        typedefs = typedefs.updated(name, Foreign.Type.Named(t"string"))
 
-    val all = if functions.isEmpty then structs else structs.updated(library, functions)
-    resolve(all, typedefs)
+      case WebIdlDefinition.Alias(name, typed) =>
+        typedefs = typedefs.updated(name, typed)
 
-  private def functionPointer(typed: Foreign.Type): Boolean = typed match
-    case applied: Foreign.Type.Applied =>
-      applied.constructor == t"fn" || applied.constructor == t"variadic"
+      case WebIdlDefinition.Includes(target, mixin) =>
+        includes = includes.updated(target, includes.getOrElse(target, SList()) :+ mixin)
 
-    case _ => false
+      case WebIdlDefinition.CallbackFunction(_, _, _) => ()
 
-  private def array(typed: Foreign.Type): Boolean = typed match
-    case applied: Foreign.Type.Applied => applied.constructor == t"array"
-    case _                             => false
+    resolve(flatten(types, parents, includes), typedefs)
 
-  // Collapses the parser's faithful types to the marshalling vocabulary. Only a *plain* `char*`
-  // is the C-string type: `unsigned char*`/`signed char*` conventionally mean a byte buffer,
-  // not text, so they stay pointers.
-  private def project(typed: Foreign.Type): Foreign.Type = typed match
-    case Foreign.Type.Named(name) => Foreign.Type.Named(canonical(name))
+  // Flattens inheritance: each type's members are those of its base chain, then of every
+  // applied mixin, then its own (so a type's own members override inherited ones of the same
+  // name). A visited set guards against cycles.
+  private def flatten
+    ( types:    Map[Text, Map[Text, Prototype]],
+      parents:  Map[Text, Text],
+      includes: Map[Text, SList[Text]] )
+  :   Map[Text, Map[Text, Prototype]] =
 
-    case applied: Foreign.Type.Applied =>
-      if applied.constructor == t"ptr" then
-        val (base, count) = unwrap(typed)
+    val empty = Map[Text, Prototype]()
 
-        if base == t"char" && count == 1 then Foreign.Type.Named(t"string")
-        else Foreign.Type.Applied(t"ptr", List(Foreign.Type.Named(canonical(base))))
-      else if applied.constructor == t"const" then project(applied.arguments.stdlib.head)
-      else Foreign.Type.Applied(applied.constructor, applied.arguments.map(project(_)))
+    def collect(name: Text, visiting: Set[Text]): Map[Text, Prototype] =
+      if visiting.has(name) then types.getOrElse(name, empty)
+      else
+        val visiting2 = visiting + name
+        val own = types.getOrElse(name, empty)
 
-    case other => other
+        val inherited = parents.get(name).optional.lay(empty): base =>
+          collect(base, visiting2)
 
-  // The innermost named base beneath `ptr` and `const` wrappers, with the pointer depth.
-  private def unwrap(typed: Foreign.Type): (Text, Int) = typed match
-    case Foreign.Type.Named(name) => (name, 0)
+        val mixedIn = includes.getOrElse(name, SList()).foldLeft(inherited): (acc, mixin) =>
+          acc ++ collect(mixin, visiting2)
 
-    case applied: Foreign.Type.Applied =>
-      if applied.constructor == t"const" then unwrap(applied.arguments.stdlib.head)
-      else if applied.constructor == t"ptr" then
-        val (base, inner) = unwrap(applied.arguments.stdlib.head)
-        (base, inner + 1)
-      else (t"*", 0)
+        mixedIn ++ own
 
-    case _ => (t"*", 0)
+    types.map { (name, _) => (name, collect(name, Set())) }
 
-  // The width-exact and sign-qualified names map to the primitive of the same size, so the FFM
-  // layout stays correct; widths without a matching primitive are left as-is.
-  private def canonical(name: Text): Text = name.s match
-    case "unsigned-int" | "int32_t" | "uint32_t"              => t"int"
-    case "unsigned-char" | "signed-char"                      => t"char"
-    case "unsigned-short"                                     => t"short"
-    case "long-long" | "unsigned-long" | "unsigned-long-long" => t"long"
-    case "int64_t" | "uint64_t" | "intptr_t" | "uintptr_t"    => t"long"
-    case "size_t" | "ssize_t"                                 => t"long"
-    case "long-double"                                        => t"long double"
-    case _                                                    => name
-
-  // Resolves every `typedef` alias appearing in a type, transitively.
+  // Resolves every `typedef`/`enum` alias appearing in a type, transitively.
   private def resolve
     ( definitions: Map[Text, Map[Text, Prototype]], typedefs: Map[Text, Foreign.Type] )
   :   Map[Text, Map[Text, Prototype]] =

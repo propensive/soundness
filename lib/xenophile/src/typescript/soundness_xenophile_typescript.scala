@@ -33,4 +33,5 @@
 package soundness
 
 export xenophile.
-        {Typescript, TypescriptDeclaration}
+        {Typescript, TypescriptDeclaration, TypescriptDialect, TypescriptError, TypescriptMember,
+         TypescriptParser, TypescriptType}

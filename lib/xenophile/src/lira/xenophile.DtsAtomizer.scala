@@ -88,7 +88,7 @@ object DtsAtomizer:
   // must therefore change no atom. `binders` holds the enclosing binder scopes, innermost last.
   private def encode
     ( out:     java.io.ByteArrayOutputStream,
-      typed:   Typescript.Type,
+      typed:   TypescriptType,
       binders: scala.List[scala.List[Text]] )
   :   Unit =
 
@@ -101,7 +101,7 @@ object DtsAtomizer:
       . getOrElse(Unset)
 
     typed match
-      case Typescript.Type.Named(name, arguments) =>
+      case TypescriptType.Named(name, arguments) =>
         index(name) match
           case position: (Int, Int) =>
             tag(out, 'P')
@@ -115,7 +115,7 @@ object DtsAtomizer:
         uvarint(out, arguments.stdlib.length.toLong)
         arguments.stdlib.foreach { argument => encode(out, argument, binders) }
 
-      case Typescript.Type.Literal(value, kind) =>
+      case TypescriptType.Literal(value, kind) =>
         tag(out, 'L')
         // The kind is folded alongside the value: `"1"` and `1` are different types whose source
         // forms differ only by quoting, which the lexer removed.
@@ -124,51 +124,51 @@ object DtsAtomizer:
 
       // Unions and intersections are set-like — `A | B` and `B | A` are the same type — so their
       // members sort. Everything below whose order is semantic keeps declaration order.
-      case Typescript.Type.Union(members) =>
+      case TypescriptType.Union(members) =>
         tag(out, '|')
         sorted(out, members, binders)
 
-      case Typescript.Type.Intersection(members) =>
+      case TypescriptType.Intersection(members) =>
         tag(out, '&')
         sorted(out, members, binders)
 
-      case Typescript.Type.Tuple(members, _) =>
+      case TypescriptType.Tuple(members, _) =>
         // A tuple's element order is its meaning; its element *labels* are documentation and
         // never distinguish two types, so they are not folded.
         tag(out, 'T')
         uvarint(out, members.stdlib.length.toLong)
         members.stdlib.foreach { member => encode(out, member, binders) }
 
-      case Typescript.Type.Array(element) =>
+      case TypescriptType.Array(element) =>
         tag(out, 'A')
         encode(out, element, binders)
 
-      case Typescript.Type.Object(members) =>
+      case TypescriptType.Object(members) =>
         tag(out, 'O')
         val ordered = members.stdlib.sortBy { member => member.selector.s }
         uvarint(out, ordered.length.toLong)
         ordered.foreach { member => encodeMember(out, member, binders) }
 
-      case Typescript.Type.Keyof(target) =>
+      case TypescriptType.Keyof(target) =>
         tag(out, 'K')
         encode(out, target, binders)
 
-      case Typescript.Type.Typeof(target) =>
+      case TypescriptType.Typeof(target) =>
         tag(out, 'Y')
         utf8(out, target)
 
-      case Typescript.Type.Indexed(target, key) =>
+      case TypescriptType.Indexed(target, key) =>
         tag(out, 'X')
         encode(out, target, binders)
         encode(out, key, binders)
 
-      case Typescript.Type.Predicate(parameter, target) =>
+      case TypescriptType.Predicate(parameter, target) =>
         // The narrowed type is the contract; which parameter it narrows is positional, and the
         // parameter's name is not consumer surface.
         tag(out, '?')
         encode(out, target, binders)
 
-      case Typescript.Type.Function(parameters, result, typed, construct) =>
+      case TypescriptType.Function(parameters, result, typed, construct) =>
         tag(out, if construct then 'C' else 'F')
         val names = typed.stdlib.map(_.name)
         val inner = binders :+ names
@@ -197,7 +197,7 @@ object DtsAtomizer:
 
   private def sorted
     ( out:     java.io.ByteArrayOutputStream,
-      members: List[Typescript.Type],
+      members: List[TypescriptType],
       binders: scala.List[scala.List[Text]] )
   :   Unit =
 
@@ -232,7 +232,7 @@ object DtsAtomizer:
 
   private def encodeMember
     ( out:     java.io.ByteArrayOutputStream,
-      member:  Typescript.Member,
+      member:  TypescriptMember,
       binders: scala.List[scala.List[Text]] )
   :   Unit =
 
@@ -251,7 +251,7 @@ object DtsAtomizer:
 
   // --- atoms -----------------------------------------------------------------------------------
 
-  private def binderNames(typed: List[Typescript.Type.Parameter]): scala.List[Text] =
+  private def binderNames(typed: List[TypescriptType.Parameter]): scala.List[Text] =
     typed.stdlib.map(_.name)
 
   def atomize(declaration: TypescriptDeclaration): List[Atom] =
@@ -334,7 +334,7 @@ object DtsAtomizer:
 
   private def parameters
     ( out:     java.io.ByteArrayOutputStream,
-      typed:   List[Typescript.Type.Parameter],
+      typed:   List[TypescriptType.Parameter],
       binders: scala.List[scala.List[Text]] )
   :   Unit =
 
@@ -344,7 +344,7 @@ object DtsAtomizer:
       parameter.bound.lay(tag(out, '0')) { bound => tag(out, '1'); encode(out, bound, binders) }
       parameter.default.lay(tag(out, '0')) { value => tag(out, '1'); encode(out, value, binders) }
 
-  private def typeParameters(declaration: TypescriptDeclaration): List[Typescript.Type.Parameter] =
+  private def typeParameters(declaration: TypescriptDeclaration): List[TypescriptType.Parameter] =
     declaration match
       case TypescriptDeclaration.Interface(_, _, typed, _, _, _)   => typed
       case TypescriptDeclaration.Class(_, _, typed, _, _, _, _, _) => typed

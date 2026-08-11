@@ -65,26 +65,26 @@ enum TypescriptDeclaration extends Declared:
   case Interface
     ( name:     Text,
       scope:    TypescriptDeclaration.Scope,
-      typed:    List[Typescript.Type.Parameter],
-      extending: List[Typescript.Type],
-      members:  List[Typescript.Member],
+      typed:    List[TypescriptType.Parameter],
+      extending: List[TypescriptType],
+      members:  List[TypescriptMember],
       exported: Boolean )
 
   case Class
     ( name:       Text,
       scope:      TypescriptDeclaration.Scope,
-      typed:      List[Typescript.Type.Parameter],
-      extending:  Optional[Typescript.Type],
-      implements: List[Typescript.Type],
-      members:    List[Typescript.Member],
+      typed:      List[TypescriptType.Parameter],
+      extending:  Optional[TypescriptType],
+      implements: List[TypescriptType],
+      members:    List[TypescriptMember],
       isAbstract: Boolean,
       exported:   Boolean )
 
   case Alias
     ( name:     Text,
       scope:    TypescriptDeclaration.Scope,
-      typed:    List[Typescript.Type.Parameter],
-      target:   Typescript.Type,
+      typed:    List[TypescriptType.Parameter],
+      target:   TypescriptType,
       exported: Boolean )
 
   // An enum's members are its contract, and a `const enum` is inlined into consumers at *their*
@@ -100,19 +100,19 @@ enum TypescriptDeclaration extends Declared:
   case Function
     ( name:       Text,
       scope:      TypescriptDeclaration.Scope,
-      signatures: List[Typescript.Type],
+      signatures: List[TypescriptType],
       exported:   Boolean )
 
   case Variable
     ( name:     Text,
       scope:    TypescriptDeclaration.Scope,
-      typed:    Optional[Typescript.Type],
+      typed:    Optional[TypescriptType],
       constant: Boolean,
       exported: Boolean )
 
   // The members a declaration presents. Named apart from the `members` parameter that two of the
   // cases carry, which an enum-level method of the same name would collide with.
-  def declaredMembers: List[Typescript.Member] = this match
+  def declaredMembers: List[TypescriptMember] = this match
     case Interface(_, _, _, _, members, _)   => members
     case Class(_, _, _, _, _, members, _, _) => members
     case _                                   => Nil

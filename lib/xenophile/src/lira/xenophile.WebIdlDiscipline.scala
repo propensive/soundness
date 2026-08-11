@@ -68,7 +68,7 @@ object WebIdlDiscipline extends Discipline:
         case WebIdlError(reason) =>
           DisciplineError(id, DisciplineError.Reason.Malformed(t"${path.text}: $reason"))
 
-      . protect(WebIdl.Parser.parse(source).stdlib)
+      . protect(WebIdlParser.parse(source).stdlib)
 
     // Partial/mixin resolution spans the whole claimed set: a partial in one file completes an
     // interface in another, exactly as the platform's own IDL is distributed.
