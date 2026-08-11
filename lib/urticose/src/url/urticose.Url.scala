@@ -35,6 +35,7 @@ package urticose
 import scala.compiletime.*
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -57,10 +58,10 @@ object Url:
 
   given encodable: [scheme <: Label] => Url[scheme] is Encodable in Text = _.show
 
-  given decodable: [scheme <: Label] => (tactic: Tactic[UrlError])
+  given decodable: [scheme <: Label] => (tactic: Tactic[Url.Error])
   =>  ((Url[scheme] is Decodable in Text)^{tactic}) =
     value =>
-      import UrlError.Expectation.*
+      import Url.Error.Expectation.*
 
       safely(value.pinpoint(_ == ':')).asMatchable match
         case Zerary(colon) =>
@@ -70,13 +71,13 @@ object Url:
           val (pathStart, auth) =
             if value.after(colon).keep(2) == t"//" then
               mitigate:
-                case error@HostnameError(hostname, reason) =>
+                case error@Hostname.Error(hostname, reason) =>
                   import error.diagnostics
-                  UrlError(value, colon + 3, UrlError.Reason.BadHostname(hostname, reason))
+                  Url.Error(value, colon + 3, Url.Error.Reason.BadHostname(hostname, reason))
 
                 case error@IpAddressError(reason) =>
                   import error.diagnostics
-                  UrlError(value, colon + 3, UrlError.Reason.BadIpv6(reason))
+                  Url.Error(value, colon + 3, Url.Error.Reason.BadIpv6(reason))
 
               . protect:
                   val authEnd = safely:
@@ -118,11 +119,54 @@ object Url:
                 Url(Origin(scheme, auth), value.from(pathStart), Unset, Unset)
 
         case _ =>
-          abort(UrlError(value, value.limit - 1, UrlError.Reason.Expected(Colon)))
+          abort(Url.Error(value, value.limit - 1, Url.Error.Reason.Expected(Colon)))
 
-  given instantiable: (tactic: Tactic[UrlError])
+  given instantiable: (tactic: Tactic[Url.Error])
   =>  ((HttpUrl is Instantiable across Urls from Text)^{tactic}) =
     _.as[HttpUrl]
+
+  // UrlError → Url.Error
+  object Error:
+    given communicable: Reason is Communicable =
+      case Reason.Expected(expectation)         => m"$expectation was expected"
+      case Reason.BadHostname(hostname, reason) => m"$hostname was not valid because $reason"
+      case Reason.BadIpv6(reason)               => m"the IPv6 address is not valid because $reason"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Expected(expectation: Expectation)                       extends Reason(1)
+      case BadHostname(hostname: Text, reason: Hostname.Error.Reason) extends Reason(2)
+      case BadIpv6(reason: IpAddressError.Reason)                    extends Reason(3)
+
+    object Expectation:
+      given communicable: Expectation is Communicable =
+        case Colon           => m"a colon"
+        case More            => m"more characters"
+        case LowerCaseLetter => m"a lowercase letter"
+        case PortRange       => m"a port range"
+        case Number          => m"a number"
+
+    enum Expectation:
+      case Colon, More, LowerCaseLetter, PortRange, Number
+
+  case class Error(text: Text, offset: Ordinal, reason: Url.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(714, reason.number)
+    ( m"the URL $text is not valid: $reason at ${offset.n0}" )
+
+  // UrlFragment → Url.Fragment
+  object Fragment:
+    def apply(value: Text): Url.Fragment = Url.Fragment.Textual(value)
+    def apply(value: Int): Url.Fragment = Url.Fragment.Integral(value)
+
+    given text: Substitution[Url.Fragment, Text, "x"] = Url.Fragment.Textual(_)
+    given int: Substitution[Url.Fragment, Int, "80"] = Url.Fragment.Integral(_)
+
+    given encodable: [encodable: Encodable in Text] => Substitution[Url.Fragment, encodable, "x"] =
+      value => Url.Fragment.Textual(encodable.encode(value))
+
+  enum Fragment:
+    case Integral(value: Int)
+    case Textual(value: Text)
+    case RawTextual(value: Text)
 
 class Url[+scheme <: Label]
   ( val origin:   Origin[scheme],

@@ -89,7 +89,7 @@ object Runners:
     mitigate:
       case Http.Error(_, _)   => RunnerError(m"Could not download the stub $name from $baseUrl")
       case ConnectError(_)   => RunnerError(m"Could not connect to $baseUrl to download $name")
-      case UrlError(_, _, _) => RunnerError(m"The runner stub URL for $name is not valid")
+      case Url.Error(_, _, _) => RunnerError(m"The runner stub URL for $name is not valid")
       case StreamError(_)    => RunnerError(m"The download of the stub $name was interrupted")
 
     . protect:

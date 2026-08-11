@@ -283,7 +283,7 @@ object internal:
       case ipv6: Ipv6              => t"[${ipv6.show}]"
       case ipv4: (Ipv4 @unchecked) => ipv4.show
 
-    given hostDecodable: (tactic: Tactic[HostnameError])
+    given hostDecodable: (tactic: Tactic[Hostname.Error])
     =>  ((urticose.Host is Decodable in Text)^{tactic}) = text =>
       safely(text.as[Ipv6]).or(safely(text.as[Ipv4])).or(text.as[Hostname])
 

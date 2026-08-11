@@ -155,38 +155,38 @@ object JsonBlueprint:
 
 
   given email
-  :   ("email" is Intensional in JsonBlueprint from Json to (EmailAddress raises EmailAddressError))
+  :   ("email" is Intensional in JsonBlueprint from Json to (EmailAddress raises EmailAddress.Error))
   =
     JsonBlueprint.intensional(_.as[EmailAddress])
 
   given optionalEmail
   :   ( "email?" is Intensional in JsonBlueprint from Json to
-            (Optional[EmailAddress] raises EmailAddressError) ) =
+            (Optional[EmailAddress] raises EmailAddress.Error) ) =
 
     JsonBlueprint.intensional(_.as[Optional[EmailAddress]])
 
   given idnEmail
   :   ( "idn-email" is Intensional in JsonBlueprint from Json to
-            (EmailAddress raises EmailAddressError) ) =
+            (EmailAddress raises EmailAddress.Error) ) =
 
     JsonBlueprint.intensional(_.as[EmailAddress])
 
   given optionalIdnEmail
   :   ( "idn-email?" is Intensional in JsonBlueprint from Json to
-            (Optional[EmailAddress] raises EmailAddressError) ) =
+            (Optional[EmailAddress] raises EmailAddress.Error) ) =
 
     JsonBlueprint.intensional(_.as[Optional[EmailAddress]])
 
 
   given hostname
-  :   ("hostname" is Intensional in JsonBlueprint from Json to (Hostname raises HostnameError)) =
+  :   ("hostname" is Intensional in JsonBlueprint from Json to (Hostname raises Hostname.Error)) =
 
     JsonBlueprint.intensional(_.as[Hostname])
 
 
   given optionalHostname
   :   ( "hostname?" is Intensional in JsonBlueprint from Json to
-            (Optional[Hostname] raises HostnameError) ) =
+            (Optional[Hostname] raises Hostname.Error) ) =
 
     JsonBlueprint.intensional(_.as[Hostname])
 

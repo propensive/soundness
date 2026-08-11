@@ -64,7 +64,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
 
   protected def makeConnection
     ( request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse )
-    ( using streamError: Tactic[StreamError], hostnameError: Tactic[HostnameError] )
+    ( using streamError: Tactic[StreamError], hostnameError: Tactic[Hostname.Error] )
   :   HttpConnection^ =
 
     val uri = request.getRequestURI.nn.tt
@@ -148,7 +148,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
       case error @ StreamError(_) =>
         error.printStackTrace(System.out)
 
-      case error @ HostnameError(_, _) =>
+      case error @ Hostname.Error(_, _) =>
         error.printStackTrace(System.out)
         try response.setStatus(400) catch case NonFatal(_) => ()
 

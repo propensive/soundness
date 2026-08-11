@@ -58,7 +58,7 @@ extends RequestServable:
           case StreamError(length) =>
             Log.warn(HttpServerEvent.BrokenStream(length))
 
-          case error @ HostnameError(_, _) =>
+          case error @ Hostname.Error(_, _) =>
             Log.warn(HttpServerEvent.ConnectionFailed(error))
 
             try
