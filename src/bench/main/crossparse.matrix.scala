@@ -60,7 +60,6 @@ import ypsiloid.*
 
 import jacinta.formatting.compactJsonFormatting
 import ypsiloid.formatting.blockYamlFormatting
-import ypsiloid.showable
 
 // ── The document matrix ─────────────────────────────────────────────────
 // Typed translations of the jacinta benchmark corpus (see

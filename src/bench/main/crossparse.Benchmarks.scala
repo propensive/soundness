@@ -70,10 +70,6 @@ import jacinta.formatting.compactJsonFormatting
 import ypsiloid.discriminables.yamlByTypeDiscriminable
 import ypsiloid.formatting.blockYamlFormatting
 
-// Ypsiloid's `Yaml is Showable` is a top-level given (not a companion
-// member), so it must be imported by name.
-import ypsiloid.showable
-
 // Jsoniter/circe mirrors of the corpus structure, with `String` fields as
 // those libraries expect; the `kind` discriminator matches the JSON corpus.
 sealed trait JsoniterPayment derives io.circe.derivation.ConfiguredDecoder
