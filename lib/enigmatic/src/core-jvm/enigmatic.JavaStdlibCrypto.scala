@@ -371,21 +371,21 @@ object JavaStdlibCrypto extends Crypto:
         cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key), IvParameterSpec(input.take(size)))
         Array.unsafeFrozen(cipher.doFinal(input.drop(size)).nn)
 
-    def stream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession =
+    def stream(transformation: Text, key: Data, iv: Optional[Data]): Cipher.Session =
       session(transformation, key, iv, jc.Cipher.ENCRYPT_MODE)
 
-    def decryptStream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession =
+    def decryptStream(transformation: Text, key: Data, iv: Optional[Data]): Cipher.Session =
       session(transformation, key, iv, jc.Cipher.DECRYPT_MODE)
 
     private def session(transformation: Text, key: Data, iv: Optional[Data], opmode: Int)
-    :   CipherSession =
+    :   Cipher.Session =
 
       val cipher = jc.Cipher.getInstance(transformation.s).nn
 
       iv.lay(cipher.init(opmode, makeKey(key))): iv =>
         cipher.init(opmode, makeKey(key), IvParameterSpec(Array.unsafeJvm(iv)))
 
-      new CipherSession:
+      new Cipher.Session:
         def update(chunk: Data): Data =
           // `Cipher.update` returns null when a block cipher has buffered the
           // whole input pending a complete block, and a fresh array otherwise.

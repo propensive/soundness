@@ -175,11 +175,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
         val entries = Tarfile.read(archiveData.stream).to(List)
         Tarfile(transform(entries)).source[Data].memoize
 
-      def failure[result](body: => result): Optional[OciError.Reason] =
+      def failure[result](body: => result): Optional[Oci.Error.Reason] =
         try
           body
           Unset
-        catch case error: OciError => error.reason
+        catch case error: Oci.Error => error.reason
 
       test(m"the index round-trips through an opened archive"):
         archiveData.open[Image]() { handle ?=> handle.index }
@@ -212,17 +212,17 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       test(m"an archive without the oci-layout marker is rejected"):
         val data = rebuilt(_.filter(_.entryName != t"oci-layout"))
         failure(data.open[Image]() { handle ?=> handle.index })
-      . assert(_ == OciError.Reason.MissingLayout)
+      . assert(_ == Oci.Error.Reason.MissingLayout)
 
       test(m"an archive without index.json is rejected"):
         val data = rebuilt(_.filter(_.entryName != t"index.json"))
         failure(data.open[Image]() { handle ?=> handle.index })
-      . assert(_ == OciError.Reason.MissingIndex)
+      . assert(_ == Oci.Error.Reason.MissingIndex)
 
       test(m"a missing blob is reported by its digest"):
         val data = rebuilt(_.filter(_.entryName != layerBlobPath))
         failure(data.open[Image]() { handle ?=> handle.verified(image.manifest.layers.head) })
-      . assert(_ == OciError.Reason.MissingBlob(layer.digest))
+      . assert(_ == Oci.Error.Reason.MissingBlob(layer.digest))
 
       test(m"a corrupted blob fails its digest check"):
         val data = rebuilt(_.map: entry =>
@@ -231,7 +231,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
         failure(data.open[Image]() { handle ?=> handle.manifest })
       . assert:
-          case OciError.Reason.DigestMismatch(expected, _) =>
+          case Oci.Error.Reason.DigestMismatch(expected, _) =>
             expected == image.manifestDescriptor.digest
 
           case _ =>
@@ -239,7 +239,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"opening an archive for writing is refused"):
         failure(archiveData.open[Image](Write) { handle ?=> () })
-      . assert(_ == OciError.Reason.WriteUnsupported)
+      . assert(_ == Oci.Error.Reason.WriteUnsupported)
 
     suite(m"Wasm OCI artifact"):
       // Not a real component: the artifact machinery never parses the bytes, so an
@@ -330,7 +330,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"the same reader still recognises a classic image config"):
         val archived = image.archive.source[Data].memoize
-        archived.open[Image]() { handle ?=> handle.config.only { case _: ImageConfig => true } }
+        archived.open[Image]() { handle ?=> handle.config.only { case _: Image.Config => true } }
       . assert(_ == true)
 
     suite(m"containerd over a gRPC loopback"):

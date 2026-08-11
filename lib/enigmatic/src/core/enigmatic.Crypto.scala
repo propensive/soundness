@@ -62,12 +62,12 @@ object Crypto:
     def decrypt(transformation: Text, key: Data, ivSize: Optional[Int], data: Data): Data
     def blockSize(transformation: Text): Int
     def generateKey(bits: Int): Data
-    def stream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession
+    def stream(transformation: Text, key: Data, iv: Optional[Data]): Cipher.Session
 
     // The decryption counterpart of `stream`: the caller supplies the IV
     // (already separated from the ciphertext, which frames it as the leading
     // block when the mode uses one).
-    def decryptStream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession
+    def decryptStream(transformation: Text, key: Data, iv: Optional[Data]): Cipher.Session
 
   trait PublicKeyCipher:
     def encrypt(input: Data, publicKey: Data): Data

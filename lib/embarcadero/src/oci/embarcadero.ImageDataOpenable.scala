@@ -45,18 +45,18 @@ import zephyrine.*
 // A named class rather than an anonymous given instance, for the reasons documented on
 // galilei's `FileOpenable`. Opening in-memory `Data` as an OCI image; opening a filesystem
 // *path* (`ImageOpenable`) lives in the JVM-only source set. Read-only for now.
-class ImageDataOpenable(using Tactic[OciError], Tactic[Tar.Error], Tactic[StreamError])
+class ImageDataOpenable(using Tactic[Oci.Error], Tactic[Tar.Error], Tactic[StreamError])
 extends Openable:
 
   type Self = Data
   type Form = Image
   type Operand = Nothing
-  type Result = ImageHandle
+  type Result = Image.Handle
 
   def open[grants <: Grant, result]
     ( value: Data, mode: Mode granting grants, flags: List[Nothing] )
-    ( block: ((ImageHandle & Granting[grants])^) ?=> result )
+    ( block: ((Image.Handle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.stdlib.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
-    block(using new ImageHandle(Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]]) with Granting[grants] {})
+    if mode.atoms.stdlib.contains(Write) then abort(Oci.Error(Oci.Error.Reason.WriteUnsupported))
+    block(using new Image.Handle(Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]]) with Granting[grants] {})
