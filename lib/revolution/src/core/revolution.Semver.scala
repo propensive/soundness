@@ -65,7 +65,7 @@ object Semver:
 
   given showable: Semver is Showable = encodable.encoded(_)
 
-  given decodable: (tactic: Tactic[SemverError]) => ((Semver is Decodable in Text)^{tactic}) =
+  given decodable: (tactic: Tactic[Semver.Error]) => ((Semver is Decodable in Text)^{tactic}) =
     text =>
       text match
         case r"$major([0-9]+)\.$minor([0-9]+)\.$patch([0-9]+)$prerelease(-[^\+]+)?$build(\+.+)?" =>
@@ -73,15 +73,15 @@ object Semver:
           val build2: List[Text] = build.let(_.skip(1).cut(t".")).or(Nil)
 
           if prerelease == t"-" || build == t"+" then
-            raise(SemverError(text, SemverError.Reason.EmptyIdentifier))
+            raise(Semver.Error(text, Semver.Error.Reason.EmptyIdentifier))
 
           for
             extra   <- List(prerelease2, build2).stdlib.compact
             element <- extra
           do element match
-            case r"0[0-9]+"       => raise(SemverError(text, SemverError.Reason.LeadingZero))
+            case r"0[0-9]+"       => raise(Semver.Error(text, Semver.Error.Reason.LeadingZero))
             case r"[0-9A-Za-z-]+" => ()
-            case _                => raise(SemverError(text, SemverError.Reason.InvalidCharacter))
+            case _                => raise(Semver.Error(text, Semver.Error.Reason.InvalidCharacter))
 
           val prerelease3: List[Text | Long] = prerelease2.map: element =>
             safely(element.as[Long]).or(element)
@@ -90,28 +90,28 @@ object Semver:
             safely(element.as[Long]).or(element)
 
           mitigate:
-            case NumberError(_, _, _) => SemverError(text, SemverError.Reason.BadFormat)
+            case NumberError(_, _, _) => Semver.Error(text, Semver.Error.Reason.BadFormat)
 
           . protect:
               val major2 = major.as[Long]
 
               if major.starts(t"0") && major2 != 0
-              then raise(SemverError(text, SemverError.Reason.LeadingZero))
+              then raise(Semver.Error(text, Semver.Error.Reason.LeadingZero))
 
               val minor2 = minor.as[Long]
 
               if minor.starts(t"0") && minor2 != 0
-              then raise(SemverError(text, SemverError.Reason.LeadingZero))
+              then raise(Semver.Error(text, Semver.Error.Reason.LeadingZero))
 
               val patch2 = patch.as[Long]
 
               if patch.starts(t"0") && patch2 != 0
-              then raise(SemverError(text, SemverError.Reason.LeadingZero))
+              then raise(Semver.Error(text, Semver.Error.Reason.LeadingZero))
 
               Semver(major2, minor2, patch2, prerelease3, build3)
 
         case _ =>
-          abort(SemverError(text, SemverError.Reason.BadFormat))
+          abort(Semver.Error(text, Semver.Error.Reason.BadFormat))
 
   given ordering: Ordering[Semver] = Ordering.fromLessThan: (left, right) =>
     def compare(left0: List[Long | Text], right0: List[Long | Text]): Boolean =
@@ -146,6 +146,24 @@ object Semver:
         left.minor < right.minor
     else
       left.major < right.major
+
+  // SemverError → Semver.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case BadFormat        extends Reason(1)
+      case EmptyIdentifier  extends Reason(2)
+      case LeadingZero      extends Reason(3)
+      case InvalidCharacter extends Reason(4)
+
+    given communicable: Reason is Communicable =
+      case Reason.BadFormat        => m"the string did not match the SemVer 2.0 grammar"
+      case Reason.EmptyIdentifier  => m"a prerelease or build identifier was empty"
+      case Reason.LeadingZero      => m"a numeric identifier had a leading zero"
+      case Reason.InvalidCharacter => m"an identifier contained a character outside `[0-9A-Za-z-]`"
+
+  case class Error(version: Text, reason: Semver.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(250, reason.number)
+    ( m"$version is not a valid semantic version because $reason" )
 
 case class Semver
   ( major:      Long,

@@ -32,6 +32,8 @@
                                                                                                   */
 package revolution
 
+import contingency.*
+import gossamer.*
 import proscenium.compat.*
 
 import java.io as ji
@@ -41,6 +43,7 @@ import anticipation.*
 import denominative.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import turbulence.*
 import zephyrine.Credit
@@ -60,22 +63,35 @@ object Manifest:
     zephyrine.Stream(manifest.serialize)
   given aggregable: Manifest is Aggregable by Data = parse(_)
 
-  def apply(entries: ManifestEntry*): Manifest = Manifest:
+  def apply(entries: Manifest.Entry*): Manifest = Manifest:
     entries.map: entry =>
       (entry.key, entry.value)
 
     . pipe(Map.from(_))
 
-  given addable: Manifest is Addable by ManifestEntry to Manifest = Addable: (manifest, entry) =>
+  given addable: Manifest is Addable by Manifest.Entry to Manifest = Addable: (manifest, entry) =>
     Manifest(manifest.entries.updated(entry.key, entry.value))
 
-  given subtractable: [key <: Label, attribute <: ManifestAttribute[key]]
+  given subtractable: [key <: Label, attribute <: Manifest.Attribute[key]]
   =>  Manifest is Subtractable by attribute to Manifest =
 
     Subtractable: (manifest, attribute) => Manifest(manifest.entries.removed(attribute.key))
 
+  // ManifestAttribute → Manifest.Attribute
+  abstract class Attribute[label <: Label: ValueOf]():
+    val key: Text = valueOf[label].tt
+
+    def parse(value: Text)(using decoder: label is DecodableManifest): decoder.Topic =
+      decoder.decoded(value)
+
+    def apply(using encoder: label is EncodableManifest)(value: encoder.Topic): Manifest.Entry =
+      Manifest.Entry(key, encoder.encode(value))
+
+  // ManifestEntry → Manifest.Entry
+  case class Entry(key: Text, value: Text)
+
 case class Manifest(entries: Map[Text, Text]):
-  def apply[key <: Label: DecodableManifest](attribute: ManifestAttribute[key])
+  def apply[key <: Label: DecodableManifest](attribute: Manifest.Attribute[key])
   :   Optional[key.Topic] =
 
     entries(attribute.key).let(key.decoded(_))

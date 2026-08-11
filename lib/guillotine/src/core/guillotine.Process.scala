@@ -32,22 +32,25 @@
                                                                                                   */
 package guillotine
 
+import java.io as ji
 import scala.caps
 
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
+import hieroglyph.*
 import prepositional.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
 
 object Process:
   private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.to[List]
 
-  def apply(pid: Pid)(using pidError: Tactic[PidError]^): Process =
+  def apply(pid: Pid)(using pidError: Tactic[Pid.Error]^): Process =
     val handle = ProcessHandle.of(pid.value).nn
-    if handle.isPresent then new Process(handle.get.nn) else abort(PidError(pid))
+    if handle.isPresent then new Process(handle.get.nn) else abort(Pid.Error(pid))
 
   // While-loops rather than `map`: a fresh capability may not be minted inside a lambda
   // whose result type another scope owns (the Spring rule); built in the method body, the
@@ -66,9 +69,38 @@ object Process:
   def roots: List[Process] = processes(List.of(allHandles.stdlib.filter(!_.parent.nn.isPresent)))
   def apply(): Process = new Process(ProcessHandle.current.nn)
 
+  // ProcessInput → Process.Input
+  // The standard input of a `Subprocess`, exposed as a sink so that writing to a process's input
+  // never surfaces `java.io.OutputStream` in guillotine's public API. The `Writable` instances
+  // delegate to turbulence's `OutputStream` writers.
+  object Input:
+    given data: (streamCut: Emit[StreamError])
+    =>  ((Process.Input is Writable by Data)^{streamCut}) =
+      (stdin, stream) =>
+        summon[(ji.OutputStream is Writable by Data)^].write(stdin.outputStream, stream)
+
+    given text: (streamCut: Emit[StreamError], encoder: CharEncoder)
+    =>  ((Process.Input is Writable by Text)^{streamCut}) =
+      (stdin, stream) =>
+        summon[(ji.OutputStream is Writable by Text)^].write(stdin.outputStream, stream)
+
+  class Input private[guillotine] (private[guillotine] val outputStream: ji.OutputStream)
+
+  // ProcessRef → Process.Ref
+  trait Ref:
+    def pid: Pid
+    // Real `using` clauses rather than the `logs` sugar: a context-function result would hide
+    // the capability `this` of implementing classes, which the separation checker rejects.
+    def kill()(using (ExecEvent is Loggable)^): Unit
+    def abort()(using (ExecEvent is Loggable)^): Unit
+    def alive: Boolean
+    def attend(): Unit
+    def startTime[instant: Instantiable across Instants from Long]: Optional[instant]
+    def cpuUsage[instantiable: Instantiable across Durations from Long]: Optional[instantiable]
+
 // A `Process` is a *capability*, like `Job`: a live handle to a running operating-system
 // process.
-class Process private (java: ProcessHandle) extends ProcessRef, caps.ExclusiveCapability:
+class Process private (java: ProcessHandle) extends Process.Ref, caps.ExclusiveCapability:
   def pid: Pid = Pid(java.pid)
   def kill()(using (ExecEvent is Loggable)^): Unit = java.destroy()
   def abort()(using (ExecEvent is Loggable)^): Unit = java.destroyForcibly()

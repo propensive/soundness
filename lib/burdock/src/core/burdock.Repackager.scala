@@ -65,9 +65,9 @@ import parasite.threading.virtualThreading
 // every dependency is either externalized or inlined — a hash that is neither is
 // an error.
 object Repackager:
-  object BurdockMain extends ManifestAttribute["Burdock-Main"]
-  object BurdockVerbosity extends ManifestAttribute["Burdock-Verbosity"]
-  object BurdockRequire extends ManifestAttribute["Burdock-Require"]
+  object BurdockMain extends Manifest.Attribute["Burdock-Main"]
+  object BurdockVerbosity extends Manifest.Attribute["Burdock-Verbosity"]
+  object BurdockRequire extends Manifest.Attribute["Burdock-Require"]
 
   given burdockMain: ("Burdock-Main" is EncodableManifest of Fqcn) = _.text
 

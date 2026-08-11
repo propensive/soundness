@@ -55,7 +55,7 @@ object Job:
   // Polymorphic over the capability instance (`job <: Job[…]^`, the galilei `Handle` recipe):
   // a bare `Job[command, result]` Self cannot match a tracked `Job` value.
   given writable: [chunk, command <: Label, result, job <: Job[command, result]^]
-  =>  (writable0: (ProcessInput is Writable by chunk)^)
+  =>  (writable0: (Process.Input is Writable by chunk)^)
   =>  ((job is Writable by chunk)^{writable0}) =
 
     (process, stream) => process.stdin(stream)
@@ -80,7 +80,7 @@ object Job:
 // every process's standard input but the first's with a null stream that throws on any write.
 class Job[+exec <: Label, result] private[guillotine]
    ( process: java.lang.Process, head: java.lang.Process )
-extends Subprocess, ProcessRef, caps.ExclusiveCapability:
+extends Subprocess, Process.Ref, caps.ExclusiveCapability:
 
   private[guillotine] def this(process: java.lang.Process) = this(process, process)
 
@@ -112,9 +112,9 @@ extends Subprocess, ProcessRef, caps.ExclusiveCapability:
 
 
   def stdin[chunk](stream: (Stream[chunk] over Credit)^)
-    ( using writable: (ProcessInput is Writable by chunk)^ )
+    ( using writable: (Process.Input is Writable by chunk)^ )
   :   Unit =
-    writable.write(ProcessInput(head.getOutputStream.nn), stream)
+    writable.write(Process.Input(head.getOutputStream.nn), stream)
 
   // Standard input as a push endpoint. `stdin` writes a whole stream and closes the pipe when it
   // ends, which suits a process that consumes its input and exits; a long-lived child that must be
@@ -150,16 +150,16 @@ extends Subprocess, ProcessRef, caps.ExclusiveCapability:
     Log.warn(ExecEvent.KillProcess(pid))
     process.destroyForcibly()
 
-  def process(using Tactic[PidError]^): Process^ = Process(pid)
+  def process(using Tactic[Pid.Error]^): Process^ = Process(pid)
 
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
     try
       import strategies.throwUnsafely
       process.startTime[instant]
-    catch case _: PidError => Unset
+    catch case _: Pid.Error => Unset
 
   def cpuUsage[instant: Instantiable across Durations from Long]: Optional[instant] =
     try
       import strategies.throwUnsafely
       process.cpuUsage[instant]
-    catch case _: PidError => Unset
+    catch case _: Pid.Error => Unset
