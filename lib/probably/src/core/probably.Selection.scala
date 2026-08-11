@@ -123,15 +123,15 @@ case class Selection
 
   def trivial: Boolean = terms.isEmpty && kinds.isEmpty && constraints.isEmpty
 
-  def admits(id: TestId, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =
+  def admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =
     admitted(kind) && admitted(id) && admitted(coordinates)
 
   private def admitted(kind: Entry.Kind): Boolean = kinds.isEmpty || kinds.has(kind)
 
-  private def ancestry(id: TestId): List[TestId] =
+  private def ancestry(id: Test.Id): List[Test.Id] =
     id :: id.suite.let { suite => ancestry(suite.id) }.or(Nil)
 
-  private def admitted(id: TestId): Boolean = terms.isEmpty || locally:
+  private def admitted(id: Test.Id): Boolean = terms.isEmpty || locally:
     val chain = ancestry(id)
     val names = chain.reverse.map(_.name.text)
     val path = names.join(t"/")

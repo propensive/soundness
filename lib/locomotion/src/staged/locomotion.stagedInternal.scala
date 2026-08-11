@@ -581,7 +581,7 @@ object stagedInternal:
     val plans: List[Plan] = fieldTypes.map(planFor(_, cache))
 
     def body
-      ( tactic: Expr[Tactic[ProtobufError]],
+      ( tactic: Expr[Tactic[Protobuf.Error]],
         parser: Expr[ProtobufParser] )
     :   Expr[product] =
 
@@ -898,7 +898,7 @@ object stagedInternal:
               else ${ absent.asExprOf[fieldType] }
             }
 
-      def planAbsent(index: Int, tactic: Expr[Tactic[ProtobufError]]): Expr[Any] =
+      def planAbsent(index: Int, tactic: Expr[Tactic[Protobuf.Error]]): Expr[Any] =
         plans(index) match
           case Plan.Leaf(kind) =>
             zeroValue(kind)
@@ -998,7 +998,7 @@ object stagedInternal:
       . asExprOf[product]
 
     '{
-      val tactic = infer[Tactic[ProtobufError]]
+      val tactic = infer[Tactic[Protobuf.Error]]
       val parser = $reader.rawParser.asInstanceOf[ProtobufParser]
       ${ body('tactic, 'parser) }
     }
@@ -1007,7 +1007,7 @@ object stagedInternal:
   // the AST path: every field takes its declared default or proto3 absent
   // value.
   private[locomotion] def productAbsent[product: Type]
-    (tactic: Expr[Tactic[ProtobufError]])
+    (tactic: Expr[Tactic[Protobuf.Error]])
     (using Quotes)
   :   Expr[product] =
 
@@ -1093,11 +1093,11 @@ object stagedInternal:
 
     val arity = variants.length
 
-    def dispatch(index: Int, chosen: Expr[Int], tactic: Expr[Tactic[ProtobufError]])
+    def dispatch(index: Int, chosen: Expr[Int], tactic: Expr[Tactic[Protobuf.Error]])
     :   Expr[sum] =
 
       if index == arity then
-        '{ abort(ProtobufError(ProtobufError.Reason.MissingField(0)))(using $tactic) }
+        '{ abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic) }
       else variants(index)(1).asType match
         case '[type variantType <: sum; variantType] =>
           val instance = resolve[variantType](cache).getOrElse:
@@ -1113,7 +1113,7 @@ object stagedInternal:
           }
 
     '{
-      val tactic = infer[Tactic[ProtobufError]]
+      val tactic = infer[Tactic[Protobuf.Error]]
       val parser = $reader.rawParser.asInstanceOf[ProtobufParser]
       var chosen = Int.MaxValue
       var chosenStart = 0
@@ -1132,7 +1132,7 @@ object stagedInternal:
         parser.directLeaveField(saved)
 
       if chosen == Int.MaxValue
-      then abort(ProtobufError(ProtobufError.Reason.MissingField(0)))(using tactic)
+      then abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using tactic)
       else
         val outer = parser.directWindow(chosenStart, chosenEnd)
         val result: sum = ${ dispatch(0, 'chosen, 'tactic) }

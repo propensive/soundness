@@ -41,6 +41,7 @@ import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import fulminate.*
 
 object Hyphenation:
   given fallback: Hyphenation = Unhyphenated
@@ -309,6 +310,10 @@ object Hyphenation:
       p += 1
 
     count
+
+  // HyphenationError → Hyphenation.Error
+  case class Error(resource: Text)(using Diagnostics)
+  extends fulminate.Error(m"the hyphenation resource $resource could not be loaded from the classpath")
 
 trait Hyphenation:
   // `patterns` is built via `Dictionary.aho(alphabet, …)` so the algorithm's

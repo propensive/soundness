@@ -69,9 +69,9 @@ private[probably] object Doc:
   enum Block:
     // A table of cells; a biaxial entry renders as a crosstab: its second axis's values
     // become the columns and each cell holds only the headline datum.
-    case Table(title: Optional[TestId], columns: List[Column], rows: List[List[Datum]])
+    case Table(title: Optional[Test.Id], columns: List[Column], rows: List[List[Datum]])
     case Sparkline(steps: List[Long], sequence: List[Spark])
-    case Histogram(title: Optional[TestId], total: Long, frames: List[Hotspots.Frame])
+    case Histogram(title: Optional[Test.Id], total: Long, frames: List[Hotspots.Frame])
 
   // A group of measurement blocks belonging to one suite, of one kind, rendered with a
   // ribbon header (and a GitHub Actions group when applicable).
@@ -79,7 +79,7 @@ private[probably] object Doc:
 
   // One row of the global results table, aggregating a test's runs across all its cells.
   case class SummaryRow
-    ( status: Report.Status, id: TestId, count: Int, min: Long, max: Long, avg: Long )
+    ( status: Report.Status, id: Test.Id, count: Int, min: Long, max: Long, avg: Long )
 
   case class Totals(passed: Int, failed: Int, aspirePassed: Int, aspireFailed: Int):
     def total: Int = passed + failed + aspirePassed + aspireFailed
@@ -88,5 +88,5 @@ private[probably] object Doc:
     ( results:  List[SummaryRow],
       totals:   Totals,
       groups:   List[Group],
-      failures: List[(TestId, List[Verdict.Detail])],
-      fatal:    Optional[(Throwable, Set[TestId])] )
+      failures: List[(Test.Id, List[Verdict.Detail])],
+      fatal:    Optional[(Throwable, Set[Test.Id])] )

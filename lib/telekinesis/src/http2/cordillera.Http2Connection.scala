@@ -223,7 +223,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   // Perform the connection handshake: emit our SETTINGS and await the peer's.
   // Plain using-parameters, de-sugared from `raises`: a context-function result may
   // not hide `this`.
-  def start()(using Tactic[AsyncError]): Unit =
+  def start()(using Tactic[Async.Error]): Unit =
     send(Frame.Settings(initialSettings, ack = false))
     started.await()
 
@@ -248,7 +248,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   // pseudo-headers the request type doesn't carry. Trailers (e.g. gRPC status) are
   // available afterwards via `stream.trailers`.
   def fetch(request: Http.Request, scheme: Text, authority: Text)
-    ( using Tactic[Http2Error], Tactic[AsyncError] )
+    ( using Tactic[Http2Error], Tactic[Async.Error] )
   :   (Http2Stream, Http.Response) =
 
     Log.fine(Http2Event.RequestSent(authority))

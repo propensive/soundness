@@ -76,7 +76,7 @@ object kotlincEdges:
 
       mitigate:
         case CompilerError() => LinkError(LinkError.Reason.CompilerUnusable(t"kotlinc"))
-        case AsyncError(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"kotlinc"))
+        case Async.Error(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"kotlinc"))
 
       . protect:
           val process = kotlinc(classpath)(sources, out)

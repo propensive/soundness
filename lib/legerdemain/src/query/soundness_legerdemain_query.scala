@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export legerdemain.{Parametric, Query, QueryError}
+export legerdemain.{Parametric, Query}

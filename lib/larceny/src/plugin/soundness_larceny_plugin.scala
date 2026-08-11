@@ -34,5 +34,5 @@ package soundness
 
 export
   larceny
-  . { CompileError, CompileErrorId, demilitarize, LarcenyPlugin, LarcenyTransformer, procrastinate,
+  . { CompileError, demilitarize, LarcenyPlugin, LarcenyTransformer, procrastinate,
       Subcompiler }

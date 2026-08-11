@@ -39,14 +39,14 @@ import scala.annotation.*
 import contingency.*
 
 object Factoradic:
-  def apply(sequence: List[Int]): Factoradic raises PermutationError =
+  def apply(sequence: List[Int]): Factoradic raises Permutation.Error =
     def recur(sequence: List[Int], bases: List[BigInt], result: BigInt, base: Int): BigInt =
       sequence match
         case Nil => result
 
         case head :: tail =>
           if head >= base
-          then raise(PermutationError(PermutationError.Reason.BaseRange(head, base)))
+          then raise(Permutation.Error(Permutation.Error.Reason.BaseRange(head, base)))
 
           recur(tail, bases.tail, result + bases.head*head, base - 1)
 

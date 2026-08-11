@@ -175,15 +175,15 @@ object Tests extends Suite(m"Nomenclature tests"):
 
     test(m"An out-of-range number cannot be encoded"):
       given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      capture[MonikerError](Moniker[Session](100000).encode).message.show
+      capture[Moniker.Error](Moniker[Session](100000).encode).message.show
     . assert(_ == t"the moniker is not valid because the number 100000 is outside the representable range")
 
     test(m"A malformed name cannot be decoded"):
       given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      capture[MonikerError](t"justoneword".as[Moniker over Session]).message.show
+      capture[Moniker.Error](t"justoneword".as[Moniker over Session]).message.show
     . assert(_ == t"the moniker is not valid because justoneword is not of the form <adjective>-<animal>")
 
     test(m"An unknown word cannot be decoded"):
       given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      capture[MonikerError](t"notathing-leopard".as[Moniker over Session]).message.show
+      capture[Moniker.Error](t"notathing-leopard".as[Moniker over Session]).message.show
     . assert(_ == t"the moniker is not valid because the word notathing does not appear in the vocabulary")

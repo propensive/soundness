@@ -56,18 +56,18 @@ class Runner[report](selection: Selection = Selection.all)(using reporter: Repor
 extends Findable:
   private val mutex: Mutex = Mutex()
   @scala.caps.unsafe.untrackedCaptures
-  private var active: List[TestId] = Nil
+  private var active: List[Test.Id] = Nil
   @scala.caps.unsafe.untrackedCaptures
-  private var listed0: List[(TestId, Entry.Kind)] = Nil
+  private var listed0: List[(Test.Id, Entry.Kind)] = Nil
   @scala.caps.unsafe.untrackedCaptures
   private var admitted0: Int = 0
   private val silent: Boolean = Ci.claudeCode || Ci()
 
-  def skip(id: TestId): Boolean = skip(id, Entry.Kind.Check, Nil)
+  def skip(id: Test.Id): Boolean = skip(id, Entry.Kind.Check, Nil)
 
   // Whether a test (or one cell of an axial test) is excluded by the selection. In listing
   // mode every test is skipped, and those the selection admits are noted for enumeration.
-  def skip(id: TestId, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =
+  def skip(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =
     if !selection.admits(id, kind, coordinates) then true
     else if selection.listOnly then
       mutex { listed0 = (id, kind) :: listed0 }
@@ -76,7 +76,7 @@ extends Findable:
       mutex { admitted0 += 1 }
       false
 
-  def listed: List[(TestId, Entry.Kind)] = mutex(listed0.reverse.distinct)
+  def listed: List[(Test.Id, Entry.Kind)] = mutex(listed0.reverse.distinct)
   def admitted: Int = mutex(admitted0)
 
   val report: report = reporter.report()

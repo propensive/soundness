@@ -371,12 +371,12 @@ object Tests extends Suite(m"Guillotine tests"):
         proc.exitStatus()
       . assert(_ == Exit.Fail(5))
 
-      test(m"await with timeout fires AsyncError"):
+      test(m"await with timeout fires Async.Error"):
         val proc = sh"sleep 1".fork[Unit]()
-        val outcome = capture[AsyncError](proc.await(50_000_000L))
+        val outcome = capture[Async.Error](proc.await(50_000_000L))
         proc.kill()
         outcome
-      . assert(_.reason == AsyncError.Reason.Timeout)
+      . assert(_.reason == Async.Error.Reason.Timeout)
 
       test(m"await with sufficient duration returns"):
         val proc = sh"sleep 0.05".fork[Unit]()

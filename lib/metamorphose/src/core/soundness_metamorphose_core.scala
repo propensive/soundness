@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export metamorphose.{Factoradic, Factorial, Permutation, PermutationError}
+export metamorphose.{Factoradic, Factorial, Permutation}

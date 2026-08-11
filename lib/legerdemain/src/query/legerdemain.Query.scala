@@ -47,6 +47,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 import wisteria.*
+import fulminate.*
 
 object Query extends Dynamic:
   def apply(): Query = new Query(Nil)
@@ -110,15 +111,15 @@ object Query extends Dynamic:
   inline given decodable: [value] => value is Decodable in Query =
     summonFrom:
       case given (`value` is Decodable in Text) =>
-        provide[Tactic[QueryError]]:
+        provide[Tactic[Query.Error]]:
           summonFrom:
             case default: Default[`value`] =>
               _().let(_.as).or:
-                raise(QueryError(QueryError.Reason.Missing))
+                raise(Query.Error(Query.Error.Reason.Missing))
                 default()
 
             case _ =>
-              _().lest(QueryError(QueryError.Reason.Missing)).as
+              _().lest(Query.Error(Query.Error.Reason.Missing)).as
 
       case given ProductReflection[`value` & Product] =>
         DecodableDerivation.conjunction[value & Product].asInstanceOf[value is Decodable in Query]
@@ -130,6 +131,17 @@ object Query extends Dynamic:
 
   given addable: Query is Addable by Query to Query =
     Addable: (left, right) => new Query(List.of(left.values.stdlib ++ right.values.stdlib))
+
+  // QueryError → Query.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Missing extends Reason(1)
+
+    given communicable: Reason is Communicable =
+      case Reason.Missing => m"the parameter was not present in the query string"
+
+  case class Error(reason: Query.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(205, reason.number)(m"the query parameter could not be read because $reason")
 
 case class Query private (values: List[(Text, Text)]) extends Dynamic:
   // private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))

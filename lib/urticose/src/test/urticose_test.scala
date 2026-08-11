@@ -76,7 +76,7 @@ object Tests extends Suite(m"Urticose tests"):
       //   .map(_.id)
       //   println(result)
       //   result
-      // .assert(_ == List(CompileErrorId.MissingImplicitArgument))
+      // .assert(_ == List(CompileError.Id.MissingImplicitArgument))
 
 
     suite(m"IPv4 tests"):

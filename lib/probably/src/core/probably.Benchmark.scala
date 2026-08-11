@@ -41,7 +41,7 @@ object Benchmark:
   given inclusion: Inclusion[Report, Benchmark]:
     def include
       ( report:      Report,
-        testId:      TestId,
+        testId:      Test.Id,
         coordinates: List[(Axis.Spec, Value)],
         benchmark:   Benchmark )
     :   Report =

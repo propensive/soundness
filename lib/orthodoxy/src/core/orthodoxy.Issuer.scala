@@ -71,39 +71,39 @@ class Issuer
   def oauth(using Http.Request, Online, (HttpEvent is Loggable)^)
     ( lambda: (Issuer.Context of this.type) ?=> Http.Response )
     ( using store: OAuth, session: Session )
-    ( using Tactic[OAuthError] )
+    ( using Tactic[OAuth.Error] )
   :   Http.Response =
 
     request.path match
       case OAuthPath =>
         mitigate:
           case error@Path.Error(reason, path) =>
-            OAuthError(OAuthError.Reason.Other)
+            OAuth.Error(OAuth.Error.Reason.Other)
 
           case error@ConnectError(reason) =>
-            OAuthError(OAuthError.Reason.Connection(exchange, reason))
+            OAuth.Error(OAuth.Error.Reason.Connection(exchange, reason))
 
           case error@ParseError(_, _, _) =>
-            OAuthError(OAuthError.Reason.InvalidJsonResponse)
+            OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
 
           case error@HttpError(status, _) =>
-            OAuthError(OAuthError.Reason.UnexpectedHttpStatus(status))
+            OAuth.Error(OAuth.Error.Reason.UnexpectedHttpStatus(status))
 
           case error@Uuid.Error(_) =>
-            OAuthError(OAuthError.Reason.Other)
+            OAuth.Error(OAuth.Error.Reason.Other)
 
-          case error@QueryError(_) =>
-            OAuthError(OAuthError.Reason.Other)
+          case error@Query.Error(_) =>
+            OAuth.Error(OAuth.Error.Reason.Other)
 
           case error@JsonError(reason) =>
-            OAuthError(OAuthError.Reason.InvalidJsonResponse)
+            OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
 
         . protect:
             store(session).let: state =>
               val code: Text = request.query.code
 
               if store(session).let(_.uuid) != request.query.state[Uuid]
-              then abort(OAuthError(OAuthError.Reason.Other))
+              then abort(OAuth.Error(OAuth.Error.Reason.Other))
 
               val query =
                 Query.make
@@ -120,7 +120,7 @@ class Issuer
                   response.receive[Json]
 
                 case response: Http.Response if response.status != Http.Unauthorized =>
-                  abort(OAuthError(OAuthError.Reason.Other))
+                  abort(OAuth.Error(OAuth.Error.Reason.Other))
 
                 // The token expired (no request was made) or was rejected: try the refresh
                 // token.
@@ -133,9 +133,9 @@ class Issuer
 
                     response.status match
                       case Http.Ok => response.receive[Json]
-                      case _       => abort(OAuthError(OAuthError.Reason.Unauthorized))
+                      case _       => abort(OAuth.Error(OAuth.Error.Reason.Unauthorized))
 
-                  . lest(OAuthError(OAuthError.Reason.Unauthorized))
+                  . lest(OAuth.Error(OAuth.Error.Reason.Unauthorized))
 
               import dynamicJsonAccess.enabled
 

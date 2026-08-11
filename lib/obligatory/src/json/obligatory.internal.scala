@@ -244,7 +244,7 @@ object internal:
                     ' {
                         val json = Map(${Varargs(entries)}*).in[Json]
 
-                        safely[AsyncError]:
+                        safely[Async.Error]:
                           JsonRpc.notification($url, $methodName, json)
                             ( using $monitor, $probate, $online )
 

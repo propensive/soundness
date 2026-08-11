@@ -78,7 +78,7 @@ object Containerd:
   // Must be called inside a `supervise` scope (the connection runs background daemons).
   def apply[endpoint]
     ( endpoint: Http2.Endpoint[endpoint], namespace: Text )
-    ( using monitor: Monitor, probate: Probate, asyncError: Tactic[AsyncError] )
+    ( using monitor: Monitor, probate: Probate, asyncError: Tactic[Async.Error] )
   :   Containerd^{monitor, caps.any} =
 
     val metadata = Grpc.Metadata(List(t"containerd-namespace" -> namespace))
@@ -92,7 +92,7 @@ case class Containerd(channel: GrpcChannel^):
   // The daemon's version and build revision (`containerd.services.version.v1.Version`).
   def version()
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   VersionResponse =
 
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
@@ -103,7 +103,7 @@ case class Containerd(channel: GrpcChannel^):
   // optionally narrowed by containerd `filters`.
   def containers(filters: List[Text] = Nil)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   List[Container] =
 
     val request = ListContainersRequest(filters)
@@ -117,7 +117,7 @@ case class Containerd(channel: GrpcChannel^):
   // `spec` carries the OCI runtime spec as an `AnyMessage`.
   def createContainer(container: Container)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Container =
 
     val request = CreateContainerRequest(container)
@@ -134,7 +134,7 @@ case class Containerd(channel: GrpcChannel^):
   // A single container by id (`Containers.Get`).
   def container(id: Text)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Container =
 
     val request = GetContainerRequest(id)
@@ -147,7 +147,7 @@ case class Containerd(channel: GrpcChannel^):
   // Remove a container by id (`Containers.Delete`).
   def deleteContainer(id: Text)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Unit =
 
     val request = DeleteContainerRequest(id)
@@ -158,7 +158,7 @@ case class Containerd(channel: GrpcChannel^):
   // The namespaces known to the daemon (`Namespaces.List`).
   def namespaces(filter: Text = t"")
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   List[Namespace] =
 
     val request = ListNamespacesRequest(filter)
@@ -171,7 +171,7 @@ case class Containerd(channel: GrpcChannel^):
   // Create a namespace, returning it as stored (`Namespaces.Create`).
   def createNamespace(namespace: Namespace)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Namespace =
 
     val request = CreateNamespaceRequest(namespace)
@@ -184,7 +184,7 @@ case class Containerd(channel: GrpcChannel^):
   // Remove a namespace by name (`Namespaces.Delete`).
   def deleteNamespace(name: Text)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Unit =
 
     val request = DeleteNamespaceRequest(name)
@@ -194,7 +194,7 @@ case class Containerd(channel: GrpcChannel^):
   // The images in the bound namespace (`Images.List`), optionally filtered.
   def images(filters: List[Text] = Nil)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   List[ImageRecord] =
 
     val request = ListImagesRequest(filters)
@@ -207,7 +207,7 @@ case class Containerd(channel: GrpcChannel^):
   // A single image by reference (`Images.Get`).
   def image(name: Text)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   ImageRecord =
 
     val request = GetImageRequest(name)
@@ -220,7 +220,7 @@ case class Containerd(channel: GrpcChannel^):
   // Remove an image by reference (`Images.Delete`).
   def deleteImage(name: Text, sync: Boolean = false)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Unit =
 
     val request = DeleteImageRequest(name, sync)
@@ -233,7 +233,7 @@ case class Containerd(channel: GrpcChannel^):
   // returning the container id and the new task's host pid.
   def createTask(containerId: Text, rootfs: List[Mount] = Nil, options: AnyMessage = AnyMessage())
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   CreateTaskResponse =
 
     val request = CreateTaskRequest(containerId, rootfs, options = options)
@@ -245,7 +245,7 @@ case class Containerd(channel: GrpcChannel^):
   // Start a created task (`Tasks.Start`), returning its host pid.
   def startTask(containerId: Text, execId: Text = t"")
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Int =
 
     val request = StartRequest(containerId, execId)
@@ -257,7 +257,7 @@ case class Containerd(channel: GrpcChannel^):
   // Send a signal to a task (`Tasks.Kill`); `all` targets every process in the container.
   def killTask(containerId: Text, signal: Int, execId: Text = t"", all: Boolean = false)
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Unit =
 
     val request = KillRequest(containerId, execId, signal, all)
@@ -268,7 +268,7 @@ case class Containerd(channel: GrpcChannel^):
   // Wait for a task to exit (`Tasks.Wait`), returning its exit status and time.
   def waitTask(containerId: Text, execId: Text = t"")
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   WaitResponse =
 
     val request = WaitRequest(containerId, execId)
@@ -279,7 +279,7 @@ case class Containerd(channel: GrpcChannel^):
   // Delete a task (`Tasks.Delete`), returning its final exit status.
   def deleteTask(containerId: Text, execId: Text = t"")
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   DeleteTaskResponse =
 
     val request = DeleteTaskRequest(containerId, execId)
@@ -291,7 +291,7 @@ case class Containerd(channel: GrpcChannel^):
   // The state of a single task (`Tasks.Get`).
   def task(containerId: Text, execId: Text = t"")
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Workload =
 
     val request = GetTaskRequest(containerId, execId)
@@ -302,7 +302,7 @@ case class Containerd(channel: GrpcChannel^):
   // Every task known to the daemon (`Tasks.List`), optionally filtered.
   def tasks(filter: Text = t"")
   ( using Monitor^ )
-  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   List[Workload] =
 
     val request = ListTasksRequest(filter)

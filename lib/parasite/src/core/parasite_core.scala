@@ -69,8 +69,8 @@ package probates:
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
   // The only capturing probate: its instance closes over the ambient `Tactic`, so it is `Probate^`.
-  given failProbate: (tactic: Tactic[AsyncError]) => (Probate^{tactic}) = _.delegate: child =>
-    if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete))
+  given failProbate: (tactic: Tactic[Async.Error]) => (Probate^{tactic}) = _.delegate: child =>
+    if !child.ready then raise(Async.Error(Async.Error.Reason.Incomplete))
 
 package supervisors:
   given globalSupervisor: Supervisor = PlatformSupervisor
@@ -122,8 +122,8 @@ def contain(handler: PartialFunction[Error, Remedy]^)(using outer: Probate^)
 
 // `X emits error` is the one concept "X can produce these errors as an out-of-band side-channel",
 // reified two ways. For a `Task`, it is the bound `Task[result] { type Error <: e }` on its member;
-// the bound (not an equality) keeps the error covariant, so a task failing only with `AsyncError`
-// is usable where `emits FooError` is expected, and `await`'s `raises (Error | AsyncError)` simply
+// the bound (not an equality) keeps the error covariant, so a task failing only with `Async.Error`
+// is usable where `emits FooError` is expected, and `await`'s `raises (Error | Async.Error)` simply
 // converts the emission to a value-replacing exit in the caller's scope. For anything else it is
 // the side-effect obligation `Emit[error] ?=> X` — the weaker sibling of `raises error`
 // (`Tactic[error] ?=>`). The `Task` branch reduces to a refinement, not a context function, so it
@@ -139,22 +139,22 @@ infix type emits[left, error <: Hazard] = left match
 def async[result, error <: Hazard](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor^, probate: Probate^ )
-:   (Task[result] emits (error | AsyncError))^{evaluate, monitor, probate} =
+:   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
   // The tactic is per-task bookkeeping owned by the worker; laundered so the handle's
   // capture set need not name a local.
   val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
-  Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
+  Task[result, error | Async.Error](worker => evaluate(using worker, tactic), name = Unset)
 
 
 def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor^, probate: Probate^ )
-:   (Task[result] emits (error | AsyncError))^{evaluate, monitor, probate} =
+:   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
   // As in `async` above.
   val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
-  Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = name)
+  Task[result, error | Async.Error](worker => evaluate(using worker, tactic), name = name)
 
 
 def relent[result]()(using Worker): Unit = monitor.relent()
@@ -182,14 +182,14 @@ def hibernate[instant: Abstractable across Instants to Long](instant: instant)(u
 
 extension [result](stream: Chain[result])
   def concurrent(using monitor: Monitor^, probate: Probate^)
-  :   (Tactic[AsyncError]^) ?->{monitor, probate} Chain[result] =
+  :   (Tactic[Async.Error]^) ?->{monitor, probate} Chain[result] =
     // The task is created and awaited under the same monitor; there is no aliased writer.
     if scala.caps.unsafe.unsafeAssumeSeparate(async(stream.nil).await())
     then Chain() else stream.head #:: stream.tail.concurrent
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)
-:   (Tactic[AsyncError]^) ?->{block} result =
+:   (Tactic[Async.Error]^) ?->{block} result =
 
   block(using Root(threading.supervisor()))
 

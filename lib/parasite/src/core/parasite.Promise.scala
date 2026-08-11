@@ -78,7 +78,7 @@ final class Promise[value]():
   // The promise's completion, reified as a `Task`: the monadic form of `await`, composable with
   // `bind`/`map` without suspending the calling strand.
   def task(using monitor: Monitor^, probate: Probate^, codepoint: Codepoint)
-  :   (Task[value] emits AsyncError)^{monitor, probate} =
+  :   (Task[value] emits Async.Error)^{monitor, probate} =
     async(await())
 
   // The transition is pure — `getAndUpdate` may re-run it under contention — so the waiters are
@@ -89,10 +89,10 @@ final class Promise[value]():
       case Incomplete(_) => Complete(supplied)
       case current       => current
 
-  def fulfill(supplied: => value): (Tactic[AsyncError]^) ?->{supplied} Unit =
+  def fulfill(supplied: => value): (Tactic[Async.Error]^) ?->{supplied} Unit =
     state.getAndUpdate(completeIncomplete(supplied)).nn match
-      case Cancelled           => raise(AsyncError(AsyncError.Reason.Cancelled))
-      case Complete(_)         => raise(AsyncError(AsyncError.Reason.AlreadyComplete))
+      case Cancelled           => raise(Async.Error(Async.Error.Reason.Cancelled))
+      case Complete(_)         => raise(Async.Error(Async.Error.Reason.AlreadyComplete))
       case Incomplete(waiting) => waiting.each(_.unpark())
 
   def offer(supplied: => value): Unit =
@@ -106,7 +106,7 @@ final class Promise[value]():
       case Complete(value)     => Complete(value)
       case _                   => Cancelled
 
-  def await()(using monitor: Monitor^): (Tactic[AsyncError]^) ?->{monitor} value =
+  def await()(using monitor: Monitor^): (Tactic[Async.Error]^) ?->{monitor} value =
     if monitor.supervisor.interrupted() then throw new InterruptedException()
 
     // A settled promise needs no CAS and no waiter-set allocation — the common case when joining
@@ -114,7 +114,7 @@ final class Promise[value]():
     // park loop.
     state.get().nn match
       case Complete(value) => value
-      case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
+      case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
       case Incomplete(_)   =>
         val strand0: Strand = monitor.supervisor.strand()
         val enqueue0: juf.UnaryOperator[State[value]] = enqueue(strand0)(_)
@@ -126,7 +126,7 @@ final class Promise[value]():
           state.getAndUpdate(enqueue0).nn match
             case Incomplete(_)   => monitor.supervisor.park(this) yet recur()
             case Complete(value) => value
-            case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
+            case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
 
         recur()
 
@@ -162,13 +162,13 @@ final class Promise[value]():
 
   def await[generic: Abstractable across Durations to Long](duration: generic)
     ( using monitor: Monitor^ )
-  :   (Tactic[AsyncError]^) ?->{monitor} value =
+  :   (Tactic[Async.Error]^) ?->{monitor} value =
 
     if monitor.supervisor.interrupted() then throw new InterruptedException()
 
     state.get().nn match
       case Complete(value) => value
-      case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
+      case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
       case Incomplete(_)   =>
         val deadline = jl.System.nanoTime() + duration.generic
         val strand0: Strand = monitor.supervisor.strand()
@@ -177,7 +177,7 @@ final class Promise[value]():
         @tailrec
         def recur(): value =
           if monitor.supervisor.interrupted() then throw new InterruptedException()
-          else if deadline < jl.System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
+          else if deadline < jl.System.nanoTime then abort(Async.Error(Async.Error.Reason.Timeout))
           else state.getAndUpdate(enqueue0).nn match
             case Incomplete(_) =>
               monitor.supervisor.park(this, deadline)
@@ -187,7 +187,7 @@ final class Promise[value]():
               value
 
             case Cancelled =>
-              abort(AsyncError(AsyncError.Reason.Cancelled))
+              abort(Async.Error(Async.Error.Reason.Cancelled))
 
         recur()
 

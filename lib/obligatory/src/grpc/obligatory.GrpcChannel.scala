@@ -61,7 +61,7 @@ import zephyrine.*
 class GrpcSessional[endpoint: {Connectable, Showable}]
   ( using monitor:    Monitor,
           probate:    Probate,
-          asyncError: Tactic[AsyncError],
+          asyncError: Tactic[Async.Error],
           loggable:   (SocketEvent is Loggable)^ )
 extends Sessional:
   type Self = Grpc.Endpoint[endpoint]
@@ -81,7 +81,7 @@ object GrpcChannel:
   // must be called inside a `supervise` scope.
   def apply[endpoint]
     ( endpoint: Http2.Endpoint[endpoint], defaults: Grpc.Metadata = Grpc.Metadata() )
-    ( using monitor: Monitor, probate: Probate, asyncError: Tactic[AsyncError] )
+    ( using monitor: Monitor, probate: Probate, asyncError: Tactic[Async.Error] )
   :   GrpcChannel^{monitor, caps.any} =
 
     new GrpcChannel(endpoint.connect(), endpoint.authority, defaults)
@@ -130,7 +130,7 @@ class GrpcChannel
   // Declared with explicit tactics rather than stacked `raises`: see `bintelDocument`
   // in stratiform (capture checking cannot unify cross-level tactic captures, 3.10).
   private def expectStatus(stream: Http2Stream)
-    ( using Monitor^, Tactic[GrpcError], Tactic[AsyncError] )
+    ( using Monitor^, Tactic[GrpcError], Tactic[Async.Error] )
   :   Unit =
 
     val fields = stream.trailers.await().stdlib ++ stream.headers.await().stdlib
@@ -153,7 +153,7 @@ class GrpcChannel
     summon[Protobuf is Encodable in Data].encoded(encodable.encoded(value))
 
   private def decodeMessage[value](bytes: Data)(using decodable: value is Decodable in Protobuf)
-  :   value raises ProtobufError =
+  :   value raises Protobuf.Error =
 
     decodable.decoded(Chain(bytes).read[Protobuf])
 
@@ -163,7 +163,7 @@ class GrpcChannel
     ( method: Grpc.Method, value: request, metadata: Grpc.Metadata = Grpc.Metadata() )
     ( using request is Encodable in Protobuf, response is Decodable in Protobuf )
     ( using Monitor^ )
-    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   response =
 
     val (stream, response) =
@@ -187,7 +187,7 @@ class GrpcChannel
     ( method: Grpc.Method, value: request, metadata: Grpc.Metadata = Grpc.Metadata() )
     ( using request is Encodable in Protobuf, response is Decodable in Protobuf )
     ( using Monitor^ )
-    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
   :   Chain[response] =
 
     val (stream, response) =

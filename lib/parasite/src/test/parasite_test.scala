@@ -125,13 +125,13 @@ object Tests extends Suite(m"Parasite tests"):
           val promise = Promise[Int]()
           promise.fulfill(1)
           capture(promise.fulfill(2))
-        . assert(_ == AsyncError(AsyncError.Reason.AlreadyComplete))
+        . assert(_ == Async.Error(Async.Error.Reason.AlreadyComplete))
 
         test(m"Fulfilling a cancelled promise raises Cancelled"):
           val promise = Promise[Int]()
           promise.cancel()
           capture(promise.fulfill(1))
-        . assert(_ == AsyncError(AsyncError.Reason.Cancelled))
+        . assert(_ == Async.Error(Async.Error.Reason.Cancelled))
 
         test(m"Offer on incomplete promise sets value"):
           val promise = Promise[Int]()
@@ -184,12 +184,12 @@ object Tests extends Suite(m"Parasite tests"):
           val promise = Promise[Int]()
           promise.cancel()
           capture(promise.await())
-        . assert(_ == AsyncError(AsyncError.Reason.Cancelled))
+        . assert(_ == Async.Error(Async.Error.Reason.Cancelled))
 
         test(m"Await with timeout on incomplete promise raises Timeout"):
           val promise = Promise[Int]()
           capture(promise.await(50.0*Milli(Second)))
-        . assert(_ == AsyncError(AsyncError.Reason.Timeout))
+        . assert(_ == Async.Error(Async.Error.Reason.Timeout))
 
         test(m"Await with timeout returns value if fulfilled in time"):
           val promise = Promise[Int]()
@@ -235,7 +235,7 @@ object Tests extends Suite(m"Parasite tests"):
             promise.cancel()
           ready.countDown()
           capture(promise.await())
-        . assert(_ == AsyncError(AsyncError.Reason.Cancelled))
+        . assert(_ == Async.Error(Async.Error.Reason.Cancelled))
 
         test(m"Multiple waiters all wake up on fulfill"):
           val promise = Promise[Int]()
@@ -264,7 +264,7 @@ object Tests extends Suite(m"Parasite tests"):
               try
                 promise.await()
                 0
-              catch case _: AsyncError =>
+              catch case _: Async.Error =>
                 cancelled.incrementAndGet()
                 1
           started.await()
@@ -351,7 +351,7 @@ object Tests extends Suite(m"Parasite tests"):
           task.cancel()
           gate.fulfill(())
           capture(task.await())
-        . assert(_ == AsyncError(AsyncError.Reason.Cancelled))
+        . assert(_ == Async.Error(Async.Error.Reason.Cancelled))
 
         test(m"Cancelling an already-cancelled task is a no-op"):
           val task = async:
@@ -471,7 +471,7 @@ object Tests extends Suite(m"Parasite tests"):
               snooze(10.0*Second)
             ()
           capture(task.await())
-        . assert(_ == AsyncError(AsyncError.Reason.Incomplete))
+        . assert(_ == Async.Error(Async.Error.Reason.Incomplete))
 
         test(m"Probates only affect non-daemon children for daemons"):
           import probates.cancelProbate
@@ -632,7 +632,7 @@ object Tests extends Suite(m"Parasite tests"):
             async:
               barrier.await()
               try { promise.fulfill(i); successes.incrementAndGet() }
-              catch case _: AsyncError => ()
+              catch case _: Async.Error => ()
           tasks.each(_.await())
           successes.get()
         . assert(_ == 1)
@@ -658,7 +658,7 @@ object Tests extends Suite(m"Parasite tests"):
             val a = async:
               start.await()
               try { promise.fulfill(1); fulfillSucceeded += 1 }
-              catch case _: AsyncError => ()
+              catch case _: Async.Error => ()
             val b = async:
               start.await()
               promise.cancel()
@@ -729,7 +729,7 @@ object Tests extends Suite(m"Parasite tests"):
           val tasks = (1 to 20).map: _ =>
             async:
               started.countDown()
-              try gate.await() catch case _: AsyncError => cancelled.incrementAndGet()
+              try gate.await() catch case _: Async.Error => cancelled.incrementAndGet()
 
           started.await()
           tasks.each(_.cancel())
@@ -842,11 +842,11 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Task await with too-short timeout raises Timeout"):
           val gate = Promise[Unit]()
           val task = async(gate.await())
-          val result = capture[AsyncError](task.await(50.0*Milli(Second)))
+          val result = capture[Async.Error](task.await(50.0*Milli(Second)))
           gate.fulfill(())
           task.await()
           result.reason
-        . assert(_ == AsyncError.Reason.Timeout)
+        . assert(_ == Async.Error.Reason.Timeout)
 
       suite(m"Cancellation edge cases"):
         test(m"Cancelling a task before it has started still works"):
@@ -881,7 +881,7 @@ object Tests extends Suite(m"Parasite tests"):
           task.cancel()
           gate.fulfill(())
           capture(task.await())
-        . assert(_ == AsyncError(AsyncError.Reason.Cancelled))
+        . assert(_ == Async.Error(Async.Error.Reason.Cancelled))
 
       suite(m"Children of children"):
         test(m"Nested tasks with await probate all complete"):
@@ -960,7 +960,7 @@ object Tests extends Suite(m"Parasite tests"):
                 try
                   promise.fulfill(i)
                   winners.incrementAndGet()
-                catch case _: AsyncError => ()
+                catch case _: Async.Error => ()
             tasks.each(_.await())
             if winners.get() != 1 then allOk = false
           allOk
@@ -980,7 +980,7 @@ object Tests extends Suite(m"Parasite tests"):
               promise.cancel()
             val c = async:
               barrier.await()
-              try promise.fulfill(2) catch case _: AsyncError => ()
+              try promise.fulfill(2) catch case _: Async.Error => ()
             a.await(); b.await(); c.await()
             val isReady = promise.ready
             val isComplete = promise.complete
@@ -1020,10 +1020,10 @@ object Tests extends Suite(m"Parasite tests"):
               val barrier = juc.CyclicBarrier(2)
               val a = async:
                 barrier.await()
-                try { promise.fulfill(1); 1 } catch case _: AsyncError => 0
+                try { promise.fulfill(1); 1 } catch case _: Async.Error => 0
               val b = async:
                 barrier.await()
-                try { promise.fulfill(2); 1 } catch case _: AsyncError => 0
+                try { promise.fulfill(2); 1 } catch case _: Async.Error => 0
               val w = a.await() + b.await()
               if w == 1 then winners.incrementAndGet()
               w
@@ -1292,7 +1292,7 @@ object Tests extends Suite(m"Parasite tests"):
             try
               val v = promise.await()
               if v == 42 then sawFulfilled.set(true)
-            catch case _: AsyncError => sawCancelled.set(true)
+            catch case _: Async.Error => sawCancelled.set(true)
 
           val rounds = 100
           var fulfillFirst = 0
@@ -1377,7 +1377,7 @@ object Tests extends Suite(m"Parasite tests"):
             async:
               try
                 promise.await(50.0*Milli(Second))
-              catch case _: AsyncError =>
+              catch case _: Async.Error =>
                 timedOut.incrementAndGet()
                 -1
           tasks.each(_.await())
@@ -1417,7 +1417,7 @@ object Tests extends Suite(m"Parasite tests"):
               try
                 promise.await()
                 completed.incrementAndGet()
-              catch case _: AsyncError =>
+              catch case _: Async.Error =>
                 cancelled.incrementAndGet()
           Thread.sleep(10)
           promise.cancel()
@@ -1434,9 +1434,9 @@ object Tests extends Suite(m"Parasite tests"):
             2
           bad.cancel()
           val seq = Seq(good, bad).sequence
-          val result = capture[AsyncError](seq.await())
+          val result = capture[Async.Error](seq.await())
           result.reason
-        . assert(_ == AsyncError.Reason.Cancelled)
+        . assert(_ == Async.Error.Reason.Cancelled)
 
       suite(m"Tenacity exponential limits"):
         test(m"Exponential.limit aborts at limit"):
@@ -1483,13 +1483,13 @@ object Tests extends Suite(m"Parasite tests"):
           . await()
         . assert(_ == 99)
 
-        test(m"Cancellation surfaces as AsyncError, not the body's error type"):
+        test(m"Cancellation surfaces as Async.Error, not the body's error type"):
           val task = async:
             snooze(1.0*Second)
             abort(FooError(1))
           task.cancel()
-          capture[AsyncError](task.await()).reason
-        . assert(_ == AsyncError.Reason.Cancelled)
+          capture[Async.Error](task.await()).reason
+        . assert(_ == Async.Error.Reason.Cancelled)
 
         test(m"A task that raises one of two error types delivers the one that occurred"):
           def make(flag: Boolean) = async:

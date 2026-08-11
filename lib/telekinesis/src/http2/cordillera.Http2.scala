@@ -365,7 +365,7 @@ object Http2:
     // Returns once the HTTP/2 handshake has completed.
     // Named using-parameters, de-sugared from `raises`: the result retains the
     // connection's capabilities, so it must name its evidence rather than hide it.
-    def connect()(using monitor: Monitor, probate: Probate, asyncError: Tactic[AsyncError])
+    def connect()(using monitor: Monitor, probate: Probate, asyncError: Tactic[Async.Error])
     :   Http2Connection^{monitor, caps.any} =
 
       // A neutral carrier: the connection (a capability) crosses the daemon and the
@@ -398,7 +398,7 @@ object Http2:
   class EndpointSessional[endpoint: {Connectable, Showable}]
     ( using monitor:    Monitor,
             probate:    Probate,
-            asyncError: Tactic[AsyncError],
+            asyncError: Tactic[Async.Error],
             loggable:   (SocketEvent is Loggable)^ )
   extends Sessional:
     type Self = Endpoint[endpoint]
@@ -415,7 +415,7 @@ object Http2:
   given sessional: [endpoint: {Connectable, Showable}]
   =>  ( monitor:    Monitor,
         probate:    Probate,
-        asyncError: Tactic[AsyncError],
+        asyncError: Tactic[Async.Error],
         loggable:   (SocketEvent is Loggable)^ )
   =>  (EndpointSessional[endpoint]^{monitor, asyncError, loggable, caps.any}) =
     EndpointSessional[endpoint]()
@@ -430,7 +430,7 @@ object Http2:
     =>  ( monitor:    Monitor,
           probate:    Probate,
           http2Error: Tactic[Http2Error],
-          asyncError: Tactic[AsyncError] )
+          asyncError: Tactic[Async.Error] )
     =>  ((HttpClient onto Endpoint[endpoint])^{monitor, http2Error, asyncError, caps.any}) =
 
       new HttpClient:

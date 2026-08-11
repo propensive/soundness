@@ -74,7 +74,7 @@ final class Tally():
 // as emergent axes acquire coordinates), and a sparse map of cells keyed by coordinates in
 // axis space. A test with no axes has exactly one cell, at `Nil`; combinations of axis
 // values without a cell are gaps, rendered as empty positions in a grid.
-final class Entry(val id: TestId, val kind: Entry.Kind):
+final class Entry(val id: Test.Id, val kind: Entry.Kind):
   private val mutex: Mutex = Mutex()
   @scala.caps.unsafe.untrackedCaptures
   private var axes0: List[Axis.Spec] = Nil

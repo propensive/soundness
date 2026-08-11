@@ -38,7 +38,7 @@ object Hotspots:
   given inclusion: Inclusion[Report, Hotspots]:
     def include
       ( report:      Report,
-        testId:      TestId,
+        testId:      Test.Id,
         coordinates: List[(Axis.Spec, Value)],
         hotspots:    Hotspots )
     :   Report =

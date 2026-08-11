@@ -49,7 +49,7 @@ object Report:
   given verdict: Inclusion[Report, Verdict]:
     def include
       ( report:      Report,
-        testId:      TestId,
+        testId:      Test.Id,
         coordinates: List[(Axis.Spec, Value)],
         verdict:     Verdict )
     :   Report =
@@ -72,7 +72,7 @@ object Report:
   given anchor: Inclusion[Report, Anchor]:
     def include
       ( report:      Report,
-        testId:      TestId,
+        testId:      Test.Id,
         coordinates: List[(Axis.Spec, Value)],
         anchor:      Anchor )
     :   Report =
@@ -82,7 +82,7 @@ object Report:
   given detail: Inclusion[Report, Verdict.Detail]:
     def include
       ( report:      Report,
-        testId:      TestId,
+        testId:      Test.Id,
         coordinates: List[(Axis.Spec, Value)],
         detail:      Verdict.Detail )
     :   Report =
@@ -125,15 +125,15 @@ object Report:
 class TestsMap():
   private val mutex: Mutex = Mutex()
   @scala.caps.unsafe.untrackedCaptures
-  private var tests: Ledger[TestId, ReportLine] = Ledger()
+  private var tests: Ledger[Test.Id, ReportLine] = Ledger()
 
-  def list: List[(TestId, ReportLine)] = mutex(tests.to[List])
-  def apply(testId: TestId): Optional[ReportLine] = mutex(tests(testId))
+  def list: List[(Test.Id, ReportLine)] = mutex(tests.to[List])
+  def apply(testId: Test.Id): Optional[ReportLine] = mutex(tests(testId))
 
-  def update(testId: TestId, reportLine: ReportLine) = mutex:
+  def update(testId: Test.Id, reportLine: ReportLine) = mutex:
     tests = tests.updated(testId, reportLine)
 
-  def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = mutex:
+  def getOrElseUpdate(testId: Test.Id, reportLine: => ReportLine): ReportLine = mutex:
     tests(testId).or:
       val line = reportLine
       tests = tests.updated(testId, line)
@@ -150,17 +150,17 @@ enum ReportLine:
 // extensible class would get.
 final class Report(using environment: Environment)(using palette: TestPalette):
   @scala.caps.unsafe.untrackedCaptures
-  private var failure0: Optional[(Throwable, Set[TestId])] = Unset
+  private var failure0: Optional[(Throwable, Set[Test.Id])] = Unset
   @scala.caps.unsafe.untrackedCaptures
   private var pass: Boolean = false
 
   private[probably] val lines: ReportLine.Suite = ReportLine.Suite(Unset)
 
-  private[probably] val details: scm.SortedMap[TestId, scm.ArrayBuffer[Verdict.Detail]] =
-    scm.TreeMap[TestId, scm.ArrayBuffer[Verdict.Detail]]()
+  private[probably] val details: scm.SortedMap[Test.Id, scm.ArrayBuffer[Verdict.Detail]] =
+    scm.TreeMap[Test.Id, scm.ArrayBuffer[Verdict.Detail]]()
     . withDefault(_ => scm.ArrayBuffer[Verdict.Detail]())
 
-  private[probably] def failure: Optional[(Throwable, Set[TestId])] = failure0
+  private[probably] def failure: Optional[(Throwable, Set[Test.Id])] = failure0
 
   def passed: Boolean = failure0.absent && pass
 
@@ -172,20 +172,20 @@ final class Report(using environment: Environment)(using palette: TestPalette):
     . getOrElse(lines)
 
   // Non-destructive: a suite is declared once per run, but two distinct suites can share a
-  // `TestId` — `Testable`'s identity is its name and parent, and `Suite`'s own `Testable` is
+  // `Test.Id` — `Testable`'s identity is its name and parent, and `Suite`'s own `Testable` is
   // built on a single source line, so every top-level suite of the same name has the same id.
   // An unconditional update would replace the earlier suite's whole subtree, silently
   // discarding everything it had recorded; merging into the existing node keeps both.
   def declare(suite: Testable): Report = this.also:
     resolve(suite.parent).tests.getOrElseUpdate(suite.id, ReportLine.Suite(suite))
 
-  def fail(error: Throwable, active: Set[TestId]): Unit = failure0 = (error, active)
+  def fail(error: Throwable, active: Set[Test.Id]): Unit = failure0 = (error, active)
 
   // Records one run at one coordinate of one test, creating the test's entry on first
   // sight. Repeated runs of the same coordinates accumulate in that cell; `headline`, when
   // given, designates the entry's headline metric.
   def record
-    ( testId:      TestId,
+    ( testId:      Test.Id,
       kind:        Entry.Kind,
       coordinates: List[(Axis.Spec, Value)],
       run:         Run,
@@ -201,12 +201,12 @@ final class Report(using environment: Environment)(using palette: TestPalette):
 
           headline.let: metric => entry.headline = metric
 
-  def addDetail(testId: TestId, info: Verdict.Detail): Report =
+  def addDetail(testId: Test.Id, info: Verdict.Detail): Report =
     this.also(details(testId) = details(testId).append(info))
 
   // Sets the comparison anchor of a test's entry: the axis value against which its other
   // cells are compared. A no-op if the test recorded no cells at all.
-  def anchor(testId: TestId, anchor: Anchor): Report = this.also:
+  def anchor(testId: Test.Id, anchor: Anchor): Report = this.also:
     resolve(testId.suite).tests.list.find(_(0) == testId).map(_(1)).foreach:
       case ReportLine.Item(entry) => entry.anchor = anchor
       case _: ReportLine.Suite    => ()

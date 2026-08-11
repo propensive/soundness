@@ -122,7 +122,7 @@ object JsonRpc:
     import fulminate.errorDiagnostics.stackTracesDiagnostics
 
     try unsafely(pending.promise.await())
-    catch case async: AsyncError => faults.remove(pending.id) match
+    catch case async: Async.Error => faults.remove(pending.id) match
       case null =>
         abort(JsonRpcError(JsonRpcError.Reason.Abandoned))
 
@@ -169,7 +169,7 @@ object JsonRpc:
         case ConnectError(_)        => promise.cancel()
         case ParseError(_, _, _)    => promise.cancel()
         case HttpError(_, _)        => promise.cancel()
-        case AsyncError(_)          => promise.cancel()
+        case Async.Error(_)          => promise.cancel()
 
       . protect:
           promise.fulfill(target.submit(Http.Post)(request).receive[Json])

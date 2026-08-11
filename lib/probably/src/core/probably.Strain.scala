@@ -43,7 +43,7 @@ object Strain:
   given inclusion: Inclusion[Report, Strain]:
     def include
       ( report:      Report,
-        testId:      TestId,
+        testId:      Test.Id,
         coordinates: List[(Axis.Spec, Value)],
         strain:      Strain )
     :   Report =

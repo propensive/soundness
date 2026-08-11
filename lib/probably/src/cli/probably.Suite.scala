@@ -129,7 +129,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
 
         runner.listed.each: (id, kind) =>
           val path =
-            def names(id: TestId): List[Text] =
+            def names(id: Test.Id): List[Text] =
               id.suite.let { suite => names(suite.id) }.or(Nil) :+ id.moniker.or(id.name.text)
             names(id).join(t"/")
 

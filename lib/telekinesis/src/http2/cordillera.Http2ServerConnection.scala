@@ -270,7 +270,7 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
   // Perform the server side of the connection handshake: emit our SETTINGS and
   // await the client's (which the dispatch acks). Plain using-parameters,
   // de-sugared from `raises`: a context-function result may not hide `this`.
-  def start()(using Tactic[AsyncError]): Unit =
+  def start()(using Tactic[Async.Error]): Unit =
     send(Frame.Settings(serverSettings, ack = false))
     started.await()
 

@@ -63,8 +63,8 @@ trait Inlinable extends Typeclass:
   // and messages to all-fields-absent records — the structural instances
   // override accordingly; the default aborts, so a custom instance that
   // does not override is loud rather than silently wrong.
-  def absent(tactic: Expr[Tactic[ProtobufError]])(using Quotes, Type[Self]): Expr[Self] =
-    '{ abort(ProtobufError(ProtobufError.Reason.MissingField(0)))(using $tactic) }
+  def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[Self]): Expr[Self] =
+    '{ abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic) }
 
 object Inlinable:
   // Generates a monomorphic `Protobuf.Parsable` for a case-class message or
@@ -91,7 +91,7 @@ object Inlinable:
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[value]): Expr[value] =
       delegate0.parse(reader)
 
-    override def absent(tactic: Expr[Tactic[ProtobufError]])(using Quotes, Type[value])
+    override def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
       delegate0.absent(tactic)
@@ -105,7 +105,7 @@ object Inlinable:
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[product]): Expr[product] =
       stagedInternal.productBody[product](reader)
 
-    override def absent(tactic: Expr[Tactic[ProtobufError]])(using Quotes, Type[product])
+    override def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[product])
     :   Expr[product] =
 
       stagedInternal.productAbsent[product](tactic)

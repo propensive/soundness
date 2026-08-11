@@ -59,7 +59,7 @@ object WorkloadHandle:
   extension (handle: (WorkloadHandle & Granting[Grant.Read])^)
     def state()
     ( using Monitor^ )
-    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
     :   ProcessStatus =
 
       handle.containerd.task(handle.containerId).state
@@ -68,7 +68,7 @@ object WorkloadHandle:
     // `await`, not `wait`: the latter would clash with `Object#wait`.
     def await()
     ( using Monitor^ )
-    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
     :   WaitResponse =
 
       handle.containerd.waitTask(handle.containerId)
@@ -76,7 +76,7 @@ object WorkloadHandle:
   extension (handle: (WorkloadHandle & Granting[WorkloadGrant.Signal])^)
     def kill(signal: Int, all: Boolean = false)
     ( using Monitor^ )
-    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
     :   Unit =
 
       handle.containerd.killTask(handle.containerId, signal, all = all)
@@ -98,8 +98,8 @@ class WorkloadOpenable
           monitor:       Monitor^,
           grpcError:     Tactic[GrpcError],
           http2Error:    Tactic[Http2Error],
-          asyncError:    Tactic[AsyncError],
-          protobufError: Tactic[ProtobufError] )
+          asyncError:    Tactic[Async.Error],
+          protobufError: Tactic[Protobuf.Error] )
 extends Openable:
 
   type Self = Container

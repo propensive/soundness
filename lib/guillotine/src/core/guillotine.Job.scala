@@ -131,11 +131,11 @@ extends Subprocess, ProcessRef, caps.ExclusiveCapability:
 
   def await[duration: Abstractable across Durations to Long](duration: duration)
     ( using computable: (result is Computable)^ )
-  :   (Tactic[AsyncError]^) ?->{this, computable} result =
+  :   (Tactic[Async.Error]^) ?->{this, computable} result =
 
     if process.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
     then computable.compute(this)
-    else contingency.abort(AsyncError(AsyncError.Reason.Timeout))
+    else contingency.abort(Async.Error(Async.Error.Reason.Timeout))
 
   // Real `using` clauses rather than the `logs` sugar, as for `Executable.exec`.
   def exitStatus()(using (ExecEvent is Loggable)^): Exit = process.waitFor() match

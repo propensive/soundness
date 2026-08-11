@@ -37,7 +37,7 @@ export
   . { Anchor, Arithmetic, Autopsy, Axable, Axis, Baseline, Benchmark, Cadential,
       Ci, debug, Geometric, GithubActions, Harness, Hotspots, Inclusion,
       Max, Mean, Metric, Min, nominative, Probing, Report, Reporter, Run, Runner, Spread,
-      Spread2, Strain, suite, Tally, Temporal, Test, test, Testable, TestId, TestPalette,
+      Spread2, Strain, suite, Tally, Temporal, Test, test, Testable, TestPalette,
       Trial, Value, Verdict }
 
 package harnesses:

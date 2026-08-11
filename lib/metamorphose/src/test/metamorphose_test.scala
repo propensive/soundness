@@ -86,12 +86,12 @@ object Tests extends Suite(m"Metamorphose tests"):
        . assert(_ == Factoradic(719))
 
       test(m"ensure that an error occurs for out-of-range bases"):
-        capture[PermutationError](Factoradic(List(2, 1)))
-      . assert(_ == PermutationError(PermutationError.Reason.BaseRange(2, 2)))
+        capture[Permutation.Error](Factoradic(List(2, 1)))
+      . assert(_ == Permutation.Error(Permutation.Error.Reason.BaseRange(2, 2)))
 
       test(m"error for complex out-of-range base"):
-        capture[PermutationError](Factoradic(List(0, 0, 8, 3, 0, 1, 0)))
-      . assert(_ == PermutationError(PermutationError.Reason.BaseRange(8, 5)))
+        capture[Permutation.Error](Factoradic(List(0, 0, 8, 3, 0, 1, 0)))
+      . assert(_ == Permutation.Error(Permutation.Error.Reason.BaseRange(8, 5)))
 
     suite(m"Factoradic decoding"):
       test(m"Check distinctness of factoradic expansions"):
@@ -116,21 +116,21 @@ object Tests extends Suite(m"Metamorphose tests"):
       . assert(_ == List("three", "one", "four", "two", "zero", "five"))
 
       test(m"Check duplicate indexes are caught"):
-        capture[PermutationError](Permutation(Sequence(3, 1, 4, 2, 3, 5)))
-      . assert(_ == PermutationError(PermutationError.Reason.DuplicateIndex(3, 4)))
+        capture[Permutation.Error](Permutation(Sequence(3, 1, 4, 2, 3, 5)))
+      . assert(_ == Permutation.Error(Permutation.Error.Reason.DuplicateIndex(3, 4)))
 
       test(m"Check negative indexes are caught"):
-        capture[PermutationError](Permutation(Sequence(3, 1, 4, 2, -3, 5)))
-      . assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(-3, 5)))
+        capture[Permutation.Error](Permutation(Sequence(3, 1, 4, 2, -3, 5)))
+      . assert(_ == Permutation.Error(Permutation.Error.Reason.InvalidIndex(-3, 5)))
 
       test(m"Check high indexes are caught"):
-        capture[PermutationError](Permutation(Sequence(3, 1, 4, 6, 0, 5)))
-      . assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(6, 5)))
+        capture[Permutation.Error](Permutation(Sequence(3, 1, 4, 6, 0, 5)))
+      . assert(_ == Permutation.Error(Permutation.Error.Reason.InvalidIndex(6, 5)))
 
       test(m"Check input is long enough"):
         val permutation = Permutation(Sequence(3, 1, 4, 2, 0, 5))
-        capture[PermutationError](permutation(List(1, 2, 3)))
-      . assert(_ == PermutationError(PermutationError.Reason.TooShort(3, 6)))
+        capture[Permutation.Error](permutation(List(1, 2, 3)))
+      . assert(_ == Permutation.Error(Permutation.Error.Reason.TooShort(3, 6)))
 
       test(m"Check uniqueness of permutations"):
         val list = List("one", "two", "three", "four", "five", "six", "seven")

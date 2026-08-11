@@ -84,7 +84,7 @@ class CompileProcess():
   def warnings: Int = warningCount
 
   def complete()(using Monitor)
-    ( using Tactic[AsyncError], (CompileEvent is Loggable)^ )
+    ( using Tactic[Async.Error], (CompileEvent is Loggable)^ )
   :   CompileResult =
     try completion.await() finally
       safely(compilation.let(_.await()))

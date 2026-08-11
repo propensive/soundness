@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
+import fulminate.*
 
 object Moniker:
   opaque type Moniker = Int
@@ -52,7 +53,7 @@ object Moniker:
 
   // An honest capability: the instance retains the resolution-scoped tactic
   // (every given that includes a tactic is a capability; Jon, 2026-07-13).
-  given encodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[MonikerError])
+  given encodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[Moniker.Error])
   =>  (((Moniker over transport) is Encodable in Text)^{tactic, caps.any}) =
     new Encodable:
       type Self = Moniker over transport
@@ -60,6 +61,24 @@ object Moniker:
 
       def encoded(moniker: Self): Text = vocabulary.name(moniker.ordinal)
 
-  given decodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[MonikerError])
+  given decodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[Moniker.Error])
   =>  (((Moniker over transport) is Decodable in Text)^{tactic}) =
     text => wrap(vocabulary.number(text))
+
+  // MonikerError → Moniker.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Unreadable               extends Reason(1)
+      case OutOfRange(value: Int)   extends Reason(2)
+      case Malformed(moniker: Text) extends Reason(3)
+      case UnknownWord(word: Text)  extends Reason(4)
+
+    given communicable: Reason is Communicable =
+      case Reason.Unreadable        => m"the vocabulary could not be read"
+      case Reason.OutOfRange(n)     => m"the number $n is outside the representable range"
+      case Reason.Malformed(name)   => m"$name is not of the form <adjective>-<animal>"
+      case Reason.UnknownWord(word) => m"the word $word does not appear in the vocabulary"
+
+  case class Error(reason: Moniker.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(80, reason.number)(m"the moniker is not valid because $reason")
+

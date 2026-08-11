@@ -154,7 +154,7 @@ object Http2Serve:
      // capturing the caller's `Probate` capability would make this call — and so
      // the accept-daemon body — impure.
      import probates.cancelProbate
-     given Tactic[AsyncError] = strategies.throwUnsafely
+     given Tactic[Async.Error] = strategies.throwUnsafely
      given Tactic[StreamError] = strategies.throwUnsafely
      val connection = Http2ServerConnection(StreamDuplex(in, out))
      connection.start()

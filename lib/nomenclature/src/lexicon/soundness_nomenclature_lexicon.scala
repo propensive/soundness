@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export nomenclature.{Moniker, MonikerError, Vocabulary}
+export nomenclature.{Moniker, Vocabulary}
