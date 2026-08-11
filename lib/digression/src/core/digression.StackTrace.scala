@@ -72,8 +72,10 @@ object StackTrace:
     // Where a frame's code was written, when the classfile's SMAP (the JSR-45
     // `SourceDebugExtension` attribute) records that it was inlined from another source file: one
     // entry per level of inlining, innermost first. `path` is the full source path, of which
-    // `file` is the last segment.
-    case class Inlined(file: Text, path: Text, line: Int)
+    // `file` is the last segment. When a resolver could also find the definition the position
+    // falls within—the inline method itself—`source` names it, just as `Frame.source` names the
+    // frame's own definition.
+    case class Inlined(file: Text, path: Text, line: Int, source: Optional[Source] = Unset)
 
   case class Frame
     ( method:    Method,
@@ -135,9 +137,14 @@ object StackTrace:
         val code = frame.source.let(_.code).lay("".tt)(code => s"\n       $code".tt)
 
         // Each level of inlining the SMAP recorded, innermost first: extra detail about the same
-        // frame, so it is indented beneath it like a quoted line of source.
+        // frame, so it is indented beneath it like a quoted line of source. When the position
+        // resolved to a definition, the inline method is named ahead of its position.
         val inlined = frame.inlined.fold(""):
-          case (text, origin) => s"$text\n       ↳ inlined from ${origin.file}:${origin.line}"
+          case (text, origin) =>
+            val where = origin.source.lay(s"${origin.file}:${origin.line}"): source =>
+              s"${source.definition} (${origin.file}:${origin.line})"
+
+            s"$text\n       ↳ inlined from $where"
 
         s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line$code$inlined".tt
 
@@ -431,7 +438,10 @@ object StackTrace:
 
       val inlined = next.inlined.fold(""):
         case (text, origin) =>
-          s"$text\n${nbsp*7}↳$nbsp"+s"inlined$nbsp"+s"from$nbsp${origin.file}:${origin.line}"
+          val where = origin.source.lay(s"${origin.file}:${origin.line}"): source =>
+            s"${source.definition}$nbsp(${origin.file}:${origin.line})"
+
+          s"$text\n${nbsp*7}↳$nbsp"+s"inlined$nbsp"+s"from$nbsp$where"
 
       s"$state\n\n${nbsp*2}at$nbsp$classPad$className$dot$method$methodPad$nbsp$file:$line$inlined"
       . tt

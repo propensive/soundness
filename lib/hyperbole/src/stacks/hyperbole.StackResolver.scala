@@ -32,8 +32,7 @@
                                                                                                   */
 package hyperbole
 
-import proscenium.compat.*
-
+import scala.collection.immutable as sci
 import scala.collection.mutable
 
 import anticipation.*
@@ -45,6 +44,7 @@ import gossamer.*
 import hellenism.*
 import hieroglyph.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
@@ -102,7 +102,12 @@ object StackResolver:
 class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
   private val tastyFiles: mutable.HashMap[Text, Optional[TastyFile]] = mutable.HashMap()
   private val sourceFiles: mutable.HashMap[Text, Optional[List[Text]]] = mutable.HashMap()
-  private val smaps: mutable.HashMap[Text, Optional[Smap]] = mutable.HashMap()
+  private val classfiles: mutable.HashMap[Text, Optional[Classfile]] = mutable.HashMap()
+
+  // Every TASTy file loaded so far, indexed by the source path it was compiled from, so that an
+  // inline origin—which names a source position but no class—can find the definitions covering
+  // it. Loading is what populates it, so it only ever grows behind `tastyFile`.
+  private val tastyPaths: mutable.HashMap[Text, TastyFile] = mutable.HashMap()
 
   def resolve(frame0: StackTrace.Frame): StackTrace.Frame =
     val frame = expand(frame0)
@@ -129,33 +134,80 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
             if definition.kind == Kind.Class then
               val name = StackResolver.display(definition.name)
               ((chain :+ name).join(t"."), frame.method.method)
-            else (chain.join(t"."), StackResolver.display(definition.name))
+            else
+              (chain.join(t"."), StackResolver.display(definition.name))
 
         frame.copy(source = StackTrace.Frame.Source(path, owner, name, kind, code))
 
   // The line a frame records may be a synthetic one the compiler allocated for inlined code, in
   // which case the classfile's SMAP says where that code was written and where it was inlined
   // from, level by level; the frame gets its real call-site line back, and the levels of inlining
-  // beneath it. Without an SMAP—or when the line is real—the frame stands as recorded. This runs
-  // before TASTy resolution, which needs the real line to find the frame's definition.
+  // beneath it, each further resolved against TASTy to name the inline method it falls inside.
+  // Without an SMAP—or when the line is real—the frame stands as recorded. This runs before TASTy
+  // resolution of the frame itself, which needs the real line to find the frame's definition.
   private def expand(frame: StackTrace.Frame): StackTrace.Frame =
     frame.line.lay(frame): line =>
-      smap(frame.jvmClass).lay(frame): smap =>
+      classfile(frame.jvmClass).let(_.smap).let(Smap.parse(_)).lay(frame): smap =>
         smap.expand(line).lay(frame): expansion =>
           val inlined = expansion.inlined.map: origin =>
-            StackTrace.Frame.Inlined(origin.file, origin.path, origin.line)
+            StackTrace.Frame.Inlined
+              ( origin.file, origin.path, origin.line, inlineSource(frame, origin) )
 
           frame.copy(line = expansion.line.or(frame.line), inlined = inlined)
 
   // Unlike TASTy, a classfile is written per class, so the frame's own class names it directly.
-  private def smap(name: Text): Optional[Smap] =
+  private def classfile(name: Text): Optional[Classfile] =
     if name.s.isEmpty then Unset
-    else smaps.synchronized(smaps.getOrElseUpdate(name, loadSmap(name)))
+    else classfiles.synchronized(classfiles.getOrElseUpdate(name, loadClassfile(name)))
 
-  private def loadSmap(name: Text): Optional[Smap] =
+  private def loadClassfile(name: Text): Optional[Classfile] =
     val resource = (name.s.replace('.', '/').nn+".class").tt
-    val text: Optional[Text] = classloader(resource).lay(Unset)(SourceDebugExtension.read(_))
-    text.let(Smap.parse(_))
+    classloader(resource).lay(Unset)(Classfile(_))
+
+  // The definition an inline origin falls inside: the innermost definition covering its line in
+  // the TASTy of whichever top-level class was compiled from the origin's source file. The SMAP
+  // records only source positions, so the class is found by matching recorded source paths:
+  // first among the TASTy files already loaded, then among the classes the frame's own classfile
+  // references—inlined code usually mentions something from the file it came from—and last by
+  // guessing class names from the file's own name. Any origin this fails for keeps its position,
+  // unnamed.
+  private def inlineSource(frame: StackTrace.Frame, origin: Smap.Origin)
+  :   Optional[StackTrace.Frame.Source] =
+
+    tastyFor(frame, origin).let: tasty =>
+      tasty.path.let: path => definitionSource(tasty, path, origin.line)
+
+  private def definitionSource(tasty: TastyFile, path: Text, line: Int)
+  :   Optional[StackTrace.Frame.Source] =
+
+    tasty.covering(line).prim.let: definition =>
+      val owner = definition.owners.reverse.map(StackResolver.display).join(t".")
+      val name = StackResolver.display(definition.name)
+
+      StackTrace.Frame.Source(path, owner, name, definition.kind, sourceLine(path, line))
+
+  private def tastyFor(frame: StackTrace.Frame, origin: Smap.Origin): Optional[TastyFile] =
+    tastyPaths.synchronized(tastyPaths.get(origin.path)).optional.or:
+      val guesses =
+        if origin.file.s.endsWith(".scala") then
+          val base = origin.file.s.dropRight(6).nn
+          sci.List(base.tt, (base+"$package").tt)
+        else
+          sci.List()
+
+      val candidates =
+        classfile(frame.jvmClass).lay(sci.List[Text]())(_.classes.stdlib) ++ guesses
+
+      def viable(name: Text): Boolean =
+        !name.s.startsWith("java.") && !name.s.startsWith("jdk.")
+
+      candidates
+      . filter(viable)
+      . distinct
+      . iterator
+      . map(tastyFile(_))
+      . find(_.let(_.path) == origin.path)
+      . getOrElse(Unset)
 
   private def tastyFile(name: Text): Optional[TastyFile] =
     if name.s.isEmpty then Unset
@@ -168,6 +220,9 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
   private def load(name: String): Optional[TastyFile] =
     val resource = (name.replace('.', '/').nn+".tasty").tt
     val loaded: Optional[TastyFile] = classloader(resource).lay(Unset)(TastyFile(_))
+
+    loaded.let: tasty =>
+      tasty.path.let: path => tastyPaths.synchronized(tastyPaths.getOrElseUpdate(path, tasty))
 
     loaded.or:
       name.lastIndexOf('$') match

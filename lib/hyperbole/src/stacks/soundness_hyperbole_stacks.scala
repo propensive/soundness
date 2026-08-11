@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export hyperbole.{resolved, SourceDebugExtension, StackResolver, TastyDefinition, TastyFile}
+export hyperbole.{resolved, StackResolver, TastyDefinition, TastyFile}
 
 package stackResolutions:
   export hyperbole.stackResolutions.tastyStackResolution

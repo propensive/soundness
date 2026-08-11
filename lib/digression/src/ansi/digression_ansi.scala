@@ -138,7 +138,10 @@ package teletypeables:
     import StackTrace.Frame.Inlined
 
     def classCell(row: Row): Teletype = row.inlined match
-      case origin: Inlined => e""
+      case origin: Inlined =>
+        origin.source.lay(e""): source =>
+          e"${palette.subdue(accent(0), 0.85)}(${source.owner})"
+
       case _ =>
         val frame = row.frame
         val obj = frame.displaySegment.starts(t"Ξ")
@@ -153,7 +156,7 @@ package teletypeables:
           e"${palette.subdue(color, 0.5)}(${frame.displayPrefix}.$Bold($color($methodCls)))"
 
     def dotCell(row: Row): Teletype = row.inlined match
-      case origin: Inlined => e""
+      case origin: Inlined => origin.source.lay(e""): _ => e"${palette.separator}(.)"
       case _ =>
         // A resolved frame names a chain of source definitions, which is joined with dots however
         // the chain happens to have been compiled.
@@ -162,13 +165,18 @@ package teletypeables:
         e"${palette.separator}($ch)"
 
     def methodCell(row: Row): Teletype = row.inlined match
-      case origin: Inlined => e"${palette.subdue(palette.method, 0.85)}(inlined from)"
+      case origin: Inlined =>
+        origin.source.lay(e"${palette.subdue(palette.method, 0.85)}(inlined from)"): source =>
+          e"${palette.subdue(palette.method, 0.85)}(${source.name})"
+
       case _ =>
         val color = if plumbing(row) then palette.subdue(palette.method, 0.85) else palette.method
         e"$color(${row.frame.displayMethod})"
 
     def codeCell(row: Row): Teletype = row.inlined match
-      case origin: Inlined => e""
+      case origin: Inlined =>
+        e"${palette.subdue(palette.file, 0.7)}(${origin.source.let(_.code).or(t"")})"
+
       case _ =>
         e"${palette.subdue(palette.file, 0.7)}(${row.frame.source.let(_.code).or(t"")})"
 

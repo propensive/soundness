@@ -32,20 +32,22 @@
                                                                                                   */
 package hyperbole
 
-import proscenium.compat.*
-
 import java.io as ji
+
+import scala.collection.immutable as sci
 
 import anticipation.*
 import rudiments.*
 import vacuous.*
 
-// Extracts the JSR-45 `SourceDebugExtension` attribute from a classfile, whose body is the text
-// of an SMAP. Like TASTy, an SMAP is only ever a source of extra detail, so anything unexpected
-// about the classfile—a bad magic number, a constant-pool tag this reader does not know, a
-// truncated attribute—means `Unset`, never failure.
-object SourceDebugExtension:
-  def read(data: Data): Optional[Text] =
+private[hyperbole] object Classfile:
+  // Reads the two things a stack-trace resolver wants from a classfile: the JSR-45
+  // `SourceDebugExtension` attribute, whose body is the text of an SMAP, and the classes the
+  // constant pool references, which are the candidates for where inlined code was defined. Like
+  // TASTy, a classfile is only ever a source of extra detail, so anything unexpected about it—a
+  // bad magic number, a constant-pool tag this reader does not know, a truncated attribute—means
+  // `Unset`, never failure.
+  def apply(data: Data): Optional[Classfile] =
     try
       val bytes = new scala.Array[Byte](data.length)
       System.arraycopy(Array.unsafeJvm(data), 0, bytes, 0, data.length)
@@ -54,23 +56,36 @@ object SourceDebugExtension:
       if in.readInt() != 0xcafebabe then Unset else
         in.skipBytes(4) // minor and major version
 
-        // Only the UTF-8 entries are kept, to recognize attribute names; everything else in the
+        // Only the UTF-8 entries and the class references are kept; everything else in the
         // constant pool is skipped by its tag's fixed size.
         val count = in.readUnsignedShort()
         val utf8 = new scala.Array[String | Null](count)
+        var classRefs: sci.List[Int] = sci.List()
         var index = 1
-
         var bad = false
+
         while index < count && !bad do
           in.readUnsignedByte() match
-            case 1          => utf8(index) = in.readUTF()
-            case 7 | 8 | 16
-               | 19 | 20    => in.skipBytes(2)
-            case 15         => in.skipBytes(3)
-            case 3 | 4 | 9 | 10 | 11
-               | 12 | 17 | 18 => in.skipBytes(4)
-            case 5 | 6      => in.skipBytes(8) yet { index += 1 } // long and double take two slots
-            case _          => bad = true
+            case 1 =>
+              utf8(index) = in.readUTF()
+
+            case 7 =>
+              classRefs = in.readUnsignedShort() :: classRefs
+
+            case 8 | 16 | 19 | 20 =>
+              in.skipBytes(2)
+
+            case 15 =>
+              in.skipBytes(3)
+
+            case 3 | 4 | 9 | 10 | 11 | 12 | 17 | 18 =>
+              in.skipBytes(4)
+
+            case 5 | 6 =>
+              in.skipBytes(8) yet { index += 1 } // longs and doubles take two slots
+
+            case _ =>
+              bad = true
 
           index += 1
 
@@ -80,12 +95,14 @@ object SourceDebugExtension:
 
           def skipAttributes(): Unit =
             val attributes = in.readUnsignedShort()
+
             for _ <- 0 until attributes do
               in.skipBytes(2)
               in.skipBytes(in.readInt())
 
           def skipMembers(): Unit =
             val members = in.readUnsignedShort()
+
             for _ <- 0 until members do
               in.skipBytes(6) // access flags, name, descriptor
               skipAttributes()
@@ -96,21 +113,33 @@ object SourceDebugExtension:
           // The class-level attributes, where a `SourceDebugExtension` lives. Its body is the
           // SMAP text in modified UTF-8, which for the ASCII an SMAP contains is plain UTF-8.
           val attributes = in.readUnsignedShort()
-          var result: Optional[Text] = Unset
+          var smap: Optional[Text] = Unset
           var attribute = 0
 
-          while attribute < attributes && result.absent do
+          while attribute < attributes && smap.absent do
             val name = utf8(in.readUnsignedShort())
             val length = in.readInt()
 
             if name == "SourceDebugExtension" then
               val body = new scala.Array[Byte](length)
               in.readFully(body)
-              result = String(body, "UTF-8").tt
-            else in.skipBytes(length)
+              smap = String(body, "UTF-8").tt
+            else
+              in.skipBytes(length)
 
             attribute += 1
 
-          result
+          // Internal class names, in dotted form; array types reference no source definition.
+          val classes = classRefs.reverse.flatMap: ref =>
+            utf8(ref) match
+              case null                         => sci.List()
+              case name if name.startsWith("[") => sci.List()
+              case name                         => sci.List(name.replace('/', '.').nn.tt)
+
+          Classfile(smap, List.of(classes))
 
     catch case error: Exception => Unset
+
+// What a classfile records that helps decipher a stack trace: its SMAP, when the compiler wrote
+// one, and the classes it references.
+private[hyperbole] case class Classfile(smap: Optional[Text], classes: List[Text])

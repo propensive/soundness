@@ -237,3 +237,13 @@ object Tests extends Suite(m"Digression Tests"):
         . show.contains(t"inlined")
 
       . assert(_ == false)
+
+      test(m"A resolved inline origin names its definition ahead of its position"):
+        val source = StackTrace.Frame.Source(t"A.scala", t"ThrowerA", t"fail", Kind.Method)
+        val origin = StackTrace.Frame.Inlined(t"A.scala", t"A.scala", 3, source)
+
+        StackTrace(t"scala", t"Exception", Message(t"boom"),
+            List(frame.copy(inlined = List(origin))), Unset)
+        . show.contains(t"↳ inlined from ThrowerA.fail (A.scala:3)")
+
+      . assert(_ == true)
