@@ -125,7 +125,7 @@ object WebIdlAtomizer:
 
   // Argument *names* are not folded — WebIDL calls are positional — while optionality,
   // variadicity and a default's existence decide which calls are legal, so all three are.
-  private def arguments(out: java.io.ByteArrayOutputStream, list: List[WebIdlArgument]): Unit =
+  private def arguments(out: java.io.ByteArrayOutputStream, list: List[WebIdl.Argument]): Unit =
     uvarint(out, list.stdlib.length.toLong)
 
     list.stdlib.foreach: argument =>
@@ -135,7 +135,7 @@ object WebIdlAtomizer:
       encode(out, argument.typed)
 
   private def encodeMember
-    ( out: java.io.ByteArrayOutputStream, container: Text, member: WebIdlMember )
+    ( out: java.io.ByteArrayOutputStream, container: Text, member: WebIdl.Member )
   :   Unit =
 
     // The container's key folds into the value, not merely the atom's key: the snapshot hashes
@@ -156,14 +156,14 @@ object WebIdlAtomizer:
   // `webidl.md` §4: partials merge into their targets and mixins fold into their includers
   // before atomization, exactly as the platform presents them. The merge is a set union keyed
   // by member selector, independent of definition order across files.
-  private def resolved(definitions: List[WebIdlDefinition])
-  :   SList[WebIdlDefinition] raises DisciplineError =
+  private def resolved(definitions: List[WebIdl.Definition])
+  :   SList[WebIdl.Definition] raises DisciplineError =
 
-    import WebIdlDefinition.*
+    import WebIdl.Definition.*
 
     val all = definitions.stdlib
 
-    val mixinMembers: SMap[Text, SList[WebIdlMember]] =
+    val mixinMembers: SMap[Text, SList[WebIdl.Member]] =
       all.collect { case interface: Interface if interface.mixin => interface }
       . groupBy(_.name)
       . map { (name, group) => name -> group.flatMap(_.members.stdlib) }
@@ -175,7 +175,7 @@ object WebIdlAtomizer:
       . map { (target, group) => target -> group.map(_(1)) }
       . toMap
 
-    def mixedIn(name: Text): SList[WebIdlMember] =
+    def mixedIn(name: Text): SList[WebIdl.Member] =
       includes.getOrElse(name, SList()).flatMap: mixin =>
         mixinMembers.getOrElse(mixin,
             abort(malformed(t"the mixin $mixin is included but never defined")))
@@ -233,8 +233,8 @@ object WebIdlAtomizer:
     if exposed.stdlib.isEmpty then name
     else Text(s"$name[${exposed.stdlib.map(_.s).sorted.mkString(",")}]")
 
-  def atomize(definitions: List[WebIdlDefinition]): List[Atom] raises DisciplineError =
-    import WebIdlDefinition.*
+  def atomize(definitions: List[WebIdl.Definition]): List[Atom] raises DisciplineError =
+    import WebIdl.Definition.*
 
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
 

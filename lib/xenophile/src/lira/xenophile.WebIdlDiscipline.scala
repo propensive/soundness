@@ -65,10 +65,10 @@ object WebIdlDiscipline extends Discipline:
       val source = Text(String(Array.unsafeJvm(data), "UTF-8"))
 
       mitigate:
-        case WebIdlError(reason) =>
+        case WebIdl.Error(reason) =>
           DisciplineError(id, DisciplineError.Reason.Malformed(t"${path.text}: $reason"))
 
-      . protect(WebIdlParser.parse(source).stdlib)
+      . protect(WebIdl.Parser.parse(source).stdlib)
 
     // Partial/mixin resolution spans the whole claimed set: a partial in one file completes an
     // interface in another, exactly as the platform's own IDL is distributed.
