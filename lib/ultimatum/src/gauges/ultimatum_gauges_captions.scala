@@ -30,24 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+// Where a label sits relative to the gauge it labels. Orthogonal to which design is used and to
+// which palette colours it, so a caption can be moved without touching either.
+package captions:
+  // The label follows the gauge, one space away — the default, also supplied by `CaptionLayout`'s
+  // companion so that a captioned gauge works with no import.
+  given trailingCaption: CaptionLayout = CaptionLayout(1, true, true)
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+  given leadingCaption: CaptionLayout = CaptionLayout(1, false, true)
+  given spacedCaption: CaptionLayout = CaptionLayout(2, true, true)
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
-
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // Never shorten the label, even where that leaves the gauge less room than it wants: for a
+  // caption whose exact text matters more than the bar beside it.
+  given truncatedCaption: CaptionLayout = CaptionLayout(1, true, false)

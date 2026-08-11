@@ -30,24 +30,79 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
+import anticipation.*
+import denominative.*
 import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import gossamer.*
+import rudiments.*
+import spectacular.*
+import symbolism.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+object Sparkline:
+  // Ascending block heights: the standard eight-level ramp.
+  private val blocks: Text = t"▁▂▃▄▅▆▇█"
+  private val dots: Text = t"⣀⠤⠒⠉"
+  private val ascii: Text = t"_.-^"
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  // Reduce `samples` to exactly `width` values by taking the maximum of each group. A sparkline
+  // narrower than its series must drop information; taking the maximum keeps the peaks, whereas
+  // truncating would silently show only the oldest samples and misrepresent the shape.
+  def decimate(samples: Sequence[Fraction], width: Int): Sequence[Fraction] =
+    val count = samples.stdlib.length
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+    if count <= width || width <= 0 then samples else
+      Sequence.from:
+        (0 until width).map: cell =>
+          val from = cell*count/width
+          val to = (((cell + 1)*count/width).max(from + 1)).min(count)
+          Fraction(samples.stdlib.slice(from, to).map(_.value).max)
+
+// How a run of samples is drawn. `Blocks` gives eight levels in one row; `Tall` stacks two rows for
+// sixteen; `Dots` and `Ascii` trade resolution for a narrower character repertoire.
+enum Sparkline:
+  case Blocks, Tall, Dots, Ascii
+
+  def rowCount: Int = this match
+    case Tall => 2
+    case _    => 1
+
+  def gaugeable(using gauging: Gauging): Series is Gaugeable = new Gaugeable:
+    type Self = Series
+    override def minWidth(status: Series): Int = 1
+    override def columns(status: Series): Int = status.samples.stdlib.length.max(1)
+    override def height(status: Series, width: Int): Int = rowCount
+
+    def rows(status: Series, tick: Tick, width: Int): List[Teletype] =
+      Sparkline.this.draw(status, width, gauging)
+
+  def draw(series: Series, width: Int, gauging: Gauging): List[Teletype] =
+    val values = Sparkline.decimate(series.normalized, width)
+    val ascii = !gauging.permits(Gaugeable.Glyphs.Unicode)
+
+    // A design whose glyphs are unavailable falls back to the ASCII ramp rather than to nothing.
+    val ramp = this match
+      case Ascii             => Sparkline.ascii
+      case _ if ascii        => Sparkline.ascii
+      case Dots              => Sparkline.dots
+      case Blocks | Tall     => Sparkline.blocks
+
+    def cell(fraction: Fraction, ramp: Text): Teletype =
+      val index = (fraction.value*ramp.length).toInt.min(ramp.length - 1).max(0)
+      val glyph = ramp.at(index.z).let(_.show).or(t" ")
+      gauging.tint(gauging.palette.lengthwise(fraction.value))(Teletype(glyph))
+
+    def row(pick: Fraction -> Fraction): Teletype =
+      val drawn = values.stdlib.map: value => cell(pick(value), ramp)
+      val body = if drawn.isEmpty then e"" else drawn.reduceLeft: (l, r) => e"$l$r"
+      val used = gauging.cells(body.plain)
+      if used >= width then body else e"$body${t" "*(width - used)}"
+
+    if this != Tall || ascii then List(row { value => value }) else
+      // Two rows give sixteen levels: the upper row shows the top half of the range and the lower
+      // row the bottom, so a tall sparkline resolves detail a single row would flatten.
+      val upper = row: value => Fraction((value.value*2 - 1).max(0.0))
+      val lower = row: value => Fraction((value.value*2).min(1.0))
+      List(upper, lower)

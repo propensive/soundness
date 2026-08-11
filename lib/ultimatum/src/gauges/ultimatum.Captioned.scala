@@ -33,6 +33,39 @@
 package ultimatum
 
 import anticipation.*
+import escapade.*
+import vacuous.*
+
+object Captioned:
+  // Derived from whatever design the underlying status already has, rather than choosing one: the
+  // caption's placement is the only style decision here, and that comes from `CaptionLayout`. So
+  // this is structural, lives in the companion, and needs no import.
+  given gaugeable: [status: Gaugeable as design]
+  =>  ( layout: CaptionLayout, gauging: Gauging )
+  =>  Captioned[status] is Gaugeable =
+
+    new Gaugeable:
+      type Self = Captioned[status]
+      override def period: Optional[Int] = design.period
+      override def minWidth(status: Self): Int = design.minWidth(status.status)
+
+      override def columns(status: Self): Int =
+        design.columns(status.status) + layout.gap + gauging.cells(status.caption)
+
+      override def height(status: Self, width: Int): Int =
+        design.height(status.status, width)
+
+      def rows(status: Self, tick: Tick, width: Int): List[Teletype] =
+        val gaugeWidth =
+          layout.gaugeWidth(design.columns(status.status), status.caption, width, gauging)
+
+        val drawn = design.rows(status.status, tick, gaugeWidth)
+
+        // Only the first row carries the caption; a multi-row design keeps its shape below it.
+        val captioned = drawn.stdlib.zipWithIndex.map: (row, index) =>
+          if index > 0 then row else layout.compose(row, gaugeWidth, status.caption, width, gauging)
+
+        List.of(captioned.toList)
 
 // Any status with a label beside it: `⠹ resolving dependencies`, `████░░ copying`. Generic over
 // what it labels, so one design serves every status type — and its given derives from the

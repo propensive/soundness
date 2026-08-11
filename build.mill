@@ -751,7 +751,7 @@ object soundness extends Toolchain:
     hallucination.bmp, hallucination.gif, hallucination.jpeg, hallucination.png,
     hallucination.webp, hallucination.formats,
     ziggurat.core, ziggurat.packager,
-    ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core):
+    ultimatum.core, ultimatum.gauges, xenophile.native, exoskeleton.args, exoskeleton.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
@@ -1316,7 +1316,8 @@ object burdock extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core
       extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.jvm,
-                       jacinta.core, eucalyptus.core, fulminate.print, hellenism.core, boot):
+                       jacinta.core, eucalyptus.core, fulminate.print, hellenism.core, boot,
+                       ultimatum.gauges):
     override def scalaJs = false // packaging; depends on JVM-only `zeppelin`/`telekinesis`
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:

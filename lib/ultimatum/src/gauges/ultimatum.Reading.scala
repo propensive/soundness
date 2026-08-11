@@ -59,7 +59,11 @@ class Reading[status](initial: status):
 
   // Paired with `apply`, this gives assignment syntax: `reading() = Fraction(0.42)`.
   def update(status: status): Unit =
-    current = status
+    // A status is data — a fraction, a count, a list of steps — but `status` is an unbounded type
+    // parameter, so the compiler cannot know that and will not let it into an untracked field.
+    // `Reading` is not a capability (a pane tree holding one must stay pure, as `Panes` does), so
+    // the alternative would be to make it `caps.Mutable` and lose that.
+    current = caps.unsafe.unsafeAssumePure(status)
     onChange()
 
   def amend(lambda: status => status): Unit = update(lambda(current))

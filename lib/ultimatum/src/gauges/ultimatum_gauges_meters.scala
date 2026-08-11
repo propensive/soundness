@@ -30,24 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
-
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
-
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
-
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+// Readings on a bounded scale. A meter can fall as well as rise, so these designs mark the scale
+// and colour the reading by where it sits on it.
+// `Meter` has no default design: a battery, a thermometer and a bullet chart are not substitutable,
+// and two of them are not even the same height.
+package meters:
+  given batteryMeter: Gauging => Meter is Gaugeable = Dial.Battery.gaugeable
+  given thermometerMeter: Gauging => Meter is Gaugeable = Dial.Thermometer.gaugeable
+  given needleMeter: Gauging => Meter is Gaugeable = Dial.Needle.gaugeable
+  given bulletMeter: Gauging => Meter is Gaugeable = Dial.Bullet.gaugeable
+  given columnMeter: Gauging => Meter is Gaugeable = Dial.Column.gaugeable
+  given asciiMeter: Gauging => Meter is Gaugeable = Dial.Ascii.gaugeable

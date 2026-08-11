@@ -30,24 +30,46 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
+import anticipation.*
 import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import gossamer.*
+import symbolism.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+object CaptionLayout:
+  // The no-import default: the label follows the gauge, one space away.
+  given default: CaptionLayout = CaptionLayout(1, true, true)
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+// Where a caption sits relative to the gauge it labels, and what happens when there is not room for
+// both. `elide` shortens the caption rather than squeezing the gauge, which is the right priority:
+// a half-drawn bar misreports the thing it is measuring, whereas a shortened label is merely
+// terser.
+case class CaptionLayout(gap: Int, trailing: Boolean, elide: Boolean):
+  // How many cells the gauge itself gets. The caption is allowed at most half the row before it
+  // starts costing the gauge cells — so a long label shortens rather than crowding out the thing it
+  // labels, and a short one still leaves an elastic bar the rest of the row.
+  def gaugeWidth(preferred: Int, caption: Text, width: Int, gauging: Gauging): Int =
+    val wanted = gauging.cells(caption)
+    val allowance = if elide then wanted.min(width/2) else wanted
+    (width - gap - allowance).max(0).min(preferred)
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  def compose(gauge: Teletype, gaugeWidth: Int, caption: Text, width: Int, gauging: Gauging)
+  :   Teletype =
+
+    val room = width - gaugeWidth - gap
+    val label = if !elide then caption else shorten(caption, room, gauging)
+    val text = gauging.tint(gauging.palette.caption)(Teletype(label))
+    val spacer = t" "*gap.max(0)
+
+    val composed =
+      if room <= 0 then gauge else if trailing then e"$gauge$spacer$text" else e"$text$spacer$gauge"
+
+    val used = gauging.cells(composed.plain)
+    if used >= width then composed else e"$composed${t" "*(width - used)}"
+
+  private def shorten(caption: Text, room: Int, gauging: Gauging): Text =
+    if room <= 0 then t""
+    else if gauging.cells(caption) <= room then caption
+    else if room == 1 then t"…"
+    else t"${caption.keep(room - 1)}…"

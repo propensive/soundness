@@ -30,24 +30,95 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
+import anticipation.*
 import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import gossamer.*
+import parasite.*
+import quantitative.*
+import symbolism.*
+import turbulence.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// A gauge drawn live at the cursor, with no form and no layout: the shape a command-line tool
+// wants when it has one thing to report. Each frame is redrawn in place, the animation is one
+// background task snoozing the design's own period, and `finish` erases the block.
+// Every design works here unchanged, because a design is a pure function of status, tick and width
+// — this class supplies the three and does the writing.
+class Inlay[status: Gaugeable as design]
+  ( reading: Reading[status], width: Optional[Int] = Unset )
+  ( using stdio: Stdio, monitor: Monitor, probate: Probate ):
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  @scala.caps.unsafe.untrackedCaptures
+  private val started: Long = System.nanoTime
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // How many rows the last frame occupied, so the next one knows how far to move back up.
+  @scala.caps.unsafe.untrackedCaptures
+  private var drawn: Int = 0
+
+  @scala.caps.unsafe.untrackedCaptures
+  private var running: Boolean = false
+
+  private def columns: Int = width.or(stdio.termcap.width.max(1))
+
+  private def tick: Tick =
+    Tick.at((System.nanoTime - started)/1000000L, design.period.or(1000))
+
+  // Draw one frame over the last one. Each row is erased to the end of the line as it is written,
+  // so a frame that is shorter than its predecessor leaves no residue.
+  private def paint(): Unit =
+    val rows = design.rows(reading(), tick, columns).stdlib
+    rewind()
+    var index = 0
+
+    while index < rows.length do
+      Out.print(e"${rows(index)}${csi.el()}")
+      if index < rows.length - 1 then Out.print(t"\n")
+      index += 1
+
+    drawn = rows.length
+
+  // Back to the first column of the block's first row.
+  private def rewind(): Unit =
+    if drawn > 1 then Out.print(csi.cuu(drawn - 1))
+    Out.print(t"\r")
+
+  // Paint once, and — if the design animates — keep painting until `finish`. A design with no
+  // period is drawn once here and thereafter only when its `Reading` changes and calls back.
+  def start(): Unit =
+    reading.bindWake: () => paint()
+    paint()
+
+    design.period.let: period =>
+      running = true
+
+      // The repaint task captures this `Inlay`, which also owns the `Monitor` the task is spawned
+      // against, and separation checking rejects the overlap. They are the same single-owner
+      // session: the task is started here, stopped by `finish`, and touches nothing else — so the
+      // assertion is local and its scope is the object's own lifetime. (`form` makes the same
+      // assertion, for the same reason, around the alternate-screen session.)
+      scala.caps.unsafe.unsafeAssumeSeparate:
+        async:
+          while running do
+            snooze(period.toDouble*Milli(Second))
+            if running then paint()
+
+        ()
+
+  // Erase the block and leave the cursor where it started, so whatever the caller prints next
+  // begins on a clean line.
+  def finish(): Unit =
+    running = false
+    reading.bindWake: () => ()
+    rewind()
+    var index = 0
+
+    while index < drawn do
+      Out.print(csi.el())
+      if index < drawn - 1 then Out.print(t"\n")
+      index += 1
+
+    if drawn > 1 then Out.print(csi.cuu(drawn - 1))
+    Out.print(t"\r")
+    drawn = 0

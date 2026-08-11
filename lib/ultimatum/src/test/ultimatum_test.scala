@@ -1022,76 +1022,79 @@ object Tests extends Suite(m"Ultimatum Tests"):
       import textMetrics.uniformMetric
 
       // A design's plain text is what it draws; the styling is the palette's business and is
-      // asserted separately.
-      def draw[status: Gaugeable as design](status: status, width: Int, tick: Tick = Tick.zero)
-      :   Text =
+      // asserted separately. Deliberately monomorphic: these tests live in `package ultimatum`,
+      // where the opaque status types are transparent, so a generic helper would infer the
+      // underlying `Double` from a literal and then fail to match the design.
+      def bar(design: Fraction is Gaugeable)(value: Fraction, width: Int): Text =
+        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
 
-        design.rows(status, tick, width).stdlib.map(_.plain).mkString("\n").tt
+      def spin(design: Busy is Gaugeable)(value: Busy, width: Int, tick: Tick = Tick.zero): Text =
+        design.rows(value, tick, width).stdlib.map(_.plain).mkString("\n").tt
 
       test(m"a half-full smooth bar fills exactly half its cells"):
-        draw(Fraction(0.5), 10)(using bars.smoothBar)
+        bar(bars.smoothBar)(Fraction(0.5), 10)
       . assert(_ == t"█████     ")
 
       test(m"an eighth-block bar advances by a fraction of a cell"):
-        draw(Fraction(0.05), 10)(using bars.smoothBar)
+        bar(bars.smoothBar)(Fraction(0.05), 10)
       . assert(_ == t"▌         ")
 
       test(m"a full bar leaves no empty cells"):
-        draw(Fraction(1.0), 8)(using bars.smoothBar)
+        bar(bars.smoothBar)(Fraction(1.0), 8)
       . assert(_ == t"████████")
 
       test(m"an empty bar draws no filled cells"):
-        draw(Fraction(0.0), 8)(using bars.smoothBar)
+        bar(bars.smoothBar)(Fraction(0.0), 8)
       . assert(_ == t"        ")
 
       test(m"a block bar draws its own track glyph"):
-        draw(Fraction(0.5), 8)(using bars.blockBar)
+        bar(bars.blockBar)(Fraction(0.5), 8)
       . assert(_ == t"████░░░░")
 
       test(m"an ASCII bar keeps its caps and fills between them"):
-        draw(Fraction(0.5), 10)(using bars.asciiBar)
+        bar(bars.asciiBar)(Fraction(0.5), 10)
       . assert(_ == t"[####----]")
 
       test(m"an arrowhead bar puts the boundary cell at the head of the fill"):
-        draw(Fraction(0.5), 10)(using bars.arrowheadBar)
+        bar(bars.arrowheadBar)(Fraction(0.5), 10)
       . assert(_ == t"[===>    ]")
 
       test(m"a segmented bar lights whole pips"):
-        draw(Fraction(0.5), 20)(using bars.segmentedBar)
+        bar(bars.segmentedBar)(Fraction(0.5), 20)
       . assert(_ == t"▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱")
 
       test(m"a marker bar shows a position, with nothing filled behind it"):
-        draw(Fraction(0.5), 9)(using bars.markerBar)
+        bar(bars.markerBar)(Fraction(0.5), 9)
       . assert(_ == t"────◆────")
 
       test(m"a bar too narrow for caps drops them and still fills"):
-        draw(Fraction(0.5), 6)(using bars.asciiBar)
+        bar(bars.asciiBar)(Fraction(0.5), 6)
       . assert(_ == t"###---")
 
       test(m"a bar degrades to a percentage when it cannot be drawn"):
-        draw(Fraction(0.42), 3)(using bars.smoothBar)
+        bar(bars.smoothBar)(Fraction(0.42), 3)
       . assert(_ == t"42%")
 
       test(m"a bar degrades to a single shade glyph at one cell"):
-        draw(Fraction(0.9), 1)(using bars.smoothBar)
+        bar(bars.smoothBar)(Fraction(0.9), 1)
       . assert(_ == t"█")
 
       test(m"the percentage design pads to a stable width as it fills"):
-        (draw(Fraction(0.07), 4)(using bars.percentageBar),
-            draw(Fraction(1.0), 4)(using bars.percentageBar))
+        (bar(bars.percentageBar)(Fraction(0.07), 4),
+            bar(bars.percentageBar)(Fraction(1.0), 4))
       . assert(_ == (t"  7%", t"100%"))
 
       test(m"a spinner advances one frame per period"):
-        (0 to 3).map(index => draw(Busy(), 1, Tick.at(index*80, 80))(using
-            spinners.brailleDotsSpinner)).mkString.tt
+        val design = spinners.brailleDotsSpinner
+        (0 to 3).map { index => spin(design)(Busy(), 1, Tick.at(index*80, 80)) }.mkString.tt
       . assert(_ == t"⠋⠙⠹⠸")
 
       test(m"a spinner cycles back to its first frame"):
-        draw(Busy(), 1, Tick.at(10*80, 80))(using spinners.brailleDotsSpinner)
+        spin(spinners.brailleDotsSpinner)(Busy(), 1, Tick.at(10*80, 80))
       . assert(_ == t"⠋")
 
       test(m"the status's own counter advances the spinner too"):
-        draw(Busy(2), 1, Tick.zero)(using spinners.brailleDotsSpinner)
+        spin(spinners.brailleDotsSpinner)(Busy(2), 1, Tick.zero)
       . assert(_ == t"⠹")
 
       test(m"a spinner declares its frame interval as its animation period"):
@@ -1103,38 +1106,41 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == Unset)
 
       test(m"a wide spinner falls back to a narrower design in a narrow column"):
-        draw(Busy(), 1, Tick.zero)(using spinners.bouncingBarSpinner)
+        spin(spinners.bouncingBarSpinner)(Busy(), 1, Tick.zero)
       . assert(_ == t"-")
 
       test(m"a multi-cell spinner draws at its full width when it fits"):
-        draw(Busy(1), 6, Tick.zero)(using spinners.bouncingBarSpinner)
+        spin(spinners.bouncingBarSpinner)(Busy(1), 6, Tick.zero)
       . assert(_ == t"[=   ]")
 
     suite(m"Gauge glyph repertoires"):
       import palettes.emberGaugePalette
       import textMetrics.uniformMetric
 
-      def draw[status: Gaugeable as design](status: status, width: Int): Text =
-        design.rows(status, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+      def bar(design: Fraction is Gaugeable)(value: Fraction, width: Int): Text =
+        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+
+      def spin(design: Busy is Gaugeable)(value: Busy, width: Int): Text =
+        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
 
       test(m"an emoji spinner renders as emoji when they are permitted"):
         import gaugeGlyphs.emojiGlyphs
-        draw(Busy(), 2)(using spinners.moonPhaseSpinner)
+        spin(spinners.moonPhaseSpinner)(Busy(), 2)
       . assert(_ == t"🌑")
 
       test(m"an emoji spinner falls back to its BMP sibling when they are not"):
         import gaugeGlyphs.unicodeGlyphs
-        draw(Busy(), 2)(using spinners.moonPhaseSpinner)
+        spin(spinners.moonPhaseSpinner)(Busy(), 2)
       . assert(_ == t"◌ ")
 
       test(m"under ASCII glyphs every spinner degrades to seven-bit output"):
         import gaugeGlyphs.asciiGlyphs
-        draw(Busy(), 2)(using spinners.brailleDotsSpinner).s.forall(_ < 128)
+        spin(spinners.brailleDotsSpinner)(Busy(), 2).s.forall(_ < 128)
       . assert(_ == true)
 
       test(m"under ASCII glyphs a bar degrades to seven-bit output"):
         import gaugeGlyphs.asciiGlyphs
-        draw(Fraction(0.5), 1)(using bars.smoothBar).s.forall(_ < 128)
+        bar(bars.smoothBar)(Fraction(0.5), 1).s.forall(_ < 128)
       . assert(_ == true)
 
     suite(m"Gauge width invariants"):
@@ -1241,29 +1247,32 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a gauge fixture paints its bar into the rectangle it is given"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val flow = FlowExtent(TerminalBoard(10, 1), Rect(0, 0, 10, 1))
-        Gaugeable.Fixture(Reading(Fraction(0.3)))(using bars.blockBar).render(flow, false)
+        Gaugeable.Fixture(Reading[Fraction](Fraction(0.3)))(using bars.blockBar).render(flow, false)
         flow.render
       . assert(_ == t"███░░░░░░░")
 
       test(m"a gauge reports its design's preferred width to the solver"):
-        Gaugeable.Fixture(Reading(Fraction(0.5)))(using bars.smoothBar).measure(80)
+        Gaugeable.Fixture(Reading[Fraction](Fraction(0.5)))(using bars.smoothBar).measure(80)
       . assert(_ == (40, 1))
 
       test(m"a spinner reports a single cell and does not stretch"):
-        Gaugeable.Fixture(Reading(Busy()))(using spinners.brailleDotsSpinner).measure(80)
+        Gaugeable.Fixture(Reading[Busy](Busy()))(using spinners.brailleDotsSpinner).measure(80)
       . assert(_ == (1, 1))
 
       test(m"a gauge is not focusable, so it stays out of the focus cycle"):
-        Gaugeable.Fixture(Reading(Busy()))(using spinners.brailleDotsSpinner)
+        Gaugeable.Fixture(Reading[Busy](Busy()))(using spinners.brailleDotsSpinner)
         . isInstanceOf[Focus]
       . assert(_ == false)
 
       test(m"an updated reading is what the next paint draws"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val reading = Reading(Fraction(0.0))
+        // Qualified: this file is `package ultimatum` but imports `soundness.*`, so a bare
+        // `Fraction` is the umbrella's alias, through which the opaque type's purity is not
+        // visible and the assignment would not typecheck.
+        val reading = Reading(ultimatum.Fraction(0.0))
         val fixture = Gaugeable.Fixture(reading)(using bars.blockBar)
         val flow = FlowExtent(TerminalBoard(8, 1), Rect(0, 0, 8, 1))
-        reading() = Fraction(0.5)
+        reading() = ultimatum.Fraction(0.5)
         fixture.render(flow, false)
         flow.render
       . assert(_ == t"████░░░░")
@@ -1274,8 +1283,177 @@ object Tests extends Suite(m"Ultimatum Tests"):
            ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"job")),
              Pane.Widget
               ( Sizing(minHeight = 1, maxHeight = 1),
-                Gaugeable.Fixture(Reading(Fraction(0.5)))(using bars.blockBar) ) )
+                Gaugeable.Fixture(Reading[Fraction](Fraction(0.5)))(using bars.blockBar) ) )
       . assert(_ == t"job     \n████░░░░")
+
+    suite(m"Meters, sparklines, counters and processions"):
+      import gaugeGlyphs.unicodeGlyphs
+      import palettes.emberGaugePalette
+      import textMetrics.uniformMetric
+
+      def plain[status](design: status is Gaugeable)(value: status, width: Int): Text =
+        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+
+      test(m"a column meter shows a bounded reading as one cell"):
+        plain(meters.columnMeter)(Meter(0.5), 1)
+      . assert(_ == t"▅")
+
+      test(m"a meter reads against its own bounds, not against zero to one"):
+        plain(meters.columnMeter)(Meter(50.0, 0.0, 100.0), 1)
+      . assert(_ == t"▅")
+
+      test(m"an ASCII meter fills between its brackets"):
+        plain(meters.asciiMeter)(Meter(0.5), 10)
+      . assert(_ == t"[####----]")
+
+      test(m"a thermometer is a column of its own height"):
+        plain(meters.thermometerMeter)(Meter(1.0), 1).cut(t"\n").length
+      . assert(_ == 5)
+
+      test(m"a block sparkline draws one cell per sample"):
+        plain(sparklines.blockSparkline)(Series(Sequence(0.0, 0.5, 1.0)), 3)
+      . assert(_ == t"▁▅█")
+
+      test(m"a sparkline auto-scales to the range of its samples"):
+        plain(sparklines.blockSparkline)(Series(Sequence(10.0, 20.0)), 2)
+      . assert(_ == t"▁█")
+
+      test(m"fixed bounds keep a sparkline's scale still between frames"):
+        plain(sparklines.blockSparkline)(Series(Sequence(0.0, 5.0), 0.0, 10.0), 2)
+      . assert(_ == t"▁▅")
+
+      // Decimation, not truncation: a narrow sparkline keeps the peaks rather than showing only
+      // the oldest samples.
+      test(m"a sparkline narrower than its series keeps the peaks"):
+        plain(sparklines.blockSparkline)(Series(Sequence(0.0, 1.0, 0.0, 0.0)), 2)
+      . assert(_ == t"█▁")
+
+      test(m"a plain counter writes done over total"):
+        plain(counters.plainCounter)(Reckoning(17, 120), 7)
+      . assert(_ == t"17/120 ")
+
+      test(m"a counter with no total writes only what is done"):
+        plain(counters.plainCounter)(Reckoning(17), 2)
+      . assert(_ == t"17")
+
+      // The numerator is right-aligned to the total's width, so the field does not jitter.
+      test(m"a padded counter holds its width as it counts up"):
+        (plain(counters.paddedCounter)(Reckoning(7, 120), 7),
+            plain(counters.paddedCounter)(Reckoning(117, 120), 7))
+      . assert(_ == (t"  7/120", t"117/120"))
+
+      test(m"a scaled counter abbreviates large figures"):
+        plain(counters.scaledCounter)(Reckoning(1200, 8400), 9)
+      . assert(_ == t"1.2k/8.4k")
+
+      test(m"a tick standing is a single coloured glyph"):
+        plain(standings.tickStanding)(Standing.Succeeded, 1)
+      . assert(_ == t"✓")
+
+      test(m"an ASCII standing stays within seven bits"):
+        plain(standings.asciiStanding)(Standing.Failed, 1)
+      . assert(_ == t"x")
+
+      test(m"a word standing pads to a fixed width so a column aligns"):
+        (plain(standings.wordStanding)(Standing.Succeeded, 4),
+            plain(standings.wordStanding)(Standing.Failed, 4))
+      . assert(_ == (t"  ok", t"FAIL"))
+
+      val steps =
+        Procession
+         ( Sequence
+            ( Step(t"resolve", Standing.Succeeded),
+              Step(t"compile", Standing.Running),
+              Step(t"publish", Standing.Pending) ) )
+
+      test(m"a checklist is one row per step"):
+        plain(processions.checklistProcession)(steps, 12).cut(t"\n").length
+      . assert(_ == 3)
+
+      test(m"a checklist marks each step by its standing"):
+        plain(processions.checklistProcession)(steps, 9)
+      . assert(_ == t"✓ resolve\n⠋ compile\n· publish")
+
+      test(m"a numbered procession counts the steps that have started"):
+        plain(processions.numberedProcession)(steps, 14)
+      . assert(_ == t"[2/3] compile ")
+
+      test(m"a bead procession is a chain of two cells per step, less one"):
+        plain(processions.beadProcession)(steps, 5)
+      . assert(_ == t"●━◐━○")
+
+      test(m"a breadcrumb procession joins the steps on one row"):
+        plain(processions.breadcrumbProcession)(steps, 29)
+      . assert(_ == t"resolve › compile › publish  ")
+
+      test(m"a checklist declares an animation period; a breadcrumb does not"):
+        (processions.checklistProcession.period, processions.breadcrumbProcession.period)
+      . assert(_ == (80, Unset))
+
+    suite(m"Captioned gauges"):
+      import gaugeGlyphs.unicodeGlyphs
+      import palettes.emberGaugePalette
+      import textMetrics.uniformMetric
+
+      def plain[status](design: status is Gaugeable)(value: status, width: Int): Text =
+        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+
+      test(m"a caption follows the gauge it labels"):
+        import bars.blockBar
+        plain(summon[Captioned[ultimatum.Fraction] is Gaugeable])(Captioned(ultimatum.Fraction(0.5), t"copying"), 12)
+      . assert(_ == t"██░░░ copyi…")
+
+      // Both degradations compose: the caption is cut to its half-row allowance, and the three
+      // cells that leaves the bar are too few to draw one, so it falls through to a figure.
+      test(m"a narrow captioned gauge elides the label and degrades the bar"):
+        import bars.blockBar
+        plain(summon[Captioned[ultimatum.Fraction] is Gaugeable])(Captioned(ultimatum.Fraction(0.5), t"copying"), 8)
+      . assert(_ == t"50% cop…")
+
+      test(m"a leading caption precedes the gauge"):
+        import bars.blockBar
+        import captions.leadingCaption
+        plain(summon[Captioned[ultimatum.Fraction] is Gaugeable])(Captioned(ultimatum.Fraction(0.5), t"go"), 8)
+      . assert(_ == t"go ██░░░")
+
+      test(m"a captioned spinner inherits the spinner's animation period"):
+        import spinners.brailleDotsSpinner
+        summon[Captioned[Busy] is Gaugeable].period
+      . assert(_ == 80)
+
+    suite(m"The form's frame clock"):
+      import gaugeGlyphs.unicodeGlyphs
+      import palettes.emberGaugePalette
+      import textMetrics.uniformMetric
+
+      // `scheduleWake` is a constructor parameter, so the ticker is tested by recording what it is
+      // asked to schedule — no sleeping, and nothing timing-dependent.
+      def wakes(pane: Pane): List[Long] =
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
+        val recorded = scala.collection.mutable.ListBuffer[Long]()
+        val root = ScreenRoot(20, 3)
+        Form(root, Occupancy.Fullscreen, pane, () => (), 0, 0, delay => { recorded += delay; () })
+        . run(scala.Iterator(Keypress.Escape))
+
+        List.of(recorded.toList)
+
+      test(m"a layout containing a spinner arms a wake at the design's period"):
+        wakes(gauge(Reading(ultimatum.Busy()))(using spinners.brailleDotsSpinner)).stdlib.headOption
+      . assert(_ == Some(80L))
+
+      test(m"a layout of static panels arms no wake at all"):
+        wakes(panel()(Out.print(t"still"))).stdlib.length
+      . assert(_ == 0)
+
+      test(m"a bar alone does not animate"):
+        wakes(gauge(Reading(ultimatum.Fraction(0.5)))(using bars.smoothBar)).stdlib.length
+      . assert(_ == 0)
+
+      test(m"the shortest period wins when several gauges animate"):
+        val fast = gauge(Reading(ultimatum.Busy()))(using spinners.starSpinner)
+        val slow = gauge(Reading(ultimatum.Busy()))(using spinners.toggleSpinner)
+        wakes(stack(fast, slow)).stdlib.headOption
+      . assert(_ == Some(70L))
 
 // A test-only root `Board` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and

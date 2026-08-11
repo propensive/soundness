@@ -30,24 +30,67 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
+import anticipation.*
 import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import gossamer.*
+import parasite.*
+import symbolism.*
+import turbulence.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// A leaf panel hosting a live gauge. The design is the `Gaugeable` given for `status` in scope
+// here, so which one is used is decided by the caller's imports at this line, not by the driver.
+// The gauge reports its design's intrinsic size on every solve, so it grows and shrinks with the
+// layout and re-negotiates on each resize; a gauge whose design animates also drives the form's
+// frame clock.
+def gauge[status: Gaugeable as design]
+  ( reading:   Reading[status],
+    fraction:  Double        = 1.0,
+    minWidth:  Int           = 0,
+    maxWidth:  Optional[Int] = Unset,
+    minHeight: Int           = 0,
+    maxHeight: Optional[Int] = Unset )
+:   Pane =
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  val preferred = design.columns(reading())
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // An inelastic design (a spinner, a status glyph) is pinned to its own width, so it does not
+  // stretch across the terminal; an elastic one takes whatever the solver gives it.
+  val width: Optional[Int] = if design.elastic then maxWidth else preferred
+
+  val sizing =
+    Sizing(fraction, minWidth.max(design.minWidth(reading())), width, minHeight, maxHeight)
+
+  Pane.Widget(sizing, Gaugeable.Fixture(reading))
+
+// One frame of `status` as styled rows — the pure entry point, for a caller doing its own drawing.
+def gaugeRows[status: Gaugeable as design]
+  ( status: status, width: Int, tick: Tick = Tick.zero )
+:   List[Teletype] =
+
+  design.rows(status, tick, width)
+
+// One frame as a single line, which is what a bar, a spinner or a counter renders to. A multi-row
+// design yields only its first row here; use `gaugeRows` for those.
+def gaugeLine[status: Gaugeable as design]
+  ( status: status, width: Int, tick: Tick = Tick.zero )
+:   Teletype =
+
+  design.rows(status, tick, width).stdlib.headOption.getOrElse(Teletype(t" "*width.max(0)))
+
+// Show a gauge at the cursor for the duration of `block`, then erase it. The animation runs in one
+// background task that redraws in place at the design's own period; a design with no period is
+// drawn once and then only when its `Reading` changes.
+// This is the standalone path — no form, no layout — and it shares every design with the embedded
+// one.
+def whilst[status: Gaugeable as design, result]
+  ( reading: Reading[status], width: Optional[Int] = Unset )
+  ( block: => result )
+  ( using Stdio, Monitor, Probate )
+:   result =
+
+  val inlay = Inlay(reading, width)
+  inlay.start()
+  try block finally inlay.finish()
