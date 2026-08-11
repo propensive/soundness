@@ -68,13 +68,13 @@ object Tarfile:
   // boundaries — the archive need never be materialized. The resulting
   // entries are single-owner: consume them in order, on one thread. Advancing
   // to the next entry first drains whatever of the previous entry's body was
-  // not yet read into its memoizing `TarBody` — an in-order consumer streams
+  // not yet read into its memoizing `Tar.Body` — an in-order consumer streams
   // with bounded memory, while listing entries before reading a body still
   // works, at the cost of buffering the passed-over bodies, which is what the
   // eager reader always did.
   // An explicit `Tactic` rather than `raises` sugar: a fresh capability in a
   // context-function result cannot flow to a forwarding caller.
-  def read(consume stream: (Stream[Data] over Credit)^)(using tactic: Tactic[TarError])
+  def read(consume stream: (Stream[Data] over Credit)^)(using tactic: Tactic[Tar.Error])
   :   Iterator[Tar.Entry]^{tactic} =
 
     // The stream's single ownership passes to the cursor inside the iterator, whose fresh
@@ -82,7 +82,7 @@ object Tarfile:
     scala.caps.unsafe.unsafeAssumePure:
       scala.caps.unsafe.unsafeAssumeSeparate(entryIterator(Cursor[Data](stream)))
 
-  def from(consume stream: (Stream[Data] over Credit)^)(using Tactic[TarError]): Tarfile =
+  def from(consume stream: (Stream[Data] over Credit)^)(using Tactic[Tar.Error]): Tarfile =
     // The stream's single ownership passes with this call; the checker cannot see through
     // the consumed parameter's re-use in the nested call.
     scala.caps.unsafe.unsafeAssumeSeparate:
@@ -90,10 +90,10 @@ object Tarfile:
 
   // Pulls an entry's `size` bytes off the shared cursor in bounded chunks,
   // consuming the trailing block padding after the final one. The closure is
-  // handed to `TarBody.deferred`, whose memoization guarantees the region is
+  // handed to `Tar.Body.deferred`, whose memoization guarantees the region is
   // read exactly once, in order.
   private def bodyPull(cursor: Cursor[Data, {}]^, size: Int, padded: Int)
-    ( using tactic: Tactic[TarError] )
+    ( using tactic: Tactic[Tar.Error] )
   :   () ->{cursor, tactic} Optional[Data] =
 
     @caps.unsafe.untrackedCaptures
@@ -104,7 +104,7 @@ object Tarfile:
     () =>
       if consumed >= size then
         if consumed < padded then
-          cursor.take(abort(TarError(TarError.Reason.TruncatedStream(padded - consumed,
+          cursor.take(abort(Tar.Error(Tar.Error.Reason.TruncatedStream(padded - consumed,
               cursor.available))))(padded - consumed)
           consumed = padded
         Unset
@@ -114,13 +114,13 @@ object Tarfile:
         // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk;
         // the cast reasserts the frozen form, which `take` already guarantees.
         val data =
-          cursor.take(abort(TarError(TarError.Reason.TruncatedStream(n, cursor.available))))(n)
+          cursor.take(abort(Tar.Error(Tar.Error.Reason.TruncatedStream(n, cursor.available))))(n)
           . asInstanceOf[Data]
 
         consumed += n
         data
 
-  private def entryIterator(cursor: Cursor[Data, {}]^)(using tactic: Tactic[TarError])
+  private def entryIterator(cursor: Cursor[Data, {}]^)(using tactic: Tactic[Tar.Error])
   :   Iterator[Tar.Entry]^{cursor, tactic} =
 
     new Iterator[Tar.Entry]:
@@ -129,7 +129,7 @@ object Tarfile:
       @caps.unsafe.untrackedCaptures
       private var lookahead: Optional[Tar.Entry] = Unset
       @caps.unsafe.untrackedCaptures
-      private var unread: Optional[TarBody] = Unset
+      private var unread: Optional[Tar.Body] = Unset
       @caps.unsafe.untrackedCaptures
       private var globalOverlay: Map[Text, Text] = Map.empty
       @caps.unsafe.untrackedCaptures
@@ -161,7 +161,7 @@ object Tarfile:
           takeBlock(cursor) match
             case Unset =>
               // The archive ended without its terminating zero blocks.
-              raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
+              raise(Tar.Error(Tar.Error.Reason.TruncatedStream(512, 0)))
               finished = true
 
             case head: Data if TarHeader.isZeroBlock(head) => finished = true
@@ -221,7 +221,7 @@ object Tarfile:
 
                   lookahead =
                     Tar.Entry.Sparse
-                      ( path, mode, user, group, mtime, realSize, allSegments, TarBody(data),
+                      ( path, mode, user, group, mtime, realSize, allSegments, Tar.Body(data),
                         extras )
 
                 case flag if flag == 0 || flag == '0' || flag == '7' =>
@@ -235,7 +235,7 @@ object Tarfile:
                   // The body pulls off the shared cursor; advancing to the
                   // next entry drains whatever of it remains unread.
                   val body =
-                    TarBody.deferred:
+                    Tar.Body.deferred:
                       // Erases the two independently-freshened `any.rd`s on the frozen
                       // chunk type (result position vs parameter position).
                       bodyPull(cursor, size, ((size + 511)/512)*512)
@@ -261,7 +261,7 @@ object Tarfile:
 
   private def buildEntry
     ( flag:   Int,
-      path:   TarRef,
+      path:   Tar.Ref,
       mode:   UnixMode,
       user:   UnixUser,
       group:  UnixGroup,
@@ -271,7 +271,7 @@ object Tarfile:
       extras: Map[Text, Text],
       header: TarHeader,
       cursor: Cursor[Data, {}]^ )
-  :   Tar.Entry raises TarError =
+  :   Tar.Entry raises Tar.Error =
 
     flag match
       case '5' =>
@@ -297,26 +297,26 @@ object Tarfile:
         Tar.Entry.Fifo(path, mode, user, group, mtime, extras)
 
       case other =>
-        raise(TarError(TarError.Reason.UnknownTypeFlag(other.toByte)))
+        raise(Tar.Error(Tar.Error.Reason.UnknownTypeFlag(other.toByte)))
         Tar.Entry.Directory(path, mode, user, group, mtime, extras)
 
   // The next 512-byte block, or `Unset` at clean end-of-archive; a partial
   // block raises. One allocation per header block.
-  private def takeBlock(cursor: Cursor[Data, {}]^)(using Tactic[TarError]): Optional[Data] =
+  private def takeBlock(cursor: Cursor[Data, {}]^)(using Tactic[Tar.Error]): Optional[Data] =
     if cursor.finished then Unset
-    else cursor.take(abort(TarError(TarError.Reason.TruncatedStream(512, cursor.available))))(512)
+    else cursor.take(abort(Tar.Error(Tar.Error.Reason.TruncatedStream(512, cursor.available))))(512)
 
   // An entry's `size` bytes of data plus its padding, in a single allocation
   // (the block-list fold this replaces reallocated per block).
-  private def takeData(cursor: Cursor[Data, {}]^, size: Int)(using Tactic[TarError]): Data =
+  private def takeData(cursor: Cursor[Data, {}]^, size: Int)(using Tactic[Tar.Error]): Data =
     val padded = ((size + 511)/512)*512
 
-    val data = cursor.take(abort(TarError(TarError.Reason.TruncatedStream(padded,
+    val data = cursor.take(abort(Tar.Error(Tar.Error.Reason.TruncatedStream(padded,
         cursor.available))))(padded)
 
     data.slice(0, size)
 
-  private def decodeSparseField(data: Data): Long raises TarError =
+  private def decodeSparseField(data: Data): Long raises Tar.Error =
     var allZero = true
     var i = 0
 
@@ -326,7 +326,7 @@ object Tarfile:
 
     if allZero then 0L else TarHeader.decodeOctal(data, t"sparse.field").long
 
-  private def readInlineSparseMap(headerBlock: Data): List[SparseSegment] raises TarError =
+  private def readInlineSparseMap(headerBlock: Data): List[SparseSegment] raises Tar.Error =
     val builder = scala.collection.immutable.List.newBuilder[SparseSegment]
     var pos = 386
     var i = 0
@@ -342,12 +342,12 @@ object Tarfile:
     List.of(builder.result())
 
   private def readSparseExtensions(cursor: Cursor[Data, {}]^, hasMore: Boolean)
-    ( using Tactic[TarError] )
+    ( using Tactic[Tar.Error] )
   :   List[SparseSegment] =
 
     if !hasMore then Nil else takeBlock(cursor) match
       case Unset =>
-        raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
+        raise(Tar.Error(Tar.Error.Reason.TruncatedStream(512, 0)))
         Nil
 
       case head: Data =>
@@ -397,11 +397,11 @@ object Tarfile:
   private def stripTrailingSlash(text: Text): Text =
     if text.s.endsWith("/") then text.s.dropRight(1).nn.tt else text
 
-  private def decodePath(text: Text): TarRef raises TarError =
+  private def decodePath(text: Text): Tar.Ref raises Tar.Error =
     import errorDiagnostics.emptyDiagnostics
 
     mitigate:
-      case Path.Error(_, _) => TarError(TarError.Reason.BadName(text))
+      case Path.Error(_, _) => Tar.Error(Tar.Error.Reason.BadName(text))
 
     . protect(text.as[Relative on Tar])
 

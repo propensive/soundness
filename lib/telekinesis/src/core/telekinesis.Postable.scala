@@ -97,7 +97,7 @@ object Postable:
     Postable(media"application/x-www-form-urlencoded", query => query.queryString.in[Data].stream)
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
-  =>  ( tactic: Tactic[MediaTypeError] )
+  =>  ( tactic: Tactic[MediaType.Error] )
   =>  ((response is Postable)^{tactic, caps.any}) =
 
     // An honest capability: the tactic-capturing decoder is retained by the instance.

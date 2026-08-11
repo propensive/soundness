@@ -83,7 +83,7 @@ object Tests extends Suite(m"Degustation Tests"):
 
   def run(): Unit = proscalaLibrary().let: lib =>
     val jars = scala.List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
-    val classpath = LocalClasspath(jars.map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
+    val classpath = LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
     val libraryPaths = jars.map { jar => Text(jar.toString) }
 
     def compileWith(source: Text, deps: LocalClasspath, libs: scala.List[Text], sjs: Boolean)
@@ -370,7 +370,7 @@ object Tests extends Suite(m"Degustation Tests"):
 
     if sjsJars.size >= 3 then
       val sjsClasspath = LocalClasspath
-        ((jars ++ sjsJars).map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
+        ((jars ++ sjsJars).map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
 
       val sjsLibraryPaths = (jars ++ sjsJars).map { jar => Text(jar.toString) }
 

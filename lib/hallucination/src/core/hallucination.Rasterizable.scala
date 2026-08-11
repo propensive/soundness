@@ -55,11 +55,11 @@ trait Rasterizable extends Typeclass:
 
     // Decode and encode this format. `sniff` reports whether `data` opens with this format's
     // magic bytes, which is how `Raster` recognises a format it was not told.
-    def decode(data: Data): Raster raises RasterError
+    def decode(data: Data): Raster raises Raster.Error
     def encode(raster: Raster): Data
     def sniff(data: Data): Boolean
 
     def read[input: Streamable by Data over zephyrine.Credit](inputType: input)
-    :   Raster in Self raises RasterError =
+    :   Raster in Self raises Raster.Error =
 
       decode(inputType.read[Data]).asInstanceOf[Raster in rasterizable.Self]

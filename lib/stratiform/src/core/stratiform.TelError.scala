@@ -342,7 +342,7 @@ object TelError:
 // validation errors, whose coordinates apply to AST nodes rather than source
 // bytes and are carried on the accrued `Tel.Focus`.
 case class TelError(reason: TelError.Reason, span: Span = Span.empty)(using Diagnostics)
-extends Error
+extends fulminate.Error
   ( 605, reason.number )
   ( if span.vacant then m"the TEL document is invalid because $reason"
     else m"the TEL document is invalid at ${TelError.describe(span)} because $reason" )

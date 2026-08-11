@@ -34,5 +34,5 @@ package soundness
 
 export
   gesticulate
-  . { ascribe, Asset, Content, Extensions, Media, media, MediaType, MediaTypeError, Multipart,
-      MultipartError, Part }
+  . { ascribe, Asset, Content, Extensions, Media, media, MediaType, Multipart,
+      Part }

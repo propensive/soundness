@@ -375,8 +375,8 @@ object SourceCode:
   // ambient `System` capability (we only have directory and jar entries here).
   private def classpathText(classpath: LocalClasspath): Text =
     classpath.entries.flatMap:
-      case ClasspathEntry.Directory(directory) => List(directory)
-      case ClasspathEntry.Jar(jar)             => List(jar)
+      case Classpath.Entry.Directory(directory) => List(directory)
+      case Classpath.Entry.Jar(jar)             => List(jar)
       case _                                   => Nil
 
     . join(java.io.File.pathSeparator.nn.tt)

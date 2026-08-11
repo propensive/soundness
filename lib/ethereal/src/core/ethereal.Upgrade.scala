@@ -76,7 +76,7 @@ object Upgrade:
             system:      System,
             diagnostics: Diagnostics,
             readable:    source is Readable to Data )
-  :   Nothing raises UpgradeError =
+  :   Nothing raises Upgrade.Error =
 
     applyBytes(source.read[Data])
 
@@ -85,14 +85,14 @@ object Upgrade:
     ( using environment: Environment,
             system:      System,
             diagnostics: Diagnostics )
-  :   Nothing raises UpgradeError =
+  :   Nothing raises Upgrade.Error =
 
     mitigate:
-      case Path.Error(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case Property.Error(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)
+      case Path.Error(_, _)     => Upgrade.Error(Upgrade.Error.Reason.CannotResolveLauncher)
+      case Property.Error(_)    => Upgrade.Error(Upgrade.Error.Reason.CannotResolveLauncher)
+      case IoError(_, _, _, _) => Upgrade.Error(Upgrade.Error.Reason.CannotWritePending)
+      case NameError(_, _, _)  => Upgrade.Error(Upgrade.Error.Reason.CannotWritePending)
+      case StreamError(_)      => Upgrade.Error(Upgrade.Error.Reason.CannotReadSource)
 
     . protect:
         val name: Text = System.properties.ethereal.name[Text]()
@@ -111,7 +111,7 @@ object Upgrade:
 
         try new jl.ProcessBuilder(launcher.s).inheritIO().nn.start()
         catch case _: jl.Throwable =>
-          abort(UpgradeError(UpgradeError.Reason.CannotRespawnLauncher))
+          abort(Upgrade.Error(Upgrade.Error.Reason.CannotRespawnLauncher))
 
         jl.System.exit(0)
         throw new jl.AssertionError("unreachable: System.exit returned")
@@ -119,3 +119,22 @@ object Upgrade:
 
   private def isWindows(using system: System): Boolean =
     safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+
+  // UpgradeError → Upgrade.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case CannotReadSource      => m"the upgrade source could not be read"
+        case CannotWritePending    => m"the .pending file could not be written"
+        case CannotResolveLauncher => m"the running launcher's path is not available"
+        case CannotRespawnLauncher => m"the launcher could not be relaunched"
+
+    enum Reason(val number: Int) extends Clarification:
+      case CannotReadSource      extends Reason(1)
+      case CannotWritePending    extends Reason(2)
+      case CannotResolveLauncher extends Reason(3)
+      case CannotRespawnLauncher extends Reason(4)
+
+  case class Error(reason: Upgrade.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(631, reason.number)(m"could not apply the upgrade because $reason")
+

@@ -45,6 +45,8 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import proscenium.compat.*
+import fulminate.*
 
 object MediaType:
   given inspectable: MediaType is Inspectable = mt => t"""media"${mt}""""
@@ -56,7 +58,7 @@ object MediaType:
   // Laundered pure: the resolution-scoped tactic shares the instance's given-resolution
   // lifetime, and wisteria-derived codecs summon `Decodable in Text` field instances
   // against pure expected types inside macro splices (see rep/DECISIONS.md).
-  given decodable: (tactic: Tactic[MediaTypeError])
+  given decodable: (tactic: Tactic[MediaType.Error])
   =>  MediaType is Decodable in Text =
     caps.unsafe.unsafeAssumePure(Media.parse(_))
 
@@ -84,6 +86,29 @@ object MediaType:
     :   MediaType =
 
       ${gesticulate.internal.mediaInterpolator[parts]('insertions)}
+
+  // MediaTypeError → MediaType.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case NotOneSlash              extends Reason(1)
+      case MissingParam             extends Reason(2)
+      case InvalidGroup             extends Reason(3)
+      case InvalidChar(char: Char)  extends Reason(4)
+      case InvalidSuffix(suffix: Text) extends Reason(5)
+
+      def message: Text = this match
+        case NotOneSlash       => txt"a media type should always contain exactly one '/' character"
+        case MissingParam      => txt"a terminal ';' suggests that a parameter is missing"
+        case InvalidChar(char) => txt"the character '$char' is not allowed"
+        case InvalidSuffix(s)  => txt"the suffix '$s' is not recognized"
+
+        case InvalidGroup =>
+          val list = Array.unsafeFrozen(Media.Group.values).toList.map(_.name)
+          txt"the type must be one of: ${list.join(t", ", t" or ")}"
+
+  case class Error(value: Text, reason: MediaType.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(353, reason.number)
+    ( m"the value $value is not a valid media type; ${reason.message}" )
 
 case class MediaType
   ( group:      Media.Group,

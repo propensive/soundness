@@ -116,7 +116,7 @@ package couriers:
           case ParseError(_, _, reason) => Out.println(reason.describe) yet error
           case HttpError(status, _)     => Out.println(status.communicate) yet error
           case JsonError(reason)        => Out.println(reason.communicate) yet error
-          case MediaTypeError(_, _)     => error
+          case MediaType.Error(_, _)     => error
 
         . protect:
            // The request and its decoding share only the resolution-scoped tactic.

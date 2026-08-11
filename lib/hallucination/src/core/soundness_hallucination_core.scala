@@ -34,4 +34,4 @@ package soundness
 
 // `Descriptor` clashes with embarcadero's OCI `Descriptor` in the umbrella; reach it via
 // `hallucination.Descriptor`.
-export hallucination.{Canvas, pixel, Raster, RasterError, RasterFormats, Rasterizable, repack}
+export hallucination.{Canvas, pixel, Raster, Rasterizable, repack}

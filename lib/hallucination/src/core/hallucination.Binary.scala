@@ -36,7 +36,7 @@ import anticipation.*
 import proscenium.compat.*
 
 // Bounds-unchecked primitive readers shared by the pure codecs; out-of-range reads throw and
-// are translated to `RasterError(..., Truncated)` at each codec's boundary.
+// are translated to `Raster.Error(..., Truncated)` at each codec's boundary.
 private[hallucination] object Binary:
   def u8(data: Data, index: Int): Int = data(index)&0xff
   def u16le(data: Data, index: Int): Int = u8(data, index) | u8(data, index + 1) << 8

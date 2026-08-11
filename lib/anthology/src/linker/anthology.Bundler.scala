@@ -91,7 +91,7 @@ object Bundler:
       val entries =
         Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
           classpath.entries.bind:
-          case ClasspathEntry.Directory(directory) =>
+          case Classpath.Entry.Directory(directory) =>
             val root = directory.as[Path on Linux]
             root.descendants.stdlib.filter: entry => !omissions.has(entry.name)
             . map: file =>
@@ -101,7 +101,7 @@ object Bundler:
 
             . compact
 
-          case ClasspathEntry.Jar(jar) =>
+          case Classpath.Entry.Jar(jar) =>
             val jarfile = workingDirectory[Path on Linux].resolve(jar)
 
             // Re-emit each entry verbatim: it already carries its compressed bytes, so no

@@ -44,9 +44,9 @@ object TarHeader:
   val checksumOffset: Int = 148
   val checksumLength: Int = 8
 
-  def parse(block: Data): TarHeader raises TarError =
+  def parse(block: Data): TarHeader raises Tar.Error =
     if block.length < blockSize
-    then raise(TarError(TarError.Reason.TruncatedStream(blockSize, block.length)))
+    then raise(Tar.Error(Tar.Error.Reason.TruncatedStream(blockSize, block.length)))
 
     TarHeader
       ( name     = block.slice(0, 100),
@@ -66,7 +66,7 @@ object TarHeader:
         devMinor = block.slice(337, 345),
         prefix   = block.slice(345, 500) )
 
-  def verifyChecksum(block: Data, recorded: U32): Unit raises TarError =
+  def verifyChecksum(block: Data, recorded: U32): Unit raises Tar.Error =
     var sum: Long = 0L
     var i = 0
 
@@ -79,9 +79,9 @@ object TarHeader:
 
     val actual: U32 = sum.toInt.bits.u32
 
-    if actual != recorded then raise(TarError(TarError.Reason.BadChecksum(recorded, actual)))
+    if actual != recorded then raise(Tar.Error(Tar.Error.Reason.BadChecksum(recorded, actual)))
 
-  def decodeOctal(data: Data, field: Text): U32 raises TarError =
+  def decodeOctal(data: Data, field: Text): U32 raises Tar.Error =
     var i = 0
     while i < data.length && data(i) == ' '.toByte do i = i + 1
 
@@ -98,10 +98,10 @@ object TarHeader:
         sawDigit = true
         i = i + 1
       else
-        raise(TarError(TarError.Reason.BadOctal(field, data)))
+        raise(Tar.Error(Tar.Error.Reason.BadOctal(field, data)))
         done = true
 
-    if !sawDigit then raise(TarError(TarError.Reason.BadOctal(field, data)))
+    if !sawDigit then raise(Tar.Error(Tar.Error.Reason.BadOctal(field, data)))
 
     n.toInt.bits.u32
 

@@ -439,7 +439,7 @@ object Tests extends Suite(m"Anthology Tests"):
     proscalaLibrary().let: lib =>
       supervise:
         val jars = List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
-        val classpath = LocalClasspath(jars.map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
+        val classpath = LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
         val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
         Files.createDirectories(Paths.get(out.encode.s))
 
@@ -615,7 +615,7 @@ object Tests extends Suite(m"Anthology Tests"):
     // 28,000 classfiles into every assembly built from it.
     kotlinToolchain().let: stdlib =>
       supervise:
-        val classpath = LocalClasspath(List(ClasspathEntry.Jar(stdlib))*)
+        val classpath = LocalClasspath(List(Classpath.Entry.Jar(stdlib))*)
         val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
         val greeting: Text =
@@ -705,7 +705,7 @@ object Tests extends Suite(m"Anthology Tests"):
           name.startsWith("scalajs-javalib") || name.startsWith("scalajs-library_2.13")
 
         val jars = fixed.stdlib.map { name => lib.resolve(name.s).nn } ++ globbed
-        LocalClasspath(jars.map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
+        LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
 
   // Yields the Scala Native compiler plugin and the runtime JARs a native compilation needs
   // (from the coursier cache, alongside the fork standard library), when all are present.
@@ -739,7 +739,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
           val classpath =
             LocalClasspath
-              ((jars.tail ++ stdlib).map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
+              ((jars.tail ++ stdlib).map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
 
           (NirPlugin(plugin), classpath)
 

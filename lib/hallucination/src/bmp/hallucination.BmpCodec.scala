@@ -39,21 +39,21 @@ import anticipation.*
 import contingency.*
 
 import Binary.*
-import RasterError.Reason
+import Raster.Error.Reason
 
 // A pure-Scala BMP codec: decodes 1-, 4- and 8-bit palettes and 16-, 24- and 32-bit pixels,
 // `BI_RGB` or `BI_BITFIELDS`, in either row order; encodes bottom-up 24-bit `BI_RGB`, the most
 // widely-supported form. Run-length-encoded variants are not supported.
 private[hallucination] object BmpCodec:
-  def decode(data: Data): Raster raises RasterError =
+  def decode(data: Data): Raster raises Raster.Error =
     try
       if data.length < 2 || u8(data, 0) != 'B' || u8(data, 1) != 'M'
-      then abort(RasterError(Bmp(), Reason.BadSignature))
+      then abort(Raster.Error(Bmp(), Reason.BadSignature))
 
       val dataOffset = u32le(data, 10)
       val headerSize = u32le(data, 14)
 
-      if headerSize < 40 then abort(RasterError(Bmp(), Reason.UnsupportedVariant))
+      if headerSize < 40 then abort(Raster.Error(Bmp(), Reason.UnsupportedVariant))
 
       val width = u32le(data, 18)
       val rawHeight = u32le(data, 22)
@@ -64,7 +64,7 @@ private[hallucination] object BmpCodec:
       val colorCount = u32le(data, 46)
 
       if compression != 0 && compression != 3
-      then abort(RasterError(Bmp(), Reason.UnsupportedVariant))
+      then abort(Raster.Error(Bmp(), Reason.UnsupportedVariant))
 
       // Default channel masks for `BI_RGB`; explicit masks for `BI_BITFIELDS`, which live
       // after a 40-byte header (RGB only) or inside a V4/V5 header (with alpha).
@@ -136,10 +136,10 @@ private[hallucination] object BmpCodec:
             if alpha then opaque << 8 | rescale(value, masks(3)) else opaque
 
           case _ =>
-            abort(RasterError(Bmp(), Reason.UnsupportedVariant))
+            abort(Raster.Error(Bmp(), Reason.UnsupportedVariant))
 
     catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
-      abort(RasterError(Bmp(), Reason.Truncated))
+      abort(Raster.Error(Bmp(), Reason.Truncated))
 
   def encode(raster: Raster): Data =
     val rowSize = (raster.width*3 + 3)& -4

@@ -165,7 +165,7 @@ object JsonRpc:
 
     async:
       recover:
-        case MediaTypeError(_, _)   => promise.cancel()
+        case MediaType.Error(_, _)   => promise.cancel()
         case ConnectError(_)        => promise.cancel()
         case ParseError(_, _, _)    => promise.cancel()
         case HttpError(_, _)        => promise.cancel()
@@ -188,7 +188,7 @@ object JsonRpc:
     val request = Request("2.0", method, payload, Unset).in[Json]
 
     recover:
-      case MediaTypeError(_, _) => ()
+      case MediaType.Error(_, _) => ()
       case ConnectError(_)      => ()
       case HttpError(_, _)      => ()
 

@@ -30,24 +30,42 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package bitumen
 
+import proscenium.compat.*
 import anticipation.*
+import contingency.*
+import denominative.*
+import distillate.*
+import galilei.*
+import gossamer.*
+import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
+import hypotenuse.*, arithmeticOptions.overflow.unchecked
+import nomenclature.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
+import zephyrine.*
 import fulminate.*
+import hypotenuse.*
+import scala.caps
+import aperture.*
+import pneumatic.*
 
-object UpgradeError:
-  object Reason:
-    given communicable: Reason is Communicable =
-      case CannotReadSource      => m"the upgrade source could not be read"
-      case CannotWritePending    => m"the .pending file could not be written"
-      case CannotResolveLauncher => m"the running launcher's path is not available"
-      case CannotRespawnLauncher => m"the launcher could not be relaunched"
+class TarDataOpenable(using Tactic[Tar.Error], Tactic[StreamError]) extends Openable:
+  type Self = Data
+  type Form = Tar
+  type Operand = Tar.Flag
+  type Result = Tar.Handle
 
-  enum Reason(val number: Int) extends Clarification:
-    case CannotReadSource      extends Reason(1)
-    case CannotWritePending    extends Reason(2)
-    case CannotResolveLauncher extends Reason(3)
-    case CannotRespawnLauncher extends Reason(4)
+  def open[grants <: Grant, result]
+    ( value: Data, mode: Mode granting grants, flags: List[Tar.Flag] )
+    ( block: ((Tar.Handle & Granting[grants])^) ?=> result )
+  :   result =
 
-case class UpgradeError(reason: UpgradeError.Reason)(using Diagnostics)
-extends Error(631, reason.number)(m"could not apply the upgrade because $reason")
+    if mode.atoms.has(Write) then abort(Tar.Error(Tar.Error.Reason.WriteUnsupported))
+    val entries = Tar.Handle.entries(value.stream, flags)
+    block(using new Tar.Handle(entries) with Granting[grants] {})

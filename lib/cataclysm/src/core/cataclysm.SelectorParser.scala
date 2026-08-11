@@ -41,16 +41,16 @@ import zephyrine.*
 
 // Parses a (comment-stripped, whitespace-normalized) selector prelude into a
 // `SelectorList`, following Selectors Level 4. Strict: malformed input raises a
-// `CssError`. Functional pseudo-classes `:is`/`:where`/`:not`/`:has` take nested
+// `Css.Error`. Functional pseudo-classes `:is`/`:where`/`:not`/`:has` take nested
 // selector lists, `:nth-*` take an `An+B` (with optional `of` selector list),
 // and any other function keeps its argument as raw text.
 private[cataclysm] object SelectorParser:
-  def parse(text: Text)(using Tactic[CssError]): SelectorList =
+  def parse(text: Text)(using Tactic[Css.Error]): SelectorList =
     import zephyrine.lineation.linefeedChars
 
     Parser(Cursor[Text](text)).document()
 
-  private class Parser(cursor: Cursor[Text, ?])(using Tactic[CssError]):
+  private class Parser(cursor: Cursor[Text, ?])(using Tactic[Css.Error]):
     def document(): SelectorList =
       val list = selectorList(relative = false)
       ws()
@@ -62,11 +62,11 @@ private[cataclysm] object SelectorParser:
     private def unexpected(): Nothing =
       val datum = cursor.peek
 
-      if datum.isEnd then fail(CssError.Reason.UnexpectedEnd)
-      else fail(CssError.Reason.UnexpectedChar(datum.asInt.toChar))
+      if datum.isEnd then fail(Css.Error.Reason.UnexpectedEnd)
+      else fail(Css.Error.Reason.UnexpectedChar(datum.asInt.toChar))
 
-    private def fail(reason: CssError.Reason): Nothing =
-      abort(CssError(reason, cursor.line, cursor.column))
+    private def fail(reason: Css.Error.Reason): Nothing =
+      abort(Css.Error(reason, cursor.line, cursor.column))
 
     private def whitespaceChar(datum: Datum): Boolean =
       datum == ' ' || datum == '\t' || datum == '\n' || datum == '\r'
@@ -183,7 +183,7 @@ private[cataclysm] object SelectorParser:
         else if datum == ':' then parts.append(pseudo())
         else continue = false
 
-      if parts.isEmpty then fail(CssError.Reason.EmptySelector)
+      if parts.isEmpty then fail(Css.Error.Reason.EmptySelector)
       Compound(List.of(parts.toList))
 
     private def nesting(parts: scala.collection.mutable.ListBuffer[Simple]): Unit =
@@ -258,9 +258,9 @@ private[cataclysm] object SelectorParser:
           text.asInstanceOf[Name[CssClass]]
 
     // The parser is lenient: an invalid identifier (e.g. a class starting with a
-    // digit) raises a `CssError` but parsing continues with the name verbatim.
+    // digit) raises a `Css.Error` but parsing continues with the name verbatim.
     private def invalid(text: Text): Unit =
-      raise(CssError(CssError.Reason.InvalidName(text), cursor.line, cursor.column))
+      raise(Css.Error(Css.Error.Reason.InvalidName(text), cursor.line, cursor.column))
 
     private def attribute(): Simple =
       eat('[')
@@ -520,7 +520,7 @@ private[cataclysm] object SelectorParser:
         val datum = cursor.peek
 
         if datum.isEnd then
-          fail(CssError.Reason.UnterminatedString)
+          fail(Css.Error.Reason.UnterminatedString)
         else
           val char = datum.asInt.toChar
 
@@ -540,7 +540,7 @@ private[cataclysm] object SelectorParser:
       val datum = cursor.peek
 
       if datum.isEnd then
-        fail(CssError.Reason.UnterminatedString)
+        fail(Css.Error.Reason.UnterminatedString)
       else
         buf.append(datum.asInt.toChar)
         cursor.advance()

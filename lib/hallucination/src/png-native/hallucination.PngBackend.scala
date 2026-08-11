@@ -38,5 +38,5 @@ import proscenium.compat.*
 
 // PNG through the pure Scala codec, used wherever `javax.imageio` is unavailable (Scala.js and WASI).
 private[hallucination] object PngBackend:
-  def decode(format: Rasterizable, data: Data): Raster raises RasterError = PngCodec.decode(data)
+  def decode(format: Rasterizable, data: Data): Raster raises Raster.Error = PngCodec.decode(data)
   def encode(format: Rasterizable, raster: Raster): Data = PngCodec.encode(raster)

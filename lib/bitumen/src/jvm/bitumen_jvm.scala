@@ -49,12 +49,12 @@ import filesystemBackends.virtualMachine
 // Opening a filesystem path or building an archive from disk needs `bitumen.jvm`; re-exported
 // through `soundness.*`, so `path.open[Tar]` and `Tar.Entry(...)` resolve as before on the JVM.
 given tarPathOpenable: [path: Abstractable across Paths to Text]
-=>  ( tarTactic: Tactic[TarError], streamTactic: Tactic[StreamError] )
+=>  ( tarTactic: Tactic[Tar.Error], streamTactic: Tactic[StreamError] )
 =>  ( TarOpenable[path]^{tarTactic, streamTactic} ) =
   TarOpenable[path]
 
 given tarPathCreatable: [path: Abstractable across Paths to Text]
-=>  (tactic: Tactic[TarError])
+=>  (tactic: Tactic[Tar.Error])
 =>  ( TarBuilder.TarCreatable[path]^{tactic} ) =
   TarBuilder.TarCreatable[path]
 
@@ -65,7 +65,7 @@ extension (companion: Tarfile.type)
             TraversalOrder,
             plane is Explorable,
             Tactic[IoError],
-            Tactic[TarError] )
+            Tactic[Tar.Error] )
   :   Tarfile =
 
     val entries: List[Tar.Entry] = root.descendants.to[List].map: path =>
@@ -79,7 +79,7 @@ extension (tarfile: Tarfile)
     ( using CreateNonexistentParents on plane,
             OverwritePreexisting on plane,
             Tactic[IoError],
-            Tactic[TarError] )
+            Tactic[Tar.Error] )
   :   Unit =
 
     tarfile.entries.each: entry =>

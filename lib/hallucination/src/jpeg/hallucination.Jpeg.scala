@@ -46,7 +46,7 @@ object Jpeg:
     def mediaType: MediaType = media"image/jpeg"
     def alpha: Boolean = false
 
-    def decode(data: Data): Raster raises RasterError = JpegBackend.decode(this, data)
+    def decode(data: Data): Raster raises Raster.Error = JpegBackend.decode(this, data)
     def encode(raster: Raster): Data = JpegBackend.encode(this, raster)
     def sniff(data: Data): Boolean = JpegCodec.isJpeg(data)
 

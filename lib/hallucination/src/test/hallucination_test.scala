@@ -164,12 +164,12 @@ object Tests extends Suite(m"Hallucination Tests"):
     . assert(_ == 1)
 
     test(m"Read a JPEG as a PNG fails"):
-      capture[RasterError](png.read[Raster in Jpeg])
-    . assert(_ == RasterError(Jpeg()))
+      capture[Raster.Error](png.read[Raster in Jpeg])
+    . assert(_ == Raster.Error(Jpeg()))
 
     test(m"Read a PNG as a JPEG fails"):
-      capture[RasterError](jpeg.read[Raster in Png])
-    . assert(_ == RasterError(Png()))
+      capture[Raster.Error](jpeg.read[Raster in Png])
+    . assert(_ == Raster.Error(Png()))
 
     test(m"Convert a PNG to a JPEG"):
       val jpeg2 = png.read[Raster in Png].to[Jpeg].read[Data]
@@ -343,8 +343,8 @@ object Tests extends Suite(m"Hallucination Tests"):
     . assert(_ == true)
 
     test(m"a truncated JPEG fails cleanly"):
-      capture[RasterError](JpegCodec.decode(Array.frozen(jpg420.readable.slice(0, 200)))).reason
-    . assert(_ == RasterError.Reason.Truncated)
+      capture[Raster.Error](JpegCodec.decode(Array.frozen(jpg420.readable.slice(0, 200)))).reason
+    . assert(_ == Raster.Error.Reason.Truncated)
 
     // A smooth gradient whose channels stay within 0..255 (no wrap-around discontinuity that
     // chroma subsampling would otherwise amplify).
@@ -394,8 +394,8 @@ object Tests extends Suite(m"Hallucination Tests"):
       val corrupted = Array.tabulate(png.readable.length): index =>
         if index == 40 then (png.readable(index) ^ 1).toByte else png.readable(index)
 
-      capture[RasterError](PngCodec.decode(corrupted)).reason
-    . assert(_ == RasterError.Reason.BadCrc)
+      capture[Raster.Error](PngCodec.decode(corrupted)).reason
+    . assert(_ == Raster.Error.Reason.BadCrc)
 
     test(m"a pure-BMP round trip preserves every pixel"):
       same(BmpCodec.decode(BmpCodec.encode(gradient)), gradient)
@@ -739,8 +739,8 @@ object Tests extends Suite(m"Hallucination Tests"):
     . assert(_ == (16, 16, true))
 
     test(m"a non-WebP byte stream is rejected"):
-      capture[RasterError](WebpCodec.decode(pngGradient)).reason
-    . assert(_ == RasterError.Reason.BadSignature)
+      capture[Raster.Error](WebpCodec.decode(pngGradient)).reason
+    . assert(_ == Raster.Error.Reason.BadSignature)
 
     // The lossless encoder round-trips through the decoder for every layout and image structure.
 

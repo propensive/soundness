@@ -35,4 +35,4 @@ package hallucination
 // Every format this library implements, for consumers that want `Raster(data)` to recognise any
 // of them. Depending on this component compiles all five codecs; a consumer that needs only one
 // should depend on that format's component and name it directly.
-given allRasterFormats: RasterFormats = RasterFormats(Bmp(), Gif(), Jpeg(), Png(), Webp())
+given allRasterFormats: Raster.Formats = Raster.Formats(Bmp(), Gif(), Jpeg(), Png(), Webp())

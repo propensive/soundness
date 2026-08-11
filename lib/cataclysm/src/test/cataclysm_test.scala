@@ -292,12 +292,12 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
     suite(m"Selector errors"):
       test(m"an empty selector is rejected"):
-        capture[CssError](parse(t"")).reason
-      . assert(_ == CssError.Reason.EmptySelector)
+        capture[Css.Error](parse(t"")).reason
+      . assert(_ == Css.Error.Reason.EmptySelector)
 
       test(m"unexpected trailing input is rejected"):
-        capture[CssError](parse(t"a!")).reason
-      . assert(_ == CssError.Reason.UnexpectedChar('!'))
+        capture[Css.Error](parse(t"a!")).reason
+      . assert(_ == Css.Error.Reason.UnexpectedChar('!'))
 
     suite(m"Property validation"):
       test(m"a known property is accepted"):
@@ -305,15 +305,15 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == List(rule(t"a", decl(t"color", t"red"))))
 
       test(m"an unknown property is rejected"):
-        capture[CssErrors](t"a { colour: red }".read[Css]).errors.head.reason
-      . assert(_ == CssError.Reason.UnknownProperty(t"colour"))
+        capture[Css.Errors](t"a { colour: red }".read[Css]).errors.head.reason
+      . assert(_ == Css.Error.Reason.UnknownProperty(t"colour"))
 
       test(m"errors from several declarations accumulate"):
-        capture[CssErrors](t"a { colour: red; bogus: 1px }".read[Css]).errors.length
+        capture[Css.Errors](t"a { colour: red; bogus: 1px }".read[Css]).errors.length
       . assert(_ == 2)
 
       test(m"an invalid value is reported"):
-        capture[CssErrors](t"a { width: notalength }".read[Css]).errors.length
+        capture[Css.Errors](t"a { width: notalength }".read[Css]).errors.length
       . assert(_ == 1)
 
       test(m"a var() value passes validation"):
@@ -587,16 +587,16 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
     suite(m"CSS errors"):
       test(m"an unterminated comment is reported"):
-        capture[CssErrors](t"a { /* unterminated }".read[Css]).errors.head.reason
-      . assert(_ == CssError.Reason.UnterminatedComment)
+        capture[Css.Errors](t"a { /* unterminated }".read[Css]).errors.head.reason
+      . assert(_ == Css.Error.Reason.UnterminatedComment)
 
       test(m"an unterminated string is reported"):
-        capture[CssErrors](t"""a { content: "x }""".read[Css]).errors.head.reason
-      . assert(_ == CssError.Reason.UnterminatedString)
+        capture[Css.Errors](t"""a { content: "x }""".read[Css]).errors.head.reason
+      . assert(_ == Css.Error.Reason.UnterminatedString)
 
       test(m"a missing closing brace is reported"):
-        capture[CssErrors](t"a { color: red;".read[Css]).errors.head.reason
-      . assert(_ == CssError.Reason.UnexpectedEnd)
+        capture[Css.Errors](t"a { color: red;".read[Css]).errors.head.reason
+      . assert(_ == Css.Error.Reason.UnexpectedEnd)
 
     suite(m"CSS serialization"):
       val complex = t"""ul > li.item:nth-child(2n+1) a[href^="http"] { color: red }""".read[Css]

@@ -46,7 +46,7 @@ object Webp:
     def mediaType = media"image/webp"
     def alpha: Boolean = true
 
-    def decode(data: Data): Raster raises RasterError = WebpCodec.decode(data)
+    def decode(data: Data): Raster raises Raster.Error = WebpCodec.decode(data)
     def encode(raster: Raster): Data = WebpCodec.encode(raster)
     def sniff(data: Data): Boolean = WebpCodec.isWebp(data)
 

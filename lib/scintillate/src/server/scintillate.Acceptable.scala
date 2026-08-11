@@ -50,25 +50,25 @@ import errorDiagnostics.stackTracesDiagnostics
 
 object Acceptable:
   // Honestly tracked: the instance retains its resolution-scoped tactic.
-  given multipart: (tactic: Tactic[MultipartError])
+  given multipart: (tactic: Tactic[Multipart.Error])
   =>  ((Multipart is Acceptable)^{tactic, caps.any}) = request =>
     mitigate:
-      case _: MediaTypeError => MultipartError(MultipartError.Reason.MediaType)
+      case _: MediaType.Error => Multipart.Error(Multipart.Error.Reason.MediaType)
 
     . protect:
         val contentType = request.headers.contentType.prim.or:
-          abort(MultipartError(MultipartError.Reason.MediaType))
+          abort(Multipart.Error(Multipart.Error.Reason.MediaType))
 
         if contentType.base == media"multipart/form-data" then
           val boundary = contentType.at(t"boundary").or:
-            abort(MultipartError(MultipartError.Reason.MediaType))
+            abort(Multipart.Error(Multipart.Error.Reason.MediaType))
 
           // Interim: `Multipart.parse` is still `Streamable`-typed; the whole body is
           // materialized (as its parts already were). Cursor-based parsing comes with
           // the Streamable-tail conversion (see rep/DECISIONS.md).
           Multipart.parse(request.body().memoize, boundary)
         else
-          abort(MultipartError(MultipartError.Reason.MediaType))
+          abort(Multipart.Error(Multipart.Error.Reason.MediaType))
 
 trait Acceptable extends Typeclass:
   def accept(request: Http.Request): Self

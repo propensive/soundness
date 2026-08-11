@@ -55,19 +55,19 @@ extension (classloader: Classloader)
 extension (classpath: Classpath.type)
   def of(classloader: jn.URLClassLoader): Classpath =
     val entries =
-      classloader.getURLs.nn.iterator.map(_.nn).flatMap(ClasspathEntry(_).option).toList
+      classloader.getURLs.nn.iterator.map(_.nn).flatMap(Classpath.Entry(_).option).toList
 
     if entries.exists:
-      case _: ClasspathEntry.Url => true
+      case _: Classpath.Entry.Url => true
       case _                     => false
     then OnlineClasspath(List.of(entries))
     else
-      type Entry = ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type
+      type Entry = Classpath.Entry.Directory | Classpath.Entry.Jar | Classpath.Entry.JavaRuntime.type
 
       val items: List[Entry] = List.of:
         entries.collect:
-          case directory: ClasspathEntry.Directory      => directory
-          case jar: ClasspathEntry.Jar                  => jar
-          case runtime: ClasspathEntry.JavaRuntime.type => runtime
+          case directory: Classpath.Entry.Directory      => directory
+          case jar: Classpath.Entry.Jar                  => jar
+          case runtime: Classpath.Entry.JavaRuntime.type => runtime
 
       LocalClasspath(items.stdlib*)

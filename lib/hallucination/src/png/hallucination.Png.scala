@@ -46,7 +46,7 @@ object Png:
     def mediaType = media"image/png"
     def alpha: Boolean = true
 
-    def decode(data: Data): Raster raises RasterError = PngBackend.decode(this, data)
+    def decode(data: Data): Raster raises Raster.Error = PngBackend.decode(this, data)
     def encode(raster: Raster): Data = PngBackend.encode(this, raster)
     def sniff(data: Data): Boolean = (data.length > 1 && (data(0)&0xff) == 0x89 && data(1) == 0x50)
 

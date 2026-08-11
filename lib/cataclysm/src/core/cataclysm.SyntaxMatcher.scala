@@ -108,10 +108,10 @@ object SyntaxMatcher:
     case List(ValueToken.Ident(value)) => globalKeywords(lower(value))
     case _                             => false
 
-  def check(property: PropertyDef, value: Text)(using Tactic[CssError]): Outcome =
+  def check(property: PropertyDef, value: Text)(using Tactic[Css.Error]): Outcome =
     check(property.grammar, value)
 
-  def check(grammar: Syntax, value: Text)(using Tactic[CssError]): Outcome =
+  def check(grammar: Syntax, value: Text)(using Tactic[Css.Error]): Outcome =
     val tokens = ValueTokenizer.tokens(value).filter(_ != ValueToken.Whitespace)
 
     if tokens.exists(substitution) then Outcome.Valid

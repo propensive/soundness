@@ -35,5 +35,5 @@ package hieroglyph
 import fulminate.*
 
 case class CharDecodeError(position: Int, encoding: Encoding)(using Diagnostics)
-extends Error
+extends fulminate.Error
   ( m"The byte sequence at position $position could not be decoded with the encoding $encoding" )

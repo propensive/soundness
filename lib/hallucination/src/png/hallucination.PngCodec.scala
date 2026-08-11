@@ -44,7 +44,7 @@ import pneumatic.*
 import rudiments.*
 
 import Binary.*
-import RasterError.Reason
+import Raster.Error.Reason
 
 // A pure-Scala PNG codec over pneumatic's `Zlib` (which selects `java.util.zip` on the JVM and
 // the pure DEFLATE port elsewhere). Decoding covers all critical chunks and colour types, bit
@@ -55,12 +55,12 @@ import RasterError.Reason
 private[hallucination] object PngCodec:
   private val signature: Array[Int]^{} = Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
 
-  def decode(data: Data): Raster raises RasterError =
+  def decode(data: Data): Raster raises Raster.Error =
     try
       val signed =
         data.length >= 8 && signature.indices.forall: index => u8(data, index) == signature.readUnchecked(index)
 
-      if !signed then abort(RasterError(Png(), Reason.BadSignature))
+      if !signed then abort(Raster.Error(Png(), Reason.BadSignature))
 
       var position = 8
       var width = 0
@@ -82,7 +82,7 @@ private[hallucination] object PngCodec:
         val storedCrc = u32be(data, position + 8 + length)
 
         if corpuscular.Crc32.checksum(data.slice(position + 4, position + 8), body) != storedCrc
-        then abort(RasterError(Png(), Reason.BadCrc))
+        then abort(Raster.Error(Png(), Reason.BadCrc))
 
         chunkType match
           case "IHDR" =>
@@ -104,7 +104,7 @@ private[hallucination] object PngCodec:
               legal && u8(data, position + 18) == 0 && u8(data, position + 19) == 0 &&
                 interlace <= 1
 
-            if !supported then abort(RasterError(Png(), Reason.UnsupportedVariant))
+            if !supported then abort(Raster.Error(Png(), Reason.UnsupportedVariant))
 
           case "PLTE" =>
             palette = Array.tabulate(length/3): index =>
@@ -135,7 +135,7 @@ private[hallucination] object PngCodec:
         try
           concatenate(Zlib.compression.decompress(Chain(deflated)))
           . asInstanceOf[Array[Byte]^{}]
-        catch case _: IllegalStateException => abort(RasterError(Png(), Reason.Truncated))
+        catch case _: IllegalStateException => abort(Raster.Error(Png(), Reason.Truncated))
 
       val channels = colorType match
         case 0 => 1
@@ -205,7 +205,7 @@ private[hallucination] object PngCodec:
                   else if upDelta <= upLeftDelta then raw + up
                   else raw + upLeft
 
-                case _ => abort(RasterError(Png(), Reason.UnsupportedVariant))
+                case _ => abort(Raster.Error(Png(), Reason.UnsupportedVariant))
 
               writable(current)(index) = defiltered.toByte
 
@@ -278,7 +278,7 @@ private[hallucination] object PngCodec:
       Raster.build(width, height, descriptor): index =>
         if alpha then words(index) else words(index) >>> 8
 
-    catch case _: IndexOutOfBoundsException => abort(RasterError(Png(), Reason.Truncated))
+    catch case _: IndexOutOfBoundsException => abort(Raster.Error(Png(), Reason.Truncated))
 
   def encode(raster: Raster): Data =
     val width = raster.width

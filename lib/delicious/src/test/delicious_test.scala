@@ -234,7 +234,7 @@ object Tests extends Suite(m"Delicious Tests"):
 
     proscalaLibrary().let: lib =>
       val jars = List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
-      val classpath = LocalClasspath(jars.map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
+      val classpath = LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
       val reifier = Reifier(classpath)
       given Imports = Imports.empty
 

@@ -536,7 +536,7 @@ object Tests extends Suite(m"Savagery tests"):
       .assert(_ == t"UTF-8")
 
       test(m"Non-SVG root raises NotAnSvg"):
-        capture[SvgError](t"""<html/>""".read[Svg])
+        capture[Svg.Error](t"""<html/>""".read[Svg])
       .assert:
-          case SvgError(SvgError.Reason.NotAnSvg(_)) => true
+          case Svg.Error(Svg.Error.Reason.NotAnSvg(_)) => true
           case _                                     => false

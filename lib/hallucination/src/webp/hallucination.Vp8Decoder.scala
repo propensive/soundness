@@ -38,7 +38,7 @@ import proscenium.compat.*
 
 import scala.caps
 
-import RasterError.Reason
+import Raster.Error.Reason
 import Vp8Tables.*
 
 // The VP8 lossy (keyframe) decoder, ported from image-rs/image-webp (`src/lossy/mod.rs`,
@@ -48,7 +48,7 @@ import Vp8Tables.*
 // supported, as in the reference (and as WebP requires). Inter-frame prediction and motion vectors
 // are absent.
 private[hallucination] object Vp8Decoder:
-  def decode(data: Data, start: Int, end: Int): Vp8Frame raises RasterError =
+  def decode(data: Data, start: Int, end: Int): Vp8Frame raises Raster.Error =
     Decoder(data, start, end).run()
 
   private final class Segment extends caps.Mutable:
@@ -132,7 +132,7 @@ private[hallucination] object Vp8Decoder:
     private def u16le(index: Int): Int = u8(index) | (u8(index + 1) << 8)
     private def u24le(index: Int): Int = u16le(index) | (u8(index + 2) << 16)
 
-    update def run()(using Tactic[RasterError]): Vp8Frame =
+    update def run()(using Tactic[Raster.Error]): Vp8Frame =
       readFrameHeader()
       var mby = 0
 
@@ -182,22 +182,22 @@ private[hallucination] object Vp8Decoder:
       // The frame privately owns the decoder's plane buffers after decode completes.
       scala.caps.unsafe.unsafeAssumePure(Vp8Frame(width, height, bufferWidth, ybuf, ubuf, vbuf))
 
-    private update def readFrameHeader()(using Tactic[RasterError]): Unit =
+    private update def readFrameHeader()(using Tactic[Raster.Error]): Unit =
       val tag = u24le(position)
       position += 3
 
-      if (tag & 1) != 0 then abort(RasterError(Webp(), Reason.UnsupportedVariant)) // not a keyframe
+      if (tag & 1) != 0 then abort(Raster.Error(Webp(), Reason.UnsupportedVariant)) // not a keyframe
       val firstPartitionSize = tag >> 5
 
       if u8(position) != 0x9d || u8(position + 1) != 0x01 || u8(position + 2) != 0x2a
-      then abort(RasterError(Webp(), Reason.BadSignature))
+      then abort(Raster.Error(Webp(), Reason.BadSignature))
 
       position += 3
 
       width = u16le(position) & 0x3fff; position += 2
       height = u16le(position) & 0x3fff; position += 2
 
-      if width == 0 || height == 0 then abort(RasterError(Webp(), Reason.UnsupportedVariant))
+      if width == 0 || height == 0 then abort(Raster.Error(Webp(), Reason.UnsupportedVariant))
 
       mbWidth = (width + 15)/16
       mbHeight = (height + 15)/16
@@ -225,7 +225,7 @@ private[hallucination] object Vp8Decoder:
       val colorSpace = bool.literal(1)
       bool.literal(1) // pixel type
 
-      if colorSpace != 0 then abort(RasterError(Webp(), Reason.UnsupportedVariant))
+      if colorSpace != 0 then abort(Raster.Error(Webp(), Reason.UnsupportedVariant))
 
       segmentsEnabled = bool.flag
 

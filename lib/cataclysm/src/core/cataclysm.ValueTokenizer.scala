@@ -39,15 +39,15 @@ import zephyrine.*
 
 // Breaks a CSS property value into `ValueToken`s, following the CSS Syntax
 // Module Level 3 tokenizer for the subset that appears in values. The output
-// feeds the value matcher; it is deliberately lenient, raising a `CssError`
+// feeds the value matcher; it is deliberately lenient, raising a `Css.Error`
 // only for an unterminated string.
 private[cataclysm] object ValueTokenizer:
-  def tokens(text: Text)(using Tactic[CssError]): List[ValueToken] =
+  def tokens(text: Text)(using Tactic[Css.Error]): List[ValueToken] =
     import zephyrine.lineation.linefeedChars
 
     Tokenizer(Cursor[Text](text)).all()
 
-  private class Tokenizer(cursor: Cursor[Text, ?])(using Tactic[CssError]):
+  private class Tokenizer(cursor: Cursor[Text, ?])(using Tactic[Css.Error]):
     def all(): List[ValueToken] =
       val acc = scala.collection.mutable.ListBuffer[ValueToken]()
       while !cursor.peek.isEnd do acc.append(next())
@@ -55,8 +55,8 @@ private[cataclysm] object ValueTokenizer:
 
     // ── primitives ──────────────────────────────────────────────────────────
 
-    private def fail(reason: CssError.Reason): Nothing =
-      abort(CssError(reason, cursor.line, cursor.column))
+    private def fail(reason: Css.Error.Reason): Nothing =
+      abort(Css.Error(reason, cursor.line, cursor.column))
 
     private def whitespaceChar(char: Char): Boolean =
       char == ' ' || char == '\t' || char == '\n' || char == '\r'
@@ -117,7 +117,7 @@ private[cataclysm] object ValueTokenizer:
         val datum = cursor.peek
 
         if datum.isEnd then
-          fail(CssError.Reason.UnterminatedString)
+          fail(Css.Error.Reason.UnterminatedString)
         else
           val char = datum.asInt.toChar
 
@@ -125,7 +125,7 @@ private[cataclysm] object ValueTokenizer:
             cursor.advance()
             val escaped = cursor.peek
 
-            if escaped.isEnd then fail(CssError.Reason.UnterminatedString)
+            if escaped.isEnd then fail(Css.Error.Reason.UnterminatedString)
             else
               buf.append(escaped.asInt.toChar)
               cursor.advance()

@@ -54,7 +54,7 @@ object Image:
   // Anchored here so `data.open[Image]()` resolves with no import. Opening a filesystem
   // *path* as an image (`path.open[Image]`) lives in the JVM-only source set.
   given dataOpenable
-  :   ( ociTactic: Tactic[OciError], tarTactic: Tactic[TarError],
+  :   ( ociTactic: Tactic[OciError], tarTactic: Tactic[Tar.Error],
         streamTactic: Tactic[StreamError] )
   =>  ( ImageDataOpenable^{ociTactic, tarTactic, streamTactic} ) =
     ImageDataOpenable()
@@ -179,7 +179,7 @@ case class Image
           user  = UnixUser(0),
           group = UnixGroup(0),
           mtime = 0.bits.u32,
-          data  = TarBody(content) )
+          data  = Tar.Body(content) )
 
     val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
     val indexEntry  = entry(t"index.json", indexBytes)

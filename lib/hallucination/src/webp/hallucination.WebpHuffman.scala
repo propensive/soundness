@@ -36,7 +36,7 @@ import contingency.*
 import proscenium.compat.*
 import vacuous.*
 
-import RasterError.Reason
+import Raster.Error.Reason
 
 // A canonical-Huffman decoder using a two-level lookup table, ported from image-rs/image-webp
 // (`src/lossless/decoder/huffman.rs`, MIT/Apache-2.0). A code is decoded by one primary-table
@@ -55,7 +55,7 @@ private[hallucination] object WebpHuffman:
       (codeword0 & (bit - 1)) | bit
 
   // Builds a tree from per-symbol code lengths (0 meaning "absent").
-  def buildImplicit(codeLengths: scala.Array[Int])(using Tactic[RasterError]): WebpHuffman =
+  def buildImplicit(codeLengths: scala.Array[Int])(using Tactic[Raster.Error]): WebpHuffman =
     var numSymbols = 0
     val histogram = new scala.Array[Int](MaxAllowedCodeLength + 1)
     var index = 0
@@ -66,7 +66,7 @@ private[hallucination] object WebpHuffman:
       if codeLengths(index) != 0 then numSymbols += 1
       index += 1
 
-    if numSymbols == 0 then abort(RasterError(Webp(), Reason.Huffman))
+    if numSymbols == 0 then abort(Raster.Error(Webp(), Reason.Huffman))
     else if numSymbols == 1 then
       var symbol = 0
 
@@ -91,7 +91,7 @@ private[hallucination] object WebpHuffman:
 
       codespaceUsed = (codespaceUsed << 1) + histogram(maxLength)
 
-      if codespaceUsed != (1 << maxLength) then abort(RasterError(Webp(), Reason.Huffman))
+      if codespaceUsed != (1 << maxLength) then abort(Raster.Error(Webp(), Reason.Huffman))
 
       val tableBits = maxLength.min(MaxTableBits)
       val tableSize = 1 << tableBits
@@ -202,7 +202,7 @@ private[hallucination] final class WebpHuffman
 
   def isSingleNode: Boolean = single >= 0
 
-  def readSymbol(reader: WebpBitReader^)(using Tactic[RasterError]): Int =
+  def readSymbol(reader: WebpBitReader^)(using Tactic[Raster.Error]): Int =
     if single >= 0 then single else
       val value = reader.peekFull.toInt & 0xffff
       val entry = primaryTable(value & tableMask)

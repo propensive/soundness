@@ -55,7 +55,7 @@ object internal:
   // sentinel char at each `$substitution`, parsed at compile time, and the parsed
   // `Css` is rebuilt as an `Expr` — a declaration value that is a lone sentinel
   // becomes the (type-checked) substitution, everything else is literal. Each such
-  // substitution's type must have a `CssConvertible` whose VDS type is valid for that
+  // substitution's type must have a `Css.Convertible` whose VDS type is valid for that
   // property, so `css"a { color: $length }"` does not compile.
   //
   // A substitution within a selector is also permitted, but only of a `Name[CssClass]`
@@ -103,7 +103,7 @@ object internal:
       val pos = expr.asTerm.underlyingArgument.pos
 
       expr match
-        case '{$value: tpe} => Expr.summon[(? >: tpe) is CssConvertible] match
+        case '{$value: tpe} => Expr.summon[(? >: tpe) is Css.Convertible] match
           case Some(convertible) =>
             propertyIssue(property, topicOf(convertible)) match
               case message: Message => halt(message, pos)
@@ -211,7 +211,7 @@ object internal:
 
   // Compile-time machinery behind the `Css.Style(borderWidth = …, color = …)`
   // dynamic constructor. Each named parameter's camelCase label becomes a
-  // kebab-case property name; the value's type must have a `CssConvertible`
+  // kebab-case property name; the value's type must have a `Css.Convertible`
   // instance (which both renders it and tags it with a value-definition-syntax
   // type); and that type is checked against the property's grammar, so e.g.
   // `Css.Style(color = 4.0*Px)` and `Css.Style(notAProperty = …)` fail to compile.
@@ -219,7 +219,7 @@ object internal:
     def recur(exprs: Seq[Expr[(Label, Any)]])
     :   scala.collection.immutable.List[Expr[(Text, Text)]] = exprs match
       case '{type key <: Label; ($key: key, $value: value)} +: tail =>
-        val convertible = Expr.summon[value is CssConvertible].getOrElse:
+        val convertible = Expr.summon[value is Css.Convertible].getOrElse:
           halt(m"cataclysm: no CSS value is available for this property's value")
 
         val name = key.value.getOrElse(halt(m"cataclysm: the property name must be a literal"))
@@ -235,7 +235,7 @@ object internal:
       case Varargs(exprs) => '{Css.Style.of(List.of(${Expr.ofList(recur(exprs))}))}
       case _              => '{Css.Style.of(Nil)}
 
-  // The VDS type a `CssConvertible` instance tags its values with (or "" if none).
+  // The VDS type a `Css.Convertible` instance tags its values with (or "" if none).
   def topicOf(using quotes: Quotes)(convertible: Expr[Any]): Text =
     import quotes.reflect.*
 

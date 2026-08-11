@@ -46,7 +46,7 @@ object Bmp:
     def mediaType = media"image/bmp"
     def alpha: Boolean = false
 
-    def decode(data: Data): Raster raises RasterError = BmpBackend.decode(this, data)
+    def decode(data: Data): Raster raises Raster.Error = BmpBackend.decode(this, data)
     def encode(raster: Raster): Data = BmpBackend.encode(this, raster)
     def sniff(data: Data): Boolean = (data.length > 1 && data(0) == 0x42 && data(1) == 0x4d)
 

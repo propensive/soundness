@@ -37,7 +37,7 @@ import proscenium.compat.*
 
 import scala.caps
 
-import RasterError.Reason
+import Raster.Error.Reason
 
 // A canonical-Huffman decoder for JPEG entropy-coded data, ported from image-rs/jpeg-decoder
 // (`src/huffman.rs`, MIT/Apache-2.0). Bits are buffered MSB-first in a 64-bit accumulator; an
@@ -54,7 +54,7 @@ private[hallucination] object JpegHuffman:
 private[hallucination] object JpegHuffmanTable:
   // A real `using` clause rather than the `raises` sugar: a context-function result would
   // hide the array parameters, which the separation checker rejects.
-  def apply(counts: scala.Array[Int], values: scala.Array[Int], ac: Boolean)(using Tactic[RasterError])
+  def apply(counts: scala.Array[Int], values: scala.Array[Int], ac: Boolean)(using Tactic[Raster.Error])
   :   JpegHuffmanTable =
 
     val lutBits = JpegHuffman.LutBits
@@ -85,7 +85,7 @@ private[hallucination] object JpegHuffmanTable:
 
     while index < totalSize do
       while codeSize < huffsize(index) do { code <<= 1; codeSize += 1 }
-      if code >= (1 << huffsize(index)) then abort(RasterError(Jpeg(), Reason.Huffman))
+      if code >= (1 << huffsize(index)) then abort(Raster.Error(Jpeg(), Reason.Huffman))
       huffcode(index) = code
       code += 1
       index += 1
@@ -176,7 +176,7 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
   var fastAcRun: Int = 0
 
   // Section F.2.2.3, Figure F.16.
-  update def decode(reader: JpegReader^, table: JpegHuffmanTable)(using Tactic[RasterError])
+  update def decode(reader: JpegReader^, table: JpegHuffmanTable)(using Tactic[Raster.Error])
   :   Int =
     if numBits < 16 then readBits(reader)
 
@@ -200,12 +200,12 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
 
         index += 1
 
-      if result == -1 then abort(RasterError(Jpeg(), Reason.Huffman)) else result
+      if result == -1 then abort(Raster.Error(Jpeg(), Reason.Huffman)) else result
 
   // Decodes a small AC coefficient in one step, if the combined table has an entry; returns true
   // and sets `fastAcValue`/`fastAcRun` when it does.
   update def decodeFastAc(reader: JpegReader^, table: JpegHuffmanTable)
-    ( using Tactic[RasterError] )
+    ( using Tactic[Raster.Error] )
   :   Boolean =
     if !table.hasAcLut then false else
       if numBits < JpegHuffman.LutBits then readBits(reader)
@@ -218,21 +218,21 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
         consumeBits(runSize & 0x0f)
         true
 
-  update def getBits(reader: JpegReader^, count: Int)(using Tactic[RasterError]): Int =
+  update def getBits(reader: JpegReader^, count: Int)(using Tactic[Raster.Error]): Int =
     if count == 0 then 0 else
       if numBits < count then readBits(reader)
       val value = peekBits(count)
       consumeBits(count)
       value
 
-  update def receiveExtend(reader: JpegReader^, count: Int)(using Tactic[RasterError]): Int =
+  update def receiveExtend(reader: JpegReader^, count: Int)(using Tactic[Raster.Error]): Int =
     JpegHuffman.extend(getBits(reader, count), count)
 
   update def reset(): Unit =
     bits = 0L
     numBits = 0
 
-  update def takeMarker(reader: JpegReader^)(using Tactic[RasterError]): Int =
+  update def takeMarker(reader: JpegReader^)(using Tactic[Raster.Error]): Int =
     readBits(reader)
     val result = marker
     marker = -1
@@ -245,7 +245,7 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
     bits <<= count
     numBits -= count
 
-  private update def readBits(reader: JpegReader^)(using Tactic[RasterError]): Unit =
+  private update def readBits(reader: JpegReader^)(using Tactic[Raster.Error]): Unit =
     while numBits <= 56 do
       val byte = if marker != -1 then 0 else reader.u8()
 
@@ -254,7 +254,7 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
         if next != 0x00 then
           // Section B.1.1.2: a marker, optionally preceded by fill bytes, ends the entropy data.
           while next == 0xff do next = reader.u8()
-          if next == 0x00 then abort(RasterError(Jpeg(), Reason.Bitstream)) else marker = next
+          if next == 0x00 then abort(Raster.Error(Jpeg(), Reason.Bitstream)) else marker = next
           numBits += 8
         else
           bits |= 0xffL << (56 - numBits)

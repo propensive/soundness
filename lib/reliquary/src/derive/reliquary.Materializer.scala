@@ -101,6 +101,6 @@ object Materializer:
         target.create[File](CreateFlag.Parents, CreateFlag.Replace): handle ?=>
           handle.write(Chain(data))
 
-      ClasspathEntry.Jar(target.encode)
+      Classpath.Entry.Jar(target.encode)
 
     LocalClasspath(jars*)

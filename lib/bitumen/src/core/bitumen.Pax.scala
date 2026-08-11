@@ -51,7 +51,7 @@ object Pax:
   def records(pairs: Iterable[(Text, Text)]): Data =
     pairs.foldLeft(Array.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
 
-  def parse(data: Data): Map[Text, Text] raises TarError =
+  def parse(data: Data): Map[Text, Text] raises Tar.Error =
     val builder = scala.collection.immutable.Map.newBuilder[Text, Text]
     var pos = 0
 
@@ -65,7 +65,7 @@ object Pax:
 
       if lengthEnd == pos || lengthEnd >= data.length || data.readUnchecked(lengthEnd) != ' '.toByte
       then
-        raise(TarError(TarError.Reason.BadPaxRecord(data)))
+        raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
         pos = data.length
       else
         // The scanned slice is all ASCII digits, so the only way `toInt` can fail is an
@@ -76,14 +76,14 @@ object Pax:
 
         if length < 1 || pos + length > data.length || data.readUnchecked(pos + length - 1) != '\n'.toByte
         then
-          raise(TarError(TarError.Reason.BadPaxRecord(data)))
+          raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
           pos = data.length
         else
           val content: String = data.slice(lengthEnd + 1, pos + length - 1).utf8.s
           val eqIdx: Int = content.indexOf('=')
 
           if eqIdx < 0 then
-            raise(TarError(TarError.Reason.BadPaxRecord(data)))
+            raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
             pos = data.length
           else
             builder += ((content.substring(0, eqIdx).nn.tt, content.substring(eqIdx + 1).nn.tt))

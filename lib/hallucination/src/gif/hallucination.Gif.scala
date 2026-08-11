@@ -46,7 +46,7 @@ object Gif:
     def mediaType = media"image/gif"
     def alpha: Boolean = true
 
-    def decode(data: Data): Raster raises RasterError = GifBackend.decode(this, data)
+    def decode(data: Data): Raster raises Raster.Error = GifBackend.decode(this, data)
     def encode(raster: Raster): Data = GifBackend.encode(this, raster)
     def sniff(data: Data): Boolean = (data.length > 2 && data(0) == 0x47 && data(1) == 0x49 && data(2) == 0x46)
 

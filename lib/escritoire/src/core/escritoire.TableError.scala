@@ -35,7 +35,7 @@ package escritoire
 import fulminate.*
 
 case class TableError(minimumWidth: Int, availableWidth: Int)(using Diagnostics)
-extends Error
+extends fulminate.Error
   ( m"""
       the table required a minimum width of $minimumWidth, but only $availableWidth was available
     """ )

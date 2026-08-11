@@ -166,24 +166,24 @@ object Tests extends Suite(m"Gesticulate tests"):
       . assert(_ == t"--xy not the boundary")
 
       test(m"Empty input throws"):
-        capture[MultipartError](Multipart.parse(Chain[Data]())).reason
+        capture[Multipart.Error](Multipart.parse(Chain[Data]())).reason
 
       . assert:
-          case MultipartError.Reason.Expected(_) => true
+          case Multipart.Error.Reason.Expected(_) => true
           case _                                 => false
 
       test(m"Non-dash leading byte throws Expected('-')"):
         val body = t"X--xyz\r\n\r\n\r\n--xyz--\r\n"
-        capture[MultipartError](Multipart.parse(Chain(body.in[Data]))).reason
+        capture[Multipart.Error](Multipart.parse(Chain(body.in[Data]))).reason
 
-      . assert(_ == MultipartError.Reason.Expected('-'))
+      . assert(_ == Multipart.Error.Reason.Expected('-'))
 
       test(m"Single-dash leading sequence throws Expected('-')"):
         val body =
           t"-xyz\r\nContent-Disposition: form-data; name=\"a\"\r\n\r\nv\r\n-xyz--\r\n"
-        capture[MultipartError](Multipart.parse(Chain(body.in[Data]))).reason
+        capture[Multipart.Error](Multipart.parse(Chain(body.in[Data]))).reason
 
-      . assert(_ == MultipartError.Reason.Expected('-'))
+      . assert(_ == Multipart.Error.Reason.Expected('-'))
 
     test(m"parse media type's type"):
       t"application/json".as[MediaType].group
@@ -208,5 +208,5 @@ object Tests extends Suite(m"Gesticulate tests"):
 
     test(m"invalid media type"):
       capture(t"applicationjson".as[MediaType])
-    . assert(_ == MediaTypeError(t"applicationjson",
-        MediaTypeError.Reason.NotOneSlash))
+    . assert(_ == MediaType.Error(t"applicationjson",
+        MediaType.Error.Reason.NotOneSlash))
