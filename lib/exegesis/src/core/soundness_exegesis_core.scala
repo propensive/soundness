@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export exegesis.{Lsp, LspProxy, LspSessional, rewrite, upstream}
+export exegesis.{Lsp, LspSessional, rewrite, upstream}

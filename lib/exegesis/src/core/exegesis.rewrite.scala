@@ -51,7 +51,7 @@ object rewrite:
   // that adds a feature must say so, and one that removes a feature must stop claiming it.
   transparent inline def capabilities
      ( inline adjust: ServerCapabilities => ServerCapabilities )
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
     proxy.results(t"initialize") = Lsp.Registry.Slot[Json => Json]: json =>
@@ -63,13 +63,13 @@ object rewrite:
   // Applied only when the server had something to say: a result that does not decode as a hover
   // is the `null` a server sends when it has none, and is passed on as it stands, so a rewriter
   // never has to spell out the empty case.
-  transparent inline def hover(inline lambda: Hover => Hover)(using proxy: LspProxy^): Unit =
+  transparent inline def hover(inline lambda: Hover => Hover)(using proxy: Lsp.Proxy^): Unit =
     proxy.results(t"textDocument/hover") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       try lambda(json.as[Hover]).in[Json] catch case _: Exception => json
 
   transparent inline def completions(inline lambda: CompletionList => CompletionList)
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
     proxy.results(t"textDocument/completion") = Lsp.Registry.Slot[Json => Json]: json =>
@@ -77,7 +77,7 @@ object rewrite:
       lambda(json.as[CompletionList]).in[Json]
 
   transparent inline def definitions(inline lambda: List[Location] => List[Location])
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
     proxy.results(t"textDocument/definition") = Lsp.Registry.Slot[Json => Json]: json =>
@@ -85,7 +85,7 @@ object rewrite:
       lambda(json.as[List[Location]]).in[Json]
 
   transparent inline def symbols(inline lambda: List[DocumentSymbol] => List[DocumentSymbol])
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
     proxy.results(t"textDocument/documentSymbol") = Lsp.Registry.Slot[Json => Json]: json =>
@@ -93,7 +93,7 @@ object rewrite:
       lambda(json.as[List[DocumentSymbol]]).in[Json]
 
   transparent inline def codeActions(inline lambda: List[CodeAction] => List[CodeAction])
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
     proxy.results(t"textDocument/codeAction") = Lsp.Registry.Slot[Json => Json]: json =>
@@ -101,7 +101,7 @@ object rewrite:
       lambda(json.as[List[CodeAction]]).in[Json]
 
   transparent inline def codeLenses(inline lambda: List[CodeLens] => List[CodeLens])
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
     proxy.results(t"textDocument/codeLens") = Lsp.Registry.Slot[Json => Json]: json =>
@@ -109,7 +109,7 @@ object rewrite:
       lambda(json.as[List[CodeLens]]).in[Json]
 
   transparent inline def inlayHints(inline lambda: List[InlayHint] => List[InlayHint])
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
     proxy.results(t"textDocument/inlayHint") = Lsp.Registry.Slot[Json => Json]: json =>
@@ -117,7 +117,7 @@ object rewrite:
       lambda(json.as[List[InlayHint]]).in[Json]
 
   transparent inline def signatureHelp(inline lambda: SignatureHelp => SignatureHelp)
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
     proxy.results(t"textDocument/signatureHelp") = Lsp.Registry.Slot[Json => Json]: json =>
@@ -128,7 +128,7 @@ object rewrite:
   // `params` are rewritten rather than a result: the `uri` and `version` the server reported are
   // kept, and only the reports are the proxy's to change.
   transparent inline def diagnostics(inline lambda: List[Diagnostic] => List[Diagnostic])
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
     proxy.notices(t"textDocument/publishDiagnostics") = Lsp.Registry.Slot[Json => Json]: params =>
@@ -146,12 +146,12 @@ object rewrite:
   // rather treat as JSON: `result` amends the answer to a request, `notification` the parameters
   // of a message the server sends unbidden.
   transparent inline def result(method: Text)(inline lambda: Json => Json)
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
     proxy.results(method) = Lsp.Registry.Slot[Json => Json](lambda)
 
   transparent inline def notification(method: Text)(inline lambda: Json => Json)
-     ( using proxy: LspProxy^ )
+     ( using proxy: Lsp.Proxy^ )
   :   Unit =
     proxy.notices(method) = Lsp.Registry.Slot[Json => Json](lambda)
 
@@ -159,15 +159,15 @@ object rewrite:
   // back, with the chance to forward it, amend it, drop it, or answer it here. Each may also ask
   // the server something of its own, through `upstream` — mind which thread the hook runs on, as
   // `upstream` documents.
-  transparent inline def outbound(inline hook: LspProxy.OutboundHook)(using proxy: LspProxy^)
+  transparent inline def outbound(inline hook: Lsp.Proxy.OutboundHook)(using proxy: Lsp.Proxy^)
   :   Unit =
-    proxy.outbound0 = Lsp.Registry.Slot[LspProxy.OutboundHook](hook)
+    proxy.outbound0 = Lsp.Registry.Slot[Lsp.Proxy.OutboundHook](hook)
 
-  transparent inline def inbound(inline hook: LspProxy.InboundHook)(using proxy: LspProxy^): Unit =
-    proxy.inbound0 = Lsp.Registry.Slot[LspProxy.InboundHook](hook)
+  transparent inline def inbound(inline hook: Lsp.Proxy.InboundHook)(using proxy: Lsp.Proxy^): Unit =
+    proxy.inbound0 = Lsp.Registry.Slot[Lsp.Proxy.InboundHook](hook)
 
   // Run once, on a task of its own, as soon as the proxy has a session with the server upstream:
   // the place for what a proxy must ask before it can amend anything, and the only hook free to
   // await an answer.
-  transparent inline def connected(inline block: => Unit)(using proxy: LspProxy^): Unit =
+  transparent inline def connected(inline block: => Unit)(using proxy: Lsp.Proxy^): Unit =
     proxy.connected0 = Lsp.Registry.Slot[() => Unit](() => block)
