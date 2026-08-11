@@ -138,7 +138,7 @@ object Http2ServerConnection:
               conn.streams.remove(id)
 
           case None =>
-            val stream = Http2.Stream(id)
+            val stream = Http2Stream(id)
             conn.streams(id) = stream
             stream.acceptHeaders(decoder.decode(block))
             if endStream then stream.end() else ()
@@ -196,7 +196,7 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
   // the reader/writer daemons (and reaches `close`) as a neutral `AnyRef` rim.
   private val duplexRef: AnyRef = duplex.asInstanceOf[AnyRef]
 
-  private[cordillera] val streams: scc.TrieMap[Int, Http2.Stream] = scc.TrieMap()
+  private[cordillera] val streams: scc.TrieMap[Int, Http2Stream] = scc.TrieMap()
   private val outbound: Relay[Frame] = Relay()
   private[cordillera] val started: Promise[Unit] = Promise()
 
@@ -209,7 +209,7 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
 
   // Streams opened by the client, in arrival order; the serve loop takes each
   // and runs its handler. Stopped when the connection ends.
-  private[cordillera] val accepted: Relay[Http2.Stream] = Relay()
+  private[cordillera] val accepted: Relay[Http2Stream] = Relay()
 
   private[cordillera] def send(frame: Frame): Unit = outbound.put(frame)
 
@@ -278,7 +278,7 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
   // reader-driven serve loop; returns when the connection ends. The handler
   // typically spawns a per-stream fiber so requests multiplexed on the one
   // connection are served concurrently.
-  def eachStream(handler: Http2.Stream => Unit): Unit =
+  def eachStream(handler: Http2Stream => Unit): Unit =
     accepted.stream.records.each(handler)
 
   // Send a response header block on `streamId`, encoded with a fresh

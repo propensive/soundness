@@ -76,7 +76,7 @@ object Http2Serve:
       val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
 
       daemon:
-        val stream0 = streamRef.asInstanceOf[Http2.Stream]
+        val stream0 = streamRef.asInstanceOf[Http2Stream]
         val connection0 = connectionRef.asInstanceOf[Http2ServerConnection]
         val handler1 = handler0.asInstanceOf[AnyRef => AnyRef]
         val streamId = stream0.id
