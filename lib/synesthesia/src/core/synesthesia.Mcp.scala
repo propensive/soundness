@@ -1028,7 +1028,7 @@ object Mcp:
     :   Http.Response =
 
       recover:
-        case error @ JsonRpcError(_, _, _) =>
+        case error @ JsonRpc.Error(_, _, _) =>
           import hieroglyph.charEncoders.utf8Encoder
           Http.Response(Unfulfilled(t"JSON-RPC error: ${error.message.text}"))
 

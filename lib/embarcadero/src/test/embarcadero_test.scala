@@ -393,7 +393,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
         supervise:
           val (clientSide, serverSide) = pair()
           val namespace = Promise[Text]()
-          val body = GrpcFraming.encode(VersionResponse(t"1.7.0", t"deadbeef").in[Protobuf].encode)
+          val body = Grpc.Framing.encode(VersionResponse(t"1.7.0", t"deadbeef").in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -415,7 +415,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val list = ListContainersResponse(List(Container(t"alpha", Map(t"tier" -> t"db")),
               Container(t"beta")))
 
-          val body = GrpcFraming.encode(list.in[Protobuf].encode)
+          val body = Grpc.Framing.encode(list.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -436,7 +436,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val response =
             GetContainerResponse(Container(t"gamma", Map(t"x" -> t"y"), image = t"img:1"))
 
-          val body = GrpcFraming.encode(response.in[Protobuf].encode)
+          val body = Grpc.Framing.encode(response.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -457,7 +457,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val list = ListNamespacesResponse(List(Namespace(t"default"),
               Namespace(t"k8s.io", Map(t"managed" -> t"true"))))
 
-          val body = GrpcFraming.encode(list.in[Protobuf].encode)
+          val body = Grpc.Framing.encode(list.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -480,7 +480,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val list = ListImagesResponse(List(ImageRecord(t"docker.io/library/alpine:latest",
               Map(t"arch" -> t"amd64"), target)))
 
-          val body = GrpcFraming.encode(list.in[Protobuf].encode)
+          val body = Grpc.Framing.encode(list.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -504,7 +504,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
               runtime = Runtime(t"io.containerd.runc.v2"),
               spec = AnyMessage(t"oci-spec", AnyMessage.Payload(t"hello".in[Data])))
 
-          val body = GrpcFraming.encode(CreateContainerResponse(container).in[Protobuf].encode)
+          val body = Grpc.Framing.encode(CreateContainerResponse(container).in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -521,7 +521,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
         supervise:
           val (clientSide, serverSide) = pair()
           val namespace = Promise[Text]()
-          val body = GrpcFraming.encode(CreateTaskResponse(t"web", 4321).in[Protobuf].encode)
+          val body = Grpc.Framing.encode(CreateTaskResponse(t"web", 4321).in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -542,7 +542,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val list =
             ListTasksResponse(List(Workload(t"web", t"", 4321, ProcessStatus.Running.code)))
 
-          val body = GrpcFraming.encode(list.in[Protobuf].encode)
+          val body = Grpc.Framing.encode(list.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -616,7 +616,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
                     serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
                   else
                     val body =
-                      responses(path).or(GrpcFraming.encode(Empty().in[Protobuf].encode))
+                      responses(path).or(Grpc.Framing.encode(Empty().in[Protobuf].encode))
 
                     val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
                     serverSide.send(zephyrine.Stream(Frame.Data(id, body, false).serialize))
@@ -627,15 +627,15 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       def lifecycleResponses(startPid: Int): Map[Text, Data] =
         Map
           ( t"$containersService/Create" ->
-              GrpcFraming.encode(CreateContainerResponse(Container(t"web")).in[Protobuf].encode),
+              Grpc.Framing.encode(CreateContainerResponse(Container(t"web")).in[Protobuf].encode),
             t"$tasksService/Create" ->
-              GrpcFraming.encode(CreateTaskResponse(t"web", 4321).in[Protobuf].encode),
+              Grpc.Framing.encode(CreateTaskResponse(t"web", 4321).in[Protobuf].encode),
             t"$tasksService/Start" ->
-              GrpcFraming.encode(StartResponse(startPid).in[Protobuf].encode),
+              Grpc.Framing.encode(StartResponse(startPid).in[Protobuf].encode),
             t"$tasksService/Wait" ->
-              GrpcFraming.encode(WaitResponse(7).in[Protobuf].encode),
+              Grpc.Framing.encode(WaitResponse(7).in[Protobuf].encode),
             t"$tasksService/Delete" ->
-              GrpcFraming.encode(DeleteTaskResponse(t"web", 4321, 7).in[Protobuf].encode) )
+              Grpc.Framing.encode(DeleteTaskResponse(t"web", 4321, 7).in[Protobuf].encode) )
 
       test(m"a Read-mode open creates container and task, never starts, then deletes"):
         supervise:

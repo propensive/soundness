@@ -42,7 +42,7 @@ import spectacular.*
 // A scoped gRPC channel over cordillera's `Http2.EndpointSessional` flow: the HTTP/2
 // connection is opened and its handshake completed, the channel is lent to the lambda,
 // and the connection (with its reader/writer daemons) is torn down when the scope ends —
-// unlike `GrpcChannel.apply`, whose connection is held open by a parked daemon until the
+// unlike `Grpc.Channel.apply`, whose connection is held open by a parked daemon until the
 // enclosing `supervise` scope ends. A named instance class rather than an anonymous
 // given: an anonymous subclass would freshen the capability types in its inferred
 // `Result` member.
@@ -57,8 +57,8 @@ extends Sessional:
   // A fresh capability (`^`, not `^{caps.any}`): each `session` call's handle is its own
   // existential, so returning it (or anything capturing it) from the block is a level
   // violation the capture checker rejects.
-  type Result = GrpcChannel^
+  type Result = Grpc.Channel^
 
   def session[result](target: Self)(lambda: (session: Result) ?=> result): result =
     target.endpoint.session: connection ?=>
-      lambda(using new GrpcChannel(connection, target.endpoint.authority, target.defaults))
+      lambda(using new Grpc.Channel(connection, target.endpoint.authority, target.defaults))

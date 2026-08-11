@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export obligatory.{JsonRpc, JsonRpcError, remote, Sse, SseError, SseSource}
+export obligatory.{JsonRpc, remote, Sse}

@@ -40,6 +40,7 @@ import java.util.concurrent as juc
 import anticipation.*
 import contingency.*
 import eucalyptus.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*
@@ -116,18 +117,18 @@ object JsonRpc:
   def request(target: JsonRpc, method: Text, payload: Json): Promise[Json] =
     call(target, method, payload).promise
 
-  // Awaits a request's response, raising the peer's fault as a `JsonRpcError` rather than
+  // Awaits a request's response, raising the peer's fault as a `JsonRpc.Error` rather than
   // blocking forever on a promise an error response could never fulfil.
-  def outcome(pending: Pending)(using Monitor, Tactic[JsonRpcError]): Json =
+  def outcome(pending: Pending)(using Monitor, Tactic[JsonRpc.Error]): Json =
     import fulminate.errorDiagnostics.stackTracesDiagnostics
 
     try unsafely(pending.promise.await())
     catch case async: Async.Error => faults.remove(pending.id) match
       case null =>
-        abort(JsonRpcError(JsonRpcError.Reason.Abandoned))
+        abort(JsonRpc.Error(JsonRpc.Error.Reason.Abandoned))
 
       case failure: Failure =>
-        abort(JsonRpcError(JsonRpcError.Reason.Failed, failure.code, failure.message))
+        abort(JsonRpc.Error(JsonRpc.Error.Reason.Failed, failure.code, failure.message))
 
   def receive(id: Text, result: Json): Unit = claim(id).let(_.offer(result))
 
@@ -197,6 +198,28 @@ object JsonRpc:
         ()
 
     Promise[Unit]().tap(_.offer(()))
+
+  // JsonRpcError → JsonRpc.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case UnknownMethod extends Reason(1)
+      case Failed        extends Reason(2)
+      case Abandoned     extends Reason(3)
+
+    given communicable: Reason is Communicable =
+      case Reason.UnknownMethod => m"the method name was not recognised by the dispatcher"
+      case Reason.Failed        => m"the peer answered the request with an error"
+      case Reason.Abandoned     => m"the request was never answered"
+
+  // `code` and `detail` carry the peer's `error.code` and `error.message` when the fault came back
+  // over the wire, so a caller can map the failure onto its own protocol's vocabulary — an LSP
+  // client, for instance, recovers an `Lsp.Error.Reason` from the code.
+  case class Error
+     ( reason: JsonRpc.Error.Reason,
+       code:   Optional[Int]  = Unset,
+       detail: Optional[Text] = Unset )
+     ( using Diagnostics )
+  extends fulminate.Error(721, reason.number)(m"the JSON-RPC operation failed because $reason")
 
 trait JsonRpc extends Original:
   private val channel: Relay[Json] = Relay()

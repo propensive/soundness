@@ -1725,11 +1725,11 @@ object Lsp:
     val workspace:  LspWorkspace  = caps.unsafe.unsafeAssumePure(channel.proxy[LspWorkspace])
     val resolve:    LspResolve    = caps.unsafe.unsafeAssumePure(channel.proxy[LspResolve])
 
-    // A fault the server reports as an error response arrives as a `JsonRpcError` carrying the wire
+    // A fault the server reports as an error response arrives as a `JsonRpc.Error` carrying the wire
     // code, which is exactly the vocabulary of `Lsp.Error.Reason`; a code outside the standard set is
     // reported as `Internal`, with the server's own message as the detail.
     private def ask[result](block: => result)(using Tactic[Lsp.Error]): result =
-      try block catch case error: JsonRpcError =>
+      try block catch case error: JsonRpc.Error =>
         abort(Lsp.Error(error.code.let(Lsp.Error.reason(_)).or(Lsp.Error.Reason.Internal), error.detail))
 
     // The raw seam: sends a message exactly as given, without minting an id or awaiting an answer.

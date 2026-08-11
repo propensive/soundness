@@ -35,8 +35,6 @@ package facsimile
 
 import scala.caps
 
-import proscenium.compat.*
-
 import anticipation.*
 import aviation.*
 import contingency.*
@@ -49,6 +47,7 @@ import iridescence.*
 import phoenicia.*
 import pneumatic.*
 import prepositional.*
+import proscenium.compat.*
 import quantitative.*
 import rudiments.*
 import vacuous.*

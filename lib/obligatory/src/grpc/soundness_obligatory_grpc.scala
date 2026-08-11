@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export obligatory.{Grpc, GrpcChannel, GrpcError, GrpcFraming, GrpcSessional}
+export obligatory.{Grpc, GrpcSessional}

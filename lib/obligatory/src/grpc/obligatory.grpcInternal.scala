@@ -49,10 +49,10 @@ object grpcInternal:
   // Derive a client stub for a service interface of `@rpc`-annotated methods. Each
   // method takes a single request message and returns either a response message
   // (unary) or a `Chain` of them (server-streaming); the generated body delegates to
-  // `GrpcChannel`, with the `:path` built from `service` and the method's own name.
+  // `Grpc.Channel`, with the `:path` built from `service` and the method's own name.
   // The protobuf codecs and the call's error capabilities are summoned at the call
   // site, so `remote` must be invoked where they are in scope.
-  def remote[interface: Type](channel: Expr[GrpcChannel], service: Expr[Text])
+  def remote[interface: Type](channel: Expr[Grpc.Channel], service: Expr[Text])
   :   Macro[interface] =
 
     import quotes.reflect.*
@@ -123,8 +123,8 @@ object grpcInternal:
                     Some:
                       ' {
                           given Monitor = ${monitorExpr}
-                          given Tactic[GrpcError] = ${tactic[GrpcError]}
-                          given Tactic[Http2.Error] = ${tactic[Http2.Error]}
+                          given grpcTactic: Tactic[Grpc.Error] = ${tactic[Grpc.Error]}
+                          given http2Tactic: Tactic[Http2.Error] = ${tactic[Http2.Error]}
                           given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
                           given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
 
@@ -140,8 +140,8 @@ object grpcInternal:
                     Some:
                       ' {
                           given Monitor = ${monitorExpr}
-                          given Tactic[GrpcError] = ${tactic[GrpcError]}
-                          given Tactic[Http2.Error] = ${tactic[Http2.Error]}
+                          given grpcTactic: Tactic[Grpc.Error] = ${tactic[Grpc.Error]}
+                          given http2Tactic: Tactic[Http2.Error] = ${tactic[Http2.Error]}
                           given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
                           given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
 

@@ -154,15 +154,15 @@ object internal:
 
                     CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
-                  val wildcard = Expr.summon[Tactic[JsonRpcError]] match
+                  val wildcard = Expr.summon[Tactic[JsonRpc.Error]] match
                     case Some(tactic) =>
                       val rhs =
-                        '{abort(JsonRpcError(JsonRpcError.Reason.UnknownMethod))(using $tactic)}
+                        '{abort(JsonRpc.Error(JsonRpc.Error.Reason.UnknownMethod))(using $tactic)}
 
                       CaseDef(Wildcard(), None, rhs.asTerm)
 
                     case None =>
-                      halt(728, m"could not find a contextual `Tactic[JsonRpcError]` instance")
+                      halt(728, m"could not find a contextual `Tactic[JsonRpc.Error]` instance")
 
                   Match('method.asTerm, cases :+ wildcard).asExprOf[Optional[Json]]
                 }
@@ -395,7 +395,7 @@ object internal:
                   // #26547). A `ThrowTactic` throws in place — exactly `unsafely`'s behaviour for
                   // a throwing tactic — so the semantics are unchanged.
                   ' {
-                      val tactic: ThrowTactic[JsonRpcError, result]^ = ThrowTactic()
+                      val tactic: ThrowTactic[JsonRpc.Error, result]^ = ThrowTactic()
 
                       val response =
                         JsonRpc.outcome(JsonRpc.call($rpc, $methodName, $payload))
