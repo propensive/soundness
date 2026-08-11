@@ -30,24 +30,24 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+// Work in progress whose extent is unknown: the status a spinner shows. It carries only a counter,
+// advanced by the caller when it has something to report, so that a spinner can be driven by
+// progress as well as by the clock; a design that ignores it animates from its `Tick` alone.
+object Busy:
+  def apply(tick: Int = 0): Busy = tick.max(0)
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+  // The default design, used when nothing is imported. Braille dots are the one spinner most
+  // people expect, they occupy a single cell, and they degrade to `-\|/` on an ASCII terminal.
+  // Any `import spinners.…` outranks this, being lexically scoped.
+  given gaugeable: Gauging => Busy is Gaugeable = spinners.brailleDotsSpinner
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+opaque type Busy = Int
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+extension (busy: Busy)
+  def tick: Int = busy
+  def next: Busy = busy + 1
+
+  // The frame to show, for a design with `count` frames.
+  def phase(count: Int): Int = if count <= 0 then 0 else busy%count

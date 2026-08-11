@@ -30,24 +30,76 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import anticipation.*
+import gossamer.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// Determinate progress bars, keyed on `Fraction`. Import one by name to choose it; with no import,
+// `Fraction`'s companion supplies the smooth eighth-block bar.
+// Each is a `Bar` value, so width negotiation, sub-cell quantization and the fall through to a
+// percentage and then to a single shade are shared by all of them rather than reimplemented
+// eighteen times.
+package bars:
+  // Full, partials, empty. Where `empty` is a space, the track shows as a background colour; where
+  // it is a glyph, the track is drawn in the track colour instead.
+  private def filled(full: Text, partials: Text, empty: Text): Bar =
+    Bar.Filled(Bar.Glyphs(full, partials, empty), Bar.defaultColumns, false)
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  // The eighth-width left blocks: each is one eighth wider than the last, so the bar's right edge
+  // advances by a fraction of a cell rather than jumping a whole one.
+  private val eighths: Text = t"▏▎▍▌▋▊▉"
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  given smoothBar: Gauging => Fraction is Gaugeable = filled(t"█", eighths, t" ").gaugeable
+  given blockBar: Gauging => Fraction is Gaugeable = filled(t"█", t"", t"░").gaugeable
+  given shadedBar: Gauging => Fraction is Gaugeable = filled(t"█", t"░▒▓", t" ").gaugeable
+
+  // The boundary cell rises rather than widens: a different reading of the same fraction, and the
+  // one to use when the bar is short.
+  given risingBar: Gauging => Fraction is Gaugeable = filled(t"█", t"▁▂▃▄▅▆▇", t" ").gaugeable
+
+  given fineBar: Gauging => Fraction is Gaugeable = filled(t"━", t"╸", t"━").gaugeable
+  given dotBar: Gauging => Fraction is Gaugeable = filled(t"●", t"", t"·").gaugeable
+  given railBar: Gauging => Fraction is Gaugeable = filled(t"━", t"╸", t"─").gaugeable
+  given squareBar: Gauging => Fraction is Gaugeable = filled(t"■", t"", t"□").gaugeable
+
+  given brailleBar: Gauging => Fraction is Gaugeable =
+    filled(t"⣿", t"⡀⡄⡆⡇⣇⣧⣷", t"⣀").gaugeable
+
+  // Capped bars: the caps mark the extent, so a partly-filled bar in a wide column still reads as
+  // a proportion of something. They are the first cells given up when the column narrows.
+  given capsuleBar: Gauging => Fraction is Gaugeable =
+    Bar.Filled(Bar.Glyphs(t"█", eighths, t"░", t"▕", t"▏"), Bar.defaultColumns, false).gaugeable
+
+  given asciiBar: Gauging => Fraction is Gaugeable =
+    Bar.Filled(Bar.Glyphs(t"#", t"", t"-", t"[", t"]"), Bar.defaultColumns, false).gaugeable
+
+  given equalsBar: Gauging => Fraction is Gaugeable =
+    Bar.Filled(Bar.Glyphs(t"=", t"", t" ", t"[", t"]"), Bar.defaultColumns, false).gaugeable
+
+  // The classic `[===>    ]`. The arrowhead is a tip rather than a partial: it marks where the
+  // fill has reached at every intermediate value, instead of appearing only on the sub-cell steps.
+  given arrowheadBar: Gauging => Fraction is Gaugeable =
+    val glyphs = Bar.Glyphs(t"=", t"", t" ", t"[", t"]", tip = t">")
+    Bar.Filled(glyphs, Bar.defaultColumns, false).gaugeable
+
+  // The fill colour is taken from the palette's lengthwise ramp per cell, so the bar carries a
+  // gradient along its length rather than one flat colour.
+  given gradientBar: Gauging => Fraction is Gaugeable =
+    Bar.Filled(Bar.Glyphs(t"█", eighths, t" "), Bar.defaultColumns, true).gaugeable
+
+  // Discrete pips rather than a continuous fill: coarser, but legible at a glance and countable,
+  // which a smooth bar is not.
+  given segmentedBar: Gauging => Fraction is Gaugeable =
+    Bar.Segmented(t"▰", t"▱", t"", 20).gaugeable
+
+  given pipBar: Gauging => Fraction is Gaugeable = Bar.Segmented(t"●", t"○", t" ", 10).gaugeable
+
+  // A head travelling along a rail, with nothing filled behind it: a position rather than an
+  // amount, for something that scrubs back and forth.
+  given markerBar: Gauging => Fraction is Gaugeable =
+    Bar.Marker(t"─", t"◆", Bar.defaultColumns).gaugeable
+
+  // The figure alone, for a column with no room for anything else — and the design every other bar
+  // degrades into.
+  given percentageBar: Gauging => Fraction is Gaugeable = Bar.Numeric.gaugeable

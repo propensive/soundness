@@ -30,24 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+// Which characters the designs may use. Importing one of these degrades or promotes the whole
+// catalogue at once, rather than requiring a different design to be chosen for each gauge.
+package gaugeGlyphs:
+  // Seven-bit output only: safe in a log capture, a CI transcript, or a terminal whose font is
+  // unknown. Every design has an ASCII rendering, so nothing disappears.
+  given asciiGlyphs: Gaugeable.Glyphs = Gaugeable.Glyphs.Ascii
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+  // Box-drawing and block glyphs: the default, and universal on modern terminals.
+  given unicodeGlyphs: Gaugeable.Glyphs = Gaugeable.Glyphs.Unicode
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  // Also braille, which packs two to four samples into a cell but needs a font that has it.
+  given brailleGlyphs: Gaugeable.Glyphs = Gaugeable.Glyphs.Braille
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // Also emoji, which are two cells wide and need a terminal that agrees they are.
+  given emojiGlyphs: Gaugeable.Glyphs = Gaugeable.Glyphs.Emoji

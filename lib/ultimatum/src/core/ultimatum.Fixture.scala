@@ -30,24 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import profanity.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// Anything the layout can host as a live element: it owns mutable state, renders itself onto
+// whichever `Board` the driver gives it (so the driver can move it to a new rectangle on
+// re-layout), and reports the intrinsic size its current content needs — the hook the reactive
+// layout uses to grow or shrink a panel.
+// A fixture need not accept input; a gauge does not, and so stays out of the focus cycle. `Focus`
+// adds input handling on top.
+trait Fixture:
+  def render(canvas: Board^, focused: Boolean): Unit
+  def measure(width: Int): (Int, Int)
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  // How long, in milliseconds, until this fixture wants redrawing again irrespective of any change
+  // to its state; `Unset` for a fixture that changes only when its state does. A spinner returns
+  // its frame interval, and that is the whole of the animation contract: the driver takes the
+  // minimum over the live fixtures and arms one timer, or none at all when every fixture is
+  // static.
+  def period: Optional[Int] = Unset
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // Install the running form's repaint trigger, so that a background change to this fixture's
+  // state wakes the event loop and appears immediately. The same contract `Panes.bindWake` has,
+  // and a no-op for a fixture whose state only ever changes in response to an event it was given.
+  private[ultimatum] def bindWake(wake: () => Unit): Unit = ()

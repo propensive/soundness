@@ -30,24 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import aviation.*
+import quantitative.*
+import symbolism.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// Time left. Clamped at zero, so a deadline that has passed reads as `0s` rather than as a
+// negative interval.
+object Countdown:
+  def apply(duration: Duration): Countdown =
+    if duration.value < 0 then 0.0*Second else duration
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  extension (countdown: Countdown) def duration: Duration = countdown
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+opaque type Countdown = Duration

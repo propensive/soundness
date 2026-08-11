@@ -30,24 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import aviation.*
+import quantitative.*
+import symbolism.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// Bytes moved against bytes to move, with the time it has taken. The rate and the estimate are
+// *derived*, never stored, so a caller cannot hand a design an inconsistent triple — the commonest
+// bug in hand-rolled transfer displays, where the percentage and the ETA disagree.
+// It has no default design: whether to show a rate, whether to show an estimate, and whether to
+// count in `MB` or `MiB` are three editorial decisions, and a silent default would be wrong about
+// half the time.
+case class Transfer
+  ( moved:   Quantity[Bytes[1]],
+    total:   Optional[Quantity[Bytes[1]]] = Unset,
+    elapsed: Duration                     = 0.0*Second ):
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  def rate: Quantity[Bytes[1] & Seconds[-1]] =
+    if elapsed.value <= 0 then 0.0*Byte/Second else moved/elapsed
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  def fraction: Optional[Fraction] = total.let: total =>
+    if total.value <= 0 then Fraction(0.0) else Fraction(moved.value/total.value)
+
+  // How long the rest should take at the rate so far; `Unset` while nothing has moved (when any
+  // estimate would be a fabrication) or while the total is unknown.
+  def estimate: Optional[Duration] = total.lay(Unset: Optional[Duration]): total =>
+    if rate.value <= 0 then Unset else ((total - moved).value/rate.value)*Second

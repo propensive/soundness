@@ -173,7 +173,7 @@ object Frame:
     Sequence.from(sizes.iterator)
 
 // A node in a layout tree: a `Cell` (a leaf panel that hosts content) or a
-// `Split` that divides its space among children along an `Axis`. Solving against
+// `Split` that divides its space among children along an `Arrangement`. Solving against
 // a root `Rect` runs two passes: a bottom-up MEASURE computing each node's (min,
 // max) on each axis (forcing a split's minimum up to the aggregate of its
 // children), then a top-down ARRANGE distributing space by fraction, fixing any
@@ -182,22 +182,22 @@ enum Frame:
   def sizing: Sizing
 
   case Cell(sizing: Sizing)
-  case Split(sizing: Sizing, axis: Axis, children: List[Frame])
+  case Split(sizing: Sizing, arrangement: Arrangement, children: List[Frame])
 
   // The resolved (min, max) of this frame along `axis`.
-  def measure(axis: Axis): Limits =
-    val own = axis match
-      case Axis.File => Limits(sizing.minWidth, sizing.maxWidth)
-      case Axis.Rank => Limits(sizing.minHeight, sizing.maxHeight)
+  def measure(arrangement: Arrangement): Limits =
+    val own = arrangement match
+      case Arrangement.Strip => Limits(sizing.minWidth, sizing.maxWidth)
+      case Arrangement.Stack => Limits(sizing.minHeight, sizing.maxHeight)
 
     this match
       case Cell(_) =>
         own
 
-      case Split(_, splitAxis, children) =>
-        val childLimits = children.map(_.measure(axis))
+      case Split(_, splitArrangement, children) =>
+        val childLimits = children.map(_.measure(arrangement))
 
-        if splitAxis == axis then Frame.alongLimits(own, childLimits)
+        if splitArrangement == arrangement then Frame.alongLimits(own, childLimits)
         else Frame.crossLimits(own, childLimits)
 
   // Solve this frame against a rectangle, producing a tree of placements.
@@ -205,18 +205,18 @@ enum Frame:
     case Cell(_) =>
       Placement.Cell(rect)
 
-    case Split(_, axis, children) =>
-      val available = axis match
-        case Axis.File => rect.width
-        case Axis.Rank => rect.height
+    case Split(_, arrangement, children) =>
+      val available = arrangement match
+        case Arrangement.Strip => rect.width
+        case Arrangement.Stack => rect.height
 
-      val limits = children.map(_.measure(axis))
+      val limits = children.map(_.measure(arrangement))
       val fractions = children.map(_.sizing.fraction)
       val sizes = Frame.distribute(fractions, limits, available)
 
-      val start = axis match
-        case Axis.File => rect.left
-        case Axis.Rank => rect.top
+      val start = arrangement match
+        case Arrangement.Strip => rect.left
+        case Arrangement.Stack => rect.top
 
       val offsets = sizes.stdlib.scanLeft(start)(_ + _)
 
@@ -224,9 +224,9 @@ enum Frame:
       // offsets; the zip truncates to the n children), so no re-indexing is needed.
       val placements = children.stdlib.lazyZip(sizes.stdlib).lazyZip(offsets).map:
         (child, size, offset) =>
-          val childRect = axis match
-            case Axis.File => Rect(offset, rect.top, size, rect.height)
-            case Axis.Rank => Rect(rect.left, offset, rect.width, size)
+          val childRect = arrangement match
+            case Arrangement.Strip => Rect(offset, rect.top, size, rect.height)
+            case Arrangement.Stack => Rect(rect.left, offset, rect.width, size)
 
           child.arrange(childRect)
 

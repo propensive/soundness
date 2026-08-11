@@ -42,10 +42,18 @@ import vacuous.*
 
 object Form:
   // One derived leaf of the live pane tree: the pane itself, the rectangle the last solve
-  // assigned it, and its focusable widget (present only for a `Pane.Widget`). Every
+  // assigned it, and its live element (present only for a `Pane.Widget`). Every
   // per-leaf datum lives together, so per-entry access needs no agreement between
   // parallel sequences.
-  private[ultimatum] case class Entry(pane: Pane, rect: Rect, focus: Optional[Focus])
+  // `focus` is the same object as `fixture` whenever the fixture accepts input, and `Unset` when it
+  // does not — which is precisely what keeps a display-only fixture (a gauge) out of the focus
+  // cycle, since `focusables` is derived from `focus` alone. Both are recorded at `solve`, where
+  // the pane is matched anyway, rather than re-tested on each access.
+  private[ultimatum] case class Entry
+    ( pane:    Pane,
+      rect:    Rect,
+      fixture: Optional[Fixture],
+      focus:   Optional[Focus] )
 
   // An immutable snapshot of one solved layout: the entries in frame order. A `Layout` is
   // only ever constructed whole (and the `Form` re-assigns its single `layout` var
@@ -98,6 +106,12 @@ class Form
   @scala.caps.unsafe.untrackedCaptures
   private var resizePending: Boolean = false
 
+  // Whether an animation wake is already scheduled. One timer serves every animated fixture in the
+  // layout (armed at the shortest period any of them asks for), and it is re-armed by each
+  // repaint, so an animation costs exactly one pending wake however many spinners are on screen.
+  @scala.caps.unsafe.untrackedCaptures
+  private var animationPending: Boolean = false
+
   // The anchor reply (the parked cursor's position after the resize's reflow),
   // stashed when it decodes and handed to the inline root at the resize repaint;
   // dropped on every new WINCH so it can only describe the latest reflow.
@@ -109,11 +123,15 @@ class Form
   @scala.caps.unsafe.untrackedCaptures
   private var resizeGrace: Boolean = false
 
-  // Bind every container to the wake function so a mutation requests a repaint.
+  // Bind every container and every live element to the wake function, so a mutation — whether of
+  // the tree's shape or of an element's own state — requests a repaint.
   private def bind(node: Pane): Unit = node match
     case Pane.Branch(_, _, panes) =>
       panes.bindWake(wake)
       panes.contents.each(bind(_))
+
+    case Pane.Widget(_, fixture) =>
+      fixture.bindWake(wake)
 
     case _ =>
       ()
@@ -126,11 +144,11 @@ class Form
 
     val stays = focused.lay(false): widget =>
       panes.stdlib.exists:
-        case Pane.Widget(_, focus) => focus eq widget
-        case _                     => false
+        case Pane.Widget(_, fixture) => fixture eq widget
+        case _                       => false
 
     if !stays then
-      focused = panes.stdlib.collectFirst { case Pane.Widget(_, focus) => focus }.optional
+      focused = panes.stdlib.collectFirst { case Pane.Widget(_, focus: Focus) => focus }.optional
 
     panes
 
@@ -155,15 +173,15 @@ class Form
     def nextWidth(): Int = if widths.hasNext then widths.next() else root.width
 
     def project(node: Pane): Frame = node match
-      case Pane.Branch(sizing, axis, panes) =>
-        Frame.Split(sizing, axis, panes.contents.map(project).to[List])
+      case Pane.Branch(sizing, arrangement, panes) =>
+        Frame.Split(sizing, arrangement, panes.contents.map(project).to[List])
 
       case Pane.Leaf(sizing, _) =>
         nextWidth()
         Frame.Cell(sizing)
 
-      case Pane.Widget(sizing, widget) =>
-        val (minWidth, minHeight) = widget.measure(nextWidth())
+      case Pane.Widget(sizing, fixture) =>
+        val (minWidth, minHeight) = fixture.measure(nextWidth())
 
         val grown = sizing.copy(minWidth = sizing.minWidth.max(minWidth),
             minHeight = sizing.minHeight.max(minHeight))
@@ -183,7 +201,7 @@ class Form
 
     val height = mode match
       case Occupancy.Fullscreen => root.height
-      case Occupancy.Inline     => frame.measure(Axis.Rank).min
+      case Occupancy.Inline     => frame.measure(Arrangement.Stack).min
 
     root match
       case inline: InlineRoot => inline.reframe(root.width, height)
@@ -195,11 +213,15 @@ class Form
     Form.Layout:
       Sequence.from:
         panes.stdlib.zip(rects.stdlib).map: (leaf, rect) =>
-          val focus: Optional[Focus] = leaf match
-            case Pane.Widget(_, focus) => focus
-            case _                     => Unset
+          val fixture: Optional[Fixture] = leaf match
+            case Pane.Widget(_, fixture) => fixture
+            case _                       => Unset
 
-          Form.Entry(leaf, rect, focus)
+          val focus: Optional[Focus] = leaf match
+            case Pane.Widget(_, focus: Focus) => focus
+            case _                            => Unset
+
+          Form.Entry(leaf, rect, fixture, focus)
 
   // Paint one leaf of a solved layout. The index is confined to `layout.entries`, so
   // callers prove it in bounds (via `iterate`, `confine` or `focusables`) before it
@@ -213,8 +235,8 @@ class Form
         content(extent)
         extent.flush()
 
-      case Pane.Widget(_, widget) =>
-        widget.render(extent, layout.focusables.indexOf(index) == focusPosition(layout))
+      case Pane.Widget(_, fixture) =>
+        fixture.render(extent, layout.focusables.indexOf(index) == focusPosition(layout))
 
       case _ =>
         ()
@@ -244,13 +266,48 @@ class Form
 
       case Occupancy.Fullscreen =>
         val previousRects = if stale then Sequence() else previous.entries.map(_.rect)
-        val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed)
+
+        // An animated fixture is dirty by definition: its appearance depends on the clock, not on
+        // its rectangle or its state, so nothing else in `dirtyCells` would notice it changing.
+        val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed ++ animated)
         dirty.each { index => updated.entries.confine(index.z).let(paint(updated)(_)) }
 
     updated.focusables.confine(focusPosition(updated).z).let: position =>
       paint(updated)(updated.focusables(position))
 
     root.flush()
+    rearm()
+
+  // The shortest redraw interval any live fixture asks for, or `Unset` when every fixture is
+  // static — in which case no timer is armed at all and the form stays purely event-driven.
+  private def animationPeriod: Optional[Int] =
+    var least: Int = Int.MaxValue
+    val current = layout
+
+    current.entries.iterate: index =>
+      least = least.min(current.entries(index).fixture.lay(Int.MaxValue)(_.period.or(Int.MaxValue)))
+
+    if least == Int.MaxValue then Unset else least
+
+  // Arm the animation timer, unless one is already armed or a resize wake already covers it (that
+  // wake will repaint, and the repaint re-arms). Armed after every refresh, so the timer stops of
+  // its own accord the moment the last animated fixture leaves the layout.
+  private def rearm(): Unit =
+    if !animationPending && !wakePending then animationPeriod.let: period =>
+      animationPending = true
+      scheduleWake(period.toLong)
+
+  // The indices of the entries whose fixture animates, and which therefore have to be repainted on
+  // every frame whether or not anything else about them changed.
+  private def animated: Set[Int] =
+    val builder = scala.collection.immutable.Set.newBuilder[Int]
+    val current = layout
+
+    current.entries.iterate: index =>
+      if current.entries(index).fixture.lay(false)(_.period.present)
+      then builder += (index: Ordinal).n0
+
+    Set.of(builder.result())
 
   // Repaint immediately, folding in any coalesced or pending-resize work. Used for
   // typing, focus changes and application redraws, which must stay responsive.
@@ -372,10 +429,14 @@ class Form
         resizePending = true
         requestResizeRefresh()
 
-      // An application redraw request (e.g. after a background layout change), or the
-      // scheduled wake for a debounced resize: repaint if the drag has gone quiet,
-      // else reschedule the wake for the rest of the debounce window.
+      // An application redraw request (e.g. after a background layout change), the scheduled wake
+      // for a debounced resize, or an animation tick: repaint if the drag has gone quiet, else
+      // reschedule the wake for the rest of the debounce window. An animation wake is consumed
+      // here — the repaint that follows re-arms it — so a layout that stops animating stops the
+      // timer of its own accord.
       case TerminalInfo.Redraw =>
+        animationPending = false
+
         if !resizePending then requestRefresh(Set())
         else if resizeDelay <= 0 then flushDeferred()
         else scheduleWake(resizeDelay)

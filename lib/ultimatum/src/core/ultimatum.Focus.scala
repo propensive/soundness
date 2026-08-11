@@ -45,10 +45,8 @@ import vacuous.*
 // driver can move it to a new rectangle on re-layout), folds an event into its
 // state, and reports the intrinsic size its current content needs — the hook the
 // reactive layout uses to grow or shrink a panel.
-trait Focus:
-  def render(canvas: Board^, focused: Boolean): Unit
+trait Focus extends Fixture:
   def handle(event: TerminalEvent): Unit
-  def measure(width: Int): (Int, Int)
 
 // A focusable wrapping a `LineEditor`. Its intrinsic height is the number of
 // wrapped rows its current value occupies, so an editor that grows past one line

@@ -30,24 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import anticipation.*
+import gossamer.*
+import prepositional.*
+import quantitative.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// The information dimension, and the byte as its unit. `quantitative` declares the seven SI base
+// dimensions and no more, so every byte quantity in the tree has so far been a local, ad-hoc
+// declaration; this is the shared one, introduced here because the transfer statuses need it.
+// It is a candidate to move into `quantitative` proper once something outside ultimatum wants it.
+sealed trait Information extends Dimension
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+sealed trait Bytes[power <: Nat] extends Units[power, Information]
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
+
+// Single-canonical, and structurally un-anchorable: the subject is a type declared in this file
+// but the typeclass belongs to `quantitative`, so there is no companion for it to live in. Named
+// distinctly for that reason, per the given-placement rules.
+given informationDesignation: Designation[Bytes[1]] = () => t"B"
+
+// How a byte quantity is scaled for display. Neither is a default: `1.5 MB` and `1.43 MiB` are the
+// same quantity written under different conventions, and which one is right depends on what is
+// being measured — so the caller picks.
+package informationPrefixes:
+  given binaryBytes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi, Tebi))
+  given decimalBytes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))

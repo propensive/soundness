@@ -30,24 +30,75 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package soundness
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+export
+  ultimatum
+  . { Bar, Busy, Byte, Bytes, CaptionLayout, Captioned, Checklist, Countdown, Dial, Elapsed, Facet,
+      Fraction, gauge, Gaugeable, GaugePalette, gaugeLine, gaugeRows, Gauging, Gradient,
+      Information, Inlay, Magnitude, Meter, Procession, Reading, Reckoning, Series, Sparkline,
+      Spinner, Standing, Step, Transfer, whilst }
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// Every given is exported by name: a wildcard would silently drop them, since `import p.*` does not
+// import givens.
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+package spinners:
+  export
+    ultimatum.spinners
+    . { aestheticSpinner, arcSpinner, arrowDoubleSpinner, arrowSpinner, balloonSpinner,
+        binarySpinner, bounceSpinner, bouncingBallSpinner, bouncingBarSpinner, boxSpinner,
+        brailleDotsSpinner, brailleGrowSpinner, brailleSnakeSpinner, brailleWaveSpinner,
+        circleHalfSpinner, circlePulseSpinner, circleQuadrantSpinner, clockSpinner,
+        crossStarSpinner, dotsScrollSpinner, dqpbSpinner, earthSpinner, growingBarSpinner,
+        growingBlockSpinner, hamburgerSpinner, hourglassSpinner, hourglassThinSpinner, layerSpinner,
+        lineSpinner, moonPhaseSpinner, noiseSpinner, pipeSpinner, pointsSpinner, pulseSpinner,
+        shuttleSpinner, squareCornerSpinner, starSpinner, toggleRoundSpinner, toggleSpinner,
+        toggleSquareSpinner, triangleSpinner }
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+package bars:
+  export
+    ultimatum.bars
+    . { arrowheadBar, asciiBar, blockBar, brailleBar, capsuleBar, dotBar, equalsBar, fineBar,
+        gradientBar, markerBar, percentageBar, pipBar, railBar, risingBar, segmentedBar, shadedBar,
+        smoothBar, squareBar }
+
+package meters:
+  export
+    ultimatum.meters
+    . { asciiMeter, batteryMeter, bulletMeter, columnMeter, needleMeter, thermometerMeter }
+
+package sparklines:
+  export ultimatum.sparklines.{asciiSparkline, blockSparkline, dotSparkline, tallSparkline}
+
+package counters:
+  export
+    ultimatum.counters
+    . { decimalTransferCounter, paddedCounter, percentageCounter, plainCounter, rateTransferCounter,
+        scaledCounter, terseTransferCounter, transferCounter, wordCounter }
+
+package standings:
+  export
+    ultimatum.standings
+    . { asciiStanding, heavyStanding, squareStanding, tickStanding, wordStanding }
+
+package processions:
+  export
+    ultimatum.processions
+    . { beadProcession, breadcrumbProcession, checklistProcession, numberedProcession,
+        ribbonProcession }
+
+package palettes:
+  export
+    ultimatum.palettes
+    . { ansiSixteenGaugePalette, emberGaugePalette, monochromeGaugePalette, oceanicGaugePalette,
+        plumGaugePalette, signalGaugePalette, slateGaugePalette, solarizedDarkGaugePalette,
+        solarizedLightGaugePalette, verdantGaugePalette }
+
+package captions:
+  export ultimatum.captions.{leadingCaption, spacedCaption, trailingCaption, truncatedCaption}
+
+package gaugeGlyphs:
+  export ultimatum.gaugeGlyphs.{asciiGlyphs, brailleGlyphs, emojiGlyphs, unicodeGlyphs}
+
+package informationPrefixes:
+  export ultimatum.informationPrefixes.{binaryBytes, decimalBytes}

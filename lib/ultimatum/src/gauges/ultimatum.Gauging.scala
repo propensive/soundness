@@ -30,24 +30,52 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
+import anticipation.*
 import escapade.*
 import hieroglyph.*
-import ultimatum.*
+import iridescence.*
+import prepositional.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+object Gauging:
+  // Assembled from three separately-importable givens, so that a caller overrides any one axis —
+  // the colours, the character repertoire, the width metric — without having to name the other
+  // two. This is what keeps "which design", "which palette" and "which glyphs" three orthogonal
+  // imports rather than one combinatorial choice.
+  given assembled: (palette0:  GaugePalette,
+                    glyphs0:   Gaugeable.Glyphs,
+                    metric0:   Text is Measurable)
+  =>  Gauging =
+    new Gauging:
+      val palette = palette0
+      val glyphs = glyphs0
+      val metric = metric0
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+// The ambient rendering context a design captures when its `given` is summoned: which colours to
+// draw in, which glyphs it may use, and how to measure a string's width in cells.
+// A design takes this as a parameter of its `given` rather than of its `rows` method, following
+// `urticose`'s `urlTeletype` and `chiaroscuro`'s `juxtapositionTeletype`: resolution then happens
+// where the user summons the design, so the user's imports decide the appearance.
+trait Gauging:
+  def palette: GaugePalette
+  def glyphs: Gaugeable.Glyphs
+  def metric: Text is Measurable
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // Colour a fragment, or leave it alone. Threading every tint through here means a design never
+  // writes an escape directly, and a palette that declines to colour a role costs nothing.
+  def tint(color: Color in Srgb)(text: Teletype): Teletype = e"${Fg(color)}($text)"
+  def wash(color: Color in Srgb)(text: Teletype): Teletype = e"${Bg(color)}($text)"
+
+  // Whether this context permits `glyphs`, so a design can pick its best available rendering.
+  // The repertoires nest: braille implies unicode, and emoji implies both.
+  def permits(required: Gaugeable.Glyphs): Boolean = required match
+    case Gaugeable.Glyphs.Ascii   => true
+    case Gaugeable.Glyphs.Unicode => glyphs != Gaugeable.Glyphs.Ascii
+    case Gaugeable.Glyphs.Emoji   => glyphs == Gaugeable.Glyphs.Emoji
+
+    case Gaugeable.Glyphs.Braille =>
+      glyphs == Gaugeable.Glyphs.Braille || glyphs == Gaugeable.Glyphs.Emoji
+
+  // The display width of `text` in cells, under whichever metric is in scope.
+  def cells(text: Text): Int = metric.width(text)

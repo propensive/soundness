@@ -30,24 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// A run of samples over time, shown as a sparkline. `floor` and `ceiling` fix the scale when it
+// should stay put between frames — a sparkline that rescales itself every tick makes a steady
+// signal look erratic — and are otherwise taken from the samples.
+case class Series
+  ( samples: Sequence[Double],
+    floor:   Optional[Double] = Unset,
+    ceiling: Optional[Double] = Unset ):
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  def lower: Double = floor.or(samples.stdlib.minOption.getOrElse(0.0))
+  def upper: Double = ceiling.or(samples.stdlib.maxOption.getOrElse(1.0))
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // The samples mapped onto `[0, 1]`. A flat series maps to zero rather than dividing by nothing.
+  def normalized: Sequence[Fraction] =
+    val span = upper - lower
+
+    Sequence.from:
+      samples.stdlib.map: sample =>
+        if span <= 0 then Fraction(0.0) else Fraction((sample - lower)/span)

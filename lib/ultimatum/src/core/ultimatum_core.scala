@@ -87,16 +87,16 @@ def menu[item: Showable]
 
 // A split whose children sit side by side as columns (distributing width): a
 // strip of panes across the terminal, on the `File` axis.
-def strip(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.File, Panes(panes*))
+def strip(panes: Pane*): Pane = Pane.Branch(Sizing(), Arrangement.Strip, Panes(panes*))
 
 // A column split over a live container, whose children can change while running.
-def strip(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.File, panes)
+def strip(panes: Panes): Pane = Pane.Branch(Sizing(), Arrangement.Strip, panes)
 
 // A split whose children stack as rows (distributing height), on the `Rank` axis.
-def stack(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, Panes(panes*))
+def stack(panes: Pane*): Pane = Pane.Branch(Sizing(), Arrangement.Stack, Panes(panes*))
 
 // A row split over a live container, whose children can change while running.
-def stack(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.Rank, panes)
+def stack(panes: Panes): Pane = Pane.Branch(Sizing(), Arrangement.Stack, panes)
 
 // Wrap `child` in a box-drawing border. Each requested side becomes a thin leaf
 // panel whose content is regenerated from its solved size, so an edge always
@@ -167,6 +167,16 @@ def form(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   // A container mutation wakes the loop by putting a redraw event on the spool.
   val wake = () => terminal.events.put(TerminalInfo.Redraw)
 
+  // A deferred repaint, woken after `delay` milliseconds (plus a small margin so it lands past the
+  // window it was waiting for). Both modes need one: inline mode uses it for the debounced resize
+  // repaint, and both use it as the animation tick for gauges.
+  val scheduleWake = (delay: Long) =>
+    async:
+      snooze((delay + 16).toDouble*Milli(Second))
+      terminal.events.put(TerminalInfo.Redraw)
+
+    ()
+
   mode match
     case Occupancy.Fullscreen =>
       // The feature body and its terminal argument are the same single-owner session.
@@ -180,18 +190,13 @@ def form(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
         val root = ScreenRoot(terminal)
         root.cursor(false)
 
-        try Form(root, mode, pane, wake).run(terminal.eventIterator()) finally root.finish()
+        // No throttle or debounce: a fullscreen resize repaints immediately (the alternate screen
+        // has no scrollback to protect), but the wake is still supplied, for the animation tick.
+        try
+          Form(root, mode, pane, wake, 0, 0, scheduleWake).run(terminal.eventIterator())
+        finally root.finish()
 
     case Occupancy.Inline =>
-      // A deferred resize repaint is woken by posting a `Redraw` after the remaining
-      // window (plus a small margin so it lands past it).
-      val scheduleWake = (delay: Long) =>
-        async:
-          snooze((delay + 16).toDouble*Milli(Second))
-          terminal.events.put(TerminalInfo.Redraw)
-
-        ()
-
       // Resize repaints are throttled to ~10/second and debounced by 50 ms of quiet,
       // so a drag must pause before the block is redrawn; typing stays immediate.
       Form(InlineRoot(terminal), mode, pane, wake, 100, 50, scheduleWake)
@@ -226,7 +231,7 @@ def dirtyCells
 // needs and presented at the cursor; any other canvas fills its own height.
 def paint(root: Board^, pane: Pane): Unit =
   val height = root match
-    case _: InlineRoot => pane.frame.measure(Axis.Rank).min
+    case _: InlineRoot => pane.frame.measure(Arrangement.Stack).min
     case _             => root.height
 
   root match

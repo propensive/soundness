@@ -30,24 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import aviation.*
+import quantitative.*
+import symbolism.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// Time spent so far. A distinct type from `Countdown` — rather than both being `Duration` — for
+// exactly the reason the whole facility is keyed on the status type: they want different designs,
+// and a duration counting up should not be able to pick up the design for one counting down.
+object Elapsed:
+  def apply(duration: Duration): Elapsed = duration
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  // In the companion, so that it does not compete at the top level with `Countdown`'s identically
+  // shaped accessor; the companion is in the opaque type's implicit scope, so it resolves anyway.
+  extension (elapsed: Elapsed) def duration: Duration = elapsed
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+opaque type Elapsed = Duration

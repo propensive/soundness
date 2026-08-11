@@ -30,24 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+// A reading on a bounded scale: a battery's charge, a temperature, a load average, a signal level.
+// Distinct from `Fraction` because the bounds are part of the datum — a meter shows where a value
+// sits between them, and its design may mark the scale — and because a meter is not progress: it
+// can fall as well as rise.
+object Meter:
+  def apply(value: Double): Meter = Meter(value, 0.0, 1.0)
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
-
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
-
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+case class Meter(value: Double, minimum: Double, maximum: Double):
+  def fraction: Fraction =
+    val span = maximum - minimum
+    if span <= 0 then Fraction(0.0) else Fraction((value - minimum)/span)

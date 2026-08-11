@@ -30,24 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// A proportion of work completed, in `[0, 1]`: the status a progress bar shows. Clamped on
+// construction, so that no design has to defend against a fraction outside its range, and
+// `Unset` for work whose total is not yet known — which every bar renders as an indeterminate
+// sweep rather than as zero.
+object Fraction:
+  def apply(value: Double): Fraction = if value.isNaN then 0.0 else value.max(0.0).min(1.0)
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  def of(done: Long, total: Long): Fraction =
+    if total <= 0 then Fraction(0.0) else Fraction(done.toDouble/total)
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // Work in flight whose total is unknown.
+  val indeterminate: Optional[Fraction] = Unset
+
+  // The default design: the smooth eighth-block bar, which is what a Soundness progress bar has
+  // always looked like. Every candidate bar is one row and says the same thing, so a default is
+  // safe here in a way it is not for a meter or a procession.
+  given gaugeable: Gauging => Fraction is Gaugeable = bars.smoothBar
+
+opaque type Fraction = Double
+
+extension (fraction: Fraction)
+  def value: Double = fraction
+  def percentage: Int = (fraction*100).toInt
+  def complete: Boolean = fraction >= 1.0

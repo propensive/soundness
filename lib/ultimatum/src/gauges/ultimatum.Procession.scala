@@ -30,24 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// An ordered run of steps: the status a checklist, a breadcrumb or a ribbon of stages shows. The
+// designs for it differ in *height* — a checklist is one row per step, a breadcrumb is one row
+// altogether — which is exactly why it has no default design: the choice changes the layout, so it
+// belongs to the caller.
+case class Procession(steps: Sequence[Step]):
+  def current: Optional[Step] = steps.stdlib.find(_.standing == Standing.Running).optional
+  def count: Int = steps.stdlib.length
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
-
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // How many steps are no longer waiting — the numerator of `[3/7]`.
+  def position: Int = steps.stdlib.count(_.standing != Standing.Pending)

@@ -35,10 +35,18 @@ package ultimatum
 import soundness.*
 
 import backstops.silentBackstop
-import probates.cancelProbate
+import bars.smoothBar
+import counters.paddedCounter
 import executives.completions
+import gaugeGlyphs.unicodeGlyphs
 import interpreters.posixInterpreter
+import palettes.emberGaugePalette
+import probates.cancelProbate
+import processions.checklistProcession
+import sparklines.blockSparkline
+import spinners.brailleDotsSpinner
 import strategies.throwUnsafely
+import textMetrics.eastAsianScriptsMetric
 import threading.platformThreading
 
 // A medium-complexity fullscreen layout demonstrating the framework: a title bar
@@ -67,6 +75,18 @@ def demo(): Unit = cli:
 //   │             │ ┌─ activity ┐                            │
 //   │             │ └───────────┘                            │
 //   └─────────────────────── status ────────────────────────┘
+// A pipeline part-way through: one step done, one running (which is what the checklist animates),
+// and two still to come.
+private def steps: Procession =
+  val stages =
+    Sequence
+      ( Step(t"resolve", Standing.Succeeded),
+        Step(t"compile", Standing.Running),
+        Step(t"test", Standing.Pending),
+        Step(t"publish", Standing.Pending) )
+
+  Procession(stages)
+
 private def demoLayout: Pane =
   // A rounded border around the menu; the menu itself is 20 wide, so the bordered
   // sidebar is 22.
@@ -74,13 +94,19 @@ private def demoLayout: Pane =
     menu(List(t"Overview", t"Compose", t"Activity", t"Settings"), t"Overview",
         minWidth = 20, maxWidth = 20)
 
+  // A column of gauges, each keyed on a different status type and each picking up its design from
+  // the imports at the top of this file. The spinner and the checklist animate; the bar, counter
+  // and sparkline change only when their `Reading` does.
   val activity = border():
-    panel(minHeight = 6):
-      Out.println(t"Recent activity")
-      Out.println(t"")
-      Out.println(t"  • Demo started")
-      Out.println(t"  • Four panes tiled")
-      Out.println(t"  • Tab moves focus, Esc quits")
+    stack
+      ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Activity")),
+        gauge(Reading(Captioned[Busy](Busy(), t"resolving")), minHeight = 1, maxHeight = 1),
+        gauge(Reading(Captioned[Fraction](Fraction(0.62), t"compiling")), minHeight = 1,
+            maxHeight = 1),
+        gauge(Reading(Reckoning(17, 120)), minHeight = 1, maxHeight = 1),
+        gauge(Reading(Series(Sequence(2.0, 5.0, 3.0, 8.0, 6.0, 9.0, 4.0))), minHeight = 1,
+            maxHeight = 1),
+        gauge(Reading(steps)) )
 
   // A bottom-only border draws a single rule under the heading, a separator with
   // no corners or sides.

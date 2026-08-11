@@ -30,24 +30,81 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
+import anticipation.*
 import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import gossamer.*
+import symbolism.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+object Spinner:
+  // Build from a run of single-cell frames written as one string — `⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏` — split by code
+  // point, which is how nearly every design in the catalogue is declared.
+  def each
+    ( frames:     Text,
+       interval:   Int             = 80,
+       repertoire: Gaugeable.Glyphs = Gaugeable.Glyphs.Unicode,
+       narrower:   Optional[Spinner] = Unset )
+  :   Spinner =
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+    Spinner(codepoints(frames), interval, 1, repertoire, narrower)
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // Split by code point rather than by `Char`, so that an astral frame (an emoji clock face) is one
+  // frame and not two halves of a surrogate pair. Frames that are themselves multi-codepoint
+  // clusters have to be given explicitly, as a `Sequence`.
+  private def codepoints(text: Text): Sequence[Text] =
+    val builder = scala.collection.immutable.Vector.newBuilder[Text]
+    val string = text.s
+    var index = 0
+
+    while index < string.length do
+      val codepoint = string.codePointAt(index)
+      val width = java.lang.Character.charCount(codepoint)
+      builder += string.substring(index, index + width).nn.tt
+      index += width
+
+    Sequence.of(builder.result())
+
+// A cyclic run of frames, shown one at a time. `columns` is how wide every frame is (they must
+// agree, or the row would shear as it animates), `repertoire` is the least adventurous character
+// set that can render it, and `narrower` is what to fall back to when this design will not fit or
+// is not permitted — the chain that lets an emoji design degrade to a BMP one and a wide marquee to
+// a single spinning cell.
+case class Spinner
+  ( frames:     Sequence[Text],
+    interval:   Int               = 80,
+    columns:    Int               = 1,
+    repertoire: Gaugeable.Glyphs  = Gaugeable.Glyphs.Unicode,
+    narrower:   Optional[Spinner] = Unset ):
+
+  // The first design in this one's fallback chain that fits `width` and is permitted here.
+  def fit(width: Int, gauging: Gauging): Optional[Spinner] =
+    if columns <= width && gauging.permits(repertoire) then this
+    else narrower.lay(Unset: Optional[Spinner])(_.fit(width, gauging))
+
+  // The narrowest design in the chain, which is what the layout is told this gauge needs.
+  def leastColumns(gauging: Gauging): Int =
+    narrower.lay(columns)(_.leastColumns(gauging).min(columns))
+
+  def gaugeable(using gauging: Gauging): Busy is Gaugeable = new Gaugeable:
+    type Self = Busy
+    override def period: Optional[Int] = interval
+    override def elastic: Boolean = false
+    override def minWidth(status: Busy): Int = leastColumns(gauging)
+    override def columns(status: Busy): Int = leastColumns(gauging)
+
+    def rows(status: Busy, tick: Tick, width: Int): List[Teletype] =
+      val chosen = fit(width, gauging)
+
+      val frame = chosen.lay(Teletype(t" "*width.max(0))): spinner =>
+        val count = spinner.frames.stdlib.length
+
+        val index = (tick.index + status.tick).abs
+        val glyph = if count == 0 then t" " else spinner.frames.stdlib(index%count)
+
+        val padding = width - spinner.columns
+        val body = gauging.tint(gauging.palette.fill)(Teletype(glyph))
+        if padding > 0 then e"$body${t" "*padding}" else body
+
+      List(frame)

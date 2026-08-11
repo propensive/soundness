@@ -30,24 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+// Multi-step processes. `checklistProcession` is one row per step and animates the running one;
+// the rest fit on a single row.
+// `Procession` has no default design, because these differ in height: choosing one decides how much
+// of the layout the gauge takes, which is not a decision a library should make silently.
+package processions:
+  given checklistProcession: Gauging => Procession is Gaugeable = Checklist.Rows.gaugeable
+  given breadcrumbProcession: Gauging => Procession is Gaugeable = Checklist.Breadcrumb.gaugeable
+  given beadProcession: Gauging => Procession is Gaugeable = Checklist.Beads.gaugeable
+  given numberedProcession: Gauging => Procession is Gaugeable = Checklist.Numbered.gaugeable
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
-
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
-
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // Powerline. Renders as tofu without a patched font, and no `Termcap` can tell us whether one is
+  // installed, so this is opt-in and never a default.
+  given ribbonProcession: Gauging => Procession is Gaugeable = Checklist.Ribbon.gaugeable

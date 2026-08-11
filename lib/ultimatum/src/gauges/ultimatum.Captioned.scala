@@ -30,24 +30,45 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
+import anticipation.*
 import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import vacuous.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+object Captioned:
+  // Derived from whatever design the underlying status already has, rather than choosing one: the
+  // caption's placement is the only style decision here, and that comes from `CaptionLayout`. So
+  // this is structural, lives in the companion, and needs no import.
+  given gaugeable: [status: Gaugeable as design]
+  =>  ( layout: CaptionLayout, gauging: Gauging )
+  =>  Captioned[status] is Gaugeable =
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+    new Gaugeable:
+      type Self = Captioned[status]
+      override def period: Optional[Int] = design.period
+      override def minWidth(status: Self): Int = design.minWidth(status.status)
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+      override def columns(status: Self): Int =
+        design.columns(status.status) + layout.gap + gauging.cells(status.caption)
+
+      override def height(status: Self, width: Int): Int =
+        design.height(status.status, width)
+
+      def rows(status: Self, tick: Tick, width: Int): List[Teletype] =
+        val gaugeWidth =
+          layout.gaugeWidth(design.columns(status.status), status.caption, width, gauging)
+
+        val drawn = design.rows(status.status, tick, gaugeWidth)
+
+        // Only the first row carries the caption; a multi-row design keeps its shape below it.
+        val captioned = drawn.stdlib.zipWithIndex.map: (row, index) =>
+          if index > 0 then row else layout.compose(row, gaugeWidth, status.caption, width, gauging)
+
+        List.of(captioned.toList)
+
+// Any status with a label beside it: `⠹ resolving dependencies`, `████░░ copying`. Generic over
+// what it labels, so one design serves every status type — and its given derives from the
+// underlying design rather than choosing one, so it is structural, not a style, and needs no
+// import.
+case class Captioned[status](status: status, caption: Text)

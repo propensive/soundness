@@ -30,24 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+object Tick:
+  val zero: Tick = Tick(0, 0L)
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+  def at(elapsed: Long, period: Int): Tick =
+    Tick(if period <= 0 then 0 else (elapsed/period).toInt, elapsed)
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
-
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+// The animation clock reading handed to a design each time it is drawn. `index` counts whole
+// animation periods since the gauge started — the frame number a spinner indexes its glyph cycle
+// with — and `elapsed` is monotonic milliseconds since it started.
+// Passing the reading in, rather than letting a design read a clock, is what keeps every design a
+// pure function of its status and its tick: a test drives one by handing it a literal `Tick`
+// instead of waiting.
+case class Tick(index: Int, elapsed: Long):
+  // Where this reading falls within the current period, as a fraction in `[0, 1)`; the dial a
+  // design uses when it wants a continuous sweep rather than a discrete frame.
+  def phase(period: Int): Double = if period <= 0 then 0.0 else (elapsed%period).toDouble/period

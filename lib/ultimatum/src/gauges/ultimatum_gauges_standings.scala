@@ -30,24 +30,34 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import anticipation.*
+import gossamer.*
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// One-cell (or one-word) markers for a `Standing`. Import one by name; with no import, `Standing`'s
+// companion supplies the tick and cross.
+// Every design carries the standing in its *glyph*, not only in its colour, so that it survives a
+// monochrome terminal, a redirected stream and a reader who cannot distinguish red from green.
+package standings:
+  import Gaugeable.Glyphs.{Ascii, Unicode}
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  private val ascii: Standing.Marks =
+    Standing.Marks(t"+", t"x", t"!", t"-", t"*", t".", 1, Ascii)
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  given asciiStanding: Gauging => Standing is Gaugeable = ascii.gaugeable
+
+  given tickStanding: Gauging => Standing is Gaugeable =
+    Standing.Marks(t"✓", t"✗", t"!", t"‑", t"⠋", t"·", 1, Unicode, ascii).gaugeable
+
+  given heavyStanding: Gauging => Standing is Gaugeable =
+    Standing.Marks(t"✔", t"✘", t"⚠", t"⊘", t"◐", t"◌", 1, Unicode, ascii).gaugeable
+
+  given squareStanding: Gauging => Standing is Gaugeable =
+    Standing.Marks(t"■", t"▨", t"▩", t"□", t"▤", t"·", 1, Unicode, ascii).gaugeable
+
+  // Words rather than glyphs, for a transcript that will be read rather than watched. Four cells,
+  // so a column of them aligns.
+  given wordStanding: Gauging => Standing is Gaugeable =
+    Standing.Marks(t"  ok", t"FAIL", t"warn", t"skip", t" run", t"   …", 4, Unicode, ascii)
+    . gaugeable

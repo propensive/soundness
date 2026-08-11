@@ -30,24 +30,40 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
+import scala.caps
 
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
+// A mutable cell holding a gauge's current status. Assigning to it publishes the new value and
+// wakes the running form, so a gauge updated from a background task repaints at once — the same
+// contract a `Panes` mutation has.
+// The status itself is plain data (a pane tree stays pure); the one effectful field is the
+// installed repaint callback.
+class Reading[status](initial: status):
+  @scala.caps.unsafe.untrackedCaptures
+  private var current: status = initial
 
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
+  // A no-op until the cell is bound into a running form.
+  @scala.caps.unsafe.untrackedCaptures
+  private var onChange: () -> Unit = () => ()
 
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+  // Install the running form's repaint trigger. As in `Panes.bindWake`, the callback genuinely
+  // captures the form's event loop and escapes into this longer-lived cell — a growing capture set
+  // that capture checking cannot yet express. It is sound by construction for the same reasons: it
+  // is re-bound on every `run` (so it never references a finished form) and is only ever called
+  // from a mutation while that form is live. Hence the single, localised `unsafeAssumePure`.
+  private[ultimatum] def bindWake(wake: () => Unit): Unit =
+    onChange = caps.unsafe.unsafeAssumePure(wake)
+
+  def apply(): status = current
+
+  // Paired with `apply`, this gives assignment syntax: `reading() = Fraction(0.42)`.
+  def update(status: status): Unit =
+    // A status is data — a fraction, a count, a list of steps — but `status` is an unbounded type
+    // parameter, so the compiler cannot know that and will not let it into an untracked field.
+    // `Reading` is not a capability (a pane tree holding one must stay pure, as `Panes` does), so
+    // the alternative would be to make it `caps.Mutable` and lose that.
+    current = caps.unsafe.unsafeAssumePure(status)
+    onChange()
+
+  def amend(lambda: status => status): Unit = update(lambda(current))

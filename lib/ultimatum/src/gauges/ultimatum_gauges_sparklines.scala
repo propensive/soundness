@@ -30,24 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package burdock
+package ultimatum
 
-import escapade.*
-import hieroglyph.*
-import ultimatum.*
-
-import gaugeGlyphs.unicodeGlyphs
-import palettes.emberGaugePalette
-import textMetrics.uniformMetric
-
-// The repackager's progress bar. The drawing is `ultimatum`'s: this fixes the width, the design and
-// the palette, and leaves the in-place redrawing to the command-line entry point.
-// It was its own implementation until the gauge facility existed; keeping the same `render`
-// signature means the call site is unchanged, and the smooth eighth-block design and the ember
-// colours are the ones it always had.
-object ProgressBar:
-  val width: Int = 40
-
-  // Renders `fraction` (clamped by `Fraction`) as a `width`-cell bar.
-  def render(fraction: Double): Teletype =
-    gaugeLine(Fraction(fraction), width)(using bars.smoothBar)
+// Runs of samples drawn as a miniature chart. A sparkline narrower than its series is decimated by
+// taking the maximum of each group, never truncated: a truncated sparkline would show only the
+// oldest samples while looking like the whole series.
+// `Series` has no default design, because the choice sets the vertical resolution — eight levels or
+// four, one row or two — and that changes what the reader can actually see in the data.
+package sparklines:
+  given blockSparkline: Gauging => Series is Gaugeable = Sparkline.Blocks.gaugeable
+  given tallSparkline: Gauging => Series is Gaugeable = Sparkline.Tall.gaugeable
+  given dotSparkline: Gauging => Series is Gaugeable = Sparkline.Dots.gaugeable
+  given asciiSparkline: Gauging => Series is Gaugeable = Sparkline.Ascii.gaugeable
