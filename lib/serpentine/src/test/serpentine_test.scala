@@ -263,13 +263,13 @@ object Tests extends Suite(m"internal Benchmarks"):
 
     suite(m"Decoding"):
       test(m"Decode a simple Linux path with a terminal slash"):
-        given Tactic[PathError] = strategies.throwUnsafely
+        given Tactic[Path.Error] = strategies.throwUnsafely
         t"/home/work/".as[Path on Linux]
 
       . assert(_ == % / "home" / "work")
 
       test(m"Decode a simple Linux path without a terminal slash"):
-        given Tactic[PathError] = strategies.throwUnsafely
+        given Tactic[Path.Error] = strategies.throwUnsafely
         t"/home/work".as[Path on Linux]
 
       . assert(_ == % / "home" / "work")
@@ -542,7 +542,7 @@ object Tests extends Suite(m"internal Benchmarks"):
       val shortPath: Path on Linux under %.type = % / "home"
       val path: Path on Linux under %.type = % / "home" / "work" / "data"
 
-      given Tactic[PathError] = strategies.throwUnsafely
+      given Tactic[Path.Error] = strategies.throwUnsafely
       summon[%.type is Radical on Linux]
 
       test(m"Match root on a simple path"):

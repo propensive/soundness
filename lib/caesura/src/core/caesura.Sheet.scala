@@ -61,7 +61,7 @@ object Sheet:
   private enum State:
     case Fresh, Quoted, DoubleQuoted
 
-  given abstractable: (CharEncoder, DsvFormat)
+  given abstractable: (CharEncoder, Dsv.Format)
   =>  Sheet is Abstractable across HttpStreams to HttpStreams.Content =
 
     new Abstractable:
@@ -100,7 +100,7 @@ object Sheet:
 
   // Sealed per the codec-thunk pattern (see rep/DECISIONS.md): the resolution-scoped
   // tactic shares the instance's given-resolution lifetime.
-  given aggregable: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  given aggregable: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Sheet is Aggregable by Text =
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
@@ -118,15 +118,15 @@ object Sheet:
           if format.header then Sheet(rows, format, rows.prim.let(_.header))
           else Sheet(rows, format)
 
-  given showable: DsvFormat => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
-  given streamable: DsvFormat => Sheet is Streamable by Text over Credit = sheet =>
+  given showable: Dsv.Format => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
+  given streamable: Dsv.Format => Sheet is Streamable by Text over Credit = sheet =>
     Stream(sheet.rows.iterator.map(_.show+t"\n"))
 
   // Parse rows from a pull endpoint as a single-consumer iterator, one
   // block-credit refill per chunk. Each call builds a fresh parser over the
   // stream; the iterator owns both for its lifetime.
   private[caesura] def parseRows(consume stream: (Stream[Text] over Credit)^)
-    ( using format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
+    ( using format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
   :   Iterator[Dsv]^ =
 
     val block = buffering.capacity(Substrate.Chars)
@@ -136,7 +136,7 @@ object Sheet:
     // statement rule). The resolution-scoped tactic is sealed at the rim (the
     // codec-thunk pattern, as in `aggregable` above) so the fresh parser can
     // cross into the consume position without referring to the parameter.
-    given sealedTactic: Tactic[DsvError] = caps.unsafe.unsafeAssumePure(tactic)
+    given sealedTactic: Tactic[Dsv.Error] = caps.unsafe.unsafeAssumePure(tactic)
 
     rowIterator:
       new Parser(() => stream.refill(Credit(block)) match
@@ -154,11 +154,11 @@ object Sheet:
   // A token reader for direct (AST-free) parsing, over a fresh parser: the
   // `Dsv.Parsable` counterpart of `parseRows`. Same rim discipline as above.
   private[caesura] def directReader(consume stream: (Stream[Text] over Credit)^)
-    ( using format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
+    ( using format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
   :   DsvReader^ =
 
     val block = buffering.capacity(Substrate.Chars)
-    given sealedTactic: Tactic[DsvError] = caps.unsafe.unsafeAssumePure(tactic)
+    given sealedTactic: Tactic[Dsv.Error] = caps.unsafe.unsafeAssumePure(tactic)
 
     DsvReader(format = format, tactic = caps.unsafe.unsafeAssumePure(tactic), parser =
       new Parser(() => stream.refill(Credit(block)) match
@@ -194,7 +194,7 @@ object Sheet:
         row
 
   private[caesura] class Parser(load: () => Optional[Text])
-    ( using format: DsvFormat, tactic: Tactic[DsvError] )
+    ( using format: Dsv.Format, tactic: Tactic[Dsv.Error] )
   extends caps.ExclusiveCapability, caps.Stateful:
     private var current: String = ""
     private var currentLen: Int = 0
@@ -278,14 +278,14 @@ object Sheet:
             return false
           else if ch == q then
             if builder.length > 0 then
-              val reason = DsvError.Reason.MisplacedQuote
+              val reason = Dsv.Error.Reason.MisplacedQuote
               // Pre-read into locals: the error's context-function argument may
               // not read the parser's state from inside `raise`'s
               // capture-polymorphic parameter.
               val row = rowOrdinal
               val cell = cellsBuf.length.z
               val position = consumed + p
-              raise(DsvError(format, reason, row, cell, position))
+              raise(Dsv.Error(format, reason, row, cell, position))
 
             state = State.Quoted
             return false
@@ -387,10 +387,10 @@ object Sheet:
 // `Iterator[Dsv]` over a live pull endpoint, which never builds a `Sheet`.
 case class Sheet
   ( rows:    Array[Dsv]^{},
-    format:  Optional[DsvFormat]    = Unset,
+    format:  Optional[Dsv.Format]    = Unset,
     columns: Optional[Array[Text]^{}] = Unset ):
 
-  def as[value: Decodable in Dsv]: List[value] raises DsvError tracks CellRef =
+  def as[value: Decodable in Dsv]: List[value] raises Dsv.Error tracks CellRef =
     rows.to[List].map(_.as[value])
 
   override def hashCode: Int =

@@ -77,7 +77,7 @@ class Issuer
     request.path match
       case OAuthPath =>
         mitigate:
-          case error@PathError(reason, path) =>
+          case error@Path.Error(reason, path) =>
             OAuthError(OAuthError.Reason.Other)
 
           case error@ConnectError(reason) =>
@@ -89,7 +89,7 @@ class Issuer
           case error@HttpError(status, _) =>
             OAuthError(OAuthError.Reason.UnexpectedHttpStatus(status))
 
-          case error@UuidError(_) =>
+          case error@Uuid.Error(_) =>
             OAuthError(OAuthError.Reason.Other)
 
           case error@QueryError(_) =>

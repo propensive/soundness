@@ -79,12 +79,12 @@ object Tests extends Suite(m"Cacophony Tests"):
     . assert(_ == 300)
 
     test(m"Read a WAV as AIFF fails"):
-      capture[AudioError](wav.read[Audio in Aiff])
-    . assert(_ == AudioError(Aiff()))
+      capture[Audio.Error](wav.read[Audio in Aiff])
+    . assert(_ == Audio.Error(Aiff()))
 
     test(m"Read malformed audio fails"):
-      capture[AudioError](broken.read[Audio in Wave])
-    . assert(_ == AudioError(Wave()))
+      capture[Audio.Error](broken.read[Audio in Wave])
+    . assert(_ == Audio.Error(Wave()))
 
     test(m"Convert a WAV to AIFF preserves frame count"):
       val aiff = wav.read[Audio in Wave].to[Aiff].read[Data]

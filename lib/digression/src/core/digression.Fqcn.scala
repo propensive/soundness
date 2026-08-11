@@ -43,11 +43,12 @@ import distillate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import fulminate.*
 
 object Fqcn:
   // Decoding a `Fqcn` from `Text`, in `Fqcn`'s own companion rather than distillate's
   // `Decodable`, so that distillate need not depend on digression.
-  given decodable: (tactic: Tactic[FqcnError]^)
+  given decodable: (tactic: Tactic[Fqcn.Error]^)
   =>  ((Fqcn is Decodable in Text)^{tactic, caps.any}) =
     Fqcn(_)
 
@@ -55,20 +56,20 @@ object Fqcn:
     char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9' ||
       char == '_' || char == '$'
 
-  def apply(name: Text): Fqcn raises FqcnError =
+  def apply(name: Text): Fqcn raises Fqcn.Error =
     val parts = Array.frozen(scala.IArray.from(name.s.split("\\.").nn.iterator.map(_.nn)))
 
     parts.each: part =>
-      if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName))
+      if part.length == 0 then raise(Fqcn.Error(name, Fqcn.Error.Reason.EmptyName))
 
       if digression.internal.javaKeywords.has(part)
-      then raise(FqcnError(name, FqcnError.Reason.JavaKeyword(part.tt)))
+      then raise(Fqcn.Error(name, Fqcn.Error.Reason.JavaKeyword(part.tt)))
 
       part.foreach: char =>
-        if !valid(char) then raise(FqcnError(name, FqcnError.Reason.InvalidChar(char)))
+        if !valid(char) then raise(Fqcn.Error(name, Fqcn.Error.Reason.InvalidChar(char)))
 
       if part.head >= '0' && part.head <= '9'
-      then raise(FqcnError(name, FqcnError.Reason.InvalidStart(part.head)))
+      then raise(Fqcn.Error(name, Fqcn.Error.Reason.InvalidStart(part.head)))
 
     new Fqcn(parts.map(_.tt))
 
@@ -82,6 +83,23 @@ object Fqcn:
       builder.append(parts.at(index).s)
 
     builder.toString.tt
+
+  // Fqcn.Error → Fqcn.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case InvalidChar(char: Char)    extends Reason(1)
+      case InvalidStart(char: Char)   extends Reason(2)
+      case EmptyName                  extends Reason(3)
+      case JavaKeyword(keyword: Text) extends Reason(4)
+
+    given communicable: Reason is Communicable =
+      case Reason.InvalidChar(char)    => m"a package name may not contain the character $char"
+      case Reason.InvalidStart(char)   => m"a package name may not start with the character $char"
+      case Reason.EmptyName            => m"a package name cannot be empty"
+      case Reason.JavaKeyword(keyword) => m"a package name cannot be the Java keyword, $keyword"
+
+  case class Error(name: Text, reason: Fqcn.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(17, reason.number)(m"the class name $name is not valid because $reason")
 
 class Fqcn(val parts: Array[Text]^{}):
   def text: Text = Fqcn.join(parts, parts.length)

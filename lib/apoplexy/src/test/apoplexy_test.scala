@@ -195,8 +195,8 @@ components:
       case _                    => false
 
     test(m"an unsupported OpenAPI version is rejected"):
-      capture[OpenApiError]:
+      capture[OpenApi.Error]:
         """{"openapi": "2.0", "info": {"title": "x", "version": "1"}}""".tt.read[OpenApi]
-    .assert(_.reason == OpenApiError.Reason.UnsupportedVersion(t"2.0"))
+    .assert(_.reason == OpenApi.Error.Reason.UnsupportedVersion(t"2.0"))
 
     ApiTests()

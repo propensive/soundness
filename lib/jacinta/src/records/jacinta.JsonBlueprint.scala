@@ -239,12 +239,12 @@ object JsonBlueprint:
     JsonBlueprint.intensional(_.as[Optional[Text]])
 
 
-  given uuid: ("uuid" is Intensional in JsonBlueprint from Json to (Uuid raises UuidError)) =
+  given uuid: ("uuid" is Intensional in JsonBlueprint from Json to (Uuid raises Uuid.Error)) =
     JsonBlueprint.intensional(_.as[Uuid])
 
 
   given optionalUuid
-  :   ("uuid?" is Intensional in JsonBlueprint from Json to (Optional[Uuid] raises UuidError)) =
+  :   ("uuid?" is Intensional in JsonBlueprint from Json to (Optional[Uuid] raises Uuid.Error)) =
 
     JsonBlueprint.intensional(_.as[Optional[Uuid]])
 

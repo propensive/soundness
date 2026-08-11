@@ -401,7 +401,7 @@ object Tarfile:
     import errorDiagnostics.emptyDiagnostics
 
     mitigate:
-      case PathError(_, _) => TarError(TarError.Reason.BadName(text))
+      case Path.Error(_, _) => TarError(TarError.Reason.BadName(text))
 
     . protect(text.as[Relative on Tar])
 

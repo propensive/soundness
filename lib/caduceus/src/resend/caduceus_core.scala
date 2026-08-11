@@ -62,7 +62,7 @@ import termcaps.environmentTermcap
 
 package couriers:
   given resend
-  :   ( courierTactic: Tactic[CourierError], online: Online, loggable: HttpEvent is Loggable,
+  :   ( courierTactic: Tactic[Courier.Error], online: Online, loggable: HttpEvent is Loggable,
         client: HttpClient )
   =>  ( apiKey: Resend.ApiKey )
   =>  (Courier^{courierTactic, online}) =
@@ -109,7 +109,7 @@ package couriers:
               email.text,
               attachments )
 
-        def error = CourierError(envelope.from, envelope.to.stdlib.head, envelope.subject)
+        def error = Courier.Error(envelope.from, envelope.to.stdlib.head, envelope.subject)
 
         mitigate:
           case ConnectError(reason)     => Out.println(reason.communicate) yet error

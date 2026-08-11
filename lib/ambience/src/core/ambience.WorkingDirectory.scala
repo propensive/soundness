@@ -35,10 +35,15 @@ package ambience
 import anticipation.*
 import beneficence.*
 import prepositional.*
+import fulminate.*
 
 object WorkingDirectory:
   def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =
     () => path.generic
+
+  // WorkingDirectory.Error → WorkingDirectory.Error
+  case class Error()(using Diagnostics)
+  extends fulminate.Error(913, 0)(m"there is no working directory")
 
 trait WorkingDirectory extends Findable:
   def directory(): Text

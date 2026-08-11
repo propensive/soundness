@@ -44,18 +44,19 @@ import symbolism.*
 import turbulence.*
 import zephyrine.*
 import vacuous.*
+import fulminate.*
 
 object Audio:
   def apply[streamable: Streamable by Data over Credit](input: streamable)
-  :   Audio raises AudioError =
+  :   Audio raises Audio.Error =
     // `ByteArrayInputStream` only reads the array it wraps.
     val rawBytes: scala.Array[Byte] = Array.unsafeJvm(input.read[Data])
 
     val raw: jss.AudioInputStream =
       try jss.AudioSystem.getAudioInputStream(ji.ByteArrayInputStream(rawBytes)).nn
       catch
-        case _: jss.UnsupportedAudioFileException => abort(AudioError(Unset))
-        case _: ji.IOException                    => abort(AudioError(Unset))
+        case _: jss.UnsupportedAudioFileException => abort(Audio.Error(Unset))
+        case _: ji.IOException                    => abort(Audio.Error(Unset))
 
     val encoding = raw.getFormat.nn.getEncoding.nn
 
@@ -78,7 +79,7 @@ object Audio:
               false )
 
         try jss.AudioSystem.getAudioInputStream(target, raw).nn
-        catch case _: IllegalArgumentException => abort(AudioError(Unset))
+        catch case _: IllegalArgumentException => abort(Audio.Error(Unset))
 
     val pcmBytes: scala.Array[Byte] = pcm.readAllBytes.nn
     val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
@@ -128,13 +129,18 @@ object Audio:
     def genericize(audio: Audio in format): HttpStreams.Content =
       (format.mediaType.basic, HttpStreams.Body(audio.source[Data].toProgression.stdlib.iterator))
 
-  given aggregable: [format: Audible as audible] => (tactic: Tactic[AudioError])
+  given aggregable: [format: Audible as audible] => (tactic: Tactic[Audio.Error])
   =>  (((Audio in format) is Aggregable by Data)^{tactic}) =
 
     audible.read(_)
 
-  given aggregable2: (tactic: Tactic[AudioError])
+  given aggregable2: (tactic: Tactic[Audio.Error])
   =>  ((Audio is Aggregable by Data)^{tactic}) = Audio(_)
+
+  // Audio.Error → Audio.Error
+  case class Error(audible: Optional[Audible])(using Diagnostics)
+  extends
+    fulminate.Error(m"unable to read the audio in ${audible.lay("unspecified".tt)(_.name)} format")
 
 case class Audio
   ( private[cacophony] val format: jss.AudioFormat,

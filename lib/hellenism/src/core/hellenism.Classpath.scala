@@ -57,10 +57,10 @@ object Classpath extends Root(t""):
   given radical: Classpath.type is Radical:
     type Plane = Classpath
 
-    def length(text: Text): Int raises PathError = 1
+    def length(text: Text): Int raises Path.Error = 1
 
-    def decode(text: Text): Classpath.type raises PathError =
-      if text.starts(t"/") then Classpath else abort(PathError(_.InvalidRoot))
+    def decode(text: Text): Classpath.type raises Path.Error =
+      if text.starts(t"/") then Classpath else abort(Path.Error(_.InvalidRoot))
 
     def encode(root: Classpath.type): Text = t""
 

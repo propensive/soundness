@@ -65,7 +65,7 @@ extends caps.Pure:
   type Topic = topic
 
   inline def absolutePath(using Environment, System)
-  :   Text raises EnvironmentError raises PropertyError =
+  :   Text raises Environment.Error raises Property.Error =
 
     val dir = part.let(baseDir/_).or(baseDir)
     // Only home-relative layouts need `$HOME`; the `/`-rooted `Base.*` layouts render without it.
@@ -85,7 +85,7 @@ extends caps.Pure:
   // which cannot flow into the `raises` existential under capture checking.
   inline def apply[instantiable: Instantiable across Paths from Text]()
     ( using System, Environment )
-  :   instantiable raises PropertyError raises EnvironmentError =
+  :   instantiable raises Property.Error raises Environment.Error =
 
     val path: Text = absolutePath
     instantiable(path)

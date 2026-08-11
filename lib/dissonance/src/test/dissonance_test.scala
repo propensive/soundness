@@ -313,16 +313,16 @@ object Tests extends Suite(m"Dissonance tests"):
 
     suite(m"Redraft ambiguity tests"):
       test(m"An under-anchored deletion is rejected"):
-        capture[RedraftError](Redraft.parse(Chain(t"- a")).patch(dup))
-      . assert(_.reason == RedraftError.Reason.Unanchored)
+        capture[Redraft.Error](Redraft.parse(Chain(t"- a")).patch(dup))
+      . assert(_.reason == Redraft.Error.Reason.Unanchored)
 
       test(m"verify reports the under-anchored line"):
         Redraft.parse(Chain(t"- a")).verify(dup)
-      . assert(_ == List(Redraft.Anomaly(0, t"a", RedraftError.Reason.Unanchored)))
+      . assert(_ == List(Redraft.Anomaly(0, t"a", Redraft.Error.Reason.Unanchored)))
 
       test(m"A non-matching context line is rejected"):
-        capture[RedraftError](Redraft.parse(Chain(t"absent", t"- line2")).patch(source))
-      . assert(_.reason == RedraftError.Reason.NoMatch)
+        capture[Redraft.Error](Redraft.parse(Chain(t"absent", t"- line2")).patch(source))
+      . assert(_.reason == Redraft.Error.Reason.NoMatch)
 
     suite(m"Redraft rendering tests"):
       val target = Sequence(t"line1", t"new", t"line3")

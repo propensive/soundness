@@ -66,12 +66,12 @@ object Windows:
   given radical: Drive is Radical:
     type Plane = Windows
 
-    def decode(text: Text): Drive raises PathError =
+    def decode(text: Text): Drive raises Path.Error =
       if text.length >= 3 && text(Sec) == ':' && text(Ter) == '\\'
-      then text.prim.let(Drive(_)).or(abort(PathError(_.InvalidRoot)))
-      else abort(PathError(_.InvalidRoot))
+      then text.prim.let(Drive(_)).or(abort(Path.Error(_.InvalidRoot)))
+      else abort(Path.Error(_.InvalidRoot))
 
-    def length(text: Text): Int raises PathError = 3
+    def length(text: Text): Int raises Path.Error = 3
     def encode(drive: Drive): Text = t"${drive.letter}:\\"
 
 sealed trait Windows extends Platform

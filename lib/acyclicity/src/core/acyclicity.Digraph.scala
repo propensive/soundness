@@ -35,10 +35,10 @@ package acyclicity
 import nomenclature.*
 
 object Digraph:
-  def apply(id: Name[DotId], statements: Dot.Statement*): Dot =
+  def apply(id: Name[Dot.Id], statements: Dot.Statement*): Dot =
     Dot.Digraph(Some(id), false, statements*)
 
   def apply(statements: Dot.Statement*): Dot = Dot.Digraph(None, false, statements*)
 
-  def strict(id: Name[DotId], statements: Dot.Statement*): Dot =
+  def strict(id: Name[Dot.Id], statements: Dot.Statement*): Dot =
     Dot.Digraph(Some(id), true, statements*)

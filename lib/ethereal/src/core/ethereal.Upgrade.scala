@@ -88,8 +88,8 @@ object Upgrade:
   :   Nothing raises UpgradeError =
 
     mitigate:
-      case PathError(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case PropertyError(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
+      case Path.Error(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
+      case Property.Error(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
       case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
       case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
       case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)

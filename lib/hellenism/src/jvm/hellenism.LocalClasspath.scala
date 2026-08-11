@@ -50,7 +50,7 @@ import filesystemBackends.virtualMachine
 object LocalClasspath:
   given encodable: System => LocalClasspath is Encodable in Text = _()
 
-  given decodable: (System, Tactic[PropertyError])
+  given decodable: (System, Tactic[Property.Error])
   =>  LocalClasspath is Decodable in Text =
 
     classpath =>
@@ -73,7 +73,7 @@ object LocalClasspath:
 
   def apply[path: Abstractable across Paths to Text]
     ( path: path )
-    ( using Tactic[PathError],
+    ( using Tactic[Path.Error],
             Tactic[IoError],
             DereferenceSymlinks )
   :   LocalClasspath =
@@ -82,7 +82,7 @@ object LocalClasspath:
 
 
   given paths: [path: Abstractable across Paths to Text]
-  =>  ( pathTactic: Tactic[PathError], ioTactic: Tactic[IoError], deref: DereferenceSymlinks )
+  =>  ( pathTactic: Tactic[Path.Error], ioTactic: Tactic[IoError], deref: DereferenceSymlinks )
   =>  ((LocalClasspath is Addable by path to LocalClasspath)^{pathTactic, ioTactic}) =
 
     (classpath, path) =>

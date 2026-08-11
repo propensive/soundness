@@ -45,6 +45,7 @@ import kaleidoscope.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import fulminate.*
 
 object Tzdb:
   case class Time(hours: Int, minutes: Int, seconds: Int, suffix: Optional[Char])
@@ -73,28 +74,28 @@ object Tzdb:
     case After(month: Month, day: Weekday, date: Int)
     case Before(month: Month, day: Weekday, date: Int)
 
-  def parseFile(name: Text): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
+  def parseFile(name: Text): List[Tzdb.Entry] logs TimeEvent raises Tzdb.Error =
     Log.fine(TimeEvent.ParseTzdb(name))
 
     val lines: Chain[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
 
       val stream2 = stream.or:
-        abort(TzdbError(TzdbError.Reason.NoTzdbFile(name), 0))
+        abort(Tzdb.Error(Tzdb.Error.Reason.NoTzdbFile(name), 0))
 
       Source.fromInputStream(stream2).getLines().map(Text(_)).map(_.cut(t"\t").stdlib.head.lower)
       . to(Chain)
 
     parse(name, lines)
 
-  def parse(name: Text, lines: Chain[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
+  def parse(name: Text, lines: Chain[Text]): List[Tzdb.Entry] logs TimeEvent raises Tzdb.Error =
     def parseDuration(lineNo: Int, string: Text) = string.cut(t":") match
       case As[Base24](h) :: Nil                                   => Duration(h, 0, 0)
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Duration(h, m, 0)
       case As[Base24](h) :: As[Base60](m) :: As[Base60](s) :: Nil => Duration(h, m, s)
 
       case other =>
-        abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
+        abort(Tzdb.Error(Tzdb.Error.Reason.CouldNotParseTime(other.show), lineNo))
 
     def parseTime(lineNo: Int, string: Text) = string.cut(t":") match
       case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)s" :: Nil   => Time(h, m, 0, 's')
@@ -103,7 +104,7 @@ object Tzdb:
       case As[Base24](h) :: As[Base60](m) :: As[Base60](s) :: Nil => Time(h, m, s, Unset)
 
       case other =>
-        abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
+        abort(Tzdb.Error(Tzdb.Error.Reason.CouldNotParseTime(other.show), lineNo))
 
     def parseDay(lineNo: Int, month: Month, string: Text): MonthDate =
       try throwErrors:
@@ -114,14 +115,14 @@ object Tzdb:
         then MonthDate.Before(month, Weekday.valueOf(string.keep(3).s), string.skip(5).as[Int])
         else MonthDate.Exact(month, string.as[Int])
       catch case error: NumberError =>
-        abort(TzdbError(TzdbError.Reason.UnparsableDate, lineNo))
+        abort(Tzdb.Error(Tzdb.Error.Reason.UnparsableDate, lineNo))
 
     def parseLeap(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Leap = arguments match
       case As[Int](year) :: month :: As[Int](day) :: time :: add :: s :: Nil =>
         Tzdb.Entry.Leap(year, parseMonth(month), day, parseTime(lineNo, time), add == t"+")
 
       case other =>
-        abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
+        abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedRule, lineNo))
 
     def parseMonth(string: Text) = Month.valueOf(string.s)
 
@@ -135,10 +136,10 @@ object Tzdb:
             Tzdb.Entry.Zone(simple, None, Sequence(parseZoneInfo(lineNo, rest)))
 
           case _ =>
-            abort(TzdbError(TzdbError.Reason.BadName(name), lineNo))
+            abort(Tzdb.Error(Tzdb.Error.Reason.BadName(name), lineNo))
 
       case _ =>
-        abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
+        abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedRule, lineNo))
 
     def parseZoneInfo(lineNo: Int, arguments: List[Text]): Tzdb.ZoneInfo = arguments match
       case stdoff :: rules :: format :: until =>
@@ -151,7 +152,7 @@ object Tzdb:
         ZoneInfo(s, rules, f, if until.nil then None else Some(until.join(t" ")))
 
       case other =>
-        abort(TzdbError(TzdbError.Reason.BadZoneInfo(other), lineNo))
+        abort(Tzdb.Error(Tzdb.Error.Reason.BadZoneInfo(other), lineNo))
 
     def parseLetters(string: Text): Option[Text] = if string == t"-" then None else Some(string)
 
@@ -169,14 +170,14 @@ object Tzdb:
           Tzdb.Entry.Rule(name, from.as[Int], end, d, t, s, parseLetters(letters))
 
         catch case error: NumberError =>
-          abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
+          abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedRule, lineNo))
 
       case _ =>
-        abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
+        abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedRule, lineNo))
 
     def parseLink(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Link = arguments match
       case from :: to :: Nil => Tzdb.Entry.Link(from, to)
-      case _                 => abort(TzdbError(TzdbError.Reason.UnexpectedLink, lineNo))
+      case _                 => abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedLink, lineNo))
 
     def addToZone(lineNo: Int, arguments: List[Text], zone: Tzdb.Entry.Zone): Tzdb.Entry.Zone =
       zone.copy(info = Sequence.of(zone.info.stdlib :+ parseZoneInfo(lineNo, arguments)))
@@ -210,9 +211,36 @@ object Tzdb:
 
           case t"" :: tail =>
             recur(lineNo + 1, lines.tail, entries, Some(addToZone(lineNo, tail, zone.getOrElse:
-              abort(TzdbError(TzdbError.Reason.UnexpectedZoneInfo, lineNo)))))
+              abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedZoneInfo, lineNo)))))
 
           case other =>
             recur(lineNo + 1, lines.tail, entries, zone)
 
     recur(1, lines)
+
+  // Tzdb.Error → Tzdb.Error
+  object Error:
+    given communicable: Reason is Communicable =
+      case Reason.CouldNotParseTime(time) => m"could not parse time $time"
+      case Reason.UnexpectedRule          => m"unexpected rule"
+      case Reason.UnexpectedLink          => m"unexpected link"
+      case Reason.UnexpectedZoneInfo      => m"unexpected zone info"
+      case Reason.BadZoneInfo(line)       => m"bad zone information: ${line.join(t"[", t"   ", t"]")}"
+      case Reason.BadName(name)           => m"the name $name is not valid"
+      case Reason.UnparsableDate          => m"the date could not be parsed"
+      case Reason.NoTzdbFile(name)        => m"the zonefile $name could not be found on the classpath"
+
+    enum Reason(val number: Int) extends Clarification:
+      case CouldNotParseTime(time: Text) extends Reason(1)
+      case UnexpectedRule extends Reason(2)
+      case UnexpectedLink extends Reason(3)
+      case UnexpectedZoneInfo extends Reason(4)
+      case UnparsableDate extends Reason(5)
+      case BadZoneInfo(line: List[Text]) extends Reason(6)
+      case BadName(name: Text) extends Reason(7)
+      case NoTzdbFile(name: Text) extends Reason(8)
+
+  case class Error(reason: Tzdb.Error.Reason, line: Int)(using Diagnostics)
+  extends fulminate.Error(385, reason.number)
+    ( m"the timezone could not be parsed at line $line: $reason" )
+

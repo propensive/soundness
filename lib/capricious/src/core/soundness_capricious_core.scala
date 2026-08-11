@@ -35,7 +35,7 @@ package soundness
 export
   capricious
   . { arbitrary, Distribution, Gamma, Gaussian, PolarGaussian, Random, random, Randomizable,
-      Randomization, RandomSize, Seed, stochastic, toss, UniformDistribution }
+      Randomization, Seed, stochastic, toss, UniformDistribution }
 
 package randomization:
   export capricious.randomization.{secureSeededRandomization, secureUnseededRandomization,

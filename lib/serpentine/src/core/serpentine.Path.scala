@@ -60,7 +60,7 @@ object Path:
     type Limit = %.type
 
   given decodable: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-  =>  (tactic: Tactic[PathError])
+  =>  (tactic: Tactic[Path.Error])
   =>  (((Path on filesystem) is Decodable in Text)^{tactic}) =
 
     text =>
@@ -71,7 +71,7 @@ object Path:
       Path(root, List.of(parts2.reverse.map(filesystem.unescape(_))))
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-  =>  (tactic: Tactic[PathError])
+  =>  (tactic: Tactic[Path.Error])
   =>  (((Path on filesystem under root) is Decodable in Text)^{tactic}) =
 
     text =>
@@ -85,7 +85,7 @@ object Path:
     path.descent.to(List).prim.or(path.root)
 
   given trustedInstantiable: [filesystem: Filesystem]
-  =>  ( radical: Tactic[PathError] ?=> Radical on filesystem )
+  =>  ( radical: Tactic[Path.Error] ?=> Radical on filesystem )
   =>  (((Path on filesystem) is Instantiable across Paths from Paths.Trusted)^{radical}) =
 
     // The input is already-trusted path data, so decoding it cannot fail; the tactic is
@@ -96,7 +96,7 @@ object Path:
 
   given instantiable: [filesystem: Filesystem]
   =>  Radical on filesystem
-  =>  (tactic: Tactic[PathError])
+  =>  (tactic: Tactic[Path.Error])
   =>  (((Path on filesystem) is Instantiable across Paths from Text)^{tactic}) =
 
     _.as[Path on filesystem]
@@ -140,7 +140,7 @@ object Path:
 
   transparent inline given quotient: [filesystem, root, path <: Path on filesystem under root]
   =>  ( radical: root is Radical on filesystem )
-  =>  (Tactic[PathError]^)
+  =>  (Tactic[Path.Error]^)
   =>  path is Quotient =
 
     ( path =>
@@ -155,6 +155,32 @@ object Path:
 
     transparent inline def toward[target <: Path: Precise](target: target): Optional[Relative] =
       ${serpentine.internal.toward[path, target]('left, 'target)}
+
+  // Path.Error → Path.Error
+  object Error:
+    def apply(reason: Path.Error.Reason.type => Path.Error.Reason, path: Optional[Text] = Unset)
+      ( using Diagnostics )
+    :   Path.Error =
+
+      new Path.Error(reason(Path.Error.Reason), path)
+
+
+    object Reason:
+      given Reason is Communicable =
+        case Reason.RootParent     => m"the root has no parent"
+        case Reason.InvalidRoot    => m"the root is not valid"
+        case Reason.DifferentRoots => m"it does not have the same root as the source"
+        case Reason.InvalidName    => m"the name is not valid"
+
+    enum Reason(val number: Int) extends Clarification:
+      case RootParent     extends Reason(1)
+      case InvalidRoot    extends Reason(2)
+      case DifferentRoots extends Reason(3)
+      case InvalidName    extends Reason(4)
+
+  case class Error(reason: Path.Error.Reason, path: Optional[Text])(using Diagnostics)
+  extends fulminate.Error(831, reason.number)
+    ( m"the path ${path.lay(t"")(_+t" ")}was invalid because $reason" )
 
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   type Topic <: Tuple
@@ -185,10 +211,10 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   def resolve(text: Text)
     ( using pathDecodable:     ((Path on Plane) is Decodable in Text)^,
             relativeDecodable: ((Relative on Plane) is Decodable in Text)^ )
-  :   (Tactic[PathError]^) ?->{this, pathDecodable, relativeDecodable} (Path on Plane) =
+  :   (Tactic[Path.Error]^) ?->{this, pathDecodable, relativeDecodable} (Path on Plane) =
 
     safely(text.as[Path on Plane]).or(safely(this + text.as[Relative on Plane])).or:
-      abort(PathError(_.InvalidRoot))
+      abort(Path.Error(_.InvalidRoot))
 
 
   def precedes(path: Path on Plane): Boolean =

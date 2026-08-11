@@ -90,7 +90,7 @@ object LaneDagDiagram:
         case (true, true, true, true)     => Junction
         case _                            => Space
 
-  def apply[node](dag: Dag[node]): LaneDagDiagram[node] raises DagError =
+  def apply[node](dag: Dag[node]): LaneDagDiagram[node] raises Dag.Error =
     val nodes: Vector[node] = dag.sorted.to(Vector)
     val total: Int = nodes.length
 

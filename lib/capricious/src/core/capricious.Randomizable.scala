@@ -49,7 +49,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
   given seed: Seed is Randomizable = long.map(Seed(_))
   given boolean: Boolean is Randomizable = long.map(_ < 0L)
 
-  given list: [element] => (randomizable: => element is Randomizable) => (size: RandomSize)
+  given list: [element] => (randomizable: => element is Randomizable) => (size: Random.Size)
   =>  List[element] is Randomizable =
 
     // Laundered pure: the by-name element instance shares this instance's given-resolution
@@ -59,7 +59,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
         given random0: (Random^{random}) = random
         List.fill(size.generate(random))(randomizable.randomize(random))
 
-  given set: [element] => (randomizable: => element is Randomizable) => (size: RandomSize)
+  given set: [element] => (randomizable: => element is Randomizable) => (size: Random.Size)
   =>  Set[element] is Randomizable =
 
     // Laundered pure: the by-name element instance shares this instance's given-resolution
@@ -70,7 +70,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
         Set.from(List.fill(size.generate(random))(randomizable.randomize(random)).stdlib)
 
   given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
-  =>  ( size: RandomSize )
+  =>  ( size: Random.Size )
   =>  (Array[element]^{}) is Randomizable =
 
     // Laundered pure, as for `list` above.

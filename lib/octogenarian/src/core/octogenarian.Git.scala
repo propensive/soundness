@@ -116,7 +116,7 @@ object Git:
   :   Worktree =
 
     try
-      throwErrors[PathError | IoError]:
+      throwErrors[Path.Error | IoError]:
         val target: Path on Linux = targetPath.generic.as[Path on Linux]
         val branchOpt = initialBranch.lay(sh""): branch => sh"--initial-branch=$branch"
         sh"$command init $branchOpt $target".exec[Exit]()
@@ -124,7 +124,7 @@ object Git:
         Worktree(Git.Repo(target/".git"), target)
 
     catch
-      case error: PathError => abort(Git.Error(InvalidRepoPath))
+      case error: Path.Error => abort(Git.Error(InvalidRepoPath))
       case error: IoError   => abort(Git.Error(InvalidRepoPath))
 
 
@@ -140,7 +140,7 @@ object Git:
   :   Git.Repo =
 
     try
-      throwErrors[PathError | IoError]:
+      throwErrors[Path.Error | IoError]:
         val target: Path on Linux = targetPath.generic.as[Path on Linux]
         val branchOpt = initialBranch.lay(sh""): branch => sh"--initial-branch=$branch"
         sh"$command init --bare $branchOpt $target".exec[Exit]()
@@ -148,7 +148,7 @@ object Git:
         Git.Repo(target)
 
     catch
-      case error: PathError => abort(Git.Error(InvalidRepoPath))
+      case error: Path.Error => abort(Git.Error(InvalidRepoPath))
       case error: IoError   => abort(Git.Error(InvalidRepoPath))
 
 
@@ -184,7 +184,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError],
             Git.Command )
-  ( using Tactic[PathError], Tactic[NameError], Tactic[Git.Error], (Git.Event is Loggable)^ )
+  ( using Tactic[Path.Error], Tactic[NameError], Tactic[Git.Error], (Git.Event is Loggable)^ )
   :   Git.Process[Worktree] =
 
     val sourceText = inline source match
@@ -207,7 +207,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError],
             Git.Command )
-  ( using Tactic[PathError], Tactic[NameError], Tactic[Git.Error], (Git.Event is Loggable)^ )
+  ( using Tactic[Path.Error], Tactic[NameError], Tactic[Git.Error], (Git.Event is Loggable)^ )
   :   Git.Process[Git.Repo] =
 
     val sourceText = inline source match
@@ -248,7 +248,7 @@ object Git:
             WorkingDirectory,
             ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError],
-            Tactic[PathError],
+            Tactic[Path.Error],
             Tactic[NameError],
             Git.Command )
     ( using gitError: Tactic[Git.Error] )
@@ -257,7 +257,7 @@ object Git:
 
     val target: Path on Linux =
       try targetPath.generic.as[Path on Linux]
-      catch case error: PathError => abort(Git.Error(InvalidRepoPath))
+      catch case error: Path.Error => abort(Git.Error(InvalidRepoPath))
 
     val branchOption = branch.lay(sh""): branch => sh"--branch=$branch"
     val recursiveOption = if recursive then sh"--recursive" else sh""
@@ -284,7 +284,7 @@ object Git:
             WorkingDirectory,
             ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError],
-            Tactic[PathError],
+            Tactic[Path.Error],
             Tactic[NameError],
             Git.Command )
     ( using gitError: Tactic[Git.Error] )
@@ -293,7 +293,7 @@ object Git:
 
     val target: Path on Linux =
       try targetPath.generic.as[Path on Linux]
-      catch case error: PathError => abort(Git.Error(InvalidRepoPath))
+      catch case error: Path.Error => abort(Git.Error(InvalidRepoPath))
 
     val branchOption = branch.lay(sh""): branch => sh"--branch=$branch"
 
@@ -490,7 +490,7 @@ object Git:
   // GitRepo → Git.Repo
   object Repo:
     def at[abstractable: Abstractable across Paths to Text](path: abstractable)
-      ( using Tactic[PathError], Tactic[NameError], Tactic[Git.Error], Tactic[IoError] )
+      ( using Tactic[Path.Error], Tactic[NameError], Tactic[Git.Error], Tactic[IoError] )
     :   Git.Repo =
 
       unsafely(path.generic.as[Path on Linux]).pipe: path =>
@@ -854,12 +854,12 @@ object Git:
               ((Path on Linux) is Decodable in Text)^,
               Tactic[ExecError],
               Git.Command )
-    ( using Tactic[NameError], Tactic[PathError], (Git.Event is Loggable)^ )
+    ( using Tactic[NameError], Tactic[Path.Error], (Git.Event is Loggable)^ )
     :   Worktree =
 
       val targetPath: Path on Linux =
         try target.generic.as[Path on Linux]
-        catch case error: PathError => abort(Git.Error(WorktreeFailed))
+        catch case error: Path.Error => abort(Git.Error(WorktreeFailed))
 
       val detachOpt = if detach then sh"--detach" else sh""
 

@@ -96,7 +96,7 @@ object LayeredDagDiagram:
         case (true,  true,  true,  true)  => Junction
         case _                            => Space
 
-  def apply[node](dag: Dag[node]): LayeredDagDiagram[node] raises DagError =
+  def apply[node](dag: Dag[node]): LayeredDagDiagram[node] raises Dag.Error =
     val nodes: Vector[node] = dag.sorted.to(Vector)
 
     if nodes.isEmpty then LayeredDagDiagram(Nil) else

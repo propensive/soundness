@@ -2464,10 +2464,10 @@ object Tests extends Suite(m"Aviation Tests"):
         capture(Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant)
       . assert(_ == TimeError(_.Gap))
 
-      test(m"Timezone(t\"NotARealZone\") raises TimezoneError"):
+      test(m"Timezone(t\"NotARealZone\") raises Timezone.Error"):
         capture(Timezone(t"NotARealZone"))
       . matches:
-          case _: TimezoneError =>
+          case _: Timezone.Error =>
 
       test(m"tz\"NotARealZone\" is a compile error"):
         demilitarize(tz"NotARealZone")
@@ -2849,7 +2849,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"parseFile on a non-existent file raises NoTzdbFile"):
         capture(Tzdb.parseFile(t"this-does-not-exist"))
       . matches:
-          case _: TzdbError =>
+          case _: Tzdb.Error =>
 
       test(m"parses a single Rule line"):
         val lines = Chain(t"Rule\tUS\t2007\tmax\t-\tMar\tSun>=8\t2:00\t1:00\tD")
@@ -2869,21 +2869,21 @@ object Tests extends Suite(m"Aviation Tests"):
       . matches:
           case Some(_: Tzdb.Entry.Leap) =>
 
-      test(m"leap line with 60-second time raises TzdbError"):
+      test(m"leap line with 60-second time raises Tzdb.Error"):
         val lines = Chain(t"Leap\t1972\tJun\t30\t23:59:60\t+\tS")
         capture(Tzdb.parse(t"inline", lines))
       . matches:
-          case _: TzdbError =>
+          case _: Tzdb.Error =>
 
 
       test(m"unparseable Rule raises UnexpectedRule"):
         val lines = Chain(t"Rule\tonly")
         capture(Tzdb.parse(t"inline", lines))
       . matches:
-          case _: TzdbError =>
+          case _: Tzdb.Error =>
 
       test(m"unparseable Link raises UnexpectedLink"):
         val lines = Chain(t"Link\tonly")
         capture(Tzdb.parse(t"inline", lines))
       . matches:
-          case _: TzdbError =>
+          case _: Tzdb.Error =>

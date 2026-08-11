@@ -111,7 +111,7 @@ object Tests extends Suite(m"Ambience Tests"):
 
       test(m"An undefined environment variable raises an error"):
         given environment: Environment = fixedEnvironment()
-        unsafely(capture[EnvironmentError](Environment[Text](t"HOME"))).variable
+        unsafely(capture[Environment.Error](Environment[Text](t"HOME"))).variable
       . assert(_ == t"HOME")
 
       test(m"The empty environment defines nothing"):
@@ -183,7 +183,7 @@ object Tests extends Suite(m"Ambience Tests"):
 
       test(m"An undefined system property raises an error"):
         given system: System = fixedSystem()
-        unsafely(capture[PropertyError](System.properties.user.home[Text]())).property
+        unsafely(capture[Property.Error](System.properties.user.home[Text]())).property
       . assert(_ == t"user.home")
 
       test(m"The empty system defines no properties"):
@@ -271,11 +271,11 @@ object Tests extends Suite(m"Ambience Tests"):
 
     suite(m"Error message tests"):
       test(m"An environment error names the missing variable"):
-        val error = unsafely(EnvironmentError(t"HOME"))
+        val error = unsafely(Environment.Error(t"HOME"))
         error.message.text
       . assert(_ == m"the environment variable HOME was not defined".text)
 
       test(m"A property error names the missing property"):
-        val error = unsafely(PropertyError(t"user.home"))
+        val error = unsafely(Property.Error(t"user.home"))
         error.message.text
       . assert(_ == m"the system property user.home was not defined".text)

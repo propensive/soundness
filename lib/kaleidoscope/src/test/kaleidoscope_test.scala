@@ -119,53 +119,53 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         test(m"Fail to parse aa(bb){14,16ccddee"):
           capture(Regex.parse(List(t"aa(bb){14,16ccddee")))
 
-        . assert(_ == RegexError(12, RegexError.Reason.UnexpectedChar))
+        . assert(_ == Regex.Error(12, Regex.Error.Reason.UnexpectedChar))
 
         test(m"Fail to parse aa(bb){14!}ccddee"):
           capture(Regex.parse(List(t"aa(bb){14!}ccddee")))
 
-        . assert(_ == RegexError(9, RegexError.Reason.UnexpectedChar))
+        . assert(_ == Regex.Error(9, Regex.Error.Reason.UnexpectedChar))
 
         test(m"Fail to parse aa(bb{14}ccddee"):
           capture(Regex.parse(List(t"aa(bb{14}ccddee")))
 
-        . assert(_ == RegexError(15, RegexError.Reason.UnclosedGroup))
+        . assert(_ == Regex.Error(15, Regex.Error.Reason.UnclosedGroup))
 
         test(m"Fail to parse aa(bb){2,1}c"):
           capture(Regex.parse(List(t"aa(bb){2,1}c")))
 
-        . assert(_ == RegexError(9, RegexError.Reason.BadRepetition))
+        . assert(_ == Regex.Error(9, Regex.Error.Reason.BadRepetition))
 
         test(m"Fail to parse aabb){2,1}c"):
           capture(Regex.parse(List(t"aabb){2,1}c")))
 
-        . assert(_ == RegexError(4, RegexError.Reason.NotInGroup))
+        . assert(_ == Regex.Error(4, Regex.Error.Reason.NotInGroup))
 
         test(m"Fail to parse aabb){2,,1}c"):
           capture(Regex.parse(List(t"aabb){2,,1}c")))
 
-        . assert(_ == RegexError(4, RegexError.Reason.NotInGroup))
+        . assert(_ == Regex.Error(4, Regex.Error.Reason.NotInGroup))
 
         test(m"Fail to parse aabb){,2}c"):
           capture(Regex.parse(List(t"aabb){,2}c")))
 
-        . assert(_ == RegexError(4, RegexError.Reason.NotInGroup))
+        . assert(_ == Regex.Error(4, Regex.Error.Reason.NotInGroup))
 
         test(m"Fail to parse aa(bb){2,,1}c"):
           capture(Regex.parse(List(t"aa(bb){2,,1}c")))
 
-        . assert(_ == RegexError(9, RegexError.Reason.UnexpectedChar))
+        . assert(_ == Regex.Error(9, Regex.Error.Reason.UnexpectedChar))
 
         test(m"Fail to parse aa(bb){"):
           capture(Regex.parse(List(t"aa(bb){")))
 
-        . assert(_ == RegexError(7, RegexError.Reason.IncompleteRepetition))
+        . assert(_ == Regex.Error(7, Regex.Error.Reason.IncompleteRepetition))
 
       suite(m"Test captures"):
         test(m"Capture without parens should fail"):
           capture(Regex.parse(List(t"a", t"a(bb)")))
 
-        . assert(_ == RegexError(0, RegexError.Reason.ExpectedGroup))
+        . assert(_ == Regex.Error(0, Regex.Error.Reason.ExpectedGroup))
 
         test(m"Check simple group is captured"):
           Regex.parse(List(t"aa", t"(bb)cc"))
@@ -185,12 +185,12 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         test(m"Check that capture in repeated group is forbidden"):
           capture(Regex.parse(List(t"a(a", t"(bb)c)*c")))
 
-        . assert(_ == RegexError(3, RegexError.Reason.Uncapturable))
+        . assert(_ == Regex.Error(3, Regex.Error.Reason.Uncapturable))
 
         test(m"Check that capture in another repeated group is forbidden"):
           capture(Regex.parse(List(t"a(a", t"(bb)c){2}c")))
 
-        . assert(_ == RegexError(3, RegexError.Reason.Uncapturable))
+        . assert(_ == Regex.Error(3, Regex.Error.Reason.Uncapturable))
 
       suite(m"Capturing patterns"):
         test(m"Show plain capturing pattern"):

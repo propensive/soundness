@@ -187,6 +187,20 @@ object Api:
           val response = dispatch(t"application/xml")
           compiletime.summonInline[(value is Conformant) over xylophone.Xml].read(response)
 
+  // Api.Error → Api.Error
+  object Error:
+    object Reason:
+      given Reason is Communicable =
+        case Status(code) => m"the server responded with an unsuccessful status, $code"
+        case Malformed    => m"the response body was not valid JSON"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Status(code: Int) extends Reason(1)
+      case Malformed         extends Reason(2)
+
+  case class Error(reason: Api.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(914, reason.number)(m"the API request was not successful because $reason")
+
 trait Api extends Dynamic, Locative, Transportive:
   def request: Api.Request
 

@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export caduceus.{Attachable, Courier, CourierError, Email, Envelope, send, Sendable, Sender}
+export caduceus.{Attachable, Courier, Email, Envelope, send, Sendable, Sender}

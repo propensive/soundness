@@ -42,7 +42,7 @@ import fulminate.*
 import rudiments.*
 import vacuous.*
 
-import RedraftError.Reason
+import Redraft.Error.Reason
 
 object Redraft:
 
@@ -274,17 +274,33 @@ object Redraft:
 
     remaining
 
+  // Redraft.Error → Redraft.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case NoMatch    => m"no matching line could be found in the original"
+        case Ambiguous  => m"the change could be interpreted in more than one way"
+        case Unanchored => m"there is not enough context to locate the change unambiguously"
+
+    enum Reason(val number: Int) extends Clarification:
+      case NoMatch    extends Reason(1)
+      case Ambiguous  extends Reason(2)
+      case Unanchored extends Reason(3)
+
+  case class Error(line: Int, text: Text, reason: Redraft.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(472, reason.number)
+    ( m"the redraft could not be applied at line $line ($text) because $reason" )
 
 case class Redraft(directives: Redraft.Directive*):
   def serialize: Chain[Text] = directives.map(Redraft.render1).to(Chain)
 
   def resolve(original: Sequence[Text], compare: (Text, Text) -> Boolean = _ == _)
-  :   Diff[Text] & Retained raises RedraftError =
+  :   Diff[Text] & Retained raises Redraft.Error =
 
     val (edits, anomalies) = Redraft.analyze(directives.to(List), original, compare)
 
     anomalies match
-      case anomaly :: _ => abort(RedraftError(anomaly.line, anomaly.text, anomaly.reason))
+      case anomaly :: _ => abort(Redraft.Error(anomaly.line, anomaly.text, anomaly.reason))
       case Nil          => Diff(edits*).retained
 
   def verify(original: Sequence[Text], compare: (Text, Text) -> Boolean = _ == _)
@@ -293,6 +309,6 @@ case class Redraft(directives: Redraft.Directive*):
     Redraft.analyze(directives.to(List), original, compare)(1)
 
   def patch(original: Sequence[Text], compare: (Text, Text) -> Boolean = _ == _)
-  :   Chain[Text] raises RedraftError =
+  :   Chain[Text] raises Redraft.Error =
 
     resolve(original, compare).patch(original.toList)

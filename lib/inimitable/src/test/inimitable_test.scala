@@ -77,8 +77,8 @@ object Tests extends Suite(m"Inimitable Tests"):
       . assert(_ == Uuid(-6860364383762101208L, -8777588922722300788L))
 
       test(m"Parse a bad UUID at runtime"):
-        unsafely(capture[UuidError](Uuid.parse(t"not-a-uuid")))
-      . assert(_ == UuidError(t"not-a-uuid"))
+        unsafely(capture[Uuid.Error](Uuid.parse(t"not-a-uuid")))
+      . assert(_ == Uuid.Error(t"not-a-uuid"))
 
       val uuid1 = Uuid()
       val uuid2 = Uuid()

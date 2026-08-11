@@ -41,6 +41,7 @@ import quantitative.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
+import fulminate.*
 
 object Feed:
   def list: List[Feed] =
@@ -55,6 +56,21 @@ object Feed:
 
         if canRecord then scala.collection.immutable.List(Feed(info))
         else scala.collection.immutable.Nil
+
+  // Feed.Error → Feed.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Unavailable              extends Reason(1)
+      case UnsupportedConfiguration extends Reason(2)
+      case Closed                   extends Reason(3)
+
+    given Reason is Communicable =
+      case Reason.Unavailable              => m"the audio line could not be opened"
+      case Reason.UnsupportedConfiguration => m"the requested configuration is not supported"
+      case Reason.Closed                   => m"the recording has already been stopped"
+
+  case class Error(feed: Text, reason: Feed.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(440, reason.number)(m"could not record from feed $feed because $reason")
 
 case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def name:        Text = mixerInfo.getName.nn.tt
@@ -100,7 +116,7 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
 
   def record[layout: ChannelLayout as cl]
     ( rate: Quantity[Seconds[-1]], bits: Int, chunkBytes: Int = 65536 )
-  :   Recording across layout raises FeedError =
+  :   Recording across layout raises Feed.Error =
 
     val sampleRate    = rate.value.toFloat
     val bytesPerFrame = cl.channels*(bits/8)
@@ -119,16 +135,16 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
     val info = jss.DataLine.Info(classOf[jss.TargetDataLine], format)
 
     if !mixer.isLineSupported(info)
-    then abort(FeedError(name, FeedError.Reason.UnsupportedConfiguration))
+    then abort(Feed.Error(name, Feed.Error.Reason.UnsupportedConfiguration))
 
     val line: jss.TargetDataLine =
       try mixer.getLine(info).nn.asInstanceOf[jss.TargetDataLine]
       catch case _: jss.LineUnavailableException =>
-        abort(FeedError(name, FeedError.Reason.Unavailable))
+        abort(Feed.Error(name, Feed.Error.Reason.Unavailable))
 
     try line.open(format)
     catch case _: jss.LineUnavailableException =>
-      abort(FeedError(name, FeedError.Reason.Unavailable))
+      abort(Feed.Error(name, Feed.Error.Reason.Unavailable))
 
     line.start()
 

@@ -81,7 +81,7 @@ object internal:
 
     try Pattern.compile(parts.mkString) catch case exception: PatternSyntaxException =>
       import errorDiagnostics.emptyDiagnostics
-      halt(RegexError(exception.getIndex, RegexError.Reason.InvalidPattern).labelled)
+      halt(Regex.Error(exception.getIndex, Regex.Error.Reason.InvalidPattern).labelled)
 
     if types.length == 0 then '{NoExtraction(${Expr(parts.head)})}
     else tupleType.asType.absolve match

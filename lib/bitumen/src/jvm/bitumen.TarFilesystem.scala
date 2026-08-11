@@ -175,7 +175,7 @@ private[bitumen] object TarFilesystem:
       if fullText.startsWith(prefix) then fullText.substring(prefix.length).nn.tt else fullText.tt
 
     mitigate:
-      case PathError(_, _) => TarError(TarError.Reason.BadName(relText))
+      case Path.Error(_, _) => TarError(TarError.Reason.BadName(relText))
 
     . protect(relText.as[Relative on Posix])
 
@@ -183,7 +183,7 @@ private[bitumen] object TarFilesystem:
     import errorDiagnostics.emptyDiagnostics
 
     mitigate:
-      case PathError(_, _) => TarError(TarError.Reason.BadName(text))
+      case Path.Error(_, _) => TarError(TarError.Reason.BadName(text))
 
     . protect(text.as[Relative on Tar])
 

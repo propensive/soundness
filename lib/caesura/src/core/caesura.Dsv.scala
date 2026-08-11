@@ -53,6 +53,7 @@ import turbulence.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
+import fulminate.*
 
 trait Dsv2:
   // Generic fallback: any `Decodable in Text` (custom types, enums, `Uuid`, …)
@@ -70,8 +71,8 @@ trait Dsv2:
   // (AST-free) path instead. The `Form` type-tag is added by an `asInstanceOf`
   // cast — `value in Dsv` is just `value { type Form = Dsv }`, so the cast is a
   // no-op at runtime.
-  given aggregableIn: [value: Decodable in Dsv] => (format: DsvFormat)
-  =>  (tactic: Tactic[DsvError])
+  given aggregableIn: [value: Decodable in Dsv] => (format: Dsv.Format)
+  =>  (tactic: Tactic[Dsv.Error])
   =>  (((value in Dsv) is Aggregable by Text)^{tactic}) =
     text =>
       summon[Sheet is Aggregable by Text].aggregate(text).rows.head.as[value]
@@ -120,47 +121,47 @@ object Dsv extends Dsv2:
   // accrued rather than the first failure aborting the whole record. An absent
   // cell (short row / missing column) is distinguished from a present-but-
   // unparseable one. The real cell location is carried by the enclosing
-  // `focus(CellRef(…))` in the product derivation, so `DsvError` itself is built
+  // `focus(CellRef(…))` in the product derivation, so `Dsv.Error` itself is built
   // through the position-free companion `apply`.
   private def decodeCell[value]
     ( dsv: Dsv, expected: Text, sentinel: value )
     ( parse: Text => Optional[value] )
-    ( using format: DsvFormat, tactic: Tactic[DsvError] )
+    ( using format: Dsv.Format, tactic: Tactic[Dsv.Error] )
   :   value =
 
-    dsv.data.prim.lay(raise(DsvError(format, DsvError.Reason.Absent)) yet sentinel): cell =>
+    dsv.data.prim.lay(raise(Dsv.Error(format, Dsv.Error.Reason.Absent)) yet sentinel): cell =>
       parse(cell).or:
-        raise(DsvError(format, DsvError.Reason.Unparseable(cell, expected))) yet sentinel
+        raise(Dsv.Error(format, Dsv.Error.Reason.Unparseable(cell, expected))) yet sentinel
 
   // The primitive cell decoders are laundered pure: their resolution-scoped tactic shares each
   // instance's given-resolution lifetime, and the product derivation summons them against pure
   // expected types (honest capturing forms return with wisteria capture-polymorphism; see
   // rep/DECISIONS.md).
-  given int: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  given int: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Int is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Int", 0): cell =>
         try Integer.parseInt(cell.s) catch case _: NumberFormatException => Unset
 
-  given long: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  given long: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Long is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Long", 0L): cell =>
         try java.lang.Long.parseLong(cell.s) catch case _: NumberFormatException => Unset
 
-  given double: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  given double: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Double is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Double", 0.0): cell =>
         try java.lang.Double.parseDouble(cell.s) catch case _: NumberFormatException => Unset
 
-  given float: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  given float: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Float is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Float", 0.0f): cell =>
         try java.lang.Float.parseFloat(cell.s) catch case _: NumberFormatException => Unset
 
-  given boolean: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  given boolean: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Boolean is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Boolean", false): cell =>
@@ -169,11 +170,11 @@ object Dsv extends Dsv2:
           case "false" => false
           case _       => Unset
 
-  given text: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  given text: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Text is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"Text", t""): cell => cell
 
-  given string: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  given string: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  String is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"String", ""): cell => cell.s
 
@@ -187,7 +188,7 @@ object Dsv extends Dsv2:
 
     EncodableDerivation.derived[value]
 
-  given showable: (format: DsvFormat) => Dsv is Showable = dsv =>
+  given showable: (format: Dsv.Format) => Dsv is Showable = dsv =>
     val cells =
       dsv.data.map: cell =>
         val safe = !cell.contains(format.Quote) && !cell.contains(format.Delimiter) &&
@@ -210,7 +211,7 @@ object Dsv extends Dsv2:
   // `read[Foo in Dsv]` parses the first row; `read[List[Foo] in Dsv]` parses
   // every row. Sealed per the codec-thunk pattern.
   given aggregableParsed: [value] => (parsable: value is Dsv.Parsable)
-  =>  ( format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
+  =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
   =>  ((value in Dsv) is Aggregable by Text) =
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
@@ -224,10 +225,10 @@ object Dsv extends Dsv2:
             Sheet.directReader(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
           if reader.nextRow() then parsable.parse(reader, 0).asInstanceOf[value in Dsv]
-          else tactic.abort(DsvError(format, DsvError.Reason.Absent))
+          else tactic.abort(Dsv.Error(format, Dsv.Error.Reason.Absent))
 
   given aggregableParsedList: [value] => (parsable: value is Dsv.Parsable)
-  =>  ( format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
+  =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
   =>  ((List[value] in Dsv) is Aggregable by Text) =
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
@@ -391,8 +392,63 @@ object Dsv extends Dsv2:
       value =>
         Dsv.flatten(fields(value) { [field] => field => contextual.encode(field).data })
 
+  // Dsv.Error → Dsv.Error
+  object Error:
+    given communicable: Reason is Communicable =
+      case Reason.MisplacedQuote =>
+        m"a quote was found after the start of a cell"
+
+      case Reason.Absent =>
+        m"the cell was absent"
+
+      case Reason.Unparseable(value, expected) =>
+        m"the value $value could not be parsed as $expected"
+
+    // `MisplacedQuote` is a parse-phase error; `Absent` and `Unparseable` are
+    // decode-phase errors (a cell missing from, or unparseable in, a row being
+    // decoded into a product). The latter accrue through a `Foci[CellRef]`, which
+    // carries the real cell location, so they construct via the position-free
+    // companion `apply` below.
+    enum Reason(val number: Int) extends Clarification:
+      case MisplacedQuote                          extends Reason(1)
+      case Absent                                  extends Reason(2)
+      case Unparseable(value: Text, expected: Text) extends Reason(3)
+
+    // Decode-phase constructor: the offending cell's position is carried by the
+    // accrued `CellRef` focus, not by the `Dsv.Error` itself, so `row`/`column`/
+    // `offset` are filled with placeholders.
+    def apply(format: Dsv.Format, reason: Reason)(using Diagnostics): Dsv.Error =
+      Dsv.Error(format, reason, Prim, Prim, 0)
+
+  // `row` and `column` are the 1-based position of the offending cell, and `offset`
+  // is the character (UTF-16 code-unit) offset into the input at which the failure
+  // was detected. A byte offset is not available here because the parser operates on
+  // already-decoded `Text`, the source bytes having been discarded upstream.
+  case class Error
+    ( format: Dsv.Format, reason: Dsv.Error.Reason, row: Ordinal, column: Ordinal, offset: Int )
+    ( using Diagnostics )
+  extends fulminate.Error(364, reason.number)
+    ( reason match
+        case Dsv.Error.Reason.MisplacedQuote =>
+          m"could not parse row data at row ${row.n1}, column ${column.n1} because $reason"
+
+        case _ =>
+          m"could not decode the cell because $reason" )
+
+  // Dsv.Format → Dsv.Format
+  case class Format(header: Boolean, delimiter: Char, quote: Char, escape: Char):
+    val Delimiter: Char = delimiter
+    val Quote: Char = quote
+    val Escape: Char = escape
+
+    def doublingEscapes: Boolean = quote == escape
+
+  // Dsv.Redesignation → Dsv.Redesignation
+  trait Redesignation:
+    def transform(name: Text): Text
+
 case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
-  def as[cell: Decodable in Dsv]: cell raises DsvError tracks CellRef = cell.decoded(this)
+  def as[cell: Decodable in Dsv]: cell raises Dsv.Error tracks CellRef = cell.decoded(this)
 
   def header: Optional[Array[Text]^{}] = columns.let: map =>
     val columns = map.stdlib.map(_.swap)
@@ -401,10 +457,10 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
 
   def selectDynamic[value](field: String)(using erased dynamicDsvEnabler: DynamicDsvEnabler)
     ( using value: (value is Decodable in Text)^ )
-    ( using DsvRedesignation )
+    ( using Dsv.Redesignation )
   :   Optional[value] =
 
-    apply(summon[DsvRedesignation].transform(field.tt))
+    apply(summon[Dsv.Redesignation].transform(field.tt))
 
 
   def apply[value](using value: (value is Decodable in Text)^)(field: Text): Optional[value] =

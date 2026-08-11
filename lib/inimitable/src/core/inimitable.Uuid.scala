@@ -48,7 +48,7 @@ import vacuous.*
 object Uuid extends Extractor[Text, Uuid]:
   // Decoding a `Uuid` from `Text`, kept in `Uuid`'s companion for the same reason as
   // `Fqcn.decodable`: distillate need not depend on inimitable.
-  given decodable: (tactic: Tactic[UuidError]^)
+  given decodable: (tactic: Tactic[Uuid.Error]^)
   =>  ((Uuid is Decodable in Text)^{tactic, caps.any}) =
     Uuid.parse(_)
 
@@ -56,8 +56,8 @@ object Uuid extends Extractor[Text, Uuid]:
   // `inimitable`; being companion-to-companion, this is the same implicit scope as before.
   given showable: Uuid is Showable = _.text
 
-  def parse(text: Text): Uuid raises UuidError =
-    extract(text).lest(UuidError(text))
+  def parse(text: Text): Uuid raises Uuid.Error =
+    extract(text).lest(Uuid.Error(text))
 
   def extract(text: Text): Optional[Uuid] = safely:
     ju.UUID.fromString(text.s).nn.pipe: uuid =>
@@ -68,6 +68,10 @@ object Uuid extends Extractor[Text, Uuid]:
 
   given communicable: Uuid is Communicable = uuid => Message(uuid.text)
   given encodable: Uuid is Encodable in Text = _.text
+
+  // Uuid.Error → Uuid.Error
+  case class Error(badUuid: Text)(using Diagnostics)
+  extends fulminate.Error(349, 0)(m"$badUuid is not a valid UUID")
 
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)

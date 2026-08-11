@@ -69,11 +69,11 @@ object Notes:
   // `<hash>/` and `commit / t"foo"` encodes as `<hash>/foo`.
   given radical: Git.Hash is Radical:
     type Plane = Notes
-    def length(text: Text): Int raises PathError = 41
+    def length(text: Text): Int raises Path.Error = 41
 
-    def decode(text: Text): Git.Hash raises PathError = text match
+    def decode(text: Text): Git.Hash raises Path.Error = text match
       case r"$hash([a-f0-9]{40})/.*" => Git.Hash.unsafe(hash)
-      case _                         => abort(PathError(_.InvalidRoot))
+      case _                         => abort(Path.Error(_.InvalidRoot))
 
     def encode(hash: Git.Hash): Text = t"${hash.text}/"
 

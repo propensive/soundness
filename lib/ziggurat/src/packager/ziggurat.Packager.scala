@@ -96,7 +96,7 @@ object Packager:
       case AssemblyError(detail) => PackageError(detail)
       case IoError(_, _, _, _)   => PackageError(m"A filesystem error occurred during packaging")
       case StreamError(_)        => PackageError(m"A stream error occurred during packaging")
-      case PathError(_, _)       => PackageError(m"A path could not be resolved during packaging")
+      case Path.Error(_, _)       => PackageError(m"A path could not be resolved during packaging")
 
     . protect:
         val jdk: Boolean = config.java.bundle == Packaging.Bundle.Jdk

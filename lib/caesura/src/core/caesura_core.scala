@@ -46,19 +46,19 @@ import vacuous.*
 import zephyrine.*
 
 package dsvFormats:
-  given csvFormat: DsvFormat = DsvFormat(false, ',', '"', '"')
-  given csvWithHeaderFormat: DsvFormat = DsvFormat(true, ',', '"', '"')
-  given tsvFormat: DsvFormat = DsvFormat(false, '\t', '"', '"')
-  given tsvWithHeaderFormat: DsvFormat = DsvFormat(true, '\t', '"', '"')
-  given ssvFormat: DsvFormat = DsvFormat(false, ' ', '"', '"')
-  given ssvWithHeaderFormat: DsvFormat = DsvFormat(true, ' ', '"', '"')
+  given csvFormat: Dsv.Format = Dsv.Format(false, ',', '"', '"')
+  given csvWithHeaderFormat: Dsv.Format = Dsv.Format(true, ',', '"', '"')
+  given tsvFormat: Dsv.Format = Dsv.Format(false, '\t', '"', '"')
+  given tsvWithHeaderFormat: Dsv.Format = Dsv.Format(true, '\t', '"', '"')
+  given ssvFormat: Dsv.Format = Dsv.Format(false, ' ', '"', '"')
+  given ssvWithHeaderFormat: Dsv.Format = Dsv.Format(true, ' ', '"', '"')
 
 package dsvRedesignations:
-  given unchangedRedesignation: DsvRedesignation = identity(_)
-  given lowerDottedRedesignation: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
-  given lowerSlashedRedesignation: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
-  given capitalizedWordsRedesignation: DsvRedesignation = _.uncamel.map(_.capitalize).join(t" ")
-  given lowerWordsRedesignation: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
+  given unchangedRedesignation: Dsv.Redesignation = identity(_)
+  given lowerDottedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t" ")
+  given lowerSlashedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t" ")
+  given capitalizedWordsRedesignation: Dsv.Redesignation = _.uncamel.map(_.capitalize).join(t" ")
+  given lowerWordsRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t" ")
 
 extension [encodable: Encodable in Dsv](value: encodable) def dsv: Dsv = encodable.encode(value)
 
@@ -70,14 +70,14 @@ extension (consume stream: (Stream[Text] over Credit)^)
   // iterator: the streaming counterpart of `read[Sheet]`, which materializes.
   // Quoted cells may span chunk (and line) boundaries; the parser carries its
   // state across refills.
-  def rows(using DsvFormat, Tactic[DsvError], Buffering): Iterator[Dsv]^ =
+  def rows(using Dsv.Format, Tactic[Dsv.Error], Buffering): Iterator[Dsv]^ =
     Sheet.parseRows(stream)
 
 extension (consume stream: (Stream[Text] over Credit)^)
   // Each row parsed straight to `value` through its `Dsv.Parsable` — the
   // streaming direct form: no `Dsv` row value is ever built.
   def rowsOf[value](using parsable: value is Dsv.Parsable)
-    ( using DsvFormat, Tactic[DsvError], Buffering )
+    ( using Dsv.Format, Tactic[Dsv.Error], Buffering )
   :   Iterator[value]^ =
 
     parsedIterator(Sheet.directReader(stream), parsable)

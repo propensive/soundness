@@ -45,12 +45,12 @@ import vacuous.*
 // retained in the result.
 class DsvReader private[caesura]
   ( consume parser: Sheet.Parser^,
-    private[caesura] val format: DsvFormat,
-    private[caesura] val tactic: Tactic[DsvError] )
+    private[caesura] val format: Dsv.Format,
+    private[caesura] val tactic: Tactic[Dsv.Error] )
 extends caps.ExclusiveCapability, caps.Stateful:
   // The reader carries the format and error tactic, so `Parsable`/`Field`
   // instances are construction-free (the jacinta `JsonReader` pattern).
-  update def absent(): Nothing = tactic.abort(DsvError(format, DsvError.Reason.Absent))
+  update def absent(): Nothing = tactic.abort(Dsv.Error(format, Dsv.Error.Reason.Absent))
 
   // Advance to the next data row (consuming the header row first, when the
   // format has one), returning false at the end of the input.

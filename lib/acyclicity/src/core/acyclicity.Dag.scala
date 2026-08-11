@@ -45,6 +45,7 @@ import nomenclature.*
 import rudiments.*
 
 import Dot.*
+import fulminate.*
 
 object Dag:
   @targetName("apply2")
@@ -61,9 +62,22 @@ object Dag:
 
   extension (dag: Dag[Text])
     def dot: Dot = unsafely:
-      val edges = dag.edges.to(List).map: (a, b) => Name[DotId](a) --> Name[DotId](b)
+      val edges = dag.edges.to(List).map: (a, b) => Name[Dot.Id](a) --> Name[Dot.Id](b)
 
       Dot.Digraph(None, false, edges*)
+
+  // Dag.Error → Dag.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case NodeMissing(node: Text) extends Reason(1)
+      case Cyclic                  extends Reason(2)
+
+    given communicable: Reason is Communicable =
+      case Reason.NodeMissing(node) => m"the node $node is not present in the graph"
+      case Reason.Cyclic            => m"the graph contains a cycle"
+
+  case class Error(reason: Dag.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(191, reason.number)(m"the DAG operation failed because $reason")
 
 case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   private val reachableCache: scm.HashMap[node, Set[node]] = scm.HashMap()
@@ -76,10 +90,10 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   def subgraph(keep: Set[node]): Dag[node] = (keys &~ keep).fuse(this)(state.remove(next))
   def apply(key: node): Set[node] = edgeMap.getOrElse(key, Set())
 
-  def descendants(key: node): Dag[node] raises DagError = subgraph(reachable(key))
-  def ancestors(key: node): Dag[node] raises DagError = subgraph(invert.reachable(key))
+  def descendants(key: node): Dag[node] raises Dag.Error = subgraph(reachable(key))
+  def ancestors(key: node): Dag[node] raises Dag.Error = subgraph(invert.reachable(key))
 
-  def lineage(key: node): Dag[node] raises DagError =
+  def lineage(key: node): Dag[node] raises Dag.Error =
     subgraph(reachable(key) ++ invert.reachable(key))
 
   @targetName("removeKey")
@@ -88,8 +102,8 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   def sources: Set[node] = edgeMap.collect { case (k, v) if v.isEmpty => k }.to(Set)
   def edges: Set[(node, node)] = edgeMap.to(Set).flatMap: (key, values) => values.map(key -> _)
   def closure: Dag[node] = Dag(keys.map { k => k -> (reach(k) - k) }.to(Map))
-  def sorted: List[node] raises DagError = sort(edgeMap, Nil).reverse
-  def hasCycle(start: node): Boolean raises DagError = findCycle(start).isDefined
+  def sorted: List[node] raises Dag.Error = sort(edgeMap, Nil).reverse
+  def hasCycle(start: node): Boolean raises Dag.Error = findCycle(start).isDefined
 
   def remove(key: node, value: node): Dag[node] =
     Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
@@ -97,7 +111,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   def has(key: node): Boolean = edgeMap.contains(key)
 
   def traversal[node2](lambda: (Set[node2], node) => node2)
-  :   (Tactic[DagError]^) ?->{lambda} Map[node, node2] =
+  :   (Tactic[Dag.Error]^) ?->{lambda} Map[node, node2] =
 
     sorted.fuse(Map[node, node2]()):
       state.updated(next, lambda(apply(next).map(state), next))
@@ -131,9 +145,9 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
       removals.foldLeft(edgeMap):
         case (m, (k, v)) => m.updated(k, m(k) - v)
 
-  def reachable(node: node): Set[node] raises DagError =
+  def reachable(node: node): Set[node] raises Dag.Error =
     if !edgeMap.defines(node)
-    then abort(DagError(DagError.Reason.NodeMissing(node.toString.tt)))
+    then abort(Dag.Error(Dag.Error.Reason.NodeMissing(node.toString.tt)))
     else reach(node)
 
   private def reach(node: node): Set[node] =
@@ -154,11 +168,11 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
       . to(Map)
 
   private def sort(todo: Map[node, Set[node]], done: List[node])
-  :   List[node] raises DagError =
+  :   List[node] raises Dag.Error =
 
     if todo.isEmpty then done
     else todo.find { (k, vs) => (vs -- done).isEmpty } match
-      case None => abort(DagError(DagError.Reason.Cyclic))
+      case None => abort(Dag.Error(Dag.Error.Reason.Cyclic))
 
       case Some((node, _)) =>
         sort((todo - node).view.mapValues(_.filter(_ != node)).to(Map), node :: done)
@@ -175,8 +189,8 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
 
       pruned -- deletions
 
-  private def findCycle(start: node): Option[List[node]] raises DagError =
-    if !edgeMap.defines(start) then abort(DagError(DagError.Reason.NodeMissing(start.toString.tt)))
+  private def findCycle(start: node): Option[List[node]] raises Dag.Error =
+    if !edgeMap.defines(start) then abort(Dag.Error(Dag.Error.Reason.NodeMissing(start.toString.tt)))
 
     @tailrec
     def recur(queue: List[(node, List[node])], finished: Set[node])

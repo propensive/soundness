@@ -93,7 +93,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       def positive:    Color in Srgb = pass
       def negative:    Color in Srgb = fail
 
-    try Runner(selection) catch case error: EnvironmentError =>
+    try Runner(selection) catch case error: Environment.Error =>
       jl.System.out.nn.println(StackTrace(error).teletype.render)
       ???
 
@@ -152,7 +152,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
 
           runner.complete()
           if runner.report.passed then jl.System.exit(0) else jl.System.exit(1)
-        catch case error: EnvironmentError =>
+        catch case error: Environment.Error =>
           jl.System.out.nn.println(StackTrace(error).teletype)
           jl.System.exit(3)
 
