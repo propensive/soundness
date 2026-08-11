@@ -70,9 +70,11 @@ object Smap:
     def origin(line: Int): Optional[(File, Int)] =
       apply(line).let: (fileId, input) => files.at(fileId).let: file => (file, input)
 
-  // Where a line of inlined code was written: the file's recorded name, its full path, and the
-  // 1-based line number.
-  case class Origin(file: Text, path: Text, line: Int)
+  // Where a line of inlined code was written: the file's recorded name, its full path, the
+  // 1-based line number, and — when the SMAP's writer emitted a `<default>Class` stratum, as the
+  // Scala compiler does — the binary name of the top-level class whose compilation unit the
+  // position lies in, which is what lets a resolver find the class's TASTy without guessing.
+  case class Origin(file: Text, path: Text, line: Int, cls: Optional[Text] = Unset)
 
   // What a synthetic output line expands to: the chain of inline origins, innermost first, and
   // the real line of the frame's own file that the chain of calls started from—absent when the
@@ -177,6 +179,7 @@ object Smap:
 case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum]):
   private lazy val stratum: Optional[Smap.Stratum] = strata.at(default)
   private lazy val debug: Optional[Smap.Stratum] = strata.at((default.s+"Debug").tt)
+  private lazy val classes: Optional[Smap.Stratum] = strata.at((default.s+"Class").tt)
 
   // The file id the generated file itself appears under in the default stratum, against which
   // identity mappings are recognized.
@@ -201,7 +204,9 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
         if real(line) then Smap.Expansion(List.of(origins.reverse), line)
         else
           val origins2 = stratum.let(_.origin(line)).lay(origins):
-            case (file, input) => Smap.Origin(file.name, file.path, input) :: origins
+            case (file, input) =>
+              val cls = classes.let(_.origin(line)).let: (clsFile, _) => clsFile.name
+              Smap.Origin(file.name, file.path, input, cls) :: origins
 
           debug.let(_(line)) match
             case (_, next: Int) if !seen.has(next) => recur(next, seen + next, origins2)

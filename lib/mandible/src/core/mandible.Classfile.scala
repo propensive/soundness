@@ -76,6 +76,16 @@ class Classfile(data: scala.IArray[Byte]):
 
     . headOption.getOrElse(Unset)
 
+  // The JSR-45 `SourceDebugExtension`, whose body is the text of an SMAP mapping the synthetic
+  // line numbers the classfile records back to the source positions they stand for. The body is
+  // modified UTF-8, which for the ASCII an SMAP contains is plain UTF-8.
+  val sourceDebugExtension: Optional[Text] =
+    model.attributes.nn.to[List].stdlib.collect:
+      case attribute: jlca.SourceDebugExtensionAttribute =>
+        String(attribute.contents.nn, "UTF-8").tt
+
+    . headOption.getOrElse(Unset)
+
   class Method(model: jlc.MethodModel):
     def name: Text = model.methodName.nn.toString.tt
 

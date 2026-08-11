@@ -141,6 +141,9 @@ object Tests extends Suite(m"Digression Tests"):
               "*S ScalaDebug",
               "*F", "+ 1 Main.scala", "Main.scala",
               "*L", "3#1:121", "3#1:122",
+              "*S ScalaClass",
+              "*F", "1 Util",
+              "*L", "1#1:121", "1#1:122",
               "*E" )
           . mkString("\n")
 
@@ -156,6 +159,9 @@ object Tests extends Suite(m"Digression Tests"):
               "*S ScalaDebug",
               "*F", "+ 1 Main.scala", "Main.scala", "+ 2 B.scala", "B.scala",
               "*L", "3#1:11", "11#2:12",
+              "*S ScalaClass",
+              "*F", "1 B", "2 A",
+              "*L", "1#1:11", "1#2:12",
               "*E" )
           . mkString("\n")
 
@@ -175,15 +181,17 @@ object Tests extends Suite(m"Digression Tests"):
 
       . assert(_ == Unset)
 
-      test(m"A synthetic line recovers its origin and its call site"):
+      test(m"A synthetic line recovers its origin, its class and its call site"):
         smap.let(_.expand(121))
 
-      . assert(_ == Smap.Expansion(List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 3)), 3))
+      . assert(_ == Smap.Expansion(
+          List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 3, t"Util")), 3))
 
       test(m"A coalesced run maps each of its lines"):
         smap.let(_.expand(122))
 
-      . assert(_ == Smap.Expansion(List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 4)), 3))
+      . assert(_ == Smap.Expansion(
+          List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 4, t"Util")), 3))
 
       test(m"Nested inlining expands innermost first, back to a real line"):
         nested.let(_.expand(12))
@@ -191,8 +199,8 @@ object Tests extends Suite(m"Digression Tests"):
       . assert:
           _ == Smap.Expansion
                  ( List
-                     ( Smap.Origin(t"A.scala", t"A.scala", 3),
-                       Smap.Origin(t"B.scala", t"B.scala", 3) ),
+                     ( Smap.Origin(t"A.scala", t"A.scala", 3, t"A"),
+                       Smap.Origin(t"B.scala", t"B.scala", 3, t"B") ),
                    3 )
 
       test(m"A chain with no call-site information keeps its origins but no line"):
