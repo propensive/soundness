@@ -37,7 +37,8 @@ import soundness.*
 import proscenium.compat.*
 
 import strategies.throwUnsafely
-import Http2.*
+import Http2.{Client, Connection, Endpoint, ErrorCode, Flags, Frame, FrameType, Setting,
+    SettingId}
 
 object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
   def run(): Unit =
@@ -272,7 +273,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
         supervise:
           val (clientSide, serverSide) = pair()
           val server = runServer(serverSide)
-          val connection = Http2Connection(clientSide)
+          val connection = Http2.Connection(clientSide)
           connection.start()
 
           val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]),
@@ -341,7 +342,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
                   server0.sendHeaders(stream.id, PseudoHeaders.entries(response), false)
                   server0.sendData(stream.id, response.body.stream.memoize, true)
 
-          val client = Http2Connection(clientSide)
+          val client = Http2.Connection(clientSide)
           val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
           client.start()
           scala.caps.unsafe.unsafeAssumeSeparate:
@@ -380,7 +381,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
                   server0.sendData(stream.id, ascii(t"body"), endStream = false)
                   server0.sendTrailers(stream.id, List(HpackEntry(t"grpc-status", t"0")))
 
-          val client = Http2Connection(clientSide)
+          val client = Http2.Connection(clientSide)
           val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
           client.start()
           scala.caps.unsafe.unsafeAssumeSeparate:
@@ -439,7 +440,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
                   server0.sendHeaders(stream.id, List(HpackEntry(t":status", t"200")), false)
                   server0.sendData(stream.id, body, endStream = true)
 
-          val client = Http2Connection(clientSide)
+          val client = Http2.Connection(clientSide)
           val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
           client.start()
           scala.caps.unsafe.unsafeAssumeSeparate:

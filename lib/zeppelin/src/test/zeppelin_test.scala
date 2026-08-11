@@ -212,10 +212,10 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"writing two entries with the same path raises DuplicateEntry"):
         import errorDiagnostics.emptyDiagnostics
-        capture[ZipError]:
+        capture[Zip.Error]:
           Zipfile.write(workDir/t"dup.zip")(List(entry(t"x.txt", t"1"), entry(t"x.txt", t"2")))
         . reason
-      . assert(_.isInstanceOf[ZipError.Reason.DuplicateEntry])
+      . assert(_.isInstanceOf[Zip.Error.Reason.DuplicateEntry])
 
       test(m"a non-ASCII entry name sets the UTF-8 general-purpose flag"):
         (firstFlag(writeZip(t"utf8.zip", entry(t"café.txt", t"x"))) & 0x800) != 0
@@ -268,13 +268,13 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"looking up an absent entry raises NotFound"):
         import errorDiagnostics.emptyDiagnostics
-        capture[ZipError](Zipfile.read(archive).entry(zipRef(t"absent.txt"))).reason
-      . assert(_.isInstanceOf[ZipError.Reason.NotFound])
+        capture[Zip.Error](Zipfile.read(archive).entry(zipRef(t"absent.txt"))).reason
+      . assert(_.isInstanceOf[Zip.Error.Reason.NotFound])
 
       test(m"reading data that is not a ZIP archive raises MissingEocd"):
         import errorDiagnostics.emptyDiagnostics
-        capture[ZipError](Zipfile.read(t"this is not a zip file".in[Data])).reason
-      . assert(_ == ZipError.Reason.MissingEocd)
+        capture[Zip.Error](Zipfile.read(t"this is not a zip file".in[Data])).reason
+      . assert(_ == Zip.Error.Reason.MissingEocd)
 
     suite(m"Scoped opening"):
       val archive = writeZip(t"scoped.zip", entry(t"a.txt", t"alpha"), entry(t"b/c.txt", t"gamma"))
@@ -296,8 +296,8 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"opening for writing is refused"):
         import errorDiagnostics.emptyDiagnostics
-        capture[ZipError](archive.open[Zip](Write) { () }).reason
-      . assert(_ == ZipError.Reason.WriteUnsupported)
+        capture[Zip.Error](archive.open[Zip](Write) { () }).reason
+      . assert(_ == Zip.Error.Reason.WriteUnsupported)
 
     suite(m"JAR archives"):
       val manifestText =
@@ -348,21 +348,21 @@ object Tests extends Suite(m"Zeppelin tests"):
         import errorDiagnostics.emptyDiagnostics
         val target = workDir/t"dup.zip"
 
-        capture[ZipError]:
+        capture[Zip.Error]:
           target.create[Zip](): builder ?=>
             builder.insert(zipRef(t"same"), t"one")
             builder.insert(zipRef(t"same"), t"two")
         . reason
-      . assert(_.isInstanceOf[ZipError.Reason.DuplicateEntry])
+      . assert(_.isInstanceOf[Zip.Error.Reason.DuplicateEntry])
 
       test(m"An exception escaping the creation scope leaves nothing behind"):
         import errorDiagnostics.emptyDiagnostics
         val target = workDir/t"doomed.zip"
 
-        capture[ZipError]:
+        capture[Zip.Error]:
           target.create[Zip](): builder ?=>
             builder.insert(zipRef(t"x"), t"data")
-            abort(ZipError(ZipError.Reason.MissingEocd))
+            abort(Zip.Error(Zip.Error.Reason.MissingEocd))
 
         target.existent()
       . assert(_ == false)
@@ -371,8 +371,8 @@ object Tests extends Suite(m"Zeppelin tests"):
         import errorDiagnostics.emptyDiagnostics
         val target = workDir/t"pre.zip"
         target.create[Zip]()
-        capture[ZipError](target.create[Zip]()).reason
-      . assert(_ == ZipError.Reason.AlreadyExists)
+        capture[Zip.Error](target.create[Zip]()).reason
+      . assert(_ == Zip.Error.Reason.AlreadyExists)
 
       test(m"A created JAR's manifest round-trips"):
         val target = workDir/t"created.jar"
@@ -396,13 +396,13 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"an entry name with a forbidden character raises InvalidName"):
         import errorDiagnostics.emptyDiagnostics
-        capture[ZipError](readEntries(writeRawZip(t"badchar.zip", t"bad:name.txt"))).reason
-      . assert(_ == ZipError.Reason.InvalidName(t"bad:name.txt"))
+        capture[Zip.Error](readEntries(writeRawZip(t"badchar.zip", t"bad:name.txt"))).reason
+      . assert(_ == Zip.Error.Reason.InvalidName(t"bad:name.txt"))
 
       test(m"a path-traversing entry name raises InvalidName"):
         import errorDiagnostics.emptyDiagnostics
-        capture[ZipError](readEntries(writeRawZip(t"slip.zip", t"../escape.txt"))).reason
-      . assert(_ == ZipError.Reason.InvalidName(t"../escape.txt"))
+        capture[Zip.Error](readEntries(writeRawZip(t"slip.zip", t"../escape.txt"))).reason
+      . assert(_ == Zip.Error.Reason.InvalidName(t"../escape.txt"))
 
     suite(m"Entry reuse between archives"):
       val source = writeZip(t"src.zip", entry(t"x.txt", (t"reuse me "*32)))

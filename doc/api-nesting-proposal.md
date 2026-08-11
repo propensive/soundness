@@ -264,6 +264,12 @@ survive contact, and the reasons generalise:
 - **Opaque types and aliases in package files** (`SvgId`, `TarRef`, `GitHash`) are not in
   their own donor files. An alias moves easily (`TarRef` → `Tar.Ref`); an opaque type whose
   companion carries its operations is better left alone.
+- **Hoisting a file-mate is not free.** Splitting `HpackEntry` out of
+  `HpackTable.scala` broke capture inference by itself, before any nesting:
+  `HpackTable.static` infers `Array[HpackEntry]^{}` while the use site demands
+  `Array[HpackEntry^'s1]^{any}`, and `Array` is invariant. Capture inference is sensitive
+  to the *file boundary*, not only to the enclosing object, so verify a hoist on its own
+  before treating it as preparation.
 - **A second top-level type sharing a donor's file** travels with it (`TarDataOpenable` in
   `TarHandle.scala`, `ZipOpenable`/`ZipDataOpenable` in `ZipHandle.scala`). Hoist it to its
   own file first — which also fixes the pre-existing L2 violation — then nest.

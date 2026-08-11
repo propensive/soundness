@@ -67,7 +67,7 @@ object Cose:
     else abort(Cose.Error(Cose.Error.Reason.MalformedStructure))
 
   // Internal constructor that refines the phantom `Form` and `Operand` types.
-  def make[scheme <: CoseStructure, cipher <: Cipher]
+  def make[scheme <: Cose.Structure, cipher <: Cipher]
     ( protectedHeader:   Data,
      unprotectedHeader: Cbor,
      payload:           Data,
@@ -126,10 +126,10 @@ object Cose:
     val tagNumber = tag.tag
 
     val contextString = tagNumber match
-      case CoseTag.Sign1 => CoseContext.Signature1
-      case CoseTag.Mac0  => CoseContext.Mac0
-      case CoseTag.Sign  => CoseContext.Signature
-      case CoseTag.Mac   => CoseContext.Mac
+      case Cose.Tag.Sign1 => Cose.Context.Signature1
+      case Cose.Tag.Mac0  => Cose.Context.Mac0
+      case Cose.Tag.Sign  => Cose.Context.Signature
+      case Cose.Tag.Mac   => Cose.Context.Mac
       case other         => abort(Cose.Error(Cose.Error.Reason.UnknownTag(other)))
 
     val body = tag.value.asInstanceOf[Cbor.Ast]
@@ -144,7 +144,7 @@ object Cose:
     val payload = readByteString(body.element(2))
 
     val recipients: List[Cose.Recipient] = tagNumber match
-      case CoseTag.Sign1 | CoseTag.Mac0 =>
+      case Cose.Tag.Sign1 | Cose.Tag.Mac0 =>
         List(Cose.Recipient(Array.empty[Byte], emptyMap, readByteString(body.element(3))))
 
       case _ =>
@@ -170,7 +170,7 @@ object Cose:
 
     new Cose
       ( protectedHeader, Cbor.ast(unprotectedAst), payload, contextString, tagNumber, recipients ):
-      type Form    = CoseStructure
+      type Form    = Cose.Structure
       type Operand = Cipher
 
   // CoseAlgorithm → Cose.Algorithm
@@ -209,8 +209,8 @@ object Cose:
         type Form    = Sign1
         type Operand = cipher
         def algId:         Long   = coseAlg.algId
-        def contextString: String = CoseContext.Signature1
-        def cborTag:       Long   = CoseTag.Sign1
+        def contextString: String = Cose.Context.Signature1
+        def cborTag:       Long   = Cose.Tag.Sign1
 
         def authenticate(toBeSigned: Data, key: PrivateKey[cipher]): Data =
           key.secret.uncloak: bytes =>
@@ -224,8 +224,8 @@ object Cose:
         type Form    = Mac0
         type Operand = cipher
         def algId:         Long   = coseAlg.algId
-        def contextString: String = CoseContext.Mac0
-        def cborTag:       Long   = CoseTag.Mac0
+        def contextString: String = Cose.Context.Mac0
+        def cborTag:       Long   = Cose.Tag.Mac0
 
         def authenticate(toBeSigned: Data, key: SymmetricKey[cipher]): Data =
           key.secret.uncloak: bytes =>
@@ -233,7 +233,7 @@ object Cose:
 
   trait Authenticator:
     type Self
-    type Form    <: CoseStructure
+    type Form    <: Cose.Structure
     type Operand <: Cipher
     def algId:         Long
     def contextString: String
@@ -286,8 +286,8 @@ object Cose:
         type Self    = PublicKey[cipher]
         type Form    = Sign1
         type Operand = cipher
-        def contextString: String = CoseContext.Signature1
-        def cborTag:       Long   = CoseTag.Sign1
+        def contextString: String = Cose.Context.Signature1
+        def cborTag:       Long   = Cose.Tag.Sign1
 
         def check(toBeSigned: Data, authentication: Data, key: PublicKey[cipher]): Boolean =
           algorithm.verify(toBeSigned, authentication, key.bytes)
@@ -299,8 +299,8 @@ object Cose:
         type Self    = SymmetricKey[cipher]
         type Form    = Mac0
         type Operand = cipher
-        def contextString: String = CoseContext.Mac0
-        def cborTag:       Long   = CoseTag.Mac0
+        def contextString: String = Cose.Context.Mac0
+        def cborTag:       Long   = Cose.Tag.Mac0
 
         def check(toBeSigned: Data, authentication: Data, key: SymmetricKey[cipher]): Boolean =
           key.secret.uncloak: bytes =>
@@ -308,11 +308,33 @@ object Cose:
 
   trait Verifier:
     type Self
-    type Form    <: CoseStructure
+    type Form    <: Cose.Structure
     type Operand <: Cipher
     def contextString: String
     def cborTag:       Long
     def check(toBeSigned: Data, authentication: Data, key: Self): Boolean
+
+  // the COSE structure taxonomy, formerly nine top-level names
+  trait Structure
+  trait Signed extends Structure
+  trait Maced  extends Structure
+
+  trait Sign  extends Signed   // multi-signer,        CBOR tag 98
+  trait Sign1 extends Signed   // single signer,       CBOR tag 18
+  trait Mac   extends Maced    // multi-recipient MAC, CBOR tag 97
+  trait Mac0  extends Maced    // single MAC,          CBOR tag 17
+
+  object Tag:
+    inline val Sign1 = 18L
+    inline val Mac0  = 17L
+    inline val Sign  = 98L
+    inline val Mac   = 97L
+
+  object Context:
+    inline val Signature1 = "Signature1"
+    inline val Signature  = "Signature"
+    inline val Mac0       = "MAC0"
+    inline val Mac        = "MAC"
 
 class Cose
   ( val protectedHeader:   Data,
@@ -321,7 +343,7 @@ class Cose
    val contextString:     String,
    val cborTag:           Long,
    val recipients:        List[Cose.Recipient] ):
-  type Form    <: CoseStructure
+  type Form    <: Cose.Structure
   type Operand <: Cipher
 
   // Serialise this COSE message to its CBOR-tagged wire form.
@@ -329,7 +351,7 @@ class Cose
     val unprotectedAst: Cbor.Ast = Cose.unsealOrEmpty(unprotectedHeader)
 
     val envelope = cborTag match
-      case CoseTag.Sign1 | CoseTag.Mac0 =>
+      case Cose.Tag.Sign1 | Cose.Tag.Mac0 =>
         val auth = recipients.stdlib.head.authentication
         Cbor.Ast.array(Array.of[Any](protectedHeader, unprotectedAst, payload, auth))
 

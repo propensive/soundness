@@ -359,7 +359,7 @@ private def httpsExchange
       try
         unsafely:
           supervise:
-            val connection = Http2Connection(duplex)
+            val connection = Http2.Connection(duplex)
 
             try
               connection.start()

@@ -48,6 +48,12 @@ import pneumatic.*
 import turbulence.*
 import zephyrine.*
 import vacuous.*
+import fulminate.*
+import scala.caps
+import java.nio as jn
+import java.nio.channels as jnc
+import java.nio.file as jnf
+import aperture.*
 
 object Zip:
   type Rules =
@@ -77,14 +83,14 @@ object Zip:
 
   // Anchored here so `path.open[Zip]()` and `data.open[Zip]()` resolve with no import.
   given openable: [path: Abstractable across Paths to Text]
-  =>  Tactic[ZipError]
+  =>  Tactic[Zip.Error]
   =>  ZipOpenable[path] =
     ZipOpenable[path]
 
-  given dataOpenable: Tactic[ZipError] => ZipDataOpenable = ZipDataOpenable()
+  given dataOpenable: Tactic[Zip.Error] => ZipDataOpenable = ZipDataOpenable()
 
   given creatable: [path: Abstractable across Paths to Text]
-  =>  Tactic[ZipError]
+  =>  Tactic[Zip.Error]
   =>  ZipBuilder.ZipCreatable[path] =
     ZipBuilder.ZipCreatable[path]
 
@@ -272,5 +278,65 @@ object Zip:
     while !deflater.finished() do out.write(buffer, 0, deflater.deflate(buffer))
     deflater.end()
     Array.unsafeFrozen(out.toByteArray.nn)
+
+  // ZipError -> Zip.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case DuplicateEntry(path: Path on Zip)   extends Reason(1)
+      case NotFound(path: Path on Zip)         extends Reason(2)
+      case InvalidName(name: Text)             extends Reason(3)
+      case UnsupportedMethod(method: Int)      extends Reason(4)
+      case MissingEocd                         extends Reason(5)
+      case TruncatedArchive                    extends Reason(6)
+      case BadSignature(expected: Int)         extends Reason(7)
+      case Zip64Error                          extends Reason(8)
+      case WriteUnsupported                    extends Reason(9)
+      case AlreadyExists                       extends Reason(10)
+      case CannotWrite(detail: Text)           extends Reason(11)
+
+    given communicable: Reason is Communicable =
+      case Reason.DuplicateEntry(path)    => m"the path $path is a duplicate entry"
+      case Reason.NotFound(path)          => m"path $path was not found in the ZIP file"
+      case Reason.InvalidName(name)       => m"the name $name is not valid for a ZIP entry"
+      case Reason.UnsupportedMethod(code) => m"the compression method $code is not supported"
+      case Reason.MissingEocd             => m"no end-of-central-directory record could be found"
+      case Reason.TruncatedArchive        => m"the ZIP archive ended unexpectedly"
+      case Reason.BadSignature(expected)  => m"an expected record signature ($expected) was absent"
+      case Reason.Zip64Error              => m"the ZIP64 metadata could not be interpreted"
+      case Reason.WriteUnsupported        => m"ZIP archives cannot yet be opened for writing"
+      case Reason.AlreadyExists           => m"an archive already exists at this path"
+      case Reason.CannotWrite(detail)     => m"the archive could not be written: $detail"
+
+  case class Error(reason: Zip.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(751, reason.number)(m"the ZIP operation failed because $reason")
+
+  // ZipEvent -> Zip.Event
+  object Event:
+    given communicable: Zip.Event is Communicable =
+      case Wrote(path, entries) => m"wrote $entries entries to the zip archive $path"
+      case Read(path, entries)  => m"read $entries entries from the zip archive $path"
+
+  enum Event:
+    case Wrote(path: Text, entries: Int) extends Zip.Event, Log.Serialization
+    case Read(path: Text, entries: Int) extends Zip.Event, Log.Serialization
+
+  // ZipHandle -> Zip.Handle
+  // The scoped capability provided by opening an archive as `Zip`: `path.open[Zip]()`. Unlike a
+  // detached `Zipfile` (whose `FileSource` re-opens the file for every read), a `Zip.Handle` reads
+  // through a single channel held open for the duration of the block, so entry payloads resolve
+  // with no per-read open/close cost — and, correspondingly, must be consumed within the scope.
+  // (Zeppelin is not yet capture-checked, so the confinement is enforced only for callers
+  // compiled with capture checking; the annotations sharpen when the module joins the rollout.)
+  class Handle private[zeppelin] (private[zeppelin] val zipfile: Zipfile)
+  extends caps.ExclusiveCapability:
+    def entries: List[Zip.Entry] = zipfile.entries
+    def entry(ref: Path on Zip): Zip.Entry raises Zip.Error = zipfile.entry(ref)
+    def comment: Optional[Text] = zipfile.comment
+
+  // A named class rather than an anonymous given instance, for the reasons documented on
+  // galilei's `FileOpenable`. Archives open read-only: a `Write` mode is refused with
+  // `Zip.Error.Reason.WriteUnsupported` until writing lands.
+  // Opens an in-memory archive; no channel is involved, but access is scoped all the same, for
+  // consistency with every other form of `Zip` target.
 
 sealed trait Zip

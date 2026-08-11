@@ -124,7 +124,7 @@ object Installer:
       case NameError(_, _, _)   => InstallError(InstallError.Reason.Io)
       case ExecError(_, _, _)   => InstallError(InstallError.Reason.Io)
       case StreamError(_)       => InstallError(InstallError.Reason.Io)
-      case ZipError(_)          => InstallError(InstallError.Reason.Io)
+      case Zip.Error(_)          => InstallError(InstallError.Reason.Io)
 
     . protect:
         val command: Text = service.script

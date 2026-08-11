@@ -47,14 +47,14 @@ import vacuous.*
 import zephyrine.*
 
 // The form for Java archives: `path.open[Jar]()`. A JAR is a ZIP, so a `JarHandle` is a
-// `ZipHandle` refined with the archive's parsed manifest; entries and their content behave
+// `Zip.Handle` refined with the archive's parsed manifest; entries and their content behave
 // exactly as they do for the `Zip` form.
 trait Jar
 
 object Jar:
   private val ManifestName: Text = t"META-INF/MANIFEST.MF"
 
-  class JarHandle private[zeppelin] (zipfile: Zipfile) extends ZipHandle(zipfile):
+  class JarHandle private[zeppelin] (zipfile: Zipfile) extends Zip.Handle(zipfile):
 
     // The main attributes of `META-INF/MANIFEST.MF`: continuation lines (a leading space)
     // rejoin the preceding attribute, and parsing stops at the first blank line, which ends
@@ -80,7 +80,7 @@ object Jar:
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Like `Zip`, archives open read-only for now.
-  class JarOpenable[path: Abstractable across Paths to Text](using Tactic[ZipError])
+  class JarOpenable[path: Abstractable across Paths to Text](using Tactic[Zip.Error])
   extends Openable:
 
     type Self = path
@@ -93,7 +93,7 @@ object Jar:
       ( block: (JarHandle & Granting[grants]) ?=> result )
     :   result =
 
-      if mode.atoms.has(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+      if mode.atoms.has(Write) then abort(Zip.Error(Zip.Error.Reason.WriteUnsupported))
 
       val channel =
         jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
@@ -103,7 +103,7 @@ object Jar:
         block(using new JarHandle(zipfile) with Granting[grants] {})
       finally channel.close()
 
-  class JarDataOpenable(using Tactic[ZipError]) extends Openable:
+  class JarDataOpenable(using Tactic[Zip.Error]) extends Openable:
     type Self = Data
     type Form = Jar
     type Operand = Nothing
@@ -114,17 +114,17 @@ object Jar:
       ( block: (JarHandle & Granting[grants]) ?=> result )
     :   result =
 
-      if mode.atoms.has(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+      if mode.atoms.has(Write) then abort(Zip.Error(Zip.Error.Reason.WriteUnsupported))
       block(using new JarHandle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})
 
   given openable: [path: Abstractable across Paths to Text]
-  =>  Tactic[ZipError]
+  =>  Tactic[Zip.Error]
   =>  JarOpenable[path] =
     JarOpenable[path]
 
-  given dataOpenable: Tactic[ZipError] => JarDataOpenable = JarDataOpenable()
+  given dataOpenable: Tactic[Zip.Error] => JarDataOpenable = JarDataOpenable()
 
   given creatable: [path: Abstractable across Paths to Text]
-  =>  Tactic[ZipError]
+  =>  Tactic[Zip.Error]
   =>  ZipBuilder.JarCreatable[path] =
     ZipBuilder.JarCreatable[path]
