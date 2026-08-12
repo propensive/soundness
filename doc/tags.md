@@ -114,7 +114,7 @@ tarantula: webdriver browser-automation chrome firefox selenium
 telekinesis: http http-client cookies authentication rest-client web-requests
 turbulence: streams io stdio streaming reactive line-separation
 typonym: type-level type-list type-map heterogeneous reflection
-ultimatum: inline-arrays resizing collections tuples
+ultimatum: terminal-layout panes progress-bar spinner gauge sparkline tui
 ulysses: bloom-filter probabilistic-data-structures palimpsest
 umbrageous: compiler-plugin shading namespace-isolation
 urticose: hostname email-address ip-address mac-address port network-identifiers endpoint

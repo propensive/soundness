@@ -77,7 +77,7 @@ interactive: terminal ?=>
 ### Layout
 
 Interfaces larger than a line compose from panes: `panel` for content, `editor` and `menu` for the
-interactive widgets, `file` and `rank` to arrange them in columns and rows, and `border` to frame
+interactive widgets, `strip` and `stack` to arrange them in columns and rows, and `border` to frame
 them. `form` runs the arrangement — full-screen on the alternate buffer, or *inline*, as a live
 block at the cursor that leaves scrollback intact:
 
@@ -89,7 +89,9 @@ interactive: terminal ?=>
   form(Occupancy.Inline)(strip(sidebar, body))
 ```
 
-Sizes solve as fractions with minima and maxima, and focus moves between widgets with Tab.
+Sizes solve as fractions with minima and maxima, and focus moves between widgets with Tab. Live
+status — progress bars, spinners, meters and step indicators — embeds the same way; see
+[gauges](gauges.md).
 
 ### Redrawing without flicker
 
