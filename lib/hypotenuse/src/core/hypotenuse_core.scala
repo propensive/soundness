@@ -544,6 +544,22 @@ extension [left](inline left: left)
     if left >= right then left else right
 
 package arithmeticOptions:
+  // Importing one of these lexically outranks the companion `divisible`, so `a/b` on
+  // rationals yields a `Double` in that scope — which is what lets `std` (whose variance
+  // must divide to `Double`) resolve for rational collections.
+  object rationalDivision:
+    given r64: R64 is Divisible:
+      type Operand = R64
+      type Result = Double
+
+      def divide(dividend: R64, divisor: R64): Double = dividend.double/divisor.double
+
+    given r32: R32 is Divisible:
+      type Operand = R32
+      type Result = Double
+
+      def divide(dividend: R32, divisor: R32): Double = dividend.double/divisor.double
+
   object division:
     inline given unchecked: DivisionByZero:
       type Wrap[result] = result
