@@ -53,7 +53,7 @@ import gastronomy.providers.javaStdlibProvider
 // conventional six-letter subset tag. An unparseable program still embeds, described by
 // standard fallback metrics.
 private[facsimile] object FontEmbedder:
-  def embed(pdf: Pdf, ttf: Ttf, name: Optional[Text], subset: Optional[Text])
+  def embed(pdf: Pdf, ttf: Truetype, name: Optional[Text], subset: Optional[Text])
   ( using Tactic[Pdf.Error] )
   :   Cos.Ref =
 
@@ -125,7 +125,7 @@ private[facsimile] object FontEmbedder:
             t"FontDescriptor" -> descriptor )
 
   // The font's advance for a character, in glyph space; zero for one it does not map.
-  private def width(ttf: Ttf, scaled: Int => Long, char: Char): Long =
+  private def width(ttf: Truetype, scaled: Int => Long, char: Char): Long =
     safely:
       val glyph = ttf.glyph(char)
       if glyph.id == 0 then 0L else scaled(ttf.hmtx.advanceWidth(glyph.id))
@@ -133,7 +133,7 @@ private[facsimile] object FontEmbedder:
     . or(0L)
 
   // A PostScript name contains no spaces, though some fonts' naming tables do.
-  private def postScriptName(ttf: Ttf): Optional[Text] =
+  private def postScriptName(ttf: Truetype): Optional[Text] =
     ttf.fontName.let(_.s.replace(" ", "").nn.tt)
 
   // The conventional six-uppercase-letter subset tag, derived deterministically from the

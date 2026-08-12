@@ -727,7 +727,7 @@ object Tests extends Suite(m"Facsimile tests"):
           t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
           t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
 
-      // Stand-in font-program bytes: the reader wraps FontFile2 bytes in `Ttf` without
+      // Stand-in font-program bytes: the reader wraps FontFile2 bytes in `Truetype` without
       // validating, and the embedder degrades gracefully on an unparseable program, so this
       // exercises the embedding plumbing without a real font file in the repo.
       val fontProgram: Data = t"pretend-truetype-font-program".in[Data]
@@ -736,7 +736,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
+          val font = doc.embedFont(Truetype(fontProgram), t"MyFont")
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -747,7 +747,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
+          val font = doc.embedFont(Truetype(fontProgram), t"MyFont")
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
           val operators = List
@@ -765,7 +765,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
+          val font = doc.embedFont(Truetype(fontProgram), t"MyFont")
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -778,7 +778,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Ttf(miniFont))
+          val font = doc.embedFont(Truetype(miniFont))
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -789,7 +789,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Ttf(miniFont))
+          val font = doc.embedFont(Truetype(miniFont))
           val dict = doc.resolved(font).dictionary.or(noParms)
 
           val descriptor =
@@ -806,7 +806,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Ttf(miniFont))
+          val font = doc.embedFont(Truetype(miniFont))
           val dict = doc.resolved(font).dictionary.or(noParms)
 
           dict(t"Widths") match
@@ -818,7 +818,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Ttf(miniFont), subset = t"AB")
+          val font = doc.embedFont(Truetype(miniFont), subset = t"AB")
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -829,7 +829,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Ttf(miniFont), subset = t"A")
+          val font = doc.embedFont(Truetype(miniFont), subset = t"A")
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -841,7 +841,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Ttf(miniFont), subset = t"C")
+          val font = doc.embedFont(Truetype(miniFont), subset = t"C")
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():

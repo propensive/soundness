@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export phoenicia.{FontError, Glyph, Ttf}
+export phoenicia.{FontError, Glyph, Truetype}

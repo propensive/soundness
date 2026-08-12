@@ -56,7 +56,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
 
   // Assembles tables into an sfnt container: the header, a table directory, then the tables
   // themselves, four-byte aligned. Checksums are left zero: the parser does not verify them.
-  def sfnt(tables: (Text, Data)*): Ttf =
+  def sfnt(tables: (Text, Data)*): Truetype =
     val count = tables.length
     val entrySelector = 31 - Integer.numberOfLeadingZeros(count)
     val searchRange = (1 << entrySelector)*16
@@ -73,7 +73,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
       body += table ++ Array.fill[Byte](padding)(0)
       offset += table.length + padding
 
-    Ttf(header ++ directory.result().reduce(_ ++ _) ++ body.result().reduce(_ ++ _))
+    Truetype(header ++ directory.result().reduce(_ ++ _) ++ body.result().reduce(_ ++ _))
 
   def headTableWith(indexToLocFormat: Int): Data =
     u16(1, 0, 1, 0)              // versions and font revision
@@ -173,7 +173,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
     ++ format4Subtable
     ++ u16(12, 0) ++ u32(28L, 0L, 1L) ++ u32(0x41L, 0x41L, 5L)
 
-  def font(cmap: Data = cmapFormat4, head: Data = headTable, extra: (Text, Data)*): Ttf =
+  def font(cmap: Data = cmapFormat4, head: Data = headTable, extra: (Text, Data)*): Truetype =
     val base = List(t"cmap" -> cmap, t"head" -> head, t"hhea" -> hheaTable,
         t"hmtx" -> hmtxTable, t"maxp" -> maxpTable, t"post" -> postTable, t"OS/2" -> os2Table,
         t"name" -> nameTable, t"loca" -> locaTable, t"glyf" -> glyfTable)

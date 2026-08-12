@@ -37,7 +37,7 @@ import fulminate.*
 
 object FontError:
   enum Reason(val number: Int) extends Clarification:
-    case MissingTable(tag: Ttf.Table.Tag)  extends Reason(1)
+    case MissingTable(tag: Truetype.Table.Tag)  extends Reason(1)
     case UnknownFormat(format: Int)   extends Reason(2)
     case MagicNumber                  extends Reason(3)
     case MissingEncoding              extends Reason(4)
