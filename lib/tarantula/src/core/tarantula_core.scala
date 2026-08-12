@@ -46,7 +46,7 @@ def browser(using session: WebDriverSession^): WebDriverSession^{session} = sess
 extension (element: WebElement)
   def click()(using session: WebDriverSession^): Unit = session.click(element)
   def clear()(using session: WebDriverSession^): Unit = session.clear(element)
-  def text()(using session: WebDriverSession^): Text = session.text(element)
+  def innerText()(using session: WebDriverSession^): Text = session.innerText(element)
   def tagName()(using session: WebDriverSession^): Text = session.tagName(element)
   def enabled()(using session: WebDriverSession^): Boolean = session.enabled(element)
   def selected()(using session: WebDriverSession^): Boolean = session.selected(element)

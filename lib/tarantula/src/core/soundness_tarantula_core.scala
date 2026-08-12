@@ -33,5 +33,5 @@
 package soundness
 
 export tarantula.{Focusable, ShadowRoot, WebDriver, WebDriverError, WebDriverSession,
-    WebElement, browser, click, clear, text, tagName, enabled, selected, displayed, role, label,
-    css, shadowRoot, rect, value, screenshotData, attribute, property, element, `/`}
+    WebElement, browser, click, clear, innerText, tagName, enabled, selected, displayed, role,
+    label, css, shadowRoot, rect, value, screenshotData, attribute, property, element, `/`}

@@ -64,6 +64,13 @@ private case class Address(url: Text)
 private case class Keys(text: Text)
 private case class Script(script: Text, args: List[Json])
 private case class Empty()
+private case class Handle(handle: Text)
+private case class Frame(id: Json)
+private case class Kind(`type`: Text)
+private case class Alert(text: Text)
+private case class Cookies(cookie: Cookie.Value)
+private case class Sequence(id: Text, `type`: Text, actions: List[Json])
+private case class Sequences(actions: List[Json])
 
 // The W3C error object, with every field optional: a driver may omit the stacktrace, and a
 // reply that is JSON but not this shape must still yield a `WebDriverError`, not a `JsonError`.
@@ -76,8 +83,16 @@ private case class ElementRef
   ( @name[Json](t"element-6066-11e4-a52e-4f735466cecf") elementId: Text )
 
 object WebDriverSession:
-  // The bounding box of an element, in CSS pixels relative to the document.
+  // The bounding box of an element, or of a window, in CSS pixels.
   case class Rect(x: Double, y: Double, width: Double, height: Double)
+
+  // The three timeouts a session keeps, in milliseconds. `implicit` is the wait a find retries
+  // for before giving up, and is how a test waits for a page to settle without sleeping. The W3C
+  // spelling replaced the JSON Wire Protocol's `{"type":…,"ms":…}` pair.
+  case class Timeouts
+    ( `implicit`: Optional[Long] = Unset,
+      pageLoad:   Optional[Long] = Unset,
+      script:     Optional[Long] = Unset )
 
   // A free function of the companion, not a method of the session: a method would carry the
   // session in its own prefix, and a lambda built from it would hide capabilities that overlap
@@ -107,6 +122,83 @@ object WebDriverSession:
 
   private[tarantula] def failure(json: Json): Failure raises JsonError =
     caps.unsafe.unsafeAssumeSeparate(json.as[Failure])
+
+  object Action:
+    // The two kinds of input source the specification defines that carry actions. (A "none" source
+    // exists too, but it can only pause, which either of these can do.) One `perform` call drives
+    // one source; driving two in lockstep — a chord across keyboard and pointer — is rare enough
+    // that it is left to `WebDriverSession#actions`, which takes the assembled JSON.
+    enum Source:
+      case Key, Pointer
+
+      def id: Text = this match
+        case Key     => t"keyboard"
+        case Pointer => t"pointer"
+
+      def kind: Text = this match
+        case Key     => t"key"
+        case Pointer => t"pointer"
+
+    // The buttons as the specification numbers them, which is the DOM's numbering and not the
+    // one a user would guess: the middle button is 1 and the right button 2.
+    val LeftButton: Int = 0
+    val MiddleButton: Int = 1
+    val RightButton: Int = 2
+
+    // Written by hand rather than derived: the discriminator is a `type` field whose values are
+    // the specification's camel-cased names, and each variant carries a different set of keys.
+    given encodable: Action is Encodable in Json =
+      case KeyDown(value)  => Json.make(`type` = t"keyDown".in[Json], value = value.in[Json])
+      case KeyUp(value)    => Json.make(`type` = t"keyUp".in[Json], value = value.in[Json])
+      case Pause(duration) => Json.make(`type` = t"pause".in[Json], duration = duration.in[Json])
+
+      case PointerDown(button) =>
+        Json.make(`type` = t"pointerDown".in[Json], button = button.in[Json])
+
+      case PointerUp(button) =>
+        Json.make(`type` = t"pointerUp".in[Json], button = button.in[Json])
+
+      case PointerMove(x, y, duration, origin) =>
+        Json.make
+          ( `type`   = t"pointerMove".in[Json],
+            x        = x.in[Json],
+            y        = y.in[Json],
+            duration = duration.in[Json],
+            origin   = origin.lay(t"viewport".in[Json])(_.in[Json]) )
+
+  // One step of an input sequence. This is the only way to send a modifier, a chord, a hover or a
+  // drag: the specification replaced the JSON Wire Protocol's `/moveto`, `/click` and `/keys` with
+  // a single `/actions` endpoint, which is why `tarantula` could not simulate a keypress before.
+  // Plain text entry into a field stays on `WebElement#value`, which is simpler and faster.
+  enum Action:
+    case KeyDown(value: Text)
+    case KeyUp(value: Text)
+    case Pause(duration: Int)
+    case PointerDown(button: Int = Action.LeftButton)
+    case PointerUp(button: Int = Action.LeftButton)
+
+    // Coordinates are relative to `origin`: the viewport when it is `Unset`, or the centre of the
+    // element when one is given.
+    case PointerMove(x: Int, y: Int, duration: Int = 100, origin: Optional[WebElement] = Unset)
+
+  // A generic `decode[value]` would not do: taking the decodable as a parameter moves its
+  // summon to the call site, where the tactic is a field of the session again and the overlap
+  // returns. So each shape the protocol replies with gets its own line here.
+  // The literal `null`, parsed once. Constructing it here rather than in the session keeps the
+  // `unsafely` — which cannot fail, the text being a literal — out of the request path.
+  private[tarantula] val nul: Json = unsafely(t"null".read[Json])
+
+  private[tarantula] def texts(json: Json): List[Text] raises JsonError =
+    caps.unsafe.unsafeAssumeSeparate(json.as[List[Text]])
+
+  private[tarantula] def cookie(json: Json): Cookie.Value raises JsonError =
+    caps.unsafe.unsafeAssumeSeparate(json.as[Cookie.Value])
+
+  private[tarantula] def cookies(json: Json): List[Cookie.Value] raises JsonError =
+    caps.unsafe.unsafeAssumeSeparate(json.as[List[Cookie.Value]])
+
+  private[tarantula] def timeouts(json: Json): Timeouts raises JsonError =
+    caps.unsafe.unsafeAssumeSeparate(json.as[Timeouts])
 
   // Whether a driver is listening yet. Every failure is swallowed: during startup a refused
   // connection is the expected outcome, not something to report. The `ready` flag in the reply
@@ -225,6 +317,12 @@ extends caps.ExclusiveCapability:
   private def delete(path: Text): Json = outcome(address(path).fetch(Http.Delete))
 
   private def read(path: Text): Json = get(t"session/$id/$path")
+
+  // The session-scoped `DELETE`s: dropping a cookie, closing a window, releasing held keys.
+  private def drop(path: Text): Unit =
+    delete(t"session/$id/$path")
+    ()
+
   private def send(path: Text, content: Json): Json = post(t"session/$id/$path", content)
 
   // A command issued for its effect on the browser: the driver replies `{"value":null}`, and
@@ -282,6 +380,91 @@ extends caps.ExclusiveCapability:
   def screenshotData(): Data =
     WebDriverSession.text(read(t"screenshot").value).deserialize[Base64]
 
+  // Windows and tabs. A handle is an opaque token, like an element's, and only the current
+  // window responds to commands — hence `switchTo`.
+  def window(): Text = WebDriverSession.text(read(t"window").value)
+
+  def closeWindow(): List[Text] =
+    WebDriverSession.texts(delete(t"session/$id/window").value)
+
+  def switchTo(window: Text): Unit = command(t"window", Handle(window).in[Json])
+  def windowRect(): WebDriverSession.Rect = WebDriverSession.rect(read(t"window/rect").value)
+  def maximize(): WebDriverSession.Rect = sized(t"maximize")
+  def minimize(): WebDriverSession.Rect = sized(t"minimize")
+  def fullscreen(): WebDriverSession.Rect = sized(t"fullscreen")
+
+  def windows(): List[Text] =
+    WebDriverSession.texts(read(t"window/handles").value)
+
+  def windowRect(rect: WebDriverSession.Rect): Unit =
+    command(t"window/rect", rect.in[Json])
+
+  // The reply is the resulting geometry, which is worth returning: a window manager may refuse
+  // to make a window the size that was asked for.
+  private def sized(path: Text): WebDriverSession.Rect =
+    WebDriverSession.rect(send(t"window/$path", Empty().in[Json]).value)
+
+  // A new window or tab is *not* switched to: the specification leaves the current window where
+  // it was, and hands back a handle to pass to `switchTo`.
+  def newWindow(tab: Boolean = true): Text =
+    val kind = if tab then t"tab" else t"window"
+    WebDriverSession.text(send(t"window/new", Kind(kind).in[Json]).value.handle)
+
+  // Frames. Commands address the current browsing context, so entering a frame is a mode change
+  // rather than an argument, and `topFrame()` is the way back out of any depth.
+  def frame(element: WebElement): Unit = command(t"frame", Frame(element.in[Json]).in[Json])
+  def frame(index: Int): Unit = command(t"frame", Frame(index.in[Json]).in[Json])
+  def parentFrame(): Unit = command(t"frame/parent", Empty().in[Json])
+  // `{"id":null}`, not `{}`: the protocol distinguishes an explicit null — return to the
+  // top-level browsing context — from an absent key, which is invalid.
+  def topFrame(): Unit = command(t"frame", Frame(WebDriverSession.nul).in[Json])
+
+  // User prompts. Every other command fails with `UnexpectedAlertOpen` while one of these is
+  // open, unless the session asked for a different `unhandledPromptBehavior`.
+  def acceptAlert(): Unit = command(t"alert/accept", Empty().in[Json])
+  def dismissAlert(): Unit = command(t"alert/dismiss", Empty().in[Json])
+  def alertText(): Text = WebDriverSession.text(read(t"alert/text").value)
+  def alertText(text: Text): Unit = command(t"alert/text", Alert(text).in[Json])
+
+  // Timeouts.
+  def timeouts(): WebDriverSession.Timeouts =
+    WebDriverSession.timeouts(read(t"timeouts").value)
+
+  def timeouts(timeouts: WebDriverSession.Timeouts): Unit =
+    command(t"timeouts", timeouts.in[Json])
+
+  // Cookies, reusing telekinesis's own `Cookie.Value`, whose fields are already the names the
+  // protocol uses. It has no `sameSite`, so that attribute is neither read nor set; a cookie
+  // needing one can be installed with `execute`.
+  def cookies(): List[Cookie.Value] =
+    WebDriverSession.cookies(read(t"cookie").value)
+
+  def cookie(name: Text): Cookie.Value =
+    WebDriverSession.cookie(read(t"cookie/$name").value)
+
+  def addCookie(cookie: Cookie.Value): Unit = command(t"cookie", Cookies(cookie).in[Json])
+  def deleteCookie(name: Text): Unit = drop(t"cookie/$name")
+  def deleteCookies(): Unit = drop(t"cookie")
+
+  // Input actions. One call drives one input source; `actions` takes the assembled JSON for the
+  // rare case of two sources moving in lockstep.
+  def perform(source: WebDriverSession.Action.Source, steps: List[WebDriverSession.Action])
+  :   Unit =
+
+    val encoded = steps.map(_.in[Json])
+    actions(Sequences(List(Sequence(source.id, source.kind, encoded).in[Json])).in[Json])
+
+  def actions(json: Json): Unit = command(t"actions", json)
+
+  // Releases every key and button an earlier `perform` left held, and clears the input state.
+  def releaseActions(): Unit = drop(t"actions")
+
+  // The page as a PDF, in raw bytes. Not universally implemented — Safari does not have it —
+  // and unrelated to `screenshotData`, which captures what is rendered rather than what would
+  // be printed.
+  def printPage(): Data =
+    WebDriverSession.text(send(t"print", Empty().in[Json]).value).deserialize[Base64]
+
   // Script execution: the escape hatch for anything the protocol does not model.
   def execute(script: Text, arguments: List[Json] = Nil): Json =
     send(t"execute/sync", Script(script, arguments).in[Json]).value
@@ -324,7 +507,11 @@ extends caps.ExclusiveCapability:
 
   // Reading an element's state. `attribute` reads the markup's attribute, `property` the live
   // DOM property; the two diverge as soon as a page's script touches the node.
-  def text(element: WebElement): Text =
+  //
+  // `innerText`, not `text`: the specification computes this with the `innerText` algorithm —
+  // rendered text, not `textContent` — and `text` is already a top-level extension in the
+  // `soundness` package, contributed by gossamer for `Array[Char]`.
+  def innerText(element: WebElement): Text =
     WebDriverSession.text(read(elementPath(element, t"text")).value)
 
   def tagName(element: WebElement): Text =

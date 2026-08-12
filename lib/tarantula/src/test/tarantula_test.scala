@@ -285,3 +285,49 @@ object Tests extends Suite(m"Tarantula tests"):
       test(m"the page source is read, not posted"):
         sent(browser.source().pipe(_ => ())).prim.let { e => (e.method, e.path) }
       . assert(_ == (Http.Get, t"/session/$sessionId/source"))
+
+      test(m"timeouts are sent in the W3C shape, not the JSON Wire pair"):
+        sent(browser.timeouts(WebDriverSession.Timeouts(`implicit` = 5000L)))
+        . prim.let(_.body.or(t""))
+      . assert(_ == t"""{"implicit":5000}""")
+
+      test(m"accepting an alert uses the W3C path"):
+        sent(browser.acceptAlert()).prim.let(_.path)
+      . assert(_ == t"/session/$sessionId/alert/accept")
+
+      test(m"switching to the top frame sends a null id"):
+        sent(browser.topFrame()).prim.let(_.body.or(t""))
+      . assert(_ == t"""{"id":null}""")
+
+      test(m"deleting all cookies is a DELETE, not a POST"):
+        sent(browser.deleteCookies()).prim.let { e => (e.method, e.path) }
+      . assert(_ == (Http.Delete, t"/session/$sessionId/cookie"))
+
+    suite(m"Input actions"):
+      def performed(steps: List[WebDriverSession.Action]): Text =
+        val fake = driver((_, _) => none)
+        given Http.Backend = fake
+        WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+          browser.perform(WebDriverSession.Action.Source.Key, steps)
+
+        fake.exchanges.stdlib.filter(_.path.ends(t"/actions")).head.body.or(t"")
+
+      test(m"a keypress is one keyboard source with two steps"):
+        performed(List(WebDriverSession.Action.KeyDown(t"a"), WebDriverSession.Action.KeyUp(t"a")))
+      . assert:
+          _ == t"""{"actions":[{"id":"keyboard","type":"key","actions":""" +
+              t"""[{"type":"keyDown","value":"a"},{"type":"keyUp","value":"a"}]}]}"""
+
+      test(m"a pause carries its duration"):
+        performed(List(WebDriverSession.Action.Pause(250)))
+      . assert(_.contains(t"""{"type":"pause","duration":250}"""))
+
+      test(m"releasing actions is a DELETE"):
+        val fake = driver((_, _) => none)
+        given Http.Backend = fake
+        WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+          browser.releaseActions()
+
+        fake.exchanges.stdlib.filter(_.path.ends(t"/actions")).head.method
+
+      . assert(_ == Http.Delete)
