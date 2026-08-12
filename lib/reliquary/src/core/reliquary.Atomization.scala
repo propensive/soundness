@@ -53,5 +53,5 @@ object Atomization:
 // hash. Union across disciplines is well-defined because value hashes are domain-separated by
 // the full discipline identifier (§7.1).
 case class Atomization private(discipline: Text, atoms: List[Atom]):
-  def rigid: List[Atom] = atoms.filter(_.atomClass == AtomClass.Rigid)
-  def replaceable: List[Atom] = atoms.filter(_.atomClass == AtomClass.Replaceable)
+  def rigid: List[Atom] = atoms.filter(_.atomClass == Atom.Class.Rigid)
+  def replaceable: List[Atom] = atoms.filter(_.atomClass == Atom.Class.Replaceable)

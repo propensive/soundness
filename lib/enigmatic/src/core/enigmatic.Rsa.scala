@@ -36,13 +36,13 @@ import anticipation.*
 
 object Rsa:
   given value: [bits <: 1024 | 2048 | 3072 | 4096: ValueOf]
-  =>  ( digest: SignatureDigest, crypto: Crypto )
+  =>  ( digest: Signature.Digest, crypto: Crypto )
   =>  Rsa[bits] =
     Rsa(crypto.rsa, crypto.rsaSignature(digest.token))
 
 // RSA both encrypts and signs. The two are distinct primitives sharing one key pair: `encrypt`
 // and `decrypt` use raw RSA, while `sign` and `verify` use RSASSA-PKCS1-v1_5 over the digest
-// named by the ambient `SignatureDigest` (SHA-256 unless overridden).
+// named by the ambient `Signature.Digest` (SHA-256 unless overridden).
 class Rsa[bits <: 1024 | 2048 | 3072 | 4096: ValueOf]
   ( cipher: Crypto.PublicKeyCipher, scheme: Crypto.SignatureScheme )
 extends Cipher, Encryption, Signing:

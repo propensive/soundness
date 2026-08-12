@@ -1125,9 +1125,9 @@ object Tests extends Suite(m"Jacinta Tests"):
         capture[Json.Error](t"""{"radius": 2.5}""".read[Shape in Json]).reason
       . assert(_ == Json.Error.Reason.Absent)
 
-      test(m"A staged sum parser raises VariantError for an unknown tag"):
+      test(m"A staged sum parser raises Variant.Error for an unknown tag"):
         given Shape is Json.Parsable = Json.Parsable.staged
-        capture[VariantError](t"""{"radius": 2.5, "kind": "Blob"}""".read[Shape in Json])
+        capture[Variant.Error](t"""{"radius": 2.5, "kind": "Blob"}""".read[Shape in Json])
         . inputLabel
       . assert(_ == t"Blob")
 

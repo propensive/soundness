@@ -65,12 +65,12 @@ object Serviceable:
   given tcpEndpoint: Online
   =>  (backend: SocketBackend, tactic: Tactic[StreamError])
   =>  (options: Every[SocketOption.Tcp])
-  =>  ( (Endpoint[TcpPort] is Serviceable)^{tactic} ) = new Serviceable:
-    type Self = Endpoint[TcpPort]
+  =>  ( (Endpoint[Tcp.Port] is Serviceable)^{tactic} ) = new Serviceable:
+    type Self = Endpoint[Tcp.Port]
     type Output = Data
     type Connection = backend.Exchange
 
-    def connect(endpoint: Endpoint[TcpPort], interface: Optional[MacAddress]): Connection =
+    def connect(endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress]): Connection =
       backend.dialTcp(endpoint, interface, List.of(options.values))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
@@ -83,12 +83,12 @@ object Serviceable:
 
   given tcpPort: (backend: SocketBackend, tactic: Tactic[StreamError])
   =>  (options: Every[SocketOption.Tcp])
-  =>  ( (TcpPort is Serviceable)^{tactic} ) = new Serviceable:
-    type Self = TcpPort
+  =>  ( (Tcp.Port is Serviceable)^{tactic} ) = new Serviceable:
+    type Self = Tcp.Port
     type Output = Data
     type Connection = backend.Exchange
 
-    def connect(port: TcpPort, interface: Optional[MacAddress]): Connection =
+    def connect(port: Tcp.Port, interface: Optional[MacAddress]): Connection =
       backend.dialTcpPort(port, interface, List.of(options.values))
 
     def close(connection: Connection): Unit = backend.hangUp(connection)

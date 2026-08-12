@@ -86,7 +86,7 @@ object KotlinMetadataAtomizer:
   private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
     val out = java.io.ByteArrayOutputStream()
     encode(out)
-    LiraHash(LiraHash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
 
   // --- type rendering -------------------------------------------------------------------------
 
@@ -125,7 +125,7 @@ object KotlinMetadataAtomizer:
     t"$owner#${function.getName.nn.tt}(${parameterTypes(function)})"
 
   private def functionAtom(owner: Text, function: KmFunction, static: Boolean): Atom =
-    Atom(functionKey(owner, function), AtomClass.Rigid, hash: out =>
+    Atom(functionKey(owner, function), Atom.Class.Rigid, hash: out =>
       tag(out, 'f')
       utf8(out, owner)
       utf8(out, function.getName.nn.tt)
@@ -153,7 +153,7 @@ object KotlinMetadataAtomizer:
       utf8(out, render(function.getReturnType.nn)))
 
   private def propertyAtom(owner: Text, property: KmProperty, static: Boolean): Atom =
-    Atom(t"$owner.${property.getName.nn.tt}", AtomClass.Rigid, hash: out =>
+    Atom(t"$owner.${property.getName.nn.tt}", Atom.Class.Rigid, hash: out =>
       tag(out, 'p')
       utf8(out, owner)
       utf8(out, property.getName.nn.tt)
@@ -171,7 +171,7 @@ object KotlinMetadataAtomizer:
     val types = constructor.getValueParameters.nn.asScala.to(SList).map: parameter =>
       render(parameter.getType.nn).s
 
-    Atom(t"$owner#constructor(${Text(types.mkString(","))})", AtomClass.Rigid, hash: out =>
+    Atom(t"$owner#constructor(${Text(types.mkString(","))})", Atom.Class.Rigid, hash: out =>
       tag(out, 'c')
       utf8(out, owner)
       uvarint(out, Attributes.getVisibility(constructor).ordinal.toLong)
@@ -185,7 +185,7 @@ object KotlinMetadataAtomizer:
         utf8(out, render(parameter.getType.nn)))
 
   private def aliasAtom(owner: Text, alias: KmTypeAlias): Atom =
-    Atom(t"$owner.${alias.getName.nn.tt}", AtomClass.Rigid, hash: out =>
+    Atom(t"$owner.${alias.getName.nn.tt}", Atom.Class.Rigid, hash: out =>
       tag(out, 'a')
       utf8(out, owner)
       utf8(out, alias.getName.nn.tt)
@@ -270,7 +270,7 @@ object KotlinMetadataAtomizer:
             constructor.getValueParameters.nn.asScala.to(SList).map: parameter =>
               s"${parameter.getName}:${render(parameter.getType.nn)}"
 
-    atoms += Atom(owner, AtomClass.Rigid, hash: out =>
+    atoms += Atom(owner, Atom.Class.Rigid, hash: out =>
       tag(out, 'K')
       utf8(out, owner)
       uvarint(out, Attributes.getKind(kmClass).ordinal.toLong)

@@ -36,10 +36,10 @@ import anticipation.*
 
 object Grade:
   private def entries(atomizations: List[Atomization])
-  :   scala.collection.immutable.Set[(Text, AtomClass, Text)] =
+  :   scala.collection.immutable.Set[(Text, Atom.Class, Text)] =
 
     atomizations.stdlib.flatMap(_.atoms.stdlib).map: atom =>
-      (atom.key, atom.atomClass, LiraHash.text(atom.valueHash))
+      (atom.key, atom.atomClass, Lira.Hash.text(atom.valueHash))
 
     . toSet
 
@@ -53,11 +53,11 @@ object Grade:
 
     if before == after then Patch
     else
-      val rigidKept = before.filter(_(1) == AtomClass.Rigid).subsetOf:
-        after.filter(_(1) == AtomClass.Rigid)
+      val rigidKept = before.filter(_(1) == Atom.Class.Rigid).subsetOf:
+        after.filter(_(1) == Atom.Class.Rigid)
 
-      val keysBefore = before.filter(_(1) == AtomClass.Replaceable).map(_(0))
-      val keysAfter = after.filter(_(1) == AtomClass.Replaceable).map(_(0))
+      val keysBefore = before.filter(_(1) == Atom.Class.Replaceable).map(_(0))
+      val keysAfter = after.filter(_(1) == Atom.Class.Replaceable).map(_(0))
 
       if rigidKept && keysBefore.subsetOf(keysAfter) then Minor else Major
 

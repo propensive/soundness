@@ -208,7 +208,7 @@ package socketBackends:
         exchange.socket.dispose()
 
     //── Stream server (TCP; Unix-domain unsupported) ─────────────────────────────────────────────
-    def listenTcp(port: TcpPort, interface: Optional[MacAddress], options: List[SocketOption])
+    def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
     :   WitHandle of "tcp-socket" =
 
       unsafely:
@@ -240,13 +240,13 @@ package socketBackends:
     def shutdown(socketHandle: WitHandle of "tcp-socket"): Unit = socketHandle.dispose()
 
     //── Datagram server (unsupported on WASI for now) ────────────────────────────────────────────
-    def listenUdp(port: UdpPort, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
+    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
       ()
 
     def receive(socket: Unit): Packet raises ConnectionError =
       abort(ConnectionError(ConnectionError.Reason.Accept))
 
-    def reply(socket: Unit, sender: Ipv4 | Ipv6, port: UdpPort, data: Data)
+    def reply(socket: Unit, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises ConnectionError =
       abort(ConnectionError(ConnectionError.Reason.Transmit))
 
@@ -254,11 +254,11 @@ package socketBackends:
 
     //── Request/response exchange (TCP; Unix-domain unsupported) ──────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[TcpPort], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
     :   WasiExchange =
       unsafely(connect(endpoint.remote, endpoint.port.number))
 
-    def dialTcpPort(port: TcpPort, interface: Optional[MacAddress], options: List[SocketOption])
+    def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
     :   WasiExchange =
       unsafely(connect(t"127.0.0.1", port.number))
 
@@ -280,7 +280,7 @@ package socketBackends:
 
     //── Persistent duplex client (TCP; Unix-domain unsupported) ───────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[TcpPort], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
     :   Duplex =
       duplexOf(unsafely(connect(endpoint.remote, endpoint.port.number)))
 
@@ -289,11 +289,11 @@ package socketBackends:
 
     //── Fire-and-forget datagram courier (unsupported on WASI for now) ────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[UdpPort], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
     :   Unit =
       ()
 
-    def routeUdpPort(port: UdpPort, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
+    def routeUdpPort(port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
       ()
 
     def dispatch(courier: Unit, consume input: (Stream[Data] over Credit)^): Unit = ()

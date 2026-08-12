@@ -39,7 +39,7 @@ import prepositional.*
 import rudiments.*
 import proscenium.compat.*
 
-import CborError.{Primitive, Reason}
+import Cbor.Error.{Primitive, Reason}
 
 extension (cbor: Cbor.Ast)
   @unexported
@@ -85,9 +85,9 @@ extension (cbor: Cbor.Ast)
     else if unset then Primitive.Undefined
     else Primitive.Null
 
-  private def expected(expected: Primitive): Unit raises CborError =
-    if unset then abort(CborError(Reason.Absent))
-    else abort(CborError(Reason.NotType(primitive, expected)))
+  private def expected(expected: Primitive): Unit raises Cbor.Error =
+    if unset then abort(Cbor.Error(Reason.Absent))
+    else abort(Cbor.Error(Reason.NotType(primitive, expected)))
 
   @unexported
   inline def elements: Int = Cbor.Ast.length(cbor)
@@ -115,36 +115,36 @@ extension (cbor: Cbor.Ast)
     -1
 
   @unexported
-  def long: Long raises CborError =
+  def long: Long raises Cbor.Error =
     if isInteger then cbor.asInstanceOf[Long] else if isFloat then cbor.asInstanceOf[Double].toLong
     else expected(Primitive.Integer) yet 0L
 
   @unexported
-  def double: Double raises CborError =
+  def double: Double raises Cbor.Error =
     if isFloat then cbor.asInstanceOf[Double]
     else if isInteger then cbor.asInstanceOf[Long].toDouble
     else expected(Primitive.Float) yet 0.0
 
   @unexported
-  def string: String raises CborError =
+  def string: String raises Cbor.Error =
     if isTextString then cbor.asInstanceOf[String] else expected(Primitive.TextString) yet ""
 
   @unexported
-  def byteString: Array[Byte]^{} raises CborError =
+  def byteString: Array[Byte]^{} raises Cbor.Error =
     if isByteString then cbor.asInstanceOf[Array[Byte]^{}]
     else expected(Primitive.ByteString) yet Array.empty[Byte]
 
   @unexported
-  def boolean: Boolean raises CborError =
+  def boolean: Boolean raises Cbor.Error =
     if isBoolean then cbor.asInstanceOf[Boolean] else expected(Primitive.Boolean) yet false
 
   @unexported
-  def tag: Cbor.Tag raises CborError =
+  def tag: Cbor.Tag raises Cbor.Error =
     if isTag then cbor.asInstanceOf[Cbor.Tag]
     else expected(Primitive.Tag) yet Cbor.Tag(0L, vacuous.Unset)
 
   @unexported
-  def array: Array[Cbor.Ast]^{} raises CborError =
+  def array: Array[Cbor.Ast]^{} raises Cbor.Error =
     if isArray then
       val full = cbor.asInstanceOf[Array[Cbor.Ast]^{}]
       val count = elements

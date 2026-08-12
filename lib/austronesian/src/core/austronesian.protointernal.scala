@@ -72,7 +72,7 @@ object protointernal:
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Pojo =
       case scala.Array(label: String @unchecked, pojo: Pojo @unchecked) =>
         provide[Tactic[PojoError]]:
-          provide[Tactic[VariantError]]:
+          provide[Tactic[Variant.Error]]:
             delegate(label): [variant <: derivation] => _.decoded(pojo)
 
       case other =>

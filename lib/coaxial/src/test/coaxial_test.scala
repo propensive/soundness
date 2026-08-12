@@ -228,7 +228,7 @@ object Tests extends Suite(m"Coaxial tests"):
             // `Chain[Data]`) and `Routable` (returns `Unit`); since value-discarding
             // makes any type conform to `Unit`, the `Routable` overload is not
             // reachable by ascription, so its given is exercised directly here.
-            val routable = summon[UdpPort is Routable]
+            val routable = summon[Udp.Port is Routable]
             routable.transmit(routable.connect(port, Unset), zephyrine.Stream(ascii(t"ping")))
             received.await()
         . assert(_ == t"ping")

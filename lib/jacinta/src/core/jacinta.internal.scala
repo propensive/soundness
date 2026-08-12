@@ -55,7 +55,7 @@ import hypotenuse.Bcd
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import wisteria.{Discriminable, VariantError}
+import wisteria.{Discriminable, Variant}
 import zephyrine.*
 
 object internal:
@@ -1132,7 +1132,7 @@ object internal:
         case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
 
     def body
-      ( reader:    Expr[JsonReader],
+      ( reader:    Expr[Json.Reader],
         foci:      Expr[Foci[Json.Focus]],
         tactic:    Expr[Tactic[Json.Error]],
         keys:      Expr[Array[String]^{}],
@@ -1225,7 +1225,7 @@ object internal:
 
           val resolve: Term =
             If
-              ( '{ $wordRef == JsonReader.KeyOpaque }.asTerm,
+              ( '{ $wordRef == Json.Reader.KeyOpaque }.asTerm,
                 '{ $reader.keyIndex($table) }.asTerm,
                 Block(scala.collection.immutable.List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), chain(0)) )
 
@@ -1233,7 +1233,7 @@ object internal:
             Block
               ( scala.collection.immutable.List(ValDef(word, Some('{ $reader.keyWord() }.asTerm))),
                 If
-                  ( '{ $wordRef == JsonReader.KeyEnd }.asTerm,
+                  ( '{ $wordRef == Json.Reader.KeyEnd }.asTerm,
                     Assign(Ref(run), Literal(BooleanConstant(false))),
                     Block
                       ( scala.collection.immutable.List(ValDef(found, Some(resolve))),
@@ -1332,7 +1332,7 @@ object internal:
           type Self = value
           def shape(): Morphology = Morphology.Any
 
-          def parse(reader: JsonReader^): value =
+          def parse(reader: Json.Reader^): value =
             ${
               body
                 ( '{reader}, '{foci}, '{tactic}, '{keys}, '{table}, '{instances},
@@ -1349,7 +1349,7 @@ object internal:
   // expansion, so a sibling staged given composes) — no per-occurrence map
   // building, no generic-equality dispatch, no `delegate` fold. A missing
   // tag and an unknown tag raise exactly as `ParsableDerivation.disjunction`
-  // does: `Json.Error(Absent)` and wisteria's `VariantError`, each through
+  // does: `Json.Error(Absent)` and wisteria's `Variant.Error`, each through
   // the same deferred `provide` summons the derived engine uses.
   def stagedSum[value: Type](renames: Expr[Map[Text, Text]])(using Quotes)
   :   Expr[value is Json.Parsable] =
@@ -1404,7 +1404,7 @@ object internal:
     // the derived engine's unknown-variant raise.
     def dispatch
       ( index:        Int,
-        reader:       Expr[JsonReader],
+        reader:       Expr[Json.Reader],
         wire:         Expr[Text],
         wireString:   Expr[String],
         variants:     Expr[Array[Json.Field]^{}],
@@ -1413,8 +1413,8 @@ object internal:
 
       if index == arity then
         '{
-          provide[Tactic[VariantError]]:
-            abort(VariantError[value]($wire))
+          provide[Tactic[Variant.Error]]:
+            abort(Variant.Error[value]($wire))
         }
       else variantTypes(index).asType match
         case '[type variantType <: value; variantType] =>
@@ -1442,7 +1442,7 @@ object internal:
           type Self = value
           def shape(): Morphology = Morphology.Any
 
-          def parse(reader: JsonReader^): value =
+          def parse(reader: Json.Reader^): value =
             provide[Tactic[Json.Error]]:
               val wire: Text = reader.discriminant(tagField).or:
                 abort(Json.Error(Json.Error.Reason.Absent))

@@ -131,7 +131,7 @@ object Tests extends Suite(m"Enigmatic tests"):
         """.s.stripMargin.show
 
       example.read[Pem].label
-    . assert(_ == PemLabel.Proprietary(t"EXAMPLE"))
+    . assert(_ == Pem.Label.Proprietary(t"EXAMPLE"))
 
     test(m"Decode PEM certificate"):
       import alphabets.base64Standard
@@ -151,14 +151,14 @@ object Tests extends Suite(m"Enigmatic tests"):
     test(m"PEM parses from a single-char-chunk stream"):
       val stream = request.s.grouped(1).map(_.tt).stream
       summon[Pem is Aggregable by Text].accept(stream).label
-    . assert(_ == PemLabel.CertificateRequest)
+    . assert(_ == Pem.Label.CertificateRequest)
 
     test(m"PEM certificate chain parses lazily from a stream"):
       val example = t"-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
       val chain = t"subject=/CN=example\n$example\nissuer comment\n$example$example"
       val stream = chain.s.grouped(11).map(_.tt).stream
       summon[Chain[Pem] is Aggregable by Text].accept(stream).map(_.label).stdlib.to(List)
-    . assert(_ == List.fill(3)(PemLabel.Proprietary(t"EXAMPLE")))
+    . assert(_ == List.fill(3)(Pem.Label.Proprietary(t"EXAMPLE")))
 
     test(m"PEM chain of an input without blocks is empty"):
       summon[Chain[Pem] is Aggregable by Text].accept(t"no blocks here\n".stream).stdlib.to(List)
@@ -1118,7 +1118,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"A DER document re-armors as PEM"):
         val value: Asn1 = certificate.read[Asn1 in Pem]
-        Pem(PemLabel.Certificate, value.in[Der]).serialize
+        Pem(Pem.Label.Certificate, value.in[Der]).serialize
       . assert(_ == certificate.trim)
 
     CaptureTests()

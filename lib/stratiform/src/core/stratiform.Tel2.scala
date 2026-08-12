@@ -355,7 +355,7 @@ trait Tel2 extends Tel3:
       // the variant's (kebab-cased) name. Dispatch on that child's keyword and decode it
       // as the variant. This is the select-member form `Tel.Type.assign` and BinTEL key
       // on. The codec-carried shape stays permissive (`Any`) — walking the variants
-      // (`delegate`) is `fallible` and would leak a `Tactic[VariantError]` requirement
+      // (`delegate`) is `fallible` and would leak a `Tactic[Variant.Error]` requirement
       // onto every codec; the precise select schema comes from the standalone
       // `Schematic` / `Tels.tels`.
       // Kebab keyword → variant label (the label `delegate` dispatches on), a
@@ -370,7 +370,7 @@ trait Tel2 extends Tel3:
         telVal =>
           provide[Foci[Tel.Focus]]:
             provide[Tactic[Tel.Error]]:
-              provide[Tactic[VariantError]]:
+              provide[Tactic[Variant.Error]]:
                 val compounds = telVal.childCompounds
 
                 // A sum position with no child compound carries no variant to

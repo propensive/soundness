@@ -41,7 +41,6 @@ import vacuous.*
 
 export savagery.internal.Affine
 
-export savagery.internal.SvgId
 
 val Up:    Delta = Delta(0.0f, -1.0f)
 

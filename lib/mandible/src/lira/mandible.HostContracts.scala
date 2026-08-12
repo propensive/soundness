@@ -41,7 +41,7 @@ import revolution.Semver
 import rudiments.*
 import vacuous.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // One harvested release of a host's surface: the vendor's name for it (which becomes the
 // release's tag, LIRA §12.6) and its content tree.
@@ -60,10 +60,10 @@ object HostContracts:
   def assemble
     ( module:     Text,
       releases:   List[HostRelease],
-      toolchain:  List[LiraManifest.Tool],
+      toolchain:  List[Lira.Manifest.Tool],
       allowMajor: Text -> Boolean            = { _ => false },
-      sign:       LiraManifest -> LiraManifest = { manifest => manifest } )
-    ( using Tactic[LiraError], Tactic[DisciplineError] )
+      sign:       Lira.Manifest -> Lira.Manifest = { manifest => manifest } )
+    ( using Tactic[Lira.Error], Tactic[DisciplineError] )
   :   List[(Text, Data)] =
 
     val registry = Discipline.Registry(List(JsigDiscipline))
@@ -93,7 +93,7 @@ object HostContracts:
 
           case Grade.Major =>
             if !allowMajor(release.tag)
-            then abort(LiraError(Reason.UngradedSuccessor(release.tag)))
+            then abort(Lira.Error(Reason.UngradedSuccessor(release.tag)))
 
             // §12.5: in the 0 series the minor conventionally carries breaking steps.
             version =

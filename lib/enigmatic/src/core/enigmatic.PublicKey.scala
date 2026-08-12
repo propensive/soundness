@@ -54,4 +54,4 @@ case class PublicKey[cipher <: Cipher](bytes: Data):
     algorithm.verify(encodable.encode(value), signature.bytes, bytes)
 
 
-  def pem: Pem = Pem(PemLabel.PublicKey, bytes)
+  def pem: Pem = Pem(Pem.Label.PublicKey, bytes)

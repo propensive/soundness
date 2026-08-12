@@ -35,7 +35,7 @@ package cataclysm
 import anticipation.*
 
 // A CSS value token, the unit a property value is broken into before being
-// matched against a `Syntax` grammar. Follows the CSS Syntax Module Level 3
+// matched against a `Css.Syntax` grammar. Follows the CSS Css.Syntax Module Level 3
 // tokenizer, restricted to the tokens that appear in property values.
 enum ValueToken derives CanEqual:
   case Whitespace

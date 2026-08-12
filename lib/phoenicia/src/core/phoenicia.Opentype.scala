@@ -30,15 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package charisma
+package phoenicia
+
+import proscenium.compat.*
 
 import anticipation.*
+import contingency.*
 import gossamer.*
-import spectacular.*
+import hypotenuse.*
+import polaris.*
+import prepositional.*
+import quantitative.*
+import rudiments.*
+import symbolism.*
+import turbulence.*
+import vacuous.*
+import zephyrine.*
 
-object ChemicalEquation:
-  given showable: ChemicalEquation is Showable = equation =>
-    t"${equation.lhs} ${equation.reaction} ${equation.rhs}"
 
-case class ChemicalEquation(lhs: ChemicalFormula, reaction: Reaction, rhs: ChemicalFormula):
-  def balanced: Boolean = lhs.atoms == rhs.atoms
+object Opentype:
+  def apply[source: Streamable by Data over Credit](source: source): Opentype =
+    Opentype(source.read[Data])
+
+// An OpenType font: an sfnt file whose outlines are PostScript, stored in `CFF `. The shared
+// tables — character mapping, metrics, naming — all work; the outline data itself is not yet
+// parsed, so there is no equivalent of TrueType's `glyf`, and subsetting is unavailable.
+case class Opentype(data: Data) extends Sfnt

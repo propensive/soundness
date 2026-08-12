@@ -45,7 +45,7 @@ import vacuous.*
 import IoError.{Operation, Reason}
 
 // The form for transient working directories: `parent.open[Scratch](Read & Write)` creates a
-// fresh, uniquely-named directory beneath `parent`, provides a `DirectoryHandle` over it for
+// fresh, uniquely-named directory beneath `parent`, provides a `Directory.Handle` over it for
 // the scope, and deletes it — and everything created within it — when the scope ends, however
 // it ends. The lifetime of the directory *is* the scope, and the fresh-plane machinery
 // guarantees that no path into it survives beyond it, so the deletion is always sound.
@@ -59,11 +59,11 @@ object Scratch:
     type Self = path
     type Form = Scratch
     type Operand = Nothing
-    type Result = DirectoryHandle { type Under = filesystem }
+    type Result = Directory.Handle { type Under = filesystem }
 
     def open[grants <: Grant, result]
       ( value: path, mode: Mode granting grants, flags: List[Nothing] )
-      ( block: (((DirectoryHandle { type Under = filesystem }) & Granting[grants])^) ?=> result )
+      ( block: (((Directory.Handle { type Under = filesystem }) & Granting[grants])^) ?=> result )
     :   result =
 
       if backend.stat(value, true).entry != Directory
@@ -82,7 +82,7 @@ object Scratch:
 
       try
         val handle =
-          new DirectoryHandle with Granting[grants]:
+          new Directory.Handle with Granting[grants]:
             type Under = filesystem
             val stem: Path on filesystem = child
             val atoms: Set[Mode] = mode.atoms

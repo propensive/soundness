@@ -49,7 +49,7 @@ object LiraBundle:
   // Each universe knows its own LIRA section label and the filename suffixes of its stored
   // representations, so one method serves all three.
   def apply[universe <: Universe & Singleton: ValueOf](compilation: Compilation[universe])
-  :   LiraAssembler.SectionInput raises LiraError =
+  :   LiraAssembler.SectionInput raises Lira.Error =
 
     val universe: Universe = valueOf[universe]
     section(universe.section, compilation.out.encode, universe.suffixes)
@@ -57,12 +57,12 @@ object LiraBundle:
   // The toolchain record for a compilation (§14): the compiler version and the
   // universe-selecting flags of its emission.
   def tool[universe <: Universe](version: Text)(using emission: Universe.Emission[universe])
-  :   LiraManifest.Tool =
+  :   Lira.Manifest.Tool =
 
-    LiraManifest.Tool(t"scala", version, emission.flags)
+    Lira.Manifest.Tool(t"scala", version, emission.flags)
 
   private def section(universe: Text, out: Text, suffixes: List[Text])
-  :   LiraAssembler.SectionInput raises LiraError =
+  :   LiraAssembler.SectionInput raises Lira.Error =
 
     val root = jnf.Paths.get(out.s).nn
 

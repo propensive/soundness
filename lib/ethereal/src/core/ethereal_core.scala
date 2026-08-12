@@ -447,7 +447,7 @@ def cli[bus <: Matchable](using executive: Executive)
             if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
             else
               ColorDepth
-                ( safely(mute[ExecEvent](sh"tput colors".exec[Text]().as[Int])).or(-1) )
+                ( safely(mute[Exec.Event](sh"tput colors".exec[Text]().as[Int])).or(-1) )
 
         val stdio: Stdio =
           Stdio

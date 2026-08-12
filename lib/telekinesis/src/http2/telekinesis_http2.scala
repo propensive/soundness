@@ -79,7 +79,7 @@ extends Sessional:
     val port: Int = target.authority.lay(defaultPort)(_.port.or(defaultPort))
 
     if !secure then
-      val tcpPort: TcpPort = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
+      val tcpPort: Tcp.Port = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
 
       val duplex: Duplex =
         try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, List.of(options.values)) catch

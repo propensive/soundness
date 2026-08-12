@@ -38,7 +38,7 @@ import anticipation.*
 
 // ML-DSA (FIPS 204), the module-lattice signature scheme standardized from CRYSTALS-Dilithium,
 // in its three parameter sets: 44, 65 and 87 (the dimensions of the matrix A, e.g. 6×5 for
-// ML-DSA-65). It signs the message directly (the "pure" variant), so no `SignatureDigest`
+// ML-DSA-65). It signs the message directly (the "pure" variant), so no `Signature.Digest`
 // participates. Like `Ecdsa`, it is not part of the mandatory provider baseline, so it is
 // reached through a structural refinement, and a provider that does not offer it is a compile
 // error at the use site rather than a failure at run time.

@@ -37,7 +37,7 @@ import vacuous.*
 
 trait Molecular extends Formulable:
   def molecule: Molecule
-  def formula: ChemicalFormula = ChemicalFormula(molecule)
+  def formula: Chemical.Formula = Chemical.Formula(molecule)
 
   @targetName("with")
   infix def * (moleculable: Molecular): Molecule =
@@ -48,7 +48,7 @@ trait Molecular extends Formulable:
     Molecule(elements2, molecule.charge + moleculable.molecule.charge)
 
   @targetName("times")
-  infix def * (multiplier: Int): ChemicalFormula = ChemicalFormula(Ledger(molecule -> multiplier))
+  infix def * (multiplier: Int): Chemical.Formula = Chemical.Formula(Ledger(molecule -> multiplier))
 
   @targetName("times2")
   infix def ** (multiplier: Int): Molecule =

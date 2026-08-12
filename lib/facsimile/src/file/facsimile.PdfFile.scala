@@ -79,7 +79,7 @@ object PdfFile:
 
     mitigate:
       case Path.Error(_, _)     => Pdf.Error(Pdf.Error.Reason.Io(t"the path is invalid"))
-      case NameError(_, _, _)  => Pdf.Error(Pdf.Error.Reason.Io(t"the path is invalid"))
+      case Name.Error(_, _, _)  => Pdf.Error(Pdf.Error.Reason.Io(t"the path is invalid"))
       case IoError(_, _, _, _) => Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be written"))
 
     . protect:

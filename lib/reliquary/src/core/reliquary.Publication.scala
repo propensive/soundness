@@ -46,10 +46,10 @@ object Publication:
   def assign
     ( release:    Lira,
       previous:   Optional[Lira],
-      published:  List[LiraManifest],
+      published:  List[Lira.Manifest],
       forceMajor: Boolean                        = false,
-      sign:       LiraManifest => LiraManifest   = identity(_) )
-  :   LiraManifest raises LiraError =
+      sign:       Lira.Manifest => Lira.Manifest   = identity(_) )
+  :   Lira.Manifest raises Lira.Error =
 
     val atoms = Verification.install(release).atomizations
     val snapshot = Snapshot(atoms)
@@ -60,7 +60,7 @@ object Publication:
         val grade = Grade.between(previousAtoms, atoms)
 
         val previousVersion =
-          previous.manifest.version.or(abort(LiraError(LiraError.Reason.VersionRequired)))
+          previous.manifest.version.or(abort(Lira.Error(Lira.Error.Reason.VersionRequired)))
 
         val version = Versioning.expected(previousVersion, grade)
 

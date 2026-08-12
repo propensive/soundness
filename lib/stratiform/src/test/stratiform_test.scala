@@ -2038,7 +2038,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"The Force flag rewrites an unmutated document"):
         val source = cell("name Alice\n")
-        source.open[Tel](Read & Write, TelFlag.Force) { handle ?=> () }
+        source.open[Tel](Read & Write, Tel.Flag.Force) { handle ?=> () }
         (source.writes, source.content)
       . assert(_ == (1, t"name Alice\n"))
 

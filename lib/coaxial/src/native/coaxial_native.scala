@@ -137,7 +137,7 @@ package socketBackends:
                 abort(StreamError(sent.b))
 
     //── Stream server (`Bindable` over TCP / Unix-domain) ──────────────────────────────────────
-    def listenTcp(port: TcpPort, interface: Optional[MacAddress], options: List[SocketOption])
+    def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
     :   ServerBinding =
 
       val address: Optional[jn.InetAddress] = interface.let(interfaceFor(_)).let(bindAddress(_))
@@ -167,7 +167,7 @@ package socketBackends:
       case ServerBinding.Tcp(server) => server.close()
 
     //── Datagram server (`Bindable` over UDP) ──────────────────────────────────────────────────
-    def listenUdp(port: UdpPort, interface: Optional[MacAddress], options: List[SocketOption])
+    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption])
     :   jn.DatagramSocket =
 
       val socket = jn.DatagramSocket(port.number)
@@ -204,7 +204,7 @@ package socketBackends:
           ip,
           Port.unsafe[Udp](address.getPort) )
 
-    def reply(socket: jn.DatagramSocket, sender: Ipv4 | Ipv6, port: UdpPort, data: Data)
+    def reply(socket: jn.DatagramSocket, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises ConnectionError =
 
       val ip: jn.InetAddress = sender.absolve match
@@ -243,7 +243,7 @@ package socketBackends:
 
     //── Request/response exchange (`Serviceable`) ──────────────────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[TcpPort], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
     :   ClientExchange =
 
       val socket =
@@ -255,7 +255,7 @@ package socketBackends:
       configure(socket, options)
       ClientExchange.Tcp(socket)
 
-    def dialTcpPort(port: TcpPort, interface: Optional[MacAddress], options: List[SocketOption])
+    def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
     :   ClientExchange =
 
       val socket =
@@ -297,7 +297,7 @@ package socketBackends:
 
     //── Persistent duplex client (`Connectable`) ───────────────────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[TcpPort], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
     :   Duplex =
 
       // The JVM backend uses a `SocketChannel`; native has none, so a plain blocking `Socket` and
@@ -319,7 +319,7 @@ package socketBackends:
 
     //── Fire-and-forget datagram courier (`Routable`) ──────────────────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[UdpPort], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
     :   UdpCourier =
 
       val address = jn.InetAddress.getByName(endpoint.remote.s).nn
@@ -332,7 +332,7 @@ package socketBackends:
       UdpCourier(address, endpoint.port.number, socket)
 
     def routeUdpPort
-      ( port: UdpPort, interface: Optional[MacAddress], options: List[SocketOption] )
+      ( port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption] )
     :   UdpCourier =
 
       val socket = jn.DatagramSocket()

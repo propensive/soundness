@@ -111,8 +111,8 @@ object JvmProfile extends EcosystemProfile:
           // or throws clause changed under a name consumers still resolve. Narrowing
           // accessibility is the case that matters most (D.2, predicate 4), and it lands here
           // because access flags fold into the atom's value.
-          if atom.atomClass == AtomClass.Rigid
-          && LiraHash.text(atom.valueHash) != LiraHash.text(replacement.valueHash)
+          if atom.atomClass == Atom.Class.Rigid
+          && Lira.Hash.text(atom.valueHash) != Lira.Hash.text(replacement.valueHash)
           then violate(t"$key no longer has the shape compiled consumers resolved")
 
     // D.2, predicate 5: the ecosystem's toolchain predicate (§13.3). TASTy readability is
@@ -138,9 +138,9 @@ object JvmProfile extends EcosystemProfile:
     val after = surface(next)
 
     val changed = before.stdlib.collect:
-      case (key, atom) if atom.atomClass == AtomClass.Replaceable =>
+      case (key, atom) if atom.atomClass == Atom.Class.Replaceable =>
         after.stdlib.get(key).filter: replacement =>
-          LiraHash.text(replacement.valueHash) != LiraHash.text(atom.valueHash)
+          Lira.Hash.text(replacement.valueHash) != Lira.Hash.text(atom.valueHash)
 
         . map { _ => key }
 
@@ -162,7 +162,7 @@ object JvmProfile extends EcosystemProfile:
   // Which TASTy versions a *particular* consumer's compiler reads is that consumer's knowledge,
   // not the manifests', so the window comparison belongs to the consuming tool; what is
   // buildpath-decidable is that every release states what produced it.
-  override def coherence(releases: List[LiraManifest]): List[Text] =
+  override def coherence(releases: List[Lira.Manifest]): List[Text] =
     List.from:
       releases.stdlib.filter(_.toolchain.stdlib.isEmpty).map: manifest =>
         t"${manifest.module} records no toolchain, so TASTy readability cannot be checked"

@@ -97,7 +97,7 @@ object nativeEdges:
     targets.map: triple => Edge(Universe.Nir, Binary(triple), NativeTool(triple, clang, clangpp))
 
   private def probe(tool: Text)(using WorkingDirectory): Text raises ToolchainError =
-    safely(mute[ExecEvent](sh"which $tool".exec[Text]())).let(_.trim)
+    safely(mute[Exec.Event](sh"which $tool".exec[Text]())).let(_.trim)
     . or(abort(ToolchainError(tool)))
 
   private case class NativeTool(triple: Triple, clang: Text, clangpp: Text) extends Tool:

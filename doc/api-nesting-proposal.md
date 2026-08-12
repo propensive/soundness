@@ -56,12 +56,11 @@ does not split at all — it becomes a namespace for its own satellites.
 - **R6 COMPONENT-BLOCKED**: outer and member in different components (or the outer nested
   inside an `internal` object, or platform-split source dirs) → the compound name stays.
   Full table below.
-- **R7 SINGLE-GIVEN BACKING TYPES**: a named type that exists only to be instantiated in
-  one `given` should generally be **eliminated** — the given instantiates an anonymous
-  class — rather than kept or nested. Where the name is genuinely needed (several
-  instantiation sites, public API, or to avoid the anonymous-class-duplication warning at
-  `inline given` sites — see coaxial's `@nowarn` precedent in `coaxial_wasi.scala`),
-  nesting is acceptable when same-component. This absorbs July's C3/C3b lists.
+- **R7 SINGLE-GIVEN BACKING TYPES — retired.** This proposed eliminating a named type that
+  exists only to back one `given`, letting the given instantiate an anonymous class.
+  Measured against the tree, essentially none of the ~90 such types can be, and the reasons
+  are specific and instructive; see the R7 section below. Where such a type is same-component
+  it may still be *nested*, which several passes have done.
 
 ## The rename table (R1/R2/R4) — all verified same-component
 
@@ -81,7 +80,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | caesura.core | `DsvError→Dsv.Error`, `DsvFormat→Dsv.Format`, `DsvRedesignation→Dsv.Redesignation` |
 | capricious.core | `RandomSize→Random.Size` |
 | cataclysm.core | `CssError→Css.Error`, `CssErrors→Css.Errors`, `CssConvertible→Css.Convertible`, `SyntaxMatcher→Syntax.Matcher` (⚑ `Syntax` exists but is unexported; export it or skip) |
-| coaxial.core | `ConnectionError→Connection.Error` (⚑ verify `Connection`), `DomainSocketEndpoint→DomainSocket.Endpoint` |
+| coaxial.core | `DomainSocketEndpoint→DomainSocket.Endpoint` (`ConnectionError` stays: the ⚑ resolved negatively — `Connection` is a case class in coaxial.**jvm**, so R6 blocks it) |
 | coaxial.jvm | `TlsAcceptance→Tls.Acceptance` |
 | telekinesis.http2 (package cordillera) | `Http2Connection→Http2.Connection`, `Http2Error→Http2.Error`, `Http2Event→Http2.Event`, `Http2Stream→Http2.Stream`, `Http2ServerConnection→Http2.ServerConnection`, `HpackTable→Hpack.Table`, `HpackEntry→Hpack.Entry` |
 | digression.core | `FqcnError→Fqcn.Error` |
@@ -187,33 +186,40 @@ compound names. (Some may gain namespaces later if the outer concepts are ever r
 | `HttpSession` | telekinesis.jvm | `Http` (core) |
 | `HttpConnection` | scintillate.server | `Http` (telekinesis — cross-library) |
 
-## Inline candidates (R7) — named types backing a single given
+## R7 — retired: the single-given backing types cannot be inlined
 
-Verify the use-count at execution; where a type is instantiated exactly once, in one
-given, prefer eliminating the name (anonymous class in the given). Candidates, from the
-July C3b list plus the carriers the modularity work created:
+R7 proposed eliminating named types that exist only to be instantiated in one `given`,
+letting the given instantiate an anonymous class. **Measured against the tree, essentially
+none of them can be**, and the three families it named each fail for a different, specific
+reason. The rule is retired rather than left as standing advice.
 
-- The per-format `DecodableDerivation`/`EncodableDerivation` objects (austronesian,
-  breviloquence, caesura, jacinta, legerdemain, locomotion, stratiform, xylophone,
-  ypsiloid) and wisteria's `AddableDerivation`/`DivisibleDerivation`/
-  `MultiplicableDerivation`/`SubtractableDerivation`, stratiform's `TelsDerivation` —
-  generically summoned, need not be named.
-- Carrier classes returned by single givens: `TarOpenable`, `TarBuilder.TarCreatable`,
-  `ImageOpenable`, `RasterOpenable`, `TelOpenable`, `TelViewOpenable`, `ZipOpenable`,
-  `ZipDataOpenable`, `TarDataOpenable`, `WatchOpenable`, `WatchAllOpenable`,
-  `DirectoryOpenable`, `FileOpenable`, `ImageDataOpenable`, `WorkloadOpenable` — each
-  either inlines into its given or, where the name is load-bearing (e.g. it carries
-  members or appears in public signatures), nests if same-component.
-- The `*Sessional` instances (`GrpcSessional`, `LspSessional`, `WsSessional`,
-  `ScalacSessional`, `NetworkDeviceSessional`) — same treatment.
-- The `*Tactic` strategy backings (contingency's `AttemptTactic`, `AmalgamateTactic`,
-  `EitherTactic`, `HaltTactic`, `OptionalTactic`, `ThrowTactic`, `TrackTactic`;
-  parasite's `AsyncTactic`) — these back the `strategies` choice givens; inline where
-  single-use, else keep (they are user-visible in error messages, which may argue for
-  keeping names).
-- Caveat from the C3 triage (still valid): a `private` modifier can leak into the
-  inferred type of a public given and break downstream derivation — prefer anonymity or
-  `@unexported`-style export removal over `private[lib]`.
+The families, as they stand: `*Openable` (25 declarations), `*Derivation` (33),
+`*Tactic` (13), `*Creatable` (10), `*Sessional` (9).
+
+- **`*Openable`, `*Sessional`, `*Creatable` — named on purpose, and the code says so.**
+  Twenty files carry a comment to the effect that "an anonymous subclass would freshen the
+  capability types in its inferred `Result` member", among them galilei's `FileOpenable`,
+  hallucination's `RasterOpenable`, cordillera's `Http2`, perihelion, zeppelin's `Jar` and
+  `Zip`, embarcadero's `Workload` and tarantula's `WebDriver`. These are not incidental
+  carriers; the name is what pins the capability type.
+- **`*Derivation` — forbidden by the compiler.** Their `conjunction` method must be
+  `inline`, and moving the object into the `inline given` that uses it nests one inline
+  method inside another: *"Implementation restriction: nested inline methods are not
+  supported"*. Verified by attempting it on wisteria's `AddableDerivation`.
+- **`*Tactic` — mostly not single-use, and load-bearing where it is.** `ThrowTactic` has 26
+  references, `HaltTactic` 15, `OptionalTactic` and `AsyncTactic` 10 each. `ThrowTactic`
+  further extends `caps.Unscoped` with a comment explaining that the capture behaviour is
+  the reason the class exists, and tactic names appear in user-facing error messages.
+
+A general scan for types whose only external use is inside a `given` returns six names, and
+none survives inspection: `Vp8Encoder` and `WebpEncoder` are utility objects called for
+their methods, `JavaIdentifier` is a phantom type used in a `Nominative under …` bound,
+`HeapCloak` is a deliberately stable singleton (its whole point is an empty capture set) and
+is already `private[enigmatic]`, and `FatalTactic`/`UncheckedTactic` are tactics as above.
+
+The residual value in the original R7 observation is the opposite of what it proposed: where
+a type exists only to back a given, that is usually *evidence of a capture-checking
+constraint*, and the name should be read as load-bearing until proven otherwise.
 
 ## Mechanics
 
@@ -382,6 +388,140 @@ Two further notes:
   `LspProxy` would collide at the fourteen `import Lsp.*` sites, since `Proxy` is a known
   homonym. None of them is ambiguous. A wildcard over a namespace object is a hazard, not a
   blocker; test it rather than abandoning the nesting.
+
+
+## Corrections from the fourth implementation pass (2026-08-12)
+
+Eight names that the first three passes had recorded as blocked turned out not to be, and
+the corrections are more interesting than the renames: in most cases the blocker was
+something the codebase should not have been doing anyway.
+
+- **A sealed trait's subtypes are a reason to move them *together*, not a reason to move
+  none of them.** `SvgDef` was abandoned in the first pass because nesting it drags the
+  exported `LinearGradient` in with it. That is exactly what should happen: both are now
+  `Svg.Def` and `Svg.LinearGradient`. The rule this replaces — "check for `sealed` before
+  proposing a move" — should read: check for `sealed`, then decide whether the whole
+  cluster belongs in the namespace. Usually it does.
+- **An opaque type belongs inside the object whose API it serves.** `SvgId` lived in
+  `object internal` and was re-exported to package level; it is now `Svg.Id` with no
+  re-export. Two consequences to expect: inside the defining object the type is
+  transparent, so its companion is *not* in the implicit scope of a value the compiler
+  sees as the underlying type — `id.text` must be written `Id.text(id)` there. Outside,
+  nothing changes.
+- **A nested companion is not a blocker; an unexported one would be.** The third pass ruled
+  `MacAddressError` out because the `MacAddress` companion sits inside `internal.Opaques`.
+  But that companion is exported to package level, so a type nested in it is exactly as
+  reachable as one nested in a toplevel object. `MacAddress.Error` works.
+- **Search the whole library, not the component, before declaring a type absent.**
+  `ConnectionError` was recorded as un-nestable because coaxial "has no `Connection` type,
+  only abstract `type Connection` members". It has one: a `case class Connection` in the
+  **jvm** component, exported to the umbrella. Adding a namespace `object Connection` to
+  core therefore put a second toplevel `Connection` in package `coaxial`, and ethereal's
+  `Promise[Connection]` stopped resolving — "expected a type, but found a term". The error
+  is in core and the type is in jvm, so this is an ordinary R6 component block, in the
+  direction that cannot be fixed. `ConnectionError` stays whole.
+- **An `@unexported` annotation is a nesting candidate flagging itself.** cataclysm's
+  `Syntax` carried one, with a comment explaining that it clashes with stenography's
+  `Syntax` in the umbrella. `Css.Syntax` removes the clash at its source, and the
+  annotation with it. Any `@unexported` justified by a name clash is worth re-reading as a
+  missing namespace.
+- **A blocking wildcard import is usually the thing to fix.** `Tel.Flag` was blocked by
+  `import Tels.*` inside `object Tel.Type`, making it ambiguous with `Tels.Flag`. Replacing
+  the wildcard with 65 qualified `Tels.X` references removes the ambiguity and reads better
+  besides: `Struct`, `Scalar`, `Field` and `Member` are generic enough that the reader needs
+  telling which vocabulary they belong to. This generalises the second pass's note that a
+  wildcard over a namespace object makes nesting fragile — prefer fixing the import.
+- **A blocking member may simply be dead.** `object Mcp` already had a nested `Error`, so
+  the second pass kept `McpError`. That payload was referenced nowhere and duplicated
+  `JsonRpc.Failure` field for field — which the same file already calls. Check whether the
+  occupant earns its name before working around it.
+
+One caution learned the hard way: **do not sweep a homonym by bare name.** Renaming
+cataclysm's `Syntax` with a repo-wide substitution rewrote stenography's and iridescence's
+unrelated `Syntax` types. Scope the sweep to the owning library and let cross-library use
+sites fail the compile instead.
+
+
+## Corrections from the fifth implementation pass (2026-08-12)
+
+A sweep through twenty-four prefix families named as obvious candidates. Thirty-one names
+nested; most of the rest were blocked by the *outer* type living in another library, which
+the family tables cannot show. Three new rules:
+
+- **A prefix family is not a component.** `Css*`, `Io*`, `Dag*`, `Oci*`, `Unix*`, `Time*`,
+  `Wasm*`, `Http*` and `Dts*` all look nestable in the tables and are not: `CssClass` is
+  nomenclature's while `Css` is cataclysm's, `DagDiagram` is dendrology's while `Dag` is
+  acyclicity's, aviation's `Unix` is the *epoch* and quantitative's `Time` is a *dimension*.
+  Resolve the outer name to a declaration before treating a shared prefix as evidence.
+- **Two `Facade`s in one file is worse than one `KotlinFacade`.** Nesting is worth doing
+  when the compound name repeats its context; it stops being worth doing when the nested
+  name collides with a *different* type the same file uses pervasively. `object Kotlin`
+  names xenophile's `Facade` about ten times, so `Kotlin.Facade` was abandoned — unlike a
+  shadowed supertype, there is no single base to qualify. `Workload.Grant`,
+  `Workload.Openable` and `Teletype.Builder` all *were* worth it: each shadows exactly one
+  base, qualified as `aperture.Grant`, `aperture.Openable` and `gossamer.Builder`.
+- **The read-only/exclusive capture failure has a signature: `Array` indexing.**
+  `MathmlReader` joined `TarHeader` and `HpackTable` in failing to nest, and all three do
+  the same thing — index an `Array[T]^{}` inside a method moved into a capture-impure
+  enclosing object, which then demands `^{any}`. Treat `Array` indexing in a donor as a
+  warning sign, and check it before doing the rest of the work.
+
+Two practical notes. **Take the receiving file's new imports from the donors, never from
+guesswork** — inventing a plausible-looking set added `enigmatic.*` to a component that
+does not depend on it and pulled in a `Numeric` ambiguity that had nothing to do with the
+rename. And **a donor's file-mates must be checked every time**: `LiraDelta.scala` and
+`LiraTree.scala` each held a second exported toplevel type (`Replacement`, `TreeEntry`)
+that would otherwise have been renamed silently.
+
+
+## Corrections from the sixth implementation pass (2026-08-12)
+
+Thirty-three more names, from the families left after the fifth pass's sweep. Four rules,
+three of them about *finding* the outer type rather than moving anything.
+
+- **Search for `case object` too.** galilei's `Directory` was recorded as having no outer
+  type. It is a `case object Directory extends WindowsEntry, UnixEntry` — the companion of
+  `trait Directory` in the entry-kind taxonomy — which a search for `object Directory`
+  silently misses. It took `Handle` and `Openable` without moving.
+- **A companion nested inside `internal` is fine if it is exported.** Applied for the
+  fourth time, and it is now the single most common false blocker: `Name`, `Port` and `Date`
+  join `MacAddress`. All four were recorded as having no outer type, and all four have one
+  in an `internal`/`Opaques` object that is re-exported to package level.
+- **Check that a proposed namespace name is free — across every library.** `Chemical`,
+  `Exec` and `Variant` were; `Daemon`, `Dom`, `Viewport` and `Textual` were not, each
+  already an exported type in parasite, honeycomb, graffiti and gossamer. Creating a second
+  would repeat the `Connection` failure. They are also homonyms rather than satellites —
+  gossamer's `Textual` is the text typeclass — so nesting into the existing owner would be
+  wrong even where the components allowed it.
+- **The read-only/exclusive capture failure is not only `Array` indexing.** `TelReader`
+  fails with "cannot call update method entryOrdinal since its capture set {} is read-only"
+  — a `+=` on a mutable buffer, not an index. Three of the four instances index an `Array`;
+  this one shows the underlying constraint is broader, so the warning sign is *any* mutation
+  through a value whose capture set the enclosing object widens.
+
+A third instance of "a name used as data", and the first one no compiler could catch. The
+sweep rewrote `scalar("AtomClass", "atom-class")` and `Reference(t"AtomClass")` inside
+reliquary's hand-encoded LIRA schemas — *string literals* naming a scalar in the
+specification, not references to the Scala type. Everything compiled; one test out of 11,065
+failed, comparing the hand-encoded schema against the `.tel` resource that still said
+`AtomClass`. Only `make attest` found it.
+
+The check that generalises: after a sweep, look for literals whose entire content is a bare
+dotted name (`"Foo.Bar"`), since those are identifiers used as data rather than prose. Test
+names and error messages mentioning the new name are fine; a literal that *is* the name is
+not.
+
+Two further sweep hazards fired, both caught by the compiler rather than by review. It
+rewrote `jnf.WatchEvent`, which is `java.nio.file`'s — the second time a bare-name sweep has
+reached outside the library that owns the name (the first was `Syntax`). And it produced
+`import wisteria.{Discriminable, Variant.Error}`: a braced selector cannot hold a dotted
+path, and a rename landing *inside* a selector list is how that happens.
+
+A new namespace object also collides the same way a nested one does. `ExecEvent` became
+`Exec.Event`, and octogenarian's `Git.Event` has a case named `Exec` — so `Exec.Event` inside
+`object Git` resolved to the enum case, not the new namespace. Qualified as
+`guillotine.Exec.Event`. Creating a namespace is not safer than nesting into an existing one:
+both put a new name into scope wherever the family is used.
 
 
 ## Execution shape

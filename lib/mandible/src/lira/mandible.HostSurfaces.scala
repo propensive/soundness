@@ -92,7 +92,7 @@ object CtSym:
   // `java.base` contract's tree reads `java/lang/Object.sig`. This is the RECOMMENDED harvest
   // for a modularized platform; `surface` below is the union view.
   def modules(path: Text, release: Int)
-  :   List[(Text, List[(TreePath, Data)])] raises LiraError =
+  :   List[(Text, List[(TreePath, Data)])] raises Lira.Error =
 
     val grouped = scala.collection.mutable.LinkedHashMap
         [String, scala.collection.mutable.ListBuffer[(TreePath, Data)]]()
@@ -117,7 +117,7 @@ object CtSym:
   // `prefix`, where given, keeps a harvest to the paths beneath it; contracts SHOULD be
   // harvested whole (`jsig.md` §4), and the filter exists for tooling and tests.
   def surface(path: Text, release: Int, prefix: Optional[Text] = Unset)
-  :   List[(TreePath, Data)] raises LiraError =
+  :   List[(TreePath, Data)] raises Lira.Error =
 
     val zip = java.util.zip.ZipFile(path.s)
     val marker = code(release)
@@ -149,7 +149,7 @@ object CtSym:
 object HostArchive:
 
   def surface(path: Text, prefix: Optional[Text] = Unset): List[(TreePath, Data)] raises
-      LiraError =
+      Lira.Error =
 
     val zip = java.util.zip.ZipFile(path.s)
 

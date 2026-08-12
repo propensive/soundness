@@ -62,7 +62,7 @@ package decodables:
 package parsables:
   // Direct-parsing counterparts: the epoch number is read straight off the
   // token stream, with no intermediate AST node or string. Genuinely pure —
-  // raising happens inside the `JsonReader`, through the tactic it carries.
+  // raising happens inside the `Json.Reader`, through the tactic it carries.
   given instantJsonParsable: (Instant over Unix) is Json.Parsable =
     Json.Parsable(Morphology.Whole): reader => Instant.of[Unix](reader.long())
 

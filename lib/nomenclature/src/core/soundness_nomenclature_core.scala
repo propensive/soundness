@@ -36,5 +36,5 @@ export
   nomenclature
   . { Check, CssClass, CssIdentifier, disintersect, DomId, DomIdentifier,
       MustContain, MustEnd, MustMatch, MustNotContain, MustNotEnd, MustNotEqual, MustNotMatch,
-      MustNotStart, MustStart, n, Name, NameError, NameExtractor, Nominative, Required, Rule,
+      MustNotStart, MustStart, n, Name, Nominative, Required, Rule,
       staticCompanion }

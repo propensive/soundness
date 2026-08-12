@@ -154,7 +154,7 @@ object WebDriver:
               working:     WorkingDirectory,
               monitor:     Monitor,
               loggable:    (Http.Event is Loggable)^,
-              exec:        (ExecEvent is Loggable)^,
+              exec:        (Exec.Event is Loggable)^,
               tactic:      Tactic[Error],
               diagnostics: Diagnostics )
     extends aperture.Sessional:
@@ -167,7 +167,7 @@ object WebDriver:
         // overlap the `tactic` it is applied to.
         val note: Diagnostics = diagnostics
 
-        given execTactic: (Tactic[ExecError]^) =
+        given execTactic: (Tactic[Exec.Error]^) =
           tactic.contramap(_ => unstarted(using note))
 
         val job = target.driver.command(target.port).fork[Exit]()
@@ -203,7 +203,7 @@ object WebDriver:
           working:     WorkingDirectory,
           monitor:     Monitor,
           loggable:    (Http.Event is Loggable)^,
-          exec:        (ExecEvent is Loggable)^,
+          exec:        (Exec.Event is Loggable)^,
           tactic:      Tactic[Error],
           diagnostics: Diagnostics )
     =>  ( Local.Sessional^{online, monitor, loggable, exec, tactic, caps.any} ) =

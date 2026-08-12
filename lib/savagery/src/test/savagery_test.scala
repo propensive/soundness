@@ -137,7 +137,7 @@ object Tests extends Suite(m"Savagery tests"):
 
     suite(m"Outline with attributes"):
       test(m"Outline with id"):
-        Outline(id = SvgId(t"plus")).moveTo((0, 0)).closed.xml.show
+        Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" id="plus"/>""")
 
       test(m"Outline with single transform"):
@@ -154,7 +154,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Outline with id and transform"):
         Outline
-         (id         = SvgId(t"shape1"),
+         (id         = Svg.Id(t"shape1"),
           transforms = List(Transform.Translate(Delta(5, 5))))
         . moveTo((0, 0)).closed.xml.show
       .assert(_ == t"""<path d="M 0.0 0.0 Z" id="shape1" transform="translate(5.0,5.0)"/>""")
@@ -252,18 +252,18 @@ object Tests extends Suite(m"Savagery tests"):
 
     suite(m"Linear gradient"):
       test(m"Single-stop gradient"):
-        LinearGradient(SvgId(t"grad1"), Stop(0.0, Red)).xml.show
+        Svg.LinearGradient(Svg.Id(t"grad1"), Stop(0.0, Red)).xml.show
       .assert: result =>
           result == t"""<linearGradient id="grad1"><stop offset="0.0" stop-color="#ff0000"/></linearGradient>"""
 
       test(m"Two-stop gradient"):
-        LinearGradient(SvgId(t"grad2"), Stop(0.0, Red), Stop(1.0, Blue)).xml.show
+        Svg.LinearGradient(Svg.Id(t"grad2"), Stop(0.0, Red), Stop(1.0, Blue)).xml.show
       .assert: result =>
           result == t"""<linearGradient id="grad2"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient>"""
 
       test(m"Three-stop gradient"):
-        LinearGradient
-         (SvgId(t"rainbow"),
+        Svg.LinearGradient
+         (Svg.Id(t"rainbow"),
           Stop(0.0, Red),
           Stop(0.5, Green),
           Stop(1.0, Blue))
@@ -294,7 +294,7 @@ object Tests extends Suite(m"Savagery tests"):
         Svg
          (100,
           100,
-          defs = List(LinearGradient(SvgId(t"g1"), Stop(0.0, Red), Stop(1.0, Blue))))
+          defs = List(Svg.LinearGradient(Svg.Id(t"g1"), Stop(0.0, Red), Stop(1.0, Blue))))
         . xml.show
       .assert: result =>
           result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs></svg>"""
@@ -303,7 +303,7 @@ object Tests extends Suite(m"Savagery tests"):
         Svg
          (100,
           100,
-          defs    = List(LinearGradient(SvgId(t"g1"), Stop(0.0, Red), Stop(1.0, Blue))),
+          defs    = List(Svg.LinearGradient(Svg.Id(t"g1"), Stop(0.0, Red), Stop(1.0, Blue))),
           figures = List(Rectangle((0, 0), 50, 50)))
         . xml.show
       .assert: result =>
@@ -380,7 +380,7 @@ object Tests extends Suite(m"Savagery tests"):
         val svg = t"""<svg width="10" height="10"><path id="x" d="M 0 0 Z"/></svg>""".read[Svg]
         svg.figures.head
       .assert:
-          case Outline(_, _, id, _) => id == SvgId(t"x")
+          case Outline(_, _, id, _) => id == Svg.Id(t"x")
           case _                    => false
 
       test(m"Parse path with single transform"):
@@ -410,7 +410,7 @@ object Tests extends Suite(m"Savagery tests"):
 
         svg.defs.head
       .assert:
-          case lg: LinearGradient[?] =>
+          case lg: Svg.LinearGradient[?] =>
             lg.stops.length == 1 && lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
       test(m"Parse short hex #f00"):
@@ -420,7 +420,7 @@ object Tests extends Suite(m"Savagery tests"):
 
         svg.defs.head
       .assert:
-          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case lg: Svg.LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
       test(m"Parse rgb function"):
         val svg =
@@ -429,7 +429,7 @@ object Tests extends Suite(m"Savagery tests"):
 
         svg.defs.head
       .assert:
-          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case lg: Svg.LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
       test(m"Parse named color red"):
         val svg =
@@ -438,7 +438,7 @@ object Tests extends Suite(m"Savagery tests"):
 
         svg.defs.head
       .assert:
-          case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
+          case lg: Svg.LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
       test(m"Parse linear gradient with id"):
         val svg =
@@ -448,7 +448,7 @@ object Tests extends Suite(m"Savagery tests"):
 
         svg.defs.head
       .assert:
-          case lg: LinearGradient[?] => lg.id == SvgId(t"myGrad")
+          case lg: Svg.LinearGradient[?] => lg.id == Svg.Id(t"myGrad")
 
       test(m"Skip unknown element"):
         val svg =
@@ -506,7 +506,7 @@ object Tests extends Suite(m"Savagery tests"):
           100,
           figures = List
            (Outline
-             (id         = SvgId(t"shape1"),
+             (id         = Svg.Id(t"shape1"),
               transforms = List(Transform.Translate(Delta(5, 10))))
             . moveTo((0, 0)).closed))
         . xml.show

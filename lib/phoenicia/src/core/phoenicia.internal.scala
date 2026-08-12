@@ -33,10 +33,10 @@
 package phoenicia
 
 object internal:
-  opaque type Glyph[ttf <: Ttf & Singleton] = Int
+  opaque type Glyph[font <: Sfnt & Singleton] = Int
 
   object Glyph:
-    def apply(ttf: Ttf, id: Int): Glyph[ttf.type] = id
+    def apply(font: Sfnt, id: Int): Glyph[font.type] = id
 
-  extension [ttf <: Ttf & Singleton](glyph: Glyph[ttf])
+  extension [font <: Sfnt & Singleton](glyph: Glyph[font])
     def id: Int = glyph

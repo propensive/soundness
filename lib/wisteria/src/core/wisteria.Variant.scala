@@ -30,11 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package guillotine
+package wisteria
 
 import anticipation.*
 import fulminate.*
 
-case class ExecError(command: Command, stdout: Data = Data(), stderr: Data = Data())
-  ( using Diagnostics )
-extends Error(691, 0)(m"execution of the command $command failed")
+// A namespace for the sum-derivation vocabulary. There is no `Variant` type: a variant
+// is a case of the sum being derived, identified by its `Index`.
+object Variant:
+  // VariantError → Variant.Error
+  object Error:
+    inline def apply[derivation](inputLabel: Text)(using diagnostics: Diagnostics): Error =
+      Error
+        ( inputLabel,
+          wisteria.internal.sumName[derivation],
+          wisteria.internal.variantLabelList[derivation] )
+
+  case class Error(inputLabel: Text, sum: Text, validVariants: List[Text])(using Diagnostics)
+  extends fulminate.Error
+    ( m"""
+        the specified variant ($inputLabel) is not one of the valid variants
+        (${validVariants.stdlib.mkString(", ").tt}) of sum type $sum
+      """ )
+
+  // VariantIndex → Variant.Index
+  object Index:
+    inline def apply[variant](int: Int): Int & Index[variant] =
+      int.asInstanceOf[Int & Index[variant]]
+
+  sealed trait Index[variant]

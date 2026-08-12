@@ -1237,8 +1237,8 @@ object Tests extends Suite(m"Parasite tests"):
             val name: Name[Async] = n"bad/name"
         . assert(_.nonEmpty)
 
-        test(m"Constructing an invalid Async name raises NameError"):
-          capture[NameError](Name[Async](t"bad/name")).message.show
+        test(m"Constructing an invalid Async name raises Name.Error"):
+          capture[Name.Error](Name[Async](t"bad/name")).message.show
         . assert(_ == t"the name bad/name is not valid because it must match [A-Za-z][A-Za-z0-9_-]*")
 
       suite(m"Concurrent stream details"):

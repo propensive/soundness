@@ -47,7 +47,7 @@ import IoError.{Operation, Reason}
 
 // The `Creatable` instances for filesystem entries, replacing the earlier standalone
 // `Creatable` typeclass. `path.create[Directory]()` and `path.create[File]()` instantiate an
-// empty entry; the block forms author the newborn entry — a fresh-plane `DirectoryHandle`
+// empty entry; the block forms author the newborn entry — a fresh-plane `Directory.Handle`
 // for a directory, a write `Handle` (staged through a temporary sibling and moved atomically)
 // for a file — with the guarantee that an exception escaping the scope leaves nothing
 // behind. FIFOs are instantiation-only: opening one just to have a handle would block until
@@ -95,7 +95,7 @@ object Creation:
     type Form = Directory
     type Operand = CreateFlag
     type Grants = Grant.Read & Grant.Write
-    type Result = DirectoryHandle { type Under = filesystem }
+    type Result = Directory.Handle { type Under = filesystem }
 
     override def make(value: path, flags: List[CreateFlag]): Unit =
       Log.info(IoEvent.Create((value: Path on filesystem).show))
@@ -105,7 +105,7 @@ object Creation:
 
     def create[result]
       ( value: path, flags: List[CreateFlag] )
-      ( block: (((DirectoryHandle { type Under = filesystem })
+      ( block: (((Directory.Handle { type Under = filesystem })
                   & Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
@@ -122,7 +122,7 @@ object Creation:
 
       try
         val handle =
-          new DirectoryHandle with Granting[Grant.Read & Grant.Write]:
+          new Directory.Handle with Granting[Grant.Read & Grant.Write]:
             type Under = filesystem
             val stem: Path on filesystem = value
             val atoms: Set[Mode] = Set(aperture.Read, aperture.Write)

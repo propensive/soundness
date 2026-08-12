@@ -108,7 +108,7 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
       test(m"Without Default[DShape], unknown discriminator aborts cleanly"):
         // Outside a `Default[DShape]`, the disjunction calls `abort`,
         // which the surrounding `validate` captures as one accrual
-        // entry. No `VariantError` punches through.
+        // entry. No `Variant.Error` punches through.
         val yaml = t"type: Triangle\nfoo: bar\n".read[Yaml]
         validateYaml(yaml)(_.as[DShape]).items.length
       . assert(_ == 1)

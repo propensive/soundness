@@ -109,14 +109,14 @@ object Tests extends Suite(m"internal Benchmarks"):
 
       test(m"Unknown label permitted on Linux with Tactic"):
         val dir: Text = t"dir"
-        given Tactic[NameError] = strategies.throwUnsafely
+        given Tactic[Name.Error] = strategies.throwUnsafely
         val path = (% / dir).on[Linux]
 
       . assert()
 
       test(m"Unknown label permitted on top of Linux Path"):
         val dir: Text = t"dir"
-        given Tactic[NameError] = strategies.throwUnsafely
+        given Tactic[Name.Error] = strategies.throwUnsafely
         val path = (% / dir).on[Linux] / "other"
 
       . assert()
@@ -125,7 +125,7 @@ object Tests extends Suite(m"internal Benchmarks"):
         demilitarize:
           var dir: Char = 'x'
           recover:
-            case NameError(_, _, _) => ()
+            case Name.Error(_, _, _) => ()
 
           . protect:
               val path = (% / dir / "baz")

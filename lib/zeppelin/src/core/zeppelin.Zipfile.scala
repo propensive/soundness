@@ -314,7 +314,7 @@ object Zipfile:
 
         mitigate:
           case Path.Error(_, _)    => Zip.Error(Zip.Error.Reason.InvalidName(cleanName))
-          case NameError(_, _, _) => Zip.Error(Zip.Error.Reason.InvalidName(cleanName))
+          case Name.Error(_, _, _) => Zip.Error(Zip.Error.Reason.InvalidName(cleanName))
 
         . protect:
           // `decode` performs no per-segment validation, so check each name component

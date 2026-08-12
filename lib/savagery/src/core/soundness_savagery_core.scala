@@ -34,5 +34,6 @@ package soundness
 
 export
   savagery
-  . { Affine, Circle, Delta, Down, Ellipse, Figure, Left, LinearGradient, Orientation, Outline,
-      Point, Rectangle, Right, Segment, Stop, Stroke, Svg, SvgDef, Sweep, Transform, Transformable, Up, unary_+, transform, translate, scale, rotate, skew }
+  . { Affine, Circle, Delta, Down, Ellipse, Figure, Left, Orientation, Outline, Point, Rectangle,
+      Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up, unary_+, transform,
+      translate, scale, rotate, skew }

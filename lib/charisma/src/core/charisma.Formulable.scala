@@ -38,29 +38,29 @@ import rudiments.*
 import vacuous.*
 
 trait Formulable:
-  def formula: ChemicalFormula
+  def formula: Chemical.Formula
 
   @targetName("plus")
-  infix def + (formulable: Formulable): ChemicalFormula = ChemicalFormula:
+  infix def + (formulable: Formulable): Chemical.Formula = Chemical.Formula:
     formulable.formula.molecules.stdlib.fuse(formula.molecules):
       state.updated(next(0), formula.molecules(next(0)).or(0) + next(1))
 
   @targetName("netForward")
-  infix def --> (rhs: Formulable): ChemicalEquation =
-    ChemicalEquation(formula, Reaction.NetForward, rhs.formula)
+  infix def --> (rhs: Formulable): Chemical.Equation =
+    Chemical.Equation(formula, Reaction.NetForward, rhs.formula)
 
   @targetName("resonance")
-  infix def <-> (rhs: Formulable): ChemicalEquation =
-    ChemicalEquation(formula, Reaction.Resonance, rhs.formula)
+  infix def <-> (rhs: Formulable): Chemical.Equation =
+    Chemical.Equation(formula, Reaction.Resonance, rhs.formula)
 
   @targetName("bothDirections")
-  infix def <=> (rhs: Formulable): ChemicalEquation =
-    ChemicalEquation(formula, Reaction.BothDirections, rhs.formula)
+  infix def <=> (rhs: Formulable): Chemical.Equation =
+    Chemical.Equation(formula, Reaction.BothDirections, rhs.formula)
 
   @targetName("equilibrium")
-  infix def <~> (rhs: Formulable): ChemicalEquation =
-    ChemicalEquation(formula, Reaction.Equilibrium, rhs.formula)
+  infix def <~> (rhs: Formulable): Chemical.Equation =
+    Chemical.Equation(formula, Reaction.Equilibrium, rhs.formula)
 
   @targetName("stoichiometric")
-  infix def === (rhs: Formulable): ChemicalEquation =
-    ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
+  infix def === (rhs: Formulable): Chemical.Equation =
+    Chemical.Equation(formula, Reaction.Stoichiometric, rhs.formula)

@@ -33,7 +33,16 @@
 package xenophile
 
 import anticipation.*
+import fulminate.*
+import gossamer.*
+import java.lang.invoke as jli
+import java.util.concurrent as juc
 import prepositional.*
+import proscenium.compat.*
+import rudiments.*
+import scala.collection.immutable.Seq
+import scala.collection.immutable.{List, Nil, ::}
+import scala.quoted.*
 import vacuous.*
 
 // The Kotlin/JVM ecosystem: `Interoperable` markers associating Scala types with the Kotlin
@@ -83,6 +92,49 @@ object Kotlin:
   =>  ( inner is Interoperable in Kotlin of topic )
   =>  ( value is Interoperable in Kotlin of (topic | "null") ) =
     Interoperable[value, Kotlin, (topic | "null")]()
+
+  // KotlinRuntime → Kotlin.Runtime
+  // The one reflective edge of the Kotlin ecosystem: Kotlin's synthetic `$default` bridges (the
+  // carriers of default-argument values) are marked ACC_SYNTHETIC, which the compiler's classfile
+  // reader omits from the symbol table, so no direct call to one can be emitted. Instead, the
+  // bridge is resolved once per call shape into a cached `MethodHandle` and invoked through it —
+  // the same linkage-time trade the Panama backend makes for `dlsym`.
+  object Runtime:
+    private val handles: juc.ConcurrentHashMap[String, jli.MethodHandle] =
+      juc.ConcurrentHashMap()
+
+    // Unwraps a facade returned from an adapted lambda, so Kotlin/Java receives the raw value.
+    def dispatch(result: Any | Null): Object | Null = result match
+      case facade: Facade => facade.raw.asInstanceOf[Object | Null]
+      case other          => other.asInstanceOf[Object | Null]
+
+    // The invocation handler behind a functional-interface proxy: `equals`/`hashCode`/`toString`
+    // answer locally; everything else (the single abstract method) forwards to the lambda.
+    def forwarder(handler: (scala.Array[Object | Null] | Null) => Object | Null)
+    :   java.lang.reflect.InvocationHandler^{handler} =
+
+      (proxy, method, arguments) =>
+        method.nn.getName match
+          case "equals"   => java.lang.Boolean.valueOf(proxy.nn eq arguments.nn(0))
+          case "hashCode" => java.lang.Integer.valueOf(java.lang.System.identityHashCode(proxy))
+          case "toString" => s"<function proxy>"
+          case _          => handler(arguments)
+
+    def invokeDefault(owner: Class[?], name: String, arguments: scala.Array[Any | Null]): Any | Null =
+      val key = s"${owner.getName}#$name#${arguments.length}"
+
+      val handle = handles.computeIfAbsent(key, _ =>
+        owner.getMethods.nn.find: method =>
+          method.nn.getName == name && method.nn.getParameterCount == arguments.length
+
+        . map: method => jli.MethodHandles.lookup.nn.unreflect(method.nn).nn
+        . getOrElse(throw IllegalStateException(s"xenophile: no $name bridge on ${owner.getName}")))
+
+      // The `java.util.List` overload, not the varargs one: an array splice cannot flow into
+      // the pure varargs formal under separation checking.
+      val argumentList = java.util.ArrayList[AnyRef]()
+      arguments.foreach { argument => argumentList.add(argument.asInstanceOf[AnyRef]); () }
+      handle.nn.invokeWithArguments(argumentList)
 
 trait Kotlin extends Ecosystem:
   type Grammar = KotlinDialect.type

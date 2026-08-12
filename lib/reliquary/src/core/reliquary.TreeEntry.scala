@@ -30,28 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package surveillance
-
-import java.nio.file as jnf
+package reliquary
 
 import anticipation.*
-import contingency.*
-import prepositional.*
-import spectacular.*
 
-enum WatchEvent:
-  case NewFile(dir: Text, file: Text)
-  case NewDirectory(dir: Text, directory: Text)
-  case Modify(dir: Text, file: Text)
-  case Delete(dir: Text, file: Text)
-
-  def dir: Text
-
-  def path[directory: Instantiable across Paths from Text]: directory = unsafely:
-    val relPath = this match
-      case NewFile(_, file)      => file
-      case NewDirectory(_, path) => path
-      case Modify(_, file)       => file
-      case Delete(_, path)       => path
-
-      directory(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
+// One row of a Tree metadata blob: a path mapped to the blob holding its content.
+case class TreeEntry(path: TreePath, blob: Data)

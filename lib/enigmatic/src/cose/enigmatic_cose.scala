@@ -46,7 +46,7 @@ final class CoseVerify[source](val source: source):
   inline def apply[K]
     ( key: K )
     ( using verifier: K is Cose.Verifier,
-            cborTactic: Tactic[CborError],
+            cborTactic: Tactic[Cbor.Error],
             readable: source is Readable to Data )
   :   Boolean raises Cose.Error =
 

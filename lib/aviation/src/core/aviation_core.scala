@@ -129,14 +129,14 @@ package dateFormats:
     given middleEndian: Endianness = Endianness.MiddleEndian
 
   package numerics:
-    given fixedWidthDateNumerics: DateNumerics = DateNumerics.FixedWidth
-    given variableWidthDateNumerics: DateNumerics = DateNumerics.VariableWidth
+    given fixedWidthDateNumerics: Date.Numerics = Date.Numerics.FixedWidth
+    given variableWidthDateNumerics: Date.Numerics = Date.Numerics.VariableWidth
 
   package separators:
-    given slashDateSeparator: DateSeparation = () => t"/"
-    given hyphenDateSeparator: DateSeparation = () => t"-"
-    given dotDateSeparator: DateSeparation = () => t"."
-    given spaceDateSeparator: DateSeparation = () => t" "
+    given slashDateSeparator: Date.Separation = () => t"/"
+    given hyphenDateSeparator: Date.Separation = () => t"-"
+    given dotDateSeparator: Date.Separation = () => t"."
+    given spaceDateSeparator: Date.Separation = () => t" "
 
   package years:
     given twoDigitsYears: Years = Years.TwoDigitYear

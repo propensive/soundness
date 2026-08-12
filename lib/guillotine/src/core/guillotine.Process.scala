@@ -91,8 +91,8 @@ object Process:
     def pid: Pid
     // Real `using` clauses rather than the `logs` sugar: a context-function result would hide
     // the capability `this` of implementing classes, which the separation checker rejects.
-    def kill()(using (ExecEvent is Loggable)^): Unit
-    def abort()(using (ExecEvent is Loggable)^): Unit
+    def kill()(using (Exec.Event is Loggable)^): Unit
+    def abort()(using (Exec.Event is Loggable)^): Unit
     def alive: Boolean
     def attend(): Unit
     def startTime[instant: Instantiable across Instants from Long]: Optional[instant]
@@ -102,8 +102,8 @@ object Process:
 // process.
 class Process private (java: ProcessHandle) extends Process.Ref, caps.ExclusiveCapability:
   def pid: Pid = Pid(java.pid)
-  def kill()(using (ExecEvent is Loggable)^): Unit = java.destroy()
-  def abort()(using (ExecEvent is Loggable)^): Unit = java.destroyForcibly()
+  def kill()(using (Exec.Event is Loggable)^): Unit = java.destroy()
+  def abort()(using (Exec.Event is Loggable)^): Unit = java.destroyForcibly()
   def alive: Boolean = java.isAlive
   def attend(): Unit = java.onExit.nn.get()
 

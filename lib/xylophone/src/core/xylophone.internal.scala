@@ -1263,7 +1263,7 @@ object internal:
       Apply(applied, arguments)
 
     def body
-      ( reader:      Expr[XmlReader],
+      ( reader:      Expr[Xml.Reader],
         keys:        Expr[Array[String]^{}],
         attrs:       Expr[Array[Boolean]^{}],
         instances:   Expr[Array[Xml.Field | Null]^{}],
@@ -1495,7 +1495,7 @@ object internal:
       val resolve: Term =
         if literalKeys then
           If
-            ( '{ $wordRef == XmlReader.NameOpaque }.asTerm,
+            ( '{ $wordRef == Xml.Reader.NameOpaque }.asTerm,
               textStep,
               Block(List(ValDef(high, Some('{ $reader.childWordHigh }.asTerm))), chain(0)) )
         else textStep
@@ -1504,7 +1504,7 @@ object internal:
         Block
           ( List(ValDef(word, Some('{ $reader.childWord() }.asTerm))),
             If
-              ( '{ $wordRef == XmlReader.NameEnd }.asTerm,
+              ( '{ $wordRef == Xml.Reader.NameEnd }.asTerm,
                 Assign(Ref(run), Literal(BooleanConstant(false))),
                 Block
                   ( List(ValDef(found, Some(resolve))),
@@ -1686,7 +1686,7 @@ object internal:
         new Xml.Parsable:
           type Self = value
 
-          def parse(reader: XmlReader^): value =
+          def parse(reader: Xml.Reader^): value =
             ${
               body
                 ( '{reader}, '{keys}, '{attrs}, '{instances}, '{repeatables}, '{fallbacks} )

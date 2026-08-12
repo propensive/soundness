@@ -38,5 +38,5 @@ import prepositional.*
 import turbulence.*
 
 extension (cbor: Cbor.Ast.type)
-  def parse(source: Array[Byte]^{}): Cbor.Ast raises CborError = Cbor.Parser.parse(source)
+  def parse(source: Array[Byte]^{}): Cbor.Ast raises Cbor.Error = Cbor.Parser.parse(source)
 

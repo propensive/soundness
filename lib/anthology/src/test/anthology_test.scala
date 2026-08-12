@@ -302,14 +302,14 @@ object Tests extends Suite(m"Anthology Tests"):
     . assert(_ == true)
 
     test(m"The APK edge defaults to API level 26"):
-      initialOf(apkEdges(), Apk).asInstanceOf[ApkConfiguration].minApi
+      initialOf(apkEdges(), Apk).asInstanceOf[Apk.Configuration].minApi
     . assert(_ == 26)
 
     test(m"The APK API level configures both dexing and packaging"):
       val setting = apkOptions.minApi(24)
 
       ( setting.edit(Dex, initialOf(dexEdges(), Dex)).asInstanceOf[DexConfiguration].minApi,
-        setting.edit(Apk, initialOf(apkEdges(), Apk)).asInstanceOf[ApkConfiguration].minApi )
+        setting.edit(Apk, initialOf(apkEdges(), Apk)).asInstanceOf[Apk.Configuration].minApi )
     . assert(_ == (24, 24))
 
     test(m"The WASI component edge is not available without toolchain and WIT world"):
@@ -460,7 +460,7 @@ object Tests extends Suite(m"Anthology Tests"):
               List(jarOptions.name(t"app.jar")),
               List(EntryPoint(Fqcn(t"Main"))) )
           . pipe: artifact =>
-              mute[ExecEvent](sh"java -jar $artifact".exec[Text]()).trim
+              mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
         . assert(_ == t"hello")
 
         // The whole point of source nodes: one path from `.scala` text to a runnable JAR, with
@@ -478,7 +478,7 @@ object Tests extends Suite(m"Anthology Tests"):
               List(EntryPoint(Fqcn(t"Main"))) )
 
           . pipe: artifact =>
-              mute[ExecEvent](sh"java -jar $artifact".exec[Text]()).trim
+              mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
         . assert(_ == t"hello")
 
         test(m"A compile edge reports a failing compilation as an error count"):
@@ -595,7 +595,7 @@ object Tests extends Suite(m"Anthology Tests"):
                 Nil,
                 List(EntryPoint(Fqcn(t"Main"))) )
             . pipe: artifact =>
-                mute[ExecEvent](sh"$artifact".exec[Text]()).trim
+                mute[Exec.Event](sh"$artifact".exec[Text]()).trim
           . assert(_ == t"hello")
 
     // `Kotlinc` itself is not constructed here: linking it resolves the compiler classes, which

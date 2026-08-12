@@ -52,7 +52,7 @@ object SignatureAlgorithm:
     arc(digest, t"SHA256" -> 2, t"SHA384" -> 3, t"SHA512" -> 4).let: last =>
       Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 10045, 4, 3, last))))
 
-  private def arc(digest: SignatureDigest, entries: (Text, Int)*): Optional[Int] =
+  private def arc(digest: Signature.Digest, entries: (Text, Int)*): Optional[Int] =
     entries.find(_(0) == digest.token).map(_(1)).getOrElse(Unset)
 
 trait SignatureAlgorithm:
@@ -60,4 +60,4 @@ trait SignatureAlgorithm:
 
   // `Unset` when the cipher and digest have no object identifier between them, which a caller
   // turns into a `CertificateError` rather than an encoding that no verifier would recognize.
-  def identifier(digest: SignatureDigest): Optional[Asn1]
+  def identifier(digest: Signature.Digest): Optional[Asn1]

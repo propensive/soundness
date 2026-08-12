@@ -45,7 +45,7 @@ import serpentine.*
 import vacuous.*
 import turbulence.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 import alphabets.hexLowerCase
 import filesystemBackends.virtualMachine
 import filesystemOptions.overwritePreexisting.enabled
@@ -57,12 +57,12 @@ import filesystemOptions.overwritePreexisting.enabled
 object Materializer:
 
   def classpath(liras: List[Lira], universe: Text, cache: Path on Linux)
-  :   LocalClasspath raises LiraError raises IoError raises StreamError =
+  :   LocalClasspath raises Lira.Error raises IoError raises StreamError =
 
     // `host` sections are never materialized onto any artifact path (§13.5): a host contract's
     // content describes the environment and joins nothing.
     if universe == t"host"
-    then abort(LiraError(Reason.BadHostContract(t"the host realm derives no artifacts")))
+    then abort(Lira.Error(Reason.BadHostContract(t"the host realm derives no artifacts")))
 
     val path = Buildpath(liras.map(_.manifest))
     val (assignment, _) = path.resolved(universe)
@@ -88,13 +88,13 @@ object Materializer:
         val report = Verification.install(lira)
 
         val tree = report.tree(universe, integration) match
-          case tree: LiraTree => tree
+          case tree: Lira.Tree => tree
 
           // §13.5 calls this a validation-time error, and it is closure's kind (L113): a
           // release with no section serving the target universe fails the buildpath exactly as
           // an absent module does. The manifest itself is not at fault.
           case _ =>
-            abort(LiraError(Reason.AbsentDependency(lira.manifest.module)))
+            abort(Lira.Error(Reason.AbsentDependency(lira.manifest.module)))
 
         val data = Derivative.jar(tree, report.blobstore)
 

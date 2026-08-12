@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export breviloquence.{CborError, parse}
+export breviloquence.parse

@@ -108,7 +108,7 @@ object internal:
       allAnnotations.exists(_.tpe.typeSymbol == resourceType)
 
     val jsonErrors = Expr.summon[Tactic[Json.Error]].getOrElse:
-      halt(m"could not find a contextual `Tactic[McpError]` instance")
+      halt(m"could not find a contextual `Tactic[Mcp.Error]` instance")
 
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
@@ -180,13 +180,13 @@ object internal:
 
                       CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
-                    val wildcard = Expr.summon[Tactic[McpError]] match
+                    val wildcard = Expr.summon[Tactic[Mcp.Error]] match
                       case Some(tactic) =>
-                        val rhs = '{abort(McpError(McpError.Reason.UnknownMethod))(using $tactic)}
+                        val rhs = '{abort(Mcp.Error(Mcp.Error.Reason.UnknownMethod))(using $tactic)}
                         CaseDef(Wildcard(), None, rhs.asTerm)
 
                       case None =>
-                        halt(m"could not find a contextual `Tactic[McpError]` instance")
+                        halt(m"could not find a contextual `Tactic[Mcp.Error]` instance")
 
                     Match('method.asTerm, cases :+ wildcard).asExprOf[Json]
                   }
@@ -222,8 +222,8 @@ object internal:
 
                                     if input.defines(key) then input.stdlib(key).as[param]
                                     else
-                                      provide[Tactic[McpError]]:
-                                        abort(McpError(McpError.Reason.MissingParameter))
+                                      provide[Tactic[Mcp.Error]]:
+                                        abort(Mcp.Error(Mcp.Error.Reason.MissingParameter))
                                   }
 
                                 . asTerm
@@ -260,7 +260,7 @@ object internal:
 
                     val wildcard =
                       val rhs =
-                        '{provide[Tactic[McpError]](abort(McpError(McpError.Reason.UnknownMethod)))}
+                        '{provide[Tactic[Mcp.Error]](abort(Mcp.Error(Mcp.Error.Reason.UnknownMethod)))}
 
                       CaseDef(Wildcard(), None, rhs.asTerm)
 
@@ -335,7 +335,7 @@ object internal:
                           (uri, rhs)
 
                     val initial =
-                      '{provide[Tactic[McpError]](abort(McpError(McpError.Reason.UnknownResource)))}
+                      '{provide[Tactic[Mcp.Error]](abort(Mcp.Error(Mcp.Error.Reason.UnknownResource)))}
 
                     cases.foldLeft(initial):
                       case (acc, (pattern, rhs)) => '{if uri == $pattern then $rhs else $acc}

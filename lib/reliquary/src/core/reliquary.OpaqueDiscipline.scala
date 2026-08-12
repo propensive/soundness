@@ -58,6 +58,6 @@ object OpaqueDiscipline extends Discipline:
   :   Atomization raises DisciplineError =
 
     val atoms = content.map: (path, data) =>
-      Atom(path.text, AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(id), data))
+      Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
 
     Atomization.of(id, atoms)

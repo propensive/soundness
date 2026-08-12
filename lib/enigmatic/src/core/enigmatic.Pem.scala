@@ -46,14 +46,15 @@ import monotonous.*, alphabets.base64Standard
 import prepositional.*
 import proscenium.compat.*
 import rudiments.*
+import spectacular.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
 
 object Pem:
-  // Armor a DER document, e.g. `Pem(PemLabel.Certificate, certificate.in[Der])`. The label is
+  // Armor a DER document, e.g. `Pem(Pem.Label.Certificate, certificate.in[Der])`. The label is
   // always given explicitly: it is a fact about the value, not a mode of the encoding.
-  def apply(label: PemLabel, der: Der): Pem = Pem(label, der.data)
+  def apply(label: Pem.Label, der: Der): Pem = Pem(label, der.data)
 
   // The DER payload of a PEM block, so that `pem.as[Der]` reaches the armored bytes as a document
   // rather than as anonymous `Data`. The label is not checked against the content: every PEM label
@@ -65,7 +66,7 @@ object Pem:
   // pattern (see rep/DECISIONS.md), like the `Pem` aggregables below.
   given aggregableIn: [value]
   =>  ( decodable: (value is Decodable in Der)^ )
-  =>  ( Diagnostics, Tactic[PemError] )
+  =>  ( Diagnostics, Tactic[Pem.Error] )
   =>  ( (value in Pem) is Aggregable by Text ) =
 
     caps.unsafe.unsafeAssumePure:
@@ -90,7 +91,7 @@ object Pem:
   // memory (modulo its payload).
   //
   // Not public: `text.read[Pem]` (through `aggregable`, below) is the entry point.
-  private[enigmatic] def parse(text: Text)(using Diagnostics): Pem raises PemError =
+  private[enigmatic] def parse(text: Text)(using Diagnostics): Pem raises Pem.Error =
     parse(Cursor(text))
 
   // The first PEM block of the input: leading whitespace is skipped (the
@@ -98,7 +99,7 @@ object Pem:
   // `BEGIN` boundary.
   // A real `using` clause rather than the `raises` sugar: a context-function result would
   // hide the `cursor` parameter, which the separation checker rejects.
-  private def parse[cap^](cursor: Cursor[Text, cap]^)(using Diagnostics, Tactic[PemError]^)
+  private def parse[cap^](cursor: Cursor[Text, cap]^)(using Diagnostics, Tactic[Pem.Error]^)
   :   Pem =
 
     while !cursor.finished
@@ -106,21 +107,21 @@ object Pem:
               || cursor.peek == '\n' || cursor.peek == '\r')
     do cursor.next()
 
-    nextLine(cursor).lay(abort(PemError(PemError.Reason.BeginMissing))):
-      case r"-----* *BEGIN ${PemLabel(label)}([ A-Z]+) *-----*" => block(cursor, label)
+    nextLine(cursor).lay(abort(Pem.Error(Pem.Error.Reason.BeginMissing))):
+      case r"-----* *BEGIN ${Pem.Label(label)}([ A-Z]+) *-----*" => block(cursor, label)
       case _                                                    => abort:
-                                                                     PemError:
-                                                                       PemError.Reason.BeginMissing
+                                                                     Pem.Error:
+                                                                       Pem.Error.Reason.BeginMissing
 
   // Every PEM block of the input, lazily: one block parses per forced cell,
   // and content between blocks (comments, subject lines in certificate
   // chains) is skipped. An input with no blocks yields the empty list.
   private def parseAll[cap^](cursor: Cursor[Text, cap]^)
-    ( using Diagnostics, Tactic[PemError] )
+    ( using Diagnostics, Tactic[Pem.Error] )
   :   Chain[Pem] =
 
     def recur(): Chain[Pem] = nextLine(cursor).lay(Chain()):
-      case r"-----* *BEGIN ${PemLabel(label)}([ A-Z]+) *-----*" => block(cursor, label) #:: recur()
+      case r"-----* *BEGIN ${Pem.Label(label)}([ A-Z]+) *-----*" => block(cursor, label) #:: recur()
       case _                                                    => recur()
 
     Chain.defer(recur())
@@ -129,18 +130,18 @@ object Pem:
   // (verbatim, as the legacy parser joined them) until an `END` boundary.
   // Like the legacy parser, the `END` label is not required to match the
   // `BEGIN` label, though the line is trimmed before matching (a relaxation).
-  private def block[cap^](cursor: Cursor[Text, cap]^, label: PemLabel)
-    ( using Diagnostics, Tactic[PemError]^ )
+  private def block[cap^](cursor: Cursor[Text, cap]^, label: Pem.Label)
+    ( using Diagnostics, Tactic[Pem.Error]^ )
   :   Pem =
 
     val body = jl.StringBuilder()
 
     def recur(): Data =
-      nextLine(cursor).lay(abort(PemError(PemError.Reason.EndMissing))): line =>
+      nextLine(cursor).lay(abort(Pem.Error(Pem.Error.Reason.EndMissing))): line =>
         line.trim match
           case r"-----* *END $endLabel([ A-Z]+) *-----*" =>
             mitigate:
-              case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
+              case SerializationError(_, _) => Pem.Error(Pem.Error.Reason.BadBase64)
 
             // `[Data]` stated, not inferred: the conformance check on a macro expansion
             // dealiases opaque types, and `Data` is a transparent alias over an opaque one.
@@ -169,7 +170,7 @@ object Pem:
 
   // Sealed per the codec-thunk pattern (see rep/DECISIONS.md): the
   // resolution-scoped tactic shares the instance's given-resolution lifetime.
-  given aggregable: (Diagnostics, Tactic[PemError]) => Pem is Aggregable by Text =
+  given aggregable: (Diagnostics, Tactic[Pem.Error]) => Pem is Aggregable by Text =
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = Pem
@@ -184,7 +185,7 @@ object Pem:
 
   // A certificate chain (or any multi-block document) as a lazy sequence of
   // its blocks.
-  given aggregableAll: (Diagnostics, Tactic[PemError]) => Chain[Pem] is Aggregable by Text =
+  given aggregableAll: (Diagnostics, Tactic[Pem.Error]) => Chain[Pem] is Aggregable by Text =
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = Chain[Pem]
@@ -205,7 +206,42 @@ object Pem:
 
     Stream((t"-----BEGIN ${pem.label}-----\n" #:: Chain.defer(groups(0))).iterator)
 
-case class Pem(label: PemLabel, data: Data):
+  // PemError → Pem.Error
+  object Error:
+    given communicable: Reason is Communicable =
+      case Reason.BadBase64    => m"could not parse the BASE-64 PEM message"
+      case Reason.BeginMissing => m"the BEGIN line could not be found"
+      case Reason.EndMissing   => m"the END line could not be found"
+      case Reason.EmptyFile    => m"the file was empty"
+
+    enum Reason(val number: Int) extends Clarification:
+      case BeginMissing extends Reason(1)
+      case EndMissing   extends Reason(2)
+      case BadBase64    extends Reason(3)
+      case EmptyFile    extends Reason(4)
+
+  case class Error(reason: Pem.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(389, reason.number)(m"could not parse PEM content because $reason")
+
+  // PemLabel → Pem.Label
+  object Label:
+    lazy val index: Map[Text, Pem.Label] =
+      (0 to 17).map(fromOrdinal(_)).indexBy(_.toString.tt.uncamel.map(_.upper).join(t" "))
+
+    given showable: Pem.Label is Showable =
+      case Proprietary(label) => label
+      case other              => other.toString.tt.uncamel.map(_.upper).join(t" ")
+
+    def unapply(text: Text): Some[Pem.Label] = Some(index.get(text).getOrElse(Proprietary(text)))
+
+  enum Label:
+    case Certificate, CertificateRequest, NewCertificateRequest, PrivateKey, RsaPrivateKey,
+      DsaPrivateKey, EcPrivateKey, EncryptedPrivateKey, PublicKey, Pkcs7, Cms, DhParameters,
+      X509Crl, AttributeCertificate, EncryptedMessage, SignedMessage, RsaPublicKey, DsaPublicKey
+
+    case Proprietary(label: Text)
+
+case class Pem(label: Pem.Label, data: Data):
   def serialize: Text =
     List
       ( List(t"-----BEGIN $label-----"),

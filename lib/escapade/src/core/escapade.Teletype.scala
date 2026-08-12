@@ -44,6 +44,7 @@ import gossamer.*
 import mercator.*
 import prepositional.*
 import rudiments.*
+import scala.collection.mutable as scm
 import spectacular.*
 import symbolism.*
 import zephyrine.*
@@ -105,7 +106,7 @@ object Teletype:
       text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
 
     def show[value: Teletypeable](value: value) = value.teletype
-    def builder(size: Optional[Int] = Unset): TeletypeBuilder = TeletypeBuilder(size)
+    def builder(size: Optional[Int] = Unset): Teletype.Builder = Teletype.Builder(size)
 
   // Empty Teletype: dense form with no chars and one trailing entry.
   val empty: Teletype =
@@ -194,6 +195,57 @@ object Teletype:
                 styleScribe.append(denseStyles.at(Ordinal.zerary(n)).or(0L))  // trailing
 
         (newStyles, newBoundaries)
+
+  // TeletypeBuilder → Teletype.Builder
+  class Builder(size: Optional[Int] = Unset) extends gossamer.Builder[Teletype]:
+    private val builder: StringBuilder = StringBuilder()
+    private val styles: scm.ArrayBuffer[Long] = scm.ArrayBuffer.empty
+    private val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap()
+    private val insertions: scm.TreeMap[Int, Text] = scm.TreeMap()
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var offset: Int = 0
+
+    def length: Int = builder.length
+
+    protected def wipe(): Unit =
+      offset = 0
+      builder.clear()
+      styles.clear()
+      hyperlinks.clear()
+      insertions.clear()
+
+    protected def put(text: Teletype): Unit =
+      builder.append(text.plain.s)
+      var i = 0
+
+      while i < text.plain.length do
+        styles += text.styleAt(i)
+        i += 1
+
+      text.hyperlinks.stdlib.each: (k, v) => hyperlinks(k + offset) = v
+      text.insertions.each: (k, v) => insertions(k + offset) = v
+
+      offset += text.plain.length
+
+    protected def putChar(char: Char): Unit =
+      builder.append(char)
+      styles += 0L
+      offset += 1
+
+    protected def result(): Teletype =
+      styles += 0L
+
+      val plainText = builder.toString.tt
+      val denseStyles = Array.unsafeFrozen(styles.toArray)
+      val (newStyles, newBoundaries) = Teletype.compressIfBeneficial(plainText, denseStyles)
+
+      Teletype
+        ( plainText,
+          newStyles,
+          Map.of(hyperlinks.toMap),
+          insertions.to(TreeMap),
+          newBoundaries )
 
 
 // `boundaries` is the run-start array for the sparse form; empty for the dense form.

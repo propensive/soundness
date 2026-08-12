@@ -39,10 +39,10 @@ import abstractables.durationAbstractable
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
 
-given silentExecEvent: ExecEvent is Loggable =
+given silentExecEvent: Exec.Event is Loggable =
   new Loggable:
-    type Self = ExecEvent
-    def log(level: Level, timestamp: Long, event: => ExecEvent): Unit = ()
+    type Self = Exec.Event
+    def log(level: Level, timestamp: Long, event: => Exec.Event): Unit = ()
 
 
 object Tests extends Suite(m"Guillotine tests"):
@@ -489,13 +489,13 @@ object Tests extends Suite(m"Guillotine tests"):
         sh"sleep 0.01"()
       . assert(_ == Exit.Ok)
 
-    suite(m"ExecError"):
-      test(m"running a missing binary raises ExecError"):
-        capture[ExecError](sh"definitely-not-a-binary-xyz".exec[Text]())
+    suite(m"Exec.Error"):
+      test(m"running a missing binary raises Exec.Error"):
+        capture[Exec.Error](sh"definitely-not-a-binary-xyz".exec[Text]())
       . assert(_.command.arguments.head == t"definitely-not-a-binary-xyz")
 
-      test(m"ExecError reports the failing command"):
-        val err = capture[ExecError](sh"definitely-not-a-binary-xyz".exec[Text]())
+      test(m"Exec.Error reports the failing command"):
+        val err = capture[Exec.Error](sh"definitely-not-a-binary-xyz".exec[Text]())
         err.command.arguments.length
       . assert(_ == 1)
 

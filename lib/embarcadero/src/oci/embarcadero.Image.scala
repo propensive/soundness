@@ -62,8 +62,8 @@ object Image:
   given dataOpenable
   :   ( ociTactic: Tactic[Oci.Error], tarTactic: Tactic[Tar.Error],
         streamTactic: Tactic[StreamError] )
-  =>  ( ImageDataOpenable^{ociTactic, tarTactic, streamTactic} ) =
-    ImageDataOpenable()
+  =>  ( Image.DataOpenable^{ociTactic, tarTactic, streamTactic} ) =
+    Image.DataOpenable()
 
   // Assembles an image from its layers and optional runtime configuration,
   // computing the config blob, manifest and index (with all digests/sizes).
@@ -293,6 +293,26 @@ object Image:
     private def decode[doc](label: Text)(body: => doc)(using Tactic[Oci.Error]): doc =
       try body catch case error: Error =>
         abort(Oci.Error(Oci.Error.Reason.InvalidBlob(label, error.message.text)))
+
+  // ImageDataOpenable → Image.DataOpenable
+  // A named class rather than an anonymous given instance, for the reasons documented on
+  // galilei's `FileOpenable`. Opening in-memory `Data` as an OCI image; opening a filesystem
+  // *path* (`ImageOpenable`) lives in the JVM-only source set. Read-only for now.
+  class DataOpenable(using Tactic[Oci.Error], Tactic[Tar.Error], Tactic[StreamError])
+  extends Openable:
+
+    type Self = Data
+    type Form = Image
+    type Operand = Nothing
+    type Result = Image.Handle
+
+    def open[grants <: Grant, result]
+      ( value: Data, mode: Mode granting grants, flags: List[Nothing] )
+      ( block: ((Image.Handle & Granting[grants])^) ?=> result )
+    :   result =
+
+      if mode.atoms.stdlib.contains(Write) then abort(Oci.Error(Oci.Error.Reason.WriteUnsupported))
+      block(using new Image.Handle(Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]]) with Granting[grants] {})
 
 case class Image
   ( layers:             List[Layer],

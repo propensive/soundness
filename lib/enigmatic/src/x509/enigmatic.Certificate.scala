@@ -86,7 +86,7 @@ object Certificate:
       alternatives: List[Text] = Nil )
     ( using algorithm:     cipher & Signing,
             signature:     cipher is SignatureAlgorithm,
-            digest:        SignatureDigest,
+            digest:        Signature.Digest,
             hash:          Hash in Sha2[256],
             erased permit: Permit[Weakness[cipher]] )
     ( using Tactic[CertificateError], Tactic[Asn1.Error], Diagnostics )
@@ -182,4 +182,4 @@ object Certificate:
 
 case class Certificate(asn1: Asn1):
   // The armored form, which is how certificates are almost always exchanged.
-  def pem: Pem = Pem(PemLabel.Certificate, asn1.in[Der])
+  def pem: Pem = Pem(Pem.Label.Certificate, asn1.in[Der])

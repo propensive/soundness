@@ -39,7 +39,7 @@ import gossamer.*
 import rudiments.*
 import stratiform.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // The decompressed payload of a `.lira` file (§8.2): a sequence of `uvarint(length) ++ bytes`
 // records in ascending bytewise order of their blob hashes, with no duplicates. Hashes are never
@@ -51,8 +51,8 @@ object BlobStream:
     val distinct = scala.collection.mutable.LinkedHashMap[Text, Blob]()
 
     blobs.each: data =>
-      val hash = LiraHash(LiraHash.Domain.Blob, data)
-      distinct.getOrElseUpdate(LiraHash.text(hash), Blob(hash, data))
+      val hash = Lira.Hash(Lira.Hash.Domain.Blob, data)
+      distinct.getOrElseUpdate(Lira.Hash.text(hash), Blob(hash, data))
 
     val sorted = distinct.values.toList.sortWith: (a, b) => Blob.compare(a.hash, b.hash) < 0
     val lengths = sorted.map: blob => Varint.encode(blob.data.length.toLong)
@@ -68,7 +68,7 @@ object BlobStream:
 
     Array.freeze(buffer)
 
-  def read(data: Data): Blobstore raises LiraError =
+  def read(data: Data): Blobstore raises Lira.Error =
     val blobs = scala.collection.mutable.ListBuffer[Blob]()
     var previous: Data | Null = null
     var offset = 0
@@ -79,28 +79,28 @@ object BlobStream:
 
         mitigate:
           case _: Varint.Error =>
-            LiraError(Reason.MalformedPayload(t"a record length is malformed"))
+            Lira.Error(Reason.MalformedPayload(t"a record length is malformed"))
 
         . protect(Varint.decode(data, offset))
 
       val length = decoded.value
 
       if length > Int.MaxValue.toLong || decoded.next + length.toInt > data.length
-      then abort(LiraError(Reason.MalformedPayload(t"a record overruns the end of the stream")))
+      then abort(Lira.Error(Reason.MalformedPayload(t"a record overruns the end of the stream")))
 
       val content = Array[Byte](length.toInt)
       System.arraycopy(Array.unsafeJvm(data), decoded.next, content.raw, 0, length.toInt)
       val bytes = Array.freeze(content)
-      val hash = LiraHash(LiraHash.Domain.Blob, bytes)
+      val hash = Lira.Hash(Lira.Hash.Domain.Blob, bytes)
 
       if previous != null then
         val order = Blob.compare(previous.nn, hash)
 
         if order == 0
-        then abort(LiraError(Reason.InvalidBlobStream(t"two records have equal hashes")))
+        then abort(Lira.Error(Reason.InvalidBlobStream(t"two records have equal hashes")))
 
         if order > 0
-        then abort(LiraError(Reason.InvalidBlobStream(t"records are not in ascending hash order")))
+        then abort(Lira.Error(Reason.InvalidBlobStream(t"records are not in ascending hash order")))
 
       blobs += Blob(hash, bytes)
       previous = hash

@@ -248,7 +248,7 @@ private[jacinta] object Parser:
 // reference the pool hands out.
 // Public as a type — generated parsers hold a `Parser` in a local and read
 // through its direct rim — but acquiring the instance behind a live read is
-// sealed inside `JsonReader.rawParser`, which only jacinta's own generated
+// sealed inside `Json.Reader.rawParser`, which only jacinta's own generated
 // splices can reach; the pool and every reset entry point remain private.
 final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   import scala.annotation.switch
@@ -2058,7 +2058,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     result
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Direct-parsing rim (used by `JsonReader`). The token-level operations
+  // Direct-parsing rim (used by `Json.Reader`). The token-level operations
   // behind `Json.Parsable` instances: each consumes exactly one token (or one
   // structural step) from the input, without building AST nodes for the values
   // the caller reads directly. Container stepping (`directKey`,
@@ -2585,7 +2585,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // current window, committing no state until the outcome is certain, so
   // any interruption (the window's end, an escaped or oversized key, or
   // malformed input, which must raise the general path's exact issue) can
-  // fall back by simply returning `MinValue`. Tactic-free, so `JsonReader`
+  // fall back by simply returning `MinValue`. Tactic-free, so `Json.Reader`
   // calls it directly on the hot path.
   private[jacinta] update def directKeyIndexFast(table: Json.KeyTable): Int =
     val limit = bufEnd

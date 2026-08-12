@@ -44,7 +44,7 @@ import urticose.*
 import vacuous.*
 
 // A secure (TLS) TCP endpoint — a `host:port` reached over TLS, the counterpart of the
-// plaintext `Endpoint[TcpPort]`. Its `Connectable` opens an `SSLSocket` (trust and keys
+// plaintext `Endpoint[Tcp.Port]`. Its `Connectable` opens an `SSLSocket` (trust and keys
 // from `Tls.context`, or the system default), sets SNI to `host`, verifies the peer
 // hostname unless `Tls.verify` is off, then presents the socket's streams as a `Duplex`.
 object SecureEndpoint:

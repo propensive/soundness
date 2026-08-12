@@ -134,8 +134,8 @@ object Completions:
 
     mitigate:
       case Path.Error(_, _)    => InstallError(InstallError.Reason.Environment)
-      case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
-      case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
+      case Name.Error(_, _, _) => InstallError(InstallError.Reason.Environment)
+      case guillotine.Exec.Error(_, _, _) => InstallError(InstallError.Reason.Environment)
 
     . protect:
         val scriptPath: Optional[Path on Local] =
@@ -216,7 +216,7 @@ object Completions:
 
     mitigate:
       case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
-      case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
+      case Name.Error(_, _, _)  => InstallError(InstallError.Reason.Io)
       case Path.Error(_, _)     => InstallError(InstallError.Reason.Io)
       case StreamError(_)      => InstallError(InstallError.Reason.Io)
 
@@ -299,12 +299,12 @@ object Completions:
           List(zsh, bash, fish, pwsh).map(_.pathname).collect { case text: Text => text }
 
 object CliEvent:
-  given execEvent: CliEvent transcribes ExecEvent = CliEvent.Exec(_)
+  given execEvent: CliEvent transcribes guillotine.Exec.Event = CliEvent.Exec(_)
 
   given communicable: CliEvent is Communicable =
     case Exec(event)          => m"execution error: $event"
     case Installing(location) => m"installing to $location"
 
 enum CliEvent:
-  case Exec(event: ExecEvent)
+  case Exec(event: guillotine.Exec.Event)
   case Installing(location: Text)

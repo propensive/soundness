@@ -81,7 +81,7 @@ object Discipline:
   // language disciplines first, then `resource/1` over the manifest's claims, then the
   // `opaque/1` fallback. So an item under a scanned directory that a language discipline claims
   // goes to that discipline, and only the remainder are atomless.
-  class Registry(disciplines: List[Discipline], resources: List[LiraManifest.Resource] = List()):
+  class Registry(disciplines: List[Discipline], resources: List[Lira.Manifest.Resource] = List()):
     // The language disciplines alone, without the two the registry supplies itself.
     def declared: List[Discipline] = disciplines
 

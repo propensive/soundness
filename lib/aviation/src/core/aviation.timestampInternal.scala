@@ -143,9 +143,9 @@ object timestampInternal:
         right.addDays(left[Days])
 
     // Date-only display (no time-of-day), honouring locale-ish formatting givens.
-    given dateShowable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable =
+    given dateShowable: (Endianness, Date.Numerics, Date.Separation, Years) => Date is Showable =
       date =>
-        import DateNumerics.*, Years.*
+        import Date.Numerics.*, Years.*
         import textMetrics.uniformMetric
 
         given calendar: RomanCalendar = calendars.gregorianCalendar
@@ -156,11 +156,11 @@ object timestampInternal:
           case TwoDigitYear => pad(date.year())
           case FullYear     => date.year().show
 
-        val month: Text = summon[DateNumerics] match
+        val month: Text = summon[Date.Numerics] match
           case FixedWidth    => pad(date.month.numerical)
           case VariableWidth => date.month.numerical.show
 
-        val day: Text = summon[DateNumerics] match
+        val day: Text = summon[Date.Numerics] match
           case FixedWidth    => pad(date.day())
           case VariableWidth => date.day().show
 
@@ -169,7 +169,7 @@ object timestampInternal:
           case Endianness.MiddleEndian => List(month, day, year)
           case Endianness.BigEndian    => List(year, month, day)
 
-        . join(summon[DateSeparation].separator)
+        . join(summon[Date.Separation].separator)
 
     given dateDecoder: Tactic[TimeError] => Date is Decodable in Text = value =>
       import calendars.gregorianCalendar
@@ -262,9 +262,9 @@ object timestampInternal:
 
     // `Monthstamp` (= `Timestamp in Month`) givens. Like `Date`'s, they live here so they're in the
     // implicit scope of the underlying `Timestamp`, not in the transparent alias's companion.
-    given monthShowable: (Months, DateSeparation, Endianness, Years) => Monthstamp is Showable =
+    given monthShowable: (Months, Date.Separation, Endianness, Years) => Monthstamp is Showable =
       monthstamp =>
-        val separator = summon[DateSeparation].separator
+        val separator = summon[Date.Separation].separator
 
         summon[Endianness] match
           case Endianness.LittleEndian => t"${monthstamp.year}$separator${monthstamp.month}"
@@ -307,6 +307,15 @@ object timestampInternal:
 
     trait Format(val name: Text):
       type Issue: Communicable
+
+    // DateNumerics → Date.Numerics
+    enum Numerics:
+      case FixedWidth, VariableWidth
+
+    // DateSeparation → Date.Separation
+    trait Separation:
+      def separator: Text = separatorChar()
+      def separatorChar(): Text
 
   extension (timestamp: Timestamp)
     def date: Date =

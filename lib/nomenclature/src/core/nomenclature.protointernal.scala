@@ -142,7 +142,7 @@ object protointernal:
     val string = context.valueOrAbort.parts.head
 
     ConstantType(StringConstant(string)).asType match
-      case '[type stringType <: Label; stringType] => '{NameExtractor[stringType]()}
+      case '[type stringType <: Label; stringType] => '{Name.Extractor[stringType]()}
 
       case _ =>
         panic(m"StringContext did not contains Strings")
@@ -191,8 +191,8 @@ object protointernal:
                       case ConstantType(StringConstant(string)) =>
                         ' {
                             if $rule.check($name, ${Expr(string)}.tt) then $expr
-                            else provide[Tactic[NameError]]:
-                              raise(NameError($name, $rule, ${Expr(string)}))
+                            else provide[Tactic[Name.Error]]:
+                              raise(Name.Error($name, $rule, ${Expr(string)}))
                           }
 
         '{$checks; $name.asInstanceOf[Name[system]]}

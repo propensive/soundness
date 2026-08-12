@@ -45,4 +45,20 @@ object Signature:
 
   given encodable: [cipher <: Cipher] => Signature[cipher] is Encodable in Data = _.bytes
 
+  // SignatureDigest → Signature.Digest
+  // The digest an asymmetric signature is taken over. RSA and ECDSA sign a hash of the message
+  // rather than the message itself, and the choice of hash is part of the signature algorithm's
+  // identity — `SHA256withRSA` is a different algorithm from `SHA384withRSA`, with its own object
+  // identifier — so it is fixed when the cipher is summoned rather than chosen per signature.
+  //
+  // SHA-256 is the default, since it is what every certificate profile in current use mandates.
+  // Import `signatureDigests.sha384Signature` or `signatureDigests.sha512Signature` to override it;
+  // an imported given outranks the one below.
+  object Digest:
+    given sha256Signature: Signature.Digest = Signature.Digest(t"SHA256")
+
+  // `token` is the digest's name as it appears in a JCE transformation, e.g. `SHA256` in
+  // `SHA256withRSA`. It has no hyphen, unlike the same digest's name as a `Hash`.
+  case class Digest(token: Text)
+
 case class Signature[+cipher <: Cipher](bytes: Data)

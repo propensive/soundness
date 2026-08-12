@@ -102,8 +102,8 @@ object Platform:
   given directoryOpenable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend: FilesystemBackend on filesystem,
         tactic:  Tactic[IoError] )
-  =>  ( DirectoryOpenable[filesystem, path]^{tactic} ) =
-    DirectoryOpenable[filesystem, path]
+  =>  ( Directory.Openable[filesystem, path]^{tactic} ) =
+    Directory.Openable[filesystem, path]
 
   // The `Creatable` instances for filesystem entries, anchored here for the same reason as
   // the `Openable` instances above: resolvable, with the form inferred where unique, from

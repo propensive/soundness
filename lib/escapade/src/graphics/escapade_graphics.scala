@@ -45,7 +45,7 @@ import vacuous.*
 
 package teletypeables:
   given graphical: [graphical: Graphical] => graphical is Teletypeable = graphic =>
-    TeletypeBuilder().build:
+    Teletype.Builder().build:
       for y <- 0 until (graphical.height(graphic) - 1) by 2 do
         for x <- 0 until graphical.width(graphic)
         do

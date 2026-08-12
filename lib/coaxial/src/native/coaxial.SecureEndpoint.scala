@@ -48,7 +48,7 @@ import urticose.*
 import vacuous.*
 
 // A secure (TLS) TCP endpoint — a `host:port` reached over TLS, the counterpart of the
-// plaintext `Endpoint[TcpPort]`, mirroring the JVM `SecureEndpoint`. Scala Native has no
+// plaintext `Endpoint[Tcp.Port]`, mirroring the JVM `SecureEndpoint`. Scala Native has no
 // `javax.net.ssl`, so its `Connectable` speaks to OpenSSL directly through `extern` calls:
 // an `SSL_CTX` trusting the system default certificate store, a *connect BIO* — OpenSSL's
 // own resolve-connect-handshake state machine, which owns the underlying socket — with SNI

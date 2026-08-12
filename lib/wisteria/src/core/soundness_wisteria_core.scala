@@ -36,4 +36,4 @@ export
   wisteria
   . { arithmetic, contextual, dereference, Derivable, Derivation, Discriminable, FieldIndex, index,
       label, ProductDerivable, ProductDerivation, ProductReflection, Reflection, SumDerivation,
-      SumReflection, variant, VariantError, VariantIndex }
+      SumReflection, Variant, variant }

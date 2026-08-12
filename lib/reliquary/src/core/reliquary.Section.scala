@@ -47,9 +47,9 @@ case class Section
     tree:        Data,
     delete:      List[TreePath] = List(),
     derivative:  Optional[Data] = Unset,
-    requires:    List[LiraManifest.Requires] = List() ):
+    requires:    List[Lira.Manifest.Requires] = List() ):
 
-  def known: Optional[LiraRealm] = LiraRealm.parse(realm)
+  def known: Optional[Lira.Realm] = Lira.Realm.parse(realm)
 
   // The key that must be unique within a release (L131), and by which a consumer selects a
   // section once an assignment has chosen an integration (§13.5).

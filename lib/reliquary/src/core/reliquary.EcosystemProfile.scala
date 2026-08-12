@@ -39,7 +39,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 object EcosystemProfile:
   // One section's content, in the form a profile predicate reads it. The same shape a discipline
@@ -57,7 +57,7 @@ object EcosystemProfile:
   // SPI and not another `Discipline`.
   case class Evidence
     ( sections: List[Section],
-      manifest: Optional[LiraManifest] = Unset ):
+      manifest: Optional[Lira.Manifest] = Unset ):
 
     def section(realm: Text): Optional[Section] =
       sections.stdlib.find { section => section.realm == realm }.getOrElse(Unset)
@@ -93,10 +93,10 @@ object EcosystemProfile:
   // must not proceed on unverified claims — a registry, per §16 — can refuse.
   def audit
     ( registry: Registry,
-      declared: List[LiraManifest.Profile],
+      declared: List[Lira.Manifest.Profile],
       previous: Evidence,
       next:     Evidence )
-  :   Audit raises LiraError raises DisciplineError =
+  :   Audit raises Lira.Error raises DisciplineError =
 
     val unchecked = scala.collection.mutable.ListBuffer[Text]()
     val advisories = scala.collection.mutable.ListBuffer[Text]()
@@ -115,7 +115,7 @@ object EcosystemProfile:
           if !uncertified.isEmpty
           then
             val details = Text(uncertified.map(_.detail.s).mkString("; "))
-            abort(LiraError(Reason.ProfileViolated(record.id, details)))
+            abort(Lira.Error(Reason.ProfileViolated(record.id, details)))
 
           val unrecorded = violations.map(_.level).distinct.filter: level =>
             !recorded.contains(level)
@@ -123,7 +123,7 @@ object EcosystemProfile:
           if !unrecorded.isEmpty
           then
             val levels = Text(unrecorded.map(keyword(_).s).mkString(", "))
-            abort(LiraError(Reason.UnrecordedBreak(record.id, levels)))
+            abort(Lira.Error(Reason.UnrecordedBreak(record.id, levels)))
 
           advisories ++= profile.advisories(previous, next).stdlib
 
@@ -133,9 +133,9 @@ object EcosystemProfile:
 
   // Both vocabularies omit `behavior` for the same reason — no hash scheme certifies it (§11.5,
   // §18) — so the mapping is total in both directions.
-  private def guarantee(level: LiraManifest.Guarantee): Discipline.Guarantee = level match
-    case LiraManifest.Guarantee.Linkage       => Discipline.Guarantee.Linkage
-    case LiraManifest.Guarantee.Recompilation => Discipline.Guarantee.Recompilation
+  private def guarantee(level: Lira.Manifest.Guarantee): Discipline.Guarantee = level match
+    case Lira.Manifest.Guarantee.Linkage       => Discipline.Guarantee.Linkage
+    case Lira.Manifest.Guarantee.Recompilation => Discipline.Guarantee.Recompilation
 
   private def keyword(level: Discipline.Guarantee): Text = level match
     case Discipline.Guarantee.Linkage       => t"linkage"
@@ -172,4 +172,4 @@ trait EcosystemProfile:
   // manifests alone — a profile predicate requiring payload inspection is a publish-time check
   // (§16), not a buildpath rule. Toolchain coherence (`jvm.md` §6) is the motivating case.
   // Returns violation details; an empty list is coherence.
-  def coherence(releases: List[LiraManifest]): List[Text] = List()
+  def coherence(releases: List[Lira.Manifest]): List[Text] = List()

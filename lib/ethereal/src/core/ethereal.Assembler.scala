@@ -155,7 +155,7 @@ object Assembler:
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true
-      safely(mute[ExecEvent](sh"codesign --sign - --force $output".exec[Exit]()))
+      safely(mute[Exec.Event](sh"codesign --sign - --force $output".exec[Exit]()))
 
     // Measured from the file rather than taken as `patched.length`: on macOS `codesign` has just
     // rewritten the stub, adding a signature blob, so the prefix the JAR is about to sit behind is

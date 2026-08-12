@@ -40,7 +40,7 @@ import prepositional.*
 // values are instantiated without an intermediate syntax tree. `Transport`
 // names the format (`value is Parsable over Json`); `Reader` is the format's
 // token-reader capability, fixed by each format's subtrait (Jacinta's
-// `Json.Parsable` sets `Reader = JsonReader`).
+// `Json.Parsable` sets `Reader = Json.Reader`).
 //
 // The reader is an exclusive, stateful capability owned by the caller for the
 // duration of the call; nothing of it may be retained in `Self`. Parse errors

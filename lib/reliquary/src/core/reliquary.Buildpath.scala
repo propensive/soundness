@@ -38,17 +38,17 @@ import contingency.*
 import gossamer.*
 import vacuous.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 object Buildpath:
 
   // The publication rules for one manifest against the set of already-published releases (the
   // local registry stand-in until the distribution network exists). A release that fails any of
   // these is a development release and must stay one.
-  def publishable(manifest: LiraManifest, published: List[LiraManifest]): Unit raises LiraError =
+  def publishable(manifest: Lira.Manifest, published: List[Lira.Manifest]): Unit raises Lira.Error =
     // L117: a published release carries a strictly numeric version.
-    val version = manifest.version.or(abort(LiraError(Reason.VersionRequired)))
-    if !Versioning.numeric(version) then abort(LiraError(Reason.VersionRequired))
+    val version = manifest.version.or(abort(Lira.Error(Reason.VersionRequired)))
+    if !Versioning.numeric(version) then abort(Lira.Error(Reason.VersionRequired))
 
     // L142: a tag names exactly one release of its module, forever. A tag carried by any other
     // published release of the module is a reassignment; and a re-signed manifest for the
@@ -61,26 +61,26 @@ object Buildpath:
         sibling.tag.stdlib.contains(tag)
           && Blob.compare(sibling.payload.hash, manifest.payload.hash) != 0
 
-      if elsewhere then abort(LiraError(Reason.TagReassigned(tag)))
+      if elsewhere then abort(Lira.Error(Reason.TagReassigned(tag)))
 
     siblings.filter { sibling => Blob.compare(sibling.payload.hash, manifest.payload.hash) == 0 }
     . foreach: sibling =>
         sibling.tag.stdlib.foreach: tag =>
           if !manifest.tag.stdlib.contains(tag)
-          then abort(LiraError(Reason.TagReassigned(tag)))
+          then abort(Lira.Error(Reason.TagReassigned(tag)))
 
     manifest.dependency.stdlib.foreach: dependency =>
       // L118: build pins are development-only; publication requires snapshot requirements.
-      dependency.build.let: _ => abort(LiraError(Reason.BuildPinned(dependency.module)))
+      dependency.build.let: _ => abort(Lira.Error(Reason.BuildPinned(dependency.module)))
 
       // L119: every dependency snapshot must appear in the lineage of a published release.
-      def matches(candidate: LiraManifest): Boolean =
+      def matches(candidate: Lira.Manifest): Boolean =
         candidate.module == dependency.module && candidate.version.present &&
           Lineage.contains(candidate.lineage, dependency.api)
 
       val satisfied = published.stdlib.exists(matches)
 
-      if !satisfied then abort(LiraError(Reason.UnpublishedDependency(dependency.module)))
+      if !satisfied then abort(Lira.Error(Reason.UnpublishedDependency(dependency.module)))
 
     // L120 (manifest-only part): for a stable series (major ≥ 1) the minor number is the count
     // of minor steps in the lineage. The 0 series is exempt: there, breaking changes bump the
@@ -88,7 +88,7 @@ object Buildpath:
     if version.major >= 1 && version.minor != manifest.lineage.stdlib.size - 1
     then
       val expected = s"${version.major}.${manifest.lineage.stdlib.size - 1}.${version.patch}"
-      abort(LiraError(Reason.VersionProjection(Text(expected))))
+      abort(Lira.Error(Reason.VersionProjection(Text(expected))))
 
 // An assignment (§13.3): one integration per release, under which a buildpath's validity is
 // decided. A release declaring no integrations maps to `Unset`, its single implicit one.
@@ -100,16 +100,16 @@ case class Assignment(choices: List[(Text, Optional[Text])]):
 // ordering irrelevant — and every rule here is decidable from manifests alone, without reading
 // any payload. Closure and satisfaction are evaluated per requested universe and per the
 // integration the assignment chose, since a dependency may be scoped to either axis.
-case class Buildpath(releases: List[LiraManifest]):
+case class Buildpath(releases: List[Lira.Manifest]):
 
-  def apply(module: Text): Optional[LiraManifest] =
+  def apply(module: Text): Optional[Lira.Manifest] =
     releases.stdlib.find(_.module == module).getOrElse(Unset)
 
   // The lira#1 reverse lookup: given the hash of a canonical derivative artifact (a classpath
   // JAR), find the release and the section declaring it — the section, not just the release,
   // because a derivative belongs to one (universe, integration) cell, so the hash identifies
   // which integration the artifact is (§13.6).
-  def byDerivative(hash: Data): Optional[(LiraManifest, Section)] =
+  def byDerivative(hash: Data): Optional[(Lira.Manifest, Section)] =
     val found = releases.stdlib.flatMap: manifest =>
       manifest.section.stdlib.collect:
         case section if section.derivative.let(Blob.compare(_, hash) == 0).or(false) =>
@@ -121,7 +121,7 @@ case class Buildpath(releases: List[LiraManifest]):
   // ascending `id`. A release declaring none offers exactly one, its implicit `Unset`. An
   // unranked integration sorts after every ranked one rather than at zero, so that leaving
   // `rank` off never silently promotes an alternative above the publisher's preferred build.
-  def candidates(manifest: LiraManifest): scala.List[Optional[Text]] =
+  def candidates(manifest: Lira.Manifest): scala.List[Optional[Text]] =
     if manifest.integration.stdlib.isEmpty then scala.List(Unset) else
       manifest.integration.stdlib.sortBy: integration =>
         (integration.rank.or(Long.MaxValue), integration.id.s)
@@ -154,14 +154,14 @@ case class Buildpath(releases: List[LiraManifest]):
 
   // A pin is how a consumer states a preference the manifests cannot imply (§13.3): the named
   // release takes the named integration, the remaining releases their canonical choices.
-  def resolve(universe: Text, pins: List[(Text, Text)] = List()): Assignment raises LiraError =
+  def resolve(universe: Text, pins: List[(Text, Text)] = List()): Assignment raises Lira.Error =
     val chosen = releases.stdlib.sortBy(_.module.s).map: manifest =>
       val pinned = pins.stdlib.find(_(0) == manifest.module).map(_(1))
 
       val options: scala.List[Optional[Text]] = pinned match
         case scala.Some(id) =>
           if !manifest.integration.stdlib.exists(_.id == id)
-          then abort(LiraError(Reason.BadIntegration(t"the pin names undeclared $id")))
+          then abort(Lira.Error(Reason.BadIntegration(t"the pin names undeclared $id")))
           scala.List(id)
 
         case _ => candidates(manifest)
@@ -171,7 +171,7 @@ case class Buildpath(releases: List[LiraManifest]):
 
         // Because the choices are independent, a failure is always one release's: there is no
         // combination to report, only the module none of whose integrations hold.
-        case _ => abort(LiraError(Reason.NoAssignment(manifest.module)))
+        case _ => abort(Lira.Error(Reason.NoAssignment(manifest.module)))
 
     Assignment(List.from(chosen))
 
@@ -184,7 +184,7 @@ case class Buildpath(releases: List[LiraManifest]):
   // Spans are taken on trust here, because they are not decidable from one manifest: proving one
   // requires atomizing the candidate's payload, so it is a publish-time check a registry makes
   // across two releases (§16), not something buildpath validation can redo from manifests alone.
-  private def requirementMet(dependency: LiraManifest.Dependency, candidate: LiraManifest)
+  private def requirementMet(dependency: Lira.Manifest.Dependency, candidate: Lira.Manifest)
   :   Boolean =
 
     Lineage.contains(candidate.lineage, dependency.api)
@@ -192,13 +192,13 @@ case class Buildpath(releases: List[LiraManifest]):
 
   // Whether one release's dependencies hold under one choice of its integration: rules 4 and 5,
   // as a predicate rather than a diagnosis. `audit` reports which rule failed and why.
-  private def satisfies(universe: Text, manifest: LiraManifest, integration: Optional[Text])
+  private def satisfies(universe: Text, manifest: Lira.Manifest, integration: Optional[Text])
   :   Boolean =
 
     manifest.dependency.stdlib.forall: dependency =>
       if !dependency.applies(universe, integration) then true else
         apply(dependency.module) match
-          case candidate: LiraManifest =>
+          case candidate: Lira.Manifest =>
             requirementMet(dependency, candidate)
             && dependency.build.let(Blob.compare(_, candidate.payload.hash) == 0).or(true)
 
@@ -208,11 +208,11 @@ case class Buildpath(releases: List[LiraManifest]):
   // (L111) and pairwise-disjoint `owns` claims (L112). Host contracts are exempt from rules 2–3
   // (hosts.md §8): a contract describes an environment and contributes no namespace claims and
   // no resources, so one mistakenly placed among the releases must not clash with anything.
-  private def structural(): Unit raises LiraError =
+  private def structural(): Unit raises Lira.Error =
     val all = releases.stdlib
 
     all.groupBy(_.module).foreach: (module, group) =>
-      if group.size > 1 then abort(LiraError(Reason.DuplicateModule(module)))
+      if group.size > 1 then abort(Lira.Error(Reason.DuplicateModule(module)))
 
     val libraries = all.filter { manifest => !manifest.hostContract }
 
@@ -226,26 +226,26 @@ case class Buildpath(releases: List[LiraManifest]):
           val two = right(1).s
 
           if one == two || one.startsWith(two + ".") || two.startsWith(one + ".")
-          then abort(LiraError(Reason.NamespaceClash(left(1))))
+          then abort(Lira.Error(Reason.NamespaceClash(left(1))))
 
     // L126: `export` and `track` paths are pairwise disjoint across modules, so a classpath-style
     // reference resolves to exactly one module. `scan` directories are exempt — cross-module
     // aggregation under a shared directory is precisely their purpose.
     val named = libraries.flatMap: manifest =>
       manifest.resource.stdlib
-        . filter(_.mode != LiraManifest.ResourceMode.Scan)
+        . filter(_.mode != Lira.Manifest.ResourceMode.Scan)
         . map: resource => (manifest.module, resource.path.text)
 
     named.groupBy(_(1)).foreach: (path, group) =>
-      if group.map(_(0)).distinct.size > 1 then abort(LiraError(Reason.ResourceClash(path)))
+      if group.map(_(0)).distinct.size > 1 then abort(Lira.Error(Reason.ResourceClash(path)))
 
   // Closure (L113) and satisfaction (L114) under one assignment, reporting the precise rule that
   // fails. `resolve` answers only whether *some* assignment works; this says why a given one does
   // not, which is what a diagnostic needs.
   private def audit(universe: Text, joins: List[Text], assignment: Assignment)
-  :   List[LiraAdvisory] raises LiraError =
+  :   List[Lira.Advisory] raises Lira.Error =
 
-    val advisories = scala.collection.mutable.ArrayBuffer[LiraAdvisory]()
+    val advisories = scala.collection.mutable.ArrayBuffer[Lira.Advisory]()
 
     releases.stdlib.foreach: manifest =>
       val served = serving(universe, manifest.module)
@@ -253,32 +253,32 @@ case class Buildpath(releases: List[LiraManifest]):
       manifest.dependency.stdlib.foreach: dependency =>
         if dependency.applies(served, assignment(manifest.module)) then
           val candidate = apply(dependency.module) match
-            case candidate: LiraManifest => candidate
+            case candidate: Lira.Manifest => candidate
 
             case _ =>
-              abort(LiraError(Reason.AbsentDependency(dependency.module)))
+              abort(Lira.Error(Reason.AbsentDependency(dependency.module)))
 
           // Rule 4's serves clause: a join edge to a universe the target does not include, or
           // to content the candidate does not offer, fails closure exactly as an absent module
           // does (§13.2, §13.3).
           dependency.serves.let: target =>
             if target != universe && !joins.stdlib.contains(target)
-            then abort(LiraError(Reason.AbsentDependency(dependency.module)))
+            then abort(Lira.Error(Reason.AbsentDependency(dependency.module)))
 
             if !candidate.section.stdlib.exists(_.realm == target)
-            then abort(LiraError(Reason.AbsentDependency(dependency.module)))
+            then abort(Lira.Error(Reason.AbsentDependency(dependency.module)))
 
           if !requirementMet(dependency, candidate)
-          then abort(LiraError(Reason.Unsatisfiable(dependency.module)))
+          then abort(Lira.Error(Reason.Unsatisfiable(dependency.module)))
 
           dependency.build.let: build =>
             if Blob.compare(build, candidate.payload.hash) != 0
-            then abort(LiraError(Reason.Unsatisfiable(dependency.module)))
+            then abort(Lira.Error(Reason.Unsatisfiable(dependency.module)))
 
           // The decorative version hint has no authority; disagreement is advisory.
           dependency.version.let: hint =>
             candidate.version.let: actual =>
-              if hint != actual then advisories += LiraAdvisory.VersionMismatch(hint, actual)
+              if hint != actual then advisories += Lira.Advisory.VersionMismatch(hint, actual)
 
     List.from(advisories)
 
@@ -314,14 +314,14 @@ case class Buildpath(releases: List[LiraManifest]):
   def hostRequirements
     ( universe:   Text,
       assignment: Assignment,
-      contracts:  List[LiraManifest],
+      contracts:  List[Lira.Manifest],
       atoms:      Text => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
       used:       Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset } )
-  :   Unit raises LiraError =
+  :   Unit raises Lira.Error =
 
     contracts.stdlib.foreach: contract =>
       if !contract.hostContract
-      then abort(LiraError(Reason.NotHostContract(contract.module)))
+      then abort(Lira.Error(Reason.NotHostContract(contract.module)))
 
     selected(universe, assignment).foreach: section =>
       section.requires.stdlib.foreach: requirement =>
@@ -329,7 +329,7 @@ case class Buildpath(releases: List[LiraManifest]):
         // libraries is a category error, checkable wherever that module's manifest is in hand.
         apply(requirement.module).let: release =>
           if !release.hostContract
-          then abort(LiraError(Reason.NotHostContract(requirement.module)))
+          then abort(Lira.Error(Reason.NotHostContract(requirement.module)))
 
         val named = contracts.stdlib.find(_.module == requirement.module)
 
@@ -346,7 +346,7 @@ case class Buildpath(releases: List[LiraManifest]):
         . or(false)
 
         if !byLineage && !bySpanning
-        then abort(LiraError(Reason.UnsatisfiedRequirement(requirement.module)))
+        then abort(Lira.Error(Reason.UnsatisfiedRequirement(requirement.module)))
 
   // §13.3 validity for one universe, with the assignment that establishes it. Diamond
   // dependencies resolve by construction: requirements on two snapshots of one module are
@@ -371,11 +371,11 @@ case class Buildpath(releases: List[LiraManifest]):
     ( universe:  Text,
       joins:     List[Text]         = List(),
       pins:      List[(Text, Text)] = List(),
-      contracts: List[LiraManifest] = List(),
+      contracts: List[Lira.Manifest] = List(),
       atoms:     Text => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
       used:      Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
       profiles:  EcosystemProfile.Registry = EcosystemProfile.Registry(List()) )
-  :   (Assignment, List[LiraAdvisory]) raises LiraError =
+  :   (Assignment, List[Lira.Advisory]) raises Lira.Error =
 
     structural()
 
@@ -392,14 +392,14 @@ case class Buildpath(releases: List[LiraManifest]):
         val details = profile.coherence(releases).stdlib
 
         if !details.isEmpty
-        then abort(LiraError(Reason.ProfileViolated(id, Text(details.map(_.s).mkString("; ")))))
+        then abort(Lira.Error(Reason.ProfileViolated(id, Text(details.map(_.s).mkString("; ")))))
 
     val required = requiredContracts(universe, assignment)
 
     if contracts.stdlib.isEmpty then
       if required.stdlib.isEmpty then (assignment, advisories)
       else
-        val pending = List(LiraAdvisory.HostPending(required))
+        val pending = List(Lira.Advisory.HostPending(required))
         (assignment, List.from(advisories.stdlib ++ pending.stdlib))
     else
       hostRequirements(universe, assignment, contracts, atoms, used)
@@ -409,9 +409,9 @@ case class Buildpath(releases: List[LiraManifest]):
     ( universe:  Text,
       joins:     List[Text]         = List(),
       pins:      List[(Text, Text)] = List(),
-      contracts: List[LiraManifest] = List(),
+      contracts: List[Lira.Manifest] = List(),
       atoms:     Text => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
       used:      Data => Optional[scala.collection.immutable.Set[Text]] = { _ => Unset },
       profiles:  EcosystemProfile.Registry = EcosystemProfile.Registry(List()) )
-  :   List[LiraAdvisory] raises LiraError =
+  :   List[Lira.Advisory] raises Lira.Error =
     resolved(universe, joins, pins, contracts, atoms, used, profiles)(1)

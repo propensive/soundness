@@ -45,7 +45,7 @@ object Tmux:
     import logging.silentLogging
 
     mitigate:
-      case ExecError(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
+      case guillotine.Exec.Error(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
 
     . protect:
         keypresses.foreach:
@@ -64,7 +64,7 @@ object Tmux:
     import logging.silentLogging
 
     mitigate:
-      case ExecError(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
+      case guillotine.Exec.Error(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
 
     . protect:
         sh"tmux resize-window -t ${tmux.id} -x $width -y $height".exec[Unit]()
@@ -73,7 +73,7 @@ object Tmux:
     import logging.silentLogging
 
     mitigate:
-      case ExecError(_, _, _)   => TmuxError(TmuxError.Reason.SessionDied)
+      case guillotine.Exec.Error(_, _, _)   => TmuxError(TmuxError.Reason.SessionDied)
       case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
 
     . protect:

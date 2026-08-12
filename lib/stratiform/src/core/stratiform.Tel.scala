@@ -79,7 +79,7 @@ object Tel extends Tel2:
   // `source.open[Tel](Read & Write)` parses on entry, offers the §22.2
   // machine operations on the handle, and writes the document back on
   // normal scope close when it was mutated (or unconditionally with
-  // `TelFlag.Force`). Takes priority over `Tel2.telViewOpenable`
+  // `Tel.Flag.Force`). Takes priority over `Tel2.telViewOpenable`
   // whenever the source is also writable.
   given telOpenable: [source]
   =>  ( readable: (source is Readable to Tel)^,
@@ -1055,7 +1055,6 @@ object Tel extends Tel2:
   // position.
   object Type:
     import Tel.Error.Reason
-    import Tels.*
 
     // Record an E2xx/E3xx validation error and continue with `continuation` —
     // the §19.5 `IgnoreErroneousNode` recovery: discard the offending node and
@@ -1115,7 +1114,7 @@ object Tel extends Tel2:
           children.each(validateElement(_, registry))
 
           elementType match
-            case s: Struct =>
+            case s: Tels.Struct =>
               s.validators.each: name =>
                 registry(Tel.Validator.Request.Struct
                          ( name, element.asInstanceOf[Tel.Element.Node] ))
@@ -1127,15 +1126,15 @@ object Tel extends Tel2:
 
             case _ => ()
 
-    private def resolveType(t: Type, schema: Tels): Type raises Tel.Error =
+    private def resolveType(t: Tels.Type, schema: Tels): Tels.Type raises Tel.Error =
       t match
-        case Reference(name) =>
+        case Tels.Reference(name) =>
           schema.records.find(_.name == name) match
-            case Some(record) => Struct(record.members, record.validators)
+            case Some(record) => Tels.Struct(record.members, record.validators)
 
             case None =>
               schema.scalars.find(_.name == name) match
-                case Some(scalarDef) => Scalar(scalarDef.validators)
+                case Some(scalarDef) => Tels.Scalar(scalarDef.validators)
 
                 case None =>
                   schema.selects.find(_.name == name) match
@@ -1147,9 +1146,9 @@ object Tel extends Tel2:
     private case class KeywordEntry
       ( flatIndex: Int,
         ordinal:   Int,
-        entryType: Type,
-        member:    Member,
-        variant:   Optional[Variant] = Unset )
+        entryType: Tels.Type,
+        member:    Tels.Member,
+        variant:   Optional[Tels.Variant] = Unset )
 
     // Builds a map from keyword Text → KeywordEntry where `flatIndex`
     // is the **flat keyword index** per BinTEL §5: each Field
@@ -1161,7 +1160,7 @@ object Tel extends Tel2:
     // index in `parent.members`: all variants of one SelectRef share
     // it, which is what lets them interleave under the §20.2 step 4c
     // contiguity rule.
-    private def keywordMap(parent: Struct, schema: Tels)
+    private def keywordMap(parent: Tels.Struct, schema: Tels)
     :   Map[Text, KeywordEntry] raises Tel.Error =
 
       val builder = scala.collection.mutable.LinkedHashMap.empty[Text, KeywordEntry]
@@ -1174,7 +1173,7 @@ object Tel extends Tel2:
             builder(f.keyword) = KeywordEntry(flatIdx, idx, f.fieldType, f)
             flatIdx += 1
 
-          case s: SelectRef =>
+          case s: Tels.SelectRef =>
             val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
               abort(Tel.Error(Reason.UnresolvedReference))
 
@@ -1190,74 +1189,74 @@ object Tel extends Tel2:
 
             flatIdx += selectDef.variants.length
 
-          case _: Exclude => ()
+          case _: Tels.Exclude => ()
 
         idx += 1
 
       Map.of(builder.toMap)
 
-    private def atomAssignable(member: Member, schema: Tels): Boolean raises Tel.Error =
+    private def atomAssignable(member: Tels.Member, schema: Tels): Boolean raises Tel.Error =
       member match
         case f: Tels.Field =>
           resolveType(f.fieldType, schema) match
-            case _: Scalar => true
-            case Flag      => true
+            case _: Tels.Scalar => true
+            case Tels.Flag      => true
             case _         => false
 
-        case s: SelectRef =>
+        case s: Tels.SelectRef =>
           val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
             abort(Tel.Error(Reason.UnresolvedReference))
 
           selectDef.variants.forall: v =>
             resolveType(v.variantType, schema) match
-              case Flag => true
+              case Tels.Flag => true
               case _    => false
 
-        case _: Exclude => false
+        case _: Tels.Exclude => false
 
-    private def selectDefinitionOf(select: SelectRef, schema: Tels)
-    :   SelectDefinition raises Tel.Error =
+    private def selectDefinitionOf(select: Tels.SelectRef, schema: Tels)
+    :   Tels.SelectDefinition raises Tel.Error =
 
       schema.selects.find(_.name == select.reference).getOrElse:
         abort(Tel.Error(Reason.UnresolvedReference))
 
     // Effective polarity per §20: `required` unless declared `Loose`.
-    private def requiredOf(member: Member): Boolean = member match
-      case f: Tels.Field => f.required != Polarity.Loose
-      case s: SelectRef  => s.required != Polarity.Loose
-      case _: Exclude    => false
+    private def requiredOf(member: Tels.Member): Boolean = member match
+      case f: Tels.Field => f.required != Tels.Polarity.Loose
+      case s: Tels.SelectRef  => s.required != Tels.Polarity.Loose
+      case _: Tels.Exclude    => false
 
-    private def repeatableOf(member: Member): Boolean = member match
-      case f: Tels.Field => f.repeatable == Polarity.Loose
-      case s: SelectRef  => s.repeatable == Polarity.Loose
-      case _: Exclude    => false
+    private def repeatableOf(member: Tels.Member): Boolean = member match
+      case f: Tels.Field => f.repeatable == Tels.Polarity.Loose
+      case s: Tels.SelectRef  => s.repeatable == Tels.Polarity.Loose
+      case _: Tels.Exclude    => false
 
     // Flag-shaped per §20.2 step 3a: a Field resolving to Flag, or a
     // SelectRef all of whose variants resolve to Flag.
-    private def flagShaped(member: Member, schema: Tels): Boolean raises Tel.Error =
+    private def flagShaped(member: Tels.Member, schema: Tels): Boolean raises Tel.Error =
       member match
         case f: Tels.Field =>
           resolveType(f.fieldType, schema) match
-            case Flag => true
+            case Tels.Flag => true
             case _    => false
 
-        case s: SelectRef => atomAssignable(s, schema)
-        case _: Exclude   => false
+        case s: Tels.SelectRef => atomAssignable(s, schema)
+        case _: Tels.Exclude   => false
 
-    private def keywordMatches(member: Member, text: Text, schema: Tels)
+    private def keywordMatches(member: Tels.Member, text: Text, schema: Tels)
     :   Boolean raises Tel.Error =
 
       member match
         case f: Tels.Field => f.keyword == text
-        case s: SelectRef  => selectDefinitionOf(s, schema).variants.exists(_.keyword == text)
-        case _: Exclude    => false
+        case s: Tels.SelectRef  => selectDefinitionOf(s, schema).variants.exists(_.keyword == text)
+        case _: Tels.Exclude    => false
 
     // Track both the member position (`pos` in parent.members) and the
     // running flat keyword index (`flatPos`) — Tel.Element.keywordIndex
     // uses flat positions per BinTEL §5.
     private def assignAtoms
       ( atoms:  Array[Tel.Atom]^{},
-       parent: Struct,
+       parent: Tels.Struct,
        schema: Tels )
     :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
 
@@ -1266,11 +1265,11 @@ object Tel extends Tel2:
       var flatPos = 0
       var i = 0
 
-      def flatWidthOf(member: Member): Int = member match
+      def flatWidthOf(member: Tels.Member): Int = member match
         case _: Tels.Field => 1
-        case _: Exclude    => 0
+        case _: Tels.Exclude    => 0
 
-        case s: SelectRef =>
+        case s: Tels.SelectRef =>
           schema.selects.find(_.name == s.reference) match
             case Some(selectDef) => selectDef.variants.length
             case None            => 0
@@ -1291,7 +1290,7 @@ object Tel extends Tel2:
           val member = parent.members.readUnchecked(pos)
 
           val skippable = member match
-            case _: Exclude => true
+            case _: Tels.Exclude => true
 
             case _ =>
               !requiredOf(member)
@@ -1318,18 +1317,18 @@ object Tel extends Tel2:
             parent.members.readUnchecked(pos) match
               case f: Tels.Field =>
                 resolveType(f.fieldType, schema) match
-                  case s: Scalar =>
+                  case s: Tels.Scalar =>
                     results += Tel.Element.Value(flatPos, s, atomText)
 
-                    if f.repeatable != Polarity.Loose then
+                    if f.repeatable != Tels.Polarity.Loose then
                       flatPos += 1
                       pos += 1
 
-                  case Flag =>
+                  case Tels.Flag =>
                     if atomText == f.keyword then
-                      results += Tel.Element.Node(flatPos, Flag, Array.empty)
+                      results += Tel.Element.Node(flatPos, Tels.Flag, Array.empty)
 
-                      if f.repeatable != Polarity.Loose then
+                      if f.repeatable != Tels.Polarity.Loose then
                         flatPos += 1
                         pos += 1
                     else
@@ -1339,14 +1338,14 @@ object Tel extends Tel2:
 
                   case _ => () // unreachable behind `atomAssignable`
 
-              case s: SelectRef =>
+              case s: Tels.SelectRef =>
                 val selectDef = selectDefinitionOf(s, schema)
 
                 selectDef.variants.readable.zipWithIndex.find(_._1.keyword == atomText) match
                   case Some((_, variantOffset)) =>
-                    results += Tel.Element.Node(flatPos + variantOffset, Flag, Array.empty)
+                    results += Tel.Element.Node(flatPos + variantOffset, Tels.Flag, Array.empty)
 
-                    if s.repeatable != Polarity.Loose then
+                    if s.repeatable != Tels.Polarity.Loose then
                       flatPos += selectDef.variants.length
                       pos += 1
 
@@ -1355,7 +1354,7 @@ object Tel extends Tel2:
                     // required all-Flag SelectRef. Recovery drops the atom.
                     recoverNode(Reason.AtomVariantUnmatched)(())
 
-              case _: Exclude => () // consumed by the skip scan
+              case _: Tels.Exclude => () // consumed by the skip scan
 
           i += 1
 
@@ -1363,7 +1362,7 @@ object Tel extends Tel2:
 
     private def assignChildren
       ( compounds: Array[Tel.Compound]^{},
-       parent:    Struct,
+       parent:    Tels.Struct,
        schema:    Tels,
        depth:     Int )
     :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
@@ -1412,7 +1411,7 @@ object Tel extends Tel2:
       Array.from(results)
 
     private def applyConstraints
-      ( parent:        Struct,
+      ( parent:        Tels.Struct,
         atomElements:  Array[Tel.Element]^{},
         childElements: Array[Tel.Element]^{},
         schema:        Tels )
@@ -1422,11 +1421,11 @@ object Tel extends Tel2:
       results ++= atomElements.readable
       results ++= childElements.readable
 
-      def flatWidth(member: Member): Int = member match
+      def flatWidth(member: Tels.Member): Int = member match
         case _: Tels.Field => 1
-        case _: Exclude    => 0
+        case _: Tels.Exclude    => 0
 
-        case s: SelectRef =>
+        case s: Tels.SelectRef =>
           schema.selects.find(_.name == s.reference) match
             case Some(sd) => sd.variants.length
             case None     => 0
@@ -1460,7 +1459,7 @@ object Tel extends Tel2:
               Tel.Focus(base.prepend(f.keyword))
             }):
               resolveType(f.fieldType, schema) match
-                case s: Scalar => f.default match
+                case s: Tels.Scalar => f.default match
                   case t: Text => results += Tel.Element.Value(flatStart, s, t)
                   case _       => recoverNode(Reason.RequiredMemberAbsent)(())
 
@@ -1471,7 +1470,7 @@ object Tel extends Tel2:
             if !repeatableOf(f) && fillCount > 1
             then recoverNode(Reason.NonRepeatableTooMany)(())
 
-          case s: SelectRef =>
+          case s: Tels.SelectRef =>
             // §20.2 step 5b: defaults exist only on Scalar Fields, so an
             // absent required SelectRef is always E307.
             if requiredOf(s) && fillCount == 0
@@ -1480,7 +1479,7 @@ object Tel extends Tel2:
             if !repeatableOf(s) && fillCount > 1
             then recoverNode(Reason.NonRepeatableTooMany)(())
 
-          case _: Exclude => ()
+          case _: Tels.Exclude => ()
 
         flatStart += width
         memberIdx += 1
@@ -1499,14 +1498,14 @@ object Tel extends Tel2:
       val resolved = resolveType(entry.entryType, schema)
 
       resolved match
-        case s: Struct =>
+        case s: Tels.Struct =>
           val atomElements = assignAtoms(compound.atoms, s, schema)
           val childCompounds: Array[Tel.Compound]^{} = compound.children.bind(_.compounds)
           val childElements = assignChildren(childCompounds, s, schema, depth + 1)
           val allElements = applyConstraints(s, atomElements, childElements, schema)
           Tel.Element.Node(entry.flatIndex, s, allElements)
 
-        case s: Scalar =>
+        case s: Tels.Scalar =>
           // §20.2 step 1: a Scalar-typed compound is a leaf with at most one
           // atom (of any presentation form) and no compound children. Extra
           // atoms are E302 and children are E301; recovery keeps the first
@@ -1525,15 +1524,15 @@ object Tel extends Tel2:
 
           Tel.Element.Value(entry.flatIndex, s, text)
 
-        case Flag =>
+        case Tels.Flag =>
           if compound.atoms.nonEmpty || compound.children.nonEmpty then
             recoverNode(Reason.FlagWithContent)(())
 
-          Tel.Element.Node(entry.flatIndex, Flag, Array.empty)
+          Tel.Element.Node(entry.flatIndex, Tels.Flag, Array.empty)
 
-        case _: Reference =>
+        case _: Tels.Reference =>
           recoverNode(Reason.UnresolvedReference):
-            Tel.Element.Node(entry.flatIndex, Flag, Array.empty)
+            Tel.Element.Node(entry.flatIndex, Tels.Flag, Array.empty)
 
   // Validator infrastructure per §21 of the TEL specification.
   object Validator:
@@ -6284,6 +6283,13 @@ object Tel extends Tel2:
     ( if span.vacant then m"the TEL document is invalid because $reason"
       else m"the TEL document is invalid at ${Tel.Error.describe(span)} because $reason" )
 
+  // TelFlag → Tel.Flag
+  // Flags for `open[Tel]`.
+  enum Flag:
+    // Serialize and write back on scope close even when no mutation was
+    // applied: a canonicalizing rewrite of the source.
+    case Force
+
   // TelHandle/TelOpenable/TelViewOpenable → Tel.Handle/Tel.Openable/Tel.ViewOpenable
   // Scoped machine editing of a TEL source through aperture's `Openable`:
   // `source.open[Tel](Read & Write) { handle ?=> ... }` parses the source on
@@ -6438,11 +6444,11 @@ object Tel extends Tel2:
   extends aperture.Openable:
     type Self = source
     type Form = Tel
-    type Operand = TelFlag
+    type Operand = Tel.Flag
     type Result = Handle
 
     def open[grants <: Grant, result]
-      ( value: source, mode: Mode granting grants, flags: List[TelFlag] )
+      ( value: source, mode: Mode granting grants, flags: List[Tel.Flag] )
       ( block: ((Handle & Granting[grants])^) ?=> result )
     :   result =
 
@@ -6453,7 +6459,7 @@ object Tel extends Tel2:
       // exception skips it — and only when the document was mutated or the
       // `Force` flag asks for a canonicalizing rewrite. TEL text is
       // UTF-8-encoded by specification, independent of any ambient encoder.
-      if mode.atoms.has(Write) && (handle.dirty0 || flags.has(TelFlag.Force)) then
+      if mode.atoms.has(Write) && (handle.dirty0 || flags.has(Tel.Flag.Force)) then
         val bytes: Data =
           Array.unsafeFrozen(handle.current0.show.s.getBytes(StandardCharsets.UTF_8).nn)
 
@@ -6468,11 +6474,11 @@ object Tel extends Tel2:
   extends aperture.Openable:
     type Self = source
     type Form = Tel
-    type Operand = TelFlag
+    type Operand = Tel.Flag
     type Result = Handle
 
     def open[grants <: Grant, result]
-      ( value: source, mode: Mode granting grants, flags: List[TelFlag] )
+      ( value: source, mode: Mode granting grants, flags: List[Tel.Flag] )
       ( block: ((Handle & Granting[grants])^) ?=> result )
     :   result =
 

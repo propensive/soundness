@@ -36,8 +36,7 @@ export
   galilei
   . { accessed, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
       created, CreateFlag, CreateNonexistentParents, Creation, D, delete,
-      DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, DirectoryHandle,
-      DirectoryOpenable, Dos, Drive, Entry,
+      DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, Dos, Drive, Entry,
       entry, executable, Explorable, existent, Fifo, file, File, FileOpenable,
       FilesystemAttribute, FilesystemBackend,
       Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, Linux, Local,

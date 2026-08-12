@@ -669,35 +669,35 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_ == List(t"[↯SN-892.4] the hostname is not valid because a DNS label cannot be empty"))
 
     suite(m"MAC Address tests"):
-      import MacAddressError.Reason.*
+      import MacAddress.Error.Reason.*
 
       test(m"Test simple MAC address"):
         t"01-23-45-ab-cd-ef".as[MacAddress]
       . assert(_ == MacAddress(1251004370415L))
 
       test(m"Check MAC address with 5 groups"):
-        capture[MacAddressError](t"01-23-ab-cd-ef".as[MacAddress])
-      . assert(_ == MacAddressError(WrongGroupCount(5)))
+        capture[MacAddress.Error](t"01-23-ab-cd-ef".as[MacAddress])
+      . assert(_ == MacAddress.Error(WrongGroupCount(5)))
 
       test(m"Check MAC address with 7 groups"):
-        capture[MacAddressError](t"01-23-45-67-ab-cd-ef".as[MacAddress])
-      . assert(_ == MacAddressError(WrongGroupCount(7)))
+        capture[MacAddress.Error](t"01-23-45-67-ab-cd-ef".as[MacAddress])
+      . assert(_ == MacAddress.Error(WrongGroupCount(7)))
 
       test(m"Check MAC address with short group"):
-        capture[MacAddressError](t"01-23-45-6-ab-cd".as[MacAddress])
-      . assert(_ == MacAddressError(WrongGroupLength(3, 1)))
+        capture[MacAddress.Error](t"01-23-45-6-ab-cd".as[MacAddress])
+      . assert(_ == MacAddress.Error(WrongGroupLength(3, 1)))
 
       test(m"Check MAC address with long group"):
-        capture[MacAddressError](t"01-23-45-67-ab-cde".as[MacAddress])
-      . assert(_ == MacAddressError(WrongGroupLength(5, 3)))
+        capture[MacAddress.Error](t"01-23-45-67-ab-cde".as[MacAddress])
+      . assert(_ == MacAddress.Error(WrongGroupLength(5, 3)))
 
       test(m"Check MAC address with empty group"):
-        capture[MacAddressError](t"01-23-45--ab-cd".as[MacAddress])
-      . assert(_ == MacAddressError(WrongGroupLength(3, 0)))
+        capture[MacAddress.Error](t"01-23-45--ab-cd".as[MacAddress])
+      . assert(_ == MacAddress.Error(WrongGroupLength(3, 0)))
 
       test(m"Check MAC address with non-hex character"):
-        capture[MacAddressError](t"01-23-45-6g-ab-cd".as[MacAddress])
-      . assert(_ == MacAddressError(NotHex(3, t"6g")))
+        capture[MacAddress.Error](t"01-23-45-6g-ab-cd".as[MacAddress])
+      . assert(_ == MacAddress.Error(NotHex(3, t"6g")))
 
       test(m"Show a MAC address"):
         t"01-23-45-ab-cd-ef".as[MacAddress].show

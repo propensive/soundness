@@ -194,7 +194,7 @@ package httpBackends:
       val defaultPort: Int = if secure then 443 else 80
       val host: Host = parsed.host.or(abort(ConnectError(Dns)))
       val port: Int = parsed.authority.lay(defaultPort)(_.port.or(defaultPort))
-      val tcpPort: TcpPort = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
+      val tcpPort: Tcp.Port = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
       val origin: Text = t"${host.show}:$port"
 
       // An origin-form URL has an empty path; its request target is `/`.
@@ -225,7 +225,7 @@ private def repackage(response: Http.Response, data: Data): Http.Response =
 // The pooled, kept-alive plaintext HTTP/1.1 exchange (see `httpBackends.native`).
 private def plaintextExchange
   ( host:    Host,
-    tcpPort: TcpPort,
+    tcpPort: Tcp.Port,
     origin:  Text,
     target:  Text,
     method:  Http.Method,

@@ -1187,7 +1187,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val twins = t"interface A { attribute long x; };\ninterface B { attribute long x; };"
         val atoms = atomize(twins).atoms.stdlib
 
-        atoms.map { atom => LiraHash.text(atom.valueHash) }.distinct.size
+        atoms.map { atom => Lira.Hash.text(atom.valueHash) }.distinct.size
         == atoms.size
       . assert(identity)
 
@@ -1195,8 +1195,8 @@ object Tests extends Suite(m"Xenophile tests"):
         val one = atomize(t"interface U { attribute (long or DOMString) x; };")
         val two = atomize(t"interface U { attribute (DOMString or long) x; };")
 
-        one.atoms.stdlib.map { atom => LiraHash.text(atom.valueHash) }
-        == two.atoms.stdlib.map { atom => LiraHash.text(atom.valueHash) }
+        one.atoms.stdlib.map { atom => Lira.Hash.text(atom.valueHash) }
+        == two.atoms.stdlib.map { atom => Lira.Hash.text(atom.valueHash) }
       . assert(identity)
 
       test(m"an unsupported construct is an atomization error"):
@@ -1303,7 +1303,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val hashes = { (source: Text) =>
           atomize(source).atoms.stdlib
           . filter(_.key == t"a:pkg/two#get")
-          . map { atom => LiraHash.text(atom.valueHash) }
+          . map { atom => Lira.Hash.text(atom.valueHash) }
         }
 
         hashes(direct) == hashes(renamed)
@@ -1365,7 +1365,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
     def hashOf(source: Text, key: Text): Optional[Text] =
       atomize(source).atoms.stdlib.find(_.key == key)
-      . map { atom => LiraHash.text(atom.valueHash) }.getOrElse(Unset)
+      . map { atom => Lira.Hash.text(atom.valueHash) }.getOrElse(Unset)
 
     def grade(before: Text, after: Text): Grade =
       Grade.between(List(atomize(before)), List(atomize(after)))
@@ -1506,14 +1506,14 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(identity)
 
       test(m"atomization is deterministic"):
-        val one = atomize(t"kotlin.Pair").atoms.stdlib.map { a => LiraHash.text(a.valueHash) }
-        val two = atomize(t"kotlin.Pair").atoms.stdlib.map { a => LiraHash.text(a.valueHash) }
+        val one = atomize(t"kotlin.Pair").atoms.stdlib.map { a => Lira.Hash.text(a.valueHash) }
+        val two = atomize(t"kotlin.Pair").atoms.stdlib.map { a => Lira.Hash.text(a.valueHash) }
         one == two
       . assert(identity)
 
       test(m"identically-shaped members of different classes do not alias"):
         val atoms = atomize(t"kotlin.Pair", t"kotlin.Triple").atoms.stdlib
-        atoms.map { atom => LiraHash.text(atom.valueHash) }.distinct.size == atoms.size
+        atoms.map { atom => Lira.Hash.text(atom.valueHash) }.distinct.size == atoms.size
       . assert(identity)
 
       test(m"the registry claims kotlin classes ahead of the opaque fallback"):

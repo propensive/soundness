@@ -95,13 +95,13 @@ object Tasty extends Discipline:
 
         val atoms = scalaAtoms.map: atom =>
           val references = atom.references.map:
-            case ScalaReference.Own(key)     => AtomReference.Own(key)
-            case ScalaReference.Foreign(key) => AtomReference.Foreign(key)
+            case ScalaReference.Own(key)     => Atom.Reference.Own(key)
+            case ScalaReference.Foreign(key) => Atom.Reference.Foreign(key)
 
           Atom
             ( atom.key,
-              if atom.replaceable then AtomClass.Replaceable else AtomClass.Rigid,
-              LiraHash(LiraHash.Domain.Atom(id), atom.encoding),
+              if atom.replaceable then Atom.Class.Replaceable else Atom.Class.Rigid,
+              Lira.Hash(Lira.Hash.Domain.Atom(id), atom.encoding),
               references )
 
         Atomization.of(id, atoms)

@@ -961,7 +961,7 @@ object stagedInternal:
   // step for opaque keywords — and parse the chosen variant in place. Extra
   // entries after the variant are skipped (the AST path reads only the
   // first child compound); an unknown keyword aborts through the splice
-  // site's `Tactic[VariantError]`, exactly as `delegate` does.
+  // site's `Tactic[Variant.Error]`, exactly as `delegate` does.
   private[stratiform] def sumBody[sum: Type](reader: Expr[TelReader], indent: Expr[Int])
     (using Quotes)
   :   Expr[sum] =
@@ -1000,8 +1000,8 @@ object stagedInternal:
 
       if index == arity then
         '{
-          provide[Tactic[wisteria.VariantError]]:
-            abort(wisteria.VariantError[sum]($reader.keywordText))
+          provide[Tactic[wisteria.Variant.Error]]:
+            abort(wisteria.Variant.Error[sum]($reader.keywordText))
         }
       else variants(index)(1).asType match
         case '[type variantType <: sum; variantType] =>

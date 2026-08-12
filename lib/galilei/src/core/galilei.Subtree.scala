@@ -43,7 +43,7 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-// The common upper bound of every `DirectoryHandle`'s fresh plane. Serpentine givens defined
+// The common upper bound of every `Directory.Handle`'s fresh plane. Serpentine givens defined
 // generically over `plane <: Subtree` supply the naming rules for paths on any handle's plane,
 // so `dir / "name"` validates its names at compile time: in particular, `.` and `..` are
 // inadmissible, making escape from an opened directory inexpressible rather than checked.
@@ -66,14 +66,14 @@ object Subtree:
   // and `delete`), which would otherwise be tried first and fail without falling through.
   extension [plane <: Subtree](path: Path on plane)
     transparent inline def contents[result]
-      ( using handle: ((DirectoryHandle { type Plane = plane }) & Granting[Grant.Read])^ )
+      ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Read])^ )
       ( using filesystem: handle.Under is Filesystem )
       ( using readable: (Data is Readable to result)^, tactic: Tactic[IoError] )
     :   result =
       readResolved[handle.Under, result](handle.resolve(path))
 
     transparent inline def overwrite[content](content: content)
-      ( using handle: ((DirectoryHandle { type Plane = plane }) & Granting[Grant.Write])^ )
+      ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Write])^ )
       ( using filesystem: handle.Under is Filesystem )
       ( using streamable: (content is Streamable by Data over Credit)^ )
       ( using tactic: Tactic[IoError] )
@@ -81,14 +81,14 @@ object Subtree:
       writeResolved(handle.resolve(path), content)
 
     transparent inline def extant()
-      ( using handle: ((DirectoryHandle { type Plane = plane }) & Granting[Grant.Read])^ )
+      ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Read])^ )
       ( using filesystem: handle.Under is Filesystem )
       ( using backend: FilesystemBackend on handle.Under )
     :   Boolean =
       existsResolved(handle.resolve(path))
 
     transparent inline def entries
-      ( using handle: ((DirectoryHandle { type Plane = plane }) & Granting[Grant.Read])^ )
+      ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Read])^ )
       ( using filesystem: handle.Under is Filesystem )
       ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[IoError] )
     :   Chain[Path on plane] =
@@ -96,7 +96,7 @@ object Subtree:
         path.child(child.name)(using Unsafe)
 
     transparent inline def remove()
-      ( using handle: ((DirectoryHandle { type Plane = plane }) & Granting[Grant.Write])^ )
+      ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Write])^ )
       ( using filesystem: handle.Under is Filesystem )
       ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[IoError] )
     :   Unit =

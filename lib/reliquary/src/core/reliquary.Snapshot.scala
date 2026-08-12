@@ -44,14 +44,14 @@ object Snapshot:
     val hashes = atomizations.stdlib.flatMap(_.atoms.stdlib).map(_.valueHash)
 
     val distinct = scala.collection.mutable.LinkedHashMap[Text, Data]()
-    hashes.foreach: hash => distinct.getOrElseUpdate(LiraHash.text(hash), hash)
+    hashes.foreach: hash => distinct.getOrElseUpdate(Lira.Hash.text(hash), hash)
 
     val sorted = distinct.values.toList.sortWith: (a, b) => Blob.compare(a, b) < 0
-    val buffer = Array[Byte](sorted.size * LiraHash.size)
+    val buffer = Array[Byte](sorted.size * Lira.Hash.size)
     var offset = 0
 
     sorted.foreach: hash =>
-      System.arraycopy(Array.unsafeJvm(hash), 0, buffer.raw, offset, LiraHash.size)
-      offset += LiraHash.size
+      System.arraycopy(Array.unsafeJvm(hash), 0, buffer.raw, offset, Lira.Hash.size)
+      offset += Lira.Hash.size
 
-    LiraHash(LiraHash.Domain.Snapshot, Array.freeze(buffer))
+    Lira.Hash(Lira.Hash.Domain.Snapshot, Array.freeze(buffer))

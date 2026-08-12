@@ -38,18 +38,18 @@ import gossamer.*
 import vacuous.*
 import zephyrine.*
 
-// Parses a CSS Value Definition Syntax (VDS) string — a property's value grammar
-// from the MDN dataset — into a `Syntax` tree. Combinator precedence, from
+// Parses a CSS Value Definition Css.Syntax (VDS) string — a property's value grammar
+// from the MDN dataset — into a `Css.Syntax` tree. Combinator precedence, from
 // loosest to tightest, is: `|`, `||`, `&&`, juxtaposition, then the multipliers
 // (`?`, `*`, `+`, `{m,n}`, `#`, `!`) which bind to the preceding term.
 private[cataclysm] object SyntaxParser:
-  def parse(text: Text)(using Tactic[Css.Error]): Syntax =
+  def parse(text: Text)(using Tactic[Css.Error]): Css.Syntax =
     import zephyrine.lineation.linefeedChars
 
     Parser(Cursor[Text](text)).document()
 
   private class Parser(cursor: Cursor[Text, ?])(using Tactic[Css.Error]):
-    def document(): Syntax =
+    def document(): Css.Syntax =
       ws()
       val result = oneOf()
       ws()
@@ -81,8 +81,8 @@ private[cataclysm] object SyntaxParser:
 
     // ── combinators, loosest to tightest ────────────────────────────────────
 
-    private def oneOf(): Syntax =
-      val acc = scala.collection.mutable.ListBuffer[Syntax](anyOf())
+    private def oneOf(): Css.Syntax =
+      val acc = scala.collection.mutable.ListBuffer[Css.Syntax](anyOf())
       ws()
 
       while cursor.peek == '|' do
@@ -91,10 +91,10 @@ private[cataclysm] object SyntaxParser:
         acc.append(anyOf())
         ws()
 
-      if acc.size == 1 then acc.head else Syntax.OneOf(List.of(acc.toList))
+      if acc.size == 1 then acc.head else Css.Syntax.OneOf(List.of(acc.toList))
 
-    private def anyOf(): Syntax =
-      val acc = scala.collection.mutable.ListBuffer[Syntax](allOf())
+    private def anyOf(): Css.Syntax =
+      val acc = scala.collection.mutable.ListBuffer[Css.Syntax](allOf())
       ws()
 
       while pipePipe() do
@@ -104,10 +104,10 @@ private[cataclysm] object SyntaxParser:
         acc.append(allOf())
         ws()
 
-      if acc.size == 1 then acc.head else Syntax.AnyOf(List.of(acc.toList))
+      if acc.size == 1 then acc.head else Css.Syntax.AnyOf(List.of(acc.toList))
 
-    private def allOf(): Syntax =
-      val acc = scala.collection.mutable.ListBuffer[Syntax](sequence())
+    private def allOf(): Css.Syntax =
+      val acc = scala.collection.mutable.ListBuffer[Css.Syntax](sequence())
       ws()
 
       while cursor.peek == '&' do
@@ -117,10 +117,10 @@ private[cataclysm] object SyntaxParser:
         acc.append(sequence())
         ws()
 
-      if acc.size == 1 then acc.head else Syntax.AllOf(List.of(acc.toList))
+      if acc.size == 1 then acc.head else Css.Syntax.AllOf(List.of(acc.toList))
 
-    private def sequence(): Syntax =
-      val acc = scala.collection.mutable.ListBuffer[Syntax]()
+    private def sequence(): Css.Syntax =
+      val acc = scala.collection.mutable.ListBuffer[Css.Syntax]()
       ws()
 
       while termStart() do
@@ -128,7 +128,7 @@ private[cataclysm] object SyntaxParser:
         ws()
 
       if acc.isEmpty then unexpected()
-      if acc.size == 1 then acc.head else Syntax.Sequence(List.of(acc.toList))
+      if acc.size == 1 then acc.head else Css.Syntax.Sequence(List.of(acc.toList))
 
     // A `|` that is not the start of a `||`.
     private def pipePipe(): Boolean =
@@ -140,7 +140,7 @@ private[cataclysm] object SyntaxParser:
 
     // ── a term: a primary followed by zero or more multipliers ───────────────
 
-    private def term(): Syntax =
+    private def term(): Css.Syntax =
       var result = primary()
       var continue = true
 
@@ -157,34 +157,34 @@ private[cataclysm] object SyntaxParser:
 
       result
 
-    private def once(term: Syntax): Syntax =
+    private def once(term: Css.Syntax): Css.Syntax =
       cursor.advance()
-      Syntax.Repeated(term, 0, 1, false)
+      Css.Syntax.Repeated(term, 0, 1, false)
 
-    private def star(term: Syntax): Syntax =
+    private def star(term: Css.Syntax): Css.Syntax =
       cursor.advance()
-      Syntax.Repeated(term, 0, Unset, false)
+      Css.Syntax.Repeated(term, 0, Unset, false)
 
-    private def plus(term: Syntax): Syntax =
+    private def plus(term: Css.Syntax): Css.Syntax =
       cursor.advance()
-      Syntax.Repeated(term, 1, Unset, false)
+      Css.Syntax.Repeated(term, 1, Unset, false)
 
-    private def mandatory(term: Syntax): Syntax =
+    private def mandatory(term: Css.Syntax): Css.Syntax =
       cursor.advance()
-      Syntax.Mandatory(term)
+      Css.Syntax.Mandatory(term)
 
-    private def hash(term: Syntax): Syntax =
+    private def hash(term: Css.Syntax): Css.Syntax =
       cursor.advance()
 
       if cursor.peek == '{' then
         val (min, max) = range()
-        Syntax.Repeated(term, min, max, true)
+        Css.Syntax.Repeated(term, min, max, true)
       else
-        Syntax.Repeated(term, 1, Unset, true)
+        Css.Syntax.Repeated(term, 1, Unset, true)
 
-    private def braces(term: Syntax): Syntax =
+    private def braces(term: Css.Syntax): Css.Syntax =
       val (min, max) = range()
-      Syntax.Repeated(term, min, max, false)
+      Css.Syntax.Repeated(term, min, max, false)
 
     private def range(): (Int, Optional[Int]) =
       eat('{')
@@ -212,7 +212,7 @@ private[cataclysm] object SyntaxParser:
 
     // ── primaries ────────────────────────────────────────────────────────────
 
-    private def primary(): Syntax =
+    private def primary(): Css.Syntax =
       val datum = cursor.peek
 
       if datum == '<' then angle()
@@ -222,11 +222,11 @@ private[cataclysm] object SyntaxParser:
       else if datum == ',' then literal(',')
       else identOrFunction()
 
-    private def literal(char: Char): Syntax =
+    private def literal(char: Char): Css.Syntax =
       cursor.advance()
-      Syntax.Literal(char.toString.nn.tt)
+      Css.Syntax.Literal(char.toString.nn.tt)
 
-    private def group(): Syntax =
+    private def group(): Css.Syntax =
       cursor.advance()
       ws()
       val inner = oneOf()
@@ -234,7 +234,7 @@ private[cataclysm] object SyntaxParser:
       eat(']')
       inner
 
-    private def quoted(): Syntax =
+    private def quoted(): Css.Syntax =
       cursor.advance()
       val buf = java.lang.StringBuilder()
 
@@ -243,9 +243,9 @@ private[cataclysm] object SyntaxParser:
         cursor.advance()
 
       eat('\'')
-      Syntax.Literal(buf.toString.nn.tt)
+      Css.Syntax.Literal(buf.toString.nn.tt)
 
-    private def identOrFunction(): Syntax =
+    private def identOrFunction(): Css.Syntax =
       val name = readName()
 
       if cursor.peek == '(' then
@@ -254,9 +254,9 @@ private[cataclysm] object SyntaxParser:
         val body = oneOf()
         ws()
         eat(')')
-        Syntax.Function(name, body)
+        Css.Syntax.Function(name, body)
       else
-        Syntax.Keyword(name)
+        Css.Syntax.Keyword(name)
 
     private def readName(): Text =
       val buf = java.lang.StringBuilder()
@@ -270,26 +270,26 @@ private[cataclysm] object SyntaxParser:
 
     // ── `<type>`, `<type [bounds]>` and `<'property'>` ────────────────────────
 
-    private def angle(): Syntax =
+    private def angle(): Css.Syntax =
       cursor.advance()
       ws()
       if cursor.peek == '\'' then propertyRef() else typeRef()
 
-    private def propertyRef(): Syntax =
+    private def propertyRef(): Css.Syntax =
       cursor.advance()
       val name = readUntil('\'')
       eat('\'')
       ws()
       eat('>')
-      Syntax.Property(name)
+      Css.Syntax.Property(name)
 
-    private def typeRef(): Syntax =
+    private def typeRef(): Css.Syntax =
       val name = typeName()
       ws()
       val bounds = if cursor.peek == '[' then bracketBounds() else Unset
       ws()
       eat('>')
-      Syntax.Type(name, bounds)
+      Css.Syntax.Type(name, bounds)
 
     private def typeBoundary(datum: Datum): Boolean =
       datum.isEnd || whitespaceChar(datum) || datum == '[' || datum == '>'
