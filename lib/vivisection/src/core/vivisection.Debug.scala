@@ -30,141 +30,61 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    telekinesis.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    vivisection.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import scala.caps
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    // turbulence.Tests() - deadlock
-    ()
+import anticipation.*
+import contingency.*
+import proscenium.*
+
+// A live debug session: the capability lent inside `target.session { debug ?=> … }`. Sealed
+// (`ExclusiveCapability`), so it cannot outlive the session that lends it. Its operations are the
+// programmer-facing surface over the wire-level `Jdwp.Connection` it wraps.
+class Debug private[vivisection] (connection: Jdwp.Connection) extends caps.ExclusiveCapability:
+  def version()(using Tactic[Debugger.Error]): Jdwp.Version = connection.version()
+  def threads()(using Tactic[Debugger.Error]): List[ThreadId] = connection.allThreads()
+  def suspend()(using Tactic[Debugger.Error]): Unit = connection.suspendAll()
+  def resume()(using Tactic[Debugger.Error]): Unit = connection.resumeAll()
+
+  def suspend(thread: ThreadId)(using Tactic[Debugger.Error]): Unit =
+    connection.suspendThread(thread)
+
+  def resume(thread: ThreadId)(using Tactic[Debugger.Error]): Unit =
+    connection.resumeThread(thread)
+
+  def name(thread: ThreadId)(using Tactic[Debugger.Error]): Text = connection.threadName(thread)
+
+  def frames(thread: ThreadId)(using Tactic[Debugger.Error]): List[(FrameId, Jdwp.Location)] =
+    connection.frames(thread, 0, connection.frameCount(thread))
+
+  // The event stream: every composite the (suspending or running) VM sends back. This is the
+  // primitive; a caller drains it and reacts, or awaits a particular event. Reading it consumes
+  // the events as they arrive.
+  def events: Chain[Jdwp.Event.Composite] = connection.composites.lazyList
+
+  // Sets a breakpoint at a resolved location, returning the request id used to `clear` it. The VM
+  // reports each hit as a `Breakpoint` event on `events`, suspending per the given policy.
+  def breakpoint(location: Jdwp.Location, policy: Jdwp.SuspendPolicy = Jdwp.SuspendPolicy.All)
+    ( using Tactic[Debugger.Error] )
+  :   Int =
+
+    val modifiers: List[Jdwp.Modifier] = List(Jdwp.Modifier.LocationOnly(location))
+    connection.eventRequestSet(Jdwp.EventKind.Breakpoint, policy, modifiers)
+
+  // Requests a single step on a thread; the VM reports it as a `SingleStep` event on `events`.
+  def step
+    ( thread: ThreadId,
+      depth:  Jdwp.StepDepth = Jdwp.StepDepth.Over,
+      size:   Jdwp.StepSize = Jdwp.StepSize.Line )
+    ( using Tactic[Debugger.Error] )
+  :   Int =
+
+    val modifiers: List[Jdwp.Modifier] =
+      List(Jdwp.Modifier.Step(thread, size, depth), Jdwp.Modifier.Count(1))
+
+    connection.eventRequestSet(Jdwp.EventKind.SingleStep, Jdwp.SuspendPolicy.EventThread, modifiers)
+
+  // Cancels a previously-set event request.
+  def clear(kind: Jdwp.EventKind, request: Int)(using Tactic[Debugger.Error]): Unit =
+    connection.eventRequestClear(kind, request)

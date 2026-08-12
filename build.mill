@@ -786,7 +786,8 @@ object soundness extends Toolchain:
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
     anthology.lira,
     anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`,
-    delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks):
+    delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks,
+    vivisection.core):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
@@ -3061,6 +3062,22 @@ object vicarious extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
+object vivisection extends Library:
+  // A from-scratch JDWP debugger client: coaxial sockets carry the wire protocol, guillotine
+  // launches the debuggee, digression supplies SMAP-aware line translation, and parasite runs
+  // the reply-correlation and event-dispatch pumps.
+  object core extends Component(coaxial.jvm, guillotine.core, aperture.core, digression.core,
+      parasite.core, zephyrine.core, gossamer.core):
+    override def scalaJs = false // debugs JVMs over TCP; depends on JVM-only `guillotine`
+    override def scalaNative = false // JDWP is a JVM protocol; forks JVMs via `guillotine`
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The offline suite drives the protocol against a scripted fake VM over an in-memory duplex;
+  // the live suite launches real JVMs under the jdwp agent.
+  object test extends Tests(core, eucalyptus.core, ambience.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
 object wisteria extends Library:
   object core extends Component(contingency.core, vicarious.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
@@ -3278,7 +3295,8 @@ val allLibraries: Seq[Library] = Seq(
   proscenium, punctuation, quantitative, querencia, reliquary, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
-  ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xenophile, xylophone,
+  ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, vivisection,
+  wisteria, xenophile, xylophone,
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
 )
 
