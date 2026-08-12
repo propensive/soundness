@@ -57,3 +57,34 @@ class Debug private[vivisection] (connection: Jdwp.Connection) extends caps.Excl
 
   def frames(thread: ThreadId)(using Tactic[Debugger.Error]): List[(FrameId, Jdwp.Location)] =
     connection.frames(thread, 0, connection.frameCount(thread))
+
+  // The event stream: every composite the (suspending or running) VM sends back. This is the
+  // primitive; a caller drains it and reacts, or awaits a particular event. Reading it consumes
+  // the events as they arrive.
+  def events: Chain[Jdwp.Event.Composite] = connection.composites.lazyList
+
+  // Sets a breakpoint at a resolved location, returning the request id used to `clear` it. The VM
+  // reports each hit as a `Breakpoint` event on `events`, suspending per the given policy.
+  def breakpoint(location: Jdwp.Location, policy: Jdwp.SuspendPolicy = Jdwp.SuspendPolicy.All)
+    ( using Tactic[Debugger.Error] )
+  :   Int =
+
+    val modifiers: List[Jdwp.Modifier] = List(Jdwp.Modifier.LocationOnly(location))
+    connection.eventRequestSet(Jdwp.EventKind.Breakpoint, policy, modifiers)
+
+  // Requests a single step on a thread; the VM reports it as a `SingleStep` event on `events`.
+  def step
+    ( thread: ThreadId,
+      depth:  Jdwp.StepDepth = Jdwp.StepDepth.Over,
+      size:   Jdwp.StepSize = Jdwp.StepSize.Line )
+    ( using Tactic[Debugger.Error] )
+  :   Int =
+
+    val modifiers: List[Jdwp.Modifier] =
+      List(Jdwp.Modifier.Step(thread, size, depth), Jdwp.Modifier.Count(1))
+
+    connection.eventRequestSet(Jdwp.EventKind.SingleStep, Jdwp.SuspendPolicy.EventThread, modifiers)
+
+  // Cancels a previously-set event request.
+  def clear(kind: Jdwp.EventKind, request: Int)(using Tactic[Debugger.Error]): Unit =
+    connection.eventRequestClear(kind, request)

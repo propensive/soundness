@@ -240,3 +240,39 @@ object Tests extends Suite(m"Vivisection tests"):
           debug.version()
 
     . assert(_.vmName == t"FakeVM")
+
+    test(m"a session sets a breakpoint and reads the hit from the event stream"):
+      supervise:
+        val (vmSide, clientSide) = Duplex.pair()
+
+        val vm = async:
+          val incoming = vmSide.source.toProgression.stdlib.iterator
+          vmSide.send(Stream(incoming.next()))
+
+          val idSizes = Jdwp.Packet.decode(incoming.next())
+          val idBody = Jdwp.Writer(sizes).int(8).int(8).int(8).int(8).int(8).data
+          vmSide.send(Stream(Jdwp.Packet.reply(idSizes.id, 0, idBody)))
+
+          // The EventRequest.Set for the breakpoint; reply with request id 1.
+          val request = Jdwp.Packet.decode(incoming.next())
+          vmSide.send(Stream(Jdwp.Packet.reply(request.id, 0, Jdwp.Writer(sizes).int(1).data)))
+
+          // A Composite command (command set 64, command 100) carrying one Breakpoint event.
+          val event = Jdwp.Writer(sizes)
+          event.byte(Jdwp.SuspendPolicy.All.id)
+          event.int(1)
+          event.byte(Jdwp.EventKind.Breakpoint.id.toByte)
+          event.int(1)
+          event.objectId(Jdwp.Ref(5L))
+          event.location(location)
+          vmSide.send(Stream(Jdwp.Packet.command(999, 64, 100, event.data)))
+
+        Debugger(Attach(clientSide)).session: debug ?=>
+          debug.breakpoint(location)
+          debug.events.stdlib.head.events
+
+    . assert:
+        case Jdwp.Event.Breakpoint(request, thread, where) :: Nil =>
+          request == 1 && thread.long == 5L && where == location
+        case _ =>
+          false
