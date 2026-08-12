@@ -37,7 +37,17 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import threading.platformThreading
 import probates.awaitProbate
+import logging.silentLogging
 import strategies.throwUnsafely
+
+case class Attach(duplex: Duplex)
+
+object Attach:
+  given connectable: (Attach is Connectable) = new Connectable:
+    type Self = Attach
+    def connect(attach: Attach, interface: Optional[MacAddress]): Duplex = attach.duplex
+
+  given showable: Attach is Showable = _ => t"attach"
 
 object Tests extends Suite(m"Vivisection tests"):
   def run(): Unit =
@@ -205,3 +215,28 @@ object Tests extends Suite(m"Vivisection tests"):
 
     . assert(_.vmName == t"FakeVM")
 
+    test(m"a full attach session connects, handshakes and reads the VM version"):
+      supervise:
+        val (vmSide, clientSide) = Duplex.pair()
+
+        val vm = async:
+          val incoming = vmSide.source.toProgression.stdlib.iterator
+          vmSide.send(Stream(incoming.next()))
+
+          val idSizes = Jdwp.Packet.decode(incoming.next())
+          val idBody = Jdwp.Writer(sizes).int(8).int(8).int(8).int(8).int(8).data
+          vmSide.send(Stream(Jdwp.Packet.reply(idSizes.id, 0, idBody)))
+
+          val version = Jdwp.Packet.decode(incoming.next())
+
+          val versionBody =
+            Jdwp.Writer(sizes).string(t"a fake VM").int(1).int(8).string(t"1.8.0")
+              .string(t"FakeVM").data
+
+          vmSide.send(Stream(Jdwp.Packet.reply(version.id, 0, versionBody)))
+
+        // A fake attach target whose `Connectable` hands back the client end of the pair.
+        Debugger(Attach(clientSide)).session: debug ?=>
+          debug.version()
+
+    . assert(_.vmName == t"FakeVM")

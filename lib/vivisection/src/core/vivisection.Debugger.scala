@@ -32,17 +32,53 @@
                                                                                                   */
 package vivisection
 
-import anticipation.*
-import fulminate.*
-import proscenium.*
-import urticose.*
+import scala.caps
 
-// An attach target: a debuggee JVM already listening for a JDWP connection on a TCP endpoint. The
-// `Sessional` that connects, exchanges the handshake and lends a `Debug` is still to come — opening
-// the duplex from within a lent session runs into the capture-checking shape the coaxial TCP
-// `Connectable` given imposes. Its companion carries the session error type.
+import anticipation.*
+import coaxial.*
+import contingency.*
+import fulminate.*
+import parasite.*
+import proscenium.*
+import spectacular.*
+
+// An attach target: a debuggee JVM already listening for a JDWP connection, wrapping a connectable
+// endpoint (typically an `Endpoint[TcpPort]`). `target.session { debug ?=> … }` connects, exchanges
+// the handshake, negotiates identifier sizes, and lends a `Debug` for the block. Its companion
+// carries the session error type.
 object Debugger:
-  def apply(endpoint: Endpoint[TcpPort]): Debugger = new Debugger(endpoint)
+  def apply[endpoint](endpoint: endpoint): Debugger[endpoint] = new Debugger(endpoint)
+
+  // Generic over the connectable endpoint, so the socket `Connectable` is resolved at the caller's
+  // site through the context bound — the only shape whose capture set lines up with `.duplex`. (A
+  // `Connectable` captured as a field, rebuilt from a captured `Online`, does not: the `Online`
+  // cannot flow into the empty capture set `.duplex` requires.)
+  class Sessional[endpoint: {Connectable, Showable}]
+    ( using monitor:    Monitor,
+            probate:    Probate,
+            asyncError: Tactic[Async.Error],
+            loggable:   (SocketEvent is Loggable)^,
+            tactic:     Tactic[Error],
+            note:       Diagnostics )
+  extends aperture.Sessional:
+    type Self = Debugger[endpoint]
+    type Result = Debug^
+
+    def session[result](target: Debugger[endpoint])(lambda: (session: Debug^) ?=> result)
+    :   result =
+
+      target.endpoint.duplex: duplex =>
+        Jdwp.Connection.exchange(duplex): connection => lambda(using new Debug(connection))
+
+  given sessional: [endpoint: {Connectable, Showable}]
+  =>  ( monitor:    Monitor,
+        probate:    Probate,
+        asyncError: Tactic[Async.Error],
+        loggable:   (SocketEvent is Loggable)^,
+        tactic:     Tactic[Error],
+        note:       Diagnostics )
+  =>  ( Sessional[endpoint]^{monitor, asyncError, loggable, tactic, caps.any} ) =
+    Sessional[endpoint]()
 
   object Error:
     object Reason:
@@ -136,4 +172,4 @@ object Debugger:
   case class Error(reason: Error.Reason, detail: Text)(using Diagnostics)
   extends fulminate.Error(601, reason.number)(m"the JDWP action failed because $reason: $detail")
 
-class Debugger(val endpoint: Endpoint[TcpPort])
+class Debugger[endpoint](val endpoint: endpoint)
