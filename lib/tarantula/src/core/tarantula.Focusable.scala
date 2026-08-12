@@ -57,7 +57,9 @@ object Focusable:
   given tag: [tag <: Tag] => tag is Focusable = Focusable(t"tag name", _.label)
   given domId: Name[DomId] is Focusable = Focusable(t"css selector", v => t"#$v")
 
-  given cssClass: ClassList is Focusable =
+  // Polymorphic for the same reason as `tag`: `ClassList["checkbox"]()` has the refined type
+  // `ClassList of "checkbox"`, which an instance fixed at `ClassList` cannot match.
+  given cssClass: [classes <: ClassList] => classes is Focusable =
     Focusable(t"css selector", _.classes.stdlib.join(t".", t".", t""))
 
 trait Focusable extends Typeclass:

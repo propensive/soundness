@@ -2090,22 +2090,56 @@ profanity recipes:
   capturing stdio evidence (an `Extent` is an `Stdio` and now captures its canvas).
 
 tarantula recipes:
-- ★ FIRST USE OF THE `uses` CLAUSE (fork feature): `case class Server(...) extends
-  caps.ExclusiveCapability uses Navigator.this:` — declares the outer reference of `stop()`.
-  Syntax: after the extends parents, before the colon (see fork tests
-  tests/pos-custom-args/captures/nested-classes-tracked.scala).
-- `WebDriver`/`Session`/`Element` are PURE ID-holders over the server's port; the live
-  resource is the `Server` capability, confined to `session` (launched there, stopped in its
-  finally). Capability-classing Session/Element was attempted and REVERTED: constructing
-  fresh capabilities inside `map(Element(_))` lambdas and passing a fresh `launch` result
-  into a fresh constructor param both hit unbridgeable fresh-root mismatches ("any² not
-  visible from any"). A leaked Session is a dangling ID over a stopped server; full handle
-  tracking waits on guillotine Job classification (D3/8b).
-- `launch` de-sugared (`logs` → explicit `using ExecEvent is Loggable`) with the VALUE param
-  LAST (`(using ...)(port: Int): Server^`): a fresh result under a trailing using clause is
-  invisible outside the implicit application. `session` likewise de-sugared.
+- SUPERSEDED (2026-08, the `Sessional` rewrite). The `uses Navigator.this` clause is gone with
+  `Navigator`, so the fork feature now has NO use anywhere in the repository — worth knowing
+  before anyone assumes it is exercised. The `launch` recipe (value param last, to keep a fresh
+  result visible outside a trailing using clause) went with it. What follows replaces the rest.
+- The RESOLUTION of the reverted capability-classing: the session IS capability-classed, and the
+  elements are NOT. `WebDriverSession` is TOP-LEVEL, so it has no outer reference and needs no
+  `uses` clause, and it extends `caps.ExclusiveCapability`; `WebElement` stays a pure case class,
+  because elements are built inside `map` lambdas where a fresh capability per construction
+  cannot be collected into a `List` ("any² not visible from any"). Nothing is lost: every
+  operation on an element takes the session as a `using` param, so it is inert without it.
+- NOT `caps.Stateful`, and no `update def`: `update` only buys a guarantee when a method returns
+  a value BORROWING the receiver (`HttpSession#fetch`, `ScalacSession#compile`). Every WebDriver
+  command is a complete round trip yielding pure data, so `update` would serialize nothing while
+  breaking `session.elements(sel).each(_.click())`. Revisit only if a genuinely borrowing
+  sub-handle (a live Window/Frame) is added.
+- The fresh `Job` is a LOCAL of `Sessional#session` — forked there, aborted in the `finally`
+  there — and never a field of the handle, so no freshly-minted capability crosses a constructor
+  boundary. (guillotine `Job` is now `caps.ExclusiveCapability`, so the D3/8b gate is cleared;
+  the design simply does not need to track it.)
+- ★★ `Json#as` UNDER SEPARATION CHECKING. `as` takes the `Tactic[JsonError]` both directly and
+  inside the capture set of the decodable it summons, so a CAPABILITY tactic — which is what
+  `raises` and `Tactic#contramap` produce — reads as two overlapping uses (the Foci/tracks
+  cluster). This is why the module previously imported `strategies.throwUnsafely`, whose tactic
+  is PURE and so never overlaps. The fix is one sealed one-liner per reply shape in the
+  companion (`text`, `boolean`, `rect`, `texts`, `cookie`, `cookies`, `timeouts`, `failure`),
+  each `raises JsonError` and each wrapped in `caps.unsafe.unsafeAssumeSeparate`. A GENERIC
+  `decode[value]` does NOT work: taking the decodable as a parameter moves its summon to the
+  call site, where the tactic is a field of the session again and the overlap returns.
+- Sub-protocol errors (connect, JSON, media type, Base64, UTF-8) are `Tactic#contramap`ped onto
+  `WebDriverError` in the session body, so the module raises ONE error type. Each lambda must
+  read `diagnostics` through a LOCAL val, never the field: reading the field puts the whole
+  session in the lambda's hidden set, which overlaps the `tactic` it is applied to. For the same
+  reason `malformed` is a free function of the COMPANION, not a method.
+- A translating tactic must not be a FIELD of a class that is not itself a capability: it puts
+  `any` in the instance's own type ("needs to extend Capability"). In `WebDriver.Local.Sessional`
+  the `Tactic[ExecError]` is a local of `session`.
+- A `Sessional` instance's `Self` is INVARIANT, and a case class's synthetic `apply` returns a
+  type refined with each argument's singleton — so `WebDriver(…).session` would never resolve.
+  `WebDriver` is therefore a plain class with a companion `apply` ascribing `: WebDriver`.
+- Both `Sessional` givens are anchored in the companions (`WebDriver.sessional`,
+  `WebDriver.Local.sessional`) rather than exported, so implicit scope finds them with no import
+  and the module adds exactly one type name to the `soundness` package.
+- ★ TYPECLASS `Self` INVARIANCE bit `Focusable` twice, silently: `Tag is Focusable` matched no
+  actual tag (`H1` is a `Tag.Container of "h1" over Phrasing in Whatwg`) and `ClassList is
+  Focusable` matched no actual class list (`ClassList["x"]()` is `ClassList of "x"`). Both are
+  now polymorphic in the refined type. The same invariance made `navigateTo` reject the `url"…"`
+  interpolator's own result (`Url["http"]` vs the instance's `HttpUrl`), fixed by an overload.
 - `Focusable.apply` takes a pure (`->`) focus lambda (all instances are pure selector
-  renderers).
+  renderers). A test `Http.Backend` must likewise be PURE — over a `->` route — because
+  `Http.Backend` is required unadorned by everything that summons one.
 
 surveillance recipes:
 - `Watcher.watch` filters are pure (`Text -> Boolean`) end-to-end — they are built by

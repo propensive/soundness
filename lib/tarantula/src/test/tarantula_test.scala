@@ -191,6 +191,16 @@ object Tests extends Suite(m"Tarantula tests"):
         (json.selectDynamic("using").as[Text], json.value.as[Text])
       . assert(_ == (t"link text", t"Read more"))
 
+      test(m"a class list is located by CSS selector, dot-prefixed"):
+        val json = located(browser.element(ClassList["checkbox"]()))
+        (json.selectDynamic("using").as[Text], json.value.as[Text])
+      . assert(_ == (t"css selector", t".checkbox"))
+
+      test(m"a DOM id is located by CSS selector, hash-prefixed"):
+        val json = located(browser.element(Name[DomId](t"menu")))
+        (json.selectDynamic("using").as[Text], json.value.as[Text])
+      . assert(_ == (t"css selector", t"#menu"))
+
       test(m"a CSS selector is located as a CSS selector"):
         val json = located(browser.element(SelectorList.read(t".menu li")))
         json.selectDynamic("using").as[Text]
