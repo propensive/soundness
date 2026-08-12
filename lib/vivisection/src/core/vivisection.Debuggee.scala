@@ -30,9 +30,111 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-export vivisection.{Jdwp, Debugger, Debuggee, Debug}
+import java.net as jn
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+import scala.caps
+
+import ambience.*
+import anticipation.*, abstractables.durationAbstractable
+import coaxial.*
+import contingency.*
+import fulminate.*
+import gigantism.*
+import gossamer.*
+import guillotine.*
+import parasite.*
+import proscenium.*
+import rudiments.*
+import spectacular.*
+import urticose.*
+import vacuous.*
+
+// A launch target: a JVM to start under the JDWP agent and then debug. `target.session { debug ?=>
+// … }` forks the process with the agent listening, waits for it to bind its port, attaches, and
+// lends a `Debug`; the debuggee is killed when the block ends.
+object Debuggee:
+  private val interval: Long = 50L*1000L*1000L
+  private val attempts: Int = 200
+
+  // A plain-socket readiness probe. With `server=y` the agent binds before `main` runs, so a
+  // successful connect means it is ready to be attached to. The connection is dropped before any
+  // handshake, which the OpenJDK agent tolerates and re-listens after.
+  private def listening(port: Int): Boolean =
+    try
+      val socket = jn.Socket()
+      socket.connect(jn.InetSocketAddress("localhost", port), 200)
+      socket.close()
+      true
+    catch case _: Throwable => false
+
+  class Sessional
+    ( using online:     Online,
+            monitor:    Monitor,
+            probate:    Probate,
+            backend:    SocketBackend,
+            options:    Every[SocketOption.Tcp],
+            asyncError: Tactic[Async.Error],
+            working:    WorkingDirectory,
+            loggable:   (SocketEvent is Loggable)^,
+            exec:       (Exec.Event is Loggable)^,
+            tactic:     Tactic[Debugger.Error],
+            note:       Diagnostics )
+  extends aperture.Sessional:
+    type Self = Debuggee
+    type Result = Debug^
+
+    def session[result](target: Debuggee)(lambda: (session: Debug^) ?=> result): result =
+      given Diagnostics = note
+
+      val launchFailed = Debugger.Error(Debugger.Error.Reason.Disconnected, t"could not launch")
+      val badPort = Debugger.Error(Debugger.Error.Reason.Disconnected, t"the port was invalid")
+      val unresponsive = Debugger.Error(Debugger.Error.Reason.Disconnected, t"never listened")
+
+      given execTactic: (Tactic[Exec.Error]^) = tactic.contramap(_ => launchFailed)
+      given portTactic: (Tactic[Port.Error]^) = tactic.contramap(_ => badPort)
+
+      val job = target.agented.fork[Exit]()
+
+      try
+        def waitFor(remaining: Int): Unit =
+          if listening(target.port) then ()
+          else if remaining <= 0 then abort(unresponsive)
+          else
+            snooze(interval)
+            waitFor(remaining - 1)
+
+        waitFor(attempts)
+
+        // Connected directly (not via `Debugger(endpoint).session`): delegating would rebuild the
+        // socket `Connectable` from the captured `online`, whose capture set `.duplex` rejects.
+        // `connect` returns a plain `Duplex`, so `online` never has to flow into an empty set.
+        val endpoint = Endpoint(t"localhost", Port[Tcp](target.port))
+        val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
+
+        try Jdwp.Connection.exchange(duplex): connection => lambda(using new Debug(connection))
+        finally duplex.close()
+      finally job.abort()
+
+  given sessional: ( online:     Online,
+                     monitor:    Monitor,
+                     probate:    Probate,
+                     backend:    SocketBackend,
+                     options:    Every[SocketOption.Tcp],
+                     asyncError: Tactic[Async.Error],
+                     working:    WorkingDirectory,
+                     loggable:   (SocketEvent is Loggable)^,
+                     exec:       (Exec.Event is Loggable)^,
+                     tactic:     Tactic[Debugger.Error],
+                     note:       Diagnostics )
+  =>  ( Sessional^{online, monitor, asyncError, loggable, exec, tactic, caps.any} ) = Sessional()
+
+case class Debuggee(command: Command, port: Int = 5005, suspended: Boolean = true):
+  // The command with the jdwp agent option inserted just after the executable.
+  private[vivisection] def agented: Command =
+    val wait = if suspended then t"y" else t"n"
+    val flag = t"-agentlib:jdwp=transport=dt_socket,server=y,suspend=$wait,address=*:$port"
+    val args = command.arguments
+
+    Command((args.take(1) ++ (flag +: args.drop(1)))*)
