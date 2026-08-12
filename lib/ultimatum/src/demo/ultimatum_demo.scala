@@ -100,9 +100,8 @@ private def demoLayout: Pane =
   val activity = border():
     stack
       ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Activity")),
-        gauge(Reading(Captioned[Busy](Busy(), t"resolving")), minHeight = 1, maxHeight = 1),
-        gauge(Reading(Captioned[Fraction](Fraction(0.62), t"compiling")), minHeight = 1,
-            maxHeight = 1),
+        gauge(Reading(Captioned(Busy(), t"resolving")), minHeight = 1, maxHeight = 1),
+        gauge(Reading(Captioned(Fraction(0.62), t"compiling")), minHeight = 1, maxHeight = 1),
         gauge(Reading(Reckoning(17, 120)), minHeight = 1, maxHeight = 1),
         gauge(Reading(Series(Sequence(2.0, 5.0, 3.0, 8.0, 6.0, 9.0, 4.0))), minHeight = 1,
             maxHeight = 1),

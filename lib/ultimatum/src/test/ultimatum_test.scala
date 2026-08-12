@@ -1247,32 +1247,29 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a gauge fixture paints its bar into the rectangle it is given"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val flow = FlowExtent(TerminalBoard(10, 1), Rect(0, 0, 10, 1))
-        Gaugeable.Fixture(Reading[Fraction](Fraction(0.3)))(using bars.blockBar).render(flow, false)
+        Gaugeable.Fixture(Reading(Fraction(0.3)))(using bars.blockBar).render(flow, false)
         flow.render
       . assert(_ == t"███░░░░░░░")
 
       test(m"a gauge reports its design's preferred width to the solver"):
-        Gaugeable.Fixture(Reading[Fraction](Fraction(0.5)))(using bars.smoothBar).measure(80)
+        Gaugeable.Fixture(Reading(Fraction(0.5)))(using bars.smoothBar).measure(80)
       . assert(_ == (40, 1))
 
       test(m"a spinner reports a single cell and does not stretch"):
-        Gaugeable.Fixture(Reading[Busy](Busy()))(using spinners.brailleDotsSpinner).measure(80)
+        Gaugeable.Fixture(Reading(Busy()))(using spinners.brailleDotsSpinner).measure(80)
       . assert(_ == (1, 1))
 
       test(m"a gauge is not focusable, so it stays out of the focus cycle"):
-        Gaugeable.Fixture(Reading[Busy](Busy()))(using spinners.brailleDotsSpinner)
+        Gaugeable.Fixture(Reading(Busy()))(using spinners.brailleDotsSpinner)
         . isInstanceOf[Focus]
       . assert(_ == false)
 
       test(m"an updated reading is what the next paint draws"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        // Qualified: this file is `package ultimatum` but imports `soundness.*`, so a bare
-        // `Fraction` is the umbrella's alias, through which the opaque type's purity is not
-        // visible and the assignment would not typecheck.
-        val reading = Reading(ultimatum.Fraction(0.0))
+        val reading = Reading(Fraction(0.0))
         val fixture = Gaugeable.Fixture(reading)(using bars.blockBar)
         val flow = FlowExtent(TerminalBoard(8, 1), Rect(0, 0, 8, 1))
-        reading() = ultimatum.Fraction(0.5)
+        reading() = Fraction(0.5)
         fixture.render(flow, false)
         flow.render
       . assert(_ == t"████░░░░")
@@ -1283,7 +1280,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
            ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"job")),
              Pane.Widget
               ( Sizing(minHeight = 1, maxHeight = 1),
-                Gaugeable.Fixture(Reading[Fraction](Fraction(0.5)))(using bars.blockBar) ) )
+                Gaugeable.Fixture(Reading(Fraction(0.5)))(using bars.blockBar) ) )
       . assert(_ == t"job     \n████░░░░")
 
     suite(m"Meters, sparklines, counters and processions"):
@@ -1447,20 +1444,20 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a caption follows the gauge it labels"):
         import bars.blockBar
-        plain(summon[Captioned[ultimatum.Fraction] is Gaugeable])(Captioned(ultimatum.Fraction(0.5), t"copying"), 12)
+        plain(summon[Captioned[Fraction] is Gaugeable])(Captioned(Fraction(0.5), t"copying"), 12)
       . assert(_ == t"██░░░ copyi…")
 
       // Both degradations compose: the caption is cut to its half-row allowance, and the three
       // cells that leaves the bar are too few to draw one, so it falls through to a figure.
       test(m"a narrow captioned gauge elides the label and degrades the bar"):
         import bars.blockBar
-        plain(summon[Captioned[ultimatum.Fraction] is Gaugeable])(Captioned(ultimatum.Fraction(0.5), t"copying"), 8)
+        plain(summon[Captioned[Fraction] is Gaugeable])(Captioned(Fraction(0.5), t"copying"), 8)
       . assert(_ == t"50% cop…")
 
       test(m"a leading caption precedes the gauge"):
         import bars.blockBar
         import captions.leadingCaption
-        plain(summon[Captioned[ultimatum.Fraction] is Gaugeable])(Captioned(ultimatum.Fraction(0.5), t"go"), 8)
+        plain(summon[Captioned[Fraction] is Gaugeable])(Captioned(Fraction(0.5), t"go"), 8)
       . assert(_ == t"go ██░░░")
 
       test(m"a captioned spinner inherits the spinner's animation period"):
@@ -1485,7 +1482,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         List.of(recorded.toList)
 
       test(m"a layout containing a spinner arms a wake at the design's period"):
-        wakes(gauge(Reading(ultimatum.Busy()))(using spinners.brailleDotsSpinner)).stdlib.headOption
+        wakes(gauge(Reading(Busy()))(using spinners.brailleDotsSpinner)).stdlib.headOption
       . assert(_ == Some(80L))
 
       test(m"a layout of static panels arms no wake at all"):
@@ -1493,12 +1490,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == 0)
 
       test(m"a bar alone does not animate"):
-        wakes(gauge(Reading(ultimatum.Fraction(0.5)))(using bars.smoothBar)).stdlib.length
+        wakes(gauge(Reading(Fraction(0.5)))(using bars.smoothBar)).stdlib.length
       . assert(_ == 0)
 
       test(m"the shortest period wins when several gauges animate"):
-        val fast = gauge(Reading(ultimatum.Busy()))(using spinners.starSpinner)
-        val slow = gauge(Reading(ultimatum.Busy()))(using spinners.toggleSpinner)
+        val fast = gauge(Reading(Busy()))(using spinners.starSpinner)
+        val slow = gauge(Reading(Busy()))(using spinners.toggleSpinner)
         wakes(stack(fast, slow)).stdlib.headOption
       . assert(_ == Some(70L))
 

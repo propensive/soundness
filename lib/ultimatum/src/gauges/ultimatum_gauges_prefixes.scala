@@ -32,29 +32,12 @@
                                                                                                   */
 package ultimatum
 
-import vacuous.*
+import prepositional.*
+import quantitative.*
 
-// A proportion of work completed, in `[0, 1]`: the status a progress bar shows. Clamped on
-// construction, so that no design has to defend against a fraction outside its range, and
-// `Unset` for work whose total is not yet known — which every bar renders as an indeterminate
-// sweep rather than as zero.
-object Fraction:
-  def apply(value: Double): Fraction = if value.isNaN then 0.0 else value.max(0.0).min(1.0)
-
-  def of(done: Long, total: Long): Fraction =
-    if total <= 0 then Fraction(0.0) else Fraction(done.toDouble/total)
-
-  // Work in flight whose total is unknown.
-  val indeterminate: Optional[Fraction] = Unset
-
-  // The default design: the smooth eighth-block bar, which is what a Soundness progress bar has
-  // always looked like. Every candidate bar is one row and says the same thing, so a default is
-  // safe here in a way it is not for a meter or a procession.
-  given gaugeable: Gauging => Fraction is Gaugeable = bars.smoothBar
-
-opaque type Fraction = Double
-
-extension (fraction: Fraction)
-  def value: Double = fraction
-  def percentage: Int = (fraction*100).toInt
-  def complete: Boolean = fraction >= 1.0
+// How a byte quantity is scaled for display. Neither is a default: `1.5 MB` and `1.43 MiB` are the
+// same quantity written under different conventions, and which one is right depends on what is
+// being measured — so the caller picks.
+package informationPrefixes:
+  given binaryBytes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi, Tebi))
+  given decimalBytes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
