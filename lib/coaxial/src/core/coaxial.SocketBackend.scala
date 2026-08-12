@@ -66,7 +66,7 @@ import zephyrine.*
 // user-facing API and stay platform-neutral. Each opaque handle type is threaded back to the
 // backend and never inspected by the API. An operation a backend cannot support (e.g. Unix-domain
 // sockets or TLS on WASI) raises the appropriate error rather than approximating; each backend
-// maps its native failures onto coaxial's `Connection.Error`/`StreamError` vocabulary. `options`
+// maps its native failures onto coaxial's `ConnectionError`/`StreamError` vocabulary. `options`
 // are coaxial's abstract `SocketOption`s, applied by the backend in whatever terms its platform
 // understands (unsupported options are silently skipped).
 trait SocketBackend:
@@ -80,7 +80,7 @@ trait SocketBackend:
 
   // Accept the next incoming connection, blocking until one arrives, as a `Duplex`: the handler
   // reads the request from its `source` and the accept loop writes the response with `send`.
-  def accept(socket: ServerSocket): Duplex raises Connection.Error
+  def accept(socket: ServerSocket): Duplex raises ConnectionError
   def shutdown(socket: ServerSocket): Unit
 
   //── Datagram server (`Bindable` over UDP) ────────────────────────────────────────────────────
@@ -90,9 +90,9 @@ trait SocketBackend:
   :   DatagramSocket
 
   // Block for the next datagram; `reply` sends `data` back to a received packet's `sender`.
-  def receive(socket: DatagramSocket): Packet raises Connection.Error
+  def receive(socket: DatagramSocket): Packet raises ConnectionError
   def reply(socket: DatagramSocket, sender: Ipv4 | Ipv6, port: UdpPort, data: Data)
-  :   Unit raises Connection.Error
+  :   Unit raises ConnectionError
 
   def unbind(socket: DatagramSocket): Unit
 

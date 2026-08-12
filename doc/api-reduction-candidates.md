@@ -5,8 +5,9 @@ and the third pass): 176 renames across 50 libraries so far. This is the working
 the remainder.
 
 - the third pass removed **63** exported multi-word names and added one (`YamlPath`, which
-  had to be exported so its nested error stayed reachable)
-- the tables below now list 387 names across 114 prefix families, plus 237 singletons. A
+  had to be exported so its nested error stayed reachable); the fourth removed eight more
+  and added one (`Css.Syntax`, which had been `@unexported` to dodge a name clash)
+- the tables below now list 384 names across 114 prefix families, plus 234 singletons. A
   direct scan of the `soundness_*` files counts 669 multi-word type-level names; the two do
   not reconcile exactly, because that scan and the tables were extracted by different means.
   Trust the tables for *which* names remain and the scan only for the trend
@@ -61,20 +62,30 @@ work the table never covered:
 
 `BaseLayout` (a supertype, not a satellite — `object Base extends BaseLayout`; note that
 `ProcessRef`, the same shape, nests fine, because there it is a *class* that extends the
-companion member, not the object); `SvgDef` (sealed, so its subtypes are pinned to its file,
-and `LinearGradient` is exported); `SvgId` (opaque type in a package file); `McpError`
-(`object Mcp` already has a nested `Error`); `HpackTable`/`HpackEntry` (capture inference,
-twice); `TarHeader` (capture inference, three times now).
+companion member, not the object); `HpackTable`/`HpackEntry` (capture inference, twice);
+`TarHeader` (capture inference, three times now — and the message is about read-only vs
+exclusive capture sets, not `Array`'s invariance).
 
-Newly blocked in the third pass: `MacAddressError` (the `MacAddress` companion is inside
-`object internal`); `ConnectionError` (coaxial has no `Connection` type, only abstract
-`type Connection` members); `SyntaxMatcher` (cataclysm's `Syntax` is deliberately unexported
-and is a homonym with stenography's); `TlsAcceptance` (JVM-only member of a platform-split
-`Tls`); `TelFlag` (`Tel.Flag` is ambiguous with `Tels.Flag` at every `import Tels.*` site).
+Still blocked: `ConnectionError` (coaxial *does* have a `Connection` type — a case class in
+the **jvm** component — so this is an ordinary R6 block, core to jvm, and not the "no such
+type" the third pass recorded); `SyntaxMatcher` (deferred, not blocked — `Css.Syntax` now exists, so
+`Css.Syntax.Matcher` is available whenever it is wanted); `TlsAcceptance` (JVM-only member
+of a platform-split `Tls`); `TerminalEvent`, `BlockCipherMode` and `BlockCipherPadding` (each
+a taxonomy whose members are separately-exported single-word names — a wider API decision,
+see "Next actions").
 
-No longer reverted: `ZipOpenable`/`ZipDataOpenable` were held to shadow the `Openable` they
-extend. They do — and qualifying the base as `extends aperture.Openable` fixes it, exactly
-as a nested `Error` qualifies `fulminate.Error`. Both are now nested.
+**No longer blocked.** Every one of these was recorded as blocked by an earlier pass and
+turned out not to be; the reasons are in the fourth-pass corrections:
+
+| name | now | what the blocker really was |
+|---|---|---|
+| `SvgDef`, `LinearGradient` | `Svg.Def`, `Svg.LinearGradient` | sealed subtypes move *together* |
+| `SvgId` | `Svg.Id` | an opaque type belongs in the object whose API it serves |
+| `McpError` | `Mcp.Error` | the `Error` occupying the name was dead code |
+| `MacAddressError` | `MacAddress.Error` | a nested companion is reachable if it is exported |
+| `TelFlag` | `Tel.Flag` | an `import Tels.*` that should not have been there |
+| `Syntax` | `Css.Syntax` | an `@unexported` clash the nesting itself resolves |
+| `ZipOpenable`, `ZipDataOpenable` | `Zip.Openable`, `Zip.DataOpenable` | qualify the shadowed base |
 
 ## Remaining names by prefix family
 
@@ -132,13 +143,13 @@ as a nested `Error` qualifies `fulminate.Error`. Both are now nested.
 | `Larceny*` | larceny| 2 | `LarcenyPlugin`, `LarcenyTransformer` |
 | `Leap*` | aviation| 2 | `LeapMode`, `LeapSeconds` |
 | `Line*` | escritoire, profanity, turbulence| 3 | `LineCharset`, `LineEditor`, `LineSeparation` |
-| `Linear*` | denominative, savagery| 3 | `LinearAccessComplexity`, `LinearGradient`, `LinearSizeComplexity` |
+| `Linear*` | denominative, savagery| 2 | `LinearAccessComplexity`, `LinearSizeComplexity` |
 | `Link*` | anthology| 2 | `LinkError`, `LinkEvent` |
 | `Lira*` | anthology, reliquary| 12 | `LiraAdvisory`, `LiraAssembler`, `LiraBundle`, `LiraDelta`, `LiraError`, `LiraHash`, `LiraManifest`, `LiraPayload`, `LiraRealm`, `LiraSchemas`, `LiraTree`, `LiraValidators` |
 | `List*` | embarcadero, proscenium| 9 | `ListContainersRequest`, `ListContainersResponse`, `ListHasAsScala`, `ListImagesRequest`, `ListImagesResponse`, `ListNamespacesRequest`, `ListNamespacesResponse`, `ListTasksRequest`, `ListTasksResponse` |
 | `Local*` | hellenism, urticose| 2 | `LocalClasspath`, `LocalPart` |
 | `Log*` | anticipation, eucalyptus| 2 | `LogPalette`, `LogSink` |
-| `Mac*` | galilei, urticose| 3 | `MacAddress`, `MacAddressError`, `MacOs` |
+| `Mac*` | galilei, urticose| 2 | `MacAddress`, `MacOs` |
 | `Map*` | proscenium| 2 | `MapHasAsJava`, `MapHasAsScala` |
 | `Mathml*` | archimedes| 3 | `MathmlError`, `MathmlParser`, `MathmlReader` |
 | `Metric*` | quantitative| 2 | `MetricPrefix`, `MetricUnit` |
@@ -170,7 +181,7 @@ as a nested `Error` qualifies `fulminate.Error`. Both are now nested.
 | `Table*` | escritoire, phoenicia| 7 | `TableCell`, `TableError`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle`, `TableTag` |
 | `Tar*` | bitumen| 4 | `TarBuilder`, `TarDataOpenable`, `TarHeader`, `TarOpenable` |
 | `Tasty*` | hyperbole| 5 | `TastyDefinition`, `TastyFile`, `TastyPalette`, `TastySymbol`, `TastyTree` |
-| `Tel*` | stratiform| 4 | `TelBlueprint`, `TelFlag`, `TelPath`, `TelReader` |
+| `Tel*` | stratiform| 3 | `TelBlueprint`, `TelPath`, `TelReader` |
 | `Teletype*` | escapade, punctuation| 2 | `TeletypeBuilder`, `TeletypeFormattable` |
 | `Terminal*` | escapade, ethereal, profanity| 5 | `TerminalBoard`, `TerminalEscapes`, `TerminalEvent`, `TerminalInfo`, `TerminalMode` |
 | `Text*` | escapade, escritoire, facsimile, fulminate, gossamer, hieroglyph, honeycomb| 7 | `TextAlignment`, `TextBuilder`, `TextEscapes`, `TextNode`, `TextRun`, `TextSanitizer`, `TextStyle` |
@@ -195,7 +206,7 @@ as a nested `Error` qualifies `fulminate.Error`. Both are now nested.
 | `Workload*` | embarcadero| 3 | `WorkloadGrant`, `WorkloadHandle`, `WorkloadOpenable` |
 | `Xml*` | xylophone| 2 | `XmlReader`, `XmlSchema` |
 
-### Singletons (237)
+### Singletons (234)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
@@ -203,43 +214,43 @@ as a nested `Error` qualifies `fulminate.Error`. Both are now nested.
 `BloomFilter`, `BorderStyle`, `BoundsError`, `BytecodePalette`, `CanonicalCbor`, `CanvasHandle`,
 `CapabilityDiscipline`, `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`,
 `CertificateError`, `ChangeKind`, `ChannelLayout`, `CheckOverflow`, `ClasspathIndex`, `CliEvent`,
-`CollectionConverters`, `ColorDepth`, `CommonFormattable`, `ConnectError`, `ConnectionError`,
-`ContainerConfig`, `CopyAttributes`, `CrLf`, `CtSym`, `CtrlChar`, `DataError`,
-`DecodableManifest`, `DegustationError`, `DereferenceSymlinks`, `DisciplineError`, `DismissError`,
-`DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`, `DummyImplicit`, `EcosystemProfile`,
-`EditorField`, `EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`,
-`EnumerationHasAsScala`, `ErgoError`, `EscapeError`, `EucalyptusGcp`, `ExpectationError`,
-`FastForward`, `FieldIndex`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `FontError`,
-`GapPolicy`, `GarbageCollection`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`,
-`GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
-`InitializationVector`, `InstallError`, `IntercardinalWind`, `InterfaceAddress`, `IpAddressError`,
-`Ipv4Subnet`, `Ipv6Subnet`, `IsinError`, `IteratorHasAsScala`, `JarBuilder`, `JsInvoke`,
-`JsigDiscipline`, `JuxtapositionPalette`, `JvmProfile`, `KeyStore`, `KeystoreError`,
-`KillRequest`, `LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`,
-`LocalhostDevice`, `LongNameFormat`, `LruCache`, `LspSessional`, `ManifestSigning`,
-`MarkdownPalette`, `MathML`, `McpError`, `MediaType`, `MenuField`, `MlDsa`, `MonotonicClock`,
-`MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NotFound`, `NoteRef`, `NumericRange`,
-`OfflineError`, `OffsetCalendar`, `OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`,
-`OperationSize`, `OptionalTactic`, `OrdinalCalendar`, `OtfTag`, `OverflowError`,
-`OverwritePreexisting`, `PanamaInvoke`, `ParseError`, `PartiallyOrdered`, `PcmFlag`, `PdfFile`,
-`PeriodicTable`, `PhysicalState`, `PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`,
-`PojoError`, `PolarGaussian`, `PollingWatcher`, `PositionTracking`, `PosixCommands`, `PrivateKey`,
-`ProcessStatus`, `ProcessingPermit`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`,
-`PublicKey`, `RadioGroup`, `RamFlag`, `RangeError`, `RasterOpenable`, `RectoPanel`,
-`ReferenceError`, `ReflogEntry`, `RemoteError`, `RequestServable`, `ResetMode`, `RetryError`,
-`Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `RpcError`, `RruleError`,
-`SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`, `SelectorList`,
-`SemanticMessage`, `SeqHasAsJava`, `SerializationError`, `ServerError`, `ShaderPlugin`,
-`SiderealDays`, `SignalResponse`, `SimpleTExtractor`, `SolarDay`, `SoundnessHashing`,
-`SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`, `StaticAnnotation`, `SubOp`,
-`SvgDef`, `SymmetricKey`, `SyntaxMatcher`, `TcpPort`, `TemperatureScale`, `TemporaryDirectory`,
-`TestPalette`, `ThemeColor`, `ThrowTactic`, `TimestampError`, `TlsAcceptance`, `ToolchainError`,
-`TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`, `TripleDes`, `TtfTag`,
-`TypescriptDialect`, `UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`,
-`UnitsNames`, `UnsetError`, `UnusedFeature`, `UrlPalette`, `UsedSets`, `UsesBlob`, `ValueToken`,
-`VersionResponse`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`,
-`WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`,
-`WritingBuilder`, `WsSessional`, `XeqConfiguration`, `ZipBuilder`
+`CollectionConverters`, `ColorDepth`, `CommonFormattable`, `ConnectError`, `ContainerConfig`,
+`CopyAttributes`, `CrLf`, `CtSym`, `CtrlChar`, `DataError`, `DecodableManifest`,
+`DegustationError`, `DereferenceSymlinks`, `DisciplineError`, `DismissError`, `DivOp`, `DnsLabel`,
+`DockerEvent`, `DomainSocket`, `DummyImplicit`, `EcosystemProfile`, `EditorField`, `EitherTactic`,
+`EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`, `ErgoError`,
+`EscapeError`, `EucalyptusGcp`, `ExpectationError`, `FastForward`, `FieldIndex`, `FlowExtent`,
+`FluidOunce`, `FoldableRectoPanel`, `FontError`, `GapPolicy`, `GarbageCollection`,
+`GenericHtmlAttribute`, `GithubActions`, `GivensPhase`, `GraphemeBreak`, `GrpcSessional`,
+`HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`, `InitializationVector`,
+`InstallError`, `IntercardinalWind`, `InterfaceAddress`, `IpAddressError`, `Ipv4Subnet`,
+`Ipv6Subnet`, `IsinError`, `IteratorHasAsScala`, `JarBuilder`, `JsInvoke`, `JsigDiscipline`,
+`JuxtapositionPalette`, `JvmProfile`, `KeyStore`, `KeystoreError`, `KillRequest`,
+`LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LocalhostDevice`,
+`LongNameFormat`, `LruCache`, `LspSessional`, `ManifestSigning`, `MarkdownPalette`, `MathML`,
+`MediaType`, `MenuField`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`,
+`NonFatal`, `NotFound`, `NoteRef`, `NumericRange`, `OfflineError`, `OffsetCalendar`,
+`OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`,
+`OrdinalCalendar`, `OtfTag`, `OverflowError`, `OverwritePreexisting`, `PanamaInvoke`,
+`ParseError`, `PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`, `PhysicalState`,
+`PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PojoError`, `PolarGaussian`,
+`PollingWatcher`, `PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessStatus`,
+`ProcessingPermit`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`,
+`RadioGroup`, `RamFlag`, `RangeError`, `RasterOpenable`, `RectoPanel`, `ReferenceError`,
+`ReflogEntry`, `RemoteError`, `RequestServable`, `ResetMode`, `RetryError`, `Rgb12Opaque`,
+`Rgb32Opaque`, `RomanCalendar`, `RootFs`, `RpcError`, `RruleError`, `SchemaSignature`,
+`ScreenRoot`, `SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`,
+`SerializationError`, `ServerError`, `ShaderPlugin`, `SiderealDays`, `SignalResponse`,
+`SimpleTExtractor`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`,
+`StandardMetadata`, `StaticAnnotation`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`, `TcpPort`,
+`TemperatureScale`, `TemporaryDirectory`, `TestPalette`, `ThemeColor`, `ThrowTactic`,
+`TimestampError`, `TlsAcceptance`, `ToolchainError`, `TopMenu`, `TransferEncoding`,
+`TraversalOrder`, `TrieMap`, `TripleDes`, `TtfTag`, `TypescriptDialect`,
+`UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnsetError`,
+`UnusedFeature`, `UrlPalette`, `UsedSets`, `UsesBlob`, `ValueToken`, `VersionResponse`,
+`VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`,
+`WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WritingBuilder`, `WsSessional`,
+`XeqConfiguration`, `ZipBuilder`
 
 ## Retained from the original inventory
 

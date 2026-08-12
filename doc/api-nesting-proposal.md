@@ -81,7 +81,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | caesura.core | `DsvError→Dsv.Error`, `DsvFormat→Dsv.Format`, `DsvRedesignation→Dsv.Redesignation` |
 | capricious.core | `RandomSize→Random.Size` |
 | cataclysm.core | `CssError→Css.Error`, `CssErrors→Css.Errors`, `CssConvertible→Css.Convertible`, `SyntaxMatcher→Syntax.Matcher` (⚑ `Syntax` exists but is unexported; export it or skip) |
-| coaxial.core | `ConnectionError→Connection.Error` (⚑ verify `Connection`), `DomainSocketEndpoint→DomainSocket.Endpoint` |
+| coaxial.core | `DomainSocketEndpoint→DomainSocket.Endpoint` (`ConnectionError` stays: the ⚑ resolved negatively — `Connection` is a case class in coaxial.**jvm**, so R6 blocks it) |
 | coaxial.jvm | `TlsAcceptance→Tls.Acceptance` |
 | telekinesis.http2 (package cordillera) | `Http2Connection→Http2.Connection`, `Http2Error→Http2.Error`, `Http2Event→Http2.Event`, `Http2Stream→Http2.Stream`, `Http2ServerConnection→Http2.ServerConnection`, `HpackTable→Hpack.Table`, `HpackEntry→Hpack.Entry` |
 | digression.core | `FqcnError→Fqcn.Error` |
@@ -382,6 +382,58 @@ Two further notes:
   `LspProxy` would collide at the fourteen `import Lsp.*` sites, since `Proxy` is a known
   homonym. None of them is ambiguous. A wildcard over a namespace object is a hazard, not a
   blocker; test it rather than abandoning the nesting.
+
+
+## Corrections from the fourth implementation pass (2026-08-12)
+
+Eight names that the first three passes had recorded as blocked turned out not to be, and
+the corrections are more interesting than the renames: in most cases the blocker was
+something the codebase should not have been doing anyway.
+
+- **A sealed trait's subtypes are a reason to move them *together*, not a reason to move
+  none of them.** `SvgDef` was abandoned in the first pass because nesting it drags the
+  exported `LinearGradient` in with it. That is exactly what should happen: both are now
+  `Svg.Def` and `Svg.LinearGradient`. The rule this replaces — "check for `sealed` before
+  proposing a move" — should read: check for `sealed`, then decide whether the whole
+  cluster belongs in the namespace. Usually it does.
+- **An opaque type belongs inside the object whose API it serves.** `SvgId` lived in
+  `object internal` and was re-exported to package level; it is now `Svg.Id` with no
+  re-export. Two consequences to expect: inside the defining object the type is
+  transparent, so its companion is *not* in the implicit scope of a value the compiler
+  sees as the underlying type — `id.text` must be written `Id.text(id)` there. Outside,
+  nothing changes.
+- **A nested companion is not a blocker; an unexported one would be.** The third pass ruled
+  `MacAddressError` out because the `MacAddress` companion sits inside `internal.Opaques`.
+  But that companion is exported to package level, so a type nested in it is exactly as
+  reachable as one nested in a toplevel object. `MacAddress.Error` works.
+- **Search the whole library, not the component, before declaring a type absent.**
+  `ConnectionError` was recorded as un-nestable because coaxial "has no `Connection` type,
+  only abstract `type Connection` members". It has one: a `case class Connection` in the
+  **jvm** component, exported to the umbrella. Adding a namespace `object Connection` to
+  core therefore put a second toplevel `Connection` in package `coaxial`, and ethereal's
+  `Promise[Connection]` stopped resolving — "expected a type, but found a term". The error
+  is in core and the type is in jvm, so this is an ordinary R6 component block, in the
+  direction that cannot be fixed. `ConnectionError` stays whole.
+- **An `@unexported` annotation is a nesting candidate flagging itself.** cataclysm's
+  `Syntax` carried one, with a comment explaining that it clashes with stenography's
+  `Syntax` in the umbrella. `Css.Syntax` removes the clash at its source, and the
+  annotation with it. Any `@unexported` justified by a name clash is worth re-reading as a
+  missing namespace.
+- **A blocking wildcard import is usually the thing to fix.** `Tel.Flag` was blocked by
+  `import Tels.*` inside `object Tel.Type`, making it ambiguous with `Tels.Flag`. Replacing
+  the wildcard with 65 qualified `Tels.X` references removes the ambiguity and reads better
+  besides: `Struct`, `Scalar`, `Field` and `Member` are generic enough that the reader needs
+  telling which vocabulary they belong to. This generalises the second pass's note that a
+  wildcard over a namespace object makes nesting fragile — prefer fixing the import.
+- **A blocking member may simply be dead.** `object Mcp` already had a nested `Error`, so
+  the second pass kept `McpError`. That payload was referenced nowhere and duplicated
+  `JsonRpc.Failure` field for field — which the same file already calls. Check whether the
+  occupant earns its name before working around it.
+
+One caution learned the hard way: **do not sweep a homonym by bare name.** Renaming
+cataclysm's `Syntax` with a repo-wide substitution rewrote stenography's and iridescence's
+unrelated `Syntax` types. Scope the sweep to the owning library and let cross-library use
+sites fail the compile instead.
 
 
 ## Execution shape

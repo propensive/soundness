@@ -77,7 +77,7 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
 
     // Each accepted connection is served by its own supervised `async` task, so connections are
     // handled concurrently. The task body is impure (it captures the connection and the handler),
-    // which is why it is an `async` task rather than a pure `daemon`; the `Connection.Error` from a
+    // which is why it is an `async` task rather than a pure `daemon`; the `ConnectionError` from a
     // handler error, a dropped client, or a failed reply is raised through the `AsyncTactic` the
     // task provides, and `safely` absorbs it so one bad connection only ends its own task — the
     // connection is always closed — while the accept loop keeps running. A failure to *accept* a

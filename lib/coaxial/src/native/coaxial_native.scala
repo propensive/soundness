@@ -153,7 +153,7 @@ package socketBackends:
     def listenDomain(address: DomainSocket, options: List[SocketOption]): ServerBinding =
       throw UnsupportedOperationException("Unix-domain sockets are unsupported on Scala Native")
 
-    def accept(socket: ServerBinding): Duplex raises Connection.Error = socket match
+    def accept(socket: ServerBinding): Duplex raises ConnectionError = socket match
       case ServerBinding.Tcp(server) =>
         try
           val client = server.accept().nn
@@ -161,7 +161,7 @@ package socketBackends:
           streamsDuplex(client.getInputStream.nn, client.getOutputStream.nn): () =>
             client.close()
 
-        catch case _: ji.IOException => abort(Connection.Error(Connection.Error.Reason.Accept))
+        catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
 
     def shutdown(socket: ServerBinding): Unit = socket match
       case ServerBinding.Tcp(server) => server.close()
@@ -178,12 +178,12 @@ package socketBackends:
 
       socket
 
-    def receive(socket: jn.DatagramSocket): Packet raises Connection.Error =
+    def receive(socket: jn.DatagramSocket): Packet raises ConnectionError =
       val array = new scala.Array[Byte](1472)
       val packet = jn.DatagramPacket(array, 1472)
 
       try socket.receive(packet)
-      catch case _: ji.IOException => abort(Connection.Error(Connection.Error.Reason.Accept))
+      catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
 
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
 
@@ -205,7 +205,7 @@ package socketBackends:
           Port.unsafe[Udp](address.getPort) )
 
     def reply(socket: jn.DatagramSocket, sender: Ipv4 | Ipv6, port: UdpPort, data: Data)
-    :   Unit raises Connection.Error =
+    :   Unit raises ConnectionError =
 
       val ip: jn.InetAddress = sender.absolve match
         case ip: (Ipv4 @unchecked) =>
@@ -237,7 +237,7 @@ package socketBackends:
       val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
 
       try socket.send(packet)
-      catch case _: ji.IOException => abort(Connection.Error(Connection.Error.Reason.Transmit))
+      catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
 
     def unbind(socket: jn.DatagramSocket): Unit = socket.close()
 
