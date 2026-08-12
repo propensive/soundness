@@ -53,13 +53,18 @@ import gastronomy.providers.javaStdlibProvider
 // conventional six-letter subset tag. An unparseable program still embeds, described by
 // standard fallback metrics.
 private[facsimile] object FontEmbedder:
-  def embed(pdf: Pdf, ttf: Truetype, name: Optional[Text], subset: Optional[Text])
+  def embed(pdf: Pdf, font: Sfnt, name: Optional[Text], subset: Optional[Text])
   ( using Tactic[Pdf.Error] )
   :   Cos.Ref =
 
-    val program = subset.lay(ttf): chars => safely(ttf.subset(chars)).or(ttf)
+    // Only TrueType outlines can be subset: rebuilding a subset rewrites `glyf` and `loca`,
+    // which an OpenType font does not have. A CFF font embeds whole.
+    val program = subset.lay(font): chars =>
+      font match
+        case ttf: Truetype => safely(ttf.subset(chars)).or(font)
+        case font          => font
 
-    val baseName = name.or(postScriptName(ttf)).or(t"Embedded")
+    val baseName = name.or(postScriptName(font)).or(t"Embedded")
 
     val baseFont = subset.lay(baseName): chars => t"${tag(baseName, chars)}+$baseName"
 
@@ -125,16 +130,16 @@ private[facsimile] object FontEmbedder:
             t"FontDescriptor" -> descriptor )
 
   // The font's advance for a character, in glyph space; zero for one it does not map.
-  private def width(ttf: Truetype, scaled: Int => Long, char: Char): Long =
+  private def width(font: Sfnt, scaled: Int => Long, char: Char): Long =
     safely:
-      val glyph = ttf.glyph(char)
-      if glyph.id == 0 then 0L else scaled(ttf.hmtx.advanceWidth(glyph.id))
+      val glyph = font.glyph(char)
+      if glyph.id == 0 then 0L else scaled(font.hmtx.advanceWidth(glyph.id))
 
     . or(0L)
 
   // A PostScript name contains no spaces, though some fonts' naming tables do.
-  private def postScriptName(ttf: Truetype): Optional[Text] =
-    ttf.fontName.let(_.s.replace(" ", "").nn.tt)
+  private def postScriptName(font: Sfnt): Optional[Text] =
+    font.fontName.let(_.s.replace(" ", "").nn.tt)
 
   // The conventional six-uppercase-letter subset tag, derived deterministically from the
   // name and subset text, so identical subsets embed identically.

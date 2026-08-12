@@ -833,8 +833,10 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").let(_.embedded).let: ttf =>
-            (ttf.glyf(1).empty, ttf.glyf(2).empty)
+          // The embedded program is read back as the `Sfnt` its tables say it is; these
+          // assertions are about TrueType outlines, so narrow to `Truetype`.
+          pdf.page(Prim).fonts(t"F1").let(_.embedded).let:
+            case ttf: Truetype => (ttf.glyf(1).empty, ttf.glyf(2).empty)
       . assert(_ == (false, true))
 
       test(m"a subset retains the components of composite glyphs"):
@@ -845,8 +847,8 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").let(_.embedded).let: ttf =>
-            (ttf.glyf(1).empty, ttf.glyf(2).empty, ttf.glyf(3).composite)
+          pdf.page(Prim).fonts(t"F1").let(_.embedded).let:
+            case ttf: Truetype => (ttf.glyf(1).empty, ttf.glyf(2).empty, ttf.glyf(3).composite)
       . assert(_ == (false, false, true))
 
       test(m"winAnsi encodes accented characters to their code page byte"):

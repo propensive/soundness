@@ -237,7 +237,7 @@ object Pdf:
         encoding:     Optional[Array[Char]^{}],
         differences:  Map[Int, Text],
         toUnicode:    Optional[CharMap],
-        embedded:     Optional[Truetype],
+        embedded:     Optional[Sfnt],
         twoByte:      Boolean,
         descriptor:   Map[Text, Cos] )
 
@@ -259,7 +259,7 @@ object Pdf:
           pdf.resolved(entries(t"Widths").or(Cos.Nil)).elements.lay(Array.empty[Double]):
             elements => Array.from(elements.stdlib.map(pdf.resolved(_).double.or(0.0)))
 
-        val embedded: Optional[Truetype] =
+        val embedded: Optional[Sfnt] =
           val program = descriptor(t"FontFile2").or:
             descriptor(t"FontFile3").let: value =>
               val body = pdf.resolved(value)
@@ -267,7 +267,7 @@ object Pdf:
               if subtype == t"OpenType" then value else Unset
 
           program.let(pdf.resolved(_)).let:
-            case body: Cos.Body => safely(Truetype(pdf.payload(body)))
+            case body: Cos.Body => safely(Sfnt(pdf.payload(body)))
             case _              => Unset
 
         val toUnicode: Optional[CharMap] =
@@ -344,10 +344,10 @@ object Pdf:
             val cidDescriptor = pdf.resolved(descendant(t"FontDescriptor").or(Cos.Nil))
               . dictionary.or(Map[Text, Cos]())
 
-            val cidEmbedded: Optional[Truetype] =
+            val cidEmbedded: Optional[Sfnt] =
               cidDescriptor(t"FontFile2").or(cidDescriptor(t"FontFile3"))
               . let(pdf.resolved(_)).let:
-                  case body: Cos.Body => safely(Truetype(pdf.payload(body)))
+                  case body: Cos.Body => safely(Sfnt(pdf.payload(body)))
                   case _              => Unset
 
             val defaultCid = descendant(t"DW").let(pdf.resolved(_).double).or(1000.0)
@@ -394,7 +394,8 @@ object Pdf:
         Map.of(builder.result())
 
   // A font as a page's resources declare it (ISO 32000-2 §9): a pure, fully-materialized
-  // value. Embedded TrueType and OpenType programs surface as phoenicia `Truetype`s; `decode`
+  // value. An embedded font program surfaces as the phoenicia `Sfnt` its tables say it is —
+  // `Truetype` for quadratic outlines, `Opentype` for CFF; `decode`
   // maps show-text operands to Unicode as well as the file allows, preferring the font's own
   // `/ToUnicode` map, then its declared encoding and differences.
   enum Font:
@@ -413,7 +414,7 @@ object Pdf:
 
     def baseFont: Text = common.baseFont
     def standard: Optional[Font.Standard] = common.standard
-    def embedded: Optional[Truetype] = common.embedded
+    def embedded: Optional[Sfnt] = common.embedded
     def descriptor: Map[Text, Cos] = common.descriptor
 
     // The advance of a code, in thousandths of an em.

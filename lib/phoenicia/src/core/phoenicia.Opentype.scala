@@ -32,21 +32,27 @@
                                                                                                   */
 package phoenicia
 
+import proscenium.compat.*
+
 import anticipation.*
-import fulminate.*
+import contingency.*
+import gossamer.*
+import hypotenuse.*
+import polaris.*
+import prepositional.*
+import quantitative.*
+import rudiments.*
+import symbolism.*
+import turbulence.*
+import vacuous.*
+import zephyrine.*
 
-object FontError:
-  enum Reason(val number: Int) extends Clarification:
-    case MissingTable(tag: Sfnt.Table.Tag)  extends Reason(1)
-    case UnknownFormat(format: Int)   extends Reason(2)
-    case MagicNumber                  extends Reason(3)
-    case MissingEncoding              extends Reason(4)
 
-  given communicable: Reason is Communicable =
-    case Reason.MissingTable(tag)     => m"the table ${tag.text} was not found"
-    case Reason.UnknownFormat(format) => m"the table contains data in unknown format $format"
-    case Reason.MagicNumber           => m"the font did not contain expected check data"
-    case Reason.MissingEncoding       => m"the font contains no usable character encoding"
+object Opentype:
+  def apply[source: Streamable by Data over Credit](source: source): Opentype =
+    Opentype(source.read[Data])
 
-case class FontError(reason: FontError.Reason)(using Diagnostics)
-extends Error(564, reason.number)(m"the font could not be read because $reason")
+// An OpenType font: an sfnt file whose outlines are PostScript, stored in `CFF `. The shared
+// tables — character mapping, metrics, naming — all work; the outline data itself is not yet
+// parsed, so there is no equivalent of TrueType's `glyf`, and subsetting is unavailable.
+case class Opentype(data: Data) extends Sfnt

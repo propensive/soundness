@@ -115,7 +115,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   // `/Font` dictionary. The name defaults to the font's own PostScript name; with `subset`,
   // only the glyphs the given text needs are embedded, under a tagged name per the PDF
   // convention.
-  def embedFont(font: Truetype, name: Optional[Text] = Unset, subset: Optional[Text] = Unset)
+  def embedFont(font: Sfnt, name: Optional[Text] = Unset, subset: Optional[Text] = Unset)
   ( using Tactic[Pdf.Error] )
   :   Cos.Ref =
 
