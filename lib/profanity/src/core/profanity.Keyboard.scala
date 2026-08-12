@@ -33,6 +33,7 @@
 package profanity
 
 import anticipation.*
+import clavichord.Keypress
 import contingency.*
 import distillate.*
 import gossamer.*
@@ -70,7 +71,7 @@ object Keyboard:
   // [:<base>]][;<modifiers>[:<event>]][;<text>]`, without the trailing `u` — into a
   // keypress. The codepoint is a Unicode value, with the C0 codes 13/9/27/127 for
   // Enter/Tab/Escape/Backspace; the modifier field is `1 + bitmask`.
-  def csiu(params: List[Char]): profanity.Keypress =
+  def csiu(params: List[Char]): clavichord.Keypress =
     val fields: List[Text] = params.map(_.show).join.cut(t";")
 
     def number(index: Int, default: Int): Int =
@@ -78,7 +79,7 @@ object Keyboard:
 
     val bitmask: Int = (number(1, 1) - 1).max(0)
 
-    def key(value: EditKey | FunctionKey): profanity.Keypress =
+    def key(value: EditKey | FunctionKey): clavichord.Keypress =
       if bitmask == 0 then value else applyModifiers(bitmask, value)
 
     number(0, 0) match
@@ -96,7 +97,7 @@ object Keyboard:
 
   // The `Ctrl`-modified form of a character, or the plain character if it has no
   // control form.
-  def ctrlChar(char: Char): profanity.Keypress = char.toUpper match
+  def ctrlChar(char: Char): clavichord.Keypress = char.toUpper match
     case c: ( '@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' |
       'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' |
       '\\' | ']' | '^' | '_' ) =>
@@ -147,7 +148,7 @@ object Keyboard:
       wait(deadline)
 
   class Standard()(using lookahead: Lookahead) extends Keyboard:
-    type Keypress = profanity.Keypress | TerminalInfo
+    type Keypress = clavichord.Keypress | TerminalInfo
 
     def process(stream: Chain[Char]): Chain[Keypress] = stream match
       case '\u001b' #:: rest =>

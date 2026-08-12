@@ -2148,6 +2148,15 @@ tarantula recipes:
   therefore poll `POST /elements`, which reports absence as an EMPTY LIST where `POST /element`
   raises; `awaitUntil` takes a caller-computed `Boolean`. The schedule is `parasite.Tenacity` via
   `parasite.retry` — tarantula is that machinery's first user outside parasite.
+- ★ `clavichord` (NEW MODULE) holds the `Keypress` ADT, moved out of profanity so that a browser
+  driver can name a keypress without depending on a terminal library. Extracting it forced
+  profanity's `TerminalEvent` from a `sealed trait` to a UNION TYPE (`Keypress | TerminalInfo |
+  Interrupt | WindowsSignal`) — a type in another module cannot extend a sealed one. Matching is
+  unaffected (unions of enums are still exhaustivity-checked) and `Interactivity[event]` /
+  `Relay[record]` are unbounded, so the 71 use sites across profanity+ultimatum needed only an
+  import. NOTE: an `export` forwarder WIDENS an enum case's singleton type, so
+  `Keypress.Shift(Keypress.Enter)` must be written fully qualified rather than through
+  `soundness.*` — profanity's own tests already did this, so the limitation predates the move.
 - Print lengths are `Quantity[Metres[1]]` but the wire wants CENTIMETRES, so the encoder is
   hand-written (`Session.encode`) and applies the factor of 100; a derivation would serialize
   metres and silently print a page 100× too small. The defaults use a local `cm(...)` helper

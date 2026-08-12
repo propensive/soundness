@@ -21,6 +21,7 @@ caesura: csv tsv dsv spreadsheet sheet delimited-values
 camouflage: cache lru-cache memoization
 capricious: random rng probability gaussian gamma distribution sampling seed
 cardinality: refinement-types numeric-range bounded-numbers ranges
+clavichord: keyboard keypress keys modifiers input
 cataclysm: css stylesheet selectors keyframes media-queries fonts typesafe-css
 charisma: chemistry periodic-table chemical-equation molecule chemical-formula
 chiaroscuro: diff comparison contrast similarity test-assertions decomposition

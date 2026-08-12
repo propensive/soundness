@@ -30,41 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package profanity
+package soundness
 
-import anticipation.*
-import clavichord.Keypress
-import contingency.*
-import fulminate.*
-import gossamer.*
-import vacuous.*
-
-case class SelectMenu[item](options: List[item], current: item)
-extends Question[item]:
-  import Keypress.*
-
-  def apply(keypress: TerminalEvent): SelectMenu[item] =
-    try
-      keypress match
-        case Up   => copy(current = options.stdlib(0 max options.stdlib.indexOf(current) - 1))
-        case Down =>
-          copy(current = options.stdlib(options.stdlib.size - 1 min options.stdlib.indexOf(current) + 1))
-        case Home => copy(current = options.stdlib.head)
-        case End  => copy(current = options.stdlib.last)
-        case _    => this
-
-    catch case e: RangeError => this
-
-
-  def ask
-    ( using interactivity: Interactivity[TerminalEvent],
-            interaction:   Interaction[item, SelectMenu[item]] )
-    [ result ]
-    ( lambda: Interactivity[TerminalEvent] ?=> item => result )
-    ( using Tactic[DismissError] )
-  :   result =
-
-    val events = interactivity.eventIterator()
-
-    interaction(events, this)(_(_)).lay(abort(DismissError())):
-      result => lambda(using Interactivity(events))(result)
+export clavichord.Keypress

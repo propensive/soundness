@@ -422,6 +422,14 @@ object Tests extends Suite(m"Tarantula tests"):
 
         fake.exchanges.stdlib.filter(_.path.ends(t"/actions")).head.body.or(t"")
 
+      def performed2(keypresses: Keypress*): Text =
+        val fake = driver((_, _) => none)
+        given Http.Backend = fake
+        WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+          browser.press(keypresses*)
+
+        fake.exchanges.stdlib.filter(_.path.ends(t"/actions")).head.body.or(t"")
+
       test(m"a keypress is one keyboard source with two steps"):
         performed(List(WebDriver.Session.Action.KeyDown(t"a"), WebDriver.Session.Action.KeyUp(t"a")))
       . assert:
@@ -431,6 +439,27 @@ object Tests extends Suite(m"Tarantula tests"):
       test(m"a pause carries its duration"):
         performed(List(WebDriver.Session.Action.Pause(250)))
       . assert(_.contains(t"""{"type":"pause","duration":250}"""))
+
+      test(m"a named key is sent as its private-use codepoint"):
+        performed2(Keypress.Enter)
+      . assert(_.contains(t"""{"type":"keyDown","value":"\uE007"}"""))
+
+      test(m"a function key counts up from F1 at U+E031"):
+        performed2(Keypress.FunctionKey(3))
+      . assert(_.contains(t"""{"type":"keyDown","value":"\uE033"}"""))
+
+      test(m"a chord holds the modifier around the key it modifies"):
+        performed2(Keypress.Ctrl('A'))
+      . assert:
+          _.contains
+           ( t"""[{"type":"keyDown","value":"\uE009"},{"type":"keyDown","value":"A"},""" +
+             t"""{"type":"keyUp","value":"A"},{"type":"keyUp","value":"\uE009"}]""" )
+
+      test(m"nested modifiers nest their held keys"):
+        // Fully qualified: an `export` forwarder widens an enum case's singleton type, so
+        // `Shift`, whose parameter is `EditKey | FunctionKey`, will not take `soundness.Keypress`.
+        performed2(clavichord.Keypress.Ctrl(clavichord.Keypress.Shift(clavichord.Keypress.Enter)))
+      . assert(_.contains(t"""{"type":"keyDown","value":"\uE008"}"""))
 
       test(m"releasing actions is a DELETE"):
         val fake = driver((_, _) => none)

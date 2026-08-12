@@ -370,20 +370,20 @@ object Tests extends Suite(m"Profanity Tests"):
         test(m"Enter inserts a newline and Shift+Enter submits"):
           editedWith(shiftSubmit)
             ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'),
-              profanity.Keypress.Shift(profanity.Keypress.Enter) )
+              clavichord.Keypress.Shift(clavichord.Keypress.Enter) )
         . assert(_ == t"a\nb")
 
         test(m"the up arrow moves the cursor to the previous line"):
           editedWith(shiftSubmit)
             ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'), Keypress.Up,
-              Keypress.CharKey('X'), profanity.Keypress.Shift(profanity.Keypress.Enter) )
+              Keypress.CharKey('X'), clavichord.Keypress.Shift(clavichord.Keypress.Enter) )
         . assert(_ == t"aX\nb")
 
         test(m"the down arrow moves the cursor to the next line"):
           editedWith(shiftSubmit)
             ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'), Keypress.Home,
               Keypress.Up, Keypress.Down, Keypress.CharKey('Y'),
-              profanity.Keypress.Shift(profanity.Keypress.Enter) )
+              clavichord.Keypress.Shift(clavichord.Keypress.Enter) )
         . assert(_ == t"a\nYb")
 
         test(m"a content predicate decides whether Enter submits or inserts a newline"):
@@ -495,22 +495,22 @@ object Tests extends Suite(m"Profanity Tests"):
         . assert(_.contains(t"\e[>1u"))
 
       suite(m"Keypress rendering"):
-        def rendered(keypress: profanity.Keypress): Text = keypress.show
+        def rendered(keypress: clavichord.Keypress): Text = keypress.show
 
         test(m"a modifier and a special key render with bracketed symbols"):
-          rendered(profanity.Keypress.Shift(profanity.Keypress.Enter))
+          rendered(clavichord.Keypress.Shift(clavichord.Keypress.Enter))
         . assert(_ == t"[⇧]+[↵]")
 
         test(m"a control-letter brackets the letter"):
-          rendered(profanity.Keypress.Ctrl('C'))
+          rendered(clavichord.Keypress.Ctrl('C'))
         . assert(_ == t"[⌃]+[C]")
 
         test(m"an ordinary character is bracketed"):
-          rendered(profanity.Keypress.CharKey('a'))
+          rendered(clavichord.Keypress.CharKey('a'))
         . assert(_ == t"[a]")
 
         test(m"nested modifiers are joined with plus"):
-          rendered(profanity.Keypress.Ctrl(profanity.Keypress.Shift(profanity.Keypress.Enter)))
+          rendered(clavichord.Keypress.Ctrl(clavichord.Keypress.Shift(clavichord.Keypress.Enter)))
         . assert(_ == t"[⌃]+[⇧]+[↵]")
 
       suite(m"Interrupt POSIX numbering"):

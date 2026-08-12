@@ -149,16 +149,22 @@ library.
 Text typed into a field should go through `value`, which is simpler and faster. Everything else
 — a modifier, a chord, a hover, a drag — goes through the actions API:
 ```scala
-import WebDriver.Session.Action.*
-
-val control = t"\uE009"
-
-browser.perform(Source.Key, List(KeyDown(control), KeyDown(t"a"), KeyUp(t"a"), KeyUp(control)))
+browser.press(Keypress.Ctrl('A'), Keypress.Enter)
 browser.releaseActions()
 ```
-The specification assigns each non-typing key a codepoint in Unicode's private use area —
-`U+E009` is the control key — so a chord is just a sequence of key-downs and key-ups.
-`releaseActions()` lets go of anything an earlier `perform` left held.
+`Keypress` comes from [Clavichord](https://github.com/propensive/clavichord), the same vocabulary
+terminal input uses, so a modifier is written as a wrapper rather than as a codepoint to look up.
+Each keypress becomes the actions that produce it: the modifiers pressed, the key struck and
+released, then the modifiers released in reverse — which is the only way the protocol can express
+a chord. `releaseActions()` lets go of anything an earlier `press` left held.
+
+For anything `press` does not cover — pointer movement, drags, precise pauses — the underlying
+actions API is there:
+```scala
+import WebDriver.Session.Action.*
+
+browser.perform(Source.Pointer, List(PointerMove(120, 40), PointerDown(), PointerUp()))
+```
 
 ### Waiting
 

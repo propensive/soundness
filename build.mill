@@ -746,7 +746,7 @@ object soundness extends Toolchain:
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
     eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, escapade.io,
-    escapade.graphics, digression.ansi, imperial.core, profanity.core,
+    escapade.graphics, digression.ansi, imperial.core, profanity.core, clavichord.core,
     surveillance.core, punctuation.ansi, hallucination.ansi, hallucination.canvas,
     hallucination.bmp, hallucination.gif, hallucination.jpeg, hallucination.png,
     hallucination.webp, hallucination.formats,
@@ -1394,6 +1394,14 @@ object cardinality extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+
+// The `Keypress` model, apart from any way of encoding it: profanity decodes terminal escape
+// sequences into it and tarantula renders it as WebDriver actions, and neither should depend on
+// the other to say what a keypress is.
+object clavichord extends Library:
+  object core extends Component(gossamer.core, spectacular.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
 object cataclysm extends Library:
   object core extends Component(zephyrine.core, gossamer.core, gossamer.lexicon, turbulence.core,
@@ -2587,7 +2595,7 @@ object probably extends Library:
 
 object profanity extends Library:
   object core extends Component(ambience.core, turbulence.core, iridescence.core,
-                                quantitative.units, escapade.core):
+                                quantitative.units, escapade.core, clavichord.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, exoskeleton.rig):
@@ -2854,7 +2862,7 @@ object synesthesia extends Library:
 
 object tarantula extends Library:
   object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core,
-      guillotine.core, honeycomb.core, aperture.core, xylophone.core):
+      guillotine.core, honeycomb.core, aperture.core, xylophone.core, clavichord.core):
     override def scalaJs = false // browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3249,7 +3257,7 @@ val allLibraries: Seq[Library] = Seq(
   aperture, apoplexy, archimedes, austronesian, aviation, baroque, beneficence, bitumen,
   breviloquence,
   burdock,
-  cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
+  cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm, clavichord,
   charisma, chiaroscuro, coaxial, concordance, contextual, contingency, corpuscular,
   cosmopolite,
   degustation, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,

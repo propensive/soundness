@@ -32,6 +32,7 @@
                                                                                                   */
 package ultimatum
 
+import clavichord.Keypress
 import proscenium.compat.*
 
 import denominative.*

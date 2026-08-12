@@ -38,6 +38,7 @@ import adversaria.name
 import ambience.*
 import anticipation.*, abstractables.durationAbstractable
 import aperture.session
+import clavichord.Keypress
 import contingency.*
 import denominative.nil
 import distillate.*
@@ -537,6 +538,67 @@ object WebDriver:
       val MiddleButton: Int = 1
       val RightButton: Int = 2
 
+      // The specification assigns each non-typing key a codepoint in Unicode's private use area,
+      // U+E000 upwards, so that a key with no character can still be "typed". These are those
+      // codepoints, named by `clavichord`'s vocabulary rather than a table of our own.
+      def codepoint(keypress: Keypress): Optional[Text] = keypress match
+        case Keypress.CharKey(char)  => char.show
+        case Keypress.Enter          => t"\uE007"
+        case Keypress.Tab            => t"\uE004"
+        case Keypress.Backspace      => t"\uE003"
+        case Keypress.Escape         => t"\uE00C"
+        case Keypress.Delete         => t"\uE017"
+        case Keypress.Insert         => t"\uE016"
+        case Keypress.Home           => t"\uE011"
+        case Keypress.End            => t"\uE010"
+        case Keypress.PageUp         => t"\uE00E"
+        case Keypress.PageDown       => t"\uE00F"
+        case Keypress.Up             => t"\uE013"
+        case Keypress.Down           => t"\uE015"
+        case Keypress.Left           => t"\uE012"
+        case Keypress.Right          => t"\uE014"
+
+        // F1 is U+E031, and the rest follow in order.
+        case Keypress.FunctionKey(n) => if n < 1 || n > 12 then Unset else (0xE030 + n).toChar.show
+
+        // A terminal escape sequence has no browser counterpart, and a modifier is not a key
+        // press on its own — `steps` expands those into the keys held around what they modify.
+        case _                       => Unset
+
+      // The modifier a wrapper stands for, as its own codepoint.
+      private def modifier(keypress: Keypress): Optional[Text] = keypress match
+        case _: Keypress.Shift => t"\uE008"
+        case _: Keypress.Ctrl  => t"\uE009"
+        case _: Keypress.Alt   => t"\uE00A"
+        case _: Keypress.Meta  => t"\uE03D"
+        case _                 => Unset
+
+      private def inner(keypress: Keypress): Optional[Keypress] = keypress match
+        case shift: Keypress.Shift => shift.keypress
+        case alt: Keypress.Alt     => alt.keypress
+        case meta: Keypress.Meta   => meta.keypress
+        case _                     => Unset
+
+      // `Ctrl` is the one wrapper whose payload may be a bare `Char` rather than a `Keypress`.
+      private def within(ctrl: Keypress.Ctrl): Keypress = ctrl.keypress.match
+        case char: Char      => Keypress.CharKey(char)
+        case other: Keypress => other
+
+      // A keypress as the actions that produce it: the modifiers pressed, the key struck and
+      // released, then the modifiers released in reverse. This is the only way the protocol can
+      // express a chord — there is no "type this with control held" command.
+      def steps(keypress: Keypress): List[Action] =
+        val held = modifier(keypress)
+
+        held.lay(codepoint(keypress).lay(Nil): key =>
+          List(Action.KeyDown(key), Action.KeyUp(key))): held =>
+
+          val nested = keypress.match
+            case ctrl: Keypress.Ctrl => steps(within(ctrl))
+            case other               => inner(other).lay(Nil)(steps(_))
+
+          List.of(Action.KeyDown(held) +: nested.stdlib :+ Action.KeyUp(held))
+
       // Written by hand rather than derived: the discriminator is a `type` field whose values are
       // the specification's camel-cased names, and each variant carries a different set of keys.
       given encodable: Action is Encodable in Json =
@@ -884,6 +946,13 @@ object WebDriver:
       actions(Sequences(List(Sequence(source.id, source.kind, encoded).in[Json])).in[Json])
 
     def actions(json: Json): Unit = command(t"actions", json)
+
+    // Types a sequence of keypresses, modifiers and all. `WebDriver.Element#value` remains the
+    // way to fill a field with plain text — it is one request rather than four actions per
+    // character — and this is for the chords and named keys that text entry cannot express.
+    def press(keypresses: Keypress*): Unit =
+      val steps = keypresses.flatMap(Session.Action.steps(_).stdlib).to(scala.List)
+      perform(Session.Action.Source.Key, List.of(steps))
 
     // Releases every key and button an earlier `perform` left held, and clears the input state.
     def releaseActions(): Unit = drop(t"actions")
