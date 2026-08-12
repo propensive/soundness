@@ -42,7 +42,7 @@ import rudiments.*
 
 // Exposes the protected `Driver` machinery — `setup` (argument processing into a fresh
 // context, loading the classpath's symbol table) and `finish` (post-run hooks) — to both
-// the stateless `Scalac#apply` path and warm `ScalacSession`s.
+// the stateless `Scalac#apply` path and warm `Scalac.Session`s.
 private[anthology] class ScalacDriver() extends dtd.Driver:
   def baseContext(arguments: List[Text])(using (CompileEvent is Loggable)^)
   :   scala.Option[dtdc.Contexts.Context] =

@@ -81,7 +81,7 @@ extends Watcher:
     ( directory: jnf.Path,
       previous:  Map[Text, Entry],
       current:   Map[Text, Entry],
-      spool:     Relay[WatchEvent] )
+      spool:     Relay[Watch.Event] )
   :   Unit =
 
     val base = directory.toString.show
@@ -89,23 +89,23 @@ extends Watcher:
     current.stdlib.each: (name, entry) =>
       previous(name) match
         case last: Entry =>
-          if !entry.directory && last != entry then spool.put(WatchEvent.Modify(base, name))
+          if !entry.directory && last != entry then spool.put(Watch.Event.Modify(base, name))
 
         case _ =>
-          if entry.directory then spool.put(WatchEvent.NewDirectory(base, name))
-          else spool.put(WatchEvent.NewFile(base, name))
+          if entry.directory then spool.put(Watch.Event.NewDirectory(base, name))
+          else spool.put(Watch.Event.NewFile(base, name))
 
     previous.stdlib.each: (name, _) =>
-      if !current.defines(name) then spool.put(WatchEvent.Delete(base, name))
+      if !current.defines(name) then spool.put(Watch.Event.Delete(base, name))
 
-  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[WatchEvent])
-  :   Watcher.Registration raises WatchError =
+  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[Watch.Event])
+  :   Watcher.Registration raises Watch.Error =
 
     directories.stdlib.each: (directory, _) =>
       val file = directory.toFile.nn
 
-      if !file.exists then abort(WatchError(WatchError.Reason.Nonexistent))
-      else if !file.isDirectory then abort(WatchError(WatchError.Reason.NotDirectory))
+      if !file.exists then abort(Watch.Error(Watch.Error.Reason.Nonexistent))
+      else if !file.isDirectory then abort(Watch.Error(Watch.Error.Reason.NotDirectory))
 
     val snapshots: scm.HashMap[jnf.Path, Map[Text, Entry]] = scm.HashMap()
 

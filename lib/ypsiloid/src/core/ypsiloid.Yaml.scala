@@ -1870,7 +1870,7 @@ object Yaml extends Yaml2, Dynamic:
     // pattern: keep `bytes`/`pos`/`bufEnd` as plain fields so the JIT can
     // hold them in registers across hot byte loops. Sync to the cursor
     // before mark/slice/refill operations and refresh after.
-    // Held as an `AnyRef` field with an exclusive-view accessor (the `TelReader.parser0`
+    // Held as an `AnyRef` field with an exclusive-view accessor (the `Tel.Reader.parser0`
     // pattern): a typed capability field poisons every later access to this parser.
     @scala.caps.unsafe.untrackedCaptures
     private var cursor1: AnyRef = null.asInstanceOf[AnyRef]

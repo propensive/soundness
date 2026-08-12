@@ -32,5 +32,5 @@
                                                                                                   */
 package soundness
 
-export embarcadero.{ContainerConfig, Descriptor, History, Image, ImageDataOpenable, Index, Layer,
+export embarcadero.{ContainerConfig, Descriptor, History, Image, Index, Layer,
     Oci, RootFs, WasmComponent, WasmConfig}

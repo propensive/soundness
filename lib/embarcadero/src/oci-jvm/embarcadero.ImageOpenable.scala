@@ -45,7 +45,7 @@ import rudiments.*
 
 // Opening a filesystem *path* as an OCI image, delegating the TAR bracket to bitumen's disk-backed
 // `TarOpenable`. Split from `embarcadero.oci`'s cross-platform sources because it needs
-// `bitumen.jvm`; the in-memory `data.open[Image]` (via `ImageDataOpenable`) stays in the core.
+// `bitumen.jvm`; the in-memory `data.open[Image]` (via `Image.DataOpenable`) stays in the core.
 class ImageOpenable[path: Abstractable across Paths to Text]
   ( using Tactic[Oci.Error], Tactic[Tar.Error], Tactic[StreamError] )
 extends Openable:

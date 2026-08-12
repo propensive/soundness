@@ -39,9 +39,9 @@ import rudiments.*
 
 // The contextual watch handle within an `open[Watch]` block, in the manner of galilei's
 // `file`. Transparent inline so the handle's precise (capturing) type is preserved.
-transparent inline def watch(using handle: WatchHandle^): handle.type = handle
+transparent inline def watch(using handle: Watch.Handle^): handle.type = handle
 
-export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
+export Watch.Event.{NewFile, NewDirectory, Modify, Delete}
 
 package watchers:
   given nativeWatcher: Watcher = NativeWatcher

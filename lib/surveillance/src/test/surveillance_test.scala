@@ -45,18 +45,18 @@ import filesystemBackends.virtualMachine
 
 object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit =
-    test(m"Watching a path beneath a nonexistent directory raises a WatchError"):
+    test(m"Watching a path beneath a nonexistent directory raises a Watch.Error"):
       val target = t"/surveillance-nonexistent-parent-9d3f17/child".as[Path on Local]
-      capture[WatchError](target.open[Watch]() { () }).reason
+      capture[Watch.Error](target.open[Watch]() { () }).reason
 
-    . assert(_ == WatchError.Reason.Nonexistent)
+    . assert(_ == Watch.Error.Reason.Nonexistent)
 
-    test(m"Watching a path whose parent is a regular file raises a WatchError"):
+    test(m"Watching a path whose parent is a regular file raises a Watch.Error"):
       val file = temporaryDirectory[Path on Local]/Uuid().show
       file.create[File]()
-      capture[WatchError]((file/Uuid().show).open[Watch]() { () }).reason
+      capture[Watch.Error]((file/Uuid().show).open[Watch]() { () }).reason
 
-    . assert(_ == WatchError.Reason.NotDirectory)
+    . assert(_ == Watch.Error.Reason.NotDirectory)
 
     test(m"A scoped watch on an untouched directory yields a terminating, empty stream"):
       val directory = temporaryDirectory[Path on Local]/Uuid().show

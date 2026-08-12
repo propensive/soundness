@@ -2373,7 +2373,7 @@ object Xml extends Tag.Container
     // backtracking via `cue`) the parser pushes `pos` to the cursor first,
     // then refreshes its snapshot from the cursor afterwards — refill may
     // compact the buffer, reallocate it, or reset `pos`.
-    // Held as an `AnyRef` field with an exclusive-view accessor (the `TelReader.parser0`
+    // Held as an `AnyRef` field with an exclusive-view accessor (the `Tel.Reader.parser0`
     // pattern): a typed array field's snapshot of the cursor's buffer trips both the
     // classifier and the consume checks.
     @scala.caps.unsafe.untrackedCaptures

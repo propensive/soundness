@@ -42,7 +42,7 @@ import anticipation.*
 // does not offer it is a compile error at the use site rather than a failure at run time.
 object Ecdsa:
   given value: [bits <: 256 | 384 | 521: ValueOf]
-  =>  ( digest: SignatureDigest,
+  =>  ( digest: Signature.Digest,
         crypto: Crypto { def ecdsa(digest: Text): Crypto.SignatureScheme } )
   =>  Ecdsa[bits] =
     Ecdsa(crypto.ecdsa(digest.token))

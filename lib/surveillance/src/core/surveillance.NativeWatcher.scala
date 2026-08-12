@@ -104,20 +104,20 @@ object NativeWatcher extends Watcher:
 
     catch case _: jnf.ClosedWatchServiceException => ()
 
-  private def registerKey(directory: jnf.Path): jnf.WatchKey raises WatchError =
+  private def registerKey(directory: jnf.Path): jnf.WatchKey raises Watch.Error =
     try directory.register(service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
     catch
-      case _: jnf.NoSuchFileException   => abort(WatchError(WatchError.Reason.Nonexistent))
-      case _: jnf.NotDirectoryException => abort(WatchError(WatchError.Reason.NotDirectory))
-      case _: jnf.AccessDeniedException => abort(WatchError(WatchError.Reason.PermissionDenied))
-      case _: SecurityException         => abort(WatchError(WatchError.Reason.PermissionDenied))
+      case _: jnf.NoSuchFileException   => abort(Watch.Error(Watch.Error.Reason.Nonexistent))
+      case _: jnf.NotDirectoryException => abort(Watch.Error(Watch.Error.Reason.NotDirectory))
+      case _: jnf.AccessDeniedException => abort(Watch.Error(Watch.Error.Reason.PermissionDenied))
+      case _: SecurityException         => abort(Watch.Error(Watch.Error.Reason.PermissionDenied))
 
       // `register` on an existing, accessible directory has essentially one remaining
       // failure mode: the operating system's watch limit (e.g. inotify `max_user_watches`).
-      case _: ji.IOException            => abort(WatchError(WatchError.Reason.LimitExceeded))
+      case _: ji.IOException            => abort(Watch.Error(Watch.Error.Reason.LimitExceeded))
 
-  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[WatchEvent])
-  :   Watcher.Registration raises WatchError =
+  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[Watch.Event])
+  :   Watcher.Registration raises Watch.Error =
 
     val pathWatches: scala.collection.immutable.Set[PathWatch] = watchesMutex:
       val watches0 = watches
@@ -136,7 +136,7 @@ object NativeWatcher extends Watcher:
   private class PathWatch
     ( private[NativeWatcher] val key:    jnf.WatchKey,
       private[NativeWatcher] val base:   jnf.Path,
-                             val spool:  Relay[WatchEvent],
+                             val spool:  Relay[Watch.Event],
                              val filter: Text -> Boolean ):
 
     def put(event: jnf.WatchEvent[?]): Unit =
@@ -149,14 +149,14 @@ object NativeWatcher extends Watcher:
               event.kind match
                 case ENTRY_CREATE =>
                   if base.resolve(path).nn.toFile.nn.isDirectory
-                  then spool.put(WatchEvent.NewDirectory(base.toString.show, name))
-                  else spool.put(WatchEvent.NewFile(base.toString.show, name))
+                  then spool.put(Watch.Event.NewDirectory(base.toString.show, name))
+                  else spool.put(Watch.Event.NewFile(base.toString.show, name))
 
                 case ENTRY_MODIFY =>
-                  spool.put(WatchEvent.Modify(base.toString.show, name))
+                  spool.put(Watch.Event.Modify(base.toString.show, name))
 
                 case ENTRY_DELETE =>
-                  spool.put(WatchEvent.Delete(base.toString.show, name))
+                  spool.put(Watch.Event.Delete(base.toString.show, name))
 
                 case _ =>
                   ()

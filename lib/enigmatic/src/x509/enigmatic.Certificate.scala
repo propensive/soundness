@@ -86,7 +86,7 @@ object Certificate:
       alternatives: List[Text] = Nil )
     ( using algorithm:     cipher & Signing,
             signature:     cipher is SignatureAlgorithm,
-            digest:        SignatureDigest,
+            digest:        Signature.Digest,
             hash:          Hash in Sha2[256],
             erased permit: Permit[Weakness[cipher]] )
     ( using Tactic[CertificateError], Tactic[Asn1.Error], Diagnostics )

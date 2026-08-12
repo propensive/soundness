@@ -47,12 +47,12 @@ extension [encodable: Encodable in Data](value: encodable)
 
     Hmac(crypto.hmac(hash.hmacName).mac(key, encodable.encode(value)))
 
-// The digest an asymmetric signature is taken over. `SignatureDigest`'s companion supplies
+// The digest an asymmetric signature is taken over. `Signature.Digest`'s companion supplies
 // SHA-256, so importing one of these is only necessary to choose something else.
 package signatureDigests:
-  given sha256Signature: SignatureDigest = SignatureDigest(t"SHA256")
-  given sha384Signature: SignatureDigest = SignatureDigest(t"SHA384")
-  given sha512Signature: SignatureDigest = SignatureDigest(t"SHA512")
+  given sha256Signature: Signature.Digest = Signature.Digest(t"SHA256")
+  given sha384Signature: Signature.Digest = Signature.Digest(t"SHA384")
+  given sha512Signature: Signature.Digest = Signature.Digest(t"SHA512")
 
 package blockCipherMode:
   export Cbc.mode as cbc

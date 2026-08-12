@@ -43,7 +43,7 @@ export
       Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
       MlDsa, NoPadding, Ofb, Pem, Password,
       Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      SignatureDigest, Symmetric, SymmetricKey, TripleDes, uncloak }
+      Symmetric, SymmetricKey, TripleDes, uncloak }
 
 package signatureDigests:
   export enigmatic.signatureDigests.{sha256Signature, sha384Signature, sha512Signature}
