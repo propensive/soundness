@@ -32,43 +32,8 @@
                                                                                                   */
 package tarantula
 
-import scala.caps
-
-import ambience.*
 import anticipation.*
-import contingency.*
-import fulminate.*
-import guillotine.*
-import parasite.*
-import telekinesis.*
-import urticose.*
 import vacuous.*
-
-// The capture set of each instance is spelled out rather than inferred: an inferred one would
-// freshen the capabilities the instance was built from, and the `Result` refinement would then
-// fail to match at the use site.
-given webDriverSessional
-:   ( online:      Online,
-      backend:     Http.Backend,
-      loggable:    (Http.Event is Loggable)^,
-      tactic:      Tactic[WebDriverError],
-      diagnostics: Diagnostics )
-=>  ( WebDriverSessional^{online, loggable, tactic, caps.any} ) =
-
-  WebDriverSessional()
-
-given browserSessional
-:   ( online:      Online,
-      backend:     Http.Backend,
-      working:     WorkingDirectory,
-      monitor:     Monitor,
-      loggable:    (Http.Event is Loggable)^,
-      exec:        (ExecEvent is Loggable)^,
-      tactic:      Tactic[WebDriverError],
-      diagnostics: Diagnostics )
-=>  ( BrowserSessional^{online, monitor, loggable, exec, tactic, caps.any} ) =
-
-  BrowserSessional()
 
 // The session in scope, for code that reads better as `browser.title()` than `session.title()`.
 // A *named* using parameter, not a `summon`, which would mint a fresh root instead of referring
@@ -76,9 +41,9 @@ given browserSessional
 def browser(using session: WebDriverSession^): WebDriverSession^{session} = session
 
 // Sugar over the session's element methods, so that `element.click()` reads as it did when
-// `Element` was an inner class of the session. The session is a *named* using parameter: a
+// `WebElement` was an inner class of the session. The session is a *named* using parameter: a
 // `summon[WebDriverSession^]` would mint a fresh root rather than refer to the one in scope.
-extension (element: Element)
+extension (element: WebElement)
   def click()(using session: WebDriverSession^): Unit = session.click(element)
   def clear()(using session: WebDriverSession^): Unit = session.clear(element)
   def text()(using session: WebDriverSession^): Text = session.text(element)
@@ -104,25 +69,25 @@ extension (element: Element)
   def property(name: Text)(using session: WebDriverSession^): Optional[Text] =
     session.property(element, name)
 
-  def element[focus: Focusable](value: focus)(using session: WebDriverSession^): Element =
+  def element[focus: Focusable](value: focus)(using session: WebDriverSession^): WebElement =
     session.element(element, value)
 
   @targetName("at")
-  infix def / [focus: Focusable](value: focus)(using session: WebDriverSession^): List[Element] =
+  infix def / [focus: Focusable](value: focus)(using session: WebDriverSession^): List[WebElement] =
     session.elements(element, value)
 
 extension (root: ShadowRoot)
-  def element[focus: Focusable](value: focus)(using session: WebDriverSession^): Element =
+  def element[focus: Focusable](value: focus)(using session: WebDriverSession^): WebElement =
     session.element(root, value)
 
   @targetName("at")
-  infix def / [focus: Focusable](value: focus)(using session: WebDriverSession^): List[Element] =
+  infix def / [focus: Focusable](value: focus)(using session: WebDriverSession^): List[WebElement] =
     session.elements(root, value)
 
 // The chained form the documentation has always shown — `browser / id"menu" / Li / cls"item"` —
 // which selects from every element found so far, deduplicating nothing: the protocol has no
 // batch find, so this is one request per element, as any WebDriver client must do.
-extension (elements: List[Element])
+extension (elements: List[WebElement])
   @targetName("at")
-  infix def / [focus: Focusable](value: focus)(using session: WebDriverSession^): List[Element] =
+  infix def / [focus: Focusable](value: focus)(using session: WebDriverSession^): List[WebElement] =
     List.of(elements.stdlib.flatMap(session.elements(_, value).stdlib))

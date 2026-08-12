@@ -51,7 +51,10 @@ object Focusable:
 
   given text: Text is Focusable = Focusable(t"link text", identity(_))
   given selector: SelectorList is Focusable = Focusable(t"css selector", _.show)
-  given tag: Tag is Focusable = Focusable(t"tag name", _.label)
+  // Polymorphic in the tag type, not `Tag is Focusable`: every tag in a vocabulary has a
+  // singleton type of its own (`H1` is a `Tag.Container of "h1" over Phrasing in Whatwg`), and a
+  // typeclass's `Self` member is invariant, so an instance fixed at `Tag` matches no actual tag.
+  given tag: [tag <: Tag] => tag is Focusable = Focusable(t"tag name", _.label)
   given domId: Name[DomId] is Focusable = Focusable(t"css selector", v => t"#$v")
 
   given cssClass: ClassList is Focusable =

@@ -2865,7 +2865,10 @@ object tarantula extends Library:
     override def scalaJs = false // extends `tarantula.core`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, image):
+  // The offline suite fakes an `Http.Backend`, so it needs the logging and process givens the
+  // library only ever takes contextually.
+  object test extends Tests(core, image, eucalyptus.core, ambience.core, honeycomb.core,
+      cataclysm.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

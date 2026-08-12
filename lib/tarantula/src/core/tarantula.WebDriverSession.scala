@@ -246,20 +246,26 @@ extends caps.ExclusiveCapability:
     delete(t"session/$id")
     ()
 
-  private def elementPath(element: Element, path: Text): Text =
+  private def elementPath(element: WebElement, path: Text): Text =
     t"element/${element.elementId}/$path"
 
   private def handle(json: Json, key: Text): Text =
     WebDriverSession.text(json.value.selectDynamic(key.s))
 
-  private def handles(json: Json): List[Element] =
+  private def handles(json: Json): List[WebElement] =
     val values = WebDriverSession.list(json.value).stdlib
-    List.of(values.map { json => Element(WebDriverSession.text(json(Wei))) })
+    List.of(values.map { json => WebElement(WebDriverSession.text(json(Wei))) })
 
   // Navigation.
 
   def navigateTo[url: Abstractable across Urls to Text](url: url): Unit =
     command(t"url", Address(url.generic).in[Json])
+
+  // Overloaded for the commonest case. `url"http://…"` has the singleton type `Url["http"]`,
+  // while the `Abstractable` instance is declared for `HttpUrl` — `Url["http" | "https"]` —
+  // whose `Self` member is invariant, so the generic form alone rejects the interpolator's own
+  // result.
+  def navigateTo(url: HttpUrl): Unit = command(t"url", Address(url.show).in[Json])
 
   def url[url: Instantiable across Urls from Text](): url =
     url(WebDriverSession.text(read(t"url").value))
@@ -283,77 +289,77 @@ extends caps.ExclusiveCapability:
   def executeAsync(script: Text, arguments: List[Json] = Nil): Json =
     send(t"execute/async", Script(script, arguments).in[Json]).value
 
-  // Finding elements, at page scope and relative to an element. `Element` is pure, so building
+  // Finding elements, at page scope and relative to an element. `WebElement` is pure, so building
   // one inside this `map` constructs no capability and hoists no fresh root.
-  def element[focus: Focusable](value: focus): Element =
-    Element(handle(send(t"element", locator(value)), Wei))
+  def element[focus: Focusable](value: focus): WebElement =
+    WebElement(handle(send(t"element", locator(value)), Wei))
 
-  def elements[focus: Focusable](value: focus): List[Element] =
+  def elements[focus: Focusable](value: focus): List[WebElement] =
     handles(send(t"elements", locator(value)))
 
-  def element[focus: Focusable](element: Element, value: focus): Element =
-    Element(handle(send(elementPath(element, t"element"), locator(value)), Wei))
+  def element[focus: Focusable](element: WebElement, value: focus): WebElement =
+    WebElement(handle(send(elementPath(element, t"element"), locator(value)), Wei))
 
-  def elements[focus: Focusable](element: Element, value: focus): List[Element] =
+  def elements[focus: Focusable](element: WebElement, value: focus): List[WebElement] =
     handles(send(elementPath(element, t"elements"), locator(value)))
 
-  def activeElement(): Element = Element(handle(read(t"element/active"), Wei))
+  def activeElement(): WebElement = WebElement(handle(read(t"element/active"), Wei))
 
   // Shadow DOM. Only *open* shadow roots are reachable; a closed one raises `NoSuchShadowRoot`.
-  def shadowRoot(element: Element): ShadowRoot =
+  def shadowRoot(element: WebElement): ShadowRoot =
     ShadowRoot(handle(read(elementPath(element, t"shadow")), Shadow))
 
-  def element[focus: Focusable](root: ShadowRoot, value: focus): Element =
-    Element(handle(send(t"shadow/${root.shadowId}/element", locator(value)), Wei))
+  def element[focus: Focusable](root: ShadowRoot, value: focus): WebElement =
+    WebElement(handle(send(t"shadow/${root.shadowId}/element", locator(value)), Wei))
 
-  def elements[focus: Focusable](root: ShadowRoot, value: focus): List[Element] =
+  def elements[focus: Focusable](root: ShadowRoot, value: focus): List[WebElement] =
     handles(send(t"shadow/${root.shadowId}/elements", locator(value)))
 
   // Acting on an element.
-  def click(element: Element): Unit = command(elementPath(element, t"click"), Empty().in[Json])
-  def clear(element: Element): Unit = command(elementPath(element, t"clear"), Empty().in[Json])
+  def click(element: WebElement): Unit = command(elementPath(element, t"click"), Empty().in[Json])
+  def clear(element: WebElement): Unit = command(elementPath(element, t"clear"), Empty().in[Json])
 
-  def value(element: Element, text: Text): Unit =
+  def value(element: WebElement, text: Text): Unit =
     command(elementPath(element, t"value"), Keys(text).in[Json])
 
   // Reading an element's state. `attribute` reads the markup's attribute, `property` the live
   // DOM property; the two diverge as soon as a page's script touches the node.
-  def text(element: Element): Text =
+  def text(element: WebElement): Text =
     WebDriverSession.text(read(elementPath(element, t"text")).value)
 
-  def tagName(element: Element): Text =
+  def tagName(element: WebElement): Text =
     WebDriverSession.text(read(elementPath(element, t"name")).value)
 
-  def role(element: Element): Text =
+  def role(element: WebElement): Text =
     WebDriverSession.text(read(elementPath(element, t"computedrole")).value)
 
-  def label(element: Element): Text =
+  def label(element: WebElement): Text =
     WebDriverSession.text(read(elementPath(element, t"computedlabel")).value)
 
-  def enabled(element: Element): Boolean =
+  def enabled(element: WebElement): Boolean =
     WebDriverSession.boolean(read(elementPath(element, t"enabled")).value)
 
-  def selected(element: Element): Boolean =
+  def selected(element: WebElement): Boolean =
     WebDriverSession.boolean(read(elementPath(element, t"selected")).value)
 
-  def attribute(element: Element, name: Text): Optional[Text] =
+  def attribute(element: WebElement, name: Text): Optional[Text] =
     safely(WebDriverSession.text(read(elementPath(element, t"attribute/$name")).value))
 
-  def property(element: Element, name: Text): Optional[Text] =
+  def property(element: WebElement, name: Text): Optional[Text] =
     safely(WebDriverSession.text(read(elementPath(element, t"property/$name")).value))
 
-  def css(element: Element, name: Text): Text =
+  def css(element: WebElement, name: Text): Text =
     WebDriverSession.text(read(elementPath(element, t"css/$name")).value)
 
-  def rect(element: Element): WebDriverSession.Rect =
+  def rect(element: WebElement): WebDriverSession.Rect =
     WebDriverSession.rect(read(elementPath(element, t"rect")).value)
 
   // Not a protocol command: `displayed` was dropped between the JSON Wire Protocol and the W3C
   // specification, which offers the "element displayedness" atom instead. Running it as a script
   // is what every conforming client does.
-  def displayed(element: Element): Boolean =
+  def displayed(element: WebElement): Boolean =
     WebDriverSession.boolean:
       execute(t"return arguments[0].getClientRects().length > 0", List(element.in[Json]))
 
-  def screenshotData(element: Element): Data =
+  def screenshotData(element: WebElement): Data =
     WebDriverSession.text(read(elementPath(element, t"screenshot")).value).deserialize[Base64]
