@@ -39,7 +39,7 @@ import proscenium.compat.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
-import cataclysm.Syntax
+import cataclysm.Css.Syntax
 import Css.Node.*
 
 object Tests extends Suite(m"Cataclysm Tests"):
@@ -70,9 +70,9 @@ object Tests extends Suite(m"Cataclysm Tests"):
   val col: Combinator = Combinator.Column
 
   // ── value-definition-syntax helpers ──────────────────────────────────────
-  def vp(text: Text): Syntax = SyntaxParser.parse(text)
-  def kw(name: Text): Syntax = Syntax.Keyword(name)
-  def ty(name: Text): Syntax = Syntax.Type(name, Unset)
+  def vp(text: Text): Css.Syntax = SyntaxParser.parse(text)
+  def kw(name: Text): Css.Syntax = Css.Syntax.Keyword(name)
+  def ty(name: Text): Css.Syntax = Css.Syntax.Type(name, Unset)
 
   // ── value-tokenizer helpers ──────────────────────────────────────────────
   def vt(text: Text): List[ValueToken] = ValueTokenizer.tokens(text)
@@ -84,7 +84,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
   def vm(property: Text, value: Text): Optional[Outcome] =
     PropertyDef.of(property).let(SyntaxMatcher.check(_, value))
 
-  def vmatch(grammar: Syntax, value: Text): Outcome = SyntaxMatcher.check(grammar, value)
+  def vmatch(grammar: Css.Syntax, value: Text): Outcome = SyntaxMatcher.check(grammar, value)
 
   def run(): Unit =
     suite(m"CSS parsing"):
@@ -332,7 +332,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
         PropertyDef.of(t"colour").absent
       . assert(_ == true)
 
-    suite(m"Value Definition Syntax"):
+    suite(m"Value Definition Css.Syntax"):
       test(m"a primitive type"):
         vp(t"<color>")
       . assert(_ == ty(t"color"))
@@ -343,67 +343,67 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
       test(m"alternatives with the bar combinator"):
         vp(t"<length> | auto")
-      . assert(_ == Syntax.OneOf(List(ty(t"length"), kw(t"auto"))))
+      . assert(_ == Css.Syntax.OneOf(List(ty(t"length"), kw(t"auto"))))
 
       test(m"the any-order double-bar combinator"):
         vp(t"<line-width> || <line-style> || <color>")
-      . assert(_ == Syntax.AnyOf(List(ty(t"line-width"), ty(t"line-style"), ty(t"color"))))
+      . assert(_ == Css.Syntax.AnyOf(List(ty(t"line-width"), ty(t"line-style"), ty(t"color"))))
 
       test(m"the all-of double-ampersand combinator"):
         vp(t"<a> && <b>")
-      . assert(_ == Syntax.AllOf(List(ty(t"a"), ty(t"b"))))
+      . assert(_ == Css.Syntax.AllOf(List(ty(t"a"), ty(t"b"))))
 
       test(m"juxtaposition is a sequence"):
         vp(t"<a> <b>")
-      . assert(_ == Syntax.Sequence(List(ty(t"a"), ty(t"b"))))
+      . assert(_ == Css.Syntax.Sequence(List(ty(t"a"), ty(t"b"))))
 
       test(m"the optional multiplier"):
         vp(t"<a>?")
-      . assert(_ == Syntax.Repeated(ty(t"a"), 0, 1, false))
+      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 0, 1, false))
 
       test(m"the star multiplier"):
         vp(t"<a>*")
-      . assert(_ == Syntax.Repeated(ty(t"a"), 0, Unset, false))
+      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 0, Unset, false))
 
       test(m"the plus multiplier"):
         vp(t"<a>+")
-      . assert(_ == Syntax.Repeated(ty(t"a"), 1, Unset, false))
+      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 1, Unset, false))
 
       test(m"a range multiplier"):
         vp(t"<a>{1,4}")
-      . assert(_ == Syntax.Repeated(ty(t"a"), 1, 4, false))
+      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 1, 4, false))
 
       test(m"the comma-separated-list multiplier"):
         vp(t"<a>#")
-      . assert(_ == Syntax.Repeated(ty(t"a"), 1, Unset, true))
+      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 1, Unset, true))
 
       test(m"a bounded comma-separated list"):
         vp(t"<a>#{1,4}")
-      . assert(_ == Syntax.Repeated(ty(t"a"), 1, 4, true))
+      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 1, 4, true))
 
       test(m"a bracketed group with a multiplier"):
         vp(t"[ <a> | <b> ]?")
-      . assert(_ == Syntax.Repeated(Syntax.OneOf(List(ty(t"a"), ty(t"b"))), 0, 1, false))
+      . assert(_ == Css.Syntax.Repeated(Css.Syntax.OneOf(List(ty(t"a"), ty(t"b"))), 0, 1, false))
 
       test(m"functional notation"):
         vp(t"rgb( <number>#{3} )")
-      . assert(_ == Syntax.Function(t"rgb", Syntax.Repeated(ty(t"number"), 3, 3, true)))
+      . assert(_ == Css.Syntax.Function(t"rgb", Css.Syntax.Repeated(ty(t"number"), 3, 3, true)))
 
       test(m"a property reference"):
         vp(t"<'border-width'>")
-      . assert(_ == Syntax.Property(t"border-width"))
+      . assert(_ == Css.Syntax.Property(t"border-width"))
 
       test(m"a bounded type keeps its range as raw text"):
         vp(t"<integer [1,4]>")
-      . assert(_ == Syntax.Type(t"integer", t"1,4"))
+      . assert(_ == Css.Syntax.Type(t"integer", t"1,4"))
 
       test(m"a literal slash in a sequence"):
         vp(t"<a> / <b>")
-      . assert(_ == Syntax.Sequence(List(ty(t"a"), Syntax.Literal(t"/"), ty(t"b"))))
+      . assert(_ == Css.Syntax.Sequence(List(ty(t"a"), Css.Syntax.Literal(t"/"), ty(t"b"))))
 
       test(m"the bar combinator is looser than juxtaposition"):
         vp(t"<a> <b> | <c>")
-      . assert(_ == Syntax.OneOf(List(Syntax.Sequence(List(ty(t"a"), ty(t"b"))), ty(t"c"))))
+      . assert(_ == Css.Syntax.OneOf(List(Css.Syntax.Sequence(List(ty(t"a"), ty(t"b"))), ty(t"c"))))
 
       test(m"every property's value grammar parses"):
         PropertyDef.list.map(_.grammar).length
@@ -480,7 +480,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == calcTokens)
 
     suite(m"Value matching"):
-      val numbers = Syntax.OneOf(List(kw(t"auto"), ty(t"length")))
+      val numbers = Css.Syntax.OneOf(List(kw(t"auto"), ty(t"length")))
 
       test(m"a keyword value is valid"):
         vm(t"color", t"red")
@@ -511,19 +511,19 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == Outcome.Invalid)
 
       test(m"an unimplemented type is unsupported"):
-        vmatch(Syntax.Type(t"frobnicate", Unset), t"anything")
+        vmatch(Css.Syntax.Type(t"frobnicate", Unset), t"anything")
       . assert(_ == Outcome.Unsupported(List(t"frobnicate")))
 
       test(m"a sequence of lengths"):
-        vmatch(Syntax.Sequence(List(ty(t"length"), ty(t"length"))), t"1px 2px")
+        vmatch(Css.Syntax.Sequence(List(ty(t"length"), ty(t"length"))), t"1px 2px")
       . assert(_ == Outcome.Valid)
 
       test(m"any-order matching with the double-ampersand"):
-        vmatch(Syntax.AnyOf(List(kw(t"a"), kw(t"b"))), t"b a")
+        vmatch(Css.Syntax.AnyOf(List(kw(t"a"), kw(t"b"))), t"b a")
       . assert(_ == Outcome.Valid)
 
       test(m"a comma-separated repeat"):
-        vmatch(Syntax.Repeated(ty(t"length"), 1, Unset, true), t"1px, 2px, 3px")
+        vmatch(Css.Syntax.Repeated(ty(t"length"), 1, Unset, true), t"1px, 2px, 3px")
       . assert(_ == Outcome.Valid)
 
       test(m"the global keyword inherit is valid for any property"):

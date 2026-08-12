@@ -49,7 +49,7 @@ import vacuous.*
 
 import hellenism.classloaders.threadContextClassloader
 
-// Checks a CSS property value against its `Syntax` grammar. Composite `<type>`s
+// Checks a CSS property value against its `Css.Syntax` grammar. Composite `<type>`s
 // are resolved lazily from the bundled `syntaxes.json` (which expand to keywords,
 // functions and a handful of leaf primitives); leaf primitives (`<length>`,
 // `<color>` parts, …) are matched at the token level. A value containing an
@@ -69,13 +69,13 @@ object SyntaxMatcher:
     val entries = cp"/cataclysm/syntaxes.json".read[Json].as[proscenium.Map[Text, Entry]]
     entries.stdlib.view.mapValues(_.syntax).toMap
 
-  private val cache: scala.collection.mutable.HashMap[Text, Optional[Syntax]] =
+  private val cache: scala.collection.mutable.HashMap[Text, Optional[Css.Syntax]] =
     scala.collection.mutable.HashMap()
 
-  private def composite(name: Text): Optional[Syntax] =
+  private def composite(name: Text): Optional[Css.Syntax] =
     cache.getOrElseUpdate(name, rawComposites.get(name).map(parsed).getOrElse(Unset))
 
-  private def parsed(raw: Text): Optional[Syntax] = safely(SyntaxParser.parse(raw))
+  private def parsed(raw: Text): Optional[Css.Syntax] = safely(SyntaxParser.parse(raw))
 
   private val lengthUnits: Set[String] =
     Set("px", "em", "rem", "ex", "ch", "cap", "ic", "lh", "rlh", "vw", "vh", "vi", "vb", "vmin",
@@ -111,7 +111,7 @@ object SyntaxMatcher:
   def check(property: PropertyDef, value: Text)(using Tactic[Css.Error]): Outcome =
     check(property.grammar, value)
 
-  def check(grammar: Syntax, value: Text)(using Tactic[Css.Error]): Outcome =
+  def check(grammar: Css.Syntax, value: Text)(using Tactic[Css.Error]): Outcome =
     val tokens = ValueTokenizer.tokens(value).filter(_ != ValueToken.Whitespace)
 
     if tokens.exists(substitution) then Outcome.Valid
@@ -135,60 +135,60 @@ object SyntaxMatcher:
     private val resolving: scala.collection.mutable.HashSet[Text] =
       scala.collection.mutable.HashSet()
 
-    def consume(syntax: Syntax, tokens: List[ValueToken]): List[List[ValueToken]] = syntax match
-      case Syntax.Keyword(name) =>
+    def consume(syntax: Css.Syntax, tokens: List[ValueToken]): List[List[ValueToken]] = syntax match
+      case Css.Syntax.Keyword(name) =>
         keyword(name, tokens)
 
-      case Syntax.Literal(token) =>
+      case Css.Syntax.Literal(token) =>
         literal(token, tokens)
 
-      case Syntax.Type(name, _) =>
+      case Css.Syntax.Type(name, _) =>
         typeMatch(name, tokens)
 
-      case Syntax.Property(name) =>
+      case Css.Syntax.Property(name) =>
         propertyMatch(name, tokens)
 
-      case Syntax.Function(name, body) =>
+      case Css.Syntax.Function(name, body) =>
         functionMatch(name, body, tokens)
 
-      case Syntax.Sequence(terms) =>
+      case Css.Syntax.Sequence(terms) =>
         terms.fold(List(tokens)): (states, term) =>
           states.bind(consume(term, _))
 
-      case Syntax.OneOf(options) =>
+      case Css.Syntax.OneOf(options) =>
         options.bind(consume(_, tokens))
 
-      case Syntax.AllOf(terms) =>
+      case Css.Syntax.AllOf(terms) =>
         allOf(terms, tokens)
 
-      case Syntax.AnyOf(terms) =>
+      case Css.Syntax.AnyOf(terms) =>
         anyOf(terms, tokens)
 
-      case Syntax.Repeated(term, min, max, separated) =>
+      case Css.Syntax.Repeated(term, min, max, separated) =>
         repeat(term, min, max, separated, tokens)
 
-      case Syntax.Mandatory(term) =>
+      case Css.Syntax.Mandatory(term) =>
         consume(term, tokens)
 
-    private def pickEach(terms: List[Syntax], tokens: List[ValueToken])
-    :   List[(List[Syntax], List[ValueToken])] =
+    private def pickEach(terms: List[Css.Syntax], tokens: List[ValueToken])
+    :   List[(List[Css.Syntax], List[ValueToken])] =
 
       List.range(0, terms.stdlib.length).bind: index =>
         consume(terms.stdlib(index), tokens).map: rem =>
-          (List.of(terms.stdlib.patch(index, List[Syntax]().stdlib, 1)), rem)
+          (List.of(terms.stdlib.patch(index, List[Css.Syntax]().stdlib, 1)), rem)
 
-    private def allOf(terms: List[Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
+    private def allOf(terms: List[Css.Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
       if terms.nil then List(tokens)
       else
         pickEach(terms, tokens).bind: (rest, rem) =>
           allOf(rest, rem)
 
-    private def anyOf(terms: List[Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
+    private def anyOf(terms: List[Css.Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
       pickEach(terms, tokens).bind: (rest, rem) =>
         (rem :: anyOf(rest, rem)): List[List[ValueToken]]
 
     private def repeat
-      ( term: Syntax, min: Int, max: Optional[Int], separated: Boolean, tokens: List[ValueToken] )
+      ( term: Css.Syntax, min: Int, max: Optional[Int], separated: Boolean, tokens: List[ValueToken] )
     :   List[List[ValueToken]] =
 
       def go(count: Int, toks: List[ValueToken]): List[List[ValueToken]] =
@@ -224,7 +224,7 @@ object SyntaxMatcher:
 
     private def typeMatch(name: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
       composite(name) match
-        case syntax: Syntax => guarded(name, consume(syntax, tokens))
+        case syntax: Css.Syntax => guarded(name, consume(syntax, tokens))
         case _              => primitive(name, tokens)
 
     private def propertyMatch(name: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
@@ -249,7 +249,7 @@ object SyntaxMatcher:
         resolving -= name
         result
 
-    private def functionMatch(name: Text, body: Syntax, tokens: List[ValueToken])
+    private def functionMatch(name: Text, body: Css.Syntax, tokens: List[ValueToken])
     :   List[List[ValueToken]] =
 
       tokens match

@@ -78,8 +78,8 @@ object PropertyDef:
 
 // The definition of a single CSS property, taken from the bundled MDN `mdn/data`
 // dataset (`css/properties.json`, CC0). `syntax` is the raw value grammar (CSS
-// Value Definition Syntax); `grammar` is its parsed form, computed on demand.
+// Value Definition Css.Syntax); `grammar` is its parsed form, computed on demand.
 case class PropertyDef(name: Text, syntax: Text) derives CanEqual:
-  lazy val grammar: Syntax =
+  lazy val grammar: Css.Syntax =
     import contingency.strategies.throwUnsafely
     SyntaxParser.parse(syntax)

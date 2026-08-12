@@ -345,4 +345,24 @@ object Css:
   trait Convertible extends Typeclass, Topical:
     def value(self: Self): Text
 
+  // Syntax → Css.Syntax
+  // The CSS Value Definition Syntax (VDS) — the grammar notation in which every
+  // property's permitted values are described. A `Syntax` is the parsed form of a
+  // grammar string such as `<line-width> || <line-style> || <color>`; it is what a
+  // later step matches a concrete value against. Nesting it under `Css` resolves the
+  // clash with stenography's `Syntax` that kept it unexported.
+  enum Syntax derives CanEqual:
+    case Keyword(name: Text)                          // a literal identifier, e.g. `auto`
+    case Literal(token: Text)                         // a literal token, e.g. `/` `,` or quoted `'+'`
+    case Type(name: Text, bounds: Optional[Text])     // `<length>`, `<integer [1,4]>` (bounds raw)
+    case Property(name: Text)                         // `<'border-width'>` — another property
+    case Function(name: Text, body: Syntax)           // `rgb( <number>#{3} )`
+    case Sequence(terms: List[Syntax])               // juxtaposition: terms in order
+    case OneOf(options: List[Syntax])                // `|`  — exactly one
+    case AnyOf(terms: List[Syntax])                  // `||` — one or more, in any order
+    case AllOf(terms: List[Syntax])                  // `&&` — all, in any order
+    // a repeat multiplier: `?` `*` `+` `{m,n}` `#`
+    case Repeated(term: Syntax, min: Int, max: Optional[Int], separated: Boolean)
+    case Mandatory(term: Syntax)                     // `!` — the group must produce a value
+
 case class Css(rules: List[Css.Node]) derives CanEqual

@@ -37,7 +37,7 @@ import contingency.*
 import gossamer.*
 import zephyrine.*
 
-// Breaks a CSS property value into `ValueToken`s, following the CSS Syntax
+// Breaks a CSS property value into `ValueToken`s, following the CSS Css.Syntax
 // Module Level 3 tokenizer for the subset that appears in values. The output
 // feeds the value matcher; it is deliberately lenient, raising a `Css.Error`
 // only for an unterminated string.
