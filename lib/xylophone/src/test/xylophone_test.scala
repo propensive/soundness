@@ -1146,6 +1146,51 @@ object Tests extends Suite(m"Xylophone tests"):
         . map(_.focus)
       . assert(_ == List("f"))
 
+    suite(m"XPath combinators"):
+      test(m"an absolute path builds with /"):
+        (XPath / t"html" / t"body").encode
+      . assert(_ == t"/html/body")
+
+      test(m"deep builds a descendant-or-self step"):
+        XPath.deep(t"div").encode
+      . assert(_ == t"//div")
+
+      test(m"where adds a contains predicate over an attribute"):
+        XPath.deep(t"div").where(XPath.attribute(t"class").contains(t"button")).encode
+      . assert(_ == t"//div[contains(@class,'button')]")
+
+      test(m"predicates compose with and"):
+        XPath.deep(t"div")
+        . where(XPath.attribute(t"class").contains(t"button") and XPath.textual === t"Submit")
+        . encode
+      . assert(_ == t"//div[contains(@class,'button') and text()='Submit']")
+
+      test(m"an ordinal predicate applies to the last step"):
+        (XPath / t"ul" / t"li")(2).encode
+      . assert(_ == t"/ul/li[2]")
+
+      test(m"position and last compose"):
+        (XPath / t"li").where(XPath.position === XPath.last).encode
+      . assert(_ == t"/li[position()=last()]")
+
+      test(m"a parent step re-sugars to double-dot"):
+        XPath.deep(t"span").on(XPath.Axis.Parent, XPath.NodeTest.Node).encode
+      . assert(_ == t"//span/..")
+
+      test(m"an attribute-presence predicate encodes bare"):
+        XPath.deep(t"a").where(XPath.attribute(t"href")).encode
+      . assert(_ == t"//a[@href]")
+
+      test(m"a variable comparison encodes with a dollar"):
+        XPath.relative(t"item").where(XPath.attribute(t"id") === XPath.variable(t"target"))
+        . encode
+      . assert(_ == t"item[@id=$$target]")
+
+      test(m"a combinator path round-trips through the parser"):
+        val path = XPath.deep(t"button").where(XPath.textual === t"Submit")
+        unsafely(path.encode.as[XPath])
+      . assert(_ == XPath.deep(t"button").where(XPath.textual === t"Submit"))
+
     suite(m"HTTP content-type integration"):
       import charEncoders.utf8Encoder
 

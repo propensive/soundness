@@ -114,6 +114,29 @@ object XPath:
     case Route(origin: Origin, steps: List[Step])
     case Substitution(index: Int)
 
+    // Operator members, not extensions: `soundness.*` exports generic
+    // extensions of the same names (`contains`, `===`, `<`, …) whose context
+    // bounds commit before their givens resolve, so an extension here would
+    // be unreachable under the umbrella import. Members always win.
+    infix def or(right: into[Expression]): Expression = Expression.Or(this, right)
+    infix def and(right: into[Expression]): Expression = Expression.And(this, right)
+    def ===(right: into[Expression]): Expression = Expression.Equal(this, right)
+    def !==(right: into[Expression]): Expression = Expression.Unequal(this, right)
+    def <(right: into[Expression]): Expression = Expression.Less(this, right)
+    def <=(right: into[Expression]): Expression = Expression.LessOrEqual(this, right)
+    def >(right: into[Expression]): Expression = Expression.Greater(this, right)
+    def >=(right: into[Expression]): Expression = Expression.GreaterOrEqual(this, right)
+    def +(right: into[Expression]): Expression = Expression.Add(this, right)
+    def -(right: into[Expression]): Expression = Expression.Subtract(this, right)
+    def *(right: into[Expression]): Expression = Expression.Multiply(this, right)
+    def |(right: into[Expression]): Expression = Expression.Union(this, right)
+
+    infix def contains(right: into[Expression]): Expression =
+      Expression.Call(Unset, t"contains", List(this, right))
+
+    infix def startsWith(right: into[Expression]): Expression =
+      Expression.Call(Unset, t"starts-with", List(this, right))
+
   // The simple positional view of a path: what `Xml`'s position `Locator` can
   // resolve against a `PositionIndex`, and what the Wisteria-derived decoders
   // produce for diagnostics.
@@ -121,8 +144,56 @@ object XPath:
     case Element(name: Text, rank: Int)
     case Attribute(name: Text)
 
-  private def qualify(prefix: Optional[Text], local: Text): Text =
-    prefix.let { prefix => t"$prefix:$local" }.or(local)
+  private def qualify(prefix: Optional[Text], local: Text): Text = prefix match
+    case prefix: Text => t"$prefix:$local"
+    case _            => local
+
+  private val descendantStep: Step = Step(Axis.DescendantOrSelf, NodeTest.Node, Nil)
+
+  // Typed construction. A bare `Text` converts to a `child::name` step or to
+  // a string literal (by target type), so paths and predicates read close to
+  // their XPath forms:
+  //
+  //     XPath.deep(t"div").where(XPath.attribute(t"class").contains(t"button")
+  //         and XPath.textual === t"Submit")
+  //
+  // encodes as `//div[contains(@class,'button') and text()='Submit']`.
+  given stepConversion: Conversion[Text, Step] =
+    name => Step(Axis.Child, NodeTest.Name(Unset, name))
+
+  given literalConversion: Conversion[Text, Expression] = Expression.Literal(_)
+  given integerConversion: Conversion[Int, Expression] = int => Expression.Number(int.toDouble)
+  given decimalConversion: Conversion[Double, Expression] = Expression.Number(_)
+  given pathConversion: Conversion[XPath, Expression] = _.expression
+
+  // Absolute path start: `XPath / t"html" / t"body"` is `/html/body`.
+  def /(step: into[Step]): XPath = XPath(Expression.Route(Origin.Root, List(step)))
+
+  // Descendant-or-self start: `XPath.deep(t"div")` is `//div`.
+  def deep(step: into[Step]): XPath =
+    XPath(Expression.Route(Origin.Root, List(descendantStep, step)))
+
+  // Relative path start: `XPath.relative(t"div")` is `div`.
+  def relative(step: into[Step]): XPath = XPath(Expression.Route(Origin.Here, List(step)))
+
+  // The context node, `.` — usable as a path or, via `pathConversion`, in a
+  // predicate.
+  val here: XPath = XPath(Expression.Route(Origin.Here, List(Step(Axis.Self, NodeTest.Node))))
+
+  // Predicate constructors.
+  def attribute(name: Text): Expression =
+    Expression.Route(Origin.Here, List(Step(Axis.Attribute, NodeTest.Name(Unset, name))))
+
+  val textual: Expression =
+    Expression.Route(Origin.Here, List(Step(Axis.Child, NodeTest.Textual)))
+
+  val position: Expression = Expression.Call(Unset, t"position", Nil)
+  val last: Expression = Expression.Call(Unset, t"last", Nil)
+
+  def function(name: Text)(arguments: into[Expression]*): Expression =
+    Expression.Call(Unset, name, List(arguments*))
+
+  def variable(name: Text): Expression = Expression.Variable(Unset, name)
 
   // Operator precedence levels, loosest-first, following the grammar's
   // production nesting (§3.1-§3.5): or=1, and=2, equality=3, relational=4,
@@ -190,9 +261,9 @@ object XPath:
     case NodeTest.Textual                => t"text()"
     case NodeTest.Comment                => t"comment()"
 
-    case NodeTest.Instruction(target) =>
-      target.let { target => t"processing-instruction('$target')" }
-      . or(t"processing-instruction()")
+    case NodeTest.Instruction(target) => target match
+      case target: Text => t"processing-instruction('$target')"
+      case _            => t"processing-instruction()"
 
   private def renderPredicates(predicates: List[Expression]): Text =
     predicates.map { predicate => t"[${render(predicate, 1)}]" }.join
@@ -312,6 +383,40 @@ derives CanEqual:
 
     case other =>
       XPath(XPath.Expression.Route(XPath.Origin.Filter(other, Nil), List(step)))
+
+  // Appends a `child::` step: `XPath / t"html" / t"body"` is `/html/body`.
+  def /(step: into[XPath.Step]): XPath = append(step)
+
+  // Appends a descendant-or-self step: `XPath.deep(t"div").deep(t"a")` is
+  // `//div//a`.
+  def deep(step: into[XPath.Step]): XPath = append(XPath.descendantStep).append(step)
+
+  // Appends a fully-general step on any axis.
+  def on(axis: XPath.Axis, test: XPath.NodeTest): XPath = append(XPath.Step(axis, test))
+
+  // Adds a predicate to the final step (or, for a stepless filter path, to
+  // the filter expression): `XPath.deep(t"div").where(...)` is `//div[...]`.
+  def where(predicate: into[XPath.Expression]): XPath = expression match
+    case XPath.Expression.Route(origin, steps) =>
+      val stdlibSteps = steps.stdlib
+
+      if stdlibSteps.isEmpty then origin match
+        case XPath.Origin.Filter(filtered, predicates) =>
+          val amended = XPath.Origin.Filter(filtered, List.of(predicates.stdlib :+ predicate))
+          XPath(XPath.Expression.Route(amended, Nil))
+
+        case _ =>
+          XPath(XPath.Expression.Route(XPath.Origin.Filter(expression, List(predicate)), Nil))
+      else
+        val lastStep = stdlibSteps.last
+        val amended = lastStep.copy(predicates = List.of(lastStep.predicates.stdlib :+ predicate))
+        XPath(XPath.Expression.Route(origin, List.of(stdlibSteps.init :+ amended)))
+
+    case other =>
+      XPath(XPath.Expression.Route(XPath.Origin.Filter(other, List(predicate)), Nil))
+
+  // Positional predicate: `(XPath / t"li")(2)` is `/li[2]`.
+  def apply(ordinal: Int): XPath = where(XPath.Expression.Number(ordinal))
 
   def element(name: Text, ordinal: Int = 1): XPath =
     append:
