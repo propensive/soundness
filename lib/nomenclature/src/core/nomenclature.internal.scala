@@ -35,7 +35,9 @@ package nomenclature
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import prepositional.*
+import scala.quoted.*
 
 object internal:
   opaque type Name[+plane] <: anticipation.Text = anticipation.Text
@@ -43,7 +45,7 @@ object internal:
   object Name:
     given encodable: [plane] => Name[plane] is Encodable in Text = identity(_)
 
-    inline given decodable: [plane] => (plane is Nominative, Tactic[NameError])
+    inline given decodable: [plane] => (plane is Nominative, Tactic[Name.Error])
     =>  Name[plane] is Decodable in Text =
 
       decoder[plane](apply)
@@ -59,3 +61,15 @@ object internal:
 
     transparent inline def apply[plane](name: Text): Name[plane] =
       ${protointernal.makeName[plane]('name)}
+
+    // NameError → Name.Error
+    case class Error(name: Text, rule: Rule, parameter: Text)(using Diagnostics)
+    extends fulminate.Error(79, 0)
+      ( m"the name $name is not valid because it ${rule.describe(parameter)}" )
+
+    // NameExtractor → Name.Extractor
+    class Extractor[text <: Label]():
+      transparent inline def apply(): Any = ${protointernal.inferName[text]}
+
+      inline def unapply[plane](inline scrutinee: Name[plane]): Boolean =
+        ${protointernal.parse2[plane, text]('scrutinee)}

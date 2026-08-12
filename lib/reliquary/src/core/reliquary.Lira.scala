@@ -180,11 +180,11 @@ object Lira:
         . map(_.valueHash)
         . sortWith: (a, b) => Blob.compare(a, b) < 0
 
-      val beforeReplaceable = before.filter(_.atomClass == AtomClass.Replaceable)
+      val beforeReplaceable = before.filter(_.atomClass == Atom.Class.Replaceable)
 
       val afterReplaceable =
         scala.collection.immutable.Map.from:
-          after.filter(_.atomClass == AtomClass.Replaceable).map: atom => (atom.key, atom)
+          after.filter(_.atomClass == Atom.Class.Replaceable).map: atom => (atom.key, atom)
 
       val replaced = beforeReplaceable
         . flatMap: atom =>
@@ -1073,13 +1073,13 @@ object Lira:
       sigil    = Unset,
       records  = Array.of(
         record("Atom",
-          field("class", Reference(t"AtomClass")),
+          field("class", Reference(t"Atom.Class")),
           field("hash", hash),
           field("key", string))),
       scalars  = builtins ++ Array.of(
         hashScalar,
         scalar("DisciplineId", "discipline-id"),
-        scalar("AtomClass", "atom-class")),
+        scalar("Atom.Class", "atom-class")),
       selects  = Array.empty[SelectDefinition])
 
     val uses: Tels = Tels(

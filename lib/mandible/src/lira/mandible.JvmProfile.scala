@@ -111,7 +111,7 @@ object JvmProfile extends EcosystemProfile:
           // or throws clause changed under a name consumers still resolve. Narrowing
           // accessibility is the case that matters most (D.2, predicate 4), and it lands here
           // because access flags fold into the atom's value.
-          if atom.atomClass == AtomClass.Rigid
+          if atom.atomClass == Atom.Class.Rigid
           && Lira.Hash.text(atom.valueHash) != Lira.Hash.text(replacement.valueHash)
           then violate(t"$key no longer has the shape compiled consumers resolved")
 
@@ -138,7 +138,7 @@ object JvmProfile extends EcosystemProfile:
     val after = surface(next)
 
     val changed = before.stdlib.collect:
-      case (key, atom) if atom.atomClass == AtomClass.Replaceable =>
+      case (key, atom) if atom.atomClass == Atom.Class.Replaceable =>
         after.stdlib.get(key).filter: replacement =>
           Lira.Hash.text(replacement.valueHash) != Lira.Hash.text(atom.valueHash)
 

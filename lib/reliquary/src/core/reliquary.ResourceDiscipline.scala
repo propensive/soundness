@@ -87,12 +87,12 @@ case class ResourceDiscipline(resources: List[Resource]) extends Discipline:
       if exports.stdlib.exists(_.text == path.text) then
         // The value hashes the path alone, so the atom asserts presence and not content: bytes
         // may differ per universe while L108 still requires the name in every one of them.
-        scala.List(Atom(path.text, AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), path.bytes)))
+        scala.List(Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), path.bytes)))
       else if tracked.stdlib.exists(_.text == path.text) then
         // Content-hashed and replaceable: an edit is replaceable churn, a minor event that marks
         // consumers whose used-sets contain the atom as stale (§13.4). Resources create no
         // linkage, so replaceability soundness is trivial and the reference list is empty.
-        scala.List(Atom(path.text, AtomClass.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data)))
+        scala.List(Atom(path.text, Atom.Class.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data)))
       else scala.List()  // claimed by a scan: atomless
 
     Atomization.of(id, List.from(atoms))

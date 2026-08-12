@@ -131,7 +131,7 @@ object WitAtomizer:
 
     val key = resource.let { res => t"$container#$res.${fn.name}" }.or(t"$container#${fn.name}")
 
-    Atom(key, AtomClass.Rigid, hash: out =>
+    Atom(key, Atom.Class.Rigid, hash: out =>
       tag(out, 'f')
       utf8(out, container)
       utf8(out, resource.or(t""))
@@ -189,7 +189,7 @@ object WitAtomizer:
           case Wit.Item.Alias(name, target) =>
             typeKeys += t"$ifaceId#$name"
 
-            atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
+            atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 't')
               utf8(out, t"$ifaceId#$name")
               encode(out, target, scope))
@@ -198,7 +198,7 @@ object WitAtomizer:
             typeKeys += t"$ifaceId#$name"
 
             // Fields fold in declaration order: the canonical ABI is positional (`wit.md` §6).
-            atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
+            atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 'r')
               utf8(out, t"$ifaceId#$name")
               uvarint(out, fields.stdlib.length.toLong)
@@ -210,7 +210,7 @@ object WitAtomizer:
           case Wit.Item.Variant(name, cases) =>
             typeKeys += t"$ifaceId#$name"
 
-            atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
+            atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 'v')
               utf8(out, t"$ifaceId#$name")
               uvarint(out, cases.stdlib.length.toLong)
@@ -222,7 +222,7 @@ object WitAtomizer:
           case Wit.Item.Enumeration(name, cases) =>
             typeKeys += t"$ifaceId#$name"
 
-            atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
+            atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 'e')
               utf8(out, t"$ifaceId#$name")
               uvarint(out, cases.stdlib.length.toLong)
@@ -231,7 +231,7 @@ object WitAtomizer:
           case Wit.Item.Flags(name, names) =>
             typeKeys += t"$ifaceId#$name"
 
-            atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
+            atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 'g')
               utf8(out, t"$ifaceId#$name")
               uvarint(out, names.stdlib.length.toLong)
@@ -240,7 +240,7 @@ object WitAtomizer:
           case Wit.Item.Resource(name, methods) =>
             typeKeys += t"$ifaceId#$name"
 
-            atoms += Atom(t"$ifaceId#$name", AtomClass.Rigid, hash: out =>
+            atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 'R')
               utf8(out, t"$ifaceId#$name"))
 
@@ -249,7 +249,7 @@ object WitAtomizer:
 
         // The interface's own atom folds the sorted key list of its *type* declarations, not
         // its functions: adding a function is additive (`wit.md` §6).
-        atoms += Atom(ifaceId, AtomClass.Rigid, hash: out =>
+        atoms += Atom(ifaceId, Atom.Class.Rigid, hash: out =>
           tag(out, 'I')
           utf8(out, ifaceId)
           val sorted = typeKeys.toList.sortBy(_.s)
@@ -269,13 +269,13 @@ object WitAtomizer:
           . sortBy(_.s)
 
         imports.foreach: imported =>
-          atoms += Atom(t"$worldId#import $imported", AtomClass.Rigid, hash: out =>
+          atoms += Atom(t"$worldId#import $imported", Atom.Class.Rigid, hash: out =>
             tag(out, 'i')
             utf8(out, worldId)
             utf8(out, imported))
 
         world.inlineImports.stdlib.foreach: (name, function) =>
-          atoms += Atom(t"$worldId#import $name", AtomClass.Rigid, hash: out =>
+          atoms += Atom(t"$worldId#import $name", Atom.Class.Rigid, hash: out =>
             tag(out, 'i')
             utf8(out, worldId)
             utf8(out, name)
@@ -289,7 +289,7 @@ object WitAtomizer:
 
               fn.result.lay(tag(out, '0')) { typed => tag(out, '1'); encode(out, typed, SMap()) })
 
-        atoms += Atom(worldId, AtomClass.Rigid, hash: out =>
+        atoms += Atom(worldId, Atom.Class.Rigid, hash: out =>
           tag(out, 'W')
           utf8(out, worldId)
           uvarint(out, exports.length.toLong)

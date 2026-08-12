@@ -37,7 +37,7 @@ export
   . { Remotable, DnsLabel, EmailAddress, Endpoint, Host, Hostname, InterfaceAddress, Internet,
       internet, ip, IpAddressError, Ipv4, Ipv4Subnet, Ipv6, Ipv6Subnet, Localhost, LocalPart, mac,
       MacAddress, NetworkInterface, OfflineError, on, Online, online, Allocatable,
-      Port, PortError, PortType, Protocolic, Quic, serve, Service, subnet, Tcp, tcp, Udp, udp }
+      Port, Protocolic, Quic, serve, Service, subnet, Tcp, tcp, Udp, udp }
 
 package internetAccess:
   export urticose.internetAccess.{offline, online}

@@ -36,29 +36,32 @@ import anticipation.*
 import gossamer.*
 import vacuous.*
 
-object AtomClass:
-  def parse(keyword: Text): Optional[AtomClass] = keyword.s match
-    case "rigid"       => Rigid
-    case "replaceable" => Replaceable
-    case _             => Unset
+object Atom:
+  // AtomClass → Atom.Class, AtomReference → Atom.Reference
+  object Class:
+    def parse(keyword: Text): Optional[Class] = keyword.s match
+      case "rigid"       => Rigid
+      case "replaceable" => Replaceable
+      case _             => Unset
 
-// The two classes of §10.2: rigid atoms are monotonic within a lineage (added, never removed or
-// changed); replaceable atoms may be replaced (same key, new value) within a minor release,
-// leaving compiled consumers behaviorally stale but never broken.
-enum AtomClass:
-  case Rigid, Replaceable
+  // The two classes of §10.2: rigid atoms are monotonic within a lineage (added, never removed or
+  // changed); replaceable atoms may be replaced (same key, new value) within a minor release,
+  // leaving compiled consumers behaviorally stale but never broken.
+  enum Class:
+    case Rigid, Replaceable
 
-  def keyword: Text = this match
-    case Rigid       => t"rigid"
-    case Replaceable => t"replaceable"
+    def keyword: Text = this match
+      case Rigid       => t"rigid"
+      case Replaceable => t"replaceable"
 
-// A symbolic reference from a replaceable atom's content (§11.2): the input to used-set closure.
-// Cross-module value hashes are not computable from one module's content alone, so disciplines
-// emit names, and reliquary resolves them against dependencies' Atoms blobs at assembly time by
-// exact key matching.
-enum AtomReference:
-  case Own(key: Text)
-  case Foreign(key: Text)
+  // A symbolic reference from a replaceable atom's content (§11.2): the input to used-set closure.
+  // Cross-module value hashes are not computable from one module's content alone, so disciplines
+  // emit names, and reliquary resolves them against dependencies' Atoms blobs at assembly time by
+  // exact key matching.
+  enum Reference:
+    case Own(key: Text)
+    case Foreign(key: Text)
+
 
 // The unit of API compatibility (§10.1): a stable key identifying *what* is declared, the atom's
 // class, and the value hash over the discipline's canonical encoding of everything consumers can
@@ -66,6 +69,6 @@ enum AtomReference:
 // computed, never stored, and does not participate in any hash.
 case class Atom
   ( key:        Text,
-    atomClass:  AtomClass,
+    atomClass:  Atom.Class,
     valueHash:  Data,
-    references: List[AtomReference] = List() )
+    references: List[Atom.Reference] = List() )

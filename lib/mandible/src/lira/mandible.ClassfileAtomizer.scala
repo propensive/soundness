@@ -196,7 +196,7 @@ object ClassfileAtomizer:
     // constant pool (JLS 13.4.9), so its *value* is churn a recompile absorbs rather than a
     // linkage contract: replaceable, with no references, exactly as `resource/1` tracks content.
     val atomClass =
-      if member.inlinable then AtomClass.Replaceable else AtomClass.Rigid
+      if member.inlinable then Atom.Class.Replaceable else Atom.Class.Rigid
 
     Atom(t"$owner${member.selector}", atomClass, encoding)
 
@@ -229,7 +229,7 @@ object ClassfileAtomizer:
       if fold.signatures then optional(out, surface.signature)
       texts(out, abstracts)
 
-    Atom(surface.name, AtomClass.Rigid, encoding)
+    Atom(surface.name, Atom.Class.Rigid, encoding)
 
   // Atomizes the visible classes of one release. `classes` is the release's own content, keyed by
   // JVM internal name; `classpath` locates the dependencies whose members present through it.

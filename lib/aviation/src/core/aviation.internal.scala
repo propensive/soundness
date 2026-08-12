@@ -88,7 +88,7 @@ object internal:
 
     def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
 
-    given showable: (endianness: Endianness, months: Months, separation: DateSeparation)
+    given showable: (endianness: Endianness, months: Months, separation: Date.Separation)
     =>  Anniversary is Showable =
 
       anniversary =>

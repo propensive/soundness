@@ -93,7 +93,7 @@ object internal:
     opaque type Ipv4 <: Matchable = Int
     opaque type MacAddress <: Matchable = Long
     opaque type DnsLabel = anticipation.Text
-    opaque type Port <: PortType = Int & PortType
+    opaque type Port <: Port.Type = Int & Port.Type
 
     object DnsLabel:
       given showable: DnsLabel is Showable = identity(_)
@@ -214,7 +214,7 @@ object internal:
       // transport-refined `Port over transport` (e.g. `Port over Tcp`); provide it explicitly.
       given showableOver: [transport] => (Port over transport) is Showable = _.number.show
 
-      given decodable: (numberTactic: Tactic[NumberError], portTactic: Tactic[PortError])
+      given decodable: (numberTactic: Tactic[NumberError], portTactic: Tactic[Port.Error])
       =>  ((Port is Decodable in Text)^{numberTactic, portTactic}) =
         text => apply(text.as[Int])
 
@@ -224,15 +224,27 @@ object internal:
       // A numbered port. The transport is taken from an explicit type argument
       // (`Port[Udp](8237)`) or inferred from the expected type (`Port(8237)` where a
       // `Port over Udp` is wanted).
-      def apply[transport](value: Int): (Port over transport) raises PortError =
+      def apply[transport](value: Int): (Port over transport) raises Port.Error =
         if 1 <= value <= 65535 then value.asInstanceOf[Port over transport]
-        else abort(PortError())
+        else abort(Port.Error())
 
       // An unused port supplied by the OS: bind an ephemeral probe socket of the
       // right kind for the transport, then release it so the caller can rebind.
       // Subject to a benign TOCTOU race.
       def apply[transport]()(using allocatable: transport is Allocatable): Port over transport =
         allocatable.unused().asInstanceOf[Port over transport]
+
+      // PortError → Port.Error
+      case class Error()(using Diagnostics)
+      extends fulminate.Error(139, 0)(m"the port is not in the valid range")
+
+      // PortType → Port.Type
+      // The structural bound of the `Port` opaque type. `Transport` distinguishes the
+      // protocol (`Tcp`, `Udp`, `Quic`, …) and `Topic` carries the literal port number,
+      // so a fully-refined port has the shape `Port over Tcp of 80`.
+      sealed trait Type:
+        type Transport
+        type Topic <: Int
 
     extension (port: Port)
       def number: Int = port

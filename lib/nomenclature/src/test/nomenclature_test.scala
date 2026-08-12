@@ -60,23 +60,23 @@ object Tests extends Suite(m"Nomenclature tests"):
     . assert(_ == t"hello!")
 
     test(m"Name must not start with 0"):
-      capture[NameError](Name[Id](t"0hello!")).message.show
+      capture[Name.Error](Name[Id](t"0hello!")).message.show
     . assert(_ == t"the name 0hello! is not valid because it must not start with 0")
 
     test(m"Name must end with !"):
-      capture[NameError](Name[Id](t"hello!9")).message.show
+      capture[Name.Error](Name[Id](t"hello!9")).message.show
     . assert(_ == t"the name hello!9 is not valid because it must end with !")
 
     test(m"Name must not contain ."):
-      capture[NameError](Name[Id](t"hello.world!")).message.show
+      capture[Name.Error](Name[Id](t"hello.world!")).message.show
     . assert(_ == t"the name hello.world! is not valid because it must not contain .")
 
     test(m"Name must not equal ."):
-      capture[NameError](Name[Id2](t".")).message.show
+      capture[Name.Error](Name[Id2](t".")).message.show
     . assert(_ == t"the name . is not valid because it must not equal .")
 
     test(m"Name must not equal .."):
-      capture[NameError](Name[Id2](t"..")).message.show
+      capture[Name.Error](Name[Id2](t"..")).message.show
     . assert(_ == t"the name .. is not valid because it must not equal ..")
 
     test(m"Covariance probe: a wider plane intersection is a subtype"):
@@ -116,7 +116,7 @@ object Tests extends Suite(m"Nomenclature tests"):
     . assert(_.nonEmpty)
 
     test(m"Name is required"):
-      capture[NameError](Name[Required](t"")).message.show
+      capture[Name.Error](Name[Required](t"")).message.show
     . assert(_ == t"""the name “” is not valid because it must not be empty""")
 
     test(m"A valid CSS class name is accepted"):
@@ -124,7 +124,7 @@ object Tests extends Suite(m"Nomenclature tests"):
     . assert(_ == t"main-nav")
 
     test(m"A CSS class name may not start with a digit"):
-      capture[NameError](Name[CssClass](t"1col")).message.show
+      capture[Name.Error](Name[CssClass](t"1col")).message.show
     . assert(_ == t"the name 1col is not valid because it must be a valid CSS identifier")
 
     test(m"A valid DOM id is accepted"):
@@ -132,7 +132,7 @@ object Tests extends Suite(m"Nomenclature tests"):
     . assert(_ == t"main-content")
 
     test(m"A DOM id may not contain whitespace"):
-      capture[NameError](Name[DomId](t"a b")).message.show
+      capture[Name.Error](Name[DomId](t"a b")).message.show
     . assert(_ == t"the name a b is not valid because it must be a valid DOM id")
 
     val adjectives = cp"/nomenclature/adjectives.txt"

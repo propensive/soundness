@@ -88,7 +88,7 @@ object CHeaderAtomizer:
     List.from:
       declarations.stdlib.map:
         case CDeclaration.Function(name, result, parameters, variadic) =>
-          Atom(name, AtomClass.Rigid, hash: out =>
+          Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, 'f')
             utf8(out, name)
             flag(out, variadic)
@@ -97,7 +97,7 @@ object CHeaderAtomizer:
             encode(out, result))
 
         case CDeclaration.Alias(name, target) =>
-          Atom(name, AtomClass.Rigid, hash: out =>
+          Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, 't')
             utf8(out, name)
             encode(out, target))
@@ -105,7 +105,7 @@ object CHeaderAtomizer:
         // Fields fold in declaration order — layout is positional — and an opaque tag folds an
         // opacity marker instead, so completing it later is a value change (`cheader.md` §6).
         case CDeclaration.Structure(name, union, fields, opaque) =>
-          Atom(name, AtomClass.Rigid, hash: out =>
+          Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, if union then 'u' else 's')
             utf8(out, name)
             flag(out, opaque)
@@ -116,7 +116,7 @@ object CHeaderAtomizer:
               encode(out, typed))
 
         case CDeclaration.Enumeration(name, cases) =>
-          Atom(name, AtomClass.Rigid, hash: out =>
+          Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, 'e')
             utf8(out, name)
             uvarint(out, cases.stdlib.length.toLong)

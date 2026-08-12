@@ -54,7 +54,7 @@ import filesystemBackends.virtualMachine
 
 object Worktree:
   def apply[abstractable: Abstractable across Paths to Text](path: abstractable)
-    ( using Tactic[Path.Error], Tactic[NameError], Tactic[Git.Error], Tactic[IoError] )
+    ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], Tactic[IoError] )
   :   Worktree =
 
     unsafely(path.generic.as[Path on Linux]).pipe: path =>
@@ -162,7 +162,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
 
   def add[path: Abstractable across Paths to Text](file: path)
-    ( using Git.Command, WorkingDirectory, Tactic[Path.Error], Tactic[NameError], Tactic[Exec.Error],
+    ( using Git.Command, WorkingDirectory, Tactic[Path.Error], Tactic[Name.Error], Tactic[Exec.Error],
             Tactic[Git.Error] )
   ( using (Git.Event is Loggable)^ )
   :   Unit =
@@ -189,7 +189,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
 
   def unstage[path: Abstractable across Paths to Text](file: path)
-    ( using Git.Command, WorkingDirectory, Tactic[Path.Error], Tactic[NameError], Tactic[Exec.Error],
+    ( using Git.Command, WorkingDirectory, Tactic[Path.Error], Tactic[Name.Error], Tactic[Exec.Error],
             Tactic[Git.Error] )
   ( using (Git.Event is Loggable)^ )
   :   Unit =
@@ -207,7 +207,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
     [ fromPath: Abstractable across Paths to Text,
       toPath:   Abstractable across Paths to Text ]
     ( from: fromPath, to: toPath )
-    ( using Git.Command, WorkingDirectory, Tactic[Path.Error], Tactic[NameError], Tactic[Exec.Error],
+    ( using Git.Command, WorkingDirectory, Tactic[Path.Error], Tactic[Name.Error], Tactic[Exec.Error],
             Tactic[Git.Error] )
   ( using (Git.Event is Loggable)^ )
   :   Unit =
@@ -309,7 +309,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
             Tactic[Git.Error],
             Tactic[Exec.Error],
             ((Path on Linux) is Decodable in Text)^ )
-  ( using Tactic[NameError], Tactic[Path.Error], (Git.Event is Loggable)^ )
+  ( using Tactic[Name.Error], Tactic[Path.Error], (Git.Event is Loggable)^ )
   :   Worktree =
 
     val target: Path on Linux =

@@ -268,7 +268,7 @@ object DtsAtomizer:
         utf8(out, key)
         encodeMember(out, member, binders)
 
-      atoms += Atom(t"$key#${member.selector}", AtomClass.Rigid, encoding)
+      atoms += Atom(t"$key#${member.selector}", Atom.Class.Rigid, encoding)
 
     val encoding = hash: out =>
       declaration match
@@ -328,7 +328,7 @@ object DtsAtomizer:
       uvarint(out, keys.length.toLong)
       keys.foreach { selector => utf8(out, selector) }
 
-    atoms += Atom(key, AtomClass.Rigid, encoding)
+    atoms += Atom(key, Atom.Class.Rigid, encoding)
 
     List.from(atoms.toList)
 

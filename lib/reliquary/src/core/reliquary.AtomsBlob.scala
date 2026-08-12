@@ -84,8 +84,8 @@ object AtomsBlob:
 
       if atoms0.length != 3 then abort(badBlob(t"an atom row does not have exactly three atoms"))
 
-      val atomClass = AtomClass.parse(atoms0(0)) match
-        case atomClass: AtomClass => atomClass
+      val atomClass = Atom.Class.parse(atoms0(0)) match
+        case atomClass: Atom.Class => atomClass
         case _                    => abort(badBlob(t"an atom class is malformed"))
 
       val hash =

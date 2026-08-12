@@ -198,7 +198,7 @@ object Verification:
 
     def summary(atomizations: List[Atomization])
     :   scala.collection.immutable.Map
-          [Text, scala.collection.immutable.Set[(Text, AtomClass, Text)]] =
+          [Text, scala.collection.immutable.Set[(Text, Atom.Class, Text)]] =
 
       atomizations.stdlib.map: atomization =>
         val atoms = atomization.atoms.stdlib.map: atom =>

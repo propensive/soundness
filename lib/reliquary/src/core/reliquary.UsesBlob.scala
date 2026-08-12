@@ -133,10 +133,10 @@ object UsesBlob:
         byHash.get(text) match
           case scala.Some((module, atom)) =>
             atom.references.stdlib.foreach:
-              case AtomReference.Own(key) =>
+              case Atom.Reference.Own(key) =>
                 byKey.get((module, key)).foreach: target => queue.append(target.valueHash)
 
-              case AtomReference.Foreign(key) =>
+              case Atom.Reference.Foreign(key) =>
                 dependencies.stdlib.foreach: other =>
                   byKey.get((other(0), key)).foreach: t => queue.append(t.valueHash)
 

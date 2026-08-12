@@ -179,7 +179,7 @@ given wsClient: ( online:            Online,
                   tls:               Tls,
                   websocketError:    Tactic[Websocket.Error],
                   httpResponseError: Tactic[Http.Response.Error],
-                  portError:         Tactic[PortError] )
+                  portError:         Tactic[Port.Error] )
 =>  (((Websocket.Url is Duplexable) { type Output = Data; type Connection = Websocket.Connection })
       ^{online, monitor, websocketError, httpResponseError, portError}) =
   // The client retains its `Monitor` (the frame pump daemon) and tactics, so the instance

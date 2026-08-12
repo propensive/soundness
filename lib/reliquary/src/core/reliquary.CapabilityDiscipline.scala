@@ -125,4 +125,4 @@ object CapabilityDiscipline extends Discipline:
       . or(out.write(0))
 
       val encoding = Array.unsafeFrozen(out.toByteArray.nn)
-      Atom(name, AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), encoding))
+      Atom(name, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), encoding))

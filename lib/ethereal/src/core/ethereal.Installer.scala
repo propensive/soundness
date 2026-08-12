@@ -85,7 +85,7 @@ object Installer:
       case Path.Error(_, _)     => InstallError(InstallError.Reason.Environment)
       case Environment.Error(_) => InstallError(InstallError.Reason.Environment)
       case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
-      case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
+      case Name.Error(_, _, _)  => InstallError(InstallError.Reason.Io)
 
     . protect:
         val paths: List[Path on Linux] = Environment.path
@@ -121,7 +121,7 @@ object Installer:
       case Property.Error(_)     => InstallError(InstallError.Reason.Environment)
       case NumberError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case IoError(_, _, _, _)  => InstallError(InstallError.Reason.Io)
-      case NameError(_, _, _)   => InstallError(InstallError.Reason.Io)
+      case Name.Error(_, _, _)   => InstallError(InstallError.Reason.Io)
       case Exec.Error(_, _, _)   => InstallError(InstallError.Reason.Io)
       case StreamError(_)       => InstallError(InstallError.Reason.Io)
       case Zip.Error(_)          => InstallError(InstallError.Reason.Io)

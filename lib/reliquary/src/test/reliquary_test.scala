@@ -476,7 +476,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         :   Atomization raises DisciplineError =
 
           val atoms = content.map: (path, data) =>
-            Atom(path.text, AtomClass.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
+            Atom(path.text, Atom.Class.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
 
           Atomization.of(id, atoms)
 
@@ -494,7 +494,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
         atoms.map { atom => (atom.key, atom.atomClass) }.stdlib.toSet
         == scala.collection.immutable.Set
-            ((t"a/One.class", AtomClass.Rigid), (t"b/Two.class", AtomClass.Rigid))
+            ((t"a/One.class", Atom.Class.Rigid), (t"b/Two.class", Atom.Class.Rigid))
       . assert(identity)
 
       test(m"opaque atom hashes are domain-separated from blob hashes"):
@@ -548,8 +548,8 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(identity)
 
       test(m"duplicate keys within a discipline are rejected"):
-        val atom = Atom(t"same", AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"1")))
-        val other = Atom(t"same", AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"2")))
+        val atom = Atom(t"same", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"1")))
+        val other = Atom(t"same", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"2")))
 
         capture[DisciplineError](Atomization.of(t"x/1", List(atom, other))).reason match
           case DisciplineError.Reason.Duplicate(_) => true
@@ -580,13 +580,13 @@ object Tests extends Suite(m"Reliquary Tests"):
     suite(m"Grades, lineage and versioning"):
       import revolution.Semver
 
-      def atom(key: Text, atomClass: AtomClass, content: Text): Atom =
+      def atom(key: Text, atomClass: Atom.Class, content: Text): Atom =
         Atom(key, atomClass, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(content)))
 
       def release(atoms: Atom*): List[Atomization] =
         List(Atomization.of(t"x/1", List.from(atoms)))
 
-      val base = release(atom(t"a", AtomClass.Rigid, t"1"), atom(t"b", AtomClass.Replaceable, t"2"))
+      val base = release(atom(t"a", Atom.Class.Rigid, t"1"), atom(t"b", Atom.Class.Replaceable, t"2"))
 
       test(m"an identical atom set grades as a patch"):
         Grade.between(base, base)
@@ -594,39 +594,39 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       test(m"a pure rigid addition grades as minor"):
         val next = release(
-          atom(t"a", AtomClass.Rigid, t"1"),
-          atom(t"b", AtomClass.Replaceable, t"2"),
-          atom(t"c", AtomClass.Rigid, t"3"))
+          atom(t"a", Atom.Class.Rigid, t"1"),
+          atom(t"b", Atom.Class.Replaceable, t"2"),
+          atom(t"c", Atom.Class.Rigid, t"3"))
 
         Grade.between(base, next)
       . assert(_ == Grade.Minor)
 
       test(m"a replaceable value change with a surviving key grades as minor"):
         val next = release(
-          atom(t"a", AtomClass.Rigid, t"1"),
-          atom(t"b", AtomClass.Replaceable, t"2-changed"))
+          atom(t"a", Atom.Class.Rigid, t"1"),
+          atom(t"b", Atom.Class.Replaceable, t"2-changed"))
 
         Grade.between(base, next)
       . assert(_ == Grade.Minor)
 
       test(m"a rigid removal grades as major"):
-        Grade.between(base, release(atom(t"b", AtomClass.Replaceable, t"2")))
+        Grade.between(base, release(atom(t"b", Atom.Class.Replaceable, t"2")))
       . assert(_ == Grade.Major)
 
       test(m"a rigid value change grades as major"):
         val next = release(
-          atom(t"a", AtomClass.Rigid, t"1-changed"),
-          atom(t"b", AtomClass.Replaceable, t"2"))
+          atom(t"a", Atom.Class.Rigid, t"1-changed"),
+          atom(t"b", Atom.Class.Replaceable, t"2"))
 
         Grade.between(base, next)
       . assert(_ == Grade.Major)
 
       test(m"a replaceable removal grades as major"):
-        Grade.between(base, release(atom(t"a", AtomClass.Rigid, t"1")))
+        Grade.between(base, release(atom(t"a", Atom.Class.Rigid, t"1")))
       . assert(_ == Grade.Major)
 
       val snapshot = Snapshot(base)
-      val older = Snapshot(release(atom(t"a", AtomClass.Rigid, t"1")))
+      val older = Snapshot(release(atom(t"a", Atom.Class.Rigid, t"1")))
 
       test(m"a lineage ending in the release's snapshot passes L109"):
         Lineage.check(List(older, snapshot), snapshot)
@@ -642,7 +642,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(_ == Lira.Error.Reason.LineageMismatch)
 
       test(m"lineage membership decides satisfaction"):
-        val absent = Snapshot(release(atom(t"z", AtomClass.Rigid, t"9")))
+        val absent = Snapshot(release(atom(t"z", Atom.Class.Rigid, t"9")))
 
         (Lineage.contains(List(older, snapshot), older),
          Lineage.contains(List(older, snapshot), absent))
@@ -670,9 +670,9 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       test(m"a delta records additions and replacements"):
         val next = release(
-          atom(t"a", AtomClass.Rigid, t"1"),
-          atom(t"b", AtomClass.Replaceable, t"2-changed"),
-          atom(t"c", AtomClass.Rigid, t"3"))
+          atom(t"a", Atom.Class.Rigid, t"1"),
+          atom(t"b", Atom.Class.Replaceable, t"2-changed"),
+          atom(t"c", Atom.Class.Rigid, t"3"))
 
         val delta = Lira.Delta.compute(base, next)
         (delta.add.stdlib.size, delta.replace.stdlib.size)
@@ -680,9 +680,9 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       test(m"a delta round-trips through its canonical encoding"):
         val next = release(
-          atom(t"a", AtomClass.Rigid, t"1"),
-          atom(t"b", AtomClass.Replaceable, t"2-changed"),
-          atom(t"c", AtomClass.Rigid, t"3"))
+          atom(t"a", Atom.Class.Rigid, t"1"),
+          atom(t"b", Atom.Class.Replaceable, t"2-changed"),
+          atom(t"c", Atom.Class.Rigid, t"3"))
 
         val delta = Lira.Delta.compute(base, next)
         val back = Lira.Delta.decode(delta.encode)
@@ -758,7 +758,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         (summary(one).map(_(0)), summary(one).map(_(1)),
          summary(one) == summary(two), summary(one) == summary(three))
       . assert(_ == (scala.List(t"r/exported.conf", t"r/tracked.json"),
-          scala.List(AtomClass.Rigid, AtomClass.Replaceable), true, false))
+          scala.List(Atom.Class.Rigid, Atom.Class.Replaceable), true, false))
 
       test(m"a resource path declared twice is L124"):
         import Lira.Manifest.{Resource, ResourceMode}
@@ -1524,12 +1524,12 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(_ == (Semver(0, 2, 0), 1))
 
       test(m"a used-set closes over replaceable references"):
-        val rigid = Atom(t"target", AtomClass.Rigid,
+        val rigid = Atom(t"target", Atom.Class.Rigid,
           Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"rigid")))
 
-        val inline = Atom(t"caller[inline]", AtomClass.Replaceable,
+        val inline = Atom(t"caller[inline]", Atom.Class.Replaceable,
           Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"body")),
-          references = List(AtomReference.Own(t"target")))
+          references = List(Atom.Reference.Own(t"target")))
 
         val dependency = Atomization.of(t"x/1", List(rigid, inline))
         val closure = UsesBlob.closure(List(inline.valueHash), List((t"dep", dependency)))
@@ -1547,8 +1547,8 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(_ == (t"dep", 2))
 
       test(m"spanning holds iff the candidate carries every used atom"):
-        val one = Atom(t"a", AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"1")))
-        val two = Atom(t"b", AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"2")))
+        val one = Atom(t"a", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"1")))
+        val two = Atom(t"b", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"2")))
 
         (UsesBlob.spanning(List(one.valueHash), List(one, two)),
          UsesBlob.spanning(List(one.valueHash, two.valueHash), List(one)))
@@ -1771,7 +1771,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         :   Atomization raises DisciplineError =
 
           val atoms = content.map: (path, data) =>
-            Atom(path.text, AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
+            Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
 
           Atomization.of(id, atoms)
 
@@ -1897,7 +1897,7 @@ object Tests extends Suite(m"Reliquary Tests"):
           :   Atomization raises DisciplineError =
 
             val atoms = content.map: (path, data) =>
-              Atom(path.text, AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
+              Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
 
             Atomization.of(id, atoms)
 
@@ -1928,7 +1928,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
         atomsOf(listing).stdlib.map { atom => (atom.key, atom.atomClass) }.toSet
       . assert(_ == scala.collection.immutable.Set
-          ((t"git", AtomClass.Rigid), (t"sh", AtomClass.Rigid)))
+          ((t"git", Atom.Class.Rigid), (t"sh", Atom.Class.Rigid)))
 
       test(m"a probe is advisory and enters no atom"):
         hashesOf(capabilities(t"capability\n  name git\n  probe  command -v git\n"))

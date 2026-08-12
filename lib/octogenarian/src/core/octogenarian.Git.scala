@@ -112,7 +112,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error] )
     ( using command: Git.Command )
-  ( using Tactic[NameError], (Git.Event is Loggable)^ )
+  ( using Tactic[Name.Error], (Git.Event is Loggable)^ )
   :   Worktree =
 
     try
@@ -136,7 +136,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error] )
     ( using command: Git.Command )
-  ( using Tactic[NameError], (Git.Event is Loggable)^ )
+  ( using Tactic[Name.Error], (Git.Event is Loggable)^ )
   :   Git.Repo =
 
     try
@@ -160,7 +160,7 @@ object Git:
             Tactic[Git.Error],
             Tactic[Exec.Error],
             WorkingDirectory )
-  ( using Tactic[NameError], (Git.Event is Loggable)^ )
+  ( using Tactic[Name.Error], (Git.Event is Loggable)^ )
   :   Git.Process[Worktree] =
 
     val sourceText = inline source match
@@ -184,7 +184,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error],
             Git.Command )
-  ( using Tactic[Path.Error], Tactic[NameError], Tactic[Git.Error], (Git.Event is Loggable)^ )
+  ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], (Git.Event is Loggable)^ )
   :   Git.Process[Worktree] =
 
     val sourceText = inline source match
@@ -207,7 +207,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error],
             Git.Command )
-  ( using Tactic[Path.Error], Tactic[NameError], Tactic[Git.Error], (Git.Event is Loggable)^ )
+  ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], (Git.Event is Loggable)^ )
   :   Git.Process[Git.Repo] =
 
     val sourceText = inline source match
@@ -227,7 +227,7 @@ object Git:
     ( using gitError:         Tactic[Git.Error],
             exec:             Tactic[Exec.Error],
             workingDirectory: WorkingDirectory )
-  ( using Tactic[NameError], (Git.Event is Loggable)^ )
+  ( using Tactic[Name.Error], (Git.Event is Loggable)^ )
   :   Git.Process[Worktree] =
 
     val worktree = init(targetPath)
@@ -249,7 +249,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error],
             Tactic[Path.Error],
-            Tactic[NameError],
+            Tactic[Name.Error],
             Git.Command )
     ( using gitError: Tactic[Git.Error] )
   ( using (Git.Event is Loggable)^ )
@@ -285,7 +285,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error],
             Tactic[Path.Error],
-            Tactic[NameError],
+            Tactic[Name.Error],
             Git.Command )
     ( using gitError: Tactic[Git.Error] )
   ( using (Git.Event is Loggable)^ )
@@ -490,7 +490,7 @@ object Git:
   // GitRepo → Git.Repo
   object Repo:
     def at[abstractable: Abstractable across Paths to Text](path: abstractable)
-      ( using Tactic[Path.Error], Tactic[NameError], Tactic[Git.Error], Tactic[IoError] )
+      ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], Tactic[IoError] )
     :   Git.Repo =
 
       unsafely(path.generic.as[Path on Linux]).pipe: path =>
@@ -854,7 +854,7 @@ object Git:
               ((Path on Linux) is Decodable in Text)^,
               Tactic[Exec.Error],
               Git.Command )
-    ( using Tactic[NameError], Tactic[Path.Error], (Git.Event is Loggable)^ )
+    ( using Tactic[Name.Error], Tactic[Path.Error], (Git.Event is Loggable)^ )
     :   Worktree =
 
       val targetPath: Path on Linux =

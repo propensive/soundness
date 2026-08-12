@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
+export reliquary.{Atom, Atomization, AtomsBlob, Blob, BlobStream,
     Blobstore, Buildpath, CapabilityDiscipline, Discipline, DisciplineError, EcosystemProfile,
     Grade, Lineage, Lira, ManifestSigning, OpaqueDiscipline, Overlay, Publication,
     Replacement, Section, Snapshot, TreeEntry, TreePath, UsesBlob, Verification, Versioning}

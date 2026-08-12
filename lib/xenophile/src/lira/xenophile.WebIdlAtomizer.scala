@@ -243,13 +243,13 @@ object WebIdlAtomizer:
         val key = keyOf(name, exposed)
 
         members.stdlib.foreach: member =>
-          atoms += Atom(t"$key#${member.selector}", AtomClass.Rigid,
+          atoms += Atom(t"$key#${member.selector}", Atom.Class.Rigid,
               hash(encodeMember(_, key, member)))
 
         // Member lists do *not* fold into the interface's own atom — the deliberate inversion
         // of `dts/1`, licensed by the declared usage direction (`webidl.md` §6). Intrinsics
         // (`iterable<…>` and kin) are features of the type and do fold, sorted by keyword.
-        atoms += Atom(key, AtomClass.Rigid, hash: out =>
+        atoms += Atom(key, Atom.Class.Rigid, hash: out =>
           tag(out, 'I')
           utf8(out, key)
           utf8(out, parent.or(t""))
@@ -267,14 +267,14 @@ object WebIdlAtomizer:
         val required = fields.stdlib.filter(_.required).sortBy(_.name.s)
 
         fields.stdlib.filter(!_.required).foreach: field =>
-          atoms += Atom(t"$name#${field.name}", AtomClass.Rigid, hash: out =>
+          atoms += Atom(t"$name#${field.name}", Atom.Class.Rigid, hash: out =>
             tag(out, 'F')
             utf8(out, name)
             utf8(out, field.name)
             flag(out, field.default)
             encode(out, field.typed))
 
-        atoms += Atom(name, AtomClass.Rigid, hash: out =>
+        atoms += Atom(name, Atom.Class.Rigid, hash: out =>
           tag(out, 'D')
           utf8(out, name)
           utf8(out, parent.or(t""))
@@ -289,32 +289,32 @@ object WebIdlAtomizer:
         val key = keyOf(name, exposed)
 
         members.stdlib.foreach: member =>
-          atoms += Atom(t"$key#${member.selector}", AtomClass.Rigid,
+          atoms += Atom(t"$key#${member.selector}", Atom.Class.Rigid,
               hash(encodeMember(_, key, member)))
 
-        atoms += Atom(key, AtomClass.Rigid, hash: out =>
+        atoms += Atom(key, Atom.Class.Rigid, hash: out =>
           tag(out, 'S')
           utf8(out, key))
 
       case Enumeration(name, values) =>
         values.stdlib.foreach: value =>
-          atoms += Atom(t"$name#$value", AtomClass.Rigid, hash: out =>
+          atoms += Atom(t"$name#$value", Atom.Class.Rigid, hash: out =>
             tag(out, 'V')
             utf8(out, name)
             utf8(out, value))
 
-        atoms += Atom(name, AtomClass.Rigid, hash: out =>
+        atoms += Atom(name, Atom.Class.Rigid, hash: out =>
           tag(out, 'E')
           utf8(out, name))
 
       case Alias(name, typed) =>
-        atoms += Atom(name, AtomClass.Rigid, hash: out =>
+        atoms += Atom(name, Atom.Class.Rigid, hash: out =>
           tag(out, 'T')
           utf8(out, name)
           encode(out, typed))
 
       case CallbackFunction(name, result, args) =>
-        atoms += Atom(name, AtomClass.Rigid, hash: out =>
+        atoms += Atom(name, Atom.Class.Rigid, hash: out =>
           tag(out, 'C')
           utf8(out, name)
           encode(out, result)

@@ -143,7 +143,7 @@ object LiraAssembler:
       then abort(Lira.Error(Reason.InapplicableDiscipline(discipline.id)))
 
     def summary(atomizations: List[Atomization])
-    :   scala.collection.immutable.Set[(Text, Text, AtomClass, Text)] =
+    :   scala.collection.immutable.Set[(Text, Text, Atom.Class, Text)] =
 
       atomizations.stdlib.flatMap: atomization =>
         atomization.atoms.stdlib.map: atom =>
