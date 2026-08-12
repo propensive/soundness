@@ -468,6 +468,36 @@ rename. And **a donor's file-mates must be checked every time**: `LiraDelta.scal
 that would otherwise have been renamed silently.
 
 
+## Corrections from the sixth implementation pass (2026-08-12)
+
+Thirty-three more names, from the families left after the fifth pass's sweep. Four rules,
+three of them about *finding* the outer type rather than moving anything.
+
+- **Search for `case object` too.** galilei's `Directory` was recorded as having no outer
+  type. It is a `case object Directory extends WindowsEntry, UnixEntry` — the companion of
+  `trait Directory` in the entry-kind taxonomy — which a search for `object Directory`
+  silently misses. It took `Handle` and `Openable` without moving.
+- **A companion nested inside `internal` is fine if it is exported.** Applied for the
+  fourth time, and it is now the single most common false blocker: `Name`, `Port` and `Date`
+  join `MacAddress`. All four were recorded as having no outer type, and all four have one
+  in an `internal`/`Opaques` object that is re-exported to package level.
+- **Check that a proposed namespace name is free — across every library.** `Chemical`,
+  `Exec` and `Variant` were; `Daemon`, `Dom`, `Viewport` and `Textual` were not, each
+  already an exported type in parasite, honeycomb, graffiti and gossamer. Creating a second
+  would repeat the `Connection` failure. They are also homonyms rather than satellites —
+  gossamer's `Textual` is the text typeclass — so nesting into the existing owner would be
+  wrong even where the components allowed it.
+- **The read-only/exclusive capture failure is not only `Array` indexing.** `TelReader`
+  fails with "cannot call update method entryOrdinal since its capture set {} is read-only"
+  — a `+=` on a mutable buffer, not an index. Three of the four instances index an `Array`;
+  this one shows the underlying constraint is broader, so the warning sign is *any* mutation
+  through a value whose capture set the enclosing object widens.
+
+The sweep also rewrote `jnf.WatchEvent`, which is `java.nio.file`'s. The compiler caught it,
+but it is the second time a bare-name sweep has reached outside the library that owns the
+name (the first was `Syntax`), so read the sweep's file list before compiling.
+
+
 ## Execution shape
 
 One library per commit (the pilot shape). Each commit: move the types, delete donor files,

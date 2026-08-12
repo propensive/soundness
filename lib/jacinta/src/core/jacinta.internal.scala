@@ -55,7 +55,7 @@ import hypotenuse.Bcd
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import wisteria.{Discriminable, Variant.Error}
+import wisteria.{Discriminable, Variant}
 import zephyrine.*
 
 object internal:
