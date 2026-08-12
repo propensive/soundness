@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export tarantula.{Navigator, browser, Chrome, Firefox, Focusable, WebDriver}
+export tarantula.{Browser, Element, Focusable, ShadowRoot, WebDriver, WebDriverError,
+    WebDriverSession, WebDriverSessional, BrowserSessional, browser, browserSessional,
+    webDriverSessional}

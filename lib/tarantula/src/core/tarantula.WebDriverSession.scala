@@ -108,6 +108,25 @@ object WebDriverSession:
   private[tarantula] def failure(json: Json): Failure raises JsonError =
     caps.unsafe.unsafeAssumeSeparate(json.as[Failure])
 
+  // Whether a driver is listening yet. Every failure is swallowed: during startup a refused
+  // connection is the expected outcome, not something to report. The `ready` flag in the reply
+  // is deliberately *not* consulted — a driver that already holds a session reports `ready:
+  // false`, and it is the port being bound, not the driver being idle, that is being waited for.
+  // A local throwing strategy, so that `safely` sees the failure rather than the caller's tactic.
+  private[tarantula] def listening(base: HttpUrl)
+    ( using Online, Http.Backend, (Http.Event is Loggable)^ )
+  :   Boolean =
+
+    import strategies.throwUnsafely
+
+    safely:
+      Url(base.origin, t"${base.location}/status")
+      . fetch(contentType = media"application/json")
+      . status
+      . category == Http.Status.Category.Successful
+
+    . or(false)
+
 // A live WebDriver session: one browser instance, its window set and its cookie jar, addressed
 // at `$base/session/$sessionId`. A capability — it is the near end of a conversation with a
 // driver that something else started and will stop — so capture checking confines it, and every
@@ -122,7 +141,7 @@ object WebDriverSession:
 // something that borrows the receiver, and every WebDriver command is a complete round trip
 // yielding pure data. Promote it if a genuinely borrowing sub-handle — a live window or frame —
 // is ever added.
-class WebDriverSession private[tarantula] (base: HttpUrl, val sessionId: Text)
+class WebDriverSession private[tarantula] (base: HttpUrl)
   ( using online:      Online,
           backend:     Http.Backend,
           loggable:    (Http.Event is Loggable)^,
@@ -137,10 +156,18 @@ extends caps.ExclusiveCapability:
   // The shadow-root counterpart of `Wei`.
   private final val Shadow: Text = t"shadow-6066-11e4-a52e-4f735466cecf"
 
+  // Set once by `create`, before the handle is lent to a block: the id does not exist until the
+  // driver has minted it, and there is no session to be a method of until then.
+  // `Text` is pure, so the variable tracks nothing; the annotation says so, rather than making
+  // the whole session `Stateful` for one immutable-valued field.
+  @scala.caps.unsafe.untrackedCaptures
+  private var id: Text = t""
+
+  def sessionId: Text = id
+
   // Built structurally from the base URL's origin rather than by parsing text, so addressing a
   // command cannot fail and no `UrlError` reaches the caller.
-  private def address(path: Text): HttpUrl =
-    Url(base.origin, t"${base.location}/session/$sessionId/$path")
+  private def address(path: Text): HttpUrl = Url(base.origin, t"${base.location}/$path")
 
   // Bound as a local before each lambda below: reading the field inside one would put the whole
   // session in the lambda's hidden set, overlapping the `tactic` it is applied to.
@@ -197,17 +224,26 @@ extends caps.ExclusiveCapability:
   private def post(path: Text, content: Json): Json = outcome(address(path).submit()(content))
   private def delete(path: Text): Json = outcome(address(path).fetch(Http.Delete))
 
+  private def read(path: Text): Json = get(t"session/$id/$path")
+  private def send(path: Text, content: Json): Json = post(t"session/$id/$path", content)
+
   // A command issued for its effect on the browser: the driver replies `{"value":null}`, and
   // there is nothing to read back.
   private def command(path: Text, content: Json): Unit =
-    post(path, content)
+    send(path, content)
     ()
 
+  // Opens the remote session. Called by the `Sessional` that owns this handle, before the block
+  // sees it — the constructor cannot do it, because a failure here must reach the caller as a
+  // `WebDriverError` and not as an exception from a field initializer.
+  private[tarantula] def create(capabilities: Json): Unit =
+    id = WebDriverSession.text(post(t"session", capabilities).value.sessionId)
+
   // Ends the session, and with it the browser instance. Called from the `finally` of the
-  // `Sessional` that opened it; a caller never needs it, and could not use the handle afterwards
-  // anyway.
+  // `Sessional` that opened it; a caller never needs it, and could not use the handle
+  // afterwards anyway.
   private[tarantula] def close(): Unit =
-    delete(t"")
+    delete(t"session/$id")
     ()
 
   private def elementPath(element: Element, path: Text): Text =
@@ -226,52 +262,52 @@ extends caps.ExclusiveCapability:
     command(t"url", Address(url.generic).in[Json])
 
   def url[url: Instantiable across Urls from Text](): url =
-    url(WebDriverSession.text(get(t"url").value))
+    url(WebDriverSession.text(read(t"url").value))
 
   def back(): Unit = command(t"back", Empty().in[Json])
   def forward(): Unit = command(t"forward", Empty().in[Json])
   def refresh(): Unit = command(t"refresh", Empty().in[Json])
-  def title(): Text = WebDriverSession.text(get(t"title").value)
-  def source(): Text = WebDriverSession.text(get(t"source").value)
+  def title(): Text = WebDriverSession.text(read(t"title").value)
+  def source(): Text = WebDriverSession.text(read(t"source").value)
 
   // The raw PNG bytes of the viewport. `screenshot()`, which decodes them into a `Raster in
   // Png`, is an extension method in `tarantula.image`, so that browser automation does not
   // depend on an image-codec library.
   def screenshotData(): Data =
-    WebDriverSession.text(get(t"screenshot").value).deserialize[Base64]
+    WebDriverSession.text(read(t"screenshot").value).deserialize[Base64]
 
   // Script execution: the escape hatch for anything the protocol does not model.
   def execute(script: Text, arguments: List[Json] = Nil): Json =
-    post(t"execute/sync", Script(script, arguments).in[Json]).value
+    send(t"execute/sync", Script(script, arguments).in[Json]).value
 
   def executeAsync(script: Text, arguments: List[Json] = Nil): Json =
-    post(t"execute/async", Script(script, arguments).in[Json]).value
+    send(t"execute/async", Script(script, arguments).in[Json]).value
 
   // Finding elements, at page scope and relative to an element. `Element` is pure, so building
   // one inside this `map` constructs no capability and hoists no fresh root.
   def element[focus: Focusable](value: focus): Element =
-    Element(handle(post(t"element", locator(value)), Wei))
+    Element(handle(send(t"element", locator(value)), Wei))
 
   def elements[focus: Focusable](value: focus): List[Element] =
-    handles(post(t"elements", locator(value)))
+    handles(send(t"elements", locator(value)))
 
   def element[focus: Focusable](element: Element, value: focus): Element =
-    Element(handle(post(elementPath(element, t"element"), locator(value)), Wei))
+    Element(handle(send(elementPath(element, t"element"), locator(value)), Wei))
 
   def elements[focus: Focusable](element: Element, value: focus): List[Element] =
-    handles(post(elementPath(element, t"elements"), locator(value)))
+    handles(send(elementPath(element, t"elements"), locator(value)))
 
-  def activeElement(): Element = Element(handle(get(t"element/active"), Wei))
+  def activeElement(): Element = Element(handle(read(t"element/active"), Wei))
 
   // Shadow DOM. Only *open* shadow roots are reachable; a closed one raises `NoSuchShadowRoot`.
   def shadowRoot(element: Element): ShadowRoot =
-    ShadowRoot(handle(get(elementPath(element, t"shadow")), Shadow))
+    ShadowRoot(handle(read(elementPath(element, t"shadow")), Shadow))
 
   def element[focus: Focusable](root: ShadowRoot, value: focus): Element =
-    Element(handle(post(t"shadow/${root.shadowId}/element", locator(value)), Wei))
+    Element(handle(send(t"shadow/${root.shadowId}/element", locator(value)), Wei))
 
   def elements[focus: Focusable](root: ShadowRoot, value: focus): List[Element] =
-    handles(post(t"shadow/${root.shadowId}/elements", locator(value)))
+    handles(send(t"shadow/${root.shadowId}/elements", locator(value)))
 
   // Acting on an element.
   def click(element: Element): Unit = command(elementPath(element, t"click"), Empty().in[Json])
@@ -283,34 +319,34 @@ extends caps.ExclusiveCapability:
   // Reading an element's state. `attribute` reads the markup's attribute, `property` the live
   // DOM property; the two diverge as soon as a page's script touches the node.
   def text(element: Element): Text =
-    WebDriverSession.text(get(elementPath(element, t"text")).value)
+    WebDriverSession.text(read(elementPath(element, t"text")).value)
 
   def tagName(element: Element): Text =
-    WebDriverSession.text(get(elementPath(element, t"name")).value)
+    WebDriverSession.text(read(elementPath(element, t"name")).value)
 
   def role(element: Element): Text =
-    WebDriverSession.text(get(elementPath(element, t"computedrole")).value)
+    WebDriverSession.text(read(elementPath(element, t"computedrole")).value)
 
   def label(element: Element): Text =
-    WebDriverSession.text(get(elementPath(element, t"computedlabel")).value)
+    WebDriverSession.text(read(elementPath(element, t"computedlabel")).value)
 
   def enabled(element: Element): Boolean =
-    WebDriverSession.boolean(get(elementPath(element, t"enabled")).value)
+    WebDriverSession.boolean(read(elementPath(element, t"enabled")).value)
 
   def selected(element: Element): Boolean =
-    WebDriverSession.boolean(get(elementPath(element, t"selected")).value)
+    WebDriverSession.boolean(read(elementPath(element, t"selected")).value)
 
   def attribute(element: Element, name: Text): Optional[Text] =
-    safely(WebDriverSession.text(get(elementPath(element, t"attribute/$name")).value))
+    safely(WebDriverSession.text(read(elementPath(element, t"attribute/$name")).value))
 
   def property(element: Element, name: Text): Optional[Text] =
-    safely(WebDriverSession.text(get(elementPath(element, t"property/$name")).value))
+    safely(WebDriverSession.text(read(elementPath(element, t"property/$name")).value))
 
   def css(element: Element, name: Text): Text =
-    WebDriverSession.text(get(elementPath(element, t"css/$name")).value)
+    WebDriverSession.text(read(elementPath(element, t"css/$name")).value)
 
   def rect(element: Element): WebDriverSession.Rect =
-    WebDriverSession.rect(get(elementPath(element, t"rect")).value)
+    WebDriverSession.rect(read(elementPath(element, t"rect")).value)
 
   // Not a protocol command: `displayed` was dropped between the JSON Wire Protocol and the W3C
   // specification, which offers the "element displayedness" atom instead. Running it as a script
@@ -320,4 +356,4 @@ extends caps.ExclusiveCapability:
       execute(t"return arguments[0].getClientRects().length > 0", List(element.in[Json]))
 
   def screenshotData(element: Element): Data =
-    WebDriverSession.text(get(elementPath(element, t"screenshot")).value).deserialize[Base64]
+    WebDriverSession.text(read(elementPath(element, t"screenshot")).value).deserialize[Base64]

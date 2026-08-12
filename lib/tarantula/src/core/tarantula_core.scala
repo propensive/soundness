@@ -32,8 +32,43 @@
                                                                                                   */
 package tarantula
 
+import scala.caps
+
+import ambience.*
 import anticipation.*
+import contingency.*
+import fulminate.*
+import guillotine.*
+import parasite.*
+import telekinesis.*
+import urticose.*
 import vacuous.*
+
+// The capture set of each instance is spelled out rather than inferred: an inferred one would
+// freshen the capabilities the instance was built from, and the `Result` refinement would then
+// fail to match at the use site.
+given webDriverSessional
+:   ( online:      Online,
+      backend:     Http.Backend,
+      loggable:    (Http.Event is Loggable)^,
+      tactic:      Tactic[WebDriverError],
+      diagnostics: Diagnostics )
+=>  ( WebDriverSessional^{online, loggable, tactic, caps.any} ) =
+
+  WebDriverSessional()
+
+given browserSessional
+:   ( online:      Online,
+      backend:     Http.Backend,
+      working:     WorkingDirectory,
+      monitor:     Monitor,
+      loggable:    (Http.Event is Loggable)^,
+      exec:        (ExecEvent is Loggable)^,
+      tactic:      Tactic[WebDriverError],
+      diagnostics: Diagnostics )
+=>  ( BrowserSessional^{online, monitor, loggable, exec, tactic, caps.any} ) =
+
+  BrowserSessional()
 
 // The session in scope, for code that reads better as `browser.title()` than `session.title()`.
 // A *named* using parameter, not a `summon`, which would mint a fresh root instead of referring
