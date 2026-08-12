@@ -21,6 +21,7 @@ caesura: csv tsv dsv spreadsheet sheet delimited-values
 camouflage: cache lru-cache memoization
 capricious: random rng probability gaussian gamma distribution sampling seed
 cardinality: refinement-types numeric-range bounded-numbers ranges
+clavichord: keyboard keypress keys modifiers input
 cataclysm: css stylesheet selectors keyframes media-queries fonts typesafe-css
 charisma: chemistry periodic-table chemical-equation molecule chemical-formula
 chiaroscuro: diff comparison contrast similarity test-assertions decomposition
@@ -110,7 +111,7 @@ superlunary: staging remote-execution multi-stage-programming distributed-comput
 surveillance: file-watcher filesystem file-events directory-monitoring nio
 symbolism: operators arithmetic typeclass operator-overloading algebra
 synesthesia: mcp model-context-protocol llm ai-protocol
-tarantula: webdriver browser-automation chrome firefox selenium
+tarantula: webdriver browser-automation chrome firefox safari edge selenium headless
 telekinesis: http http-client cookies authentication rest-client web-requests
 turbulence: streams io stdio streaming reactive line-separation
 typonym: type-level type-list type-map heterogeneous reflection

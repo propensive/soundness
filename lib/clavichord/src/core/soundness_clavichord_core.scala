@@ -30,24 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package tarantula
+package soundness
 
-import ambience.*
-import anticipation.*
-import contingency.*
-import gossamer.*
-import guillotine.*
-import parasite.*
-import telekinesis.*
-
-import abstractables.instantAbstractable
-import strategies.throwUnsafely
-
-object Chrome extends Navigator(t"chrome"):
-  def launch(using WorkingDirectory, Monitor)(using (ExecEvent is Loggable)^)(port: Int): Server^ =
-    val server: Job["chromedriver", Text] = sh"chromedriver --port=$port".fork()
-    sleep(100L)
-    Server(port, server)
-
-  def stop(server: Server)(using (Http.Event is Loggable)^, (ExecEvent is Loggable)^): Unit =
-    server.value.abort()
+export clavichord.Keypress

@@ -130,7 +130,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | stratiform.base256 | `Base256Error→Base256.Error` |
 | stratiform.binary | `BintelError→Bintel.Error`, `VarintError→Varint.Error` |
 | synesthesia.core | `McpClient→Mcp.Client`, `McpError→Mcp.Error`, `McpServer→Mcp.Server`, `McpSession→Mcp.Session`, `McpSpecification→Mcp.Specification` |
-| tarantula.core | `WebDriverError→WebDriver.Error` |
+| tarantula.core | `WebDriverError→WebDriver.Error`, `WebDriverSession→WebDriver.Session`, `WebElement→WebDriver.Element`, `ShadowRoot→WebDriver.ShadowRoot` |
 | telekinesis.core | `HttpClient→Http.Client`, `HttpError→Http.Error`, `HttpEvent→Http.Event`, `HttpRedirection→Http.Redirection`, `HttpRequestError→Http.Request.Error`, `HttpResponseError→Http.Response.Error` |
 | urticose.core | `HostnameError→Hostname.Error`, `EmailAddressError→EmailAddress.Error`, `MacAddressError→MacAddress.Error`, `NetworkInterfaceError→NetworkInterface.Error` |
 | urticose.url | `UrlError→Url.Error`, `UrlFragment→Url.Fragment` |

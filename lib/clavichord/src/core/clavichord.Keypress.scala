@@ -30,38 +30,82 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package tarantula
+package clavichord
 
-import scala.caps
-
-import ambience.*
 import anticipation.*
-import guillotine.*
-import parasite.*
-import telekinesis.*
+import gossamer.*
+import spectacular.*
 
-trait Navigator(name: Text):
-  transparent inline def browser = this
+// A key, as pressed: an ordinary character, a named editing or function key, or one of those
+// wrapped in the modifiers held down with it. Terminals and browsers agree on what a keypress
+// *is* and disagree only on how it is encoded, so the model lives here, apart from either —
+// profanity decodes terminal escape sequences into it, and tarantula renders it as the WebDriver
+// actions the protocol defines.
+object Keypress:
+  type EditKey = Tab.type | Home.type | End.type | PageUp.type | PageDown.type | Insert.type |
+    Delete.type | Enter.type | Backspace.type | Escape.type | Left.type | Right.type | Up.type |
+    Down.type
 
-  // A `Server` is a *capability*: it wraps the live browser-automation process. Its `stop`
-  // reaches back to the defining `Navigator`, declared by the `uses` clause.
-  case class Server(port: Int, value: Job[Label, Text]) extends caps.ExclusiveCapability
-  uses Navigator.this:
-    def stop()(using (ExecEvent is Loggable)^, (Http.Event is Loggable)^): Unit =
-      browser.stop(this)
+  // Renders a keypress with a Unicode symbol in square brackets for each special
+  // key (and modifier), joining a modifier to the key it modifies with `+`; an
+  // ordinary character is shown as itself. E.g. `[⇧]+[↵]`, `[⌃]+C`, `[⌥]+[→]`.
+  private def render(keypress: Keypress): Text =
+    def key(symbol: Text): Text = t"[$symbol]"
 
-  def launch(using WorkingDirectory, Monitor)(using (ExecEvent is Loggable)^)(port: Int): Server^
-  def stop(server: Server)(using (Http.Event is Loggable)^, (ExecEvent is Loggable)^): Unit
+    keypress match
+      // Typed patterns with field access rather than extractors: under capture checking, an
+      // enum-case unapply of a union-typed field fails to unify with the synthesized
+      // capture-variable-decorated scrutinee.
+      case shift: Shift => t"${key(t"⇧")}+${render(shift.keypress)}"
+      case alt: Alt     => t"${key(t"⌥")}+${render(alt.keypress)}"
+      case meta: Meta   => t"${key(t"⌘")}+${render(meta.keypress)}"
 
-  // Explicit `using` evidence instead of stacked `logs` sugar: the fresh `Server` capability
-  // bound in the body cannot cross the nested context-function results the sugar desugars to
-  // (the stacked-raises convention; see rep/DECISIONS.md).
-  def session[result](port: Int = 4444)(block: (session: WebDriver#Session) ?=> result)
-    ( using WorkingDirectory, Monitor )
-    ( using (Http.Event is Loggable)^, (ExecEvent is Loggable)^ )
-  :   result =
+      case ctrl: Ctrl =>
+        // Widened to a clean binary union first: a type test against the raw field type's
+        // GADT-narrowed intersections fails to unify with its capture-variable-decorated
+        // form under capture checking.
+        val inner: Keypress | Char = ctrl.keypress
 
-    // The fresh `Server` capability stays confined to this method; the `WebDriver` passed to
-    // the block is a pure port-holder.
-    val server = launch(port)
-    try block(using WebDriver(port).startSession()) finally server.stop()
+        inner match
+          case char: Char      => t"${key(t"⌃")}+${key(char.show)}"
+          case other: Keypress => t"${key(t"⌃")}+${render(other)}"
+
+      case CharKey(' ')      => key(t"␣")
+      case CharKey(char)     => key(char.show)
+      case FunctionKey(n)    => key(t"F${n.show}")
+      case EscapeSeq(id, _*) => key(t"⎋${id.show}")
+
+      case Tab       => key(t"⇥")
+      case Enter     => key(t"↵")
+      case Backspace => key(t"⌫")
+      case Delete    => key(t"⌦")
+      case Escape    => key(t"⎋")
+      case Up        => key(t"↑")
+      case Down      => key(t"↓")
+      case Left      => key(t"←")
+      case Right     => key(t"→")
+      case Home      => key(t"↖")
+      case End       => key(t"↘")
+      case PageUp    => key(t"⇞")
+      case PageDown  => key(t"⇟")
+      case Insert    => key(t"⎀")
+
+  given showable: Keypress is Showable = render(_)
+
+enum Keypress:
+  case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up,
+    Down
+
+  case CharKey(char: Char)
+  case FunctionKey(number: Int)
+  case EscapeSeq(id: Char, content: Char*)
+  case Shift(keypress: Keypress.EditKey | FunctionKey)
+  case Alt(keypress: Shift | Keypress.EditKey | FunctionKey)
+
+  case
+    Ctrl
+      ( keypress: Alt | Shift | Keypress.EditKey | FunctionKey | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' |
+        'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' |
+        'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^' | '_' | '@' )
+
+  case Meta(keypress: Ctrl | Alt | Shift | Keypress.EditKey | FunctionKey)

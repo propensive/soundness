@@ -28,16 +28,23 @@ import soundness.*
 
 ### Driving a browser
 
-A browser session launches the driver, opens a session, and closes both when the block ends. Within
-it, the session navigates and queries:
+A browser session launches the driver, opens a session, and closes both when the block ends —
+whether it returns or throws. Within it, the session navigates and queries:
 
 ```scala
-Chrome.session(port = 4444):
+WebDriver.Chrome.headless.session:
   browser.navigateTo(url"https://example.com/")
   browser.title()
 ```
 
-`Firefox` works identically; each drives its standard driver executable.
+`WebDriver.Firefox`, `WebDriver.Safari` and `WebDriver.Edge` work identically; each drives its
+standard driver executable. `WebDriver(url"http://localhost:4444", capabilities)` drives a driver
+that is already running, including a remote grid, through the same interface.
+
+The session handle is a capability, confined by capture checking to the block that owns it:
+returning it, or anything that captures it, is a compile error, since a session which has been
+closed is not something a program should be able to hold. Element handles, by contrast, are pure
+values — but every operation on one needs the session in scope, so they are inert outside it.
 
 ### Finding and using elements
 
@@ -46,13 +53,20 @@ an HTML tag — with `/` returning every match and `element` exactly one. Elemen
 elements descend the tree:
 
 ```scala
-val heading = browser.element(H1)          // by tag
+val heading = browser.element(H1)                    // by tag
 val items = browser / SelectorList.read(t"nav li")   // by CSS selector
 
 heading.click()
+heading.innerText()                        // the rendered text
 field.value(t"search terms")               // type into an input
+field.property(t"value")                   // the live DOM property, not the markup
 button.screenshot()                        // a Raster in Png of the element
 ```
+
+Anything a locator cannot express is reached with `execute`, which runs JavaScript in the page
+and returns its result as `Json`. Modifiers, chords, hovers and drags go through `perform` and
+the typed actions API; a failure of any kind arrives as a `WebDriver.Error` carrying the W3C
+error code the driver reported, its message and the browser-side stack trace.
 
 ### Typed page scripting
 

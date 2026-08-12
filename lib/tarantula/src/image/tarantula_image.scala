@@ -32,20 +32,20 @@
                                                                                                   */
 package tarantula
 
-import anticipation.*
-import gesticulate.*
-import hallucination.*
-import monotonous.*
-import prepositional.*
 import contingency.*
-import telekinesis.*
+import hallucination.*
+import prepositional.*
 import turbulence.*
 
-// The same ambient strategy the method had as a member of `Element`.
+// The same ambient strategy the method had as a member of `WebDriver.Element`.
 import strategies.throwUnsafely
 
-// The decoded form of `Element.screenshotData()`. This lives outside `tarantula.core` so that
-// browser automation does not depend on `hallucination` and its image-codec closure; the
-// method's name and result type are unchanged from when it was a member of `Element`.
-extension (element: WebDriver#Session#Element)
-  def screenshot(): Raster in Png logs Http.Event = element.screenshotData().read[Raster in Png]
+// The decoded form of `screenshotData()`, at element and at page scope. This lives outside
+// `tarantula.core` so that browser automation does not depend on `hallucination` and its
+// image-codec closure; screenshots are PNG, so only that format's codec is needed.
+extension (element: WebDriver.Element)
+  def screenshot()(using session: WebDriver.Session^): Raster in Png =
+    session.screenshotData(element).read[Raster in Png]
+
+extension (session: WebDriver.Session^)
+  def screenshot(): Raster in Png = session.screenshotData().read[Raster in Png]

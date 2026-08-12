@@ -1,0 +1,4 @@
+- models a keypress as a key plus the modifiers held with it
+- names editing keys, function keys and ordinary characters uniformly
+- independent of any way of encoding a keypress
+- shared by terminal input and browser automation

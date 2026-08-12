@@ -33,6 +33,7 @@
 package profanity
 
 import anticipation.*
+import clavichord.Keypress
 import denominative.*
 import gossamer.*
 import rudiments.*

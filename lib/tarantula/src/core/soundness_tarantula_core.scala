@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export tarantula.{Navigator, browser, Chrome, Firefox, Focusable, WebDriver}
+export tarantula.{Focusable, WebDriver, browser, click, clear, innerText, tagName, enabled,
+    selected, displayed, role, label, css, shadowRoot, rect, value, screenshotData, attribute,
+    property, element, `/`}

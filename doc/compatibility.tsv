@@ -39,6 +39,7 @@ caesura	yes	yes	yes	js
 camouflage	yes	yes	yes	js	
 capricious	yes	yes	yes	wasi	backends: core+wasi
 cardinality	yes	yes	yes	js	
+clavichord	yes	yes	yes	js	
 cataclysm	yes	yes	no	js	
 charisma	yes	yes	yes	js	
 chiaroscuro	yes	yes	yes	js	
