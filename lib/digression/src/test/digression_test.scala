@@ -129,3 +129,129 @@ object Tests extends Suite(m"Digression Tests"):
         . map(_.plumbing)
 
       . assert(_.all(!_))
+
+    val smap: Optional[Smap] =
+      Smap.parse:
+        Text:
+          List
+            ( "SMAP", "Main.scala", "Scala",
+              "*S Scala",
+              "*F", "+ 1 Main.scala", "Main.scala", "+ 2 Util.scala", "foo/Util.scala",
+              "*L", "1#1,120:1", "3#2,2:121",
+              "*S ScalaDebug",
+              "*F", "+ 1 Main.scala", "Main.scala",
+              "*L", "3#1:121", "3#1:122",
+              "*S ScalaClass",
+              "*F", "1 Util",
+              "*L", "1#1:121", "1#1:122",
+              "*E" )
+          . mkString("\n")
+
+    val nested: Optional[Smap] =
+      Smap.parse:
+        Text:
+          List
+            ( "SMAP", "Main.scala", "Scala",
+              "*S Scala",
+              "*F", "+ 1 Main.scala", "Main.scala", "+ 2 B.scala", "B.scala",
+              "+ 3 A.scala", "A.scala",
+              "*L", "1#1,10:1", "3#2:11", "3#3:12",
+              "*S ScalaDebug",
+              "*F", "+ 1 Main.scala", "Main.scala", "+ 2 B.scala", "B.scala",
+              "*L", "3#1:11", "11#2:12",
+              "*S ScalaClass",
+              "*F", "1 B", "2 A",
+              "*L", "1#1:11", "1#2:12",
+              "*E" )
+          . mkString("\n")
+
+    suite(m"SMAP parsing and expansion"):
+      test(m"Unparsable text is not an SMAP"):
+        Smap.parse(t"not an SMAP")
+
+      . assert(_ == Unset)
+
+      test(m"A real line expands to nothing"):
+        smap.let(_.expand(50))
+
+      . assert(_ == Unset)
+
+      test(m"A line beyond every mapping expands to nothing"):
+        smap.let(_.expand(200))
+
+      . assert(_ == Unset)
+
+      test(m"A synthetic line recovers its origin, its class and its call site"):
+        smap.let(_.expand(121))
+
+      . assert(_ == Smap.Expansion(
+          List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 3, t"Util")), 3))
+
+      test(m"A coalesced run maps each of its lines"):
+        smap.let(_.expand(122))
+
+      . assert(_ == Smap.Expansion(
+          List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 4, t"Util")), 3))
+
+      test(m"Nested inlining expands innermost first, back to a real line"):
+        nested.let(_.expand(12))
+
+      . assert:
+          _ == Smap.Expansion
+                 ( List
+                     ( Smap.Origin(t"A.scala", t"A.scala", 3, t"A"),
+                       Smap.Origin(t"B.scala", t"B.scala", 3, t"B") ),
+                   3 )
+
+      test(m"A chain with no call-site information keeps its origins but no line"):
+        val bare =
+          List
+            ( "SMAP", "Main.scala", "Scala",
+              "*S Scala",
+              "*F", "+ 1 Main.scala", "Main.scala", "+ 2 Util.scala", "Util.scala",
+              "*L", "1#1,120:1", "3#2:121",
+              "*E" )
+          . mkString("\n")
+
+        Smap.parse(Text(bare)).let(_.expand(121))
+
+      . assert(_ == Smap.Expansion(List(Smap.Origin(t"Util.scala", t"Util.scala", 3)), Unset))
+
+    suite(m"Rendering inlined frames"):
+      val method = StackTrace.Method(t"Main", t"run()")
+
+      val inlined =
+        List
+          ( StackTrace.Frame.Inlined(t"A.scala", t"A.scala", 3),
+            StackTrace.Frame.Inlined(t"B.scala", t"B.scala", 3) )
+
+      val frame = StackTrace.Frame(method, t"Main.scala", 3, false, inlined = inlined)
+      val stack = StackTrace(t"scala", t"Exception", Message(t"boom"), List(frame), Unset)
+
+      test(m"An inlined origin is rendered beneath its frame"):
+        stack.show.contains(t"↳ inlined from A.scala:3")
+
+      . assert(_ == true)
+
+      test(m"Inlined origins are rendered innermost first"):
+        val text = stack.show
+        text.s.indexOf("A.scala:3") < text.s.indexOf("B.scala:3")
+
+      . assert(_ == true)
+
+      test(m"A frame with no inline information renders as before"):
+        StackTrace(t"scala", t"Exception", Message(t"boom"),
+            List(frame.copy(inlined = Nil)), Unset)
+        . show.contains(t"inlined")
+
+      . assert(_ == false)
+
+      test(m"A resolved inline origin names its definition ahead of its position"):
+        val source = StackTrace.Frame.Source(t"A.scala", t"ThrowerA", t"fail", Kind.Method)
+        val origin = StackTrace.Frame.Inlined(t"A.scala", t"A.scala", 3, source)
+
+        StackTrace(t"scala", t"Exception", Message(t"boom"),
+            List(frame.copy(inlined = List(origin))), Unset)
+        . show.contains(t"↳ inlined from ThrowerA.fail (A.scala:3)")
+
+      . assert(_ == true)
