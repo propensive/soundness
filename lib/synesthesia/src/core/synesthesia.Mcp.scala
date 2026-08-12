@@ -216,7 +216,6 @@ object Mcp:
 
 
   case class TaskAugmented(task: Optional[TaskMetadata] = Unset)
-  case class Error(code: Int, message: Text, data: Optional[Json] = Unset)
 
   object TextInt:
     given encodable: TextInt is Json.Encodable = Json.Encodable(() => Morphology.Any):
@@ -1044,4 +1043,19 @@ object Mcp:
 
   // McpSession -> Mcp.Session
   trait Session
+
+  // McpError → Mcp.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case UnknownMethod    extends Reason(1)
+      case UnknownResource  extends Reason(2)
+      case MissingParameter extends Reason(3)
+
+    given communicable: Reason is Communicable =
+      case Reason.UnknownMethod    => m"the method name does not match any registered tool or prompt"
+      case Reason.UnknownResource  => m"the URI does not match any registered resource"
+      case Reason.MissingParameter => m"a required parameter was not present in the input"
+
+  case class Error(reason: Mcp.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(630, reason.number)(m"the MCP operation failed because $reason")
 
