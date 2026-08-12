@@ -736,3 +736,102 @@ object Jdwp:
     private[vivisection] def negotiate()(using Tactic[Debugger.Error], Monitor): Unit =
       val reader = request(1, 7)(_ => ())
       sizes0 = IdSizes(reader.int(), reader.int(), reader.int(), reader.int(), reader.int())
+
+    // Reads `count` items in sequence. A helper rather than `map` over a range, because the reads
+    // are ordered side effects and must run strictly left to right.
+    private def list[element](count: Int)(read: () => element): List[element] =
+      def recur(remaining: Int): List[element] =
+        if remaining <= 0 then Nil else
+          val head = read()
+          head :: recur(remaining - 1)
+
+      recur(count)
+
+    // Issues a command whose reply carries no data of interest, discarding the reader.
+    private def command(set: Int, cmd: Int)(write: Writer => Unit)
+      ( using Tactic[Debugger.Error], Monitor )
+    :   Unit =
+
+      request(set, cmd)(write)
+      ()
+
+    // VirtualMachine (command set 1).
+    def version()(using Tactic[Debugger.Error], Monitor): Version =
+      val reader = request(1, 1)(_ => ())
+      Version(reader.string(), reader.int(), reader.int(), reader.string(), reader.string())
+
+    def allThreads()(using Tactic[Debugger.Error], Monitor): List[ThreadId] =
+      val reader = request(1, 4)(_ => ())
+      list(reader.int()): () => reader.threadId()
+
+    def suspendAll()(using Tactic[Debugger.Error], Monitor): Unit = command(1, 8)(_ => ())
+    def resumeAll()(using Tactic[Debugger.Error], Monitor): Unit = command(1, 9)(_ => ())
+    def dispose()(using Tactic[Debugger.Error], Monitor): Unit = command(1, 6)(_ => ())
+
+    // ReferenceType (command set 2).
+    def signature(cls: ReferenceTypeId)(using Tactic[Debugger.Error], Monitor): Text =
+      request(2, 1)(_.referenceTypeId(cls)).string()
+
+    def sourceFile(cls: ReferenceTypeId)(using Tactic[Debugger.Error], Monitor): Text =
+      request(2, 7)(_.referenceTypeId(cls)).string()
+
+    def sourceDebugExtension(cls: ReferenceTypeId)
+      ( using Tactic[Debugger.Error], Monitor )
+    :   Text =
+
+      request(2, 12)(_.referenceTypeId(cls)).string()
+
+    def methods(cls: ReferenceTypeId)(using Tactic[Debugger.Error], Monitor): List[MethodInfo] =
+      val reader = request(2, 5)(_.referenceTypeId(cls))
+
+      list(reader.int()): () =>
+        MethodInfo(reader.methodId(), reader.string(), reader.string(), reader.int())
+
+    // Method (command set 6).
+    def lineTable(cls: ReferenceTypeId, method: MethodId)
+      ( using Tactic[Debugger.Error], Monitor )
+    :   LineTable =
+
+      val reader = request(6, 1)(_.referenceTypeId(cls).methodId(method))
+      val start = reader.long()
+      val end = reader.long()
+      val lines = list(reader.int()): () => LineEntry(reader.long(), reader.int())
+
+      LineTable(start, end, lines)
+
+    // ThreadReference (command set 11).
+    def threadName(thread: ThreadId)(using Tactic[Debugger.Error], Monitor): Text =
+      request(11, 1)(_.threadId(thread)).string()
+
+    def suspendThread(thread: ThreadId)(using Tactic[Debugger.Error], Monitor): Unit =
+      command(11, 2)(_.threadId(thread))
+
+    def resumeThread(thread: ThreadId)(using Tactic[Debugger.Error], Monitor): Unit =
+      command(11, 3)(_.threadId(thread))
+
+    def frameCount(thread: ThreadId)(using Tactic[Debugger.Error], Monitor): Int =
+      request(11, 7)(_.threadId(thread)).int()
+
+    def frames(thread: ThreadId, start: Int, length: Int)
+      ( using Tactic[Debugger.Error], Monitor )
+    :   List[(FrameId, Location)] =
+
+      val reader = request(11, 6): writer => writer.threadId(thread).int(start).int(length)
+      list(reader.int()): () => (reader.frameId(), reader.location())
+
+    // EventRequest (command set 15). `set` returns the request id used to `clear` it later.
+    def eventRequestSet(kind: EventKind, policy: SuspendPolicy, modifiers: List[Modifier])
+      ( using Tactic[Debugger.Error], Monitor )
+    :   Int =
+
+      request(15, 1): writer =>
+        writer.byte(kind.id.toByte).byte(policy.id).int(modifiers.stdlib.length)
+        modifiers.stdlib.foreach(writer.modifier)
+
+      . int()
+
+    def eventRequestClear(kind: EventKind, request0: Int)
+      ( using Tactic[Debugger.Error], Monitor )
+    :   Unit =
+
+      command(15, 2)(_.byte(kind.id.toByte).int(request0))
