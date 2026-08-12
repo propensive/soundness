@@ -630,7 +630,7 @@ object Jdwp:
       // Sealed: the connection captures this session's monitor and diagnostics, which an honest
       // `Connection^` would hide from the pumps that serve it. It is a local of this method, lent
       // to `lambda` and dead once `lambda` returns.
-      val connection: Connection = caps.unsafe.unsafeAssumePure(Connection(diagnostics))
+      val connection: Connection = caps.unsafe.unsafeAssumePure(Connection(monitor, diagnostics))
 
       // A single writer drains outgoing packets so writes never interleave.
       val writer: Task[Unit] = async:
@@ -679,7 +679,8 @@ object Jdwp:
         reader.cancel()
         writer.cancel()
 
-  class Connection private[vivisection] (note: Diagnostics) extends caps.ExclusiveCapability:
+  class Connection private[vivisection] (monitor: Monitor, note: Diagnostics)
+  extends caps.ExclusiveCapability:
     private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
     private val pending: scc.TrieMap[Int, Promise[Connection.Reply]] = scc.TrieMap()
     private[vivisection] val outgoing: Relay[Data] = Relay()
@@ -709,7 +710,7 @@ object Jdwp:
     // The one seam every command goes through: allocate an id, frame the request, await the reply,
     // and hand back a reader over its payload (raising the VM's error code on failure).
     def request(set: Int, command: Int)(write: Writer => Unit)
-      ( using Tactic[Debugger.Error], Monitor )
+      ( using Tactic[Debugger.Error] )
     :   Reader =
 
       val id = counter.getAndIncrement()
@@ -721,10 +722,11 @@ object Jdwp:
 
       given Diagnostics = note
 
-      // A cancelled or interrupted await is reported as a lost connection (code −1). An error is
-      // raised recoverably, then an empty reader returned, so no `Nothing`-typed expression reaches
-      // the reply position.
-      safely(promise.await()).or(Connection.Reply.Failed(-1)) match
+      // The session's monitor is passed to `await` explicitly rather than as a `given`, which would
+      // hide `this`. A cancelled or interrupted await is reported as a lost connection (code −1); an
+      // error is raised recoverably, then an empty reader returned, so no `Nothing`-typed expression
+      // reaches the reply position.
+      safely(promise.await()(using monitor)).or(Connection.Reply.Failed(-1)) match
         case Connection.Reply.Ok(data) =>
           Reader(data, sizes0)
 
@@ -733,7 +735,7 @@ object Jdwp:
           Reader(Array.empty[Byte], sizes0)
 
     // VirtualMachine (command set 1): negotiate the identifier sizes the rest of the session needs.
-    private[vivisection] def negotiate()(using Tactic[Debugger.Error], Monitor): Unit =
+    private[vivisection] def negotiate()(using Tactic[Debugger.Error]): Unit =
       val reader = request(1, 7)(_ => ())
       sizes0 = IdSizes(reader.int(), reader.int(), reader.int(), reader.int(), reader.int())
 
@@ -749,39 +751,39 @@ object Jdwp:
 
     // Issues a command whose reply carries no data of interest, discarding the reader.
     private def command(set: Int, cmd: Int)(write: Writer => Unit)
-      ( using Tactic[Debugger.Error], Monitor )
+      ( using Tactic[Debugger.Error] )
     :   Unit =
 
       request(set, cmd)(write)
       ()
 
     // VirtualMachine (command set 1).
-    def version()(using Tactic[Debugger.Error], Monitor): Version =
+    def version()(using Tactic[Debugger.Error]): Version =
       val reader = request(1, 1)(_ => ())
       Version(reader.string(), reader.int(), reader.int(), reader.string(), reader.string())
 
-    def allThreads()(using Tactic[Debugger.Error], Monitor): List[ThreadId] =
+    def allThreads()(using Tactic[Debugger.Error]): List[ThreadId] =
       val reader = request(1, 4)(_ => ())
       list(reader.int()): () => reader.threadId()
 
-    def suspendAll()(using Tactic[Debugger.Error], Monitor): Unit = command(1, 8)(_ => ())
-    def resumeAll()(using Tactic[Debugger.Error], Monitor): Unit = command(1, 9)(_ => ())
-    def dispose()(using Tactic[Debugger.Error], Monitor): Unit = command(1, 6)(_ => ())
+    def suspendAll()(using Tactic[Debugger.Error]): Unit = command(1, 8)(_ => ())
+    def resumeAll()(using Tactic[Debugger.Error]): Unit = command(1, 9)(_ => ())
+    def dispose()(using Tactic[Debugger.Error]): Unit = command(1, 6)(_ => ())
 
     // ReferenceType (command set 2).
-    def signature(cls: ReferenceTypeId)(using Tactic[Debugger.Error], Monitor): Text =
+    def signature(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Text =
       request(2, 1)(_.referenceTypeId(cls)).string()
 
-    def sourceFile(cls: ReferenceTypeId)(using Tactic[Debugger.Error], Monitor): Text =
+    def sourceFile(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Text =
       request(2, 7)(_.referenceTypeId(cls)).string()
 
     def sourceDebugExtension(cls: ReferenceTypeId)
-      ( using Tactic[Debugger.Error], Monitor )
+      ( using Tactic[Debugger.Error] )
     :   Text =
 
       request(2, 12)(_.referenceTypeId(cls)).string()
 
-    def methods(cls: ReferenceTypeId)(using Tactic[Debugger.Error], Monitor): List[MethodInfo] =
+    def methods(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): List[MethodInfo] =
       val reader = request(2, 5)(_.referenceTypeId(cls))
 
       list(reader.int()): () =>
@@ -789,7 +791,7 @@ object Jdwp:
 
     // Method (command set 6).
     def lineTable(cls: ReferenceTypeId, method: MethodId)
-      ( using Tactic[Debugger.Error], Monitor )
+      ( using Tactic[Debugger.Error] )
     :   LineTable =
 
       val reader = request(6, 1)(_.referenceTypeId(cls).methodId(method))
@@ -800,20 +802,20 @@ object Jdwp:
       LineTable(start, end, lines)
 
     // ThreadReference (command set 11).
-    def threadName(thread: ThreadId)(using Tactic[Debugger.Error], Monitor): Text =
+    def threadName(thread: ThreadId)(using Tactic[Debugger.Error]): Text =
       request(11, 1)(_.threadId(thread)).string()
 
-    def suspendThread(thread: ThreadId)(using Tactic[Debugger.Error], Monitor): Unit =
+    def suspendThread(thread: ThreadId)(using Tactic[Debugger.Error]): Unit =
       command(11, 2)(_.threadId(thread))
 
-    def resumeThread(thread: ThreadId)(using Tactic[Debugger.Error], Monitor): Unit =
+    def resumeThread(thread: ThreadId)(using Tactic[Debugger.Error]): Unit =
       command(11, 3)(_.threadId(thread))
 
-    def frameCount(thread: ThreadId)(using Tactic[Debugger.Error], Monitor): Int =
+    def frameCount(thread: ThreadId)(using Tactic[Debugger.Error]): Int =
       request(11, 7)(_.threadId(thread)).int()
 
     def frames(thread: ThreadId, start: Int, length: Int)
-      ( using Tactic[Debugger.Error], Monitor )
+      ( using Tactic[Debugger.Error] )
     :   List[(FrameId, Location)] =
 
       val reader = request(11, 6): writer => writer.threadId(thread).int(start).int(length)
@@ -821,7 +823,7 @@ object Jdwp:
 
     // EventRequest (command set 15). `set` returns the request id used to `clear` it later.
     def eventRequestSet(kind: EventKind, policy: SuspendPolicy, modifiers: List[Modifier])
-      ( using Tactic[Debugger.Error], Monitor )
+      ( using Tactic[Debugger.Error] )
     :   Int =
 
       request(15, 1): writer =>
@@ -831,7 +833,7 @@ object Jdwp:
       . int()
 
     def eventRequestClear(kind: EventKind, request0: Int)
-      ( using Tactic[Debugger.Error], Monitor )
+      ( using Tactic[Debugger.Error] )
     :   Unit =
 
       command(15, 2)(_.byte(kind.id.toByte).int(request0))
