@@ -30,27 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package coaxial
 
-import anticipation.*
 import fulminate.*
 
-object MacAddressError:
-  object Reason:
+// A namespace for the connection vocabulary. There is no `Connection` type: a
+// connection is whatever a backend's `Courier` or `Exchange` is, named by the
+// abstract `type Connection` members of `Routable` and `Serviceable`.
+object Connection:
+  // Connection.Error → Connection.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Accept   extends Reason(1)
+      case Transmit extends Reason(2)
+      case Close    extends Reason(3)
+
     given communicable: Reason is Communicable =
-      case WrongGroupCount(count) =>
-        m"there should be six colon-separated groups, but there were $count"
+      case Reason.Accept   => m"a new connection could not be accepted"
+      case Reason.Transmit => m"data could not be transmitted to the connection"
+      case Reason.Close    => m"the connection could not be closed cleanly"
 
-      case WrongGroupLength(group, length) =>
-        m"group $group should be two hex digits, but its length is $length"
-
-      case NotHex(group, content) =>
-        m"group $group should be a two-digit hex number, but it is $content"
-
-  enum Reason(val number: Int) extends Clarification:
-    case WrongGroupCount(count: Int)               extends Reason(1)
-    case WrongGroupLength(group: Int, length: Int) extends Reason(2)
-    case NotHex(group: Int, content: Text)         extends Reason(3)
-
-case class MacAddressError(reason: MacAddressError.Reason)(using Diagnostics)
-extends Error(532, reason.number)(m"the MAC address is not valid because $reason")
+  case class Error(reason: Connection.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(266, reason.number)(m"the connection failed because $reason")

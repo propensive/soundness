@@ -142,22 +142,22 @@ object internal:
           abort(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)))
 
     object MacAddress:
-      import MacAddressError.Reason.*
+      import MacAddress.Error.Reason.*
 
       inline given underlying: Underlying[MacAddress, Long] = !!
       given showable: MacAddress is Showable = _.text
       given encodable: MacAddress is Encodable in Text = _.text
-      given decoder: (tactic: Tactic[MacAddressError])
+      given decoder: (tactic: Tactic[MacAddress.Error])
       =>  ((MacAddress is Decodable in Text)^{tactic}) =
         parse(_)
 
       def apply(value: Long): MacAddress = value
 
-      def parse(text: Text): MacAddress raises MacAddressError =
+      def parse(text: Text): MacAddress raises MacAddress.Error =
         val groups = text.cut(t"-")
 
         if groups.stdlib.length != 6
-        then raise(MacAddressError(WrongGroupCount(groups.stdlib.length)))
+        then raise(MacAddress.Error(WrongGroupCount(groups.stdlib.length)))
 
         @tailrec
         def recur(todo: List[Text], index: Int = 0, acc: Long = 0L): Long = todo match
@@ -165,10 +165,10 @@ object internal:
 
           case head :: tail =>
             if head.length != 2
-            then raise(MacAddressError(WrongGroupLength(index, head.length)))
+            then raise(MacAddress.Error(WrongGroupLength(index, head.length)))
 
             val value = try Integer.parseInt(head.s, 16) catch case error: NumberFormatException =>
-              abort(MacAddressError(NotHex(index, head)))
+              abort(MacAddress.Error(NotHex(index, head)))
 
             recur(tail, index + 1, (acc << 8) + value)
 
@@ -183,6 +183,27 @@ object internal:
           case Nil          => done
 
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
+
+      // MacAddressError → MacAddress.Error
+      object Error:
+        object Reason:
+          given communicable: Reason is Communicable =
+            case WrongGroupCount(count) =>
+              m"there should be six colon-separated groups, but there were $count"
+
+            case WrongGroupLength(group, length) =>
+              m"group $group should be two hex digits, but its length is $length"
+
+            case NotHex(group, content) =>
+              m"group $group should be a two-digit hex number, but it is $content"
+
+        enum Reason(val number: Int) extends Clarification:
+          case WrongGroupCount(count: Int)               extends Reason(1)
+          case WrongGroupLength(group: Int, length: Int) extends Reason(2)
+          case NotHex(group: Int, content: Text)         extends Reason(3)
+
+      case class Error(reason: MacAddress.Error.Reason)(using Diagnostics)
+      extends fulminate.Error(532, reason.number)(m"the MAC address is not valid because $reason")
 
     object Port:
       inline given underlying: Underlying[Port, Int] = !!

@@ -51,13 +51,13 @@ object Bindable:
     def bind(domainSocket: DomainSocket, interface: Optional[MacAddress]): Binding =
       backend.listenDomain(domainSocket, List.of(options.values))
 
-    def connect(binding: Binding): Duplex raises ConnectionError = backend.accept(binding)
+    def connect(binding: Binding): Duplex raises Connection.Error = backend.accept(binding)
 
-    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises ConnectionError =
+    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises Connection.Error =
       input.send(Stream(bytes))
 
     def stop(binding: Binding): Unit = backend.shutdown(binding)
-    def close(connection: Duplex): Unit raises ConnectionError = connection.close()
+    def close(connection: Duplex): Unit raises Connection.Error = connection.close()
 
   given tcpPort: (backend: SocketBackend, options: Every[SocketOption.Tcp]) => TcpPort is Bindable:
     type Binding = backend.ServerSocket
@@ -67,12 +67,12 @@ object Bindable:
     def bind(port: TcpPort, interface: Optional[MacAddress]): Binding =
       backend.listenTcp(port, interface, List.of(options.values))
 
-    def connect(binding: Binding): Duplex raises ConnectionError = backend.accept(binding)
+    def connect(binding: Binding): Duplex raises Connection.Error = backend.accept(binding)
 
-    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises ConnectionError =
+    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises Connection.Error =
       input.send(Stream(bytes))
 
-    def close(connection: Duplex): Unit raises ConnectionError = connection.close()
+    def close(connection: Duplex): Unit raises Connection.Error = connection.close()
     def stop(binding: Binding): Unit = backend.shutdown(binding)
 
   given udpPort: (backend: SocketBackend, options: Every[SocketOption.Udp]) => UdpPort is Bindable:
@@ -83,17 +83,17 @@ object Bindable:
     def bind(port: UdpPort, interface: Optional[MacAddress]): Binding =
       backend.listenUdp(port, interface, List.of(options.values))
 
-    def connect(binding: Binding): Packet raises ConnectionError = backend.receive(binding)
+    def connect(binding: Binding): Packet raises Connection.Error = backend.receive(binding)
 
     def transmit(binding: Binding, input: Packet, response: UdpResponse)
-    :   Unit raises ConnectionError =
+    :   Unit raises Connection.Error =
 
       response match
         case UdpResponse.Ignore      => ()
         case UdpResponse.Reply(data) => backend.reply(binding, input.sender, input.port, data)
 
     def stop(binding: Binding): Unit = backend.unbind(binding)
-    def close(input: Packet): Unit raises ConnectionError = ()
+    def close(input: Packet): Unit raises Connection.Error = ()
 
 trait Bindable extends Typeclass:
   type Binding
@@ -101,7 +101,7 @@ trait Bindable extends Typeclass:
   type Output
 
   def bind(socket: Self, interface: Optional[MacAddress]): Binding
-  def connect(binding: Binding): Input raises ConnectionError
-  def transmit(binding: Binding, input: Input, output: Output): Unit raises ConnectionError
-  def close(connection: Input): Unit raises ConnectionError
+  def connect(binding: Binding): Input raises Connection.Error
+  def transmit(binding: Binding, input: Input, output: Output): Unit raises Connection.Error
+  def close(connection: Input): Unit raises Connection.Error
   def stop(binding: Binding): Unit

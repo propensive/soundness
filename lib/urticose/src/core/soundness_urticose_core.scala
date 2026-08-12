@@ -36,7 +36,7 @@ export
   urticose
   . { Remotable, DnsLabel, EmailAddress, Endpoint, Host, Hostname, InterfaceAddress, Internet,
       internet, ip, IpAddressError, Ipv4, Ipv4Subnet, Ipv6, Ipv6Subnet, Localhost, LocalPart, mac,
-      MacAddress, MacAddressError, NetworkInterface, OfflineError, on, Online, online, Allocatable,
+      MacAddress, NetworkInterface, OfflineError, on, Online, online, Allocatable,
       Port, PortError, PortType, Protocolic, Quic, serve, Service, subnet, Tcp, tcp, TcpPort, Udp,
       udp, UdpPort }
 
