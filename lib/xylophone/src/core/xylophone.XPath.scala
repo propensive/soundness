@@ -257,62 +257,42 @@ object XPath:
 
       ${xylophone.internal.xpath[parts, origins]('insertions)}
 
-  // Parses an absolute XPath (`/`, `/root[1]/child[2]`, `/root/@attr`),
-  // reporting the offset of any error. Each step is interpreted by `parseStep`;
-  // an unrecognised (e.g. empty, or `name[x]` with a non-numeric ordinal) step
-  // is a `BadStep`.
+  // Parses any XPath 1.0 expression — location paths, absolute or relative,
+  // and the full expression language — reporting the offset of any error.
   given decodable: (tactic: Tactic[XPath.Error]) => ((XPath is Decodable in Text)^{tactic}) = text =>
-    val string = text.s
-
-    if string.isEmpty || string.charAt(0) != '/'
-    then abort(XPath.Error(XPath.Error.Reason.ExpectedSlash, 0))
-    else
-      var xpath: XPath = XPath()
-      var offset = 1
-
-      while offset < string.length do
-        val slash = string.indexOf('/', offset)
-        val end = if slash < 0 then string.length else slash
-
-        parseStep(string.substring(offset, end).nn.tt) match
-          case Unset => abort(XPath.Error(XPath.Error.Reason.BadStep, offset))
-
-          case step => step.asInstanceOf[Either[Text, (Text, Int)]] match
-            case Left(name)       => xpath = xpath.attribute(name)
-            case Right((name, n)) => xpath = xpath.element(name, n)
-
-        offset = end + 1
-
-      xpath
-
-  // Parse a stored descent segment back into an addressable step. Returns
-  // `Right(name, ordinal)` for an element step, `Left(name)` for an
-  // attribute step, or `Unset` for an unrecognised segment.
-  private def parseStep(segment: Text): Optional[Either[Text, (Text, Int)]] =
-    if segment.length == 0 then Unset
-    else if segment.s.charAt(0) == '@' then Left(segment.s.drop(1).tt)
-    else
-      val s = segment.s
-      val openBracket = s.lastIndexOf('[')
-
-      if openBracket >= 0 && s.endsWith("]") then
-        val name = s.substring(0, openBracket).nn.tt
-        val ordinalText = s.substring(openBracket + 1, s.length - 1).nn
-
-        try Right((name, Integer.parseInt(ordinalText)))
-        catch case _: NumberFormatException => Unset
-      else
-        Right((segment, 1))
+    XPath(XPathReader.parse(text, holes = false))
 
   // XPathError → XPath.Error
   object Error:
+    // Reasons are append-only: `number` values are stable identifiers within
+    // the error 562 envelope and must never be reassigned. `ExpectedSlash`
+    // and `BadStep` were raised by the pre-AST positional parser and are
+    // retained only for numbering.
     enum Reason(val number: Int) extends Clarification:
-      case ExpectedSlash extends Reason(1)
-      case BadStep       extends Reason(2)
+      case ExpectedSlash        extends Reason(1)
+      case BadStep              extends Reason(2)
+      case UnexpectedCharacter  extends Reason(3)
+      case UnterminatedLiteral  extends Reason(4)
+      case UnknownAxis          extends Reason(5)
+      case ExpectedNodeTest     extends Reason(6)
+      case ExpectedExpression   extends Reason(7)
+      case ExpectedCloseParen   extends Reason(8)
+      case ExpectedCloseBracket extends Reason(9)
+      case UnexpectedEnd        extends Reason(10)
+      case UnexpectedToken      extends Reason(11)
 
     given communicable: Reason is Communicable =
-      case Reason.ExpectedSlash => m"an XPath must begin with '/'"
-      case Reason.BadStep       => m"the path step is not a valid XPath step"
+      case Reason.ExpectedSlash        => m"an XPath must begin with '/'"
+      case Reason.BadStep              => m"the path step is not a valid XPath step"
+      case Reason.UnexpectedCharacter  => m"the character is not valid in an XPath"
+      case Reason.UnterminatedLiteral  => m"the string literal is not terminated"
+      case Reason.UnknownAxis          => m"the axis name is not one of the thirteen XPath axes"
+      case Reason.ExpectedNodeTest     => m"a node test was expected"
+      case Reason.ExpectedExpression   => m"an expression was expected"
+      case Reason.ExpectedCloseParen   => m"a closing parenthesis was expected"
+      case Reason.ExpectedCloseBracket => m"a closing square bracket was expected"
+      case Reason.UnexpectedEnd        => m"the XPath ends prematurely"
+      case Reason.UnexpectedToken      => m"the token was not expected at this position"
 
   // `offset` is the character index, within the path text, where the error was
   // detected; consumers (e.g. the `xp"…"` interpolator) use it to position a

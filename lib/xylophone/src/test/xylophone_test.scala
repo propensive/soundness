@@ -1078,31 +1078,41 @@ object Tests extends Suite(m"Xylophone tests"):
         xp"/root[1]/@id".encode
       . assert(_ == t"/root[1]/@id")
 
-      test(m"a step without an ordinal defaults to [1]"):
+      test(m"a step without an ordinal keeps its abbreviated form"):
         xp"/root/child".encode
-      . assert(_ == t"/root[1]/child[1]")
+      . assert(_ == t"/root/child")
 
       test(m"the root path parses"):
         xp"/".encode
       . assert(_ == t"/")
 
-      test(m"a path not beginning with '/' is rejected at the first character"):
-        demilitarize:
-          xp"root/child"
-        . map(_.focus)
-      . assert(_ == List("r"))
+      test(m"a relative path parses"):
+        xp"root/child".encode
+      . assert(_ == t"root/child")
 
-      test(m"an empty step is rejected at the offending separator"):
-        demilitarize:
-          xp"/root//child"
-        . map(_.focus)
-      . assert(_ == List("/"))
+      test(m"a descendant-or-self step parses"):
+        xp"/root//child".encode
+      . assert(_ == t"/root//child")
 
-      test(m"a non-numeric ordinal is rejected"):
+      test(m"an attribute predicate parses"):
+        xp"//*[@data-test='submit']".encode
+      . assert(_ == t"//*[@data-test='submit']")
+
+      test(m"a text predicate parses"):
+        xp"//button[text()='Submit']".encode
+      . assert(_ == t"//button[text()='Submit']")
+
+      test(m"an unclosed predicate is rejected"):
         demilitarize:
-          xp"/root[x]"
+          xp"/root["
         . map(_.focus.nonEmpty)
       . assert(_ == List(true))
+
+      test(m"an unknown axis is rejected at its first character"):
+        demilitarize:
+          xp"/foo::bar"
+        . map(_.focus)
+      . assert(_ == List("f"))
 
     suite(m"HTTP content-type integration"):
       import charEncoders.utf8Encoder
