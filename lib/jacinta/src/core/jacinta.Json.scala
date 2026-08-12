@@ -65,7 +65,7 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
-import JsonError.Reason
+import Json.Error.Reason
 
 // Base mixin for Jacinta's decoder instances. Fixes the focus type to
 // `Json.Focus` and provides the position-enrichment hook that `Json#as[T]` runs
@@ -139,7 +139,7 @@ trait Json2 extends Json3:
     Json.Encodable(shape): value =>
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
 
-  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[JsonError]
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[Json.Error]
   =>  ( decodable: => (inner is Json.Decodable)^ )
   =>  value is Json.Decodable =
 
@@ -162,7 +162,7 @@ trait Json2 extends Json3:
 
   // An honest capability: the instance retains the resolution-scoped tactic
   // (every given that includes a tactic is a capability; Jon, 2026-07-12).
-  given bytes: (tactic: Tactic[JsonError])
+  given bytes: (tactic: Tactic[Json.Error])
   =>  ((Bytes is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Whole)(_.root.long.b)
 
@@ -172,7 +172,7 @@ trait Json2 extends Json3:
   // types never reach its `Reflection` case (a `List`'s own `Mirror` would
   // otherwise derive it as a sum).
   given fieldOptional: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  Tactic[JsonError]
+  =>  Tactic[Json.Error]
   =>  ( field: => (inner is Json.Field)^ )
   =>  value is Json.Field =
     Json.Field(Json.Parsable.optionality[inner, value](field))
@@ -183,7 +183,7 @@ trait Json2 extends Json3:
 
   given fieldArray: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]],
-        tactic:  Tactic[JsonError],
+        tactic:  Tactic[Json.Error],
         foci:    Foci[Json.Focus] )
   =>  ( field: => (element is Json.Field)^ )
   =>  collection[element] is Json.Field =
@@ -193,7 +193,7 @@ trait Json2 extends Json3:
   // conform to `Iterable`, so each alias gets its own instance, built at the
   // underlying stdlib type and cast (a no-op at erasure).
   given fieldList: [list <: List, element]
-  =>  ( tactic: Tactic[JsonError],
+  =>  ( tactic: Tactic[Json.Error],
         foci:   Foci[Json.Focus] )
   =>  ( field: => (element is Json.Field)^ )
   =>  list[element] is Json.Field =
@@ -201,7 +201,7 @@ trait Json2 extends Json3:
     . asInstanceOf[list[element] is Json.Field]
 
   given fieldSet: [set <: Set, element]
-  =>  ( tactic: Tactic[JsonError],
+  =>  ( tactic: Tactic[Json.Error],
         foci:   Foci[Json.Focus] )
   =>  ( field: => (element is Json.Field)^ )
   =>  set[element] is Json.Field =
@@ -209,7 +209,7 @@ trait Json2 extends Json3:
     . asInstanceOf[set[element] is Json.Field]
 
   given fieldSeries: [sequence <: Sequence, element]
-  =>  ( tactic: Tactic[JsonError],
+  =>  ( tactic: Tactic[Json.Error],
         foci:   Foci[Json.Focus] )
   =>  ( field: => (element is Json.Field)^ )
   =>  sequence[element] is Json.Field =
@@ -217,7 +217,7 @@ trait Json2 extends Json3:
     . asInstanceOf[sequence[element] is Json.Field]
 
   given fieldMap: [key: distillate.Decodable in Text, element]
-  =>  Tactic[JsonError]
+  =>  Tactic[Json.Error]
   =>  ( field: => (element is Json.Field)^ )
   =>  Map[key, element] is Json.Field =
     Json.Field(Json.Parsable.dictionary[key, element](field))
@@ -225,7 +225,7 @@ trait Json2 extends Json3:
   // The nominal counterpart of `fieldOptional`: an `Optional` reads
   // directly only when its element has opted in.
   given optionalParsable: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  Tactic[JsonError]
+  =>  Tactic[Json.Error]
   =>  ( parsable: => (inner is Json.Parsable)^ )
   =>  value is Json.Parsable =
     Json.Parsable.optionality[inner, value](parsable)
@@ -236,7 +236,7 @@ trait Json2 extends Json3:
   // does not (all pre-`Parsable` code), this resolves exactly as before.
   // Sealed like `Json.aggregable`; see the comment there.
   given aggregableDirect: [value: distillate.Decodable in Json]
-  =>  (tactic: Tactic[ParseError], jsonTactic: Tactic[JsonError], tracking: PositionTracking)
+  =>  (tactic: Tactic[ParseError], jsonTactic: Tactic[Json.Error], tracking: PositionTracking)
   =>  ((value in Json) is Aggregable by Data) =
 
     caps.unsafe.unsafeAssumePure:
@@ -263,7 +263,7 @@ trait Json2 extends Json3:
       // instance's given-resolution lifetime; laundered pure per the codec-thunk seal
       // pattern (see rep/DECISIONS.md), like the primitive codecs.
       caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Str)(provide[Tactic[JsonError]](_.root.string.as[value]))
+        Json.Decodable(Morphology.Str)(provide[Tactic[Json.Error]](_.root.string.as[value]))
 
     case given Reflection[`value`] =>
       DecodableDerivation.derived
@@ -302,11 +302,11 @@ trait Json2 extends Json3:
           decodeObject[derivation](json)
             ( using infer[ProductReflection[derivation]],
                     infer[Foci[Json.Focus]],
-                    infer[Tactic[JsonError]] )
+                    infer[Tactic[Json.Error]] )
 
     private inline def decodeObject[derivation <: Product]
       ( json: Json )
-      ( using ProductReflection[derivation], Foci[Json.Focus], Tactic[JsonError] )
+      ( using ProductReflection[derivation], Foci[Json.Focus], Tactic[Json.Error] )
     :   derivation =
 
       val root = json.root
@@ -361,7 +361,7 @@ trait Json2 extends Json3:
 
       Json.Decodable(Morphology.Any):
         json =>
-          provide[Tactic[JsonError]]:
+          provide[Tactic[Json.Error]]:
             provide[Tactic[VariantError]]:
               val discriminable = infer[derivation is Discriminable in Json]
 
@@ -371,7 +371,7 @@ trait Json2 extends Json3:
                 variantRelabelling[derivation, Json].stdlib.map: (variant, wire) => wire -> variant
 
               val wire: Text = discriminable.discriminate(json).or:
-                focus(prior.or(Json.Focus(JsonPointer())))(abort(JsonError(Reason.Absent)))
+                focus(prior.or(Json.Focus(JsonPointer())))(abort(Json.Error(Reason.Absent)))
 
               val discriminant: Text = variantNames(wire).or(wire)
 
@@ -407,7 +407,7 @@ trait Json2 extends Json3:
                 default[Optional[field]]: Any )
         },
         values => Json.Parsable.assemble(reflection, values))
-        ( using infer[Foci[Json.Focus]], infer[Tactic[JsonError]] )
+        ( using infer[Foci[Json.Focus]], infer[Tactic[Json.Error]] )
 
     inline def disjunction[derivation: SumReflection]: (derivation is Json.Field)^ =
       // Dispatch strategy by wire shape: a wrapper's tag is its first token,
@@ -433,10 +433,10 @@ trait Json2 extends Json3:
               def shape(): Morphology = Morphology.Any
 
               def parse(reader: JsonReader^): derivation =
-                provide[Tactic[JsonError]]:
+                provide[Tactic[Json.Error]]:
                   provide[Tactic[VariantError]]:
                     val wire: Text = reader.discriminant(fielded.field).or:
-                      abort(JsonError(Reason.Absent))
+                      abort(Json.Error(Reason.Absent))
 
                     // The variant re-reads the whole object, skipping the
                     // tag as an unknown key.
@@ -449,10 +449,10 @@ trait Json2 extends Json3:
               def shape(): Morphology = Morphology.Any
 
               def parse(reader: JsonReader^): derivation =
-                provide[Tactic[JsonError]]:
+                provide[Tactic[Json.Error]]:
                   provide[Tactic[VariantError]]:
                     reader.openObject()
-                    val wire: Text = reader.key().or(abort(JsonError(Reason.Absent)))
+                    val wire: Text = reader.key().or(abort(Json.Error(Reason.Absent)))
 
                     val result =
                       delegate(variantNames(wire).or(wire)):
@@ -460,7 +460,7 @@ trait Json2 extends Json3:
 
                     // A wrapper is a single-key object; anything more means
                     // no tag is identifiable, as on the AST path.
-                    if !reader.key().absent then abort(JsonError(Reason.Absent))
+                    if !reader.key().absent then abort(Json.Error(Reason.Absent))
                     result
 
           case envelope: Json.DiscriminantEnvelope[?] =>
@@ -469,10 +469,10 @@ trait Json2 extends Json3:
               def shape(): Morphology = Morphology.Any
 
               def parse(reader: JsonReader^): derivation =
-                provide[Tactic[JsonError]]:
+                provide[Tactic[Json.Error]]:
                   provide[Tactic[VariantError]]:
                     val wire: Text = reader.discriminant(envelope.tagField).or:
-                      abort(JsonError(Reason.Absent))
+                      abort(Json.Error(Reason.Absent))
 
                     val name = variantNames(wire).or(wire)
                     reader.openObject()
@@ -488,7 +488,7 @@ trait Json2 extends Json3:
                           [variant <: derivation] => context => context.parse(reader)
                       else reader.skipValue()
 
-                    result.or(abort(JsonError(Reason.Absent)))
+                    result.or(abort(Json.Error(Reason.Absent)))
 
           case other =>
             Json.Field(Json.Parsable.fromDecodable(infer[derivation is Json.Decodable]))
@@ -647,7 +647,7 @@ object Json extends Json2, Dynamic:
     def parseField[value](parsing: AnyRef, reader: AnyRef): value =
       parsing.asInstanceOf[value is Json.Parsing].parse(reader.asInstanceOf[JsonReader^])
 
-    def absentField[value](parsing: AnyRef)(using Tactic[JsonError]): value =
+    def absentField[value](parsing: AnyRef)(using Tactic[Json.Error]): value =
       parsing.asInstanceOf[value is Json.Parsing].absent()
 
     def apply[value](shape0: => Morphology)(parser: (reader: JsonReader^) => value)
@@ -672,7 +672,7 @@ object Json extends Json2, Dynamic:
         def parse(reader: JsonReader^): value = decodable.decoded(reader.value())
         def shape(): Morphology = decodable.shape()
 
-        override def absent()(using Tactic[JsonError]): value =
+        override def absent()(using Tactic[Json.Error]): value =
           decodable.decoded(Json.ast(Json.Ast(Unset)))
 
     // The one-line opt-in to direct parsing for a structural type:
@@ -724,7 +724,7 @@ object Json extends Json2, Dynamic:
         type Self = value
         def parse(reader: JsonReader^): value = field0.parse(reader)
         def shape(): Morphology = field0.shape()
-        override def absent()(using Tactic[JsonError]): value = field0.absent()
+        override def absent()(using Tactic[Json.Error]): value = field0.absent()
 
     // Shared element-wise implementations, used by the nominal
     // `Json.Parsable` givens (elements must themselves be nominally
@@ -734,7 +734,7 @@ object Json extends Json2, Dynamic:
     // named in a capture set (see `Json2.optional`).
     def optionality[inner <: value, value >: Unset.type]
       ( field: => (inner is Json.Parsing)^ )
-      ( using tactic: Tactic[JsonError] )
+      ( using tactic: Tactic[Json.Error] )
     :   value is Json.Parsable =
 
       caps.unsafe.unsafeAssumePure:
@@ -750,7 +750,7 @@ object Json extends Json2, Dynamic:
               Unset
             else field.parse(reader)
 
-          override def absent()(using Tactic[JsonError]): value = Unset
+          override def absent()(using Tactic[Json.Error]): value = Unset
 
     def boxed[value](field: => (value is Json.Parsing)^)
     :   Option[value] is Json.Parsable =
@@ -764,12 +764,12 @@ object Json extends Json2, Dynamic:
           // the element, preserving the AST decoder's `Option` asymmetry —
           // while an absent key yields `None`.
           def parse(reader: JsonReader^): Option[value] = Some(field.parse(reader))
-          override def absent()(using Tactic[JsonError]): Option[value] = None
+          override def absent()(using Tactic[Json.Error]): Option[value] = None
 
     def iterable[collection <: Iterable, element]
       ( field: => (element is Json.Parsing)^ )
       ( using factory: Factory[element, collection[element]],
-              tactic:  Tactic[JsonError],
+              tactic:  Tactic[Json.Error],
               foci:    Foci[Json.Focus] )
     :   collection[element] is Json.Parsable =
 
@@ -796,7 +796,7 @@ object Json extends Json2, Dynamic:
 
     def dictionary[key: distillate.Decodable in Text, element]
       ( field: => (element is Json.Parsing)^ )
-      ( using tactic: Tactic[JsonError] )
+      ( using tactic: Tactic[Json.Error] )
     :   Map[key, element] is Json.Parsable =
 
       caps.unsafe.unsafeAssumePure:
@@ -823,7 +823,7 @@ object Json extends Json2, Dynamic:
       names.map { name => renames(name.tt).or(name.tt).s }
 
     // A required field whose key was absent from the object.
-    def missing[value]()(using Tactic[JsonError]): value = abort(JsonError(Reason.Absent))
+    def missing[value]()(using Tactic[Json.Error]): value = abort(Json.Error(Reason.Absent))
 
     // Focus bookkeeping for one field read, compiled away when the ambient
     // `Foci` is the inert default — the same short-circuit as the derived
@@ -904,7 +904,7 @@ object Json extends Json2, Dynamic:
     def product[derivation]
       ( fields0: () => Array[(String, Json.Parsing, Any)]^{},
         make:    Array[Any]^{} -> derivation )
-      ( using foci: Foci[Json.Focus], tactic: Tactic[JsonError] )
+      ( using foci: Foci[Json.Focus], tactic: Tactic[Json.Error] )
     :   ((derivation is Json.Field)^{fields0, tactic}) =
 
       new Json.Field:
@@ -1021,7 +1021,7 @@ object Json extends Json2, Dynamic:
     // object: an error unless overridden (`Unset` for `Optional`s, `None`
     // for `Option`s; the bridge delegates to its decoder). A wire `null` is
     // never routed here: the parse method consumes it itself.
-    def absent()(using Tactic[JsonError]): Self = abort(JsonError(Reason.Absent))
+    def absent()(using Tactic[Json.Error]): Self = abort(Json.Error(Reason.Absent))
 
   object KeyTable:
     inline final val Unknown = -1
@@ -1169,7 +1169,7 @@ object Json extends Json2, Dynamic:
 
       def parse(reader: JsonReader^): value = source.parse(reader)
       def shape(): Morphology = source.shape()
-      override def absent()(using Tactic[JsonError]): value = source.absent()
+      override def absent()(using Tactic[Json.Error]): value = source.absent()
 
     def apply[value](parsing: (value is Json.Parsing)^)
     :   ((value is Json.Field)^{parsing}) =
@@ -1615,9 +1615,9 @@ object Json extends Json2, Dynamic:
       // True when the array is in the larger-BCD `Array[Long]` form.
       inline def isBcdLongArray: Boolean = json.isInstanceOf[scala.Array[Long]]
 
-      private def expected(jsonPrimitive: JsonPrimitive): Unit raises JsonError =
+      private def expected(jsonPrimitive: Json.Primitive): Unit raises Json.Error =
         val reason = if isAbsent then Reason.Absent else Reason.NotType(primitive, jsonPrimitive)
-        raise(JsonError(reason))
+        raise(Json.Error(reason))
 
       // The number of user-visible elements in an array node (excludes the
       // sentinel pad of a parity-padded heterogeneous array, if present).
@@ -1671,7 +1671,7 @@ object Json extends Json2, Dynamic:
           i += 2
         -1
 
-      def array(using Tactic[JsonError]): Array[Json.Ast]^{} = (json: @unchecked) match
+      def array(using Tactic[Json.Error]): Array[Json.Ast]^{} = (json: @unchecked) match
         // Freshly built, frozen on return; the seal strips the tactic-capture decoration
         // that `arrayElement`'s raising result leaves on the elements.
         case bcds: (Array[Long]^{}) @unchecked =>
@@ -1699,16 +1699,16 @@ object Json extends Json2, Dynamic:
             // hoisted: a fresh array built inside `yet`'s by-name operand (which
             // captures the ambient Tactic) could not escape it
             val empty = Array.of[Json.Ast]().asInstanceOf[Array[Json.Ast]^{}]
-            expected(JsonPrimitive.Array) yet empty
+            expected(Json.Primitive.Array) yet empty
 
-      def double: Double raises JsonError = json.asMatchable match
+      def double: Double raises Json.Error = json.asMatchable match
         case value: Double                   => value
         case value: Long                     => value.toDouble
         case value: Int                      => Bcd.bcdIntToDouble(value)
         case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toDouble
-        case _                               => expected(JsonPrimitive.Number) yet 0.0
+        case _                               => expected(Json.Primitive.Number) yet 0.0
 
-      def bcd: Bcd raises JsonError = json.asMatchable match
+      def bcd: Bcd raises Json.Error = json.asMatchable match
         case value: scala.Array[Double] @unchecked => Bcd.adopt(value)
         case value: Long                     => Bcd(BigDecimal(value))
         case value: Double                   => Bcd(BigDecimal(value))
@@ -1717,39 +1717,39 @@ object Json extends Json2, Dynamic:
           Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
 
         case _ =>
-          expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
+          expected(Json.Primitive.Number) yet Bcd(BigDecimal(0L))
 
-      def long: Long raises JsonError = json.asMatchable match
+      def long: Long raises Json.Error = json.asMatchable match
         case value: Long                     => value
         case value: Double                   => value.toLong
         case value: Int                      => Bcd.bcdIntToDouble(value).toLong
         case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toLong.or(0L)
-        case _                               => expected(JsonPrimitive.Number) yet 0L
+        case _                               => expected(Json.Primitive.Number) yet 0L
 
-      def primitive: JsonPrimitive =
-        if isNumber then JsonPrimitive.Number
-        else if isBoolean then JsonPrimitive.Boolean
-        else if isString then JsonPrimitive.String
-        else if isObject then JsonPrimitive.Object
-        else if isArray then JsonPrimitive.Array
-        else JsonPrimitive.Null
+      def primitive: Json.Primitive =
+        if isNumber then Json.Primitive.Number
+        else if isBoolean then Json.Primitive.Boolean
+        else if isString then Json.Primitive.String
+        else if isObject then Json.Primitive.Object
+        else if isArray then Json.Primitive.Array
+        else Json.Primitive.Null
 
-      def string: Text raises JsonError =
+      def string: Text raises Json.Error =
         if isString then json.asInstanceOf[Text]
-        else expected(JsonPrimitive.String) yet "".tt
+        else expected(Json.Primitive.String) yet "".tt
 
-      def boolean: Boolean raises JsonError =
+      def boolean: Boolean raises Json.Error =
         if isBoolean then json.asInstanceOf[Boolean]
-        else expected(JsonPrimitive.Boolean) yet false
+        else expected(Json.Primitive.Boolean) yet false
 
       // Returns a (keys, values) view over an object node. This *materialises*
       // two new IArrays from the flat alternating layout, so prefer
       // `objectKey`/`objectValue` when you only need a few entries.
-      def obj(using Tactic[JsonError]): (Array[String]^{}, Array[Json.Ast]^{}) =
+      def obj(using Tactic[Json.Error]): (Array[String]^{}, Array[Json.Ast]^{}) =
         if !isObject
         then
           val empty = (Array.of[String](), Array.of[Json.Ast]()).asInstanceOf[(Array[String]^{}, Array[Json.Ast]^{})]
-          expected(JsonPrimitive.Object) yet empty
+          expected(Json.Primitive.Object) yet empty
         else
           val arr = json.asInstanceOf[Array[Any]^{}]
           val n = arr.length/2
@@ -1765,12 +1765,12 @@ object Json extends Json2, Dynamic:
           (Array.freeze(keys).asInstanceOf[Array[String]^{}],
            Array.freeze(values).asInstanceOf[Array[Json.Ast]^{}])
 
-      def number: Long | Double | Bcd raises JsonError =
+      def number: Long | Double | Bcd raises Json.Error =
         if isLong then long
         else if isDouble then double
         else if isBcd then bcd
         else if isSmallBcd then long
-        else expected(JsonPrimitive.Number) yet 0L
+        else expected(Json.Primitive.Number) yet 0L
 
     // Low-level parsers building an `Ast` directly from input. Public reading
     // goes through `source.read[Json]` (the `Aggregable` instances); these are
@@ -2032,48 +2032,48 @@ object Json extends Json2, Dynamic:
   // (`optional`, `array`, `map`), from where it cannot flow into the slot's own
   // expected fresh capture — rejecting e.g. an `Optional[Text]` field in a derived
   // product under capture checking (#1604). A concrete `^{tactic}` flows fine.
-  given boolean: (tactic: Tactic[JsonError])
+  given boolean: (tactic: Tactic[Json.Error])
   =>  ((Boolean is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Bool)(_.root.boolean)
 
-  given double: (tactic: Tactic[JsonError])
+  given double: (tactic: Tactic[Json.Error])
   =>  ((Double is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Real)(_.root.double)
 
-  given float: (tactic: Tactic[JsonError])
+  given float: (tactic: Tactic[Json.Error])
   =>  ((Float is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Real)(_.root.double.toFloat)
 
-  given long: (tactic: Tactic[JsonError])
+  given long: (tactic: Tactic[Json.Error])
   =>  ((Long is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Whole)(_.root.long)
 
-  given int: (tactic: Tactic[JsonError])
+  given int: (tactic: Tactic[Json.Error])
   =>  ((Int is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Whole)(_.root.long.toInt)
 
-  given ordinalDecodable: (tactic: Tactic[JsonError])
+  given ordinalDecodable: (tactic: Tactic[Json.Error])
   =>  ((Ordinal is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Whole)(_.root.long.toInt.z)
 
-  given text: (tactic: Tactic[JsonError])
+  given text: (tactic: Tactic[Json.Error])
   =>  ((Text is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Str)(_.root.string)
 
-  given string: (tactic: Tactic[JsonError])
+  given string: (tactic: Tactic[Json.Error])
   =>  ((String is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Str)(_.root.string.s)
 
-  given unit: (tactic: Tactic[JsonError])
+  given unit: (tactic: Tactic[Json.Error])
   =>  ((Unit is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Empty): value =>
       if value.root.isNull then ()
       else
         val reason =
           if value.root.isAbsent then Reason.Absent
-          else Reason.NotType(value.root.primitive, JsonPrimitive.Null)
+          else Reason.NotType(value.root.primitive, Json.Primitive.Null)
 
-        raise(JsonError(reason))
+        raise(Json.Error(reason))
 
   // Direct-parsing primitives. Genuinely pure — no tactic and no seal: all
   // raising happens inside the `JsonReader`, through the tactic it carries.
@@ -2109,7 +2109,7 @@ object Json extends Json2, Dynamic:
 
   given arrayParsable: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]],
-        tactic:  Tactic[JsonError],
+        tactic:  Tactic[Json.Error],
         foci:    Foci[Json.Focus] )
   =>  ( parsable: => (element is Json.Parsable)^ )
   =>  collection[element] is Json.Parsable =
@@ -2117,7 +2117,7 @@ object Json extends Json2, Dynamic:
 
   // Alias counterparts of `arrayParsable` (see `fieldList`).
   given listParsable: [list <: List, element]
-  =>  ( tactic: Tactic[JsonError],
+  =>  ( tactic: Tactic[Json.Error],
         foci:   Foci[Json.Focus] )
   =>  ( parsable: => (element is Json.Parsable)^ )
   =>  list[element] is Json.Parsable =
@@ -2125,7 +2125,7 @@ object Json extends Json2, Dynamic:
     . asInstanceOf[list[element] is Json.Parsable]
 
   given setParsable: [set <: Set, element]
-  =>  ( tactic: Tactic[JsonError],
+  =>  ( tactic: Tactic[Json.Error],
         foci:   Foci[Json.Focus] )
   =>  ( parsable: => (element is Json.Parsable)^ )
   =>  set[element] is Json.Parsable =
@@ -2133,7 +2133,7 @@ object Json extends Json2, Dynamic:
     . asInstanceOf[set[element] is Json.Parsable]
 
   given seriesParsable: [sequence <: Sequence, element]
-  =>  ( tactic: Tactic[JsonError],
+  =>  ( tactic: Tactic[Json.Error],
         foci:   Foci[Json.Focus] )
   =>  ( parsable: => (element is Json.Parsable)^ )
   =>  sequence[element] is Json.Parsable =
@@ -2141,12 +2141,12 @@ object Json extends Json2, Dynamic:
     . asInstanceOf[sequence[element] is Json.Parsable]
 
   given mapParsable: [key: distillate.Decodable in Text, element]
-  =>  Tactic[JsonError]
+  =>  Tactic[Json.Error]
   =>  ( parsable: => (element is Json.Parsable)^ )
   =>  Map[key, element] is Json.Parsable =
     Json.Parsable.dictionary[key, element](parsable)
 
-  given option: [value: Json.Decodable] => Tactic[JsonError]
+  given option: [value: Json.Decodable] => Tactic[Json.Error]
   =>  Option[value] is Json.Decodable =
 
     // Sealed lazily: the shape must stay by-name (recursive derivation
@@ -2242,7 +2242,7 @@ object Json extends Json2, Dynamic:
 
   given array: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]],
-        tactic:  Tactic[JsonError],
+        tactic:  Tactic[Json.Error],
         foci:    Foci[Json.Focus] )
   =>  ( decodable: => (element is Json.Decodable)^ )
   =>  collection[element] is Json.Decodable =
@@ -2279,7 +2279,7 @@ object Json extends Json2, Dynamic:
 
   // Alias counterparts of `array` (see `fieldList`).
   given listDecodable: [list <: List, element]
-  =>  ( tactic: Tactic[JsonError],
+  =>  ( tactic: Tactic[Json.Error],
         foci:   Foci[Json.Focus] )
   =>  ( decodable: => (element is Json.Decodable)^ )
   =>  list[element] is Json.Decodable =
@@ -2287,7 +2287,7 @@ object Json extends Json2, Dynamic:
     . asInstanceOf[list[element] is Json.Decodable]
 
   given setDecodable: [set <: Set, element]
-  =>  ( tactic: Tactic[JsonError],
+  =>  ( tactic: Tactic[Json.Error],
         foci:   Foci[Json.Focus] )
   =>  ( decodable: => (element is Json.Decodable)^ )
   =>  set[element] is Json.Decodable =
@@ -2295,7 +2295,7 @@ object Json extends Json2, Dynamic:
     . asInstanceOf[set[element] is Json.Decodable]
 
   given seriesDecodable: [sequence <: Sequence, element]
-  =>  ( tactic: Tactic[JsonError],
+  =>  ( tactic: Tactic[Json.Error],
         foci:   Foci[Json.Focus] )
   =>  ( decodable: => (element is Json.Decodable)^ )
   =>  sequence[element] is Json.Decodable =
@@ -2304,7 +2304,7 @@ object Json extends Json2, Dynamic:
 
   given map: [key: distillate.Decodable in Text, element]
   =>  ( decodable: => (element is Json.Decodable)^ )
-  =>  Tactic[JsonError]
+  =>  Tactic[Json.Error]
   =>  Map[key, element] is Json.Decodable =
 
     // HONESTY BLOCKED BY THE CHECKER, not by design (Jon's 2026-07-12 ruling wants
@@ -2497,6 +2497,29 @@ object Json extends Json2, Dynamic:
 
     def variant(json: Json): Json = json.selectField(valueLabel.s)
 
+  // JsonError → Json.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case OutOfRange                => m"the array index is out of range"
+        case NotType(found, primitive) => m"the JSON value had type $found instead of $primitive"
+        case Absent                    => m"the JSON value was not present"
+
+    enum Reason(val number: Int) extends Clarification:
+      case OutOfRange extends Reason(1)
+      case NotType(found: Json.Primitive, primitive: Json.Primitive) extends Reason(2)
+      case Absent     extends Reason(3)
+
+  case class Error(reason: Json.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(337, reason.number)(m"could not access the value because $reason")
+
+  // JsonPrimitive → Json.Primitive
+  object Primitive:
+    given communicable: Json.Primitive is Communicable = primitive => Message(primitive.show)
+
+  enum Primitive:
+    case Array, Object, Number, Null, Boolean, String
+
 class Json(rootValue: Any, positions: Optional[Json.PositionIndex] = Unset)
 extends Dynamic, Topical, Original derives CanEqual:
   private[jacinta] def root: Json.Ast = rootValue.asInstanceOf[Json.Ast]
@@ -2516,7 +2539,7 @@ extends Dynamic, Topical, Original derives CanEqual:
     else Json.ast(Json.Ast(Unset))
 
   // Raising array access, preserving the behaviour of plain `json(i)`.
-  private[jacinta] def indexValue(index: Int): Json raises JsonError = Json(root.array.readUnchecked(index))
+  private[jacinta] def indexValue(index: Int): Json raises Json.Error = Json(root.array.readUnchecked(index))
 
   // Array indexing. For a schema-typed `Json of List[E] from R` the navigation
   // macro yields `Json of E from R`; for a plain `Json` it indexes at runtime
@@ -2536,9 +2559,9 @@ extends Dynamic, Topical, Original derives CanEqual:
 
   def update[value: anticipation.Encodable in Json](index: Int, value: value)
     (using erased dynamicJsonEnabler: DynamicJsonEnabler)
-  :   Json raises JsonError =
+  :   Json raises Json.Error =
 
-    if !root.isArray then raise(JsonError(Reason.NotType(root.primitive, JsonPrimitive.Array)))
+    if !root.isArray then raise(Json.Error(Reason.NotType(root.primitive, Json.Primitive.Array)))
     val n = root.arrayLength
     val updated = Array[Any](n)
     var i = 0
@@ -2555,18 +2578,18 @@ extends Dynamic, Topical, Original derives CanEqual:
 
   def updateDynamic(field: String)[value: anticipation.Encodable in Json](value: value)
     (using erased dynamicJsonEnabler: DynamicJsonEnabler)
-  :   Json raises JsonError =
+  :   Json raises Json.Error =
 
     modify(field, value.encode)
 
 
   def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicJsonEnabler: DynamicJsonEnabler)
-  :   Json raises JsonError =
+  :   Json raises Json.Error =
 
     delete(field)
 
 
-  private[jacinta] def modify(field: String, value: Json): Json raises JsonError =
+  private[jacinta] def modify(field: String, value: Json): Json raises Json.Error =
     val arr = root.asInstanceOf[Array[Any]^{}]
     val len = arr.length
     val n = len/2
@@ -2585,7 +2608,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         out(index*2 + 1) = value.root
         Json.ast(Json.Ast(Array.freeze(out)))
 
-  private[jacinta] def delete(field: String): Json raises JsonError =
+  private[jacinta] def delete(field: String): Json raises Json.Error =
     val arr = root.asInstanceOf[Array[Any]^{}]
     val len = arr.length
 
@@ -2599,7 +2622,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         out.copyFrom(arr, index*2 + 2, index*2, len - index*2 - 2)
         Json.ast(Json.Ast(Array.freeze(out)))
 
-  def apply(field: Text): Json raises JsonError =
+  def apply(field: Text): Json raises Json.Error =
     if root.isAbsent then Json.ast(Json.Ast(Unset))
     else root.objectIndexOf(field.s) match
       case -1    => Json.ast(Json.Ast(Unset))
@@ -2835,7 +2858,7 @@ extends Dynamic, Topical, Original derives CanEqual:
   // Plain using-parameters, de-sugared from `raises`/`tracks`: a context-function
   // result may not hide the capability-typed evidence.
   def as[value](using decodable: (value is distillate.Decodable in Json at Json.Focus)^)
-    ( using Foci[Json.Focus], Tactic[JsonError] )
+    ( using Foci[Json.Focus], Tactic[Json.Error] )
   :   value =
 
     val result = decodable.decoded(this)

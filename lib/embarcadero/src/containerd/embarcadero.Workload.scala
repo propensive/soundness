@@ -44,7 +44,7 @@ import vacuous.*
 object Workload:
   // Anchored here so `container.open[Workload](...)` resolves with no import.
   given openable: (containerd: Containerd^, monitor: Monitor^)
-  =>  ( grpcTactic: Tactic[GrpcError], http2Tactic: Tactic[Http2.Error],
+  =>  ( grpcTactic: Tactic[Grpc.Error], http2Tactic: Tactic[Http2.Error],
         asyncTactic: Tactic[Async.Error], protobufTactic: Tactic[Protobuf.Error] )
   =>  ( WorkloadOpenable^{containerd, monitor, grpcTactic, http2Tactic, asyncTactic,
         protobufTactic} ) =

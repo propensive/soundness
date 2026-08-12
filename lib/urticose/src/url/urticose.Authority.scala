@@ -50,9 +50,9 @@ object Authority:
   given showable: Authority is Showable = auth =>
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host.show}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
-  given decodable: (hostnameTactic: Tactic[HostnameError])
+  given decodable: (hostnameTactic: Tactic[Hostname.Error])
   =>  (ipTactic: Tactic[IpAddressError])
-  =>  (urlTactic: Tactic[UrlError])
+  =>  (urlTactic: Tactic[Url.Error])
   =>  ((Authority is Decodable in Text)^{hostnameTactic, ipTactic, urlTactic}) =
     parse(_)
 
@@ -60,20 +60,20 @@ object Authority:
   // result, so the nested `parsePort`/`parseHostPort` helpers may capture them; a `raises` chain
   // makes each a context-function result that an enclosing helper literal cannot capture under CC.
   private def parse(value: Text)
-      (using Tactic[HostnameError], Tactic[IpAddressError], Tactic[UrlError])
+      (using Tactic[Hostname.Error], Tactic[IpAddressError], Tactic[Url.Error])
   :   Authority =
 
-    import UrlError.{Expectation, Reason}, Expectation.*, Reason.*
+    import Url.Error.{Expectation, Reason}, Expectation.*, Reason.*
 
     def parsePort(portText: Text, offset: Ordinal): Int =
       safely(portText.s.toInt).match
         case port: Int if port >= 0 && port <= 65535 => port
 
         case port: Int =>
-          abort(UrlError(value, offset, Expected(PortRange)))
+          abort(Url.Error(value, offset, Expected(PortRange)))
 
         case _ =>
-          abort(UrlError(value, offset, Expected(Number)))
+          abort(Url.Error(value, offset, Expected(Number)))
 
     def parseHostPort(hostPort: Text, base: Ordinal, userInfo: Optional[Text]): Authority =
       if hostPort(Prim) == '[' then
@@ -90,12 +90,12 @@ object Authority:
             else
               val errorOffset: Ordinal = base + afterClose.n0
 
-              abort(UrlError(value, errorOffset, Expected(More)))
+              abort(Url.Error(value, errorOffset, Expected(More)))
 
           case _ =>
             val errorOffset: Ordinal = base + (hostPort.limit.n0 - 1).max(0)
 
-            abort(UrlError(value, errorOffset, Expected(More)))
+            abort(Url.Error(value, errorOffset, Expected(More)))
       else
         safely(hostPort.where(_ == ':')).asMatchable match
           case Zerary(colon) =>

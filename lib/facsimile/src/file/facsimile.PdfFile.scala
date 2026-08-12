@@ -74,20 +74,20 @@ object PdfFile:
   // Writes the authored bytes to a hidden temporary sibling, then moves it atomically onto
   // the target — so an exception escaping the creation scope leaves nothing behind.
   private[facsimile] def commit(filename: Text, flags: List[CreateFlag], bytes: Data)
-    ( using Tactic[PdfError] )
+    ( using Tactic[Pdf.Error] )
   :   Unit =
 
     mitigate:
-      case Path.Error(_, _)     => PdfError(PdfError.Reason.Io(t"the path is invalid"))
-      case NameError(_, _, _)  => PdfError(PdfError.Reason.Io(t"the path is invalid"))
-      case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be written"))
+      case Path.Error(_, _)     => Pdf.Error(Pdf.Error.Reason.Io(t"the path is invalid"))
+      case NameError(_, _, _)  => Pdf.Error(Pdf.Error.Reason.Io(t"the path is invalid"))
+      case IoError(_, _, _, _) => Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be written"))
 
     . protect:
         val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
           workingDirectory[Path on Local].resolve(filename)
 
         if !flags.has(CreateFlag.Replace) && target.existent()
-        then abort(PdfError(PdfError.Reason.Io(t"the file already exists")))
+        then abort(Pdf.Error(Pdf.Error.Reason.Io(t"the file already exists")))
 
         if flags.has(CreateFlag.Parents) then
           target.parent.let: parent =>
@@ -107,7 +107,7 @@ object PdfFile:
   // galilei's `FileOpenable`. Documents open read-only: a future write mode is a staged
   // sibling scope (PDF incremental updates), refused until it lands. A `Password` is passed
   // as a flag: `PdfFile(path).open(Password(t"..."))`.
-  class PdfOpenable(using pdfError: Tactic[PdfError]) extends Openable:
+  class PdfOpenable(using pdfError: Tactic[Pdf.Error]) extends Openable:
     type Self = PdfFile
     type Form = Pdf
     type Operand = Password
@@ -124,7 +124,7 @@ object PdfFile:
   // `path.open[Pdf]()`. (The form must be explicit for these targets, which are openable in
   // several forms.)
   class PdfPathOpenable[path: Abstractable across Paths to Text]
-    ( using pdfError: Tactic[PdfError] )
+    ( using pdfError: Tactic[Pdf.Error] )
   extends Openable:
 
     type Self = path
@@ -139,7 +139,7 @@ object PdfFile:
 
       PdfFile(value).openAs[grants, result](flags.prim, mode.atoms.has(Write))(block)
 
-  class PdfDataOpenable(using pdfError: Tactic[PdfError]) extends Openable:
+  class PdfDataOpenable(using pdfError: Tactic[Pdf.Error]) extends Openable:
     type Self = Data
     type Form = Pdf
     type Operand = Password
@@ -154,13 +154,13 @@ object PdfFile:
 
   // Anchored here so `pdfFile.open(...)` resolves — and, `PdfFile` having a unique instance,
   // infers the `Pdf` form — with no import.
-  given openable: (tactic: Tactic[PdfError]) => ( PdfOpenable^{tactic} ) = PdfOpenable()
+  given openable: (tactic: Tactic[Pdf.Error]) => ( PdfOpenable^{tactic} ) = PdfOpenable()
 
   // Authoring a new document: `path.create[Pdf](): doc ?=> doc.appendPage(...)`. The block
   // edits a fresh, empty document — the same write surface as editing an existing one — and
   // the result is written in full, to a temporary sibling moved atomically onto the target,
   // so a failure leaves nothing behind. `Replace`/`Parents` govern a pre-existing target.
-  class PdfCreatable[path: Abstractable across Paths to Text](using pdfError: Tactic[PdfError])
+  class PdfCreatable[path: Abstractable across Paths to Text](using pdfError: Tactic[Pdf.Error])
   extends Creatable:
 
     type Self = path
@@ -194,20 +194,20 @@ class PdfFile private (origin: PdfFile.Origin):
   private[facsimile] def openAs[grants <: Grant, result]
     ( password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   result =
 
     origin match
       case Origin.InMemory(data) =>
         // In-memory bytes have nowhere to be written back; opening them writably is refused.
-        if writable then abort(PdfError(PdfError.Reason.WriteUnsupported))
+        if writable then abort(Pdf.Error(Pdf.Error.Reason.WriteUnsupported))
         val (outcome, _) = read[grants, result](DataSource(data), password, false)(block)
         outcome
 
       case Origin.OnDisk(filename) =>
         mitigate:
-          case Path.Error(_, _)     => PdfError(PdfError.Reason.Io(t"the path is invalid"))
-          case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be opened"))
+          case Path.Error(_, _)     => Pdf.Error(Pdf.Error.Reason.Io(t"the path is invalid"))
+          case IoError(_, _, _, _) => Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be opened"))
 
         . protect:
             val path: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
@@ -243,7 +243,7 @@ class PdfFile private (origin: PdfFile.Origin):
   private def read[grants <: Grant, result]
     ( source: ByteSource, password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   (result, Optional[Data]) =
 
     val version = Pdf.readVersion(source) // check the header before anything else is trusted
@@ -255,7 +255,7 @@ class PdfFile private (origin: PdfFile.Origin):
       if writable && pdf.dirty then
         // An incremental update chains to the previous cross-reference section; a file whose
         // table was only recovered by scanning has none to chain to.
-        if pdf.xref.startxref.absent then abort(PdfError(PdfError.Reason.WriteUnsupported))
+        if pdf.xref.startxref.absent then abort(Pdf.Error(Pdf.Error.Reason.WriteUnsupported))
         PdfWriter.increment(pdf, source.size)
       else Unset
 

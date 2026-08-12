@@ -75,7 +75,7 @@ object Api:
     ( using Online,
             Http.Event is Loggable,
             Tactic[ConnectError],
-            Tactic[UrlError] )
+            Tactic[Url.Error] )
     ( using client: Http.Client onto Origin["http" | "https"] )
   :   Http.Response =
 
@@ -169,7 +169,7 @@ object Api:
       ( using online:   Online,
               loggable: Http.Event is Loggable,
               connect:  Tactic[ConnectError],
-              urlError: Tactic[UrlError],
+              urlError: Tactic[Url.Error],
               client:   Http.Client onto Origin["http" | "https"] )
     :   value =
 

@@ -54,7 +54,7 @@ object XmlReader:
   private[xylophone] def apply
     ( parser:    Xml.XmlParser^,
       tactic:    Tactic[ParseError],
-      xmlTactic: Tactic[XmlError],
+      xmlTactic: Tactic[Xml.Error],
       foci:      Foci[Xml.Focus] )
   :   XmlReader^ =
 
@@ -73,7 +73,7 @@ object XmlReader:
 //
 // The reader carries its own `Tactic[ParseError]`, so malformed input aborts
 // through the read call's ambient tactic — and, unlike jacinta's reader, the
-// read-site `Tactic[XmlError]` and `Foci[Xml.Focus]` too, so decode errors
+// read-site `Tactic[Xml.Error]` and `Foci[Xml.Focus]` too, so decode errors
 // raised by `Parsable` instances accrue to the same `validate` boundary the
 // AST path's inline derivation uses, with the same field foci, even when the
 // `Parsable` given was instantiated outside the boundary.
@@ -92,8 +92,8 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // The read-site capabilities, public because staged parsers — generated
   // into user modules — bind them once per record for focus bookkeeping and
   // absent-field raising, exactly as the derived engine does.
-  inline def errorTactic: Tactic[XmlError] =
-    xmlTactic0.asInstanceOf[Tactic[XmlError]]
+  inline def errorTactic: Tactic[Xml.Error] =
+    xmlTactic0.asInstanceOf[Tactic[Xml.Error]]
 
   inline def foci: Foci[Xml.Focus] = foci0.asInstanceOf[Foci[Xml.Focus]]
 
@@ -160,7 +160,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // field types that only carry a `Decodable in Xml`.
   inline update def element(): Xml = parser.directElement()(using parseTactic)
 
-  // Raise an `XmlError` through the read-site tactic and continue — for leaf
+  // Raise an `Xml.Error` through the read-site tactic and continue — for leaf
   // instances that reject an element's content, preserving the AST
   // primitives' raise-and-continue accrual.
-  update def fault(): Unit = raise(XmlError())(using errorTactic)
+  update def fault(): Unit = raise(Xml.Error())(using errorTactic)

@@ -30,49 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package zeppelin
+package stratiform
 
-import java.io as ji
-import java.util.zip as juz
 import proscenium.compat.*
-import anticipation.*
-import contingency.*
-import galilei.*
-import gossamer.*
-import nomenclature.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import pneumatic.*
-import turbulence.*
-import zephyrine.*
-import vacuous.*
-import fulminate.*
-import scala.caps
-import java.nio as jn
-import java.nio.channels as jnc
-import java.nio.file as jnf
-import aperture.*
 
-class ZipOpenable[path: Abstractable across Paths to Text](using Tactic[Zip.Error])
-extends Openable:
-
-  type Self = path
-  type Form = Zip
-  type Operand = Nothing
-  type Result = Zip.Handle
-
-  def open[grants <: Grant, result]
-    ( value: path, mode: Mode granting grants, flags: List[Nothing] )
-    ( block: (Zip.Handle & Granting[grants]) ?=> result )
-  :   result =
-
-    if mode.atoms.has(Write) then abort(Zip.Error(Zip.Error.Reason.WriteUnsupported))
-
-    val channel =
-      jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
-
-    try
-      val zipfile = Zipfile.parse(Zipfile.ChannelSource(channel))
-      block(using new Zip.Handle(zipfile) with Granting[grants] {})
-    finally channel.close()
+// Flags for `open[Tel]`.
+enum TelFlag:
+  // Serialize and write back on scope close even when no mutation was
+  // applied: a canonicalizing rewrite of the source.
+  case Force

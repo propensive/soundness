@@ -70,67 +70,67 @@ object Mcp:
   // Only genuinely multiply-shared records are anchored: anchoring rarely-shared types regresses,
   // since each anchor still costs one derivation and enlarges the implicit-search space everywhere.
   object Icon:
-    given (Tactic[JsonError]) => Icon is Json.Decodable =
+    given (Tactic[Json.Error]) => Icon is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given Icon is Json.Encodable = Json.EncodableDerivation.derived
 
   object Annotations:
-    given (Tactic[JsonError]) => Annotations is Json.Decodable =
+    given (Tactic[Json.Error]) => Annotations is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given Annotations is Json.Encodable = Json.EncodableDerivation.derived
 
   object Implementation:
-    given (Tactic[JsonError]) => Implementation is Json.Decodable =
+    given (Tactic[Json.Error]) => Implementation is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given Implementation is Json.Encodable = Json.EncodableDerivation.derived
 
   object BaseMetadata:
-    given (Tactic[JsonError]) => BaseMetadata is Json.Decodable =
+    given (Tactic[Json.Error]) => BaseMetadata is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given BaseMetadata is Json.Encodable = Json.EncodableDerivation.derived
 
   object TextContent:
-    given (Tactic[JsonError]) => TextContent is Json.Decodable =
+    given (Tactic[Json.Error]) => TextContent is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given TextContent is Json.Encodable = Json.EncodableDerivation.derived
 
   object ImageContent:
-    given (Tactic[JsonError]) => ImageContent is Json.Decodable =
+    given (Tactic[Json.Error]) => ImageContent is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given ImageContent is Json.Encodable = Json.EncodableDerivation.derived
 
   object AudioContent:
-    given (Tactic[JsonError]) => AudioContent is Json.Decodable =
+    given (Tactic[Json.Error]) => AudioContent is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given AudioContent is Json.Encodable = Json.EncodableDerivation.derived
 
   object ResourceLink:
-    given (Tactic[JsonError]) => ResourceLink is Json.Decodable =
+    given (Tactic[Json.Error]) => ResourceLink is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given ResourceLink is Json.Encodable = Json.EncodableDerivation.derived
 
   object EmbeddedResource:
-    given (Tactic[JsonError]) => EmbeddedResource is Json.Decodable =
+    given (Tactic[Json.Error]) => EmbeddedResource is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given EmbeddedResource is Json.Encodable = Json.EncodableDerivation.derived
 
   object TextResourceContents:
-    given (Tactic[JsonError]) => TextResourceContents is Json.Decodable =
+    given (Tactic[Json.Error]) => TextResourceContents is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given TextResourceContents is Json.Encodable = Json.EncodableDerivation.derived
 
   object BlobResourceContents:
-    given (Tactic[JsonError]) => BlobResourceContents is Json.Decodable =
+    given (Tactic[Json.Error]) => BlobResourceContents is Json.Decodable =
       Json.DecodableDerivation.derived
 
     given BlobResourceContents is Json.Encodable = Json.EncodableDerivation.derived
@@ -156,7 +156,7 @@ object Mcp:
 
         . mcpSessionId = id
 
-      case error: JsonError =>
+      case error: Json.Error =>
         Http.Response(Http.Ok):
           JsonRpc.failure(-32600, t"Invalid request: ${error.message}".show)
 
@@ -224,7 +224,7 @@ object Mcp:
         case text: Text => text.in[Json]
         case int: Int   => int.in[Json]
 
-    given decodable: Tactic[JsonError] => TextInt is Json.Decodable =
+    given decodable: Tactic[Json.Error] => TextInt is Json.Decodable =
       Json.Decodable(Morphology.Any): json => TextInt(safely(json.as[Int]).or(json.as[Text]))
 
   case class TextInt(id: Text | Int)
@@ -318,7 +318,7 @@ object Mcp:
         case text: TextResourceContents => text.in[Json]
         case blob: BlobResourceContents => blob.in[Json]
 
-    given decodable: Tactic[JsonError] => Contents is Json.Decodable =
+    given decodable: Tactic[Json.Error] => Contents is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
         Contents(safely(json.as[TextResourceContents]).or(json.as[BlobResourceContents]))
 
@@ -378,12 +378,12 @@ object Mcp:
       case Role.User      => t"user".in[Json]
       case Role.Assistant => t"assistant".in[Json]
 
-    given decodable: Tactic[JsonError] => Role is Json.Decodable =
+    given decodable: Tactic[Json.Error] => Role is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
           case t"user"      => Role.User
           case t"assistant" => Role.Assistant
-          case _            => abort(JsonError(JsonError.Reason.OutOfRange))
+          case _            => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum Role:
     case User, Assistant
@@ -394,13 +394,13 @@ object Mcp:
       case TaskSupport.Optional  => t"optional".in[Json]
       case TaskSupport.Required  => t"required".in[Json]
 
-    given decodable: Tactic[JsonError] => TaskSupport is Json.Decodable =
+    given decodable: Tactic[Json.Error] => TaskSupport is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
           case t"forbidden" => TaskSupport.Forbidden
           case t"optional"  => TaskSupport.Optional
           case t"required"  => TaskSupport.Required
-          case _            => abort(JsonError(JsonError.Reason.OutOfRange))
+          case _            => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum TaskSupport:
     case Forbidden, Optional, Required
@@ -409,7 +409,7 @@ object Mcp:
     given encodable: LoggingLevel is Json.Encodable =
       Json.Encodable(() => Morphology.Str)(_.toString.tt.lower.in[Json])
 
-    given decodable: Tactic[JsonError] => LoggingLevel is Json.Decodable =
+    given decodable: Tactic[Json.Error] => LoggingLevel is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
           case t"debug"     => LoggingLevel.Debug
@@ -420,7 +420,7 @@ object Mcp:
           case t"critical"  => LoggingLevel.Critical
           case t"alert"     => LoggingLevel.Alert
           case t"emergency" => LoggingLevel.Emergency
-          case _            => abort(JsonError(JsonError.Reason.OutOfRange))
+          case _            => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum LoggingLevel:
     case Debug, Info, Notice, Warning, Error, Critical, Alert, Emergency
@@ -435,7 +435,7 @@ object Mcp:
       case TaskStatus.Failed        => t"failed".in[Json]
       case TaskStatus.Cancelled     => t"cancelled".in[Json]
 
-    given decodable: Tactic[JsonError] => TaskStatus is Json.Decodable =
+    given decodable: Tactic[Json.Error] => TaskStatus is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
           case t"working"        => TaskStatus.Working
@@ -443,7 +443,7 @@ object Mcp:
           case t"completed"      => TaskStatus.Completed
           case t"failed"         => TaskStatus.Failed
           case t"cancelled"      => TaskStatus.Cancelled
-          case _                 => abort(JsonError(JsonError.Reason.OutOfRange))
+          case _                 => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum TaskStatus:
     case Working, InputRequired, Completed, Failed, Cancelled
@@ -473,12 +473,12 @@ object Mcp:
       case ref: PromptReference           => typeTag.rewrite(t"ref/prompt", ref.in[Json])
       case ref: ResourceTemplateReference => typeTag.rewrite(t"ref/resource", ref.in[Json])
 
-    given decodable: Tactic[JsonError] => Reference is Json.Decodable =
+    given decodable: Tactic[Json.Error] => Reference is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
         json.`type`.as[Text] match
           case "ref/prompt"   => json.as[PromptReference]
           case "ref/resource" => json.as[ResourceTemplateReference]
-          case _              => abort(JsonError(JsonError.Reason.OutOfRange))
+          case _              => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   sealed trait Reference
 
@@ -524,13 +524,13 @@ object Mcp:
       case Mode.Required => t"required".in[Json]
       case Mode.None     => t"none".in[Json]
 
-    given decodable: Tactic[JsonError] => Mode is Json.Decodable =
+    given decodable: Tactic[Json.Error] => Mode is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
           case t"auto"     => Mode.Auto
           case t"required" => Mode.Required
           case t"none"     => Mode.None
-          case _           => abort(JsonError(JsonError.Reason.OutOfRange))
+          case _           => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum Mode:
     case Auto, Required, None
@@ -550,7 +550,7 @@ object Mcp:
       case content: ToolUseContent    => typeTag.rewrite(t"tool_use",    content.in[Json])
       case content: ToolResultContent => typeTag.rewrite(t"tool_result", content.in[Json])
 
-    given decodable: Tactic[JsonError] => SamplingMessageContentBlock is Json.Decodable =
+    given decodable: Tactic[Json.Error] => SamplingMessageContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
         json.`type`.as[Text] match
           case "text"        => json.as[TextContent]
@@ -558,7 +558,7 @@ object Mcp:
           case "audio"       => json.as[AudioContent]
           case "tool_use"    => json.as[ToolUseContent]
           case "tool_result" => json.as[ToolResultContent]
-          case _             => abort(JsonError(JsonError.Reason.OutOfRange))
+          case _             => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   sealed trait SamplingMessageContentBlock
 
@@ -582,7 +582,7 @@ object Mcp:
       case content: ResourceLink     => typeTag.rewrite(t"resource_link", content.in[Json])
       case content: EmbeddedResource => typeTag.rewrite(t"resource", content.in[Json])
 
-    given decodable: Tactic[JsonError] => ContentBlock is Json.Decodable =
+    given decodable: Tactic[Json.Error] => ContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
         json.`type`.as[Text] match
           case "text"          => json.as[TextContent]
@@ -590,7 +590,7 @@ object Mcp:
           case "audio"         => json.as[AudioContent]
           case "resource_link" => json.as[ResourceLink]
           case "resource"      => json.as[EmbeddedResource]
-          case _               => abort(JsonError(JsonError.Reason.OutOfRange))
+          case _               => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   sealed trait ContentBlock
 
@@ -654,13 +654,13 @@ object Mcp:
       case ElicitAction.Decline => t"decline".in[Json]
       case ElicitAction.Cancel  => t"cancel".in[Json]
 
-    given decodable: Tactic[JsonError] => ElicitAction is Json.Decodable =
+    given decodable: Tactic[Json.Error] => ElicitAction is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
           case t"accept"  => ElicitAction.Accept
           case t"decline" => ElicitAction.Decline
           case t"cancel"  => ElicitAction.Cancel
-          case _          => abort(JsonError(JsonError.Reason.OutOfRange))
+          case _          => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum ElicitAction:
     case Accept, Decline, Cancel
@@ -1028,7 +1028,7 @@ object Mcp:
     :   Http.Response =
 
       recover:
-        case error @ JsonRpcError(_, _, _) =>
+        case error @ JsonRpc.Error(_, _, _) =>
           import hieroglyph.charEncoders.utf8Encoder
           Http.Response(Unfulfilled(t"JSON-RPC error: ${error.message.text}"))
 

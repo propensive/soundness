@@ -222,22 +222,22 @@ object OpensslCrypto extends Crypto:
       ivSize.lay(oneShot(encrypting = false, transformation, key, Unset, data)): size =>
         oneShot(encrypting = false, transformation, key, data.take(size), data.drop(size))
 
-    def stream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession =
+    def stream(transformation: Text, key: Data, iv: Optional[Data]): Cipher.Session =
       session(transformation, key, iv, encrypting = true)
 
-    def decryptStream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession =
+    def decryptStream(transformation: Text, key: Data, iv: Optional[Data]): Cipher.Session =
       session(transformation, key, iv, encrypting = false)
 
     private def session
       ( transformation: Text, key: Data, iv: Optional[Data], encrypting: Boolean )
-    :   CipherSession =
+    :   Cipher.Session =
 
       val context = newContext()
       initialise(context, transformation, key, iv, encrypting)
       val parts = transformation.cut(t"/").stdlib
       val block = if parts(0) == t"AES" then 16 else 8
 
-      new CipherSession:
+      new Cipher.Session:
         def update(chunk: Data): Data = OpensslCrypto.update(context, chunk, block, encrypting)
 
         def finish(): Data =

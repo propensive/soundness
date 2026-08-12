@@ -63,8 +63,8 @@ object Http2Serve:
   // state a session sets up is captured by `handler0` and shared here across
   // all streams.
   private def runStreams
-    ( connection: Http2ServerConnection^, handler0: AnyRef, port: Int )
-    ( using Monitor, Probate, (HttpServerEvent is Loggable)^ )
+    ( connection: Http2.ServerConnection^, handler0: AnyRef, port: Int )
+    ( using Monitor, Probate, (HttpServer.Event is Loggable)^ )
   :   Unit =
 
     given Tactic[Http2.Error] = strategies.throwUnsafely
@@ -77,7 +77,7 @@ object Http2Serve:
 
       daemon:
         val stream0 = streamRef.asInstanceOf[Http2.Stream]
-        val connection0 = connectionRef.asInstanceOf[Http2ServerConnection]
+        val connection0 = connectionRef.asInstanceOf[Http2.ServerConnection]
         val handler1 = handler0.asInstanceOf[AnyRef => AnyRef]
         val streamId = stream0.id
 
@@ -145,7 +145,7 @@ object Http2Serve:
   // handles with no per-connection setup; `serveSession` lends the caller an
   // `Http2Session` so it can set up per-connection state first.
   private def open(in: ji.InputStream, out: ji.OutputStream)(using monitor: Monitor)
-  :   Http2ServerConnection^{monitor} =
+  :   Http2.ServerConnection^{monitor} =
    // The connection is created and used under the same monitor; its fresh capability is
    // laundered into the declared result.
    scala.caps.unsafe.unsafeAssumePure:
@@ -156,13 +156,13 @@ object Http2Serve:
      import probates.cancelProbate
      given Tactic[Async.Error] = strategies.throwUnsafely
      given Tactic[StreamError] = strategies.throwUnsafely
-     val connection = Http2ServerConnection(StreamDuplex(in, out))
+     val connection = Http2.ServerConnection(StreamDuplex(in, out))
      connection.start()
      connection
 
   def serve
     ( handler: AnyRef => AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
-    ( using Monitor, (HttpServerEvent is Loggable)^ )
+    ( using Monitor, (HttpServer.Event is Loggable)^ )
   :   Unit =
 
     val connection = open(in, out)
@@ -179,7 +179,7 @@ object Http2Serve:
   // `AnyRef => Unit` rim (a session-scope function value re-hides otherwise).
   def serveSession
     ( scope0: AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
-    ( using Monitor, (HttpServerEvent is Loggable)^ )
+    ( using Monitor, (HttpServer.Event is Loggable)^ )
   :   Unit =
 
     val connection = open(in, out)
@@ -209,7 +209,7 @@ trait Http2Session:
 
 // A `Duplex` over a socket's raw byte streams: reads frame the inbound endpoint,
 // each `send` writes the whole chunk and flushes (the writer serialises one frame
-// per send). Used to drive `Http2ServerConnection` over a scintillate socket.
+// per send). Used to drive `Http2.ServerConnection` over a scintillate socket.
 class StreamDuplex(in: ji.InputStream, out: ji.OutputStream)(using Tactic[StreamError])
 extends Duplex:
   def source(using Buffering): (Stream[Data] over Credit)^ = Streamable.inputStream.stream(in)

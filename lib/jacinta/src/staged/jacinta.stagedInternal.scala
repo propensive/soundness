@@ -292,7 +292,7 @@ object stagedInternal:
           ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
       }
 
-    override def absent(tactic: Expr[Tactic[JsonError]])(using Quotes, Type[value])
+    override def absent(tactic: Expr[Tactic[Json.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
       '{ Json.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic) }
@@ -491,7 +491,7 @@ object stagedInternal:
     def body
       ( foci:    Expr[Foci[Json.Focus]],
         focused: Expr[Boolean],
-        tactic:  Expr[Tactic[JsonError]],
+        tactic:  Expr[Tactic[Json.Error]],
         parser:  Expr[Parser],
         ptactic: Expr[Tactic[ParseError]] )
     :   Expr[product] =
@@ -742,7 +742,7 @@ object stagedInternal:
     '{
       val foci = infer[Foci[Json.Focus]]
       val focused = foci.active
-      val tactic = infer[Tactic[JsonError]]
+      val tactic = infer[Tactic[Json.Error]]
       val parser = $reader.rawParser.asInstanceOf[Parser]
       val ptactic = $reader.rawTactic.asInstanceOf[Tactic[ParseError]]
       ${ body('foci, 'focused, 'tactic, 'parser, 'ptactic) }

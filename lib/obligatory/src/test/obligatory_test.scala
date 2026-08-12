@@ -123,22 +123,22 @@ object Tests extends Suite(m"Obligatory Tests"):
       def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
 
       test(m"encode prefixes a flag byte and 4-byte length"):
-        GrpcFraming.encode(ascii(t"hi")).to[List]
+        Grpc.Framing.encode(ascii(t"hi")).to[List]
       . assert(_ == Array.frozen(Data(0, 0, 0, 0, 2).readable ++ ascii(t"hi").readable).to[List])
 
       test(m"round-trip a single message"):
-        val framed = GrpcFraming.encode(ascii(t"hello"))
-        Chain(framed).iterator.frames[GrpcFraming].to(List).map(_.readable.to(List))
+        val framed = Grpc.Framing.encode(ascii(t"hello"))
+        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
-        val framed = Array.frozen(GrpcFraming.encode(ascii(t"one")).readable ++ GrpcFraming.encode(ascii(t"two")).readable)
-        Chain(framed).iterator.frames[GrpcFraming].to(List).map(_.readable.to(List))
+        val framed = Array.frozen(Grpc.Framing.encode(ascii(t"one")).readable ++ Grpc.Framing.encode(ascii(t"two")).readable)
+        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
       test(m"gzip-compressed message round-trips"):
-        val framed = GrpcFraming.encode(ascii(t"compress me please"), compress = true)
-        Chain(framed).iterator.frames[GrpcFraming].to(List).map(_.readable.to(List))
+        val framed = Grpc.Framing.encode(ascii(t"compress me please"), compress = true)
+        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"compress me please").to[List]))
 
       test(m"status code maps to the canonical name"):
@@ -211,14 +211,14 @@ object Tests extends Suite(m"Obligatory Tests"):
           runServer(serverSide, (hpack, id) =>
             List
               ( okHeaders(hpack, id),
-                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
+                Frame.Data(id, Grpc.Framing.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
           given (Loopback is Showable) = _ => t"loopback"
 
-          val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
+          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
           channel.unary[Ping, Pong](method, Ping(t"ping")).message
       . assert(_ == t"pong")
 
@@ -229,7 +229,7 @@ object Tests extends Suite(m"Obligatory Tests"):
           runServer(serverSide, (hpack, id) =>
             List
               ( okHeaders(hpack, id),
-                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
+                Frame.Data(id, Grpc.Framing.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
@@ -240,7 +240,7 @@ object Tests extends Suite(m"Obligatory Tests"):
             channel.unary[Ping, Pong](method, Ping(t"ping")).message
       . assert(_ == t"pong")
 
-      test(m"a non-Ok trailing status raises a GrpcError"):
+      test(m"a non-Ok trailing status raises a Grpc.Error"):
         supervise:
           val (clientSide, serverSide) = pair()
 
@@ -252,8 +252,8 @@ object Tests extends Suite(m"Obligatory Tests"):
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
           given (Loopback is Showable) = _ => t"loopback"
 
-          val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
-          capture[GrpcError](channel.unary[Ping, Pong](method, Ping(t"ping"))).status
+          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
+          capture[Grpc.Error](channel.unary[Ping, Pong](method, Ping(t"ping"))).status
       . assert(_ == Grpc.Status.NotFound)
 
       test(m"a server-streaming call decodes every response message"):
@@ -262,9 +262,9 @@ object Tests extends Suite(m"Obligatory Tests"):
 
           val body =
             Array.frozen
-             ( GrpcFraming.encode(Pong(t"a").in[Protobuf].encode).readable
-               ++ GrpcFraming.encode(Pong(t"b").in[Protobuf].encode).readable
-               ++ GrpcFraming.encode(Pong(t"c").in[Protobuf].encode).readable )
+             ( Grpc.Framing.encode(Pong(t"a").in[Protobuf].encode).readable
+               ++ Grpc.Framing.encode(Pong(t"b").in[Protobuf].encode).readable
+               ++ Grpc.Framing.encode(Pong(t"c").in[Protobuf].encode).readable )
 
           runServer(serverSide, (hpack, id) =>
             List
@@ -276,7 +276,7 @@ object Tests extends Suite(m"Obligatory Tests"):
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
           given (Loopback is Showable) = _ => t"loopback"
 
-          val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
+          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
           channel.serverStreaming[Ping, Pong](method, Ping(t"ping")).map(_.message).stdlib.to(List)
       . assert(_ == List(t"a", t"b", t"c"))
 
@@ -287,14 +287,14 @@ object Tests extends Suite(m"Obligatory Tests"):
           runServer(serverSide, (hpack, id) =>
             List
               ( okHeaders(hpack, id),
-                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
+                Frame.Data(id, Grpc.Framing.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
           given (Loopback is Showable) = _ => t"loopback"
 
-          val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
+          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
           val echo = Grpc.remote[Echo](channel, t"echo.Echo")
           echo.call(Ping(t"ping")).message
       . assert(_ == t"pong")

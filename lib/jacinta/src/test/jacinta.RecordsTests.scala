@@ -82,11 +82,11 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
     . assert(_ == 0.8)
 
     test(m"A bad pattern-checked value throws an exception"):
-      capture[JsonBlueprintError]:
+      capture[JsonBlueprint.Error]:
         record.children.head.color
     . assert
-        ( _ == JsonBlueprintError
-                  ( JsonBlueprintError.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
+        ( _ == JsonBlueprint.Error
+                  ( JsonBlueprint.Error.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
 
     test(m"Get a color"):
       record.children.stdlib(1).color

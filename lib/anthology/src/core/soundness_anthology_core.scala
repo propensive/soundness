@@ -35,5 +35,5 @@ package soundness
 export
   anthology
   . { Compilation, CompileEvent, CompileEvents, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Component, Deliverable, Edge, EntryPoint, Importance,
+      CompileResult, Component, Deliverable, Edge, EntryPoint, Importance,
       LinkError, LinkEvent, NirPlugin, Notice, Setting, Tool, Toolchain, Universe, WasmObject }

@@ -64,7 +64,7 @@ object Destination:
       named: Text => Optional[Cos],
       following: Boolean = false )
     ( using pdf: Pdf )
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   Optional[Destination] =
 
     pdf.resolved(value) match
@@ -88,7 +88,7 @@ object Destination:
             case "FitBV" => FitBoxHeight(page, dimension(0))
 
             case "FitR" =>
-              PdfRect.read(Cos.Sequence(rest), 1.0).let(FitRect(page, _))
+              Pdf.Rect.read(Cos.Sequence(rest), 1.0).let(FitRect(page, _))
 
             case _ =>
               Unset
@@ -111,7 +111,7 @@ enum Destination:
   case Fit(page: Ordinal)
   case FitWidth(page: Ordinal, top: Optional[Double])
   case FitHeight(page: Ordinal, left: Optional[Double])
-  case FitRect(page: Ordinal, rect: PdfRect)
+  case FitRect(page: Ordinal, rect: Pdf.Rect)
   case FitBox(page: Ordinal)
   case FitBoxWidth(page: Ordinal, top: Optional[Double])
   case FitBoxHeight(page: Ordinal, left: Optional[Double])

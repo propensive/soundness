@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
@@ -46,11 +47,11 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import HostnameError.Reason.*
+import Hostname.Error.Reason.*
 
 object Hostname:
   given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
-  given decodable: (tactic: Tactic[HostnameError])
+  given decodable: (tactic: Tactic[Hostname.Error])
   =>  ((Hostname is Decodable in Text)^{tactic}) =
     parse(_)
   given encodable: Hostname is Encodable in Text = showable.text(_)
@@ -62,31 +63,51 @@ object Hostname:
 
       '{Hostname($labels*)}
 
-  private[urticose] def parse(text: Text): Hostname raises HostnameError =
+  private[urticose] def parse(text: Text): Hostname raises Hostname.Error =
     val builder: TextBuilder = TextBuilder()
 
     def recur(index: Ordinal, dnsLabels: List[DnsLabel]): Hostname = text(index) match
       case char: Char if char != '.' =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
         then builder.append(char.toString.tt)
-        else raise(HostnameError(text, InvalidChar(char)))
+        else raise(Hostname.Error(text, InvalidChar(char)))
 
         recur(index + 1, dnsLabels)
 
       case _ =>
         val label = builder()
-        if label.nil then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.stdlib.length)))
-        if label.length > 63 then raise(HostnameError(text, LongDnsLabel(label)))
-        if label.starts(t"-") then raise(HostnameError(text, InitialDash(label)))
+        if label.nil then raise(Hostname.Error(text, EmptyDnsLabel(dnsLabels.stdlib.length)))
+        if label.length > 63 then raise(Hostname.Error(text, LongDnsLabel(label)))
+        if label.starts(t"-") then raise(Hostname.Error(text, InitialDash(label)))
         val dnsLabels2 = DnsLabel(label) :: dnsLabels
         builder.clear()
 
         if index < text.limit then recur(index + 1, dnsLabels2) else
           if dnsLabels2.map(_.text.length + 1).sum > 254
-          then raise(HostnameError(text, LongHostname))
+          then raise(Hostname.Error(text, LongHostname))
 
           Hostname(dnsLabels2.reverse*)
 
     recur(Prim, Nil)
+
+  // HostnameError → Hostname.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case LongDnsLabel(label) => m"the DNS label $label is longer than 63 characters"
+        case LongHostname        => m"the hostname is longer than 253 characters"
+        case InvalidChar(char)   => m"the character $char is not allowed in a hostname"
+        case EmptyDnsLabel(n)    => m"a DNS label cannot be empty"
+        case InitialDash(label)  => m"the DNS label $label begins with a dash which is not allowed"
+
+    enum Reason(val number: Int) extends Clarification:
+      case LongDnsLabel(label: Text) extends Reason(1)
+      case LongHostname              extends Reason(2)
+      case InvalidChar(char: Char)   extends Reason(3)
+      case EmptyDnsLabel(n: Int)     extends Reason(4)
+      case InitialDash(label: Text)  extends Reason(5)
+
+  case class Error(text: Text, reason: Hostname.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(892, reason.number)(m"the hostname is not valid because $reason")
 
 case class Hostname(dnsLabels: DnsLabel*)

@@ -39,17 +39,18 @@ import scala.jdk.CollectionConverters.*
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import NetworkInterfaceError.Reason.*
+import NetworkInterface.Error.Reason.*
 
 object NetworkInterface:
   given showable: NetworkInterface is Showable = _.name
 
-  def all(): List[NetworkInterface] raises NetworkInterfaceError = enumerated:
+  def all(): List[NetworkInterface] raises NetworkInterface.Error = enumerated:
     def recur(interfaces: ju.Enumeration[jn.NetworkInterface], acc: List[NetworkInterface])
     :   List[NetworkInterface] =
 
@@ -58,13 +59,13 @@ object NetworkInterface:
 
     Optional(jn.NetworkInterface.getNetworkInterfaces).lay(Nil)(recur(_, Nil))
 
-  def byName(name: Text): Optional[NetworkInterface] raises NetworkInterfaceError = enumerated:
+  def byName(name: Text): Optional[NetworkInterface] raises NetworkInterface.Error = enumerated:
     Optional(jn.NetworkInterface.getByName(name.s)).let(read(_))
 
-  def byIndex(index: Int): Optional[NetworkInterface] raises NetworkInterfaceError = enumerated:
+  def byIndex(index: Int): Optional[NetworkInterface] raises NetworkInterface.Error = enumerated:
     Optional(jn.NetworkInterface.getByIndex(index)).let(read(_))
 
-  def byAddress(address: Ipv4 | Ipv6): Optional[NetworkInterface] raises NetworkInterfaceError =
+  def byAddress(address: Ipv4 | Ipv6): Optional[NetworkInterface] raises NetworkInterface.Error =
     enumerated:
       val inet = jn.InetAddress.getByAddress(bytes(address)).nn
       Optional(jn.NetworkInterface.getByInetAddress(inet)).let(read(_))
@@ -72,16 +73,16 @@ object NetworkInterface:
   // Inline, so the thunk never crosses a checked function boundary: a context-function
   // result would hide the caller's thunk, which the separation checker rejects.
   private inline def enumerated[result](inline block: result)
-    ( using Tactic[NetworkInterfaceError]^ )
+    ( using Tactic[NetworkInterface.Error]^ )
   :   result =
 
     try block catch case error: jn.SocketException =>
-      abort(NetworkInterfaceError(Enumeration(message(error))))
+      abort(NetworkInterface.Error(Enumeration(message(error))))
 
   private def message(error: jn.SocketException): Text =
     Optional(error.getMessage).lay(t"of a socket error")(_.tt)
 
-  private def read(nic: jn.NetworkInterface): NetworkInterface raises NetworkInterfaceError =
+  private def read(nic: jn.NetworkInterface): NetworkInterface raises NetworkInterface.Error =
     val name = nic.getName.nn.tt
 
     try
@@ -106,7 +107,7 @@ object NetworkInterface:
           nic.isVirtual )
 
     catch case error: jn.SocketException =>
-      abort(NetworkInterfaceError(Inspection(name, message(error))))
+      abort(NetworkInterface.Error(Inspection(name, message(error))))
 
   private def inet(address: jn.InetAddress): Ipv4 | Ipv6 =
     val bytes = address.getAddress.nn
@@ -130,6 +131,23 @@ object NetworkInterface:
 
     case ipv4: (Ipv4 @unchecked) =>
       scala.Array(ipv4.byte0.toByte, ipv4.byte1.toByte, ipv4.byte2.toByte, ipv4.byte3.toByte)
+
+  // NetworkInterfaceError → NetworkInterface.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case Enumeration(message) =>
+          m"the network interfaces could not be enumerated because $message"
+
+        case Inspection(name, message) =>
+          m"the interface $name could not be inspected because $message"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Enumeration(message: Text)             extends Reason(1)
+      case Inspection(name: Text, message: Text)  extends Reason(2)
+
+  case class Error(reason: NetworkInterface.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(418, reason.number)(m"the network interface could not be read because $reason")
 
 case class NetworkInterface
   ( name:         Text,

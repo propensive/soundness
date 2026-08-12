@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export scintillate.{JavaServlet, JavaServletFn, servlet}
+export scintillate.{JavaServlet, servlet}

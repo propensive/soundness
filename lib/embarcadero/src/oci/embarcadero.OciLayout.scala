@@ -30,8 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package revolution
+package embarcadero
 
 import anticipation.*
 
-case class ManifestEntry(key: Text, value: Text)
+// The `oci-layout` marker document at the archive root.
+private[embarcadero] case class OciLayout(imageLayoutVersion: Text)

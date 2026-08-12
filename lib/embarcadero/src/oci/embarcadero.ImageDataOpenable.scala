@@ -30,13 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
+import scala.caps
 import anticipation.*
-import fulminate.*
+import proscenium.compat.*
 
-// Raised when a gRPC call completes with a non-`Ok` `grpc-status` trailer, or when
-// the response cannot be framed or decoded. The `status` mirrors the canonical
-// gRPC code; `detail` carries the `grpc-message` text (or a local diagnostic).
-case class GrpcError(status: Grpc.Status, detail: Text)(using Diagnostics)
-extends Error(m"the gRPC call failed with status $status: $detail")
+import aperture.*
+import bitumen.*
+import contingency.*
+import turbulence.*
+import zephyrine.*
+
+// A named class rather than an anonymous given instance, for the reasons documented on
+// galilei's `FileOpenable`. Opening in-memory `Data` as an OCI image; opening a filesystem
+// *path* (`ImageOpenable`) lives in the JVM-only source set. Read-only for now.
+class ImageDataOpenable(using Tactic[Oci.Error], Tactic[Tar.Error], Tactic[StreamError])
+extends Openable:
+
+  type Self = Data
+  type Form = Image
+  type Operand = Nothing
+  type Result = Image.Handle
+
+  def open[grants <: Grant, result]
+    ( value: Data, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: ((Image.Handle & Granting[grants])^) ?=> result )
+  :   result =
+
+    if mode.atoms.stdlib.contains(Write) then abort(Oci.Error(Oci.Error.Reason.WriteUnsupported))
+    block(using new Image.Handle(Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]]) with Granting[grants] {})

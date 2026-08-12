@@ -45,9 +45,9 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-// The WebIDL grammar for foreign navigation: a *projection* of `WebIdlParser`'s declaration
+// The WebIDL grammar for foreign navigation: a *projection* of `WebIdl.Parser`'s declaration
 // model onto the flat form the JS backend marshals against — one reader per language, two
-// views, exactly as `TypescriptDialect` projects from `TypescriptParser`.
+// views, exactly as `TypescriptDialect` projects from `Typescript.Parser`.
 //
 // The parser retains the declared surface faithfully — partiality, mixin identity, `[Exposed]`
 // scopes, required-versus-optional dictionary members, enumeration values — and this
@@ -65,7 +65,7 @@ object WebIdlDialect extends Dialect:
 
   private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
     import strategies.throwUnsafely
-    val definitions = WebIdlParser.parse(source).stdlib
+    val definitions = WebIdl.Parser.parse(source).stdlib
 
     var types = Map[Text, Map[Text, Prototype]]()
     var parents = Map[Text, Text]()
@@ -77,45 +77,45 @@ object WebIdlDialect extends Dialect:
       types = types.updated(name, merged)
       parent.let { base => parents = parents.updated(name, base) }
 
-    def navigable(members: List[WebIdlMember]): Map[Text, Prototype] =
+    def navigable(members: List[WebIdl.Member]): Map[Text, Prototype] =
       members.stdlib.flatMap: member =>
         member.kind match
-          case WebIdlMember.Kind.Attribute | WebIdlMember.Kind.Constant =>
+          case WebIdl.Member.Kind.Attribute | WebIdl.Member.Kind.Constant =>
             SList(member.name -> Prototype(Unset, member.typed))
 
-          case WebIdlMember.Kind.Operation =>
+          case WebIdl.Member.Kind.Operation =>
             if member.special.present || member.name.s.isEmpty then SList()
             else
               val parameters = List.from(member.arguments.stdlib.map(_.typed))
               SList(member.name -> Prototype(parameters, member.typed))
 
-          case WebIdlMember.Kind.Constructor => SList()
+          case WebIdl.Member.Kind.Constructor => SList()
 
       . toMap
 
     definitions.foreach:
-      case WebIdlDefinition.Interface(name, parent, _, members, _, _, _, _) =>
+      case WebIdl.Definition.Interface(name, parent, _, members, _, _, _, _) =>
         record(name, parent, navigable(members))
 
-      case WebIdlDefinition.Dictionary(name, parent, fields, _) =>
+      case WebIdl.Definition.Dictionary(name, parent, fields, _) =>
         val members = fields.stdlib.map: field =>
           field.name -> Prototype(Unset, field.typed)
 
         record(name, parent, members.toMap)
 
-      case WebIdlDefinition.Namespace(name, _, members, _) =>
+      case WebIdl.Definition.Namespace(name, _, members, _) =>
         record(name, Unset, navigable(members))
 
-      case WebIdlDefinition.Enumeration(name, _) =>
+      case WebIdl.Definition.Enumeration(name, _) =>
         typedefs = typedefs.updated(name, Foreign.Type.Named(t"string"))
 
-      case WebIdlDefinition.Alias(name, typed) =>
+      case WebIdl.Definition.Alias(name, typed) =>
         typedefs = typedefs.updated(name, typed)
 
-      case WebIdlDefinition.Includes(target, mixin) =>
+      case WebIdl.Definition.Includes(target, mixin) =>
         includes = includes.updated(target, includes.getOrElse(target, SList()) :+ mixin)
 
-      case WebIdlDefinition.CallbackFunction(_, _, _) => ()
+      case WebIdl.Definition.CallbackFunction(_, _, _) => ()
 
     resolve(flatten(types, parents, includes), typedefs)
 

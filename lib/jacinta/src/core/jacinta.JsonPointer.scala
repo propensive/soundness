@@ -41,6 +41,7 @@ import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -90,14 +91,14 @@ object JsonPointer extends Root(""):
   // offset of any error. URL-bearing references begin with a non-`#` character
   // and so are rejected as `ExpectedHash`; same-document refs are all OpenAPI's
   // `$ref`s use, and are JSON Pointer fragments per RFC 6901.
-  given decodable: (tactic: Tactic[JsonPointerError])
+  given decodable: (tactic: Tactic[JsonPointer.Error])
   =>  ((JsonPointer is Decodable in Text)^{tactic}) = text =>
     val string = text.s
 
     if string.isEmpty || string.charAt(0) != '#'
-    then abort(JsonPointerError(JsonPointerError.Reason.ExpectedHash, 0))
+    then abort(JsonPointer.Error(JsonPointer.Error.Reason.ExpectedHash, 0))
     else if string.length > 1 && string.charAt(1) != '/'
-    then abort(JsonPointerError(JsonPointerError.Reason.ExpectedSlash, 1))
+    then abort(JsonPointer.Error(JsonPointer.Error.Reason.ExpectedSlash, 1))
     else
       var index = 1
 
@@ -106,7 +107,7 @@ object JsonPointer extends Root(""):
           val next = if index + 1 < string.length then string.charAt(index + 1) else ' '
 
           if next != '0' && next != '1'
-          then abort(JsonPointerError(JsonPointerError.Reason.BadEscape, index))
+          then abort(JsonPointer.Error(JsonPointer.Error.Reason.BadEscape, index))
 
         index += 1
 
@@ -129,11 +130,31 @@ object JsonPointer extends Root(""):
       def divide(pointer: JsonPointer, segment: Ordinal): JsonPointer =
         JsonPointer(pointer.url, pointer.path / segment)
 
+  // JsonPointerError → JsonPointer.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case UnknownDocument extends Reason(1)
+      case ExpectedHash    extends Reason(2)
+      case ExpectedSlash   extends Reason(3)
+      case BadEscape       extends Reason(4)
+
+    given communicable: Reason is Communicable =
+      case Reason.UnknownDocument => m"the registry contains no document at the reference's URL"
+      case Reason.ExpectedHash    => m"a JSON reference must begin with '#'"
+      case Reason.ExpectedSlash   => m"a JSON reference fragment must begin with '/'"
+      case Reason.BadEscape       => m"a '~' in a JSON reference must be followed by '0' or '1'"
+
+  // `offset` is the character index, within the reference text, where the error
+  // was detected; consumers (e.g. the `jp"…"` interpolator) use it to position a
+  // compile-time error precisely.
+  case class Error(reason: JsonPointer.Error.Reason, offset: Int)(using Diagnostics)
+  extends fulminate.Error(415, reason.number)(m"the JSON reference was not valid because $reason")
+
 case class JsonPointer(url: Optional[HttpUrl] = Unset, path: Path on JsonPointer = JsonPointer):
   def apply(using registry: (JsonPointer.Registry)^)(document: Json)
-    ( using Tactic[JsonPointerError] )
+    ( using Tactic[JsonPointer.Error] )
   :   Json =
-    url.let(registry(_).lest(JsonPointerError(JsonPointerError.Reason.UnknownDocument, 0)))
+    url.let(registry(_).lest(JsonPointer.Error(JsonPointer.Error.Reason.UnknownDocument, 0)))
     . or(document)
 
   def apply(ordinal: Ordinal): JsonPointer = JsonPointer(url, path / ordinal)

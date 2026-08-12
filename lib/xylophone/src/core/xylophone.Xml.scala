@@ -117,7 +117,7 @@ object Xml extends Tag.Container
   // Identity-checked sentinel used by `DecodableDerivation.conjunction` to
   // signal "this field was absent from the XML". The textual decoder and
   // the primitive `Decodable in Xml` instances detect it by reference
-  // equality and `raise` an `XmlError` while continuing with a zero / empty
+  // equality and `raise` an `Xml.Error` while continuing with a zero / empty
   // sentinel, so multi-error accrual can register every missing field in
   // one decode rather than aborting at the first.
   private[xylophone] val Absent: Xml = new Fragment()
@@ -140,7 +140,7 @@ object Xml extends Tag.Container
   // polymorphism; see rep/DECISIONS.md).
   //
   // Explicit `Decodable in Xml` for the common primitive scalars. These
-  // *raise + continue* (record an `XmlError` on the ambient `Foci` and
+  // *raise + continue* (record an `Xml.Error` on the ambient `Foci` and
   // return a zero / false sentinel) rather than `abort`ing, so a case
   // class with multiple bad fields accrues one error per field instead of
   // bailing at the first.
@@ -148,70 +148,70 @@ object Xml extends Tag.Container
   // Specific givens here shadow the generic `decodable` summonFrom below
   // for these types — that branch's `summon[Decodable in Text]` for
   // `Int` would otherwise `abort` with `NumberError` and break accrual.
-  given int: (tactic: Tactic[XmlError]) => Int is Decodable in Xml =
+  given int: (tactic: Tactic[Xml.Error]) => Int is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try Integer.parseInt(text.s).nn
-        catch case _: NumberFormatException => raise(XmlError()) yet 0
+        catch case _: NumberFormatException => raise(Xml.Error()) yet 0
 
       . or:
-          raise(XmlError()) yet 0
+          raise(Xml.Error()) yet 0
 
-  given long: (tactic: Tactic[XmlError]) => Long is Decodable in Xml =
+  given long: (tactic: Tactic[Xml.Error]) => Long is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Long.parseLong(text.s).nn
-        catch case _: NumberFormatException => raise(XmlError()) yet 0L
+        catch case _: NumberFormatException => raise(Xml.Error()) yet 0L
 
       . or:
-          raise(XmlError()) yet 0L
+          raise(Xml.Error()) yet 0L
 
-  given short: (tactic: Tactic[XmlError]) => Short is Decodable in Xml =
+  given short: (tactic: Tactic[Xml.Error]) => Short is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Short.parseShort(text.s).nn
-        catch case _: NumberFormatException => raise(XmlError()) yet 0.toShort
+        catch case _: NumberFormatException => raise(Xml.Error()) yet 0.toShort
 
       . or:
-          raise(XmlError()) yet 0.toShort
+          raise(Xml.Error()) yet 0.toShort
 
-  given byte: (tactic: Tactic[XmlError]) => Byte is Decodable in Xml =
+  given byte: (tactic: Tactic[Xml.Error]) => Byte is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Byte.parseByte(text.s).nn
-        catch case _: NumberFormatException => raise(XmlError()) yet 0.toByte
+        catch case _: NumberFormatException => raise(Xml.Error()) yet 0.toByte
 
       . or:
-          raise(XmlError()) yet 0.toByte
+          raise(Xml.Error()) yet 0.toByte
 
-  given double: (tactic: Tactic[XmlError]) => Double is Decodable in Xml =
+  given double: (tactic: Tactic[Xml.Error]) => Double is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Double.parseDouble(text.s).nn
-        catch case _: NumberFormatException => raise(XmlError()) yet 0.0
+        catch case _: NumberFormatException => raise(Xml.Error()) yet 0.0
 
       . or:
-          raise(XmlError()) yet 0.0
+          raise(Xml.Error()) yet 0.0
 
-  given float: (tactic: Tactic[XmlError]) => Float is Decodable in Xml =
+  given float: (tactic: Tactic[Xml.Error]) => Float is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Float.parseFloat(text.s).nn
-        catch case _: NumberFormatException => raise(XmlError()) yet 0.0f
+        catch case _: NumberFormatException => raise(Xml.Error()) yet 0.0f
 
       . or:
-          raise(XmlError()) yet 0.0f
+          raise(Xml.Error()) yet 0.0f
 
-  given boolean: (tactic: Tactic[XmlError]) => Boolean is Decodable in Xml =
+  given boolean: (tactic: Tactic[Xml.Error]) => Boolean is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         text.s match
           case "true"  => true
           case "false" => false
-          case _       => raise(XmlError()) yet false
+          case _       => raise(Xml.Error()) yet false
 
       . or:
-          raise(XmlError()) yet false
+          raise(Xml.Error()) yet false
 
   // The encoding counterpart of the `boolean` decodable above. The other
   // primitives encode through the blanket `encodable`'s `Encodable in Text`
@@ -344,7 +344,7 @@ object Xml extends Tag.Container
   // field type); otherwise falls back to Wisteria-derived case-class /
   // sealed-trait decoding via `DecodableDerivation`.
   //
-  // The textual branch raises `XmlError` (and continues with `""`) on the
+  // The textual branch raises `Xml.Error` (and continues with `""`) on the
   // `Absent` sentinel and on wrong-shape input. The inner
   // `Decodable in Text` is then called with that sentinel `""`; primitive
   // numerics have explicit `Decodable in Xml` givens above that pre-empt
@@ -354,10 +354,10 @@ object Xml extends Tag.Container
   inline given decodable: [value] => value is Decodable in Xml = summonFrom:
     case given (`value` is Decodable in Text) =>
       xml =>
-        provide[Tactic[XmlError]]:
+        provide[Tactic[Xml.Error]]:
           val text: Text =
-            if xml eq Absent then raise(XmlError()) yet t""
-            else textOf(xml).or(raise(XmlError()) yet t"")
+            if xml eq Absent then raise(Xml.Error()) yet t""
+            else textOf(xml).or(raise(Xml.Error()) yet t"")
 
           summon[`value` is Decodable in Text].decoded(text)
 
@@ -400,11 +400,11 @@ object Xml extends Tag.Container
         decodeElement[derivation](xml)
           ( using infer[ProductReflection[derivation]],
                   infer[Foci[Xml.Focus]],
-                  infer[Tactic[XmlError]] )
+                  infer[Tactic[Xml.Error]] )
 
     private inline def decodeElement[derivation <: Product]
       ( xml: Xml )
-      ( using ProductReflection[derivation], Foci[Xml.Focus], Tactic[XmlError] )
+      ( using ProductReflection[derivation], Foci[Xml.Focus], Tactic[Xml.Error] )
     :   derivation =
 
       xml match
@@ -423,16 +423,16 @@ object Xml extends Tag.Container
           // its own missing-field error.
           summonFrom:
             case derivationDefault: Default[`derivation`] =>
-              raise(XmlError())
+              raise(Xml.Error())
               derivationDefault()
 
             case _ =>
-              raise(XmlError())
+              raise(Xml.Error())
               buildWith[derivation](Element(t"", Attributes.empty, Array.empty))
 
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( element: Element )
-      ( using Foci[Xml.Focus], Tactic[XmlError] )
+      ( using Foci[Xml.Focus], Tactic[Xml.Error] )
     :   derivation =
 
       // Fields marked `@attribute` are read from the element's attributes
@@ -532,7 +532,7 @@ object Xml extends Tag.Container
 
       xml =>
         provide[Foci[Xml.Focus]]:
-          provide[Tactic[XmlError]]:
+          provide[Tactic[Xml.Error]]:
             provide[Tactic[VariantError]]:
               val discriminable = infer[derivation is Discriminable in Xml]
 
@@ -548,10 +548,10 @@ object Xml extends Tag.Container
               . or:
                   summonFrom:
                     case derivationDefault: Default[`derivation`] =>
-                      raise(XmlError()) yet derivationDefault()
+                      raise(Xml.Error()) yet derivationDefault()
 
                     case _ =>
-                      abort(XmlError())
+                      abort(Xml.Error())
 
   // A sum discriminated by an attribute on the value's element —
   // `<payment type="Card">…</payment>`. This is the shape a sum nested
@@ -706,14 +706,14 @@ object Xml extends Tag.Container
     // the bridge delegates to its decoder over `Absent`; a derived product
     // expands per sub-field). Takes the read-site `Foci` so that per-sub-
     // field expansion registers the same paths as the AST path's.
-    def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Self = abort(XmlError())
+    def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Self = abort(Xml.Error())
 
     // How a field of this type reads from an attribute value — the direct
     // counterpart of the AST derivation decoding `TextNode(text)` for a
     // field marked `@attribute`. For any shape that cannot read from a text
     // leaf, a `TextNode` is wrong-shape input on the AST path, which is
     // exactly `absent()`'s behavior — hence the default.
-    def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Self = absent()
+    def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Self = absent()
 
   object Parsable:
     // The base of generated parsers: generated code is capture-erased, so
@@ -737,7 +737,7 @@ object Xml extends Tag.Container
     def parseField[value](parsing: AnyRef, reader: AnyRef): value =
       parsing.asInstanceOf[value is Xml.Parsing].parse(reader.asInstanceOf[XmlReader^])
 
-    def absentField[value](parsing: AnyRef)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+    def absentField[value](parsing: AnyRef)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
       parsing.asInstanceOf[value is Xml.Parsing].absent()
 
     def apply[value](parser: (reader: XmlReader^) => value)
@@ -774,10 +774,10 @@ object Xml extends Tag.Container
           override def repeatable: Boolean = true
           def parse(reader: XmlReader^): value = decodable.decoded(reader.element())
 
-          override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
+          override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
             decodable.decoded(Absent)
 
-          override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+          override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
             decodable.decoded(TextNode(text))
 
           def parseElement(reader: XmlReader^): Any = reader.element()
@@ -790,10 +790,10 @@ object Xml extends Tag.Container
           type Self = value
           def parse(reader: XmlReader^): value = decodable.decoded(reader.element())
 
-          override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
+          override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
             decodable.decoded(Absent)
 
-          override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+          override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
             decodable.decoded(TextNode(text))
 
     // The one-line opt-in to direct parsing for a structural type:
@@ -823,9 +823,9 @@ object Xml extends Tag.Container
         type Self = value
         def parse(reader: XmlReader^): value = field0.parse(reader)
         override def repeatable: Boolean = field0.repeatable
-        override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value = field0.absent()
+        override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value = field0.absent()
 
-        override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+        override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
           field0.attribute(text)
 
     // The element-wise hooks of a repeatable (collection) parser. The
@@ -874,7 +874,7 @@ object Xml extends Tag.Container
           // paths (the AST decoder receives an empty synthetic fragment);
           // the engine routes repeatable fields through `gathered`, so this
           // covers only the wrong-shape and root fallbacks.
-          override def absent()(using Tactic[XmlError], Foci[Xml.Focus])
+          override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus])
           :   collection[element] =
 
             factory.newBuilder.result()
@@ -920,8 +920,8 @@ object Xml extends Tag.Container
 
     // A required primitive field whose name never arrived: the primitives'
     // `absent()` semantics — raise and continue with the sentinel.
-    def missing[value](sentinel: value)(using Tactic[XmlError]): value =
-      raise(XmlError()) yet sentinel
+    def missing[value](sentinel: value)(using Tactic[Xml.Error]): value =
+      raise(Xml.Error()) yet sentinel
 
     // Focus bookkeeping for one field read, compiled away when the read
     // site's `Foci` is the inert default — the same short-circuit as the
@@ -1006,7 +1006,7 @@ object Xml extends Tag.Container
 
         def parse(reader: XmlReader^): derivation =
           given foci: Foci[Xml.Focus] = reader.foci
-          given tactic: Tactic[XmlError] = reader.errorTactic
+          given tactic: Tactic[Xml.Error] = reader.errorTactic
           val entries = fields
           val count = entries.length
           val values = Array[Any](count)
@@ -1116,13 +1116,13 @@ object Xml extends Tag.Container
         // `decodeElement` wrong-shape fallback, so a missing nested case
         // class expands per sub-field on both paths (or collapses to one
         // error under a `Default`).
-        override def absent()(using tactic: Tactic[XmlError], foci: Foci[Xml.Focus])
+        override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus])
         :   derivation =
 
-          raise(XmlError())
+          raise(Xml.Error())
           fallback.lay(absentBuild()): instantiate => instantiate()
 
-        private def absentBuild()(using tactic: Tactic[XmlError], foci: Foci[Xml.Focus])
+        private def absentBuild()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus])
         :   derivation =
 
           val entries = fields
@@ -1176,9 +1176,9 @@ object Xml extends Tag.Container
       def parse(reader: XmlReader^): value = source.parse(reader)
       override def repeatable: Boolean = source.repeatable
 
-      override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value = source.absent()
+      override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value = source.absent()
 
-      override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+      override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
         source.attribute(text)
 
     def apply[value](parsing: (value is Xml.Parsing)^): ((value is Xml.Field)^{parsing}) =
@@ -1210,11 +1210,11 @@ object Xml extends Tag.Container
         reader.text().lay(reader.fault() yet sentinel): text =>
           convert(text).or(reader.fault() yet sentinel)
 
-      override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
-        raise(XmlError()) yet sentinel
+      override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
+        raise(Xml.Error()) yet sentinel
 
-      override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
-        convert(text).or(raise(XmlError()) yet sentinel)
+      override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
+        convert(text).or(raise(Xml.Error()) yet sentinel)
 
   // `Int`/`Long`/`Double`/`Boolean` read their value straight from the
   // buffered content chars (`reader.int()`/`long()`/`double()`/`boolean()`),
@@ -1225,23 +1225,23 @@ object Xml extends Tag.Container
     type Self = Int
     def parse(reader: XmlReader^): Int = reader.int().or(reader.fault() yet 0)
 
-    override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Int =
-      raise(XmlError()) yet 0
+    override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Int =
+      raise(Xml.Error()) yet 0
 
-    override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Int =
+    override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Int =
       try Integer.parseInt(text.s)
-      catch case _: NumberFormatException => raise(XmlError()) yet 0
+      catch case _: NumberFormatException => raise(Xml.Error()) yet 0
 
   given longParsable: Long is Xml.Parsable = new Xml.Parsable:
     type Self = Long
     def parse(reader: XmlReader^): Long = reader.long().or(reader.fault() yet 0L)
 
-    override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Long =
-      raise(XmlError()) yet 0L
+    override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Long =
+      raise(Xml.Error()) yet 0L
 
-    override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Long =
+    override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Long =
       try jl.Long.parseLong(text.s)
-      catch case _: NumberFormatException => raise(XmlError()) yet 0L
+      catch case _: NumberFormatException => raise(Xml.Error()) yet 0L
 
   given shortParsable: Short is Xml.Parsable = primitiveParsable(0.toShort): text =>
     try jl.Short.parseShort(text.s) catch case _: NumberFormatException => Unset
@@ -1253,12 +1253,12 @@ object Xml extends Tag.Container
     type Self = Double
     def parse(reader: XmlReader^): Double = reader.double().or(reader.fault() yet 0.0)
 
-    override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Double =
-      raise(XmlError()) yet 0.0
+    override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Double =
+      raise(Xml.Error()) yet 0.0
 
-    override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Double =
+    override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Double =
       try jl.Double.parseDouble(text.s)
-      catch case _: NumberFormatException => raise(XmlError()) yet 0.0
+      catch case _: NumberFormatException => raise(Xml.Error()) yet 0.0
 
   given floatParsable: Float is Xml.Parsable = primitiveParsable(0.0f): text =>
     try jl.Float.parseFloat(text.s) catch case _: NumberFormatException => Unset
@@ -1267,14 +1267,14 @@ object Xml extends Tag.Container
     type Self = Boolean
     def parse(reader: XmlReader^): Boolean = reader.boolean().or(reader.fault() yet false)
 
-    override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Boolean =
-      raise(XmlError()) yet false
+    override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Boolean =
+      raise(Xml.Error()) yet false
 
-    override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Boolean =
+    override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Boolean =
       text.s match
         case "true"  => true
         case "false" => false
-        case _       => raise(XmlError()) yet false
+        case _       => raise(Xml.Error()) yet false
 
   // Element-wise `Xml.Field` for collections, resolved during derivation:
   // the element's own parser comes from the fallback chain, so nested
@@ -1325,11 +1325,11 @@ object Xml extends Tag.Container
       def parse(reader: XmlReader^): value =
         codec.decoded(reader.text().or(reader.fault() yet t""))
 
-      override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
-        raise(XmlError())
+      override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
+        raise(Xml.Error())
         codec.decoded(t"")
 
-      override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+      override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
         codec.decoded(text)
 
   object ParsableDerivation extends Derivable[Xml.Field]:
@@ -1487,7 +1487,7 @@ object Xml extends Tag.Container
   given aggregableParsed: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
   =>  ( schema: XmlSchema )
-  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError], foci: Foci[Xml.Focus] )
+  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( ((value in Xml) is Aggregable by Text)^{parsable, tactic, xmlTactic} ) =
 
     input => parseDirect(input.iterator, parsable).asInstanceOf[value in Xml]
@@ -1499,7 +1499,7 @@ object Xml extends Tag.Container
   given readableParsed: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
   =>  ( schema: XmlSchema )
-  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError], foci: Foci[Xml.Focus] )
+  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( (Text is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
 
     text => parseDirect(text, parsable).asInstanceOf[value in Xml]
@@ -1524,7 +1524,7 @@ object Xml extends Tag.Container
   private def parseDirect[value](input: Iterator[Text], parsable: (value is Xml.Parsable)^)
     ( using schema:    XmlSchema,
             tactic:    Tactic[ParseError],
-            xmlTactic: Tactic[XmlError],
+            xmlTactic: Tactic[Xml.Error],
             foci:      Foci[Xml.Focus] )
   :   value =
 
@@ -1535,7 +1535,7 @@ object Xml extends Tag.Container
   private def parseDirect[value](input: Text, parsable: (value is Xml.Parsable)^)
     ( using schema:    XmlSchema,
             tactic:    Tactic[ParseError],
-            xmlTactic: Tactic[XmlError],
+            xmlTactic: Tactic[Xml.Error],
             foci:      Foci[Xml.Focus] )
   :   value =
 
@@ -1544,7 +1544,7 @@ object Xml extends Tag.Container
   private def parseWith[value](parser: XmlParser^, parsable: (value is Xml.Parsable)^)
     ( using schema:    XmlSchema,
             tactic:    Tactic[ParseError],
-            xmlTactic: Tactic[XmlError],
+            xmlTactic: Tactic[Xml.Error],
             foci:      Foci[Xml.Focus] )
   :   value =
 
@@ -3944,6 +3944,10 @@ object Xml extends Tag.Container
   :   (Tactic[ParseError]^) ?->{callback} Xml =
 
     new XmlParser(Cursor[Text](input), tracking = false, callback).parseXml(headers0)
+
+  // XmlError → Xml.Error
+  case class Error()(using Diagnostics)
+  extends fulminate.Error(149, 0)(m"there was an XML error")
 
 
 sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:

@@ -46,7 +46,7 @@ import wisteria.*
 import zephyrine.*
 
 import httpBackends.virtualMachine
-import JsonError.Reason
+import Json.Error.Reason
 
 package jsonPointerRegistries:
   given standaloneRegistry: JsonPointer.Registry:
@@ -64,7 +64,7 @@ package jsonPointerRegistries:
           case ConnectError(_)       => Unset
           case Http.Error(_, _)       => Unset
           case ParseError(_, _, _)   => Unset
-          case JsonError(_)          => Unset
+          case Json.Error(_)          => Unset
 
         . protect(url.fetch().receive[Json])
 
@@ -77,10 +77,10 @@ extension (json: Json)
   // `dynamicJsonAccess.enabled` import required.
   //
   // The conformance check walks `schematic.schema(): JsonSchema` against the
-  // value, raising `JsonError` on the first structural mismatch (wrong type, or a
+  // value, raising `Json.Error` on the first structural mismatch (wrong type, or a
   // required field absent).
   def verify[topic](using decodable: topic is Json.Decodable)
-  :   (Json of topic from topic) raises JsonError =
+  :   (Json of topic from topic) raises Json.Error =
 
     conform(JsonSchema.reify(decodable.shape()), json.root)
     json.asInstanceOf[Json of topic from topic]
@@ -89,21 +89,21 @@ extension (json: Json)
 // Checks that a `Json.Ast` node conforms to a `JsonSchema`. An absent node is
 // permitted only where the schema is optional; otherwise each variant checks the
 // node's primitive type and recurses into object properties / array items.
-private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
-  inline def mismatch(expected: JsonPrimitive): Unit =
-    raise(JsonError(Reason.NotType(ast.primitive, expected)))
+private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises Json.Error =
+  inline def mismatch(expected: Json.Primitive): Unit =
+    raise(Json.Error(Reason.NotType(ast.primitive, expected)))
 
-  if ast.isAbsent then (if !schema.optional then raise(JsonError(Reason.Absent))) else schema match
+  if ast.isAbsent then (if !schema.optional then raise(Json.Error(Reason.Absent))) else schema match
     case obj: JsonSchema.Object => obj.oneOf match
       case variants: List[JsonSchema] @scala.unchecked =>
         if
           !(variants: List[JsonSchema]).stdlib.exists: variant =>
             safely(conform(variant, ast)).present
         then
-          mismatch(JsonPrimitive.Object)
+          mismatch(Json.Primitive.Object)
 
       case _ =>
-        if !ast.isObject then mismatch(JsonPrimitive.Object) else
+        if !ast.isObject then mismatch(Json.Primitive.Object) else
           val absent = Json.Ast(Unset)
 
           for (key, property) <- obj.properties.stdlib do
@@ -111,7 +111,7 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
             conform(property, if index < 0 then absent else ast.objectValue(index))
 
     case array: JsonSchema.Array =>
-      if !ast.isArray then mismatch(JsonPrimitive.Array)
+      if !ast.isArray then mismatch(Json.Primitive.Array)
       else array.items.lay(()): items =>
         var index = 0
         val length = ast.arrayLength
@@ -120,11 +120,11 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
           conform(items, ast.arrayElement(index))
           index += 1
 
-    case _: JsonSchema.String  => if !ast.isString  then mismatch(JsonPrimitive.String)
-    case _: JsonSchema.Number  => if !ast.isNumber  then mismatch(JsonPrimitive.Number)
-    case _: JsonSchema.Integer => if !ast.isNumber  then mismatch(JsonPrimitive.Number)
-    case _: JsonSchema.Boolean => if !ast.isBoolean then mismatch(JsonPrimitive.Boolean)
-    case _: JsonSchema.Null    => if !ast.isNull    then mismatch(JsonPrimitive.Null)
+    case _: JsonSchema.String  => if !ast.isString  then mismatch(Json.Primitive.String)
+    case _: JsonSchema.Number  => if !ast.isNumber  then mismatch(Json.Primitive.Number)
+    case _: JsonSchema.Integer => if !ast.isNumber  then mismatch(Json.Primitive.Number)
+    case _: JsonSchema.Boolean => if !ast.isBoolean then mismatch(Json.Primitive.Boolean)
+    case _: JsonSchema.Null    => if !ast.isNull    then mismatch(Json.Primitive.Null)
 
     // A `$ref` cannot be resolved without the root schema document, which is not
     // yet threaded through; such nodes are left unchecked for now.

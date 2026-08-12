@@ -119,7 +119,7 @@ extends Rig:
             threading: Threading,
             suite:     Testable,
             codepoint: Codepoint )
-  :   Unit raises CompilerError raises RemoteError =
+  :   Unit raises Compiler.Error raises RemoteError =
 
     val concurrency0: Optional[Int] = concurrency
     val start: Int = concurrency0.or(1)

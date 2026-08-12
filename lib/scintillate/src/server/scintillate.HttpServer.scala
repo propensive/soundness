@@ -34,32 +34,49 @@ package scintillate
 
 import java.net as jn
 
+import anticipation.Log
 import com.sun.net.httpserver as csnh
 
 import anticipation.*
 import contingency.*
 import digression.*
+import fulminate.*
 import parasite.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
 
+object HttpServer:
+  // HttpServerEvent → HttpServer.Event
+  object Event:
+    given communicable: Event is Communicable =
+      case Received(request)            => m"received the request $request"
+      case Processed(request, duration) => m"processed the request $request in ${duration}ms"
+      case BrokenStream(length)         => m"sending the response was aborted after $length"
+      case ConnectionFailed(error)      => m"the connection handler failed: ${error.message}"
+
+  enum Event:
+    case Received(request: Http.Request) extends Event, Log.Network, Log.Protocol
+    case Processed(request: Http.Request, duration: Long) extends Event, Log.Network
+    case BrokenStream(length: Bytes) extends Event, Log.Network
+    case ConnectionFailed(error: Error) extends Event, Log.Network
+
 case class HttpServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
 extends RequestServable:
   def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
-    ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
+    ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
   :   Service^ =
 
     def handle(exchange: csnh.HttpExchange | Null): Unit =
       try
         recover:
           case StreamError(length) =>
-            Log.warn(HttpServerEvent.BrokenStream(length))
+            Log.warn(HttpServer.Event.BrokenStream(length))
 
-          case error @ HostnameError(_, _) =>
-            Log.warn(HttpServerEvent.ConnectionFailed(error))
+          case error @ Hostname.Error(_, _) =>
+            Log.warn(HttpServer.Event.ConnectionFailed(error))
 
             try
               exchange.nn.sendResponseHeaders(400, -1)
@@ -74,7 +91,7 @@ extends RequestServable:
                 errorPage.handle(throwable, connection)
 
       catch case NonFatal(exception) =>
-        Log.fail(HttpServerEvent.ConnectionFailed(fulminate.Error(exception)))
+        Log.fail(HttpServer.Event.ConnectionFailed(fulminate.Error(exception)))
 
     def startServer()(using Tactic[ServerError]): com.sun.net.httpserver.HttpServer =
       try

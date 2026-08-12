@@ -44,9 +44,9 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-// The WIT grammar for foreign navigation: a *projection* of `WitParser`'s declaration model
+// The WIT grammar for foreign navigation: a *projection* of `Wit.Parser`'s declaration model
 // onto the flat form the wasm backend marshals against — one reader per language, two views,
-// exactly as `TypescriptDialect` projects from `TypescriptParser`.
+// exactly as `TypescriptDialect` projects from `Typescript.Parser`.
 //
 // The parser retains the declared surface faithfully — enum and variant cases, package
 // structure, `use` clauses — and this projection deliberately erases what an invocation cannot
@@ -73,14 +73,14 @@ object WitDialect extends Dialect:
   def worlds(source: Text): proscenium.Map[Text, World] =
     worlds0(source).asInstanceOf[proscenium.Map[Text, World]]
 
-  private def packageOf(document: WitDocument): Optional[Text] =
+  private def packageOf(document: Wit.Document): Optional[Text] =
     document.packageName.let: name =>
       document.version.let { version => t"$name@$version" }.or(name)
 
   private def worlds0(source: Text): Map[Text, World] =
     import strategies.throwUnsafely
 
-    WitParser.parse(source).stdlib.flatMap: document =>
+    Wit.Parser.parse(source).stdlib.flatMap: document =>
       val pkg = packageOf(document)
 
       def qualify(id: Text): Text =
@@ -94,7 +94,7 @@ object WitDialect extends Dialect:
 
   private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
     import strategies.throwUnsafely
-    val documents = WitParser.parse(source).stdlib
+    val documents = Wit.Parser.parse(source).stdlib
 
     var types = Map[Text, Map[Text, Prototype]]()
     var typedefs = Map[Text, Foreign.Type]()
@@ -107,7 +107,7 @@ object WitDialect extends Dialect:
       val module = moduleId(pkg, interface.name)
       val functions = scala.collection.mutable.LinkedHashMap[Text, Prototype]()
 
-      def signature(fn: WitFunction, resource: Optional[Text]): Prototype =
+      def signature(fn: Wit.Function, resource: Optional[Text]): Prototype =
         Prototype
           ( List.from(fn.parameters.stdlib.map { (_, typed) => project(typed) }),
             if fn.constructor then Foreign.Type.Named(resource.or(t""))
@@ -117,10 +117,10 @@ object WitDialect extends Dialect:
             fn.static || fn.constructor )
 
       interface.items.stdlib.foreach:
-        case WitItem.Function(fn) =>
+        case Wit.Item.Function(fn) =>
           functions(fn.name) = signature(fn, Unset)
 
-        case WitItem.Record(name, fields) =>
+        case Wit.Item.Record(name, fields) =>
           val members = fields.stdlib.map: (field, typed) =>
             field -> Prototype(Unset, project(typed))
 
@@ -128,12 +128,12 @@ object WitDialect extends Dialect:
 
         // An `enum` collapses to the unsigned discriminant that holds its cases, and `flags`
         // to the bit-vector that holds its members, so the FFM layouts stay correct.
-        case WitItem.Enumeration(name, cases) =>
+        case Wit.Item.Enumeration(name, cases) =>
           val count = cases.stdlib.length
           val topic = if count <= 256 then t"u8" else if count <= 65536 then t"u16" else t"u32"
           typedefs = typedefs.updated(name, Foreign.Type.Named(topic))
 
-        case WitItem.Flags(name, names) =>
+        case Wit.Item.Flags(name, names) =>
           val count = names.stdlib.length
 
           val topic =
@@ -142,17 +142,17 @@ object WitDialect extends Dialect:
 
           typedefs = typedefs.updated(name, Foreign.Type.Named(topic))
 
-        case WitItem.Alias(name, target) =>
+        case Wit.Item.Alias(name, target) =>
           typedefs = typedefs.updated(name, project(target))
 
         // A variant (or a bodyless resource) has no navigable members, but must still record
         // which module defines it, so functions in *other* interfaces that mention it (e.g. in
         // a `result` error arm) resolve its facade class: a single unnameable member carries
         // the module.
-        case WitItem.Variant(name, _) =>
+        case Wit.Item.Variant(name, _) =>
           types = types.updated(name, declaration(name, module))
 
-        case WitItem.Resource(name, methods) =>
+        case Wit.Item.Resource(name, methods) =>
           if methods.stdlib.isEmpty then types = types.updated(name, declaration(name, module))
           else
             val members = methods.stdlib.map: method =>
@@ -160,7 +160,7 @@ object WitDialect extends Dialect:
 
             types = types.updated(name, members.toMap)
 
-        case WitItem.Use(_, _) => ()
+        case Wit.Item.Use(_, _) => ()
 
       // Merge, rather than overwrite: a resource or variant sharing the interface's own name
       // (e.g. the `network` resource in `interface network`) has already recorded its module

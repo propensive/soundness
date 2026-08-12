@@ -65,7 +65,7 @@ trait LowPriorityConformant:
 
       mitigate:
         case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
-        case JsonError(_)        => Api.Error(Api.Error.Reason.Malformed)
+        case Json.Error(_)        => Api.Error(Api.Error.Reason.Malformed)
 
       . protect(response.body.stream.memoize.read[Json].as[value])
 
@@ -77,7 +77,7 @@ trait LowPriorityConformant:
 
       mitigate:
         case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
-        case _: XmlError         => Api.Error(Api.Error.Reason.Malformed)
+        case _: Xml.Error         => Api.Error(Api.Error.Reason.Malformed)
 
       . protect(summon[CharDecoder].decoded(response.body.stream.memoize).read[Xml].as[value])
 

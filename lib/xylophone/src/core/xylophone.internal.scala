@@ -350,7 +350,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
   // Reuses `XPath`'s own `Decodable` for validation: the literal is decoded at
-  // macro-expansion time and, if it fails, the `XPathError`'s offset is mapped
+  // macro-expansion time and, if it fails, the `XPath.Error`'s offset is mapped
   // back to a source position so the error points exactly at the offending
   // character. Mirrors `jacinta.internal.jsonPointer`.
   def xpath[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
@@ -375,7 +375,7 @@ object internal:
     val start: Int = firstOrigin[origins]
 
     try unsafely(raw.tt.as[XPath]) catch
-      case error: XPathError =>
+      case error: XPath.Error =>
         val sourceFile = Position.ofMacroExpansion.sourceFile
 
         val position = sourceFile.content match
@@ -1280,13 +1280,13 @@ object internal:
           Symbol.noSymbol)
 
       val tacticSymbol =
-        Symbol.newVal(owner, "tactic", TypeRepr.of[Tactic[XmlError]], Flags.EmptyFlags,
+        Symbol.newVal(owner, "tactic", TypeRepr.of[Tactic[Xml.Error]], Flags.EmptyFlags,
           Symbol.noSymbol)
 
       val fociDef = ValDef(fociSymbol, Some('{ $reader.foci }.asTerm))
       val tacticDef = ValDef(tacticSymbol, Some('{ $reader.errorTactic }.asTerm))
       val foci = Ref(fociSymbol).asExprOf[Foci[Xml.Focus]]
-      val tactic = Ref(tacticSymbol).asExprOf[Tactic[XmlError]]
+      val tactic = Ref(tacticSymbol).asExprOf[Tactic[Xml.Error]]
 
       val slots = List.range(0, arity).map: index =>
         Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
@@ -1592,7 +1592,7 @@ object internal:
     // record yields when no user-supplied `Default` collapses it — every
     // sub-field takes its declared default or raises at its own focus,
     // mirroring the derived engine's `absentBuild`.
-    def absentBody(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+    def absentBody(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       ( keys:        Expr[Array[String]^{}],
         instances:   Expr[Array[Xml.Field | Null]^{}],
         repeatables: Expr[Array[Boolean]^{}],
@@ -1692,8 +1692,8 @@ object internal:
                 ( '{reader}, '{keys}, '{attrs}, '{instances}, '{repeatables}, '{fallbacks} )
             }
 
-          override def absent()(using tactic: Tactic[XmlError], foci: Foci[Xml.Focus]): value =
-            raise(XmlError())
+          override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
+            raise(Xml.Error())
 
             fallback.lay
               ( ${

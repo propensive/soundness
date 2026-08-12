@@ -67,7 +67,7 @@ extends Cipher, Encryption, Symmetric:
     val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
     cipher.encrypt(transformation, key, iv, bytes)
 
-  // Streaming encryption feeds each chunk through the provider's `CipherSession`,
+  // Streaming encryption feeds each chunk through the provider's `Cipher.Session`,
   // mirroring `turbulence.Compression`. The IV (if any) is emitted as the first
   // chunk; the `NoPadding` alignment check happens at end-of-stream, where the
   // total length is finally known.
@@ -127,7 +127,7 @@ extends Cipher, Encryption, Symmetric:
     val transformation0 = transformation
     val usesIv = mode.usesIv
 
-    val start: Data => CipherSession = iv =>
+    val start: Data => Cipher.Session = iv =>
       cipher0.decryptStream(transformation0, key, if usesIv then iv else Unset)
 
     // The duct retains the ambient tactic, which the `consume` formal cannot see is not an
@@ -144,13 +144,13 @@ extends Cipher, Encryption, Symmetric:
   def privateToPublic(key: Data): Data = key
 
 // The session-driven cipher transformation as a `Duct`: input windows feed
-// `CipherSession.update`, whose output (of arbitrary size — a block cipher
+// `Cipher.Session.update`, whose output (of arbitrary size — a block cipher
 // may buffer or release several blocks) stages in `pending` and delivers as
 // the target window allows. `prefix` (the IV) delivers before any ciphertext;
 // `finalise` sees the total input length at end-of-stream, before the final
 // block is flushed.
 private[enigmatic] final class CipherDuct
-  ( session: CipherSession, prefix: Optional[Data], finalise: Int => Unit )
+  ( session: Cipher.Session, prefix: Optional[Data], finalise: Int => Unit )
 extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
@@ -212,7 +212,7 @@ extends Duct[Data, Data]:
 // with the truncated prefix, and the provider raises its own (accurate)
 // invalid-parameter error.
 private[enigmatic] final class DecipherDuct
-  ( start: Data => CipherSession, ivSize: Int, tactic: Tactic[Crypto.Error] )
+  ( start: Data => Cipher.Session, ivSize: Int, tactic: Tactic[Crypto.Error] )
 extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit

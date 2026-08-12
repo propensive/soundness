@@ -800,7 +800,7 @@ object Tests extends Suite(m"Xenophile tests"):
   def typescriptParserTests(): Unit =
     import strategies.throwUnsafely
 
-    def declarations(source: Text): List[TypescriptDeclaration] = TypescriptParser.parse(source)
+    def declarations(source: Text): List[Typescript.Declaration] = Typescript.Parser.parse(source)
 
     def names(source: Text): scala.List[Text] = declarations(source).stdlib.map(_.key)
 
@@ -816,7 +816,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
     test(m"an interface's extends clause is recorded"):
       declarations(t"interface A { x: number; }\ninterface B extends A { y: number; }").stdlib
-      . collect { case interface: TypescriptDeclaration.Interface => interface }
+      . collect { case interface: Typescript.Declaration.Interface => interface }
       . flatMap(_.extending.stdlib.map(_.text))
     . assert(_ == scala.List(t"A"))
 
@@ -881,75 +881,75 @@ object Tests extends Suite(m"Xenophile tests"):
 
     test(m"an intersection is not truncated to its first member"):
       declarations(t"type T = A & B;").stdlib
-      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+      . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
     . assert(_ == scala.List(t"A & B"))
 
     test(m"a tuple type is read"):
       declarations(t"type T = [string, number];").stdlib
-      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+      . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
     . assert(_ == scala.List(t"[string, number]"))
 
     test(m"a string literal type keeps its value and is not confused with a name"):
       declarations(t"""type T = "a" | "b";""").stdlib
-      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+      . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
     . assert(_ == scala.List(t"a | b"))
 
     test(m"a negative numeric literal type keeps its sign"):
       declarations(t"type T = -1;").stdlib
-      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+      . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
     . assert(_ == scala.List(t"-1"))
 
     test(m"a nested array type is read to the right depth"):
       declarations(t"type T = string[][];").stdlib
-      . collect { case alias: TypescriptDeclaration.Alias => alias.target.text }
+      . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
     . assert(_ == scala.List(t"string[][]"))
 
     test(m"a type predicate is read"):
       declarations(t"declare function isFoo(x: unknown): x is Foo;").stdlib
-      . collect { case function: TypescriptDeclaration.Function => function }
+      . collect { case function: Typescript.Declaration.Function => function }
       . flatMap(_.signatures.stdlib).map(_.text)
     . assert(_ == scala.List(t"(x: unknown) => x is Foo"))
 
     test(m"a rest parameter is marked as such"):
       declarations(t"declare function f(...args: string[]): void;").stdlib
-      . collect { case function: TypescriptDeclaration.Function => function }
+      . collect { case function: Typescript.Declaration.Function => function }
       . flatMap(_.signatures.stdlib)
-      . collect { case TypescriptType.Function(parameters, _, _, _) => parameters.stdlib.map(_.rest) }
+      . collect { case Typescript.Type.Function(parameters, _, _, _) => parameters.stdlib.map(_.rest) }
     . assert(_ == scala.List(scala.List(true)))
 
     // Constructs outside the grammar are refused, never approximated. This is the property the
     // discipline depends on: a declaration file read as a smaller contract than it declares
     // would make every claim computed from it unsound.
 
-    def refuses(source: Text): Optional[TypescriptError.Reason] =
+    def refuses(source: Text): Optional[Typescript.Error.Reason] =
       import errorDiagnostics.stackTracesDiagnostics
-      capture[TypescriptError](TypescriptParser.parse(source)).reason
+      capture[Typescript.Error](Typescript.Parser.parse(source)).reason
 
     test(m"a conditional type is refused"):
       refuses(t"type T<A> = A extends string ? number : boolean;")
-    . assert(_ == TypescriptError.Reason.Unsupported(t"a conditional type"))
+    . assert(_ == Typescript.Error.Reason.Unsupported(t"a conditional type"))
 
     test(m"a template literal type is refused"):
       refuses(t"type T = `a${'$'}{B}c`;")
-    . assert(_ == TypescriptError.Reason.Unsupported(t"a template literal type"))
+    . assert(_ == Typescript.Error.Reason.Unsupported(t"a template literal type"))
 
     test(m"an infer binder is refused"):
       refuses(t"type T<A> = Array<infer B>;")
-    . assert(_ == TypescriptError.Reason.Unsupported(t"an `infer` binder"))
+    . assert(_ == Typescript.Error.Reason.Unsupported(t"an `infer` binder"))
 
     test(m"a mapped type is refused under its own name"):
       refuses(t"interface A { [K in B]: number; }")
-    . assert(_ == TypescriptError.Reason.Unsupported(t"a mapped type"))
+    . assert(_ == Typescript.Error.Reason.Unsupported(t"a mapped type"))
 
     test(m"an unterminated string literal is a syntax error"):
       refuses(t"""type T = "unterminated;""").let:
-        case TypescriptError.Reason.Syntax(_, _) => true
+        case Typescript.Error.Reason.Syntax(_, _) => true
         case _                                   => false
     . assert(_ == true)
 
     test(m"a duplicated class declaration is refused"):
       refuses(t"declare class A {}\ndeclare class A {}")
-    . assert(_ == TypescriptError.Reason.Duplicate(t"A"))
+    . assert(_ == Typescript.Error.Reason.Duplicate(t"A"))
 
     test(m"interfaces merge, so a repeated interface name is accepted"):
       names(t"interface A { x: number; }\ninterface A { y: number; }")

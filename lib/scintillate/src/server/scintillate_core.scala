@@ -60,7 +60,7 @@ package httpServers:
     ( using tactic:    Tactic[ServerError],
             monitor:   Monitor,
             probate:   Probate,
-            loggable:  HttpServerEvent is Loggable,
+            loggable:  HttpServer.Event is Loggable,
             errorPage: WebserverErrorPage )
   extends Protocolic:
     type Transport = TcpPort of port
@@ -86,25 +86,25 @@ package httpServers:
 
   given stdlibHttpServer: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
-  =>  ( loggable: HttpServerEvent is Loggable, errorPage: WebserverErrorPage )
+  =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](false, true)
 
   given stdlibPublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
-  =>  ( loggable: HttpServerEvent is Loggable, errorPage: WebserverErrorPage )
+  =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](false, false)
 
   given nativeHttpServer: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
-  =>  ( loggable: HttpServerEvent is Loggable, errorPage: WebserverErrorPage )
+  =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](true, true)
 
   given nativePublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
-  =>  ( loggable: HttpServerEvent is Loggable, errorPage: WebserverErrorPage )
+  =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](true, false)
 

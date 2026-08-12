@@ -48,7 +48,7 @@ object PropertyDef:
   // One entry of the bundled `properties.json`. Only `syntax` is read; jacinta
   // ignores the dataset's other fields (initial, inherited, …).
   private object Entry:
-    given decodable: Tactic[JsonError] => Entry is Json.Decodable = Json.DecodableDerivation.derived
+    given decodable: Tactic[Json.Error] => Entry is Json.Decodable = Json.DecodableDerivation.derived
 
   private case class Entry(syntax: Text)
 

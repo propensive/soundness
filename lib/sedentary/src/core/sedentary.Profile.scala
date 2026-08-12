@@ -93,7 +93,7 @@ extends Rig:
             inclusion: Inclusion[report, Hotspots],
             suite:     Testable,
             codepoint: Codepoint )
-  :   Unit raises CompilerError raises RemoteError =
+  :   Unit raises Compiler.Error raises RemoteError =
 
     val testId = Test.Id(name, suite, codepoint)
     val frames0: Optional[Int] = frames

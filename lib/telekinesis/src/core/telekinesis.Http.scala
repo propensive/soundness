@@ -385,19 +385,19 @@ object Http:
     // unbounded amount) — the scan aborts mid-token once the cap is crossed.
     def parseHead
       ( cursor: Cursor[Data, {}]^, maxRequestLine: Int = 8192, maxHeaders: Int = 65536 )
-      ( using Tactic[HttpRequestError] )
+      ( using Tactic[Http.Request.Error] )
     :   Head =
 
-      import HttpRequestError.Reason
+      import Http.Request.Error.Reason
 
-      inline def expected(char: Char): Diagnostics ?=> HttpRequestError =
-        HttpRequestError(Reason.Expectation(char, cursor.peek.asInt.toChar))
+      inline def expected(char: Char): Diagnostics ?=> Http.Request.Error =
+        Http.Request.Error(Reason.Expectation(char, cursor.peek.asInt.toChar))
 
       def upTo(stop: Char, limit: Int, reason: Reason): Text = cursor.hold:
         val start = cursor.mark
 
         while !cursor.finished && !(cursor.peek == stop) do
-          if cursor.position.n0 > limit then abort(HttpRequestError(reason))
+          if cursor.position.n0 > limit then abort(Http.Request.Error(reason))
           cursor.next()
 
         Ascii(cursor.grab(start, cursor.mark)).show
@@ -417,7 +417,7 @@ object Http:
       val headerLimit = cursor.position.n0 + maxHeaders
 
       def readHeaders(headers: List[Http.Header]): List[Http.Header] =
-        if cursor.position.n0 > headerLimit then abort(HttpRequestError(Reason.HeadersTooLarge))
+        if cursor.position.n0 > headerLimit then abort(Http.Request.Error(Reason.HeadersTooLarge))
 
         if cursor.peek == '\r' then
           // Consume the final CRLF with `advance` rather than `next`/`expect`:
@@ -446,15 +446,15 @@ object Http:
 
       val hostText: Optional[Text] = headers.filter(_.key.lower == t"host").prim.let(_.value)
 
-      val host: Host = hostText.lay(abort(HttpRequestError(HttpRequestError.Reason.Host(t"")))):
+      val host: Host = hostText.lay(abort(Http.Request.Error(Http.Request.Error.Reason.Host(t"")))):
         text =>
           safely(text.as[Host]).or:
             safely(text.cut(t":").prim.or(text).as[Host]).or:
-              abort(HttpRequestError(HttpRequestError.Reason.Host(text)))
+              abort(Http.Request.Error(Http.Request.Error.Reason.Host(text)))
 
       Head(method, version, host, target, headers)
 
-    def parse(stream: Chain[Data])(using Tactic[HttpRequestError]): Request^ =
+    def parse(stream: Chain[Data])(using Tactic[Http.Request.Error]): Request^ =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
       val head = parseHead(cursor)
 
@@ -470,7 +470,7 @@ object Http:
     // endpoint. The body spring lends the cursor's remainder as a SINGLE-OWNER
     // stream: each mint resumes from wherever the previous reader stopped, and
     // explicit `memoize` replaces the Chain form's implicit caching.
-    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[HttpRequestError])
+    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[Http.Request.Error])
     :   Request^ =
 
       val cursor = Cursor[Data](input)
@@ -595,6 +595,25 @@ object Http:
           else
             ended = true
             Unset
+
+    // HttpRequestError → Http.Request.Error
+    object Error:
+      enum Reason(val number: Int) extends Clarification:
+        case Expectation(expected: Char, found: Char) extends Reason(1)
+        case Version(value: Text)                     extends Reason(2)
+        case Host(value: Text)                        extends Reason(3)
+        case UriTooLong                               extends Reason(4)
+        case HeadersTooLarge                          extends Reason(5)
+
+      given communicable: Reason is Communicable =
+        case Reason.Expectation(expected, found) => m"$found was found when $expected was expected"
+        case Reason.Version(value)               => m"the HTTP version $value was invalid"
+        case Reason.Host(value)                  => m"the host $value was missing or invalid"
+        case Reason.UriTooLong                   => m"the request line exceeded the maximum length"
+        case Reason.HeadersTooLarge              => m"the request headers exceeded the maximum size"
+
+    case class Error(reason: Http.Request.Error.Reason)(using Diagnostics)
+    extends fulminate.Error(367, reason.number)(m"could not parse HTTP request because $reason")
 
   enum Body:
     case Flowing(source: Spring[Data]^)
@@ -836,14 +855,14 @@ object Http:
       Stream(Iterator(head.in[Data]) ++ chunks)
 
     def parse(stream: Chain[Data], bodiless: Boolean = false)
-    :   Response raises HttpResponseError =
+    :   Response raises Http.Response.Error =
 
       parseCursor(Cursor[Data](stream.filter(_.nonEmpty).iterator), bodiless)
 
     // The endpoint form: the response is parsed straight off the connection's pull
     // endpoint, with no lazy-list view. The tactic is a plain using-parameter: a
     // context-function result may not hide the consumed endpoint.
-    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[HttpResponseError])
+    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[Http.Response.Error])
     :   Response =
 
       parseCursor(Cursor[Data](input), false)
@@ -852,7 +871,7 @@ object Http:
     // repeats the `GET` framing headers but carries no body (RFC 7230 §3.3.3).
     // (A separate overload: only one variant may have default arguments.)
     def parse(consume input: (Stream[Data] over Credit)^, bodiless: Boolean)
-      ( using Tactic[HttpResponseError] )
+      ( using Tactic[Http.Response.Error] )
     :   Response =
 
       parseCursor(Cursor[Data](input), bodiless)
@@ -864,9 +883,9 @@ object Http:
     // message body. The symmetric twin of `Request.parseHead`; factored out so a
     // client driving a single cursor across a kept-alive connection can frame
     // the body itself (e.g. an `HttpSession` lending streaming bodies).
-    def parseHead(cursor: Cursor[Data, {}]^)(using Tactic[HttpResponseError]): Head =
-      inline def expected(char: Char): Diagnostics ?=> HttpResponseError =
-        HttpResponseError(HttpResponseError.Reason.Expectation(char, cursor.peek.asInt.toChar))
+    def parseHead(cursor: Cursor[Data, {}]^)(using Tactic[Http.Response.Error]): Head =
+      inline def expected(char: Char): Diagnostics ?=> Http.Response.Error =
+        Http.Response.Error(Http.Response.Error.Reason.Expectation(char, cursor.peek.asInt.toChar))
 
       val version: Http.Version = cursor.hold:
         val start = cursor.mark
@@ -889,8 +908,8 @@ object Http:
           cursor.next()
 
           abort:
-            HttpResponseError:
-              HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)
+            Http.Response.Error:
+              Http.Response.Error.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show)
 
         var code = d1.asInt - '0'
         cursor.next()
@@ -900,8 +919,8 @@ object Http:
           cursor.next()
 
           abort:
-            HttpResponseError
-              ( HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show) )
+            Http.Response.Error
+              ( Http.Response.Error.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show) )
 
         code = code*10 + (d2.asInt - '0')
         cursor.next()
@@ -909,8 +928,8 @@ object Http:
 
         if d3.asInt < '0' || d3.asInt > '9' then
           abort:
-            HttpResponseError
-              ( HttpResponseError.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show) )
+            Http.Response.Error
+              ( Http.Response.Error.Reason.Status(Ascii(cursor.grab(start, cursor.mark)).show) )
 
         code*10 + (d3.asInt - '0')
 
@@ -918,7 +937,7 @@ object Http:
       cursor.expect(' ')(expected(' '))
 
       val status = Http.Status.unapply(code).optional.or:
-        abort(HttpResponseError(HttpResponseError.Reason.Status(code.toString.tt)))
+        abort(Http.Response.Error(Http.Response.Error.Reason.Status(code.toString.tt)))
 
       cursor.seek('\r'.toByte.asInstanceOf[cursor.addressable.Operand])
       cursor.next()
@@ -965,7 +984,7 @@ object Http:
       Head(version, status, headers.reverse)
 
     private def parseCursor(consume cursor: Cursor[Data, {}]^, bodiless: Boolean)
-      ( using Tactic[HttpResponseError] )
+      ( using Tactic[Http.Response.Error] )
     :   Response =
 
       val head: Head = parseHead(cursor)
@@ -1035,6 +1054,19 @@ object Http:
             if length <= 0 then Http.Body.Empty else framed(length)
 
       Response(version, status, headerList, body)
+
+    // HttpResponseError → Http.Response.Error
+    object Error:
+      enum Reason(val number: Int) extends Clarification:
+        case Expectation(expected: Char, found: Char) extends Reason(1)
+        case Status(value: Text)                      extends Reason(2)
+
+      given communicable: Reason is Communicable =
+        case Reason.Expectation(expected, found) => m"$found was found when $expected was expected"
+        case Reason.Status(value)                => m"the HTTP status code $value was invalid"
+
+    case class Error(reason: Http.Response.Error.Reason)(using Diagnostics)
+    extends fulminate.Error(366, reason.number)(m"could not parse HTTP response because $reason")
 
   // The body is capture-polymorphic (`Body^`): a server-side streamed response
   // legitimately retains the live connection it answers — the handler shape

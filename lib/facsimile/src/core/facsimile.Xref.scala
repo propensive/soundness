@@ -51,12 +51,12 @@ private[facsimile] object Xref:
   // Later (older) sections never override earlier entries, and the newest trailer's values
   // take precedence. When the cross-reference machinery is missing or corrupt — as it
   // frequently is in the wild — the whole file is scanned for objects instead (`rebuild`).
-  def load(source: ByteSource)(using Tactic[PdfError]): Xref =
+  def load(source: ByteSource)(using Tactic[Pdf.Error]): Xref =
     // Any structural failure in the cross-reference machinery drops through to a full-file
     // scan for objects.
     safely(strict(source)).or(rebuild(source))
 
-  private def strict(source: ByteSource)(using Tactic[PdfError]): Xref =
+  private def strict(source: ByteSource)(using Tactic[Pdf.Error]): Xref =
     val head = startxref(source)
 
     def recur
@@ -67,7 +67,7 @@ private[facsimile] object Xref:
     :   Xref =
 
       if visited.has(offset) || offset < 0 || offset >= source.size
-      then abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+      then abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
       val (classicEntries, sectionTrailer) = section(source, offset)
 
@@ -95,7 +95,7 @@ private[facsimile] object Xref:
   // Whether the section at `offset` is a cross-reference stream. The two forms are told apart
   // exactly as `section` tells them apart: a classic table opens with the `xref` keyword, a
   // stream with the object number of the indirect object holding it.
-  private def streamed(source: ByteSource, offset: Long): Boolean raises PdfError =
+  private def streamed(source: ByteSource, offset: Long): Boolean raises Pdf.Error =
     CosLexer(new Scan(source, offset)).next() match
       case CosToken.Keyword(word) if word.s == "xref" => false
       case _                                          => true
@@ -105,7 +105,7 @@ private[facsimile] object Xref:
   // appears later in the file). Object streams found this way are expanded to their compressed
   // members. The trailer is the last `trailer` dictionary if any, else synthesized by finding
   // the catalog among the recovered objects.
-  private[facsimile] def rebuild(source: ByteSource)(using Tactic[PdfError]): Xref =
+  private[facsimile] def rebuild(source: ByteSource)(using Tactic[Pdf.Error]): Xref =
     var entries = Map[Int, Entry]()
     val objectStreams = scala.collection.immutable.List.newBuilder[Int]
     val size = source.size
@@ -181,10 +181,10 @@ private[facsimile] object Xref:
   private def objStmMembers(source: ByteSource, body: Cos.Body): List[Int] =
     safely:
       val length = body.entries(t"Length").let(_.long)
-        . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Length")))).toInt
+        . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Length")))).toInt
 
       val count = body.entries(t"N").let(_.long)
-        . or(abort(PdfError(PdfError.Reason.MissingEntry(t"N")))).toInt
+        . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"N")))).toInt
 
       val raw = source.read(body.start, length)
       val chain = Filter.chain(body.entries(t"Filter"), body.entries(t"DecodeParms"))
@@ -196,7 +196,7 @@ private[facsimile] object Xref:
           case (CosToken.Integral(number), CosToken.Integral(_)) => number.toInt
 
           case _ =>
-            abort(PdfError(PdfError.Reason.CorruptStream(t"ObjStm")))
+            abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ObjStm")))
 
     . or(List())
 
@@ -234,9 +234,9 @@ private[facsimile] object Xref:
       safely:
         val lexer = CosLexer(new Scan(source, source.size - windowSize + i))
         lexer.next() // the `trailer` keyword
-        CosParser(lexer).value().dictionary.or(abort(PdfError(PdfError.Reason.Truncated)))
+        CosParser(lexer).value().dictionary.or(abort(Pdf.Error(Pdf.Error.Reason.Truncated)))
 
-  private def startxref(source: ByteSource)(using Tactic[PdfError]): Long =
+  private def startxref(source: ByteSource)(using Tactic[Pdf.Error]): Long =
     val windowSize = source.size.min(2048L).toInt
     val windowStart = source.size - windowSize
     val window = source.read(windowStart, windowSize)
@@ -245,7 +245,7 @@ private[facsimile] object Xref:
     var i = window.length - marker.length
 
     while i >= 0 && !matches(window, i, marker) do i -= 1
-    if i < 0 then abort(PdfError(PdfError.Reason.MissingStartxref))
+    if i < 0 then abort(Pdf.Error(Pdf.Error.Reason.MissingStartxref))
 
     val lexer = CosLexer(new Scan(source, windowStart + i))
 
@@ -253,7 +253,7 @@ private[facsimile] object Xref:
 
     lexer.next() match
       case CosToken.Integral(offset) => offset
-      case _                         => abort(PdfError(PdfError.Reason.MissingStartxref))
+      case _                         => abort(Pdf.Error(Pdf.Error.Reason.MissingStartxref))
 
   private def matches(window: Data, index: Int, marker: Text): Boolean =
     var j = 0
@@ -261,7 +261,7 @@ private[facsimile] object Xref:
     j == marker.length
 
   private def section(source: ByteSource, offset: Long)
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   (Map[Int, Entry], Map[Text, Cos]) =
 
     val lexer = CosLexer(new Scan(source, offset))
@@ -274,13 +274,13 @@ private[facsimile] object Xref:
         stream(source, offset)
 
       case _ =>
-        abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+        abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
   // A classic cross-reference table: subsections of fixed-format entries, then a trailer
   // dictionary. Entries are lexed rather than sliced at fixed widths, which also tolerates
   // the widespread 19-byte-line variant.
   private def classic(lexer: CosLexer, offset: Long)
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   (Map[Int, Entry], Map[Text, Cos]) =
 
     var entries = Map[Int, Entry]()
@@ -289,7 +289,7 @@ private[facsimile] object Xref:
       case CosToken.Integral(first) =>
         val count = lexer.next() match
           case CosToken.Integral(count) => count.toInt
-          case _                        => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+          case _                        => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
         for index <- 0 until count do
           val entry = (lexer.next(), lexer.next(), lexer.next()) match
@@ -298,10 +298,10 @@ private[facsimile] object Xref:
               kind.s match
                 case "n" => Entry.Direct(position, generation.toInt)
                 case "f" => Entry.Free
-                case _   => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+                case _   => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
             case _ =>
-              abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+              abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
           entries = entries.updated(first.toInt + index, entry)
 
@@ -310,10 +310,10 @@ private[facsimile] object Xref:
       case CosToken.Keyword(word) if word.s == "trailer" =>
         CosParser(lexer).value() match
           case Cos.Dictionary(trailer) => trailer
-          case _                       => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+          case _                       => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
       case _ =>
-        abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+        abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
     val trailer = subsections()
     (entries, trailer)
@@ -322,7 +322,7 @@ private[facsimile] object Xref:
   // its decoded payload holds binary rows of `/W`-specified field widths. Everything needed
   // here — `/Length`, `/W`, `/Index`, `/Size`, filters — is required by the spec to be direct.
   private def stream(source: ByteSource, offset: Long)
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   (Map[Int, Entry], Map[Text, Cos]) =
 
     val parser = CosParser(CosLexer(new Scan(source, offset)))
@@ -330,29 +330,29 @@ private[facsimile] object Xref:
     parser.indirect() match
       case (_, _, Cos.Body(dictionary, start)) =>
         val length = dictionary(t"Length").let(_.long)
-          . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Length")))).toInt
+          . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Length")))).toInt
 
         val raw = source.read(start, length)
-        if raw.length < length then abort(PdfError(PdfError.Reason.Truncated))
+        if raw.length < length then abort(Pdf.Error(Pdf.Error.Reason.Truncated))
 
         val chain = Filter.chain(dictionary(t"Filter"), dictionary(t"DecodeParms"))
         val data = Filter.decode(raw, chain)
 
         val widths: List[Int] = dictionary(t"W").let(_.elements)
-          . or(abort(PdfError(PdfError.Reason.MissingEntry(t"W"))))
-          . map(_.long.or(abort(PdfError(PdfError.Reason.TypeMismatch(t"W", t"an integer")))).toInt)
+          . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"W"))))
+          . map(_.long.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"W", t"an integer")))).toInt)
 
-        if widths.length != 3 then abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+        if widths.length != 3 then abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
         val size = dictionary(t"Size").let(_.long)
-          . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Size"))))
+          . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Size"))))
 
         val ranges: List[(Long, Long)] =
           dictionary(t"Index").let(_.elements).lay(List((0L, size))): elements =>
-            elements.map(_.long.or(abort(PdfError(PdfError.Reason.MalformedXref(offset)))))
+            elements.map(_.long.or(abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))))
             . grouped(2).to(List).map:
                 case List(first, count) => (first, count)
-                case _                  => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+                case _                  => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
         val rowLength = widths.sum
         var entries = Map[Int, Entry]()
@@ -361,7 +361,7 @@ private[facsimile] object Xref:
         for (first, count) <- ranges do
           for index <- 0L until count do
             if position + rowLength > data.length
-            then abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+            then abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
             // A zero-width first field defaults to type 1; other absent fields default to 0.
             val kind = if widths.stdlib(0) == 0 then 1L else field(data, position, widths.stdlib(0))
@@ -380,7 +380,7 @@ private[facsimile] object Xref:
         (entries, dictionary)
 
       case _ =>
-        abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+        abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
   private def field(data: Data, start: Int, width: Int): Long =
     var value = 0L

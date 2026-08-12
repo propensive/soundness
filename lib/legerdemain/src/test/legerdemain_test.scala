@@ -70,7 +70,7 @@ object Tests extends Suite(m"Legerdemain tests"):
     //       case Submission.Invalid(query) =>
     //         val errors =
     //           validate[Text](Errors()):
-    //             case error@EmailAddressError(_) => accrual + (focus.or(t"unknown"), error)
+    //             case error@EmailAddress.Error(_) => accrual + (focus.or(t"unknown"), error)
     //             case error@NameError(_, _, _)   => accrual + (focus.or(t"unknown"), error)
 
     //           . within(query.as[Group])

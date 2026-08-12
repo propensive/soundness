@@ -134,9 +134,9 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | telekinesis.core | `HttpClient→Http.Client`, `HttpError→Http.Error`, `HttpEvent→Http.Event`, `HttpRedirection→Http.Redirection`, `HttpRequestError→Http.Request.Error`, `HttpResponseError→Http.Response.Error` |
 | urticose.core | `HostnameError→Hostname.Error`, `EmailAddressError→EmailAddress.Error`, `MacAddressError→MacAddress.Error`, `NetworkInterfaceError→NetworkInterface.Error` |
 | urticose.url | `UrlError→Url.Error`, `UrlFragment→Url.Fragment` |
-| xenophile.typescript | `TypescriptDeclaration→Typescript.Declaration`, `TypescriptDialect→Typescript.Dialect`, `TypescriptError→Typescript.Error`, `TypescriptMember→Typescript.Member`, `TypescriptType→Typescript.Type`, `TypescriptParser→Typescript.Parser` |
-| xenophile.webidl | `WebIdlDefinition→WebIdl.Definition`, `WebIdlDialect→WebIdl.Dialect`, `WebIdlParser→WebIdl.Parser` |
-| xenophile.wit | `WitDeclaration→Wit.Declaration`, `WitDialect→Wit.Dialect`, `WitParser→Wit.Parser` |
+| xenophile.typescript | `TypescriptDeclaration→Typescript.Declaration` (with `Declared`, its sealed supertype), `TypescriptError→Typescript.Error`, `TypescriptMember→Typescript.Member`, `TypescriptType→Typescript.Type`, `TypescriptParser→Typescript.Parser` |
+| xenophile.webidl | `WebIdlDefinition→WebIdl.Definition`, `WebIdlArgument→WebIdl.Argument`, `WebIdlMember→WebIdl.Member`, `WebIdlField→WebIdl.Field`, `WebIdlError→WebIdl.Error`, `WebIdlParser→WebIdl.Parser` (`WebIdlDialect` stays: reflective) |
+| xenophile.wit | `WitFunction→Wit.Function`, `WitItem→Wit.Item`, `WitInterface→Wit.Interface`, `WitWorldModel→Wit.WorldModel`, `WitDocument→Wit.Document`, `WitParseError→Wit.ParseError`, `WitParser→Wit.Parser` (⚑ this row read `WitDeclaration→Wit.Declaration` until the third pass; no type of that name has ever existed — `xenophile.WitDeclaration.scala` is a container named after a type it does not declare. `WitDialect` stays: reflective) |
 | xylophone.core | `XmlError→Xml.Error`, `XPathError→XPath.Error` |
 | yossarian.core | `PtyEscapeError→Pty.EscapeError`, `PtyState→Pty.State` |
 | ypsiloid.core | `YamlError→Yaml.Error`, `YamlPrimitive→Yaml.Primitive`, `YamlPathError→YamlPath.Error` (`YamlPath` stays whole, per R2) |
@@ -330,10 +330,67 @@ carried `type Error`), and package-qualified references to our own nested types
 (`cordillera.Http2.Frame`, which a guard against rewriting foreign types like
 `jnh.HttpClient` will collapse if it only tests for a lowercase qualifier).
 
-## Execution shape (when implementation is approved)
+## Corrections from the third implementation pass (2026-08-11)
 
-One library per commit (the pilot shape), starting with the best-value targets:
-octogenarian (12 renames, empty `object Git`, zero blockers), then synesthesia, exegesis,
-enigmatic.cose, telekinesis.core, and outward. Each commit: move the types, delete donor
-files, fix the export file, sweep references (`grep -a`), clean-compile the library and
-its test module. `make attest` gates each PR.
+The remaining ~55 rows of the rename table were worked through, plus five of the six
+split-first candidates: **63 names left the umbrella's exported surface**, and the table is
+now exhausted. Six new rules, and one revert overturned.
+
+- **A donor file holding a taxonomy nests only if its members are not separately exported.**
+  The second pass's rule — a taxonomy moves into the namespace whole — needs that proviso.
+  `TerminalEvent` is a `sealed trait` over `Interrupt`, `Keypress`, `CtrlChar` and
+  `WindowsSignal`; `BlockCipherMode` and `BlockCipherPadding` are containers for `Cbc`,
+  `Ecb`, `Ctr`, `Cfb`, `Ofb`, `Pkcs7`, `Iso10126` and `NoPadding`. Every one of those is an
+  exported single-word name, so nesting the container silently renames all of them. That is
+  a wider API decision than nesting a satellite, and all three stay.
+- **A sealed trait pins its subtype's file too, not just its own.** The first pass recorded
+  that nesting `SvgDef` drags its subtypes along. The converse also bites: `Declared` could
+  not be *split out* of `xenophile.TypescriptDeclaration.scala`, because it is sealed and the
+  declaration enum is its only subtype. Sealing constrains the move in both directions; the
+  two move together.
+- **Shadowing a supertype is fixable by qualifying it, not a reason to revert.**
+  `ZipOpenable`/`ZipDataOpenable` were reverted in the first pass for shadowing the
+  `Openable` they extend. `extends aperture.Openable` fixes it, exactly as a nested `Error`
+  qualifies `fulminate.Error`. Both are now nested, as are stratiform's two openables.
+  Check for the qualified form before recording a shadowing revert.
+- **Check the outer object's *siblings* for the target name, not only the outer object.**
+  Two collisions came from one level deeper than the second pass's rule reaches:
+  `Wit.Function` is ambiguous with `Wit.Item.Function`, an enum case of a sibling member,
+  inside that enum's own body; and `Tel.Flag` is ambiguous with `Tels.Flag` — a type in a
+  *different* toplevel object — at every `import Tels.*` site within `object Tel`. The first
+  was worth qualifying; the second was not, and `TelFlag` stays whole.
+- **A donor's extension-method dependencies do not travel with its body.** Moving `LspProxy`
+  into `object Lsp` broke `upstream.session`, an extension the donor file imported via
+  `aperture.*` and the receiving file did not. Wildcard-import differences show up as
+  missing *extension methods* long before they show up as missing types, so diff the two
+  import lists rather than adding only what the type errors demand.
+- **Never re-sort a receiving file's imports.** `obligatory.JsonRpc.scala` ends with
+  `import httpBackends.virtualMachine`, a choice import that must follow `telekinesis.*`;
+  alphabetising the block moved it above and it stopped resolving. Insert new imports into
+  the alphabetical run and leave the trailing choice imports alone. Relatedly, scope a
+  donor's `scala.collection.immutable.{::, Nil}` imports to the member that needs them — at
+  file level they re-point the cons pattern for every other member of the namespace.
+
+Two further notes:
+
+- **`TarHeader` failed a third time, and the message is sharper than "invariance".** The
+  compiler reports that `^{}` is a *read-only* capture set and `^{any}` an *exclusive* one on
+  a stateful `Array[Byte]`, so the one cannot subsume the other. That is a read-only/exclusive
+  distinction, not merely `Array`'s invariance, which is probably why `caps.Pure` — which
+  speaks to purity, not exclusivity — did not rescue `Hpack` either.
+- **The wildcard-import fear is worth measuring.** The second pass predicted that nesting
+  `LspProxy` would collide at the fourteen `import Lsp.*` sites, since `Proxy` is a known
+  homonym. None of them is ambiguous. A wildcard over a namespace object is a hazard, not a
+  blocker; test it rather than abandoning the nesting.
+
+
+## Execution shape
+
+One library per commit (the pilot shape). Each commit: move the types, delete donor files,
+fix the export file, sweep references (`grep -a`), clean-compile the library and its test
+module. `make attest` gates each PR.
+
+Three passes have run this shape to completion; the rename table above is exhausted. What
+is left is recorded under "Next actions" in `api-reduction-candidates.md`: the three
+taxonomy containers, `TarHeader`, and the two independent pieces of work (`caps.Pure` for
+L2, and the namespace-wildcard survey).

@@ -35,5 +35,4 @@ package soundness
 export
   stratiform
   . { DynamicTelEnabler, dynamicTelAccess, Revision, Mutation, Stratiform, Tel, TelPath, Tel2,
-      Tel3, telConversion, TelFlag, TelHandle, TelOpenable, TelReader,
-      TelViewOpenable, Tels, Tels2, tel }
+      Tel3, telConversion, TelFlag, TelReader, Tels, Tels2, tel }

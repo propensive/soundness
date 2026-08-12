@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*
@@ -47,6 +48,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import telekinesis.*
+import turbulence.*
 import vacuous.*
 import zephyrine.*
 
@@ -84,7 +86,7 @@ object Sse:
   given textEncodable: Text is Encodable in Sse =
     text => Sse("message", List(text))
 
-  given decodable: Tactic[SseError] => Sse is Decodable in Text =
+  given decodable: Tactic[Sse.Error] => Sse is Decodable in Text =
     // The decode lambda closes over the resolution-scoped tactic, which shares the
     // instance's given-resolution lifetime; laundered pure per the codec-thunk seal
     // pattern (see rep/DECISIONS.md).
@@ -95,7 +97,7 @@ object Sse:
       var retry: Optional[Long] = Unset
 
       text.cut(Lf).each: line =>
-        line.offsetOf(t":").lay(raise(SseError(SseError.Reason.MalformedField))): ordinal =>
+        line.offsetOf(t":").lay(raise(Sse.Error(Sse.Error.Reason.MalformedField))): ordinal =>
           val n = ordinal.n0
           val value = line.skip(if line(n.z + 1) == ' ' then n + 2 else n + 1)
 
@@ -105,9 +107,9 @@ object Sse:
             case "id"    => id = value
 
             case "retry" =>
-              retry = safely(value.as[Long]).lest(SseError(SseError.Reason.BadRetryValue))
+              retry = safely(value.as[Long]).lest(Sse.Error(Sse.Error.Reason.BadRetryValue))
 
-            case _ => raise(SseError(SseError.Reason.UnknownField))
+            case _ => raise(Sse.Error(Sse.Error.Reason.UnknownField))
 
       Sse(event, data.reverse, id, retry)
 
@@ -135,6 +137,54 @@ object Sse:
 
       buffer.append("\n")
       buffer.toString().tt
+
+  // SseError → Sse.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case MalformedField   extends Reason(1)
+      case UnknownField     extends Reason(2)
+      case BadRetryValue    extends Reason(3)
+      case CapacityExceeded extends Reason(4)
+
+    given communicable: Reason is Communicable =
+      case Reason.MalformedField   => m"a line did not contain the expected `field: value` separator"
+      case Reason.BadRetryValue    => m"the `retry` field value could not be parsed as an integer"
+
+      case Reason.UnknownField =>
+        m"the field name was not one of `event`, `data`, `id`, or `retry`"
+
+      case Reason.CapacityExceeded =>
+        m"the requested replay range exceeded the source buffer capacity"
+
+  case class Error(reason: Sse.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(350, reason.number)(m"the server-sent event was not valid because $reason")
+
+  // SseSource → Sse.Source
+  class Source(capacity: Int):
+    private val mutex: Mutex = Mutex()
+    @scala.caps.unsafe.untrackedCaptures
+    private val buffer: scala.Array[Sse] = new scala.Array(capacity)
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var current: Int = 0
+    @scala.caps.unsafe.untrackedCaptures
+    private var spool: Relay[Sse] = Relay()
+
+    def put[entity: Encodable in Sse](value: entity): Unit = mutex:
+      val sse = value.encode.copy(id = current.show)
+      buffer.asInstanceOf[scala.Array[Sse]^](current%capacity) = sse
+      spool.put(sse)
+      current += 1
+
+    def stream(start: Optional[Int] = Unset): Chain[Sse] raises Error = mutex:
+      start.let: start =>
+        spool.stop()
+        spool = Relay()
+
+        if current - start - 1 > capacity then abort(Error(Error.Reason.CapacityExceeded)) else
+          ((start + 1) until current).map: index => spool.put(buffer(index%capacity))
+
+      Chain.from(spool.stream.records)
 
 case class Sse
   ( event: Text           = "message",

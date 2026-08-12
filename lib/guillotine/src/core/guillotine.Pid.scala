@@ -36,6 +36,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import prepositional.*
 import spectacular.*
 
@@ -49,6 +50,10 @@ object Pid:
   given decodable: (tactic: Tactic[NumberError]) => ((Pid is Decodable in Text)^{tactic}) = text =>
     try Pid(text.s.toLong) catch case error: Exception =>
       abort(NumberError(text, Int, NumberError.Reason.Unparseable))
+
+  // PidError → Pid.Error
+  case class Error(pid: Pid)(using Diagnostics)
+  extends fulminate.Error(909, 0)(m"the process with PID ${pid.value} is not running")
 
 case class Pid(value: Long):
   override def toString(): String = "\u21af"+value

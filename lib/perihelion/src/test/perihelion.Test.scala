@@ -195,27 +195,27 @@ object Tests extends Suite(m"Perihelion tests"):
       . assert(_ == (true, t"xy"))
 
       test(m"An unmasked client frame is rejected"):
-        capture[WebsocketError](parseFrame(frame(0x1, octets("x"), masked = false))).reason
-      . assert(_ == WebsocketError.Reason.Unmasked)
+        capture[Websocket.Error](parseFrame(frame(0x1, octets("x"), masked = false))).reason
+      . assert(_ == Websocket.Error.Reason.Unmasked)
 
       test(m"A frame with a reserved bit set is rejected"):
         val bytes = frame(0x1, octets("x"))
         bytes(0) = (bytes(0) | 0x40).toByte
 
-        capture[WebsocketError](parseFrame(bytes)).reason
-      . assert(_ == WebsocketError.Reason.ReservedBits)
+        capture[Websocket.Error](parseFrame(bytes)).reason
+      . assert(_ == Websocket.Error.Reason.ReservedBits)
 
       test(m"A reserved opcode is rejected"):
-        capture[WebsocketError](parseFrame(frame(0x3, octets("x")))).reason
-      . assert(_ == WebsocketError.Reason.BadOpcode(0x3))
+        capture[Websocket.Error](parseFrame(frame(0x3, octets("x")))).reason
+      . assert(_ == Websocket.Error.Reason.BadOpcode(0x3))
 
       test(m"A fragmented control frame is rejected"):
-        capture[WebsocketError](parseFrame(frame(0x9, octets("x"), fin = false))).reason
-      . assert(_ == WebsocketError.Reason.BadControl)
+        capture[Websocket.Error](parseFrame(frame(0x9, octets("x"), fin = false))).reason
+      . assert(_ == Websocket.Error.Reason.BadControl)
 
       test(m"An over-long control frame is rejected"):
-        capture[WebsocketError](parseFrame(frame(0x9, scala.Array.fill(126)(0x61.toByte)))).reason
-      . assert(_ == WebsocketError.Reason.BadControl)
+        capture[Websocket.Error](parseFrame(frame(0x9, scala.Array.fill(126)(0x61.toByte)))).reason
+      . assert(_ == Websocket.Error.Reason.BadControl)
 
       test(m"A 16-bit length frame parses fully"):
         parseFrame(frame(0x1, scala.Array.fill(200)(0x61.toByte))) match
@@ -236,12 +236,12 @@ object Tests extends Suite(m"Perihelion tests"):
       . assert(_ == 1005)
 
       test(m"A one-byte close payload is rejected"):
-        capture[WebsocketError](parseFrame(frame(0x8, scala.Array[Byte](0x03)))).reason
-      . assert(_ == WebsocketError.Reason.BadClose)
+        capture[Websocket.Error](parseFrame(frame(0x8, scala.Array[Byte](0x03)))).reason
+      . assert(_ == Websocket.Error.Reason.BadClose)
 
       test(m"An invalid close code is rejected"):
-        capture[WebsocketError](parseFrame(frame(0x8, closeBytes(1004, "")))).reason
-      . assert(_ == WebsocketError.Reason.BadClose)
+        capture[Websocket.Error](parseFrame(frame(0x8, closeBytes(1004, "")))).reason
+      . assert(_ == Websocket.Error.Reason.BadClose)
 
       // Simulates a live connection delivering a complete zero-payload
       // unmasked control frame (a server's empty Pong: 0x8a 0x00) and then
@@ -286,18 +286,18 @@ object Tests extends Suite(m"Perihelion tests"):
       . assert(_ == List(t"hello"))
 
       test(m"A new data frame mid-message is rejected"):
-        capture[WebsocketError]:
+        capture[Websocket.Error]:
           readMessages(frame(0x1, octets("he"), fin = false), frame(0x1, octets("llo")))
         . reason
-      . assert(_ == WebsocketError.Reason.BadFragmentation)
+      . assert(_ == Websocket.Error.Reason.BadFragmentation)
 
       test(m"A continuation with nothing to continue is rejected"):
-        capture[WebsocketError](readMessages(frame(0x0, octets("x")))).reason
-      . assert(_ == WebsocketError.Reason.BadFragmentation)
+        capture[Websocket.Error](readMessages(frame(0x0, octets("x")))).reason
+      . assert(_ == Websocket.Error.Reason.BadFragmentation)
 
       test(m"A text frame with invalid UTF-8 is rejected"):
-        capture[WebsocketError](readMessages(frame(0x1, scala.Array[Byte](0xc3.toByte, 0x28)))).reason
-      . assert(_ == WebsocketError.Reason.InvalidText)
+        capture[Websocket.Error](readMessages(frame(0x1, scala.Array[Byte](0xc3.toByte, 0x28)))).reason
+      . assert(_ == Websocket.Error.Reason.InvalidText)
 
     suite(m"Typed messages"):
       test(m"A Ping round-trips through the composed over-Json codec"):
@@ -340,8 +340,8 @@ object Tests extends Suite(m"Perihelion tests"):
 
       test(m"A client rejects a masked server frame"):
         val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".in[Data]).encode)
-        capture[WebsocketError](parseAs(Masking.Client(), masked)).reason
-      . assert(_ == WebsocketError.Reason.Masked)
+        capture[Websocket.Error](parseAs(Masking.Client(), masked)).reason
+      . assert(_ == Websocket.Error.Reason.Masked)
 
     supervise:
       suite(m"WebSocket echo"):
@@ -418,7 +418,7 @@ object Tests extends Suite(m"Perihelion tests"):
         . assert(_ == (true, 0x1, 8))
 
       suite(m"WebSocket client"):
-        // The client is Coaxial's `react` over the `WsUrl is Duplexable` transport. It
+        // The client is Coaxial's `react` over the `Websocket.Url is Duplexable` transport. It
         // is reactive (it acts on inbound messages), so the server greets on connect via
         // its `Channel`, and the client decodes the typed greeting and concludes.
         test(m"A client handshakes and decodes a server-pushed typed message"):
@@ -429,7 +429,7 @@ object Tests extends Suite(m"Perihelion tests"):
             websocket.channel.send(perihelion.Message.Text(Ping(7).in[Json].show))
             websocket
 
-          val url = t"ws://localhost:$port/".as[WsUrl]
+          val url = t"ws://localhost:$port/".as[Websocket.Url]
 
           val value = url.react(0): (ping: Ping over Json) =>
             Conclude(Ping(ping.value + 1).over[Json], ping.value)
@@ -448,7 +448,7 @@ object Tests extends Suite(m"Perihelion tests"):
             webSocket(): (ping: Ping over Json) =>
               Reply(Ping(ping.value + 1).over[Json], ())
 
-          val url = t"ws://localhost:$port/".as[WsUrl]
+          val url = t"ws://localhost:$port/".as[Websocket.Url]
 
           val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
             ping => Conclude(Ping(0).over[Json], ping.value)
@@ -472,7 +472,7 @@ object Tests extends Suite(m"Perihelion tests"):
               Reply(Ping(ping.value + 1).over[Json], ())
 
           given Tls = Tls(clientContext, verify = false)
-          val url = t"wss://localhost:$port/".as[WsUrl]
+          val url = t"wss://localhost:$port/".as[Websocket.Url]
 
           val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
             ping => Conclude(Ping(0).over[Json], ping.value)

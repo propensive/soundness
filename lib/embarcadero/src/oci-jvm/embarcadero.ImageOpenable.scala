@@ -47,26 +47,26 @@ import rudiments.*
 // `TarOpenable`. Split from `embarcadero.oci`'s cross-platform sources because it needs
 // `bitumen.jvm`; the in-memory `data.open[Image]` (via `ImageDataOpenable`) stays in the core.
 class ImageOpenable[path: Abstractable across Paths to Text]
-  ( using Tactic[OciError], Tactic[Tar.Error], Tactic[StreamError] )
+  ( using Tactic[Oci.Error], Tactic[Tar.Error], Tactic[StreamError] )
 extends Openable:
 
   type Self = path
   type Form = Image
   type Operand = Nothing
-  type Result = ImageHandle
+  type Result = Image.Handle
 
   def open[grants <: Grant, result]
     ( value: path, mode: Mode granting grants, flags: List[Nothing] )
-    ( block: ((ImageHandle & Granting[grants])^) ?=> result )
+    ( block: ((Image.Handle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.has(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
+    if mode.atoms.has(Write) then abort(Oci.Error(Oci.Error.Reason.WriteUnsupported))
 
     TarOpenable[path]().open(value, mode, Nil): tar ?=>
-      block(using new ImageHandle(tar.entries.to(List)) with Granting[grants] {})
+      block(using new Image.Handle(tar.entries.to(List)) with Granting[grants] {})
 
 // Re-exported through `soundness.*`, so `path.open[Image]` resolves on the JVM as before.
 given imagePathOpenable: [path: Abstractable across Paths to Text]
-=>  ( ociTactic: Tactic[OciError], tarTactic: Tactic[Tar.Error], streamTactic: Tactic[StreamError] )
+=>  ( ociTactic: Tactic[Oci.Error], tarTactic: Tactic[Tar.Error], streamTactic: Tactic[StreamError] )
 =>  ( ImageOpenable[path]^{ociTactic, tarTactic, streamTactic} ) =
   ImageOpenable[path]

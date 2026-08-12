@@ -49,7 +49,7 @@ object CaptureTests extends Suite(m"Terminal confinement tests"):
   def run(): Unit =
     test(m"the Terminal capability cannot be returned from interactive"):
       demilitarize:
-        def attempt(using Console, Monitor, Probate, Environment, Every[TerminalFeature])
+        def attempt(using Console, Monitor, Probate, Environment, Every[Terminal.Feature])
         :   Terminal =
           interactive(summon[Terminal])
       . map(_.message)
@@ -60,14 +60,14 @@ object CaptureTests extends Suite(m"Terminal confinement tests"):
     // terminal itself demonstrates confinement.
     test(m"a closure over the Terminal cannot escape interactive"):
       demilitarize:
-        def attempt(using Console, Monitor, Probate, Environment, Every[TerminalFeature])
+        def attempt(using Console, Monitor, Probate, Environment, Every[Terminal.Feature])
         :   () => Int =
           interactive(() => summon[Terminal].knownColumns)
     . assert(_.nonEmpty)
 
     test(m"the Terminal cannot be stashed in an outer variable"):
       demilitarize:
-        def attempt(using Console, Monitor, Probate, Environment, Every[TerminalFeature]): Unit =
+        def attempt(using Console, Monitor, Probate, Environment, Every[Terminal.Feature]): Unit =
           var stash: () => Unit = () => ()
           interactive:
             stash = () => { summon[Terminal].knownColumns; () }

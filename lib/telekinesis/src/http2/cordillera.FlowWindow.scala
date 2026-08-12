@@ -30,30 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package guillotine
+package cordillera
 
-import scala.language.experimental.pureFunctions
+import java.util.concurrent.locks as jucl
 
-import java.io as ji
+import scala.math
+import scala.caps
 
-import anticipation.*
-import contingency.*
-import hieroglyph.*
-import prepositional.*
-import turbulence.*
+import proscenium.*
 
-// The standard input of a `Subprocess`, exposed as a sink so that writing to a process's input
-// never surfaces `java.io.OutputStream` in guillotine's public API. The `Writable` instances
-// delegate to turbulence's `OutputStream` writers.
-object ProcessInput:
-  given data: (streamCut: Emit[StreamError])
-  =>  ((ProcessInput is Writable by Data)^{streamCut}) =
-    (stdin, stream) =>
-      summon[(ji.OutputStream is Writable by Data)^].write(stdin.outputStream, stream)
+// A single HTTP/2 flow-control send window (RFC 7540 §6.9): a signed byte
+// budget the peer grants us for sending DATA. `acquire` blocks the sending
+// fiber until at least one byte is available and returns up to `n` (so a large
+// body drains as the window opens); `release` (from an inbound WINDOW_UPDATE)
+// tops it up and wakes waiters. A `ReentrantLock`/`Condition` rather than
+// `synchronized`, so a blocked virtual thread unmounts its carrier.
+class FlowWindow(initial: Int):
+  private val lock: jucl.ReentrantLock = jucl.ReentrantLock()
+  private val replenished: jucl.Condition = lock.newCondition().nn
 
-  given text: (streamCut: Emit[StreamError], encoder: CharEncoder)
-  =>  ((ProcessInput is Writable by Text)^{streamCut}) =
-    (stdin, stream) =>
-      summon[(ji.OutputStream is Writable by Text)^].write(stdin.outputStream, stream)
+  // Guarded by `lock`; reached only through this window's own methods.
+  @caps.unsafe.untrackedCaptures
+  private var value: Long = initial.toLong
 
-class ProcessInput private[guillotine] (private[guillotine] val outputStream: ji.OutputStream)
+  def acquire(n: Int): Int =
+    lock.lock()
+    try
+      while value <= 0 do replenished.await()
+      val take: Int = math.min(n.toLong, value).toInt
+      value -= take
+      take
+    finally lock.unlock()
+
+  def release(increment: Int): Unit =
+    lock.lock()
+    try
+      value += increment.toLong
+      replenished.signalAll()
+    finally lock.unlock()

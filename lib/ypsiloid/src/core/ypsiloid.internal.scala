@@ -91,7 +91,7 @@ object internal:
     (cleaned, spreads)
 
   // Reuses `YamlPath`'s own `Decodable` for validation: the literal is decoded
-  // at macro-expansion time and, if it fails, the `YamlPathError`'s offset is
+  // at macro-expansion time and, if it fails, the `YamlPath.Error`'s offset is
   // mapped back to a source position so the error points exactly at the
   // offending character. Mirrors `jacinta.internal.jsonPointer`.
   def yamlPath[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
@@ -116,7 +116,7 @@ object internal:
     val start: Int = firstOrigin[origins]
 
     try unsafely(raw.tt.as[YamlPath]) catch
-      case error: YamlPathError =>
+      case error: YamlPath.Error =>
         val sourceFile = Position.ofMacroExpansion.sourceFile
 
         val position = sourceFile.content match

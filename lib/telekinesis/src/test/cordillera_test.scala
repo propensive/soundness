@@ -317,7 +317,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       test(m"the server role serves the client role over an in-memory pair"):
         supervise:
           val (clientSide, serverSide) = pair()
-          val server = Http2ServerConnection(serverSide)
+          val server = Http2.ServerConnection(serverSide)
 
           // The serve loop: one handler per accepted stream, echoing the
           // decoded request's method and target through a real `Http.Response`.
@@ -327,7 +327,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
           daemon:
             safely:
-              val server0 = serverRef.asInstanceOf[Http2ServerConnection]
+              val server0 = serverRef.asInstanceOf[Http2.ServerConnection]
 
               server0.accepted.stream.records.each: stream =>
                 unsafely:
@@ -364,12 +364,12 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       test(m"the server role emits response trailers the client reads"):
         supervise:
           val (clientSide, serverSide) = pair()
-          val server = Http2ServerConnection(serverSide)
+          val server = Http2.ServerConnection(serverSide)
           val serverRef: AnyRef = server.asInstanceOf[AnyRef]
 
           daemon:
             safely:
-              val server0 = serverRef.asInstanceOf[Http2ServerConnection]
+              val server0 = serverRef.asInstanceOf[Http2.ServerConnection]
 
               server0.accepted.stream.records.each: stream =>
                 unsafely:
@@ -420,7 +420,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       test(m"a response larger than the connection window streams intact"):
         supervise:
           val (clientSide, serverSide) = pair()
-          val server = Http2ServerConnection(serverSide)
+          val server = Http2.ServerConnection(serverSide)
           val serverRef: AnyRef = server.asInstanceOf[AnyRef]
 
           // A body well over the 65535-byte connection window, so the server
@@ -431,7 +431,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
           daemon:
             safely:
-              val server0 = serverRef.asInstanceOf[Http2ServerConnection]
+              val server0 = serverRef.asInstanceOf[Http2.ServerConnection]
               val body = payloadRef.asInstanceOf[Data]
 
               server0.accepted.stream.records.each: stream =>

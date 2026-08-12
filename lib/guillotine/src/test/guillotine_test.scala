@@ -453,10 +453,10 @@ object Tests extends Suite(m"Guillotine tests"):
         Process(cur.pid).pid
       . assert(_ == Process().pid)
 
-      test(m"Process(invalid pid) raises PidError"):
+      test(m"Process(invalid pid) raises Pid.Error"):
         // `.pid` rather than the `Process` itself: the fresh capability may not leak into
         // `capture`'s result.
-        capture[PidError](Process(Pid(Long.MaxValue)).pid)
+        capture[Pid.Error](Process(Pid(Long.MaxValue)).pid)
       . assert(_.pid == Pid(Long.MaxValue))
 
       test(m"current process has a parent"):

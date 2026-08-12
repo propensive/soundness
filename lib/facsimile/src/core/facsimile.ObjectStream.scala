@@ -44,7 +44,7 @@ import vacuous.*
 // into one compressed stream. The header is a table of `number offset` pairs; each object is
 // parsed on demand from the decoded payload.
 private[facsimile] object ObjectStream:
-  def apply(data: Data, first: Int, count: Int)(using Tactic[PdfError]): ObjectStream =
+  def apply(data: Data, first: Int, count: Int)(using Tactic[Pdf.Error]): ObjectStream =
     val lexer = CosLexer(Scan(data))
     var offsets = Map[Int, Int]()
 
@@ -53,12 +53,12 @@ private[facsimile] object ObjectStream:
         offsets = offsets.updated(number.toInt, offset.toInt)
 
       case _ =>
-        abort(PdfError(PdfError.Reason.CorruptStream(t"ObjStm")))
+        abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ObjStm")))
 
     new ObjectStream(data, first, offsets)
 
 private[facsimile] class ObjectStream(data: Data, first: Int, offsets: Map[Int, Int]):
-  def apply(number: Int)(using Tactic[PdfError]): Optional[Cos] = offsets(number).let: offset =>
+  def apply(number: Int)(using Tactic[Pdf.Error]): Optional[Cos] = offsets(number).let: offset =>
     val scan = Scan(data)
     scan.skip(first.toLong + offset)
     CosParser(CosLexer(scan)).value()

@@ -107,7 +107,7 @@ object internal:
       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
       allAnnotations.exists(_.tpe.typeSymbol == resourceType)
 
-    val jsonErrors = Expr.summon[Tactic[JsonError]].getOrElse:
+    val jsonErrors = Expr.summon[Tactic[Json.Error]].getOrElse:
       halt(m"could not find a contextual `Tactic[McpError]` instance")
 
     // This has been written as a partial function because the more natural way of writing it,
@@ -117,7 +117,7 @@ object internal:
           {
             case target: `interface` =>
               (method: Text, input: Json, client: Mcp.Client) =>
-                given Tactic[JsonError] = $jsonErrors
+                given Tactic[Json.Error] = $jsonErrors
 
                 val request = input.as[Map[Text, Json]]
 
@@ -202,7 +202,7 @@ object internal:
           {
             case target: `interface` =>
               (method: Text, input: Map[Text, Text], client: Mcp.Client) =>
-                given Tactic[JsonError] = $jsonErrors
+                given Tactic[Json.Error] = $jsonErrors
 
                 $ {
                     val cases = promptMethods.map: method =>

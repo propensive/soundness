@@ -44,16 +44,16 @@ import vacuous.*
 // leaves carry sorted `/Names` or `/Nums` pair arrays. Both flatten to their in-order pairs,
 // with reference cycles guarded.
 private[facsimile] object Trees:
-  def names(root: Cos)(using Pdf)(using Tactic[PdfError]): List[(Text, Cos)] =
+  def names(root: Cos)(using Pdf)(using Tactic[Pdf.Error]): List[(Text, Cos)] =
     pairs(root, t"Names", Set()).bind: (key, value) =>
       key.text.let(text => List((text, value))).or(List())
 
-  def numbers(root: Cos)(using Pdf)(using Tactic[PdfError]): List[(Long, Cos)] =
+  def numbers(root: Cos)(using Pdf)(using Tactic[Pdf.Error]): List[(Long, Cos)] =
     pairs(root, t"Nums", Set()).bind: (key, value) =>
       key.long.let(number => List((number, value))).or(List())
 
   private def pairs(node: Cos, key: Text, visited: Set[Int])(using pdf: Pdf)
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   List[(Cos, Cos)] =
 
     node match
@@ -69,7 +69,7 @@ private[facsimile] object Trees:
         List()
 
   private def leaf(entries: Map[Text, Cos], key: Text)(using pdf: Pdf)
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   List[(Cos, Cos)] =
 
     pdf.resolved(entries(key).or(Cos.Nil)).elements.lay(List()): elements =>

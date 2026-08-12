@@ -51,9 +51,14 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
+object JavaServlet:
+  // JavaServletFn → JavaServlet.Fn
+  open class Fn(handle: HttpConnection => Http.Response)
+  extends JavaServlet(handle)
+
 // `handle` is a plain function (not a context function): with `HttpConnection` a capability,
 // a context-function class parameter cannot be applied from the synthesized superclass
-// argument of subclasses like `JavaServletFn` (capture-root unification).
+// argument of subclasses like `JavaServlet.Fn` (capture-root unification).
 open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest)
     ( using Tactic[StreamError] )
@@ -64,7 +69,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
 
   protected def makeConnection
     ( request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse )
-    ( using streamError: Tactic[StreamError], hostnameError: Tactic[HostnameError] )
+    ( using streamError: Tactic[StreamError], hostnameError: Tactic[Hostname.Error] )
   :   HttpConnection^ =
 
     val uri = request.getRequestURI.nn.tt
@@ -148,7 +153,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
       case error @ StreamError(_) =>
         error.printStackTrace(System.out)
 
-      case error @ HostnameError(_, _) =>
+      case error @ Hostname.Error(_, _) =>
         error.printStackTrace(System.out)
         try response.setStatus(400) catch case NonFatal(_) => ()
 

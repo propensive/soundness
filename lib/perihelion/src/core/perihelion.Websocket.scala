@@ -114,22 +114,22 @@ class Channel()(using masking: Masking, buffering: Buffering):
     // publishing, but an interactive protocol must deliver each frame promptly.
     intake.flush()
 
-  def send(message: Message): Unit logs WebsocketEvent =
-    Log.fine(WebsocketEvent.Sent(message.bytes.length))
+  def send(message: Message): Unit logs Websocket.Event =
+    Log.fine(Websocket.Event.Sent(message.bytes.length))
     // One message serializes to one complete frame; see `Transmissible`.
     enqueue(Message.transmissible.serialize(message).memoize)
 
   def stop(): Unit = synchronized(intake.finish())
 
-  def close(code: Int = 1000): Unit logs WebsocketEvent =
-    Log.info(WebsocketEvent.Closed(code))
+  def close(code: Int = 1000): Unit logs Websocket.Event =
+    Log.info(Websocket.Event.Closed(code))
     enqueue(Frame.Close(code, Data()).encode)
     stop()
 
 // Reads client frames off the connection, reassembles fragmented messages,
 // answers Ping with Pong, and ends (stopping the outgoing side) when the peer
-// sends Close. Protocol violations raise `WebsocketError`.
-class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError], Masking):
+// sends Close. Protocol violations raise `Websocket.Error`.
+class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error], Masking):
   def messages: Chain[Message] =
     // Deferred: constructing a stream-backed `Cursor` performs its first
     // refill, which on a live connection blocks until bytes arrive. The
@@ -162,7 +162,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
       // incrementally and emitting it once `fin` is seen.
       def extend(text: Boolean, data: Data, fin: Boolean): Chain[Message] =
         if text && !validUtf8(data, fin)
-        then abort(WebsocketError(WebsocketError.Reason.InvalidText))
+        then abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
 
         if fin then emit(text, data) #:: recur(Unset) else recur((text, data))
 
@@ -171,7 +171,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
       def started(fin: Boolean, text: Boolean, data: Data, partial: Optional[(Boolean, Data)])
       :   Chain[Message] =
 
-        if partial.present then abort(WebsocketError(WebsocketError.Reason.BadFragmentation))
+        if partial.present then abort(Websocket.Error(Websocket.Error.Reason.BadFragmentation))
         else extend(text, data, fin)
 
       def recur(partial: Optional[(Boolean, Data)]): Chain[Message] =
@@ -187,7 +187,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
             recur(partial)
 
           case Frame.Close(code, reason) =>
-            if !validUtf8(reason, true) then abort(WebsocketError(WebsocketError.Reason.InvalidText))
+            if !validUtf8(reason, true) then abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
             channel.enqueue(Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
             channel.stop()
             Chain()
@@ -196,7 +196,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
           case Frame.Binary(fin, data) => started(fin, false, data, partial)
 
           case Frame.Continuation(fin, data) =>
-            partial.lay(abort(WebsocketError(WebsocketError.Reason.BadFragmentation))):
+            partial.lay(abort(Websocket.Error(Websocket.Error.Reason.BadFragmentation))):
               (text, accumulated) =>
                 extend(text, accumulated ++ data, fin)
 
@@ -222,6 +222,95 @@ object Websocket:
         // The channel's reader endpoint is a singleton: the upgrade body is
         // materialized exactly once, by the server's response writer.
         ( Http.Body.Flowing(() => websocket.channel.stream) )
+
+  // WsUrl → Websocket.Url
+  // A `ws://` or `wss://` URL. `Url` decoding is scheme-generic, so a `Websocket.Url` parses
+  // with no bespoke scheme machinery; the port defaults to 80 (`ws`) or 443 (`wss`) when the
+  // authority omits it. A `wss://` connection is opened over TLS (via Coaxial's
+  // `SecureEndpoint`), configured by the `Tls` capability in scope (system trust store and
+  // hostname verification by default).
+  type Url = urticose.Url["ws" | "wss"]
+
+  // WebsocketError → Websocket.Error
+  object Error:
+    // Each reason carries the RFC 6455 close code the server sends before closing.
+    enum Reason(val number: Int, val closeCode: Int) extends Clarification:
+      case Unmasked                extends Reason(1, 1002)
+      case BadOpcode(code: Int)    extends Reason(2, 1002)
+      case BadControl              extends Reason(3, 1002)
+      case BadFragmentation        extends Reason(4, 1002)
+      case TooLarge(size: Long)    extends Reason(5, 1009)
+      case InvalidText             extends Reason(6, 1007)
+      case ReservedBits            extends Reason(7, 1002)
+      case BadClose                extends Reason(8, 1002)
+      case Masked                  extends Reason(9, 1002)
+      case Handshake(detail: Text) extends Reason(10, 1002)
+
+    given communicable: Reason is Communicable =
+      case Reason.Unmasked          => m"the client sent an unmasked frame"
+      case Reason.BadOpcode(code)   => m"the frame used the reserved opcode $code"
+      case Reason.BadControl        => m"a control frame was fragmented or exceeded 125 bytes"
+      case Reason.BadFragmentation  => m"the message fragmentation was invalid"
+      case Reason.TooLarge(size)    => m"the frame payload of $size bytes exceeded the limit"
+      case Reason.InvalidText       => m"a text frame contained invalid UTF-8"
+      case Reason.ReservedBits      => m"a reserved header bit (RSV1/2/3) was set"
+      case Reason.BadClose          => m"the close frame had a malformed payload or invalid code"
+      case Reason.Masked            => m"the server sent a masked frame"
+      case Reason.Handshake(detail) => m"the WebSocket handshake failed because $detail"
+
+  case class Error(reason: Websocket.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(368, reason.number)(m"the WebSocket protocol was violated because $reason")
+
+  // WebsocketEvent → Websocket.Event
+  object Event:
+    given communicable: Websocket.Event is Communicable =
+      case Sent(bytes)     => m"sent a $bytes-byte websocket message"
+      case Received(bytes) => m"received a $bytes-byte websocket message"
+      case Closed(code)    => m"closed the websocket connection with code $code"
+
+  enum Event:
+    case Sent(bytes: Int) extends Websocket.Event, Log.Network, Log.Protocol
+    case Received(bytes: Int) extends Websocket.Event, Log.Network, Log.Protocol
+    case Closed(code: Int) extends Websocket.Event, Log.Network, Log.Protocol
+
+  // WsConnection → Websocket.Connection
+  // A live WebSocket client connection: the underlying byte `Duplex`, the outgoing frame
+  // `Channel` (masking each frame with `Masking.Client`), the reassembled inbound frame
+  // stream left after the `101` handshake, and the background pump copying spooled frames
+  // onto the socket. It is the `Connection` type of the `Websocket.Url is Duplexable` instance
+  // (`wsClient`), so a client is driven by Coaxial's `react`/`exchange` — or lent directly
+  // by a session scope (`url.session`), whose free-form send-and-read style these methods
+  // serve.
+  class Connection
+    ( private[perihelion] val duplex:  Duplex,
+      private[perihelion] val channel: Channel,
+      private[perihelion] val masking: Masking,
+      // The connection's pull endpoint (a neutral `AnyRef` carrier for the exclusive
+      // `Stream[Data] over Credit`), already advanced past the `101` handshake.
+      private[perihelion] val inbound: AnyRef,
+      private[perihelion] val pump:    Daemon ):
+
+    // The reassembled inbound messages, one element per complete message: Ping/Pong and
+    // Close are handled by the shared `Reader`, and chunk boundaries frame messages.
+    def messages(using Tactic[Websocket.Error]): (Stream[Data] over Credit)^{this, caps.any} =
+      given Masking = masking
+
+      val stream =
+        Reader(() => inbound.asInstanceOf[(Stream[Data] over Credit)^], channel)
+        . messages.map(_.bytes)
+
+      Stream(stream.stdlib.iterator)
+
+    // Sends one message as one complete frame, masked at the `Channel` boundary.
+    def send(consume message: (Stream[Data] over Credit)^): Unit =
+      channel.enqueue(message.memoize)
+
+    def close()(using Monitor^): Unit =
+      given Masking = masking
+      safely(channel.enqueue(Frame.Close(1000, Data()).encode))
+      channel.stop()
+      safely(pump.attend())
+      duplex.close()
 
 // The `Servable` carrier for a WebSocket handler. On serve it produces the `101`
 // handshake response whose body is the outgoing frame stream; the handler runs
@@ -259,7 +348,7 @@ class Websocket[message, state]
 
     async:
       recover:
-        case error: WebsocketError =>
+        case error: Websocket.Error =>
           safely(channel0.close(error.reason.closeCode))
           initial0
 
@@ -270,7 +359,7 @@ class Websocket[message, state]
 
           def loop(messages: Chain[Message], state: state): state =
             messages.flow(channel0.stop() yet state):
-              Log.fine(WebsocketEvent.Received(next.bytes.length))
+              Log.fine(Websocket.Event.Received(next.bytes.length))
 
               handleRef.asInstanceOf[state => message => Control[state]]
                 (state)(decodeRef.asInstanceOf[Message => message](next)) match

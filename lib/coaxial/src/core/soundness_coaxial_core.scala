@@ -35,7 +35,7 @@ package soundness
 export
   coaxial
   . { Bindable, BindError, Connectable, connectableSessional, ConnectionError, Control,
-      DomainSocket, DomainSocketEndpoint, duplex, Duplex, Duplexable, exchange, Ingressive,
+      DomainSocket, duplex, Duplex, Duplexable, exchange, Ingressive,
       listen, Packet, react, Routable, Transmitter, Serviceable, SocketBackend, SocketEvent,
       SocketOption, SocketService, Transmissible, transmit, UdpResponse }
 

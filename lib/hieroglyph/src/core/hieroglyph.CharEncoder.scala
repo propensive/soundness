@@ -32,6 +32,7 @@
                                                                                                   */
 package hieroglyph
 
+import fulminate.*
 import proscenium.compat.*
 
 import java.nio as jn, jn.charset as jnc
@@ -47,6 +48,11 @@ object CharEncoder:
 
   def unapply(name: Text): Option[CharEncoder] =
     Encoding.codecs.get(name.s.toLowerCase.nn.tt).map(CharEncoder(_))
+
+  // CharEncodeError → CharEncoder.Error
+  case class Error(char: Char, encoding: Encoding)(using Diagnostics)
+  extends fulminate.Error(282, 0)
+    ( m"character $char cannot be encoded with the encoding $encoding" )
 
 class CharEncoder(val encoding: Encoding { type CanEncode = true })
 extends Encodable, Findable:

@@ -79,7 +79,7 @@ object Scalac:
     given sessional: [version <: Versions, universe <: Universe]
     =>  ( system:   System,
           emission: Universe.Emission[universe],
-          tactic:   Tactic[CompilerError],
+          tactic:   Tactic[Compiler.Error],
           loggable: (CompileEvent is Loggable)^ )
     =>  ( ScalacSessional[version, universe]^{tactic, loggable, scala.caps.any} ) =
 
@@ -107,7 +107,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Probate, Universe.Emission[universe] )
-    ( using Tactic[CompilerError], (CompileEvent is Loggable)^ )
+    ( using Tactic[Compiler.Error], (CompileEvent is Loggable)^ )
   :   CompileProcess =
 
     val scalacProcess: CompileProcess = CompileProcess()

@@ -45,5 +45,5 @@ trait RequestServable:
   // stream, and is written out by the server within the connection's lifetime.
   def handle(handle: (connection: HttpConnection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
-    ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
+    ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
   :   Service^

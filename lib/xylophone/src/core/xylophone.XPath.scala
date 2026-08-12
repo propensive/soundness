@@ -35,7 +35,9 @@ package xylophone
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import serpentine.*
@@ -77,11 +79,11 @@ object XPath extends Root("/"):
   // reporting the offset of any error. Each step is interpreted by `parseStep`;
   // an unrecognised (e.g. empty, or `name[x]` with a non-numeric ordinal) step
   // is a `BadStep`.
-  given decodable: (tactic: Tactic[XPathError]) => ((XPath is Decodable in Text)^{tactic}) = text =>
+  given decodable: (tactic: Tactic[XPath.Error]) => ((XPath is Decodable in Text)^{tactic}) = text =>
     val string = text.s
 
     if string.isEmpty || string.charAt(0) != '/'
-    then abort(XPathError(XPathError.Reason.ExpectedSlash, 0))
+    then abort(XPath.Error(XPath.Error.Reason.ExpectedSlash, 0))
     else
       var xpath: XPath = XPath()
       var offset = 1
@@ -91,7 +93,7 @@ object XPath extends Root("/"):
         val end = if slash < 0 then string.length else slash
 
         parseStep(string.substring(offset, end).nn.tt) match
-          case Unset => abort(XPathError(XPathError.Reason.BadStep, offset))
+          case Unset => abort(XPath.Error(XPath.Error.Reason.BadStep, offset))
 
           case step => step.asInstanceOf[Either[Text, (Text, Int)]] match
             case Left(name)       => xpath = xpath.attribute(name)
@@ -119,6 +121,22 @@ object XPath extends Root("/"):
         catch case _: NumberFormatException => Unset
       else
         Right((segment, 1))
+
+  // XPathError → XPath.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case ExpectedSlash extends Reason(1)
+      case BadStep       extends Reason(2)
+
+    given communicable: Reason is Communicable =
+      case Reason.ExpectedSlash => m"an XPath must begin with '/'"
+      case Reason.BadStep       => m"the path step is not a valid XPath step"
+
+  // `offset` is the character index, within the path text, where the error was
+  // detected; consumers (e.g. the `xp"…"` interpolator) use it to position a
+  // compile-time error precisely.
+  case class Error(reason: XPath.Error.Reason, offset: Int)(using Diagnostics)
+  extends fulminate.Error(562, reason.number)(m"the XPath was not valid because $reason")
 
 case class XPath(path: Path on XPath = XPath):
   def element(name: Text, ordinal: Int = 1): XPath =

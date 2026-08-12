@@ -58,7 +58,10 @@ object Javac:
   def refresh(): Unit = Javac = jt.ToolProvider.getSystemJavaCompiler().nn
   def compiler(): jt.JavaCompiler = Javac
 
-case class Javac(options: List[JavacOption]):
+  // JavacOption → Javac.Option
+  case class Option(flags: Text*)
+
+case class Javac(options: List[Javac.Option]):
   case class JavaSource(name: Text, code: Text)
   extends jt.SimpleJavaFileObject
     ( jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE ):
@@ -67,7 +70,7 @@ case class Javac(options: List[JavacOption]):
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Probate )
-  :   CompileProcess logs CompileEvent raises CompilerError =
+  :   CompileProcess logs CompileEvent raises Compiler.Error =
 
     Log.info(CompileEvent.Start)
     val process: CompileProcess = CompileProcess()

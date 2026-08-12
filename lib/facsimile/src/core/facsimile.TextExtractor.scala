@@ -46,17 +46,17 @@ import vacuous.*
 // are still to hand — the page's plain text: content order, a space where consecutive runs
 // on a baseline leave a gap, a newline where the baseline moves.
 private[facsimile] object TextExtractor:
-  def extract(operators: List[PdfOperator], fonts: Map[Text, PdfFont], scale: Double)
+  def extract(operators: List[Pdf.Operator], fonts: Map[Text, Pdf.Font], scale: Double)
   :   (List[TextRun], Text) =
 
     val runs = scala.collection.immutable.List.newBuilder[TextRun]
     val text = StringBuilder()
 
-    var ctm = PdfMatrix.Identity
-    var stack: List[PdfMatrix] = List()
-    var tm = PdfMatrix.Identity
-    var tlm = PdfMatrix.Identity
-    var font: Optional[PdfFont] = Unset
+    var ctm = Pdf.Matrix.Identity
+    var stack: List[Pdf.Matrix] = List()
+    var tm = Pdf.Matrix.Identity
+    var tlm = Pdf.Matrix.Identity
+    var font: Optional[Pdf.Font] = Unset
     var size = 0.0
     var charSpacing = 0.0
     var wordSpacing = 0.0
@@ -69,7 +69,7 @@ private[facsimile] object TextExtractor:
     var lastY: Optional[Double] = Unset
 
     def offset(dx: Double, dy: Double): Unit =
-      tlm = PdfMatrix(1, 0, 0, 1, dx, dy)*tlm
+      tlm = Pdf.Matrix(1, 0, 0, 1, dx, dy)*tlm
       tm = tlm
 
     def show(bytes: Data): Unit = font.let: font =>
@@ -105,11 +105,11 @@ private[facsimile] object TextExtractor:
             Quantity[Points[1]](y*scale),
             Quantity[Points[1]](width*scale) )
 
-      tm = PdfMatrix(1, 0, 0, 1, advance, 0)*tm
+      tm = Pdf.Matrix(1, 0, 0, 1, advance, 0)*tm
 
     def kern(adjustment: Double): Unit =
       val gap = -adjustment/1000.0*size*horizontal
-      tm = PdfMatrix(1, 0, 0, 1, gap, 0)*tm
+      tm = Pdf.Matrix(1, 0, 0, 1, gap, 0)*tm
 
       // A large positive gap reads as a space the file never encoded.
       if gap > size*0.15 && !text.isEmpty && text.charAt(text.length - 1) != ' ' then
@@ -117,26 +117,26 @@ private[facsimile] object TextExtractor:
         lastX.let: end => lastX = end + gap
 
     operators.each:
-      case PdfOperator.Save                  => stack = ctm :: stack
-      case PdfOperator.Concat(matrix)        => ctm = matrix*ctm
-      case PdfOperator.Offset(dx, dy)        => offset(dx, dy)
-      case PdfOperator.NextLine              => offset(0, -leading)
-      case PdfOperator.SetCharSpacing(space) => charSpacing = space
-      case PdfOperator.SetWordSpacing(space) => wordSpacing = space
-      case PdfOperator.SetScaling(percent)   => horizontal = percent/100.0
-      case PdfOperator.SetLeading(value)     => leading = value
-      case PdfOperator.SetRise(value)        => rise = value
-      case PdfOperator.ShowText(bytes)       => show(bytes)
+      case Pdf.Operator.Save                  => stack = ctm :: stack
+      case Pdf.Operator.Concat(matrix)        => ctm = matrix*ctm
+      case Pdf.Operator.Offset(dx, dy)        => offset(dx, dy)
+      case Pdf.Operator.NextLine              => offset(0, -leading)
+      case Pdf.Operator.SetCharSpacing(space) => charSpacing = space
+      case Pdf.Operator.SetWordSpacing(space) => wordSpacing = space
+      case Pdf.Operator.SetScaling(percent)   => horizontal = percent/100.0
+      case Pdf.Operator.SetLeading(value)     => leading = value
+      case Pdf.Operator.SetRise(value)        => rise = value
+      case Pdf.Operator.ShowText(bytes)       => show(bytes)
 
-      case PdfOperator.BeginText =>
-        tm = PdfMatrix.Identity
-        tlm = PdfMatrix.Identity
+      case Pdf.Operator.BeginText =>
+        tm = Pdf.Matrix.Identity
+        tlm = Pdf.Matrix.Identity
 
-      case PdfOperator.SetTextMatrix(matrix) =>
+      case Pdf.Operator.SetTextMatrix(matrix) =>
         tm = matrix
         tlm = matrix
 
-      case PdfOperator.Restore => stack match
+      case Pdf.Operator.Restore => stack match
         case head :: tail =>
           ctm = head
           stack = tail
@@ -144,11 +144,11 @@ private[facsimile] object TextExtractor:
         case _ =>
           ()
 
-      case PdfOperator.OffsetLeading(dx, dy) =>
+      case Pdf.Operator.OffsetLeading(dx, dy) =>
         leading = -dy
         offset(dx, dy)
 
-      case PdfOperator.SetFont(name, points) =>
+      case Pdf.Operator.SetFont(name, points) =>
         font = fonts(name)
         size = points
 
@@ -156,19 +156,19 @@ private[facsimile] object TextExtractor:
       // takes a reach capture under pattern binding that `each`'s Traversable rejects.
       // Guard-plus-cast, not a type-test pattern: binding a `ShowTexts` refines its
       // frozen-array-union field with capture variables the checker cannot discharge.
-      case operator if operator.isInstanceOf[PdfOperator.ShowTexts] =>
-        operator.asInstanceOf[PdfOperator.ShowTexts].elements
+      case operator if operator.isInstanceOf[Pdf.Operator.ShowTexts] =>
+        operator.asInstanceOf[Pdf.Operator.ShowTexts].elements
         . asInstanceOf[List[scala.IArray[Byte] | Double]] // pure view; same erasure
         . stdlib.foreach: element =>
           (element.asInstanceOf[Matchable]: @unchecked) match
             case adjustment: Double => kern(adjustment)
             case bytes              => show(bytes.asInstanceOf[Data])
 
-      case PdfOperator.NextLineShow(bytes) =>
+      case Pdf.Operator.NextLineShow(bytes) =>
         offset(0, -leading)
         show(bytes)
 
-      case PdfOperator.NextLineShowSpaced(word, char, bytes) =>
+      case Pdf.Operator.NextLineShowSpaced(word, char, bytes) =>
         wordSpacing = word
         charSpacing = char
         offset(0, -leading)

@@ -44,9 +44,9 @@ case class VPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class VAddress(street: Text, city: Text, zip: Text) derives CanEqual
 case class VContact(person: VPerson, address: VAddress) derives CanEqual
 
-case class Issues(items: List[(Text, JsonError)] = Nil)(using Diagnostics)
+case class Issues(items: List[(Text, Json.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} validation issues"):
-  def +(focus: Text, error: JsonError): Issues = Issues(items :+ (focus, error))
+  def +(focus: Text, error: Json.Error): Issues = Issues(items :+ (focus, error))
 
 
 object ValidationTests extends Suite(m"Jacinta validation tests"):
@@ -56,11 +56,11 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
   // function, an unimplemented compiler restriction), so the decode lambda must beta-reduce
   // away into `protect`'s inline position. See rep/DECISIONS.md.
   private inline def validateJson[result](json: Json)
-    (inline decode: Json => result raises JsonError tracks Json.Focus)
+    (inline decode: Json => result raises Json.Error tracks Json.Focus)
   :   Issues =
-    Validate[Issues, [r] =>> r raises JsonError, Json.Focus]
+    Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
       ( Issues(),
-        { case error: JsonError => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
+        { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
     . protect(decode(json))
 
   def run(): Unit =
@@ -94,7 +94,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       test(m"Each missing-field error has reason Absent"):
         val json = t"""{"name": "Alice"}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.all:
-          case (_, err) => err.reason == JsonError.Reason.Absent
+          case (_, err) => err.reason == Json.Error.Reason.Absent
       . assert(identity)
 
       test(m"Three missing fields: three errors accrued"):
@@ -117,7 +117,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         val json = t"""{"name": 42, "age": "thirty", "email": "x@y"}""".read[Json]
         validateJson(json)(_.as[VPerson]).items.all:
           case (_, err) => err.reason match
-            case JsonError.Reason.NotType(_, _) => true
+            case Json.Error.Reason.NotType(_, _) => true
             case _                              => false
       . assert(identity)
 
@@ -172,11 +172,11 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       // to `Json.Focus.withPosition`) over the accumulated foci once
       // after decoding, so accruals don't need to call `withPosition`.
       inline def validateWithPositions[result](json: Json)
-        (inline decode: Json => result raises JsonError tracks Json.Focus)
+        (inline decode: Json => result raises Json.Error tracks Json.Focus)
       :   List[(Text, Optional[Int], Optional[Int])] =
-        Validate[Tagged, [r] =>> r raises JsonError, Json.Focus]
+        Validate[Tagged, [r] =>> r raises Json.Error, Json.Focus]
           ( Tagged(),
-            { case error: JsonError =>
+            { case error: Json.Error =>
                 val position = prior.let(_.position)
                 accrual + ( prior.let(_.pointer.encode).or(t"#"),
                             position.let(_.line),

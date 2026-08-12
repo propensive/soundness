@@ -61,31 +61,31 @@ object protointernal:
 
     def substitute(state: Text, sub: Text): Text = state+sub
 
-    def insert(state: Text, value: UrlFragment): Text = value match
-      case UrlFragment.Integral(port) =>
+    def insert(state: Text, value: Url.Fragment): Text = value match
+      case Url.Fragment.Integral(port) =>
         if !state.ends(t":")
         then throw UrlInterpolatorError(m"a port number must be specified after a colon")
 
         try throwErrors((state+port.show).as[HttpUrl]) catch
-          case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
+          case error: Url.Error => throw UrlInterpolatorError(Message(error.message.text))
 
         state+port.show
 
-      case UrlFragment.Textual(text) =>
+      case Url.Fragment.Textual(text) =>
         try throwErrors((state+text.urlEncode).as[HttpUrl]) catch
-          case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
+          case error: Url.Error => throw UrlInterpolatorError(Message(error.message.text))
 
         state+text.urlEncode
 
-      case UrlFragment.RawTextual(text) =>
+      case Url.Fragment.RawTextual(text) =>
         try throwErrors((state+text.urlEncode).as[HttpUrl]) catch
-          case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
+          case error: Url.Error => throw UrlInterpolatorError(Message(error.message.text))
 
         state+text
 
     def complete(value: Text): Url[Label] =
       try throwErrors(value.as[Url[Label]]) catch
-        case error: UrlError => throw UrlInterpolatorError(error.message)
+        case error: Url.Error => throw UrlInterpolatorError(error.message)
 
 
   def refined(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
@@ -118,12 +118,12 @@ object protointernal:
 
       head.absolve match
         case '{$value: tpe} =>
-          val typeclassExpr: Expr[Insertion[UrlFragment, tpe]] =
-            Expr.summon[Insertion[UrlFragment, tpe]].getOrElse:
+          val typeclassExpr: Expr[Insertion[Url.Fragment, tpe]] =
+            Expr.summon[Insertion[Url.Fragment, tpe]].getOrElse:
               halt(m"can't substitute ${TypeRepr.of[tpe].show} into a url-interpolator")
 
           typeclassExpr.absolve match
-            case '{$_ : Substitution[UrlFragment, tpe, sub]} =>
+            case '{$_ : Substitution[Url.Fragment, tpe, sub]} =>
               val label: String = TypeRepr.of[sub] match
                 case ConstantType(StringConstant(s)) => s
 

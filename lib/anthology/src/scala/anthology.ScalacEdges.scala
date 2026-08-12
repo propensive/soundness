@@ -96,7 +96,7 @@ object scalacEdges:
         CompileEvents.relay(using linkEvents)
 
       mitigate:
-        case CompilerError() => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
+        case Compiler.Error() => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
         case Async.Error(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"scalac"))
 
       . protect:

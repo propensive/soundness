@@ -89,7 +89,7 @@ object HttpSession:
 
       val head: Http.Response.Head =
         try unsafely(Http.Response.parseHead(cursor)) catch
-          case error: HttpResponseError => abort(ConnectError(Unknown))
+          case error: Http.Response.Error => abort(ConnectError(Unknown))
           case error: ji.IOException    => abort(ConnectError(Unknown))
 
       // A `101` body is the upgraded protocol's unending stream; refuse it.

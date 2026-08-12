@@ -84,10 +84,10 @@ object Zip:
   // Anchored here so `path.open[Zip]()` and `data.open[Zip]()` resolve with no import.
   given openable: [path: Abstractable across Paths to Text]
   =>  Tactic[Zip.Error]
-  =>  ZipOpenable[path] =
-    ZipOpenable[path]
+  =>  Zip.Openable[path] =
+    Zip.Openable[path]
 
-  given dataOpenable: Tactic[Zip.Error] => ZipDataOpenable = ZipDataOpenable()
+  given dataOpenable: Tactic[Zip.Error] => Zip.DataOpenable = Zip.DataOpenable()
 
   given creatable: [path: Abstractable across Paths to Text]
   =>  Tactic[Zip.Error]
@@ -338,5 +338,44 @@ object Zip:
   // `Zip.Error.Reason.WriteUnsupported` until writing lands.
   // Opens an in-memory archive; no channel is involved, but access is scoped all the same, for
   // consistency with every other form of `Zip` target.
+
+  // ZipOpenable → Zip.Openable
+  class Openable[path: Abstractable across Paths to Text](using Tactic[Zip.Error])
+  extends aperture.Openable:
+
+    type Self = path
+    type Form = Zip
+    type Operand = Nothing
+    type Result = Zip.Handle
+
+    def open[grants <: Grant, result]
+      ( value: path, mode: Mode granting grants, flags: List[Nothing] )
+      ( block: (Zip.Handle & Granting[grants]) ?=> result )
+    :   result =
+
+      if mode.atoms.has(Write) then abort(Zip.Error(Zip.Error.Reason.WriteUnsupported))
+
+      val channel =
+        jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
+
+      try
+        val zipfile = Zipfile.parse(Zipfile.ChannelSource(channel))
+        block(using new Zip.Handle(zipfile) with Granting[grants] {})
+      finally channel.close()
+
+  // ZipDataOpenable → Zip.DataOpenable
+  class DataOpenable(using Tactic[Zip.Error]) extends aperture.Openable:
+    type Self = Data
+    type Form = Zip
+    type Operand = Nothing
+    type Result = Zip.Handle
+
+    def open[grants <: Grant, result]
+      ( value: Data, mode: Mode granting grants, flags: List[Nothing] )
+      ( block: (Zip.Handle & Granting[grants]) ?=> result )
+    :   result =
+
+      if mode.atoms.has(Write) then abort(Zip.Error(Zip.Error.Reason.WriteUnsupported))
+      block(using new Zip.Handle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})
 
 sealed trait Zip

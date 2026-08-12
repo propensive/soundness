@@ -34,6 +34,15 @@ package enigmatic
 
 import anticipation.*
 
+object Cipher:
+  // CipherSession → Cipher.Session
+  // A stateful streaming-encryption session owned by a `Crypto` provider. The IV
+  // (if any) has already been applied at construction; `update` feeds successive
+  // plaintext chunks and `finish` flushes the final block.
+  trait Session:
+    def update(chunk: Data): Data
+    def finish(): Data
+
 trait Cipher:
   type Size <: Nat
 

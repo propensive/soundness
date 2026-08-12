@@ -34,7 +34,7 @@ package soundness
 
 export
   hieroglyph
-  . { Bel, Bs, Bsl, CharDecodeError, CharDecoder, CharEncodeError, CharEncoder, Chars, Cr,
+  . { Bel, Bs, Bsl, CharDecoder, CharEncoder, Chars, Cr,
       description, Dqt, enc, Encoding, Esc, Ff, GraphemeBreak, Ht, Lf, majuscule, Measurable,
       metrics, minuscule, Nul, Sqt, subscript, superscript, TextSanitizer, ucs, Unicode,
       WideCharacterWidth, whitespace, control, designation, printable, unicode }

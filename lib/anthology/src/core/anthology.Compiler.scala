@@ -35,9 +35,15 @@ package anthology
 import ambience.*
 import anticipation.*
 import contingency.*
+import fulminate.*
 import hellenism.*
 import parasite.*
 import prepositional.*
+
+object Compiler:
+  // CompilerError → Compiler.Error
+  case class Error()(using Diagnostics)
+  extends fulminate.Error(779, 0)(m"there was a problem with the compiler configuration")
 
 trait Compiler:
   def apply
@@ -45,4 +51,4 @@ trait Compiler:
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor )
-  :   CompileProcess logs CompileEvent raises CompilerError
+  :   CompileProcess logs CompileEvent raises Compiler.Error

@@ -227,7 +227,7 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_ == List(t"[↯SN-077.9] the IP address is not valid because the prefix length 40 is not in the range 0-32"))
 
     suite(m"Email address tests"):
-      import EmailAddressError.Reason.*
+      import EmailAddress.Error.Reason.*
 
       test(m"simple@example.com"):
         t"simple@example.com".as[EmailAddress]
@@ -295,48 +295,48 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"Empty email address"):
         capture(t"".as[EmailAddress])
-      . assert(_ == EmailAddressError(Empty))
+      . assert(_ == EmailAddress.Error(Empty))
 
       test(m"abc.example.com"):
         capture(t"abc.example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(MissingAtSymbol))
+      . assert(_ == EmailAddress.Error(MissingAtSymbol))
 
       test(m"a@b@c@example.com"):
         capture(t"a@b@c@example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(InvalidDomain(HostnameError(t"b@c@example.com", HostnameError.Reason.InvalidChar('@')))))
+      . assert(_ == EmailAddress.Error(InvalidDomain(Hostname.Error(t"b@c@example.com", Hostname.Error.Reason.InvalidChar('@')))))
 
       test(m"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"):
         capture(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(InvalidChar('\\')))
+      . assert(_ == EmailAddress.Error(InvalidChar('\\')))
 
       test(m"just\"not\"right@example.com"):
         capture(t"just\"not\"right@example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(InvalidChar('\"')))
+      . assert(_ == EmailAddress.Error(InvalidChar('\"')))
 
       test(m"this is\\\"not\\allowed@example.com"):
         capture(t"this is\\\"not\\allowed@example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(InvalidChar(' ')))
+      . assert(_ == EmailAddress.Error(InvalidChar(' ')))
 
       test(m"this\\ still\\\"not\\\\allowed@example.com"):
         capture(t"this\\ still\\\"not\\\\allowed@example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(InvalidChar('\\')))
+      . assert(_ == EmailAddress.Error(InvalidChar('\\')))
 
       test(m"64-digit local part with tag is too long"):
         capture(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(LongLocalPart))
+      . assert(_ == EmailAddress.Error(LongLocalPart))
 
       test(m"user@[not-an-ip]"):
         capture(t"user@[not-an-ip]".as[EmailAddress])
-      . assert(_ == EmailAddressError(InvalidDomain(IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfGroups(1)))))
+      . assert(_ == EmailAddress.Error(InvalidDomain(IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfGroups(1)))))
 
       test(m"i.like.underscores@but_they_are_not_allowed_in_this_part"):
         capture(t"i.like.underscores@but_they_are_not_allowed_in_this_part".as[EmailAddress])
-      . assert(_ == EmailAddressError(InvalidDomain(HostnameError(t"but_they_are_not_allowed_in_this_part", HostnameError.Reason.InvalidChar('_')))))
+      . assert(_ == EmailAddress.Error(InvalidDomain(Hostname.Error(t"but_they_are_not_allowed_in_this_part", Hostname.Error.Reason.InvalidChar('_')))))
 
       test(m"I❤️CHOCOLATE🍫@example.com"):
         capture(t"I❤️CHOCOLATE🍫@example.com".as[EmailAddress])
       .matches:
-        case EmailAddressError(InvalidChar(_)) =>
+        case EmailAddress.Error(InvalidChar(_)) =>
 
       test(m"Create an email address at compiletime"):
         email"test@example.com"
@@ -356,31 +356,31 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"forbidden.@example.com"):
         capture(t"forbidden.@example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(TerminalPeriod))
+      . assert(_ == EmailAddress.Error(TerminalPeriod))
 
       test(m".forbidden@example.com"):
         capture(t".forbidden@example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(InitialPeriod))
+      . assert(_ == EmailAddress.Error(InitialPeriod))
 
       test(m"not..allowed@example.com"):
         capture(t"not..allowed@example.com".as[EmailAddress])
-      . assert(_ == EmailAddressError(SuccessivePeriods))
+      . assert(_ == EmailAddress.Error(SuccessivePeriods))
 
       test(m""""unescaped quote " is forbidden"@example.com"""):
         capture(t""""unescaped quote " is forbidden"@example.com""".as[EmailAddress])
-      . assert(_ == EmailAddressError(UnescapedQuote))
+      . assert(_ == EmailAddress.Error(UnescapedQuote))
 
       test(m""""unclosed.quote@example.com"""):
         capture(t""""unclosed.quote@example.com""".as[EmailAddress])
-      . assert(_ == EmailAddressError(UnclosedQuote))
+      . assert(_ == EmailAddress.Error(UnclosedQuote))
 
       test(m"""missing.domain@"""):
         capture(t"""missing.domain@""".as[EmailAddress])
-      . assert(_ == EmailAddressError(MissingDomain))
+      . assert(_ == EmailAddress.Error(MissingDomain))
 
       test(m"""unclosed IP address domain"""):
         capture(t"""user@[192.168.0.1""".as[EmailAddress])
-      . assert(_ == EmailAddressError(UnclosedIpAddress))
+      . assert(_ == EmailAddress.Error(UnclosedIpAddress))
 
     suite(m"URL tests"):
       test(m"parse Authority with username and password"):
@@ -407,7 +407,7 @@ object Tests extends Suite(m"Urticose tests"):
         scala.caps.unsafe.unsafeAssumeSeparate:
           capture(t"username@example.com:no".as[Authority])
       .matches:
-        case UrlError(_, position, UrlError.Reason.Expected(UrlError.Expectation.Number)) if position == 21.z =>
+        case Url.Error(_, position, Url.Error.Reason.Expected(Url.Error.Expectation.Number)) if position == 21.z =>
 
       test(m"Parse full URL"):
         t"http://user:pw@example.com:8080/path/to/location?query=1#ref".as[HttpUrl]
@@ -618,34 +618,34 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"example"), DnsLabel(t"com")))
 
       test(m"A hostname cannot end in a period"):
-        capture[HostnameError](t"www.example.".as[Hostname])
-      . assert(_ == HostnameError(t"www.example.", HostnameError.Reason.EmptyDnsLabel(2)))
+        capture[Hostname.Error](t"www.example.".as[Hostname])
+      . assert(_ == Hostname.Error(t"www.example.", Hostname.Error.Reason.EmptyDnsLabel(2)))
 
       test(m"A hostname cannot start with a period"):
-        capture[HostnameError](t".example.com".as[Hostname])
-      . assert(_ == HostnameError(t".example.com", HostnameError.Reason.EmptyDnsLabel(0)))
+        capture[Hostname.Error](t".example.com".as[Hostname])
+      . assert(_ == Hostname.Error(t".example.com", Hostname.Error.Reason.EmptyDnsLabel(0)))
 
       test(m"A hostname cannot have adjacent periods"):
-        capture[HostnameError](t"www..com".as[Hostname])
-      . assert(_ == HostnameError(t"www..com", HostnameError.Reason.EmptyDnsLabel(1)))
+        capture[Hostname.Error](t"www..com".as[Hostname])
+      . assert(_ == Hostname.Error(t"www..com", Hostname.Error.Reason.EmptyDnsLabel(1)))
 
       test(m"A hostname cannot contain symbols"):
-        capture[HostnameError](t"www.maybe?.com".as[Hostname])
-      . assert(_ == HostnameError(t"www.maybe?.com", HostnameError.Reason.InvalidChar('?')))
+        capture[Hostname.Error](t"www.maybe?.com".as[Hostname])
+      . assert(_ == Hostname.Error(t"www.maybe?.com", Hostname.Error.Reason.InvalidChar('?')))
 
       test(m"A DNS Label cannot begin with a dash"):
-        capture[HostnameError](t"www.-maybe.com".as[Hostname])
-      . assert(_ == HostnameError(t"www.-maybe.com", HostnameError.Reason.InitialDash(t"-maybe")))
+        capture[Hostname.Error](t"www.-maybe.com".as[Hostname])
+      . assert(_ == Hostname.Error(t"www.-maybe.com", Hostname.Error.Reason.InitialDash(t"-maybe")))
 
       test(m"A hostname can contain two consecutive dashes"):
         t"www.exam--ple.com".as[Hostname]
       . assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"exam--ple"), DnsLabel(t"com")))
 
       test(m"A DNS label cannot be longer than 63 characters"):
-        capture[HostnameError](t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com".as[Hostname])
-      . assert(_ == HostnameError(
+        capture[Hostname.Error](t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com".as[Hostname])
+      . assert(_ == Hostname.Error(
         t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com",
-        HostnameError.Reason.LongDnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij")
+        Hostname.Error.Reason.LongDnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij")
       ))
 
       test(m"A DNS label may be 63 characters long"):
@@ -658,7 +658,7 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"A DNS label may not be longer than 253 characters"):
         capture(t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy.com".as[Hostname])
-      . assert(_.reason == HostnameError.Reason.LongHostname)
+      . assert(_.reason == Hostname.Error.Reason.LongHostname)
 
       test(m"Parse hostname at compiletime"):
         host"www.altavista.com"

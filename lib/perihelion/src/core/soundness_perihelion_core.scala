@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export perihelion.{Frame, Masking, Message, Websocket, WebsocketError, WebsocketEvent,
-    WsConnection, WsSessional, WsUrl, overIngressive, overTransmissible, webSocket}
+export perihelion.{Frame, Masking, Message, Websocket, WsSessional, overIngressive,
+    overTransmissible, webSocket}
 
 // `wsClient` and `wsSessional` are deliberately not exported: their types carry
 // capture-annotated refinements, which synthesized export forwarders lose (see the note in

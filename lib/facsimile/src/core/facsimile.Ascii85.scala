@@ -45,7 +45,7 @@ import vacuous.*
 // bytes base-85; `z` abbreviates four zero bytes; a partial final group of n characters
 // yields n−1 bytes; `~>` ends the data.
 private[facsimile] object Ascii85:
-  def decode(data: Data)(using Tactic[PdfError]): Data =
+  def decode(data: Data)(using Tactic[Pdf.Error]): Data =
     val bytes = DataBuilder()
     val group = new scala.Array[Int](5)
     var members = 0
@@ -85,9 +85,9 @@ private[facsimile] object Ascii85:
               emit(5)
               members = 0
           else if !CosLexer.whitespace(byte) then
-            abort(PdfError(PdfError.Reason.CorruptStream(t"ASCII85Decode")))
+            abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ASCII85Decode")))
 
-    if members == 1 then abort(PdfError(PdfError.Reason.CorruptStream(t"ASCII85Decode")))
+    if members == 1 then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ASCII85Decode")))
     if members > 1 then emit(members)
 
     bytes.result()

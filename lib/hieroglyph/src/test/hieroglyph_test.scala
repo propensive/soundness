@@ -42,9 +42,9 @@ import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import errorDiagnostics.stackTracesDiagnostics
 
-case class DecodeIssues(items: List[(Int, CharDecodeError)] = Nil)(using Diagnostics)
+case class DecodeIssues(items: List[(Int, CharDecoder.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} decoding issues"):
-  def +(position: Int, error: CharDecodeError): DecodeIssues =
+  def +(position: Int, error: CharDecoder.Error): DecodeIssues =
     DecodeIssues(items :+ (position, error))
 
 object Tests extends Suite(m"Hieroglyph tests"):
@@ -92,14 +92,14 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
       test(m"Decode invalid UTF-8 sequence, throwing exception"):
         import textSanitizers.strictSanitizer
-        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(badUtf8))
-      . assert(_ == CharDecodeError(1, enc"UTF-8"))
+        capture[CharDecoder.Error](charDecoders.utf8Decoder.decoded(badUtf8))
+      . assert(_ == CharDecoder.Error(1, enc"UTF-8"))
 
       test(m"Ensure that decoding is finished"):
         import textSanitizers.strictSanitizer
         given CharEncoder = enc"UTF-8".encoder
-        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(Array.frozen(t"café".in[Data].readable.dropRight(1))))
-      . assert(_ == CharDecodeError(4, enc"UTF-8"))
+        capture[CharDecoder.Error](charDecoders.utf8Decoder.decoded(Array.frozen(t"café".in[Data].readable.dropRight(1))))
+      . assert(_ == CharDecoder.Error(4, enc"UTF-8"))
 
     suite(m"Accruing decode errors"):
       val badUtf8 = Data(45, -62, 49, 48)
@@ -107,7 +107,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
       test(m"Valid UTF-8 accrues no errors"):
         validate[CharDecoder.Focus](DecodeIssues()):
-          case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+          case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
         . protect:
             import textSanitizers.accrueSanitizer
             charDecoders.utf8Decoder.decoded(japaneseData)
@@ -115,24 +115,24 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
       test(m"A single bad sequence accrues one error"):
         validate[CharDecoder.Focus](DecodeIssues()):
-          case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+          case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
         . protect:
             import textSanitizers.accrueSanitizer
             charDecoders.utf8Decoder.decoded(badUtf8)
-      . assert(_.items == List((1, CharDecodeError(1, enc"UTF-8"))))
+      . assert(_.items == List((1, CharDecoder.Error(1, enc"UTF-8"))))
 
       test(m"Both bad sequences accrue (decoding does not stop at the first)"):
         validate[CharDecoder.Focus](DecodeIssues()):
-          case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+          case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
         . protect:
             import textSanitizers.accrueSanitizer
             charDecoders.utf8Decoder.decoded(worseUtf8)
-      . assert(_.items == List((1, CharDecodeError(1, enc"UTF-8")), (3, CharDecodeError(3, enc"UTF-8"))))
+      . assert(_.items == List((1, CharDecoder.Error(1, enc"UTF-8")), (3, CharDecoder.Error(3, enc"UTF-8"))))
 
       test(m"Decoded text substitutes the replacement character at each error"):
         var text: Text = t""
         validate[CharDecoder.Focus](DecodeIssues()):
-          case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+          case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
         . protect:
             import textSanitizers.accrueSanitizer
             text = charDecoders.utf8Decoder.decoded(worseUtf8)

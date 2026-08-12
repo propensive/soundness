@@ -252,30 +252,30 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       suite(m"Malformed input"):
         test(m"Wrong protocol prefix raises Expectation"):
-          capture[HttpResponseError]:
+          capture[Http.Response.Error]:
             Http.Response.parse(chunks(t"XTTP/1.1 200 OK\r\n\r\n", 4096))
           . reason
 
         . assert:
-          case HttpResponseError.Reason.Expectation('H', 'X') => true
+          case Http.Response.Error.Reason.Expectation('H', 'X') => true
           case _                                              => false
 
         test(m"Non-digit in status code raises Status"):
-          capture[HttpResponseError]:
+          capture[Http.Response.Error]:
             Http.Response.parse(chunks(t"HTTP/1.1 2X0 OK\r\n\r\n", 4096))
           . reason
 
         . assert:
-          case HttpResponseError.Reason.Status(_) => true
+          case Http.Response.Error.Reason.Status(_) => true
           case _                                  => false
 
         test(m"Status code first digit out of range raises Status"):
-          capture[HttpResponseError]:
+          capture[Http.Response.Error]:
             Http.Response.parse(chunks(t"HTTP/1.1 700 Weird\r\n\r\n", 4096))
           . reason
 
         . assert:
-          case HttpResponseError.Reason.Status(_) => true
+          case Http.Response.Error.Reason.Status(_) => true
           case _                                  => false
 
       suite(m"Keep-alive boundary"):
@@ -410,14 +410,14 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(_ == t"example.com")
 
       test(m"Missing Host header raises Host reason"):
-        capture[HttpRequestError]:
+        capture[Http.Request.Error]:
           // bound so the fresh Request does not escape the capture block as its result
           val request = Http.Request.parse(chunks(t"GET / HTTP/1.1\r\n\r\n", 4096))
           ()
         . reason
 
       . assert:
-        case HttpRequestError.Reason.Host(_) => true
+        case Http.Request.Error.Reason.Host(_) => true
         case _                               => false
 
       for blockSize <- blockSizes do

@@ -95,7 +95,7 @@ class Issuer
           case error@Query.Error(_) =>
             OAuth.Error(OAuth.Error.Reason.Other)
 
-          case error@JsonError(reason) =>
+          case error@Json.Error(reason) =>
             OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
 
         . protect:

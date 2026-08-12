@@ -74,7 +74,7 @@ object javacEdges:
       given compileEvents: (CompileEvent is Loggable) = CompileEvents.relay(using linkEvents)
 
       mitigate:
-        case CompilerError() => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
+        case Compiler.Error() => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
         case Async.Error(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
 
       . protect:

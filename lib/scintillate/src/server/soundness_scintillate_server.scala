@@ -39,7 +39,7 @@ import scala.caps
 // via `scintillate.as`.
 export
   scintillate
-  . { Acceptable, basicAuth, cookie, HttpConnection, HttpServer, HttpServerEvent, NoCache, NotFound,
+  . { Acceptable, basicAuth, cookie, HttpConnection, HttpServer, NoCache, NotFound,
       Redirect, request, RequestServable, Responder, ServerError, SocketServer, Unfulfilled,
       WebserverErrorPage }
 
@@ -50,7 +50,7 @@ package httpServers:
   =>  ( tactic:  contingency.Tactic[scintillate.ServerError],
         monitor: parasite.Monitor,
         probate: parasite.Probate )
-  =>  ( loggable:  scintillate.HttpServerEvent is anticipation.Loggable,
+  =>  ( loggable:  scintillate.HttpServer.Event is anticipation.Loggable,
         errorPage: scintillate.WebserverErrorPage )
   =>  ((scintillate.httpServers.HttpServerFor[port])^{tactic, monitor, caps.any}) =
     // One erasing cast at the forwarding boundary (the wisteria `fieldInstance` pattern):
@@ -63,7 +63,7 @@ package httpServers:
   =>  ( tactic:  contingency.Tactic[scintillate.ServerError],
         monitor: parasite.Monitor,
         probate: parasite.Probate )
-  =>  ( loggable:  scintillate.HttpServerEvent is anticipation.Loggable,
+  =>  ( loggable:  scintillate.HttpServer.Event is anticipation.Loggable,
         errorPage: scintillate.WebserverErrorPage )
   =>  ((scintillate.httpServers.HttpServerFor[port])^{tactic, monitor, caps.any}) =
     scintillate.httpServers.stdlibPublicHttpServer[port]

@@ -59,7 +59,7 @@ import hellenism.classloaders.threadContextClassloader
 // implemented primitive yields `Outcome.Unsupported`.
 object SyntaxMatcher:
   private object Entry:
-    given decodable: Tactic[JsonError] => Entry is Json.Decodable = Json.DecodableDerivation.derived
+    given decodable: Tactic[Json.Error] => Entry is Json.Decodable = Json.DecodableDerivation.derived
 
   private case class Entry(syntax: Text)
 

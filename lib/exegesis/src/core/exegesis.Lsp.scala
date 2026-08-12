@@ -39,6 +39,7 @@ import java.io as ji
 
 import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -189,7 +190,7 @@ object Lsp:
   object CompletionItem:
     given decodable: CompletionItem is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -247,7 +248,7 @@ object Lsp:
   object WorkspaceEdit:
     given decodable: WorkspaceEdit is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -260,7 +261,7 @@ object Lsp:
   object CodeAction:
     given decodable: CodeAction is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -329,7 +330,7 @@ object Lsp:
   object CodeLens:
     given decodable: CodeLens is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -341,7 +342,7 @@ object Lsp:
   object DocumentLink:
     given decodable: DocumentLink is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -380,7 +381,7 @@ object Lsp:
   object CallHierarchyItem:
     given decodable: CallHierarchyItem is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -414,7 +415,7 @@ object Lsp:
   object TypeHierarchyItem:
     given decodable: TypeHierarchyItem is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -456,7 +457,7 @@ object Lsp:
   object InlayHint:
     given decodable: InlayHint is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -474,7 +475,7 @@ object Lsp:
   object InlineValueContext:
     given decodable: InlineValueContext is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -520,7 +521,7 @@ object Lsp:
   object WorkspaceSymbol:
     given decodable: WorkspaceSymbol is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -537,7 +538,7 @@ object Lsp:
   object FileEvent:
     given decodable: FileEvent is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -548,7 +549,7 @@ object Lsp:
   object WorkspaceFoldersChangeEvent:
     given decodable: WorkspaceFoldersChangeEvent is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -559,7 +560,7 @@ object Lsp:
   object FileCreate:
     given decodable: FileCreate is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -570,7 +571,7 @@ object Lsp:
   object FileRename:
     given decodable: FileRename is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -581,7 +582,7 @@ object Lsp:
   object FileDelete:
     given decodable: FileDelete is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -594,7 +595,7 @@ object Lsp:
   object Diagnostic:
     given decodable: Diagnostic is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `JsonError` handled at the
+      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
       // transport. Threading a caller's tactic through the capture-polymorphic derivation
       // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
       import strategies.throwUnsafely
@@ -1576,13 +1577,13 @@ object Lsp:
 
   // Serves an editor over the stdio transport while forwarding everything to a language server
   // upstream, amending what the block registers on the lent proxy. The block may capture the
-  // monitor, which a hook needs to await an answer of its own; see `LspProxy`.
+  // monitor, which a hook needs to await an answer of its own; see `Lsp.Proxy`.
   def proxy[capture^](upstream: Server, observer: Observer = Observer.Silent)
-     ( register: (proxy: LspProxy^) ?->{capture} Unit )
+     ( register: (proxy: Lsp.Proxy^) ?->{capture} Unit )
      ( using Stdio^, Monitor^{capture}, Probate, WorkingDirectory, Diagnostics )
   :   Unit =
 
-    LspProxy.run[capture](upstream, observer)(register)
+    Lsp.Proxy.run[capture](upstream, observer)(register)
 
   // Establishes a Language Server over the stdio transport. The block registers the server's
   // feature handlers on the lent registry; once it returns, the registry is consumed and frozen,
@@ -1626,7 +1627,7 @@ object Lsp:
         json =>
           val response: Optional[Json] =
             try dispatch(json) catch
-              case error: JsonError =>
+              case error: Json.Error =>
                 JsonRpc.failure(-32602, t"Invalid params", requestId(json))
 
               case error: Exception =>
@@ -1725,11 +1726,11 @@ object Lsp:
     val workspace:  LspWorkspace  = caps.unsafe.unsafeAssumePure(channel.proxy[LspWorkspace])
     val resolve:    LspResolve    = caps.unsafe.unsafeAssumePure(channel.proxy[LspResolve])
 
-    // A fault the server reports as an error response arrives as a `JsonRpcError` carrying the wire
+    // A fault the server reports as an error response arrives as a `JsonRpc.Error` carrying the wire
     // code, which is exactly the vocabulary of `Lsp.Error.Reason`; a code outside the standard set is
     // reported as `Internal`, with the server's own message as the detail.
     private def ask[result](block: => result)(using Tactic[Lsp.Error]): result =
-      try block catch case error: JsonRpcError =>
+      try block catch case error: JsonRpc.Error =>
         abort(Lsp.Error(error.code.let(Lsp.Error.reason(_)).or(Lsp.Error.Reason.Internal), error.detail))
 
     // The raw seam: sends a message exactly as given, without minting an id or awaiting an answer.
@@ -2303,6 +2304,245 @@ object Lsp:
           diagnosticProvider               = flag(diagnostics0).let(_ => diagnosticOptions0),
           workspaceSymbolProvider          = flag(workspaceSymbols0),
           executeCommandProvider           = commandOptions )
+
+  // LspProxy → Lsp.Proxy
+  object Proxy:
+    // The raw hooks' types, named because each is written three times — registered, read out of
+    // the erased rim, and applied — and must be spelled identically at all three.
+    private[exegesis] type OutboundHook = (Text, Json) => Transit
+    private[exegesis] type InboundHook = (Optional[Text], Json) => Transit
+
+    // The session a proxy holds with the server upstream, which `upstream` reads and `run` fills in.
+    // A cell, and a parameter of the proxy rather than a slot on it, for two reasons: the listener
+    // that carries messages to the hooks is built before the session exists — `Sessional#session`
+    // takes the listener, so the listener cannot take the connection — and `run` must not touch the
+    // proxy again once registration is over.
+    private[exegesis] class Upstream():
+      @scala.caps.unsafe.untrackedCaptures
+      var connection: Lsp.Connection | Null = null
+
+      // Sealed on the way in and out, as the listener is: the connection is lent for the life of the
+      // session, and every hook that reads it here runs within it.
+      def open(connection: Lsp.Connection^): Unit =
+        this.connection = caps.unsafe.unsafeAssumePure(connection)
+
+      def apply(): Optional[Lsp.Connection] = connection match
+        case null                      => Unset
+        case connection: Lsp.Connection => caps.unsafe.unsafeAssumePure(connection)
+
+    // Runs the proxy: this process serves an editor over its own standard input and output while
+    // holding a session with the server it forwards to.
+    //
+    // The relay is asynchronous in both directions — a message is forwarded as it arrives, and
+    // nothing waits for a response — so requests may be in flight in any number and answered in any
+    // order, exactly as they would be without a proxy in the middle. Request ids pass through
+    // unchanged, so a response returns under the id the editor chose; the id-to-method map exists
+    // only so that a response can be given back its type on the way out.
+    //
+    // The registration block is capture-polymorphic, and the monitor is declared to be among what it
+    // captures: a hook that asks the server something of its own needs the monitor to await the
+    // answer, and separation checking would otherwise see the block and this method aliasing it.
+    def run[capture^]
+       ( upstream: Lsp.Server, observer: Lsp.Observer = Lsp.Observer.Silent )
+       ( register: (proxy: Lsp.Proxy^) ?->{capture} Unit )
+       ( using stdio: Stdio^, monitor: Monitor^{capture}, probate: Probate, working: WorkingDirectory,
+               diagnostics: Diagnostics )
+    :   Unit =
+
+      import strategies.throwUnsafely
+      import Json.jsonEncodableInText
+
+      val session: Upstream = Upstream()
+      val proxy: Lsp.Proxy^ = Lsp.Proxy(session)
+      register(using proxy)
+
+      // Registration is over, so the rules are read out once, here: everything below closes over
+      // these, and not over the registry, which may not be touched again once a value hiding it
+      // exists.
+      val results: scm.HashMap[Text, AnyRef] = proxy.results
+      val notices: scm.HashMap[Text, AnyRef] = proxy.notices
+      val inbound0: Optional[InboundHook] = inbound(proxy.inbound0)
+      val outbound0: Optional[OutboundHook] = outbound(proxy.outbound0)
+      // Nullable rather than `Optional`, and alone among the rules in that: a function in a
+      // container is capture-polymorphic, and the block is passed to a task rather than called here,
+      // which is one adaptation more than an `Optional` of it survives.
+      val connected0: (() => Unit) | Null = connected(proxy.connected0)
+
+      // The method each in-flight request named, by the text of its id. An id is matched by its
+      // encoded form because the protocol allows either a number or a string, and the proxy neither
+      // rewrites nor interprets it.
+      val pending: scm.HashMap[Text, Text] = scm.HashMap()
+
+      def downstream(json: Json): Unit =
+        val body: Text = json.encode
+        observer.sent(body)
+        stdio.write(LspTransport.frame(body))
+        stdio.out.flush()
+
+      // Everything the server sends is intercepted before the session routes it: a proxy relays
+      // messages rather than acting on them, and that includes the responses that no named handler
+      // covers. Sealed because the listener writes downstream, and so captures this process's own
+      // standard output, which an honest capability type would then hide from the loop below —
+      // which writes there too. It is a local of this method, and lives as long as the session.
+      given listener: Lsp.Listener = caps.unsafe.unsafeAssumePure(new Lsp.Listener:
+        override def intercept(json: Json): Boolean =
+          val method: Optional[Text] = Lsp.method(json)
+          val id: Optional[Json] = Lsp.identifier(json)
+
+          // A response is retyped by the method it answers, a notification by its own name.
+          val answered: Optional[Text] =
+            if method.absent then id.let { id => pending.remove(id.encode).getOrElse(Unset) }
+            else Unset
+
+          // A response the proxy never forwarded a request for, answering under an id of the form
+          // `JsonRpc.call` mints, answers a request the proxy asked of its own accord. It is not the
+          // editor's to receive, so it is not intercepted: the session routes it to the caller
+          // awaiting it. The editor's ids cannot be confused with these, because a request that
+          // crossed this proxy was recorded in `pending` above.
+          if method.absent && answered.absent && id.let(token(_)).present then false else
+            val retyped: Json =
+              val typed: Json = answered.lay(json): method =>
+                rule(results.get(method)).lay(json)(rewriteResult(json, _))
+
+              method.lay(typed): method =>
+                rule(notices.get(method)).lay(typed)(rewriteParams(typed, _))
+
+            inbound0.lay(downstream(retyped)): hook =>
+              hook(method.or(answered), retyped) match
+                case Transit.Forward       => downstream(retyped)
+                case Transit.Rewrite(json) => downstream(json)
+                case Transit.Drop          => ()
+                case Transit.Answer(_)     => ()
+
+            true )
+
+      upstream.session: server ?=>
+        // The session is published before a single message crosses, so every hook that runs sees it.
+        session.open(server)
+
+        // On its own task, because it may await what it asks, and the loop below must not wait for
+        // it: an editor's first request arrives before a server has finished starting up.
+        val startup = if connected0 == null then null else async(connected0.nn())
+
+        try LspTransport.pump(stdio.in.source[Data], observer): message =>
+          safely(message.as[Json]).let: json =>
+            Lsp.method(json).let: method =>
+              val id: Optional[Json] = Lsp.identifier(json)
+
+              def forward(message: Json): Unit =
+                id.let { id => pending(id.encode) = method }
+                server.send(message)
+
+              outbound0.lay(forward(json)): hook =>
+                hook(method, json) match
+                  case Transit.Forward       => forward(json)
+                  case Transit.Rewrite(json) => forward(json)
+                  case Transit.Drop          => ()
+
+                  // Answered here, so the server never sees the request and never answers it.
+                  case Transit.Answer(result) =>
+                    id.let { id => downstream(JsonRpc.Response("2.0", result, id).in[Json]) }
+
+        finally if startup != null then startup.nn.cancel()
+
+    // The `result` member of a response, rewritten in place. A response carrying an `error` is left
+    // alone: a fault is not a payload, and a rewriter typed for the payload could not read it.
+    private def rewriteResult(json: Json, rewrite: Json => Json): Json =
+      import dynamicJsonAccess.enabled
+      import strategies.throwUnsafely
+
+      try
+        val result = json.result
+        Map(t"jsonrpc" -> t"2.0".in[Json], t"result" -> rewrite(result), t"id" -> json.id).in[Json]
+
+      catch case _: Exception => json
+
+    // The `params` of a notification or of a request the server made of its client, rewritten.
+    private def rewriteParams(json: Json, rewrite: Json => Json): Json =
+      import dynamicJsonAccess.enabled
+      import strategies.throwUnsafely
+
+      try
+        val method: Json = json.method
+        val params: Json = rewrite(json.params)
+
+        // Rebuilt rather than amended in place: a notification carries no id, and a request the
+        // server made of its client must keep the one it chose.
+        Lsp.identifier(json).lay:
+          Map(t"jsonrpc" -> t"2.0".in[Json], t"method" -> method, t"params" -> params).in[Json]
+        . apply: id =>
+            Map
+             ( t"jsonrpc" -> t"2.0".in[Json],
+               t"method"  -> method,
+               t"params"  -> params,
+               t"id"      -> id )
+
+            . in[Json]
+
+      catch case _: Exception => json
+
+    // The slots are an erased rim, as `Lsp.Registry`'s are, and each is restored by a single
+    // annotated cast at the one place that reads it.
+    // A rewriter read back out of the erased rim, restored by a single annotated cast.
+    private def rule(slot: scala.Option[AnyRef]): Optional[Json => Json] =
+      slot.getOrElse(null) match
+        case null => Unset
+
+        case value: AnyRef =>
+          val lambda: Json => Json = value.asInstanceOf[Lsp.Registry.Slot[Json => Json]].value
+          lambda
+
+    private def outbound(hook: AnyRef | Null): Optional[OutboundHook] =
+      if hook == null then Unset else
+        val relay: OutboundHook = hook.asInstanceOf[Lsp.Registry.Slot[OutboundHook]].value
+
+        relay
+
+    private def inbound(hook: AnyRef | Null): Optional[InboundHook] =
+      if hook == null then Unset else
+        val relay: InboundHook = hook.asInstanceOf[Lsp.Registry.Slot[InboundHook]].value
+
+        relay
+
+    private def connected(block: AnyRef | Null): (() => Unit) | Null =
+      if block == null then null else block.asInstanceOf[Lsp.Registry.Slot[() => Unit]].value
+
+    // The id of a message, if the peer chose a string for it: the form `JsonRpc.call` mints, and so
+    // the form a response to a request the proxy made itself comes back under.
+    private def token(id: Json): Optional[Text] =
+      import strategies.throwUnsafely
+      try id.as[Text] catch case _: Exception => Unset
+
+  // The target of the proxy's registration combinators, lent to the block given to `Lsp.proxy` for
+  // its duration. An exclusive capability, so it cannot escape the block; its slots are public and
+  // untracked, as `Lsp.Registry`'s are, because the combinators are inline and assign from their
+  // expansion sites.
+  //
+  // Two layers of interception live here. The typed rewriters — `hover`, `capabilities`, and the
+  // rest — are keyed by method and act on a decoded payload; the raw hooks act on whole messages,
+  // including methods this library does not model. What neither covers is forwarded byte for byte.
+  //
+  // The session with the server upstream comes in with the proxy, and goes back out through
+  // `upstream`: a rewriter or a hook is registered before the session exists, but runs while it
+  // does, so a proxy may ask the server something the editor never asked for.
+  class Proxy private[exegesis] (private[exegesis] val session: Lsp.Proxy.Upstream)
+  extends caps.ExclusiveCapability:
+    // The rewriters, by method: an erased rim like `Lsp.Registry`'s slots, for the same reason — a
+    // function value in an invariant container freshens its capture set at every adaptation.
+    @scala.caps.unsafe.untrackedCaptures
+    val results: scm.HashMap[Text, AnyRef] = scm.HashMap()
+
+    @scala.caps.unsafe.untrackedCaptures
+    val notices: scm.HashMap[Text, AnyRef] = scm.HashMap()
+
+    @scala.caps.unsafe.untrackedCaptures
+    var outbound0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var inbound0: AnyRef | Null = null
+
+    @scala.caps.unsafe.untrackedCaptures
+    var connected0: AnyRef | Null = null
 
 // The Language Server Protocol request/notification surface. It is split into several sub-traits
 // purely so that each can be compiled into its own JSON-RPC dispatcher class: `JsonRpc.serve`

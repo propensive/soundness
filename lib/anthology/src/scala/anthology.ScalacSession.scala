@@ -104,7 +104,7 @@ object ScalacSession:
 // loads at its next use from the *classpath*, not the retained symbols, so callers wanting
 // same-session macro expansion must `save` to a directory on the session's classpath.
 class ScalacSession private[anthology] (arguments: List[Text])
-  ( using loggable: (CompileEvent is Loggable)^, tactic: Tactic[CompilerError] )
+  ( using loggable: (CompileEvent is Loggable)^, tactic: Tactic[Compiler.Error] )
 extends caps.ExclusiveCapability, caps.Stateful:
 
   private val driver: ScalacDriver = ScalacDriver()
@@ -114,14 +114,14 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   @scala.caps.unsafe.untrackedCaptures
   private var baseContext: dtdc.Contexts.Context =
-    driver.baseContext(arguments).getOrElse(abort(CompilerError()))
+    driver.baseContext(arguments).getOrElse(abort(Compiler.Error()))
 
   // After a crash the whole warm state is rebuilt together: replacing only the compiler
   // would restart its run ids against a context whose denotation validity periods already
   // used them.
   private update def rebuild(): Unit =
     compiler = new dtd.Compiler()
-    baseContext = driver.baseContext(arguments).getOrElse(abort(CompilerError()))
+    baseContext = driver.baseContext(arguments).getOrElse(abort(Compiler.Error()))
 
   update def compile(sources: Map[Text, Text]): ScalacSession.Process^{this, caps.any} =
     val output = dtio.virtualDirectory("<session output>")
@@ -160,7 +160,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
 class ScalacSessional[version <: Scalac.Versions, universe <: Universe]
   ( using system:   System,
           emission: Universe.Emission[universe],
-          tactic:   Tactic[CompilerError],
+          tactic:   Tactic[Compiler.Error],
           loggable: (CompileEvent is Loggable)^ )
 extends Sessional:
   type Self = Scalac.Setup[version, universe]

@@ -77,19 +77,19 @@ package charEncoders:
 package textSanitizers:
   // Sealed per the codec-thunk pattern (rep/DECISIONS.md): the resolution-scoped tactic
   // shares the sanitizer's given-resolution lifetime, keeping `CharDecoder` untracked.
-  given strictSanitizer: (Tactic[CharDecodeError]^) => (TextSanitizer) =
-    caps.unsafe.unsafeAssumePure: (position, encoding) => abort(CharDecodeError(position, encoding))
+  given strictSanitizer: (Tactic[CharDecoder.Error]^) => (TextSanitizer) =
+    caps.unsafe.unsafeAssumePure: (position, encoding) => abort(CharDecoder.Error(position, encoding))
 
   given skipSanitizer: TextSanitizer = (position, encoding) => Unset
   given substituteSanitizer: TextSanitizer = (position, encoding) => '?'
 
   // Sealed like `strictSanitizer` above.
   given accrueSanitizer
-  :   (Tactic[CharDecodeError]^, Foci[CharDecoder.Focus]^) => (TextSanitizer) =
+  :   (Tactic[CharDecoder.Error]^, Foci[CharDecoder.Focus]^) => (TextSanitizer) =
 
     caps.unsafe.unsafeAssumePure: (position, encoding) =>
       focus(CharDecoder.Focus(position)):
-        raise(CharDecodeError(position, encoding))
+        raise(CharDecoder.Error(position, encoding))
 
       '?'
 

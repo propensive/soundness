@@ -34,8 +34,7 @@ package soundness
 
 export
   revolution
-  . { Compatibility, DecodableManifest, EncodableManifest, Manifest, ManifestAttribute,
-      ManifestEntry, Semver, SemverError, v }
+  . { Compatibility, DecodableManifest, EncodableManifest, Manifest, Semver, v }
 
 package manifestAttributes:
   export

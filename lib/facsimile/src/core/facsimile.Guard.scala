@@ -85,11 +85,11 @@ private[facsimile] object Guard:
   // The password arrives as a mutable char array — as lent by `Password.uncloak` — never as
   // an immutable string, so the transient encodings derived from it here can all be zeroed.
   def apply(encrypt: Map[Text, Cos], id: Data, password: scala.Array[Char])(using pdf: Pdf)
-  ( using Tactic[PdfError] )
+  ( using Tactic[Pdf.Error] )
   :   Guard =
 
     val filter = encrypt(t"Filter").let(pdf.resolved(_).name).or(t"")
-    if filter != t"Standard" then abort(PdfError(PdfError.Reason.UnsupportedEncryption(0)))
+    if filter != t"Standard" then abort(Pdf.Error(Pdf.Error.Reason.UnsupportedEncryption(0)))
 
     val version = encrypt(t"V").let(pdf.resolved(_).long).or(0L).toInt
     val revision = encrypt(t"R").let(pdf.resolved(_).long).or(0L).toInt
@@ -128,7 +128,7 @@ private[facsimile] object Guard:
       val ue = encrypt(t"UE").let(pdf.resolved(_).chars).or(Array.empty[Byte])
 
       val fileKey = unwrap6(password, user, ue)
-        . or(abort(PdfError(PdfError.Reason.BadPassword)))
+        . or(abort(Pdf.Error(Pdf.Error.Reason.BadPassword)))
 
       new Guard(fileKey, revision, Method.Aes256, Method.Aes256, encryptMetadata)
     else
@@ -138,7 +138,7 @@ private[facsimile] object Guard:
         deriveKey(password, owner, permissions, id, keyBytes, revision, encryptMetadata)
 
       if !validate(fileKey, user, id, revision, keyBytes)
-      then abort(PdfError(PdfError.Reason.BadPassword))
+      then abort(Pdf.Error(Pdf.Error.Reason.BadPassword))
 
       new Guard(fileKey, revision, streamMethod, stringMethod, encryptMetadata)
 

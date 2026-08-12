@@ -37,7 +37,7 @@ import gossamer.*
 import vacuous.*
 
 // A Wasm artifact config document (media type `application/vnd.wasm.config.v0+json`): the
-// config blob of a Wasm OCI Artifact. It stands where an `ImageConfig` would, but describes
+// config blob of a Wasm OCI Artifact. It stands where an `Image.Config` would, but describes
 // a component rather than a filesystem — there is no `rootfs`, because there are no layers
 // to stack. `layerDigests` names the single `application/wasm` blob directly, and
 // `component` states the interfaces it needs.

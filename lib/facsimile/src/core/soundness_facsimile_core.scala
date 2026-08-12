@@ -32,6 +32,7 @@
                                                                                                   */
 package soundness
 
-export facsimile.{Annotation, Bookmark, Cos, Destination, Page, Pdf, PdfError, PdfFont, PdfInfo, PdfMatrix, PdfOperator, PdfRect, TextRun, pdf, set, allocate, newStream,
-    free, setContents, setRotation, setBox, setPageEntry, appendPage, removePage, setInfo,
-    setBookmarks, setAnnotations, addLink, embedFont, addResource, winAnsi}
+export facsimile.{Annotation, Bookmark, Cos, Destination, Page, Pdf, TextRun, pdf, set,
+    allocate, newStream, free, setContents, setRotation, setBox, setPageEntry, appendPage,
+    removePage, setInfo, setBookmarks, setAnnotations, addLink, embedFont, addResource,
+    winAnsi}

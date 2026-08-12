@@ -37,7 +37,7 @@ package soundness
 export
   enigmatic
   . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, Ctr, decrypt, Decryptor,
+      Cleartext, cleartext, Cloak, Crypto, Ctr, decrypt, Decryptor,
       Des, Divulgence,
       Dsa, Ecb, Ecdsa, encrypt, Encryptor, Encryption,
       Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
