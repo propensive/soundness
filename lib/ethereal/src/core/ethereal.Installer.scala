@@ -122,13 +122,13 @@ object Installer:
       case NumberError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case IoError(_, _, _, _)  => InstallError(InstallError.Reason.Io)
       case Name.Error(_, _, _)   => InstallError(InstallError.Reason.Io)
-      case Exec.Error(_, _, _)   => InstallError(InstallError.Reason.Io)
+      case guillotine.Exec.Error(_, _, _)   => InstallError(InstallError.Reason.Io)
       case StreamError(_)       => InstallError(InstallError.Reason.Io)
       case Zip.Error(_)          => InstallError(InstallError.Reason.Io)
 
     . protect:
         val command: Text = service.script
-        val scriptPath = mute[Exec.Event](sh"sh -c 'command -v $command'".exec[Text]())
+        val scriptPath = mute[guillotine.Exec.Event](sh"sh -c 'command -v $command'".exec[Text]())
 
         if safely(scriptPath.as[Path on Linux]) == service.executable && !force
         then Result.AlreadyOnPath(command, service.executable.encode)

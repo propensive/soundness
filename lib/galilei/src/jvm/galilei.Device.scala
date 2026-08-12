@@ -58,13 +58,13 @@ object Device:
     ( using createNonexistentParents: CreateNonexistentParents on plane,
             overwritePreexisting:     OverwritePreexisting on plane,
             working:                  WorkingDirectory,
-            loggable:                 Exec.Event is Loggable )
+            loggable:                 guillotine.Exec.Event is Loggable )
   :   Path on plane raises IoError =
 
     createNonexistentParents(path):
       overwritePreexisting(path):
         mitigate:
-          case Exec.Error(_, _, _) =>
+          case guillotine.Exec.Error(_, _, _) =>
             import errorDiagnostics.stackTracesDiagnostics
             IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
 
