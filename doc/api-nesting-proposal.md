@@ -499,7 +499,19 @@ three of them about *finding* the outer type rather than moving anything.
   this one shows the underlying constraint is broader, so the warning sign is *any* mutation
   through a value whose capture set the enclosing object widens.
 
-Two sweep hazards fired again, both caught by the compiler rather than by review. It
+A third instance of "a name used as data", and the first one no compiler could catch. The
+sweep rewrote `scalar("AtomClass", "atom-class")` and `Reference(t"AtomClass")` inside
+reliquary's hand-encoded LIRA schemas — *string literals* naming a scalar in the
+specification, not references to the Scala type. Everything compiled; one test out of 11,065
+failed, comparing the hand-encoded schema against the `.tel` resource that still said
+`AtomClass`. Only `make attest` found it.
+
+The check that generalises: after a sweep, look for literals whose entire content is a bare
+dotted name (`"Foo.Bar"`), since those are identifiers used as data rather than prose. Test
+names and error messages mentioning the new name are fine; a literal that *is* the name is
+not.
+
+Two further sweep hazards fired, both caught by the compiler rather than by review. It
 rewrote `jnf.WatchEvent`, which is `java.nio.file`'s — the second time a bare-name sweep has
 reached outside the library that owns the name (the first was `Syntax`). And it produced
 `import wisteria.{Discriminable, Variant.Error}`: a braced selector cannot hold a dotted

@@ -1073,13 +1073,13 @@ object Lira:
       sigil    = Unset,
       records  = Array.of(
         record("Atom",
-          field("class", Reference(t"Atom.Class")),
+          field("class", Reference(t"AtomClass")),
           field("hash", hash),
           field("key", string))),
       scalars  = builtins ++ Array.of(
         hashScalar,
         scalar("DisciplineId", "discipline-id"),
-        scalar("Atom.Class", "atom-class")),
+        scalar("AtomClass", "atom-class")),
       selects  = Array.empty[SelectDefinition])
 
     val uses: Tels = Tels(
