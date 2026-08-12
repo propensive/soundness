@@ -51,10 +51,3 @@ val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 // but the typeclass belongs to `quantitative`, so there is no companion for it to live in. Named
 // distinctly for that reason, per the given-placement rules.
 given informationDesignation: Designation[Bytes[1]] = () => t"B"
-
-// How a byte quantity is scaled for display. Neither is a default: `1.5 MB` and `1.43 MiB` are the
-// same quantity written under different conventions, and which one is right depends on what is
-// being measured — so the caller picks.
-package informationPrefixes:
-  given binaryBytes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi, Tebi))
-  given decimalBytes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))

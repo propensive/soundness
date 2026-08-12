@@ -51,6 +51,7 @@ package bars:
   private val eighths: Text = t"▏▎▍▌▋▊▉"
 
   given smoothBar: Gauging => Fraction is Gaugeable = filled(t"█", eighths, t" ").gaugeable
+
   given blockBar: Gauging => Fraction is Gaugeable = filled(t"█", t"", t"░").gaugeable
   given shadedBar: Gauging => Fraction is Gaugeable = filled(t"█", t"░▒▓", t" ").gaugeable
 

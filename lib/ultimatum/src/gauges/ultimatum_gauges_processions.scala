@@ -34,14 +34,18 @@ package ultimatum
 
 // Multi-step processes. `checklistProcession` is one row per step and animates the running one;
 // the rest fit on a single row.
-// `Procession` has no default design, because these differ in height: choosing one decides how much
-// of the layout the gauge takes, which is not a decision a library should make silently.
+// A run of steps is a plain `Sequence[Step]`. It has no default design, because these differ in
+// height: choosing one decides how much of the layout the gauge takes, which is not a decision a
+// library should make silently.
 package processions:
-  given checklistProcession: Gauging => Procession is Gaugeable = Checklist.Rows.gaugeable
-  given breadcrumbProcession: Gauging => Procession is Gaugeable = Checklist.Breadcrumb.gaugeable
-  given beadProcession: Gauging => Procession is Gaugeable = Checklist.Beads.gaugeable
-  given numberedProcession: Gauging => Procession is Gaugeable = Checklist.Numbered.gaugeable
+  given checklistProcession: Gauging => Sequence[Step] is Gaugeable = Checklist.Rows.gaugeable
+
+  given breadcrumbProcession: Gauging => Sequence[Step] is Gaugeable =
+    Checklist.Breadcrumb.gaugeable
+
+  given beadProcession: Gauging => Sequence[Step] is Gaugeable = Checklist.Beads.gaugeable
+  given numberedProcession: Gauging => Sequence[Step] is Gaugeable = Checklist.Numbered.gaugeable
 
   // Powerline. Renders as tofu without a patched font, and no `Termcap` can tell us whether one is
   // installed, so this is opt-in and never a default.
-  given ribbonProcession: Gauging => Procession is Gaugeable = Checklist.Ribbon.gaugeable
+  given ribbonProcession: Gauging => Sequence[Step] is Gaugeable = Checklist.Ribbon.gaugeable

@@ -30,24 +30,51 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ultimatum
+// Deliberately NOT under `package ultimatum`: an example compiled there would not be testing what a
+// user of the library sees, which is exactly how the status types' abstraction leak went unnoticed.
+package gaugedocs
 
-// Work in progress whose extent is unknown: the status a spinner shows. It carries only a counter,
-// advanced by the caller when it has something to report, so that a spinner can be driven by
-// progress as well as by the clock; a design that ignores it animates from its `Tick` alone.
-object Busy:
-  def apply(tick: Int = 0): Busy = tick.max(0)
+import soundness.*
 
-  // The default design, used when nothing is imported. Braille dots are the one spinner most
-  // people expect, they occupy a single cell, and they degrade to `-\|/` on an ASCII terminal.
-  // Any `import spinners.…` outranks this, being lexically scoped.
-  given gaugeable: Gauging => Busy is Gaugeable = spinners.brailleDotsSpinner
+import bars.arrowheadBar
+import gaugeGlyphs.asciiGlyphs
+import palettes.solarizedDarkGaugePalette
+import processions.checklistProcession
+import textMetrics.uniformMetric
 
-opaque type Busy = Int
+// Every code example in `doc/modules/gauges.md`, compiled. Prose drifts from an API silently, and a
+// documented example that does not compile is worse than no example at all.
+object Examples:
+  def defaults(using Stdio): Unit =
+    Out.println(gaugeLine(Fraction(0.42), 40))
+    Out.println(gaugeLine(Reckoning(17, 120), 7))
+    Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
 
-extension (busy: Busy)
-  def tick: Int = busy
-  def next: Busy = busy + 1
+  def inALayout(using Terminal, Monitor, Probate): Unit =
+    val progress = Reading(Fraction(0.0))
+    progress() = Fraction.of(3, 10)
+    form(Occupancy.Inline)(stack(gauge(progress)))
 
-  // The frame to show, for a design with `count` frames.
-  def phase(count: Int): Int = if count <= 0 then 0 else busy%count
+  def standalone(using Stdio, Monitor, Probate): Unit =
+    whilst(Reading(Fraction.indeterminate)):
+      ()
+
+  // A spinner and a bar are two designs for one status, so only one can be imported at a time.
+  // Where a layout needs both, the other is passed explicitly.
+  def both(using Stdio): Unit =
+    Out.println(gaugeLine(Fraction(0.5), 20))
+    Out.println(gaugeLine(Fraction(0.0), 1)(using spinners.brailleDotsSpinner))
+
+  def oneFrame(done: Int, total: Int)(using Stdio): Unit =
+    Out.print(e"\r${gaugeLine(Fraction.of(done, total), 40)} $done/$total${csi.el()}")
+
+  def captioned: Pane = gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
+
+  def procession: Pane =
+    val steps =
+      Sequence
+        ( Step(t"resolve", Standing.Succeeded),
+          Step(t"compile", Standing.Running),
+          Step(t"publish", Standing.Pending) )
+
+    gauge(Reading(steps))

@@ -87,20 +87,27 @@ case class Spinner
   def leastColumns(gauging: Gauging): Int =
     narrower.lay(columns)(_.leastColumns(gauging).min(columns))
 
-  def gaugeable(using gauging: Gauging): Busy is Gaugeable = new Gaugeable:
-    type Self = Busy
+  // A spinner says the work is alive, not how far along it is, so it draws the same whether or not
+  // a fraction is known — and the same again when there is none, which is what makes it the design
+  // to import for indeterminate work.
+  def gaugeable(using gauging: Gauging): Fraction is Gaugeable = new Gaugeable:
+    type Self = Fraction
     override def period: Optional[Int] = interval
     override def elastic: Boolean = false
-    override def minWidth(status: Busy): Int = leastColumns(gauging)
-    override def columns(status: Busy): Int = leastColumns(gauging)
+    override def minWidth(status: Fraction): Int = leastColumns(gauging)
+    override def columns(status: Fraction): Int = leastColumns(gauging)
+    override def absentColumns: Int = leastColumns(gauging)
+    override def absent(tick: Tick, width: Int): List[Teletype] = frame(tick, width)
 
-    def rows(status: Busy, tick: Tick, width: Int): List[Teletype] =
+    def rows(status: Fraction, tick: Tick, width: Int): List[Teletype] = frame(tick, width)
+
+    private def frame(tick: Tick, width: Int): List[Teletype] =
       val chosen = fit(width, gauging)
 
       val frame = chosen.lay(Teletype(t" "*width.max(0))): spinner =>
         val count = spinner.frames.stdlib.length
 
-        val index = (tick.index + status.tick).abs
+        val index = tick.index.abs
         val glyph = if count == 0 then t" " else spinner.frames.stdlib(index%count)
 
         val padding = width - spinner.columns

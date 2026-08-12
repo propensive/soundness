@@ -69,17 +69,41 @@ enum Sparkline:
     case Tall => 2
     case _    => 1
 
-  def gaugeable(using gauging: Gauging): Series is Gaugeable = new Gaugeable:
-    type Self = Series
-    override def minWidth(status: Series): Int = 1
-    override def columns(status: Series): Int = status.samples.stdlib.length.max(1)
-    override def height(status: Series, width: Int): Int = rowCount
+  // Keyed on a plain `Sequence[Double]`, and scaled to the samples it is given.
+  def gaugeable(using gauging: Gauging): Sequence[Double] is Gaugeable = scaled(Unset, Unset)
 
-    def rows(status: Series, tick: Tick, width: Int): List[Teletype] =
-      Sparkline.this.draw(status, width, gauging)
+  // The same, with the scale fixed. A fixed scale is a presentation decision, not part of the data:
+  // a sparkline that rescales itself every frame makes a steady signal look erratic, and only the
+  // caller knows which reading is wanted.
+  def scaled(floor: Optional[Double], ceiling: Optional[Double])(using gauging: Gauging)
+  :   Sequence[Double] is Gaugeable =
 
-  def draw(series: Series, width: Int, gauging: Gauging): List[Teletype] =
-    val values = Sparkline.decimate(series.normalized, width)
+    new Gaugeable:
+      type Self = Sequence[Double]
+      override def minWidth(status: Sequence[Double]): Int = 1
+      override def columns(status: Sequence[Double]): Int = status.stdlib.length.max(1)
+      override def height(status: Sequence[Double], width: Int): Int = rowCount
+
+      def rows(status: Sequence[Double], tick: Tick, width: Int): List[Teletype] =
+        Sparkline.this.draw(status, floor, ceiling, width, gauging)
+
+  def draw
+    ( samples: Sequence[Double],
+      floor:   Optional[Double],
+      ceiling: Optional[Double],
+      width:   Int,
+      gauging: Gauging )
+  :   List[Teletype] =
+
+    val lower = floor.or(samples.stdlib.minOption.getOrElse(0.0))
+    val upper = ceiling.or(samples.stdlib.maxOption.getOrElse(1.0))
+    val span = upper - lower
+
+    val normalized = Sequence.from:
+      samples.stdlib.map: sample =>
+        if span <= 0 then Fraction(0.0) else Fraction((sample - lower)/span)
+
+    val values = Sparkline.decimate(normalized, width)
     val ascii = !gauging.permits(Gaugeable.Glyphs.Unicode)
 
     // A design whose glyphs are unavailable falls back to the ASCII ramp rather than to nothing.

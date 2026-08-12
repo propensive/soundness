@@ -35,10 +35,12 @@ package ultimatum
 // Runs of samples drawn as a miniature chart. A sparkline narrower than its series is decimated by
 // taking the maximum of each group, never truncated: a truncated sparkline would show only the
 // oldest samples while looking like the whole series.
-// `Series` has no default design, because the choice sets the vertical resolution — eight levels or
-// four, one row or two — and that changes what the reader can actually see in the data.
+// A sparkline has no default design, because the choice sets the vertical resolution — eight levels
+// or four, one row or two — and that changes what the reader can actually see in the data.
+// `Sparkline.scaled` builds any of these with the scale fixed, for a reading that should stay still
+// between frames.
 package sparklines:
-  given blockSparkline: Gauging => Series is Gaugeable = Sparkline.Blocks.gaugeable
-  given tallSparkline: Gauging => Series is Gaugeable = Sparkline.Tall.gaugeable
-  given dotSparkline: Gauging => Series is Gaugeable = Sparkline.Dots.gaugeable
-  given asciiSparkline: Gauging => Series is Gaugeable = Sparkline.Ascii.gaugeable
+  given blockSparkline: Gauging => Sequence[Double] is Gaugeable = Sparkline.Blocks.gaugeable
+  given tallSparkline: Gauging => Sequence[Double] is Gaugeable = Sparkline.Tall.gaugeable
+  given dotSparkline: Gauging => Sequence[Double] is Gaugeable = Sparkline.Dots.gaugeable
+  given asciiSparkline: Gauging => Sequence[Double] is Gaugeable = Sparkline.Ascii.gaugeable

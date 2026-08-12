@@ -32,29 +32,20 @@
                                                                                                   */
 package ultimatum
 
-import vacuous.*
+import aviation.*
 
-// A proportion of work completed, in `[0, 1]`: the status a progress bar shows. Clamped on
-// construction, so that no design has to defend against a fraction outside its range, and
-// `Unset` for work whose total is not yet known — which every bar renders as an indeterminate
-// sweep rather than as zero.
-object Fraction:
-  def apply(value: Double): Fraction = if value.isNaN then 0.0 else value.max(0.0).min(1.0)
+// Durations, written out. Elapsed time is an `aviation.Duration`; a `Countdown` keeps its own type,
+// so that the two can be shown side by side with different designs and the countdown can signal
+// urgency as it runs out.
+package timers:
+  given compactElapsed: Gauging => Duration is Gaugeable = Stopwatch.Compact.elapsed
+  given digitalElapsed: Gauging => Duration is Gaugeable = Stopwatch.Digital.elapsed
 
-  def of(done: Long, total: Long): Fraction =
-    if total <= 0 then Fraction(0.0) else Fraction(done.toDouble/total)
+  given compactCountdown: Gauging => Countdown is Gaugeable =
+    Stopwatch.Compact.countdown(false)
 
-  // Work in flight whose total is unknown.
-  val indeterminate: Optional[Fraction] = Unset
+  given digitalCountdown: Gauging => Countdown is Gaugeable =
+    Stopwatch.Digital.countdown(false)
 
-  // The default design: the smooth eighth-block bar, which is what a Soundness progress bar has
-  // always looked like. Every candidate bar is one row and says the same thing, so a default is
-  // safe here in a way it is not for a meter or a procession.
-  given gaugeable: Gauging => Fraction is Gaugeable = bars.smoothBar
-
-opaque type Fraction = Double
-
-extension (fraction: Fraction)
-  def value: Double = fraction
-  def percentage: Int = (fraction*100).toInt
-  def complete: Boolean = fraction >= 1.0
+  // Reddens as the remaining time runs out.
+  given urgentCountdown: Gauging => Countdown is Gaugeable = Stopwatch.Compact.countdown(true)

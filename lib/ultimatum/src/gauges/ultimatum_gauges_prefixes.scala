@@ -32,18 +32,12 @@
                                                                                                   */
 package ultimatum
 
-import aviation.*
+import prepositional.*
 import quantitative.*
-import symbolism.*
 
-// Time spent so far. A distinct type from `Countdown` — rather than both being `Duration` — for
-// exactly the reason the whole facility is keyed on the status type: they want different designs,
-// and a duration counting up should not be able to pick up the design for one counting down.
-object Elapsed:
-  def apply(duration: Duration): Elapsed = duration
-
-  // In the companion, so that it does not compete at the top level with `Countdown`'s identically
-  // shaped accessor; the companion is in the opaque type's implicit scope, so it resolves anyway.
-  extension (elapsed: Elapsed) def duration: Duration = elapsed
-
-opaque type Elapsed = Duration
+// How a byte quantity is scaled for display. Neither is a default: `1.5 MB` and `1.43 MiB` are the
+// same quantity written under different conventions, and which one is right depends on what is
+// being measured — so the caller picks.
+package informationPrefixes:
+  given binaryBytes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi, Tebi))
+  given decimalBytes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))

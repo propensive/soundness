@@ -52,143 +52,149 @@ package spinners:
   private val halves: Spinner = Spinner.each(t"◐◓◑◒", 120, Unicode, line)
   private val hourglass: Spinner = Spinner.each(t"⧖⧗", 500, Unicode, line)
 
-  given lineSpinner: Gauging => Busy is Gaugeable = line.gaugeable
-  given crossStarSpinner: Gauging => Busy is Gaugeable = Spinner.each(t"+x*", 120, Ascii).gaugeable
-  given dqpbSpinner: Gauging => Busy is Gaugeable = Spinner.each(t"dqpb", 100, Ascii).gaugeable
-  given bounceSpinner: Gauging => Busy is Gaugeable = Spinner.each(t".oO°Oo.", 120, Ascii).gaugeable
+  given lineSpinner: Gauging => Fraction is Gaugeable = line.gaugeable
 
-  given balloonSpinner: Gauging => Busy is Gaugeable =
+  given crossStarSpinner: Gauging => Fraction is Gaugeable =
+    Spinner.each(t"+x*", 120, Ascii).gaugeable
+
+  given dqpbSpinner: Gauging => Fraction is Gaugeable =
+    Spinner.each(t"dqpb", 100, Ascii).gaugeable
+
+  given bounceSpinner: Gauging => Fraction is Gaugeable =
+    Spinner.each(t".oO°Oo.", 120, Ascii).gaugeable
+
+  given balloonSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t" .oO@* ", 140, Ascii).gaugeable
 
   // Braille: the densest single-cell animations there are, and the ones most terminals show best.
-  given brailleDotsSpinner: Gauging => Busy is Gaugeable =
+  given brailleDotsSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏", 80, Unicode, line).gaugeable
 
-  given brailleSnakeSpinner: Gauging => Busy is Gaugeable =
+  given brailleSnakeSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"⣾⣽⣻⢿⡿⣟⣯⣷", 80, Unicode, line).gaugeable
 
-  given brailleWaveSpinner: Gauging => Busy is Gaugeable =
+  given brailleWaveSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"⠁⠂⠄⡀⢀⠠⠐⠈", 90, Unicode, line).gaugeable
 
-  given brailleGrowSpinner: Gauging => Busy is Gaugeable =
+  given brailleGrowSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"⠋⠙⠚⠞⠖⠦⠴⠲⠳⠓", 80, Unicode, line).gaugeable
 
   // Circles, arcs and quadrants.
-  given arcSpinner: Gauging => Busy is Gaugeable = arc.gaugeable
-  given circleQuadrantSpinner: Gauging => Busy is Gaugeable = quadrant.gaugeable
-  given circleHalfSpinner: Gauging => Busy is Gaugeable = halves.gaugeable
-  given circlePulseSpinner: Gauging => Busy is Gaugeable = circles.gaugeable
+  given arcSpinner: Gauging => Fraction is Gaugeable = arc.gaugeable
+  given circleQuadrantSpinner: Gauging => Fraction is Gaugeable = quadrant.gaugeable
+  given circleHalfSpinner: Gauging => Fraction is Gaugeable = halves.gaugeable
+  given circlePulseSpinner: Gauging => Fraction is Gaugeable = circles.gaugeable
 
-  given squareCornerSpinner: Gauging => Busy is Gaugeable =
+  given squareCornerSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"◰◳◲◱", 120, Unicode, line).gaugeable
 
-  given triangleSpinner: Gauging => Busy is Gaugeable =
+  given triangleSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"◢◣◤◥", 120, Unicode, line).gaugeable
 
-  given pipeSpinner: Gauging => Busy is Gaugeable =
+  given pipeSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"┤┘┴└├┌┬┐", 100, Unicode, line).gaugeable
 
-  given boxSpinner: Gauging => Busy is Gaugeable =
+  given boxSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"▖▘▝▗", 120, Unicode, line).gaugeable
 
   // Arrows and stars.
-  given arrowSpinner: Gauging => Busy is Gaugeable =
+  given arrowSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"←↖↑↗→↘↓↙", 100, Unicode, line).gaugeable
 
-  given arrowDoubleSpinner: Gauging => Busy is Gaugeable =
+  given arrowDoubleSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"⇐⇖⇑⇗⇒⇘⇓⇙", 100, Unicode, line).gaugeable
 
-  given starSpinner: Gauging => Busy is Gaugeable =
+  given starSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"✶✸✹✺✹✷", 70, Unicode, line).gaugeable
 
-  given hamburgerSpinner: Gauging => Busy is Gaugeable =
+  given hamburgerSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"☱☲☴", 100, Unicode, line).gaugeable
 
   // Shading and growth: an amount of ink rather than a shape, so they read as effort.
-  given noiseSpinner: Gauging => Busy is Gaugeable =
+  given noiseSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"▓▒░", 100, Unicode, line).gaugeable
 
-  given pulseSpinner: Gauging => Busy is Gaugeable = pulse.gaugeable
+  given pulseSpinner: Gauging => Fraction is Gaugeable = pulse.gaugeable
 
-  given growingBarSpinner: Gauging => Busy is Gaugeable =
+  given growingBarSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"▏▎▍▌▋▊▉█▉▊▋▌▍▎", 90, Unicode, line).gaugeable
 
-  given growingBlockSpinner: Gauging => Busy is Gaugeable =
+  given growingBlockSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"▁▃▄▅▆▇█▇▆▅▄▃", 90, Unicode, line).gaugeable
 
-  given layerSpinner: Gauging => Busy is Gaugeable =
+  given layerSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"-=≡", 150, Ascii).gaugeable
 
   // Toggles: two states, slow, for something that is alive rather than working.
-  given toggleSpinner: Gauging => Busy is Gaugeable =
+  given toggleSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"⊶⊷", 250, Unicode, line).gaugeable
 
-  given toggleSquareSpinner: Gauging => Busy is Gaugeable =
+  given toggleSquareSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"▫▪", 250, Unicode, line).gaugeable
 
-  given toggleRoundSpinner: Gauging => Busy is Gaugeable =
+  given toggleRoundSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"⦾⦿", 250, Unicode, line).gaugeable
 
   // Hourglasses: the only single-cell designs that say "waiting" rather than "working".
-  given hourglassThinSpinner: Gauging => Busy is Gaugeable = hourglass.gaugeable
+  given hourglassThinSpinner: Gauging => Fraction is Gaugeable = hourglass.gaugeable
 
   // Multi-cell designs. Each falls back to a single cell, so a narrow column still animates.
-  given pointsSpinner: Gauging => Busy is Gaugeable =
+  given pointsSpinner: Gauging => Fraction is Gaugeable =
     Spinner(Sequence(t"∙∙∙", t"●∙∙", t"∙●∙", t"∙∙●"), 125, 3, Unicode, line).gaugeable
 
-  given dotsScrollSpinner: Gauging => Busy is Gaugeable =
+  given dotsScrollSpinner: Gauging => Fraction is Gaugeable =
     Spinner(Sequence(t"   ", t".  ", t".. ", t"..."), 200, 3, Ascii, line).gaugeable
 
-  given binarySpinner: Gauging => Busy is Gaugeable =
+  given binarySpinner: Gauging => Fraction is Gaugeable =
     val frames =
       Sequence(t"010010", t"001100", t"100101", t"111010", t"111101", t"010111", t"101011",
           t"111000", t"110011", t"110101")
 
     Spinner(frames, 80, 6, Ascii, line).gaugeable
 
-  given bouncingBarSpinner: Gauging => Busy is Gaugeable =
+  given bouncingBarSpinner: Gauging => Fraction is Gaugeable =
     val frames =
       Sequence(t"[    ]", t"[=   ]", t"[==  ]", t"[=== ]", t"[ ===]", t"[  ==]", t"[   =]",
           t"[    ]", t"[   =]", t"[  ==]", t"[ ===]", t"[====]", t"[=== ]", t"[==  ]", t"[=   ]")
 
     Spinner(frames, 80, 6, Ascii, line).gaugeable
 
-  given bouncingBallSpinner: Gauging => Busy is Gaugeable =
+  given bouncingBallSpinner: Gauging => Fraction is Gaugeable =
     val frames =
       Sequence(t"( ●    )", t"(  ●   )", t"(   ●  )", t"(    ● )", t"(     ●)", t"(    ● )",
           t"(   ●  )", t"(  ●   )", t"( ●    )", t"(●     )")
 
     Spinner(frames, 80, 8, Unicode, line).gaugeable
 
-  given aestheticSpinner: Gauging => Busy is Gaugeable =
+  given aestheticSpinner: Gauging => Fraction is Gaugeable =
     val frames =
       Sequence(t"▰▱▱▱▱▱▱", t"▰▰▱▱▱▱▱", t"▰▰▰▱▱▱▱", t"▰▰▰▰▱▱▱", t"▰▰▰▰▰▱▱", t"▰▰▰▰▰▰▱",
           t"▰▰▰▰▰▰▰", t"▱▱▱▱▱▱▱")
 
     Spinner(frames, 120, 7, Unicode, line).gaugeable
 
-  given shuttleSpinner: Gauging => Busy is Gaugeable =
+  given shuttleSpinner: Gauging => Fraction is Gaugeable =
     val frames = Sequence(t"▸▹▹▹▹", t"▹▸▹▹▹", t"▹▹▸▹▹", t"▹▹▹▸▹", t"▹▹▹▹▸")
 
     Spinner(frames, 120, 5, Unicode, line).gaugeable
 
   // Emoji: two cells wide, and only where the terminal has said it can render them. Each falls
   // back to the BMP design that means the same thing, which is also the ASCII path.
-  given clockSpinner: Gauging => Busy is Gaugeable =
+  given clockSpinner: Gauging => Fraction is Gaugeable =
     val frames =
       Sequence(t"🕛", t"🕐", t"🕑", t"🕒", t"🕓", t"🕔", t"🕕", t"🕖", t"🕗", t"🕘", t"🕙", t"🕚")
 
     Spinner(frames, 100, 2, Emoji, quadrant).gaugeable
 
-  given moonPhaseSpinner: Gauging => Busy is Gaugeable =
+  given moonPhaseSpinner: Gauging => Fraction is Gaugeable =
     val frames = Sequence(t"🌑", t"🌒", t"🌓", t"🌔", t"🌕", t"🌖", t"🌗", t"🌘")
 
     Spinner(frames, 80, 2, Emoji, circles).gaugeable
 
-  given earthSpinner: Gauging => Busy is Gaugeable =
+  given earthSpinner: Gauging => Fraction is Gaugeable =
     Spinner(Sequence(t"🌍", t"🌎", t"🌏"), 180, 2, Emoji, halves).gaugeable
 
-  given hourglassSpinner: Gauging => Busy is Gaugeable =
+  given hourglassSpinner: Gauging => Fraction is Gaugeable =
     val frames = Sequence(t"⏳", t"⌛")
 
     Spinner(frames, 500, 2, Emoji, hourglass).gaugeable

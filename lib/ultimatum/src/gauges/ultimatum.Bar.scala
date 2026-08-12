@@ -87,6 +87,32 @@ enum Bar:
     def rows(status: Fraction, tick: Tick, width: Int): List[Teletype] =
       List(Bar.this.draw(status, width, gauging))
 
+    // Where there is no figure to draw, sweep. An empty bar says "no progress", which is a
+    // different claim from "not measured"; the generic lifting to `Optional[Fraction]` uses this.
+    override def absent(tick: Tick, width: Int): List[Teletype] =
+      List(Bar.this.sweep(tick, width, gauging))
+
+    override def absentColumns: Int = columnCount
+
+  // A lit window travelling back and forth along the track, its width a fifth of the whole.
+  def sweep(tick: Tick, width: Int, gauging: Gauging): Teletype =
+    val palette = gauging.palette
+    val plain = !gauging.permits(Gaugeable.Glyphs.Unicode)
+    val lit = if plain then t"#" else t"█"
+    val dark = if plain then t"-" else t"░"
+    val window = (width/5).max(1)
+    val span = (width - window).max(1)
+
+    // A triangle wave over `2*span`, so the window returns rather than jumping back to the start.
+    val phase = tick.index%(span*2)
+    val start = if phase <= span then phase else span*2 - phase
+
+    val before = gauging.tint(palette.track)(Teletype(dark*start))
+    val block = gauging.tint(palette.fill)(Teletype(lit*window.min(width - start)))
+    val after = gauging.tint(palette.track)(Teletype(dark*(width - start - window).max(0)))
+
+    e"$before$block$after"
+
   // Draw at exactly `width` cells.
   def draw(fraction: Fraction, width: Int, gauging: Gauging): Teletype =
     val palette = gauging.palette
