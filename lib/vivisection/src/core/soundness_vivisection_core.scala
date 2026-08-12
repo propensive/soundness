@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export vivisection.Jdwp
+export vivisection.{Jdwp, Debugger}
 
 export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
     MethodId, FieldId, FrameId}

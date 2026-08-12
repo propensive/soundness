@@ -301,26 +301,27 @@ object Jdwp:
 
   // Decodes a JDWP packet payload. Big-endian throughout; identifier reads consult the negotiated
   // `sizes`. Stateful and single-threaded — one reader decodes one reply or one event, in order.
-  class Reader(data: Data, sizes: IdSizes) extends scala.caps.Mutable:
+  class Reader(data: Data, sizes: IdSizes):
+    @scala.caps.unsafe.untrackedCaptures
     private var position: Int = 0
 
     def remaining: Int = data.length - position
 
-    private update def next(): Int =
+    private def next(): Int =
       val byte = data.readUnchecked(position) & 0xff
       position += 1
       byte
 
-    update def byte(): Byte = next().toByte
-    update def boolean(): Boolean = next() != 0
-    update def short(): Short = ((next() << 8) | next()).toShort
-    update def char(): Char = ((next() << 8) | next()).toChar
-    update def int(): Int = (next() << 24) | (next() << 16) | (next() << 8) | next()
-    update def long(): Long = (int().toLong << 32) | (int().toLong & 0xffffffffL)
-    update def float(): Float = jl.Float.intBitsToFloat(int())
-    update def double(): Double = jl.Double.longBitsToDouble(long())
+    def byte(): Byte = next().toByte
+    def boolean(): Boolean = next() != 0
+    def short(): Short = ((next() << 8) | next()).toShort
+    def char(): Char = ((next() << 8) | next()).toChar
+    def int(): Int = (next() << 24) | (next() << 16) | (next() << 8) | next()
+    def long(): Long = (int().toLong << 32) | (int().toLong & 0xffffffffL)
+    def float(): Float = jl.Float.intBitsToFloat(int())
+    def double(): Double = jl.Double.longBitsToDouble(long())
 
-    update def id(width: Int): Long =
+    def id(width: Int): Long =
       var accumulator = 0L
       var count = 0
 
@@ -330,28 +331,28 @@ object Jdwp:
 
       accumulator
 
-    update def objectId(): ObjectId = Ref(id(sizes.objectId))
-    update def threadId(): ThreadId = Ref(id(sizes.objectId))
-    update def threadGroupId(): ThreadGroupId = Ref(id(sizes.objectId))
-    update def stringId(): StringId = Ref(id(sizes.objectId))
-    update def classLoaderId(): ClassLoaderId = Ref(id(sizes.objectId))
-    update def referenceTypeId(): ReferenceTypeId = Ref(id(sizes.referenceType))
-    update def methodId(): MethodId = Ref(id(sizes.method))
-    update def fieldId(): FieldId = Ref(id(sizes.field))
-    update def frameId(): FrameId = Ref(id(sizes.frame))
+    def objectId(): ObjectId = Ref(id(sizes.objectId))
+    def threadId(): ThreadId = Ref(id(sizes.objectId))
+    def threadGroupId(): ThreadGroupId = Ref(id(sizes.objectId))
+    def stringId(): StringId = Ref(id(sizes.objectId))
+    def classLoaderId(): ClassLoaderId = Ref(id(sizes.objectId))
+    def referenceTypeId(): ReferenceTypeId = Ref(id(sizes.referenceType))
+    def methodId(): MethodId = Ref(id(sizes.method))
+    def fieldId(): FieldId = Ref(id(sizes.field))
+    def frameId(): FrameId = Ref(id(sizes.frame))
 
-    update def string(): Text =
+    def string(): Text =
       val length = int()
       val text = Jdwp.decodeModifiedUtf8(data, position, length)
       position += length
       text
 
-    update def location(): Location =
+    def location(): Location =
       Location(TypeTag(byte()), referenceTypeId(), methodId(), long())
 
-    update def value(): Value = untaggedValue(Tag(next().toChar))
+    def value(): Value = untaggedValue(Tag(next().toChar))
 
-    update def untaggedValue(tag: Tag): Value = tag match
+    def untaggedValue(tag: Tag): Value = tag match
       case Tag.ByteTag    => Value.OfByte(byte())
       case Tag.CharTag    => Value.OfChar(char())
       case Tag.DoubleTag  => Value.OfDouble(double())
@@ -457,3 +458,75 @@ object Jdwp:
           threadId(thread).int(size.id).int(depth.id)
 
     def data: Data = Array.unsafeFrozen(out.toByteArray.nn)
+
+  // The events a suspended (or running) VM sends back, decoded from a Composite command. Only the
+  // kinds this debugger requests are modelled in full; an unrecognized kind terminates decoding of
+  // the enclosing composite, since its payload length is unknown and the stream cannot be resynced
+  // within the packet (the next packet is unaffected, being length-framed).
+  object Event:
+    case class Composite(policy: SuspendPolicy, events: List[Event])
+
+    def composite(reader: Reader): Composite =
+      val policy = SuspendPolicy(reader.byte())
+      val count = reader.int()
+
+      // Builds the list in order; an unrecognized event kind ends the list, since its unknown
+      // payload length prevents locating the next event within this composite.
+      def decode(remaining: Int): List[Event] =
+        if remaining <= 0 then Nil else
+          val event = one(reader)
+
+          event match
+            case Unknown(_, _) => event :: Nil
+            case _             => event :: decode(remaining - 1)
+
+      Composite(policy, decode(count))
+
+    private def one(reader: Reader): Event =
+      val kind = EventKind(reader.byte() & 0xff)
+      val request = reader.int()
+
+      kind match
+        case EventKind.VmStart      => VmStart(request, reader.threadId())
+        case EventKind.VmDeath      => VmDeath(request)
+        case EventKind.ThreadStart  => ThreadStart(request, reader.threadId())
+        case EventKind.ThreadDeath  => ThreadDeath(request, reader.threadId())
+        case EventKind.Breakpoint   => Breakpoint(request, reader.threadId(), reader.location())
+        case EventKind.SingleStep   => SingleStep(request, reader.threadId(), reader.location())
+        case EventKind.MethodEntry  => MethodEntry(request, reader.threadId(), reader.location())
+        case EventKind.MethodExit   => MethodExit(request, reader.threadId(), reader.location())
+
+        case EventKind.Exception =>
+          val thread = reader.threadId()
+          val location = reader.location()
+          val exception = reader.objectId()
+          val catchLocation = reader.location()
+          Thrown(request, thread, location, exception, catchLocation)
+
+        case EventKind.ClassPrepare =>
+          val thread = reader.threadId()
+          val tag = TypeTag(reader.byte())
+          val cls = reader.referenceTypeId()
+          val signature = reader.string()
+          val status = reader.int()
+          ClassPrepared(request, thread, tag, cls, signature, status)
+
+        case other => Unknown(other.id, request)
+
+  enum Event:
+    case VmStart(request: Int, thread: ThreadId)
+    case VmDeath(request: Int)
+    case ThreadStart(request: Int, thread: ThreadId)
+    case ThreadDeath(request: Int, thread: ThreadId)
+    case Breakpoint(request: Int, thread: ThreadId, location: Location)
+    case SingleStep(request: Int, thread: ThreadId, location: Location)
+    case MethodEntry(request: Int, thread: ThreadId, location: Location)
+    case MethodExit(request: Int, thread: ThreadId, location: Location)
+
+    case Thrown(request: Int, thread: ThreadId, location: Location, exception: ObjectId,
+        catchLocation: Location)
+
+    case ClassPrepared(request: Int, thread: ThreadId, tag: TypeTag, cls: ReferenceTypeId,
+        signature: Text, status: Int)
+
+    case Unknown(kind: Int, request: Int)
