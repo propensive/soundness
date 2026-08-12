@@ -1916,53 +1916,46 @@ object Xml extends Tag.Container
   // to resolve an `XPath` to a source `Position`; see the descriptor-layout
   // comment on `PositionIndex` below.
   private object Locator:
-    // `XPath.path.descent` is stored leaf-first (Serpentine's `/`
-    // prepends), so the walker iterates it in reverse to descend
-    // root-to-leaf. The XPath convention is `/foo/bar/@attr`, so the
-    // first element step names the *root* element itself (no descent
-    // into children) and subsequent steps descend.
+    // The path arrives as `XPath.Location`s, root-first. The XPath convention
+    // is `/foo/bar/@attr`, so the first element step names the *root* element
+    // itself (no descent into children) and subsequent steps descend.
     private[xylophone] def walk
       ( xml:      Xml,
         data:     Array[Int]^{},
         offset:   Int,
-        segments: Sequence[Text],
-        i:        Int )
+        segments: List[XPath.Location],
+        first:    Boolean )
     :   Optional[Position] =
 
-      if i >= segments.length then
-        Position(data.readUnchecked(offset + 1).z, data.readUnchecked(offset + 2).z, length = data.readUnchecked(offset + 3))
-      else
-        val segment = segments.stdlib(segments.length - 1 - i)
+      segments match
+        case Nil =>
+          Position(data.readUnchecked(offset + 1).z, data.readUnchecked(offset + 2).z, length = data.readUnchecked(offset + 3))
 
-        XPath.parseStep(segment) match
-          case Unset => Unset
+        case XPath.Location.Attribute(attrName) :: _ =>
+          xml match
+            case element: Element => attrPosition(element, data, offset, attrName)
+            case _                => Unset
 
-          case step => step.asInstanceOf[Either[Text, (Text, Int)]] match
-            case Left(attrName) =>
-              xml match
-                case element: Element => attrPosition(element, data, offset, attrName)
-                case _                => Unset
+        case XPath.Location.Element(name, ordinal) :: rest =>
+          xml match
+            case element: Element if first =>
+              // First step names the document's root element.
+              if element.label == name && ordinal == 1 then
+                walk(element, data, offset, rest, false)
+              else
+                Unset
 
-            case Right((name, ordinal)) =>
-              xml match
-                case element: Element if i == 0 =>
-                  // First step names the document's root element.
-                  if element.label == name && ordinal == 1 then
-                    walk(element, data, offset, segments, i + 1)
-                  else
-                    Unset
+            case element: Element =>
+              descend(element, name, ordinal).let: childElementIndex =>
+                val attrCount = data.readUnchecked(offset + 4)
+                val offSlot = offset + 6 + attrCount + childElementIndex
+                val childOff = data.readUnchecked(offSlot)
 
-                case element: Element =>
-                  descend(element, name, ordinal).let: childElementIndex =>
-                    val attrCount = data.readUnchecked(offset + 4)
-                    val offSlot = offset + 6 + attrCount + childElementIndex
-                    val childOff = data.readUnchecked(offSlot)
+                descendAst(element, name, ordinal).let: child =>
+                  walk(child, data, offset + childOff, rest, false)
 
-                    descendAst(element, name, ordinal).let: child =>
-                      walk(child, data, offset + childOff, segments, i + 1)
-
-                case _ =>
-                  Unset
+            case _ =>
+              Unset
 
     private def attrPosition
       ( element:  Element,
@@ -2053,7 +2046,8 @@ object Xml extends Tag.Container
 
       def locate(document: Document[Xml], path: XPath): Optional[Xml.Position] =
         document.metadata.positionIndex.let: index =>
-          Locator.walk(document.root, index.ints, 0, Sequence.from(path.path.descent), 0)
+          path.locations.let: segments =>
+            Locator.walk(document.root, index.ints, 0, segments, true)
 
       // XML has no distinct key positions, so there is nothing to locate by key.
       def locateKey(document: Document[Xml], path: XPath): Optional[Xml.Position] = Unset
