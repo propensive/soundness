@@ -56,12 +56,11 @@ does not split at all — it becomes a namespace for its own satellites.
 - **R6 COMPONENT-BLOCKED**: outer and member in different components (or the outer nested
   inside an `internal` object, or platform-split source dirs) → the compound name stays.
   Full table below.
-- **R7 SINGLE-GIVEN BACKING TYPES**: a named type that exists only to be instantiated in
-  one `given` should generally be **eliminated** — the given instantiates an anonymous
-  class — rather than kept or nested. Where the name is genuinely needed (several
-  instantiation sites, public API, or to avoid the anonymous-class-duplication warning at
-  `inline given` sites — see coaxial's `@nowarn` precedent in `coaxial_wasi.scala`),
-  nesting is acceptable when same-component. This absorbs July's C3/C3b lists.
+- **R7 SINGLE-GIVEN BACKING TYPES — retired.** This proposed eliminating a named type that
+  exists only to back one `given`, letting the given instantiate an anonymous class.
+  Measured against the tree, essentially none of the ~90 such types can be, and the reasons
+  are specific and instructive; see the R7 section below. Where such a type is same-component
+  it may still be *nested*, which several passes have done.
 
 ## The rename table (R1/R2/R4) — all verified same-component
 
@@ -187,33 +186,40 @@ compound names. (Some may gain namespaces later if the outer concepts are ever r
 | `HttpSession` | telekinesis.jvm | `Http` (core) |
 | `HttpConnection` | scintillate.server | `Http` (telekinesis — cross-library) |
 
-## Inline candidates (R7) — named types backing a single given
+## R7 — retired: the single-given backing types cannot be inlined
 
-Verify the use-count at execution; where a type is instantiated exactly once, in one
-given, prefer eliminating the name (anonymous class in the given). Candidates, from the
-July C3b list plus the carriers the modularity work created:
+R7 proposed eliminating named types that exist only to be instantiated in one `given`,
+letting the given instantiate an anonymous class. **Measured against the tree, essentially
+none of them can be**, and the three families it named each fail for a different, specific
+reason. The rule is retired rather than left as standing advice.
 
-- The per-format `DecodableDerivation`/`EncodableDerivation` objects (austronesian,
-  breviloquence, caesura, jacinta, legerdemain, locomotion, stratiform, xylophone,
-  ypsiloid) and wisteria's `AddableDerivation`/`DivisibleDerivation`/
-  `MultiplicableDerivation`/`SubtractableDerivation`, stratiform's `TelsDerivation` —
-  generically summoned, need not be named.
-- Carrier classes returned by single givens: `TarOpenable`, `TarBuilder.TarCreatable`,
-  `ImageOpenable`, `RasterOpenable`, `TelOpenable`, `TelViewOpenable`, `ZipOpenable`,
-  `ZipDataOpenable`, `TarDataOpenable`, `WatchOpenable`, `WatchAllOpenable`,
-  `DirectoryOpenable`, `FileOpenable`, `ImageDataOpenable`, `WorkloadOpenable` — each
-  either inlines into its given or, where the name is load-bearing (e.g. it carries
-  members or appears in public signatures), nests if same-component.
-- The `*Sessional` instances (`GrpcSessional`, `LspSessional`, `WsSessional`,
-  `ScalacSessional`, `NetworkDeviceSessional`) — same treatment.
-- The `*Tactic` strategy backings (contingency's `AttemptTactic`, `AmalgamateTactic`,
-  `EitherTactic`, `HaltTactic`, `OptionalTactic`, `ThrowTactic`, `TrackTactic`;
-  parasite's `AsyncTactic`) — these back the `strategies` choice givens; inline where
-  single-use, else keep (they are user-visible in error messages, which may argue for
-  keeping names).
-- Caveat from the C3 triage (still valid): a `private` modifier can leak into the
-  inferred type of a public given and break downstream derivation — prefer anonymity or
-  `@unexported`-style export removal over `private[lib]`.
+The families, as they stand: `*Openable` (25 declarations), `*Derivation` (33),
+`*Tactic` (13), `*Creatable` (10), `*Sessional` (9).
+
+- **`*Openable`, `*Sessional`, `*Creatable` — named on purpose, and the code says so.**
+  Twenty files carry a comment to the effect that "an anonymous subclass would freshen the
+  capability types in its inferred `Result` member", among them galilei's `FileOpenable`,
+  hallucination's `RasterOpenable`, cordillera's `Http2`, perihelion, zeppelin's `Jar` and
+  `Zip`, embarcadero's `Workload` and tarantula's `WebDriver`. These are not incidental
+  carriers; the name is what pins the capability type.
+- **`*Derivation` — forbidden by the compiler.** Their `conjunction` method must be
+  `inline`, and moving the object into the `inline given` that uses it nests one inline
+  method inside another: *"Implementation restriction: nested inline methods are not
+  supported"*. Verified by attempting it on wisteria's `AddableDerivation`.
+- **`*Tactic` — mostly not single-use, and load-bearing where it is.** `ThrowTactic` has 26
+  references, `HaltTactic` 15, `OptionalTactic` and `AsyncTactic` 10 each. `ThrowTactic`
+  further extends `caps.Unscoped` with a comment explaining that the capture behaviour is
+  the reason the class exists, and tactic names appear in user-facing error messages.
+
+A general scan for types whose only external use is inside a `given` returns six names, and
+none survives inspection: `Vp8Encoder` and `WebpEncoder` are utility objects called for
+their methods, `JavaIdentifier` is a phantom type used in a `Nominative under …` bound,
+`HeapCloak` is a deliberately stable singleton (its whole point is an empty capture set) and
+is already `private[enigmatic]`, and `FatalTactic`/`UncheckedTactic` are tactics as above.
+
+The residual value in the original R7 observation is the opposite of what it proposed: where
+a type exists only to back a given, that is usually *evidence of a capture-checking
+constraint*, and the name should be read as load-bearing until proven otherwise.
 
 ## Mechanics
 

@@ -74,6 +74,13 @@ body = (f'{FAMILIES}\n\n| prefix | libraries | n | names |\n|---|---|---|---|\n'
         + '\n'.join(textwrap.wrap(', '.join(f'`{n}`' for n in singles), width=98))
         + '\n\n' + doc[doc.index(TAIL):])
 
-open(DOC, 'w', encoding='utf-8').write(head + body)
+# The curated section must survive byte-for-byte; a silent migration of rows into it
+# would quietly retire names from review.
+result = head + body
+check = result[result.index(REVIEWED):result.index(SINGLETONS)]
+if check != reviewed_section:
+    raise SystemExit('refusing to write: the reviewed section would change')
+
+open(DOC, 'w', encoding='utf-8').write(result)
 print(f'{ninfam} names in {nfam} families, {nsing} singletons, '
       f'{len(reviewed)} reviewed-and-excluded')
