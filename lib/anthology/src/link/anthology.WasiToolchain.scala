@@ -50,7 +50,7 @@ object WasiToolchain:
     new WasiToolchain()
 
   private def probe(tool: Text)(using WorkingDirectory): Unit raises ToolchainError =
-    if safely(mute[ExecEvent](sh"$tool --version".exec[Exit]())) != Exit.Ok
+    if safely(mute[Exec.Event](sh"$tool --version".exec[Exit]())) != Exit.Ok
     then raise(ToolchainError(tool))
 
 class WasiToolchain private ()

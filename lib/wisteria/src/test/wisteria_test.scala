@@ -90,8 +90,8 @@ object Tests extends Suite(m"Wisteria tests"):
         case List(variant, text2) =>
           // Seal the variant-dispatch tactic inside the instance (the austronesian/jacinta
           // pattern): without it the derived instance captures the enclosing scope's
-          // `Tactic[VariantError]` given and is itself a capability.
-          provide[Tactic[VariantError]]:
+          // `Tactic[Variant.Error]` given and is itself a capability.
+          provide[Tactic[Variant.Error]]:
             delegate[derivation](variant):
               [variant <: derivation] =>
                 context => context.read(text2)
@@ -282,12 +282,12 @@ object Tests extends Suite(m"Wisteria tests"):
   def run(): Unit =
     // A non-capturing tactic: `throwUnsafely` captures the universal `canThrowAny`, and that
     // capture flows into every derived instance summoned under it, making the derivation itself
-    // a capability. `uncheckedErrors` throws identically (the tests still observe VariantError)
+    // a capability. `uncheckedErrors` throws identically (the tests still observe Variant.Error)
     // but captures nothing.
-    erased given uncheckedVariantError: VariantError is Unchecked =
-      new Unchecked { type Self = VariantError }
+    erased given uncheckedVariantError: Variant.Error is Unchecked =
+      new Unchecked { type Self = Variant.Error }
 
-    given Tactic[VariantError] = strategies.uncheckedErrors
+    given Tactic[Variant.Error] = strategies.uncheckedErrors
 
     suite(m"Product derivation"):
       test(m"Parse a product via construct"):
@@ -405,7 +405,7 @@ object Tests extends Suite(m"Wisteria tests"):
         Eq.derived[Tree].equal(left, right)
       . assert(_ == false)
 
-      test(m"VariantError is raised for unknown variant tag"):
+      test(m"Variant.Error is raised for unknown variant tag"):
         sealed trait Wrapped
         case class WrappedInt(value: Int) extends Wrapped
         case class WrappedBool(value: Boolean) extends Wrapped
@@ -413,10 +413,10 @@ object Tests extends Suite(m"Wisteria tests"):
         try
           Readable.derived[Wrapped].read(t"Unknown:42")
           t""
-        catch case error: VariantError => error.inputLabel
+        catch case error: Variant.Error => error.inputLabel
       . assert(_ == t"Unknown")
 
-      test(m"VariantError reports the parent sum type"):
+      test(m"Variant.Error reports the parent sum type"):
         sealed trait Wrapped
         case class WrappedInt(value: Int) extends Wrapped
         case class WrappedBool(value: Boolean) extends Wrapped
@@ -424,10 +424,10 @@ object Tests extends Suite(m"Wisteria tests"):
         try
           Readable.derived[Wrapped].read(t"Unknown:42")
           t""
-        catch case error: VariantError => error.sum
+        catch case error: Variant.Error => error.sum
       . assert(_ == t"Wrapped")
 
-      test(m"VariantError lists the valid variants"):
+      test(m"Variant.Error lists the valid variants"):
         sealed trait Wrapped
         case class WrappedInt(value: Int) extends Wrapped
         case class WrappedBool(value: Boolean) extends Wrapped
@@ -435,7 +435,7 @@ object Tests extends Suite(m"Wisteria tests"):
         try
           Readable.derived[Wrapped].read(t"Unknown:42")
           List.empty[Text]
-        catch case error: VariantError => error.validVariants
+        catch case error: Variant.Error => error.validVariants
       . assert(_ == List(t"WrappedInt", t"WrappedBool"))
 
       test(m"SumOnly applies to a manually-given variant"):

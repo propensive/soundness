@@ -512,7 +512,7 @@ object Xml extends Tag.Container
 
     // Sealed-trait disjunction picks a variant by element label. We screen
     // the discriminator against `variantLabels` *before* `delegate`-ing so
-    // an unrecognised label doesn't punch through as `VariantError` — it
+    // an unrecognised label doesn't punch through as `Variant.Error` — it
     // gets the same `Default[derivation]`-or-abort treatment as a missing
     // discriminator. When the user supplies `Default[derivation]` we
     // register one error at the current focus and continue with the
@@ -533,7 +533,7 @@ object Xml extends Tag.Container
       xml =>
         provide[Foci[Xml.Focus]]:
           provide[Tactic[Xml.Error]]:
-            provide[Tactic[VariantError]]:
+            provide[Tactic[Variant.Error]]:
               val discriminable = infer[derivation is Discriminable in Xml]
 
               val resolved: Optional[Text] =

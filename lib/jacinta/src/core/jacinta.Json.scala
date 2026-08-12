@@ -352,7 +352,7 @@ trait Json2 extends Json3:
       // available from the standalone `Schematic` / `JsonSchema.derived`; the
       // codec-carried shape is kept permissive (`Any`) because the only way to walk
       // the variants here (`delegate`) is `fallible` and would leak a
-      // `Tactic[VariantError]` requirement onto every codec.
+      // `Tactic[Variant.Error]` requirement onto every codec.
       // The shape test happens once, outside the decode lambda: a reference
       // to the shape class inside the nested context functions poisons
       // their capture sets.
@@ -362,7 +362,7 @@ trait Json2 extends Json3:
       Json.Decodable(Morphology.Any):
         json =>
           provide[Tactic[Json.Error]]:
-            provide[Tactic[VariantError]]:
+            provide[Tactic[Variant.Error]]:
               val discriminable = infer[derivation is Discriminable in Json]
 
               // `@name[Json]` / bare `@name` variant renames: map the serialized
@@ -434,7 +434,7 @@ trait Json2 extends Json3:
 
               def parse(reader: Json.Reader^): derivation =
                 provide[Tactic[Json.Error]]:
-                  provide[Tactic[VariantError]]:
+                  provide[Tactic[Variant.Error]]:
                     val wire: Text = reader.discriminant(fielded.field).or:
                       abort(Json.Error(Reason.Absent))
 
@@ -450,7 +450,7 @@ trait Json2 extends Json3:
 
               def parse(reader: Json.Reader^): derivation =
                 provide[Tactic[Json.Error]]:
-                  provide[Tactic[VariantError]]:
+                  provide[Tactic[Variant.Error]]:
                     reader.openObject()
                     val wire: Text = reader.key().or(abort(Json.Error(Reason.Absent)))
 
@@ -470,7 +470,7 @@ trait Json2 extends Json3:
 
               def parse(reader: Json.Reader^): derivation =
                 provide[Tactic[Json.Error]]:
-                  provide[Tactic[VariantError]]:
+                  provide[Tactic[Variant.Error]]:
                     val wire: Text = reader.discriminant(envelope.tagField).or:
                       abort(Json.Error(Reason.Absent))
 

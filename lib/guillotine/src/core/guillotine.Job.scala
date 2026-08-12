@@ -138,16 +138,16 @@ extends Subprocess, Process.Ref, caps.ExclusiveCapability:
     else contingency.abort(Async.Error(Async.Error.Reason.Timeout))
 
   // Real `using` clauses rather than the `logs` sugar, as for `Executable.exec`.
-  def exitStatus()(using (ExecEvent is Loggable)^): Exit = process.waitFor() match
-    case 0     => Log.fine(ExecEvent.ProcessExit(pid, 0)); Exit.Ok
-    case other => Log.warn(ExecEvent.ProcessExit(pid, other)); Exit.Fail(other)
+  def exitStatus()(using (Exec.Event is Loggable)^): Exit = process.waitFor() match
+    case 0     => Log.fine(Exec.Event.ProcessExit(pid, 0)); Exit.Ok
+    case other => Log.warn(Exec.Event.ProcessExit(pid, other)); Exit.Fail(other)
 
-  def abort()(using (ExecEvent is Loggable)^): Unit =
-    Log.info(ExecEvent.AbortProcess(pid))
+  def abort()(using (Exec.Event is Loggable)^): Unit =
+    Log.info(Exec.Event.AbortProcess(pid))
     process.destroy()
 
-  def kill()(using (ExecEvent is Loggable)^): Unit =
-    Log.warn(ExecEvent.KillProcess(pid))
+  def kill()(using (Exec.Event is Loggable)^): Unit =
+    Log.warn(Exec.Event.KillProcess(pid))
     process.destroyForcibly()
 
   def process(using Tactic[Pid.Error]^): Process^ = Process(pid)

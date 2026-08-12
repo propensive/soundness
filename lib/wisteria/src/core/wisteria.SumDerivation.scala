@@ -51,7 +51,7 @@ object SumDerivation:
 
 
     protected transparent inline def complement[derivation, variant](sum: derivation)
-      ( using variantIndex: Int & VariantIndex[variant] aka "index",
+      ( using variantIndex: Int & Variant.Index[variant] aka "index",
               reflection:   SumReflection[derivation] )
     :   Optional[variant] =
 
@@ -82,7 +82,7 @@ object SumDerivation:
       ( inline lambda:  [variant <: derivation] => typeclass[variant]
                         ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
-                              Int & VariantIndex[variant] aka "index" ) ?=> result )
+                              Int & Variant.Index[variant] aka "index" ) ?=> result )
     :   Array[result]^{} =
 
       type Labels = reflection.MirroredElemLabels
@@ -103,7 +103,7 @@ object SumDerivation:
       ( inline lambda:  result => [variant <: derivation] => typeclass[variant]
                         ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
-                              (Int & VariantIndex[variant]) aka "index" ) ?=> result )
+                              (Int & Variant.Index[variant]) aka "index" ) ?=> result )
     :   result =
 
       inline !![variants] match
@@ -117,8 +117,8 @@ object SumDerivation:
 
                 val typeclass = wisteria.internal.field[typeclass, variant0]
 
-                val variantIndex: Int & VariantIndex[variant0] =
-                  VariantIndex[variant0](index)
+                val variantIndex: Int & Variant.Index[variant0] =
+                  Variant.Index[variant0](index)
 
                 val accumulator2 =
                   lambda(accumulator)[variant0](typeclass)
@@ -139,8 +139,8 @@ object SumDerivation:
       type Labels = reflection.MirroredElemLabels
 
       singletonFold[derivation, Variants, Labels](_ == input).or:
-        provide[Tactic[VariantError]]:
-          abort(VariantError[derivation](input))
+        provide[Tactic[Variant.Error]]:
+          abort(Variant.Error[derivation](input))
 
 
     private transparent inline def singletonFold[derivation, variants <: Tuple, labels <: Tuple]
@@ -168,7 +168,7 @@ object SumDerivation:
       ( inline lambda:  [variant <: derivation] => typeclass[variant]
                         ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
-                              Int & VariantIndex[variant] aka "index" ) ?=> result )
+                              Int & Variant.Index[variant] aka "index" ) ?=> result )
     :   result =
 
       type Labels = reflection.MirroredElemLabels
@@ -191,7 +191,7 @@ object SumDerivation:
                         =>  variant
                         ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
-                              Int & VariantIndex[variant] aka "index" ) ?=> result )
+                              Int & Variant.Index[variant] aka "index" ) ?=> result )
     :   result =
 
       type Labels = reflection.MirroredElemLabels
@@ -209,13 +209,13 @@ object SumDerivation:
       ( inline inputLabel: Text, size: Int, index: Int, fallible: Boolean )
       ( using reflection: SumReflection[derivation] )
       ( inline predicate:
-          (Text aka "label", Int & VariantIndex[derivation] aka "index") ?=> Boolean )
+          (Text aka "label", Int & Variant.Index[derivation] aka "index") ?=> Boolean )
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  typeclass[variant]
                         ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
-                              Int & VariantIndex[variant] aka "index" ) ?=> result )
+                              Int & Variant.Index[variant] aka "index" ) ?=> result )
     :   Optional[result] =
 
       inline !![variants] match
@@ -227,11 +227,11 @@ object SumDerivation:
               if index >= size then Unset else
                 (valueOf[label].asMatchable: @unchecked) match
                   case label: String =>
-                    val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
+                    val index2: Int & Variant.Index[derivation] = Variant.Index[derivation](index)
 
                     if predicate(using label.tt.aka["label"], index2.aka["index"])
                     then
-                      val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
+                      val index3: Int & Variant.Index[variant0] = Variant.Index[variant0](index)
                       val context = wisteria.internal.field[typeclass, variant0]
 
                       lambda[variant0](context)
@@ -247,8 +247,8 @@ object SumDerivation:
 
         case _ =>
           inline if fallible
-          then provide[Tactic[VariantError]]:
-            abort(VariantError[derivation](inputLabel))
+          then provide[Tactic[Variant.Error]]:
+            abort(Variant.Error[derivation](inputLabel))
           else panic(m"Should be unreachable")
 
 
@@ -256,14 +256,14 @@ object SumDerivation:
       ( inline sum: derivation, size: Int, index: Int, fallible: Boolean )
       ( using reflection: SumReflection[derivation] )
       ( inline predicate: ( label: Text aka "label",
-                            index: Int & VariantIndex[derivation] aka "index" )
+                            index: Int & Variant.Index[derivation] aka "index" )
                           ?=> Boolean )
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant
                         ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
-                              Int & VariantIndex[variant] aka "index" ) ?=> result )
+                              Int & Variant.Index[variant] aka "index" ) ?=> result )
     :   Optional[result] =
 
       inline !![variants] match
@@ -275,10 +275,10 @@ object SumDerivation:
               if index >= size then Unset else
                 (valueOf[label].asMatchable: @unchecked) match
                   case label: String =>
-                    val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
+                    val index2: Int & Variant.Index[derivation] = Variant.Index[derivation](index)
 
                     if predicate(using label.tt.aka["label"], index2.aka["index"]) then
-                      val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
+                      val index3: Int & Variant.Index[variant0] = Variant.Index[variant0](index)
                       val variant: variant0 = sum.asInstanceOf[variant0]
                       val context = wisteria.internal.field[typeclass, variant0]
 
@@ -293,7 +293,7 @@ object SumDerivation:
 
         case _ =>
           inline if fallible
-          then provide[Tactic[VariantError]](abort(VariantError[derivation]("".tt)))
+          then provide[Tactic[Variant.Error]](abort(Variant.Error[derivation]("".tt)))
           else panic(m"Should be unreachable")
 
 

@@ -55,7 +55,7 @@ import hypotenuse.Bcd
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import wisteria.{Discriminable, VariantError}
+import wisteria.{Discriminable, Variant.Error}
 import zephyrine.*
 
 object internal:
@@ -1349,7 +1349,7 @@ object internal:
   // expansion, so a sibling staged given composes) — no per-occurrence map
   // building, no generic-equality dispatch, no `delegate` fold. A missing
   // tag and an unknown tag raise exactly as `ParsableDerivation.disjunction`
-  // does: `Json.Error(Absent)` and wisteria's `VariantError`, each through
+  // does: `Json.Error(Absent)` and wisteria's `Variant.Error`, each through
   // the same deferred `provide` summons the derived engine uses.
   def stagedSum[value: Type](renames: Expr[Map[Text, Text]])(using Quotes)
   :   Expr[value is Json.Parsable] =
@@ -1413,8 +1413,8 @@ object internal:
 
       if index == arity then
         '{
-          provide[Tactic[VariantError]]:
-            abort(VariantError[value]($wire))
+          provide[Tactic[Variant.Error]]:
+            abort(Variant.Error[value]($wire))
         }
       else variantTypes(index).asType match
         case '[type variantType <: value; variantType] =>

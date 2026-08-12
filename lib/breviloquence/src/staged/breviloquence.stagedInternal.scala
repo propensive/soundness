@@ -901,8 +901,8 @@ object stagedInternal:
     def dispatch(index: Int, tag: Expr[String]): Expr[sum] =
       if index == arity then
         '{
-          provide[Tactic[wisteria.VariantError]]:
-            abort(wisteria.VariantError[sum]($tag.tt))
+          provide[Tactic[wisteria.Variant.Error]]:
+            abort(wisteria.Variant.Error[sum]($tag.tt))
         }
       else variants(index)(1).asType match
         case '[type variantType <: sum; variantType] =>

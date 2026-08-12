@@ -45,7 +45,7 @@ import serpentine.*
 
 package gitCommands:
   given environmentDefaultGitCommand: ( WorkingDirectory, Git.Event is Loggable, Tactic[NameError],
-                                        Tactic[Path.Error], Tactic[IoError], Tactic[ExecError] )
+                                        Tactic[Path.Error], Tactic[IoError], Tactic[Exec.Error] )
   =>  (((Path on Linux) is Instantiable across Paths from Text)^)
   =>  Git.Command =
 
@@ -84,7 +84,7 @@ extension (noteRef: NoteRef)
             wd:      WorkingDirectory,
             gitErr:  Tactic[Git.Error],
             refErr:  Tactic[Git.RefError],
-            exec:    Tactic[ExecError] )
+            exec:    Tactic[Exec.Error] )
   ( using (Git.Event is Loggable)^ )
   :   value =
 

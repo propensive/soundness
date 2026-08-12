@@ -225,7 +225,7 @@ trait Yaml2:
     // Sealed-trait disjunction picks a variant by mapping discriminator
     // (`type:` key). We screen the discriminator against
     // `variantLabels` *before* `delegate`-ing so an unrecognised label
-    // doesn't punch through as `VariantError` (which `validate
+    // doesn't punch through as `Variant.Error` (which `validate
     // [Yaml.Focus]` doesn't catch) — it gets the same
     // `Default[derivation]`-or-abort treatment as a missing
     // discriminator. When the user supplies `Default[derivation]` we
@@ -234,7 +234,7 @@ trait Yaml2:
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Yaml = yaml =>
       provide[Foci[Yaml.Focus]]:
         provide[Tactic[Yaml.Error]]:
-          provide[Tactic[VariantError]]:
+          provide[Tactic[Variant.Error]]:
             val discriminable = infer[derivation is Discriminable in Yaml]
             val labels: List[Text] = variantLabels
 

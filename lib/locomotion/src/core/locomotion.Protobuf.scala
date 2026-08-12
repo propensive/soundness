@@ -614,7 +614,7 @@ object Protobuf extends Protobuf2:
       // A fresh (`^`) result honestly admitting the capture, as for `conjunction` above.
       { protobuf =>
         provide[Tactic[Protobuf.Error]]:
-          provide[Tactic[VariantError]]:
+          provide[Tactic[Variant.Error]]:
             val map = ProtobufParser(protobuf.payload).fields()
             val labels = variantLabels
 

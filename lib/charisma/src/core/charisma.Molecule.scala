@@ -81,9 +81,9 @@ object Molecule:
     . join +
       suffix
 
-  def apply(element: ChemicalElement): Molecule = element.molecule
+  def apply(element: Chemical.Element): Molecule = element.molecule
 
 case class Molecule
-  ( elements: Map[ChemicalElement, Int], charge: Int, state: Optional[PhysicalState] = Unset )
+  ( elements: Map[Chemical.Element, Int], charge: Int, state: Optional[PhysicalState] = Unset )
 extends Molecular:
   def molecule: Molecule = this

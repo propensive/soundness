@@ -154,7 +154,7 @@ trait Cbor2:
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Cbor =
       cbor =>
         provide[Tactic[Cbor.Error]]:
-          provide[Tactic[VariantError]]:
+          provide[Tactic[Variant.Error]]:
             val discriminable = infer[derivation is Discriminable in Cbor]
 
             // `@name[Cbor]` / bare `@name` variant renames: map the serialized

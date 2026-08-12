@@ -34,7 +34,30 @@ package guillotine
 
 import anticipation.*
 import fulminate.*
+import gossamer.*
+import rudiments.*
+import spectacular.*
 
-case class ExecError(command: Command, stdout: Data = Data(), stderr: Data = Data())
-  ( using Diagnostics )
-extends Error(691, 0)(m"execution of the command $command failed")
+// A namespace for the vocabulary of running an external command. There is no `Exec`
+// type: the execution itself is a `Process` or a `Job`.
+object Exec:
+  // ExecError → Exec.Error
+  case class Error(command: Command, stdout: Data = Data(), stderr: Data = Data())
+    ( using Diagnostics )
+  extends fulminate.Error(691, 0)(m"execution of the command $command failed")
+
+  // ExecEvent → Exec.Event
+  object Event:
+    given communicable: Event is Communicable =
+      case AbortProcess(pid)       => m"aborted the process with PID $pid"
+      case PipelineStart(commands) => m"starting the pipeline ${commands.map(_.show).join(t" ")}"
+      case KillProcess(pid)        => m"killed the process with PID $pid"
+      case ProcessStart(command)   => m"starting the process $command"
+      case ProcessExit(pid, code)  => m"the process with PID $pid exited with code $code"
+
+  enum Event:
+    case ProcessStart(command: Command) extends Event, Log.Process
+    case AbortProcess(pid: Pid) extends Event, Log.Process
+    case PipelineStart(commands: List[Command]) extends Event, Log.Process
+    case KillProcess(pid: Pid) extends Event, Log.Process
+    case ProcessExit(pid: Pid, code: Int) extends Event, Log.Process

@@ -54,14 +54,14 @@ sealed trait Executable:
   // the freshly-minted `Job` capability cannot cross the nested context-function results the
   // sugar desugars to (the stacked-raises convention; see rep/DECISIONS.md).
   def fork[result]()(using working: WorkingDirectory)
-    ( using Tactic[ExecError], (ExecEvent is Loggable)^ )
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^
 
 
   // Real `using` clauses rather than the `raises`/`logs` sugar: a context-function result
   // would hide the `computable` parameter, which the separation checker rejects.
   def exec[result]()(using computable: (result is Computable)^, working: WorkingDirectory)
-    ( using Tactic[ExecError], (ExecEvent is Loggable)^ )
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   result =
 
     fork[result]().await()
@@ -73,7 +73,7 @@ sealed trait Executable:
     ( using erased intelligible: Exec is Intelligible,
             working:             WorkingDirectory,
             computable:          (intelligible.Result is Computable)^ )
-  :   intelligible.Result raises ExecError logs ExecEvent =
+  :   intelligible.Result raises Exec.Error logs Exec.Event =
 
     fork[intelligible.Result]().await()
 
@@ -113,7 +113,7 @@ object Command:
 
 case class Command(arguments: Text*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-    ( using Tactic[ExecError], (ExecEvent is Loggable)^ )
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^ =
 
     // The `java.util.List` overload, not the varargs one: a Java varargs splice of an array
@@ -123,13 +123,13 @@ case class Command(arguments: Text*) extends Executable:
     val processBuilder = ProcessBuilder(javaArguments)
     processBuilder.directory(ji.File(working.directory().s))
 
-    Log.info(ExecEvent.ProcessStart(this))
+    Log.info(Exec.Event.ProcessStart(this))
 
     // The JDK process starts inside the `try`; the `Job` capability is minted outside it
     // (a fresh result may not be created within a `try` expression).
     val process =
       try processBuilder.start().nn
-      catch case errror: ji.IOException => abort(ExecError(this))
+      catch case errror: ji.IOException => abort(Exec.Error(this))
 
     new Job(process)
 
@@ -145,7 +145,7 @@ object Pipeline:
 
 case class Pipeline(commands: Command*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-    ( using Tactic[ExecError], (ExecEvent is Loggable)^ )
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^ =
 
     val processBuilders = commands.map: command =>
@@ -158,7 +158,7 @@ case class Pipeline(commands: Command*) extends Executable:
 
       processBuilder.nn
 
-    Log.info(ExecEvent.PipelineStart(commands.to(List)))
+    Log.info(Exec.Event.PipelineStart(commands.to(List)))
 
     val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala
 

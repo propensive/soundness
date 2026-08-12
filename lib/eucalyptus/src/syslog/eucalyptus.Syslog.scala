@@ -50,17 +50,17 @@ object Syslog:
 
     recover:
       case StreamError(_)     => ()
-      case ExecError(_, _, _) => ()
+      case Exec.Error(_, _, _) => ()
 
     . protect:
         // The fresh `Job` capability is bound before `writeTo` so its evidence summons
         // against a stable reference rather than a fresh-decorated expression.
         syslog.tag match
-          case tag: Text => mute[ExecEvent]:
+          case tag: Text => mute[Exec.Event]:
             val job = sh"logger -t $tag".fork[Unit]()
             job.stdin(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
-          case _ => mute[ExecEvent]:
+          case _ => mute[Exec.Event]:
             val job = sh"logger".fork[Unit]()
             job.stdin(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 

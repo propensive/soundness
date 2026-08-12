@@ -34,5 +34,5 @@ package soundness
 
 export
   charisma
-  . { ChemicalElement, ChemicalEquation, ChemicalFormula, Formulable, Molecular, Molecule,
+  . { Chemical, Formulable, Molecular, Molecule,
       PeriodicTable, PhysicalState, Reaction }

@@ -209,7 +209,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
       test(m"Without Default[DShape], unknown discriminator aborts"):
         // Outside a `Default[DShape]`, the disjunction calls `abort`,
         // which the surrounding `validate` captures and reports as one
-        // accrual entry. No `VariantError` punches through.
+        // accrual entry. No `Variant.Error` punches through.
         val xml = x"<UnknownVariant><foo>bar</foo></UnknownVariant>"
         validateXml(xml)(_.as[DShape]).items.length
       . assert(_ == 1)
