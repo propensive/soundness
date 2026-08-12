@@ -57,12 +57,12 @@ object Connectable:
   // capability carrying that evidence in its capture set.
   given tcpEndpoint: (online: Online)
   =>  (backend: SocketBackend, options: Every[SocketOption.Tcp])
-  =>  ((Endpoint[TcpPort] is Connectable)^{online, caps.any}) =
+  =>  ((Endpoint[Tcp.Port] is Connectable)^{online, caps.any}) =
 
     new Connectable:
-      type Self = Endpoint[TcpPort]
+      type Self = Endpoint[Tcp.Port]
 
-      def connect(endpoint: Endpoint[TcpPort], interface: Optional[MacAddress]): Duplex =
+      def connect(endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress]): Duplex =
         backend.duplexTcp(endpoint, interface, List.of(options.values))
 
 trait Connectable extends Typeclass:

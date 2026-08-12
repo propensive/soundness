@@ -34,7 +34,14 @@ package urticose
 
 import java.net as jn
 
+import prepositional.*
+
 object Udp:
+  // UdpPort → Udp.Port
+  // A protocol refinement of the unified `Port` type. Qualified, because inside
+  // `object Udp` the bare name would be this alias itself.
+  type Port = urticose.Port over Udp
+
   given allocatable: Udp is Allocatable = new Allocatable:
     type Self = Udp
 

@@ -44,12 +44,6 @@ export urticose.internal.Opaques.MacAddress
 export urticose.internal.Opaques.DnsLabel
 export urticose.internal.Opaques.Port
 
-// `TcpPort` and `UdpPort` are now the two protocol refinements of the unified
-// `Port` type; the names are retained for readability and backwards source
-// compatibility.
-type TcpPort = Port over Tcp
-type UdpPort = Port over Udp
-
 extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${urticose.internal.ip('context)}
 

@@ -73,7 +73,7 @@ trait SocketBackend:
   //── Stream server (`Bindable` over TCP / Unix-domain) ────────────────────────────────────────
   type ServerSocket
 
-  def listenTcp(port: TcpPort, interface: Optional[MacAddress], options: List[SocketOption])
+  def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
   :   ServerSocket
 
   def listenDomain(address: DomainSocket, options: List[SocketOption]): ServerSocket
@@ -86,12 +86,12 @@ trait SocketBackend:
   //── Datagram server (`Bindable` over UDP) ────────────────────────────────────────────────────
   type DatagramSocket
 
-  def listenUdp(port: UdpPort, interface: Optional[MacAddress], options: List[SocketOption])
+  def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption])
   :   DatagramSocket
 
   // Block for the next datagram; `reply` sends `data` back to a received packet's `sender`.
   def receive(socket: DatagramSocket): Packet raises ConnectionError
-  def reply(socket: DatagramSocket, sender: Ipv4 | Ipv6, port: UdpPort, data: Data)
+  def reply(socket: DatagramSocket, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
   :   Unit raises ConnectionError
 
   def unbind(socket: DatagramSocket): Unit
@@ -100,10 +100,10 @@ trait SocketBackend:
   type Exchange
 
   def dialTcp
-    ( endpoint: Endpoint[TcpPort], interface: Optional[MacAddress], options: List[SocketOption] )
+    ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
   :   Exchange
 
-  def dialTcpPort(port: TcpPort, interface: Optional[MacAddress], options: List[SocketOption])
+  def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
   :   Exchange
 
   def dialDomain(address: DomainSocket, options: List[SocketOption]): Exchange
@@ -121,7 +121,7 @@ trait SocketBackend:
   // Connect and hand back a `Duplex`: independent reads and writes over one open connection, with
   // no half-close.
   def duplexTcp
-    ( endpoint: Endpoint[TcpPort], interface: Optional[MacAddress], options: List[SocketOption] )
+    ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
   :   Duplex
 
   def duplexDomain(address: DomainSocket, options: List[SocketOption]): Duplex
@@ -130,11 +130,11 @@ trait SocketBackend:
   type Courier
 
   def routeUdp
-    ( endpoint: Endpoint[UdpPort], interface: Optional[MacAddress], options: List[SocketOption] )
+    ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
   :   Courier
 
   def routeUdpPort
-    ( port: UdpPort, interface: Optional[MacAddress], options: List[SocketOption] )
+    ( port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption] )
   :   Courier
 
   // Dispatch the stream as a single datagram to the courier's destination.

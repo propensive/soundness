@@ -63,7 +63,7 @@ package httpServers:
             loggable:  HttpServer.Event is Loggable,
             errorPage: WebserverErrorPage )
   extends Protocolic:
-    type Transport = TcpPort of port
+    type Transport = Tcp.Port of port
     type Self = Http
     type Server = Service
     // Alias with the explicit capture: a bare capability-class alias decorates the trait's
@@ -71,7 +71,7 @@ package httpServers:
     type Request = HttpConnection^
     type Response = Http.Response
 
-    def server(port: TcpPort of port)(lambda: (request: Request) ?=> Response^{request})
+    def server(port: Tcp.Port of port)(lambda: (request: Request) ?=> Response^{request})
     :   Server^ =
       if native then SocketServer(port.number, local).handle(lambda)
       else HttpServer(port.number, local).handle(lambda)
@@ -79,7 +79,7 @@ package httpServers:
   // Public: the soundness bundle's hand-written forwarder givens name this alias.
   type HttpServerFor[port] =
     Http is Protocolic
-      { type Transport = TcpPort of port
+      { type Transport = Tcp.Port of port
         type Request = HttpConnection^
         type Response = Http.Response
         type Server = Service }

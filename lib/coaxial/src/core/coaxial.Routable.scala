@@ -42,19 +42,19 @@ import vacuous.*
 
 object Routable:
   given udpEndpoint: (backend: SocketBackend, options: Every[SocketOption.Udp])
-  =>  Endpoint[UdpPort] is Routable:
+  =>  Endpoint[Udp.Port] is Routable:
     type Connection = backend.Courier
 
-    def connect(endpoint: Endpoint[UdpPort], interface: Optional[MacAddress]): Connection =
+    def connect(endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress]): Connection =
       backend.routeUdp(endpoint, interface, List.of(options.values))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       backend.dispatch(connection, input)
 
-  given udpPort: (backend: SocketBackend, options: Every[SocketOption.Udp]) => UdpPort is Routable:
+  given udpPort: (backend: SocketBackend, options: Every[SocketOption.Udp]) => Udp.Port is Routable:
     type Connection = backend.Courier
 
-    def connect(port: UdpPort, interface: Optional[MacAddress]): Connection =
+    def connect(port: Udp.Port, interface: Optional[MacAddress]): Connection =
       backend.routeUdpPort(port, interface, List.of(options.values))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =

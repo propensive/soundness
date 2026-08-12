@@ -34,7 +34,14 @@ package urticose
 
 import java.net as jn
 
+import prepositional.*
+
 object Tcp:
+  // TcpPort → Tcp.Port
+  // A protocol refinement of the unified `Port` type. Qualified, because inside
+  // `object Tcp` the bare name would be this alias itself.
+  type Port = urticose.Port over Tcp
+
   given allocatable: Tcp is Allocatable = new Allocatable:
     type Self = Tcp
 
