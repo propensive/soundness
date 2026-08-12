@@ -129,7 +129,7 @@ object Svg:
       val width = numAttr(elem, t"width")
       val height = numAttr(elem, t"height")
 
-      val defs = ListBuffer[SvgDef]()
+      val defs = ListBuffer[Def]()
       val figures = ListBuffer[Figure]()
 
       def walk(parent: Element): Unit = parent.children.each:
@@ -180,14 +180,14 @@ object Svg:
     private def decodePath(elem: Element)(using Tactic[Svg.Error]): Outline =
       val d = elem.attributes(t"d").or(t"")
       val ops = parsePathData(d)
-      val id = elem.attributes(t"id").let(SvgId(_))
+      val id = elem.attributes(t"id").let(Id(_))
       val transforms = elem.attributes(t"transform").let(parseTransforms).or(Nil)
       Outline(ops = ops.reverse, id = id, transforms = transforms)
 
 
     private def decodeSvgDef(elem: Element)
       ( using Tactic[Svg.Error] )
-    :   Optional[SvgDef] =
+    :   Optional[Def] =
 
       elem.label match
         case t"linearGradient" => decodeLinearGradient(elem)
@@ -198,7 +198,7 @@ object Svg:
       ( using Tactic[Svg.Error] )
     :   LinearGradient[Color in Srgb] =
 
-      val id = elem.attributes(t"id").let(SvgId(_)).or(SvgId(t""))
+      val id = elem.attributes(t"id").let(Id(_)).or(Id(t""))
 
       val stops: List[Stop[Color in Srgb]] =
         List.of:
@@ -462,10 +462,27 @@ object Svg:
           case "magenta" => Srgb(1.0, 0.0, 1.0)
           case _         => abort(Svg.Error(Svg.Error.Reason.MalformedColor(c)))
 
+  // SvgId → Svg.Id
+  object Id:
+    def apply(id: Text): Id = id
+
+    extension (id: Id) def text: Text = id
+
+  opaque type Id = Text
+
+  // SvgDef → Svg.Def, with LinearGradient, its only subtype: a sealed trait pins its
+  // subtypes to its file, so they nest together or not at all.
+  sealed trait Def:
+    def xml: Xml
+
+  case class LinearGradient[color](id: Id, stops: Stop[color]*) extends Def:
+    def xml: Xml =
+      Element(t"linearGradient", Attributes(t"id" -> Id.text(id)), stops.map(_.xml).toSeq.nodes)
+
 case class Svg
   ( width:      Float,
     height:     Float,
-    defs:       List[SvgDef]    = Nil,
+    defs:       List[Svg.Def]    = Nil,
     figures:    List[Figure]    = Nil,
     transforms: List[Transform] = Nil )
 extends Documentary:

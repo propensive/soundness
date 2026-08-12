@@ -36,13 +36,6 @@ import anticipation.*
 import mosquito.*
 
 object internal:
-  opaque type SvgId = Text
-
-  object SvgId:
-    def apply(id: Text): SvgId = id
-
-    extension (id: SvgId) def text: Text = id
-
   object Affine:
     // SVG matrix(a, b, c, d, e, f) corresponds to the 3x3 homogeneous matrix
     //   | a c e |

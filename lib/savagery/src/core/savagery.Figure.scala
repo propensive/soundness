@@ -69,7 +69,7 @@ extends Figure:
 case class Outline
   ( ops:        List[Stroke]       = Nil,
     style:      Optional[Css.Style] = Unset,
-    id:         Optional[SvgId]    = Unset,
+    id:         Optional[Svg.Id]    = Unset,
     transforms: List[Transform]    = Nil )
 extends Figure:
 
