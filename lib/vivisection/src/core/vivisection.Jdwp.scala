@@ -722,10 +722,9 @@ object Jdwp:
 
       given Diagnostics = note
 
-      // The session's monitor is passed to `await` explicitly rather than as a `given`, which would
-      // hide `this`. A cancelled or interrupted await is reported as a lost connection (code −1); an
-      // error is raised recoverably, then an empty reader returned, so no `Nothing`-typed expression
-      // reaches the reply position.
+      // The monitor is passed to `await` explicitly, not as a `given` (which would hide `this`). A
+      // cancelled await becomes a lost connection; an error is raised recoverably and an empty
+      // reader returned, so no `Nothing`-typed expression reaches the reply position.
       safely(promise.await()(using monitor)).or(Connection.Reply.Failed(-1)) match
         case Connection.Reply.Ok(data) =>
           Reader(data, sizes0)

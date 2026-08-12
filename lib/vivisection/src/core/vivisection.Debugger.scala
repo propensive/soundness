@@ -35,10 +35,15 @@ package vivisection
 import anticipation.*
 import fulminate.*
 import proscenium.*
+import urticose.*
 
-// The failures a debug session can raise: a transport-level fault local to the debugger, or a JDWP
-// error code returned by the debuggee VM in reply to a command.
+// An attach target: a debuggee JVM already listening for a JDWP connection on a TCP endpoint. The
+// `Sessional` that connects, exchanges the handshake and lends a `Debug` is still to come — opening
+// the duplex from within a lent session runs into the capture-checking shape the coaxial TCP
+// `Connectable` given imposes. Its companion carries the session error type.
 object Debugger:
+  def apply(endpoint: Endpoint[TcpPort]): Debugger = new Debugger(endpoint)
+
   object Error:
     object Reason:
       // Hand-written rather than derived: an unrecognized code becomes `Other`, so decoding a
@@ -130,3 +135,5 @@ object Debugger:
 
   case class Error(reason: Error.Reason, detail: Text)(using Diagnostics)
   extends fulminate.Error(601, reason.number)(m"the JDWP action failed because $reason: $detail")
+
+class Debugger(val endpoint: Endpoint[TcpPort])

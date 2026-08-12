@@ -30,9 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-export vivisection.{Jdwp, Debugger, Debug}
+import scala.caps
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+import anticipation.*
+import contingency.*
+import proscenium.*
+
+// A live debug session: the capability lent inside `target.session { debug ?=> … }`. Sealed
+// (`ExclusiveCapability`), so it cannot outlive the session that lends it. Its operations are the
+// programmer-facing surface over the wire-level `Jdwp.Connection` it wraps.
+class Debug private[vivisection] (connection: Jdwp.Connection) extends caps.ExclusiveCapability:
+  def version()(using Tactic[Debugger.Error]): Jdwp.Version = connection.version()
+  def threads()(using Tactic[Debugger.Error]): List[ThreadId] = connection.allThreads()
+  def suspend()(using Tactic[Debugger.Error]): Unit = connection.suspendAll()
+  def resume()(using Tactic[Debugger.Error]): Unit = connection.resumeAll()
+
+  def suspend(thread: ThreadId)(using Tactic[Debugger.Error]): Unit =
+    connection.suspendThread(thread)
+
+  def resume(thread: ThreadId)(using Tactic[Debugger.Error]): Unit =
+    connection.resumeThread(thread)
+
+  def name(thread: ThreadId)(using Tactic[Debugger.Error]): Text = connection.threadName(thread)
+
+  def frames(thread: ThreadId)(using Tactic[Debugger.Error]): List[(FrameId, Jdwp.Location)] =
+    connection.frames(thread, 0, connection.frameCount(thread))
