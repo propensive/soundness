@@ -43,8 +43,16 @@ import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
 import internetAccess.online
 import logging.silentLogging
+import environments.javaEnvironment
+import probates.awaitProbate
+import stdios.virtualMachineStdio
+import systems.javaSystem
+import termcaps.environmentTermcap
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
+import threading.virtualThreading
+import webserverErrorPages.minimalErrorPage
+import workingDirectories.defaultWorkingDirectory
 
 object FakeDriver:
   // One request as the driver saw it. The body is `Unset` for a request that had none, so that a
@@ -99,6 +107,12 @@ object Tests extends Suite(m"Tarantula tests"):
       then value(t"""{"sessionId":"$sessionId"}""")
       else if method == Http.Delete && path == t"/session/$sessionId" then none
       else route(method, path)
+
+  def freePort(): Int =
+    val socket = java.net.ServerSocket(0)
+    val port = socket.getLocalPort
+    socket.close()
+    port
 
   def run(): Unit =
     // The tag vocabulary the `Focusable` instance for `Tag` locates by. Scoped to `run`, since
@@ -331,3 +345,75 @@ object Tests extends Suite(m"Tarantula tests"):
         fake.exchanges.stdlib.filter(_.path.ends(t"/actions")).head.method
 
       . assert(_ == Http.Delete)
+
+    // Everything above proves the protocol layer against a fake. This proves the module actually
+    // drives a browser: a real driver, a real headless browser, and a real page served locally.
+    // It is skipped when no driver is installed — browsers are not among the tooling `make
+    // attest` requires, and a suite that fails on a machine without one would be no use to
+    // anybody. `--version` is enough of a probe: a driver that cannot find its browser fails at
+    // `POST /session`, and that failure is worth seeing rather than skipping.
+    val chromedriver: Boolean = safely(sh"chromedriver --version".exec[Exit]()) == Exit.Ok
+    val geckodriver: Boolean = safely(sh"geckodriver --version".exec[Exit]()) == Exit.Ok
+
+    if !chromedriver && !geckodriver
+    then Out.println(t"No WebDriver installed; skipping the live browser tests.")
+    else
+      val local = if chromedriver then WebDriver.Chrome else WebDriver.Firefox
+
+      val page: Text =
+        t"""<!DOCTYPE html><html><head><title>Tarantula</title></head><body>"""
+        + t"""<h1 id="greeting">Hello</h1><p class="note">A paragraph.</p>"""
+        + t"""<input id="field" value=""></body></html>"""
+
+      // The real transport, only for this block: everything above deliberately runs against a
+      // fake backend, and summoning both at once would be ambiguous.
+      import httpBackends.virtualMachine
+
+      supervise:
+        val port = freePort()
+
+        val server = scala.caps.unsafe.unsafeAssumeSeparate:
+          SocketServer(port).handle(Http.Response(Http.Ok, contentType = media"text/html")(page))
+
+        try
+          val address: HttpUrl = url"http://localhost:$port/"
+
+          suite(m"Live browser"):
+            test(m"the served document's title is read back"):
+              local.headless.on(freePort()).session: session ?=>
+                browser.navigateTo(address)
+                browser.title()
+
+            . assert(_ == t"Tarantula")
+
+            test(m"an element's rendered text is read from the live page"):
+              local.headless.on(freePort()).session: session ?=>
+                browser.navigateTo(address)
+                browser.element(Name[DomId](t"greeting")).innerText()
+
+            . assert(_ == t"Hello")
+
+            test(m"a locator matching nothing raises NoSuchElement"):
+              local.headless.on(freePort()).session: session ?=>
+                browser.navigateTo(address)
+                capture[WebDriverError](browser.element(Name[DomId](t"absent"))).reason
+
+            . assert(_ == WebDriverError.Reason.NoSuchElement)
+
+            test(m"typing into a field is read back as a property"):
+              local.headless.on(freePort()).session: session ?=>
+                browser.navigateTo(address)
+                val field = browser.element(Name[DomId](t"field"))
+                field.value(t"typed")
+                field.property(t"value")
+
+            . assert(_ == t"typed")
+
+            test(m"a script's result crosses back as JSON"):
+              local.headless.on(freePort()).session: session ?=>
+                browser.navigateTo(address)
+                WebDriverSession.text(browser.execute(t"return document.title"))
+
+            . assert(_ == t"Tarantula")
+
+        finally server.cancel()
