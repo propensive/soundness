@@ -2139,7 +2139,20 @@ tarantula recipes:
   interpolator's own result (`Url["http"]` vs the instance's `HttpUrl`), fixed by an overload.
 - `Focusable.apply` takes a pure (`->`) focus lambda (all instances are pure selector
   renderers). A test `Http.Backend` must likewise be PURE — over a `->` route — because
-  `Http.Backend` is required unadorned by everything that summons one.
+  `Http.Backend` is required unadorned by everything that summons one. (To let a pure route model
+  a driver whose answer changes, the fake passes the request ordinal into the route.)
+- ★ WAITS CANNOT CATCH-AND-RETRY. A session's `Tactic[Error]` is a CONSTRUCTOR field, so a
+  failure raised inside a caller's block goes to the caller's handler and no inner `safely`
+  intercepts it — it happens to work under `strategies.throwUnsafely`, whose tactic throws, which
+  would make waits behave differently per error strategy. `awaitElement`/`awaitElements`
+  therefore poll `POST /elements`, which reports absence as an EMPTY LIST where `POST /element`
+  raises; `awaitUntil` takes a caller-computed `Boolean`. The schedule is `parasite.Tenacity` via
+  `parasite.retry` — tarantula is that machinery's first user outside parasite.
+- Print lengths are `Quantity[Metres[1]]` but the wire wants CENTIMETRES, so the encoder is
+  hand-written (`Session.encode`) and applies the factor of 100; a derivation would serialize
+  metres and silently print a page 100× too small. The defaults use a local `cm(...)` helper
+  rather than `21.59*Centi(Metre)`, because that operator comes from `symbolism`, whose
+  extensions collide with `proscenium.compat`'s at file scope in this 900-line file.
 
 surveillance recipes:
 - `Watcher.watch` filters are pure (`Text -> Boolean`) end-to-end — they are built by

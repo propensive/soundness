@@ -67,6 +67,10 @@ The session handle is a capability, confined by capture checking to the block th
 Returning it, or anything that captures it, is a compile error: a session which has been closed
 is not something a program should be able to hold.
 
+The session also knows what the driver actually agreed to, which is not the same as what was
+asked for: `browserName`, `browserVersion` and `platformName` name what answered, and
+`capabilities` is the whole negotiated object, vendor keys included.
+
 ### Simple navigation
 
 Inside the block, `browser` is the session, and navigates:
@@ -85,6 +89,7 @@ Inside the block, `browser` is the session, and navigates:
 - an HTML tag, from [Honeycomb](https://github.com/propensive/honeycomb) — by tag name
 - `Name[DomId]` — by DOM id
 - `ClassList` — by CSS class
+- `XPath`, from [Xylophone](https://github.com/propensive/xylophone) — by XPath
 
 So the link reading `here` is `browser.element(t"here")`, and the first image on the page is
 `browser.element(Img)`. Both return a `WebDriver.Element`: a handle to a node in the live page, not a
@@ -104,6 +109,11 @@ do element.click()
 ```
 
 An open shadow root is reached with `shadowRoot()`, and searched with the same `element` and `/`.
+
+Note that `XPath` currently expresses only absolute paths of element steps with 1-indexed
+ordinals, plus a trailing attribute — `xp"/html[1]/body[1]/div[2]"`. The predicate forms XPath is
+usually reached for cannot be written yet; they will work here unchanged once Xylophone's XPath
+supports them.
 
 ### Using elements
 
@@ -152,10 +162,25 @@ The specification assigns each non-typing key a codepoint in Unicode's private u
 
 ### Waiting
 
-Rather than sleeping, set an implicit wait once and let each find retry until the page settles:
+The protocol's `implicit` timeout covers find commands, and can be set once for the session:
 ```scala
 browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
 ```
+
+Nothing else has a server-side notion of waiting, so for a button becoming enabled or a heading's
+text changing there is `awaitElement`, `awaitElements` and `awaitUntil`, which poll under the
+ambient retry policy:
+```scala
+import retryTenacities.exponentialTenTimesTenacity
+
+val result = browser.awaitElement(Name[DomId](t"result"))
+browser.awaitUntil(browser.title() == t"Done")
+```
+The policy is a `Tenacity` — `parasite`'s pure retry schedules, exported from `soundness` — so
+the interval and the number of attempts are the caller's to choose, and giving up raises
+`RetryError`. These poll `/elements`, which reports absence as an empty list rather than as an
+error; that matters because a session's error strategy is fixed when it opens, so a failure
+raised inside the block cannot be caught here to drive a retry.
 
 ### Windows, frames and prompts
 
@@ -168,6 +193,20 @@ A user prompt blocks every other command until it is dealt with, so `alertText()
 `acceptAlert()` and `dismissAlert()` handle it. `cookies()`, `addCookie`, `deleteCookie` and
 `deleteCookies()` manage the cookie jar.
 
+### Printing
+
+`printPage()` renders the page to PDF, returning the raw bytes. Its options are typed, and the
+lengths are quantities rather than bare numbers — the protocol wants centimetres, and the
+conversion is computed rather than assumed:
+```scala
+browser.printPage:
+  WebDriver.Session.Print
+    ( orientation = WebDriver.Session.Orientation.Landscape,
+      margin      = WebDriver.Session.Margin.uniform(15.0*Milli(Metre)),
+      background  = true )
+```
+Not every driver implements it; Safari does not.
+
 ### Running scripts
 
 `execute` runs JavaScript in the page and returns its result as `Json`; `executeAsync` runs a
@@ -177,7 +216,9 @@ does not model.
 ### Errors
 
 Every failure raises `WebDriver.Error`, carrying the reason the driver reported (one of the W3C
-error codes), its message, and the browser-side stack trace. An unrecognized code is kept
+error codes), its message, the browser-side stack trace, and the specification's optional `data`
+object — which is what holds the prompt's text on an `unexpected alert open`, and so the only
+part of that error a caller can act on. An unrecognized code is kept
 verbatim as `Other(code)` rather than being lost, and a reply which is not the expected shape at
 all — a crashed driver, an interposed proxy — still arrives as a `WebDriver.Error` carrying the
 raw body.

@@ -2854,7 +2854,7 @@ object synesthesia extends Library:
 
 object tarantula extends Library:
   object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core,
-      guillotine.core, honeycomb.core, aperture.core):
+      guillotine.core, honeycomb.core, aperture.core, xylophone.core):
     override def scalaJs = false // browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))

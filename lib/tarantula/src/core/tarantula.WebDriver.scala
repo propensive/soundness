@@ -39,6 +39,7 @@ import ambience.*
 import anticipation.*, abstractables.durationAbstractable
 import aperture.session
 import contingency.*
+import denominative.nil
 import distillate.*
 import fulminate.*
 import gesticulate.*
@@ -50,6 +51,7 @@ import jacinta.*, formatting.compactJsonFormatting, dynamicJsonAccess.enabled
 import monotonous.*, alphabets.base64Standard
 import parasite.*
 import prepositional.*
+import quantitative.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*
@@ -76,7 +78,10 @@ private case class Sequences(actions: List[Json])
 // The W3C error object, with every field optional: a driver may omit the stacktrace, and a
 // reply that is JSON but not this shape must still yield a `Error`, not a `Json.Error`.
 private case class Failure
-  ( error: Optional[Text], message: Optional[Text], stacktrace: Optional[Text] )
+  ( error:      Optional[Text],
+    message:    Optional[Text],
+    stacktrace: Optional[Text],
+    data:       Optional[Json] )
 
 // The wire form of an element handle, under the W3C "web element identifier" — a key chosen to be
 // one no page can collide with.
@@ -389,8 +394,14 @@ object WebDriver:
       case Reason.UnknownMethod           => m"the command does not support the HTTP method used"
       case Reason.UnsupportedOperation    => m"the WebDriver does not support the operation"
 
+  // `data` is the specification's optional extra object. It is what carries the prompt's text on
+  // an `unexpected alert open`, which is precisely what a caller needs in order to decide whether
+  // to accept or dismiss it, so dropping it would lose the only actionable part of that error.
   case class Error
-    ( reason: Error.Reason, detail: Text, browserStacktrace: List[Text] )
+    ( reason:            Error.Reason,
+      detail:            Text,
+      browserStacktrace: List[Text],
+      data:              Optional[Json] = Unset )
     ( using Diagnostics )
   extends fulminate.Error
     ( 589, reason.number )
@@ -426,6 +437,46 @@ object WebDriver:
   object Session:
     // The bounding box of an element, or of a window, in CSS pixels.
     case class Rect(x: Double, y: Double, width: Double, height: Double)
+
+    // The page geometry and margins a print takes. Lengths are `Quantity[Metres[1]]`, so they may
+    // be written in whatever unit reads best — `21.0*Centi(Metre)`, `8.5*Inch` — and the
+    // centimetres the protocol wants are computed rather than assumed. The defaults are the
+    // specification's own (A4, 1cm margins).
+    // A length given in centimetres. Defined here rather than writing `21.59*Centi(Metre)` in the
+    // defaults because that operator comes from `symbolism`, whose extensions collide with
+    // `proscenium.compat`'s at file scope. Callers importing `soundness.*` have both and may write
+    // whichever unit reads best.
+    def cm(centimetres: Double): Quantity[Metres[1]] = Quantity(centimetres/100)
+
+    case class Page
+      ( width: Quantity[Metres[1]] = cm(21.59), height: Quantity[Metres[1]] = cm(27.94) )
+
+    object Margin:
+      def uniform(length: Quantity[Metres[1]]): Margin = Margin(length, length, length, length)
+
+    case class Margin
+      ( top:    Quantity[Metres[1]] = cm(1.0),
+        bottom: Quantity[Metres[1]] = cm(1.0),
+        left:   Quantity[Metres[1]] = cm(1.0),
+        right:  Quantity[Metres[1]] = cm(1.0) )
+
+    enum Orientation:
+      case Portrait, Landscape
+
+      def name: Text = this match
+        case Portrait  => t"portrait"
+        case Landscape => t"landscape"
+
+    // The options `POST /print` takes. `pageRanges` is the specification's own string form —
+    // `List(t"1-3", t"5")` — since a range there may be open-ended.
+    case class Print
+      ( orientation: Orientation      = Orientation.Portrait,
+        scale:       Double           = 1.0,
+        background:  Boolean          = false,
+        page:        Page             = Page(),
+        margin:      Margin           = Margin(),
+        shrinkToFit: Boolean          = true,
+        pageRanges:  List[Text]       = Nil )
 
     // The three timeouts a session keeps, in milliseconds. `implicit` is the wait a find retries
     // for before giving up, and is how a test waits for a page to settle without sleeping. The W3C
@@ -529,6 +580,26 @@ object WebDriver:
     // `unsafely` — which cannot fail, the text being a literal — out of the request path.
     private[tarantula] val nul: Json = unsafely(t"null".read[Json])
 
+    // Encoded by hand rather than derived: every length crosses the wire in centimetres, and
+    // `Quantity#value` is in metres, so each needs the factor of 100 applying. A derivation would
+    // serialize the metres and silently print a page a hundred times too small.
+    private[tarantula] def encode(print: Print): Json =
+      def cm(length: Quantity[Metres[1]]): Json = (length.value*100).in[Json]
+
+      Json.make
+        ( orientation = print.orientation.name.in[Json],
+          scale       = print.scale.in[Json],
+          background  = print.background.in[Json],
+          shrinkToFit = print.shrinkToFit.in[Json],
+          pageRanges  = print.pageRanges.in[Json],
+          page        = Json.make(width = cm(print.page.width), height = cm(print.page.height)),
+
+          margin      = Json.make
+                         ( top    = cm(print.margin.top),
+                           bottom = cm(print.margin.bottom),
+                           left   = cm(print.margin.left),
+                           right  = cm(print.margin.right) ) )
+
     private[tarantula] def texts(json: Json): List[Text] raises Json.Error =
       caps.unsafe.unsafeAssumeSeparate(json.as[List[Text]])
 
@@ -589,14 +660,28 @@ object WebDriver:
     // The shadow-root counterpart of `Wei`.
     private final val Shadow: Text = t"shadow-6066-11e4-a52e-4f735466cecf"
 
-    // Set once by `create`, before the handle is lent to a block: the id does not exist until the
-    // driver has minted it, and there is no session to be a method of until then.
-    // `Text` is pure, so the variable tracks nothing; the annotation says so, rather than making
-    // the whole session `Stateful` for one immutable-valued field.
+    // Set once by `create`, before the handle is lent to a block: neither exists until the driver
+    // has minted them, and there is no session to be a method of until then. Both are pure values,
+    // so the variables track nothing; the annotation says so, rather than making the whole session
+    // `Stateful` for two write-once fields.
     @scala.caps.unsafe.untrackedCaptures
     private var id: Text = t""
 
+    @scala.caps.unsafe.untrackedCaptures
+    private var negotiated: Optional[Json] = Unset
+
     def sessionId: Text = id
+
+    // What the driver actually agreed to, which is not what was asked for: it names the browser
+    // and version that answered, and says whether optional behaviour — `setWindowRect`,
+    // `acceptInsecureCerts` — is available. Vendor keys (`moz:*`, `goog:*`) are left as `Json`.
+    def capabilities: Json = negotiated.or(Empty().in[Json])
+    def browserName: Optional[Text] = capability(t"browserName")
+    def browserVersion: Optional[Text] = capability(t"browserVersion")
+    def platformName: Optional[Text] = capability(t"platformName")
+
+    private def capability(name: Text): Optional[Text] =
+      safely(Session.text(capabilities.selectDynamic(name.s)))
 
     // Built structurally from the base URL's origin rather than by parsing text, so addressing a
     // command cannot fail and no `UrlError` reaches the caller.
@@ -649,7 +734,8 @@ object WebDriver:
           Error
             ( Error.Reason(failure.error.or(t"unknown error")),
               failure.message.or(body),
-              failure.stacktrace.lay(Nil)(_.cut(t"\n")) )
+              failure.stacktrace.lay(Nil)(_.cut(t"\n")),
+              failure.data )
 
     private def get(path: Text): Json =
       outcome(address(path).fetch(contentType = media"application/json"))
@@ -676,7 +762,9 @@ object WebDriver:
     // sees it — the constructor cannot do it, because a failure here must reach the caller as a
     // `Error` and not as an exception from a field initializer.
     private[tarantula] def create(capabilities: Json): Unit =
-      id = Session.text(post(t"session", capabilities).value.sessionId)
+      val value = post(t"session", capabilities).value
+      id = Session.text(value.sessionId)
+      negotiated = safely(value.capabilities)
 
     // Ends the session, and with it the browser instance. Called from the `finally` of the
     // `Sessional` that opened it; a caller never needs it, and could not use the handle
@@ -803,8 +891,8 @@ object WebDriver:
     // The page as a PDF, in raw bytes. Not universally implemented — Safari does not have it —
     // and unrelated to `screenshotData`, which captures what is rendered rather than what would
     // be printed.
-    def printPage(): Data =
-      Session.text(send(t"print", Empty().in[Json]).value).deserialize[Base64]
+    def printPage(options: Session.Print = Session.Print()): Data =
+      Session.text(send(t"print", Session.encode(options)).value).deserialize[Base64]
 
     // Script execution: the escape hatch for anything the protocol does not model.
     def execute(script: Text, arguments: List[Json] = Nil): Json =
@@ -828,6 +916,39 @@ object WebDriver:
       handles(send(elementPath(element, t"elements"), locator(value)))
 
     def activeElement(): Element = Element(handle(read(t"element/active"), Wei))
+
+    // Waiting. The protocol has no wait command: the `implicit` timeout covers find commands and
+    // nothing else, so a button becoming enabled, a heading's text changing or a prompt appearing
+    // has no server-side notion of waiting at all.
+    //
+    // These poll `POST /elements`, which answers with an empty list where `POST /element` raises
+    // `NoSuchElement`. That choice is load-bearing rather than incidental: the session's
+    // `Tactic[Error]` is fixed when the session is constructed, so a failure raised inside a
+    // caller's block goes to the caller's handler and cannot be intercepted here to drive a
+    // retry. Polling a command that reports absence as a *value* sidesteps that entirely.
+    //
+    // The policy is the ambient `Tenacity` — `exponentialFiveTimesTenacity` and its siblings are
+    // exported from `soundness` — so the schedule is the caller's to choose.
+    def awaitElements[focus: Focusable](value: focus)
+      ( using Tenacity, Monitor, Tactic[RetryError] )
+    :   List[Element] =
+
+      retry: (surrender, persevere) ?=>
+        val found = elements(value)
+        if found.nil then persevere() else found
+
+    def awaitElement[focus: Focusable](value: focus)
+      ( using Tenacity, Monitor, Tactic[RetryError] )
+    :   Element =
+
+      awaitElements(value).prim.lest(Error(Error.Reason.NoSuchElement, t"nothing matched", Nil))
+
+    // The general form, for a condition the caller can evaluate without raising — comparing a
+    // title, counting elements, reading a cookie.
+    def awaitUntil(condition: => Boolean)(using Tenacity, Monitor, Tactic[RetryError]): Unit =
+      retry: (surrender, persevere) ?=>
+        val satisfied = condition
+        if satisfied then () else persevere()
 
     // Shadow DOM. Only *open* shadow roots are reachable; a closed one raises `NoSuchShadowRoot`.
     def shadowRoot(element: Element): ShadowRoot =

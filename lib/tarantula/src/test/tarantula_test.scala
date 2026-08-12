@@ -78,10 +78,12 @@ object FakeDriver:
 // A *pure* function, so that `FakeDriver` is itself pure: `Http.Backend` is required unadorned
 // by everything that summons one, and a route capturing a capability would make the fake a
 // capability too.
-class FakeDriver(route: (Http.Method, Text) -> Http.Response) extends Http.Backend:
+class FakeDriver(route: (Http.Method, Text, Int) -> Http.Response) extends Http.Backend:
   @scala.caps.unsafe.untrackedCaptures
   var exchanges: List[FakeDriver.Exchange] = Nil
 
+  // The route sees how many requests have already been made, so a pure function can still model a
+  // driver whose answer changes over time — which is what testing a retry needs.
   def request
      ( url: Text, method: Http.Method, headers: List[Http.Header], body: Spring[Data]^ )
      ( using Tactic[ConnectError] )
@@ -90,9 +92,10 @@ class FakeDriver(route: (Http.Method, Text) -> Http.Response) extends Http.Backe
     val data = body().memoize
     val sent = if data.readable.isEmpty then Unset else data.read[Text]
     val path = url.skip(t"http://localhost:4444".length)
+    val attempt = exchanges.stdlib.size
     exchanges ::= FakeDriver.Exchange(method, path, sent)
 
-    route(method, path)
+    route(method, path, attempt)
 
 object Tests extends Suite(m"Tarantula tests"):
   import FakeDriver.*
@@ -102,11 +105,14 @@ object Tests extends Suite(m"Tarantula tests"):
   // Every conversation starts by creating a session and ends by deleting it; a test's own route
   // is consulted first, so it may override either.
   def driver(route: (Http.Method, Text) -> Http.Response): FakeDriver =
-    FakeDriver: (method, path) =>
+    counting((method, path, _) => route(method, path))
+
+  def counting(route: (Http.Method, Text, Int) -> Http.Response): FakeDriver =
+    FakeDriver: (method, path, attempt) =>
       if method == Http.Post && path == t"/session"
       then value(t"""{"sessionId":"$sessionId"}""")
       else if method == Http.Delete && path == t"/session/$sessionId" then none
-      else route(method, path)
+      else route(method, path, attempt)
 
   def freePort(): Int =
     val socket = java.net.ServerSocket(0)
@@ -200,6 +206,11 @@ object Tests extends Suite(m"Tarantula tests"):
         val json = located(browser.element(Name[DomId](t"menu")))
         (json.selectDynamic("using").as[Text], json.value.as[Text])
       . assert(_ == (t"css selector", t"#menu"))
+
+      test(m"an XPath is located by the xpath strategy"):
+        val json = located(browser.element(xp"/html[1]/body[1]"))
+        (json.selectDynamic("using").as[Text], json.value.as[Text])
+      . assert(_ == (t"xpath", t"/html[1]/body[1]"))
 
       test(m"a CSS selector is located as a CSS selector"):
         val json = located(browser.element(SelectorList.read(t".menu li")))
@@ -326,6 +337,81 @@ object Tests extends Suite(m"Tarantula tests"):
       test(m"deleting all cookies is a DELETE, not a POST"):
         sent(browser.deleteCookies()).prim.let { e => (e.method, e.path) }
       . assert(_ == (Http.Delete, t"/session/$sessionId/cookie"))
+
+    suite(m"Capabilities, errors and printing"):
+      test(m"the negotiated capabilities are kept, not discarded"):
+        val fake = FakeDriver: (method, path, _) =>
+          if method == Http.Post && path == t"/session"
+          then
+            value:
+              t"""{"sessionId":"$sessionId","capabilities":""" +
+                  t"""{"browserName":"firefox","browserVersion":"153.0"}}"""
+          else none
+
+        given Http.Backend = fake
+        WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+          (session.browserName, session.browserVersion)
+
+      . assert(_ == (t"firefox", t"153.0"))
+
+      test(m"the error object's data member is kept"):
+        val fake = driver: (_, _) =>
+          Http.Response(Http.BadRequest):
+            t"""{"value":{"error":"unexpected alert open","message":"open","stacktrace":"",""" +
+                t""""data":{"text":"Are you sure?"}}}"""
+
+        given Http.Backend = fake
+
+        capture[WebDriver.Error]:
+          WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+            browser.title()
+
+        . data.let(_.text.as[Text])
+
+      . assert(_ == t"Are you sure?")
+
+      test(m"print options are sent in centimetres, not metres"):
+        val fake = driver((_, _) => string(t"JVBERi0="))
+        given Http.Backend = fake
+        WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+          browser.printPage(WebDriver.Session.Print(scale = 0.5))
+
+        fake.exchanges.stdlib.filter(_.path.ends(t"/print")).head.body.or(t"").read[Json]
+        . pipe { json => (json.page.width.as[Double], json.margin.top.as[Double]) }
+
+      . assert(_ == (21.59, 1.0))
+
+    suite(m"Waiting"):
+      // No delay, five attempts: the schedule is the caller's, and a test wants it instant.
+      import retryTenacities.fixedNoDelayFiveTimesTenacity
+
+      supervise:
+
+        test(m"a wait returns as soon as the element appears"):
+          // Absent for the first two polls, then present: the retry must survive the empty answers
+          // and hand back the element, without the caller seeing a failure.
+          val fake = counting: (_, path, attempt) =>
+            if !path.ends(t"/elements") then none
+            else if attempt < 3 then value(t"[]")
+            else value(t"""[{"element-6066-11e4-a52e-4f735466cecf":"E4"}]""")
+
+          given Http.Backend = fake
+          WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+            browser.awaitElement(H1).elementId
+
+        . assert(_ == t"E4")
+
+        test(m"a wait gives up according to the retry policy"):
+          val fake = driver((_, path) => if path.ends(t"/elements") then value(t"[]") else none)
+          given Http.Backend = fake
+
+          capture[RetryError]:
+            WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+              browser.awaitElement(H1)
+
+          . pipe(_ => fake.exchanges.stdlib.count(_.path.ends(t"/elements")))
+
+        . assert(_ == 5)
 
     suite(m"Input actions"):
       def performed(steps: List[WebDriver.Session.Action]): Text =
