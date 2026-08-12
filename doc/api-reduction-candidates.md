@@ -3,9 +3,9 @@
 Regenerated from the `soundness_*` re-export files after five nesting passes (#1764, #1765,
 #1770 and the two that follow it). This is the working list for the remainder.
 
-- exported multi-word type-level names still under review: **488**;
-  249 sit in a prefix family of two or more, across 68 families, and
-  239 are singletons. Names under "Reviewed items which should not be moved"
+- exported multi-word type-level names still under review: **485**;
+  248 sit in a prefix family of two or more, across 68 families, and
+  237 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -161,7 +161,7 @@ turned out not to be; the reasons are in the fourth-pass corrections:
 | `Stack*` | digression, hyperbole | 3 | `StackResolver`, `StackTrace`, `StackTracePalette` |
 | `Start*` | embarcadero | 2 | `StartRequest`, `StartResponse` |
 | `Stream*` | turbulence | 2 | `StreamError`, `StreamOutputStream` |
-| `Table*` | escritoire, phoenicia | 7 | `TableCell`, `TableError`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle`, `TableTag` |
+| `Table*` | escritoire | 6 | `TableCell`, `TableError`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle` |
 | `Tar*` | bitumen | 4 | `TarBuilder`, `TarDataOpenable`, `TarHeader`, `TarOpenable` |
 | `Tasty*` | hyperbole | 5 | `TastyDefinition`, `TastyFile`, `TastyPalette`, `TastySymbol`, `TastyTree` |
 | `Tel*` | stratiform | 3 | `TelBlueprint`, `TelPath`, `TelReader` |
@@ -211,7 +211,7 @@ turned out not to be; the reasons are in the fourth-pass corrections:
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (239)
+### Singletons (237)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
@@ -236,26 +236,26 @@ turned out not to be; the reasons are in the fourth-pass corrections:
 `MathmlReader`, `MediaType`, `MenuField`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`,
 `NirPlugin`, `NonFatal`, `NoteRef`, `NotFound`, `NumericRange`, `OfflineError`, `OffsetCalendar`,
 `OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`,
-`OrdinalCalendar`, `OtfTag`, `OverflowError`, `OverwritePreexisting`, `PanamaInvoke`,
-`ParseError`, `PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`, `PhysicalState`,
-`PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PojoError`, `PolarGaussian`,
-`PollingWatcher`, `PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`,
-`ProcessStatus`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`,
-`RamFlag`, `RangeError`, `RasterOpenable`, `RectoPanel`, `ReferenceError`, `ReflogEntry`,
-`RemoteError`, `RequestServable`, `ResetMode`, `RetryError`, `Rgb12Opaque`, `Rgb32Opaque`,
-`RomanCalendar`, `RootFs`, `RpcError`, `RruleError`, `SchemaSignature`, `ScreenRoot`,
-`SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`,
-`SerializationError`, `ServerError`, `ShaderPlugin`, `SiderealDays`, `SignalResponse`,
-`SignatureAlgorithm`, `SimpleTExtractor`, `SolarDay`, `SoundnessHashing`, `SourceCode`,
-`SparseSegment`, `SshUrl`, `StandardMetadata`, `StaticAnnotation`, `SubOp`, `SymmetricKey`,
-`SyntaxMatcher`, `TeletypeFormattable`, `TemperatureScale`, `TemporaryDirectory`, `TestPalette`,
-`ThemeColor`, `ThrowTactic`, `TimestampError`, `TlsAcceptance`, `ToolchainError`, `TopMenu`,
-`TransferEncoding`, `TraversalOrder`, `TrieMap`, `TripleDes`, `TtfTag`, `TypescriptDialect`,
-`UdpResponse`, `UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`, `UnitsNames`,
-`UnsetError`, `UnusedFeature`, `UrlPalette`, `UsedSets`, `UsesBlob`, `ValueToken`,
-`VersionResponse`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`,
-`WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`,
-`WritingBuilder`, `WsSessional`, `XeqConfiguration`, `XmlSchema`, `YamlPath`, `ZipBuilder`
+`OrdinalCalendar`, `OverflowError`, `OverwritePreexisting`, `PanamaInvoke`, `ParseError`,
+`PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`, `PhysicalState`, `PixelOpaque`,
+`PlaceholderKind`, `PlatformSupervisor`, `PojoError`, `PolarGaussian`, `PollingWatcher`,
+`PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`, `ProcessStatus`,
+`ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`,
+`RangeError`, `RasterOpenable`, `RectoPanel`, `ReferenceError`, `ReflogEntry`, `RemoteError`,
+`RequestServable`, `ResetMode`, `RetryError`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`,
+`RootFs`, `RpcError`, `RruleError`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`,
+`SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `SerializationError`,
+`ServerError`, `ShaderPlugin`, `SiderealDays`, `SignalResponse`, `SignatureAlgorithm`,
+`SimpleTExtractor`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`,
+`StandardMetadata`, `StaticAnnotation`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`,
+`TeletypeFormattable`, `TemperatureScale`, `TemporaryDirectory`, `TestPalette`, `ThemeColor`,
+`ThrowTactic`, `TimestampError`, `TlsAcceptance`, `ToolchainError`, `TopMenu`, `TransferEncoding`,
+`TraversalOrder`, `TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`,
+`UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnsetError`,
+`UnusedFeature`, `UrlPalette`, `UsedSets`, `UsesBlob`, `ValueToken`, `VersionResponse`,
+`VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`,
+`WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WritingBuilder`, `WsSessional`,
+`XeqConfiguration`, `XmlSchema`, `YamlPath`, `ZipBuilder`
 
 ## Retained from the original inventory
 

@@ -50,7 +50,6 @@ import zephyrine.*
 object Ttf:
   def apply[source: Streamable by Data over Credit](source: source): Ttf =
     Ttf(source.read[Data])
-
   enum PlatformId:
     case Unicode, Macintosh, Windows, Custom
 
@@ -65,10 +64,47 @@ object Ttf:
       WwsFamily, WwsSubfamily, LightBackgroundPalette, DarkBackgroundPalette,
       VariationsPostScriptNamePrefix
 
+  // TableTag → Ttf.Table.Tag, TtfTag → Ttf.Table.Truetype, OtfTag → Ttf.Table.Opentype.
+  // A table tag belongs to the font format, and escritoire owns the `Table*` prefix at
+  // toplevel; `Tag`'s two subtypes are sealed to its file, so all three move together.
+  object Table:
+    sealed trait Tag:
+      def text: Text
+
+    object Opentype extends Extractor[Text, Opentype]:
+      def extract(text: Text): Optional[Opentype] = text match
+        case t"OS/2" => Os2
+        case t"CFF " => Cff
+        case other   => safely(Opentype.valueOf(other.lower.capitalize.s))
+
+    object Truetype extends Extractor[Text, Truetype]:
+      def extract(text: Text): Optional[Truetype] = text match
+        case t"cvt " => Cvt
+        case other   => safely(Truetype.valueOf(other.lower.capitalize.s))
+
+    enum Truetype extends Tag:
+      case
+        Avar, Cmap, Cvar, Cvt, Fpgm, Fvar, Gasp, Glyf, Gvar, Hdmx, Head, Hhea, Hmtx, Kern, Loca, Maxp,
+        Meta, Name, Post, Prep, Sbix, Vhea, Vmtx
+
+      def text: Text = this match
+        case Cvt   => t"cvt "
+        case table => table.toString.tt.lower
+
+    enum Opentype extends Tag:
+      case
+        Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar, Jstf,
+        Ltsh, Math, Merg, Mvar, Os2, Pclt, Stat, Svg, Vdmx, Vorg, Vvar
+
+      def text: Text = this match
+        case Os2   => t"OS/2"
+        case Cff   => t"CFF "
+        case table => table.toString.tt.upper
+
 case class Ttf(data: Data):
   ttf =>
 
-  case class TableOffset(id: TableTag, checksum: B32, offset: Int, length: Int)
+  case class TableOffset(id: Ttf.Table.Tag, checksum: B32, offset: Int, length: Int)
 
   lazy val numTables = B16(data, 4).u16.int
   lazy val searchRange = B16(data, 6).u16.int
@@ -87,7 +123,7 @@ case class Ttf(data: Data):
   def leftSideBearing(char: Char): Int raises FontError =
     hmtx.leftSideBearing(glyph(char).id)
 
-  lazy val tables: Map[TableTag, TableOffset] =
+  lazy val tables: Map[Ttf.Table.Tag, TableOffset] =
     (0 until numTables).flatMap: n =>
       val start = 12 + n*16
       val tableTag = String(Array.unsafeJvm(data), start, 4, "ASCII").tt
@@ -96,56 +132,56 @@ case class Ttf(data: Data):
       val length = B32(data, start + 12).s32.int
 
       tableTag match
-        case OtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
-        case TtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
+        case Ttf.Table.Opentype(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
+        case Ttf.Table.Truetype(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
         case _           => None
 
     . pipe(Map.from(_))
 
   def head: HeadTable raises FontError =
-    tables(TtfTag.Head).let: ref =>
+    tables(Ttf.Table.Truetype.Head).let: ref =>
       data.unpackFrom[HeadTable](ref.offset).tap: table =>
         if table.magicNumber != 0x5f0f3cf5.bits then raise(FontError(FontError.Reason.MagicNumber))
 
-    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Head)))
 
   def cmap: CmapTable raises FontError =
-    tables(TtfTag.Cmap).let: ref => CmapTable(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Cmap)))
+    tables(Ttf.Table.Truetype.Cmap).let: ref => CmapTable(ref.offset)
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Cmap)))
 
   def hhea: HheaTable raises FontError =
-    tables(TtfTag.Hhea).let: ref => data.unpackFrom[HheaTable](ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hhea)))
+    tables(Ttf.Table.Truetype.Hhea).let: ref => data.unpackFrom[HheaTable](ref.offset)
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Hhea)))
 
   def hmtx: HmtxTable raises FontError =
-    tables(TtfTag.Hmtx).let: ref => HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
-    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx)))
+    tables(Ttf.Table.Truetype.Hmtx).let: ref => HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Hmtx)))
 
   def maxp: MaxpTable raises FontError =
-    tables(TtfTag.Maxp).let: ref => MaxpTable(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Maxp)))
+    tables(Ttf.Table.Truetype.Maxp).let: ref => MaxpTable(ref.offset)
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Maxp)))
 
   def post: PostTable raises FontError =
-    tables(TtfTag.Post).let: ref => PostTable(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Post)))
+    tables(Ttf.Table.Truetype.Post).let: ref => PostTable(ref.offset)
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Post)))
 
   def os2: Os2Table raises FontError =
-    tables(OtfTag.Os2).let: ref => Os2Table(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(OtfTag.Os2)))
+    tables(Ttf.Table.Opentype.Os2).let: ref => Os2Table(ref.offset)
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Opentype.Os2)))
 
   def name: NameTable raises FontError =
-    tables(TtfTag.Name).let: ref => NameTable(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Name)))
+    tables(Ttf.Table.Truetype.Name).let: ref => NameTable(ref.offset)
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Name)))
 
   def loca: LocaTable raises FontError =
-    tables(TtfTag.Loca).let: ref =>
+    tables(Ttf.Table.Truetype.Loca).let: ref =>
       LocaTable(ref.offset, maxp.glyphCount, head.indexToLocFormat.int == 1)
 
-    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Loca)))
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Loca)))
 
   def glyf: GlyfTable raises FontError =
-    tables(TtfTag.Glyf).let: ref => GlyfTable(ref.offset, loca)
-    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Glyf)))
+    tables(Ttf.Table.Truetype.Glyf).let: ref => GlyfTable(ref.offset, loca)
+    . lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Glyf)))
 
   // A new font containing only the outlines needed to render the given characters — plus any
   // composite components they reference — with the original glyph numbering retained: unused
@@ -186,7 +222,7 @@ case class Ttf(data: Data):
       newLoca(id*4 + 2) = (offsets(id) >> 8).toByte
       newLoca(id*4 + 3) = offsets(id).toByte
 
-    val headRef = tables(TtfTag.Head).lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
+    val headRef = tables(Ttf.Table.Truetype.Head).lest(FontError(FontError.Reason.MissingTable(Ttf.Table.Truetype.Head)))
     val headData = data.slice(headRef.offset, headRef.offset + headRef.length)
     val newHead = Array[Byte](headData.length)
     newHead.copyFrom(headData, 0, 0, headData.length)
@@ -195,7 +231,7 @@ case class Ttf(data: Data):
     newHead(51) = 1
 
     val carried = tables.values.to(List).bind: ref =>
-      if ref.id == TtfTag.Glyf || ref.id == TtfTag.Loca || ref.id == TtfTag.Head then Nil
+      if ref.id == Ttf.Table.Truetype.Glyf || ref.id == Ttf.Table.Truetype.Loca || ref.id == Ttf.Table.Truetype.Head then Nil
       else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
 
     val entries =
