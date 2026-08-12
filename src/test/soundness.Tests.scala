@@ -152,6 +152,7 @@ object Tests extends Suite(m"Soundness tests"):
     vexillology.Tests()
     vacuous.Tests()
     vicarious.Tests()
+    vivisection.Tests()
     jacinta.RecordsTests()
     jacinta.ValidationTests()
     wisteria.Tests()
