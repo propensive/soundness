@@ -52,10 +52,21 @@ object Sh:
   enum Context:
     case Awaiting, Unquoted, Quotes2, Quotes1
 
-  case class State(current: Context, escape: Boolean, arguments: sci.List[Text])
+  // `offset` counts characters consumed so far in "value space", where each substitution
+  // occupies exactly one position (matching `Runtime.skip`); `quoteStart` records the offset of
+  // the opening quote of the current `Quotes1`/`Quotes2` context, so that errors over
+  // unterminated quotes can be positioned at the quote that was never closed.
+  case class State
+    ( current: Context,
+      escape: Boolean,
+      arguments: sci.List[Text],
+      offset: Int = 0,
+      quoteStart: Int = -1 )
+
   case class Parameters(params: Text*)
 
-  case class ShError(detail: Message) extends Exception(s"guillotine: ${detail.text.s}")
+  case class ShError(detail: Message, offset: Int)
+  extends Exception(s"guillotine: ${detail.text.s}")
 
   object Runtime:
     import unsafeExceptions.canThrowAny
@@ -64,13 +75,13 @@ object Sh:
     def complete(state: State): Command =
       val arguments = state.current match
         case Quotes2 =>
-          throw ShError(m"the double quotes have not been closed")
+          throw ShError(m"this double quote is never closed", state.quoteStart)
 
         case Quotes1 =>
-          throw ShError(m"the single quotes have not been closed")
+          throw ShError(m"this single quote is never closed", state.quoteStart)
 
         case _ if state.escape =>
-          throw ShError(m"cannot terminate with an escape character")
+          throw ShError(m"a command cannot end with an escape character", state.offset - 1)
 
         case _ =>
           state.arguments
@@ -82,66 +93,78 @@ object Sh:
 
     def insert(state: State, value: Parameters): State = value.params.toList match
       case head :: tail =>
-        if state.escape
-        then throw ShError(m"escaping with '\\' is not allowed immediately before a substitution")
+        if state.escape then
+          throw ShError
+            ( m"an escape character cannot appear immediately before a substitution",
+              state.offset - 1 )
 
-        state.absolve match
-          case State(Awaiting, false, arguments) =>
+        val state2 = state.absolve match
+          case State(Awaiting, false, arguments, _, _) =>
             State(Unquoted, false, arguments ++ ((head :: tail): sci.List[Text]))
 
-          case State(Unquoted, false, arguments :+ last) =>
+          case State(Unquoted, false, arguments :+ last, _, _) =>
             State(Unquoted, false, arguments ++ ((t"$last$head" :: tail): sci.List[Text]))
 
-          case State(Quotes1, false, arguments :+ last) =>
+          case State(Quotes1, false, arguments :+ last, _, _) =>
             State(Quotes1, false, arguments :+ ((t"$last$head" :: tail): sci.List[Text]).join(t" "))
 
-          case State(Quotes2, false, arguments :+ last) =>
+          case State(Quotes2, false, arguments :+ last, _, _) =>
             State(Quotes2, false, arguments :+ ((t"$last$head" :: tail): sci.List[Text]).join(t" "))
 
+        state2.copy(offset = state.offset + 1, quoteStart = state.quoteStart)
+
       case _ =>
-        state
+        state.copy(offset = state.offset + 1)
 
     private def chars(text: Text): scala.Seq[Char] = text.chars.toSeq
 
     def parse(current: State, text: Text): State = chars(text).fuse(current):
-      (state, next).absolve match
-        case (State(Awaiting, _, arguments), ' ') => State(Awaiting, false, arguments)
+      val step = (state, next).absolve match
+        case (State(Awaiting, _, arguments, _, _), ' ') =>
+          State(Awaiting, false, arguments)
 
-          case (State(Quotes1, false, more :+ current), '\\') =>
-            State(Quotes1, false, more :+ t"$current\\")
+        case (State(Quotes1, false, more :+ current, _, _), '\\') =>
+          State(Quotes1, false, more :+ t"$current\\")
 
-          case (State(context, false, arguments), '\\') =>
-            State(context, true, arguments)
+        case (State(context, false, arguments, _, _), '\\') =>
+          State(context, true, arguments)
 
-          case (State(Unquoted, _, arguments), ' ') =>
-            State(Awaiting, false, arguments)
+        case (State(Unquoted, _, arguments, _, _), ' ') =>
+          State(Awaiting, false, arguments)
 
-          case (State(Quotes1, _, arguments), '\'') =>
-            State(Unquoted, false, arguments)
+        case (State(Quotes1, _, arguments, _, _), '\'') =>
+          State(Unquoted, false, arguments)
 
-          case (State(Quotes2, false, arguments), '"') =>
-            State(Unquoted, false, arguments)
+        case (State(Quotes2, false, arguments, _, _), '"') =>
+          State(Unquoted, false, arguments)
 
-          case (State(Unquoted, false, arguments), '"') =>
-            State(Quotes2, false, arguments)
+        case (State(Unquoted, false, arguments, _, _), '"') =>
+          State(Quotes2, false, arguments)
 
-          case (State(Unquoted, false, arguments), '\'') =>
-            State(Quotes1, false, arguments)
+        case (State(Unquoted, false, arguments, _, _), '\'') =>
+          State(Quotes1, false, arguments)
 
-          case (State(Awaiting, false, arguments), '"') =>
-            State(Quotes2, false, arguments :+ t"")
+        case (State(Awaiting, false, arguments, _, _), '"') =>
+          State(Quotes2, false, arguments :+ t"")
 
-          case (State(Awaiting, false, arguments), '\'') =>
-            State(Quotes1, false, arguments :+ t"")
+        case (State(Awaiting, false, arguments, _, _), '\'') =>
+          State(Quotes1, false, arguments :+ t"")
 
-          case (State(Awaiting, _, arguments), char) =>
-            State(Unquoted, false, arguments :+ t"$char")
+        case (State(Awaiting, _, arguments, _, _), char) =>
+          State(Unquoted, false, arguments :+ t"$char")
 
-          case (State(context, _, sci.Nil), char) =>
-            State(context, false, sci.List(t"$char"))
+        case (State(context, _, sci.Nil, _, _), char) =>
+          State(context, false, sci.List(t"$char"))
 
-          case (State(context, _, more :+ current), char) =>
-            State(context, false, more :+ t"$current$char")
+        case (State(context, _, more :+ current, _, _), char) =>
+          State(context, false, more :+ t"$current$char")
+
+      val entering =
+        (step.current == Quotes1 || step.current == Quotes2) && step.current != state.current
+
+      step.copy
+        ( offset = state.offset + 1,
+          quoteStart = if entering then state.offset else state.quoteStart )
 
   given nothing: Insertion[Parameters, Nothing] = value => Parameters(t"")
   given text: Insertion[Parameters, Text] = value => Parameters(value)

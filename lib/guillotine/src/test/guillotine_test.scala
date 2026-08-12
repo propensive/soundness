@@ -172,6 +172,62 @@ object Tests extends Suite(m"Guillotine tests"):
         sh"cat $path"
       . assert(_ == Command(t"cat", t"/etc/hosts"))
 
+    suite(m"Compile-time checking"):
+      test(m"unterminated single quote is a compile error"):
+        demilitarize:
+          sh"echo 'Hello world"
+        . map(_.message)
+      . assert(_.headOption.exists(_.contains("single quote")))
+
+      test(m"unterminated single quote focus is the opening quote"):
+        demilitarize:
+          sh"echo 'Hello world"
+        . map(_.focus)
+      . assert(_ == List("'"))
+
+      test(m"unterminated double quote is a compile error"):
+        demilitarize:
+          sh"""echo "Hello"""
+        . map(_.message)
+      . assert(_.headOption.exists(_.contains("double quote")))
+
+      test(m"unterminated double quote focus is the opening quote"):
+        demilitarize:
+          sh"""echo "Hello"""
+        . map(_.focus)
+      . assert(_ == List("\""))
+
+      test(m"trailing escape character is a compile error"):
+        demilitarize:
+          sh"""echo \"""
+        . map(_.message)
+      . assert(_.headOption.exists(_.contains("escape character")))
+
+      test(m"trailing escape character focus is the backslash"):
+        demilitarize:
+          sh"""echo \"""
+        . map(_.focus)
+      . assert(_ == List("\\"))
+
+      test(m"escape character before a substitution is a compile error"):
+        val file = t"file"
+        demilitarize:
+          sh"""ls \$file"""
+        . map(_.message)
+      . assert(_.headOption.exists(_.contains("substitution")))
+
+      test(m"quote opened after a substitution is positioned correctly"):
+        val flags = t"-la"
+        demilitarize:
+          sh"ls $flags 'unclosed"
+        . map(_.focus)
+      . assert(_ == List("'"))
+
+      test(m"a well-formed command produces no compile errors"):
+        demilitarize:
+          sh"""echo 'Hello world' "a b c" plain"""
+      . assert(_ == Nil)
+
     suite(m"Showable, Inspectable, equality"):
       test(m"render simple command"):
         (sh"echo Hello World": Command).inspect
