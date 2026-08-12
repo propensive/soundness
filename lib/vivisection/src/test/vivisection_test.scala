@@ -34,6 +34,11 @@ package vivisection
 
 import soundness.*
 
+import errorDiagnostics.stackTracesDiagnostics
+import threading.platformThreading
+import probates.awaitProbate
+import strategies.throwUnsafely
+
 object Tests extends Suite(m"Vivisection tests"):
   def run(): Unit =
     val sizes = Jdwp.IdSizes.bootstrap
@@ -172,4 +177,31 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"error reason decodes an unknown code as Other"):
       Debugger.Error.Reason(9999)
     . assert(_ == Debugger.Error.Reason.Other(9999))
+
+    test(m"a session handshakes, negotiates id sizes, and reads the VM version"):
+      supervise:
+        val (vmSide, clientSide) = Duplex.pair()
+
+        // A scripted fake VM: echo the handshake, answer IDSizes, then answer Version. Chunk
+        // boundaries survive `Duplex.pair`, so each command arrives as its own chunk.
+        val vm = async:
+          val incoming = vmSide.source.toProgression.stdlib.iterator
+          vmSide.send(Stream(incoming.next()))
+
+          val idSizes = Jdwp.Packet.decode(incoming.next())
+          val idBody = Jdwp.Writer(sizes).int(8).int(8).int(8).int(8).int(8).data
+          vmSide.send(Stream(Jdwp.Packet.reply(idSizes.id, 0, idBody)))
+
+          val version = Jdwp.Packet.decode(incoming.next())
+
+          val versionBody =
+            Jdwp.Writer(sizes).string(t"a fake VM").int(1).int(8).string(t"1.8.0")
+              .string(t"FakeVM").data
+
+          vmSide.send(Stream(Jdwp.Packet.reply(version.id, 0, versionBody)))
+
+        Jdwp.Connection.exchange(clientSide): connection =>
+          connection.version()
+
+    . assert(_.vmName == t"FakeVM")
 
