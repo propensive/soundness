@@ -69,6 +69,7 @@ object Debugger:
         case 112   => VmDead
         case 113   => Internal
         case 502   => AlreadyInvoking
+        case -1    => Disconnected
         case code0 => Other(code0)
 
     given communicable: Reason is Communicable =

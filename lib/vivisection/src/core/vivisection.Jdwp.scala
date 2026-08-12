@@ -35,10 +35,22 @@ package vivisection
 import java.io as ji
 import java.lang as jl
 import java.nio.charset as jnc
+import java.util.concurrent.atomic as juca
+
+import scala.caps
+import scala.collection.concurrent as scc
 
 import anticipation.*
+import coaxial.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import parasite.*
 import proscenium.*
 import spectacular.*
+import turbulence.*
+import vacuous.*
+import zephyrine.*
 
 // A Scala-native model of the Java Debug Wire Protocol (JDWP). The names mirror the specification's
 // so that this file can be read against it: command sets and commands keep their published numbers,
@@ -457,6 +469,10 @@ object Jdwp:
         case Modifier.Step(thread, size, depth) =>
           threadId(thread).int(size.id).int(depth.id)
 
+    def bytes(data: Data): Writer =
+      out.write(Array.unsafeJvm(data))
+      this
+
     def data: Data = Array.unsafeFrozen(out.toByteArray.nn)
 
   // The events a suspended (or running) VM sends back, decoded from a Composite command. Only the
@@ -530,3 +546,193 @@ object Jdwp:
         signature: Text, status: Int)
 
     case Unknown(kind: Int, request: Int)
+
+  // A complete JDWP packet. The 4-byte length prefix counts the whole packet, header included; the
+  // `flags` high bit marks a reply, which carries a 2-byte error code where a command carries a
+  // 1-byte command set and a 1-byte command.
+  object Packet:
+    val headerLength: Int = 11
+
+    private def payload(bytes: Data): Data =
+      val length = bytes.length - headerLength
+      val array = Array.scratch[Byte](length)
+      var index = 0
+
+      while index < length do
+        array(index) = bytes.readUnchecked(headerLength + index)
+        index += 1
+
+      Array.unsafeFrozen(array)
+
+    // Frames an outgoing command packet.
+    def command(id: Int, set: Int, command: Int, body: Data): Data =
+      val writer = Writer(IdSizes.bootstrap)
+      writer.int(headerLength + body.length)
+      writer.int(id)
+      writer.byte(0)
+      writer.byte(set.toByte)
+      writer.byte(command.toByte)
+      writer.bytes(body)
+      writer.data
+
+    // Frames a reply packet (used by the test harness's fake VM). A non-zero `code` is an error.
+    def reply(id: Int, code: Int, body: Data): Data =
+      val writer = Writer(IdSizes.bootstrap)
+      writer.int(headerLength + body.length)
+      writer.int(id)
+      writer.byte(0x80.toByte)
+      writer.short(code.toShort)
+      writer.bytes(body)
+      writer.data
+
+    // Decodes one complete packet (exactly its own `length` bytes).
+    def decode(bytes: Data): Packet =
+      val reader = Reader(bytes, IdSizes.bootstrap)
+      reader.int()
+      val id = reader.int()
+      val flags = reader.byte() & 0xff
+      val body = payload(bytes)
+
+      if (flags & 0x80) != 0 then Packet(id, flags, reader.short() & 0xffff, 0, 0, body)
+      else Packet(id, flags, 0, reader.byte() & 0xff, reader.byte() & 0xff, body)
+
+  case class Packet(id: Int, flags: Int, code: Int, commandSet: Int, command: Int, body: Data):
+    def reply: Boolean = (flags & 0x80) != 0
+
+  // A live JDWP connection: the wire-level client that frames and correlates packets over a duplex
+  // byte channel. Not itself the debug session capability — `Debug` owns one of these — but sealed
+  // (`ExclusiveCapability`) so it cannot be shared past the session it serves. The reader task only
+  // fulfils promises and enqueues composites; command handlers run elsewhere, so a handler issuing
+  // a further command never blocks the reader that must deliver its reply.
+  object Connection:
+    // The outcome of a command, as a dedicated type rather than an `Either[Int, Data]`: a `Left`
+    // with `Nothing` in the payload slot flows into the mutable-classified `Data` position and
+    // crashes the fork's read-only capture adaptation, so the reply channel avoids it entirely.
+    enum Reply:
+      case Ok(data: Data)
+      case Failed(code: Int)
+
+    // Reads a big-endian 32-bit integer from a raw byte array at the given offset.
+    private def int32(bytes: scala.Array[Byte], offset: Int): Int =
+      ((bytes(offset) & 0xff) << 24) | ((bytes(offset + 1) & 0xff) << 16) |
+        ((bytes(offset + 2) & 0xff) << 8) | (bytes(offset + 3) & 0xff)
+
+    // Opens a connection over an already-connected duplex: exchanges the handshake, starts the
+    // writer and reader pumps, negotiates identifier sizes, lends the connection, and tears
+    // everything down afterwards. Modelled on `exegesis.LspSessional.exchange`.
+    private[vivisection] def exchange[result](duplex: Duplex)(lambda: Connection => result)
+      ( using monitor: Monitor, probate: Probate, diagnostics: Diagnostics )
+      ( using Tactic[Debugger.Error] )
+    :   result =
+
+      duplex.send(Stream(Jdwp.Handshake))
+
+      // Sealed: the connection captures this session's monitor and diagnostics, which an honest
+      // `Connection^` would hide from the pumps that serve it. It is a local of this method, lent
+      // to `lambda` and dead once `lambda` returns.
+      val connection: Connection = caps.unsafe.unsafeAssumePure(Connection(diagnostics))
+
+      // A single writer drains outgoing packets so writes never interleave.
+      val writer: Task[Unit] = async:
+        connection.outgoing.lazyList.stdlib.foreach: packet => duplex.send(Stream(packet))
+
+      // The reader owns the read side: it is minted and consumed here, which also keeps the caller
+      // thread off the channel's first (blocking) refill before the writer has started.
+      val reader: Task[Unit] = async:
+        val source = duplex.source
+        val accumulator = ji.ByteArrayOutputStream()
+        var handshaken = false
+
+        source.toProgression.stdlib.iterator.foreach: chunk =>
+          accumulator.write(Array.unsafeJvm(chunk))
+          val bytes = accumulator.toByteArray.nn
+          var offset = 0
+          var advancing = true
+
+          while advancing do
+            advancing = false
+
+            if !handshaken then
+              if bytes.length - offset >= Jdwp.Handshake.length then
+                offset += Jdwp.Handshake.length
+                handshaken = true
+                advancing = true
+            else if bytes.length - offset >= Packet.headerLength then
+              val length = int32(bytes, offset)
+
+              if length >= Packet.headerLength && bytes.length - offset >= length then
+                val packet = Array.scratch[Byte](length)
+                java.lang.System.arraycopy(bytes, offset, packet, 0, length)
+                connection.dispatch(Packet.decode(Array.unsafeFrozen(packet)))
+                offset += length
+                advancing = true
+
+          accumulator.reset()
+          accumulator.write(bytes, offset, bytes.length - offset)
+
+        connection.disconnect()
+
+      try
+        connection.negotiate()
+        lambda(connection)
+      finally
+        reader.cancel()
+        writer.cancel()
+
+  class Connection private[vivisection] (note: Diagnostics) extends caps.ExclusiveCapability:
+    private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
+    private val pending: scc.TrieMap[Int, Promise[Connection.Reply]] = scc.TrieMap()
+    private[vivisection] val outgoing: Relay[Data] = Relay()
+    private[vivisection] val composites: Relay[Event.Composite] = Relay()
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var sizes0: IdSizes = IdSizes.bootstrap
+
+    def sizes: IdSizes = sizes0
+
+    // Routes a decoded packet: a reply fulfils its pending promise (with the error code, or the
+    // payload); a Composite command (command set 64, command 100) is enqueued for the dispatcher.
+    private[vivisection] def dispatch(packet: Packet): Unit =
+      if packet.reply then pending.remove(packet.id).foreach: promise =>
+        promise.offer:
+          if packet.code != 0 then Connection.Reply.Failed(packet.code)
+          else Connection.Reply.Ok(packet.body)
+      else if packet.commandSet == 64 && packet.command == 100 then
+        composites.put(Event.composite(Reader(packet.body, sizes0)))
+
+    // Fails every in-flight request and ends the event stream when the channel closes.
+    private[vivisection] def disconnect(): Unit =
+      pending.values.foreach(_.offer(Connection.Reply.Failed(-1)))
+      pending.clear()
+      composites.stop()
+
+    // The one seam every command goes through: allocate an id, frame the request, await the reply,
+    // and hand back a reader over its payload (raising the VM's error code on failure).
+    def request(set: Int, command: Int)(write: Writer => Unit)
+      ( using Tactic[Debugger.Error], Monitor )
+    :   Reader =
+
+      val id = counter.getAndIncrement()
+      val writer = Writer(sizes0)
+      write(writer)
+      val promise = Promise[Connection.Reply]()
+      pending(id) = promise
+      outgoing.put(Packet.command(id, set, command, writer.data))
+
+      given Diagnostics = note
+
+      // A cancelled or interrupted await is reported as a lost connection (code −1). An error is
+      // raised recoverably, then an empty reader returned, so no `Nothing`-typed expression reaches
+      // the reply position.
+      safely(promise.await()).or(Connection.Reply.Failed(-1)) match
+        case Connection.Reply.Ok(data) =>
+          Reader(data, sizes0)
+
+        case Connection.Reply.Failed(code) =>
+          raise(Debugger.Error(Debugger.Error.Reason(code), t"command ($set, $command)"))
+          Reader(Array.empty[Byte], sizes0)
+
+    // VirtualMachine (command set 1): negotiate the identifier sizes the rest of the session needs.
+    private[vivisection] def negotiate()(using Tactic[Debugger.Error], Monitor): Unit =
+      val reader = request(1, 7)(_ => ())
+      sizes0 = IdSizes(reader.int(), reader.int(), reader.int(), reader.int(), reader.int())
