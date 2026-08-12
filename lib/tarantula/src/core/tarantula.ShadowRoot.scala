@@ -33,61 +33,7 @@
 package tarantula
 
 import anticipation.*
-import vacuous.*
 
-// The session in scope, for code that reads better as `browser.title()` than `session.title()`.
-// A *named* using parameter, not a `summon`, which would mint a fresh root instead of referring
-// to the session the enclosing block owns.
-def browser(using session: WebDriverSession^): WebDriverSession^{session} = session
-
-// Sugar over the session's element methods, so that `element.click()` reads as it did when
-// `Element` was an inner class of the session. The session is a *named* using parameter: a
-// `summon[WebDriverSession^]` would mint a fresh root rather than refer to the one in scope.
-extension (element: Element)
-  def click()(using session: WebDriverSession^): Unit = session.click(element)
-  def clear()(using session: WebDriverSession^): Unit = session.clear(element)
-  def text()(using session: WebDriverSession^): Text = session.text(element)
-  def tagName()(using session: WebDriverSession^): Text = session.tagName(element)
-  def enabled()(using session: WebDriverSession^): Boolean = session.enabled(element)
-  def selected()(using session: WebDriverSession^): Boolean = session.selected(element)
-  def displayed()(using session: WebDriverSession^): Boolean = session.displayed(element)
-  def role()(using session: WebDriverSession^): Text = session.role(element)
-  def label()(using session: WebDriverSession^): Text = session.label(element)
-  def css(name: Text)(using session: WebDriverSession^): Text = session.css(element, name)
-  def shadowRoot()(using session: WebDriverSession^): ShadowRoot = session.shadowRoot(element)
-  def rect()(using session: WebDriverSession^): WebDriverSession.Rect = session.rect(element)
-
-  def value(text: Text)(using session: WebDriverSession^): Unit =
-    session.value(element, text)
-
-  def screenshotData()(using session: WebDriverSession^): Data =
-    session.screenshotData(element)
-
-  def attribute(name: Text)(using session: WebDriverSession^): Optional[Text] =
-    session.attribute(element, name)
-
-  def property(name: Text)(using session: WebDriverSession^): Optional[Text] =
-    session.property(element, name)
-
-  def element[focus: Focusable](value: focus)(using session: WebDriverSession^): Element =
-    session.element(element, value)
-
-  @targetName("at")
-  infix def / [focus: Focusable](value: focus)(using session: WebDriverSession^): List[Element] =
-    session.elements(element, value)
-
-extension (root: ShadowRoot)
-  def element[focus: Focusable](value: focus)(using session: WebDriverSession^): Element =
-    session.element(root, value)
-
-  @targetName("at")
-  infix def / [focus: Focusable](value: focus)(using session: WebDriverSession^): List[Element] =
-    session.elements(root, value)
-
-// The chained form the documentation has always shown — `browser / id"menu" / Li / cls"item"` —
-// which selects from every element found so far, deduplicating nothing: the protocol has no
-// batch find, so this is one request per element, as any WebDriver client must do.
-extension (elements: List[Element])
-  @targetName("at")
-  infix def / [focus: Focusable](value: focus)(using session: WebDriverSession^): List[Element] =
-    List.of(elements.stdlib.flatMap(session.elements(_, value).stdlib))
+// The open shadow root hosted by an element: a separate handle because the protocol addresses it
+// separately, and because only `element`/`elements` are valid against one.
+case class ShadowRoot(shadowId: Text)
