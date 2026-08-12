@@ -436,6 +436,38 @@ unrelated `Syntax` types. Scope the sweep to the owning library and let cross-li
 sites fail the compile instead.
 
 
+## Corrections from the fifth implementation pass (2026-08-12)
+
+A sweep through twenty-four prefix families named as obvious candidates. Thirty-one names
+nested; most of the rest were blocked by the *outer* type living in another library, which
+the family tables cannot show. Three new rules:
+
+- **A prefix family is not a component.** `Css*`, `Io*`, `Dag*`, `Oci*`, `Unix*`, `Time*`,
+  `Wasm*`, `Http*` and `Dts*` all look nestable in the tables and are not: `CssClass` is
+  nomenclature's while `Css` is cataclysm's, `DagDiagram` is dendrology's while `Dag` is
+  acyclicity's, aviation's `Unix` is the *epoch* and quantitative's `Time` is a *dimension*.
+  Resolve the outer name to a declaration before treating a shared prefix as evidence.
+- **Two `Facade`s in one file is worse than one `KotlinFacade`.** Nesting is worth doing
+  when the compound name repeats its context; it stops being worth doing when the nested
+  name collides with a *different* type the same file uses pervasively. `object Kotlin`
+  names xenophile's `Facade` about ten times, so `Kotlin.Facade` was abandoned — unlike a
+  shadowed supertype, there is no single base to qualify. `Workload.Grant`,
+  `Workload.Openable` and `Teletype.Builder` all *were* worth it: each shadows exactly one
+  base, qualified as `aperture.Grant`, `aperture.Openable` and `gossamer.Builder`.
+- **The read-only/exclusive capture failure has a signature: `Array` indexing.**
+  `MathmlReader` joined `TarHeader` and `HpackTable` in failing to nest, and all three do
+  the same thing — index an `Array[T]^{}` inside a method moved into a capture-impure
+  enclosing object, which then demands `^{any}`. Treat `Array` indexing in a donor as a
+  warning sign, and check it before doing the rest of the work.
+
+Two practical notes. **Take the receiving file's new imports from the donors, never from
+guesswork** — inventing a plausible-looking set added `enigmatic.*` to a component that
+does not depend on it and pulled in a `Numeric` ambiguity that had nothing to do with the
+rename. And **a donor's file-mates must be checked every time**: `LiraDelta.scala` and
+`LiraTree.scala` each held a second exported toplevel type (`Replacement`, `TreeEntry`)
+that would otherwise have been renamed silently.
+
+
 ## Execution shape
 
 One library per commit (the pilot shape). Each commit: move the types, delete donor files,
