@@ -101,7 +101,7 @@ object Tasty extends Discipline:
           Atom
             ( atom.key,
               if atom.replaceable then AtomClass.Replaceable else AtomClass.Rigid,
-              LiraHash(LiraHash.Domain.Atom(id), atom.encoding),
+              Lira.Hash(Lira.Hash.Domain.Atom(id), atom.encoding),
               references )
 
         Atomization.of(id, atoms)

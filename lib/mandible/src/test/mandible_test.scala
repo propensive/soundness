@@ -437,18 +437,18 @@ object Tests extends Suite(m"Mandible tests"):
 
     test(m"an unrecorded linkage break is rejected"):
       val registry = EcosystemProfile.Registry(List(JvmProfile))
-      val declared = List(LiraManifest.Profile(t"jvm/1"))
+      val declared = List(Lira.Manifest.Profile(t"jvm/1"))
       val after = evidence(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
 
       import errorDiagnostics.stackTracesDiagnostics
-      capture[LiraError](EcosystemProfile.audit(registry, declared, before, after)).reason
-    . assert(_ == LiraError.Reason.UnrecordedBreak(t"jvm/1", t"linkage"))
+      capture[Lira.Error](EcosystemProfile.audit(registry, declared, before, after)).reason
+    . assert(_ == Lira.Error.Reason.UnrecordedBreak(t"jvm/1", t"linkage"))
 
     test(m"a recorded linkage break is accepted"):
       val registry = EcosystemProfile.Registry(List(JvmProfile))
 
       val declared =
-        List(LiraManifest.Profile(t"jvm/1", List(LiraManifest.Guarantee.Linkage)))
+        List(Lira.Manifest.Profile(t"jvm/1", List(Lira.Manifest.Guarantee.Linkage)))
 
       val after = evidence(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
 
@@ -457,7 +457,7 @@ object Tests extends Suite(m"Mandible tests"):
 
     test(m"a declared profile with no implementation is reported, not rejected"):
       val registry = EcosystemProfile.Registry(List(JvmProfile))
-      val declared = List(LiraManifest.Profile(t"unknown/1"))
+      val declared = List(Lira.Manifest.Profile(t"unknown/1"))
 
       EcosystemProfile.audit(registry, declared, before, before).unchecked.stdlib
     . assert(_ == scala.List(t"unknown/1"))
@@ -472,26 +472,26 @@ object Tests extends Suite(m"Mandible tests"):
           List(EcosystemProfile.Violation(Discipline.Guarantee.Recompilation, t"out of scope"))
 
       val registry = EcosystemProfile.Registry(List(broken))
-      val declared = List(LiraManifest.Profile(t"broken/1"))
+      val declared = List(Lira.Manifest.Profile(t"broken/1"))
 
       import errorDiagnostics.stackTracesDiagnostics
-      capture[LiraError](EcosystemProfile.audit(registry, declared, before, before)).reason
-    . assert(_ == LiraError.Reason.ProfileViolated(t"broken/1", t"out of scope"))
+      capture[Lira.Error](EcosystemProfile.audit(registry, declared, before, before)).reason
+    . assert(_ == Lira.Error.Reason.ProfileViolated(t"broken/1", t"out of scope"))
 
     test(m"the toolchain predicate reports releases with no toolchain record"):
       def data(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
 
-      def release(module: Text, toolchain: List[LiraManifest.Tool]): LiraManifest =
-        LiraManifest(
+      def release(module: Text, toolchain: List[Lira.Manifest.Tool]): Lira.Manifest =
+        Lira.Manifest(
           module    = module,
-          lineage   = List(LiraHash(LiraHash.Domain.Snapshot, data(module))),
+          lineage   = List(Lira.Hash(Lira.Hash.Domain.Snapshot, data(module))),
           toolchain = toolchain,
           api       = List(),
           section   = List(),
-          payload   = LiraManifest.Payload(t"brotli", 0L,
-              LiraHash(LiraHash.Domain.Blob, data(module))))
+          payload   = Lira.Manifest.Payload(t"brotli", 0L,
+              Lira.Hash(Lira.Hash.Domain.Blob, data(module))))
 
-      val tooled = release(t"alpha", List(LiraManifest.Tool(t"scala", t"3.9.0")))
+      val tooled = release(t"alpha", List(Lira.Manifest.Tool(t"scala", t"3.9.0")))
       val bare = release(t"beta", List())
 
       JvmProfile.coherence(List(tooled, bare)).stdlib.map(_.s.takeWhile(_ != ' '))
@@ -499,7 +499,7 @@ object Tests extends Suite(m"Mandible tests"):
 
     test(m"changed constants surface through the audit's advisory channel"):
       val registry = EcosystemProfile.Registry(List(JvmProfile))
-      val declared = List(LiraManifest.Profile(t"jvm/1"))
+      val declared = List(Lira.Manifest.Profile(t"jvm/1"))
       val after = evidence(edit(base, t"CONSTANT = 7", t"CONSTANT = 8"), derived, api)
 
       EcosystemProfile.audit(registry, declared, before, after).advisories.stdlib
@@ -548,7 +548,7 @@ object Tests extends Suite(m"Mandible tests"):
         HostRelease(t"jdk-19", v3))
 
       val liras = HostContracts.assemble(t"fixture-host", releases,
-        List(LiraManifest.Tool(t"jsig-harvest", t"0.1")),
+        List(Lira.Manifest.Tool(t"jsig-harvest", t"0.1")),
         allowMajor = { tag => tag == t"jdk-19" })
 
       val parsed = liras.stdlib.map { (tag, bytes) => (tag, Lira.read(bytes)) }
@@ -572,12 +572,12 @@ object Tests extends Suite(m"Mandible tests"):
 
       import errorDiagnostics.stackTracesDiagnostics
 
-      capture[LiraError]:
+      capture[Lira.Error]:
         HostContracts.assemble(t"fixture-host",
           List(HostRelease(t"a", v1), HostRelease(t"b", v2)),
-          List(LiraManifest.Tool(t"jsig-harvest", t"0.1")))
+          List(Lira.Manifest.Tool(t"jsig-harvest", t"0.1")))
       . reason
-    . assert(_ == LiraError.Reason.UngradedSuccessor(t"b"))
+    . assert(_ == Lira.Error.Reason.UngradedSuccessor(t"b"))
 
     test(m"ct.sym harvests a verifiable, tagged jdk contract"):
       CtSym.location().lay(true): path =>
@@ -587,7 +587,7 @@ object Tests extends Suite(m"Mandible tests"):
         val tag = Text(s"jdk-$earliest")
 
         val liras = HostContracts.assemble(t"jdk", List(HostRelease(tag, surface)),
-          List(LiraManifest.Tool(t"jsig-harvest", t"0.1")))
+          List(Lira.Manifest.Tool(t"jsig-harvest", t"0.1")))
 
         val lira = Lira.read(liras.stdlib.head(1))
         Verification.install(lira)
@@ -601,7 +601,7 @@ object Tests extends Suite(m"Mandible tests"):
     // --- used-set extraction ------------------------------------------------------------------
 
     def encode(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
-    def blob(data: Data): Data = LiraHash(LiraHash.Domain.Blob, data)
+    def blob(data: Data): Data = Lira.Hash(Lira.Hash.Domain.Blob, data)
 
     // Package-private: the source compiles in the `Holder.java` fixture slot, where a public
     // class of another name could not.
@@ -642,8 +642,8 @@ object Tests extends Suite(m"Mandible tests"):
       val (usesBlob, _) = UsedSets.uses(t"fixture-host", content, listing)
       val (matched, _) = UsedSets.resolve(UsedSets.references(content), listing)
 
-      UsesBlob.decode(usesBlob)(1).stdlib.map { hash => LiraHash.text(hash) }.toSet
-      == matched.stdlib.map { hash => LiraHash.text(hash) }.toSet
+      UsesBlob.decode(usesBlob)(1).stdlib.map { hash => Lira.Hash.text(hash) }.toSet
+      == matched.stdlib.map { hash => Lira.Hash.text(hash) }.toSet
     . assert(identity)
 
     test(m"a computed used-set decides host satisfaction by spanning"):
@@ -657,7 +657,7 @@ object Tests extends Suite(m"Mandible tests"):
 
       val contracts = HostContracts.assemble(t"fixture-host",
         List(HostRelease(t"v1", v1), HostRelease(t"v2", v2)),
-        List(LiraManifest.Tool(t"jsig-harvest", t"0.1")))
+        List(Lira.Manifest.Tool(t"jsig-harvest", t"0.1")))
 
       val v1Manifest = Lira.read(contracts.stdlib.head(1)).manifest
       val v2Manifest = Lira.read(contracts.stdlib.last(1)).manifest
@@ -671,27 +671,27 @@ object Tests extends Suite(m"Mandible tests"):
       val markerOld = blob(encode(t"uses-old"))
       val markerNew = blob(encode(t"uses-new"))
 
-      def library(marker: Data): LiraManifest =
-        LiraManifest(
+      def library(marker: Data): Lira.Manifest =
+        Lira.Manifest(
           module  = t"consumer",
-          lineage = List(LiraHash(LiraHash.Domain.Snapshot, encode(t"consumer"))),
+          lineage = List(Lira.Hash(Lira.Hash.Domain.Snapshot, encode(t"consumer"))),
           api     = List(),
           section = List(Section(t"jvm", tree = blob(encode(t"tree")),
-              requires = List(LiraManifest.Requires(t"fixture-host", snap2, uses = marker)))),
-          payload = LiraManifest.Payload(t"brotli", 0L, blob(encode(t"consumer"))))
+              requires = List(Lira.Manifest.Requires(t"fixture-host", snap2, uses = marker)))),
+          payload = Lira.Manifest.Payload(t"brotli", 0L, blob(encode(t"consumer"))))
 
       def usedSet(consumer: Text): scala.collection.immutable.Set[Text] =
         val (matched, _) = UsedSets.resolve(
             UsedSets.references(consumerContent(added, consumer)), v2Listing)
 
-        matched.stdlib.map { hash => LiraHash.text(hash) }.toSet
+        matched.stdlib.map { hash => Lira.Hash.text(hash) }.toSet
 
       val oldUses = usedSet(consumerOld)
       val newUses = usedSet(consumerNew)
 
       val contractAtoms = { (module: Text) =>
         if module == t"fixture-host"
-        then v1Listing.atoms.stdlib.map { atom => LiraHash.text(atom.valueHash) }.toSet
+        then v1Listing.atoms.stdlib.map { atom => Lira.Hash.text(atom.valueHash) }.toSet
         else Unset
       }
 
@@ -709,14 +709,14 @@ object Tests extends Suite(m"Mandible tests"):
       import errorDiagnostics.stackTracesDiagnostics
 
       val refused =
-        capture[LiraError]:
+        capture[Lira.Error]:
           Buildpath(List(library(markerNew)))
           . validate(t"jvm", contracts = List(v1Manifest), atoms = contractAtoms,
               used = lookup(markerNew, newUses))
         . reason
 
       (spans, refused)
-    . assert(_ == (true, LiraError.Reason.UnsatisfiedRequirement(t"fixture-host")))
+    . assert(_ == (true, Lira.Error.Reason.UnsatisfiedRequirement(t"fixture-host")))
 
     test(m"fixture references resolve against a harvested jdk surface"):
       CtSym.location().lay(true): path =>

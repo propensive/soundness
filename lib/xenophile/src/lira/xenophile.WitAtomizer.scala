@@ -85,7 +85,7 @@ object WitAtomizer:
   private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
     val out = java.io.ByteArrayOutputStream()
     encode(out)
-    LiraHash(LiraHash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
 
   private val primitives: Set[Text] =
     Set(t"bool", t"u8", t"u16", t"u32", t"u64", t"s8", t"s16", t"s32", t"s64", t"f32", t"f64",

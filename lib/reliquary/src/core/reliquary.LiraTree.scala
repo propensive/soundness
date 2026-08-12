@@ -43,8 +43,6 @@ import vacuous.*
 
 import LiraError.Reason
 
-// One row of a Tree metadata blob: a path mapped to the blob holding its content.
-case class TreeEntry(path: TreePath, blob: Data)
 
 object LiraTree:
   val empty: LiraTree = LiraTree(List())

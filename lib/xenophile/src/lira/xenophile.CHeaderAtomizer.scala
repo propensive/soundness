@@ -68,7 +68,7 @@ object CHeaderAtomizer:
   private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
     val out = java.io.ByteArrayOutputStream()
     encode(out)
-    LiraHash(LiraHash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
 
   private def encode(out: java.io.ByteArrayOutputStream, typed: Foreign.Type): Unit =
     typed match
