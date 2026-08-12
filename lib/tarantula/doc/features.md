@@ -4,4 +4,4 @@
 - uses the standard W3C WebDriver protocol
 - the session is a capability, confined to its block by capture checking
 - element locators are typed: CSS selectors, HTML tags, DOM ids and class lists
-- every failure is a typed `WebDriverError`, not an exception
+- every failure is a typed `WebDriver.Error`, not an exception

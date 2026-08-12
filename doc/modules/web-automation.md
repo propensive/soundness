@@ -65,7 +65,7 @@ button.screenshot()                        // a Raster in Png of the element
 
 Anything a locator cannot express is reached with `execute`, which runs JavaScript in the page
 and returns its result as `Json`. Modifiers, chords, hovers and drags go through `perform` and
-the typed actions API; a failure of any kind arrives as a `WebDriverError` carrying the W3C
+the typed actions API; a failure of any kind arrives as a `WebDriver.Error` carrying the W3C
 error code the driver reported, its message and the browser-side stack trace.
 
 ### Typed page scripting

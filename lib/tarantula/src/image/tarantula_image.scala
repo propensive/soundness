@@ -37,15 +37,15 @@ import hallucination.*
 import prepositional.*
 import turbulence.*
 
-// The same ambient strategy the method had as a member of `WebElement`.
+// The same ambient strategy the method had as a member of `WebDriver.Element`.
 import strategies.throwUnsafely
 
 // The decoded form of `screenshotData()`, at element and at page scope. This lives outside
 // `tarantula.core` so that browser automation does not depend on `hallucination` and its
 // image-codec closure; screenshots are PNG, so only that format's codec is needed.
-extension (element: WebElement)
-  def screenshot()(using session: WebDriverSession^): Raster in Png =
+extension (element: WebDriver.Element)
+  def screenshot()(using session: WebDriver.Session^): Raster in Png =
     session.screenshotData(element).read[Raster in Png]
 
-extension (session: WebDriverSession^)
+extension (session: WebDriver.Session^)
   def screenshot(): Raster in Png = session.screenshotData().read[Raster in Png]

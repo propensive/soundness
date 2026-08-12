@@ -18,7 +18,7 @@ protocol.
 - uses the standard W3C WebDriver protocol
 - the session is a capability, confined to its block by capture checking
 - element locators are typed: CSS selectors, HTML tags, DOM ids and class lists
-- every failure is a typed `WebDriverError`, not an exception
+- every failure is a typed `WebDriver.Error`, not an exception
 
 ## Availability
 
@@ -87,17 +87,17 @@ Inside the block, `browser` is the session, and navigates:
 - `ClassList` — by CSS class
 
 So the link reading `here` is `browser.element(t"here")`, and the first image on the page is
-`browser.element(Img)`. Both return a `WebElement`: a handle to a node in the live page, not a
+`browser.element(Img)`. Both return a `WebDriver.Element`: a handle to a node in the live page, not a
 copy of it, so every question about it is a round trip to the browser. An element that does not
-exist raises `WebDriverError` with reason `NoSuchElement`.
+exist raises `WebDriver.Error` with reason `NoSuchElement`.
 
 HTML is a tree, so elements are found within elements:
 ```scala
 val link = browser.element(Nav).element(Name[DomId](t"menu")).element(t"About")
 ```
 
-`/` is defined on the session, on `WebElement` and on `List[WebElement]`, and always returns a
-`List[WebElement]` — so a selection can be narrowed by repeated application:
+`/` is defined on the session, on `WebDriver.Element` and on `List[WebDriver.Element]`, and always returns a
+`List[WebDriver.Element]` — so a selection can be narrowed by repeated application:
 ```scala
 for element <- browser / Name[DomId](t"menu") / Li / ClassList["checkbox"]()
 do element.click()
@@ -139,7 +139,7 @@ library.
 Text typed into a field should go through `value`, which is simpler and faster. Everything else
 — a modifier, a chord, a hover, a drag — goes through the actions API:
 ```scala
-import WebDriverSession.Action.*
+import WebDriver.Session.Action.*
 
 val control = t"\uE009"
 
@@ -154,7 +154,7 @@ The specification assigns each non-typing key a codepoint in Unicode's private u
 
 Rather than sleeping, set an implicit wait once and let each find retry until the page settles:
 ```scala
-browser.timeouts(WebDriverSession.Timeouts(`implicit` = 5000L))
+browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
 ```
 
 ### Windows, frames and prompts
@@ -176,10 +176,10 @@ does not model.
 
 ### Errors
 
-Every failure raises `WebDriverError`, carrying the reason the driver reported (one of the W3C
+Every failure raises `WebDriver.Error`, carrying the reason the driver reported (one of the W3C
 error codes), its message, and the browser-side stack trace. An unrecognized code is kept
 verbatim as `Other(code)` rather than being lost, and a reply which is not the expected shape at
-all — a crashed driver, an interposed proxy — still arrives as a `WebDriverError` carrying the
+all — a crashed driver, an interposed proxy — still arrives as a `WebDriver.Error` carrying the
 raw body.
 
 ## Status

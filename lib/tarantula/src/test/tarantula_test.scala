@@ -67,7 +67,7 @@ object FakeDriver:
   def string(text: Text): Http.Response = value(t"\"$text\"")
 
   // The W3C error object: a 4xx or 5xx whose body says which error, in words the specification
-  // fixes. This is the shape `WebDriverSession#outcome` exists to read.
+  // fixes. This is the shape `WebDriver.Session#outcome` exists to read.
   def failure(status: Http.Status, code: Text, message: Text, trace: Text = t""): Http.Response =
     Http.Response(status):
       t"""{"value":{"error":"$code","message":"$message","stacktrace":"$trace"}}"""
@@ -116,7 +116,7 @@ object Tests extends Suite(m"Tarantula tests"):
 
   def run(): Unit =
     // The tag vocabulary the `Focusable` instance for `Tag` locates by. Scoped to `run`, since
-    // `whatwg.*` also defines an `WebElement`, which the package's own would otherwise have to
+    // `whatwg.*` also defines an `WebDriver.Element`, which the package's own would otherwise have to
     // out-rank at every use.
     import doms.html.whatwg
     import whatwg.*
@@ -166,14 +166,14 @@ object Tests extends Suite(m"Tarantula tests"):
 
         safely:
           WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
-            abort(WebDriverError(WebDriverError.Reason.UnknownError, t"deliberate", Nil))
+            abort(WebDriver.Error(WebDriver.Error.Reason.UnknownError, t"deliberate", Nil))
 
         fake.exchanges.prim.let(_.method)
 
       . assert(_ == Http.Delete)
 
     suite(m"Locator strategies"):
-      def located(lambda: (session: WebDriverSession^) ?=> Unit): Json =
+      def located(lambda: (session: WebDriver.Session^) ?=> Unit): Json =
         val fake = driver((_, _) => value(t"""{"element-6066-11e4-a52e-4f735466cecf":"E1"}"""))
         given Http.Backend = fake
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session(lambda)
@@ -206,7 +206,7 @@ object Tests extends Suite(m"Tarantula tests"):
         json.selectDynamic("using").as[Text]
       . assert(_ == t"css selector")
 
-    suite(m"WebElement handles"):
+    suite(m"WebDriver.Element handles"):
       test(m"an element handle is unwrapped from the W3C key"):
         val fake = driver: (_, _) =>
           value(t"""{"element-6066-11e4-a52e-4f735466cecf":"E17"}""")
@@ -221,13 +221,13 @@ object Tests extends Suite(m"Tarantula tests"):
         val fake = driver((_, _) => value(t"""{"ELEMENT":"E17"}"""))
         given Http.Backend = fake
 
-        capture[WebDriverError]:
+        capture[WebDriver.Error]:
           WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
             browser.element(H1)
 
         . reason
 
-      . assert(_ == WebDriverError.Reason.UnknownError)
+      . assert(_ == WebDriver.Error.Reason.UnknownError)
 
       test(m"an element command addresses the element by its handle"):
         val fake = driver: (method, path) =>
@@ -244,18 +244,18 @@ object Tests extends Suite(m"Tarantula tests"):
 
     suite(m"Error decoding"):
       def raised(status: Http.Status, code: Text, message: Text, trace: Text = t"")
-      :   WebDriverError =
+      :   WebDriver.Error =
 
         val fake = driver((_, _) => failure(status, code, message, trace))
         given Http.Backend = fake
 
-        capture[WebDriverError]:
+        capture[WebDriver.Error]:
           WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
             browser.title()
 
       test(m"a no-such-element reply decodes to NoSuchElement"):
         raised(Http.NotFound, t"no such element", t"nothing matched").reason
-      . assert(_ == WebDriverError.Reason.NoSuchElement)
+      . assert(_ == WebDriver.Error.Reason.NoSuchElement)
 
       test(m"the driver's message becomes the error's detail"):
         raised(Http.NotFound, t"no such element", t"nothing matched").detail
@@ -267,17 +267,17 @@ object Tests extends Suite(m"Tarantula tests"):
 
       test(m"a click intercepted reply decodes to a code added since"):
         raised(Http.BadRequest, t"element click intercepted", t"covered").reason
-      . assert(_ == WebDriverError.Reason.ElementClickIntercepted)
+      . assert(_ == WebDriver.Error.Reason.ElementClickIntercepted)
 
       test(m"an unrecognized code is kept verbatim rather than lost"):
         raised(Http.BadRequest, t"future error", t"unknown").reason
-      . assert(_ == WebDriverError.Reason.Other(t"future error"))
+      . assert(_ == WebDriver.Error.Reason.Other(t"future error"))
 
-      test(m"a non-JSON body still raises WebDriverError, carrying the body"):
+      test(m"a non-JSON body still raises WebDriver.Error, carrying the body"):
         val fake = driver((_, _) => Http.Response(Http.InternalServerError)(t"<html>crash</html>"))
         given Http.Backend = fake
 
-        capture[WebDriverError]:
+        capture[WebDriver.Error]:
           WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
             browser.title()
 
@@ -288,7 +288,7 @@ object Tests extends Suite(m"Tarantula tests"):
     suite(m"Protocol shapes"):
       val target: HttpUrl = url"http://example.com/"
 
-      def sent(lambda: (session: WebDriverSession^) ?=> Unit): List[Exchange] =
+      def sent(lambda: (session: WebDriver.Session^) ?=> Unit): List[Exchange] =
         val fake = driver((_, _) => string(t"Example"))
         given Http.Backend = fake
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session(lambda)
@@ -311,7 +311,7 @@ object Tests extends Suite(m"Tarantula tests"):
       . assert(_ == (Http.Get, t"/session/$sessionId/source"))
 
       test(m"timeouts are sent in the W3C shape, not the JSON Wire pair"):
-        sent(browser.timeouts(WebDriverSession.Timeouts(`implicit` = 5000L)))
+        sent(browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L)))
         . prim.let(_.body.or(t""))
       . assert(_ == t"""{"implicit":5000}""")
 
@@ -328,22 +328,22 @@ object Tests extends Suite(m"Tarantula tests"):
       . assert(_ == (Http.Delete, t"/session/$sessionId/cookie"))
 
     suite(m"Input actions"):
-      def performed(steps: List[WebDriverSession.Action]): Text =
+      def performed(steps: List[WebDriver.Session.Action]): Text =
         val fake = driver((_, _) => none)
         given Http.Backend = fake
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
-          browser.perform(WebDriverSession.Action.Source.Key, steps)
+          browser.perform(WebDriver.Session.Action.Source.Key, steps)
 
         fake.exchanges.stdlib.filter(_.path.ends(t"/actions")).head.body.or(t"")
 
       test(m"a keypress is one keyboard source with two steps"):
-        performed(List(WebDriverSession.Action.KeyDown(t"a"), WebDriverSession.Action.KeyUp(t"a")))
+        performed(List(WebDriver.Session.Action.KeyDown(t"a"), WebDriver.Session.Action.KeyUp(t"a")))
       . assert:
           _ == t"""{"actions":[{"id":"keyboard","type":"key","actions":""" +
               t"""[{"type":"keyDown","value":"a"},{"type":"keyUp","value":"a"}]}]}"""
 
       test(m"a pause carries its duration"):
-        performed(List(WebDriverSession.Action.Pause(250)))
+        performed(List(WebDriver.Session.Action.Pause(250)))
       . assert(_.contains(t"""{"type":"pause","duration":250}"""))
 
       test(m"releasing actions is a DELETE"):
@@ -406,9 +406,9 @@ object Tests extends Suite(m"Tarantula tests"):
             test(m"a locator matching nothing raises NoSuchElement"):
               local.headless.on(freePort()).session: session ?=>
                 browser.navigateTo(address)
-                capture[WebDriverError](browser.element(Name[DomId](t"absent"))).reason
+                capture[WebDriver.Error](browser.element(Name[DomId](t"absent"))).reason
 
-            . assert(_ == WebDriverError.Reason.NoSuchElement)
+            . assert(_ == WebDriver.Error.Reason.NoSuchElement)
 
             test(m"typing into a field is read back as a property"):
               local.headless.on(freePort()).session: session ?=>
@@ -422,7 +422,7 @@ object Tests extends Suite(m"Tarantula tests"):
             test(m"a script's result crosses back as JSON"):
               local.headless.on(freePort()).session: session ?=>
                 browser.navigateTo(address)
-                WebDriverSession.text(browser.execute(t"return document.title"))
+                WebDriver.Session.text(browser.execute(t"return document.title"))
 
             . assert(_ == t"Tarantula")
 

@@ -2095,8 +2095,8 @@ tarantula recipes:
   before anyone assumes it is exercised. The `launch` recipe (value param last, to keep a fresh
   result visible outside a trailing using clause) went with it. What follows replaces the rest.
 - The RESOLUTION of the reverted capability-classing: the session IS capability-classed, and the
-  elements are NOT. `WebDriverSession` is TOP-LEVEL, so it has no outer reference and needs no
-  `uses` clause, and it extends `caps.ExclusiveCapability`; `WebElement` stays a pure case class,
+  elements are NOT. `WebDriver.Session` is TOP-LEVEL, so it has no outer reference and needs no
+  `uses` clause, and it extends `caps.ExclusiveCapability`; `WebDriver.Element` stays a pure case class,
   because elements are built inside `map` lambdas where a fresh capability per construction
   cannot be collected into a `List` ("any² not visible from any"). Nothing is lost: every
   operation on an element takes the session as a `using` param, so it is inert without it.
@@ -2119,7 +2119,7 @@ tarantula recipes:
   `decode[value]` does NOT work: taking the decodable as a parameter moves its summon to the
   call site, where the tactic is a field of the session again and the overlap returns.
 - Sub-protocol errors (connect, JSON, media type, Base64, UTF-8) are `Tactic#contramap`ped onto
-  `WebDriverError` in the session body, so the module raises ONE error type. Each lambda must
+  `WebDriver.Error` in the session body, so the module raises ONE error type. Each lambda must
   read `diagnostics` through a LOCAL val, never the field: reading the field puts the whole
   session in the lambda's hidden set, which overlaps the `tactic` it is applied to. For the same
   reason `malformed` is a free function of the COMPANION, not a method.
