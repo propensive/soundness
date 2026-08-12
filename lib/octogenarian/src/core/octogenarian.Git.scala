@@ -382,13 +382,13 @@ object Git:
 
   // GitEvent → Git.Event
   object Event:
-    given execEvent: Git.Event transcribes Exec.Event = Git.Event.Exec(_)
+    given execEvent: Git.Event transcribes guillotine.Exec.Event = Git.Event.Exec(_)
 
     given communicable: Git.Event is Communicable =
       case Exec(reason) => m"the git operation did not execute: $reason"
 
   enum Event:
-    case Exec(event: Exec.Event) extends Git.Event, Log.Process
+    case Exec(event: guillotine.Exec.Event) extends Git.Event, Log.Process
 
   // GitPathStatus → Git.PathStatus
   case class PathStatus

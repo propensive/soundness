@@ -493,9 +493,17 @@ three of them about *finding* the outer type rather than moving anything.
   this one shows the underlying constraint is broader, so the warning sign is *any* mutation
   through a value whose capture set the enclosing object widens.
 
-The sweep also rewrote `jnf.WatchEvent`, which is `java.nio.file`'s. The compiler caught it,
-but it is the second time a bare-name sweep has reached outside the library that owns the
-name (the first was `Syntax`), so read the sweep's file list before compiling.
+Two sweep hazards fired again, both caught by the compiler rather than by review. It
+rewrote `jnf.WatchEvent`, which is `java.nio.file`'s — the second time a bare-name sweep has
+reached outside the library that owns the name (the first was `Syntax`). And it produced
+`import wisteria.{Discriminable, Variant.Error}`: a braced selector cannot hold a dotted
+path, and a rename landing *inside* a selector list is how that happens.
+
+A new namespace object also collides the same way a nested one does. `ExecEvent` became
+`Exec.Event`, and octogenarian's `Git.Event` has a case named `Exec` — so `Exec.Event` inside
+`object Git` resolved to the enum case, not the new namespace. Qualified as
+`guillotine.Exec.Event`. Creating a namespace is not safer than nesting into an existing one:
+both put a new name into scope wherever the family is used.
 
 
 ## Execution shape
