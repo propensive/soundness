@@ -35,9 +35,12 @@ package archimedes
 import scala.math
 
 import anticipation.*
+import contingency.*
+import fulminate.*
 import gossamer.*
 import honeycomb.Html
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import xylophone.*
@@ -358,6 +361,121 @@ object Mathml:
   extends Semantic:
     def label: Text = t"annotation-xml"
     def text: Optional[Text] = Unset
+
+  // MathmlError → Mathml.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case NotMathml(label: Text)      extends Reason(1)
+      case UnknownElement(label: Text) extends Reason(2)
+
+    given communicable: Reason is Communicable =
+      case Reason.NotMathml(label)      => m"the root element was <$label> instead of <math>"
+      case Reason.UnknownElement(label) => m"the element <$label> is not a known MathML element"
+
+  case class Error(reason: Mathml.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(430, reason.number)(m"the MathML could not be parsed because $reason")
+
+  // MathmlParser → Mathml.Parser
+  // Decodes a xylophone `Xml` tree into the Archimedes model by dispatching on
+  // each element's label. Every element's attributes are preserved verbatim in
+  // the node's `attributes` bag (except `xmlns`/`display` on the root, which are
+  // represented structurally), so a parse/serialise round-trip is lossless.
+
+  object Parser:
+    def labelOf(xml: Xml): Text = xml match
+      case element: Element => element.label
+      case _                => t"<unknown>"
+
+    def findMath(nodes: List[Node])(using Tactic[Mathml.Error]): Element =
+      nodes.stdlib.collectFirst { case element: Element if element.label == t"math" => element }
+      . getOrElse:
+        abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))
+
+    def rootElement(xml: Xml)(using Tactic[Mathml.Error]): Element = xml match
+      case element: Element if element.label == t"math" => element
+      case Fragment(nodes*)                             => findMath(nodes.to(List))
+
+      case other =>
+        abort(Mathml.Error(Mathml.Error.Reason.NotMathml(labelOf(other))))
+
+    private def childElements(elem: Element): List[Element] =
+      List.of(elem.children.readable.toList.collect { case element: Element => element })
+
+    private def attributesOf(elem: Element): List[(Text, Text)] =
+      List.of(elem.attributes.keys.map { key => (key, elem.attributes(key).or(t"")) }.toList)
+
+    private def textOf(elem: Element): Text =
+      List.of(elem.children.readable.toList.collect { case TextNode(text) => text }).join
+
+    private def children(elem: Element)(using Tactic[Mathml.Error]): List[Mathml] =
+      childElements(elem).map(decodeNode)
+
+    private def at(nodes: List[Mathml], index: Int): Mathml =
+      nodes.stdlib.lift(index).getOrElse(Mrow(Nil))
+
+    def decodeMath(elem: Element)(using Tactic[Mathml.Error]): Math =
+      val kept = attributesOf(elem).filter { case (key, _) => key != t"xmlns" && key != t"display" }
+
+      val display: Optional[Display] = elem.attributes(t"display").let: text =>
+        Display.unapply(text).getOrElse(Display.Inline)
+
+      Math(children(elem), display, kept)
+
+    def decodeNode(elem: Element)(using Tactic[Mathml.Error]): Mathml =
+      val attrs = attributesOf(elem)
+      val cs = children(elem)
+
+      elem.label match
+        case t"mi"             => Mi(textOf(elem), attrs)
+        case t"mn"             => Mn(textOf(elem), attrs)
+        case t"mo"             => Mo(textOf(elem), attrs)
+        case t"mtext"          => Mtext(textOf(elem), attrs)
+        case t"ms"             => Ms(textOf(elem), attrs)
+        case t"mspace"         => Mspace(attrs)
+        case t"mglyph"         => Mglyph(attrs)
+
+        case t"mrow"           => Mrow(cs, attrs)
+        case t"msqrt"          => Msqrt(cs, attrs)
+        case t"mstyle"         => Mstyle(cs, attrs)
+        case t"merror"         => Merror(cs, attrs)
+        case t"mpadded"        => Mpadded(cs, attrs)
+        case t"mphantom"       => Mphantom(cs, attrs)
+        case t"menclose"       => Menclose(cs, attrs)
+        case t"mfenced"        => Mfenced(cs, attrs)
+        case t"mfrac"          => Mfrac(at(cs, 0), at(cs, 1), attrs)
+        case t"mroot"          => Mroot(at(cs, 0), at(cs, 1), attrs)
+
+        case t"msub"           => Msub(at(cs, 0), at(cs, 1), attrs)
+        case t"msup"           => Msup(at(cs, 0), at(cs, 1), attrs)
+        case t"msubsup"        => Msubsup(at(cs, 0), at(cs, 1), at(cs, 2), attrs)
+        case t"munder"         => Munder(at(cs, 0), at(cs, 1), attrs)
+        case t"mover"          => Mover(at(cs, 0), at(cs, 1), attrs)
+        case t"munderover"     => Munderover(at(cs, 0), at(cs, 1), at(cs, 2), attrs)
+        case t"mmultiscripts"  => Mmultiscripts(cs, attrs)
+        case t"mprescripts"    => Mprescripts(attrs)
+        case t"mnone"          => Mnone(attrs)
+
+        case t"mtable"         => Mtable(cs, attrs)
+        case t"mtr"            => Mtr(cs, attrs)
+        case t"mlabeledtr"     => Mlabeledtr(cs, attrs)
+        case t"mtd"            => Mtd(cs, attrs)
+        case t"maligngroup"    => Maligngroup(attrs)
+        case t"malignmark"     => Malignmark(attrs)
+
+        case t"mstack"         => Mstack(cs, attrs)
+        case t"mlongdiv"       => Mlongdiv(cs, attrs)
+        case t"msgroup"        => Msgroup(cs, attrs)
+        case t"msrow"          => Msrow(cs, attrs)
+        case t"mscarries"      => Mscarries(cs, attrs)
+        case t"mscarry"        => Mscarry(cs, attrs)
+        case t"msline"         => Msline(attrs)
+
+        case t"maction"        => Maction(cs, attrs)
+        case t"semantics"      => Semantics(cs, attrs)
+        case t"annotation"     => Annotation(textOf(elem), attrs)
+        case t"annotation-xml" => AnnotationXml(cs, attrs)
+
+        case other             => abort(Mathml.Error(Mathml.Error.Reason.UnknownElement(other)))
 
 trait Mathml:
   def label: Text

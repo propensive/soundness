@@ -44,13 +44,13 @@ import honeycomb.Html
 // Extracts MathML embedded in HTML. Honeycomb parses `<math>` as a foreign
 // element with its own (non-xylophone) `Element`/`Node` types, so the reader
 // walks the honeycomb tree, finds the first `<math>` subtree, transcribes it
-// into a xylophone `Xml` element, and hands that to `MathmlParser` to reuse the
+// into a xylophone `Xml` element, and hands that to `Mathml.Parser` to reuse the
 // same label-dispatch decoding used for standalone XML.
 
 object MathmlReader:
-  def read(html: Html)(using Tactic[MathmlError]): Math =
-    findMath(html).lay(abort(MathmlError(MathmlError.Reason.NotMathml(t"<missing>")))): element =>
-      MathmlParser.decodeMath(toXmlElement(element))
+  def read(html: Html)(using Tactic[Mathml.Error]): Math =
+    findMath(html).lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))): element =>
+      Mathml.Parser.decodeMath(toXmlElement(element))
 
   def findMath(html: Html): Optional[honeycomb.Element] = html match
     case element: honeycomb.Element =>

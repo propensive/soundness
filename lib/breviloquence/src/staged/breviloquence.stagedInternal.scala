@@ -56,7 +56,7 @@ object stagedInternal:
   // through its `Decodable in Cbor`, materializing just that field's
   // subtree. An inline method because `summonFrom` may only live in one; it
   // expands where the generated parser is spliced.
-  inline def fieldSeam[fieldType](reader: CborReader): fieldType =
+  inline def fieldSeam[fieldType](reader: Cbor.Reader): fieldType =
     scala.compiletime.summonFrom:
       case parsable: (`fieldType` is Cbor.Parsable) => parsable.parse(reader)
 
@@ -67,7 +67,7 @@ object stagedInternal:
 
   // The seam's absent counterpart, preserving the AST path's semantics for
   // a missing key: `decoded(Cbor(Ast(Unset)))` through the bridge.
-  inline def fieldSeamAbsent[fieldType](tactic: Tactic[CborError]): fieldType =
+  inline def fieldSeamAbsent[fieldType](tactic: Tactic[Cbor.Error]): fieldType =
     scala.compiletime.summonFrom:
       case parsable: (`fieldType` is Cbor.Parsable) => parsable.absent()(using tactic)
 
@@ -305,13 +305,13 @@ object stagedInternal:
   private final class RuntimeInlinable[value](parsable: Expr[Any]) extends Inlinable:
     type Self = value
 
-    def parse(reader: Expr[CborReader])(using Quotes, Type[value]): Expr[value] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[value]): Expr[value] =
       '{
         Cbor.Parsable.parseField[value]
           ($parsable.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
       }
 
-    override def absent(tactic: Expr[Tactic[CborError]])(using Quotes, Type[value])
+    override def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
       '{ Cbor.Parsable.absentField[value]($parsable.asInstanceOf[AnyRef])(using $tactic) }
@@ -319,10 +319,10 @@ object stagedInternal:
   private final class DecodedInlinable[value](decodable: Expr[Any]) extends Inlinable:
     type Self = value
 
-    def parse(reader: Expr[CborReader])(using Quotes, Type[value]): Expr[value] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[value]): Expr[value] =
       '{ $decodable.asInstanceOf[value is Decodable in Cbor].decoded($reader.value()) }
 
-    override def absent(tactic: Expr[Tactic[CborError]])(using Quotes, Type[value])
+    override def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
       '{
@@ -336,7 +336,7 @@ object stagedInternal:
   // JIT-compilable while the call stays monomorphic and direct. Leaf
   // generators stay inline.
   private def nested[fieldType: Type]
-    (instance: Inlinable { type Self = fieldType }, reader: Expr[CborReader])
+    (instance: Inlinable { type Self = fieldType }, reader: Expr[Cbor.Reader])
     (using Quotes)
   :   Expr[fieldType] =
 
@@ -537,7 +537,7 @@ object stagedInternal:
   // count-driven, an indefinite one Break-terminated — with the element's
   // generated code inlined into the loop.
   private[breviloquence] def iterableBody[collection: Type]
-    (reader: Expr[CborReader], element0: Inlinable)
+    (reader: Expr[Cbor.Reader], element0: Inlinable)
     (using Quotes)
   :   Expr[collection] =
 
@@ -558,7 +558,7 @@ object stagedInternal:
               def parseElement(): element = ${ instance.parse(reader) }
               val factory = infer[scala.collection.Factory[element, stdlib]]
               val builder = factory.newBuilder
-              val tactic = infer[Tactic[CborError]]
+              val tactic = infer[Tactic[Cbor.Error]]
               val parser = $reader.rawParser.asInstanceOf[Cbor.Parser]
               var remaining = parser.directOpenArray()(using tactic)
               var run = remaining != 0
@@ -584,12 +584,12 @@ object stagedInternal:
   // consumed name against literal strings; unknown keys and non-text-keyed
   // entries are skipped), first occurrence read per key, declared defaults
   // then absent semantics for missing fields, direct construction.
-  private[breviloquence] def productBody[product: Type](reader: Expr[CborReader])(using Quotes)
+  private[breviloquence] def productBody[product: Type](reader: Expr[Cbor.Reader])(using Quotes)
   :   Expr[product] =
 
     productBody[product](reader, Cache())
 
-  private def productBody[product: Type](reader: Expr[CborReader], cache: Cache)(using Quotes)
+  private def productBody[product: Type](reader: Expr[Cbor.Reader], cache: Cache)(using Quotes)
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -599,7 +599,7 @@ object stagedInternal:
     try productBody0[product](reader, cache)
     finally cache.active -= TypeRepr.of[product].dealias.show
 
-  private def productBody0[product: Type](reader: Expr[CborReader], cache: Cache)(using Quotes)
+  private def productBody0[product: Type](reader: Expr[Cbor.Reader], cache: Cache)(using Quotes)
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -642,7 +642,7 @@ object stagedInternal:
     val packedNames: List[Option[(Long, Long)]] = List.range(0, arity).map(packedName)
 
     def body
-      ( tactic: Expr[Tactic[CborError]],
+      ( tactic: Expr[Tactic[Cbor.Error]],
         parser: Expr[Cbor.Parser] )
     :   Expr[product] =
 
@@ -672,7 +672,7 @@ object stagedInternal:
       val unit = Literal(UnitConstant())
 
       // Builtins read straight off the parser bound once per record,
-      // skipping the CborReader rim entirely.
+      // skipping the Cbor.Reader rim entirely.
       def builtinDirect(tpe: TypeRepr): Option[Expr[Any]] =
         if tpe =:= TypeRepr.of[Int] then Some('{ $parser.directLong()(using $tactic).toInt })
         else if tpe =:= TypeRepr.of[Long] then Some('{ $parser.directLong()(using $tactic) })
@@ -806,7 +806,7 @@ object stagedInternal:
 
         val resolveStep: Term =
           If
-            ( '{ $wordRef == CborReader.KeyOpaque }.asTerm,
+            ( '{ $wordRef == Cbor.Reader.KeyOpaque }.asTerm,
               opaque.asTerm,
               Block
                 ( List(ValDef(high, Some('{ $parser.directKeyHigh }.asTerm))),
@@ -859,7 +859,7 @@ object stagedInternal:
       Block(slotDefs ::: seenDefs ::: loop ::: absents, construct).asExprOf[product]
 
     '{
-      val tactic = infer[Tactic[CborError]]
+      val tactic = infer[Tactic[Cbor.Error]]
       val parser = $reader.rawParser.asInstanceOf[Cbor.Parser]
       ${ body('tactic, 'parser) }
     }
@@ -869,13 +869,13 @@ object stagedInternal:
   // parser is left where it started), then parsed from the start of the
   // map as its product — the discriminant entry skips as an unknown key —
   // exactly the AST disjunction's `discriminate` + `delegate` semantics.
-  private[breviloquence] def sumBody[sum: Type](reader: Expr[CborReader], key: String)
+  private[breviloquence] def sumBody[sum: Type](reader: Expr[Cbor.Reader], key: String)
     (using Quotes)
   :   Expr[sum] =
 
     sumBody[sum](reader, key, Cache())
 
-  private def sumBody[sum: Type](reader: Expr[CborReader], key: String, cache: Cache)
+  private def sumBody[sum: Type](reader: Expr[Cbor.Reader], key: String, cache: Cache)
     (using Quotes)
   :   Expr[sum] =
 
@@ -885,7 +885,7 @@ object stagedInternal:
 
     try sumBody0[sum](reader, key, cache) finally cache.active -= TypeRepr.of[sum].dealias.show
 
-  private def sumBody0[sum: Type](reader: Expr[CborReader], key: String, cache: Cache)
+  private def sumBody0[sum: Type](reader: Expr[Cbor.Reader], key: String, cache: Cache)
     (using Quotes)
   :   Expr[sum] =
 
@@ -919,11 +919,11 @@ object stagedInternal:
           }
 
     '{
-      val tactic = infer[Tactic[CborError]]
+      val tactic = infer[Tactic[Cbor.Error]]
       val parser = $reader.rawParser.asInstanceOf[Cbor.Parser]
       val tag = parser.directDiscriminant(${Expr(key)})(using tactic)
 
-      if tag == null then abort(CborError(CborError.Reason.Absent))(using tactic)
+      if tag == null then abort(Cbor.Error(Cbor.Error.Reason.Absent))(using tactic)
       else
         val tagValue: String = tag.nn
         ${ dispatch(0, 'tagValue) }
@@ -957,5 +957,5 @@ object stagedInternal:
           protected def parseCarrier(reader0: AnyRef): value =
             // A capability class cannot be quoted into a pure hole, so
             // every use casts from the neutral carrier afresh.
-            ${ instance.parse('{ reader0.asInstanceOf[CborReader] }) }
+            ${ instance.parse('{ reader0.asInstanceOf[Cbor.Reader] }) }
     }

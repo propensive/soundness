@@ -56,11 +56,11 @@ import prepositional.*
 // an earlier run than the expansion; same-run instances degrade to a spliced
 // runtime call through the `Decodable in Cbor` bridge.
 trait Inlinable extends Typeclass:
-  def parse(reader: Expr[CborReader])(using Quotes, Type[Self]): Expr[Self]
+  def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Self]): Expr[Self]
 
   // What a field of this type yields when its key is absent from the map,
   // mirroring the runtime instances: an abort unless overridden.
-  def absent(tactic: Expr[Tactic[CborError]])(using Quotes, Type[Self]): Expr[Self] =
+  def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[Self]): Expr[Self] =
     '{ Cbor.Parsable.missing[Self]()(using $tactic) }
 
 object Inlinable:
@@ -85,10 +85,10 @@ object Inlinable:
     type Self = value
     private[breviloquence] def delegate: value is Inlinable = delegate0
 
-    def parse(reader: Expr[CborReader])(using Quotes, Type[value]): Expr[value] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[value]): Expr[value] =
       delegate0.parse(reader)
 
-    override def absent(tactic: Expr[Tactic[CborError]])(using Quotes, Type[value])
+    override def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
       delegate0.absent(tactic)
@@ -99,14 +99,14 @@ object Inlinable:
   private[breviloquence] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
 
-    def parse(reader: Expr[CborReader])(using Quotes, Type[product]): Expr[product] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[product]): Expr[product] =
       stagedInternal.productBody[product](reader)
 
   private[breviloquence] final class IterableInlinable[element](element0: element is Inlinable)
   extends Inlinable:
     type Self = Iterable[element]
 
-    def parse(reader: Expr[CborReader])(using Quotes, Type[Iterable[element]])
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Iterable[element]])
     :   Expr[Iterable[element]] =
 
       stagedInternal.iterableBody[Iterable[element]](reader, element0)
@@ -119,7 +119,7 @@ object Inlinable:
   private[breviloquence] final class SumInlinable[sum](key: String) extends Inlinable:
     type Self = sum
 
-    def parse(reader: Expr[CborReader])(using Quotes, Type[sum]): Expr[sum] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[sum]): Expr[sum] =
       stagedInternal.sumBody[sum](reader, key)
 
   // ── Instances ──────────────────────────────────────────────────────────
@@ -129,47 +129,47 @@ object Inlinable:
 
   given int: (Int is Inlinable) = new Inlinable:
     type Self = Int
-    def parse(reader: Expr[CborReader])(using Quotes, Type[Int]): Expr[Int] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Int]): Expr[Int] =
       '{ $reader.int() }
 
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
-    def parse(reader: Expr[CborReader])(using Quotes, Type[Long]): Expr[Long] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Long]): Expr[Long] =
       '{ $reader.long() }
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
-    def parse(reader: Expr[CborReader])(using Quotes, Type[Double]): Expr[Double] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Double]): Expr[Double] =
       '{ $reader.double() }
 
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
-    def parse(reader: Expr[CborReader])(using Quotes, Type[Float]): Expr[Float] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Float]): Expr[Float] =
       '{ $reader.double().toFloat }
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
-    def parse(reader: Expr[CborReader])(using Quotes, Type[Boolean]): Expr[Boolean] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{ $reader.boolean() }
 
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
-    def parse(reader: Expr[CborReader])(using Quotes, Type[Text]): Expr[Text] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Text]): Expr[Text] =
       '{ $reader.text() }
 
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
-    def parse(reader: Expr[CborReader])(using Quotes, Type[String]): Expr[String] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[String]): Expr[String] =
       '{ $reader.string() }
 
   given byteString: ((Data) is Inlinable) = new Inlinable:
     type Self = Data
-    def parse(reader: Expr[CborReader])(using Quotes, Type[Data]): Expr[Data] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Data]): Expr[Data] =
       '{ $reader.byteString() }
 
   given cbor: (Cbor is Inlinable) = new Inlinable:
     type Self = Cbor
-    def parse(reader: Expr[CborReader])(using Quotes, Type[Cbor]): Expr[Cbor] =
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Cbor]): Expr[Cbor] =
       '{ $reader.value() }
 
   given iterable: [collection <: Iterable, element]

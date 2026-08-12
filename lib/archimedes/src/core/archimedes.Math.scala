@@ -59,7 +59,7 @@ import Mathml.*
 // The root `<math>` element and Archimedes' integration points.
 //
 //   - `Aggregable`/`Loadable` parse MathML text into `Math` (delegating the raw
-//     XML parse to xylophone, then mapping the tree with `MathmlParser`);
+//     XML parse to xylophone, then mapping the tree with `Mathml.Parser`);
 //   - `Showable` serialises a `Document[Math]` to MathML text with an XML header;
 //   - `Renderable in "math"` lets a `Math` value drop straight into honeycomb
 //     HTML wherever `<math>` is admissible (embedded/phrasing/flow content),
@@ -67,23 +67,23 @@ import Mathml.*
 
 object Math:
   given aggregable: (schema: XmlSchema)
-  =>  (parseTactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[MathmlError])
+  =>  (parseTactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[Mathml.Error])
   =>  ((Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
 
     source =>
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
-      MathmlParser.decodeMath(MathmlParser.rootElement(xml))
+      Mathml.Parser.decodeMath(Mathml.Parser.rootElement(xml))
 
   given loadable: (XmlSchema)
   =>  (parseTactic: Tactic[ParseError])
   =>  (xmlTactic: Tactic[Xml.Error])
-  =>  (mathmlTactic: Tactic[MathmlError])
+  =>  (mathmlTactic: Tactic[Mathml.Error])
   =>  ((Math is Loadable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
 
     source =>
       val xmlDoc: Document[Xml] = summon[(Xml is Loadable by Text)^].load(source)
-      val mathElement = MathmlParser.rootElement(xmlDoc.root)
-      val parsedMath: Math = MathmlParser.decodeMath(mathElement)
+      val mathElement = Mathml.Parser.rootElement(xmlDoc.root)
+      val parsedMath: Math = Mathml.Parser.decodeMath(mathElement)
 
       val encoding: Encoding =
         xmlDoc.metadata.encoding.let: name => Encoding.unapply(name).getOrElse(enc"UTF-8")

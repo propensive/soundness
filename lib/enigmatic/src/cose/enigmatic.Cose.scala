@@ -88,7 +88,7 @@ object Cose:
   inline def apply[source, key]
     ( source: source, key: key )
     ( using auth: key is Cose.Authenticator,
-            cborTactic: Tactic[CborError],
+            cborTactic: Tactic[Cbor.Error],
             readable: source is Readable to Data )
   :   Cose in auth.Form by auth.Operand raises Cose.Error =
 
@@ -115,7 +115,7 @@ object Cose:
   // A real `using` clause rather than the `raises` sugar: a context-function result would
   // hide the `cborTactic` parameter, which the separation checker rejects.
   def parse(bytes: Data)
-    ( using cborTactic: Tactic[CborError], coseTactic: Tactic[Cose.Error] )
+    ( using cborTactic: Tactic[Cbor.Error], coseTactic: Tactic[Cose.Error] )
   :   Cose =
 
     val ast = Cbor.Ast.parse(bytes)

@@ -81,4 +81,4 @@ class PrivateKey[cipher <: Cipher](private[enigmatic] val secret: Secret^):
   // The immutable `Data` in the result outlives the cloak's zeroing, which is exactly why
   // revealing it demands the explicit `Divulgence` token.
   def pem(reveal: Divulgence.type): Pem = secret.uncloak: bytes =>
-    Pem(PemLabel.PrivateKey, Array.unsafeFrozen(bytes.clone))
+    Pem(Pem.Label.PrivateKey, Array.unsafeFrozen(bytes.clone))

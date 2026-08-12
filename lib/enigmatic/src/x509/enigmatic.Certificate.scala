@@ -182,4 +182,4 @@ object Certificate:
 
 case class Certificate(asn1: Asn1):
   // The armored form, which is how certificates are almost always exchanged.
-  def pem: Pem = Pem(PemLabel.Certificate, asn1.in[Der])
+  def pem: Pem = Pem(Pem.Label.Certificate, asn1.in[Der])

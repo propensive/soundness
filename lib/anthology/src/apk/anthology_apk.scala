@@ -50,8 +50,8 @@ import turbulence.*
 import zeppelin.*
 
 object apkOptions:
-  private def apk(edit: ApkConfiguration => ApkConfiguration): Setting =
-    Setting[ApkConfiguration](_ == Apk)(edit)
+  private def apk(edit: Apk.Configuration => Apk.Configuration): Setting =
+    Setting[Apk.Configuration](_ == Apk)(edit)
 
   // The lowest Android API level the application must run on. The level configures both the
   // manifest (`Apk`) and the dexing that precedes it on the path (`Dex`), so this one setting
@@ -61,7 +61,7 @@ object apkOptions:
 
     def edit(format: Format, settings: Any): Any = format match
       case Dex => settings.asInstanceOf[DexConfiguration].copy(minApi = level)
-      case _   => settings.asInstanceOf[ApkConfiguration].copy(minApi = level)
+      case _   => settings.asInstanceOf[Apk.Configuration].copy(minApi = level)
 
   def targetApi(level: Int): Setting = apk(_.copy(targetApi = level))
   def packageName(name: Text): Setting = apk(_.copy(packageName = name))
@@ -78,7 +78,7 @@ object apkOptions:
     apk(_.copy(keystore = path, storePass = storePass, alias = alias, keyPass = keyPass))
 
 // The packaging edge of a toolchain: `Dex` to `Apk`. It encodes a binary manifest (`Axml`),
-// assembles a zip-aligned package (`zeppelin`), and signs it (APK v2, `ApkSigner`)—a complete,
+// assembles a zip-aligned package (`zeppelin`), and signs it (APK v2, `Apk.Signer`)—a complete,
 // installable Android application, produced with no Android SDK build tool. Dexing is the
 // preceding edge on the path, so this tool consumes the dex archive it produced; dex settings
 // (compilation mode, platform stubs) are addressed to the `Dex` node.
@@ -86,13 +86,13 @@ object apkEdges:
   def apply(): List[Edge] = List(Edge(Dex, Apk, ApkTool))
 
   private object ApkTool extends Tool:
-    type Settings = ApkConfiguration
+    type Settings = Apk.Configuration
 
     def name: Text = t"apk"
-    def initial: ApkConfiguration = ApkConfiguration.default
+    def initial: Apk.Configuration = Apk.Configuration.default
 
     def run
-      ( settings:    ApkConfiguration,
+      ( settings:    Apk.Configuration,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
@@ -110,7 +110,7 @@ object apkEdges:
 
   // The packaging step itself: takes an already-dexed archive and yields the signed package.
   private def package0
-    ( form:       ApkConfiguration,
+    ( form:       Apk.Configuration,
       dexArchive: Path on Linux,
       activity:   Fqcn,
       out:        Path on Linux )
@@ -125,7 +125,7 @@ object apkEdges:
       // The binary manifest, built from the configuration and the launcher activity.
       val manifest =
         Axml.encode:
-          ApkManifest
+          Apk.Manifest
             ( packageName = form.packageName,
               versionCode = form.versionCode,
               versionName = form.versionName,
@@ -152,7 +152,7 @@ object apkEdges:
       val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
 
       val signed =
-        ApkSigner.sign(Array.unsafeFrozen(unsigned), form.keystore, form.storePass,
+        Apk.Signer.sign(Array.unsafeFrozen(unsigned), form.keystore, form.storePass,
             form.alias, form.keyPass)
 
       val apkPath = out / "app.apk"

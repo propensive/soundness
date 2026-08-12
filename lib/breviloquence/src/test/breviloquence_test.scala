@@ -397,20 +397,20 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
     suite(m"Error byte-offsets"):
       test(m"truncated input reports the offset of the missing byte"):
-        capture[CborError](Cbor.Ast.parse(hex("18"))).reason match
-          case CborError.Reason.Truncated(offset) => offset
+        capture[Cbor.Error](Cbor.Ast.parse(hex("18"))).reason match
+          case Cbor.Error.Reason.Truncated(offset) => offset
           case _                                   => -1L
       . assert(_ == 1L)
 
       test(m"trailing bytes report the offset where they begin"):
-        capture[CborError](Cbor.Ast.parse(hex("0000"))).reason match
-          case CborError.Reason.Trailing(offset) => offset
+        capture[Cbor.Error](Cbor.Ast.parse(hex("0000"))).reason match
+          case Cbor.Error.Reason.Trailing(offset) => offset
           case _                                 => -1L
       . assert(_ == 1L)
 
       test(m"a reserved head byte reports its offset and byte value"):
-        capture[CborError](Cbor.Ast.parse(hex("1c"))).reason match
-          case CborError.Reason.Reserved(offset, byte) => (offset, byte)
+        capture[Cbor.Error](Cbor.Ast.parse(hex("1c"))).reason match
+          case Cbor.Error.Reason.Reserved(offset, byte) => (offset, byte)
           case _                                        => (-1L, -1)
       . assert(_ == (0L, 28))
 
@@ -508,8 +508,8 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Wide(9, 2))
 
       test(m"a missing required field aborts with Absent"):
-        capture[CborError](hex("a1 6178 03").read[Point in Cbor]).reason
-      . assert(_ == CborError.Reason.Absent)
+        capture[Cbor.Error](hex("a1 6178 03").read[Point in Cbor]).reason
+      . assert(_ == Cbor.Error.Reason.Absent)
 
       test(m"a missing field with a declared default takes it"):
         hex("a1 6178 03").read[Defaulted in Cbor]
@@ -528,14 +528,14 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == OptPerson(t"Ada", 36))
 
       test(m"a non-map item reads as an empty record"):
-        capture[CborError](hex("07").read[Point in Cbor]).reason
-      . assert(_ == CborError.Reason.Absent)
+        capture[Cbor.Error](hex("07").read[Point in Cbor]).reason
+      . assert(_ == Cbor.Error.Reason.Absent)
 
       test(m"trailing bytes are rejected as on the AST path"):
         val bytes = encoded(Point(3, 4))
         val padded = Array.from(bytes.readable.to(List) :+ 0.toByte)
-        capture[CborError](padded.read[Point in Cbor]).reason match
-          case CborError.Reason.Trailing(offset) => offset
+        capture[Cbor.Error](padded.read[Point in Cbor]).reason match
+          case Cbor.Error.Reason.Trailing(offset) => offset
           case _                                 => -1L
       . assert(_ == 7L)
 

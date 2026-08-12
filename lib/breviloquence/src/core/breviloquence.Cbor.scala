@@ -36,6 +36,7 @@ import scala.collection.immutable.Vector
 
 import scala.caps
 
+import fulminate.*
 import proscenium.compat.*
 
 import scala.language.dynamics
@@ -60,7 +61,7 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
-import CborError.{Primitive, Reason}
+import Cbor.Error.{Primitive, Reason}
 
 trait Cbor2:
   this: Cbor.type =>
@@ -76,7 +77,7 @@ trait Cbor2:
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(ast(Ast(Unset)))
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  ( tactic: Tactic[CborError] )
+  =>  ( tactic: Tactic[Cbor.Error] )
   =>  ( decodable: => (inner is Decodable in Cbor)^ )
   =>  ((value is Decodable in Cbor)^{tactic, decodable}) =
     // An honest capability: the instance retains the resolution-scoped tactic and
@@ -86,7 +87,7 @@ trait Cbor2:
 
   inline given decodable: [value] => value is Decodable in Cbor = summonFrom:
     case given (`value` is Decodable in Text) =>
-      provide[Tactic[CborError]](_.root.string.tt.as[value])
+      provide[Tactic[Cbor.Error]](_.root.string.tt.as[value])
 
     case given Reflection[`value`] =>
       DecodableDerivation.derived
@@ -98,7 +99,7 @@ trait Cbor2:
   // is shorthand for `source.read[Cbor].as[Foo]`; the `Form` type-tag is
   // added by an `asInstanceOf` cast — `value in Cbor` is just
   // `value { type Form = Cbor }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Cbor] => (tactic: Tactic[CborError])
+  given aggregableIn: [value: Decodable in Cbor] => (tactic: Tactic[Cbor.Error])
   =>  (((value in Cbor) is Aggregable by Data)^{tactic}) =
     bytes => Cbor.ast(bytes.read[Cbor.Ast]).as[value].asInstanceOf[value in Cbor]
 
@@ -117,11 +118,11 @@ trait Cbor2:
         // capture set.
       cbor =>
         decodeRecord[derivation](cbor)
-          (using infer[ProductReflection[derivation]], infer[Tactic[CborError]])
+          (using infer[ProductReflection[derivation]], infer[Tactic[Cbor.Error]])
 
     private inline def decodeRecord[derivation <: Product]
       ( cbor: Cbor )
-      ( using ProductReflection[derivation], Tactic[CborError] )
+      ( using ProductReflection[derivation], Tactic[Cbor.Error] )
     :   derivation =
 
       val root = cbor.root
@@ -152,7 +153,7 @@ trait Cbor2:
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Cbor =
       cbor =>
-        provide[Tactic[CborError]]:
+        provide[Tactic[Cbor.Error]]:
           provide[Tactic[VariantError]]:
             val discriminable = infer[derivation is Discriminable in Cbor]
 
@@ -162,7 +163,7 @@ trait Cbor2:
               variantRelabelling[derivation, Cbor].stdlib.map: (variant, wire) => wire -> variant
 
             val wire: Text =
-              discriminable.discriminate(cbor).lest(CborError(Reason.Absent))
+              discriminable.discriminate(cbor).lest(Cbor.Error(Reason.Absent))
 
             val discriminant: Text = variantNames(wire).or(wire)
 
@@ -227,7 +228,7 @@ object Cbor extends Cbor2, Dynamic:
 
   object Ast:
     // In the companion (implicit scope), so aggregating a CBOR stream needs no import.
-    given aggregable: (tactic: Tactic[CborError])
+    given aggregable: (tactic: Tactic[Cbor.Error])
     =>  ((Ast is Aggregable by Data)^{tactic}) =
       source => Ast.parse(source.read[Data])
 
@@ -477,7 +478,7 @@ object Cbor extends Cbor2, Dynamic:
   // and `filterOptical` traverse every (or matching) array element. All reuse the
   // existing `selectDynamic`/`modify`/`element`/`Ast.array` primitives and rebuild
   // immutably. Mirrors jacinta's `Json` optics.
-  given lens: [name <: Label: ValueOf] => (erased dynamicCborEnabler: DynamicCborEnabler) => (tactic: Tactic[CborError])
+  given lens: [name <: Label: ValueOf] => (erased dynamicCborEnabler: DynamicCborEnabler) => (tactic: Tactic[Cbor.Error])
   =>  ((name is Lens from Cbor onto Cbor)^{tactic}) =
     // Both lambdas only read through the same resolution-scoped tactic; no aliased writer.
     scala.caps.unsafe.unsafeAssumeSeparate:
@@ -545,25 +546,25 @@ object Cbor extends Cbor2, Dynamic:
       else
         origin
 
-  given boolean: (tactic: Tactic[CborError])
+  given boolean: (tactic: Tactic[Cbor.Error])
   =>  ((Boolean is Decodable in Cbor)^{tactic}) = _.root.boolean
-  given double: (tactic: Tactic[CborError])
+  given double: (tactic: Tactic[Cbor.Error])
   =>  ((Double is Decodable in Cbor)^{tactic}) = _.root.double
-  given float: (tactic: Tactic[CborError])
+  given float: (tactic: Tactic[Cbor.Error])
   =>  ((Float is Decodable in Cbor)^{tactic}) = _.root.double.toFloat
-  given long: (tactic: Tactic[CborError])
+  given long: (tactic: Tactic[Cbor.Error])
   =>  ((Long is Decodable in Cbor)^{tactic}) = _.root.long
-  given int: (tactic: Tactic[CborError])
+  given int: (tactic: Tactic[Cbor.Error])
   =>  ((Int is Decodable in Cbor)^{tactic}) = _.root.long.toInt
-  given text: (tactic: Tactic[CborError])
+  given text: (tactic: Tactic[Cbor.Error])
   =>  ((Text is Decodable in Cbor)^{tactic}) = _.root.string.tt
-  given string: (tactic: Tactic[CborError])
+  given string: (tactic: Tactic[Cbor.Error])
   =>  ((String is Decodable in Cbor)^{tactic}) = _.root.string
-  given byteString: (tactic: Tactic[CborError])
+  given byteString: (tactic: Tactic[Cbor.Error])
   =>  (((Array[Byte]^{}) is Decodable in Cbor)^{tactic}) = _.root.byteString
   given cbor: Cbor is Decodable in Cbor = identity(_)
 
-  given aggregable: (tactic: Tactic[CborError])
+  given aggregable: (tactic: Tactic[Cbor.Error])
   =>  ((Cbor is Aggregable by Data)^{tactic}) =
     bytes => Cbor.ast(bytes.read[Cbor.Ast])
 
@@ -592,14 +593,14 @@ object Cbor extends Cbor2, Dynamic:
 
       protected def parseCarrier(reader: AnyRef): value
 
-      def parse(reader: CborReader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
+      def parse(reader: Cbor.Reader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
 
-    def apply[value](parser: (reader: CborReader^) => value)
+    def apply[value](parser: (reader: Cbor.Reader^) => value)
     :   ((value is Cbor.Parsable)^{parser}) =
 
       new Cbor.Parsable:
         type Self = value
-        def parse(reader: CborReader^): value = parser(reader)
+        def parse(reader: Cbor.Reader^): value = parser(reader)
 
     // The universal bridge from the AST world: parse one whole item into a
     // `Cbor` and decode it. Field types with only a `Decodable in Cbor`
@@ -610,14 +611,14 @@ object Cbor extends Cbor2, Dynamic:
 
       new Cbor.Parsable:
         type Self = value
-        def parse(reader: CborReader^): value = decodable.decoded(reader.value())
+        def parse(reader: Cbor.Reader^): value = decodable.decoded(reader.value())
 
-        override def absent()(using Tactic[CborError]): value =
+        override def absent()(using Tactic[Cbor.Error]): value =
           decodable.decoded(Cbor.ast(Ast(Unset)))
 
     // A required field whose key was absent from the map. Public because
     // generated parsers are spliced into user modules.
-    def missing[value]()(using Tactic[CborError]): value = abort(CborError(Reason.Absent))
+    def missing[value]()(using Tactic[Cbor.Error]): value = abort(Cbor.Error(Reason.Absent))
 
     // The call points for a nominal `Parsable` in a field position of a
     // *generated* parser (a recursive record's own instance, or a
@@ -625,13 +626,13 @@ object Cbor extends Cbor2, Dynamic:
     // is capture-erased — and the capability is reasserted here, at the
     // audited point, exactly as the reader's own rim accessors do.
     def parseField[value](parsable: AnyRef, reader: AnyRef): value =
-      parsable.asInstanceOf[value is Cbor.Parsable].parse(reader.asInstanceOf[CborReader^])
+      parsable.asInstanceOf[value is Cbor.Parsable].parse(reader.asInstanceOf[Cbor.Reader^])
 
-    def absentField[value](parsable: AnyRef)(using Tactic[CborError]): value =
+    def absentField[value](parsable: AnyRef)(using Tactic[Cbor.Error]): value =
       parsable.asInstanceOf[value is Cbor.Parsable].absent()
 
   // The direct-parsing counterpart of `Decodable in Cbor`: consumes data
-  // items straight off the input bytes through a `CborReader` instead of
+  // items straight off the input bytes through a `Cbor.Reader` instead of
   // walking a materialized `Cbor.Ast`, so `read[value in Cbor]` can
   // instantiate values without building the AST. `Parsable` is the opt-in
   // surface: explicit instances and `Cbor.Inlinable.parsable`. It has no
@@ -639,27 +640,27 @@ object Cbor extends Cbor2, Dynamic:
   // in; field types without one bridge through `Parsable.fromDecodable`.
   trait Parsable extends distillate.Parsable:
     type Transport = Cbor
-    type Reader = CborReader
+    type Reader = Cbor.Reader
 
     // What a field of this type yields when its key is absent from the map,
     // mirroring the AST path's `decoded(Cbor(Ast(Unset)))`: an abort unless
     // overridden.
-    def absent()(using Tactic[CborError]): Self = abort(CborError(Reason.Absent))
+    def absent()(using Tactic[Cbor.Error]): Self = abort(Cbor.Error(Reason.Absent))
 
   // Direct-parsing counterpart of the `aggregable`/`aggregableIn` path:
   // drives a `Cbor.Parsable` instance over the input through a
-  // `CborReader`, so no AST is built for the items the instance reads
+  // `Cbor.Reader`, so no AST is built for the items the instance reads
   // directly. Trailing bytes are rejected exactly as `Parser.parse`.
   private def parseDirect[value]
     ( input: Data, parsable: (value is Cbor.Parsable)^ )
-    ( using tactic: Tactic[CborError] )
+    ( using tactic: Tactic[Cbor.Error] )
   :   value =
 
     val parser = Parser(input)
-    val result = parsable.parse(CborReader(parser, tactic))
+    val result = parsable.parse(Cbor.Reader(parser, tactic))
 
     if parser.offset < parser.data.length
-    then abort(CborError(Reason.Trailing(parser.offset.toLong)))
+    then abort(Cbor.Error(Reason.Trailing(parser.offset.toLong)))
 
     result
 
@@ -671,7 +672,7 @@ object Cbor extends Cbor2, Dynamic:
   // instance retains the resolution-scoped parsable and tactic.
   given aggregableParsed: [value]
   =>  (parsable: (value is Cbor.Parsable)^)
-  =>  (tactic: Tactic[CborError])
+  =>  (tactic: Tactic[Cbor.Error])
   =>  ((value in Cbor) is Aggregable by Data) =
 
     caps.unsafe.unsafeAssumePure:
@@ -683,13 +684,13 @@ object Cbor extends Cbor2, Dynamic:
   // Sealed like `aggregableParsed` above.
   given readableParsed: [value]
   =>  (parsable: (value is Cbor.Parsable)^)
-  =>  (tactic: Tactic[CborError])
+  =>  (tactic: Tactic[Cbor.Error])
   =>  (Data is Readable to (value in Cbor)) =
 
     caps.unsafe.unsafeAssumePure:
       data => parseDirect(data, parsable).asInstanceOf[value in Cbor]
 
-  given unit: (tactic: Tactic[CborError])
+  given unit: (tactic: Tactic[Cbor.Error])
   =>  ((Unit is Decodable in Cbor)^{tactic}) =
     value =>
       if !value.root.nullary then
@@ -697,9 +698,9 @@ object Cbor extends Cbor2, Dynamic:
           if value.root.unset then Reason.Absent
           else Reason.NotType(value.root.primitive, Primitive.Null)
 
-        abort(CborError(reason))
+        abort(Cbor.Error(reason))
 
-  given option: [value: Decodable in Cbor] => Tactic[CborError]
+  given option: [value: Decodable in Cbor] => Tactic[Cbor.Error]
   =>  Option[value] is Decodable in Cbor =
 
     cbor => if cbor.root.unset then None else Some(value.decoded(cbor))
@@ -750,7 +751,7 @@ object Cbor extends Cbor2, Dynamic:
     values => ast(Ast.array(Array.from(values.stdlib.map(encodable.encoded(_).root))))
 
   given collectionDecodable: [collection <: Iterable, element]
-  =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[CborError] )
+  =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[Cbor.Error] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
   =>  ((collection[element] is Decodable in Cbor)^{tactic, decodable}) =
 
@@ -768,7 +769,7 @@ object Cbor extends Cbor2, Dynamic:
   // derivation — `List[Tree]` inside `Tree` — ties the knot exactly as the
   // Iterable instance did before the flip) and casts.
   given listDecodable: [list <: List, element]
-  =>  ( tactic: Tactic[CborError] )
+  =>  ( tactic: Tactic[Cbor.Error] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
   =>  ((list[element] is Decodable in Cbor)^{tactic, decodable}) =
     value =>
@@ -777,7 +778,7 @@ object Cbor extends Cbor2, Dynamic:
       builder.result().asInstanceOf[list[element]]
 
   given setDecodable: [set <: Set, element]
-  =>  ( tactic: Tactic[CborError] )
+  =>  ( tactic: Tactic[Cbor.Error] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
   =>  ((set[element] is Decodable in Cbor)^{tactic, decodable}) =
     value =>
@@ -786,7 +787,7 @@ object Cbor extends Cbor2, Dynamic:
       builder.result().asInstanceOf[set[element]]
 
   given seriesDecodable: [sequence <: Sequence, element]
-  =>  ( tactic: Tactic[CborError] )
+  =>  ( tactic: Tactic[Cbor.Error] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
   =>  ((sequence[element] is Decodable in Cbor)^{tactic, decodable}) =
     value =>
@@ -796,7 +797,7 @@ object Cbor extends Cbor2, Dynamic:
 
   given mapDecodable: [key: Decodable in Text, element]
   =>  ( decodable: => (element is Decodable in Cbor)^ )
-  =>  ( tactic: Tactic[CborError] )
+  =>  ( tactic: Tactic[Cbor.Error] )
   =>  ((Map[key, element] is Decodable in Cbor)^{tactic, decodable}) =
 
     // An honest capability, as `optional` above.
@@ -811,7 +812,7 @@ object Cbor extends Cbor2, Dynamic:
 
           if key.isTextString
           then map = map.updated(key.string.tt.as, decodable.decoded(ast(root.value(index))))
-          else abort(CborError(Reason.NonStringKey))
+          else abort(Cbor.Error(Reason.NonStringKey))
 
           index += 1
 
@@ -876,12 +877,12 @@ object Cbor extends Cbor2, Dynamic:
       if value >= 0L && value < LongCacheSize then longCache.readUnchecked(value.toInt)
       else java.lang.Long.valueOf(value).nn
 
-    def parse(source: Array[Byte]^{}): Cbor.Ast raises CborError =
+    def parse(source: Array[Byte]^{}): Cbor.Ast raises Cbor.Error =
       val parser = new Parser(source)
       val result = parser.value()
 
       if parser.offset < parser.data.length
-      then abort(CborError(Reason.Trailing(parser.offset.toLong)))
+      then abort(Cbor.Error(Reason.Trailing(parser.offset.toLong)))
 
       result
 
@@ -907,23 +908,23 @@ object Cbor extends Cbor2, Dynamic:
     // context-function result the sugar expands to synthesizes a closure per inline expansion,
     // and from the 2026-07-17 upstream nightlies (#26547) a second expansion in the same
     // method fails cc root-visibility against the first expansion's memoized root capability.
-    private inline def expect(count: Int)(using Tactic[CborError]): Unit =
-      if data.length - offset < count then abort(CborError(Reason.Truncated(offset.toLong)))
+    private inline def expect(count: Int)(using Tactic[Cbor.Error]): Unit =
+      if data.length - offset < count then abort(Cbor.Error(Reason.Truncated(offset.toLong)))
 
     private inline def readByte(): Int =
       (data(offset)&0xFF).also(offset += 1)
 
-    private inline def readUInt8()(using Tactic[CborError]): Int =
+    private inline def readUInt8()(using Tactic[Cbor.Error]): Int =
       expect(1)
       readByte()
 
-    private inline def readUInt16()(using Tactic[CborError]): Int =
+    private inline def readUInt16()(using Tactic[Cbor.Error]): Int =
       expect(2)
       val pos = offset
       offset = pos + 2
       ((data(pos) & 0xFF) << 8) | (data(pos + 1) & 0xFF)
 
-    private inline def readUInt32()(using Tactic[CborError]): Long =
+    private inline def readUInt32()(using Tactic[Cbor.Error]): Long =
       expect(4)
       val pos = offset
       offset = pos + 4
@@ -932,7 +933,7 @@ object Cbor extends Cbor2, Dynamic:
         ((data(pos + 2) & 0xFFL) << 8) |
         (data(pos + 3) & 0xFFL)
 
-    private inline def readUInt64()(using Tactic[CborError]): Long =
+    private inline def readUInt64()(using Tactic[Cbor.Error]): Long =
       expect(8)
       val pos = offset
       offset = pos + 8
@@ -952,7 +953,7 @@ object Cbor extends Cbor2, Dynamic:
     // dominates real-world workloads (small integers, short strings, small
     // arrays/maps). The remaining cases dispatch through a `match` so the JVM
     // can compile them to a tableswitch.
-    private inline def readLength(info: Int, headOffset: Long)(using Tactic[CborError]): Long =
+    private inline def readLength(info: Int, headOffset: Long)(using Tactic[Cbor.Error]): Long =
       if info < 24 then info.toLong
       else info match
         case 24 => readUInt8().toLong
@@ -963,11 +964,11 @@ object Cbor extends Cbor2, Dynamic:
           val v = readUInt64()
           // Bit 63 set means the value > Long.MaxValue; CBOR allows this for
           // major types 0/1 but breviloquence rejects it.
-          if v < 0 then abort(CborError(Reason.Overflow(headOffset)))
+          if v < 0 then abort(Cbor.Error(Reason.Overflow(headOffset)))
           v
 
         case 31 => -1L
-        case _  => abort(CborError(Reason.Reserved(headOffset, info)))
+        case _  => abort(Cbor.Error(Reason.Reserved(headOffset, info)))
 
     private def readBytes(length: Int): Array[Byte]^{} =
       val result = Array[Byte](length)
@@ -975,8 +976,8 @@ object Cbor extends Cbor2, Dynamic:
       offset += length
       Array.freeze(result)
 
-    private inline def boundedLength(length: Long, headOffset: Long)(using Tactic[CborError]): Int =
-      if length < 0 || length > Int.MaxValue then abort(CborError(Reason.Overflow(headOffset)))
+    private inline def boundedLength(length: Long, headOffset: Long)(using Tactic[Cbor.Error]): Int =
+      if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(headOffset)))
       val count = length.toInt
       expect(count)
       count
@@ -985,7 +986,7 @@ object Cbor extends Cbor2, Dynamic:
     // length chunks (each prefixed with major type 2) until a Break stop code.
     // Uses `ByteArrayOutputStream` so chunk bytes flow through bulk `write`
     // (≈ `System.arraycopy`) without per-byte boxing into `java.lang.Byte`.
-    private def readIndefiniteByteString(): Array[Byte]^{} raises CborError =
+    private def readIndefiniteByteString(): Array[Byte]^{} raises Cbor.Error =
       val buffer = new java.io.ByteArrayOutputStream
       var done = false
 
@@ -999,7 +1000,7 @@ object Cbor extends Cbor2, Dynamic:
         else
           val major = head >>> 5
           val info = head & 0x1F
-          if major != 2 then abort(CborError(Reason.Reserved(offset.toLong, head)))
+          if major != 2 then abort(Cbor.Error(Reason.Reserved(offset.toLong, head)))
           val chunkOffset = offset.toLong
           offset += 1
           val length = boundedLength(readLength(info, chunkOffset), chunkOffset)
@@ -1008,7 +1009,7 @@ object Cbor extends Cbor2, Dynamic:
 
       buffer.toByteArray.nn.asInstanceOf[Array[Byte]^{}]
 
-    private def readIndefiniteTextString(): String raises CborError =
+    private def readIndefiniteTextString(): String raises Cbor.Error =
       val buffer = new java.io.ByteArrayOutputStream
       var done = false
 
@@ -1022,7 +1023,7 @@ object Cbor extends Cbor2, Dynamic:
         else
           val major = head >>> 5
           val info = head & 0x1F
-          if major != 3 then abort(CborError(Reason.Reserved(offset.toLong, head)))
+          if major != 3 then abort(Cbor.Error(Reason.Reserved(offset.toLong, head)))
           val chunkOffset = offset.toLong
           offset += 1
           val length = boundedLength(readLength(info, chunkOffset), chunkOffset)
@@ -1034,11 +1035,11 @@ object Cbor extends Cbor2, Dynamic:
 
     private inline def decodeUtf8
       ( bytes: scala.Array[Byte], start: Int, length: Int, errorOffset: Long )
-      ( using Tactic[CborError] )
+      ( using Tactic[Cbor.Error] )
     :   String =
 
       try new String(bytes, start, length, java.nio.charset.StandardCharsets.UTF_8)
-      catch case _: Throwable => abort(CborError(Reason.InvalidUtf8(errorOffset)))
+      catch case _: Throwable => abort(Cbor.Error(Reason.InvalidUtf8(errorOffset)))
 
     // IEEE 754 half precision (16-bit) → Double, per RFC 8949 §3.3.
     // Assembles the 64-bit pattern directly rather than going through
@@ -1067,9 +1068,9 @@ object Cbor extends Cbor2, Dynamic:
 
       java.lang.Double.longBitsToDouble(bits)
 
-    def value(): Cbor.Ast raises CborError =
+    def value(): Cbor.Ast raises Cbor.Error =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
       offset = pos + 1
 
@@ -1091,7 +1092,7 @@ object Cbor extends Cbor2, Dynamic:
       if head >= 0x60 && head < 0x78 then
         val length = head & 0x1F
         val end = pos + 1 + length
-        if end > data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+        if end > data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
         val str = new String(data, pos + 1, length, java.nio.charset.StandardCharsets.UTF_8)
         offset = end
         return Cbor.Ast(str)
@@ -1100,7 +1101,7 @@ object Cbor extends Cbor2, Dynamic:
       if head >= 0x40 && head < 0x58 then
         val length = head & 0x1F
         val end = pos + 1 + length
-        if end > data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+        if end > data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
         val out = Array[Byte](length)
         System.arraycopy(data, pos + 1, out.raw, 0, length)
         offset = end
@@ -1113,13 +1114,13 @@ object Cbor extends Cbor2, Dynamic:
       (major: @scala.annotation.switch) match
         case 0 =>
           val length = readLength(info, headOffset)
-          if length < 0 then abort(CborError(Reason.Reserved(headOffset, head)))
+          if length < 0 then abort(Cbor.Error(Reason.Reserved(headOffset, head)))
           Cbor.Ast.fromRef(boxLong(length))
 
         case 1 =>
           val length = readLength(info, headOffset)
-          if length < 0 then abort(CborError(Reason.Reserved(headOffset, head)))
-          if length == Long.MinValue then abort(CborError(Reason.Overflow(headOffset)))
+          if length < 0 then abort(Cbor.Error(Reason.Reserved(headOffset, head)))
+          if length == Long.MinValue then abort(Cbor.Error(Reason.Overflow(headOffset)))
           Cbor.Ast.fromRef(boxLong(-1L - length))
 
         case 2 =>
@@ -1168,7 +1169,7 @@ object Cbor extends Cbor2, Dynamic:
             val length = readLength(info, headOffset)
 
             if length < 0 || length > Int.MaxValue
-            then abort(CborError(Reason.Overflow(headOffset)))
+            then abort(Cbor.Error(Reason.Overflow(headOffset)))
             val count = length.toInt
             // Allocate directly in the parity-padded shape used by `Cbor.Ast.array`
             // (odd length, with sentinel pad if logical count is even). One allocation
@@ -1213,7 +1214,7 @@ object Cbor extends Cbor2, Dynamic:
             val length = readLength(info, headOffset)
 
             if length < 0 || length > Int.MaxValue
-            then abort(CborError(Reason.Overflow(headOffset)))
+            then abort(Cbor.Error(Reason.Overflow(headOffset)))
 
             val count = length.toInt
             val items = Array[Any](count*2)
@@ -1228,7 +1229,7 @@ object Cbor extends Cbor2, Dynamic:
 
         case 6 =>
           val tag = readLength(info, headOffset)
-          if tag < 0 then abort(CborError(Reason.Reserved(headOffset, head)))
+          if tag < 0 then abort(Cbor.Error(Reason.Reserved(headOffset, head)))
           val inner = value()
           Cbor.Ast(Cbor.Tag(tag, inner))
 
@@ -1245,11 +1246,11 @@ object Cbor extends Cbor2, Dynamic:
               // The error message reads this parser only to render its diagnostic detail.
               val value = readUInt8()
               scala.caps.unsafe.unsafeAssumeSeparate:
-                abort(CborError(Reason.BadSimpleValue(headOffset, value)))
-            case 31 => abort(CborError(Reason.UnexpectedBreak(headOffset)))
-            case _  => abort(CborError(Reason.BadSimpleValue(headOffset, info)))
+                abort(Cbor.Error(Reason.BadSimpleValue(headOffset, value)))
+            case 31 => abort(Cbor.Error(Reason.UnexpectedBreak(headOffset)))
+            case _  => abort(Cbor.Error(Reason.BadSimpleValue(headOffset, info)))
 
-        case _ => abort(CborError(Reason.Reserved(headOffset, head)))
+        case _ => abort(Cbor.Error(Reason.Reserved(headOffset, head)))
 
     // ── The direct rim ───────────────────────────────────────────────────
     // Byte-level reads for direct parsing (`Cbor.Parsable`): each consumes
@@ -1258,9 +1259,9 @@ object Cbor extends Cbor2, Dynamic:
     // mistyped items, absence), so values and failures agree with the AST
     // accessors exactly.
 
-    def directLong()(using Tactic[CborError]): Long =
+    def directLong()(using Tactic[Cbor.Error]): Long =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
 
       if head < 0x18 then
@@ -1275,20 +1276,20 @@ object Cbor extends Cbor2, Dynamic:
         if major == 0 then
           offset = pos + 1
           val length = readLength(head & 0x1F, pos.toLong)
-          if length < 0 then abort(CborError(Reason.Reserved(pos.toLong, head)))
+          if length < 0 then abort(Cbor.Error(Reason.Reserved(pos.toLong, head)))
           length
         else if major == 1 then
           offset = pos + 1
           val length = readLength(head & 0x1F, pos.toLong)
-          if length < 0 then abort(CborError(Reason.Reserved(pos.toLong, head)))
-          if length == Long.MinValue then abort(CborError(Reason.Overflow(pos.toLong)))
+          if length < 0 then abort(Cbor.Error(Reason.Reserved(pos.toLong, head)))
+          if length == Long.MinValue then abort(Cbor.Error(Reason.Overflow(pos.toLong)))
           -1L - length
         else
           value().long
 
-    def directDouble()(using Tactic[CborError]): Double =
+    def directDouble()(using Tactic[Cbor.Error]): Double =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
 
       if head == 0xFB then
@@ -1303,9 +1304,9 @@ object Cbor extends Cbor2, Dynamic:
       else
         value().double
 
-    def directBoolean()(using Tactic[CborError]): Boolean =
+    def directBoolean()(using Tactic[Cbor.Error]): Boolean =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
 
       if head == 0xF5 then
@@ -1317,15 +1318,15 @@ object Cbor extends Cbor2, Dynamic:
       else
         value().boolean
 
-    def directString()(using Tactic[CborError]): String =
+    def directString()(using Tactic[Cbor.Error]): String =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
 
       if head >= 0x60 && head < 0x78 then
         val length = head & 0x1F
         val end = pos + 1 + length
-        if end > data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+        if end > data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
         val str = new String(data, pos + 1, length, java.nio.charset.StandardCharsets.UTF_8)
         offset = end
         str
@@ -1340,15 +1341,15 @@ object Cbor extends Cbor2, Dynamic:
       else
         value().string
 
-    def directBytes()(using Tactic[CborError]): Array[Byte]^{} =
+    def directBytes()(using Tactic[Cbor.Error]): Array[Byte]^{} =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
 
       if head >= 0x40 && head < 0x58 then
         val length = head & 0x1F
         val end = pos + 1 + length
-        if end > data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+        if end > data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
         val out = Array[Byte](length)
         System.arraycopy(data, pos + 1, out.raw, 0, length)
         offset = end
@@ -1373,9 +1374,9 @@ object Cbor extends Cbor2, Dynamic:
     // Any other item is consumed whole and reads as an empty map (every
     // field absent), exactly as the AST record decoder's
     // `if root.isMap then root.entries else 0`.
-    def directOpenMap()(using Tactic[CborError]): Int =
+    def directOpenMap()(using Tactic[Cbor.Error]): Int =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
 
       if (head >>> 5) == 5 then
@@ -1384,7 +1385,7 @@ object Cbor extends Cbor2, Dynamic:
 
         if info == 31 then -1 else
           val length = readLength(info, pos.toLong)
-          if length < 0 || length > Int.MaxValue then abort(CborError(Reason.Overflow(pos.toLong)))
+          if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(pos.toLong)))
           length.toInt
       else
         directSkipValue()
@@ -1393,9 +1394,9 @@ object Cbor extends Cbor2, Dynamic:
     // Opens an array, returning its element count, or -1 for indefinite
     // length. Any other item classifies through the AST accessor, so the
     // failure agrees with the AST collection decoder's `.array`.
-    def directOpenArray()(using Tactic[CborError]): Int =
+    def directOpenArray()(using Tactic[Cbor.Error]): Int =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
 
       if (head >>> 5) == 4 then
@@ -1404,7 +1405,7 @@ object Cbor extends Cbor2, Dynamic:
 
         if info == 31 then -1 else
           val length = readLength(info, pos.toLong)
-          if length < 0 || length > Int.MaxValue then abort(CborError(Reason.Overflow(pos.toLong)))
+          if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(pos.toLong)))
           length.toInt
       else
         value().array
@@ -1412,8 +1413,8 @@ object Cbor extends Cbor2, Dynamic:
 
     // Consumes a Break stop code if one is next — the end step of an
     // indefinite-length map or array.
-    def directBreak()(using Tactic[CborError]): Boolean =
-      if offset >= data.length then abort(CborError(Reason.Truncated(offset.toLong)))
+    def directBreak()(using Tactic[Cbor.Error]): Boolean =
+      if offset >= data.length then abort(Cbor.Error(Reason.Truncated(offset.toLong)))
 
       if (data(offset) & 0xFF) == Break then
         offset += 1
@@ -1425,20 +1426,20 @@ object Cbor extends Cbor2, Dynamic:
     // literal constants (generated parsers compile field names to
     // immediates): the packed low word of a definite-length, 1-16 byte,
     // 7-bit-clean text key (its high word left in `directKeyHigh`), or
-    // `CborReader.KeyOpaque` without consuming anything — the caller then
+    // `Cbor.Reader.KeyOpaque` without consuming anything — the caller then
     // takes the `directKeyName` step, which consumes the key generally.
     @scala.caps.unsafe.untrackedCaptures
     var directKeyHigh: Long = 0L
 
     def directKeyWord(): Long =
       val pos = offset
-      if pos >= data.length then return CborReader.KeyOpaque
+      if pos >= data.length then return Cbor.Reader.KeyOpaque
       val head = data(pos) & 0xFF
 
       if head > 0x60 && head <= 0x70 then
         val length = head & 0x1F
         val end = pos + 1 + length
-        if end > data.length then return CborReader.KeyOpaque
+        if end > data.length then return Cbor.Reader.KeyOpaque
         var low = 0L
         var high = 0L
         var ascii = 0
@@ -1452,19 +1453,19 @@ object Cbor extends Cbor2, Dynamic:
 
           position += 1
 
-        if (ascii & 0x80) != 0 then CborReader.KeyOpaque else
+        if (ascii & 0x80) != 0 then Cbor.Reader.KeyOpaque else
           offset = end
           directKeyHigh = high
           low
       else
-        CborReader.KeyOpaque
+        Cbor.Reader.KeyOpaque
 
     // The general key step: consumes the key and returns a text key's
     // content, or `null` for a non-text key — whose entry the AST record
     // decoder ignores, so the caller skips its value and continues.
-    def directKeyName()(using Tactic[CborError]): String | Null =
+    def directKeyName()(using Tactic[Cbor.Error]): String | Null =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
 
       if (head >>> 5) == 3 then directString()
@@ -1476,9 +1477,9 @@ object Cbor extends Cbor2, Dynamic:
     // non-map-shaped records. Rejects exactly the head shapes `value()`
     // rejects, so a skipped malformed item fails as the AST path (which
     // parses every entry) would.
-    def directSkipValue()(using Tactic[CborError]): Unit =
+    def directSkipValue()(using Tactic[Cbor.Error]): Unit =
       val pos = offset
-      if pos >= data.length then abort(CborError(Reason.Truncated(pos.toLong)))
+      if pos >= data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
       val head = data(pos) & 0xFF
       offset = pos + 1
       val major = head >>> 5
@@ -1487,7 +1488,7 @@ object Cbor extends Cbor2, Dynamic:
       (major: @scala.annotation.switch) match
         case 0 | 1 =>
           if readLength(info, pos.toLong) < 0
-          then abort(CborError(Reason.Reserved(pos.toLong, head)))
+          then abort(Cbor.Error(Reason.Reserved(pos.toLong, head)))
 
         case 2 | 3 =>
           if info == 31 then
@@ -1502,7 +1503,7 @@ object Cbor extends Cbor2, Dynamic:
                 done = true
               else
                 if (chunkHead >>> 5) != major
-                then abort(CborError(Reason.Reserved(offset.toLong, chunkHead)))
+                then abort(Cbor.Error(Reason.Reserved(offset.toLong, chunkHead)))
 
                 val chunkOffset = offset.toLong
                 offset += 1
@@ -1519,7 +1520,7 @@ object Cbor extends Cbor2, Dynamic:
             val length = readLength(info, pos.toLong)
 
             if length < 0 || length > Int.MaxValue
-            then abort(CborError(Reason.Overflow(pos.toLong)))
+            then abort(Cbor.Error(Reason.Overflow(pos.toLong)))
 
             var index = 0
 
@@ -1536,7 +1537,7 @@ object Cbor extends Cbor2, Dynamic:
             val length = readLength(info, pos.toLong)
 
             if length < 0 || length > Int.MaxValue
-            then abort(CborError(Reason.Overflow(pos.toLong)))
+            then abort(Cbor.Error(Reason.Overflow(pos.toLong)))
 
             var index = 0
 
@@ -1547,7 +1548,7 @@ object Cbor extends Cbor2, Dynamic:
 
         case 6 =>
           if readLength(info, pos.toLong) < 0
-          then abort(CborError(Reason.Reserved(pos.toLong, head)))
+          then abort(Cbor.Error(Reason.Reserved(pos.toLong, head)))
 
           directSkipValue()
 
@@ -1571,11 +1572,11 @@ object Cbor extends Cbor2, Dynamic:
               // As above.
               val value = readUInt8()
               scala.caps.unsafe.unsafeAssumeSeparate:
-                abort(CborError(Reason.BadSimpleValue(pos.toLong, value)))
-            case 31 => abort(CborError(Reason.UnexpectedBreak(pos.toLong)))
-            case _  => abort(CborError(Reason.BadSimpleValue(pos.toLong, info)))
+                abort(Cbor.Error(Reason.BadSimpleValue(pos.toLong, value)))
+            case 31 => abort(Cbor.Error(Reason.UnexpectedBreak(pos.toLong)))
+            case _  => abort(Cbor.Error(Reason.BadSimpleValue(pos.toLong, info)))
 
-        case _ => abort(CborError(Reason.Reserved(pos.toLong, head)))
+        case _ => abort(Cbor.Error(Reason.Reserved(pos.toLong, head)))
 
     // Scans the upcoming map for the given text key and returns its text
     // value, leaving the parser where it started — the dispatch primitive
@@ -1583,7 +1584,7 @@ object Cbor extends Cbor2, Dynamic:
     // `null` when the item is not a map, has no such key, or the key's
     // value is not text — the caller raises `Absent`, mirroring the AST
     // path's `discriminate(cbor).lest(...)`.
-    def directDiscriminant(key: String)(using Tactic[CborError])
+    def directDiscriminant(key: String)(using Tactic[Cbor.Error])
     :   String | Null =
 
       val start = offset
@@ -1599,7 +1600,7 @@ object Cbor extends Cbor2, Dynamic:
             val length = readLength(info, start.toLong)
 
             if length < 0 || length > Int.MaxValue
-            then abort(CborError(Reason.Overflow(start.toLong)))
+            then abort(Cbor.Error(Reason.Overflow(start.toLong)))
 
             length.toInt
 
@@ -1618,35 +1619,184 @@ object Cbor extends Cbor2, Dynamic:
         null
       finally offset = start
 
+  // CborError → Cbor.Error
+  object Error:
+    object Primitive:
+      given communicable: Primitive is Communicable =
+        case Integer    => m"integer"
+        case Float      => m"float"
+        case ByteString => m"byte string"
+        case TextString => m"text string"
+        case Array      => m"array"
+        case Map        => m"map"
+        case Tag        => m"tag"
+        case Boolean    => m"boolean"
+        case Null       => m"null"
+        case Undefined  => m"undefined"
+
+    enum Primitive:
+      case Integer, Float, ByteString, TextString, Array, Map, Tag, Boolean, Null, Undefined
+
+    object Reason:
+      given communicable: Reason is Communicable =
+        case Truncated(offset)        => m"the input was truncated at byte $offset"
+        case InvalidUtf8(offset)      => m"invalid UTF-8 was found at byte $offset"
+        case Overflow(offset)         => m"an integer too large for Long was found at byte $offset"
+        case UnexpectedBreak(offset)  => m"an unexpected break stop code was found at byte $offset"
+        case Trailing(offset)         => m"unexpected trailing bytes were found from byte $offset"
+        case OutOfRange               => m"the array index was out of range"
+        case NotType(found, expected) => m"the CBOR value had type $found instead of $expected"
+        case NonStringKey             => m"the map key was not a string"
+        case Absent                   => m"the CBOR value was not present"
+
+        case Reserved(offset, byte) =>
+          m"a reserved CBOR head byte ${byte.toString} was found at byte $offset"
+
+        case BadSimpleValue(offset, value) =>
+          m"an invalid simple value ${value.toString} was found at byte $offset"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Truncated(offset: Long) extends Reason(1)
+      case Reserved(offset: Long, byte: Int) extends Reason(2)
+      case BadSimpleValue(offset: Long, value: Int) extends Reason(3)
+      case InvalidUtf8(offset: Long) extends Reason(4)
+      case Overflow(offset: Long) extends Reason(5)
+      case UnexpectedBreak(offset: Long) extends Reason(6)
+      case Trailing(offset: Long) extends Reason(7)
+      case OutOfRange extends Reason(8)
+      case NotType(found: Primitive, expected: Primitive) extends Reason(9)
+      case NonStringKey extends Reason(10)
+      case Absent extends Reason(11)
+
+  case class Error(reason: Cbor.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(595, reason.number)(m"could not process the CBOR value because $reason")
+
+  // CborReader → Cbor.Reader
+  object Reader:
+    // Sentinel of `keyWord()`; impossible as a packed key, whose bytes are all
+    // 7-bit ASCII.
+    inline final val KeyOpaque = -2L
+
+    // Only breviloquence's read path (`Cbor.parseDirect`) constructs readers,
+    // so the exclusivity of the wrapped parser and the resolution scope of the
+    // carried tactic are preserved by construction. The wrapped tactic travels
+    // as a neutral carrier (jacinta's `JsonReader` pattern): the field stays
+    // pure, and each accessor reasserts the type at the rim — the audited
+    // point.
+    private[breviloquence] def apply(parser: Cbor.Parser, tactic: Tactic[Cbor.Error])
+    :   Cbor.Reader^ =
+
+      new Cbor.Reader(parser, tactic.asInstanceOf[AnyRef])
+
+  // The public, restricted rim of the CBOR parser, handed to `Cbor.Parsable`
+  // instances so they can consume data items straight off the input without an
+  // intermediate `Cbor.Ast`. Each method consumes exactly one item (or one
+  // structural step). The reader carries its own `Tactic[Cbor.Error]` — CBOR's
+  // single error type covers both malformed input and mistyped items — so
+  // instance `parse` bodies need no error vocabulary: failures abort through
+  // the read call's ambient tactic.
+  //
+  // An exclusive, stateful capability, like the parser it wraps: it is owned
+  // by one `Cbor.Parsable.parse` call at a time, for the duration of that
+  // call, and nothing of it may be retained afterwards.
+  final class Reader private (parser0: AnyRef, tactic0: AnyRef)
+  extends caps.ExclusiveCapability, caps.Stateful:
+    private inline def parser: Cbor.Parser = parser0.asInstanceOf[Cbor.Parser]
+
+    // The sealed conduit for generated parsers: package-private, so the only
+    // path to the wrapped capabilities from outside breviloquence is through
+    // the accessor the compiler synthesizes for breviloquence's own
+    // macro-generated splices — hand-written code cannot name it. Generated
+    // code binds the parser once per record and reads through `Cbor.Parser`'s
+    // direct rim without this class's per-item forwarders.
+    private[breviloquence] def rawParser: AnyRef = parser0
+    private[breviloquence] def rawTactic: AnyRef = tactic0
+    private inline def tactic: Tactic[Cbor.Error] = tactic0.asInstanceOf[Tactic[Cbor.Error]]
+
+    // ── Scalars: one data item each. Values and failures agree with the
+    // `Cbor.Ast` accessors exactly, so direct and AST reads yield equal
+    // values — integers coerce to floats and vice versa, as `.long` and
+    // `.double` do. ──
+    inline update def long(): Long = parser.directLong()(using tactic)
+    inline update def int(): Int = parser.directLong()(using tactic).toInt
+    inline update def double(): Double = parser.directDouble()(using tactic)
+    inline update def boolean(): Boolean = parser.directBoolean()(using tactic)
+    update def text(): Text = parser.directString()(using tactic).tt
+    update def string(): String = parser.directString()(using tactic)
+    update def byteString(): Array[Byte]^{} = parser.directBytes()(using tactic)
+
+    // ── Undefined handling: `hasUndefined` peeks without consuming, for
+    // optional wrappers that map a wire `undefined` (0xF7) to an absent
+    // value, exactly as the AST path's `optional`. ──
+    update def hasUndefined: Boolean = parser.directIsUndefined
+    update def undefined(): Unit = parser.directUndefined()
+
+    // ── Structure. `openMap()` and `openArray()` yield the entry or element
+    // count, or -1 for an indefinite-length item, whose end is a Break stop
+    // code consumed by `breakEnd()`. A non-map item under `openMap()` reads
+    // as an empty map (the AST record decoder's semantics); a non-array item
+    // under `openArray()` fails as the AST `.array` accessor. ──
+    inline update def openMap(): Int = parser.directOpenMap()(using tactic)
+    inline update def openArray(): Int = parser.directOpenArray()(using tactic)
+    inline update def breakEnd(): Boolean = parser.directBreak()(using tactic)
+
+    // The next map key in packed form, for parsers that compare keys against
+    // literal constants (generated parsers compile field names to
+    // immediates): the packed low word of the key (its high word from
+    // `keyHigh`), or `KeyOpaque` when the key cannot be packed — the caller
+    // then takes the `keyName` step instead, which consumes it generally.
+    update def keyWord(): Long = parser.directKeyWord()
+
+    update def keyHigh: Long = parser.directKeyHigh
+
+    // The general key step: a text key's content, or `null` for a non-text
+    // key, whose entry is ignored — the caller skips its value.
+    update def keyName(): String | Null = parser.directKeyName()(using tactic)
+
+    // ── The fallback seam: parse one whole item into an AST (for field types
+    // that only have a `Decodable in Cbor`), or skip one whole item (for
+    // unknown keys). ──
+    update def value(): Cbor = Cbor.ast(parser.value()(using tactic))
+    inline update def skipValue(): Unit = parser.directSkipValue()(using tactic)
+
+    // Scans the upcoming map for the given key and returns its text value,
+    // leaving the reader where it started — the dispatch primitive for a
+    // sum's discriminant entry, which may appear anywhere in the map. `Unset`
+    // when the item has no such key or its value is not text.
+    update def discriminant(key: Text): Optional[Text] =
+      parser.directDiscriminant(key.s)(using tactic) match
+        case null        => Unset
+        case tag: String => tag.tt
+
 
 class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives CanEqual:
-  def apply(index: Int): Cbor raises CborError = Cbor(root.array.readUnchecked(index))
+  def apply(index: Int): Cbor raises Cbor.Error = Cbor(root.array.readUnchecked(index))
 
-  def selectDynamic(field: String)(using erased dynamicCborEnabler: DynamicCborEnabler): Cbor raises CborError =
+  def selectDynamic(field: String)(using erased dynamicCborEnabler: DynamicCborEnabler): Cbor raises Cbor.Error =
     apply(field.tt)
 
 
   def applyDynamic(field: String)(index: Int)(using erased dynamicCborEnabler: DynamicCborEnabler)
-  :   Cbor raises CborError =
+  :   Cbor raises Cbor.Error =
 
     apply(field.tt)(index)
 
 
   def updateDynamic(field: String)[value: Encodable in Cbor](value: value)
     ( using erased dynamicCborEnabler: DynamicCborEnabler )
-  :   Cbor raises CborError =
+  :   Cbor raises Cbor.Error =
 
     modify(field, value.encode)
 
 
   def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicCborEnabler: DynamicCborEnabler)
-  :   Cbor raises CborError =
+  :   Cbor raises Cbor.Error =
 
     delete(field)
 
 
-  private[breviloquence] def modify(field: String, value: Cbor): Cbor raises CborError =
-    if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
+  private[breviloquence] def modify(field: String, value: Cbor): Cbor raises Cbor.Error =
+    if !root.isMap then abort(Cbor.Error(Reason.NotType(root.primitive, Primitive.Map)))
     val array = root.asInstanceOf[Array[Any]^{}]
     val length = array.length
 
@@ -1664,8 +1814,8 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
         out(index*2 + 1) = value.root
         Cbor.ast(Cbor.Ast(Array.freeze(out)))
 
-  private[breviloquence] def delete(field: String): Cbor raises CborError =
-    if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
+  private[breviloquence] def delete(field: String): Cbor raises Cbor.Error =
+    if !root.isMap then abort(Cbor.Error(Reason.NotType(root.primitive, Primitive.Map)))
     val array = root.asInstanceOf[scala.Array[Any]]
     val length = array.length
 
@@ -1679,9 +1829,9 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
         System.arraycopy(array, index*2 + 2, out.raw, index*2, length - index*2 - 2)
         Cbor.ast(Cbor.Ast(Array.freeze(out)))
 
-  def apply(field: Text): Cbor raises CborError =
+  def apply(field: Text): Cbor raises Cbor.Error =
     if root.unset then Cbor.ast(Cbor.Ast(Unset))
-    else if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
+    else if !root.isMap then abort(Cbor.Error(Reason.NotType(root.primitive, Primitive.Map)))
     else root.index(field.s) match
       case -1    => Cbor.ast(Cbor.Ast(Unset))
       case index => Cbor(root.value(index))
@@ -1751,5 +1901,5 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
       false
 
   def as[value](using decodable: (value is Decodable in Cbor)^)
-  :   (Tactic[CborError]^) ?->{decodable} value =
+  :   (Tactic[Cbor.Error]^) ?->{decodable} value =
     decodable.decoded(this)

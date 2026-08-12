@@ -302,14 +302,14 @@ object Tests extends Suite(m"Anthology Tests"):
     . assert(_ == true)
 
     test(m"The APK edge defaults to API level 26"):
-      initialOf(apkEdges(), Apk).asInstanceOf[ApkConfiguration].minApi
+      initialOf(apkEdges(), Apk).asInstanceOf[Apk.Configuration].minApi
     . assert(_ == 26)
 
     test(m"The APK API level configures both dexing and packaging"):
       val setting = apkOptions.minApi(24)
 
       ( setting.edit(Dex, initialOf(dexEdges(), Dex)).asInstanceOf[DexConfiguration].minApi,
-        setting.edit(Apk, initialOf(apkEdges(), Apk)).asInstanceOf[ApkConfiguration].minApi )
+        setting.edit(Apk, initialOf(apkEdges(), Apk)).asInstanceOf[Apk.Configuration].minApi )
     . assert(_ == (24, 24))
 
     test(m"The WASI component edge is not available without toolchain and WIT world"):

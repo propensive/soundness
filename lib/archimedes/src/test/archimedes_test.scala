@@ -89,8 +89,8 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert(_ == stretchy)
 
       test(m"Reject a non-math root element"):
-        capture[MathmlError](t"<svg><rect/></svg>".read[Math]).reason
-      .assert(_ == MathmlError.Reason.NotMathml(t"svg"))
+        capture[Mathml.Error](t"<svg><rect/></svg>".read[Math]).reason
+      .assert(_ == Mathml.Error.Reason.NotMathml(t"svg"))
 
     suite(m"Embedding in and extracting from HTML"):
       val expression = Math(Mrow(Mi(t"a"), Mo(t"+"), Mn(t"1")))
