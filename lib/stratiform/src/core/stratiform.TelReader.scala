@@ -49,7 +49,7 @@ object TelReader:
   // the parser-pool invariants (one exclusive `Parser` per thread) and the
   // resolution scope of the carried tactic are preserved by construction.
   // The wrapped capabilities travel as neutral carriers (jacinta's
-  // `JsonReader` pattern): the fields stay pure, and each accessor reasserts
+  // `Json.Reader` pattern): the fields stay pure, and each accessor reasserts
   // the type at the rim — the audited point.
   private[stratiform] def apply(parser: Tel.Parser^, tactic: Tactic[Tel.Error]): TelReader^ =
     new TelReader(parser.asInstanceOf[AnyRef], tactic.asInstanceOf[AnyRef])

@@ -41,7 +41,7 @@ object ProtobufReader:
   // Only locomotion's read path (`Protobuf.parseDirect`) constructs readers,
   // so the exclusivity of the wrapped parser and the resolution scope of the
   // carried tactic are preserved by construction. The wrapped tactic travels
-  // as a neutral carrier (jacinta's `JsonReader` pattern): the field stays
+  // as a neutral carrier (jacinta's `Json.Reader` pattern): the field stays
   // pure, and each accessor reasserts the type at the rim — the audited
   // point.
   private[locomotion] def apply(parser: ProtobufParser, tactic: Tactic[Protobuf.Error])

@@ -49,7 +49,7 @@ class DsvReader private[caesura]
     private[caesura] val tactic: Tactic[Dsv.Error] )
 extends caps.ExclusiveCapability, caps.Stateful:
   // The reader carries the format and error tactic, so `Parsable`/`Field`
-  // instances are construction-free (the jacinta `JsonReader` pattern).
+  // instances are construction-free (the jacinta `Json.Reader` pattern).
   update def absent(): Nothing = tactic.abort(Dsv.Error(format, Dsv.Error.Reason.Absent))
 
   // Advance to the next data row (consuming the header row first, when the

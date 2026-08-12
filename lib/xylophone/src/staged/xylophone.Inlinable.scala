@@ -59,7 +59,7 @@ import vacuous.*
 // an earlier run than the expansion; same-run instances degrade to a spliced
 // runtime call through `Xml.Field`.
 trait Inlinable extends Typeclass:
-  def parse(reader: Expr[XmlReader])(using Quotes, Type[Self]): Expr[Self]
+  def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Self]): Expr[Self]
 
   // What a field of this type yields when no child element carries its
   // name, mirroring the runtime instances: an abort unless overridden (the
@@ -92,7 +92,7 @@ object Inlinable:
     type Self = value
     private[xylophone] def delegate: value is Inlinable = delegate0
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[value]): Expr[value] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[value]): Expr[value] =
       delegate0.parse(reader)
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
@@ -107,7 +107,7 @@ object Inlinable:
   private[xylophone] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[product]): Expr[product] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[product]): Expr[product] =
       stagedInternal.productFields[product](reader)
 
     // A missing (or wrong-shape) record: one raise at the current focus,
@@ -128,7 +128,7 @@ object Inlinable:
   private[xylophone] final class SumInlinable[sum](val attribute: String) extends Inlinable:
     type Self = sum
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[sum]): Expr[sum] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[sum]): Expr[sum] =
       stagedInternal.sumBody[sum](reader, attribute)
 
     // A missing sum field: the AST disjunction over the `Absent` sentinel —
@@ -147,7 +147,7 @@ object Inlinable:
     // `Xml.Parsable.iterable`'s behavior when handed a lone element. In
     // *field* position the deriving generator never calls this: it gathers
     // each same-name occurrence through the element's own generator.
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[Iterable[element]])
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Iterable[element]])
     :   Expr[Iterable[element]] =
 
       stagedInternal.iterableBody[Iterable[element]](reader, element0)
@@ -167,7 +167,7 @@ object Inlinable:
   given int: (Int is Inlinable) = new Inlinable:
     type Self = Int
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[Int]): Expr[Int] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Int]): Expr[Int] =
       '{ Xml.intParsable.parse($reader) }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
@@ -179,7 +179,7 @@ object Inlinable:
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[Long]): Expr[Long] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Long]): Expr[Long] =
       '{ Xml.longParsable.parse($reader) }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
@@ -191,7 +191,7 @@ object Inlinable:
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[Double]): Expr[Double] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Double]): Expr[Double] =
       '{ Xml.doubleParsable.parse($reader) }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
@@ -203,7 +203,7 @@ object Inlinable:
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[Float]): Expr[Float] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Float]): Expr[Float] =
       '{ Xml.floatParsable.parse($reader) }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
@@ -215,7 +215,7 @@ object Inlinable:
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[Boolean]): Expr[Boolean] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{ Xml.booleanParsable.parse($reader) }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
@@ -227,7 +227,7 @@ object Inlinable:
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[Text]): Expr[Text] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Text]): Expr[Text] =
       '{ $reader.text().or { $reader.fault(); t"" } }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
@@ -239,7 +239,7 @@ object Inlinable:
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[String]): Expr[String] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[String]): Expr[String] =
       '{ ($reader.text().or { $reader.fault(); t"" }).s }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])

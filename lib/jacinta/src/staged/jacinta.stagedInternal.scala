@@ -54,7 +54,7 @@ object stagedInternal:
   // skipping the `Field.Adapter` the fallback chain would otherwise
   // construct per occurrence. An inline method because `summonFrom` may
   // only live in one; it expands where the generated parser is spliced.
-  inline def fieldSeam[fieldType](reader: JsonReader): fieldType =
+  inline def fieldSeam[fieldType](reader: Json.Reader): fieldType =
     scala.compiletime.summonFrom:
       case parsable: (`fieldType` is Json.Parsable) => parsable.parse(reader)
 
@@ -286,7 +286,7 @@ object stagedInternal:
   private final class RuntimeInlinable[value](parsing: Expr[Any]) extends Inlinable:
     type Self = value
 
-    def parse(reader: Expr[JsonReader])(using Quotes, Type[value]): Expr[value] =
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[value]): Expr[value] =
       '{
         Json.Parsable.parseField[value]
           ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
@@ -303,7 +303,7 @@ object stagedInternal:
   // def keeps each generated method JIT-compilable while the call stays
   // monomorphic and direct. Leaf generators stay inline.
   private def nested[fieldType: Type]
-    (instance: Inlinable { type Self = fieldType }, reader: Expr[JsonReader])
+    (instance: Inlinable { type Self = fieldType }, reader: Expr[Json.Reader])
     (using Quotes)
   :   Expr[fieldType] =
 
@@ -383,7 +383,7 @@ object stagedInternal:
   // per-index focusing when the read site's `Foci` is active — with the
   // element's generated code inlined into the loop.
   private[jacinta] def iterableBody[collection: Type]
-    (reader: Expr[JsonReader], element0: Inlinable)
+    (reader: Expr[Json.Reader], element0: Inlinable)
     (using Quotes)
   :   Expr[collection] =
 
@@ -433,12 +433,12 @@ object stagedInternal:
   // staged parser there is no KeyTable and no instances array: every field
   // is either inlined through its `Inlinable` code or spliced as a
   // `summonInline`d `Json.Field` runtime call.
-  private[jacinta] def productBody[product: Type](reader: Expr[JsonReader])(using Quotes)
+  private[jacinta] def productBody[product: Type](reader: Expr[Json.Reader])(using Quotes)
   :   Expr[product] =
 
     productBody[product](reader, Cache())
 
-  private def productBody[product: Type](reader: Expr[JsonReader], cache: Cache)(using Quotes)
+  private def productBody[product: Type](reader: Expr[Json.Reader], cache: Cache)(using Quotes)
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -448,7 +448,7 @@ object stagedInternal:
     try productBody0[product](reader, cache)
     finally cache.active -= TypeRepr.of[product].dealias.show
 
-  private def productBody0[product: Type](reader: Expr[JsonReader], cache: Cache)(using Quotes)
+  private def productBody0[product: Type](reader: Expr[Json.Reader], cache: Cache)(using Quotes)
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -522,7 +522,7 @@ object stagedInternal:
       val unit = Literal(UnitConstant())
 
       // EXPERIMENT(cc-bypass): builtins read straight off the parser bound
-      // once per record, skipping the JsonReader rim entirely.
+      // once per record, skipping the Json.Reader rim entirely.
       def builtinDirect(tpe: TypeRepr): Option[Expr[Any]] =
         if tpe =:= TypeRepr.of[Int] then Some('{ $parser.directLong()(using $ptactic).toInt })
         else if tpe =:= TypeRepr.of[Long] then Some('{ $parser.directLong()(using $ptactic) })
@@ -683,7 +683,7 @@ object stagedInternal:
 
         val resolveStep: Term =
           If
-            ( '{ $wordRef == JsonReader.KeyOpaque }.asTerm,
+            ( '{ $wordRef == Json.Reader.KeyOpaque }.asTerm,
               opaque.asTerm,
               Block
                 ( List(ValDef(high, Some('{ $parser.directKeyWordHigh }.asTerm))),
@@ -699,7 +699,7 @@ object stagedInternal:
         Block
           ( List(ValDef(word, Some(wordStep.asTerm))),
             If
-              ( '{ $wordRef == JsonReader.KeyEnd }.asTerm,
+              ( '{ $wordRef == Json.Reader.KeyEnd }.asTerm,
                 Assign(Ref(run), Literal(BooleanConstant(false))),
                 Block
                   ( List(ValDef(found, Some(resolveStep))),
@@ -776,5 +776,5 @@ object stagedInternal:
           protected def parseCarrier(reader0: AnyRef): value =
             // A capability class cannot be quoted into a pure hole, so
             // every use casts from the neutral carrier afresh.
-            ${ instance.parse('{ reader0.asInstanceOf[JsonReader] }) }
+            ${ instance.parse('{ reader0.asInstanceOf[Json.Reader] }) }
     }

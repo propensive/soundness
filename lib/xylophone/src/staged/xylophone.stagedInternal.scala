@@ -295,7 +295,7 @@ object stagedInternal:
   private[xylophone] final class RuntimeInlinable[value](parsing: Expr[Any]) extends Inlinable:
     type Self = value
 
-    def parse(reader: Expr[XmlReader])(using Quotes, Type[value]): Expr[value] =
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[value]): Expr[value] =
       '{
         Xml.Parsable.parseField[value]
           ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
@@ -487,7 +487,7 @@ object stagedInternal:
   // occurrence directly (see `fieldLoop`), exactly as the derived engine
   // routes repeatable fields through `parseElement`.
   private[xylophone] def iterableBody[collection: Type]
-    (reader: Expr[XmlReader], element0: Inlinable)
+    (reader: Expr[Xml.Reader], element0: Inlinable)
     (using Quotes)
   :   Expr[collection] =
 
@@ -549,13 +549,13 @@ object stagedInternal:
   // and keeps the engine's dynamic repeatability dispatch. Like the staged
   // parser (and unlike jacinta's), the capabilities come from the reader at
   // the read site.
-  private[xylophone] def productFields[product: Type](reader: Expr[XmlReader])(using Quotes)
+  private[xylophone] def productFields[product: Type](reader: Expr[Xml.Reader])(using Quotes)
   :   Expr[product] =
 
     productFields[product](reader, Cache())
 
   private[xylophone] def productFields[product: Type]
-    (reader: Expr[XmlReader], cache: Cache)
+    (reader: Expr[Xml.Reader], cache: Cache)
     (using Quotes)
   :   Expr[product] =
 
@@ -567,7 +567,7 @@ object stagedInternal:
     finally cache.active -= TypeRepr.of[product].dealias.show
 
   private def productFields0[product: Type]
-    (reader: Expr[XmlReader], cache: Cache)
+    (reader: Expr[Xml.Reader], cache: Cache)
     (using Quotes)
   :   Expr[product] =
 
@@ -613,7 +613,7 @@ object stagedInternal:
     (fieldTypes, plans)
 
   private def fieldLoop[product: Type]
-    ( reader:  Expr[XmlReader],
+    ( reader:  Expr[Xml.Reader],
       foci:    Expr[Foci[Xml.Focus]],
       focused: Expr[Boolean],
       tactic:  Expr[Tactic[Xml.Error]],
@@ -942,7 +942,7 @@ object stagedInternal:
 
     val resolveStep: Term =
       If
-        ( '{ $wordRef == XmlReader.NameOpaque }.asTerm,
+        ( '{ $wordRef == Xml.Reader.NameOpaque }.asTerm,
           textStep,
           Block
             ( List(ValDef(high, Some('{ $reader.childWordHigh }.asTerm))),
@@ -952,7 +952,7 @@ object stagedInternal:
       Block
         ( List(ValDef(word, Some('{ $reader.childWord() }.asTerm))),
           If
-            ( '{ $wordRef == XmlReader.NameEnd }.asTerm,
+            ( '{ $wordRef == Xml.Reader.NameEnd }.asTerm,
               Assign(Ref(run), Literal(BooleanConstant(false))),
               Block
                 ( List(ValDef(found, Some(resolveStep))),
@@ -1135,13 +1135,13 @@ object stagedInternal:
   // children, in place. A missing or unrecognised discriminator skips the
   // element and takes the AST disjunction's fallback: a raise-plus-`Default`
   // when the user supplied one, an abort otherwise.
-  private[xylophone] def sumBody[sum: Type](reader: Expr[XmlReader], attribute: String)
+  private[xylophone] def sumBody[sum: Type](reader: Expr[Xml.Reader], attribute: String)
     (using Quotes)
   :   Expr[sum] =
 
     sumBody[sum](reader, attribute, Cache())
 
-  private def sumBody[sum: Type](reader: Expr[XmlReader], attribute: String, cache: Cache)
+  private def sumBody[sum: Type](reader: Expr[Xml.Reader], attribute: String, cache: Cache)
     (using Quotes)
   :   Expr[sum] =
 
@@ -1152,7 +1152,7 @@ object stagedInternal:
     try sumBody0[sum](reader, attribute, cache)
     finally cache.active -= TypeRepr.of[sum].dealias.show
 
-  private def sumBody0[sum: Type](reader: Expr[XmlReader], attribute: String, cache: Cache)
+  private def sumBody0[sum: Type](reader: Expr[Xml.Reader], attribute: String, cache: Cache)
     (using Quotes)
   :   Expr[sum] =
 
@@ -1235,7 +1235,7 @@ object stagedInternal:
           protected def parseCarrier(reader0: AnyRef): value =
             // A capability class cannot be quoted into a pure hole, so
             // every use casts from the neutral carrier afresh.
-            ${ productFields[value]('{ reader0.asInstanceOf[XmlReader] }, cache) }
+            ${ productFields[value]('{ reader0.asInstanceOf[Xml.Reader] }, cache) }
 
           override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
             ${ productAbsent[value]('tactic, 'foci, cache) }

@@ -432,7 +432,7 @@ trait Json2 extends Json3:
               type Self = derivation
               def shape(): Morphology = Morphology.Any
 
-              def parse(reader: JsonReader^): derivation =
+              def parse(reader: Json.Reader^): derivation =
                 provide[Tactic[Json.Error]]:
                   provide[Tactic[VariantError]]:
                     val wire: Text = reader.discriminant(fielded.field).or:
@@ -448,7 +448,7 @@ trait Json2 extends Json3:
               type Self = derivation
               def shape(): Morphology = Morphology.Any
 
-              def parse(reader: JsonReader^): derivation =
+              def parse(reader: Json.Reader^): derivation =
                 provide[Tactic[Json.Error]]:
                   provide[Tactic[VariantError]]:
                     reader.openObject()
@@ -468,7 +468,7 @@ trait Json2 extends Json3:
               type Self = derivation
               def shape(): Morphology = Morphology.Any
 
-              def parse(reader: JsonReader^): derivation =
+              def parse(reader: Json.Reader^): derivation =
                 provide[Tactic[Json.Error]]:
                   provide[Tactic[VariantError]]:
                     val wire: Text = reader.discriminant(envelope.tagField).or:
@@ -637,7 +637,7 @@ object Json extends Json2, Dynamic:
 
       protected def parseCarrier(reader: AnyRef): value
 
-      def parse(reader: JsonReader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
+      def parse(reader: Json.Reader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
 
     // The call points for a nominal `Parsing` instance in a field position
     // of a *generated* parser (a recursive record's own `Parsable`, a
@@ -645,19 +645,19 @@ object Json extends Json2, Dynamic:
     // neutral carriers — generated code is capture-erased — and the
     // capability is reasserted here, at the audited point.
     def parseField[value](parsing: AnyRef, reader: AnyRef): value =
-      parsing.asInstanceOf[value is Json.Parsing].parse(reader.asInstanceOf[JsonReader^])
+      parsing.asInstanceOf[value is Json.Parsing].parse(reader.asInstanceOf[Json.Reader^])
 
     def absentField[value](parsing: AnyRef)(using Tactic[Json.Error]): value =
       parsing.asInstanceOf[value is Json.Parsing].absent()
 
-    def apply[value](shape0: => Morphology)(parser: (reader: JsonReader^) => value)
+    def apply[value](shape0: => Morphology)(parser: (reader: Json.Reader^) => value)
     :   ((value is Json.Parsable)^{parser}) =
       // Same shape-thunk laundering as `Encodable.apply`; see the comment there.
       val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
 
       new Json.Parsable:
         type Self = value
-        def parse(reader: JsonReader^): value = parser(reader)
+        def parse(reader: Json.Reader^): value = parser(reader)
         def shape(): Morphology = shape1()
 
     // The universal bridge from the AST world: parse one whole value into a
@@ -669,7 +669,7 @@ object Json extends Json2, Dynamic:
 
       new Json.Parsable:
         type Self = value
-        def parse(reader: JsonReader^): value = decodable.decoded(reader.value())
+        def parse(reader: Json.Reader^): value = decodable.decoded(reader.value())
         def shape(): Morphology = decodable.shape()
 
         override def absent()(using Tactic[Json.Error]): value =
@@ -722,7 +722,7 @@ object Json extends Json2, Dynamic:
 
       new Json.Parsable:
         type Self = value
-        def parse(reader: JsonReader^): value = field0.parse(reader)
+        def parse(reader: Json.Reader^): value = field0.parse(reader)
         def shape(): Morphology = field0.shape()
         override def absent()(using Tactic[Json.Error]): value = field0.absent()
 
@@ -744,7 +744,7 @@ object Json extends Json2, Dynamic:
 
           // A wire `null` reads as `Unset`, and so does an absent key: both
           // mean "no value", exactly as the AST decoder's `optional`.
-          def parse(reader: JsonReader^): value =
+          def parse(reader: Json.Reader^): value =
             if reader.hasNull then
               reader.nullValue()
               Unset
@@ -763,7 +763,7 @@ object Json extends Json2, Dynamic:
           // A present key always reads the value — a wire `null` flows to
           // the element, preserving the AST decoder's `Option` asymmetry —
           // while an absent key yields `None`.
-          def parse(reader: JsonReader^): Option[value] = Some(field.parse(reader))
+          def parse(reader: Json.Reader^): Option[value] = Some(field.parse(reader))
           override def absent()(using Tactic[Json.Error]): Option[value] = None
 
     def iterable[collection <: Iterable, element]
@@ -778,7 +778,7 @@ object Json extends Json2, Dynamic:
           type Self = collection[element]
           def shape(): Morphology = Morphology.Arr(field.shape())
 
-          def parse(reader: JsonReader^): collection[element] =
+          def parse(reader: Json.Reader^): collection[element] =
             val builder = factory.newBuilder
             // See the derived product parser: skip inert focus wrapping.
             val focused = foci.active
@@ -804,7 +804,7 @@ object Json extends Json2, Dynamic:
           type Self = Map[key, element]
           def shape(): Morphology = Morphology.Dict(Morphology.Str, field.shape())
 
-          def parse(reader: JsonReader^): Map[key, element] =
+          def parse(reader: Json.Reader^): Map[key, element] =
             var entries = Map.empty[key, element]
             reader.openObject()
             var name: String | Null = reader.keyName()
@@ -943,7 +943,7 @@ object Json extends Json2, Dynamic:
 
           -1
 
-        def parse(reader: JsonReader^): derivation =
+        def parse(reader: Json.Reader^): derivation =
           val entries = fields
           val count = entries.length
           val values = Array[Any](count)
@@ -996,7 +996,7 @@ object Json extends Json2, Dynamic:
           make(Array.freeze(values))
 
   // The direct-parsing counterpart of `Json.Decodable`: consumes JSON tokens
-  // from a `JsonReader` instead of walking a materialized `Json`, so
+  // from a `Json.Reader` instead of walking a materialized `Json`, so
   // `read[value in Json]` can instantiate values without building the AST.
   // Carries the same `Morphology` so a direct parser stays coherent with the
   // schema machinery. `Parsable` is the opt-in surface: explicit instances,
@@ -1014,7 +1014,7 @@ object Json extends Json2, Dynamic:
   // lazy-val self-reference.
   trait Parsing extends distillate.Parsable:
     type Transport = Json
-    type Reader = JsonReader
+    type Reader = Json.Reader
     def shape(): Morphology
 
     // What a field of this type yields when its key is absent from the
@@ -1167,7 +1167,7 @@ object Json extends Json2, Dynamic:
       private[jacinta] def source: value is Json.Parsing =
         source0.asInstanceOf[value is Json.Parsing]
 
-      def parse(reader: JsonReader^): value = source.parse(reader)
+      def parse(reader: Json.Reader^): value = source.parse(reader)
       def shape(): Morphology = source.shape()
       override def absent()(using Tactic[Json.Error]): value = source.absent()
 
@@ -1177,7 +1177,7 @@ object Json extends Json2, Dynamic:
       . asInstanceOf[(value is Json.Field)^{parsing}]
 
   // The operational face of direct parsing: how a value is read from a
-  // `JsonReader`, whether directly or through the AST bridge. This is the
+  // `Json.Reader`, whether directly or through the AST bridge. This is the
   // typeclass the product derivation resolves per field: `Json2` carries its
   // element-wise instances and `Json3` the universal fallback — declared as
   // members of this companion (like `Json2.decodable`) so Wisteria's wrapper
@@ -1872,7 +1872,7 @@ object Json extends Json2, Dynamic:
         Json(Json.Ast.parse(ref.asInstanceOf[(Stream[Data] over Credit)^]))
 
   // Direct-parsing counterpart of `readJson`: drives a `Json.Parsable`
-  // instance over the input through a `JsonReader`, so no AST is built for
+  // instance over the input through a `Json.Reader`, so no AST is built for
   // the values the instance reads directly. Under `parsing.trackPositions`
   // the parser's lineation is enabled so parse errors carry real source
   // coordinates; there is no `PositionIndex` (nothing to index — the result
@@ -1888,7 +1888,7 @@ object Json extends Json2, Dynamic:
     parser.holes = false
     parser.numberMode = mode
     parser.directBegin()
-    val result = parsable.parse(JsonReader(parser, tactic))
+    val result = parsable.parse(Json.Reader(parser, tactic))
     parser.directEnd()
     result
 
@@ -1905,7 +1905,7 @@ object Json extends Json2, Dynamic:
     parser.holes = false
     parser.numberMode = mode
     parser.directBegin()
-    val result = parsable.parse(JsonReader(parser, tactic))
+    val result = parsable.parse(Json.Reader(parser, tactic))
     parser.directEnd()
     result
 
@@ -1923,7 +1923,7 @@ object Json extends Json2, Dynamic:
     parser.holes = false
     parser.numberMode = mode
     parser.directBegin()
-    val result = parsable.parse(JsonReader(parser, tactic))
+    val result = parsable.parse(Json.Reader(parser, tactic))
     parser.directEnd()
     result
 
@@ -2076,7 +2076,7 @@ object Json extends Json2, Dynamic:
         raise(Json.Error(reason))
 
   // Direct-parsing primitives. Genuinely pure — no tactic and no seal: all
-  // raising happens inside the `JsonReader`, through the tactic it carries.
+  // raising happens inside the `Json.Reader`, through the tactic it carries.
   given booleanParsable: Boolean is Json.Parsable =
     Json.Parsable(Morphology.Bool)(_.boolean())
 
@@ -2519,6 +2519,124 @@ object Json extends Json2, Dynamic:
 
   enum Primitive:
     case Array, Object, Number, Null, Boolean, String
+
+  // JsonReader → Json.Reader
+  object Reader:
+    // Sentinels of `keyWord()`; impossible as packed keys, whose bytes are
+    // all printable ASCII.
+    inline final val KeyEnd = -1L
+    inline final val KeyOpaque = -2L
+
+    // Only jacinta's read path (`Json.parseDirect`) constructs readers, so the
+    // parser-pool invariants (one exclusive `Parser` per thread) and the
+    // resolution scope of the carried tactic are preserved by construction. The
+    // wrapped capabilities travel as neutral carriers (the `FrameReader`
+    // pattern): the fields stay pure, and each accessor reasserts the type at
+    // the rim — the audited point.
+    private[jacinta] def apply(parser: Parser^, tactic: Tactic[ParseError]): Json.Reader^ =
+      new Json.Reader(parser.asInstanceOf[AnyRef], tactic.asInstanceOf[AnyRef])
+
+  // The public, restricted rim of the JSON tokenizer, handed to `Json.Parsable`
+  // instances so they can consume JSON tokens straight off the input without an
+  // intermediate `Json.Ast`. Each method consumes exactly one token (or one
+  // structural step), skipping any leading whitespace. The reader carries its
+  // own `Tactic[ParseError]`, so instance `parse` bodies need no error
+  // vocabulary: malformed input and mistyped values abort through the read
+  // call's ambient tactic.
+  //
+  // An exclusive, stateful capability, like the parser it wraps: it is owned by
+  // one `Json.Parsable.parse` call at a time, for the duration of that call,
+  // and nothing of it may be retained afterwards.
+  final class Reader private (parser0: AnyRef, tactic0: AnyRef)
+  extends caps.ExclusiveCapability, caps.Stateful:
+    private inline def parser: Parser^ = parser0.asInstanceOf[Parser^]
+
+    // The sealed conduit for generated parsers: package-private, so the only
+    // path to the wrapped capabilities from outside jacinta is through the
+    // accessor the compiler synthesizes for jacinta's own macro-generated
+    // splices — hand-written code cannot name it. Generated code binds the
+    // parser once per record and reads through `Parser`'s direct rim without
+    // this class's per-token forwarders (measured at ~3% of a parse).
+    private[jacinta] def rawParser: AnyRef = parser0
+    private[jacinta] def rawTactic: AnyRef = tactic0
+    private inline def tactic: Tactic[ParseError] = tactic0.asInstanceOf[Tactic[ParseError]]
+
+    // ── Scalars: one JSON value each. Numbers coerce exactly as the
+    // `Json.Ast` accessors do, so direct and AST reads yield equal values. ──
+    inline update def string(): Text = parser.directString()(using tactic).tt
+    inline update def boolean(): Boolean = parser.directBoolean()(using tactic)
+    inline update def long(): Long = parser.directLong()(using tactic)
+    inline update def int(): Int = parser.directLong()(using tactic).toInt
+    inline update def double(): Double = parser.directDouble()(using tactic)
+    update def bcd(): Bcd = parser.directBcd()(using tactic)
+
+    // ── Null handling: `hasNull` peeks without consuming, for optional
+    // wrappers that map a wire `null` to an absent value. ──
+    update def hasNull: Boolean = parser.directIsNull()
+    update def nullValue(): Unit = parser.directNull()(using tactic)
+
+    // ── Structure. After `openObject()`, `key()` yields each key in turn
+    // (consuming the separator and the colon) and `Unset` once the closing
+    // brace is consumed. After `openArray()`, `element()` is true while
+    // another element follows (positioned at it) and false once the closing
+    // bracket is consumed. ──
+    inline update def openObject(): Unit = parser.directOpenObject()(using tactic)
+
+    update def key(): Optional[Text] = parser.directKey()(using tactic) match
+      case null        => Unset
+      case key: String => key.tt
+
+    // As `key()`, but exposing the tokenizer's interned `String` (repeated keys
+    // return the same reference), so the derived product parser's key lookup is
+    // a reference-equality scan in the steady state.
+    private[jacinta] update def keyName(): String | Null = parser.directKey()(using tactic)
+
+    // As `key()`, but resolving against a precomputed key table without
+    // materializing the key at all: the table index, `KeyTable.Unknown`, or
+    // `KeyTable.End` once the closing brace is consumed. Public because
+    // staged parsers are generated into user modules; also the fastest way
+    // for a hand-written parser to dispatch on keys.
+    update def keyIndex(table: Json.KeyTable): Int =
+      val fast = parser.directKeyIndexFast(table)
+      if fast != Int.MinValue then fast else parser.directKeyIndexGeneral(table)(using tactic)
+
+    // The next key step in packed form, for parsers that compare keys against
+    // literal constants (staged parsers compile field names to immediates):
+    // the packed low word of the key (its high word from `keyWordHigh`),
+    // `KeyEnd` once the closing brace is consumed, or `KeyOpaque` when the key
+    // cannot be scanned in place — the caller then takes the `keyIndex` step
+    // instead, which consumes it generally.
+    update def keyWord(): Long = parser.directKeyWordFast()
+
+    // The split protocol for generated parsers whose loop statically knows
+    // which step is first — the steady-state step consults no per-key state.
+    inline update def keyWordFirst(): Long = parser.directKeyWordFirst()
+
+    inline update def keyWordNext(): Long = parser.directKeyWordNext()
+
+    inline update def keyWordHigh: Long = parser.directKeyWordHigh
+
+    inline update def openArray(): Unit = parser.directOpenArray()(using tactic)
+    inline update def element(): Boolean = parser.directElement()(using tactic)
+
+    // ── The fallback seam: parse one whole value into an AST (for field types
+    // that only have a `Decodable in Json`), or skip one whole value (for
+    // unknown keys). ──
+    update def value(): Json = Json.ast(Json.Ast(parser.directValue()(using tactic)))
+    inline update def skipValue(): Unit = parser.directSkipValue()(using tactic)
+
+    // Scans the upcoming object for the given key and returns its string
+    // value, leaving the reader where it started — the dispatch primitive for
+    // an internal discriminator field that may appear anywhere in the object.
+    // `Unset` when the object has no such key or its value is not a string.
+    update def discriminant(key: Text): Optional[Text] =
+      parser.directDiscriminant(key.s)(using tactic) match
+        case null        => Unset
+        case tag: String => tag.tt
+
+    // Abort through the reader's tactic, positioned at the current input
+    // offset — for leaf instances that reject a well-formed token's content.
+    update def fail(issue: Json.Ast.Issue): Nothing = parser.directFail(issue)(using tactic)
 
 class Json(rootValue: Any, positions: Optional[Json.PositionIndex] = Unset)
 extends Dynamic, Topical, Original derives CanEqual:

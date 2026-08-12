@@ -1132,7 +1132,7 @@ object internal:
         case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
 
     def body
-      ( reader:    Expr[JsonReader],
+      ( reader:    Expr[Json.Reader],
         foci:      Expr[Foci[Json.Focus]],
         tactic:    Expr[Tactic[Json.Error]],
         keys:      Expr[Array[String]^{}],
@@ -1225,7 +1225,7 @@ object internal:
 
           val resolve: Term =
             If
-              ( '{ $wordRef == JsonReader.KeyOpaque }.asTerm,
+              ( '{ $wordRef == Json.Reader.KeyOpaque }.asTerm,
                 '{ $reader.keyIndex($table) }.asTerm,
                 Block(scala.collection.immutable.List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), chain(0)) )
 
@@ -1233,7 +1233,7 @@ object internal:
             Block
               ( scala.collection.immutable.List(ValDef(word, Some('{ $reader.keyWord() }.asTerm))),
                 If
-                  ( '{ $wordRef == JsonReader.KeyEnd }.asTerm,
+                  ( '{ $wordRef == Json.Reader.KeyEnd }.asTerm,
                     Assign(Ref(run), Literal(BooleanConstant(false))),
                     Block
                       ( scala.collection.immutable.List(ValDef(found, Some(resolve))),
@@ -1332,7 +1332,7 @@ object internal:
           type Self = value
           def shape(): Morphology = Morphology.Any
 
-          def parse(reader: JsonReader^): value =
+          def parse(reader: Json.Reader^): value =
             ${
               body
                 ( '{reader}, '{foci}, '{tactic}, '{keys}, '{table}, '{instances},
@@ -1404,7 +1404,7 @@ object internal:
     // the derived engine's unknown-variant raise.
     def dispatch
       ( index:        Int,
-        reader:       Expr[JsonReader],
+        reader:       Expr[Json.Reader],
         wire:         Expr[Text],
         wireString:   Expr[String],
         variants:     Expr[Array[Json.Field]^{}],
@@ -1442,7 +1442,7 @@ object internal:
           type Self = value
           def shape(): Morphology = Morphology.Any
 
-          def parse(reader: JsonReader^): value =
+          def parse(reader: Json.Reader^): value =
             provide[Tactic[Json.Error]]:
               val wire: Text = reader.discriminant(tagField).or:
                 abort(Json.Error(Json.Error.Reason.Absent))

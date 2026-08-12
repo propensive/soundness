@@ -692,7 +692,7 @@ object Xml extends Tag.Container
   // carries no `Morphology`), so their direct counterparts are too.
   trait Parsing extends distillate.Parsable:
     type Transport = Xml
-    type Reader = XmlReader
+    type Reader = Xml.Reader
 
     // True for collection parsers: a repeated field, gathered occurrence by
     // occurrence by the derived product parser — the direct counterpart of a
@@ -720,14 +720,14 @@ object Xml extends Tag.Container
     // the body receives the reader as a neutral carrier, and the capability
     // is asserted here at the rim — the audited point — like the reader's
     // own accessors. (A generated override of `parse` itself would narrow
-    // the trait's `XmlReader^` parameter to a pure type, which capture
+    // the trait's `Xml.Reader^` parameter to a pure type, which capture
     // checking rejects at the instantiation site.)
     abstract class Direct[value] extends Xml.Parsable:
       type Self = value
 
       protected def parseCarrier(reader: AnyRef): value
 
-      def parse(reader: XmlReader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
+      def parse(reader: Xml.Reader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
 
     // The call points for a nominal `Parsing` instance in a field position
     // of a *generated* parser (a recursive record's own `Parsable`, a
@@ -735,17 +735,17 @@ object Xml extends Tag.Container
     // neutral carriers — generated code is capture-erased — and the
     // capability is reasserted here, at the audited point.
     def parseField[value](parsing: AnyRef, reader: AnyRef): value =
-      parsing.asInstanceOf[value is Xml.Parsing].parse(reader.asInstanceOf[XmlReader^])
+      parsing.asInstanceOf[value is Xml.Parsing].parse(reader.asInstanceOf[Xml.Reader^])
 
     def absentField[value](parsing: AnyRef)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
       parsing.asInstanceOf[value is Xml.Parsing].absent()
 
-    def apply[value](parser: (reader: XmlReader^) => value)
+    def apply[value](parser: (reader: Xml.Reader^) => value)
     :   ((value is Xml.Parsable)^{parser}) =
 
       new Xml.Parsable:
         type Self = value
-        def parse(reader: XmlReader^): value = parser(reader)
+        def parse(reader: Xml.Reader^): value = parser(reader)
 
     // The universal bridge from the AST world: materialize one element as an
     // `Xml` and decode it. Field types with only a `Decodable in Xml` keep
@@ -772,7 +772,7 @@ object Xml extends Tag.Container
         new Xml.Parsable with Gathering:
           type Self = value
           override def repeatable: Boolean = true
-          def parse(reader: XmlReader^): value = decodable.decoded(reader.element())
+          def parse(reader: Xml.Reader^): value = decodable.decoded(reader.element())
 
           override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
             decodable.decoded(Absent)
@@ -780,15 +780,15 @@ object Xml extends Tag.Container
           override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
             decodable.decoded(TextNode(text))
 
-          def parseElement(reader: XmlReader^): Any = reader.element()
+          def parseElement(reader: Xml.Reader^): Any = reader.element()
 
           def gathered(elements: List[Any]): value =
-            // `XmlReader.element()` materializes exactly one `Element`.
+            // `Xml.Reader.element()` materializes exactly one `Element`.
             decodable.decoded(Fragment(elements.map(_.asInstanceOf[Node])*))
       else
         new Xml.Parsable:
           type Self = value
-          def parse(reader: XmlReader^): value = decodable.decoded(reader.element())
+          def parse(reader: Xml.Reader^): value = decodable.decoded(reader.element())
 
           override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
             decodable.decoded(Absent)
@@ -821,7 +821,7 @@ object Xml extends Tag.Container
 
       new Xml.Parsable:
         type Self = value
-        def parse(reader: XmlReader^): value = field0.parse(reader)
+        def parse(reader: Xml.Reader^): value = field0.parse(reader)
         override def repeatable: Boolean = field0.repeatable
         override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value = field0.absent()
 
@@ -838,7 +838,7 @@ object Xml extends Tag.Container
     // instance.
     private[xylophone] trait Gathering:
       self: Xml.Parsing^ =>
-      def parseElement(reader: XmlReader^): Any
+      def parseElement(reader: Xml.Reader^): Any
       def gathered(elements: List[Any]): Self
 
     // Shared collection implementation, backing the `fieldCollection` given
@@ -855,7 +855,7 @@ object Xml extends Tag.Container
           type Self = collection[element]
           override def repeatable: Boolean = true
 
-          def parseElement(reader: XmlReader^): Any = field.parse(reader)
+          def parseElement(reader: Xml.Reader^): Any = field.parse(reader)
 
           def gathered(elements: List[Any]): collection[element] =
             val builder = factory.newBuilder
@@ -865,7 +865,7 @@ object Xml extends Tag.Container
           // A single element read as a collection: one element — the AST
           // collection decoder's behavior when handed a lone element (a
           // whole-document read of a collection value).
-          def parse(reader: XmlReader^): collection[element] =
+          def parse(reader: Xml.Reader^): collection[element] =
             val builder = factory.newBuilder
             builder += field.parse(reader)
             builder.result()
@@ -953,7 +953,7 @@ object Xml extends Tag.Container
       val actual = unwrap(parsing)
       actual.repeatable && actual.isInstanceOf[Gathering]
 
-    def parseElement(parsing: Xml.Parsing, reader: XmlReader^): Any =
+    def parseElement(parsing: Xml.Parsing, reader: Xml.Reader^): Any =
       (unwrap(parsing): @unchecked) match
         case gathering: Gathering => gathering.parseElement(reader)
 
@@ -1004,7 +1004,7 @@ object Xml extends Tag.Container
 
           -1
 
-        def parse(reader: XmlReader^): derivation =
+        def parse(reader: Xml.Reader^): derivation =
           given foci: Foci[Xml.Focus] = reader.foci
           given tactic: Tactic[Xml.Error] = reader.errorTactic
           val entries = fields
@@ -1154,7 +1154,7 @@ object Xml extends Tag.Container
           make(Array.freeze(values))
 
   // The direct-parsing counterpart of `Decodable in Xml`: consumes elements
-  // from an `XmlReader` instead of walking a materialized `Xml`, so
+  // from an `Xml.Reader` instead of walking a materialized `Xml`, so
   // `read[value in Xml]` can instantiate values without building the tree.
   // `Parsable` is the opt-in surface: explicit instances,
   // `Xml.Parsable.derived`, and the read trigger. It has no blanket fallback
@@ -1173,7 +1173,7 @@ object Xml extends Tag.Container
       private[xylophone] def source: value is Xml.Parsing =
         source0.asInstanceOf[value is Xml.Parsing]
 
-      def parse(reader: XmlReader^): value = source.parse(reader)
+      def parse(reader: Xml.Reader^): value = source.parse(reader)
       override def repeatable: Boolean = source.repeatable
 
       override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value = source.absent()
@@ -1186,7 +1186,7 @@ object Xml extends Tag.Container
       . asInstanceOf[(value is Xml.Field)^{parsing}]
 
   // The operational face of direct parsing: how a field's value is read from
-  // an `XmlReader`, whether directly or through the AST bridge. This is the
+  // an `Xml.Reader`, whether directly or through the AST bridge. This is the
   // typeclass the product derivation resolves per field; `Xml3` carries the
   // universal fallback — declared as an (inherited) member of this companion
   // so Wisteria's wrapper detection excludes the fallback during codec
@@ -1206,7 +1206,7 @@ object Xml extends Tag.Container
     new Xml.Parsable:
       type Self = value
 
-      def parse(reader: XmlReader^): value =
+      def parse(reader: Xml.Reader^): value =
         reader.text().lay(reader.fault() yet sentinel): text =>
           convert(text).or(reader.fault() yet sentinel)
 
@@ -1223,7 +1223,7 @@ object Xml extends Tag.Container
   // fallback, which parses exactly as the primitives here would have.
   given intParsable: Int is Xml.Parsable = new Xml.Parsable:
     type Self = Int
-    def parse(reader: XmlReader^): Int = reader.int().or(reader.fault() yet 0)
+    def parse(reader: Xml.Reader^): Int = reader.int().or(reader.fault() yet 0)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Int =
       raise(Xml.Error()) yet 0
@@ -1234,7 +1234,7 @@ object Xml extends Tag.Container
 
   given longParsable: Long is Xml.Parsable = new Xml.Parsable:
     type Self = Long
-    def parse(reader: XmlReader^): Long = reader.long().or(reader.fault() yet 0L)
+    def parse(reader: Xml.Reader^): Long = reader.long().or(reader.fault() yet 0L)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Long =
       raise(Xml.Error()) yet 0L
@@ -1251,7 +1251,7 @@ object Xml extends Tag.Container
 
   given doubleParsable: Double is Xml.Parsable = new Xml.Parsable:
     type Self = Double
-    def parse(reader: XmlReader^): Double = reader.double().or(reader.fault() yet 0.0)
+    def parse(reader: Xml.Reader^): Double = reader.double().or(reader.fault() yet 0.0)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Double =
       raise(Xml.Error()) yet 0.0
@@ -1265,7 +1265,7 @@ object Xml extends Tag.Container
 
   given booleanParsable: Boolean is Xml.Parsable = new Xml.Parsable:
     type Self = Boolean
-    def parse(reader: XmlReader^): Boolean = reader.boolean().or(reader.fault() yet false)
+    def parse(reader: Xml.Reader^): Boolean = reader.boolean().or(reader.fault() yet false)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Boolean =
       raise(Xml.Error()) yet false
@@ -1322,7 +1322,7 @@ object Xml extends Tag.Container
     new Xml.Parsable:
       type Self = value
 
-      def parse(reader: XmlReader^): value =
+      def parse(reader: Xml.Reader^): value =
         codec.decoded(reader.text().or(reader.fault() yet t""))
 
       override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
@@ -1505,7 +1505,7 @@ object Xml extends Tag.Container
     text => parseDirect(text, parsable).asInstanceOf[value in Xml]
 
   // Direct-parsing counterpart of `Xml2.aggregableIn`: drives an
-  // `Xml.Parsable` instance over the input through an `XmlReader`, so no
+  // `Xml.Parsable` instance over the input through an `Xml.Reader`, so no
   // tree is built for the values the instance reads directly. Like
   // `aggregableIn`, the direct read path does not thread position tracking
   // (there is no `PositionIndex` — the result is the caller's value, not an
@@ -1553,7 +1553,7 @@ object Xml extends Tag.Container
      parser.directSession:
       parser.directRoot() match
         case 0 =>
-          val result = parsable.parse(XmlReader(parser, tactic, xmlTactic, foci))
+          val result = parsable.parse(Xml.Reader(parser, tactic, xmlTactic, foci))
           if parser.directTrailing() then parsable.absent() else result
 
         case 1 =>
@@ -3454,7 +3454,7 @@ object Xml extends Tag.Container
 
     // ── Direct parsing rim ─────────────────────────────────────────────────
     //
-    // The pull-event surface behind `XmlReader`, letting an `Xml.Parsable`
+    // The pull-event surface behind `Xml.Reader`, letting an `Xml.Parsable`
     // instance consume the input element by element without materializing
     // the document's tree. The rim reuses the tree-building parser's own
     // token readers (`readName`, `readAttributes`, `readText`,
@@ -3649,17 +3649,17 @@ object Xml extends Tag.Container
     // As `directNextChild`, but returning the child's name in packed form
     // for staged parsers that compare names against literal constants: the
     // packed low word (its high word from `directChildWordHigh`),
-    // `XmlReader.NameEnd` once the close tag is consumed, or
-    // `XmlReader.NameOpaque` when the name cannot pack (non-ASCII, or longer
+    // `Xml.Reader.NameEnd` once the close tag is consumed, or
+    // `Xml.Reader.NameOpaque` when the name cannot pack (non-ASCII, or longer
     // than sixteen chars) — the child is still opened, and
     // `directChildLabel` identifies it for the general dispatch.
     private[xylophone] def directNextChildWord()(using Tactic[ParseError]): Long =
       val name = directNextChild()
 
-      if name == null then XmlReader.NameEnd
+      if name == null then Xml.Reader.NameEnd
       else
         directChildName = name.nn
-        if !directChildPackable then XmlReader.NameOpaque else directChildLow
+        if !directChildPackable then Xml.Reader.NameOpaque else directChildLow
 
     private[xylophone] def directChildWordHigh: Long = directChildHigh
     private[xylophone] def directChildLabel: Text = directChildName
@@ -3948,6 +3948,133 @@ object Xml extends Tag.Container
   // XmlError → Xml.Error
   case class Error()(using Diagnostics)
   extends fulminate.Error(149, 0)(m"there was an XML error")
+
+  // XmlReader → Xml.Reader
+  object Reader:
+    // Sentinels of `childWord()`; impossible as packed names, whose chars are
+    // all 7-bit ASCII.
+    inline final val NameEnd = -1L
+    inline final val NameOpaque = -2L
+
+    // Only xylophone's read path (`Xml.parseDirect`) constructs readers, so the
+    // exclusivity of the wrapped parser and the resolution scope of the carried
+    // capabilities are preserved by construction. The wrapped capabilities
+    // travel as neutral carriers (jacinta's `Json.Reader` pattern): the fields
+    // stay pure, and each accessor reasserts the type at the rim — the audited
+    // point.
+    private[xylophone] def apply
+      ( parser:    Xml.XmlParser^,
+        tactic:    Tactic[ParseError],
+        xmlTactic: Tactic[Xml.Error],
+        foci:      Foci[Xml.Focus] )
+    :   Xml.Reader^ =
+
+      new Xml.Reader
+        ( parser.asInstanceOf[AnyRef],
+          tactic.asInstanceOf[AnyRef],
+          xmlTactic.asInstanceOf[AnyRef],
+          foci.asInstanceOf[AnyRef] )
+
+  // The public, restricted rim of the XML parser, handed to `Xml.Parsable`
+  // instances so they can consume elements straight off the input without an
+  // intermediate `Xml` tree. `parse` is invoked with the current element just
+  // *opened* (its name and attributes consumed); exactly one of the content
+  // consumers — `nextChild` until `Unset`, `text`, `skipElement` or `element` —
+  // must then consume the element's content and its close tag in full.
+  //
+  // The reader carries its own `Tactic[ParseError]`, so malformed input aborts
+  // through the read call's ambient tactic — and, unlike jacinta's reader, the
+  // read-site `Tactic[Xml.Error]` and `Foci[Xml.Focus]` too, so decode errors
+  // raised by `Parsable` instances accrue to the same `validate` boundary the
+  // AST path's inline derivation uses, with the same field foci, even when the
+  // `Parsable` given was instantiated outside the boundary.
+  //
+  // An exclusive, stateful capability, like the parser it wraps: it is owned
+  // by one `Xml.Parsable.parse` call at a time, for the duration of that call,
+  // and nothing of it may be retained afterwards.
+  final class Reader private
+    ( parser0: AnyRef, tactic0: AnyRef, xmlTactic0: AnyRef, foci0: AnyRef )
+  extends caps.ExclusiveCapability, caps.Stateful:
+    private inline def parser: Xml.XmlParser^ = parser0.asInstanceOf[Xml.XmlParser^]
+
+    private[xylophone] inline def parseTactic: Tactic[ParseError] =
+      tactic0.asInstanceOf[Tactic[ParseError]]
+
+    // The read-site capabilities, public because staged parsers — generated
+    // into user modules — bind them once per record for focus bookkeeping and
+    // absent-field raising, exactly as the derived engine does.
+    inline def errorTactic: Tactic[Xml.Error] =
+      xmlTactic0.asInstanceOf[Tactic[Xml.Error]]
+
+    inline def foci: Foci[Xml.Focus] = foci0.asInstanceOf[Foci[Xml.Focus]]
+
+    // The attributes of the just-opened element, valid until the next element
+    // is opened. The derived product parser reads them before its child loop,
+    // so `@attribute` fields are filled before any child is consumed.
+    update def attributes(): Attributes = parser.directAttributes()
+
+    // Steps within the current element: the name of the next child element
+    // (opened — its name and attributes consumed), or `Unset` once the close
+    // tag is consumed and validated. Character data, comments, CDATA sections
+    // and processing instructions between child elements are consumed
+    // transparently — the AST derivation looks only at `Element` children.
+    //
+    // The hot forwarders are `inline` (enabled by the toolchain's
+    // inline-update receiver fix), so the derived engine's steps reach the
+    // parser without a call through the rim. Methods that appear inside
+    // xylophone's macro quotes stay non-inline: the spliced reader there is
+    // capture-erased, and an inline update method requires an exclusive
+    // receiver.
+    inline update def nextChild(): Optional[Text] =
+      val name = parser.directNextChild()(using parseTactic)
+      if name == null then Unset else name.nn
+
+    // The next child step in packed form, for parsers that compare names
+    // against literal constants (staged parsers compile field names to
+    // immediates): the packed low word of the child's name (its high word from
+    // `childWordHigh`), `NameEnd` once the close tag is consumed, or
+    // `NameOpaque` when the name cannot pack — the child is still opened, and
+    // `childLabel` identifies it for a general dispatch. Public because staged
+    // parsers are generated into user modules.
+    update def childWord(): Long = parser.directNextChildWord()(using parseTactic)
+
+    update def childWordHigh: Long = parser.directChildWordHigh
+
+    update def childLabel: Text = parser.directChildLabel
+
+    // The current element's text content, consumed together with its close
+    // tag: `Unset` when the content is not exactly one text run (mirroring
+    // `textOf`'s shape rules, under which CDATA is *not* text). Backs the
+    // text-codec parsers.
+    update def text(): Optional[Text] =
+      val text = parser.directText()(using parseTactic)
+      if text == null then Unset else text.nn
+
+    // The current element's content parsed straight from the buffered chars
+    // as a primitive (consumed with its close tag), or `Unset` for missing,
+    // wrong-shaped or unparseable content — the byte-parsed counterparts of
+    // `text()`, saving the value `Text` it would otherwise materialize only
+    // for the primitive to re-scan. Values and failures agree with the
+    // `String`-parsing primitives exactly: exotic content falls back to the
+    // general path internally.
+    update def int(): Optional[Int] = parser.directTextInt()(using parseTactic)
+    update def long(): Optional[Long] = parser.directTextLong()(using parseTactic)
+    update def double(): Optional[Double] = parser.directTextDouble()(using parseTactic)
+    update def boolean(): Optional[Boolean] = parser.directTextBoolean()(using parseTactic)
+
+    // Skips the current element's entire subtree, validating every close tag
+    // on the way, building nothing — for unknown child elements and duplicate
+    // occurrences of a field.
+    update def skipElement(): Unit = parser.directSkipElement()(using parseTactic)
+
+    // The fallback seam: materialize the current element as an `Xml` tree, for
+    // field types that only carry a `Decodable in Xml`.
+    inline update def element(): Xml = parser.directElement()(using parseTactic)
+
+    // Raise an `Xml.Error` through the read-site tactic and continue — for leaf
+    // instances that reject an element's content, preserving the AST
+    // primitives' raise-and-continue accrual.
+    update def fault(): Unit = raise(Xml.Error())(using errorTactic)
 
 
 sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:

@@ -381,15 +381,15 @@ object KotlinFacade:
           val handler: Expr[(scala.Array[Object | Null] | Null) => Object | Null] = arity match
             case 0 =>
               val lambda = argument.asExprOf[() => Any]
-              '{_ => KotlinRuntime.dispatch($lambda())}
+              '{_ => Kotlin.Runtime.dispatch($lambda())}
 
             case 1 =>
               val lambda = '{${argument.asExpr}.asInstanceOf[Any => Any]}
-              '{args => KotlinRuntime.dispatch($lambda(args.nn(0)))}
+              '{args => Kotlin.Runtime.dispatch($lambda(args.nn(0)))}
 
             case 2 =>
               val lambda = '{${argument.asExpr}.asInstanceOf[(Any, Any) => Any]}
-              '{args => KotlinRuntime.dispatch($lambda(args.nn(0), args.nn(1)))}
+              '{args => Kotlin.Runtime.dispatch($lambda(args.nn(0), args.nn(1)))}
 
             case _ =>
               halt(m"xenophile: functional interfaces above arity 2 are not yet supported")
@@ -402,7 +402,7 @@ object KotlinFacade:
           val proxy =
             ' {
                 val loader = $samClass.getClassLoader
-                val invocations = KotlinRuntime.forwarder($handler)
+                val invocations = Kotlin.Runtime.forwarder($handler)
 
                 java.lang.reflect.Proxy.newProxyInstance(loader, scala.Array($samClass), invocations)
                 . asInstanceOf[i]
@@ -1138,7 +1138,7 @@ object KotlinFacade:
   // Calls a member through its synthetic `name$default` bridge: a static method taking the
   // receiver, every declared parameter (absent ones as zero values), a bitmask of the absent
   // positions, and a marker. The bridge is ACC_SYNTHETIC — invisible to the symbol table — so
-  // the call goes through `KotlinRuntime`'s cached `MethodHandle` rather than a direct emission.
+  // the call goes through `Kotlin.Runtime`'s cached `MethodHandle` rather than a direct emission.
   private def bridgeCall(using Quotes)
     ( self:      Expr[Facade],
       repr:      quotes.reflect.TypeRepr,
@@ -1194,7 +1194,7 @@ object KotlinFacade:
 
     val call: Expr[Any | Null] =
       ' {
-          KotlinRuntime.invokeDefault
+          Kotlin.Runtime.invokeDefault
             ( ${ownerClass.asExprOf[Class[?]]},
               ${Expr(bridgeName.s)},
               scala.Array[Any | Null]($arguments*) )
