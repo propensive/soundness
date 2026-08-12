@@ -30,35 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package telekinesis
 
-import anticipation.*
-import coaxial.*
-import contingency.*
-import telekinesis.*
-import parasite.*
-import spectacular.*
+import java.util.concurrent.locks as jucl
 
-// A scoped gRPC channel over `Http2.EndpointSessional`: the HTTP/2
-// connection is opened and its handshake completed, the channel is lent to the lambda,
-// and the connection (with its reader/writer daemons) is torn down when the scope ends —
-// unlike `Grpc.Channel.apply`, whose connection is held open by a parked daemon until the
-// enclosing `supervise` scope ends. A named instance class rather than an anonymous
-// given: an anonymous subclass would freshen the capability types in its inferred
-// `Result` member.
-class GrpcSessional[endpoint: {Connectable, Showable}]
-  ( using monitor:    Monitor,
-          probate:    Probate,
-          asyncError: Tactic[Async.Error],
-          loggable:   (SocketEvent is Loggable)^ )
-extends Sessional:
-  type Self = Grpc.Endpoint[endpoint]
+import scala.math
+import scala.caps
 
-  // A fresh capability (`^`, not `^{caps.any}`): each `session` call's handle is its own
-  // existential, so returning it (or anything capturing it) from the block is a level
-  // violation the capture checker rejects.
-  type Result = Grpc.Channel^
+import proscenium.*
 
-  def session[result](target: Self)(lambda: (session: Result) ?=> result): result =
-    target.endpoint.session: connection ?=>
-      lambda(using new Grpc.Channel(connection, target.endpoint.authority, target.defaults))
+// A single HTTP/2 flow-control send window (RFC 7540 §6.9): a signed byte
+// budget the peer grants us for sending DATA. `acquire` blocks the sending
+// fiber until at least one byte is available and returns up to `n` (so a large
+// body drains as the window opens); `release` (from an inbound WINDOW_UPDATE)
+// tops it up and wakes waiters. A `ReentrantLock`/`Condition` rather than
+// `synchronized`, so a blocked virtual thread unmounts its carrier.
+class FlowWindow(initial: Int):
+  private val lock: jucl.ReentrantLock = jucl.ReentrantLock()
+  private val replenished: jucl.Condition = lock.newCondition().nn
+
+  // Guarded by `lock`; reached only through this window's own methods.
+  @caps.unsafe.untrackedCaptures
+  private var value: Long = initial.toLong
+
+  def acquire(n: Int): Int =
+    lock.lock()
+    try
+      while value <= 0 do replenished.await()
+      val take: Int = math.min(n.toLong, value).toInt
+      value -= take
+      take
+    finally lock.unlock()
+
+  def release(increment: Int): Unit =
+    lock.lock()
+    try
+      value += increment.toLong
+      replenished.signalAll()
+    finally lock.unlock()

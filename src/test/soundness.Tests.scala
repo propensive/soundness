@@ -62,7 +62,7 @@ object Tests extends Suite(m"Soundness tests"):
     coaxial.Tests()
     _root_.contextual.Tests()
     contingency.Tests()
-    cordillera.Tests()
+    telekinesis.Http2Tests()
     //cosmopolite.Tests()
     degustation.Tests()
     dendrology.Tests()

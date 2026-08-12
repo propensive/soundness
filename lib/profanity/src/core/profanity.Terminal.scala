@@ -214,7 +214,7 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
   //
   // A daemon body must be a pure context function, so everything it needs is bound to
   // block locals first: the untracked `Metrics` holder and `Spool` cross directly, the
-  // capability-typed keyboard crosses as an `AnyRef` rim (the cordillera recipe), and the
+  // capability-typed keyboard crosses as an `AnyRef` rim (the `AnyRef`-rim recipe), and the
   // stdin stream is a `Chain`, which is not capture-tracked, so it crosses as a plain
   // value.
   val pumpInput: Daemon =

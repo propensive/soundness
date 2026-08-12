@@ -2906,10 +2906,9 @@ object telekinesis extends Library:
     override def scalaJs = false
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  // The native HTTP/2 stack (client framing, HPACK and stream multiplexing) — formerly the
-  // `cordillera` module, whose sources retain the `cordillera` package. A separate JVM-only
-  // component rather than part of `jvm`: these sources require separation checking, which
-  // `jvm` has not yet adopted.
+  // The native HTTP/2 stack (client framing, HPACK and stream multiplexing). A separate
+  // JVM-only component rather than part of `jvm`: these sources require separation checking,
+  // which `jvm` has not yet adopted.
   object http2
       extends Component(core, coaxial.jvm, zephyrine.core, turbulence.core,
         parasite.core, gossamer.core, contingency.core):

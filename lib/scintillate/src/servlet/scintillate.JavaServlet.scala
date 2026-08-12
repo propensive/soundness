@@ -85,7 +85,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
 
     // Rims: under separation checking a method's fresh capability result may not hide its
     // parameters, so nothing the connection retains — the body thunk or the respond sink —
-    // may charge them; they cross as `AnyRef` (the cordillera recipe), with the tactic
+    // may charge them; they cross as `AnyRef` (the `AnyRef`-rim recipe), with the tactic
     // re-typed at each use site.
     val in: AnyRef = request.getInputStream().nn
     val servletResponse0: AnyRef = servletResponse

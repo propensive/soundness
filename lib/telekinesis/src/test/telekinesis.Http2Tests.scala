@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cordillera
+package telekinesis
 
 import soundness.*
 
@@ -40,7 +40,7 @@ import strategies.throwUnsafely
 import Http2.{Client, Connection, Endpoint, ErrorCode, Flags, Frame, FrameType, Setting,
     SettingId}
 
-object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
+object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
   def run(): Unit =
     def bytes(hex: Text): Data =
       Array.from(hex.s.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List))

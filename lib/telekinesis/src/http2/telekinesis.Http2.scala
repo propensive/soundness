@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cordillera
+package telekinesis
 
 import scala.caps
 import proscenium.compat.*
@@ -144,10 +144,10 @@ object Http2:
   case class Setting(id: Int, value: Long)
 
   object Frame:
-    private[cordillera] def uint24(data: Bytes, offset: Int): Int =
+    private[telekinesis] def uint24(data: Bytes, offset: Int): Int =
       ((data.readUnchecked(offset) & 0xff) << 16) | ((data.readUnchecked(offset + 1) & 0xff) << 8) | (data.readUnchecked(offset + 2) & 0xff)
 
-    private[cordillera] def uint32(data: Bytes, offset: Int): Long =
+    private[telekinesis] def uint32(data: Bytes, offset: Int): Long =
       ((data.readUnchecked(offset).toLong & 0xff) << 24) | ((data.readUnchecked(offset + 1).toLong & 0xff) << 16) |
         ((data.readUnchecked(offset + 2).toLong & 0xff) << 8) | (data.readUnchecked(offset + 3).toLong & 0xff)
 
@@ -272,7 +272,7 @@ object Http2:
       lambda(buf)
       buf.data
 
-    private[cordillera] def serializeFrame(frame: Frame): Bytes =
+    private[telekinesis] def serializeFrame(frame: Frame): Bytes =
       val body = payload(frame)
       val buf: ByteBuf^ = ByteBuf(9 + body.length)
       writeUint24(buf, body.length)
@@ -493,10 +493,10 @@ object Http2:
   object Connection:
     // The client connection preface (RFC 7540 §3.5): a fixed octet sequence that
     // precedes the first SETTINGS frame in prior-knowledge h2c.
-    private[cordillera] val connectionPreface: Bytes = t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".in[Bytes]
+    private[telekinesis] val connectionPreface: Bytes = t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".in[Bytes]
 
     // Our advertised SETTINGS: disable server push; a generous stream window.
-    private[cordillera] val initialSettings: List[Setting] =
+    private[telekinesis] val initialSettings: List[Setting] =
       List
         ( Setting(SettingId.EnablePush.id, 0),
           Setting(SettingId.InitialWindowSize.id, 0x7fffffff) )
@@ -818,22 +818,22 @@ object Http2:
     // the reader/writer daemons (and reaches `close`) as a neutral `AnyRef` rim.
     private val duplexRef: AnyRef = duplex.asInstanceOf[AnyRef]
 
-    private[cordillera] val streams: scc.TrieMap[Int, Http2.Stream] = scc.TrieMap()
+    private[telekinesis] val streams: scc.TrieMap[Int, Http2.Stream] = scc.TrieMap()
     private val outbound: Relay[Frame] = Relay()
-    private[cordillera] val started: Promise[Unit] = Promise()
+    private[telekinesis] val started: Promise[Unit] = Promise()
 
     // Send-side flow control (RFC 7540 §6.9): the connection window, a per-stream
     // window created lazily at the peer's advertised initial size, and that
     // advertised size (updated by the peer's SETTINGS).
-    private[cordillera] val connWindow: FlowWindow = FlowWindow(defaultWindow)
-    private[cordillera] val streamWindows: scc.TrieMap[Int, FlowWindow] = scc.TrieMap()
-    private[cordillera] val peerInitialWindow: juca.AtomicInteger = juca.AtomicInteger(defaultWindow)
+    private[telekinesis] val connWindow: FlowWindow = FlowWindow(defaultWindow)
+    private[telekinesis] val streamWindows: scc.TrieMap[Int, FlowWindow] = scc.TrieMap()
+    private[telekinesis] val peerInitialWindow: juca.AtomicInteger = juca.AtomicInteger(defaultWindow)
 
     // Streams opened by the client, in arrival order; the serve loop takes each
     // and runs its handler. Stopped when the connection ends.
-    private[cordillera] val accepted: Relay[Http2.Stream] = Relay()
+    private[telekinesis] val accepted: Relay[Http2.Stream] = Relay()
 
-    private[cordillera] def send(frame: Frame): Unit = outbound.put(frame)
+    private[telekinesis] def send(frame: Frame): Unit = outbound.put(frame)
 
     // Tear the connection down after an unrecoverable reader/writer failure or a
     // bad preface: unblock a pending handshake, end every open stream, and stop

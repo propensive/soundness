@@ -58,8 +58,9 @@ snapshots from that audit and must be re-verified at implementation time.
 
 ## Corrections established during the audit
 
-1. "cordillera" is a package inside `telekinesis.http2`, not a library; dedup items citing
-   it are telekinesis.http2 items.
+1. "cordillera" was a package inside `telekinesis.http2`, not a library; dedup items citing
+   it are telekinesis.http2 items. The package has since been renamed to `telekinesis`, so
+   the distinction no longer arises.
 2. murmuration is half-wired: listed in `groupCheck.disabledLibraries` and absent from
    `allLibraries`, yet `rudiments.core` already depends on `murmuration.core`. Any move into
    murmuration needs a registration decision first.
@@ -703,8 +704,10 @@ coaxial.core (redundant: re-supplied via telekinesis.http2 → coaxial.jvm);
 surveillance.core → eucalyptus.core; prescience.core → fulminate.core and → gossamer.core.
 
 Two scan traps, recorded so the next sweep does not repeat them: telekinesis.http2's
-sources live in `package cordillera`, so a package-name grep calls the edge dead when it is
-genuinely used (embarcadero.containerd imports `cordillera.*`); and components with
+sources used to live in `package cordillera`, so a package-name grep called the edge dead
+when it was genuinely used (embarcadero.containerd imports it) — that package is now
+`telekinesis`, but a component whose package differs from its library will trip the same
+wire; and components with
 `override def sources` pull in sibling directories the per-component scan misses —
 enigmatic.core → aperture.core looked dead but is used in `core-jvm`
 (enigmatic.Keystore.scala).

@@ -37,7 +37,6 @@ import scala.caps
 import anticipation.*
 import coaxial.*
 import contingency.*
-import cordillera.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -56,7 +55,7 @@ import zephyrine.*
 
 // The gRPC vocabulary. Grouped under `Grpc` so its generic names — `Status`,
 // `Method`, `Metadata` — don't crowd the top-level namespace, mirroring how
-// `telekinesis` groups its types under `Http` and `cordillera` under `Http2`.
+// `telekinesis` groups its types under `Http` and under `Http2`.
 object Grpc:
   object Status:
     given communicable: Status is Communicable = status => m"${status.toString.tt}"
@@ -129,12 +128,12 @@ object Grpc:
 
       new Channel(endpoint.connect(), endpoint.authority, defaults)
 
-  // A gRPC channel over a single, persistent HTTP/2 connection (`cordillera`). Each
+  // A gRPC channel over a single, persistent HTTP/2 connection (`Http2`). Each
   // call opens one multiplexed stream: the request is one length-prefixed protobuf
   // message (`locomotion`), and the canonical status arrives in the response's
   // `grpc-status` trailer. v1 supports unary and server-streaming calls; the request
   // is always a single message, so client-streaming and bidirectional streaming wait
-  // on a `cordillera` enhancement.
+  // on an `Http2` enhancement.
   // The channel retains its connection — a capability holding the ambient `Monitor` —
   // so a channel is itself a capability.
   class Channel
