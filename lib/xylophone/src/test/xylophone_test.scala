@@ -1102,6 +1102,38 @@ object Tests extends Suite(m"Xylophone tests"):
         xp"//button[text()='Submit']".encode
       . assert(_ == t"//button[text()='Submit']")
 
+      test(m"a Text insertion becomes a string literal"):
+        val id = t"target"
+        xp"//div[@id=$id]".encode
+      . assert(_ == t"//div[@id='target']")
+
+      test(m"an Int insertion becomes a number"):
+        val n = 3
+        xp"//li[position()=$n]".encode
+      . assert(_ == t"//li[position()=3]")
+
+      test(m"an XPath insertion splices its expression in parentheses"):
+        val base = xp"/html/body"
+        xp"$base//div".encode
+      . assert(_ == t"(/html/body)//div")
+
+      test(m"an insertion containing both quote kinds renders via concat"):
+        val value = t"it's a \"test\""
+        xp"//a[@title=$value]".encode
+      . assert(_ == t"""//a[@title=concat('it',"'",'s a "test"')]""")
+
+      test(m"an insertion of an unsupported type is rejected"):
+        demilitarize:
+          val flag = true
+          xp"//div[@id=$flag]"
+      . assert(_.nonEmpty)
+
+      test(m"an insertion cannot appear as an axis name"):
+        demilitarize:
+          val axis = t"child"
+          xp"//$axis::div"
+      . assert(_.nonEmpty)
+
       test(m"an unclosed predicate is rejected"):
         demilitarize:
           xp"/root["

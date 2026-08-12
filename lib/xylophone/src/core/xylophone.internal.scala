@@ -349,48 +349,187 @@ object internal:
             case '[type result <: Tuple; result] =>
               '{$result.asInstanceOf[Option[result]]}
 
-  // Reuses `XPath`'s own `Decodable` for validation: the literal is decoded at
-  // macro-expansion time and, if it fails, the `XPath.Error`'s offset is mapped
-  // back to a source position so the error points exactly at the offending
-  // character. Mirrors `jacinta.internal.jsonPointer`.
-  def xpath[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
+  // Parses the literal at macro-expansion time with `XPathReader` (the same
+  // parser the runtime `Decodable` uses, so the compile-time check can never
+  // diverge from runtime behaviour); a failure's offset is mapped back to a
+  // source position so the error points exactly at the offending character.
+  // Substitutions are permitted wherever the grammar allows a primary
+  // expression: each one becomes a NUL-marker hole in the parsed text, and
+  // the parsed AST — with insertions grafted in place of the holes — is
+  // lifted wholesale into the tree, so nothing is re-parsed at runtime.
+  def xpath[parts <: Tuple: Type, origins <: Tuple: Type](insertions0: Expr[Seq[Any]])
   :   Macro[XPath] =
 
     import quotes.reflect.*
+    import XPath.{Axis, Expression, NodeTest, Origin, Step}
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
       case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
       case _               => strings
 
-    def firstOrigin[tuple: Type]: Int = Type.of[tuple] match
-      case '[head *: tail] => TypeRepr.of[head].dealias match
-        case AppliedType(_, ConstantType(IntConstant(start)) :: _) => start
-        case _                                                     => 0
+    def recurOrigins[tuple: Type](acc: List[(Int, Int)]): List[(Int, Int)] =
+      Type.of[tuple] match
+        case '[head *: tail] =>
+          val pair = TypeRepr.of[head].dealias match
+            case AppliedType(_, List(ConstantType(IntConstant(s)), ConstantType(IntConstant(e)))) =>
+              (s, e)
 
-      case _ => 0
+            case _ =>
+              (0, 0)
+
+          recurOrigins[tail](pair :: acc)
+
+        case _ =>
+          acc.reverse
 
     val parts = recur[parts](Nil)
-    if parts.length != 1 then halt(m"an XPath literal cannot have substitutions")
-    val raw: String = parts.head
-    val start: Int = firstOrigin[origins]
+    val partOrigins: List[(Int, Int)] = recurOrigins[origins](Nil)
+    val sourceFile = Position.ofMacroExpansion.sourceFile
+    val macroPos = Position.ofMacroExpansion
 
-    try unsafely(raw.tt.as[XPath]) catch
-      case error: XPath.Error =>
-        val sourceFile = Position.ofMacroExpansion.sourceFile
+    val sourceContent: Optional[String] = sourceFile.content match
+      case Some(s: String) => s
+      case _               => Unset
 
-        val position = sourceFile.content match
-          case Some(content: String) if start > 0 && start < content.length =>
-            val upper = (start + raw.length*6 + 16).min(content.length)
-            val mapping = Interpolation.buildMapping(content.substring(start, upper).nn, raw)
-            val at = (start + mapping(error.offset.min(raw.length))).min(content.length - 1)
-            Position(sourceFile, at, (at + 1).min(content.length))
+    // Per part, the value→source offset mapping (escape sequences in the
+    // source expand to multiple characters); see `interpolator` below.
+    val perPart: IndexedSeq[((String, Int), Int -> Int)] =
+      parts.zip(partOrigins).map: (part, origin) =>
+        val (srcStart, _) = origin
 
-          case _ =>
-            Position.ofMacroExpansion
+        val mapping: Int -> Int = sourceContent.lay[Int -> Int](identity): content =>
+          if srcStart > 0 && srcStart < content.length then
+            val upper = (srcStart + part.length * 6 + 16).min(content.length)
+            Interpolation.buildMapping(content.substring(srcStart, upper).nn, part)
+          else
+            (i: Int) => i
 
-        halt(error.message, position)
+        ((part, srcStart), mapping)
 
-    '{unsafely(${Expr(raw)}.tt.as[XPath])}
+      . toIndexedSeq
+
+    def translate(parserOff: Int): Position =
+      var acc = 0
+      var i = 0
+
+      while i < perPart.length do
+        val ((part, srcStart), mapping) = perPart(i)
+
+        if parserOff <= acc + part.length && srcStart > 0 then
+          val inPart = (parserOff - acc).min(part.length)
+          val at = (srcStart + mapping(inPart)).min((sourceContent.let(_.length).or(Int.MaxValue)) - 1)
+          return Position(sourceFile, at, at + 1)
+
+        acc += part.length + 1
+        i += 1
+
+      macroPos
+
+    val insertions: Seq[Expr[Any]] = insertions0.absolve match
+      case Varargs(exprs) => exprs
+
+    val substitutions: IndexedSeq[Expr[Expression]] =
+      insertions.map: insertion =>
+        insertion.absolve match
+          case '{$text: Text}     => '{Expression.Literal($text)}
+          case '{$string: String} => '{Expression.Literal($string.tt)}
+          case '{$int: Int}       => '{Expression.Number($int.toDouble)}
+          case '{$double: Double} => '{Expression.Number($double)}
+          case '{$xpath: XPath}   => '{$xpath.expression}
+
+          case other =>
+            halt
+              ( m"only Text, Int, Double and XPath values can be substituted into an XPath",
+                other.asTerm.pos )
+
+      . toIndexedSeq
+
+    def liftName(optional: Optional[Text]): Expr[Optional[Text]] = optional match
+      case text: Text => '{${Expr(text.s)}.tt}
+      case _          => '{Unset}
+
+    def liftAxis(axis: Axis): Expr[Axis] = axis match
+      case Axis.Ancestor         => '{Axis.Ancestor}
+      case Axis.AncestorOrSelf   => '{Axis.AncestorOrSelf}
+      case Axis.Attribute        => '{Axis.Attribute}
+      case Axis.Child            => '{Axis.Child}
+      case Axis.Descendant       => '{Axis.Descendant}
+      case Axis.DescendantOrSelf => '{Axis.DescendantOrSelf}
+      case Axis.Following        => '{Axis.Following}
+      case Axis.FollowingSibling => '{Axis.FollowingSibling}
+      case Axis.Namespace        => '{Axis.Namespace}
+      case Axis.Parent           => '{Axis.Parent}
+      case Axis.Preceding        => '{Axis.Preceding}
+      case Axis.PrecedingSibling => '{Axis.PrecedingSibling}
+      case Axis.Self             => '{Axis.Self}
+
+    def liftTest(test: NodeTest): Expr[NodeTest] = test match
+      case NodeTest.Name(prefix, local) =>
+        '{NodeTest.Name(${liftName(prefix)}, ${Expr(local.s)}.tt)}
+
+      case NodeTest.Wildcard               => '{NodeTest.Wildcard}
+      case NodeTest.PrefixWildcard(prefix) => '{NodeTest.PrefixWildcard(${Expr(prefix.s)}.tt)}
+      case NodeTest.Node                   => '{NodeTest.Node}
+      case NodeTest.Textual                => '{NodeTest.Textual}
+      case NodeTest.Comment                => '{NodeTest.Comment}
+      case NodeTest.Instruction(target)    => '{NodeTest.Instruction(${liftName(target)})}
+
+    def liftStep(step: Step): Expr[Step] =
+      '{Step(${liftAxis(step.axis)}, ${liftTest(step.test)}, ${liftExpressions(step.predicates)})}
+
+    def liftSteps(steps: proscenium.List[Step]): Expr[proscenium.List[Step]] =
+      '{proscenium.List(${Varargs(steps.stdlib.map(liftStep))}*)}
+
+    def liftExpressions(expressions: proscenium.List[Expression])
+    :   Expr[proscenium.List[Expression]] =
+
+      '{proscenium.List(${Varargs(expressions.stdlib.map(liftExpression))}*)}
+
+    def liftOrigin(origin: Origin): Expr[Origin] = origin match
+      case Origin.Root => '{Origin.Root}
+      case Origin.Here => '{Origin.Here}
+
+      case Origin.Filter(expression, predicates) =>
+        '{Origin.Filter(${liftExpression(expression)}, ${liftExpressions(predicates)})}
+
+    def liftExpression(expression: Expression): Expr[Expression] = expression match
+      case Expression.Or(l, r)             => '{Expression.Or(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.And(l, r)            => '{Expression.And(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Equal(l, r)          => '{Expression.Equal(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Unequal(l, r)        => '{Expression.Unequal(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Less(l, r)           => '{Expression.Less(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.LessOrEqual(l, r)    => '{Expression.LessOrEqual(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Greater(l, r)        => '{Expression.Greater(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.GreaterOrEqual(l, r) => '{Expression.GreaterOrEqual(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Add(l, r)            => '{Expression.Add(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Subtract(l, r)       => '{Expression.Subtract(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Multiply(l, r)       => '{Expression.Multiply(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Divide(l, r)         => '{Expression.Divide(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Modulo(l, r)         => '{Expression.Modulo(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Negate(operand)      => '{Expression.Negate(${liftExpression(operand)})}
+      case Expression.Union(l, r)          => '{Expression.Union(${liftExpression(l)}, ${liftExpression(r)})}
+      case Expression.Literal(text)        => '{Expression.Literal(${Expr(text.s)}.tt)}
+      case Expression.Number(value)        => '{Expression.Number(${Expr(value)})}
+
+      case Expression.Variable(prefix, name) =>
+        '{Expression.Variable(${liftName(prefix)}, ${Expr(name.s)}.tt)}
+
+      case Expression.Call(prefix, name, arguments) =>
+        '{Expression.Call(${liftName(prefix)}, ${Expr(name.s)}.tt, ${liftExpressions(arguments)})}
+
+      case Expression.Route(origin, steps) =>
+        '{Expression.Route(${liftOrigin(origin)}, ${liftSteps(steps)})}
+
+      case Expression.Substitution(index) =>
+        substitutions(index)
+
+    val joined: String = parts.mkString("\u0000")
+
+    val expression: Expression =
+      try unsafely(XPathReader.parse(joined.tt, holes = true)) catch
+        case error: XPath.Error => halt(error.message, translate(error.offset))
+
+    '{XPath(${liftExpression(expression)})}
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )
