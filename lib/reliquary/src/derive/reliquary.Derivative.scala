@@ -46,7 +46,7 @@ import vacuous.*
 import zephyrine.*
 import zeppelin.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // The canonical derivative artifact (lira#1): a byte-deterministic JAR derived from one
 // section's materialized tree, whose hash the manifest declares so that a release can be found
@@ -62,7 +62,7 @@ import LiraError.Reason
 // depends only on the content itself.
 object Derivative:
 
-  def jar(tree: LiraTree, store: Blobstore): Data raises LiraError =
+  def jar(tree: Lira.Tree, store: Blobstore): Data raises Lira.Error =
     given Zip.Compression = Zip.Compression.Stored
 
     val entries = tree.entries.stdlib.map: entry =>
@@ -70,7 +70,7 @@ object Derivative:
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case _: Path.Error => LiraError(Reason.InvalidTree(t"the path is not a zip path"))
+          case _: Path.Error => Lira.Error(Reason.InvalidTree(t"the path is not a zip path"))
 
         . protect(entry.path.text.as[Path on Zip])
 
@@ -86,15 +86,15 @@ object Derivative:
 
     Array.unsafeFrozen(out.toByteArray.nn)
 
-  def hash(tree: LiraTree, store: Blobstore): Data raises LiraError =
-    LiraHash(LiraHash.Domain.Derivative, jar(tree, store))
+  def hash(tree: Lira.Tree, store: Blobstore): Data raises Lira.Error =
+    Lira.Hash(Lira.Hash.Domain.Derivative, jar(tree, store))
 
   // §16 step 3 (L138): every declared derivative hash must recompute from the section's
   // materialized tree. Sections of unknown universes are never materialized (§9.4), so a
   // declared derivative there stays unchecked here, exactly as the rest of the section does.
-  def verify(manifest: LiraManifest, report: Verification.Report): Unit raises LiraError =
+  def verify(manifest: Lira.Manifest, report: Verification.Report): Unit raises Lira.Error =
     manifest.section.stdlib.foreach: section =>
       section.derivative.let: declared =>
         report.tree(section.realm, section.integration).let: tree =>
           if Blob.compare(hash(tree, report.blobstore), declared) != 0
-          then abort(LiraError(Reason.BadDerivative(section.realm)))
+          then abort(Lira.Error(Reason.BadDerivative(section.realm)))

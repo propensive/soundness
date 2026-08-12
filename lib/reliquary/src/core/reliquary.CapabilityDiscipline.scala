@@ -89,7 +89,7 @@ object CapabilityDiscipline extends Discipline:
       . protect:
           import Tels.Decoder.validate
           val tel = data.read[Tel]
-          tel.validate(using LiraSchemas.capabilities, LiraValidators.registry)
+          tel.validate(using Lira.Schemas.capabilities, Lira.Validators.registry)
           tel
 
     val compounds = document.childCompounds.readable.filter(_.keyword == t"capability").toVector
@@ -125,4 +125,4 @@ object CapabilityDiscipline extends Discipline:
       . or(out.write(0))
 
       val encoding = Array.unsafeFrozen(out.toByteArray.nn)
-      Atom(name, AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(id), encoding))
+      Atom(name, AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), encoding))

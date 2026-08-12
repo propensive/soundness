@@ -38,7 +38,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-import LiraManifest.{Resource, ResourceMode}
+import Lira.Manifest.{Resource, ResourceMode}
 
 // The normative `resource/1` discipline (§11.4): non-code content addressed by classpath-style
 // name, whose *name* may be part of a module's contract even where its bytes are not. It is the
@@ -87,12 +87,12 @@ case class ResourceDiscipline(resources: List[Resource]) extends Discipline:
       if exports.stdlib.exists(_.text == path.text) then
         // The value hashes the path alone, so the atom asserts presence and not content: bytes
         // may differ per universe while L108 still requires the name in every one of them.
-        scala.List(Atom(path.text, AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(id), path.bytes)))
+        scala.List(Atom(path.text, AtomClass.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), path.bytes)))
       else if tracked.stdlib.exists(_.text == path.text) then
         // Content-hashed and replaceable: an edit is replaceable churn, a minor event that marks
         // consumers whose used-sets contain the atom as stale (§13.4). Resources create no
         // linkage, so replaceability soundness is trivial and the reference list is empty.
-        scala.List(Atom(path.text, AtomClass.Replaceable, LiraHash(LiraHash.Domain.Atom(id), data)))
+        scala.List(Atom(path.text, AtomClass.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data)))
       else scala.List()  // claimed by a scan: atomless
 
     Atomization.of(id, List.from(atoms))
@@ -101,14 +101,14 @@ object ResourceDiscipline:
   // L124: declarations must be well-formed — no path declared twice, and no `export` or `track`
   // path lying under a declared `scan` directory — so §11.2's partition has a single claimant by
   // construction.
-  def check(resources: List[Resource]): Unit raises LiraError =
+  def check(resources: List[Resource]): Unit raises Lira.Error =
     val discipline = ResourceDiscipline(resources)
     val paths = resources.stdlib.map(_.path.text)
 
     paths.groupBy(identity).foreach: (path, group) =>
       if group.size > 1
-      then abort(LiraError(LiraError.Reason.BadResource(t"$path is declared twice")))
+      then abort(Lira.Error(Lira.Error.Reason.BadResource(t"$path is declared twice")))
 
     (discipline.exports.stdlib ++ discipline.tracked.stdlib).foreach: path =>
       if discipline.underScan(path)
-      then abort(LiraError(LiraError.Reason.BadResource(t"${path.text} lies under a scan")))
+      then abort(Lira.Error(Lira.Error.Reason.BadResource(t"${path.text} lies under a scan")))

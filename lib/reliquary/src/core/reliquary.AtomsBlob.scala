@@ -40,7 +40,7 @@ import hieroglyph.*
 import stratiform.*
 import turbulence.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // The Atoms metadata blob (§10.4): one discipline's atom listing, one row per atom in ascending
 // value-hash order, with the key in human-readable form for diagnostics (the key text
@@ -49,14 +49,14 @@ object AtomsBlob:
 
   def encode(atomization: Atomization): Data =
     val rows = atomization.atoms.stdlib.map: atom =>
-      s"atom ${atom.atomClass.keyword}  ${LiraHash.text(atom.valueHash)}  ${atom.key}"
+      s"atom ${atom.atomClass.keyword}  ${Lira.Hash.text(atom.valueHash)}  ${atom.key}"
 
     val body = rows.mkString("\n")
-    val header = s"tel 1.0 ${LiraSchemas.atomsSignature}\n\ndiscipline ${atomization.discipline}"
+    val header = s"tel 1.0 ${Lira.Schemas.atomsSignature}\n\ndiscipline ${atomization.discipline}"
     val text = Text(if rows.isEmpty then s"$header\n" else s"$header\n\n$body\n")
     charEncoders.utf8Encoder.encoded(text)
 
-  def decode(data: Data): Atomization raises LiraError =
+  def decode(data: Data): Atomization raises Lira.Error =
     import Tels.Decoder.validate
 
     val document =
@@ -64,11 +64,11 @@ object AtomsBlob:
 
       mitigate:
         case Tel.Error(reason, _) =>
-          LiraError(Reason.InvalidManifest(t"the atoms blob is invalid: $reason"))
+          Lira.Error(Reason.InvalidManifest(t"the atoms blob is invalid: $reason"))
 
       . protect:
           val tel = data.read[Tel]
-          tel.validate(using LiraSchemas.atoms, LiraValidators.registry)
+          tel.validate(using Lira.Schemas.atoms, Lira.Validators.registry)
           tel
 
     val discipline =
@@ -113,9 +113,9 @@ object AtomsBlob:
 
     . protect(Atomization.of(discipline, List.from(atoms)))
 
-  private def badBlob(detail: Text): LiraError =
+  private def badBlob(detail: Text): Lira.Error =
     import errorDiagnostics.emptyDiagnostics
-    LiraError(Reason.InvalidManifest(t"the atoms blob is invalid: $detail"))
+    Lira.Error(Reason.InvalidManifest(t"the atoms blob is invalid: $detail"))
 
   private def atomTexts(compound: Tel.Compound): scala.collection.immutable.Vector[Text] =
     compound.atoms.readable.collect:

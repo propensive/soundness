@@ -40,7 +40,7 @@ import revolution.Semver
 import rudiments.*
 import vacuous.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 import errorDiagnostics.emptyDiagnostics
 
 // The language-blind producer: given one body of content per section — the first is the root —
@@ -57,7 +57,7 @@ object LiraAssembler:
     ( realm:       Text,
       content:     List[(TreePath, Data)],
       integration: Optional[Text] = Unset,
-      requires:    List[LiraManifest.Requires] = List() )
+      requires:    List[Lira.Manifest.Requires] = List() )
 
   def assemble
     ( module:      Text,
@@ -66,28 +66,28 @@ object LiraAssembler:
       version:     Optional[Semver]              = Unset,
       tag:         List[Text]                    = List(),
       lineage:     List[Data]                    = List(),
-      toolchain:   List[LiraManifest.Tool]       = List(),
+      toolchain:   List[Lira.Manifest.Tool]       = List(),
       owns:        List[Text]                    = List(),
-      profile:     List[LiraManifest.Profile]     = List(),
-      integration: List[LiraManifest.Integration] = List(),
-      resource:    List[LiraManifest.Resource]    = List(),
-      dependency:  List[LiraManifest.Dependency]  = List(),
-      delta:       Optional[LiraDelta]            = Unset,
+      profile:     List[Lira.Manifest.Profile]     = List(),
+      integration: List[Lira.Manifest.Integration] = List(),
+      resource:    List[Lira.Manifest.Resource]    = List(),
+      dependency:  List[Lira.Manifest.Dependency]  = List(),
+      delta:       Optional[Lira.Delta]            = Unset,
       profiles:    EcosystemProfile.Registry      = EcosystemProfile.Registry(List()),
       predecessor: Optional[EcosystemProfile.Evidence] = Unset,
       classpath:   SectionInput => List[Text]     = { _ => List() },
       report:      Text => Unit                   = { _ => () },
-      sign:        LiraManifest => LiraManifest  = identity(_) )
-  :   Data raises LiraError raises DisciplineError =
+      sign:        Lira.Manifest => Lira.Manifest  = identity(_) )
+  :   Data raises Lira.Error raises DisciplineError =
 
     val inputs = sections.stdlib
 
     if inputs.isEmpty
-    then abort(LiraError(Reason.InvalidManifest(t"a release needs at least one section")))
+    then abort(Lira.Error(Reason.InvalidManifest(t"a release needs at least one section")))
 
-    def treeOf(input: SectionInput): LiraTree =
-      LiraTree.of:
-        input.content.map: pair => TreeEntry(pair(0), LiraHash(LiraHash.Domain.Blob, pair(1)))
+    def treeOf(input: SectionInput): Lira.Tree =
+      Lira.Tree.of:
+        input.content.map: pair => TreeEntry(pair(0), Lira.Hash(Lira.Hash.Domain.Blob, pair(1)))
 
     // Each section's content is atomized independently; the atom sets must be identical, as
     // (discipline, key, class, value hash), for the release to present one API on every universe
@@ -122,7 +122,7 @@ object LiraAssembler:
         input.content.stdlib.exists: pair => pair(0).text == path.text
 
       if !present
-      then abort(LiraError(Reason.IneffectiveResource(path.text)))
+      then abort(Lira.Error(Reason.IneffectiveResource(path.text)))
 
       val claimedByOther = disciplines.declared.stdlib.exists: discipline =>
         inputs.exists: input =>
@@ -130,7 +130,7 @@ object LiraAssembler:
             pair(0).text == path.text && discipline.claims(pair(0), pair(1))
 
       if claimedByOther
-      then abort(LiraError(Reason.IneffectiveResource(path.text)))
+      then abort(Lira.Error(Reason.IneffectiveResource(path.text)))
 
     // L127: a declared discipline must atomize some universe this release carries. An
     // atomization of nothing is not a claim about anything. The rule quantifies over the
@@ -140,14 +140,14 @@ object LiraAssembler:
 
     registry.declared.stdlib.foreach: discipline =>
       if !universes.exists(discipline.domain.covers)
-      then abort(LiraError(Reason.InapplicableDiscipline(discipline.id)))
+      then abort(Lira.Error(Reason.InapplicableDiscipline(discipline.id)))
 
     def summary(atomizations: List[Atomization])
     :   scala.collection.immutable.Set[(Text, Text, AtomClass, Text)] =
 
       atomizations.stdlib.flatMap: atomization =>
         atomization.atoms.stdlib.map: atom =>
-          (atomization.discipline, atom.key, atom.atomClass, LiraHash.text(atom.valueHash))
+          (atomization.discipline, atom.key, atom.atomClass, Lira.Hash.text(atom.valueHash))
 
       . toSet
 
@@ -159,7 +159,7 @@ object LiraAssembler:
 
       difference.headOption match
         case scala.Some(sample) =>
-          abort(LiraError(Reason.ApiDivergence(t"${pair(0)} differs at ${sample(1)}")))
+          abort(Lira.Error(Reason.ApiDivergence(t"${pair(0)} differs at ${sample(1)}")))
 
         case scala.None => ()
 
@@ -167,13 +167,13 @@ object LiraAssembler:
     val contentBlobs = inputs.flatMap: input => input.content.stdlib.map(_(1))
 
     val store = Blobstore:
-      List.from(contentBlobs.map { data => Blob(LiraHash(LiraHash.Domain.Blob, data), data) })
+      List.from(contentBlobs.map { data => Blob(Lira.Hash(Lira.Hash.Domain.Blob, data), data) })
 
     val atomsBlobs = rootAtoms.stdlib.map: atomization => AtomsBlob.encode(atomization)
 
     val api = List.from:
       rootAtoms.stdlib.zip(atomsBlobs).map: pair =>
-        LiraManifest.Api(pair(0).discipline, LiraHash(LiraHash.Domain.Blob, pair(1)))
+        Lira.Manifest.Api(pair(0).discipline, Lira.Hash(Lira.Hash.Domain.Blob, pair(1)))
 
     val rootTree = treeOf(inputs.head)
 
@@ -187,7 +187,7 @@ object LiraAssembler:
         Section
           ( realm       = input.realm,
             integration = input.integration,
-            tree        = LiraHash(LiraHash.Domain.Blob, tree.encode),
+            tree        = Lira.Hash(Lira.Hash.Domain.Blob, tree.encode),
             delete      = delete,
             derivative  = Derivative.hash(target, store),
             requires    = input.requires )
@@ -200,7 +200,7 @@ object LiraAssembler:
     Lineage.check(fullLineage, snapshot)
 
     val manifest =
-      LiraManifest
+      Lira.Manifest
         ( module      = module,
           version     = version,
           tag         = tag,
@@ -212,9 +212,9 @@ object LiraAssembler:
           profile     = profile,
           integration = integration,
           dependency  = dependency,
-          delta       = deltaBlob.let { data => LiraHash(LiraHash.Domain.Blob, data) },
+          delta       = deltaBlob.let { data => Lira.Hash(Lira.Hash.Domain.Blob, data) },
           section     = List.from(builtSections.map(_(0))),
-          payload     = LiraManifest.Payload(t"brotli", 0L, LiraHash(LiraHash.Domain.Blob,
+          payload     = Lira.Manifest.Payload(t"brotli", 0L, Lira.Hash(Lira.Hash.Domain.Blob,
               Array.freeze(Array[Byte](0)))) )
 
     // The producer never emits a file a consumer would reject: L131/L133/L135 are decidable
@@ -228,7 +228,7 @@ object LiraAssembler:
     // not a property of the step.
     profile.stdlib.foreach: record =>
       if profiles(record.id).absent
-      then abort(LiraError(Reason.UnimplementedClaim(record.id)))
+      then abort(Lira.Error(Reason.UnimplementedClaim(record.id)))
 
     // L128/L130. Profile predicates are diachronic, so they can only run where the caller has the
     // predecessor's content in hand; with no predecessor there is no step to check, which is the

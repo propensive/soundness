@@ -38,7 +38,7 @@ import gossamer.*
 import hieroglyph.*
 import vacuous.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 object TreePath:
   // The L106 path rules, shared with the `tree-path` schema validator: relative, `/`-separated,
@@ -53,8 +53,8 @@ object TreePath:
     then t"the path has an empty, `.` or `..` segment"
     else Unset
 
-  def apply(text: Text): TreePath raises LiraError =
-    check(text).let: detail => abort(LiraError(Reason.InvalidTree(detail)))
+  def apply(text: Text): TreePath raises Lira.Error =
+    check(text).let: detail => abort(Lira.Error(Reason.InvalidTree(detail)))
     new TreePath(text)
 
   // Tree rows sort in ascending bytewise UTF-8 order of path (§9.2). UTF-8 preserves code-point

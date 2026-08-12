@@ -36,7 +36,7 @@ import contingency.*
 import rudiments.*
 import vacuous.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // Overlay semantics (§9.3): a non-root section's materialized form is
 //
@@ -47,31 +47,31 @@ import LiraError.Reason
 // platform divergence visible in the manifest rather than buried in the payload.
 object Overlay:
 
-  def materialize(root: LiraTree, delete: List[TreePath], overlay: LiraTree)
-  :   LiraTree raises LiraError =
+  def materialize(root: Lira.Tree, delete: List[TreePath], overlay: Lira.Tree)
+  :   Lira.Tree raises Lira.Error =
 
     delete.each: path =>
-      if root.get(path).absent then abort(LiraError(Reason.OverlayNotMinimal(path.text)))
+      if root.get(path).absent then abort(Lira.Error(Reason.OverlayNotMinimal(path.text)))
 
       // A deleted-and-re-added path is a replacement spelled redundantly; overlays are minimal
       // by construction, so the redundant spelling is invalid.
-      if overlay.get(path).present then abort(LiraError(Reason.OverlayNotMinimal(path.text)))
+      if overlay.get(path).present then abort(Lira.Error(Reason.OverlayNotMinimal(path.text)))
 
     overlay.entries.each: entry =>
       root.get(entry.path).let: existing =>
         if Blob.compare(existing.blob, entry.blob) == 0
-        then abort(LiraError(Reason.OverlayNotMinimal(entry.path.text)))
+        then abort(Lira.Error(Reason.OverlayNotMinimal(entry.path.text)))
 
     val deleted = delete.map(_.text).stdlib.toSet
 
     val kept = root.entries.filter: entry =>
       !deleted.contains(entry.path.text) && overlay.get(entry.path).absent
 
-    LiraTree.of(List.from(kept.stdlib ++ overlay.entries.stdlib))
+    Lira.Tree.of(List.from(kept.stdlib ++ overlay.entries.stdlib))
 
   // The producer inverse: the minimal `(tree, delete)` pair such that
   // `materialize(root, delete, tree) == target`.
-  def diff(root: LiraTree, target: LiraTree): (LiraTree, List[TreePath]) raises LiraError =
+  def diff(root: Lira.Tree, target: Lira.Tree): (Lira.Tree, List[TreePath]) raises Lira.Error =
     val delete = root.entries.filter { entry => target.get(entry.path).absent }.map(_.path)
 
     val changed = target.entries.filter: entry =>
@@ -79,4 +79,4 @@ object Overlay:
         case existing: TreeEntry => Blob.compare(existing.blob, entry.blob) != 0
         case _                   => true
 
-    (LiraTree.of(changed), delete)
+    (Lira.Tree.of(changed), delete)

@@ -39,7 +39,7 @@ object Grade:
   :   scala.collection.immutable.Set[(Text, AtomClass, Text)] =
 
     atomizations.stdlib.flatMap(_.atoms.stdlib).map: atom =>
-      (atom.key, atom.atomClass, LiraHash.text(atom.valueHash))
+      (atom.key, atom.atomClass, Lira.Hash.text(atom.valueHash))
 
     . toSet
 

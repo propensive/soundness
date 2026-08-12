@@ -39,7 +39,7 @@ import denominative.*
 import revolution.*
 import vacuous.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // The decorative-version projection and the lineage-extension rules. Every consumer decision is
 // made on hashes; the `major.minor.patch` number is a human-readable projection of the lineage
@@ -62,28 +62,28 @@ object Versioning:
   // L110: a lineage may be extended only by a patch (unchanged) or minor (appended snapshot)
   // successor; a major successor begins a fresh lineage, and only on explicit request.
   def extendLineage(lineage: List[Data], snapshot: Data, grade: Grade, forceMajor: Boolean = false)
-  :   List[Data] raises LiraError =
+  :   List[Data] raises Lira.Error =
 
     grade match
       case Grade.Patch => lineage
       case Grade.Minor => List.from(lineage.stdlib :+ snapshot)
 
       case Grade.Major =>
-        if !forceMajor then abort(LiraError(Reason.UngradedSuccessor(t"the release")))
+        if !forceMajor then abort(Lira.Error(Reason.UngradedSuccessor(t"the release")))
         List(snapshot)
 
   // The §12.4 comparison, as warn-only advisories: a declared version that is not numeric, or
   // that is not the projection of the grade from the previous published version.
-  def advisories(declared: Semver, previous: Optional[Semver], grade: Grade): List[LiraAdvisory] =
+  def advisories(declared: Semver, previous: Optional[Semver], grade: Grade): List[Lira.Advisory] =
     val numericAdvisory =
-      if numeric(declared) then scala.Nil else scala.List(LiraAdvisory.NotNumeric(declared))
+      if numeric(declared) then scala.Nil else scala.List(Lira.Advisory.NotNumeric(declared))
 
     val projection = previous match
       case previous: Semver =>
         val expectation = expected(previous, grade)
 
         if declared == expectation then scala.Nil
-        else scala.List(LiraAdvisory.VersionMismatch(declared, expectation))
+        else scala.List(Lira.Advisory.VersionMismatch(declared, expectation))
 
       case _ => scala.Nil
 

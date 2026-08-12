@@ -40,7 +40,7 @@ import hieroglyph.*
 import stratiform.*
 import turbulence.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // The Uses metadata blob (§13.4): the set of one dependency's atom value hashes that a module
 // actually depends on, computed as the module's own direct references transitively closed over
@@ -50,34 +50,34 @@ object UsesBlob:
 
   def encode(module: Text, atoms: List[Data]): Data =
     val sorted = atoms.stdlib
-      . map: hash => LiraHash.text(hash)
+      . map: hash => Lira.Hash.text(hash)
       . distinct
       . map: text => (text, Base256.decode(text))
       . sortWith: (a, b) => Blob.compare(a(1), b(1)) < 0
 
     val rows = sorted.map: pair => s"atom ${pair(0)}"
-    val header = s"tel 1.0 ${LiraSchemas.usesSignature}\n\nmodule $module"
+    val header = s"tel 1.0 ${Lira.Schemas.usesSignature}\n\nmodule $module"
     val body = rows.mkString("\n")
     val text = Text(if rows.isEmpty then s"$header\n" else s"$header\n\n$body\n")
     charEncoders.utf8Encoder.encoded(text)
 
-  def decode(data: Data): (Text, List[Data]) raises LiraError =
+  def decode(data: Data): (Text, List[Data]) raises Lira.Error =
     import Tels.Decoder.validate
 
-    def bad(detail: Text): LiraError =
+    def bad(detail: Text): Lira.Error =
       import errorDiagnostics.emptyDiagnostics
-      LiraError(Reason.InvalidManifest(t"the uses blob is invalid: $detail"))
+      Lira.Error(Reason.InvalidManifest(t"the uses blob is invalid: $detail"))
 
     val document =
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
         case Tel.Error(reason, _) =>
-          LiraError(Reason.InvalidManifest(t"the uses blob is invalid: $reason"))
+          Lira.Error(Reason.InvalidManifest(t"the uses blob is invalid: $reason"))
 
       . protect:
           val tel = data.read[Tel]
-          tel.validate(using LiraSchemas.uses, LiraValidators.registry)
+          tel.validate(using Lira.Schemas.uses, Lira.Validators.registry)
           tel
 
     def texts(compound: Tel.Compound): scala.collection.immutable.Vector[Text] =
@@ -116,7 +116,7 @@ object UsesBlob:
 
     dependencies.stdlib.foreach: pair =>
       pair(1).atoms.stdlib.foreach: atom =>
-        byHash(LiraHash.text(atom.valueHash)) = (pair(0), atom)
+        byHash(Lira.Hash.text(atom.valueHash)) = (pair(0), atom)
         byKey((pair(0), atom.key)) = atom
 
     val used = scala.collection.mutable.LinkedHashMap[Text, Data]()
@@ -125,7 +125,7 @@ object UsesBlob:
 
     while queue.nonEmpty do
       val hash = queue.removeHead()
-      val text = LiraHash.text(hash)
+      val text = Lira.Hash.text(hash)
 
       if !used.contains(text) then
         used(text) = hash
@@ -147,12 +147,12 @@ object UsesBlob:
   // §13.4 spanning: a module compiled against one release is also valid against any release
   // whose atom set includes everything the module uses.
   def spanning(used: List[Data], candidate: List[Atom]): Boolean =
-    val available = candidate.stdlib.map { atom => LiraHash.text(atom.valueHash) }.toSet
-    used.stdlib.forall: hash => available.contains(LiraHash.text(hash))
+    val available = candidate.stdlib.map { atom => Lira.Hash.text(atom.valueHash) }.toSet
+    used.stdlib.forall: hash => available.contains(Lira.Hash.text(hash))
 
   // §13.4 staleness: after a minor upgrade, the modules that should be recompiled are exactly
   // those whose used-set intersects the replaced atoms of the traversed deltas. Advisory only —
   // linkage is guaranteed by the algebra.
   def staleness(used: List[Data], replaced: List[Replacement]): Boolean =
-    val old = replaced.stdlib.map { replacement => LiraHash.text(replacement.old) }.toSet
-    used.stdlib.exists: hash => old.contains(LiraHash.text(hash))
+    val old = replaced.stdlib.map { replacement => Lira.Hash.text(replacement.old) }.toSet
+    used.stdlib.exists: hash => old.contains(Lira.Hash.text(hash))

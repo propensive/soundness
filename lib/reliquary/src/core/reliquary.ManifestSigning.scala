@@ -42,7 +42,7 @@ import stratiform.*
 import turbulence.*
 import vacuous.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // Manifest signing (§15). The signed message is
 //
@@ -64,13 +64,13 @@ object ManifestSigning:
 
       keys.stdlib.find(matches).getOrElse(Unset)
 
-  def fingerprint(publicKey: Data): Data = LiraHash(LiraHash.Domain.Key, publicKey)
+  def fingerprint(publicKey: Data): Data = Lira.Hash(Lira.Hash.Domain.Key, publicKey)
 
   // The signing input: the manifest's semantic model, minus signatures, canonically encoded.
   // The typed manifest is re-rendered and re-assigned rather than mutated as presentation —
   // BinTEL encodes only the semantic model, so this is signature-equivalent for every
   // conforming manifest of the base schema.
-  def input(manifest: LiraManifest): Data raises LiraError =
+  def input(manifest: Lira.Manifest): Data raises Lira.Error =
     val stripped = manifest.copy(signature = List())
     val data = charEncoders.utf8Encoder.encoded(stripped.render)
 
@@ -78,52 +78,52 @@ object ManifestSigning:
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case _: Tel.Error    => LiraError(Reason.InvalidManifest(t"the manifest does not re-parse"))
-        case _: Bintel.Error => LiraError(Reason.InvalidManifest(t"the manifest does not encode"))
+        case _: Tel.Error    => Lira.Error(Reason.InvalidManifest(t"the manifest does not re-parse"))
+        case _: Bintel.Error => Lira.Error(Reason.InvalidManifest(t"the manifest does not encode"))
 
       . protect:
           val document = data.utf8.load[Tel]
-          val element = Tel.Type.assign(document.root, LiraSchemas.lira)
-          Bintel.encode(element, LiraSchemas.lira)
+          val element = Tel.Type.assign(document.root, Lira.Schemas.lira)
+          Bintel.encode(element, Lira.Schemas.lira)
 
-    LiraHash(LiraHash.Domain.Manifest, bytes)
+    Lira.Hash(Lira.Hash.Domain.Manifest, bytes)
 
   // Appends one signature record; the existing records are untouched, so co-signing is stable.
   def sign
-    ( manifest:   LiraManifest,
+    ( manifest:   Lira.Manifest,
       signer:     Text,
       algorithm:  Text,
       scheme:     Signing,
       privateKey: Data,
       publicKey:  Data )
-  :   LiraManifest raises LiraError =
+  :   Lira.Manifest raises Lira.Error =
 
     val value = Base256.encode(scheme.sign(input(manifest), privateKey))
-    val record = LiraManifest.Signature(signer, algorithm, fingerprint(publicKey), value)
+    val record = Lira.Manifest.Signature(signer, algorithm, fingerprint(publicKey), value)
     manifest.copy(signature = List.from(manifest.signature.stdlib :+ record))
 
   // Verification step 7 (§16): every signature present must verify; a signature whose algorithm
   // the verifier does not implement is rejected, never ignored (§15.1).
-  def verify(manifest: LiraManifest, keyring: Keyring, scheme: Text => Optional[Signing])
-  :   Unit raises LiraError =
+  def verify(manifest: Lira.Manifest, keyring: Keyring, scheme: Text => Optional[Signing])
+  :   Unit raises Lira.Error =
 
     val message = input(manifest)
 
     manifest.signature.stdlib.foreach: record =>
       val signing = scheme(record.algorithm) match
         case signing: Signing => signing
-        case _                => abort(LiraError(Reason.UnknownAlgorithm(record.algorithm)))
+        case _                => abort(Lira.Error(Reason.UnknownAlgorithm(record.algorithm)))
 
       val publicKey = keyring.find(record.key).or:
-        abort(LiraError(Reason.UnknownKey(LiraHash.text(record.key))))
+        abort(Lira.Error(Reason.UnknownKey(Lira.Hash.text(record.key))))
 
       val signature =
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case _: Base256.Error => LiraError(Reason.BadSignature(record.signer))
+          case _: Base256.Error => Lira.Error(Reason.BadSignature(record.signer))
 
         . protect(Base256.decodeStrict(record.value))
 
       if !signing.verify(message, signature, publicKey)
-      then abort(LiraError(Reason.BadSignature(record.signer)))
+      then abort(Lira.Error(Reason.BadSignature(record.signer)))

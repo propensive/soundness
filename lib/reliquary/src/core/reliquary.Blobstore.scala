@@ -36,7 +36,7 @@ import anticipation.*
 import contingency.*
 import rudiments.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // The resolved view of a blob stream: content addressed by hash. A hash referenced by the
 // manifest or by a metadata blob that resolves to nothing renders the file invalid (§8.2,
@@ -45,16 +45,16 @@ import LiraError.Reason
 class Blobstore(val blobs: List[Blob]):
   private lazy val index: scala.collection.immutable.Map[Text, Blob] =
     scala.collection.immutable.Map.from:
-      blobs.stdlib.map: blob => (LiraHash.text(blob.hash), blob)
+      blobs.stdlib.map: blob => (Lira.Hash.text(blob.hash), blob)
 
-  def contains(hash: Data): Boolean = index.contains(LiraHash.text(hash))
+  def contains(hash: Data): Boolean = index.contains(Lira.Hash.text(hash))
 
-  def resolve(hash: Data): Data raises LiraError =
-    index.get(LiraHash.text(hash)) match
+  def resolve(hash: Data): Data raises Lira.Error =
+    index.get(Lira.Hash.text(hash)) match
       case Some(blob) => blob.data
-      case None       => abort(LiraError(Reason.MissingBlob(LiraHash.text(hash))))
+      case None       => abort(Lira.Error(Reason.MissingBlob(Lira.Hash.text(hash))))
 
   def unreferenced(referenced: Set[Text]): List[Text] =
     val known = referenced.stdlib
 
-    blobs.map { blob => LiraHash.text(blob.hash) }.filter: hash => !known.contains(hash)
+    blobs.map { blob => Lira.Hash.text(blob.hash) }.filter: hash => !known.contains(hash)

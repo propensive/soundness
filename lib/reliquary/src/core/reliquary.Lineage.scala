@@ -35,7 +35,7 @@ package reliquary
 import anticipation.*
 import contingency.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // A module's verifiable version history within one major series (§12.2): the snapshots of its
 // releases, oldest first, each appearing once (patches do not append). Every compatibility
@@ -43,11 +43,11 @@ import LiraError.Reason
 object Lineage:
 
   // L109: the final entry must equal the release's own snapshot.
-  def check(lineage: List[Data], snapshot: Data): Unit raises LiraError =
+  def check(lineage: List[Data], snapshot: Data): Unit raises Lira.Error =
     val entries = lineage.stdlib
 
     if entries.isEmpty || Blob.compare(entries.last, snapshot) != 0
-    then abort(LiraError(Reason.LineageMismatch))
+    then abort(Lira.Error(Reason.LineageMismatch))
 
   // §13.2: a candidate release satisfies a requirement iff the required snapshot appears in the
   // candidate's lineage.

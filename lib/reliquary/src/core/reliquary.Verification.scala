@@ -38,7 +38,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-import LiraError.Reason
+import Lira.Error.Reason
 
 // Verification is re-execution of the construction, bottom-up (§16). `install` performs the
 // language-blind steps every consumer runs: payload decompression and hashing (1), blob-stream
@@ -52,10 +52,10 @@ object Verification:
   case class Report
     ( blobstore:     Blobstore,
       atomizations:  List[Atomization],
-      materialized:  List[(Section, LiraTree)],
-      advisories:    List[LiraAdvisory] ):
+      materialized:  List[(Section, Lira.Tree)],
+      advisories:    List[Lira.Advisory] ):
 
-    def tree(universe: Text, integration: Optional[Text]): Optional[LiraTree] =
+    def tree(universe: Text, integration: Optional[Text]): Optional[Lira.Tree] =
       materialized.stdlib.find: pair =>
         pair(0).realm == universe && pair(0).integration.option == integration.option
 
@@ -65,39 +65,39 @@ object Verification:
   // integration declared, no two sections sharing a (universe, integration) key — and every
   // declared integration must be realized by at least one section. Decidable from the manifest
   // alone, so every consumer checks it, not just a registry.
-  def integrations(manifest: LiraManifest): Unit raises LiraError =
+  def integrations(manifest: Lira.Manifest): Unit raises Lira.Error =
     val declared = manifest.integration.stdlib.map(_.id)
 
     declared.groupBy(identity).foreach: (id, group) =>
       if group.size > 1
-      then abort(LiraError(Reason.BadIntegration(t"the integration $id is declared twice")))
+      then abort(Lira.Error(Reason.BadIntegration(t"the integration $id is declared twice")))
 
     manifest.section.stdlib.foreach: section =>
       section.integration.let: id =>
         if !declared.contains(id)
-        then abort(LiraError(Reason.BadIntegration(t"the section names undeclared $id")))
+        then abort(Lira.Error(Reason.BadIntegration(t"the section names undeclared $id")))
 
       if section.integration.absent && !declared.isEmpty
-      then abort(LiraError(Reason.BadIntegration(t"a section names no integration")))
+      then abort(Lira.Error(Reason.BadIntegration(t"a section names no integration")))
 
     manifest.section.stdlib.groupBy(_.key).foreach: (key, group) =>
       if group.size > 1
-      then abort(LiraError(Reason.BadIntegration(t"two sections share universe ${key(0)}")))
+      then abort(Lira.Error(Reason.BadIntegration(t"two sections share universe ${key(0)}")))
 
     declared.foreach: id =>
       val realized = manifest.section.stdlib.exists: section =>
         section.integration.let(_ == id).or(false)
 
-      if !realized then abort(LiraError(Reason.UnrealizedIntegration(id)))
+      if !realized then abort(Lira.Error(Reason.UnrealizedIntegration(id)))
 
   // L135 (§9.4, hosts.md §4): a release carrying a `host` section is a host contract, and its
   // shape is fixed — exactly that one section, no integrations, no dependencies, and no
   // `requires` records on the section. The exclusions are not arbitrary: an integration is an
   // alternative dependency vector and a contract has no dependencies to vary, and a contract
   // requiring a host would make satisfaction recursive. Decidable from the manifest alone.
-  def hostShape(manifest: LiraManifest): Unit raises LiraError =
+  def hostShape(manifest: Lira.Manifest): Unit raises Lira.Error =
     if manifest.hostContract then
-      def bad(detail: Text): Nothing = abort(LiraError(Reason.BadHostContract(detail)))
+      def bad(detail: Text): Nothing = abort(Lira.Error(Reason.BadHostContract(detail)))
       if manifest.section.stdlib.size != 1 then bad(t"it carries more than one section")
       if !manifest.integration.stdlib.isEmpty then bad(t"it declares integrations")
       if !manifest.dependency.stdlib.isEmpty then bad(t"it declares dependencies")
@@ -105,7 +105,7 @@ object Verification:
       manifest.section.stdlib.foreach: section =>
         if !section.requires.stdlib.isEmpty then bad(t"its section carries requirements")
 
-  def install(lira: Lira): Report raises LiraError =
+  def install(lira: Lira): Report raises Lira.Error =
     val manifest = lira.manifest
     integrations(manifest)
     hostShape(manifest)
@@ -114,13 +114,13 @@ object Verification:
     // Steps 1–2: decompress within the declared length, verify the payload hash, and re-derive
     // every blob identity while checking stream order (L102–L105).
     val stream =
-      LiraPayload.decompress(lira.compressed, manifest.payload.length, manifest.payload.hash)
+      Lira.Payload.decompress(lira.compressed, manifest.payload.length, manifest.payload.hash)
 
     val store = BlobStream.read(stream)
     val referenced = scala.collection.mutable.Set[Text]()
 
-    def resolve(hash: Data): Data raises LiraError =
-      referenced += LiraHash.text(hash)
+    def resolve(hash: Data): Data raises Lira.Error =
+      referenced += Lira.Hash.text(hash)
       store.resolve(hash)
 
     // Step 4's input: the declared atom listings must at least resolve and parse; comparing
@@ -128,7 +128,7 @@ object Verification:
     val atomizations = List.from:
       manifest.api.stdlib.map: api => AtomsBlob.decode(resolve(api.atoms))
 
-    manifest.delta.let: hash => LiraDelta.decode(resolve(hash))
+    manifest.delta.let: hash => Lira.Delta.decode(resolve(hash))
 
     manifest.dependency.stdlib.foreach: dependency => dependency.uses.let(resolve(_))
 
@@ -136,7 +136,7 @@ object Verification:
     // resolve (L104); overlays of known universes materialize against the root under the
     // minimality rules (L107). Unknown universes stay opaque (§9.4).
     val trees = manifest.section.stdlib.map: section =>
-      (section, LiraTree.decode(resolve(section.tree)))
+      (section, Lira.Tree.decode(resolve(section.tree)))
 
     for
       pair  <- trees
@@ -161,7 +161,7 @@ object Verification:
 
     val advisories =
       if unreferenced.stdlib.isEmpty then List()
-      else List(LiraAdvisory.UnreferencedBlobs(unreferenced))
+      else List(Lira.Advisory.UnreferencedBlobs(unreferenced))
 
     Report(store, atomizations, List.from(materialized), advisories)
 
@@ -173,11 +173,11 @@ object Verification:
   // must equal the declared listings on the root section (L141) and be identical across every
   // other section (L108), and no declared discipline may be inapplicable (L127).
   def reatomize
-    ( manifest:        LiraManifest,
+    ( manifest:        Lira.Manifest,
       report:          Report,
       implementations: List[Discipline],
       classpath:       (Text, Optional[Text]) => List[Text] = { (_, _) => List() } )
-  :   Unit raises LiraError raises DisciplineError =
+  :   Unit raises Lira.Error raises DisciplineError =
 
     val resourceId = ResourceDiscipline(manifest.resource).id
     val declaredIds = manifest.api.map(_.discipline)
@@ -187,14 +187,14 @@ object Verification:
 
     val resolved = languages.map: id =>
       implementations.stdlib.find(_.id == id).getOrElse:
-        abort(LiraError(Reason.UnimplementedClaim(id)))
+        abort(Lira.Error(Reason.UnimplementedClaim(id)))
 
     val registry = Discipline.Registry(List.from(resolved), manifest.resource)
     val universes = manifest.section.stdlib.map(_.realm).toSet
 
     resolved.foreach: discipline =>
       if !universes.exists(discipline.domain.covers)
-      then abort(LiraError(Reason.InapplicableDiscipline(discipline.id)))
+      then abort(Lira.Error(Reason.InapplicableDiscipline(discipline.id)))
 
     def summary(atomizations: List[Atomization])
     :   scala.collection.immutable.Map
@@ -202,7 +202,7 @@ object Verification:
 
       atomizations.stdlib.map: atomization =>
         val atoms = atomization.atoms.stdlib.map: atom =>
-          (atom.key, atom.atomClass, LiraHash.text(atom.valueHash))
+          (atom.key, atom.atomClass, Lira.Hash.text(atom.valueHash))
 
         atomization.discipline -> atoms.toSet
 
@@ -224,11 +224,11 @@ object Verification:
     computed.headOption.foreach: (_, root) =>
       (declared.keySet ++ root.keySet).foreach: id =>
         if declared.getOrElse(id, Set()) != root.getOrElse(id, Set())
-        then abort(LiraError(Reason.AtomsMismatch(id)))
+        then abort(Lira.Error(Reason.AtomsMismatch(id)))
 
       computed.drop(1).foreach: (section, other) =>
         if other != root
-        then abort(LiraError(Reason.ApiDivergence(t"${section.realm} differs from the root")))
+        then abort(Lira.Error(Reason.ApiDivergence(t"${section.realm} differs from the root")))
 
   // Step 4's sibling for profiles (§11.6, L128/L130). `install` stays language-blind, exactly as
   // it does for re-atomization and lineage-step grading, and this recovers the per-section
@@ -236,10 +236,10 @@ object Verification:
   // hashes. `classpath` supplies the materialized dependency vector per (universe, integration)
   // cell, since a profile checking a universe's structure needs the same view a discipline had.
   def evidence
-    ( manifest:  LiraManifest,
+    ( manifest:  Lira.Manifest,
       report:    Report,
       classpath: (Text, Optional[Text]) => List[Text] = { (_, _) => List() } )
-  :   EcosystemProfile.Evidence raises LiraError =
+  :   EcosystemProfile.Evidence raises Lira.Error =
 
     val sections = report.materialized.stdlib.map: (section, tree) =>
       val content = tree.entries.map: entry =>
