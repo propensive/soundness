@@ -54,6 +54,22 @@ object Tests extends Suite(m"Baroque tests"):
       Complex(0, 3).show
     . assert(_ == t"3ℐ")
 
+    test(m"Show a rational complex number"):
+      Complex(R64(1, 2), R64(1, 3)).show
+    . assert(_ == t"1/2 + 1/3ℐ")
+
+    test(m"Add rational complex numbers"):
+      Complex(R64(1, 2), R64(1, 3)) + Complex(R64(1, 3), R64(1, 6))
+    . assert(_ == Complex(R64(5, 6), R64(1, 2)))
+
+    test(m"Multiply rational complex numbers"):
+      Complex(R64(1, 2), R64(1, 3))*Complex(R64(2, 3), R64(3, 4))
+    . assert(_ == Complex(R64(1, 12), R64(43, 72)))
+
+    test(m"Divide rational complex numbers"):
+      Complex(R64(1, 2), R64(1, 3))/Complex(R64(1), R64(0))
+    . assert(_ == Complex(R64(1, 2), R64(1, 3)))
+
     test(m"Show a quantity complex number"):
       val re = 1.0*Metre/Second
       val im = Metre*9.0/Second

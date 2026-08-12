@@ -257,6 +257,16 @@ object Tests extends Suite(m"Mosquito tests"):
         m1/2
       . assert(_ == Matrix[2, 3]((0, 1, 1), (2, 2, 3)))
 
+    suite(m"Rational elements"):
+      test(m"Dot product of rational vectors"):
+        Vector(R64(1, 2), R64(1, 3)).dot(Vector(R64(2), R64(3)))
+      . assert(_ == R64(2))
+
+      test(m"Multiply rational matrices"):
+        val left = Matrix[2, 2]((R32(1, 2), R32(1, 3)), (R32(1, 4), R32(1, 5)))
+        left*Matrix[2, 2]((R32(2), R32(0)), (R32(0), R32(2)))
+      . assert(_ == Matrix[2, 2]((R32(1), R32(2, 3)), (R32(1, 2), R32(2, 5))))
+
     suite(m"Determinant"):
       test(m"Determinant of 2x2 matrix"):
         Matrix[2, 2]((1, 2), (3, 4)).determinant

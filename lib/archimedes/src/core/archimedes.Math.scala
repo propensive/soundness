@@ -42,6 +42,7 @@ import contingency.*
 import gossamer.*
 import hieroglyph.*
 import honeycomb.Html
+import hypotenuse.*
 import honeycomb.Renderable
 import mosquito.*
 import prepositional.*
@@ -122,6 +123,19 @@ object Math:
   given text:       Text is Encodable in Math       = value => Math(Mtext(value))
   given identical:  Mathml is Encodable in Math     = node => Math(List(node))
   given self:       Math is Encodable in Math       = identity(_)
+
+  // Rationals render as `<mfrac>`, collapsing to a plain `<mn>` for whole values, with
+  // the sign hoisted out as an `<mo>`.
+  given r64: R64 is Encodable in Math = value => rationalMathml(value.numerator, value.denominator)
+  given r32: R32 is Encodable in Math = value => rationalMathml(value.numerator, value.denominator)
+
+  private def rationalMathml(numerator: Long, denominator: Long): Math =
+    if denominator == 0L then Math(Mtext(t"NaR")) else
+      val body =
+        if denominator == 1L then Mn(math.abs(numerator).toString.tt)
+        else Mfrac(Mn(math.abs(numerator).toString.tt), Mn(denominator.toString.tt))
+
+      if numerator < 0L then Math(Mrow(List(Mo(t"−"), body))) else Math(body)
 
   // Wraps the encoder lambda in a class (rather than an inline function value) to
   // avoid inline-given code bloat, mirroring quantitative's `ShowableQuantity`. It

@@ -52,6 +52,15 @@ object Tests extends Suite(m"Archimedes tests"):
         Mfrac(Mn(t"1"), Mn(t"2")).xml.show
       .assert(_ == t"<mfrac><mn>1</mn><mn>2</mn></mfrac>")
 
+      test(m"Render a rational as a fraction"):
+        R64(-3, 4).math.xml.show
+      .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mo>−</mo>"""
+          + t"<mfrac><mn>3</mn><mn>4</mn></mfrac></mrow></math>")
+
+      test(m"Render a whole rational as a number"):
+        R32(7).math.xml.show
+      .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><mn>7</mn></math>""")
+
       test(m"Render a token with an attribute"):
         Mi(t"x", List(t"mathvariant" -> t"italic")).xml.show
       .assert(_ == t"""<mi mathvariant="italic">x</mi>""")
