@@ -1028,7 +1028,21 @@ object Tests extends Suite(m"Ultimatum Tests"):
       def bar(design: Fraction is Gaugeable)(value: Fraction, width: Int): Text =
         design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
 
-      def spin(design: Busy is Gaugeable)(value: Busy, width: Int, tick: Tick = Tick.zero): Text =
+      // Any design lifts to the same status made optional, via `Gaugeable.optional`; putting the
+      // definite design in scope is what lets the lift derive the optional one.
+      def sweeping(design: Fraction is Gaugeable)
+         (value: Optional[Fraction], width: Int, tick: Tick)
+      :   Text =
+
+        given definite: (Fraction is Gaugeable) = design
+
+        summon[Optional[Fraction] is Gaugeable].rows(value, tick, width).stdlib.map(_.plain)
+        . mkString("\n").tt
+
+      def spin(design: Fraction is Gaugeable)
+         (value: Fraction, width: Int, tick: Tick = Tick.zero)
+      :   Text =
+
         design.rows(value, tick, width).stdlib.map(_.plain).mkString("\n").tt
 
       test(m"a half-full smooth bar fills exactly half its cells"):
@@ -1086,19 +1100,36 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a spinner advances one frame per period"):
         val design = spinners.brailleDotsSpinner
-        (0 to 3).map { index => spin(design)(Busy(), 1, Tick.at(index*80, 80)) }.mkString.tt
+        (0 to 3).map { index => spin(design)(Fraction(0.0), 1, Tick.at(index*80, 80)) }.mkString.tt
       . assert(_ == t"⠋⠙⠹⠸")
 
       test(m"a spinner cycles back to its first frame"):
-        spin(spinners.brailleDotsSpinner)(Busy(), 1, Tick.at(10*80, 80))
+        spin(spinners.brailleDotsSpinner)(Fraction(0.0), 1, Tick.at(10*80, 80))
       . assert(_ == t"⠋")
 
-      test(m"the status's own counter advances the spinner too"):
-        spin(spinners.brailleDotsSpinner)(Busy(2), 1, Tick.zero)
-      . assert(_ == t"⠹")
+
+      // Progress that may not be known is one status: a figure when there is one, a sweep when
+      // there is not, so a job that learns its total does not change type half way through.
+      test(m"a bar over unknown progress sweeps rather than sitting at zero"):
+        sweeping(bars.smoothBar)(Fraction.indeterminate, 10, Tick.zero)
+      . assert(_ == t"██░░░░░░░░")
+
+      test(m"the sweep travels, and returns rather than jumping back"):
+        (sweeping(bars.smoothBar)(Fraction.indeterminate, 10, Tick.at(240, 80)),
+            sweeping(bars.smoothBar)(Fraction.indeterminate, 10, Tick.at(80*10, 80)))
+      . assert(_ == (t"░░░██░░░░░", t"░░░░░░██░░"))
+
+      test(m"the same design draws a bar once the fraction is known"):
+        sweeping(bars.smoothBar)(Fraction(0.5), 10, Tick.zero)
+      . assert(_ == t"█████     ")
+
+      test(m"an unknown-progress design animates; a definite bar does not"):
+        given definite: (Fraction is Gaugeable) = bars.smoothBar
+        (summon[Optional[Fraction] is Gaugeable].period, bars.smoothBar.period)
+      . assert(_ == (80, Unset))
 
       test(m"a spinner declares its frame interval as its animation period"):
-        summon[Busy is Gaugeable](using spinners.brailleDotsSpinner).period
+        summon[Fraction is Gaugeable](using spinners.brailleDotsSpinner).period
       . assert(_ == 80)
 
       test(m"a bar declares no animation period"):
@@ -1106,11 +1137,11 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == Unset)
 
       test(m"a wide spinner falls back to a narrower design in a narrow column"):
-        spin(spinners.bouncingBarSpinner)(Busy(), 1, Tick.zero)
+        spin(spinners.bouncingBarSpinner)(Fraction(0.0), 1, Tick.zero)
       . assert(_ == t"-")
 
       test(m"a multi-cell spinner draws at its full width when it fits"):
-        spin(spinners.bouncingBarSpinner)(Busy(1), 6, Tick.zero)
+        spin(spinners.bouncingBarSpinner)(Fraction(0.0), 6, Tick.at(80, 80))
       . assert(_ == t"[=   ]")
 
     suite(m"Gauge glyph repertoires"):
@@ -1120,22 +1151,22 @@ object Tests extends Suite(m"Ultimatum Tests"):
       def bar(design: Fraction is Gaugeable)(value: Fraction, width: Int): Text =
         design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
 
-      def spin(design: Busy is Gaugeable)(value: Busy, width: Int): Text =
+      def spin(design: Fraction is Gaugeable)(value: Fraction, width: Int): Text =
         design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
 
       test(m"an emoji spinner renders as emoji when they are permitted"):
         import gaugeGlyphs.emojiGlyphs
-        spin(spinners.moonPhaseSpinner)(Busy(), 2)
+        spin(spinners.moonPhaseSpinner)(Fraction(0.0), 2)
       . assert(_ == t"🌑")
 
       test(m"an emoji spinner falls back to its BMP sibling when they are not"):
         import gaugeGlyphs.unicodeGlyphs
-        spin(spinners.moonPhaseSpinner)(Busy(), 2)
+        spin(spinners.moonPhaseSpinner)(Fraction(0.0), 2)
       . assert(_ == t"◌ ")
 
       test(m"under ASCII glyphs every spinner degrades to seven-bit output"):
         import gaugeGlyphs.asciiGlyphs
-        spin(spinners.brailleDotsSpinner)(Busy(), 2).s.forall(_ < 128)
+        spin(spinners.brailleDotsSpinner)(Fraction(0.0), 2).s.forall(_ < 128)
       . assert(_ == true)
 
       test(m"under ASCII glyphs a bar degrades to seven-bit output"):
@@ -1256,12 +1287,13 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == (40, 1))
 
       test(m"a spinner reports a single cell and does not stretch"):
-        Gaugeable.Fixture(Reading(Busy()))(using spinners.brailleDotsSpinner).measure(80)
+        given definite: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
+        Gaugeable.Fixture(Reading(Fraction.indeterminate)).measure(80)
       . assert(_ == (1, 1))
 
       test(m"a gauge is not focusable, so it stays out of the focus cycle"):
-        Gaugeable.Fixture(Reading(Busy()))(using spinners.brailleDotsSpinner)
-        . isInstanceOf[Focus]
+        given definite: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
+        Gaugeable.Fixture(Reading(Fraction.indeterminate)).isInstanceOf[Focus]
       . assert(_ == false)
 
       test(m"an updated reading is what the next paint draws"):
@@ -1308,21 +1340,21 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == 5)
 
       test(m"a block sparkline draws one cell per sample"):
-        plain(sparklines.blockSparkline)(Series(Sequence(0.0, 0.5, 1.0)), 3)
+        plain(sparklines.blockSparkline)(Sequence(0.0, 0.5, 1.0), 3)
       . assert(_ == t"▁▅█")
 
       test(m"a sparkline auto-scales to the range of its samples"):
-        plain(sparklines.blockSparkline)(Series(Sequence(10.0, 20.0)), 2)
+        plain(sparklines.blockSparkline)(Sequence(10.0, 20.0), 2)
       . assert(_ == t"▁█")
 
       test(m"fixed bounds keep a sparkline's scale still between frames"):
-        plain(sparklines.blockSparkline)(Series(Sequence(0.0, 5.0), 0.0, 10.0), 2)
+        plain(Sparkline.Blocks.scaled(0.0, 10.0))(Sequence(0.0, 5.0), 2)
       . assert(_ == t"▁▅")
 
       // Decimation, not truncation: a narrow sparkline keeps the peaks rather than showing only
       // the oldest samples.
       test(m"a sparkline narrower than its series keeps the peaks"):
-        plain(sparklines.blockSparkline)(Series(Sequence(0.0, 1.0, 0.0, 0.0)), 2)
+        plain(sparklines.blockSparkline)(Sequence(0.0, 1.0, 0.0, 0.0), 2)
       . assert(_ == t"█▁")
 
       test(m"a plain counter writes done over total"):
@@ -1357,11 +1389,10 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == (t"  ok", t"FAIL"))
 
       val steps =
-        Procession
-         ( Sequence
-            ( Step(t"resolve", Standing.Succeeded),
-              Step(t"compile", Standing.Running),
-              Step(t"publish", Standing.Pending) ) )
+        Sequence
+         ( Step(t"resolve", Standing.Succeeded),
+           Step(t"compile", Standing.Running),
+           Step(t"publish", Standing.Pending) )
 
       test(m"a checklist is one row per step"):
         plain(processions.checklistProcession)(steps, 12).cut(t"\n").length
@@ -1394,27 +1425,27 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       // Monomorphic, as elsewhere in these suites: a generic helper infers the underlying
       // `Duration` from a literal, because the opaque types are transparent in this package.
-      def spent(design: Elapsed is Gaugeable)(value: Elapsed, width: Int): Text =
+      def spent(design: Duration is Gaugeable)(value: Duration, width: Int): Text =
         design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
 
       def left(design: Countdown is Gaugeable)(value: Countdown, width: Int): Text =
         design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
 
       test(m"a compact elapsed time gives the two largest useful units"):
-        spent(timers.compactElapsed)(Elapsed(161.0*Second), 5)
+        spent(timers.compactElapsed)(161.0*Second, 5)
       . assert(_ == t"2m41s")
 
       test(m"a compact elapsed time under a minute is just seconds"):
-        spent(timers.compactElapsed)(Elapsed(41.0*Second), 3)
+        spent(timers.compactElapsed)(41.0*Second, 3)
       . assert(_ == t"41s")
 
       test(m"a digital elapsed time keeps its shape as it crosses a minute"):
-        (spent(timers.digitalElapsed)(Elapsed(59.0*Second), 5),
-            spent(timers.digitalElapsed)(Elapsed(61.0*Second), 5))
+        (spent(timers.digitalElapsed)(59.0*Second, 5),
+            spent(timers.digitalElapsed)(61.0*Second, 5))
       . assert(_ == (t"00:59", t"01:01"))
 
       test(m"a digital elapsed time grows an hours field only when there are hours"):
-        spent(timers.digitalElapsed)(Elapsed(3661.0*Second), 7)
+        spent(timers.digitalElapsed)(3661.0*Second, 7)
       . assert(_ == t"1:01:01")
 
       // A countdown is clamped at zero, so a deadline that has passed reads as `0s`.
@@ -1423,11 +1454,11 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == t"0s")
 
       test(m"a narrow timer keeps the seconds, which are what is moving"):
-        spent(timers.compactElapsed)(Elapsed(161.0*Second), 3)
+        spent(timers.compactElapsed)(161.0*Second, 3)
       . assert(_ == t"41s")
 
       test(m"a timer is inelastic, so it does not stretch across a row"):
-        timers.compactElapsed.columns(Elapsed(161.0*Second))
+        timers.compactElapsed.columns(161.0*Second)
       . assert(_ == 5)
 
       test(m"neither timer animates: they change only when their reading does"):
@@ -1462,7 +1493,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a captioned spinner inherits the spinner's animation period"):
         import spinners.brailleDotsSpinner
-        summon[Captioned[Busy] is Gaugeable].period
+        summon[Captioned[Optional[Fraction]] is Gaugeable].period
       . assert(_ == 80)
 
     suite(m"The form's frame clock"):
@@ -1482,7 +1513,8 @@ object Tests extends Suite(m"Ultimatum Tests"):
         List.of(recorded.toList)
 
       test(m"a layout containing a spinner arms a wake at the design's period"):
-        wakes(gauge(Reading(Busy()))(using spinners.brailleDotsSpinner)).stdlib.headOption
+        given definite: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
+        wakes(gauge(Reading(Fraction.indeterminate))).stdlib.headOption
       . assert(_ == Some(80L))
 
       test(m"a layout of static panels arms no wake at all"):
@@ -1494,8 +1526,8 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == 0)
 
       test(m"the shortest period wins when several gauges animate"):
-        val fast = gauge(Reading(Busy()))(using spinners.starSpinner)
-        val slow = gauge(Reading(Busy()))(using spinners.toggleSpinner)
+        val fast = gauge(Reading(Fraction(0.0)))(using spinners.starSpinner)
+        val slow = gauge(Reading(Fraction(0.0)))(using spinners.toggleSpinner)
         wakes(stack(fast, slow)).stdlib.headOption
       . assert(_ == Some(70L))
 

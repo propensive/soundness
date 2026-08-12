@@ -42,7 +42,7 @@ import vacuous.*
 
 // The status types, whose opaque declarations live in `internal` so that their abstraction does not
 // leak; see the note there.
-export ultimatum.internal.{Busy, Countdown, Elapsed, Fraction}
+export ultimatum.internal.{Countdown, Fraction}
 
 // A leaf panel hosting a live gauge. The design is the `Gaugeable` given for `status` in scope
 // here, so which one is used is decided by the caller's imports at this line, not by the driver.

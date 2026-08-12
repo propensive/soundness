@@ -34,11 +34,43 @@ package ultimatum
 
 import denominative.*
 import escapade.*
+import gossamer.*
 import prepositional.*
 import profanity.*
+import symbolism.*
 import vacuous.*
 
 object Gaugeable:
+  // One generic lifting of any design to the same status made optional, so that optionality is
+  // handled here rather than by a parallel design for every family.
+  // The `Mandatable` constraint identifies the mandatory type `inner`, so this applies only to
+  // genuine optionals and never competes with `inner`'s own instance — which is what keeps
+  // `Captioned(Fraction(0.5), …)` unambiguous when both are in scope.
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( design: inner is Gaugeable )
+  =>  value is Gaugeable =
+
+    new Gaugeable:
+      type Self = value
+
+      // The lifted design may have to sweep, which the definite one never does, so it animates
+      // whether or not this particular value happens to be present.
+      override def period: Optional[Int] = design.period.or(80)
+      override def elastic: Boolean = design.elastic
+
+      override def minWidth(status: value): Int =
+        status.lay(1): value => design.minWidth(value.asInstanceOf[inner])
+
+      override def columns(status: value): Int =
+        status.lay(design.absentColumns): value => design.columns(value.asInstanceOf[inner])
+
+      override def height(status: value, width: Int): Int =
+        status.lay(1): value => design.height(value.asInstanceOf[inner], width)
+
+      def rows(status: value, tick: Tick, width: Int): List[Teletype] =
+        status.lay(design.absent(tick, width)): value =>
+          design.rows(value.asInstanceOf[inner], tick, width)
+
   // How adventurous a design may be with its character repertoire. Every design in the catalogue
   // carries an ASCII rendering as well as its preferred one, so importing `asciiGlyphs` degrades
   // the whole catalogue at once — the single import a caller writing to a dumb terminal, a log
@@ -132,3 +164,12 @@ trait Gaugeable extends Typeclass:
   // Render at exactly `width` cells. Every row must measure exactly `width` under the ambient
   // metric, and there must be exactly `height(status, width)` of them.
   def rows(status: Self, tick: Tick, width: Int): List[Teletype]
+
+  // How to draw when there is no status at all — the `Unset` of an `Optional`. "Not measured" is a
+  // different claim from "no progress", so a bar sweeps here rather than sitting empty, and a
+  // spinner draws its frames. The default is blank, which is right for a design with nothing to
+  // say without a value.
+  def absent(tick: Tick, width: Int): List[Teletype] = List(Teletype(t" "*width.max(0)))
+
+  // The width to claim when there is no status to measure.
+  def absentColumns: Int = 1

@@ -33,6 +33,7 @@
 package ultimatum
 
 import anticipation.*
+import aviation.*
 import escapade.*
 import gossamer.*
 import iridescence.*
@@ -69,14 +70,16 @@ enum Stopwatch:
   def columns(seconds: Double): Int = write(seconds).length
 
   // Elapsed time is reference material, not a warning, so it is drawn in the muted role.
-  def elapsed(using gauging: Gauging): Elapsed is Gaugeable = new Gaugeable:
-    type Self = Elapsed
+  // Keyed on `aviation.Duration` itself: elapsed time is a duration, and wrapping it bought
+  // nothing. `Countdown` keeps its own type, because the two must be able to appear together.
+  def elapsed(using gauging: Gauging): Duration is Gaugeable = new Gaugeable:
+    type Self = Duration
     override def elastic: Boolean = false
-    override def minWidth(status: Elapsed): Int = 1
-    override def columns(status: Elapsed): Int = Stopwatch.this.columns(status.duration.value)
+    override def minWidth(status: Duration): Int = 1
+    override def columns(status: Duration): Int = Stopwatch.this.columns(status.value)
 
-    def rows(status: Elapsed, tick: Tick, width: Int): List[Teletype] =
-      List(draw(status.duration.value, gauging.palette.muted, width, gauging))
+    def rows(status: Duration, tick: Tick, width: Int): List[Teletype] =
+      List(draw(status.value, gauging.palette.muted, width, gauging))
 
   // A countdown, optionally colouring by how little is left: `urgent` reads the severity ramp
   // backwards, so the figure passes through the warning colour and reddens as it approaches zero.

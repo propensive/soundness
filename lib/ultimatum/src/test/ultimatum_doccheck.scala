@@ -40,7 +40,6 @@ import bars.arrowheadBar
 import gaugeGlyphs.asciiGlyphs
 import palettes.solarizedDarkGaugePalette
 import processions.checklistProcession
-import spinners.moonPhaseSpinner
 import textMetrics.uniformMetric
 
 // Every code example in `doc/modules/gauges.md`, compiled. Prose drifts from an API silently, and a
@@ -57,20 +56,25 @@ object Examples:
     form(Occupancy.Inline)(stack(gauge(progress)))
 
   def standalone(using Stdio, Monitor, Probate): Unit =
-    whilst(Reading(Busy())):
+    whilst(Reading(Fraction.indeterminate)):
       ()
+
+  // A spinner and a bar are two designs for one status, so only one can be imported at a time.
+  // Where a layout needs both, the other is passed explicitly.
+  def both(using Stdio): Unit =
+    Out.println(gaugeLine(Fraction(0.5), 20))
+    Out.println(gaugeLine(Fraction(0.0), 1)(using spinners.brailleDotsSpinner))
 
   def oneFrame(done: Int, total: Int)(using Stdio): Unit =
     Out.print(e"\r${gaugeLine(Fraction.of(done, total), 40)} $done/$total${csi.el()}")
 
-  def captioned: Pane = gauge(Reading(Captioned(Busy(), t"resolving dependencies")))
+  def captioned: Pane = gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
 
   def procession: Pane =
     val steps =
-      Procession
-        ( Sequence
-           ( Step(t"resolve", Standing.Succeeded),
-             Step(t"compile", Standing.Running),
-             Step(t"publish", Standing.Pending) ) )
+      Sequence
+        ( Step(t"resolve", Standing.Succeeded),
+          Step(t"compile", Standing.Running),
+          Step(t"publish", Standing.Pending) )
 
     gauge(Reading(steps))

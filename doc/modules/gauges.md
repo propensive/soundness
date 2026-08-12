@@ -31,19 +31,41 @@ import soundness.*
 
 What a gauge displays is a value of a specific type, and that type is what selects the design:
 
-Status        | Displays                                        | Default design
---------------|-------------------------------------------------|-------------------
-`Busy`        | work of unknown extent                          | braille dots
-`Fraction`    | a proportion in `[0, 1]`, clamped               | smooth block bar
-`Reckoning`   | `done` against a total that may be unknown      | `17/120`
-`Standing`    | how one unit of work turned out                 | `✓ ✗ ‑`
-`Elapsed`     | time spent                                      | `2m41s`
-`Countdown`   | time left, clamped at zero                      | `2m41s`
-`Captioned`   | any status, with a label                        | derived
-`Transfer`    | bytes moved, with rate and estimate             | *none*
-`Meter`       | a reading on a bounded scale                    | *none*
-`Series`      | samples over time                               | *none*
-`Procession`  | an ordered run of `Step`s                       | *none*
+Status                | Displays                                    | Default design
+----------------------|---------------------------------------------|-------------------
+`Fraction`            | a proportion in `[0, 1]`, clamped           | smooth block bar
+`Reckoning`           | `done` against a total that may be unknown  | `17/120`
+`Standing`            | how one unit of work turned out             | `✓ ✗ ‑`
+`Duration`            | time spent                                  | `2m41s`
+`Countdown`           | time left, clamped at zero                  | `2m41s`
+`Captioned`           | any status, with a label                    | derived
+`Transfer`            | bytes moved, with rate and estimate         | *none*
+`Meter`               | a reading on a bounded scale                | *none*
+`Sequence[Double]`    | samples over time                           | *none*
+`Sequence[Step]`      | an ordered run of steps                     | *none*
+
+Most of these are types you already have. Only where a type has to be *distinct* — because it is
+the key the design is looked up by — is a new one introduced: a proportion cannot be a plain
+`Double` without claiming every `Double` in the program for progress bars. Elapsed time is an
+`aviation.Duration`, samples are a `Sequence[Double]`, and a run of steps is a `Sequence[Step]`.
+`Countdown` keeps its own type only so that it can sit beside an elapsed time with a different
+design.
+
+Any status may be `Optional`, and every design lifts to that automatically: `Optional[Fraction]` is
+progress that may not be known yet, so a job that starts out unmeasurable and later learns its total
+does not change type half way through. A design says how to draw when there is no value — a bar
+sweeps, because an empty bar claims "no progress" where the truth is "not measured", and a spinner
+draws its frames. Nothing has to be written twice for the optional case.
+
+A spinner is what you import when the figure is not worth showing, or is not known; it keys on
+`Fraction` like a bar does, and ignores the value. Two designs for one status conflict, as two bars
+always have, so a layout wanting both takes one from a locally-scoped `given`:
+
+```scala
+val resolving =
+  given spinner: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
+  gauge(Reading(Fraction.indeterminate))
+```
 
 The four with no default are deliberate. A default exists only where every candidate design is the
 same height and says the same thing; a battery, a thermometer and a dial are not interchangeable,
@@ -137,7 +159,7 @@ Outside a layout, `whilst` shows a gauge at the cursor for the duration of a blo
 afterwards:
 
 ```scala
-whilst(Reading(Busy())):
+whilst(Reading(Fraction.indeterminate)):
   slowThing()
 ```
 
@@ -162,7 +184,9 @@ so a transfer that reads
 at eighty cells keeps only the figures at thirty. A caption is elided rather than squeezing the
 gauge it labels, and is allowed at most half the row before it begins costing the gauge cells.
 
-A sparkline narrower than its series is *decimated* — each output cell shows the maximum of the
+A sparkline's scale is a design choice rather than part of the data — `Sparkline.Blocks.scaled(0, 100)`
+fixes it, so a steady signal does not look erratic as the bounds move under it. A sparkline narrower
+than its series is *decimated* — each output cell shows the maximum of the
 samples it covers — rather than truncated. A truncated sparkline would show only the oldest samples
 while looking like the whole series, which is worse than showing less.
 
@@ -172,19 +196,18 @@ while looking like the whole series, which is worse than showing less.
 uses, so it is not a style choice and needs no import:
 
 ```scala
-gauge(Reading(Captioned(Busy(), t"resolving dependencies")))
+gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
 ```
 
-A `Procession` of `Step`s renders as a checklist, a breadcrumb, a chain of beads, a numbered
-position or a powerline ribbon:
+A `Sequence[Step]` renders as a checklist, a breadcrumb, a chain of beads, a numbered position or a
+powerline ribbon:
 
 ```scala
 val steps =
-  Procession
-    ( Sequence
-       ( Step(t"resolve", Standing.Succeeded),
-         Step(t"compile", Standing.Running),
-         Step(t"publish", Standing.Pending) ) )
+  Sequence
+    ( Step(t"resolve", Standing.Succeeded),
+      Step(t"compile", Standing.Running),
+      Step(t"publish", Standing.Pending) )
 
 gauge(Reading(steps))   // with `import processions.checklistProcession`
 ```

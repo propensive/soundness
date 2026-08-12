@@ -44,7 +44,6 @@ import palettes.emberGaugePalette
 import probates.cancelProbate
 import processions.checklistProcession
 import sparklines.blockSparkline
-import spinners.brailleDotsSpinner
 import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import threading.platformThreading
@@ -77,15 +76,12 @@ def demo(): Unit = cli:
 //   └─────────────────────── status ────────────────────────┘
 // A pipeline part-way through: one step done, one running (which is what the checklist animates),
 // and two still to come.
-private def steps: Procession =
-  val stages =
-    Sequence
-      ( Step(t"resolve", Standing.Succeeded),
-        Step(t"compile", Standing.Running),
-        Step(t"test", Standing.Pending),
-        Step(t"publish", Standing.Pending) )
-
-  Procession(stages)
+private def steps: Sequence[Step] =
+  Sequence
+    ( Step(t"resolve", Standing.Succeeded),
+      Step(t"compile", Standing.Running),
+      Step(t"test", Standing.Pending),
+      Step(t"publish", Standing.Pending) )
 
 private def demoLayout: Pane =
   // A rounded border around the menu; the menu itself is 20 wide, so the bordered
@@ -97,13 +93,20 @@ private def demoLayout: Pane =
   // A column of gauges, each keyed on a different status type and each picking up its design from
   // the imports at the top of this file. The spinner and the checklist animate; the bar, counter
   // and sparkline change only when their `Reading` does.
+  // A spinner and a bar are two designs for one status, so only one can be imported at a time; a
+  // local `given` selects the spinner for this gauge alone, leaving the imported bar for the rest.
+  val resolving =
+    given spinner: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
+
+    gauge(Reading(Captioned(Fraction.indeterminate, t"resolving")), minHeight = 1, maxHeight = 1)
+
   val activity = border():
     stack
       ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Activity")),
-        gauge(Reading(Captioned(Busy(), t"resolving")), minHeight = 1, maxHeight = 1),
+        resolving,
         gauge(Reading(Captioned(Fraction(0.62), t"compiling")), minHeight = 1, maxHeight = 1),
         gauge(Reading(Reckoning(17, 120)), minHeight = 1, maxHeight = 1),
-        gauge(Reading(Series(Sequence(2.0, 5.0, 3.0, 8.0, 6.0, 9.0, 4.0))), minHeight = 1,
+        gauge(Reading(Sequence(2.0, 5.0, 3.0, 8.0, 6.0, 9.0, 4.0)), minHeight = 1,
             maxHeight = 1),
         gauge(Reading(steps)) )
 

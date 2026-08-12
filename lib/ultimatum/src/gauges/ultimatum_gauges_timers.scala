@@ -32,11 +32,14 @@
                                                                                                   */
 package ultimatum
 
-// Durations, written out. `Elapsed` counts up and `Countdown` counts down; they are separate types
-// so that each can have its own design, and the countdown ones can signal urgency.
+import aviation.*
+
+// Durations, written out. Elapsed time is an `aviation.Duration`; a `Countdown` keeps its own type,
+// so that the two can be shown side by side with different designs and the countdown can signal
+// urgency as it runs out.
 package timers:
-  given compactElapsed: Gauging => Elapsed is Gaugeable = Stopwatch.Compact.elapsed
-  given digitalElapsed: Gauging => Elapsed is Gaugeable = Stopwatch.Digital.elapsed
+  given compactElapsed: Gauging => Duration is Gaugeable = Stopwatch.Compact.elapsed
+  given digitalElapsed: Gauging => Duration is Gaugeable = Stopwatch.Digital.elapsed
 
   given compactCountdown: Gauging => Countdown is Gaugeable =
     Stopwatch.Compact.countdown(false)

@@ -50,24 +50,29 @@ object Checklist:
 enum Checklist:
   case Rows, Breadcrumb, Beads, Numbered, Ribbon
 
-  def gaugeable(using gauging: Gauging): Procession is Gaugeable = new Gaugeable:
-    type Self = Procession
+  def gaugeable(using gauging: Gauging): Sequence[Step] is Gaugeable = new Gaugeable:
+    type Self = Sequence[Step]
 
     // Only a design that shows a working step needs the clock.
     override def period: Optional[Int] = Checklist.this match
       case Rows | Beads => 80
       case _            => Unset
 
-    override def minWidth(status: Procession): Int = 3
+    override def minWidth(status: Sequence[Step]): Int = 3
 
-    override def height(status: Procession, width: Int): Int = Checklist.this match
-      case Rows => status.count.max(1)
+    override def height(status: Sequence[Step], width: Int): Int = Checklist.this match
+      case Rows => status.stdlib.length.max(1)
       case _    => 1
 
-    def rows(status: Procession, tick: Tick, width: Int): List[Teletype] =
+    def rows(status: Sequence[Step], tick: Tick, width: Int): List[Teletype] =
       Checklist.this.draw(status, tick, width, gauging)
 
-  def draw(procession: Procession, tick: Tick, width: Int, gauging: Gauging): List[Teletype] =
+  def draw(steps: Sequence[Step], tick: Tick, width: Int, gauging: Gauging): List[Teletype] =
+    // Derived here rather than carried by a wrapper type: a run of steps is just a `Sequence`.
+    val current: Optional[Step] = steps.stdlib.find(_.standing == Standing.Running).optional
+    val started = steps.stdlib.count(_.standing != Standing.Pending)
+    val count = steps.stdlib.length
+
     val palette = gauging.palette
     val plain = !gauging.permits(Gaugeable.Glyphs.Unicode)
 
@@ -97,7 +102,7 @@ enum Checklist:
       case Rows =>
         // One row per step: the canonical multi-row widget, and the one that makes the layout grow
         // as steps are appended.
-        val steps = procession.steps.stdlib.map: step =>
+        val lines = steps.stdlib.map: step =>
           val glyph = gauging.tint(palette.colorOf(step.standing))(Teletype(marker(step.standing)))
           val faded = step.standing == Standing.Succeeded || step.standing == Standing.Skipped
           val color = if faded then palette.muted else palette.caption
@@ -105,11 +110,11 @@ enum Checklist:
 
           pad(e"$glyph $name")
 
-        if steps.isEmpty then List(pad(e"")) else List.of(steps.toList)
+        if lines.isEmpty then List(pad(e"")) else List.of(lines.toList)
 
       case Numbered =>
-        val name = procession.current.lay(t"")(_.name)
-        val position = t"[${procession.position}/${procession.count}]"
+        val name = current.lay(t"")(_.name)
+        val position = t"[$started/$count]"
         val label = clip(name, (width - position.length - 1).max(0))
 
         val marker = gauging.tint(palette.muted)(Teletype(position))
@@ -121,7 +126,7 @@ enum Checklist:
         // A compact chain: one bead per step, joined by a rule. Fixed at `2n - 1` cells.
         val link = if plain then t"-" else t"━"
 
-        val beads = procession.steps.stdlib.zipWithIndex.map: (step, index) =>
+        val beads = steps.stdlib.zipWithIndex.map: (step, index) =>
           val glyph = step.standing match
             case Standing.Pending => if plain then t"o" else t"○"
             case Standing.Running => if plain then t"*" else t"◐"
@@ -136,7 +141,7 @@ enum Checklist:
       case Breadcrumb =>
         val separator = if plain then t">" else t"›"
 
-        val crumbs = procession.steps.stdlib.map: step =>
+        val crumbs = steps.stdlib.map: step =>
           val faded = step.standing == Standing.Pending
           val color = if faded then palette.track else palette.colorOf(step.standing)
           gauging.tint(color)(Teletype(step.name))
@@ -150,7 +155,7 @@ enum Checklist:
       case Ribbon =>
         // Powerline: `escapade.Ribbon` already draws the separators and picks a legible foreground
         // per segment, so this is only a matter of choosing the backgrounds.
-        val names = procession.steps.stdlib.map: step => Teletype(step.name)
+        val names = steps.stdlib.map: step => Teletype(step.name)
 
         if names.isEmpty then List(pad(e"")) else
           // Qualified: this enum's own `Ribbon` case shadows the one from escapade.

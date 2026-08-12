@@ -49,31 +49,12 @@ import vacuous.*
 // The `caps.Pure` bound is the other half: a status is data, and saying so here is what lets it be
 // assigned into a `Reading` without the capture checker demanding a purity the type never claimed.
 object internal:
-  opaque type Busy <: Matchable & caps.Pure = Int & caps.Pure
   opaque type Fraction <: Matchable & caps.Pure = Double & caps.Pure
-  // No `Matchable` bound on these two: `Duration` is itself opaque, and the intersection conflicts.
-  opaque type Elapsed <: caps.Pure = Duration & caps.Pure
+  // No `Matchable` bound: `Duration` is itself opaque, and the intersection conflicts.
   opaque type Countdown <: caps.Pure = Duration & caps.Pure
 
   // `caps.Pure` is an erased marker, so each type still erases to its representation; the casts
   // are runtime no-ops that let the capture checker treat the status as pure.
-  object Busy:
-    private inline def make(tick: Int): Busy = tick.asInstanceOf[Busy]
-
-    def apply(tick: Int = 0): Busy = make(tick.max(0))
-
-    // The default design, used when nothing is imported. Braille dots are the one spinner most
-    // people expect, they occupy a single cell, and they degrade to `-\|/` on an ASCII terminal.
-    // Any `import spinners.…` outranks this, being lexically scoped.
-    given gaugeable: Gauging => Busy is Gaugeable = spinners.brailleDotsSpinner
-
-    extension (busy: Busy)
-      def tick: Int = busy.asInstanceOf[Int]
-      def next: Busy = make(busy.tick + 1)
-
-      // The frame to show, for a design with `count` frames.
-      def phase(count: Int): Int = if count <= 0 then 0 else busy.tick%count
-
   object Fraction:
     private inline def make(value: Double): Fraction = value.asInstanceOf[Fraction]
 
@@ -83,27 +64,22 @@ object internal:
     def of(done: Long, total: Long): Fraction =
       if total <= 0 then Fraction(0.0) else Fraction(done.toDouble/total)
 
-    // Work in flight whose total is unknown.
+    // Work in flight whose total is not known. Progress is `Optional[Fraction]` rather than a
+    // separate "busy" type, so a job that starts out unmeasurable and later learns its total does
+    // not change type half way through — and every design decides both renderings.
     val indeterminate: Optional[Fraction] = Unset
 
     // The default design: the smooth eighth-block bar, which is what a Soundness progress bar has
     // always looked like. Every candidate bar is one row and says the same thing, so a default is
     // safe here in a way it is not for a meter or a procession.
+    // `Optional[Fraction]` needs no separate default: `Gaugeable.optional` lifts this one, and a
+    // bar's `absent` rendering sweeps.
     given gaugeable: Gauging => Fraction is Gaugeable = bars.smoothBar
 
     extension (fraction: Fraction)
       def value: Double = fraction.asInstanceOf[Double]
       def percentage: Int = (fraction.value*100).toInt
       def complete: Boolean = fraction.value >= 1.0
-
-  object Elapsed:
-    private inline def make(duration: Duration): Elapsed = duration.asInstanceOf[Elapsed]
-
-    def apply(duration: Duration): Elapsed = make(duration)
-
-    given gaugeable: Gauging => Elapsed is Gaugeable = timers.compactElapsed
-
-    extension (elapsed: Elapsed) def duration: Duration = elapsed.asInstanceOf[Duration]
 
   object Countdown:
     private inline def make(duration: Duration): Countdown = duration.asInstanceOf[Countdown]
