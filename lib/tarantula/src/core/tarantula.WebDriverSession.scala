@@ -73,7 +73,7 @@ private case class Sequence(id: Text, `type`: Text, actions: List[Json])
 private case class Sequences(actions: List[Json])
 
 // The W3C error object, with every field optional: a driver may omit the stacktrace, and a
-// reply that is JSON but not this shape must still yield a `WebDriverError`, not a `JsonError`.
+// reply that is JSON but not this shape must still yield a `WebDriverError`, not a `Json.Error`.
 private case class Failure
   ( error: Optional[Text], message: Optional[Text], stacktrace: Optional[Text] )
 
@@ -101,26 +101,26 @@ object WebDriverSession:
     WebDriverError(Reason.UnknownError, detail, Nil)
 
   // Every decode of a driver's reply goes through one of these five, and each is sealed with
-  // `unsafeAssumeSeparate` for the same reason: `Json#as` takes the `Tactic[JsonError]` both
+  // `unsafeAssumeSeparate` for the same reason: `Json#as` takes the `Tactic[Json.Error]` both
   // directly and inside the capture set of the decodable it summons, so a *capability* tactic —
   // which is what `raises` and `contramap` produce — reads as two overlapping uses. This is the
   // Foci/tracks cluster recorded in rep/DECISIONS.md, and the reason the module previously
   // imported `strategies.throwUnsafely`, whose tactic is pure and so never overlaps. Each body
   // here is a single decode of a single value against a single tactic: there is no second use to
   // interleave with, and confining the assertion to these five lines keeps every caller honest.
-  private[tarantula] def text(json: Json): Text raises JsonError =
+  private[tarantula] def text(json: Json): Text raises Json.Error =
     caps.unsafe.unsafeAssumeSeparate(json.as[Text])
 
-  private[tarantula] def boolean(json: Json): Boolean raises JsonError =
+  private[tarantula] def boolean(json: Json): Boolean raises Json.Error =
     caps.unsafe.unsafeAssumeSeparate(json.as[Boolean])
 
-  private[tarantula] def rect(json: Json): Rect raises JsonError =
+  private[tarantula] def rect(json: Json): Rect raises Json.Error =
     caps.unsafe.unsafeAssumeSeparate(json.as[Rect])
 
-  private[tarantula] def list(json: Json): List[Json] raises JsonError =
+  private[tarantula] def list(json: Json): List[Json] raises Json.Error =
     caps.unsafe.unsafeAssumeSeparate(json.as[List[Json]])
 
-  private[tarantula] def failure(json: Json): Failure raises JsonError =
+  private[tarantula] def failure(json: Json): Failure raises Json.Error =
     caps.unsafe.unsafeAssumeSeparate(json.as[Failure])
 
   object Action:
@@ -188,16 +188,16 @@ object WebDriverSession:
   // `unsafely` — which cannot fail, the text being a literal — out of the request path.
   private[tarantula] val nul: Json = unsafely(t"null".read[Json])
 
-  private[tarantula] def texts(json: Json): List[Text] raises JsonError =
+  private[tarantula] def texts(json: Json): List[Text] raises Json.Error =
     caps.unsafe.unsafeAssumeSeparate(json.as[List[Text]])
 
-  private[tarantula] def cookie(json: Json): Cookie.Value raises JsonError =
+  private[tarantula] def cookie(json: Json): Cookie.Value raises Json.Error =
     caps.unsafe.unsafeAssumeSeparate(json.as[Cookie.Value])
 
-  private[tarantula] def cookies(json: Json): List[Cookie.Value] raises JsonError =
+  private[tarantula] def cookies(json: Json): List[Cookie.Value] raises Json.Error =
     caps.unsafe.unsafeAssumeSeparate(json.as[List[Cookie.Value]])
 
-  private[tarantula] def timeouts(json: Json): Timeouts raises JsonError =
+  private[tarantula] def timeouts(json: Json): Timeouts raises Json.Error =
     caps.unsafe.unsafeAssumeSeparate(json.as[Timeouts])
 
   // Whether a driver is listening yet. Every failure is swallowed: during startup a refused
@@ -273,7 +273,7 @@ extends caps.ExclusiveCapability:
   private given connectTactic: (Tactic[ConnectError]^) =
     tactic.contramap(_ => malformed(t"the WebDriver could not be reached")(using note))
 
-  private given jsonTactic: (Tactic[JsonError]^) =
+  private given jsonTactic: (Tactic[Json.Error]^) =
     tactic.contramap(_ => malformed(t"the reply had an unexpected shape")(using note))
 
   private given mediaTactic: (Tactic[MediaType.Error]^) =
@@ -282,7 +282,7 @@ extends caps.ExclusiveCapability:
   private given base64Tactic: (Tactic[SerializationError]^) =
     tactic.contramap(_ => malformed(t"the screenshot was not valid Base64")(using note))
 
-  private given decodeTactic: (Tactic[CharDecodeError]^) =
+  private given decodeTactic: (Tactic[CharDecoder.Error]^) =
     tactic.contramap(_ => malformed(t"the reply was not valid UTF-8")(using note))
 
   // The `using`/`value` pair the specification requires, rendered by the `Focusable` instance.
