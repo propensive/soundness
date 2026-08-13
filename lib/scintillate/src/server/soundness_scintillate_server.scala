@@ -39,7 +39,7 @@ import scala.caps
 // via `scintillate.as`.
 export
   scintillate
-  . { Acceptable, basicAuth, cookie, HttpConnection, HttpServer, NoCache, NotFound,
+  . { Acceptable, basicAuth, cookie, HttpServer, NoCache, NotFound,
       Redirect, request, RequestServable, Responder, ServerError, SocketServer, Unfulfilled,
       WebserverErrorPage }
 

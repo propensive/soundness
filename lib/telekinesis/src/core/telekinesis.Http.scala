@@ -34,6 +34,7 @@ package telekinesis
 
 import scala.caps
 
+import beneficence.*
 import proscenium.compat.*
 
 import scala.language.dynamics
@@ -882,7 +883,7 @@ object Http:
     // header block off `cursor`, leaving it positioned at the first byte of the
     // message body. The symmetric twin of `Request.parseHead`; factored out so a
     // client driving a single cursor across a kept-alive connection can frame
-    // the body itself (e.g. an `HttpSession` lending streaming bodies).
+    // the body itself (e.g. an `Http.Session` lending streaming bodies).
     def parseHead(cursor: Cursor[Data, {}]^)(using Tactic[Http.Response.Error]): Head =
       inline def expected(char: Char): Diagnostics ?=> Http.Response.Error =
         Http.Response.Error(Http.Response.Error.Reason.Expectation(char, cursor.peek.asInt.toChar))
@@ -1070,7 +1071,7 @@ object Http:
 
   // The body is capture-polymorphic (`Body^`): a server-side streamed response
   // legitimately retains the live connection it answers — the handler shape
-  // `(connection: HttpConnection) ?=> Http.Response^{connection}` — while every
+  // `(connection: Http.Connection) ?=> Http.Response^{connection}` — while every
   // client-facing `Response` remains pure.
   into case class Response private
     ( version: Version, status: Status, textHeaders: List[Header], body: Body^ )
@@ -1293,5 +1294,49 @@ object Http:
     given default: Http.Redirection = Http.Redirection(10)
 
   class Redirection(val value: Int)
+
+  // Http.Session → Http.Session
+  // An HTTP session: a single client connection to one origin, over which several
+  // requests are exchanged. The protocol is fixed for the session's lifetime — for
+  // `https`, by ALPN during the TLS handshake (a multiplexed HTTP/2 session or a
+  // sequential HTTP/1.1 one); for plaintext `http`, always sequential HTTP/1.1 with
+  // keep-alive. `fetch` requires exclusive access (`update`) and its response borrows
+  // the session, so an unconsumed streaming body blocks the next fetch at compile time.
+  //
+  // Only the interface lives here: the implementations need a wire, and live in
+  // `telekinesis.http2`. It was `sealed` while class and implementations shared a file;
+  // they no longer can, so the implementations are `private[telekinesis]` instead.
+  abstract class Session extends caps.ExclusiveCapability, caps.Stateful:
+    update def fetch(request: Request)(using Tactic[ConnectError])
+    :   Response^{this, caps.any}
+
+  // Http.Connection → Http.Connection
+  object Connection:
+    // The sink that writes the response to (and closes) the client connection. `out` may
+    // capture the live connection (a streamed body reading the request stream), and a
+    // function type cannot take a `^` parameter (the `Spring` precedent). The tactic is a
+    // using-parameter, not a curried context-function result — a value of curried dependent
+    // context-function type is not yet supported — so nothing escapes `apply`.
+    trait Respond:
+      def apply(response: Response^)(using Tactic[StreamError]): Unit
+
+  // One live request/response exchange, as the handler sees it: the request, plus the
+  // means of answering it. `Exclusive` because an exchange has a single owner and may be
+  // responded to only once. Constructing one from a particular server's transport is the
+  // server's business; the type itself needs nothing but the request and the sink.
+  class Connection
+    (     request: Request^,
+      val tls:     Boolean,
+      val port:    Int,
+      val respond: Connection.Respond^ )
+  extends Request
+    ( request.method,
+      request.version,
+      request.host,
+      request.target,
+      request.textHeaders,
+      request.body ),
+    Findable,
+    caps.ExclusiveCapability
 
 sealed trait Http

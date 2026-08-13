@@ -422,7 +422,7 @@ object WebDriver:
   // and a capability-classed `Element` constructed there is fresh at each construction, so a
   // `List` of them cannot be formed ("any² is not visible from any"); that is precisely the
   // failure recorded in rep/DECISIONS.md which caused the earlier attempt to be reverted. The
-  // `X^{this, caps.any}` borrow that `HttpSession#fetch` uses works for one value returned from a
+  // `X^{this, caps.any}` borrow that `Http.Session#fetch` uses works for one value returned from a
   // method; it does not survive being built in a lambda and collected into a container.
   //
   // Nothing is lost by leaving elements pure. A leaked element is a dangling id, not a live

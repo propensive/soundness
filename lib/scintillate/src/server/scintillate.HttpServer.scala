@@ -64,7 +64,7 @@ object HttpServer:
 
 case class HttpServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
 extends RequestServable:
-  def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
+  def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
     ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
   :   Service^ =
@@ -84,7 +84,7 @@ extends RequestServable:
             catch case NonFatal(_) => ()
 
         . protect:
-            val connection = HttpConnection(exchange.nn)
+            val connection = Connections(exchange.nn)
 
             connection.respond:
               try handler(using connection) catch case throwable: Throwable =>

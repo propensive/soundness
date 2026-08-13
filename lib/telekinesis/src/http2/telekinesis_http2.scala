@@ -63,7 +63,7 @@ class UrlSessional[url <: HttpUrl]
           connectError: Tactic[ConnectError] )
 extends Sessional:
   type Self = url
-  type Result = HttpSession^{caps.any}
+  type Result = Http.Session^{caps.any}
 
   def session[result](target: url)(lambda: (session: Result) ?=> result): result =
     import ConnectError.Reason.*
@@ -84,7 +84,7 @@ extends Sessional:
         try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, List.of(options.values)) catch
           case error: ji.IOException => abort(ConnectError(Unknown))
 
-      try lambda(using HttpSession.Sequential(duplex)) finally duplex.close()
+      try lambda(using Sessions.Sequential(duplex)) finally duplex.close()
 
     else
       import threading.virtualThreading
@@ -110,7 +110,7 @@ extends Sessional:
 
                   try
                     connection.start()
-                    lambda(using HttpSession.Multiplexed(connection, authority))
+                    lambda(using Sessions.Multiplexed(connection, authority))
 
                   finally connection.close()
 
@@ -119,12 +119,12 @@ extends Sessional:
               case error: Async.Error => abort(ConnectError(Unknown))
 
           case _ =>
-            lambda(using HttpSession.Sequential(duplex))
+            lambda(using Sessions.Sequential(duplex))
 
       finally duplex.close()
 
 // A session on an HTTP or HTTPS URL: the connection to the URL's origin is
-// opened once, lent to the lambda as an `HttpSession`, and closed when the
+// opened once, lent to the lambda as an `Http.Session`, and closed when the
 // scope ends. Bounded like `Fetchable.httpUrl` so `url"https://..."` literals
 // (whose types are scheme-refined subtypes of `HttpUrl`) resolve the instance.
 given httpUrlSessional: [url <: HttpUrl]

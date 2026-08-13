@@ -55,22 +55,14 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-object HttpConnection:
+private[scintillate] object Connections:
   // A named SAM rather than a curried function type: the response the server writes
-  // out may capture the live connection (a streamed body reading the request stream),
-  // and a function type cannot take a `^` parameter (the `Spring` precedent). The
-  // tactic is a using-parameter, not a curried context-function result — a value of
-  // curried dependent context-function type is not yet supported — so nothing escapes
-  // `apply`; `connection.respond(response)` resolves the ambient `StreamError` tactic.
-  trait Respond:
-    def apply(response: Http.Response^)(using Tactic[StreamError]): Unit
-
   // Explicit `using` evidence instead of `logs`/`raises` sugar: the `respond` closure built
   // in the body cannot cross the nested context-function results the sugar desugars to (the
   // stacked-raises convention; see rep/DECISIONS.md).
   def apply(exchange: csnh.HttpExchange)
     ( using (HttpServer.Event is Loggable)^, Tactic[Hostname.Error] )
-  :   HttpConnection^ =
+  :   Http.Connection^ =
 
     val uri = exchange.getRequestURI.nn
     val query = Optional(uri.getQuery)
@@ -120,7 +112,7 @@ object HttpConnection:
     val port = Option(exchange.getRequestURI.nn.getPort).filter(_ > 0).getOrElse:
       exchange.getLocalAddress.nn.getPort
 
-    val respond: Respond^ = new Respond:
+    val respond: Http.Connection.Respond^ = new Http.Connection.Respond:
       def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
         var chunked = false
 
@@ -179,26 +171,4 @@ object HttpConnection:
 
         exchange.close()
 
-    new HttpConnection(request, false, port, respond)
-
-// An `HttpConnection` is a *capability*: it is one live, socket-backed exchange, holding the
-// `respond` sink that writes to (and closes) the client connection. Its lifetime is the
-// handler invocation that receives it. `Exclusive` because an exchange has a single owner
-// and may be responded to only once.
-class HttpConnection
-  (     request: Http.Request^,
-    val tls:     Boolean,
-    val port:    Int,
-    // The sink that writes the response to (and closes) the client connection. Its
-    // `apply` takes `Http.Response^`: the handler's response may capture this very
-    // connection — a streamed body reading the live request stream.
-    val respond: HttpConnection.Respond^ )
-extends Http.Request
-  ( request.method,
-    request.version,
-    request.host,
-    request.target,
-    request.textHeaders,
-    request.body ),
-  Findable,
-  caps.ExclusiveCapability
+    new Http.Connection(request, false, port, respond)

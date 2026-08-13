@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import logging.silentLogging
 
-// A handler receives one live exchange as an `HttpConnection` capability; capture checking
+// A handler receives one live exchange as an `Http.Connection` capability; capture checking
 // prevents the connection (or its respond sink) being retained past the handler invocation.
 object CaptureTests extends Suite(m"Connection confinement tests"):
   def run(): Unit =
@@ -49,7 +49,7 @@ object CaptureTests extends Suite(m"Connection confinement tests"):
           var stash: () => Unit = () => ()
 
           server.handle:
-            stash = () => summon[HttpConnection].respond(Http.Response(Http.Ok)(t""))
+            stash = () => summon[Http.Connection].respond(Http.Response(Http.Ok)(t""))
             Http.Response(Http.Ok)(t"")
 
           ()

@@ -53,7 +53,7 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-object HttpSession:
+private[telekinesis] object Sessions:
   // The sequential HTTP/1.1 form: one exchange at a time over the pinned,
   // kept-alive connection. `fetch` is an `update` method and its response
   // BORROWS the session — the streaming body lends the connection's wire
@@ -61,7 +61,7 @@ object HttpSession:
   // response is still being read; consuming the body (e.g. `memoize` or
   // `receive`) ends the borrow. Each framed body ends exactly at the next
   // response, which is what permits the next fetch.
-  class Sequential private[telekinesis] (duplex: Duplex)(using Buffering) extends HttpSession:
+  class Sequential private[telekinesis] (duplex: Duplex)(using Buffering) extends Http.Session:
     // The previous response's framing, kept so an unconsumed remainder can be
     // drained before the next exchange (the wire must reach the response
     // boundary). The borrow is also expressed in `fetch`'s result type;
@@ -133,7 +133,7 @@ object HttpSession:
   // fetches may run concurrently). The body is drained within the fetch, so
   // the response is pure and the borrow ends immediately.
   class Multiplexed private[telekinesis] (connection: Http2.Connection^, authority: Text)
-  extends HttpSession:
+  extends Http.Session:
     update def fetch(request: Http.Request)(using Tactic[ConnectError])
     :   Http.Response^{this, caps.any} =
 
@@ -169,14 +169,3 @@ object HttpSession:
         case error: Http2.Error  => abort(ConnectError(Unknown))
         case error: Async.Error  => abort(ConnectError(Unknown))
         case error: StreamError => abort(ConnectError(Unknown))
-
-// An HTTP session: a single client connection to one origin, over which several
-// requests are exchanged. The protocol is fixed for the session's lifetime —
-// for `https`, by ALPN during the TLS handshake (a `Multiplexed` HTTP/2 session
-// or a `Sequential` HTTP/1.1 one); for plaintext `http`, always sequential
-// HTTP/1.1 with keep-alive. `fetch` requires exclusive access (`update`) and
-// its response borrows the session, so an unconsumed streaming body blocks the
-// next fetch at compile time.
-sealed abstract class HttpSession extends caps.ExclusiveCapability, caps.Stateful:
-  update def fetch(request: Http.Request)(using Tactic[ConnectError])
-  :   Http.Response^{this, caps.any}

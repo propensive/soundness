@@ -330,7 +330,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
     // Aspirational: the handle's fresh capability and the borrow expressed in `compile`'s
     // result type record the intent, but rejecting these statically awaits further
-    // separation-checker support (as telekinesis's `HttpSession.fetch` notes for its own
+    // separation-checker support (as telekinesis's `Http.Session.fetch` notes for its own
     // borrow).
     test(m"A compiler session handle cannot escape its scope"):
       demilitarize:
