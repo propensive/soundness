@@ -569,12 +569,12 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == Nil)
 
       test(m"A wrong password is refused as Unreadable"):
-        capture[KeystoreError](guarded.open[Keystore](Password(t"wrong")) { () }).reason
-      . assert(_ == KeystoreError.Reason.Unreadable)
+        capture[Keystore.Error](guarded.open[Keystore](Password(t"wrong")) { () }).reason
+      . assert(_ == Keystore.Error.Reason.Unreadable)
 
       test(m"Opening a keystore for writing is refused"):
-        capture[KeystoreError](guarded.open[Keystore](Write, Password(t"sesame")) { () }).reason
-      . assert(_ == KeystoreError.Reason.WriteUnsupported)
+        capture[Keystore.Error](guarded.open[Keystore](Write, Password(t"sesame")) { () }).reason
+      . assert(_ == Keystore.Error.Reason.WriteUnsupported)
 
       test(m"A missing certificate alias is Unset"):
         guarded.open[Keystore](Password(t"sesame")):

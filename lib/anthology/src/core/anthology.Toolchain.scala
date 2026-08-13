@@ -42,6 +42,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import digression.*
+import fulminate.*
 import galilei.*
 import parasite.*
 import prepositional.*
@@ -80,6 +81,10 @@ object Toolchain:
     if remaining > 0 then abort(Link.Error(Link.Error.Reason.CyclicToolchain))
 
     new Toolchain(List.of(all))
+
+  // ToolchainError → Toolchain.Error
+  case class Error(tool: Text)(using Diagnostics)
+  extends fulminate.Error(586, 0)(m"the native tool $tool is not available on the PATH")
 
 // An in-memory toolchain: a directed acyclic graph whose nodes are formats and whose edges are
 // tools. Producing one format from another is path search: the unique shortest edge sequence
