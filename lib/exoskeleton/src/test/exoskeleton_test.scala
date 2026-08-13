@@ -68,6 +68,8 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             val Ubuntu = Subcommand("ubuntu", e"Ubuntu")
             val Gentoo = Subcommand("gentoo", e"Gentoo Linux")
             val Tree = Subcommand("tree", e"path-segment completion", hidden = true)
+            val Files = Subcommand("files", e"path completion", hidden = true)
+            val Verify = Subcommand("verify", e"verify a file")
 
             class Hue(name: Text)
             class Segment(name: Text)
@@ -114,6 +116,15 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
                   Flag[Segment]("at", description = t"path segment")()
                   execute(Exit.Ok)
+
+                case Files() :: rest =>
+                  import systems.javaSystem
+                  given WorkingDirectory = summon[Cli].workingDirectory
+
+                  rest match
+                    case Verify() :: Pathname(file) :: _ => execute(Exit.Ok)
+                    case Pathname(file) :: Nil           => execute(Exit.Ok)
+                    case _                               => execute(Exit.Fail(1))
 
                 case _ =>
                   execute(Exit.Fail(1))
@@ -410,6 +421,90 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             test(m"fish focus=0 exits cleanly"):
               sh"$tool '{completions}' fish 0 0 /dev/null -- abcd".exec[Exit]()
             .assert(_ == Exit.Ok)
+
+          suite(m"Pathname completions"):
+            import interfaces.paths.pathOnLinux
+
+            val tool = summon[Enclave.Tool].path
+
+            // A directory of known content, used as the working directory of each completion
+            // invocation below so `Pathname`'s listings are deterministic.
+            val fixture: Path on Linux = unsafely:
+              val dir: Path on Linux = temporaryDirectory[Path on Linux]/t"exoskeleton-${Uuid()}"
+              dir.create[Directory]()
+              (dir/t"one.txt").create[File]()
+              (dir/t"two.txt").create[File]()
+              (dir/t"src").create[Directory]()
+              dir
+
+            given WorkingDirectory = () => fixture.encode
+
+            // Issue #1783: the fish/powershell branch renders `Suggestion.incomplete` as a
+            // second candidate line with a trailing space, so every path entry shows twice
+            // in the menu, and selecting the twin inserts a stray trailing space.
+            test(m"fish lists a file candidate exactly once"):
+              sh"$tool '{completions}' fish 3 0 /dev/null -- abcd files verify ''".exec[Text]()
+            .aspire(_.cut(t"\n").stdlib.count(_.starts(t"one.txt")) == 1)
+
+            test(m"fish lists a directory candidate exactly once"):
+              sh"$tool '{completions}' fish 3 0 /dev/null -- abcd files verify ''".exec[Text]()
+            .aspire(_.cut(t"\n").stdlib.count(_.starts(t"src/")) == 1)
+
+            test(m"powershell lists a file candidate exactly once"):
+              val line = t"abcd files verify "
+              sh"$tool '{completions}' powershell ${line.length} 0 '' -- $line".exec[Text]()
+            .aspire(_.cut(t"\n").stdlib.count(_.starts(t"one.txt")) == 1)
+
+            // Issue #1783, `incomplete` too broad: `Pathname` marks every candidate that
+            // differs from the argument as incomplete, so even plain files get zsh's
+            // suffix-suppressing `compadd` twin; only directories should.
+            test(m"zsh emits no suffix-suppressing twin for a plain file"):
+              sh"$tool '{completions}' zsh 4 0 /dev/null -- abcd files verify ''".exec[Text]()
+            .aspire(_.cut(t"\n").stdlib.count(_.contains(t"one.txt")) == 1)
+
+            test(m"zsh still emits the suffix-suppressing twin for a directory"):
+              sh"$tool '{completions}' zsh 4 0 /dev/null -- abcd files verify ''".exec[Text]()
+            .assert(_.cut(t"\n").stdlib.count(_.contains(t"src/")) == 2)
+
+            // Issue #1782: `Pathname` discards the `prior` suggestions, so a subcommand and
+            // a path matched against the same argument should offer the union, but the
+            // extractor evaluated last erases the other's suggestions.
+            test(m"subcommands and paths at one position combine on fish"):
+              sh"$tool '{completions}' fish 2 0 /dev/null -- abcd files ''".exec[Text]()
+            .aspire { out => out.contains(t"verify") && out.contains(t"one.txt") }
+
+            test(m"subcommands and paths at one position combine on bash"):
+              sh"$tool '{completions}' bash 2 0 /dev/null -- abcd files ''".exec[Text]()
+            .aspire { out => out.contains(t"verify") && out.contains(t"one.txt") }
+
+            test(m"subcommands and paths at one position combine on zsh"):
+              sh"$tool '{completions}' zsh 3 0 /dev/null -- abcd files ''".exec[Text]()
+            .aspire { out => out.contains(t"verify") && out.contains(t"one.txt") }
+
+            // Issue #1782, worst case: a partial word matching no file must still offer the
+            // subcommand it matches, not an empty list.
+            test(m"a partial word matching no file still offers the subcommand"):
+              sh"$tool '{completions}' fish 2 3 /dev/null -- abcd files ver".exec[Text]()
+            .aspire(_.contains(t"verify"))
+
+            // Issue #1086 guard, end-to-end: a unique directory candidate must complete
+            // progressively — inserted without a trailing space, not advancing to the next
+            // argument.
+            test(m"fish inserts a unique directory without advancing"):
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Fish.tmux():
+                  Tmux.enter(t"cd ${fixture.encode}")
+                  Tmux.enter('\r')
+                  Tmux.progress(t"files verify sr")
+            .assert(_ == t"files verify src/^")
+
+            test(m"fish menu shows each path entry once"):
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Fish.tmux(width = 120):
+                  Tmux.enter(t"cd ${fixture.encode}")
+                  Tmux.enter('\r')
+                  Tmux.completions(t"files verify ")
+            .aspire { out => out.cut(t"one.txt").stdlib.length == 2 && out.cut(t"src/").stdlib.length == 2 }
 
       object HelpApp:
         import interpreters.posixInterpreter
