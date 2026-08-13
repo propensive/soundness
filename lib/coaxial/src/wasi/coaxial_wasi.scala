@@ -110,7 +110,7 @@ package socketBackends:
 
     // Opens a TCP connection to `host:port` and drives `start-connect` to completion, blocking on
     // the socket's pollable. Returns the connection's stream halves and the socket handle.
-    private def connect(host: Text, port: Int)(using Tactic[ConnectionError]): WasiExchange =
+    private def connect(host: Text, port: Int)(using Tactic[Socket.Error]): WasiExchange =
       val net = network()
       val socketHandle = createSocket()
       val socket: Foreign of "tcp-socket" from Wit = socketHandle
@@ -125,7 +125,7 @@ package socketBackends:
         WasiExchange(input, output, socketHandle)
       catch case error: WitError =>
         socketHandle.dispose()
-        abort(ConnectionError(ConnectionError.Reason.Accept))
+        abort(Socket.Error(Socket.Error.Reason.Accept))
 
     // Blocks until the socket is ready for the next step of a `start-`/`finish-` operation.
     private def await(socketHandle: WitHandle of "tcp-socket"): Unit =
@@ -222,9 +222,9 @@ package socketBackends:
         socketHandle
 
     def listenDomain(address: DomainSocket, options: List[Socket.Option]): WitHandle of "tcp-socket" =
-      unsafely(abort(ConnectionError(ConnectionError.Reason.Accept)))
+      unsafely(abort(Socket.Error(Socket.Error.Reason.Accept)))
 
-    def accept(socketHandle: WitHandle of "tcp-socket"): Duplex raises ConnectionError =
+    def accept(socketHandle: WitHandle of "tcp-socket"): Duplex raises Socket.Error =
       val socket: Foreign of "tcp-socket" from Wit = socketHandle
 
       try
@@ -235,7 +235,7 @@ package socketBackends:
           . call[(WitHandle of "tcp-socket", WitHandle of "input-stream", WitHandle of "output-stream")]()
 
         duplexOf(WasiExchange(input, output, client))
-      catch case error: WitError => abort(ConnectionError(ConnectionError.Reason.Accept))
+      catch case error: WitError => abort(Socket.Error(Socket.Error.Reason.Accept))
 
     def shutdown(socketHandle: WitHandle of "tcp-socket"): Unit = socketHandle.dispose()
 
@@ -243,12 +243,12 @@ package socketBackends:
     def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option]): Unit =
       ()
 
-    def receive(socket: Unit): Packet raises ConnectionError =
-      abort(ConnectionError(ConnectionError.Reason.Accept))
+    def receive(socket: Unit): Packet raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Accept))
 
     def reply(socket: Unit, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
-    :   Unit raises ConnectionError =
-      abort(ConnectionError(ConnectionError.Reason.Transmit))
+    :   Unit raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def unbind(socket: Unit): Unit = ()
 
@@ -263,7 +263,7 @@ package socketBackends:
       unsafely(connect(t"127.0.0.1", port.number))
 
     def dialDomain(address: DomainSocket, options: List[Socket.Option]): WasiExchange =
-      unsafely(abort(ConnectionError(ConnectionError.Reason.Accept)))
+      unsafely(abort(Socket.Error(Socket.Error.Reason.Accept)))
 
     def request(exchange: WasiExchange, consume input: (Stream[Data] over Credit)^): Unit =
       drain(exchange.output, input)
@@ -285,7 +285,7 @@ package socketBackends:
       duplexOf(unsafely(connect(endpoint.remote, endpoint.port.number)))
 
     def duplexDomain(address: DomainSocket, options: List[Socket.Option]): Duplex =
-      duplexOf(unsafely(abort(ConnectionError(ConnectionError.Reason.Accept))))
+      duplexOf(unsafely(abort(Socket.Error(Socket.Error.Reason.Accept))))
 
     //── Fire-and-forget datagram courier (unsupported on WASI for now) ────────────────────────────
     def routeUdp

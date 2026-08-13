@@ -158,7 +158,7 @@ package socketBackends:
       channel.bind(socketAddress)
       ServerBinding.Domain(channel)
 
-    def accept(socket: ServerBinding): Duplex raises ConnectionError = socket match
+    def accept(socket: ServerBinding): Duplex raises Socket.Error = socket match
       case ServerBinding.Tcp(server) =>
         try
           val client = server.accept().nn
@@ -166,11 +166,11 @@ package socketBackends:
           streamsDuplex(client.getInputStream.nn, client.getOutputStream.nn): () =>
             client.close()
 
-        catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
+        catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
 
       case ServerBinding.Domain(channel) =>
         try channelDuplex(channel.accept().nn)
-        catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
+        catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
 
     def shutdown(socket: ServerBinding): Unit = socket match
       case ServerBinding.Tcp(server)     => server.close()
@@ -188,12 +188,12 @@ package socketBackends:
 
       socket
 
-    def receive(socket: jn.DatagramSocket): Packet raises ConnectionError =
+    def receive(socket: jn.DatagramSocket): Packet raises Socket.Error =
       val array = new scala.Array[Byte](1472)
       val packet = jn.DatagramPacket(array, 1472)
 
       try socket.receive(packet)
-      catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
+      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
 
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
 
@@ -215,7 +215,7 @@ package socketBackends:
           Port.unsafe[Udp](address.getPort) )
 
     def reply(socket: jn.DatagramSocket, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
-    :   Unit raises ConnectionError =
+    :   Unit raises Socket.Error =
 
       val ip: jn.InetAddress = sender.absolve match
         case ip: (Ipv4 @unchecked) =>
@@ -247,7 +247,7 @@ package socketBackends:
       val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
 
       try socket.send(packet)
-      catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
+      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def unbind(socket: jn.DatagramSocket): Unit = socket.close()
 

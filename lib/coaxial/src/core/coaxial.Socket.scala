@@ -73,7 +73,7 @@ object Socket:
   // user-facing API and stay platform-neutral. Each opaque handle type is threaded back to the
   // backend and never inspected by the API. An operation a backend cannot support (e.g. Unix-domain
   // sockets or TLS on WASI) raises the appropriate error rather than approximating; each backend
-  // maps its native failures onto coaxial's `ConnectionError`/`StreamError` vocabulary. `options`
+  // maps its native failures onto coaxial's `Socket.Error`/`StreamError` vocabulary. `options`
   // are coaxial's abstract `Option`s, applied by the backend in whatever terms its platform
   // understands (unsupported options are silently skipped).
   trait Backend:
@@ -87,7 +87,7 @@ object Socket:
 
     // Accept the next incoming connection, blocking until one arrives, as a `Duplex`: the handler
     // reads the request from its `source` and the accept loop writes the response with `send`.
-    def accept(socket: ServerSocket): Duplex raises ConnectionError
+    def accept(socket: ServerSocket): Duplex raises Socket.Error
     def shutdown(socket: ServerSocket): Unit
 
     //── Datagram server (`Bindable` over UDP) ────────────────────────────────────────────────────
@@ -97,9 +97,9 @@ object Socket:
     :   DatagramSocket
 
     // Block for the next datagram; `reply` sends `data` back to a received packet's `sender`.
-    def receive(socket: DatagramSocket): Packet raises ConnectionError
+    def receive(socket: DatagramSocket): Packet raises Socket.Error
     def reply(socket: DatagramSocket, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
-    :   Unit raises ConnectionError
+    :   Unit raises Socket.Error
 
     def unbind(socket: DatagramSocket): Unit
 
@@ -194,3 +194,18 @@ object Socket:
   // anonymous one so the `transparent inline` `listen` does not duplicate it at each call site.
   class Service(stopServer: () => Unit) extends caps.ExclusiveCapability:
     def stop(): Unit = stopServer()
+
+  // ConnectionError → Socket.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Accept   extends Reason(1)
+      case Transmit extends Reason(2)
+      case Close    extends Reason(3)
+
+    given communicable: Reason is Communicable =
+      case Reason.Accept   => m"a new connection could not be accepted"
+      case Reason.Transmit => m"data could not be transmitted to the connection"
+      case Reason.Close    => m"the connection could not be closed cleanly"
+
+  case class Error(reason: Socket.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(266, reason.number)(m"the connection failed because $reason")
