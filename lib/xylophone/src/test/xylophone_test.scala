@@ -1078,31 +1078,118 @@ object Tests extends Suite(m"Xylophone tests"):
         xp"/root[1]/@id".encode
       . assert(_ == t"/root[1]/@id")
 
-      test(m"a step without an ordinal defaults to [1]"):
+      test(m"a step without an ordinal keeps its abbreviated form"):
         xp"/root/child".encode
-      . assert(_ == t"/root[1]/child[1]")
+      . assert(_ == t"/root/child")
 
       test(m"the root path parses"):
         xp"/".encode
       . assert(_ == t"/")
 
-      test(m"a path not beginning with '/' is rejected at the first character"):
-        demilitarize:
-          xp"root/child"
-        . map(_.focus)
-      . assert(_ == List("r"))
+      test(m"a relative path parses"):
+        xp"root/child".encode
+      . assert(_ == t"root/child")
 
-      test(m"an empty step is rejected at the offending separator"):
-        demilitarize:
-          xp"/root//child"
-        . map(_.focus)
-      . assert(_ == List("/"))
+      test(m"a descendant-or-self step parses"):
+        xp"/root//child".encode
+      . assert(_ == t"/root//child")
 
-      test(m"a non-numeric ordinal is rejected"):
+      test(m"an attribute predicate parses"):
+        xp"//*[@data-test='submit']".encode
+      . assert(_ == t"//*[@data-test='submit']")
+
+      test(m"a text predicate parses"):
+        xp"//button[text()='Submit']".encode
+      . assert(_ == t"//button[text()='Submit']")
+
+      test(m"a Text insertion becomes a string literal"):
+        val id = t"target"
+        xp"//div[@id=$id]".encode
+      . assert(_ == t"//div[@id='target']")
+
+      test(m"an Int insertion becomes a number"):
+        val n = 3
+        xp"//li[position()=$n]".encode
+      . assert(_ == t"//li[position()=3]")
+
+      test(m"an XPath insertion splices its expression in parentheses"):
+        val base = xp"/html/body"
+        xp"$base//div".encode
+      . assert(_ == t"(/html/body)//div")
+
+      test(m"an insertion containing both quote kinds renders via concat"):
+        val value = t"it's a \"test\""
+        xp"//a[@title=$value]".encode
+      . assert(_ == t"""//a[@title=concat('it',"'",'s a "test"')]""")
+
+      test(m"an insertion of an unsupported type is rejected"):
         demilitarize:
-          xp"/root[x]"
+          val flag = true
+          xp"//div[@id=$flag]"
+      . assert(_.nonEmpty)
+
+      test(m"an insertion cannot appear as an axis name"):
+        demilitarize:
+          val axis = t"child"
+          xp"//$axis::div"
+      . assert(_.nonEmpty)
+
+      test(m"an unclosed predicate is rejected"):
+        demilitarize:
+          xp"/root["
         . map(_.focus.nonEmpty)
       . assert(_ == List(true))
+
+      test(m"an unknown axis is rejected at its first character"):
+        demilitarize:
+          xp"/foo::bar"
+        . map(_.focus)
+      . assert(_ == List("f"))
+
+    suite(m"XPath combinators"):
+      test(m"an absolute path builds with /"):
+        (XPath / t"html" / t"body").encode
+      . assert(_ == t"/html/body")
+
+      test(m"deep builds a descendant-or-self step"):
+        XPath.deep(t"div").encode
+      . assert(_ == t"//div")
+
+      test(m"where adds a contains predicate over an attribute"):
+        XPath.deep(t"div").where(XPath.attribute(t"class").contains(t"button")).encode
+      . assert(_ == t"//div[contains(@class,'button')]")
+
+      test(m"predicates compose with and"):
+        XPath.deep(t"div")
+        . where(XPath.attribute(t"class").contains(t"button") and XPath.textual === t"Submit")
+        . encode
+      . assert(_ == t"//div[contains(@class,'button') and text()='Submit']")
+
+      test(m"an ordinal predicate applies to the last step"):
+        (XPath / t"ul" / t"li")(2).encode
+      . assert(_ == t"/ul/li[2]")
+
+      test(m"position and last compose"):
+        (XPath / t"li").where(XPath.position === XPath.last).encode
+      . assert(_ == t"/li[position()=last()]")
+
+      test(m"a parent step re-sugars to double-dot"):
+        XPath.deep(t"span").on(XPath.Axis.Parent, XPath.NodeTest.Node).encode
+      . assert(_ == t"//span/..")
+
+      test(m"an attribute-presence predicate encodes bare"):
+        XPath.deep(t"a").where(XPath.attribute(t"href")).encode
+      . assert(_ == t"//a[@href]")
+
+      test(m"a variable comparison encodes with a dollar"):
+        XPath.relative(t"item").where(XPath.attribute(t"id") === XPath.variable(t"target"))
+        . encode
+      . assert(_ == t"item[@id=$$target]")
+
+      test(m"a combinator path round-trips through the parser"):
+        val path = XPath.deep(t"button").where(XPath.textual === t"Submit")
+        unsafely(path.encode.as[XPath])
+      . assert(_ == XPath.deep(t"button").where(XPath.textual === t"Submit"))
 
     suite(m"HTTP content-type integration"):
       import charEncoders.utf8Encoder
@@ -1195,5 +1282,6 @@ object Tests extends Suite(m"Xylophone tests"):
 
     PositionTests()
     DecoderTests()
+    XPathTests()
     EncoderTests()
     DirectParsingTests()

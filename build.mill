@@ -3169,7 +3169,7 @@ object querencia extends Library:
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, wisteria.core,
       contextual.core,
-      panopticon.core, turbulence.core, serpentine.core, gossamer.lexicon):
+      panopticon.core, turbulence.core, gossamer.lexicon):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Expr-level `Inlinable` typeclass and its expansion-time instance

@@ -58,11 +58,9 @@ object Focusable:
   given tag: [tag <: Tag] => tag is Focusable = Focusable(t"tag name", _.label)
   given domId: Name[DomId] is Focusable = Focusable(t"css selector", v => t"#$v")
 
-  // Xylophone's `XPath` is an absolute path of element steps with 1-indexed ordinals, plus an
-  // optional trailing attribute — `/html[1]/body[1]/div[2]`. That is a strict subset of what the
-  // locator strategy permits: no `//`, no `*`, and no predicate but the ordinal, so the forms
-  // XPath is usually reached for (`//button[text()='Submit']`) cannot yet be written. Wiring the
-  // type in now means those arrive here for free when Xylophone's XPath grows them.
+  // Xylophone's `XPath` covers the full XPath 1.0 grammar, so everything the locator strategy
+  // permits — `//button[text()='Submit']`, `//*[contains(@class,'active')]` — renders through
+  // `encode` unchanged.
   given xpath: XPath is Focusable = Focusable(t"xpath", _.encode)
 
   // Polymorphic for the same reason as `tag`: `ClassList["checkbox"]()` has the refined type

@@ -1916,53 +1916,46 @@ object Xml extends Tag.Container
   // to resolve an `XPath` to a source `Position`; see the descriptor-layout
   // comment on `PositionIndex` below.
   private object Locator:
-    // `XPath.path.descent` is stored leaf-first (Serpentine's `/`
-    // prepends), so the walker iterates it in reverse to descend
-    // root-to-leaf. The XPath convention is `/foo/bar/@attr`, so the
-    // first element step names the *root* element itself (no descent
-    // into children) and subsequent steps descend.
+    // The path arrives as `XPath.Location`s, root-first. The XPath convention
+    // is `/foo/bar/@attr`, so the first element step names the *root* element
+    // itself (no descent into children) and subsequent steps descend.
     private[xylophone] def walk
       ( xml:      Xml,
         data:     Array[Int]^{},
         offset:   Int,
-        segments: Sequence[Text],
-        i:        Int )
+        segments: List[XPath.Location],
+        first:    Boolean )
     :   Optional[Position] =
 
-      if i >= segments.length then
-        Position(data.readUnchecked(offset + 1).z, data.readUnchecked(offset + 2).z, length = data.readUnchecked(offset + 3))
-      else
-        val segment = segments.stdlib(segments.length - 1 - i)
+      segments match
+        case Nil =>
+          Position(data.readUnchecked(offset + 1).z, data.readUnchecked(offset + 2).z, length = data.readUnchecked(offset + 3))
 
-        XPath.parseStep(segment) match
-          case Unset => Unset
+        case XPath.Location.Attribute(attrName) :: _ =>
+          xml match
+            case element: Element => attrPosition(element, data, offset, attrName)
+            case _                => Unset
 
-          case step => step.asInstanceOf[Either[Text, (Text, Int)]] match
-            case Left(attrName) =>
-              xml match
-                case element: Element => attrPosition(element, data, offset, attrName)
-                case _                => Unset
+        case XPath.Location.Element(name, ordinal) :: rest =>
+          xml match
+            case element: Element if first =>
+              // First step names the document's root element.
+              if element.label == name && ordinal == 1 then
+                walk(element, data, offset, rest, false)
+              else
+                Unset
 
-            case Right((name, ordinal)) =>
-              xml match
-                case element: Element if i == 0 =>
-                  // First step names the document's root element.
-                  if element.label == name && ordinal == 1 then
-                    walk(element, data, offset, segments, i + 1)
-                  else
-                    Unset
+            case element: Element =>
+              descend(element, name, ordinal).let: childElementIndex =>
+                val attrCount = data.readUnchecked(offset + 4)
+                val offSlot = offset + 6 + attrCount + childElementIndex
+                val childOff = data.readUnchecked(offSlot)
 
-                case element: Element =>
-                  descend(element, name, ordinal).let: childElementIndex =>
-                    val attrCount = data.readUnchecked(offset + 4)
-                    val offSlot = offset + 6 + attrCount + childElementIndex
-                    val childOff = data.readUnchecked(offSlot)
+                descendAst(element, name, ordinal).let: child =>
+                  walk(child, data, offset + childOff, rest, false)
 
-                    descendAst(element, name, ordinal).let: child =>
-                      walk(child, data, offset + childOff, segments, i + 1)
-
-                case _ =>
-                  Unset
+            case _ =>
+              Unset
 
     private def attrPosition
       ( element:  Element,
@@ -2053,7 +2046,8 @@ object Xml extends Tag.Container
 
       def locate(document: Document[Xml], path: XPath): Optional[Xml.Position] =
         document.metadata.positionIndex.let: index =>
-          Locator.walk(document.root, index.ints, 0, Sequence.from(path.path.descent), 0)
+          path.locations.let: segments =>
+            Locator.walk(document.root, index.ints, 0, segments, true)
 
       // XML has no distinct key positions, so there is nothing to locate by key.
       def locateKey(document: Document[Xml], path: XPath): Optional[Xml.Position] = Unset
@@ -3944,6 +3938,49 @@ object Xml extends Tag.Container
   :   (Tactic[ParseError]^) ?->{callback} Xml =
 
     new XmlParser(Cursor[Text](input), tracking = false, callback).parseXml(headers0)
+
+  // Selects the nodes matching an XPath: `//div[@id='x']` and friends,
+  // evaluated against this tree. The result is a `Fragment` of the matching
+  // tree nodes in document order; a path selecting attributes (`//a/@href`)
+  // yields their values through `selectText` or `evaluate` instead, since
+  // attributes are not tree nodes.
+  extension (xml: Xml)
+    def select(xpath: XPath)(using Tactic[XPath.EvaluationError]): Fragment =
+      XPathEngine.evaluate(xml, xpath.expression, Map()) match
+        case XPath.Value.NodeSet(loci) =>
+          val nodes = loci.stdlib.flatMap: locus =>
+            locus.attributeIndex match
+              case _: Int => scala.collection.immutable.Nil
+
+              case _ => locus.subject match
+                case node: Node => scala.collection.immutable.List(node)
+                case _          => scala.collection.immutable.Nil
+
+          new Fragment(nodes*)
+
+        case _ =>
+          abort(XPath.EvaluationError(XPath.EvaluationError.Reason.NotNodeSet))
+
+    // The string-value of the first matching node (`Unset` when nothing
+    // matches), or of the expression's value for non-node-set results. This is
+    // the way to read an attribute selected by path: `xml.selectText(xp"//a/@href")`.
+    def selectText(xpath: XPath)(using Tactic[XPath.EvaluationError]): Optional[Text] =
+      XPathEngine.evaluate(xml, xpath.expression, Map()) match
+        case XPath.Value.NodeSet(loci) => loci.stdlib.headOption match
+          case Some(locus) => locus.stringValue
+          case None        => Unset
+
+        case value =>
+          value.text
+
+    // Full XPath 1.0 expression evaluation, yielding one of the four value
+    // types: `count(//div)` is a number, `//a` a node-set. Variables referenced
+    // as `$name` resolve from `variables`, keyed by qualified name.
+    def evaluate(xpath: XPath, variables: Map[Text, XPath.Value] = Map())
+      ( using Tactic[XPath.EvaluationError] )
+    :   XPath.Value =
+
+      XPathEngine.evaluate(xml, xpath.expression, variables)
 
   // XmlError → Xml.Error
   case class Error()(using Diagnostics)
