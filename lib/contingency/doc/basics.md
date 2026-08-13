@@ -122,21 +122,21 @@ but multiple `raises` clauses are cumbersome: not only does the method need to
 declare each error type, any method which invokes it must also handle _all_ of
 these errors.
 
-Instead, we can _tend_ them into an `EventError`:
+Instead, we can _mitigate_ them into an `EventError`:
 
 ```amok
 syntax  scala
 ##
 def eventData(event: Text): Bytes raises EventError =
-  tend:
+  mitigate:
     case ParseError()  => EventError()
     case AccessError() => EventError()
     case AsciiError()  => EventError()
-  .within:
+  .protect:
     convert(Json.parse(event).as[Event].message)
 ```
 
-This has the effect that any exception matching one of the `tend` cases will
+This has the effect that any exception matching one of the `mitigate` cases will
 be transformed into the right-hand side of the case—in this case, a new
 `EventError`.
 
@@ -154,11 +154,11 @@ from one type to the other, like so:
 syntax  scala
 ##
 def processEvent(event: Text): Unit raises EventError =
-  tend:
+  mitigate:
     case ParseError(line) => EventError(m"invalid JSON at line $line")
     case AccessError(key) => EventError(m"key $key was missing")
     case AsciiError()     => EventError(m"the message contained invalid ASCII")
-  .within:
+  .protect:
     send(convert(Json.parse(event).as[Event].message))
 ```
 
@@ -170,21 +170,21 @@ in the return type ensures that handler.
 
 Sometimes, however, in the event of certain errors, we want to _return_ a
 value—some sort of "fallback" value—instead of continuing along an
-error-recovery path. For this, we can use `mend` instead of `tend`, and the
+error-recovery path. For this, we can use `recover` instead of `mitigate`, and the
 right-hand side of each case will represent the return value:
 ```amok
 syntax  scala
 ##
 def processEvent(event: Text): Unit raises EventError = send:
-  mend:
+  recover:
     case ParseError(_)  => Bytes(0, 1)
     case AccessError(_) => Bytes(0, 2)
     case AsciiError(_)  => Bytes(0, 3)
-  .within:
+  .protect:
     convert(Json.parse(event).as[Event].message)
 ```
 
-Here, we _mend_ the subexpression
+Here, we _recover_ the subexpression
 `convert(Json.parse(event).as[Event].message)` and produce a two-byte message
 (such as `Bytes(0, 1)`, which could be a representation of the failure). Either
 this, or the successful evaluation of the subexpression will be passed to the
@@ -318,6 +318,54 @@ cannot affect the end result, because that value is guaranteed to be discarded.
 But this guarantee does not apply to side-effects, including additional errors
 which may be raised as a consequence of the ersatz value. Ideally, ersatz values should be innocuous and independent.
 
+### Ventures and guards
+
+The trouble with ersatz values is that they flow onwards: a consistency check
+or a validating constructor downstream has no way to know it received a
+placeholder, and may raise spurious _cascade_ errors about a value nobody ever
+supplied. `venture` and `guard` remove that hazard by making the dependency
+structure explicit.
+
+`venture(…)` evaluates its block _immediately_, under the ambient tactic — so
+every error it raises accrues exactly as it would outside — but yields a
+`Venture[Value]`: the computed value if the block recorded no errors, or the
+`Failed` marker if it did. Crucially, an `abort` inside a venture is
+_delimited_: it registers its error and abandons only the venture, not the
+whole aggregation scope. Sibling ventures therefore contribute their full
+error sets independently:
+
+```scala
+def decodePerson(json: Json): Person raises Json.Error =
+  val name: Venture[Text] = venture(json.name.as[Text])
+  val role: Venture[Role] = venture(json.role.as[Role])
+
+  venture(checkConsistency(name(), role()))
+
+  guard:
+    Person(name(), role())
+```
+
+Forcing a venture with `name()` requires a _skip-scope_ in context — an
+enclosing `venture` or `guard` block, witnessed by a contextual `Guard`
+capability. Forcing a `Failed` venture escapes to that scope without
+registering anything further (its errors are already in the accrual): above,
+if `name` failed, the consistency check is skipped entirely — but since `role`
+was evaluated eagerly at its declaration, its errors were still collected.
+Forcing outside any skip-scope is a compile error: there would be nowhere
+well-defined to skip to.
+
+`guard` runs its block only if the ambient tactic is _clean_ — no errors
+recorded so far in the aggregation scope. If the tactic is tainted, the block
+is skipped by certifying the tactic, surrendering the scope to its accumulated
+errors. Under a fail-fast tactic (where any error already escaped), `guard` is
+the identity and `venture` is transparent eager evaluation, so code written
+this way costs nothing when accrual is not in play.
+
+An earlier design consideration — allowing a bare `name()` anywhere, escaping
+to the enclosing aggregation boundary — was rejected: it would silently
+abandon the rest of the method, losing later, independent errors. The
+skip-scope requirement keeps the escape target statically precise.
+
 ### Performance
 
 One advantage of using Scala's `boundary` and `break` infrastructure instead of
@@ -328,7 +376,7 @@ any other immutable datatype.
 ### Strategies
 
 Each error must be handled by a `Tactic`, which will typically be constrained
-to a limited scope—often the `within` block of a `mend` or `tend`, or a
+to a limited scope—often the `protect` block of a `recover` or `mitigate`, or a
 `safely` or `unsafely` block. They are _tactics_ in the sense that they apply
 within a limited scope.
 

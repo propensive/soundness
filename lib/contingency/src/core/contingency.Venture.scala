@@ -49,8 +49,11 @@ object Venture:
 
   opaque type Type[+value] = Failed.type | value
 
-  inline def apply[value](value: value): Type[value] = value
-  inline def failed[value]: Type[value] = Failed
+  // Not `inline`: an inline body is re-elaborated at each expansion site, where the opaque
+  // `Type`'s RHS is invisible, so `Failed.type <: Type[value]` no longer holds (the
+  // branded-opaque inline-widening trap). Both are trivial and JIT-inlined anyway.
+  def apply[value](value: value): Type[value] = value
+  def failed[value]: Type[value] = Failed
 
   extension [value](venture: Type[value])
     inline def ready: Boolean = venture.asInstanceOf[AnyRef] ne Failed

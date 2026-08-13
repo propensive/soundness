@@ -85,6 +85,32 @@ Under an accruing strategy the recorded errors are collected; under a throwing o
 first still throws. The operation states which of the two it means, and the strategy
 decides what becomes of it.
 
+## Ventures and guards
+
+A fallback value flows onwards, and downstream code cannot tell it from a real one — a
+consistency check fed a placeholder raises spurious *cascade* errors. `venture` and
+`guard` make the dependency structure explicit instead:
+
+```scala
+def decodePerson(json: Json): Person raises Json.Error =
+  val name: Venture[Text] = venture(json.name.as[Text])
+  val role: Venture[Role] = venture(json.role.as[Role])
+
+  venture(checkConsistency(name(), role()))
+
+  guard:
+    Person(name(), role())
+```
+
+A `venture` evaluates immediately — its errors accrue like any others — but remembers
+whether anything went wrong. Forcing a failed venture with `name()` skips the enclosing
+venture or `guard` block rather than producing a value, so the consistency check above
+never runs on garbage; and because `role` was evaluated eagerly at its declaration, its
+errors were collected even if `name` failed first. `guard` runs its block only when no
+error has been recorded so far. Under a fail-fast strategy both constructs disappear:
+an error escapes at the venture itself, and `guard` is the identity — the same body
+serves every strategy, which is the point.
+
 ## Making the response total
 
 `safely` and `unsafely` are the two escape hatches, and they are deliberately conspicuous.
@@ -110,8 +136,9 @@ implicit search rather than about the error. Importing `explainMissingContext` t
 into a diagnosis naming the strategy imports that would satisfy it.
 
 **There is a vocabulary to learn.** `raise`, `abort`, `safely`, `unsafely`, `recover`,
-`mitigate`, `accrue`, `capture`, `attempt` — nine words where `try`/`catch` has two. Each
-earns its place, but the learning curve is real and front-loaded.
+`mitigate`, `accrue`, `capture`, `attempt`, `venture`, `guard` — eleven words where
+`try`/`catch` has two. Each earns its place, but the learning curve is real and
+front-loaded.
 
 See [expressive errors](expressive-errors.md) for what an error value carries, and
 [honest signatures](honest-signatures.md) for the wider principle that a signature states

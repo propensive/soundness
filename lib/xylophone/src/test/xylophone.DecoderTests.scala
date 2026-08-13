@@ -51,6 +51,16 @@ case class XmlIssues(items: List[(Text, Xml.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} XML decoding issues"):
   def +(focus: Text, error: Xml.Error): XmlIssues = XmlIssues(items :+ (focus, error))
 
+object XProbe:
+  var constructions: Int = 0
+
+// The body statement observes construction: decoding must never construct from garbage
+// fallback values, so a decode with any failed field must leave the counter untouched.
+case class XChecked(name: Text, age: Int) derives CanEqual:
+  XProbe.constructions += 1
+
+case class XMix(shape: DShape, name: Text) derives CanEqual
+
 // Wrapped in an object so the `given Default[DPerson]` is in lexical scope
 // *at the conjunction call site* — the `summonFrom` inside the inlined
 // `Xml.DecodableDerivation.conjunction` body resolves against the call
@@ -118,6 +128,24 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
               <company>Acme</company>
             </root>""".as[DContact]
       . assert(_ == DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme"))
+
+    suite(m"Gated construction"):
+      test(m"Constructor does not run when any field failed"):
+        XProbe.constructions = 0
+        val issues = validateXml(x"<root><name>Zoe</name></root>")(_.as[XChecked])
+        (issues.items.length, XProbe.constructions)
+      . assert(_ == (1, 0))
+
+      test(m"Constructor runs exactly once when all fields are clean"):
+        XProbe.constructions = 0
+        validateXml(x"<root><name>Zoe</name><age>5</age></root>")(_.as[XChecked])
+        XProbe.constructions
+      . assert(_ == 1)
+
+      test(m"A failing sum field and a missing sibling both accrue"):
+        validateXml(x"<root><shape><foo>bar</foo></shape></root>")(_.as[XMix])
+        . items.map(_(0).s).to[Set]
+      . assert(_ == Set("/shape[1]", "/name[1]"))
 
     suite(m"Sum type by element label"):
       test(m"Decode the Circle variant"):

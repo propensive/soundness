@@ -379,11 +379,11 @@ trait Json2 extends Json3:
         var slot = 0
 
         while slot < slots.length do
-          if !slots(slot).ready then failed = true
+          if !slots.readUnchecked(slot).ready then failed = true
           slot += 1
 
         if failed then null.asInstanceOf[derivation]
-        else build[derivation]: [field] => context => slots(index).asInstanceOf[Venture[field]].vouch
+        else build[derivation]: [field] => context => slots.readUnchecked(index).asInstanceOf[Venture[field]].vouch
 
     inline def disjunction[derivation: SumReflection]: derivation is Json.Decodable =
       // A sum encodes as a discriminated object. Its precise per-variant schema is

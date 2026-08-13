@@ -432,7 +432,7 @@ object Xml extends Tag.Container
 
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( element: Element )
-      ( using Foci[Xml.Focus], Tactic[Xml.Error] )
+      ( using foci: Foci[Xml.Focus], tactic: Tactic[Xml.Error] )
     :   derivation =
 
       // Fields marked `@attribute` are read from the element's attributes
@@ -458,17 +458,14 @@ object Xml extends Tag.Container
 
         i += 1
 
-      build[derivation]: [field] =>
-        context =>
-          val fieldLabel: Text = wisteria.label[Text]
-          val wireName: Text = renames(fieldLabel).or(fieldLabel)
-          focus({
-            // Each outer `focus` runs *after* the inner one, so we
-            // extend `prior` at the root side (`/outer/inner`), not the
-            // leaf side that `XPath#element` would use.
-            val base = prior.let(_.path).or(XPath())
-            Xml.Focus(base.prepend(wireName, 1))
-          }):
+      if !foci.active then
+        // Fail-fast path: the first recorded error escapes through the tactic, so decode and
+        // construct in a single traversal with no venture slots and no focus bookkeeping.
+        build[derivation]: [field] =>
+          context =>
+            val fieldLabel: Text = wisteria.label[Text]
+            val wireName: Text = renames(fieldLabel).or(fieldLabel)
+
             if attributeFields.defines(fieldLabel) then
               // `@attribute` field: decode from the matching attribute as a
               // `TextNode`; a missing attribute falls back to the declared
@@ -502,13 +499,84 @@ object Xml extends Tag.Container
                 case _ =>
                   children.get(wireName.s) match
                     case Some(child) => context.decoded(child)
-                    // Missing field: fall back to the case-class declared
-                    // default (Wisteria's `default`); if absent, hand the
-                    // `Absent` sentinel to the field's decoder. Primitives
-                    // detect it and `raise + continue`; nested conjunctions
-                    // detect it and may further short-circuit via a
-                    // user-supplied `Default[Nested]`.
                     case None        => default.or(context.decoded(Absent))
+
+      else
+        // Accruing path (as in jacinta's `decodeObject`): decode EVERY field into a venture
+        // slot first, marking a slot failed if its decode registered any focus, and construct
+        // only when all slots are clean — user constructor code never sees a garbage fallback
+        // value. On failure the returned value is never used (the caller's scope is tainted),
+        // and siblings keep accruing in the meantime.
+        val slots: Array[Venture[Any]] =
+          contexts[derivation]()[Venture[Any]]: [field] =>
+            context =>
+              val fieldLabel: Text = wisteria.label[Text]
+              val wireName: Text = renames(fieldLabel).or(fieldLabel)
+
+              focus({
+                // Each outer `focus` runs *after* the inner one, so we
+                // extend `prior` at the root side (`/outer/inner`), not the
+                // leaf side that `XPath#element` would use.
+                val base = prior.let(_.path).or(XPath())
+                Xml.Focus(base.prepend(wireName, 1))
+              }):
+                val before = foci.length
+
+                val value: field =
+                  if attributeFields.defines(fieldLabel) then
+                    // `@attribute` field: decode from the matching attribute as a
+                    // `TextNode`; a missing attribute falls back to the declared
+                    // default, else the `Absent` sentinel (raise + continue).
+                    element.attributes(wireName).lay(default.or(context.decoded(Absent))): text =>
+                      context.decoded(TextNode(text))
+                  else
+                    // The `AnyRef` cast (rather than `asMatchable`) sidesteps the
+                    // capture-refined singleton type the checker would otherwise
+                    // require of the scrutinee.
+                    context.asInstanceOf[AnyRef] match
+                      case marked: Repeatable if marked.repeatable =>
+                        // A repeatable (collection) field gathers *all* same-label
+                        // children, in document order, into a synthetic `Fragment`
+                        // for the collection decoder — stratiform's synthetic-
+                        // document idea. Zero matches decode the empty fragment
+                        // (an empty collection): the declared default is never
+                        // consulted, exactly as on the direct path.
+                        val gathered: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
+                        var child = 0
+
+                        while child < element.children.length do
+                          element.children.readUnchecked(child) match
+                            case node: Element =>
+                              if node.label == wireName then gathered += node
+
+                            case _ => ()
+
+                          child += 1
+
+                        context.decoded(Fragment(gathered.toSeq*))
+
+                      case _ =>
+                        children.get(wireName.s) match
+                          case Some(child) => context.decoded(child)
+                          // Missing field: fall back to the case-class declared
+                          // default (Wisteria's `default`); if absent, hand the
+                          // `Absent` sentinel to the field's decoder. Primitives
+                          // detect it and `raise + continue`; nested conjunctions
+                          // detect it and may further short-circuit via a
+                          // user-supplied `Default[Nested]`.
+                          case None => default.or(context.decoded(Absent))
+
+                if foci.length > before then Venture.failed else Venture(value)
+
+        var failed = false
+        var slot = 0
+
+        while slot < slots.length do
+          if !slots.readUnchecked(slot).ready then failed = true
+          slot += 1
+
+        if failed then null.asInstanceOf[derivation]
+        else build[derivation]: [field] => context => slots.readUnchecked(index).asInstanceOf[Venture[field]].vouch
 
     // Sealed-trait disjunction picks a variant by element label. We screen
     // the discriminator against `variantLabels` *before* `delegate`-ing so
@@ -551,7 +619,13 @@ object Xml extends Tag.Container
                       raise(Xml.Error()) yet derivationDefault()
 
                     case _ =>
-                      abort(Xml.Error())
+                      // Under an accruing scope, record ONE error and skip the variant decode
+                      // without killing the whole scope: the returned value is never used (the
+                      // caller sees the focus delta, or the tracking scope is tainted), so
+                      // siblings keep accruing. Fail-fast scopes abort as before.
+                      if infer[Foci[Xml.Focus]].active
+                      then raise(Xml.Error()) yet null.asInstanceOf[derivation]
+                      else abort(Xml.Error())
 
   // A sum discriminated by an attribute on the value's element —
   // `<payment type="Card">…</payment>`. This is the shape a sum nested

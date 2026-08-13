@@ -368,22 +368,59 @@ object Dsv extends Dsv2:
         // the fresh (`^`) result honestly admits the capture — no seal.
         DsvProductDecoder[derivation](
           (row: Dsv) =>
-            var count = 0
+            val foci = infer[Foci[CellRef]]
 
-            build[derivation]:
-              [field] => context =>
-                // Positional mode (`columns` Unset): read the field's span starting at `count`.
-                // Header mode: locate the field by column name; an absent column hands the field
-                // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
-                // position.
-                val row2 = row.columns.lay(Dsv(row.data.drop(count))): columns =>
-                  columns(label).lay(Dsv(Array.of[Text]())): i =>
-                    Dsv(row.data.drop(i))
+            // Positional mode (`columns` Unset): read the field's span starting at `count`.
+            // Header mode: locate the field by column name; an absent column hands the field
+            // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
+            // position.
+            def fieldRow(label: Text, count: Int): Dsv =
+              row.columns.lay(Dsv(row.data.drop(count))): columns =>
+                columns(label).lay(Dsv(Array.of[Text]())): i =>
+                  Dsv(row.data.drop(i))
 
-                count += spans.readUnchecked(index)
+            if !foci.active then
+              // Fail-fast path: the first recorded error escapes through the tactic, so decode
+              // and construct in a single traversal with no venture slots and no focus
+              // bookkeeping.
+              var count = 0
 
-                focus(CellRef(Prim, label)):
-                  contextual.decoded(row2))
+              build[derivation]:
+                [field] => context =>
+                  val row2 = fieldRow(label, count)
+                  count += spans.readUnchecked(index)
+                  contextual.decoded(row2)
+
+            else
+              // Accruing path (as in jacinta's `decodeObject`): decode EVERY field into a
+              // venture slot first, marking a slot failed if its decode registered any focus,
+              // and construct only when all slots are clean — user constructor code never sees
+              // a garbage fallback value. On failure the returned value is never used (the
+              // caller's scope is tainted), and siblings keep accruing in the meantime.
+              var count = 0
+
+              val slots: Array[Venture[Any]]^{} =
+                contexts[derivation]()[Venture[Any]]:
+                  [field] => context =>
+                    val row2 = fieldRow(label, count)
+                    count += spans.readUnchecked(index)
+
+                    focus(CellRef(Prim, label)):
+                      val before = foci.length
+                      val value: field = contextual.decoded(row2)
+                      if foci.length > before then Venture.failed else Venture(value)
+
+              var failed = false
+              var slot = 0
+
+              while slot < slots.length do
+                if !slots.readUnchecked(slot).ready then failed = true
+                slot += 1
+
+              if failed then null.asInstanceOf[derivation]
+              else
+                build[derivation]:
+                  [field] => context => slots.readUnchecked(index).asInstanceOf[Venture[field]].vouch)
 
   object EncodableDerivation extends ProductDerivable[Encodable in Dsv]:
     inline def conjunction[derivation <: Product: ProductReflection]
