@@ -82,12 +82,12 @@ object CHeaderAtomizer:
         uvarint(out, arguments.stdlib.length.toLong)
         arguments.stdlib.foreach { argument => encode(out, argument) }
 
-      case Foreign.Type.Union(_) => () // not producible by `CHeaderParser`
+      case Foreign.Type.Union(_) => () // not producible by `CHeader.Parser`
 
-  def atomize(declarations: List[CDeclaration]): List[Atom] =
+  def atomize(declarations: List[CHeader.Declaration]): List[Atom] =
     List.from:
       declarations.stdlib.map:
-        case CDeclaration.Function(name, result, parameters, variadic) =>
+        case CHeader.Declaration.Function(name, result, parameters, variadic) =>
           Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, 'f')
             utf8(out, name)
@@ -96,7 +96,7 @@ object CHeaderAtomizer:
             parameters.stdlib.foreach { parameter => encode(out, parameter) }
             encode(out, result))
 
-        case CDeclaration.Alias(name, target) =>
+        case CHeader.Declaration.Alias(name, target) =>
           Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, 't')
             utf8(out, name)
@@ -104,7 +104,7 @@ object CHeaderAtomizer:
 
         // Fields fold in declaration order — layout is positional — and an opaque tag folds an
         // opacity marker instead, so completing it later is a value change (`cheader.md` §6).
-        case CDeclaration.Structure(name, union, fields, opaque) =>
+        case CHeader.Declaration.Structure(name, union, fields, opaque) =>
           Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, if union then 'u' else 's')
             utf8(out, name)
@@ -115,7 +115,7 @@ object CHeaderAtomizer:
               utf8(out, field)
               encode(out, typed))
 
-        case CDeclaration.Enumeration(name, cases) =>
+        case CHeader.Declaration.Enumeration(name, cases) =>
           Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, 'e')
             utf8(out, name)

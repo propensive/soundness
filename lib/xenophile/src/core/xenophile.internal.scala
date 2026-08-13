@@ -61,9 +61,10 @@ object Xenophile:
       case TypeBounds(_, hi) => hi
       case other             => other
 
-    // The symbol's full name is the JVM binary name of the module class (already `$`-suffixed); its
+    // The symbol's full name is `$`-suffixed for a module, but dots separate owners, so a *nested*
+    // grammar object reads `Outer$.Inner$` where the JVM binary name is `Outer$Inner$`; the
     // singleton is the static `MODULE$` field. `Class.forName/1` uses the macro's own classloader.
-    val className = dialectType.typeSymbol.fullName
+    val className = dialectType.typeSymbol.fullName.replaceAll("\\$\\.", "\\$").nn
 
     try Class.forName(className).nn.getField("MODULE$").nn.get(null).nn.asInstanceOf[Dialect]
     catch case _: Throwable =>

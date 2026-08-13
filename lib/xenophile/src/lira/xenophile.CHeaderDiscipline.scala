@@ -63,9 +63,9 @@ object CHeaderDiscipline extends Discipline:
       val source = Text(String(Array.unsafeJvm(data), "UTF-8"))
 
       mitigate:
-        case CHeaderError(reason) =>
+        case CHeader.Error(reason) =>
           Discipline.Error(id, Discipline.Error.Reason.Malformed(t"${path.text}: $reason"))
 
-      . protect(CHeaderParser.parse(source).stdlib)
+      . protect(CHeader.Parser.parse(source).stdlib)
 
     Atomization.of(id, CHeaderAtomizer.atomize(List.from(declarations)))

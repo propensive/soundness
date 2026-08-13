@@ -41,7 +41,7 @@ import xenophile.*
 import proscenium.compat.*
 
 // A `Crypto` provider backed by OpenSSL's `libcrypto`, called through xenophile's typed C
-// navigation: the prototypes in `/enigmatic/openssl.h` are parsed by `CHeaderDialect` at compile
+// navigation: the prototypes in `/enigmatic/openssl.h` are parsed by `CHeader.Dialect` at compile
 // time, and each fully-applied navigation's `call` materializes as a Panama downcall on the JVM
 // and a direct C call on Scala Native — this one source serves both platforms, with buffers
 // passed through the platform-twinned `ForeignBuffer` and opaque handles as `Address`s.
