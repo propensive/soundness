@@ -51,7 +51,7 @@ import textSanitizers.skipSanitizer
 import _root_.java.io as ji
 import _root_.java.util.zip as juz
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object Tests extends Suite(m"Zeppelin tests"):
   def run(): Unit =

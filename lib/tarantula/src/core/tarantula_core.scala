@@ -54,7 +54,8 @@ extension (element: WebDriver.Element)
   def displayed()(using session: WebDriver.Session^): Boolean = session.displayed(element)
   def role()(using session: WebDriver.Session^): Text = session.role(element)
   def label()(using session: WebDriver.Session^): Text = session.label(element)
-  def css(name: Text)(using session: WebDriver.Session^): Text = session.css(element, name)
+  def cssValue(name: Text)(using session: WebDriver.Session^): Text =
+    session.css(element, name)
   def shadowRoot()(using session: WebDriver.Session^): WebDriver.ShadowRoot =
     session.shadowRoot(element)
 

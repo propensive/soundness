@@ -78,7 +78,7 @@ import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus]^{service} =
   service

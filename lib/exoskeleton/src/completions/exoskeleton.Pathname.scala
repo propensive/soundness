@@ -50,7 +50,7 @@ import vacuous.*
 import filesystemOptions.dereferenceSymlinks.enabled
 import interfaces.paths.pathOnLocal
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object Pathname:
   def unapply(argument: Argument)(using WorkingDirectory, Cli, System): Option[Path on Local] =

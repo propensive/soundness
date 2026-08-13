@@ -54,7 +54,7 @@ import scala.compiletime.*
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistentParents.enabled
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object ParserTests extends Suite(m"Jacinta JSON parser tests"):
   def run(): Unit =

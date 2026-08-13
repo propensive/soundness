@@ -72,7 +72,7 @@ package filesystemBackends:
   // The per-site duplication the compiler warns about is the point: the instance must
   // materialize at the downstream summoning site, and a WASI-linked application summons it once.
   @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
-  inline given wasi: [plane: Filesystem] => FilesystemBackend on plane =
+  inline given wasiFilesystem: [plane: Filesystem] => FilesystemBackend on plane =
     new FilesystemBackend:
       type Plane = plane
 

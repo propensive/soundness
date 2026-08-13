@@ -45,7 +45,7 @@ import rudiments.*
 import serpentine.*
 import symbolism.*
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object LocalClasspath:
   given encodable: System => LocalClasspath is Encodable in Text = _()

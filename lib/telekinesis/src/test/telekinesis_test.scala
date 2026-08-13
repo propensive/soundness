@@ -48,7 +48,7 @@ case class Person(name: Text, address: Address)
 
 object Tests extends Suite(m"Telekinesis tests"):
   def run(): Unit =
-    import httpBackends.virtualMachine
+    import httpBackends.virtualMachineHttp
     import internetAccess.online
 
     suite(m"Response construction tests"):
@@ -599,9 +599,9 @@ object Tests extends Suite(m"Telekinesis tests"):
       server.start()
       val port: Int = server.getAddress.nn.getPort
 
-      import socketBackends.virtualMachine
+      import socketBackends.virtualMachineSockets
 
-      val backend: Http.Backend = httpBackends.native
+      val backend: Http.Backend = httpBackends.nativeHttp
 
       def fetchNative(target: Text, method: Http.Method = Http.Get, body: Text = t"")
       :   Http.Response =
@@ -712,9 +712,9 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       given Tls = Tls(clientContext, verify = false)
 
-      import socketBackends.virtualMachine
+      import socketBackends.virtualMachineSockets
 
-      val backend: Http.Backend = httpBackends.native
+      val backend: Http.Backend = httpBackends.nativeHttp
 
       test(m"An ALPN-less server falls back to HTTP/1.1 over TLS"):
         val server = csnh.HttpsServer.create(InetSocketAddress("127.0.0.1", 0), 0).nn

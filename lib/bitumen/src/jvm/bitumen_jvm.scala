@@ -44,7 +44,7 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 // Opening a filesystem path or building an archive from disk needs `bitumen.jvm`; re-exported
 // through `soundness.*`, so `path.open[Tar]` and `Tar.Entry(...)` resolve as before on the JVM.

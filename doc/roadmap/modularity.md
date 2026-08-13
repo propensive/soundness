@@ -723,7 +723,7 @@ stack from the compiler stack entirely.
 
 - **obligatory.json** drops scintillate.server, hyperbole.core and revolution.core — all
   three dead. obligatory.json is a JSON-RPC peer plus SSE codec: it never serves HTTP
-  (its `Servable` is telekinesis's, reached via jacinta.http; `httpBackends.virtualMachine`
+  (its `Servable` is telekinesis's, reached via jacinta.http; `httpBackends.virtualMachineHttp`
   comes from telekinesis.jvm via jacinta.schema), never introspects TASTy, and never touches
   a manifest. The hyperbole edge is what put the whole harlequin/anthology stack under
   exegesis; deleting it collapses the measured deepest path. (eucalyptus.core is genuinely

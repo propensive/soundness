@@ -46,7 +46,7 @@ import vacuous.*
 
 import errorDiagnostics.emptyDiagnostics
 import gastronomy.*, providers.javaStdlibProvider
-import httpBackends.virtualMachine
+import httpBackends.virtualMachineHttp
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
 

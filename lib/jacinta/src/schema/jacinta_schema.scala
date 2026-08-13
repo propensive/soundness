@@ -45,7 +45,7 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
-import httpBackends.virtualMachine
+import httpBackends.virtualMachineHttp
 import Json.Error.Reason
 
 package jsonPointerRegistries:

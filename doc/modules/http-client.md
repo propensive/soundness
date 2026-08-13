@@ -98,7 +98,7 @@ session: the next fetch drains what remains of the previous body to reach the re
 
 ### Choosing a transport
 
-The transport is a given. `httpBackends.virtualMachine` uses the JVM's own `java.net.http`;
+The transport is a given. `httpBackends.virtualMachineHttp` uses the JVM's own `java.net.http`;
 `httpBackends.native` speaks Soundness's wire codecs directly over a socket, with no
 `java.net.http` involved:
 

@@ -37,7 +37,7 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import interfaces.paths.pathOnLinux
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 extension (shell: Shell)
   // Explicit `using` evidence instead of `raises`/`logs` sugar: a context-function result

@@ -55,12 +55,12 @@ import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import gastronomy.*, providers.javaStdlibProvider
-import httpBackends.virtualMachine
+import httpBackends.virtualMachineHttp
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
 import proscenium.compat.*
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 import filesystemOptions.dereferenceSymlinks.enabled
 
 // Turns a `Packaging` configuration into a distributable. Each per-platform binary is the

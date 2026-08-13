@@ -54,7 +54,7 @@ import affirmations.yesNoAffirmation       // how a boolean is shown
 import threading.virtualThreading          // what a task runs on
 import probates.cancelProbate              // what happens to unfinished tasks
 import httpBackends.native                 // which HTTP transport is used
-import filesystemBackends.virtualMachine   // which filesystem implementation
+import filesystemBackends.virtualMachineFilesystem   // which filesystem implementation
 import calendars.gregorianCalendar         // which calendar a date literal means
 ```
 

@@ -53,7 +53,7 @@ import probates.awaitProbate
 
 import Control.*
 
-import socketBackends.virtualMachine
+import socketBackends.virtualMachineSockets
 
 object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:

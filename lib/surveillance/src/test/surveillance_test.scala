@@ -41,7 +41,7 @@ import strategies.throwUnsafely
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit =

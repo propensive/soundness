@@ -492,7 +492,7 @@ object Tests extends Suite(m"Tarantula tests"):
 
       // The real transport, only for this block: everything above deliberately runs against a
       // fake backend, and summoning both at once would be ambiguous.
-      import httpBackends.virtualMachine
+      import httpBackends.virtualMachineHttp
 
       supervise:
         val port = freePort()

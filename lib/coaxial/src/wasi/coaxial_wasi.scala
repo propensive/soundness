@@ -77,7 +77,7 @@ package socketBackends:
   // wired. `inline`, so the `call`s expand at the downstream summoning site, where the WASI
   // facades are on the classpath.
   @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
-  inline given wasi: SocketBackend = new SocketBackend:
+  inline given wasiSockets: SocketBackend = new SocketBackend:
     type ServerSocket = WitHandle of "tcp-socket"
     type DatagramSocket = Unit
     type Exchange = WasiExchange

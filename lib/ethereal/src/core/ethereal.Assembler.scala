@@ -56,7 +56,7 @@ import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 case class AssemblyError(detail: Message)(using Diagnostics) extends Error(detail)
 

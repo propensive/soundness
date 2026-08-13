@@ -63,7 +63,7 @@ import systems.javaSystem
 import threading.platformThreading
 import workingDirectories.javaWorkingDirectory
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object Enclave:
   // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime

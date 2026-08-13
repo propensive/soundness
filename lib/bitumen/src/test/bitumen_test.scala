@@ -34,7 +34,7 @@ package bitumen
 
 import soundness.*
 import proscenium.compat.*
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 import java.nio.file as jnf
 

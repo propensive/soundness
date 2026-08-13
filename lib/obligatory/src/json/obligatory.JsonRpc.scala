@@ -56,7 +56,7 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-import httpBackends.virtualMachine
+import httpBackends.virtualMachineHttp
 
 object JsonRpc:
   // Requests in flight, by correlation id. Concurrent and self-evicting: the requesting thread

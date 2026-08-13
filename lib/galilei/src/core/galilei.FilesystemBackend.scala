@@ -40,7 +40,7 @@ import serpentine.*
 // The pluggable low-level filesystem backend for a plane: the complete set of primitive
 // operations that galilei's user-facing API is defined in terms of, expressed without reference
 // to any platform API. `galilei.jvm` provides the `java.nio` implementation
-// (`filesystemBackends.virtualMachine`); other platforms (e.g. WASI's `wasi:filesystem`) supply
+// (`filesystemBackends.virtualMachineFilesystem`); other platforms (e.g. WASI's `wasi:filesystem`) supply
 // their own.
 //
 // Operations that compose several primitives (recursive deletion, copy-into, creating parents)

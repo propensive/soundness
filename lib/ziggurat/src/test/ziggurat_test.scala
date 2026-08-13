@@ -55,7 +55,7 @@ import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object Tests extends Suite(m"Ziggurat tests"):
   def run(): Unit =

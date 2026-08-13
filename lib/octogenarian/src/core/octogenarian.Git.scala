@@ -58,7 +58,7 @@ import zephyrine.*
 import beneficence.*
 import enigmatic.*
 import proscenium.compat.*
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 import spectacular.*
 
 object Git:

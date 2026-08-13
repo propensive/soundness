@@ -39,4 +39,4 @@ export
       TextStyle, Underline, Hyperlink, TerminalEscapes }
 
 package displayableTypes:
-  export escapade.displayableTypes.messagePrintable
+  export escapade.displayableTypes.ansiMessagePrintable

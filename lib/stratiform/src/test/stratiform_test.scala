@@ -2076,7 +2076,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       import galilei.*
       import serpentine.*
       import inimitable.*
-      import galilei.filesystemBackends.virtualMachine
+      import galilei.filesystemBackends.virtualMachineFilesystem
       import galilei.filesystemOptions.deleteRecursively.enabled
 
       test(m"A file path opened Read & Write writes the mutation back"):

@@ -47,7 +47,7 @@ import turbulence.*
 
 import Lira.Error.Reason
 import alphabets.hexLowerCase
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 import filesystemOptions.overwritePreexisting.enabled
 
 // Derivation of conventional artifacts (§13.5): from a valid buildpath and a chosen universe,

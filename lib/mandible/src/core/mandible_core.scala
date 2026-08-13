@@ -55,7 +55,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import filesystemOptions.dereferenceSymlinks.enabled
 import interfaces.paths.pathOnLinux
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
