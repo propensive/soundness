@@ -67,8 +67,8 @@ package stdios:
   inline given wasiStdio: (termcap0: Termcap) => Stdio =
     def send(error: Boolean, data: Data): Unit =
       val handle =
-        if error then Foreign["stderr", Wit].`get-stderr`.call[WitHandle of "output-stream"]()
-        else Foreign["stdout", Wit].`get-stdout`.call[WitHandle of "output-stream"]()
+        if error then Foreign["stderr", Wit].`get-stderr`.call[Wasm.Handle of "output-stream"]()
+        else Foreign["stdout", Wit].`get-stdout`.call[Wasm.Handle of "output-stream"]()
 
       val stream: Foreign of "output-stream" from Wit = handle
       stream.`blocking-write-and-flush`(data).call[Unit]()
@@ -93,7 +93,7 @@ package stdios:
 
       override def read(array: scala.Array[Byte] | Null, offset: Int, length: Int): Int =
         if array == null || length == 0 then 0 else
-          val handle = Foreign["stdin", Wit].`get-stdin`.call[WitHandle of "input-stream"]()
+          val handle = Foreign["stdin", Wit].`get-stdin`.call[Wasm.Handle of "input-stream"]()
           val stream: Foreign of "input-stream" from Wit = handle
 
           try
@@ -105,7 +105,7 @@ package stdios:
               index += 1
 
             if data.length == 0 then -1 else data.length
-          catch case error: WitError => -1
+          catch case error: Wasm.Error => -1
           finally handle.dispose()
 
     def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)

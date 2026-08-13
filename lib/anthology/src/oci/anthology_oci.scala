@@ -78,10 +78,10 @@ object ociEdges:
   private val incomingHandler = t"wasi:http/incoming-handler@0.2.0"
   private val proxy = t"wasi:http/proxy@0.2.0"
 
-  def apply()(using world: WitWorld): List[Edge] =
+  def apply()(using world: Wasi.World): List[Edge] =
     List(Edge(Wasi(Wasi.Version.Wasip2), OciImage, OciTool(world)))
 
-  private case class OciTool(world: WitWorld) extends Tool:
+  private case class OciTool(world: Wasi.World) extends Tool:
     type Settings = OciConfiguration
 
     def name: Text = t"oci"
@@ -102,7 +102,7 @@ object ociEdges:
   // The wrapping step itself: takes an already-linked component and writes the `oci-archive`.
   private def wrap
     ( form:      OciConfiguration,
-      world:     WitWorld,
+      world:     Wasi.World,
       component: Path on Linux,
       out:       Path on Linux )
   :   Path on Linux logs LinkEvent raises Link.Error =
@@ -140,7 +140,7 @@ object ociEdges:
   // and none of them declares the world being linked. A world that cannot be found contributes
   // no interfaces rather than failing the link — the component is still valid, only less well
   // described.
-  private def interfaces(world: WitWorld): (List[Text], List[Text]) =
+  private def interfaces(world: Wasi.World): (List[Text], List[Text]) =
     val files = jnf.Paths.get(world.directory.encode.s).nn.toFile.nn.listFiles.nn
 
     def search(index: Int): Optional[WitDialect.World] =

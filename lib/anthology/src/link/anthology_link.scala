@@ -98,11 +98,11 @@ object sjsEdges:
   // The component edge exists only where the WASI toolchain (`wasm-tools`, `wit-bindgen`) has
   // been probed and a WIT world chosen; a WASI link whose native tooling is absent is not
   // expressible.
-  def wasi()(using toolchain: WasiToolchain, world: WitWorld): Edge =
+  def wasi()(using toolchain: WasiToolchain, world: Wasi.World): Edge =
     edge(Wasi(Wasi.Version.Wasip2), wasiConfig(world), _ / "main.wasm")
 
   // The configuration mandated by a WASI component link against the given world.
-  private def wasiConfig(world: WitWorld): StandardConfig => StandardConfig =
+  private def wasiConfig(world: Wasi.World): StandardConfig => StandardConfig =
     _.withModuleKind(ModuleKind.WasmComponent)
     . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
     . withWasmFeatures: features =>

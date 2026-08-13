@@ -41,7 +41,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import Wit.ParseError.Reason
+import Wit.Error.Reason
 
 // The WIT (WebAssembly Interface Types) ecosystem: `Interoperable` markers associating Scala types
 // with the WIT types `WitDialect` reads from `.wit` files. WIT's sized integers map to Hypotenuse's
@@ -143,7 +143,7 @@ object Wit:
       interfaces:  List[Interface],
       worlds:      List[WorldModel] )
 
-  object ParseError:
+  object Error:
     enum Reason(val number: Int) extends Clarification:
       case Syntax(detail: Text, near: Text)  extends Reason(1)
       case Unsupported(construct: Text)      extends Reason(2)
@@ -164,7 +164,7 @@ object Wit:
   // claim computed from it would be unsound. `@unstable` items are `Unsupported` by design
   // (`wit.md` §4): an unstable item in a published contract would be a stable claim about an
   // unstable surface.
-  case class ParseError(reason: Wit.ParseError.Reason)(using Diagnostics)
+  case class Error(reason: Wit.Error.Reason)(using Diagnostics)
   extends fulminate.Error(645, reason.number)(m"the WIT could not be read because $reason")
 
   // WitParser → Wit.Parser
@@ -187,15 +187,15 @@ object Wit:
     // One `Document` per `package` section: a curated `.wit` file may hold several packages
     // (the WASI subsets the backends carry do), and every interface and world belongs to the
     // package declared above it.
-    def parse(source: Text): List[Document] raises ParseError =
+    def parse(source: Text): List[Document] raises Error =
       List.from(documents(tokenize(source.s)))
 
-    private def fail(detail: Text, tokens: SList[String]): Nothing raises ParseError =
+    private def fail(detail: Text, tokens: SList[String]): Nothing raises Error =
       val near = Text(tokens.take(5).mkString(" "))
-      abort(ParseError(Reason.Syntax(detail, if near.s.isEmpty then t"the end" else near)))
+      abort(Error(Reason.Syntax(detail, if near.s.isEmpty then t"the end" else near)))
 
-    private def unsupported(construct: Text): Nothing raises ParseError =
-      abort(ParseError(Reason.Unsupported(construct)))
+    private def unsupported(construct: Text): Nothing raises Error =
+      abort(Error(Reason.Unsupported(construct)))
 
     // --- lexing ---------------------------------------------------------------------------------
 
@@ -242,7 +242,7 @@ object Wit:
 
     // --- gates ----------------------------------------------------------------------------------
 
-    private def gates(tokens: SList[String]): SList[String] raises ParseError = tokens match
+    private def gates(tokens: SList[String]): SList[String] raises Error = tokens match
       case "@since" :: "(" :: rest =>
         rest.dropWhile(_ != ")") match
           case ")" :: more => gates(more)
@@ -257,13 +257,13 @@ object Wit:
       Set("bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "char",
           "string")
 
-    private def typeOf(tokens: SList[String]): (Foreign.Type, SList[String]) raises ParseError =
+    private def typeOf(tokens: SList[String]): (Foreign.Type, SList[String]) raises Error =
       tokens match
         case ("stream" | "future") :: _ => unsupported(t"a stream or future type")
 
         case name :: "<" :: rest =>
           def arguments(tokens: SList[String], acc: SList[Foreign.Type])
-          :   (SList[Foreign.Type], SList[String]) raises ParseError =
+          :   (SList[Foreign.Type], SList[String]) raises Error =
 
             val (arg, after) = tokens match
               case "_" :: more => (Foreign.Type.Named(t"_"), more)
@@ -285,10 +285,10 @@ object Wit:
     // --- functions ------------------------------------------------------------------------------
 
     private def parameters(tokens: SList[String])
-    :   (List[(Text, Foreign.Type)], SList[String]) raises ParseError =
+    :   (List[(Text, Foreign.Type)], SList[String]) raises Error =
 
       def recur(tokens: SList[String], acc: SList[(Text, Foreign.Type)])
-      :   (List[(Text, Foreign.Type)], SList[String]) raises ParseError =
+      :   (List[(Text, Foreign.Type)], SList[String]) raises Error =
 
         tokens match
           case ")" :: rest => (List.from(acc.reverse), rest)
@@ -305,7 +305,7 @@ object Wit:
         case _           => fail(t"a parameter list was expected", tokens)
 
     private def functionType(name: Text, tokens: SList[String], static: Boolean)
-    :   (Function, SList[String]) raises ParseError =
+    :   (Function, SList[String]) raises Error =
 
       val afterAsync = tokens match
         case "async" :: rest => unsupported(t"an async function")
@@ -331,10 +331,10 @@ object Wit:
     // --- interface items ------------------------------------------------------------------------
 
     private def nameList(tokens: SList[String])
-    :   (List[(Text, Text)], SList[String]) raises ParseError =
+    :   (List[(Text, Text)], SList[String]) raises Error =
 
       def recur(tokens: SList[String], acc: SList[(Text, Text)])
-      :   (List[(Text, Text)], SList[String]) raises ParseError =
+      :   (List[(Text, Text)], SList[String]) raises Error =
 
         tokens match
           case "}" :: rest => (List.from(acc.reverse), rest)
@@ -351,10 +351,10 @@ object Wit:
         case _           => fail(t"a `{` was expected", tokens)
 
     private def fieldList(tokens: SList[String], closer: Text)
-    :   (List[(Text, Foreign.Type)], SList[String]) raises ParseError =
+    :   (List[(Text, Foreign.Type)], SList[String]) raises Error =
 
       def recur(tokens: SList[String], acc: SList[(Text, Foreign.Type)])
-      :   (List[(Text, Foreign.Type)], SList[String]) raises ParseError =
+      :   (List[(Text, Foreign.Type)], SList[String]) raises Error =
 
         gates(tokens) match
           case "}" :: rest => (List.from(acc.reverse), rest)
@@ -369,10 +369,10 @@ object Wit:
       recur(tokens, SList())
 
     private def caseList(tokens: SList[String])
-    :   (List[(Text, Optional[Foreign.Type])], SList[String]) raises ParseError =
+    :   (List[(Text, Optional[Foreign.Type])], SList[String]) raises Error =
 
       def recur(tokens: SList[String], acc: SList[(Text, Optional[Foreign.Type])])
-      :   (List[(Text, Optional[Foreign.Type])], SList[String]) raises ParseError =
+      :   (List[(Text, Optional[Foreign.Type])], SList[String]) raises Error =
 
         gates(tokens) match
           case "}" :: rest => (List.from(acc.reverse), rest)
@@ -391,10 +391,10 @@ object Wit:
       recur(tokens, SList())
 
     private def bareList(tokens: SList[String])
-    :   (List[Text], SList[String]) raises ParseError =
+    :   (List[Text], SList[String]) raises Error =
 
       def recur(tokens: SList[String], acc: SList[Text])
-      :   (List[Text], SList[String]) raises ParseError =
+      :   (List[Text], SList[String]) raises Error =
 
         gates(tokens) match
           case "}" :: rest  => (List.from(acc.reverse), rest)
@@ -405,10 +405,10 @@ object Wit:
       recur(tokens, SList())
 
     private def resourceBody(tokens: SList[String])
-    :   (List[Function], SList[String]) raises ParseError =
+    :   (List[Function], SList[String]) raises Error =
 
       def recur(tokens: SList[String], acc: SList[Function])
-      :   (List[Function], SList[String]) raises ParseError =
+      :   (List[Function], SList[String]) raises Error =
 
         gates(tokens) match
           case "}" :: rest => (List.from(acc.reverse), rest)
@@ -435,10 +435,10 @@ object Wit:
       recur(tokens, SList())
 
     private def interfaceBody(tokens: SList[String])
-    :   (List[Item], SList[String]) raises ParseError =
+    :   (List[Item], SList[String]) raises Error =
 
       def recur(tokens: SList[String], acc: SList[Item])
-      :   (List[Item], SList[String]) raises ParseError =
+      :   (List[Item], SList[String]) raises Error =
 
         gates(tokens) match
           case "}" :: rest => (List.from(acc.reverse), rest)
@@ -492,7 +492,7 @@ object Wit:
     // --- worlds ---------------------------------------------------------------------------------
 
     private def worldBody(name: Text, tokens: SList[String])
-    :   (WorldModel, SList[String]) raises ParseError =
+    :   (WorldModel, SList[String]) raises Error =
 
       def recur
         ( tokens:        SList[String],
@@ -500,10 +500,10 @@ object Wit:
           exports:       SList[Text],
           inlineImports: SList[(Text, Optional[Function])],
           inlineExports: SList[(Text, Optional[Function])] )
-      :   (WorldModel, SList[String]) raises ParseError =
+      :   (WorldModel, SList[String]) raises Error =
 
         def inlineItem(name: String, tokens: SList[String])
-        :   (Optional[Function], SList[String]) raises ParseError =
+        :   (Optional[Function], SList[String]) raises Error =
 
           tokens match
             case "func" :: _ =>
@@ -552,7 +552,7 @@ object Wit:
 
     // --- documents ------------------------------------------------------------------------------
 
-    private def documents(tokens: SList[String]): SList[Document] raises ParseError =
+    private def documents(tokens: SList[String]): SList[Document] raises Error =
       def flush
         ( pkg:        Optional[Text],
           version:    Optional[Text],
@@ -573,7 +573,7 @@ object Wit:
           interfaces: SList[Interface],
           worlds:     SList[WorldModel],
           acc:        SList[Document] )
-      :   SList[Document] raises ParseError =
+      :   SList[Document] raises Error =
 
         gates(tokens) match
           case SNil =>

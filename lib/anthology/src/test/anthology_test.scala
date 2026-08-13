@@ -353,7 +353,7 @@ object Tests extends Suite(m"Anthology Tests"):
     // edge, whose provider probes the WASI toolchain), so its graph shape is checkable without
     // `wasm-tools` installed.
     val ociToolchain =
-      val world = WitWorld(unsafely(temporaryDirectory / Uuid()), t"main")
+      val world = Wasi.World(unsafely(temporaryDirectory / Uuid()), t"main")
       Toolchain(ociEdges()(using world))
 
     test(m"An OCI image is unreachable from a classfile compilation"):

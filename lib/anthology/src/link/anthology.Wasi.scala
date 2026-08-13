@@ -33,7 +33,10 @@
 package anthology
 
 import anticipation.*
+import galilei.*
 import gossamer.*
+import prepositional.*
+import serpentine.*
 
 object Wasi:
   // WASI interface versions: `wasip1` (0.1) is a flat, libc-style syscall ABI on core modules;
@@ -47,6 +50,11 @@ object Wasi:
       case Wasip1 => t"wasip1"
       case Wasip2 => t"wasip2"
       case Wasip3 => t"wasip3"
+
+  // WitWorld → Wasi.World
+  // The WIT definitions a WASI component link resolves its imports and exports against: a
+  // directory of `.wit` packages and the name of the world to link.
+  case class World(directory: Path on Linux, world: Text)
 
 // A standalone WebAssembly artifact bound to a version of the WASI system interface: one
 // application node per version.

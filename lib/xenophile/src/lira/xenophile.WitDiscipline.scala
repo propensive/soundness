@@ -62,7 +62,7 @@ object WitDiscipline extends Discipline:
       val source = Text(String(Array.unsafeJvm(data), "UTF-8"))
 
       mitigate:
-        case Wit.ParseError(reason) =>
+        case Wit.Error(reason) =>
           Discipline.Error(id, Discipline.Error.Reason.Malformed(t"${path.text}: $reason"))
 
       . protect(Wit.Parser.parse(source).stdlib)
