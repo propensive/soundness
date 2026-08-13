@@ -97,13 +97,17 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
     expect(',')
     expect(' ')
 
-    val day: Int =
+    // Each field is a `venture`: its digit errors accrue independently of the other fields'
+    // (one pass over a bad timestamp reports every problem), while the in-expression fallback
+    // values — needed only to complete the arithmetic — are confined to the failed venture and
+    // never reach `Date`/`Clockface` construction, which is guarded below.
+    val day: Venture[Int] = venture:
       (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
         (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
 
     expect(' ')
 
-    val month: Month = next() match
+    val month: Venture[Month] = venture(next() match
       case 'A' =>
         next() match
           case 'p' => if next() != 'r' then fail(MonthName(Apr)) yet Apr else Apr
@@ -143,11 +147,11 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
         if next() != 'e' || next() != 'p' then fail(MonthName(Sep)) yet Sep else Sep
 
       case _ =>
-        fail(MonthName(Month.all*)) yet Jan
+        fail(MonthName(Month.all*)) yet Jan)
 
     expect(' ')
 
-    val year: Int =
+    val year: Venture[Int] = venture:
       (if next() < '0' || focus > '9' then fail(Digit) yet 2 else (focus - '0')*1000) +
         (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*100) +
         (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
@@ -155,19 +159,19 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
 
     expect(' ')
 
-    val hour: Int =
+    val hour: Venture[Int] = venture:
       (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
         (if next() < '0' || focus > '9' then fail(Digit) yet 0 else focus - '0')
 
     expect(':')
 
-    val minute: Int =
+    val minute: Venture[Int] = venture:
       (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
         (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
 
     expect(':')
 
-    val second: Int =
+    val second: Venture[Int] = venture:
       (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
         (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
 
@@ -178,7 +182,11 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
 
     import calendars.gregorianCalendar
 
-    val date = Date(Year(year), month, Day(day))
-    val time = Clockface(Base24(hour), Base60(minute), Base60(second))
+    // Construction only happens on a clean parse: a fallback value from a failed field can
+    // never reach `Date` (whose calendar validation would report a phantom `Invalid` error for
+    // a date nobody wrote) or `Clockface`.
+    guard:
+      val date = Date(Year(year()), month(), Day(day()))
+      val time = Clockface(Base24(hour()), Base60(minute()), Base60(second()))
 
-    Timestamp(date, time).in(tz"GMT").instant
+      Timestamp(date, time).in(tz"GMT").instant

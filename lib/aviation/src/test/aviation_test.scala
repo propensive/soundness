@@ -2906,3 +2906,24 @@ object Tests extends Suite(m"Aviation Tests"):
           rec"Rx/2024-01-01/P1D"
         . map(_.focus)
       . assert(_ == List("Rx"))
+
+    suite(m"Accrual under validation"):
+      case class TimeIssues(count: Int = 0)(using Diagnostics)
+      extends Error(m"$count time issues"):
+        def + : TimeIssues = TimeIssues(count + 1)
+
+      // Inline, with a directly-constructed `Validate`; see rep/DECISIONS.md.
+      inline def collectTime(inline block: Unit raises TimeError tracks Text): TimeIssues =
+        Validate[TimeIssues, [r] =>> r raises TimeError, Text]
+          (TimeIssues(), { case _: TimeError => accrual.+ })
+        . protect(block)
+
+      test(m"An RFC 1123 timestamp with several bad fields accrues each error"):
+        // Both day digits and one year digit are wrong: three independent format errors,
+        // and no phantom `Invalid`-date error from a synthesised fallback date.
+        collectTime { Rfc1123.parse(t"Wed, XY Jul 20A2 17:45:00 GMT"); () }.count
+      . assert(_ == 3)
+
+      test(m"A truncated ISO 8601 date accrues one error, not a masqueraded today()"):
+        collectTime { Iso8601.parse(t"2011-"); () }.count
+      . assert(_ == 1)
