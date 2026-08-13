@@ -39,7 +39,6 @@ import anticipation.*
 import coaxial.*
 import contingency.*
 import denominative.*
-import cordillera.*
 import gossamer.*
 import parasite.*
 import prepositional.*

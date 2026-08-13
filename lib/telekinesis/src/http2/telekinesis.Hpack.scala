@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cordillera
+package telekinesis
 
 import scala.collection.mutable as scm
 import proscenium.compat.*
@@ -51,7 +51,7 @@ import scala.caps
 object Hpack:
   // Builder mutation lives here rather than in class methods, which would force a
   // `uses` clause onto the class itself.
-  private[cordillera] def encodeEntries(headers: List[HpackEntry], table: HpackTable): Data =
+  private[telekinesis] def encodeEntries(headers: List[HpackEntry], table: HpackTable): Data =
     val buf: ByteBuf^ = ByteBuf()
 
     // A while-loop rather than `each`: the closure may not capture the exclusive buffer.

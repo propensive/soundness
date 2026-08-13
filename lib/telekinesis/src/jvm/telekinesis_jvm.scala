@@ -43,7 +43,7 @@ import anticipation.*
 import coaxial.*
 import coaxial.socketBackends.virtualMachine
 import contingency.*
-import cordillera.*
+import telekinesis.*
 import distillate.*
 import gigantism.*
 import gossamer.*
@@ -322,7 +322,7 @@ private def plaintextExchange
         case error: ji.IOException    => duplex.close(); fresh()
 
 // The TLS exchange: ALPN offers `h2` then `http/1.1` during the handshake, and
-// the peer's selection selects the driver — HTTP/2 framing (the `cordillera`
+// the peer's selection selects the driver — HTTP/2 framing (the `Http2`
 // stack) or the HTTP/1.1 wire codec — over the same negotiated socket. One
 // connection per request for now: the framed body is drained eagerly and the
 // connection closed (TLS connection reuse is a later refinement).

@@ -737,8 +737,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert(_ == (Http.Ok, t"secure-native"))
 
-      import cordillera.{FrameReader, Hpack, HpackEntry}
-      import cordillera.Http2.Frame
+      import Http2.Frame
 
       // A minimal frame-level HTTP/2 server for a single TLS connection, with
       // ALPN pinned to `h2`: exchange SETTINGS, then answer each request

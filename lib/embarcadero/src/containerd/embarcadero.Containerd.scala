@@ -36,7 +36,7 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
-import cordillera.*
+import telekinesis.*
 import gossamer.*
 import locomotion.*
 import obligatory.*

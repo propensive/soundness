@@ -200,7 +200,7 @@ private[facsimile] object ContentWriter:
         out(t"$operator\n")
 
 // A minimal growable byte accumulator replacing `DataBuilder()`, whose `result()`
-// is charged a read of the universal capability under uses checking (the `cordillera.ByteBuf`
+// is charged a read of the universal capability under uses checking (the `telekinesis.ByteBuf`
 // pattern: untracked storage, exclusive view for writes, Java-side copies for growth/freeze).
 private[facsimile] final class DataBuilder:
   @scala.caps.unsafe.untrackedCaptures

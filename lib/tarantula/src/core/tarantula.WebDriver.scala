@@ -249,7 +249,7 @@ object WebDriver:
 
   // A session on a driver that is already listening — one started by hand, or a Selenium grid.
   // Split from `LocalSessional` so that launching a driver is *composition* over this, in the
-  // shape `obligatory.GrpcSessional` uses over `cordillera.EndpointSessional`, rather than a second
+  // shape `obligatory.GrpcSessional` uses over `telekinesis.Http2.EndpointSessional`, rather than a second
   // copy of the protocol.
   //
   // A named instance class rather than an anonymous given: an anonymous subclass would freshen the

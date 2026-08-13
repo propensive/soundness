@@ -82,7 +82,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | cataclysm.core | `CssError→Css.Error`, `CssErrors→Css.Errors`, `CssConvertible→Css.Convertible`, `SyntaxMatcher→Syntax.Matcher` (⚑ `Syntax` exists but is unexported; export it or skip) |
 | coaxial.core | `DomainSocketEndpoint→DomainSocket.Endpoint` (`ConnectionError` stays: the ⚑ resolved negatively — `Connection` is a case class in coaxial.**jvm**, so R6 blocks it) |
 | coaxial.jvm | `TlsAcceptance→Tls.Acceptance` |
-| telekinesis.http2 (package cordillera) | `Http2Connection→Http2.Connection`, `Http2Error→Http2.Error`, `Http2Event→Http2.Event`, `Http2Stream→Http2.Stream`, `Http2ServerConnection→Http2.ServerConnection`, `HpackTable→Hpack.Table`, `HpackEntry→Hpack.Entry` |
+| telekinesis.http2 | `Http2Connection→Http2.Connection`, `Http2Error→Http2.Error`, `Http2Event→Http2.Event`, `Http2Stream→Http2.Stream`, `Http2ServerConnection→Http2.ServerConnection`, `HpackTable→Hpack.Table`, `HpackEntry→Hpack.Entry` |
 | digression.core | `FqcnError→Fqcn.Error` |
 | dissonance.core | `DiffError→Diff.Error`, `RedraftError→Redraft.Error` |
 | embarcadero.oci | `ImageConfig→Image.Config`, `ImageHandle→Image.Handle`, `OciError→Oci.Error` |
@@ -199,7 +199,7 @@ The families, as they stand: `*Openable` (25 declarations), `*Derivation` (33),
 - **`*Openable`, `*Sessional`, `*Creatable` — named on purpose, and the code says so.**
   Twenty files carry a comment to the effect that "an anonymous subclass would freshen the
   capability types in its inferred `Result` member", among them galilei's `FileOpenable`,
-  hallucination's `RasterOpenable`, cordillera's `Http2`, perihelion, zeppelin's `Jar` and
+  hallucination's `RasterOpenable`, telekinesis's `Http2`, perihelion, zeppelin's `Jar` and
   `Zip`, embarcadero's `Workload` and tarantula's `WebDriver`. These are not incidental
   carriers; the name is what pins the capability type.
 - **`*Derivation` — forbidden by the compiler.** Their `conjunction` method must be
@@ -333,7 +333,7 @@ phantom markers — moves into the namespace whole, rather than being split N wa
 satisfy one-type-per-file first. And a **reference rename can match more than types**: an
 enum case (`VarintError`, a constructor), an existing alias to the old name (`object Tel`
 carried `type Error`), and package-qualified references to our own nested types
-(`cordillera.Http2.Frame`, which a guard against rewriting foreign types like
+(`telekinesis.Http2.Frame`, which a guard against rewriting foreign types like
 `jnh.HttpClient` will collapse if it only tests for a lowercase qualifier).
 
 ## Corrections from the third implementation pass (2026-08-11)

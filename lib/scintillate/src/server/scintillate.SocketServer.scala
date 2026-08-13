@@ -343,7 +343,7 @@ extends RequestServable:
 
      . protect:
         // Daemon bodies must be pure context functions, so the server, the handler and each
-        // socket cross into them as `AnyRef` rims (the cordillera recipe).
+        // socket cross into them as `AnyRef` rims (the `AnyRef`-rim recipe).
         val self: AnyRef = this
         // Eta-wrapped into a capture-neutral `AnyRef => Unit` (capability-typed function
         // types re-hide when crossed through a rim; the kernel-module-sep finding), since a
