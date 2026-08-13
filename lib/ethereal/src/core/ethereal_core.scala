@@ -460,7 +460,7 @@ def cli[bus <: Matchable](using executive: Executive)
         // over its control channel. A launcher that never opened one (a pipe, or a stub built
         // before the channel existed) leaves the promise unfulfilled: the brief await expires
         // and the command runs with the raw mode it would have had anyway.
-        def setMode(mode: TerminalMode): Unit =
+        def setMode(mode: Tty): Unit =
           safely(clientState.control.await(0.1*Second)(using monitor = monitor0)).let: out =>
             out.write(mode.byte)
             out.flush()

@@ -59,7 +59,7 @@ case class DaemonService[bus <: Matchable]
     script:     Text,
     startTime:  Long,
     helpThunk:  () => Optional[Help],
-    setMode:    TerminalMode => Unit )
+    setMode:    Tty => Unit )
 extends Entrypoint, caps.ExclusiveCapability:
   def broadcast(message: bus): Unit = deliver(message)
 
@@ -70,8 +70,8 @@ extends Entrypoint, caps.ExclusiveCapability:
   // offer a control channel.
   def cooked[result](block: => result): result =
     if cliInput != Stdin.Terminal then block else
-      setMode(TerminalMode.Canonical)
-      try block finally setMode(TerminalMode.Raw)
+      setMode(Tty.Canonical)
+      try block finally setMode(Tty.Raw)
 
   // The structured help tree for this command, generated lazily by re-running the application
   // in tab-completion mode. Falls back to a name-only root if the executive cannot generate it.

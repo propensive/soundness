@@ -413,7 +413,7 @@ case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
   @targetName("concat")
   def + (that: Teletype2): Teletype2 = Teletype2(plain+that.plain, ansi ++ that.ansi)
 
-  def render(using escapes: TerminalEscapes): Text =
+  def render(using escapes: Ansi.Escapes): Text =
     Text.build:
       def recur(current: AnsiStyle, index: Ordinal): Unit =
         // The presence of the character at `index` is the loop's bounds check; `ansi` shares
