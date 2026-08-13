@@ -144,7 +144,7 @@ object XPath:
     case Element(name: Text, rank: Int)
     case Attribute(name: Text)
 
-  private def qualify(prefix: Optional[Text], local: Text): Text = prefix match
+  private[xylophone] def qualify(prefix: Optional[Text], local: Text): Text = prefix match
     case prefix: Text => t"$prefix:$local"
     case _            => local
 
@@ -195,6 +195,159 @@ object XPath:
 
   def variable(name: Text): Expression = Expression.Variable(Unset, name)
 
+  object Locus:
+    private[xylophone] def root(document: Xml): Locus = Locus(document, Nil, Unset, Unset)
+
+    // The string-value (§5) of a single node: elements concatenate every
+    // descendant text and CDATA node; the character-carrying kinds are their
+    // own content.
+    private[xylophone] def textOf(node: Node): Text = node match
+      case TextNode(text)                 => text
+      case Cdata(text)                    => text
+      case Comment(text)                  => text
+      case ProcessingInstruction(_, data) => data
+
+      case element: Element =>
+        val builder = StringBuilder()
+        accumulate(element, builder)
+        builder.toString.nn.tt
+
+      case _ =>
+        t""
+
+    private def accumulate(element: Element, builder: StringBuilder): Unit =
+      val children = element.children
+      var i = 0
+
+      while i < children.length do
+        children.readUnchecked(i) match
+          case TextNode(text)   => builder.append(text.s)
+          case Cdata(text)      => builder.append(text.s)
+          case child: Element   => accumulate(child, builder)
+          case _                => ()
+
+        i += 1
+
+  // A located node: the evaluation subject plus the child-index path from the
+  // virtual root (XPath's `/`, the node *above* the root element) down to the
+  // node. Index paths provide parentage, document order and identity in one
+  // stroke — none of which the node tree itself can offer, since nodes carry
+  // no parent pointers and their `equals` deliberately conflates a node with
+  // a singleton `Fragment` of it. `subject` is `Unset` for the virtual root.
+  // An attribute pseudo-node shares its owner element's `path`, holds the
+  // owner as `subject`, and sets `attributeIndex`.
+  case class Locus
+    ( document:       Xml,
+      path:           List[Int],
+      subject:        Optional[Node],
+      attributeIndex: Optional[Int] ):
+
+    private[xylophone] def attributeName: Optional[Text] = attributeIndex match
+      case index: Int => subject match
+        case element: Element =>
+          val keys = element.attributes.keys.drop(index)
+          if keys.hasNext then keys.next() else Unset
+
+        case _ =>
+          Unset
+
+      case _ =>
+        Unset
+
+    def stringValue: Text = attributeIndex match
+      case index: Int => subject match
+        case element: Element =>
+          val values = element.attributes.values.drop(index)
+          if values.hasNext then values.next() else t""
+
+        case _ =>
+          t""
+
+      case _ => subject match
+        case node: Node => Locus.textOf(node)
+
+        case _ => document match
+          case Fragment(nodes*) =>
+            val builder = StringBuilder()
+            nodes.foreach { node => builder.append(Locus.textOf(node).s) }
+            builder.toString.nn.tt
+
+          case node: Node =>
+            Locus.textOf(node)
+
+  // The four XPath 1.0 value types (§1), with the conversion rules of §3.2,
+  // §4.2 and §4.3 as members. A node-set is always in document order without
+  // duplicates.
+  enum Value derives CanEqual:
+    case NodeSet(loci: List[Locus])
+    case Truth(value: Boolean)
+    case Numeric(value: Double)
+    case Textual(value: Text)
+
+    def truth: Boolean = this match
+      case Truth(value)   => value
+      case Numeric(value) => value == value && value != 0.0
+      case Textual(value) => value.s.length > 0
+      case NodeSet(loci)  => loci.stdlib.nonEmpty
+
+    def number: Double = this match
+      case Numeric(value) => value
+      case Truth(value)   => if value then 1.0 else 0.0
+      case Textual(value) => XPath.parseNumber(value)
+      case NodeSet(_)     => XPath.parseNumber(text)
+
+    def text: Text = this match
+      case Textual(value) => value
+      case Truth(value)   => if value then t"true" else t"false"
+      case Numeric(value) => XPath.renderNumber(value)
+
+      case NodeSet(loci) => loci.stdlib.headOption match
+        case Some(locus) => locus.stringValue
+        case None        => t""
+
+  // The `number()` conversion of a string (§4.4): optional whitespace, an
+  // optional minus sign, then the Number production — no exponents, no other
+  // sign forms; anything else is NaN.
+  private[xylophone] def parseNumber(text: Text): Double =
+    val trimmed = text.s.trim.nn
+
+    if trimmed.isEmpty then Double.NaN else
+      var index = if trimmed.charAt(0) == '-' then 1 else 0
+      var digits = false
+      var dot = false
+      var valid = index < trimmed.length
+
+      while index < trimmed.length && valid do
+        val char = trimmed.charAt(index)
+
+        if char >= '0' && char <= '9' then digits = true
+        else if char == '.' && !dot then dot = true
+        else valid = false
+
+        index += 1
+
+      if valid && digits then java.lang.Double.parseDouble(trimmed) else Double.NaN
+
+  object EvaluationError:
+    enum Reason(val number: Int) extends Clarification:
+      case UnknownFunction(name: Text) extends Reason(1)
+      case BadArity(name: Text)        extends Reason(2)
+      case UnboundVariable(name: Text) extends Reason(3)
+      case NotNodeSet                  extends Reason(4)
+      case Unsupported(feature: Text)  extends Reason(5)
+      case Unresolved                  extends Reason(6)
+
+    given communicable: Reason is Communicable =
+      case Reason.UnknownFunction(name) => m"the function $name is not an XPath 1.0 core function"
+      case Reason.BadArity(name)        => m"the function $name was applied to the wrong number of arguments"
+      case Reason.UnboundVariable(name) => m"the variable $$$name has no binding"
+      case Reason.NotNodeSet            => m"a node-set was expected"
+      case Reason.Unsupported(feature)  => m"$feature is not supported"
+      case Reason.Unresolved            => m"the expression contains an unresolved substitution"
+
+  case class EvaluationError(reason: XPath.EvaluationError.Reason)(using Diagnostics)
+  extends fulminate.Error(563, reason.number)(m"the XPath could not be evaluated because $reason")
+
   // Operator precedence levels, loosest-first, following the grammar's
   // production nesting (§3.1-§3.5): or=1, and=2, equality=3, relational=4,
   // additive=5, multiplicative=6, unary=7, union=8; paths and primaries are
@@ -236,7 +389,7 @@ object XPath:
 
   // XPath 1.0 number syntax has no exponent, and the canonical form of an
   // integral value has no decimal point (`string(1.0)` is `1`).
-  private def renderNumber(value: Double): Text =
+  private[xylophone] def renderNumber(value: Double): Text =
     if value != value then t"NaN"
     else if java.lang.Double.isInfinite(value) then (if value > 0 then t"Infinity" else t"-Infinity")
     else if value == Math.floor(value) && Math.abs(value) < 1e15 then value.toLong.toString.tt

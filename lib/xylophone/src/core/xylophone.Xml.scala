@@ -3939,6 +3939,49 @@ object Xml extends Tag.Container
 
     new XmlParser(Cursor[Text](input), tracking = false, callback).parseXml(headers0)
 
+  // Selects the nodes matching an XPath: `//div[@id='x']` and friends,
+  // evaluated against this tree. The result is a `Fragment` of the matching
+  // tree nodes in document order; a path selecting attributes (`//a/@href`)
+  // yields their values through `selectText` or `evaluate` instead, since
+  // attributes are not tree nodes.
+  extension (xml: Xml)
+    def select(xpath: XPath)(using Tactic[XPath.EvaluationError]): Fragment =
+      XPathEngine.evaluate(xml, xpath.expression, Map()) match
+        case XPath.Value.NodeSet(loci) =>
+          val nodes = loci.stdlib.flatMap: locus =>
+            locus.attributeIndex match
+              case _: Int => scala.collection.immutable.Nil
+
+              case _ => locus.subject match
+                case node: Node => scala.collection.immutable.List(node)
+                case _          => scala.collection.immutable.Nil
+
+          new Fragment(nodes*)
+
+        case _ =>
+          abort(XPath.EvaluationError(XPath.EvaluationError.Reason.NotNodeSet))
+
+    // The string-value of the first matching node (`Unset` when nothing
+    // matches), or of the expression's value for non-node-set results. This is
+    // the way to read an attribute selected by path: `xml.selectText(xp"//a/@href")`.
+    def selectText(xpath: XPath)(using Tactic[XPath.EvaluationError]): Optional[Text] =
+      XPathEngine.evaluate(xml, xpath.expression, Map()) match
+        case XPath.Value.NodeSet(loci) => loci.stdlib.headOption match
+          case Some(locus) => locus.stringValue
+          case None        => Unset
+
+        case value =>
+          value.text
+
+    // Full XPath 1.0 expression evaluation, yielding one of the four value
+    // types: `count(//div)` is a number, `//a` a node-set. Variables referenced
+    // as `$name` resolve from `variables`, keyed by qualified name.
+    def evaluate(xpath: XPath, variables: Map[Text, XPath.Value] = Map())
+      ( using Tactic[XPath.EvaluationError] )
+    :   XPath.Value =
+
+      XPathEngine.evaluate(xml, xpath.expression, variables)
+
   // XmlError → Xml.Error
   case class Error()(using Diagnostics)
   extends fulminate.Error(149, 0)(m"there was an XML error")
