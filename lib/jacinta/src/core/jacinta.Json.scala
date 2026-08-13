@@ -1026,20 +1026,31 @@ object Json extends Json2, Dynamic:
             found = reader.keyIndex(table)
 
           index = 0
+          var failed = false
 
           while index < count do
             if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
               val fallback = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
-              values(index) =
-                if fallback.present then fallback
-                else if focused
-                then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).absent())
-                else entries.readUnchecked(index)(1).absent()
+              if fallback.present then values(index) = fallback
+              else if focused then
+                // Unlike the mid-loop parse (where a token-level mismatch must stay fail-fast —
+                // the stream cannot be resynchronized), absent keys are only discovered here,
+                // after the object is fully consumed, so EVERY missing field can accrue: the
+                // venture delimits `absent()`'s abort (the `Tactic` is a call-time parameter,
+                // not resolution-captured), records it at this field's focus, and continues.
+                focus(descend(prior, keys.readUnchecked(index).tt)):
+                  given Diagnostics = tactic.diagnostics
+                  val ventured = venture(entries.readUnchecked(index)(1).absent())
+                  if ventured.ready then values(index) = ventured.vouch else failed = true
+              else values(index) = entries.readUnchecked(index)(1).absent()
 
             index += 1
 
-          make(Array.freeze(values))
+          // Construction is gated on a full set of clean slots, so user constructor code never
+          // sees a garbage value; on failure the returned value is never used (the caller's
+          // tracking scope is tainted by the errors recorded above).
+          if failed then null.asInstanceOf[derivation] else make(Array.freeze(values))
 
   // The direct-parsing counterpart of `Json.Decodable`: consumes JSON tokens
   // from a `Json.Reader` instead of walking a materialized `Json`, so

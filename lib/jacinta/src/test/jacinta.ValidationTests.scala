@@ -210,6 +210,39 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         validateJson(json)(_.as[VMix]).items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
       . assert(_ == Set("#/shape", "#/name"))
 
+    suite(m"Streaming-parse accrual"):
+      // The direct-parse path: `Tactic[ParseError]` comes from the ambient `throwUnsafely`
+      // (token-level errors stay fail-fast; a malformed stream cannot be resynchronized), while
+      // `Json.Error`s — absent required fields, discovered after the object is consumed — accrue.
+      inline def validateRead[result](text: Text)
+        (inline decode: Text => result raises Json.Error tracks Json.Focus)
+      :   Issues =
+        Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
+          ( Issues(),
+            { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
+        . protect(decode(text))
+
+      test(m"Two missing fields accrue on the direct-parse path"):
+        validateRead(t"""{"name": "Bob"}""")(_.read[VPerson in Json]).items.length
+      . assert(_ == 2)
+
+      test(m"Pointers identify both missing fields on the direct-parse path"):
+        validateRead(t"""{"name": "Bob"}""")(_.read[VPerson in Json])
+        . items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+      . assert(_ == Set("#/age", "#/email"))
+
+      test(m"Direct-parse construction is skipped when a field is missing"):
+        VProbe.constructions = 0
+        val issues = validateRead(t"""{"name": "Zoe"}""")(_.read[VChecked in Json])
+        (issues.items.length, VProbe.constructions)
+      . assert(_ == (1, 0))
+
+      test(m"Direct-parse construction runs once when clean"):
+        VProbe.constructions = 0
+        validateRead(t"""{"name": "Zoe", "age": 5}""")(_.read[VChecked in Json])
+        VProbe.constructions
+      . assert(_ == 1)
+
     suite(m"Ventures and guards over Json decoding"):
       import dynamicJsonAccess.enabled
       test(m"Failed sibling reads both accrue; dependent steps are skipped"):
