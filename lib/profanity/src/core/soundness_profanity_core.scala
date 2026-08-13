@@ -34,7 +34,7 @@ package soundness
 
 export
   profanity
-  . { Board, Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
+  . { Board, Console, CtrlChar, Interaction, interactive, Interactivity, Keyboard,
       LineEditor, Question, SelectMenu, Interrupt, SignalResponse,
       Terminal, TerminalBoard, InlineBoard, UnixSignal, WindowsSignal }
 

@@ -186,10 +186,10 @@ extends Question[Text]:
             interaction:   Interaction[Text, LineEditor] )
     [ result ]
     ( lambda: Interactivity[Terminal.Event] ?=> Text => result )
-    ( using Tactic[DismissError] )
+    ( using Tactic[Question.Error] )
   :   result =
 
     val events = interactivity.eventIterator()
 
-    interaction(events, this)(_(_)).lay(abort(DismissError())):
+    interaction(events, this)(_(_)).lay(abort(Question.Error())):
       result => lambda(using Interactivity(events))(result)

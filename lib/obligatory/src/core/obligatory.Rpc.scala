@@ -30,9 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package profanity
+package obligatory
 
 import fulminate.*
 
-case class DismissError()(using Diagnostics)
-extends Error(372, 0)(m"the user dismissed an interaction")
+object Rpc:
+  // RpcError → Rpc.Error
+  case class Error()(using Diagnostics)
+  extends fulminate.Error(983, 0)(m"the remote procedure call failed")

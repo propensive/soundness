@@ -36,6 +36,7 @@ import scala.caps
 
 import beneficence.*
 import contingency.*
+import fulminate.*
 import vacuous.*
 
 // An `Internet` is a *capability*: it is evidence of (possible) network access, so code that
@@ -43,9 +44,14 @@ import vacuous.*
 // ambient strategies) rather than a scoped classifier: it holds only a `Boolean`, and the
 // deliberately-ambient `Online` singleton and `internetAccess.online` given must be storable
 // statically, which the scoped classifiers forbid.
+object Internet:
+  // OfflineError → Internet.Error
+  case class Error()(using Diagnostics)
+  extends fulminate.Error(770, 0)(m"an Internet connection is not available")
+
 class Internet(val online: Boolean) extends Findable, caps.Unscoped:
-  def require[result](block: Online ?=> result)(using Tactic[OfflineError]): result =
-    if online then block(using Online()) else abort(OfflineError())
+  def require[result](block: Online ?=> result)(using Tactic[Internet.Error]): result =
+    if online then block(using Online()) else abort(Internet.Error())
 
   def appropriate[result](block: Online ?=> result): Optional[result] =
     if online then block(using Online()) else Unset
