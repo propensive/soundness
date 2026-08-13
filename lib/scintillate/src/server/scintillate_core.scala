@@ -112,7 +112,7 @@ def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.tex
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
   ( using connection: Http.Connection )
-  ( using Tactic[AuthError] )
+  ( using Tactic[Auth.Error] )
 :   Http.Response =
 
   connection.headers.authorization match

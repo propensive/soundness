@@ -141,7 +141,7 @@ object Pem:
         line.trim match
           case r"-----* *END $endLabel([ A-Z]+) *-----*" =>
             mitigate:
-              case SerializationError(_, _) => Pem.Error(Pem.Error.Reason.BadBase64)
+              case Serialization.Error(_, _) => Pem.Error(Pem.Error.Reason.BadBase64)
 
             // `[Data]` stated, not inferred: the conformance check on a macro expansion
             // dealiases opaque types, and `Data` is a transparent alias over an opaque one.

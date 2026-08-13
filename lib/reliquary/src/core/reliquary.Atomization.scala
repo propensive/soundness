@@ -39,13 +39,13 @@ import rudiments.*
 object Atomization:
   // Establishes atomization invariants: atoms sorted by ascending value hash (the order of every
   // atom listing, §10.4) and keys unique within the discipline.
-  def of(discipline: Text, atoms: List[Atom]): Atomization raises DisciplineError =
+  def of(discipline: Text, atoms: List[Atom]): Atomization raises Discipline.Error =
     val sorted = atoms.stdlib.sortWith: (a, b) => Blob.compare(a.valueHash, b.valueHash) < 0
     val seen = scala.collection.mutable.HashSet[Text]()
 
     sorted.foreach: atom =>
       if !seen.add(atom.key)
-      then abort(DisciplineError(discipline, DisciplineError.Reason.Duplicate(atom.key)))
+      then abort(Discipline.Error(discipline, Discipline.Error.Reason.Duplicate(atom.key)))
 
     Atomization(discipline, List.from(sorted))
 

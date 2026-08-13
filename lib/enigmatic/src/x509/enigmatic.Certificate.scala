@@ -46,7 +46,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import CertificateError.Reason
+import Certificate.Error.Reason
 
 // An X.509 certificate. It is held as the ASN.1 value it is, so that it encodes to DER — and hence
 // to PEM — through the ordinary codec, and so that a certificate read back from the wire re-encodes
@@ -89,13 +89,13 @@ object Certificate:
             digest:        Signature.Digest,
             hash:          Hash in Sha2[256],
             erased permit: Permit[Weakness[cipher]] )
-    ( using Tactic[CertificateError], Tactic[Asn1.Error], Diagnostics )
+    ( using Tactic[Certificate.Error], Tactic[Asn1.Error], Diagnostics )
   :   Certificate =
 
-    if serial <= 0 then abort(CertificateError(Reason.BadSerialNumber))
-    if validity.finish.long <= validity.start.long then abort(CertificateError(Reason.BadValidity))
+    if serial <= 0 then abort(Certificate.Error(Reason.BadSerialNumber))
+    if validity.finish.long <= validity.start.long then abort(Certificate.Error(Reason.BadValidity))
 
-    val unknown = CertificateError(Reason.UnknownAlgorithm(digest.token))
+    val unknown = Certificate.Error(Reason.UnknownAlgorithm(digest.token))
     val identifier = signature.identifier(digest).lay(abort(unknown))(identity)
 
     // `PublicKey#bytes` is already a DER `SubjectPublicKeyInfo`, so it is decoded rather than
@@ -106,7 +106,7 @@ object Certificate:
       case Asn1.Sequence(List(_, bits: Asn1.BitString)) => bits
 
       case _ =>
-        abort(CertificateError(Reason.BadPublicKey))
+        abort(Certificate.Error(Reason.BadPublicKey))
 
     val name = Distinguished.sequence(subject)
 
@@ -179,6 +179,23 @@ object Certificate:
   private def instant(instant: Instant over Unix): Asn1 =
     val seconds = Math.floorDiv(instant.long, 1000L)
     if seconds < Generalized then Asn1.UtcTime(seconds) else Asn1.GeneralizedTime(seconds)
+
+  // CertificateError → Certificate.Error
+  object Error:
+    given communicable: Reason is Communicable =
+      case Reason.UnknownAlgorithm(digest) => m"no signature algorithm is assigned to $digest"
+      case Reason.BadPublicKey             => m"the public key was not a SubjectPublicKeyInfo"
+      case Reason.BadSerialNumber          => m"the serial number was negative or zero"
+      case Reason.BadValidity              => m"the validity period ended before it began"
+
+    enum Reason(val number: Int) extends Clarification:
+      case UnknownAlgorithm(digest: Text) extends Reason(1)
+      case BadPublicKey extends Reason(2)
+      case BadSerialNumber extends Reason(3)
+      case BadValidity extends Reason(4)
+
+  case class Error(reason: Certificate.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(524, reason.number)(m"could not build the certificate because $reason")
 
 case class Certificate(asn1: Asn1):
   // The armored form, which is how certificates are almost always exchanged.

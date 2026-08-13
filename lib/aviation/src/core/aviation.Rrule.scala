@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import proscenium.compat.*
@@ -117,7 +118,7 @@ object Rrule:
 
     parts.join(t";")
 
-  def parse[point: Decodable in Text](text: Text, start: point)(using Tactic[RruleError])
+  def parse[point: Decodable in Text](text: Text, start: point)(using Tactic[Rrule.Error])
   :   Rrule[point] =
 
     val fields: Map[Text, Text] = Map.from:
@@ -130,7 +131,7 @@ object Rrule:
 
     Rrule
       ( start,
-        field(t"FREQ").lay(abort(RruleError(text)))(frequencyOf(_, text)),
+        field(t"FREQ").lay(abort(Rrule.Error(text)))(frequencyOf(_, text)),
         field(t"INTERVAL").lay(1)(intOf(_, text)),
         field(t"COUNT").lay(Unset)(intOf(_, text)),
         field(t"UNTIL").lay(Unset)(_.as[point]),
@@ -145,7 +146,7 @@ object Rrule:
         field(t"BYSETPOS").lay(Nil)(ints(_, text)),
         field(t"WKST").lay(Weekday.Mon)(weekdayOf(_, text)) )
 
-  private def frequencyOf(text: Text, context: Text)(using Tactic[RruleError]): Frequency =
+  private def frequencyOf(text: Text, context: Text)(using Tactic[Rrule.Error]): Frequency =
     text.upper match
       case t"SECONDLY" => Frequency.Secondly
       case t"MINUTELY" => Frequency.Minutely
@@ -154,24 +155,24 @@ object Rrule:
       case t"WEEKLY"   => Frequency.Weekly
       case t"MONTHLY"  => Frequency.Monthly
       case t"YEARLY"   => Frequency.Yearly
-      case _           => abort(RruleError(context))
+      case _           => abort(Rrule.Error(context))
 
-  private def intOf(text: Text, context: Text)(using Tactic[RruleError]): Int =
+  private def intOf(text: Text, context: Text)(using Tactic[Rrule.Error]): Int =
     val string = text.s
     val body = if string.startsWith("-") || string.startsWith("+") then string.drop(1) else string
-    if body.nonEmpty && body.forall(_.isDigit) then string.toInt else abort(RruleError(context))
+    if body.nonEmpty && body.forall(_.isDigit) then string.toInt else abort(Rrule.Error(context))
 
-  private def ints(text: Text, context: Text)(using Tactic[RruleError]): List[Int] =
+  private def ints(text: Text, context: Text)(using Tactic[Rrule.Error]): List[Int] =
     text.cut(t",").map(intOf(_, context))
 
-  private def weekdayOf(text: Text, context: Text)(using Tactic[RruleError]): Weekday =
+  private def weekdayOf(text: Text, context: Text)(using Tactic[Rrule.Error]): Weekday =
     weekdayCodes.indexOf(text.upper) match
-      case -1    => abort(RruleError(context))
+      case -1    => abort(Rrule.Error(context))
       case index => Weekday.fromOrdinal(index)
 
-  private def dayOf(text: Text, context: Text)(using Tactic[RruleError]): WeekdayOrdinal =
+  private def dayOf(text: Text, context: Text)(using Tactic[Rrule.Error]): WeekdayOrdinal =
     val string = text.s
-    if string.length < 2 then abort(RruleError(context))
+    if string.length < 2 then abort(Rrule.Error(context))
     val weekday = weekdayOf(string.takeRight(2).tt, context)
     val prefix = string.dropRight(2)
     WeekdayOrdinal(weekday, if prefix.isEmpty then Unset else intOf(prefix.tt, context))
@@ -404,6 +405,10 @@ object Rrule:
         if index >= 0 && index < count then List(candidates.stdlib(index)) else Nil
 
       chosen.distinct.sort(_.jdn)
+
+  // RruleError → Rrule.Error
+  case class Error(value: Text)(using Diagnostics)
+  extends fulminate.Error(m"the value $value is not a valid RFC 5545 recurrence rule")
 
 case class Rrule[point]
   ( start:      point,

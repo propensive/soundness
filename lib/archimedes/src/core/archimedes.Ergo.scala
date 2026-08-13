@@ -44,7 +44,9 @@ import scala.collection.mutable.ListBuffer
 import proscenium.compat.*
 
 import anticipation.*
+import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -134,13 +136,13 @@ object Ergo:
   private def directive(char: Char): Optional[Directive] =
     directives.stdlib.collectFirst { case (glyph, entry) if glyph == char => entry }.optional
 
-  def parse(input: Text)(using Tactic[ErgoError]): Math =
+  def parse(input: Text)(using Tactic[Ergo.Error]): Math =
     Parser(input.s, Iterator.empty).parseTop()
 
   // Parses an interpolated `ergo""` literal: the `parts` are joined with a hole
   // sentinel, and each hole yields the corresponding already-encoded `atoms` node
   // as a single atom, in left-to-right order.
-  def interpolate(parts: Seq[Text], atoms: Seq[Mathml])(using Tactic[ErgoError]): Math =
+  def interpolate(parts: Seq[Text], atoms: Seq[Mathml])(using Tactic[Ergo.Error]): Math =
     Parser(parts.map(_.s).mkString(Hole.toString), atoms.iterator).parseTop()
 
   // Parse-or-throw, for callers (in particular the `ergo""` interpolator's
@@ -158,17 +160,17 @@ object Ergo:
   // Emits the ergo-expressible subset of Presentation MathML (the elements Ergo
   // has structural syntax for, plus every MathML Core attribute as a directive).
   // An element outside that subset — e.g. `<mtext>`, `<mspace>`, `<mstyle>` — has
-  // no ergo form and raises `ErgoError`. The root `<math>`'s own attributes are
+  // no ergo form and raises `Ergo.Error`. The root `<math>`'s own attributes are
   // not representable and are dropped.
 
   private val special: Set[Char] =
     Set('(', ')', '[', ']', '{', '}', '⟨', '⟩', '↗', '↘', '↑', '↓', '/', '√', '⋱', '⋯', '⋮')
 
-  def serialize(math: Math)(using Tactic[ErgoError]): Text = t"(${sequence(math.contents)})"
+  def serialize(math: Math)(using Tactic[Ergo.Error]): Text = t"(${sequence(math.contents)})"
 
   private def group(core: Text): Text = t"($core)"
 
-  private def operand(node: Mathml)(using Tactic[ErgoError]): Text = emit(node, true)
+  private def operand(node: Mathml)(using Tactic[Ergo.Error]): Text = emit(node, true)
 
   private def rowOf(nodes: List[Mathml]): Mathml = nodes match
     case one :: Nil => one
@@ -176,7 +178,7 @@ object Ergo:
 
   // Joins a juxtaposed run, inserting a space only where two tokens would
   // otherwise merge (letter+letter into one `<mi>`, or digit+digit into one `<mn>`).
-  private def sequence(nodes: List[Mathml])(using Tactic[ErgoError]): Text =
+  private def sequence(nodes: List[Mathml])(using Tactic[Ergo.Error]): Text =
     val parts = nodes.stdlib.map(emit(_, false)).filter(!_.s.isEmpty)
 
     parts.foldLeft(t""): (acc, next) =>
@@ -197,7 +199,7 @@ object Ergo:
     else if asOperand && !safe then group(core)
     else core
 
-  private def emit(node: Mathml, asOperand: Boolean)(using Tactic[ErgoError]): Text = node match
+  private def emit(node: Mathml, asOperand: Boolean)(using Tactic[Ergo.Error]): Text = node match
     case Mo(value, attributes) if value.s.length == 1 && special(value.s.charAt(0)) =>
       t"${group(value)}${directivesFor(attributes)}"
 
@@ -239,7 +241,7 @@ object Ergo:
       val kept = accentless(accentless(attributes, under, t"accentunder"), over, t"accent")
       finish(t"${operand(base)}↓${operand(under)}↑${operand(over)}", kept, asOperand, false)
 
-    case other => scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unsupported(other.label))))
+    case other => scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unsupported(other.label))))
 
   // A `↑`/`↓` script that is a single `<mo>` re-acquires its accent on parsing, so
   // the corresponding accent attribute is implied and not emitted.
@@ -252,7 +254,7 @@ object Ergo:
 
     if accent then List.of(attributes.stdlib.filter { pair => pair != (name, t"true") }) else attributes
 
-  private def serializeTable(table: Mtable)(using Tactic[ErgoError]): Text =
+  private def serializeTable(table: Mtable)(using Tactic[Ergo.Error]): Text =
     val rows: List[List[Text]] =
       table.contents.collect:
         case Mtr(cells, _) => cells.map(cellText)
@@ -267,7 +269,7 @@ object Ergo:
       val body = rows.map { cells => group(cells.join) }.join
       t"${Matrix.toString.tt}($body)"
 
-  private def cellText(node: Mathml)(using Tactic[ErgoError]): Text = node match
+  private def cellText(node: Mathml)(using Tactic[Ergo.Error]): Text = node match
     case Mtd(contents, _) => group(sequence(contents))
     case other            => group(emit(other, false))
 
@@ -287,7 +289,7 @@ object Ergo:
 
     matched.optional
 
-  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[ErgoError]):
+  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error]):
     @scala.caps.unsafe.untrackedCaptures
     private var pos = 0
     @scala.caps.unsafe.untrackedCaptures
@@ -311,11 +313,11 @@ object Ergo:
     private def digit(c: Char): Boolean = Character.isDigit(c)
 
     def parseTop(): Math =
-      if s.isEmpty then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Empty, pos)))
+      if s.isEmpty then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Empty, pos)))
       open = s.charAt(0)
 
       if !pairs.contains(open)
-      then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.BadOpener(open.toString.tt), pos)))
+      then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.BadOpener(open.toString.tt), pos)))
 
       close = pairs(open)
 
@@ -328,7 +330,7 @@ object Ergo:
       advance()
       val inner = parseSequence()
       skipSpaces()
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
       advance()
       inner
 
@@ -415,7 +417,7 @@ object Ergo:
         if depth > 0 then pos += 1
 
       val raw = s.substring(start, pos).nn.tt
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
       advance() // close
       raw
 
@@ -479,7 +481,7 @@ object Ergo:
 
         rooted(Mn(s.substring(start, pos).nn.tt))
       else if c == '\u0000' then
-        scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.UnexpectedEnd, pos)))
+        scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.UnexpectedEnd, pos)))
       else
         // a content glyph, or an operator glyph degraded for want of an operand
         advance()
@@ -494,13 +496,13 @@ object Ergo:
     // introducer, returning the parsed child groups. A body with no nested
     // groups is treated as a single element (so `⋯(a)` is a one-cell vector).
     private def parseBody(introducer: Char): List[Mathml] =
-      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt), pos)))
+      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.MissingBody(introducer.toString.tt), pos)))
       advance() // body open
       val items = ListBuffer[Mathml]()
       while peek == open do items += parseGroup()
       if items.isEmpty && peek != close then items += parseSequence()
       skipSpaces()
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
       advance() // body close
       items.to(List)
 
@@ -511,7 +513,7 @@ object Ergo:
 
     private def parseMatrix(): Mathml =
       val introducer = advance()
-      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt), pos)))
+      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.MissingBody(introducer.toString.tt), pos)))
       advance() // body open
       val rows = ListBuffer[Mathml]()
 
@@ -523,11 +525,35 @@ object Ergo:
         // A row group with no nested cell-groups is a single-cell row.
         if cells.isEmpty && peek != close then cells += parseSequence()
         skipSpaces()
-        if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
+        if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
         advance() // row-group close
         rows += Mtr(cells.toList.map { cell => Mtd(cell) }*)
 
       skipSpaces()
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
       advance() // body close
       Mtable(rows.to(List)*)
+
+  // Ergo.Error → Ergo.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Empty                    extends Reason(1)
+      case BadOpener(char: Text)    extends Reason(2)
+      case Unclosed(expected: Text) extends Reason(3)
+      case UnexpectedEnd            extends Reason(4)
+      case MissingBody(char: Text)  extends Reason(5)
+      case Unsupported(label: Text) extends Reason(6)
+
+    given communicable: Reason is Communicable =
+      case Reason.Empty              => m"the expression was empty"
+      case Reason.BadOpener(char)    => m"the expression must start with a bracket, not $char"
+      case Reason.Unclosed(expected) => m"a group was not closed with $expected"
+      case Reason.UnexpectedEnd      => m"the expression ended unexpectedly"
+      case Reason.MissingBody(char)  => m"the $char introducer must be followed by a group"
+      case Reason.Unsupported(label) => m"the <$label> element has no ergo representation"
+
+  // `offset` is the character position within the parsed input at which the error was detected,
+  // or -1 when unavailable (the serialization path, which has no cursor).
+  case class Error(reason: Ergo.Error.Reason, offset: Int = -1)(using Diagnostics)
+  extends fulminate.Error(431, reason.number)
+    ( m"the ergo expression could not be parsed because $reason" )

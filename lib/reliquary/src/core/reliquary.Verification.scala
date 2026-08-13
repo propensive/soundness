@@ -177,7 +177,7 @@ object Verification:
       report:          Report,
       implementations: List[Discipline],
       classpath:       (Text, Optional[Text]) => List[Text] = { (_, _) => List() } )
-  :   Unit raises Lira.Error raises DisciplineError =
+  :   Unit raises Lira.Error raises Discipline.Error =
 
     val resourceId = ResourceDiscipline(manifest.resource).id
     val declaredIds = manifest.api.map(_.discipline)

@@ -69,17 +69,17 @@ object CapabilityDiscipline extends Discipline:
   def guarantees(realm: Text): Set[Discipline.Guarantee] =
     Set(Discipline.Guarantee.Recompilation)
 
-  private def malformed(detail: Text): DisciplineError =
+  private def malformed(detail: Text): Discipline.Error =
     import errorDiagnostics.emptyDiagnostics
-    DisciplineError(t"capability/1", DisciplineError.Reason.Malformed(detail))
+    Discipline.Error(t"capability/1", Discipline.Error.Reason.Malformed(detail))
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError =
+  :   Atomization raises Discipline.Error =
 
     val atoms = content.stdlib.flatMap: (path, data) => rows(data)
     Atomization.of(id, List.from(atoms))
 
-  private def rows(data: Data): scala.List[Atom] raises DisciplineError =
+  private def rows(data: Data): scala.List[Atom] raises Discipline.Error =
     val document =
       import errorDiagnostics.emptyDiagnostics
 

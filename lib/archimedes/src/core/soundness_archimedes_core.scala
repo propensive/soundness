@@ -37,4 +37,4 @@ package soundness
 // names do not collide with unrelated modules in the `soundness` namespace. Import
 // `soundness.Mathml.*` for the bare element names where MathML is being authored by hand.
 export archimedes.{Math, Mathml, Display, MathmlReader, mathmlNamespace,
-    Ergo, ErgoError, ergo, mathml, math, Cell, cell, draw}
+    Ergo, ergo, mathml, math, Cell, cell, draw}

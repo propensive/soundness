@@ -66,7 +66,7 @@ object JvmProfile extends EcosystemProfile:
   // An absent section — a release that carries no `jvm` universe at all — has no linkage surface
   // and yields nothing to compare.
   private def surface(evidence: EcosystemProfile.Evidence)
-  :   Map[Text, Atom] raises DisciplineError =
+  :   Map[Text, Atom] raises Discipline.Error =
 
     evidence.section(universe).lay(Map.empty[Text, Atom]): section =>
       val classes = section.content.stdlib.filter { pair => pair(0).text.s.endsWith(".class") }
@@ -84,12 +84,12 @@ object JvmProfile extends EcosystemProfile:
             (Map.of(surfaces), section.classpath, ClassfileAtomizer.Fold.Linkage)
 
         outcome.unresolved.stdlib.headOption.foreach: name =>
-          abort(DisciplineError(id, DisciplineError.Reason.Unresolved(name)))
+          abort(Discipline.Error(id, Discipline.Error.Reason.Unresolved(name)))
 
         Map.of(outcome.atoms.stdlib.map { atom => atom.key -> atom }.toMap)
 
   def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
-  :   List[EcosystemProfile.Violation] raises DisciplineError =
+  :   List[EcosystemProfile.Violation] raises Discipline.Error =
 
     val before = surface(previous)
     val after = surface(next)
@@ -132,7 +132,7 @@ object JvmProfile extends EcosystemProfile:
   // minor and stale used-sets are marked, §13.4), and repeating it as a break would overstate
   // the finding. They are surfaced separately, for reporting.
   def constants(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
-  :   List[Text] raises DisciplineError =
+  :   List[Text] raises Discipline.Error =
 
     val before = surface(previous)
     val after = surface(next)
@@ -150,7 +150,7 @@ object JvmProfile extends EcosystemProfile:
   // publisher sees them without any bespoke call.
   override def advisories
     ( previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence )
-  :   List[Text] raises DisciplineError =
+  :   List[Text] raises Discipline.Error =
 
     List.from:
       constants(previous, next).stdlib.map: key =>

@@ -123,7 +123,7 @@ package alphabets:
 
 extension (value: Text)
   def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
-  :   Data raises SerializationError =
+  :   Data raises Serialization.Error =
 
     deserializable.deserialize(value)
 
@@ -142,7 +142,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
 extension (consume stream: (Stream[Text] over Credit)^)
   def deserialize[scheme <: Serialization]
-    (using Alphabet[scheme], Buffering, Tactic[SerializationError])
+    (using Alphabet[scheme], Buffering, Tactic[Serialization.Error])
   :   (Stream[Data] over Credit)^ =
 
     stream.via(summon[Alphabet[scheme]])

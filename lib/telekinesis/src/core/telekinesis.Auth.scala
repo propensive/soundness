@@ -35,6 +35,7 @@ package telekinesis
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
 import kaleidoscope.*
@@ -57,7 +58,7 @@ object Auth:
     case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
     case Vapid(text)               => t"vapid $text"
 
-  given decodable: (tactic: Tactic[AuthError])
+  given decodable: (tactic: Tactic[Auth.Error])
   =>  ((Auth is Decodable in Text)^{tactic}) = value => value match
     case r"Bearer $token(.*)"        => Bearer(token)
     case r"Digest $digest(.*)"       => Digest(digest)
@@ -71,10 +72,14 @@ object Auth:
 
     case r"Basic $username(.*):$password(.*)" =>
       safely(Basic(username.deserialize[Base64].utf8, password.deserialize[Base64].utf8)).lest:
-        AuthError(value)
+        Auth.Error(value)
 
     case value =>
-      abort(AuthError(value))
+      abort(Auth.Error(value))
+
+  // AuthError → Auth.Error
+  case class Error(value: Text)(using Diagnostics)
+  extends fulminate.Error(570, 0)(m"the authentication value $value is not valid")
 
 enum Auth:
   case Basic(username: Text, password: Text)

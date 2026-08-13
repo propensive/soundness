@@ -767,7 +767,7 @@ object WebDriver:
     private given mediaTactic: (Tactic[MediaType.Error]^) =
       tactic.contramap(_ => Session.malformed(t"the media type was not valid")(using note))
 
-    private given base64Tactic: (Tactic[SerializationError]^) =
+    private given base64Tactic: (Tactic[Serialization.Error]^) =
       tactic.contramap(_ => Session.malformed(t"the screenshot was not valid Base64")(using note))
 
     private given decodeTactic: (Tactic[CharDecoder.Error]^) =

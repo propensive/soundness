@@ -2139,10 +2139,10 @@ object Tests extends Suite(m"Aviation Tests"):
         Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.take(2).stdlib.to(List)
       . assert(_ == List(2024-Jan-26, 2024-Feb-23))
 
-      test(m"An invalid rrule string raises RruleError"):
+      test(m"An invalid rrule string raises Rrule.Error"):
         capture(Rrule.parse(t"FREQ=FORTNIGHTLY", 2024-Jan-1))
       . matches:
-          case _: RruleError =>
+          case _: Rrule.Error =>
 
     suite(m"RecurrenceSet"):
       import calendars.gregorianCalendar

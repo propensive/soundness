@@ -34,6 +34,7 @@ package reliquary
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -89,7 +90,7 @@ object Discipline:
       List.from(disciplines.stdlib :+ ResourceDiscipline(resources) :+ OpaqueDiscipline)
 
     def atomize(content: List[(TreePath, Data)], context: Context)
-    :   List[Atomization] raises DisciplineError =
+    :   List[Atomization] raises Discipline.Error =
 
       var remaining = content.stdlib
 
@@ -104,6 +105,23 @@ object Discipline:
       List.from:
         results.filter { (_, claimed) => !claimed.isEmpty }.map: (discipline, claimed) =>
           discipline.atomize(List.from(claimed), context)
+
+  // DisciplineError → Discipline.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Malformed(detail: Text)  extends Reason(1)
+      case Duplicate(key: Text)     extends Reason(2)
+      case Unresolved(name: Text)   extends Reason(3)
+      case Nondeterminism(detail: Text) extends Reason(4)
+
+    given communicable: Reason is Communicable =
+      case Reason.Malformed(detail)      => m"the content could not be atomized: $detail"
+      case Reason.Duplicate(key)         => m"the key $key was produced twice"
+      case Reason.Unresolved(name)       => m"the reference $name resolves to nothing atomized"
+      case Reason.Nondeterminism(detail) => m"the canonicalization is unstable: $detail"
+
+  case class Error(discipline: Text, reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(641, reason.number)(m"the discipline $discipline failed because $reason")
 
 // A named, versioned canonicalization procedure (§11): the single language-specific plug-in
 // point of the format. Atomization must be a pure function of the content's semantic model —
@@ -122,4 +140,4 @@ trait Discipline:
   def guarantees(universe: Text): Set[Discipline.Guarantee]
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError
+  :   Atomization raises Discipline.Error

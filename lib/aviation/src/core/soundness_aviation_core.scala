@@ -45,9 +45,9 @@ export
       Meridiem, Minute, Moment, Mon, monotonic, Monotonic, MonotonicClock, Month, Months,
       Monthstamp, Nov, now,
       Occurrence, Oct, OffsetCalendar, OrdinalCalendar, Period, PersianCalendar, PersianMonth, pm,
-      following, occurrences, Unix, rec, Recurrence, RecurrenceError, recInterpolator,
+      following, occurrences, Unix, rec, Recurrence, recInterpolator,
       RecurrenceLiteral, RecurrenceSet, Recurrent, Regime, Resolution, Rfc1123, RomanCalendar,
-      Rrule, RruleError, Tai, until, WeekdayOrdinal, within,
+      Rrule, Tai, until, WeekdayOrdinal, within,
       Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
       TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, today, ts, tsInterpolator, Tue, tz, Tzdb, Wed, Week, WeekDate, Weekday, Weekdays,
       WorkingDays, Year, Years }

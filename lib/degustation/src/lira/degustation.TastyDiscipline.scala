@@ -70,7 +70,7 @@ object TastyDiscipline extends Discipline:
     name.endsWith(".tasty") || atomless.exists: suffix => name.endsWith(suffix)
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError =
+  :   Atomization raises Discipline.Error =
 
     val tasty = content.stdlib.filter: pair => pair(0).text.s.endsWith(".tasty")
 
@@ -89,7 +89,7 @@ object TastyDiscipline extends Discipline:
         val scalaAtoms =
           mitigate:
             case DegustationError(reason) =>
-              DisciplineError(id, DisciplineError.Reason.Malformed(t"$reason"))
+              Discipline.Error(id, Discipline.Error.Reason.Malformed(t"$reason"))
 
           . protect(Inspection.atomize(List.from(files), context.classpath))
 

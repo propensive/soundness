@@ -63,7 +63,7 @@ object HostContracts:
       toolchain:  List[Lira.Manifest.Tool],
       allowMajor: Text -> Boolean            = { _ => false },
       sign:       Lira.Manifest -> Lira.Manifest = { manifest => manifest } )
-    ( using Tactic[Lira.Error], Tactic[DisciplineError] )
+    ( using Tactic[Lira.Error], Tactic[Discipline.Error] )
   :   List[(Text, Data)] =
 
     val registry = Discipline.Registry(List(JsigDiscipline))

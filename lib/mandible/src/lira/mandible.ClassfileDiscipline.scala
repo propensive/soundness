@@ -75,7 +75,7 @@ object ClassfileDiscipline extends Discipline:
   def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".class")
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError =
+  :   Atomization raises Discipline.Error =
 
     val classes = content.stdlib.map: (path, data) =>
       // Same erasure; the parser reads the bytes and retains nothing of them.
@@ -90,6 +90,6 @@ object ClassfileDiscipline extends Discipline:
     // presented set of everything below it is understated, and an understated interface is a
     // compatibility claim made over content nobody read.
     outcome.unresolved.stdlib.headOption.foreach: name =>
-      abort(DisciplineError(id, DisciplineError.Reason.Unresolved(name)))
+      abort(Discipline.Error(id, Discipline.Error.Reason.Unresolved(name)))
 
     Atomization.of(id, outcome.atoms)

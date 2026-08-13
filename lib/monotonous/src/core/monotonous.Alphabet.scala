@@ -184,7 +184,7 @@ object Alphabet:
 
             produced
 
-  given deserialization: [encoding <: Serialization] => (tactic: Tactic[SerializationError])
+  given deserialization: [encoding <: Serialization] => (tactic: Tactic[Serialization.Error])
   =>  Ductile.Instance[Alphabet[encoding], Text, Data, Credit, Credit] =
 
     // Sealed: see `serialization` above. The tactic is sealed here too — the duct
@@ -301,7 +301,7 @@ object Alphabet:
                 else
                   accumulator = (accumulator << base)
                     | stage.invert(position, char)
-                        (using tacticRef.asInstanceOf[Tactic[SerializationError]])
+                        (using tacticRef.asInstanceOf[Tactic[Serialization.Error]])
                   accumulated += base
 
                 position += 1
@@ -316,9 +316,9 @@ case class Alphabet[encoding <: Serialization]
 
   def apply(index: Int): Char = chars.s.charAt(index)
 
-  def invert(position: Int, char: Char): Int raises SerializationError =
+  def invert(position: Int, char: Char): Int raises Serialization.Error =
     if char < inversions.length && inversions.readUnchecked(char) >= 0 then inversions.readUnchecked(char)
-    else abort(SerializationError(position, char))
+    else abort(Serialization.Error(position, char))
 
   lazy val inverse: Map[Char, Int] =
     Map.of(tolerance.stdlib ++ chars.chars.readable.zipWithIndex.toMap)

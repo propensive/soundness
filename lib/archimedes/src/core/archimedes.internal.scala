@@ -83,7 +83,7 @@ object internal:
       import errorDiagnostics.emptyDiagnostics
 
       try Ergo.interpolate(parts.stdlib.map(_.tt), List.fill(atoms.stdlib.length)(Mi(t"?")).stdlib)
-      catch case error: ErgoError =>
+      catch case error: Ergo.Error =>
         // The parser's offset refers to the parts joined with a one-character hole sentinel
         // per substitution; clamp end-of-input errors onto the last character.
         val joinedLength = parts.stdlib.map(_.length).sum + atoms.stdlib.length

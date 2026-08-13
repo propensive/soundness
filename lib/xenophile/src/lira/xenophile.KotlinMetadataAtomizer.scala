@@ -58,9 +58,9 @@ import vacuous.*
 object KotlinMetadataAtomizer:
   val id: Text = t"kotlin-metadata/1"
 
-  private def malformed(detail: Text): DisciplineError =
+  private def malformed(detail: Text): Discipline.Error =
     import errorDiagnostics.emptyDiagnostics
-    DisciplineError(id, DisciplineError.Reason.Malformed(detail))
+    Discipline.Error(id, Discipline.Error.Reason.Malformed(detail))
 
   // --- canonical binary encoding -------------------------------------------------------------
 
@@ -334,7 +334,7 @@ object KotlinMetadataAtomizer:
   // Atomizes the metadata-carrying classes among `content`, resolving supertypes through the
   // release's own classes first and the classpath second.
   def atomize(content: SList[(Text, Data)], classpath: SList[Text])
-  :   List[Atom] raises DisciplineError =
+  :   List[Atom] raises Discipline.Error =
 
     val own: SMap[String, Data] = content.map { (name, data) => (name.s, data) }.toMap
 

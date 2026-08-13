@@ -53,13 +53,13 @@ import vacuous.*
 object WitAtomizer:
   val id: Text = t"wit/1"
 
-  private def malformed(detail: Text): DisciplineError =
+  private def malformed(detail: Text): Discipline.Error =
     import errorDiagnostics.emptyDiagnostics
-    DisciplineError(id, DisciplineError.Reason.Malformed(detail))
+    Discipline.Error(id, Discipline.Error.Reason.Malformed(detail))
 
-  private def unresolved(name: Text): DisciplineError =
+  private def unresolved(name: Text): Discipline.Error =
     import errorDiagnostics.emptyDiagnostics
-    DisciplineError(id, DisciplineError.Reason.Unresolved(name))
+    Discipline.Error(id, Discipline.Error.Reason.Unresolved(name))
 
   // --- canonical binary encoding -------------------------------------------------------------
 
@@ -101,7 +101,7 @@ object WitAtomizer:
     ( out:   java.io.ByteArrayOutputStream,
       typed: Foreign.Type,
       scope: SMap[Text, Text] )
-  :   Unit raises DisciplineError =
+  :   Unit raises Discipline.Error =
 
     typed match
       case Foreign.Type.Named(name) =>
@@ -127,7 +127,7 @@ object WitAtomizer:
       resource:  Optional[Text],
       fn:        Wit.Function,
       scope:     SMap[Text, Text] )
-  :   Atom raises DisciplineError =
+  :   Atom raises Discipline.Error =
 
     val key = resource.let { res => t"$container#$res.${fn.name}" }.or(t"$container#${fn.name}")
 
@@ -149,7 +149,7 @@ object WitAtomizer:
 
   // --- atomization ----------------------------------------------------------------------------
 
-  def atomize(documents: List[Wit.Document]): List[Atom] raises DisciplineError =
+  def atomize(documents: List[Wit.Document]): List[Atom] raises Discipline.Error =
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
 
     documents.stdlib.foreach: document =>
