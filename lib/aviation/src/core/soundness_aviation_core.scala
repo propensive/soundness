@@ -49,7 +49,7 @@ export
       RecurrenceLiteral, RecurrenceSet, Recurrent, Regime, Resolution, Rfc1123, RomanCalendar,
       Rrule, Tai, until, WeekdayOrdinal, within,
       Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, today, ts, tsInterpolator, Tue, tz, Tzdb, Wed, Week, WeekDate, Weekday, Weekdays,
+      TimeSeparation, TimeSpecificity, Timespan, Timestamp, Timezone, today, ts, tsInterpolator, Tue, tz, Tzdb, Wed, Week, WeekDate, Weekday, Weekdays,
       WorkingDays, Year, Years }
 
 package calendars:

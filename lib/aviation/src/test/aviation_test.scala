@@ -2808,12 +2808,12 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Timestamp.decode rejects malformed input"):
         capture(t"not-a-timestamp".as[Timestamp])
       . matches:
-          case _: TimestampError =>
+          case _: Timestamp.Error =>
 
       test(m"Timestamp.decode rejects invalid month"):
         capture(t"2024-13-15T14:30:59".as[Timestamp])
       . matches:
-          case _: TimestampError =>
+          case _: Timestamp.Error =>
 
       test(m"Timestamp difference decomposes into days/hours/minutes/seconds"):
         val a = Timestamp(2024-Jan-10, Clockface(8, 0, 0))
