@@ -34,33 +34,27 @@ package contingency
 
 import scala.language.experimental.pureFunctions
 
-import fulminate.*
+// The outcome of a `venture(…)`: either the computed value itself, or the `Failed` sentinel
+// marking that one or more errors were recorded while it was computed. A sentinel union (like
+// vacuous's `Optional`) rather than an enum, so a successful venture allocates nothing — but
+// OPAQUE, unlike `Optional`: a transparent union would let the `apply()` extension unify with any
+// type at all, polluting extension resolution repo-wide. The errors themselves are NOT held
+// here — they were already recorded into the ambient tactic's accrual at the venture's declaration
+// site; `Failed` is only the "this value is unusable" marker, which is why forcing a failed
+// venture escapes without reporting anything further.
+object Venture:
+  case object Failed
 
-// A `Tactic` is an `Emit` that can additionally `abort`: a value-replacing abnormal exit. `raises
-// error` (`Tactic[error] ?=>`) is therefore the stronger obligation than `emits error`; code with a
-// `Tactic` can satisfy either, but a fire-and-forget context offering only an `Emit` cannot supply
-// the `abort` half. See [[Emit]].
-trait Tactic[-error <: Hazard] extends Emit[error]:
-  private inline def tactic: this.type = this
-  def abort(error: Diagnostics ?=> error): Nothing
+  opaque type Type[value] = Failed.type | value
 
-  // The flush point of an aggregation scope: if `tainted`, `certify` does not return — it
-  // surrenders the scope to its accumulated errors; otherwise it is a no-op. On a fail-fast
-  // tactic it is always a no-op, since a recorded error would already have escaped.
-  def certify(): Unit
+  inline def apply[value](value: value): Type[value] = value
+  inline def failed[value]: Type[value] = Failed
 
-  // Whether any error has been recorded in this tactic's aggregation scope. Truthfully `false`
-  // on every fail-fast tactic (`record` never returns there), and forwarded through `contramap`
-  // so that taint is visible across `mitigate`d library boundaries.
-  def tainted: Boolean = false
+  extension [value](venture: Type[value])
+    inline def ready: Boolean = venture.asInstanceOf[AnyRef] ne Failed
 
-  override def contramap[error2 <: Hazard](lambda: error2 => error)
-  :   Tactic[error2]^ =
-
-    scala.caps.unsafe.unsafeAssumeSeparate:
-      new Tactic[error2]:
-        def diagnostics: Diagnostics = tactic.diagnostics
-        def record(error: Diagnostics ?=> error2): Unit = tactic.record(lambda(error))
-        def abort(error: Diagnostics ?=> error2): Nothing = tactic.abort(lambda(error))
-        def certify(): Unit = tactic.certify()
-        override def tainted: Boolean = tactic.tainted
+    // Forcing requires a `Guard`: the witness of an enclosing skip-scope (a `venture` or `guard`
+    // block) to which a failed venture can escape. With no skip-scope in context, forcing does
+    // not compile — there would be nowhere well-defined to skip to.
+    inline def apply()(using guard: Guard^): value =
+      if venture.ready then venture.asInstanceOf[value] else guard.escape()

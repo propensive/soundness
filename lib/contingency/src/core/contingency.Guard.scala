@@ -32,11 +32,15 @@
                                                                                                   */
 package contingency
 
-import fulminate.Hazard
+import scala.caps
 
 import scala.language.experimental.pureFunctions
 
-// Holds an unevaluated `Tactic[error] ?=> result` body; `apply()` re-evaluates it under whichever
-// `Tactic[error]` is in scope at the call, allowing late binding to different error handlers.
-final class Deferred[result, error <: Hazard](body: Tactic[error]^ ?=> result):
-  def apply()(using Tactic[error]^): result = body
+// The witness of an enclosing skip-scope: a lexical region — a `venture(…)` or `guard{…}` block —
+// which can be abandoned when a failed `Venture` is forced within it. `escape` performs that
+// abandonment: for a `venture`, it fails the venture itself (recording nothing further — the
+// forced venture's errors are already in the accrual); for a `guard`, it certifies the ambient
+// tactic, surrendering the whole aggregation scope to its accumulated errors. A capability, so
+// that forcing is only possible where a skip-scope statically encloses it.
+trait Guard extends caps.ExclusiveCapability:
+  def escape(): Nothing

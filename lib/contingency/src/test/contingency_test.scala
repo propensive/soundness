@@ -377,39 +377,6 @@ object Tests extends Suite(m"Contingency"):
         . to(List)
       . assert(_ == List(2, 4))
 
-    suite(m"defer / Deferred"):
-      test(m"defer holds the unapplied body; apply() runs it under the in-scope tactic"):
-        def failing(n: Int): String raises ErrorA = raise(ErrorA(n)) yet "fallback"
-
-        recover:
-          case ErrorA(n) => s"recovered:$n"
-        . protect:
-            val held = contingency.defer(failing(7))
-            held()
-      . assert(_ == "recovered:7")
-
-      test(m"defer re-evaluates the body on each apply() with the current tactic"):
-        var counter = 0
-        def increment(): Int raises ErrorA =
-          counter += 1
-          counter
-
-        recover:
-          case ErrorA(_) => -1
-        . protect:
-            val held = contingency.defer(increment())
-            held()
-            held()
-            held()
-      . assert(_ == 3)
-
-      test(m"defer of a plain value is identity-with-wrapping"):
-        recover:
-          case ErrorA(n) => n
-        . protect:
-            contingency.defer(17)()
-      . assert(_ == 17)
-
     suite(m"Foci / Pointer / track / validate / focus"):
       test(m"Pointer.Self has empty text"):
         Pointer.Self.text
@@ -661,3 +628,5 @@ object Tests extends Suite(m"Contingency"):
           ErrorA(99)
         err.message.text
       . assert(_ == t"error a: 99")
+
+    CompositionTests()
