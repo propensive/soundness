@@ -83,8 +83,12 @@ object Pax:
           val eqIdx: Int = content.indexOf('=')
 
           if eqIdx < 0 then
+            // Unlike a malformed length prefix (which desynchronizes the cursor and must
+            // terminate the scan), a record with no `=` has a known extent: record its error
+            // and skip just that record, so every malformed record accrues rather than only
+            // the first.
             raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
-            pos = data.length
+            pos = pos + length
           else
             builder += ((content.substring(0, eqIdx).nn.tt, content.substring(eqIdx + 1).nn.tt))
             pos = pos + length
