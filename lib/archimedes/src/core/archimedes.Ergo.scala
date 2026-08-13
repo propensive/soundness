@@ -311,11 +311,11 @@ object Ergo:
     private def digit(c: Char): Boolean = Character.isDigit(c)
 
     def parseTop(): Math =
-      if s.isEmpty then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Empty)))
+      if s.isEmpty then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Empty, pos)))
       open = s.charAt(0)
 
       if !pairs.contains(open)
-      then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.BadOpener(open.toString.tt))))
+      then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.BadOpener(open.toString.tt), pos)))
 
       close = pairs(open)
 
@@ -328,7 +328,7 @@ object Ergo:
       advance()
       val inner = parseSequence()
       skipSpaces()
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
       advance()
       inner
 
@@ -415,7 +415,7 @@ object Ergo:
         if depth > 0 then pos += 1
 
       val raw = s.substring(start, pos).nn.tt
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
       advance() // close
       raw
 
@@ -479,7 +479,7 @@ object Ergo:
 
         rooted(Mn(s.substring(start, pos).nn.tt))
       else if c == ' ' then
-        scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.UnexpectedEnd)))
+        scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.UnexpectedEnd, pos)))
       else
         // a content glyph, or an operator glyph degraded for want of an operand
         advance()
@@ -494,13 +494,13 @@ object Ergo:
     // introducer, returning the parsed child groups. A body with no nested
     // groups is treated as a single element (so `⋯(a)` is a one-cell vector).
     private def parseBody(introducer: Char): List[Mathml] =
-      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt))))
+      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt), pos)))
       advance() // body open
       val items = ListBuffer[Mathml]()
       while peek == open do items += parseGroup()
       if items.isEmpty && peek != close then items += parseSequence()
       skipSpaces()
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
       advance() // body close
       items.to(List)
 
@@ -511,7 +511,7 @@ object Ergo:
 
     private def parseMatrix(): Mathml =
       val introducer = advance()
-      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt))))
+      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt), pos)))
       advance() // body open
       val rows = ListBuffer[Mathml]()
 
@@ -523,11 +523,11 @@ object Ergo:
         // A row group with no nested cell-groups is a single-cell row.
         if cells.isEmpty && peek != close then cells += parseSequence()
         skipSpaces()
-        if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
+        if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
         advance() // row-group close
         rows += Mtr(cells.toList.map { cell => Mtd(cell) }*)
 
       skipSpaces()
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt), pos)))
       advance() // body close
       Mtable(rows.to(List)*)

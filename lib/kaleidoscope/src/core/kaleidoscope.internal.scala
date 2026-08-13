@@ -43,6 +43,7 @@ import java.util.regex.*
 import scala.quoted.*
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import fulminate.*
 import gigantism.*
@@ -52,16 +53,36 @@ object internal:
   def glob(context: Expr[StringContext]): Macro[Any] =
     val parts = context.value.get.parts.map(Text(_)).map(Glob.parse(_).regex.s).to(List)
 
+    // The parts have been transformed from glob to regex syntax, so parser offsets no longer
+    // correspond to the source literal; unknown origins make errors fall back to the whole
+    // expansion.
     val parts2 = parts.stdlib
-    extractor(List.of(parts2.head :: parts2.tail.map("([^/\\\\]*)"+_)))
+    extractor
+      ( List.of(parts2.head :: parts2.tail.map("([^/\\\\]*)"+_)),
+        List.fill(parts.length)((0, 0)) )
 
   def regex(context: Expr[StringContext]): Macro[Any] =
-    extractor(context.value.get.parts.to(List))
+    val parts = context.value.get.parts.to(List)
+    extractor(parts, Interpolation.literalOrigins(context, parts.length))
 
-  private def extractor(parts: List[String]): Macro[Any] =
+  private def extractor(parts: List[String], origins: List[(Int, Int)]): Macro[Any] =
     import quotes.reflect.*
 
-    val regex = abortive(Regex.parse(List.of(parts.stdlib.map(Text(_)))))
+    // A parser error's index refers to the parts joined with nothing standing in for the
+    // substitutions, since a substitution binds the capture group that immediately follows it.
+    // An index at end-of-input (an unclosed group, say) is clamped onto the last character.
+    def fail(error: Regex.Error): Nothing =
+      val length = parts.stdlib.map(_.length).sum
+      val offset = error.index.min(length - 1).max(0)
+      halt(error.labelled, Interpolation.sourcePosition(parts, origins, 0, offset))
+
+    val regex =
+      given Diagnostics = Diagnostics.omit
+
+      given HaltTactic[Regex.Error, Regex] = new HaltTactic[Regex.Error, Regex]:
+        override def abort(error: Diagnostics ?=> Regex.Error): Nothing = fail(error)
+
+      Regex.parse(List.of(parts.stdlib.map(Text(_))))
 
     val types = regex.captureGroups.stdlib.map: group =>
       group.quantifier match
@@ -81,7 +102,7 @@ object internal:
 
     try Pattern.compile(parts.mkString) catch case exception: PatternSyntaxException =>
       import errorDiagnostics.emptyDiagnostics
-      halt(Regex.Error(exception.getIndex, Regex.Error.Reason.InvalidPattern).labelled)
+      fail(Regex.Error(exception.getIndex, Regex.Error.Reason.InvalidPattern))
 
     if types.length == 0 then '{NoExtraction(${Expr(parts.head)})}
     else tupleType.asType.absolve match

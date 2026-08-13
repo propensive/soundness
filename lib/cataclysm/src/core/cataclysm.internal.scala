@@ -38,7 +38,9 @@ import scala.collection.`+:`
 import scala.quoted.*
 
 import anticipation.*
+import contextual.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gossamer.*
 import nomenclature.*
@@ -88,8 +90,33 @@ object internal:
     val parts = partList[parts].reverse
     val joined = parts.mkString(sentinel.toString).tt
 
-    val css: Css = safely(CssParser.parse(Iterator(joined), validating = false)).or:
-      halt(m"cataclysm: invalid CSS, or a substitution outside a property-value position")
+    val css: Css =
+      given Diagnostics = Diagnostics.omit
+
+      given HaltTactic[Css.Error, Css] = new HaltTactic[Css.Error, Css]:
+        override def abort(error: Diagnostics ?=> Css.Error): Nothing =
+          val cssError = error
+
+          // Convert the parser's (line, column) coordinates to a character offset into
+          // `joined`, whose substitution sentinels are one character wide. End-of-input
+          // errors (an unterminated string or comment, say) clamp onto the last character.
+          def lineStart(line: Int, from: Int): Int =
+            if line == 0 then from else
+              val next = joined.s.indexOf('\n', from)
+              if next < 0 then from else lineStart(line - 1, next + 1)
+
+          val offset =
+            (lineStart(cssError.line.n0, 0) + cssError.column.n0)
+            . min(joined.s.length - 1)
+            . max(0)
+
+          val position =
+            Interpolation.sourcePosition
+              (List.of(parts), Interpolation.decodeOrigins[origins], 1, offset)
+
+          halt(cssError.message, position)
+
+      CssParser.parse(Iterator(joined), validating = false)
 
     def has(text: Text): Boolean = text.s.contains(sentinel.toString)
     def lift(value: Text): Expr[Text] = '{${Expr(value.s)}.tt}

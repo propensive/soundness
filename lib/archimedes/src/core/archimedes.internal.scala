@@ -37,6 +37,7 @@ import scala.collection.immutable.Seq
 import scala.quoted.*
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import fulminate.*
 import gigantism.*
@@ -53,7 +54,8 @@ object internal:
   // single atom node, parses the whole expression *at compile time* so a malformed
   // literal fails compilation with the parser's own diagnostic, then emits runtime
   // code that re-parses with the substitutions woven in.
-  def ergoInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[Math] =
+  def ergoInterpolator[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
+  :   Macro[Math] =
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
@@ -82,7 +84,15 @@ object internal:
 
       try Ergo.interpolate(parts.stdlib.map(_.tt), List.fill(atoms.stdlib.length)(Mi(t"?")).stdlib)
       catch case error: ErgoError =>
-        halt(m"the ergo expression could not be parsed because ${error.reason}")
+        // The parser's offset refers to the parts joined with a one-character hole sentinel
+        // per substitution; clamp end-of-input errors onto the last character.
+        val joinedLength = parts.stdlib.map(_.length).sum + atoms.stdlib.length
+        val offset = error.offset.min(joinedLength - 1).max(0)
+
+        halt
+          ( m"the ergo expression could not be parsed because ${error.reason}",
+            Interpolation.sourcePosition
+              (parts, Interpolation.decodeOrigins[origins], 1, offset) )
 
     val partExprs: Expr[Seq[Text]] = Expr.ofSeq(parts.stdlib.map { part => '{${Expr(part)}.tt} })
 

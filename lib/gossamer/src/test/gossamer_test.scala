@@ -1302,3 +1302,17 @@ object Tests extends Suite(m"Gossamer Tests"):
         . map(_.message)
 
       . assert(!_.isEmpty)
+
+    suite(m"Ascii compile-time error positioning"):
+      test(m"a non-ASCII character's focus is the character itself"):
+        demilitarize:
+          a"hello café"
+        . map(_.focus)
+      . assert(_ == List("é"))
+
+      test(m"a non-ASCII character in a later part is still located"):
+        val name = a"world"
+        demilitarize:
+          a"hello $name café"
+        . map(_.focus)
+      . assert(_ == List("é"))

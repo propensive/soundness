@@ -52,5 +52,7 @@ object ErgoError:
     case Reason.MissingBody(char)  => m"the $char introducer must be followed by a group"
     case Reason.Unsupported(label) => m"the <$label> element has no ergo representation"
 
-case class ErgoError(reason: ErgoError.Reason)(using Diagnostics)
+// `offset` is the character position within the parsed input at which the error was detected,
+// or -1 when unavailable (the serialization path, which has no cursor).
+case class ErgoError(reason: ErgoError.Reason, offset: Int = -1)(using Diagnostics)
 extends Error(431, reason.number)(m"the ergo expression could not be parsed because $reason")

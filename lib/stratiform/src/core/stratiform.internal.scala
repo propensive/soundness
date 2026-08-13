@@ -72,6 +72,35 @@ object internal:
   private def hasMarker(text: Text): Boolean =
     text.spot { index => text(index) == Marker }.present
 
+  // Translate a `Tel.Error`'s span — a 0-based line with byte-oriented column and length into
+  // the marker-joined `source` — to a source-file position, so the compiler's caret lands on
+  // the offending TEL inside the literal. The markers are one character wide, matching
+  // `sourcePosition`'s substitution gaps.
+  private def errorPosition[origins <: Tuple: Type](using Quotes)
+    ( error: Tel.Error, source: String, parts: List[String] )
+  :   quotes.reflect.Position =
+
+    val utf8 = java.nio.charset.StandardCharsets.UTF_8
+    val bytes = source.getBytes(utf8).nn
+    val line = error.span.startLine.lay(0)(_.n0)
+    val column = error.span.startColumn.lay(0)(_.n0)
+    val spanLength = error.span.length.or(1).max(1)
+
+    def lineStart(remaining: Int, from: Int): Int =
+      if remaining == 0 || from >= bytes.length then from else
+        var index = from
+        while index < bytes.length && bytes(index) != '\n'.toByte do index += 1
+        lineStart(remaining - 1, (index + 1).min(bytes.length))
+
+    val byteStart = (lineStart(line, 0) + column).min(bytes.length)
+    val byteEnd = (byteStart + spanLength).min(bytes.length)
+    val charStart = String(bytes, 0, byteStart, utf8).length
+    val charEnd = String(bytes, 0, byteEnd, utf8).length
+
+    contextual.Interpolation.sourcePosition
+      ( proscenium.List.of(parts), contextual.Interpolation.decodeOrigins[origins],
+        1, charStart, (charEnd - charStart).max(1) )
+
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )
   :   Macro[Tel] =
@@ -97,9 +126,16 @@ object internal:
     val document: Tel.Document =
       given Diagnostics = Diagnostics.omit
 
+      // `record` is overridden too: the parser reports recoverable errors (e.g. odd
+      // indentation) by raising rather than aborting, and both must land positioned.
       given HaltTactic[Tel.Error, Tel.Document] = new HaltTactic[Tel.Error, Tel.Document]:
-        override def abort(error: Diagnostics ?=> Tel.Error): Nothing =
-          halt(m"the tel\"…\" literal is invalid: ${error.message}")
+        private def fail(telError: Tel.Error): Nothing =
+          halt
+            ( m"the tel\"…\" literal is invalid: ${telError.message}",
+              errorPosition[origins](telError, source, parts) )
+
+        override def record(error: Diagnostics ?=> Tel.Error): Unit = fail(error)
+        override def abort(error: Diagnostics ?=> Tel.Error): Nothing = fail(error)
 
       Tel.Parser.parse(data)
 
@@ -260,8 +296,13 @@ object internal:
       given Diagnostics = Diagnostics.omit
 
       given HaltTactic[Tel.Error, Tel.Document] = new HaltTactic[Tel.Error, Tel.Document]:
-        override def abort(error: Diagnostics ?=> Tel.Error): Nothing =
-          halt(m"the tel\"…\" pattern is invalid: ${error.message}")
+        private def fail(telError: Tel.Error): Nothing =
+          halt
+            ( m"the tel\"…\" pattern is invalid: ${telError.message}",
+              errorPosition[origins](telError, source, parts) )
+
+        override def record(error: Diagnostics ?=> Tel.Error): Unit = fail(error)
+        override def abort(error: Diagnostics ?=> Tel.Error): Nothing = fail(error)
 
       Tel.Parser.parse(Array.from(source.getBytes("UTF-8").nn.iterator))
 

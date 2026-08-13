@@ -613,6 +613,15 @@ object Tests extends Suite(m"Xylophone tests"):
         . map(_.focus)
       . assert(_ == List("bar>"))
 
+      test(m"focus in a part after a substitution lands on the right part"):
+        // The Origins tuple is reversed like Transport; a decode that re-reversed it
+        // mapped errors in later parts through the wrong part's source range.
+        val greeting = t"hello"
+        demilitarize:
+          x"<foo>$greeting</foo></bar>"
+        . map(_.focus)
+      . assert(_.headOption.exists(_.contains("bar")))
+
 
     suite(m"Extractor tests"):
       test(m"Extract a text node from an element"):

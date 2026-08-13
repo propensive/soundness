@@ -571,7 +571,7 @@ inline given recInterpolator: RecurrenceLiteral is Interpolable:
     ( inline insertions: Any* )
   :   RecurrenceLiteral =
 
-    ${aviation.internal.recInterpolator[parts]('insertions)}
+    ${aviation.internal.recInterpolator[parts, origins]('insertions)}
 
 extension (inline context: StringContext)
   transparent inline def tz: Interpolation = interpolation[Timezone](context)
