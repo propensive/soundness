@@ -960,7 +960,7 @@ object Html extends Tag.Container
         if !more then
           // Permissive mode records (and discards) the warning and lets the recovery paths
           // finish the best-effort DOM. Strict mode ABORTS: continuing to read an exhausted
-          // cursor would only manufacture a cascade of `Unexpected(' ')` errors under an
+          // cursor would only manufacture a cascade of `Unexpected('\u0000')` errors under an
           // accruing caller.
           if permissive then raise(ParseError(Html, currentPosition(), ExpectedMore))
           else fail(ExpectedMore)

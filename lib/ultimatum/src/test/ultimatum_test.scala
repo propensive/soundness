@@ -966,12 +966,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a focused editor shows the hardware cursor"):
         captured: stdio ?=>
           EditorField(LineEditor(t"hi")).render(TerminalBoard(20, 1), true)
-      . assert(_.s.contains("[?25h"))
+      . assert(_.s.contains("\u001B[?25h"))
 
       test(m"an unfocused editor hides the hardware cursor"):
         captured: stdio ?=>
           EditorField(LineEditor(t"hi")).render(TerminalBoard(20, 1), false)
-      . assert(_.s.contains("[?25l"))
+      . assert(_.s.contains("\u001B[?25l"))
 
       // Tabbing focus away from the menu must repaint it, so its marker updates
       // from `>` to `·` (a regression: only the panel gaining focus was redrawn).

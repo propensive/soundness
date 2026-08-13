@@ -215,7 +215,7 @@ object Alphabet:
           type Upstream = Credit
 
           private val base: Int = bits(alphabet)
-          private val pad: Char = if stage.padding then alphabet(1 << base) else ' '
+          private val pad: Char = if stage.padding then alphabet(1 << base) else '\u0000'
 
           // Dense decode table and the largest valid data value, for the fast
           // path: a character outside `0..dataMax` (invalid, or a pad) bails to

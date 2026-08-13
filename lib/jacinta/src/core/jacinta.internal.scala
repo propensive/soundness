@@ -278,8 +278,8 @@ object internal:
       case _ =>
         plain
 
-  private final val Marker: Char = ' '
-  private final val MarkerString: String = " "
+  private final val Marker: Char = '\u0000'
+  private final val MarkerString: String = "\u0000"
 
   // Strip the trailing sentinel pad (if present) from a parity-padded
   // heterogeneous array literal read at compile time, returning just the

@@ -986,7 +986,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
             case bad       => errorAt(Issue.IncorrectEscape(bad.toChar), token)
 
         case _ =>
-          if ch == 0 && holes then appendChar(' ')
+          if ch == 0 && holes then appendChar('\u0000')
           else ((ch >> 5): @switch) match
             case 0                 => errorAt(Issue.NotEscaped(ch.toChar), token)
             case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
@@ -1840,13 +1840,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               must() match
                 case Comma =>
                   advance()
-                  items += " "
+                  items += "\u0000"
                   items += value
                   skip()
 
                 case CloseBrace =>
                   advance()
-                  items += " "
+                  items += "\u0000"
                   items += value
                   continue = false
 
@@ -1854,13 +1854,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
             case Comma =>
               advance()
-              items += " "
+              items += "\u0000"
               items += Unset
               skip()
 
             case CloseBrace =>
               advance()
-              items += " "
+              items += "\u0000"
               items += Unset
               continue = false
 
@@ -1963,13 +1963,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               must() match
                 case Comma =>
                   advance()
-                  items += " "
+                  items += "\u0000"
                   items += value
                   skip()
 
                 case CloseBrace =>
                   advance()
-                  items += " "
+                  items += "\u0000"
                   items += value
                   continue = false
 
@@ -1989,7 +1989,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               indexScratch += 0
               indexEnds += indexScratch.length
               advance()
-              items += " "
+              items += "\u0000"
               items += Unset
               skip()
 
@@ -2007,7 +2007,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               indexScratch += 0
               indexEnds += indexScratch.length
               advance()
-              items += " "
+              items += "\u0000"
               items += Unset
               continue = false
 

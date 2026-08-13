@@ -88,13 +88,13 @@ object Tests extends Suite(m"Fulminate Tests"):
         val inner = m"world"
         val outer = m"hello $inner end"
         outer.colorText
-      . assert(_ == t"hello [3mworld[0m end")
+      . assert(_ == t"hello \u001B[3mworld\u001B[0m end")
 
       test(m"Doubly-embedded renders bold-italics at depth 2 in colorText"):
         val deepest = m"deep"
         val mid = m"mid $deepest mid"
         val outer = m"start $mid end"
-        outer.colorText.s.contains("[3m[1mdeep[0m")
+        outer.colorText.s.contains("\u001B[3m\u001B[1mdeep\u001B[0m")
       . assert(_ == true)
 
       test(m"Int substitution renders as decimal"):
@@ -128,7 +128,7 @@ object Tests extends Suite(m"Fulminate Tests"):
 
       test(m"backticks render as nested italics in colorText"):
         m"hello `world` today".colorText
-      . assert(_ == t"hello [3mworld[0m today")
+      . assert(_ == t"hello \u001B[3mworld\u001B[0m today")
 
       test(m"backticks at start of string"):
         m"`x` y".messages.head.texts
@@ -166,7 +166,7 @@ object Tests extends Suite(m"Fulminate Tests"):
 
       test(m"depth 2 renders with bold-italic ANSI in colorText"):
         val inner = m"b"
-        m"`a $inner c`".colorText.s.contains("[3m[1mb[0m")
+        m"`a $inner c`".colorText.s.contains("\u001B[3m\u001B[1mb\u001B[0m")
       . assert(_ == true)
 
       test(m"unclosed backtick is a compile error"):

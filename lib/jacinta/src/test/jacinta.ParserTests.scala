@@ -263,36 +263,36 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         case other => other
 
       test(m"Hole as a top-level value"):
-        shape(Json.Ast.parse(bytes(t" "), holes = true))
+        shape(Json.Ast.parse(bytes(t"\u0000"), holes = true))
       . assert(_ == Unset)
 
       test(m"Hole as an array element"):
-        shape(Json.Ast.parse(bytes(t"[ ]"), holes = true))
+        shape(Json.Ast.parse(bytes(t"[\u0000]"), holes = true))
       . assert(_ == List(Unset))
 
       test(m"Hole as an object value"):
-        shape(Json.Ast.parse(bytes(t"""{"a":   }"""), holes = true))
+        shape(Json.Ast.parse(bytes(t"""{"a": \u0000 }"""), holes = true))
       . assert(_ == (List("a"), List(Unset)))
 
       test(m"Hole as an object rest, no other entries"):
-        shape(Json.Ast.parse(bytes(t"{ }"), holes = true))
+        shape(Json.Ast.parse(bytes(t"{\u0000}"), holes = true))
       . assert(_ == (List("\u0000"), List(Unset)))
 
       test(m"Hole as an object rest after literal entry"):
-        shape(Json.Ast.parse(bytes(t"""{"a": 1,   }"""), holes = true))
+        shape(Json.Ast.parse(bytes(t"""{"a": 1, \u0000 }"""), holes = true))
       . assert(_ == (List("a", "\u0000"), List(1L, Unset)))
 
       test(m"Hole inside a string is preserved"):
-        shape(Json.Ast.parse(bytes(t""" "x y" """), holes = true))
+        shape(Json.Ast.parse(bytes(t""" "x\u0000y" """), holes = true))
       . assert(_ == "x\u0000y")
 
       test(m"Plain mode rejects a value-position hole"):
-        capture[ParseError](Json.Ast.parse(bytes(t" ")))
+        capture[ParseError](Json.Ast.parse(bytes(t"\u0000")))
       . matches:
           case ParseError(_, _, _) => true
 
       test(m"Plain mode rejects a hole inside a string"):
-        capture[ParseError](Json.Ast.parse(bytes(t""" "a b" """)))
+        capture[ParseError](Json.Ast.parse(bytes(t""" "a\u0000b" """)))
       . matches:
           case ParseError(_, _, _) => true
 

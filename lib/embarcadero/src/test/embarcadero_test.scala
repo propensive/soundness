@@ -244,7 +244,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
     suite(m"Wasm OCI artifact"):
       // Not a real component: the artifact machinery never parses the bytes, so an
       // arbitrary payload exercises every digest, descriptor and document the same way.
-      val component = t" asm   ".in[Data]
+      val component = t"\u0000asm\u0001\u0000\u0000\u0000".in[Data]
 
       val artifact =
         Image.wasm

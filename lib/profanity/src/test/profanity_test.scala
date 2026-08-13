@@ -411,35 +411,35 @@ object Tests extends Suite(m"Profanity Tests"):
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('', '[', '1', '3', ';', '2', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', ';', '2', 'u')).head
       . assert:
           case Keypress.Shift(Keypress.Enter) => true
           case _                              => false
 
       test(m"plain Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('', '[', '1', '3', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', 'u')).head
       . assert:
           case Keypress.Enter => true
           case _              => false
 
       test(m"Escape is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('', '[', '2', '7', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '2', '7', 'u')).head
       . assert:
           case Keypress.Escape => true
           case _               => false
 
       test(m"Ctrl+C is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('', '[', '9', '9', ';', '5', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '9', '9', ';', '5', 'u')).head
       . assert:
           case Keypress.Ctrl('C') => true
           case _                  => false
 
       test(m"a plain letter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('', '[', '9', '7', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '9', '7', 'u')).head
       . assert:
           case Keypress.CharKey('a') => true
           case _                     => false
@@ -448,7 +448,7 @@ object Tests extends Suite(m"Profanity Tests"):
       // it as an anchor reply when the resize trap queued one.
       test(m"a plain CPR decodes to a WindowSize"):
         supervise:
-          Keyboard.Standard().process(Chain('', '[', '1', '2', ';', '3', '4', 'R')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '1', '2', ';', '3', '4', 'R')).head
       . assert:
           case TerminalInfo.WindowSize(12, 34) => true
           case _                               => false
@@ -457,7 +457,7 @@ object Tests extends Suite(m"Profanity Tests"):
       test(m"a DECXCPR reply decodes to a CursorPosition"):
         supervise:
           Keyboard.Standard()
-          . process(Chain('', '[', '?', '1', '2', ';', '3', '4', 'R'))
+          . process(Chain('\u001B', '[', '?', '1', '2', ';', '3', '4', 'R'))
           . head
       . assert:
           case TerminalInfo.CursorPosition(12, 34) => true
@@ -467,7 +467,7 @@ object Tests extends Suite(m"Profanity Tests"):
       test(m"a three-field DECXCPR reply decodes, dropping the page"):
         supervise:
           Keyboard.Standard()
-          . process(Chain('', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
+          . process(Chain('\u001B', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
           . head
       . assert:
           case TerminalInfo.CursorPosition(12, 34) => true
@@ -475,7 +475,7 @@ object Tests extends Suite(m"Profanity Tests"):
 
       test(m"a malformed report is dropped and the stream continues"):
         supervise:
-          Keyboard.Standard().process(Chain('', '[', '?', ';', 'R', 'z')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '?', ';', 'R', 'z')).head
       . assert:
           case Keypress.CharKey('z') => true
           case _                     => false

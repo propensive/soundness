@@ -295,7 +295,7 @@ object Ergo:
     @scala.caps.unsafe.untrackedCaptures
     private var close = ')'
 
-    private def peek: Char = if pos < s.length then s.charAt(pos) else ' '
+    private def peek: Char = if pos < s.length then s.charAt(pos) else '\u0000'
 
     private def peekAt(offset: Int): Char =
       if pos + offset < s.length then s.charAt(pos + offset) else ' '
@@ -478,7 +478,7 @@ object Ergo:
         do pos += 1
 
         rooted(Mn(s.substring(start, pos).nn.tt))
-      else if c == ' ' then
+      else if c == '\u0000' then
         scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.UnexpectedEnd, pos)))
       else
         // a content glyph, or an operator glyph degraded for want of an operand

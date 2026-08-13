@@ -66,7 +66,7 @@ object internal:
   // The marker character interleaved between the static parts. Chosen so
   // it never appears in legitimate TEL source (U+0001 SOH is not a valid
   // sigil and is unlikely to occur in human-authored TEL).
-  private final val Marker: Char = ''
+  private final val Marker: Char = '\u0001'
   private final val MarkerString: String = Marker.toString
 
   private def hasMarker(text: Text): Boolean =

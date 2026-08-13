@@ -3214,7 +3214,7 @@ object Xml extends Tag.Container
 
       // Macro element holes can't carry meaningful positions; emit an empty
       // attribute / child set and a zero-length descriptor.
-      if more && peek == ' ' then
+      if more && peek == '\u0000' then
         callback(position.z, Hole.Element(t""))
         advance()
         if !more then fail(Issue.ExpectedMore)
@@ -3232,7 +3232,7 @@ object Xml extends Tag.Container
         relinquishIndexBuffer()
         relinquishIndexBuffer()
         relinquishIndexBuffer()
-        Element(t" ", Attributes.empty, Array.empty[Node])
+        Element(t"\u0000", Attributes.empty, Array.empty[Node])
       else
         val attrDescs = getIndexBuffer()
         val attrEnds  = getIndexBuffer()
@@ -3290,12 +3290,12 @@ object Xml extends Tag.Container
         val ch = peek
 
         if ch == '>' || ch == '/' || ch == '?' then done = true
-        else if ch == ' ' then
+        else if ch == '\u0000' then
           callback(position.z, Hole.Tagbody)
           advance()
           skipWs()
           ensureCapacity()
-          attrBufTarget(2*n) = " "
+          attrBufTarget(2*n) = "\u0000"
           attrBufTarget(2*n + 1) = ""
           n += 1
         else
@@ -3327,10 +3327,10 @@ object Xml extends Tag.Container
           val q = peek
 
           val value =
-            if q == ' ' then
+            if q == '\u0000' then
               callback(position.z, Hole.Attribute(tag, key))
               advance()
-              t" "
+              t"\u0000"
             else if q == '"' || q == '\'' then
               advance()
               readAttrValue(tag, q)
