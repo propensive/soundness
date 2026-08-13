@@ -190,7 +190,7 @@ infix type mitigates [error <: Hazard, error2 <: Hazard] =
 
 infix type tracks [result, focus] = Foci[focus] ?=> result
 
-type Venture[value] = Venture.Type[value]
+type Venture[+value] = Venture.Type[value]
 
 // The single capability a `venture` block receives: its delimiting tactic, which is also its own
 // skip-scope witness (`Guard`). A named alias rather than an inline intersection because the

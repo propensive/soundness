@@ -44,6 +44,20 @@ case class VPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class VAddress(street: Text, city: Text, zip: Text) derives CanEqual
 case class VContact(person: VPerson, address: VAddress) derives CanEqual
 
+object VProbe:
+  var constructions: Int = 0
+
+// The body statement observes construction: decoding must never construct from garbage
+// fallback values, so a decode with any failed field must leave the counter untouched.
+case class VChecked(name: Text, age: Int) derives CanEqual:
+  VProbe.constructions += 1
+
+enum VShape derives CanEqual:
+  case VCircle(radius: Int)
+  case VSquare(side: Int)
+
+case class VMix(shape: VShape, name: Text) derives CanEqual
+
 case class Issues(items: List[(Text, Json.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} validation issues"):
   def +(focus: Text, error: Json.Error): Issues = Issues(items :+ (focus, error))
@@ -156,6 +170,87 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
                         "address": {"street": 2, "city": 3, "zip": 4}}""".read[Json]
         validateJson(json)(_.as[VContact]).items.length
       . assert(_ == 6)
+
+    suite(m"Gated construction"):
+      test(m"Constructor does not run when any field failed"):
+        VProbe.constructions = 0
+        val json = t"""{"name": "Zoe"}""".read[Json]
+        val issues = validateJson(json)(_.as[VChecked])
+        (issues.items.length, VProbe.constructions)
+      . assert(_ == (1, 0))
+
+      test(m"Constructor runs exactly once when all fields are clean"):
+        VProbe.constructions = 0
+        val json = t"""{"name": "Zoe", "age": 5}""".read[Json]
+        validateJson(json)(_.as[VChecked])
+        VProbe.constructions
+      . assert(_ == 1)
+
+      test(m"A nested record with failures does not construct its parent"):
+        VProbe.constructions = 0
+        val json = t"""{"person": {"name": "D"}, "address": {"street": "X"}}""".read[Json]
+        validateJson(json)(_.as[VContact]).items.length
+      . assert(_ == 4)
+
+    suite(m"Sum discriminators under accrual"):
+      import discriminables.jsonByKindDiscriminable
+
+      test(m"A clean sum field decodes; no issues"):
+        val json = t"""{"shape": {"kind": "VCircle", "radius": 3}, "name": "ok"}""".read[Json]
+        validateJson(json)(_.as[VMix]).items.length
+      . assert(_ == 0)
+
+      test(m"A missing discriminator accrues one error without killing the scope"):
+        val json = t"""{"shape": {"radius": 3}, "name": 42}""".read[Json]
+        validateJson(json)(_.as[VMix]).items.length
+      . assert(_ == 2)
+
+      test(m"The missing-discriminator error and its sibling report their pointers"):
+        val json = t"""{"shape": {"radius": 3}, "name": 42}""".read[Json]
+        validateJson(json)(_.as[VMix]).items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+      . assert(_ == Set("#/shape", "#/name"))
+
+    suite(m"Ventures and guards over Json decoding"):
+      import dynamicJsonAccess.enabled
+      test(m"Failed sibling reads both accrue; dependent steps are skipped"):
+        var consistencyRan = false
+        var constructed = false
+
+        val json = t"""{"name": 42, "age": "x"}""".read[Json]
+
+        val issues = validateJson(json): json =>
+          val name = venture(json.name.as[Text])
+          val age = venture(json.age.as[Int])
+
+          venture:
+            val consistent = name().length < age()
+            consistencyRan = true
+
+          guard:
+            constructed = true
+
+        (issues.items.length, consistencyRan, constructed)
+      . assert(_ == (2, false, false))
+
+      test(m"Clean reads run the consistency check and the guarded construction"):
+        var consistencyRan = false
+        var constructed = false
+
+        val json = t"""{"name": "Ada", "age": 36}""".read[Json]
+
+        validateJson(json): json =>
+          val name = venture(json.name.as[Text])
+          val age = venture(json.age.as[Int])
+
+          venture:
+            val consistent = name().length < age()
+            consistencyRan = true
+
+          guard:
+            constructed = true
+
+        (consistencyRan, constructed)
+      . assert(_ == (true, true))
 
     suite(m"Position-aware focus (tracked Json)"):
       case class Tagged(items: List[(Text, Optional[Int], Optional[Int])] = Nil)

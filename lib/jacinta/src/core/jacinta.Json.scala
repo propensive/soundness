@@ -306,7 +306,9 @@ trait Json2 extends Json3:
 
     private inline def decodeObject[derivation <: Product]
       ( json: Json )
-      ( using ProductReflection[derivation], Foci[Json.Focus], Tactic[Json.Error] )
+      ( using reflection: ProductReflection[derivation],
+              foci:       Foci[Json.Focus],
+              tactic:     Tactic[Json.Error] )
     :   derivation =
 
       val root = json.root
@@ -328,24 +330,60 @@ trait Json2 extends Json3:
       // back the same way they are written.
       val renames: Map[Text, Text] = relabelling[derivation, Json]
 
-      build[derivation]: [field] =>
-        context =>
-          val key: Text = renames(label).or(label)
+      if !foci.active then
+        // Fail-fast path: no accrual is possible (the first recorded error escapes through the
+        // tactic), so decode and construct in the single traversal, with no venture slots and no
+        // focus bookkeeping.
+        build[derivation]: [field] =>
+          context =>
+            val key: Text = renames(label).or(label)
 
-          focus({
-            val base = prior.let(_.pointer).or(JsonPointer())
-
-            val newPointer =
-              JsonPointer
-                ( base.url,
-                  Path[JsonPointer, JsonPointer.type, Tuple]
-                    ( base.path.root, (base.path.descent :+ key).to(List) ) )
-
-            Json.Focus(newPointer)
-          }):
             values.get(key.s) match
               case Some(value) => context.decoded(new Json(value))
               case None        => default.or(context.decoded(new Json(Json.Ast(Unset))))
+
+      else
+        // Accruing path: decode EVERY field first, marking each slot failed if its decode
+        // registered any focus (the field decoders capture the resolution-scoped tactic, so a
+        // venture tactic cannot be interposed here; the foci delta detects the same thing). Only
+        // if every slot is clean is the product constructed — user code in constructors never
+        // sees a garbage fallback value. On any failure, the returned value is never used: this
+        // decode's own caller sees its focus delta (or, at top level, the tracking scope is
+        // tainted), so the result is discarded, and siblings keep accruing in the meantime.
+        val slots: Array[Venture[Any]] =
+          contexts[derivation]()[Venture[Any]]: [field] =>
+            context =>
+              val key: Text = renames(label).or(label)
+
+              focus({
+                val base = prior.let(_.pointer).or(JsonPointer())
+
+                val newPointer =
+                  JsonPointer
+                    ( base.url,
+                      Path[JsonPointer, JsonPointer.type, Tuple]
+                        ( base.path.root, (base.path.descent :+ key).to(List) ) )
+
+                Json.Focus(newPointer)
+              }):
+                val before = foci.length
+
+                val value: field =
+                  values.get(key.s) match
+                    case Some(value) => context.decoded(new Json(value))
+                    case None        => default.or(context.decoded(new Json(Json.Ast(Unset))))
+
+                if foci.length > before then Venture.failed else Venture(value)
+
+        var failed = false
+        var slot = 0
+
+        while slot < slots.length do
+          if !slots(slot).ready then failed = true
+          slot += 1
+
+        if failed then null.asInstanceOf[derivation]
+        else build[derivation]: [field] => context => slots(index).asInstanceOf[Venture[field]].vouch
 
     inline def disjunction[derivation: SumReflection]: derivation is Json.Decodable =
       // A sum encodes as a discriminated object. Its precise per-variant schema is
@@ -370,19 +408,27 @@ trait Json2 extends Json3:
               val variantNames: Map[Text, Text] = Map.from:
                 variantRelabelling[derivation, Json].stdlib.map: (variant, wire) => wire -> variant
 
-              val wire: Text = discriminable.discriminate(json).or:
-                focus(prior.or(Json.Focus(JsonPointer())))(abort(Json.Error(Reason.Absent)))
+              discriminable.discriminate(json).lay:
+                focus(prior.or(Json.Focus(JsonPointer()))):
+                  // Under an accruing scope, a missing discriminator records ONE error and skips
+                  // the variant decode without killing the whole scope: the returned value is
+                  // never used (the caller sees the focus delta, or the tracking scope is
+                  // tainted), so siblings keep accruing. Fail-fast scopes abort as before.
+                  if infer[Foci[Json.Focus]].active
+                  then raise(Json.Error(Reason.Absent)) yet null.asInstanceOf[derivation]
+                  else abort(Json.Error(Reason.Absent))
 
-              val discriminant: Text = variantNames(wire).or(wire)
+              . apply: wire =>
+                  val discriminant: Text = variantNames(wire).or(wire)
 
-              // The variant decodes the whole value for the internal-field
-              // shape (its tag is simply skipped as an unknown key — no need
-              // to rebuild the object without it), and the extracted payload
-              // for every other shape.
-              val payload = if fieldShaped then json else discriminable.variant(json)
+                  // The variant decodes the whole value for the internal-field
+                  // shape (its tag is simply skipped as an unknown key — no need
+                  // to rebuild the object without it), and the extracted payload
+                  // for every other shape.
+                  val payload = if fieldShaped then json else discriminable.variant(json)
 
-              delegate(discriminant): [variant <: derivation] =>
-                context => context.decoded(payload)
+                  delegate(discriminant): [variant <: derivation] =>
+                    context => context.decoded(payload)
 
   object ParsableDerivation extends Derivable[Json.Field]:
     inline def conjunction[derivation <: Product: ProductReflection]

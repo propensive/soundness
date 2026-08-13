@@ -34,6 +34,8 @@ package contingency
 
 import scala.language.experimental.pureFunctions
 
+import fulminate.*
+
 // The outcome of a `venture(…)`: either the computed value itself, or the `Failed` sentinel
 // marking that one or more errors were recorded while it was computed. A sentinel union (like
 // vacuous's `Optional`) rather than an enum, so a successful venture allocates nothing — but
@@ -45,7 +47,7 @@ import scala.language.experimental.pureFunctions
 object Venture:
   case object Failed
 
-  opaque type Type[value] = Failed.type | value
+  opaque type Type[+value] = Failed.type | value
 
   inline def apply[value](value: value): Type[value] = value
   inline def failed[value]: Type[value] = Failed
@@ -58,3 +60,10 @@ object Venture:
     // not compile — there would be nowhere well-defined to skip to.
     inline def apply()(using guard: Guard^): value =
       if venture.ready then venture.asInstanceOf[value] else guard.escape()
+
+    // Escape-free forcing for a venture the caller has already established is ready — for code
+    // (e.g. a decoder's construction pass) that checks a whole batch of ventures before using
+    // any. Panics on a failed venture: reaching one here is a logic error, not an error state.
+    inline def vouch: value =
+      if venture.ready then venture.asInstanceOf[value]
+      else panic(m"a failed venture was vouched for")
