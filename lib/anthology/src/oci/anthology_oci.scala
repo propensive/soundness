@@ -93,7 +93,7 @@ object ociEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val component = input.product(OciImage)
@@ -105,7 +105,7 @@ object ociEdges:
       world:     WitWorld,
       component: Path on Linux,
       out:       Path on Linux )
-  :   Path on Linux logs LinkEvent raises LinkError =
+  :   Path on Linux logs LinkEvent raises Link.Error =
 
     val (imports, exports) = interfaces(world)
 
@@ -133,7 +133,7 @@ object ociEdges:
       archive
 
     catch case suc.NonFatal(error) =>
-      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+      abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))
 
   // The world's imports and exports, read from the `.wit` sources at the top of the WIT
   // directory. Only that top level is searched: `deps/` holds the packages the world draws on,

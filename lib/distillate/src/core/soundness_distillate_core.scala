@@ -35,4 +35,4 @@ package soundness
 export
   distillate
   . { As, as, Decodable, Decodable2, Enumerable, Extractable, Identifiable, Irrefutable,
-      NumberError, Parsable, Requirable }
+      Number, Parsable, Requirable }

@@ -130,7 +130,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         try t"""<scrip>""".read[Html of Phrasing]
         catch case exception: Exception => exception
       . assert:
-          case ParseError(Html, Html.Position(line, col, _, _), Html.Issue.InvalidTag("scrip")) =>
+          case Parse.Error(Html, Html.Position(line, col, _, _), Html.Issue.InvalidTag("scrip")) =>
             line == 1.u && col == 2.u
           case _ => false
 
@@ -185,12 +185,12 @@ object Tests extends Suite(m"Honeycombd Tests"):
       test(m"unclosed tag 1"):
         try t"""<ul><li>First item</li>""".read[Html of Flow]
         catch case exception: Exception => exception
-      . assert(_ == ParseError(Html, Html.Position(1.u, 23.u), Html.Issue.Incomplete("ul")))
+      . assert(_ == Parse.Error(Html, Html.Position(1.u, 23.u), Html.Issue.Incomplete("ul")))
 
       test(m"unclosed tag 2"):
         try t"""<ul><li>First item""".read[Html of Flow]
         catch case exception: Exception => exception
-      . assert(_ == ParseError(Html, Html.Position(1.u, 18.u), Html.Issue.Incomplete("ul")))
+      . assert(_ == Parse.Error(Html, Html.Position(1.u, 18.u), Html.Issue.Incomplete("ul")))
 
       test(m"infer both <head> and <body>"):
         t"""<title>Page title</title><p>A paragraph</p>""".read[Html of "html"]
@@ -246,7 +246,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
       test(m"Non-whitespace text not permitted between list items"):
         try t"""<ul><li>hello</li>\n and <li>world</li></ul>""".read[Html of "html"]
         catch case exception: Exception => exception
-      . assert(_ == ParseError(Html, Html.Position(2.u, 2.u), Html.Issue.OnlyWhitespace('a')))
+      . assert(_ == Parse.Error(Html, Html.Position(2.u, 2.u), Html.Issue.OnlyWhitespace('a')))
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
@@ -265,7 +265,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         try t"""<div><a href="#"><li>list item</li></a></div>""".read[Html of Flow]
         catch case exception: Exception => exception
       . assert:
-          case ParseError
+          case Parse.Error
                 ( Html, Html.Position(line, col, _, _), Html.Issue.InadmissibleTag("li", "a") ) =>
             line == 1.u && col == 18.u
           case _ => false
@@ -415,7 +415,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, Html.Position(line, _, _, _), _) => line == 2.u
+              case Parse.Error(_, Html.Position(line, _, _, _), _) => line == 2.u
 
       suite(m"Attribute parsing depth"):
         test(m"multiple attributes preserved"):
@@ -450,7 +450,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
           try t"""<img alt=a"b>""".read[Html of "img"]
           catch case exception: Exception => exception
         . assert:
-            case ParseError
+            case Parse.Error
                   ( Html,
                     Html.Position(line, col, _, _),
                     Html.Issue.ForbiddenUnquoted('"') ) =>
@@ -467,22 +467,22 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.DuplicateAttribute(name)) => name == t"alt"
+              case Parse.Error(_, _, Html.Issue.DuplicateAttribute(name)) => name == t"alt"
 
         test(m"unknown attribute on known tag"):
           try t"""<div bogus="x"></div>""".read[Html of "div"]
           catch case exception: Exception => exception
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.UnknownAttributeStart(_)) => true
-              case ParseError(_, _, Html.Issue.UnknownAttribute(_))      => true
+              case Parse.Error(_, _, Html.Issue.UnknownAttributeStart(_)) => true
+              case Parse.Error(_, _, Html.Issue.UnknownAttribute(_))      => true
 
       suite(m"Position ranges"):
         def position(input: Text): Html.Position =
           try
             input.read[Html of Phrasing]
             Html.Position(0.u, 0.u)
-          catch case e: ParseError => e.position.asInstanceOf[Html.Position]
+          catch case e: Parse.Error => e.position.asInstanceOf[Html.Position]
 
         def focus(input: Text): Text =
           val pos = position(input)
@@ -665,7 +665,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.InvalidCdata) => true
+              case Parse.Error(_, _, Html.Issue.InvalidCdata) => true
 
         test(m"SVG self-closing rect"):
           t"""<svg><rect/></svg>""".read[Html of Flow]
@@ -678,7 +678,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.ExpectedMore) => true
+              case Parse.Error(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside attribute value"):
           try t"""<div style="ab""".read[Html of "div"]
@@ -686,7 +686,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.ExpectedMore) => true
+              case Parse.Error(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside comment"):
           try t"""<!-- abc""".read[Html of Flow]
@@ -694,7 +694,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.ExpectedMore) => true
+              case Parse.Error(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside CDATA"):
           try t"""<svg><![CDATA[abc""".read[Html of Flow]
@@ -702,7 +702,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.ExpectedMore) => true
+              case Parse.Error(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside closing tag"):
           try t"""<div></div""".read[Html of "div"]
@@ -710,25 +710,25 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.ExpectedMore) => true
+              case Parse.Error(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"unexpected character in tag name"):
           try t"""<div@>""".read[Html of "div"]
           catch case exception: Exception => exception
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.Unexpected(_))      => true
-              case ParseError(_, _, Html.Issue.UnknownAttributeStart(_)) => true
-              case ParseError(_, _, Html.Issue.InvalidTag(_))      => true
+              case Parse.Error(_, _, Html.Issue.Unexpected(_))      => true
+              case Parse.Error(_, _, Html.Issue.UnknownAttributeStart(_)) => true
+              case Parse.Error(_, _, Html.Issue.InvalidTag(_))      => true
 
         test(m"tag starting with digit"):
           try t"""<1div>""".read[Html of Flow]
           catch case exception: Exception => exception
         . assert: result =>
             (result: @unchecked) match
-              case ParseError(_, _, Html.Issue.InvalidTagStart(_)) => true
-              case ParseError(_, _, Html.Issue.InvalidTag(_))      => true
-              case ParseError(_, _, Html.Issue.Unexpected(_))      => true
+              case Parse.Error(_, _, Html.Issue.InvalidTagStart(_)) => true
+              case Parse.Error(_, _, Html.Issue.InvalidTag(_))      => true
+              case Parse.Error(_, _, Html.Issue.Unexpected(_))      => true
 
       suite(m"Round-trip via show"):
         test(m"simple element"):
@@ -1064,8 +1064,8 @@ object Tests extends Suite(m"Honeycombd Tests"):
             catch case _: Throwable => false
         . assert(_.forall(identity))
 
-        test(m"permissive given wins when Tactic[ParseError] is also in scope"):
-          // `throwUnsafely` (file-level import) provides Tactic[ParseError] via
+        test(m"permissive given wins when Tactic[Parse.Error] is also in scope"):
+          // `throwUnsafely` (file-level import) provides Tactic[Parse.Error] via
           // contravariance. `recoveries.permissiveRecovery` provides Recovery.Permissive.
           // Both givens are visible: strict requires `NotGiven[Permissive]`,
           // which fails — so only permissive resolves.
@@ -1076,18 +1076,18 @@ object Tests extends Suite(m"Honeycombd Tests"):
         . assert(_ == P("unclosed"))
 
         test(m"parser emits warnings via raise() when a Tactic is in scope"):
-          val errors = scala.collection.mutable.ListBuffer[ParseError]()
+          val errors = scala.collection.mutable.ListBuffer[Parse.Error]()
 
           locally:
-            given Tactic[ParseError]:
+            given Tactic[Parse.Error]:
               given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
 
               def diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
 
-              def record(error: Diagnostics ?=> ParseError): Unit =
+              def record(error: Diagnostics ?=> Parse.Error): Unit =
                 errors += error(using diagnostics)
 
-              def abort(error: Diagnostics ?=> ParseError): Nothing =
+              def abort(error: Diagnostics ?=> Parse.Error): Nothing =
                 throw error(using diagnostics)
 
               def certify(): Unit = ()
@@ -1188,7 +1188,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
         try t"""<scrip>""".read[Html of Inline]
         catch case exception: Exception => exception
       . assert:
-          case ParseError(Html, Html.Position(line, col, _, _), Html.Issue.InvalidTag("scrip")) =>
+          case Parse.Error(Html, Html.Position(line, col, _, _), Html.Issue.InvalidTag("scrip")) =>
             line == 1.u && col == 2.u
           case _ => false
 
@@ -1227,7 +1227,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
       test(m"unclosed tag 1"):
         try t"""<ul><li>First item</li>""".read[Html of Flow]
         catch case exception: Exception => exception
-      . assert(_ == ParseError(Html, Html.Position(1.u, 23.u), Html.Issue.Incomplete("ul")))
+      . assert(_ == Parse.Error(Html, Html.Position(1.u, 23.u), Html.Issue.Incomplete("ul")))
 
       test(m"infer both <head> and <body>"):
         t"""<title>Page title</title><p>A paragraph</p>""".read[Html of "html"]
@@ -1389,7 +1389,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
           try t"""<img alt=a"b>""".read[Html of "img"]
           catch case exception: Exception => exception
         . assert:
-            case ParseError
+            case Parse.Error
                   ( Html,
                     Html.Position(line, col, _, _),
                     Html.Issue.ForbiddenUnquoted('"') ) =>
@@ -1404,15 +1404,15 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
           try t"""<img alt="a" alt="b">""".read[Html of "img"]
           catch case exception: Exception => exception
         . assert:
-            case ParseError(_, _, Html.Issue.DuplicateAttribute(name)) => name == t"alt"
+            case Parse.Error(_, _, Html.Issue.DuplicateAttribute(name)) => name == t"alt"
             case _                                                     => false
 
         test(m"unknown attribute on known tag"):
           try t"""<div bogus="x"></div>""".read[Html of "div"]
           catch case exception: Exception => exception
         . assert:
-            case ParseError(_, _, Html.Issue.UnknownAttributeStart(_)) => true
-            case ParseError(_, _, Html.Issue.UnknownAttribute(_))      => true
+            case Parse.Error(_, _, Html.Issue.UnknownAttributeStart(_)) => true
+            case Parse.Error(_, _, Html.Issue.UnknownAttribute(_))      => true
             case _                                                     => false
 
       suite(m"Element coverage: void elements"):
@@ -1520,28 +1520,28 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
           try t"""<div""".read[Html of "div"]
           catch case exception: Exception => exception
         . assert:
-            case ParseError(_, _, Html.Issue.ExpectedMore) => true
+            case Parse.Error(_, _, Html.Issue.ExpectedMore) => true
             case _                                         => false
 
         test(m"EOF inside attribute value"):
           try t"""<div style="ab""".read[Html of "div"]
           catch case exception: Exception => exception
         . assert:
-            case ParseError(_, _, Html.Issue.ExpectedMore) => true
+            case Parse.Error(_, _, Html.Issue.ExpectedMore) => true
             case _                                         => false
 
         test(m"EOF inside comment"):
           try t"""<!-- abc""".read[Html of Flow]
           catch case exception: Exception => exception
         . assert:
-            case ParseError(_, _, Html.Issue.ExpectedMore) => true
+            case Parse.Error(_, _, Html.Issue.ExpectedMore) => true
             case _                                         => false
 
         test(m"EOF inside closing tag"):
           try t"""<div></div""".read[Html of "div"]
           catch case exception: Exception => exception
         . assert:
-            case ParseError(_, _, Html.Issue.ExpectedMore) => true
+            case Parse.Error(_, _, Html.Issue.ExpectedMore) => true
             case _                                         => false
 
       suite(m"Round-trip via show"):

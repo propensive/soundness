@@ -39,6 +39,7 @@ import scala.caps
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import prepositional.*
 import probably.*
 import rudiments.*
@@ -173,7 +174,7 @@ object internal:
     // through a lazy sibling instead of structurally sum-deriving `List` (issue #1431).
     given collection: [collection <: Iterable, element]
     =>  ( factory: scala.collection.Factory[element, collection[element]],
-          tactic:  Tactic[PojoError] )
+          tactic:  Tactic[Pojo.Error] )
     =>  ( decodable: => element is Decodable in Pojo )
     =>  collection[element] is Decodable in Pojo =
 
@@ -186,24 +187,24 @@ object internal:
             builder.result()
 
         case other =>
-          abort(PojoError())
+          abort(Pojo.Error())
 
     given listDecodable: [list <: List, element]
-    =>  ( tactic: Tactic[PojoError] )
+    =>  ( tactic: Tactic[Pojo.Error] )
     =>  ( decodable: => element is Decodable in Pojo )
     =>  list[element] is Decodable in Pojo =
       collection[scala.collection.immutable.List, element]
       . asInstanceOf[list[element] is Decodable in Pojo]
 
     given setDecodable: [set <: Set, element]
-    =>  ( tactic: Tactic[PojoError] )
+    =>  ( tactic: Tactic[Pojo.Error] )
     =>  ( decodable: => element is Decodable in Pojo )
     =>  set[element] is Decodable in Pojo =
       collection[scala.collection.immutable.Set, element]
       . asInstanceOf[set[element] is Decodable in Pojo]
 
     given seriesDecodable: [sequence <: Sequence, element]
-    =>  ( tactic: Tactic[PojoError] )
+    =>  ( tactic: Tactic[Pojo.Error] )
     =>  ( decodable: => element is Decodable in Pojo )
     =>  sequence[element] is Decodable in Pojo =
       collection[Vector, element]
@@ -212,6 +213,10 @@ object internal:
 
     extension (pojo: Pojo)
       inline def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)
+
+    // PojoError → Pojo.Error
+    case class Error()(using Diagnostics)
+    extends fulminate.Error(916, 0)(m"could not deserialize from Java POJO types")
 
   trait Pojo2:
     given checkable: Pojo is Checkable:

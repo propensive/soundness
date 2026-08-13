@@ -75,7 +75,7 @@ object Url:
                   import error.diagnostics
                   Url.Error(value, colon + 3, Url.Error.Reason.BadHostname(hostname, reason))
 
-                case error@IpAddressError(reason) =>
+                case error@IpAddress.Error(reason) =>
                   import error.diagnostics
                   Url.Error(value, colon + 3, Url.Error.Reason.BadIpv6(reason))
 
@@ -135,7 +135,7 @@ object Url:
     enum Reason(val number: Int) extends Clarification:
       case Expected(expectation: Expectation)                       extends Reason(1)
       case BadHostname(hostname: Text, reason: Hostname.Error.Reason) extends Reason(2)
-      case BadIpv6(reason: IpAddressError.Reason)                    extends Reason(3)
+      case BadIpv6(reason: IpAddress.Error.Reason)                    extends Reason(3)
 
     object Expectation:
       given communicable: Expectation is Communicable =

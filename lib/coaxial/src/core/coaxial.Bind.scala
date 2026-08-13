@@ -30,15 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package zephyrine
+package coaxial
 
-import denominative.*
 import fulminate.*
 
-case class ParseError(format: Format, position: format.Position, issue: format.Issue)
-  ( using Diagnostics )
-extends Error(594, 0)
-  ( m"the ${format.name} was not valid at ${position.describe} because ${issue.describe}" ):
+object Bind:
+  // BindError → Bind.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case PortInUse          extends Reason(1)
+      case PermissionDenied   extends Reason(2)
+      case AddressUnavailable extends Reason(3)
 
-  // The internal parser `Position` rendered as a uniform `Span` for public use.
-  def span: Span = position.span
+    given communicable: Reason is Communicable =
+      case Reason.PortInUse          => m"another process is already bound to the port"
+      case Reason.PermissionDenied   => m"the user does not have permission to bind the port"
+      case Reason.AddressUnavailable => m"the requested address is not available on this host"
+
+  case class Error(reason: Bind.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(265, reason.number)(m"the socket could not be bound because $reason")

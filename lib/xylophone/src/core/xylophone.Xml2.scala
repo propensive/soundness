@@ -50,7 +50,7 @@ trait Xml2 extends Xml3:
   // type-tag is added by an `asInstanceOf` cast — `value in Xml` is just
   // `value { type Form = Xml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Xml] => (schema: XmlSchema)
-  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error] )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error] )
   =>  ( ((value in Xml) is Aggregable by Text)^{tactic, xmlTactic} ) =
 
     input =>

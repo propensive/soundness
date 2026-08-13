@@ -30,59 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package phoenicia
 
 import anticipation.*
-import digression.*
 import fulminate.*
 
-object LinkError:
-  enum Reason(val number: Int) extends Clarification:
-    case Failed(trace: StackTrace)                  extends Reason(1)
-    case NoEntryPoint                               extends Reason(3)
-    case ManyEntryPoints                            extends Reason(4)
-    case NoPath(source: Text, target: Text)         extends Reason(5)
-    case AmbiguousPath(source: Text, target: Text)  extends Reason(6)
-    case InapplicableSetting                        extends Reason(7)
-    case DuplicateEdge(source: Text, target: Text)  extends Reason(8)
-    case CyclicToolchain                            extends Reason(9)
-    case UnexpectedInput(format: Text)              extends Reason(10)
-    case CompilationFailed(errors: Int)             extends Reason(11)
-    case MissingSetting(name: Text)                 extends Reason(12)
-    case Packaging(detail: Text)                    extends Reason(13)
-    case CompilerCrash                              extends Reason(14)
-    case CompilerUnusable(detail: Text)             extends Reason(15)
+object Font:
+  // FontError → Font.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case MissingTable(tag: Sfnt.Table.Tag)  extends Reason(1)
+      case UnknownFormat(format: Int)   extends Reason(2)
+      case MagicNumber                  extends Reason(3)
+      case MissingEncoding              extends Reason(4)
 
-  given communicable: Reason is Communicable =
-    case Reason.Failed(_)       => m"the linker terminated abnormally"
-    case Reason.NoEntryPoint    => m"a native executable requires exactly one entry point"
-    case Reason.ManyEntryPoints => m"an executable JAR permits at most one entry point"
+    given communicable: Reason is Communicable =
+      case Reason.MissingTable(tag)     => m"the table ${tag.text} was not found"
+      case Reason.UnknownFormat(format) => m"the table contains data in unknown format $format"
+      case Reason.MagicNumber           => m"the font did not contain expected check data"
+      case Reason.MissingEncoding       => m"the font contains no usable character encoding"
 
-    case Reason.NoPath(source, target) =>
-      m"the toolchain has no path from $source to $target"
-
-    case Reason.AmbiguousPath(source, target) =>
-      m"""
-        the toolchain has several shortest paths from $source to $target, so an intermediate
-        format must be produced explicitly
-      """
-
-    case Reason.InapplicableSetting =>
-      m"a setting applies to no format produced on the path"
-
-    case Reason.DuplicateEdge(source, target) =>
-      m"the toolchain declares more than one edge from $source to $target"
-
-    case Reason.CyclicToolchain => m"the toolchain's edges form a cycle"
-
-    case Reason.UnexpectedInput(format) =>
-      m"the tool producing $format cannot consume the content it was given"
-
-    case Reason.CompilationFailed(errors) => m"compilation failed with $errors errors"
-    case Reason.MissingSetting(name)      => m"the setting $name is required but unspecified"
-    case Reason.Packaging(detail)         => m"packaging failed: $detail"
-    case Reason.CompilerCrash             => m"the compiler crashed"
-    case Reason.CompilerUnusable(detail)  => m"the compiler could not be run: $detail"
-
-case class LinkError(reason: LinkError.Reason)(using Diagnostics)
-extends Error(443, reason.number)(m"linking failed because $reason")
+  case class Error(reason: Font.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(564, reason.number)(m"the font could not be read because $reason")

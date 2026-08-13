@@ -628,14 +628,14 @@ object internal:
 
     given XmlSchema = XmlSchema.Freeform
 
-    // Custom HaltTactic: when Xml.parse raises ParseError, translate the parser
+    // Custom HaltTactic: when Xml.parse raises Parse.Error, translate the parser
     // offset/length to a source-file Position and pass it to halt, so editors
     // underline the precise span inside the literal.
     val xml: Xml =
       given diagnostics: Diagnostics = Diagnostics.omit
 
-      given parseTactic: HaltTactic[ParseError, Xml] = new HaltTactic[ParseError, Xml]:
-        override def abort(error: Diagnostics ?=> ParseError): Nothing =
+      given parseTactic: HaltTactic[Parse.Error, Xml] = new HaltTactic[Parse.Error, Xml]:
+        override def abort(error: Diagnostics ?=> Parse.Error): Nothing =
           val pe = error
           val off = pe.position.offset.or(0)
           val length = pe.position.length.or(0)

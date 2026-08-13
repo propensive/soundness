@@ -403,13 +403,13 @@ object internal:
 
       macroPos
 
-    // Custom HaltTactic: translate parser ParseError positions to source-file ranges.
+    // Custom HaltTactic: translate parser Parse.Error positions to source-file ranges.
     val ast: Json.Ast =
       given diagnostics: Diagnostics = Diagnostics.omit
 
-      given parseTactic: HaltTactic[ParseError, Json.Ast] =
-        new HaltTactic[ParseError, Json.Ast]:
-          override def abort(error: Diagnostics ?=> ParseError): Nothing =
+      given parseTactic: HaltTactic[Parse.Error, Json.Ast] =
+        new HaltTactic[Parse.Error, Json.Ast]:
+          override def abort(error: Diagnostics ?=> Parse.Error): Nothing =
             val pe = error
             val off = pe.position.offset.or(0)
             val length = pe.position.length.or(0)

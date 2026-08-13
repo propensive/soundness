@@ -101,9 +101,9 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
     suite(m"Negative tests"):
       negativeCases.each: (name, data) =>
         test(Message(name.skip(5, Rtl))):
-          capture[ParseError](Json.Ast.parse(data))
+          capture[Parse.Error](Json.Ast.parse(data))
         .matches:
-          case ParseError(_, _, _) => true
+          case Parse.Error(_, _, _) => true
 
     suite(m"Number tests"):
       test(m"Parse 0e+1"):
@@ -287,19 +287,19 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == "x\u0000y")
 
       test(m"Plain mode rejects a value-position hole"):
-        capture[ParseError](Json.Ast.parse(bytes(t"\u0000")))
+        capture[Parse.Error](Json.Ast.parse(bytes(t"\u0000")))
       . matches:
-          case ParseError(_, _, _) => true
+          case Parse.Error(_, _, _) => true
 
       test(m"Plain mode rejects a hole inside a string"):
-        capture[ParseError](Json.Ast.parse(bytes(t""" "a\u0000b" """)))
+        capture[Parse.Error](Json.Ast.parse(bytes(t""" "a\u0000b" """)))
       . matches:
-          case ParseError(_, _, _) => true
+          case Parse.Error(_, _, _) => true
 
     suite(m"Position ranges"):
       def asBytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
       def position(input: Text): Json.Ast.Position =
-        capture[ParseError](Json.Ast.parse(asBytes(input)))
+        capture[Parse.Error](Json.Ast.parse(asBytes(input)))
         . position.asInstanceOf[Json.Ast.Position]
 
       // Bad escape \q after the opening quote (raw to avoid Text-interpolator escaping).

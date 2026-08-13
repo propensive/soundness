@@ -30,12 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hypotenuse
+package escritoire
 
-import scala.language.experimental.into
-
-import anticipation.*
 import fulminate.*
 
-case class RationalError(text: Text)(using Diagnostics)
-extends Error(741, 0)(m"$text is not a representable rational number")
+object Table:
+  // TableError → Table.Error
+  case class Error(minimumWidth: Int, availableWidth: Int)(using Diagnostics)
+  extends fulminate.Error
+    ( m"""
+        the table required a minimum width of $minimumWidth, but only $availableWidth was available
+      """ )

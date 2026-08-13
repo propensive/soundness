@@ -53,7 +53,7 @@ extends Question[item]:
         case End  => copy(current = options.stdlib.last)
         case _    => this
 
-    catch case e: RangeError => this
+    catch case e: Range.Error => this
 
 
   def ask

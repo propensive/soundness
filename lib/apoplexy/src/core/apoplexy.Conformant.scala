@@ -43,7 +43,7 @@ import turbulence.*
 import xylophone.*
 
 import errorDiagnostics.emptyDiagnostics
-import zephyrine.{ParseError, memoize}
+import zephyrine.{Parse, memoize}
 
 // Interprets an `Http.Response` as a value of `Self`, reading the body in the wire
 // format `Transport` (`jacinta.Json` or `xylophone.Xml`) the spec dictates.
@@ -64,7 +64,7 @@ trait LowPriorityConformant:
       Conformant.successful(response)
 
       mitigate:
-        case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
+        case Parse.Error(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
         case Json.Error(_)        => Api.Error(Api.Error.Reason.Malformed)
 
       . protect(response.body.stream.memoize.read[Json].as[value])
@@ -76,7 +76,7 @@ trait LowPriorityConformant:
       Conformant.successful(response)
 
       mitigate:
-        case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
+        case Parse.Error(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
         case _: Xml.Error         => Api.Error(Api.Error.Reason.Malformed)
 
       . protect(summon[CharDecoder].decoded(response.body.stream.memoize).read[Xml].as[value])
@@ -102,7 +102,7 @@ object Conformant extends LowPriorityConformant:
     successful(response)
 
     mitigate:
-      case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
+      case Parse.Error(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
 
     . protect(response.body.stream.memoize.read[Json])
 
@@ -113,7 +113,7 @@ object Conformant extends LowPriorityConformant:
       successful(response)
 
       mitigate:
-        case ParseError(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
+        case Parse.Error(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
 
       . protect(summon[CharDecoder].decoded(response.body.stream.memoize).read[Xml])
 

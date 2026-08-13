@@ -495,8 +495,8 @@ object Tests extends Suite(m"Guillotine tests"):
         t"42".as[Pid]
       . assert(_ == Pid(42L))
 
-      test(m"decode Pid from non-numeric Text raises NumberError"):
-        capture[NumberError](t"abc".as[Pid])
+      test(m"decode Pid from non-numeric Text raises Number.Error"):
+        capture[Number.Error](t"abc".as[Pid])
       . assert(_.text == t"abc")
 
     suite(m"OS Process"):

@@ -150,7 +150,7 @@ object Mcp:
     given lastEventId: ("lastEventId" is Directive of Text) = identity(_)
 
     recover:
-      case error: ParseError =>
+      case error: Parse.Error =>
         Http.Response(Http.Ok):
           JsonRpc.failure(-32700, t"Parse error: ${error.message}".show)
 

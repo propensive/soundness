@@ -190,21 +190,21 @@ object JsonBlueprint:
 
     JsonBlueprint.intensional(_.as[Hostname])
 
-  given ipv4: ("ipv4" is Intensional in JsonBlueprint from Json to (Ipv4 raises IpAddressError)) =
+  given ipv4: ("ipv4" is Intensional in JsonBlueprint from Json to (Ipv4 raises IpAddress.Error)) =
     JsonBlueprint.intensional(_.as[Ipv4])
 
   given optionalIpv4
   :   ( "ipv4?" is Intensional in JsonBlueprint from Json to
-        (Optional[Ipv4] raises IpAddressError) ) =
+        (Optional[Ipv4] raises IpAddress.Error) ) =
 
     JsonBlueprint.intensional(_.as[Optional[Ipv4]])
 
-  given ipv6: ("ipv6" is Intensional in JsonBlueprint from Json to (Ipv6 raises IpAddressError)) =
+  given ipv6: ("ipv6" is Intensional in JsonBlueprint from Json to (Ipv6 raises IpAddress.Error)) =
     JsonBlueprint.intensional(_.as[Ipv6])
 
   given optionalIpv6
   :   ( "ipv6?" is Intensional in JsonBlueprint from Json to
-        (Optional[Ipv6] raises IpAddressError) ) =
+        (Optional[Ipv6] raises IpAddress.Error) ) =
 
     JsonBlueprint.intensional(_.as[Optional[Ipv6]])
 

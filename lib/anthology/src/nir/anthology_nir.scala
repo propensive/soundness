@@ -121,12 +121,12 @@ object nativeEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val main = entryPoints match
         case List(entry) => entry.mainClass.text
-        case _           => abort(LinkError(LinkError.Reason.NoEntryPoint))
+        case _           => abort(Link.Error(Link.Error.Reason.NoEntryPoint))
 
       val (directory, classpath) = input.emission(Binary(triple))
 
@@ -154,4 +154,4 @@ object nativeEdges:
         Deliverable.Product(unsafely(artifact.toString.tt.as[Path on Linux]))
 
       catch case suc.NonFatal(error) =>
-        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+        abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))

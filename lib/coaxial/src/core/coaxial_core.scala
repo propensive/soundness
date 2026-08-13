@@ -62,7 +62,7 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
   transparent inline def listen[input](using Monitor, Probate)[result]
     ( lambda: bindable.Input => bindable.Output )
     ( block: Socket.Service ?=> result )
-  :   result raises BindError logs Socket.Event =
+  :   result raises Bind.Error logs Socket.Event =
 
     socket.listenOn(Unset)(lambda)(block)
 
@@ -70,7 +70,7 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
     ( interface: Optional[MacAddress] )
     ( lambda: bindable.Input => bindable.Output )
     ( block: Socket.Service ?=> result )
-  :   result raises BindError logs Socket.Event =
+  :   result raises Bind.Error logs Socket.Event =
 
     val binding = bindable.bind(socket, interface)
     Log.info(Socket.Event.Listening(socket.show))

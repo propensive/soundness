@@ -65,7 +65,7 @@ object javacEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using tactic: Tactic[LinkError], linkEvents: LinkEvent is Loggable )
+      ( using tactic: Tactic[Link.Error], linkEvents: LinkEvent is Loggable )
     :   Deliverable =
 
       val (sources, classpath) = input.sources(Universe.Classfile)
@@ -74,15 +74,15 @@ object javacEdges:
       given compileEvents: (CompileEvent is Loggable) = CompileEvents.relay(using linkEvents)
 
       mitigate:
-        case Compiler.Error() => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
-        case Async.Error(_)   => LinkError(LinkError.Reason.CompilerUnusable(t"javac"))
+        case Compiler.Error() => Link.Error(Link.Error.Reason.CompilerUnusable(t"javac"))
+        case Async.Error(_)   => Link.Error(Link.Error.Reason.CompilerUnusable(t"javac"))
 
       . protect:
           val process = javac(classpath)(sources, out)
 
           process.complete() match
             case CompileResult.Success  => Deliverable.Emission(out, classpath)
-            case CompileResult.Crash(_) => abort(LinkError(LinkError.Reason.CompilerCrash))
+            case CompileResult.Crash(_) => abort(Link.Error(Link.Error.Reason.CompilerCrash))
 
             case CompileResult.Failure =>
-              abort(LinkError(LinkError.Reason.CompilationFailed(process.errors)))
+              abort(Link.Error(Link.Error.Reason.CompilationFailed(process.errors)))

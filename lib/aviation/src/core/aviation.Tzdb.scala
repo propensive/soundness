@@ -114,7 +114,7 @@ object Tzdb:
         else if string.skip(3).keep(2) == t"<="
         then MonthDate.Before(month, Weekday.valueOf(string.keep(3).s), string.skip(5).as[Int])
         else MonthDate.Exact(month, string.as[Int])
-      catch case error: NumberError =>
+      catch case error: Number.Error =>
         abort(Tzdb.Error(Tzdb.Error.Reason.UnparsableDate, lineNo))
 
     def parseLeap(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Leap = arguments match
@@ -169,7 +169,7 @@ object Tzdb:
           val s = parseDuration(lineNo, save)
           Tzdb.Entry.Rule(name, from.as[Int], end, d, t, s, parseLetters(letters))
 
-        catch case error: NumberError =>
+        catch case error: Number.Error =>
           abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedRule, lineNo))
 
       case _ =>

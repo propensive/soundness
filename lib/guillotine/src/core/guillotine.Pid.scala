@@ -44,12 +44,12 @@ object Pid:
   given showable: Pid is Showable = _.toString.tt
   given encodable: Pid is Encodable in Text = _.toString.tt
 
-  given sshAgentPid: (tactic: Tactic[NumberError]) => ((Variable["sshAgentPid", Pid])^{tactic}) =
+  given sshAgentPid: (tactic: Tactic[Number.Error]) => ((Variable["sshAgentPid", Pid])^{tactic}) =
     text => Pid(text.as[Int])
 
-  given decodable: (tactic: Tactic[NumberError]) => ((Pid is Decodable in Text)^{tactic}) = text =>
+  given decodable: (tactic: Tactic[Number.Error]) => ((Pid is Decodable in Text)^{tactic}) = text =>
     try Pid(text.s.toLong) catch case error: Exception =>
-      abort(NumberError(text, Int, NumberError.Reason.Unparseable))
+      abort(Number.Error(text, Int, Number.Error.Reason.Unparseable))
 
   // PidError → Pid.Error
   case class Error(pid: Pid)(using Diagnostics)

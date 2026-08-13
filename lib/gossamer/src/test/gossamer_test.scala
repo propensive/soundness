@@ -500,9 +500,9 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == '1')
 
       // test(m"Random access of out-of-range character"):
-      //   capture[RangeError](t"123".at(Sen))
+      //   capture[Range.Error](t"123".at(Sen))
       //
-      //. assert(_ == RangeError(5, 0, 3))
+      //. assert(_ == Range.Error(5, 0, 3))
 
       test(m"Random access of out-of-range character"):
         t"123"(Sen)

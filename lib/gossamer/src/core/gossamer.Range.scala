@@ -34,8 +34,9 @@ package gossamer
 
 import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
-
 import fulminate.*
 
-case class RangeError(index: Int, from: Int, to: Int)(using Diagnostics)
-extends Error(151, 0)(m"the index $index is outside the range $from-$to")
+object Range:
+  // RangeError → Range.Error
+  case class Error(index: Int, from: Int, to: Int)(using Diagnostics)
+  extends fulminate.Error(151, 0)(m"the index $index is outside the range $from-$to")

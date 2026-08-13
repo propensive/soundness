@@ -194,21 +194,21 @@ object Tests extends Suite(m"Coaxial tests"):
         socket.at(t"/info") == DomainSocket.Endpoint(socket, t"/info")
       . assert(_ == true)
 
-    suite(m"BindError"):
+    suite(m"Bind.Error"):
       test(m"PortInUse has a descriptive message"):
-        BindError.Reason.PortInUse.communicate.text
+        Bind.Error.Reason.PortInUse.communicate.text
       . assert(_ == t"another process is already bound to the port")
 
       test(m"PermissionDenied has a descriptive message"):
-        BindError.Reason.PermissionDenied.communicate.text
+        Bind.Error.Reason.PermissionDenied.communicate.text
       . assert(_ == t"the user does not have permission to bind the port")
 
       test(m"AddressUnavailable has a descriptive message"):
-        BindError.Reason.AddressUnavailable.communicate.text
+        Bind.Error.Reason.AddressUnavailable.communicate.text
       . assert(_ == t"the requested address is not available on this host")
 
-      test(m"A BindError incorporates its reason"):
-        BindError(BindError.Reason.PortInUse).message.text
+      test(m"A Bind.Error incorporates its reason"):
+        Bind.Error(Bind.Error.Reason.PortInUse).message.text
       . assert(_ == t"the socket could not be bound because another process is already "+
           t"bound to the port")
 

@@ -47,7 +47,7 @@ import vacuous.*
 import ypsiloid.*
 
 import errorDiagnostics.emptyDiagnostics
-import zephyrine.ParseError
+import zephyrine.Parse
 
 object OpenApi:
   case class Info(title: Text, version: Text, description: Optional[Text] = Unset)
@@ -286,7 +286,7 @@ object OpenApi:
     summon[Text is Aggregable by Text].map: text =>
       val document =
         mitigate:
-          case ParseError(_, _, _)    => OpenApi.Error(OpenApi.Error.Reason.Malformed)
+          case Parse.Error(_, _, _)    => OpenApi.Error(OpenApi.Error.Reason.Malformed)
           case Json.Error(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
           case Yaml.Error(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
           case JsonPointer.Error(_, _) => OpenApi.Error(OpenApi.Error.Reason.Malformed)

@@ -74,7 +74,7 @@ object Tmux:
 
     mitigate:
       case guillotine.Exec.Error(_, _, _)   => TmuxError(TmuxError.Reason.SessionDied)
-      case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
+      case Number.Error(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
 
     . protect:
         val content = Array.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().stdlib)

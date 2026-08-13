@@ -63,7 +63,7 @@ package jsonPointerRegistries:
           case wisteria.Variant.Error(_, _, _) => Unset
           case ConnectError(_)       => Unset
           case Http.Error(_, _)       => Unset
-          case ParseError(_, _, _)   => Unset
+          case Parse.Error(_, _, _)   => Unset
           case Json.Error(_)          => Unset
 
         . protect(url.fetch().receive[Json])

@@ -116,13 +116,13 @@ object xeqEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val jar = input.product(anthology.Xeq(delivery))
 
       val runners = settings.runners.or:
-        abort(LinkError(LinkError.Reason.MissingSetting(t"runners")))
+        abort(Link.Error(Link.Error.Reason.MissingSetting(t"runners")))
 
       // With no explicit targets, target every platform the runner source names; a local
       // directory names none, so explicit targets are required there.
@@ -132,7 +132,7 @@ object xeqEdges:
             List(hashes.stdlib.keys.toSeq.sortBy(_.s)*)
 
           case Packaging.RunnerSource.Local(_) =>
-            abort(LinkError(LinkError.Reason.MissingSetting(t"targets")))
+            abort(Link.Error(Link.Error.Reason.MissingSetting(t"targets")))
 
       val packaging =
         Packaging
@@ -147,7 +147,7 @@ object xeqEdges:
             buildId      = settings.buildId )
 
       mitigate:
-        case error: PackageError => LinkError(LinkError.Reason.Packaging(error.message.text))
+        case error: PackageError => Link.Error(Link.Error.Reason.Packaging(error.message.text))
 
       . protect:
           Deliverable.Product(Packager.pack(packaging))

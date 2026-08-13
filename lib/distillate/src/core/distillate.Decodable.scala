@@ -52,48 +52,48 @@ object Decodable extends Decodable2:
   // The SAM instances below raise through their resolution-scoped tactic, which shares each
   // instance's given-resolution lifetime: honest capabilities (every given that includes a
   // tactic is a capability; Jon, 2026-07-12). See rep/DECISIONS.md.
-  given int: (number: Tactic[NumberError]^) => ((Int is Decodable in Text)^{number, caps.any}) =
+  given int: (number: Tactic[Number.Error]^) => ((Int is Decodable in Text)^{number, caps.any}) =
     text =>
       try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-        abort(NumberError(text, Int, NumberError.Reason.Unparseable))
+        abort(Number.Error(text, Int, Number.Error.Reason.Unparseable))
 
-  given byte: (tactic: Tactic[NumberError]^)
+  given byte: (tactic: Tactic[Number.Error]^)
   =>  ((Byte is Decodable in Text)^{tactic, caps.any}) =
     text =>
       val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-        abort(NumberError(text, Byte, NumberError.Reason.Unparseable))
+        abort(Number.Error(text, Byte, Number.Error.Reason.Unparseable))
 
       if int < Byte.MinValue || int > Byte.MaxValue
-      then abort(NumberError(text, Byte, NumberError.Reason.OutOfRange))
+      then abort(Number.Error(text, Byte, Number.Error.Reason.OutOfRange))
       else int.toByte
 
-  given short: (tactic: Tactic[NumberError]^)
+  given short: (tactic: Tactic[Number.Error]^)
   =>  ((Short is Decodable in Text)^{tactic, caps.any}) =
     text =>
       val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-        abort(NumberError(text, Short, NumberError.Reason.Unparseable))
+        abort(Number.Error(text, Short, Number.Error.Reason.Unparseable))
 
       if int < Short.MinValue || int > Short.MaxValue
-      then abort(NumberError(text, Short, NumberError.Reason.OutOfRange))
+      then abort(Number.Error(text, Short, Number.Error.Reason.OutOfRange))
       else int.toShort
 
-  given long: (tactic: Tactic[NumberError]^)
+  given long: (tactic: Tactic[Number.Error]^)
   =>  ((Long is Decodable in Text)^{tactic, caps.any}) =
     text =>
       try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
-        abort(NumberError(text, Long, NumberError.Reason.Unparseable))
+        abort(Number.Error(text, Long, Number.Error.Reason.Unparseable))
 
-  given double: (tactic: Tactic[NumberError]^)
+  given double: (tactic: Tactic[Number.Error]^)
   =>  ((Double is Decodable in Text)^{tactic, caps.any}) =
     text =>
       try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
-        abort(NumberError(text, Double, NumberError.Reason.Unparseable))
+        abort(Number.Error(text, Double, Number.Error.Reason.Unparseable))
 
-  given float: (tactic: Tactic[NumberError]^)
+  given float: (tactic: Tactic[Number.Error]^)
   =>  ((Float is Decodable in Text)^{tactic, caps.any}) =
     text =>
       try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
-        abort(NumberError(text, Float, NumberError.Reason.Unparseable))
+        abort(Number.Error(text, Float, Number.Error.Reason.Unparseable))
 
   given char: Char is Decodable in Text = _.s.charAt(0)
 

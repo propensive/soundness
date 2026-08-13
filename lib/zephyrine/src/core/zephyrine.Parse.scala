@@ -30,31 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package plutocrat
+package zephyrine
 
-import anticipation.*
+import denominative.*
 import fulminate.*
 
-object IsinError:
-  enum Reason(val number: Int) extends Clarification:
-    case InvalidCharacter(index: Int, char: Char) extends Reason(1)
-    case BadCountryCode(code: Text)               extends Reason(2)
-    case WrongLength(length: Int)                 extends Reason(3)
-    case LuhnCheck                                extends Reason(4)
+object Parse:
+  // ParseError → Parse.Error
+  case class Error(format: Format, position: format.Position, issue: format.Issue)
+    ( using Diagnostics )
+  extends fulminate.Error(594, 0)
+    ( m"the ${format.name} was not valid at ${position.describe} because ${issue.describe}" ):
 
-  export Reason.*
-
-  given communicable: Reason is Communicable =
-    case BadCountryCode(code) => m"its country code $code was not valid"
-
-    case WrongLength(length) =>
-      m"it had length $length, but it should be 12 characters long"
-
-    case LuhnCheck =>
-      m"its last digit failed the Luhn check"
-
-    case InvalidCharacter(index, char) =>
-      m"the character $char at position $index is not a digit or uppercase letter"
-
-case class IsinError(reason: IsinError.Reason)(using Diagnostics)
-extends Error(515, reason.number)(m"the ISIN number is not valid because $reason")
+    // The internal parser `Position` rendered as a uniform `Span` for public use.
+    def span: Span = position.span

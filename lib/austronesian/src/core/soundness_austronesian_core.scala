@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export austronesian.{PojoError, pojo}
+export austronesian.{Pojo, pojo}

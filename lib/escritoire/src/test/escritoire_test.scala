@@ -233,7 +233,7 @@ object Tests extends Suite(m"Escritoire tests"):
 
     // ─── Attenuation ────────────────────────────────────────────────────────
 
-    test(m"failAttenuation raises a TableError when the table is too wide"):
+    test(m"failAttenuation raises a Table.Error when the table is too wide"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.failAttenuation
       val wide = Scaffold[Person, Text](Column(t"Name", sizing = columnar.Fixed(20))(_.name))

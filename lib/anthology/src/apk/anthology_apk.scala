@@ -97,13 +97,13 @@ object apkEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val activity: Fqcn = entryPoints match
         case List(entry) => entry.mainClass
-        case Nil         => abort(LinkError(LinkError.Reason.NoEntryPoint))
-        case _           => abort(LinkError(LinkError.Reason.ManyEntryPoints))
+        case Nil         => abort(Link.Error(Link.Error.Reason.NoEntryPoint))
+        case _           => abort(Link.Error(Link.Error.Reason.ManyEntryPoints))
 
       val dexArchive = input.product(Apk)
       Deliverable.Product(package0(settings, dexArchive, activity, out))
@@ -114,7 +114,7 @@ object apkEdges:
       dexArchive: Path on Linux,
       activity:   Fqcn,
       out:        Path on Linux )
-  :   Path on Linux logs LinkEvent raises LinkError =
+  :   Path on Linux logs LinkEvent raises Link.Error =
 
     try
       jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
@@ -160,4 +160,4 @@ object apkEdges:
       apkPath
 
     catch case suc.NonFatal(error) =>
-      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+      abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))

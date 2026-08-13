@@ -178,7 +178,7 @@ extends Question[Text]:
         case _ =>
           this
 
-    catch case e: RangeError => this
+    catch case e: Range.Error => this
 
 
   def ask

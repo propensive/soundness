@@ -134,7 +134,7 @@ object sjsEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val (directory, classpath) = input.emission(node)
@@ -149,7 +149,7 @@ object sjsEdges:
       entryPoints: List[EntryPoint],
       out:         Path on Linux,
       artifact:    (Path on Linux) => (Path on Linux) )
-  :   Path on Linux logs LinkEvent raises LinkError =
+  :   Path on Linux logs LinkEvent raises Link.Error =
 
     val entries: List[jnf.Path] =
       jnf.Paths.get(directory.encode.s).nn ::
@@ -185,4 +185,4 @@ object sjsEdges:
       artifact(out)
 
     catch case suc.NonFatal(error) =>
-      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+      abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))

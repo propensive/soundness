@@ -43,7 +43,7 @@ import serpentine.*
 // produces. `Sources` inhabit a source-language node; an `Emission`—a compilation's output
 // directory and the classpath it was compiled against—inhabits an intermediate-representation
 // node; a `Product`—a linked or packaged file—inhabits an application node. A tool given a
-// variant it cannot consume raises `LinkError.Reason.UnexpectedInput`.
+// variant it cannot consume raises `Link.Error.Reason.UnexpectedInput`.
 enum Deliverable:
   case Sources(sources: Map[Text, Text], classpath: LocalClasspath)
   case Emission(out: Path on Linux, classpath: LocalClasspath)
@@ -51,14 +51,14 @@ enum Deliverable:
 
   // Coercions for tools, which know statically which variant their edge consumes; `target`
   // names the format under production, for diagnosis when a toolchain is miswired.
-  def sources(target: Format): (Map[Text, Text], LocalClasspath) raises LinkError = this match
+  def sources(target: Format): (Map[Text, Text], LocalClasspath) raises Link.Error = this match
     case Sources(sources, classpath) => (sources, classpath)
-    case _ => abort(LinkError(LinkError.Reason.UnexpectedInput(target.id)))
+    case _ => abort(Link.Error(Link.Error.Reason.UnexpectedInput(target.id)))
 
-  def emission(target: Format): (Path on Linux, LocalClasspath) raises LinkError = this match
+  def emission(target: Format): (Path on Linux, LocalClasspath) raises Link.Error = this match
     case Emission(out, classpath) => (out, classpath)
-    case _                        => abort(LinkError(LinkError.Reason.UnexpectedInput(target.id)))
+    case _                        => abort(Link.Error(Link.Error.Reason.UnexpectedInput(target.id)))
 
-  def product(target: Format): Path on Linux raises LinkError = this match
+  def product(target: Format): Path on Linux raises Link.Error = this match
     case Product(file) => file
-    case _             => abort(LinkError(LinkError.Reason.UnexpectedInput(target.id)))
+    case _             => abort(Link.Error(Link.Error.Reason.UnexpectedInput(target.id)))

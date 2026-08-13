@@ -88,7 +88,7 @@ object TastyDiscipline extends Discipline:
 
         val scalaAtoms =
           mitigate:
-            case DegustationError(reason) =>
+            case Inspection.Error(reason) =>
               Discipline.Error(id, Discipline.Error.Reason.Malformed(t"$reason"))
 
           . protect(Inspection.atomize(List.from(files), context.classpath))

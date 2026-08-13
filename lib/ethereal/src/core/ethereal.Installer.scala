@@ -119,7 +119,7 @@ object Installer:
     mitigate:
       case Path.Error(_, _)      => InstallError(InstallError.Reason.Environment)
       case Property.Error(_)     => InstallError(InstallError.Reason.Environment)
-      case NumberError(_, _, _) => InstallError(InstallError.Reason.Environment)
+      case Number.Error(_, _, _) => InstallError(InstallError.Reason.Environment)
       case IoError(_, _, _, _)  => InstallError(InstallError.Reason.Io)
       case Name.Error(_, _, _)   => InstallError(InstallError.Reason.Io)
       case guillotine.Exec.Error(_, _, _)   => InstallError(InstallError.Reason.Io)

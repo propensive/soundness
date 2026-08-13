@@ -147,7 +147,7 @@ object Xml extends Tag.Container
   //
   // Specific givens here shadow the generic `decodable` summonFrom below
   // for these types — that branch's `summon[Decodable in Text]` for
-  // `Int` would otherwise `abort` with `NumberError` and break accrual.
+  // `Int` would otherwise `abort` with `Number.Error` and break accrual.
   given int: (tactic: Tactic[Xml.Error]) => Int is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
@@ -1508,12 +1508,12 @@ object Xml extends Tag.Container
 
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
-  =>  (tactic: Tactic[ParseError])
+  =>  (tactic: Tactic[Parse.Error])
   =>  (((Xml of content) is Aggregable by Text)^{tactic}) =
 
     input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).of[content]
 
-  given aggregable2: (schema: XmlSchema) => (tactic: Tactic[ParseError])
+  given aggregable2: (schema: XmlSchema) => (tactic: Tactic[Parse.Error])
   =>  ((Xml is Aggregable by Text)^{tactic}) =
     input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false)
 
@@ -1532,7 +1532,7 @@ object Xml extends Tag.Container
       def genericize(xml: Xml): HttpStreams.Content =
         (t"application/xml; charset=${encoder.encoding.name}", HttpStreams.Body(xml.show.in[Data]))
 
-  given instantiable: (schema: XmlSchema) => (tactic: Tactic[ParseError])
+  given instantiable: (schema: XmlSchema) => (tactic: Tactic[Parse.Error])
   =>  ((Xml is Instantiable across HttpRequests from Text)^{tactic}) =
 
     text => Chain(text).read[Xml]
@@ -1547,7 +1547,7 @@ object Xml extends Tag.Container
   given aggregableParsed: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
   =>  ( schema: XmlSchema )
-  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( ((value in Xml) is Aggregable by Text)^{parsable, tactic, xmlTactic} ) =
 
     input => parseDirect(input.iterator, parsable).asInstanceOf[value in Xml]
@@ -1559,7 +1559,7 @@ object Xml extends Tag.Container
   given readableParsed: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
   =>  ( schema: XmlSchema )
-  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( (Text is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
 
     text => parseDirect(text, parsable).asInstanceOf[value in Xml]
@@ -1579,11 +1579,11 @@ object Xml extends Tag.Container
   // `absent()` fallback, the exact wrong-shape continuation of the AST
   // derivation. (A degenerate root — a comment, PI or doctype where the
   // value should be — also lands on `absent()`, where the AST path may
-  // instead report a `ParseError`; the divergence is confined to inputs
+  // instead report a `Parse.Error`; the divergence is confined to inputs
   // that fail on both paths.)
   private def parseDirect[value](input: Iterator[Text], parsable: (value is Xml.Parsable)^)
     ( using schema:    XmlSchema,
-            tactic:    Tactic[ParseError],
+            tactic:    Tactic[Parse.Error],
             xmlTactic: Tactic[Xml.Error],
             foci:      Foci[Xml.Focus] )
   :   value =
@@ -1594,7 +1594,7 @@ object Xml extends Tag.Container
   // plumbing (the `readableParsed` entry).
   private def parseDirect[value](input: Text, parsable: (value is Xml.Parsable)^)
     ( using schema:    XmlSchema,
-            tactic:    Tactic[ParseError],
+            tactic:    Tactic[Parse.Error],
             xmlTactic: Tactic[Xml.Error],
             foci:      Foci[Xml.Focus] )
   :   value =
@@ -1603,7 +1603,7 @@ object Xml extends Tag.Container
 
   private def parseWith[value](parser: XmlParser^, parsable: (value is Xml.Parsable)^)
     ( using schema:    XmlSchema,
-            tactic:    Tactic[ParseError],
+            tactic:    Tactic[Parse.Error],
             xmlTactic: Tactic[Xml.Error],
             foci:      Foci[Xml.Focus] )
   :   value =
@@ -1631,7 +1631,7 @@ object Xml extends Tag.Container
   // into the metadata `Header` and dropped from the tree, so the tracked value has
   // the same shape as a header-less load (keeping it aligned with the index, which
   // is built from the root element alone).
-  given loadable: (schema: XmlSchema) => (tactic: Tactic[ParseError], tracking: PositionTracking)
+  given loadable: (schema: XmlSchema) => (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Xml is Loadable by Text)^{tactic}) = stream =>
     // The chunk iterator view of the pull endpoint (the audited bridge; the
     // DOM loader's parser is iterator-fed).
@@ -1657,12 +1657,12 @@ object Xml extends Tag.Container
 
     parsed match
       case Fragment((header: Header), rest*) =>
-        if rest.isEmpty then abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
+        if rest.isEmpty then abort(Parse.Error(Xml, Position(1.u, 1.u), Issue.BadDocument))
         else if rest.length == 1 then Document(rest.head, withIndex(header))
         else Document(Fragment(rest*), withIndex(header))
 
       case _: Header =>
-        abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
+        abort(Parse.Error(Xml, Position(1.u, 1.u), Issue.BadDocument))
 
       case fragment: Fragment =>
         Document(fragment, withIndex(Xml.header))
@@ -2528,11 +2528,11 @@ object Xml extends Tag.Container
       val length: Optional[Int] = start.let: mark => end - mark.absolute.toInt
       Position(line.u, col.u, offset = offset, length = length)
 
-    protected inline def fail(issue: Issue)(using Tactic[ParseError]): Nothing =
-      abort(ParseError(Xml, computePosition(Unset), issue))
+    protected inline def fail(issue: Issue)(using Tactic[Parse.Error]): Nothing =
+      abort(Parse.Error(Xml, computePosition(Unset), issue))
 
-    protected def fail(issue: Issue, start: Cursor.Mark)(using Tactic[ParseError]): Nothing =
-      abort(ParseError(Xml, computePosition(start), issue))
+    protected def fail(issue: Issue, start: Cursor.Mark)(using Tactic[Parse.Error]): Nothing =
+      abort(Parse.Error(Xml, computePosition(start), issue))
 
     protected inline def isAsciiLetter(c: Char): Boolean =
       ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
@@ -2551,12 +2551,12 @@ object Xml extends Tag.Container
 
     protected def skipWs(): Unit = while more && isWs(peek) do advance()
 
-    protected def expectChar(chr: Char)(using Tactic[ParseError]): Unit =
+    protected def expectChar(chr: Char)(using Tactic[Parse.Error]): Unit =
       if !more then fail(Issue.ExpectedMore)
       if peek != chr then fail(Issue.Unexpected(peek))
       advance()
 
-    protected def readName()(using Tactic[ParseError]): Text =
+    protected def readName()(using Tactic[Parse.Error]): Text =
       val start = begin()
       if !more then fail(Issue.ExpectedMore, start)
       val first = peek
@@ -2607,7 +2607,7 @@ object Xml extends Tag.Container
 
     // Parse an entity reference. Position must be just after the '&'.
     // Returns the expansion as a Text; leaves position just after the ';'.
-    protected def readEntity()(using Tactic[ParseError]): Text =
+    protected def readEntity()(using Tactic[Parse.Error]): Text =
       if !more then fail(Issue.ExpectedMore)
 
       if peek == '#' then
@@ -2665,7 +2665,7 @@ object Xml extends Tag.Container
     // Read attribute value enclosed in `quote`. Returns the unescaped
     // value as Text. Position starts just after the opening quote and
     // ends just after the closing quote.
-    protected def readAttrValue(tag: Text, quote: Char)(using Tactic[ParseError]): Text =
+    protected def readAttrValue(tag: Text, quote: Char)(using Tactic[Parse.Error]): Text =
       val start = begin()
       var hasEntity = false
       var hasHole = false
@@ -2714,7 +2714,7 @@ object Xml extends Tag.Container
         advance() // consume closing quote
         buf.toString.nn.tt
 
-    protected def readAttributes(tag: Text)(using Tactic[ParseError]): Attributes =
+    protected def readAttributes(tag: Text)(using Tactic[Parse.Error]): Attributes =
       // Append into the parser-shared interleaved scratch buffer (laid out as
       // `[k0, v0, k1, v1, ...]`); on close, snapshot the populated prefix
       // into a freshly-sized `Array[String]^{}` and wrap it as the opaque
@@ -2808,7 +2808,7 @@ object Xml extends Tag.Container
     // the loop continues in the same iteration, re-using the running
     // `bracketCount`. The previous form rescanned the whole region a
     // second time once an entity was detected.
-    protected def readText(parentLabel: Text)(using Tactic[ParseError]): Text =
+    protected def readText(parentLabel: Text)(using Tactic[Parse.Error]): Text =
       val start = begin()
       var bracketCount = 0
       var buf: jl.StringBuilder | Null = null
@@ -2843,7 +2843,7 @@ object Xml extends Tag.Container
         appendSlice(segStart, buf.nn)
         buf.nn.toString.nn.tt
 
-    protected def readComment()(using Tactic[ParseError]): Text =
+    protected def readComment()(using Tactic[Parse.Error]): Text =
       val start = begin()
 
       while
@@ -2864,7 +2864,7 @@ object Xml extends Tag.Container
         advance()
         slice(start, end)
 
-    private def readComment_continue(start: Region)(using Tactic[ParseError]): Text =
+    private def readComment_continue(start: Region)(using Tactic[Parse.Error]): Text =
       // We saw '-' but the next wasn't '-' or '>'. Continue scanning.
       while more && peek != '-' do advance()
       if !more then fail(Issue.ExpectedMore, start)
@@ -2880,7 +2880,7 @@ object Xml extends Tag.Container
         advance()
         slice(start, end)
 
-    protected def readCdata()(using Tactic[ParseError]): Text =
+    protected def readCdata()(using Tactic[Parse.Error]): Text =
       val start = begin()
       var done = false
       var endRegion: Region = start
@@ -2906,7 +2906,7 @@ object Xml extends Tag.Container
 
     // Position must be just after '<?'. Reads PI target + data, returning
     // the appropriate Node.
-    protected def readProcessingInstruction()(using Tactic[ParseError]): Node =
+    protected def readProcessingInstruction()(using Tactic[Parse.Error]): Node =
       val nameStart = begin()
       if !more then fail(Issue.ExpectedMore, nameStart)
       val first = peek
@@ -2999,7 +2999,7 @@ object Xml extends Tag.Container
           ProcessingInstruction(target, data)
 
     private def readPiData(dataStart: Region, target: Text)
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   ProcessingInstruction =
 
       while more && peek != '?' do advance()
@@ -3013,7 +3013,7 @@ object Xml extends Tag.Container
         advance()
         ProcessingInstruction(target, slice(dataStart, dataEnd))
 
-    protected def readDoctype()(using Tactic[ParseError]): Text =
+    protected def readDoctype()(using Tactic[Parse.Error]): Text =
       skipWs()
       val start = begin()
       while more && peek != '>' do advance()
@@ -3023,7 +3023,7 @@ object Xml extends Tag.Container
       slice(start, end)
 
     // Read a single element starting just after '<'.
-    protected def readElement()(using Tactic[ParseError]): Element =
+    protected def readElement()(using Tactic[Parse.Error]): Element =
       // Detect `<\u0000` (macro element hole)
       if more && peek == '\u0000' then
         callback(position.z, Hole.Element(t""))
@@ -3049,7 +3049,7 @@ object Xml extends Tag.Container
           val children = readChildren(name)
           Element(name, attrs, children)
 
-    protected def readChildren(parentName: Text)(using Tactic[ParseError]): Array[Node]^{} =
+    protected def readChildren(parentName: Text)(using Tactic[Parse.Error]): Array[Node]^{} =
       val children = getNodeBuffer()
       var done = false
 
@@ -3112,7 +3112,7 @@ object Xml extends Tag.Container
       relinquishNodeBuffer()
       result
 
-    protected def consumeLiteral(literal: String)(using Tactic[ParseError]): Unit =
+    protected def consumeLiteral(literal: String)(using Tactic[Parse.Error]): Unit =
       var i = 0
 
       while i < literal.length do
@@ -3124,7 +3124,7 @@ object Xml extends Tag.Container
     @scala.caps.unsafe.untrackedCaptures
     private var headers: Boolean = false
 
-    def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
+    def parseXml(headers0: Boolean)(using Tactic[Parse.Error]): Xml =
       cursor.hold:
         heldToken = summon[Cursor.Held]
 
@@ -3138,7 +3138,7 @@ object Xml extends Tag.Container
     // the position bookkeeping differs. Splitting keeps the untracked
     // hot path free of any tracking-related branches.
 
-    private def parseXmlTracked0(headers0: Boolean)(using Tactic[ParseError]): Xml =
+    private def parseXmlTracked0(headers0: Boolean)(using Tactic[Parse.Error]): Xml =
       headers = headers0
       skipWs()
       val nodes = getNodeBuffer()
@@ -3209,7 +3209,7 @@ object Xml extends Tag.Container
         startLine:   Int,
         startColumn: Int,
         startMark:   Long )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Element =
 
       // Macro element holes can't carry meaningful positions; emit an empty
@@ -3269,7 +3269,7 @@ object Xml extends Tag.Container
       ( tag:       Text,
         attrDescs: scala.collection.mutable.ArrayBuffer[Int],
         attrEnds:  scala.collection.mutable.ArrayBuffer[Int] )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Attributes =
 
       var n = 0
@@ -3361,7 +3361,7 @@ object Xml extends Tag.Container
       ( parentName: Text,
         childDescs: scala.collection.mutable.ArrayBuffer[Int],
         childEnds:  scala.collection.mutable.ArrayBuffer[Int] )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Array[Node]^{} =
 
       val children = getNodeBuffer()
@@ -3436,7 +3436,7 @@ object Xml extends Tag.Container
       relinquishNodeBuffer()
       result
 
-    private def parseXml0(headers0: Boolean)(using Tactic[ParseError]): Xml =
+    private def parseXml0(headers0: Boolean)(using Tactic[Parse.Error]): Xml =
       headers = headers0
       skipWs()
       val nodes = getNodeBuffer()
@@ -3489,7 +3489,7 @@ object Xml extends Tag.Container
       relinquishNodeBuffer()
       result
 
-    protected def consumeLiteralCi(literal: String)(using Tactic[ParseError]): Unit =
+    protected def consumeLiteralCi(literal: String)(using Tactic[Parse.Error]): Unit =
       var i = 0
 
       while i < literal.length do
@@ -3569,7 +3569,7 @@ object Xml extends Tag.Container
     //       comment / PI / doctype / close tag, which the AST path decodes
     //       as a wrong-shape `Fragment` — the caller continues with
     //       `absent()`.
-    private[xylophone] def directRoot()(using Tactic[ParseError]): Int =
+    private[xylophone] def directRoot()(using Tactic[Parse.Error]): Int =
       headers = false
       skipWs()
 
@@ -3587,7 +3587,7 @@ object Xml extends Tag.Container
 
     // The root character data, up to the next markup or the end of the
     // input — read exactly as `parseXml0` reads a root-level text run.
-    private[xylophone] def directRootText()(using Tactic[ParseError]): Text = readText(t"")
+    private[xylophone] def directRootText()(using Tactic[Parse.Error]): Text = readText(t"")
 
     // The attributes of the element opened most recently. Valid until the
     // next element is opened.
@@ -3605,7 +3605,7 @@ object Xml extends Tag.Container
     // attributes, consumes `>` or `/>`, and pushes the name. Reuses
     // `readName` and `readAttributes`, so validation (name syntax,
     // duplicate attributes) is identical to `readElement`'s.
-    private def directOpen()(using Tactic[ParseError]): Text =
+    private def directOpen()(using Tactic[Parse.Error]): Text =
       val name = readName()
       directChildLow = nameLow
       directChildHigh = nameHigh
@@ -3630,7 +3630,7 @@ object Xml extends Tag.Container
     // Consumes and validates the current element's close tag; the position
     // is just after `</`. Mirrors `readChildren`'s close-tag arm, including
     // the `MismatchedTag` check against the opening name.
-    private def directClose()(using Tactic[ParseError]): Unit =
+    private def directClose()(using Tactic[Parse.Error]): Unit =
       val parent = directNames(directNames.length - 1)
       val closeStart = begin()
       val close = readName()
@@ -3643,7 +3643,7 @@ object Xml extends Tag.Container
 
     // Consumes a comment or a CDATA section, discarding it; the position is
     // just after `<!`. Mirrors `readChildren`'s `!` arm.
-    private def directBang()(using Tactic[ParseError]): Unit =
+    private def directBang()(using Tactic[Parse.Error]): Unit =
       if more && peek == '-' then
         advance()
         if !more then fail(Issue.ExpectedMore)
@@ -3664,7 +3664,7 @@ object Xml extends Tag.Container
     // processing instructions between child elements are consumed and
     // discarded — mirroring the AST derivation, whose `buildWith` collects
     // nothing but `Element`s from `element.children`.
-    private[xylophone] def directNextChild()(using Tactic[ParseError]): Text | Null =
+    private[xylophone] def directNextChild()(using Tactic[Parse.Error]): Text | Null =
       if directEmpty then
         directEmpty = false
         directPop()
@@ -3707,7 +3707,7 @@ object Xml extends Tag.Container
     // `Xml.Reader.NameOpaque` when the name cannot pack (non-ASCII, or longer
     // than sixteen chars) — the child is still opened, and
     // `directChildLabel` identifies it for the general dispatch.
-    private[xylophone] def directNextChildWord()(using Tactic[ParseError]): Long =
+    private[xylophone] def directNextChildWord()(using Tactic[Parse.Error]): Long =
       val name = directNextChild()
 
       if name == null then Xml.Reader.NameEnd
@@ -3724,7 +3724,7 @@ object Xml extends Tag.Container
     // `Element(_, _, Array.of(TextNode(text)))` and `Element(_, _, Array.of())`.
     // A CDATA section, a comment, a processing instruction or a child
     // element therefore makes a leaf wrong-shaped on both paths.
-    private[xylophone] def directText()(using Tactic[ParseError]): Text | Null =
+    private[xylophone] def directText()(using Tactic[Parse.Error]): Text | Null =
       if directEmpty then
         directEmpty = false
         directPop()
@@ -3780,13 +3780,13 @@ object Xml extends Tag.Container
     // precedent) and takes the general `directText` path, so the two routes
     // agree by construction.
 
-    private def directTextLongFallback()(using Tactic[ParseError]): Optional[Long] =
+    private def directTextLongFallback()(using Tactic[Parse.Error]): Optional[Long] =
       directText() match
         case null       => Unset
         case text: Text =>
           try Optional(jl.Long.parseLong(text.s)) catch case _: NumberFormatException => Unset
 
-    private[xylophone] def directTextLong()(using Tactic[ParseError]): Optional[Long] =
+    private[xylophone] def directTextLong()(using Tactic[Parse.Error]): Optional[Long] =
       if directEmpty then
         directText()
         Unset
@@ -3824,7 +3824,7 @@ object Xml extends Tag.Container
           reset(start)
           directTextLongFallback()
 
-    private[xylophone] def directTextInt()(using Tactic[ParseError]): Optional[Int] =
+    private[xylophone] def directTextInt()(using Tactic[Parse.Error]): Optional[Int] =
       val value = directTextLong()
 
       value.let: long =>
@@ -3832,14 +3832,14 @@ object Xml extends Tag.Container
         then Optional(long.toInt)
         else Unset
 
-    private def directTextDoubleFallback()(using Tactic[ParseError]): Optional[Double] =
+    private def directTextDoubleFallback()(using Tactic[Parse.Error]): Optional[Double] =
       directText() match
         case null       => Unset
         case text: Text =>
           try Optional(jl.Double.parseDouble(text.s))
           catch case _: NumberFormatException => Unset
 
-    private[xylophone] def directTextDouble()(using Tactic[ParseError]): Optional[Double] =
+    private[xylophone] def directTextDouble()(using Tactic[Parse.Error]): Optional[Double] =
       if directEmpty then
         directText()
         Unset
@@ -3886,7 +3886,7 @@ object Xml extends Tag.Container
           reset(start)
           directTextDoubleFallback()
 
-    private def directTextBooleanFallback()(using Tactic[ParseError]): Optional[Boolean] =
+    private def directTextBooleanFallback()(using Tactic[Parse.Error]): Optional[Boolean] =
       directText() match
         case null       => Unset
         case text: Text => text.s match
@@ -3894,7 +3894,7 @@ object Xml extends Tag.Container
           case "false" => Optional(false)
           case _       => Unset
 
-    private[xylophone] def directTextBoolean()(using Tactic[ParseError]): Optional[Boolean] =
+    private[xylophone] def directTextBoolean()(using Tactic[Parse.Error]): Optional[Boolean] =
       if directEmpty then
         directText()
         Unset
@@ -3933,7 +3933,7 @@ object Xml extends Tag.Container
     // validating every close tag on the way, building nothing. Used for
     // unknown child elements and for duplicate occurrences of a field (the
     // AST derivation's first-match-wins `HashMap`).
-    private[xylophone] def directSkipElement()(using Tactic[ParseError]): Unit =
+    private[xylophone] def directSkipElement()(using Tactic[Parse.Error]): Unit =
       if directEmpty then
         directEmpty = false
         directPop()
@@ -3971,7 +3971,7 @@ object Xml extends Tag.Container
     // field types that only carry a `Decodable in Xml`. The children are
     // read with `readChildren`, so the materialized subtree (and its
     // close-tag validation) is exactly what `readElement` would have built.
-    private[xylophone] def directElement()(using Tactic[ParseError]): Element =
+    private[xylophone] def directElement()(using Tactic[Parse.Error]): Element =
       val name = directPop()
       val attributes = directAttributes1
 
@@ -3995,7 +3995,7 @@ object Xml extends Tag.Container
       callback: (Ordinal, Hole) => Unit                = (_, _) => (),
       headers0: Boolean                           = false )
     ( using schema: XmlSchema )
-  :   (Tactic[ParseError]^) ?->{callback} Xml =
+  :   (Tactic[Parse.Error]^) ?->{callback} Xml =
 
     new XmlParser(Cursor[Text](input), tracking = false, callback).parseXml(headers0)
 
@@ -4061,7 +4061,7 @@ object Xml extends Tag.Container
     // point.
     private[xylophone] def apply
       ( parser:    Xml.XmlParser^,
-        tactic:    Tactic[ParseError],
+        tactic:    Tactic[Parse.Error],
         xmlTactic: Tactic[Xml.Error],
         foci:      Foci[Xml.Focus] )
     :   Xml.Reader^ =
@@ -4079,7 +4079,7 @@ object Xml extends Tag.Container
   // consumers — `nextChild` until `Unset`, `text`, `skipElement` or `element` —
   // must then consume the element's content and its close tag in full.
   //
-  // The reader carries its own `Tactic[ParseError]`, so malformed input aborts
+  // The reader carries its own `Tactic[Parse.Error]`, so malformed input aborts
   // through the read call's ambient tactic — and, unlike jacinta's reader, the
   // read-site `Tactic[Xml.Error]` and `Foci[Xml.Focus]` too, so decode errors
   // raised by `Parsable` instances accrue to the same `validate` boundary the
@@ -4094,8 +4094,8 @@ object Xml extends Tag.Container
   extends caps.ExclusiveCapability, caps.Stateful:
     private inline def parser: Xml.XmlParser^ = parser0.asInstanceOf[Xml.XmlParser^]
 
-    private[xylophone] inline def parseTactic: Tactic[ParseError] =
-      tactic0.asInstanceOf[Tactic[ParseError]]
+    private[xylophone] inline def parseTactic: Tactic[Parse.Error] =
+      tactic0.asInstanceOf[Tactic[Parse.Error]]
 
     // The read-site capabilities, public because staged parsers — generated
     // into user modules — bind them once per record for focus bookkeeping and

@@ -50,10 +50,10 @@ object Stageable:
 
     inline def deserialize(text: Text | Null): scala.Array[Object] =
       provide[Tactic[RemoteError]]:
-        given RemoteError mitigates Json.Error =
+        given jsonRemote: RemoteError mitigates Json.Error =
           error => RemoteError(RemoteError.Reason.Deserialization)
 
-        given RemoteError mitigates zephyrine.ParseError =
+        given parseRemote: RemoteError mitigates zephyrine.Parse.Error =
           error => RemoteError(RemoteError.Reason.Deserialization)
 
         // `Json.decodable` is named explicitly rather than left to `provide`'s deferred
@@ -68,7 +68,8 @@ object Stageable:
     inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.in[Json])
 
     inline def extract[entity](json: Json): entity = provide[Tactic[RemoteError]]:
-      given RemoteError mitigates Json.Error = error => RemoteError(RemoteError.Reason.Unknown)
+      given jsonRemote: RemoteError mitigates Json.Error =
+        error => RemoteError(RemoteError.Reason.Unknown)
       provide[entity is Decodable in Json](json.as[entity])
 
   given pojo: Stageable:

@@ -76,7 +76,7 @@ object jarEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val (directory, classpath) = input.emission(Jar)
@@ -84,7 +84,7 @@ object jarEdges:
       val main: Optional[Fqcn] = entryPoints match
         case Nil         => Unset
         case List(entry) => entry.mainClass
-        case _           => abort(LinkError(LinkError.Reason.ManyEntryPoints))
+        case _           => abort(Link.Error(Link.Error.Reason.ManyEntryPoints))
 
       try
         jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
@@ -93,7 +93,7 @@ object jarEdges:
         Deliverable.Product(jarfile)
 
       catch case suc.NonFatal(error) =>
-        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+        abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))
 
   private case class LibraryTool(universe: Universe) extends Tool:
     type Settings = Text
@@ -108,7 +108,7 @@ object jarEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val (directory, _) = input.emission(Library(universe))
@@ -120,4 +120,4 @@ object jarEdges:
         Deliverable.Product(jarfile)
 
       catch case suc.NonFatal(error) =>
-        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+        abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))

@@ -49,7 +49,7 @@ extension (shell: Shell)
 
     mitigate:
       case guillotine.Exec.Error(_, _, _)   => TmuxError(TmuxError.Reason.ExecFailed)
-      case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
+      case Number.Error(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
       case IoError(_, _, _, _)  => TmuxError(TmuxError.Reason.ExecFailed)
       case StreamError(_)       => TmuxError(TmuxError.Reason.ExecFailed)
 

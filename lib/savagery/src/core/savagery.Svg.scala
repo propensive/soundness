@@ -54,7 +54,7 @@ import iridescence.*
 
 object Svg:
   given aggregable: (schema: XmlSchema)
-  =>  (parseTactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error], svgTactic: Tactic[Svg.Error])
+  =>  (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], svgTactic: Tactic[Svg.Error])
   =>  ((Svg is Aggregable by Text)^{parseTactic, xmlTactic, svgTactic}) =
 
     source =>
@@ -62,7 +62,7 @@ object Svg:
       Svg.Parser.decodeSvg(Svg.Parser.rootElement(xml))
 
   given loadable: (XmlSchema)
-  =>  (parseTactic: Tactic[ParseError])
+  =>  (parseTactic: Tactic[Parse.Error])
   =>  (xmlTactic: Tactic[Xml.Error])
   =>  (svgTactic: Tactic[Svg.Error])
   =>  ((Svg is Loadable by Text)^{parseTactic, xmlTactic, svgTactic}) =

@@ -30,21 +30,61 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package degustation
+package anthology
 
 import anticipation.*
+import digression.*
 import fulminate.*
 
-object DegustationError:
-  enum Reason(val number: Int) extends Clarification:
-    case InspectionFailed(detail: Text)  extends Reason(1)
-    case Unencodable(construct: Text)    extends Reason(2)
-    case DuplicateKey(key: Text)         extends Reason(3)
+object Link:
+  // LinkError → Link.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Failed(trace: StackTrace)                  extends Reason(1)
+      case NoEntryPoint                               extends Reason(3)
+      case ManyEntryPoints                            extends Reason(4)
+      case NoPath(source: Text, target: Text)         extends Reason(5)
+      case AmbiguousPath(source: Text, target: Text)  extends Reason(6)
+      case InapplicableSetting                        extends Reason(7)
+      case DuplicateEdge(source: Text, target: Text)  extends Reason(8)
+      case CyclicToolchain                            extends Reason(9)
+      case UnexpectedInput(format: Text)              extends Reason(10)
+      case CompilationFailed(errors: Int)             extends Reason(11)
+      case MissingSetting(name: Text)                 extends Reason(12)
+      case Packaging(detail: Text)                    extends Reason(13)
+      case CompilerCrash                              extends Reason(14)
+      case CompilerUnusable(detail: Text)             extends Reason(15)
 
-  given communicable: Reason is Communicable =
-    case Reason.InspectionFailed(detail) => m"the TASTy could not be inspected: $detail"
-    case Reason.Unencodable(construct)   => m"no canonical encoding is defined for $construct"
-    case Reason.DuplicateKey(key)        => m"the key $key was produced twice"
+    given communicable: Reason is Communicable =
+      case Reason.Failed(_)       => m"the linker terminated abnormally"
+      case Reason.NoEntryPoint    => m"a native executable requires exactly one entry point"
+      case Reason.ManyEntryPoints => m"an executable JAR permits at most one entry point"
 
-case class DegustationError(reason: DegustationError.Reason)(using Diagnostics)
-extends Error(642, reason.number)(m"the Scala discipline failed because $reason")
+      case Reason.NoPath(source, target) =>
+        m"the toolchain has no path from $source to $target"
+
+      case Reason.AmbiguousPath(source, target) =>
+        m"""
+          the toolchain has several shortest paths from $source to $target, so an intermediate
+          format must be produced explicitly
+        """
+
+      case Reason.InapplicableSetting =>
+        m"a setting applies to no format produced on the path"
+
+      case Reason.DuplicateEdge(source, target) =>
+        m"the toolchain declares more than one edge from $source to $target"
+
+      case Reason.CyclicToolchain => m"the toolchain's edges form a cycle"
+
+      case Reason.UnexpectedInput(format) =>
+        m"the tool producing $format cannot consume the content it was given"
+
+      case Reason.CompilationFailed(errors) => m"compilation failed with $errors errors"
+      case Reason.MissingSetting(name)      => m"the setting $name is required but unspecified"
+      case Reason.Packaging(detail)         => m"packaging failed: $detail"
+      case Reason.CompilerCrash             => m"the compiler crashed"
+      case Reason.CompilerUnusable(detail)  => m"the compiler could not be run: $detail"
+
+  case class Error(reason: Link.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(443, reason.number)(m"linking failed because $reason")

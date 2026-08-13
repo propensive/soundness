@@ -99,7 +99,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
     test(m"fail to extract bad integer"):
       // The explicit `Int is Decodable in Xml` raises `Xml.Error` (not
-      // `NumberError`) so multi-error accrual can register and continue
+      // `Number.Error`) so multi-error accrual can register and continue
       // through every bad field of a case class; outside `validate`,
       // `raise` still throws via the ambient `Tactic`.
       capture[Xml.Error](x"""<message>ABC</message>""".as[Int])
@@ -178,7 +178,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
     suite(m"Element name validation"):
       test(m"Element name cannot start with digit"):
-        capture[ParseError](t"<1a/>".read[Xml]).issue
+        capture[Parse.Error](t"<1a/>".read[Xml]).issue
       . assert: issue =>
           issue match
             case _: Xml.Issue.InvalidTagStart => true
@@ -186,14 +186,14 @@ object Tests extends Suite(m"Xylophone tests"):
             case _                           => false
 
       test(m"Element name cannot start with hyphen"):
-        capture[ParseError](t"<-a/>".read[Xml]).issue
+        capture[Parse.Error](t"<-a/>".read[Xml]).issue
       . assert: issue =>
           issue match
             case _: Xml.Issue.Unexpected => true
             case _                       => false
 
       test(m"Element name cannot start with period"):
-        capture[ParseError](t"<.a/>".read[Xml]).issue
+        capture[Parse.Error](t"<.a/>".read[Xml]).issue
       . assert: issue =>
           issue match
             case _: Xml.Issue.Unexpected => true
@@ -250,14 +250,14 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == elem(t"a", Map(t"_x" -> t"c")))
 
       test(m"Duplicate attribute is rejected"):
-        capture[ParseError](t"""<a x="1" x="2"/>""".read[Xml]).issue
+        capture[Parse.Error](t"""<a x="1" x="2"/>""".read[Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.DuplicateAttribute(t"x") => true
             case _                                  => false
 
       test(m"Unquoted attribute is rejected"):
-        capture[ParseError](t"<a x=1/>".read[Xml]).issue
+        capture[Parse.Error](t"<a x=1/>".read[Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.UnquotedAttribute => true
@@ -306,7 +306,7 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == elem(t"a", Comment(t" <foo/> ")))
 
       test(m"Comment with double-hyphen is rejected"):
-        capture[ParseError](t"<a><!-- a -- b --></a>".read[Xml])
+        capture[Parse.Error](t"<a><!-- a -- b --></a>".read[Xml])
       . assert(_.issue.isInstanceOf[Xml.Issue.Unexpected])
 
 
@@ -353,11 +353,11 @@ object Tests extends Suite(m"Xylophone tests"):
             elem(t"a"))
 
       test(m"Processing instruction target cannot be xml"):
-        capture[ParseError](t"<a><?xml foo?></a>".read[Xml])
+        capture[Parse.Error](t"<a><?xml foo?></a>".read[Xml])
       . assert(_.issue.isInstanceOf[Xml.Issue.InvalidTag])
 
       test(m"Processing instruction target cannot be XML"):
-        capture[ParseError](t"<a><?XML foo?></a>".read[Xml])
+        capture[Parse.Error](t"<a><?XML foo?></a>".read[Xml])
       . assert(_.issue.isInstanceOf[Xml.Issue.InvalidTag])
 
 
@@ -463,48 +463,48 @@ object Tests extends Suite(m"Xylophone tests"):
 
     suite(m"Document errors"):
       test(m"Mismatched closing tag"):
-        capture[ParseError](t"<a></b>".read[Xml]).issue
+        capture[Parse.Error](t"<a></b>".read[Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.MismatchedTag(t"a", t"b") => true
             case _                                   => false
 
       test(m"Unopened closing tag"):
-        capture[ParseError](t"</a>".read[Xml]).issue
+        capture[Parse.Error](t"</a>".read[Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.UnopenedTag(t"a") => true
             case _                           => false
 
       test(m"Unclosed element"):
-        capture[ParseError](t"<a>".read[Xml]).issue
+        capture[Parse.Error](t"<a>".read[Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.Incomplete(t"a") => true
             case _                          => false
 
       test(m"Unclosed nested element"):
-        capture[ParseError](t"<a><b></a>".read[Xml]).issue
+        capture[Parse.Error](t"<a><b></a>".read[Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.MismatchedTag(t"b", t"a") => true
             case _                                   => false
 
       test(m"Unknown entity reference"):
-        capture[ParseError](t"<a>&unknown;</a>".read[Xml]).issue
+        capture[Parse.Error](t"<a>&unknown;</a>".read[Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.UnknownEntity(t"unknown") => true
             case _                                   => false
 
       test(m"Literal ]]> in text is rejected"):
-        capture[ParseError](t"<a>foo]]>bar</a>".read[Xml])
+        capture[Parse.Error](t"<a>foo]]>bar</a>".read[Xml])
       . assert(_.issue.isInstanceOf[Xml.Issue.Unexpected])
 
 
     suite(m"Position ranges"):
       def focus(input: Text): Text =
-        val error = capture[ParseError](input.read[Xml])
+        val error = capture[Parse.Error](input.read[Xml])
         val pos = error.position.asInstanceOf[Xml.Position]
         val start = pos.offset.or(0)
         val length = pos.length.or(0)
@@ -527,7 +527,7 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_.s.contains("x"))
 
       test(m"Position ranges are non-empty for parse errors"):
-        capture[ParseError](t"<a></b>".read[Xml])
+        capture[Parse.Error](t"<a></b>".read[Xml])
         . position.asInstanceOf[Xml.Position].length
       . assert(_ != Unset)
 
@@ -938,7 +938,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Lone XML declaration is rejected"):
         supervise:
-          capture[ParseError](t"""<?xml version="1.0"?>""".load[Xml]).issue
+          capture[Parse.Error](t"""<?xml version="1.0"?>""".load[Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.BadDocument => true
@@ -978,7 +978,7 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == elem(t"a", Map(t"x" -> t"<&>")))
 
       test(m"Attribute value containing literal < is rejected"):
-        capture[ParseError](t"""<a x="<"/>""".read[Xml])
+        capture[Parse.Error](t"""<a x="<"/>""".read[Xml])
       . assert(_.issue.isInstanceOf[Xml.Issue.Unexpected])
 
 
@@ -1040,7 +1040,7 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == elem(t"P:Tag"))
 
       test(m"Mismatched prefixed close tag"):
-        capture[ParseError](t"<p:a></q:a>".read[Xml]).issue
+        capture[Parse.Error](t"<p:a></q:a>".read[Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.MismatchedTag(t"p:a", t"q:a") => true

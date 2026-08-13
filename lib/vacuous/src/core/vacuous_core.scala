@@ -116,7 +116,7 @@ extension [value](optional: Optional[value])(using Optionality[optional.type])
 
   def presume(using default: Default[value]): value = optional.or(default())
   def option: Option[value] = if absent then None else Some(unsafeGet)
-  def assume(using absentValue: CanThrow[UnsetError]): value = optional.or(throw UnsetError())
+  def assume(using absentValue: CanThrow[Optional.Error]): value = optional.or(throw Optional.Error())
 
   inline def lay[value2](inline alternative: => value2)(inline lambda: value => value2): value2 =
 

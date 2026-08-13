@@ -121,7 +121,7 @@ object EmailAddress:
               text.segment(index.next thru pen)
 
           if ipAddress.starts(t"IPv6:") then ipAddress.skip(5).as[Ipv6] else ipAddress.as[Ipv4]
-        catch case error: IpAddressError => abort(EmailAddress.Error(InvalidDomain(error)))
+        catch case error: IpAddress.Error => abort(EmailAddress.Error(InvalidDomain(error)))
 
       else
         try
@@ -150,12 +150,12 @@ object EmailAddress:
 
         case InvalidDomain(error) =>
           error match
-            case error: IpAddressError => m"the domain is not a valid IP address: ${error.message}"
+            case error: IpAddress.Error => m"the domain is not a valid IP address: ${error.message}"
             case error: Hostname.Error  => m"the domain is not a valid hostname: ${error.message}"
 
     enum Reason(val number: Int) extends Clarification:
       case Empty                                              extends Reason(1)
-      case InvalidDomain(error: IpAddressError | Hostname.Error) extends Reason(2)
+      case InvalidDomain(error: IpAddress.Error | Hostname.Error) extends Reason(2)
       case LongLocalPart                                      extends Reason(3)
       case TerminalPeriod                                     extends Reason(4)
       case SuccessivePeriods                                  extends Reason(5)

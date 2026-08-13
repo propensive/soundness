@@ -1628,7 +1628,7 @@ object Yaml extends Yaml2, Dynamic:
   // `Tracking.On` into scope before calling `.read[Yaml]` / `.load[Yaml]`
   // / `Yaml.parseAll(...)`.
 
-  given decodable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  given decodable: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
   =>  ((Yaml is Decodable in Text)^{tactic}) =
     text => tracking match
       case Yaml.Tracking.On =>
@@ -1638,7 +1638,7 @@ object Yaml extends Yaml2, Dynamic:
       case Yaml.Tracking.Off =>
         Yaml(Yaml.Parser.parse(text))
 
-  def parseAll(input: Text)(using Tactic[ParseError], Yaml.Tracking): List[Yaml] =
+  def parseAll(input: Text)(using Tactic[Parse.Error], Yaml.Tracking): List[Yaml] =
     summon[Yaml.Tracking] match
       case Yaml.Tracking.On =>
         Yaml.Parser.parseAllTracked(input).map: (ast, ints) =>
@@ -1648,7 +1648,7 @@ object Yaml extends Yaml2, Dynamic:
         Yaml.Parser.parseAll(input).map(Yaml(_))
 
   // Parse a whole in-memory document (the honest one-shot transcode path).
-  private def fromText(text: Text)(using Tactic[ParseError], Yaml.Tracking): Yaml =
+  private def fromText(text: Text)(using Tactic[Parse.Error], Yaml.Tracking): Yaml =
     summon[Yaml.Tracking] match
       case Yaml.Tracking.On =>
         val (ast, ints) = Yaml.Parser.parseTracked(text)
@@ -1661,7 +1661,7 @@ object Yaml extends Yaml2, Dynamic:
   // cursor refills straight from the stream, so the input is never
   // concatenated or copied through `getBytes`.
   private def fromStream(consume stream: (Stream[Data] over Credit)^)
-    ( using Tactic[ParseError], Yaml.Tracking, Buffering )
+    ( using Tactic[Parse.Error], Yaml.Tracking, Buffering )
   :   Yaml =
 
     summon[Yaml.Tracking] match
@@ -1673,7 +1673,7 @@ object Yaml extends Yaml2, Dynamic:
         Yaml(Yaml.Parser.parse(stream))
 
   private def fromStreamAll(consume stream: (Stream[Data] over Credit)^)
-    ( using Tactic[ParseError], Yaml.Tracking, Buffering )
+    ( using Tactic[Parse.Error], Yaml.Tracking, Buffering )
   :   List[Yaml] =
 
     summon[Yaml.Tracking] match
@@ -1690,7 +1690,7 @@ object Yaml extends Yaml2, Dynamic:
   :   (Stream[Data] over Credit)^ =
     stream.via(hieroglyph.charEncoders.utf8Encoder).asInstanceOf[(Stream[Data] over Credit)^]
 
-  given aggregable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  given aggregable: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
   =>  ((Yaml is Aggregable by Text)^{tactic}) =
     new Aggregable:
       type Self = Yaml
@@ -1707,7 +1707,7 @@ object Yaml extends Yaml2, Dynamic:
 
   // Byte sources (files, HTTP bodies) skip transcoding entirely: the parser
   // reads the bytes as delivered, and `skipBom()` already absorbs a UTF-8 BOM.
-  given aggregableData: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  given aggregableData: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
   =>  ((Yaml is Aggregable by Data)^{tactic}) =
     new Aggregable:
       type Self = Yaml
@@ -1722,7 +1722,7 @@ object Yaml extends Yaml2, Dynamic:
   // Multi-document reads (`---`-separated YAML) through the uniform `.read`
   // API: `text.read[List[Yaml]]` yields one `Yaml` per document. Backed by
   // `parseAll`, this replaces the former bespoke `Text.readAll` extension.
-  given aggregableAll: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  given aggregableAll: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
   =>  ((List[Yaml] is Aggregable by Text)^{tactic}) =
     new Aggregable:
       type Self = List[Yaml]
@@ -1753,7 +1753,7 @@ object Yaml extends Yaml2, Dynamic:
         ( t"application/yaml; charset=${encoder.encoding.name}",
           HttpStreams.Body(Yaml.unseal(value).show.in[Data]) )
 
-  given instantiable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  given instantiable: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
   =>  ((Yaml is Instantiable across HttpRequests from Text)^{tactic}) =
 
     text => Chain(text).read[Yaml]
@@ -1764,7 +1764,7 @@ object Yaml extends Yaml2, Dynamic:
   // `asInstanceOf` cast — `value in Yaml` is just `value { type
   // Form = Yaml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Yaml]
-  =>  ( tactic: Tactic[ParseError], yamlTactic: Tactic[Yaml.Error], tracking: Yaml.Tracking )
+  =>  ( tactic: Tactic[Parse.Error], yamlTactic: Tactic[Yaml.Error], tracking: Yaml.Tracking )
   =>  (((value in Yaml) is Aggregable by Text)^{tactic, yamlTactic}) =
 
     new Aggregable:
@@ -1808,25 +1808,25 @@ object Yaml extends Yaml2, Dynamic:
 
     // Untracked entry points — preserved byte-identical to the historical
     // shape so callers that don't need position tracking pay no cost.
-    def parse(input: Text)(using Tactic[ParseError]): Yaml.Ast =
+    def parse(input: Text)(using Tactic[Parse.Error]): Yaml.Ast =
       val parser = borrow()
       parser.tracking = false
       parser.resetText(input)
       parser.parse()
 
-    def parse(input: Data)(using Tactic[ParseError]): Yaml.Ast =
+    def parse(input: Data)(using Tactic[Parse.Error]): Yaml.Ast =
       val parser = borrow()
       parser.tracking = false
       parser.resetData(input)
       parser.parse()
 
-    def parseAll(input: Text)(using Tactic[ParseError]): List[Yaml.Ast] =
+    def parseAll(input: Text)(using Tactic[Parse.Error]): List[Yaml.Ast] =
       val parser = borrow()
       parser.tracking = false
       parser.resetText(input)
       parser.parseAll()
 
-    def parseAll(input: Data)(using Tactic[ParseError]): List[Yaml.Ast] =
+    def parseAll(input: Data)(using Tactic[Parse.Error]): List[Yaml.Ast] =
       val parser = borrow()
       parser.tracking = false
       parser.resetData(input)
@@ -1837,14 +1837,14 @@ object Yaml extends Yaml2, Dynamic:
     // concatenated into a single `Text` or copied through `getBytes`. (The
     // whole-parse `holding:` still accumulates the document once in the
     // cursor's own buffer; narrowing the holds is a separate campaign.)
-    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[Parse.Error], Buffering)
     :   Yaml.Ast =
       val parser = borrow()
       parser.tracking = false
       parser.resetStream(input)
       parser.parse()
 
-    def parseAll(consume input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    def parseAll(consume input: (Stream[Data] over Credit)^)(using Tactic[Parse.Error], Buffering)
     :   List[Yaml.Ast] =
 
       val parser = borrow()
@@ -1853,7 +1853,7 @@ object Yaml extends Yaml2, Dynamic:
       parser.parseAll()
 
     def parseTracked(consume input: (Stream[Data] over Credit)^)
-      ( using Tactic[ParseError], Buffering )
+      ( using Tactic[Parse.Error], Buffering )
     :   (Yaml.Ast, Array[Int]^{}) =
 
       val parser = borrow()
@@ -1868,7 +1868,7 @@ object Yaml extends Yaml2, Dynamic:
       finally parser.tracking = false
 
     def parseAllTracked(consume input: (Stream[Data] over Credit)^)
-      ( using Tactic[ParseError], Buffering )
+      ( using Tactic[Parse.Error], Buffering )
     :   List[(Yaml.Ast, Array[Int]^{})] =
 
       val parser = borrow()
@@ -1882,7 +1882,7 @@ object Yaml extends Yaml2, Dynamic:
     // Tracked entry points — produce the AST plus a flat `Array[Int]^{}`
     // descriptor index. Used by the tracking-aware `Decodable`/`Aggregable`
     // givens in `object Yaml` when `Yaml.Tracking.On` is in scope.
-    def parseTracked(input: Text)(using Tactic[ParseError]): (Yaml.Ast, Array[Int]^{}) =
+    def parseTracked(input: Text)(using Tactic[Parse.Error]): (Yaml.Ast, Array[Int]^{}) =
       val parser = borrow()
       parser.tracking = true
 
@@ -1894,7 +1894,7 @@ object Yaml extends Yaml2, Dynamic:
         (ast, parser.rootIndex.asInstanceOf[Array[Int]^{}])
       finally parser.tracking = false
 
-    def parseTracked(input: Data)(using Tactic[ParseError]): (Yaml.Ast, Array[Int]^{}) =
+    def parseTracked(input: Data)(using Tactic[Parse.Error]): (Yaml.Ast, Array[Int]^{}) =
       val parser = borrow()
       parser.tracking = true
 
@@ -1906,7 +1906,7 @@ object Yaml extends Yaml2, Dynamic:
         (ast, parser.rootIndex.asInstanceOf[Array[Int]^{}])
       finally parser.tracking = false
 
-    def parseAllTracked(input: Text)(using Tactic[ParseError])
+    def parseAllTracked(input: Text)(using Tactic[Parse.Error])
     :   List[(Yaml.Ast, Array[Int]^{})] =
 
       val parser = borrow()
@@ -1917,7 +1917,7 @@ object Yaml extends Yaml2, Dynamic:
         parser.parseAllTracked()
       finally parser.tracking = false
 
-    def parseAllTracked(input: Data)(using Tactic[ParseError])
+    def parseAllTracked(input: Data)(using Tactic[Parse.Error])
     :   List[(Yaml.Ast, Array[Int]^{})] =
 
       val parser = borrow()
@@ -2215,17 +2215,17 @@ object Yaml extends Yaml2, Dynamic:
 
     // ── Errors ──────────────────────────────────────────────────────────────
 
-    // Mirror of `JsonParser.errorAt`: builds a `ParseError` with the
+    // Mirror of `JsonParser.errorAt`: builds a `Parse.Error` with the
     // YAML-format-local `Issue` and the current line/column, then aborts.
     // `offset` carries the absolute byte position (from the cursor) so
     // compile-time consumers (e.g. the `y"…"` interpolator macro) can
     // map errors to source-file positions without re-scanning.
-    private update def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
+    private update def errorAt(issue: Issue)(using Tactic[Parse.Error]): Nothing =
       syncTo()
       val line = cursor.line.n0
       val column = cursor.column.n0
       val offset = cursor.position.n0
-      abort(ParseError(Yaml.Ast, Yaml.Ast.Position(line, column, offset = offset), issue))
+      abort(Parse.Error(Yaml.Ast, Yaml.Ast.Position(line, column, offset = offset), issue))
 
     // ── Position / mark plumbing ────────────────────────────────────────────
 
@@ -2295,7 +2295,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // ── Top-level parse ─────────────────────────────────────────────────────
 
-    update def parse()(using Tactic[ParseError]): Yaml.Ast = holding:
+    update def parse()(using Tactic[Parse.Error]): Yaml.Ast = holding:
       skipBom()
       skipBlankAndCommentLines()
       val sawDirectives = parseDirectivesIfAny()
@@ -2344,7 +2344,7 @@ object Yaml extends Yaml2, Dynamic:
           consumeOptionalDocumentEnd()
           node
 
-    update def parseAll()(using Tactic[ParseError]): List[Yaml.Ast] = holding:
+    update def parseAll()(using Tactic[Parse.Error]): List[Yaml.Ast] = holding:
       val docs = scala.collection.mutable.ArrayBuffer[Yaml.Ast]()
       skipBom()
 
@@ -2427,7 +2427,7 @@ object Yaml extends Yaml2, Dynamic:
     // Tracked variant of `parseAll`: parses every document like `parseAll`
     // but also captures a per-document `PositionIndex` for the
     // tracking-aware `Yaml.parseAll` companion entry.
-    update def parseAllTracked()(using Tactic[ParseError])
+    update def parseAllTracked()(using Tactic[Parse.Error])
     :   List[(Yaml.Ast, Array[Int]^{})] =
 
       holding:
@@ -2529,7 +2529,7 @@ object Yaml extends Yaml2, Dynamic:
     // Consume `...` if at the current position; only inline whitespace
     // and an optional comment may follow on the same line — anything
     // else is an error per spec.
-    private update def consumeOptionalDocumentEnd()(using Tactic[ParseError]): Boolean =
+    private update def consumeOptionalDocumentEnd()(using Tactic[Parse.Error]): Boolean =
       if isDocumentMarker(Period) then
         pos += 3
         while more && (peek == Space || peek == Tab) do advance()
@@ -2548,7 +2548,7 @@ object Yaml extends Yaml2, Dynamic:
     // spec only `%YAML <version>` and `%TAG <handle> <prefix>` are
     // recognised; the YAML directive must appear at most once per
     // document, with a single major.minor version argument.
-    private update def parseDirectivesIfAny()(using Tactic[ParseError]): Boolean =
+    private update def parseDirectivesIfAny()(using Tactic[Parse.Error]): Boolean =
       var sawAny = false
       var sawYaml = false
 
@@ -2688,12 +2688,12 @@ object Yaml extends Yaml2, Dynamic:
     // Parse a single YAML node at the given context indent. Caller has
     // ensured we're positioned at the first byte of the node (after any
     // leading whitespace).
-    private update def parseNode(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseNode(indent: Int)(using Tactic[Parse.Error]): Yaml.Ast =
       skipSpaces()
 
       if !more then Yaml.Ast.Null else parseNodeHere(indent)
 
-    private update def parseNodeHere(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseNodeHere(indent: Int)(using Tactic[Parse.Error]): Yaml.Ast =
       // `prefixesConsumed` and `lastNodeHadAnchor` are parser-wide fields
       // but "did THIS call apply its own prefixes / anchor?" is per-call.
       // Recursive parses (e.g. parseMappingValue inside parseBlock-
@@ -2812,7 +2812,7 @@ object Yaml extends Yaml2, Dynamic:
     // at the first non-prefix byte (without crossing newlines, so the caller
     // can detect a bare-prefix-with-block). Writes results to `prefixAnchor`,
     // `prefixTag`, `prefixHeadByte` to avoid per-call Tuple3 allocation.
-    private update def consumeNodePrefixes()(using Tactic[ParseError]): Unit =
+    private update def consumeNodePrefixes()(using Tactic[Parse.Error]): Unit =
       var anchorName = t""
       var tagText = t""
       var done = false
@@ -2886,7 +2886,7 @@ object Yaml extends Yaml2, Dynamic:
 
       slice(mk).tt
 
-    private update def parseAlias()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseAlias()(using Tactic[Parse.Error]): Yaml.Ast =
       val name = readWord()
 
       anchors.get(name.s) match
@@ -2928,7 +2928,7 @@ object Yaml extends Yaml2, Dynamic:
     // anything else is an error per spec.
     private update def maybeBlockMappingFromQuotedKey
       ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val hadSpaceOrTab = more && (peek == Space || peek == Tab)
@@ -3016,7 +3016,7 @@ object Yaml extends Yaml2, Dynamic:
 
     private update def parsePlainOrBlockMapping
       ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val textValue = readPlainScalarText(indent)
@@ -3048,7 +3048,7 @@ object Yaml extends Yaml2, Dynamic:
     // to true if a `: ` (or `:` at line-end) at the same line level was
     // seen so the caller knows this is the key of a block mapping.
     private update def readPlainScalarText(indent: Int)
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Text =
 
       resetString()
@@ -3081,7 +3081,7 @@ object Yaml extends Yaml2, Dynamic:
     // Read one line of a plain scalar (until newline or terminator), pushing
     // characters into `chars`. Returns Mapping if a `:` (followed by space
     // or newline) was found at the top level on this line.
-    private update def readPlainScalarLine()(using Tactic[ParseError]): PlainOutcome =
+    private update def readPlainScalarLine()(using Tactic[Parse.Error]): PlainOutcome =
       var lineStart = stringCursor
 
       while more do
@@ -3464,7 +3464,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // ── Quoted strings ──────────────────────────────────────────────────────
 
-    private update def parseDoubleQuoted()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseDoubleQuoted()(using Tactic[Parse.Error]): Yaml.Ast =
       resetString()
       lastScalarSpannedLines = false
       var done = false
@@ -3511,7 +3511,7 @@ object Yaml extends Yaml2, Dynamic:
 
       Yaml.Ast.Str(getStringText())
 
-    private update def consumeDoubleQuotedEscape()(using Tactic[ParseError]): Unit =
+    private update def consumeDoubleQuotedEscape()(using Tactic[Parse.Error]): Unit =
       val b = peek
       advance()
 
@@ -3559,7 +3559,7 @@ object Yaml extends Yaml2, Dynamic:
         case _ =>
           errorAt(Issue.InvalidEscapeSequence)
 
-    private update def readHex(count: Int)(using Tactic[ParseError]): Int =
+    private update def readHex(count: Int)(using Tactic[Parse.Error]): Int =
       var acc = 0
       var i = 0
 
@@ -3579,7 +3579,7 @@ object Yaml extends Yaml2, Dynamic:
 
       acc
 
-    private update def parseSingleQuoted()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseSingleQuoted()(using Tactic[Parse.Error]): Yaml.Ast =
       resetString()
       lastScalarSpannedLines = false
       var done = false
@@ -3634,7 +3634,7 @@ object Yaml extends Yaml2, Dynamic:
     // (per spec 6.5). When the continuation reaches a non-whitespace
     // byte, its leading-space count must exceed the parent collection's
     // indent — otherwise the quoted scalar is mis-indented.
-    private update def consumeMultilineFold()(using Tactic[ParseError]): Unit =
+    private update def consumeMultilineFold()(using Tactic[Parse.Error]): Unit =
       while
         stringCursor > 0 && (chars(stringCursor - 1) == ' ' || chars(stringCursor - 1) == '\t')
       do stringCursor -= 1
@@ -3674,7 +3674,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // ── Flow types ──────────────────────────────────────────────────────────
 
-    private update def parseFlowSequence()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseFlowSequence()(using Tactic[Parse.Error]): Yaml.Ast =
       val buf = acquireBuffer()
       var done = false
 
@@ -3752,7 +3752,7 @@ object Yaml extends Yaml2, Dynamic:
       releaseBuffer()
       result
 
-    private update def parseFlowMapping()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseFlowMapping()(using Tactic[Parse.Error]): Yaml.Ast =
       val buf = acquireBuffer()
       var done = false
 
@@ -3850,7 +3850,7 @@ object Yaml extends Yaml2, Dynamic:
     // and `]#c` after a flow close is an error). Newlines also flip
     // `lastScalarSpannedLines` so multi-line flow collections used as
     // implicit keys can be rejected without a separate scan.
-    private update def skipFlowWhitespace()(using Tactic[ParseError]): Unit =
+    private update def skipFlowWhitespace()(using Tactic[Parse.Error]): Unit =
       var continue = true
 
       while continue && more do
@@ -3891,7 +3891,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // A node within a flow context — same dispatch as parseNodeHere but
     // with flow-specific scalar termination.
-    private update def parseFlowNode()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseFlowNode()(using Tactic[Parse.Error]): Yaml.Ast =
       skipFlowWhitespace()
 
       if !more then Yaml.Ast.Null
@@ -3942,7 +3942,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Plain scalar within a flow context: terminates on `,`, `]`, `}`,
     // `:`+space, newline, or hash-comment.
-    private update def parseFlowPlainScalar()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseFlowPlainScalar()(using Tactic[Parse.Error]): Yaml.Ast =
       // Plain scalars in flow context cannot start with `-`, `?` or
       // `:` followed by a flow-context indicator (space, tab, comma,
       // `]`, `}`, newline, EOF). Per spec these combinations are
@@ -4020,7 +4020,7 @@ object Yaml extends Yaml2, Dynamic:
     // scalar starting with `-` (e.g. negative number) or a block sequence
     // marker. The disambiguation is the byte after `-`: if space/tab/
     // newline/EOF, it's a sequence marker.
-    private update def parseMinus(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseMinus(indent: Int)(using Tactic[Parse.Error]): Yaml.Ast =
       val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
 
       if
@@ -4060,7 +4060,7 @@ object Yaml extends Yaml2, Dynamic:
     // end-of-input, this is an explicit-key indicator: set up a block
     // mapping at `indent`, read the first pair, then iterate. `?foo` (no
     // separator) is just a plain scalar starting with `?`.
-    private update def parseQuestion(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseQuestion(indent: Int)(using Tactic[Parse.Error]): Yaml.Ast =
       if isExplicitKeyIndicator then
         val buf = acquireBuffer()
         val savedParentIndent = blockParentIndent
@@ -4082,7 +4082,7 @@ object Yaml extends Yaml2, Dynamic:
     // explicit (`? key`) and implicit (`key:`) keys.
     private update def iterateBlockMapping
       ( buf: scala.collection.mutable.ArrayBuffer[Any], indent: Int )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Unit =
 
       var done = false
@@ -4164,7 +4164,7 @@ object Yaml extends Yaml2, Dynamic:
           buf += keyAst
           buf += value
 
-    private update def parseBlockSequence(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseBlockSequence(indent: Int)(using Tactic[Parse.Error]): Yaml.Ast =
       val buf = acquireBuffer()
       val savedParentIndent = blockParentIndent
       blockParentIndent = indent
@@ -4278,7 +4278,7 @@ object Yaml extends Yaml2, Dynamic:
     // block mapping at `indent`. Subsequent keys may also be quoted.
     private update def parseBlockMappingFromFirstKey
       ( firstKey: Yaml.Ast, indent: Int )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val buf = acquireBuffer()
@@ -4308,7 +4308,7 @@ object Yaml extends Yaml2, Dynamic:
     // at `?`. The key may be on the same line as `?` or on a subsequent
     // indented line; the matching `:` value indicator must appear at the
     // mapping's indent and may be absent (yielding a Null value).
-    private update def readExplicitPair(indent: Int)(using Tactic[ParseError])
+    private update def readExplicitPair(indent: Int)(using Tactic[Parse.Error])
     :   (Yaml.Ast, Yaml.Ast) =
 
       advance() // ?
@@ -4368,7 +4368,7 @@ object Yaml extends Yaml2, Dynamic:
     // the colon, on the same line) or a block on the next indented lines.
     private update def parseMappingValue
       ( parentIndent: Int, isExplicitValue: Boolean = false )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       skipSpaces()
@@ -4414,7 +4414,7 @@ object Yaml extends Yaml2, Dynamic:
     // Rewinds to lineStart on Null so the outer scope re-reads the line.
     private update def pickValueOrNull
       ( parentIndent: Int, childIndent: Int, lineStart: Int )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       if more && peek == Tab then errorAt(Issue.TabInIndentation)
@@ -4431,7 +4431,7 @@ object Yaml extends Yaml2, Dynamic:
 
     private update def pickValueOrNullBody
       ( parentIndent: Int, childIndent: Int, lineStart: Int )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       if !more then Yaml.Ast.Null
@@ -4461,7 +4461,7 @@ object Yaml extends Yaml2, Dynamic:
       case None, Blank, Regular, MoreIndented
 
     private update def parseBlockScalar(literal: Boolean)
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       advance() // consume `|` or `>`
@@ -4680,7 +4680,7 @@ object Yaml extends Yaml2, Dynamic:
     // declared via a `%TAG` directive in the current document. The primary
     // (`!`) and secondary (`!!`) handles are built-in. Verbatim tags
     // (`!<URI>`) skip resolution entirely.
-    private update def validateTagHandle(tagText: Text)(using Tactic[ParseError]): Unit =
+    private update def validateTagHandle(tagText: Text)(using Tactic[Parse.Error]): Unit =
       val s = tagText.s
 
       if s.length >= 2 && s.charAt(0) == '!' && s.charAt(1) != '<' then
@@ -4692,7 +4692,7 @@ object Yaml extends Yaml2, Dynamic:
           if handle != "!!" && !tagHandles.defines(handle) then
             errorAt(Issue.UndefinedTagHandle(handle.tt))
 
-    private update def applyTag(tag: Text, value: Yaml.Ast)(using Tactic[ParseError])
+    private update def applyTag(tag: Text, value: Yaml.Ast)(using Tactic[Parse.Error])
     :   Yaml.Ast =
 
       tag.s match
@@ -4804,7 +4804,7 @@ object Yaml extends Yaml2, Dynamic:
       indexOut += 0
 
     private update def parseNodeTracked(indent: Int, indexOut: ArrayBuffer[Int])
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       skipSpaces()
@@ -4816,7 +4816,7 @@ object Yaml extends Yaml2, Dynamic:
         parseNodeHereTracked(indent, indexOut)
 
     private update def parseNodeHereTracked(indent: Int, indexOut: ArrayBuffer[Int])
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val savedPrefixesConsumed = prefixesConsumed
@@ -4982,7 +4982,7 @@ object Yaml extends Yaml2, Dynamic:
         tagText: Text,
         value: Yaml.Ast,
         consumed: Boolean )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       prefixesConsumed = savedPrefixesConsumed
@@ -5010,7 +5010,7 @@ object Yaml extends Yaml2, Dynamic:
     // PR 1; PR-2/3 can revisit if needed).
     private update def maybeBlockMappingFromQuotedKeyAfterComposite
       ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       maybeBlockMappingFromQuotedKey(scalar, indent, headTag, headAnchor)
@@ -5025,7 +5025,7 @@ object Yaml extends Yaml2, Dynamic:
       ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       // Capture the scalar's end position before any trailing whitespace,
@@ -5095,7 +5095,7 @@ object Yaml extends Yaml2, Dynamic:
       ( indent: Int, headTag: Text, headAnchor: Text,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val textValue = readPlainScalarText(indent)
@@ -5134,7 +5134,7 @@ object Yaml extends Yaml2, Dynamic:
       ( indent: Int,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val buf = acquireBuffer()
@@ -5227,7 +5227,7 @@ object Yaml extends Yaml2, Dynamic:
         indent: Int,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val buf = acquireBuffer()
@@ -5265,7 +5265,7 @@ object Yaml extends Yaml2, Dynamic:
       ( buf: scala.collection.mutable.ArrayBuffer[Any],
         scratch: ArrayBuffer[Int], ends: ArrayBuffer[Int],
         indent: Int )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Unit =
 
       var done = false
@@ -5367,7 +5367,7 @@ object Yaml extends Yaml2, Dynamic:
     private update def parseFlowSequenceTracked
       ( indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val buf = acquireBuffer()
@@ -5533,7 +5533,7 @@ object Yaml extends Yaml2, Dynamic:
     private update def parseFlowMappingTracked
       ( indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val buf = acquireBuffer()
@@ -5629,7 +5629,7 @@ object Yaml extends Yaml2, Dynamic:
     // composite descriptor (via the *Tracked composite variants) for
     // flow sequences/mappings.
     private update def parseFlowNodeTracked(indexOut: ArrayBuffer[Int])
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       skipFlowWhitespace()
@@ -5715,7 +5715,7 @@ object Yaml extends Yaml2, Dynamic:
       ( indent: Int,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       if isExplicitKeyIndicator then
@@ -5747,7 +5747,7 @@ object Yaml extends Yaml2, Dynamic:
       ( indent: Int,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
@@ -5774,7 +5774,7 @@ object Yaml extends Yaml2, Dynamic:
     // descriptor (3 ints) plus the value's descriptor to `scratch`.
     private update def readExplicitPairTracked
       ( indent: Int, scratch: ArrayBuffer[Int] )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   (Yaml.Ast, Yaml.Ast) =
 
       advance() // ?
@@ -5923,7 +5923,7 @@ object Yaml extends Yaml2, Dynamic:
       ( parentIndent: Int,
         scratch: ArrayBuffer[Int],
         isExplicitValue: Boolean = false )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       skipSpaces()
@@ -5964,7 +5964,7 @@ object Yaml extends Yaml2, Dynamic:
     private update def pickValueOrNullTracked
       ( parentIndent: Int, childIndent: Int, lineStart: Int,
         indexOut: ArrayBuffer[Int] )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
       if more && peek == Tab then errorAt(Issue.TabInIndentation)
