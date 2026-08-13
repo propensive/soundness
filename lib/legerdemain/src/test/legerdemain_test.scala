@@ -34,45 +34,76 @@ package legerdemain
 
 import soundness.*
 
-case class Group(org: Organization)
-case class Organization(leader: Person, name: Name[Person])
+import proscenium.compat.*
 
-object Person:
-  inline given Person is Nominative under MustMatch["[A-Z][a-z]+"] = !!
+import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
 
-case class Person(name: Name[Person], description: Text, email: EmailAddress)
+case class QPerson(name: Text, email: Text) derives CanEqual
+case class QTeam(leader: QPerson, title: Text) derives CanEqual
+
+object QProbe:
+  @scala.caps.unsafe.untrackedCaptures
+  var constructions: Int = 0
+
+// The body statement observes construction: decoding must never construct from garbage
+// fallback values, so a decode with any failed parameter must leave the counter untouched.
+case class QChecked(name: Text, email: Text) derives CanEqual:
+  QProbe.constructions += 1
 
 object Tests extends Suite(m"Legerdemain tests"):
+
+  case class Issues(items: List[(Text, Query.Error)] = Nil)(using Diagnostics)
+  extends Error(m"${items.length} query issues"):
+    def +(focus: Text, error: Query.Error): Issues = Issues(items :+ (focus, error))
+
+  // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
+  // cannot be typed under capture checking, so the decode lambda must beta-reduce away into
+  // `protect`'s inline position. See rep/DECISIONS.md.
+  private inline def validateQuery[result](query: Query)
+    (inline decode: Query => result raises Query.Error tracks Pointer)
+  :   Issues =
+    Validate[Issues, [r] =>> r raises Query.Error, Pointer]
+      ( Issues(),
+        { case error: Query.Error => accrual + (prior.let(_.text).or(t"?"), error) } )
+    . protect(decode(query))
+
   def run(): Unit =
-    ()
+    suite(m"Query decoding"):
+      test(m"A complete query decodes"):
+        t"name=Ada&email=a%40b.c".as[Query].as[QPerson]
+      . assert(_ == QPerson(t"Ada", t"a@b.c"))
 
-    // test(m"Create a simple form"):
-    //   val person = Person(t"John", t"A generic person", true)
-    //   elicit[Person](t"Sample form", Query(person))
-    // .assert(_ == whatwge.Form)
+      test(m"A missing parameter aborts under a fail-fast strategy"):
+        capture[Query.Error](t"name=Ada".as[Query].as[QPerson]).reason
+      . assert(_ == Query.Error.Reason.Missing)
 
-    // test(m"Create a form from nested fields"):
-    //   val organization = Organization(Person(t"Paul", t"Generic", false), t"My org")
-    //   elicit[Organization](t"Sample", Query(organization))
-    // .assert(_ == whatwge.Form)
+    suite(m"Validation accrual"):
+      test(m"Two missing parameters both accrue, with their pointers"):
+        validateQuery(t"".as[Query])(_.as[QPerson]).items.map(_(0).s).to[Set]
+      . assert(_ == Set("name", "email"))
 
-    // summon[Boolean is Decodable in Query]
+      test(m"One missing parameter accrues one error; the present one does not"):
+        validateQuery(t"name=Ada".as[Query])(_.as[QPerson]).items.map(_(0).s)
+      . assert(_ == List("email"))
 
-    // supervise:
-    //   tcp"8082".serve[Http]:
-    //     orchestrate[Group]:
-    //       case Submission.Complete(group) =>
-    //         Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(H1(group.inspect)))))
+      test(m"Nested parameters accrue with dotted pointers"):
+        validateQuery(t"title=Skunkworks".as[Query])(_.as[QTeam]).items.map(_(0).s).to[Set]
+      . assert(_ == Set("leader.name", "leader.email"))
 
-    //       case Submission.Incomplete(form) =>
-    //         Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))
+      test(m"A fully-valid query accrues nothing"):
+        validateQuery(t"name=Ada&email=a%40b.c".as[Query])(_.as[QPerson]).items.length
+      . assert(_ == 0)
 
-    //       case Submission.Invalid(query) =>
-    //         val errors =
-    //           validate[Text](Errors()):
-    //             case error@EmailAddress.Error(_) => accrual + (focus.or(t"unknown"), error)
-    //             case error@Name.Error(_, _, _)   => accrual + (focus.or(t"unknown"), error)
+    suite(m"Gated construction"):
+      test(m"Constructor does not run when any parameter failed"):
+        QProbe.constructions = 0
+        val issues = validateQuery(t"name=Zoe".as[Query])(_.as[QChecked])
+        (issues.items.length, QProbe.constructions)
+      . assert(_ == (1, 0))
 
-    //           . within(query.as[Group])
-
-    //         abort(errors)
+      test(m"Constructor runs exactly once when all parameters are present"):
+        QProbe.constructions = 0
+        validateQuery(t"name=Zoe&email=z%40y.x".as[Query])(_.as[QChecked])
+        QProbe.constructions
+      . assert(_ == 1)

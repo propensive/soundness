@@ -102,7 +102,7 @@ object Tests extends Suite(m"Soundness tests"):
     jacinta.Tests()
     kaleidoscope.Tests()
     larceny.Tests()
-    //legerdemain.Tests()
+    legerdemain.Tests()
     locomotion.Tests()
     mandible.Tests()
     mercator.Tests()
