@@ -172,7 +172,7 @@ package httpBackends:
   // responses do not stream yet, and `101` upgrades are not supported (the
   // upgraded stream would never end).
   given nativeHttp: (online: Online)
-  =>  (backend: SocketBackend, options: Every[SocketOption.Tcp], buffering: Buffering, tls: Tls)
+  =>  (backend: Socket.Backend, options: Every[Socket.Option.Tcp], buffering: Buffering, tls: Tls)
   =>  Http.Backend = new Http.Backend:
 
     def request
@@ -231,7 +231,7 @@ private def plaintextExchange
     method:  Http.Method,
     headers: List[Http.Header],
     body:    Spring[Data] )
-  ( using backend: SocketBackend, options: Every[SocketOption.Tcp], buffering: Buffering )
+  ( using backend: Socket.Backend, options: Every[Socket.Option.Tcp], buffering: Buffering )
   ( using Tactic[ConnectError] )
 :   Http.Response =
 
@@ -333,7 +333,7 @@ private def httpsExchange
     method:  Http.Method,
     headers: List[Http.Header],
     body:    Spring[Data] )
-  ( using online: Online, options: Every[SocketOption.Tcp], buffering: Buffering, tls: Tls )
+  ( using online: Online, options: Every[Socket.Option.Tcp], buffering: Buffering, tls: Tls )
   ( using Tactic[ConnectError] )
 :   Http.Response =
 

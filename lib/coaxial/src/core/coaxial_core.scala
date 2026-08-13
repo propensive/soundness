@@ -50,7 +50,7 @@ import vacuous.*
 import Control.*
 
 extension [bindable: {Bindable, Showable}](socket: bindable)
-  // `listen` is a loan: it binds, lends the running server to `block` as a `SocketService`
+  // `listen` is a loan: it binds, lends the running server to `block` as a `Socket.Service`
   // capability, and always stops it afterwards. The capability form (rather than returning
   // the service) means capture checking confines the accept loop to the block — the earlier
   // `val server = port.listen(...)` shape was a genuine fresh-capability escape
@@ -61,19 +61,19 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
   // ambiguous against the trailing block, so the interface form has its own name.
   transparent inline def listen[input](using Monitor, Probate)[result]
     ( lambda: bindable.Input => bindable.Output )
-    ( block: SocketService ?=> result )
-  :   result raises BindError logs SocketEvent =
+    ( block: Socket.Service ?=> result )
+  :   result raises BindError logs Socket.Event =
 
     socket.listenOn(Unset)(lambda)(block)
 
   transparent inline def listenOn[input](using Monitor, Probate)[result]
     ( interface: Optional[MacAddress] )
     ( lambda: bindable.Input => bindable.Output )
-    ( block: SocketService ?=> result )
-  :   result raises BindError logs SocketEvent =
+    ( block: Socket.Service ?=> result )
+  :   result raises BindError logs Socket.Event =
 
     val binding = bindable.bind(socket, interface)
-    Log.info(SocketEvent.Listening(socket.show))
+    Log.info(Socket.Event.Listening(socket.show))
 
     // Each accepted connection is served by its own supervised `async` task, so connections are
     // handled concurrently. The task body is impure (it captures the connection and the handler),
@@ -96,11 +96,11 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
 
     val task = async(bindLoop.run())
 
-    val service = SocketService: () =>
+    val service = Socket.Service: () =>
       bindLoop.stop()
       bindable.stop(binding)
       safely(task.await())
-      Log.fine(SocketEvent.Closed(socket.show))
+      Log.fine(Socket.Event.Closed(socket.show))
 
     try block(using service) finally service.stop()
 
@@ -109,10 +109,10 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
 // the evidence is an explicit capturing using-parameter rather than a context bound, which would
 // demand a pure instance.
 extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint is Serviceable)^)
-  def transmit[message: Transmissible](input: message)(using (SocketEvent is Loggable)^)
+  def transmit[message: Transmissible](input: message)(using (Socket.Event is Loggable)^)
   :   (Stream[Data] over Credit)^{serviceable, caps.any} =
     val connection = serviceable.connect(endpoint, Unset)
-    Log.fine(SocketEvent.Connected(endpoint.show))
+    Log.fine(Socket.Event.Connected(endpoint.show))
 
     serviceable.transmit(connection, message.serialize(input))
     serviceable.receive(connection)
@@ -123,11 +123,11 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
   // initiate; a `Duplexable` additionally offers `exchange`, which can also send proactively.
   def react[state](initialState: state)[message: Ingressive]
     ( handle: (state: state) ?=> message => Control[state] )
-    ( using (SocketEvent is Loggable)^ )(using buffering: Buffering)
+    ( using (Socket.Event is Loggable)^ )(using buffering: Buffering)
   :   state =
 
     val connection = serviceable.connect(endpoint, Unset)
-    Log.fine(SocketEvent.Connected(endpoint.show))
+    Log.fine(Socket.Event.Connected(endpoint.show))
 
     // One refill window is one inbound message: chunk boundaries frame messages,
     // exactly as each lazy-list element did. A while-loop rather than a
@@ -177,11 +177,11 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
   def exchange[state](initialState: state)[message: {Ingressive, Transmissible}]
     ( handle: (state: state) ?=> message => Control[state] )
     ( interact: Transmitter[message]^ => Unit )
-    ( using (SocketEvent is Loggable)^ )(using buffering: Buffering)
+    ( using (Socket.Event is Loggable)^ )(using buffering: Buffering)
   :   state =
 
     val connection = duplexable.connect(endpoint, Unset)
-    Log.fine(SocketEvent.Connected(endpoint.show))
+    Log.fine(Socket.Event.Connected(endpoint.show))
 
     // A named `Post` rather than a lambda: forwarding to the consuming `transmit`
     // requires a `consume` parameter, which only a method can declare.
@@ -226,10 +226,10 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
 
 extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)
   def transmit[transmissible: Transmissible](message: transmissible)
-    ( using Monitor, Tactic[StreamError], (SocketEvent is Loggable)^ )
+    ( using Monitor, Tactic[StreamError], (Socket.Event is Loggable)^ )
   :   Unit =
 
-    Log.fine(SocketEvent.Connected(endpoint.show))
+    Log.fine(Socket.Event.Connected(endpoint.show))
     routable.transmit(routable.connect(endpoint, Unset), transmissible.serialize(message))
 
 
@@ -245,36 +245,36 @@ extension [endpoint: {Connectable as connectable, Showable}](endpoint: endpoint)
   // connection is never half-closed. A long-lived connection that must outlive any
   // single block keeps `lambda` running (e.g. parked on its supervisor) until the
   // enclosing scope ends, at which point the loan closes the connection.
-  def duplex[result](lambda: Duplex => result)(using (SocketEvent is Loggable)^): result =
+  def duplex[result](lambda: Duplex => result)(using (Socket.Event is Loggable)^): result =
     duplex(lambda)(Unset)
 
   def duplex[result](lambda: Duplex => result)(interface: Optional[MacAddress])
-    ( using (SocketEvent is Loggable)^ )
+    ( using (Socket.Event is Loggable)^ )
   :   result =
 
     val connection = connectable.connect(endpoint, interface)
-    Log.info(SocketEvent.Connected(endpoint.show))
+    Log.info(Socket.Event.Connected(endpoint.show))
 
     try lambda(connection) finally
       connection.close()
-      Log.fine(SocketEvent.Closed(endpoint.show))
+      Log.fine(Socket.Event.Closed(endpoint.show))
 
 
 // Importable socket-option contributions. Each flag is a named `given` declared at its concrete
-// option type (not `SocketOption`), so the per-connection `Every[SocketOption.Tcp]` / `.Udp` /
+// option type (not `Socket.Option`), so the per-connection `Every[Socket.Option.Tcp]` / `.Udp` /
 // `.Domain` searches collect it. Bring one into scope with, e.g.,
 // `import socketOptions.noDelaySocketOption`. Options that carry a value are factory methods whose
 // result type is the concrete option, so a
-// `given SocketOption.ReceiveBuffer = socketOptions.receiveBuffer(65536)` is likewise collected.
+// `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)` is likewise collected.
 package socketOptions:
-  given reuseAddressSocketOption: SocketOption.ReuseAddress.type = SocketOption.ReuseAddress
-  given reusePortSocketOption:    SocketOption.ReusePort.type    = SocketOption.ReusePort
-  given noDelaySocketOption:      SocketOption.NoDelay.type      = SocketOption.NoDelay
-  given keepAliveSocketOption:    SocketOption.KeepAlive.type    = SocketOption.KeepAlive
-  given broadcastSocketOption:    SocketOption.Broadcast.type    = SocketOption.Broadcast
+  given reuseAddressSocketOption: Socket.Option.ReuseAddress.type = Socket.Option.ReuseAddress
+  given reusePortSocketOption:    Socket.Option.ReusePort.type    = Socket.Option.ReusePort
+  given noDelaySocketOption:      Socket.Option.NoDelay.type      = Socket.Option.NoDelay
+  given keepAliveSocketOption:    Socket.Option.KeepAlive.type    = Socket.Option.KeepAlive
+  given broadcastSocketOption:    Socket.Option.Broadcast.type    = Socket.Option.Broadcast
 
-  def receiveBuffer(bytes: Int): SocketOption.ReceiveBuffer = SocketOption.ReceiveBuffer(bytes)
-  def sendBuffer(bytes: Int): SocketOption.SendBuffer = SocketOption.SendBuffer(bytes)
-  def linger(seconds: Optional[Int] = Unset): SocketOption.Linger = SocketOption.Linger(seconds)
-  def trafficClass(value: Int): SocketOption.TrafficClass = SocketOption.TrafficClass(value)
-  def timeout(milliseconds: Int): SocketOption.Timeout = SocketOption.Timeout(milliseconds)
+  def receiveBuffer(bytes: Int): Socket.Option.ReceiveBuffer = Socket.Option.ReceiveBuffer(bytes)
+  def sendBuffer(bytes: Int): Socket.Option.SendBuffer = Socket.Option.SendBuffer(bytes)
+  def linger(seconds: Optional[Int] = Unset): Socket.Option.Linger = Socket.Option.Linger(seconds)
+  def trafficClass(value: Int): Socket.Option.TrafficClass = Socket.Option.TrafficClass(value)
+  def timeout(milliseconds: Int): Socket.Option.Timeout = Socket.Option.Timeout(milliseconds)

@@ -70,14 +70,14 @@ private case class WasiExchange
     socket: WitHandle of "tcp-socket" )
 
 package socketBackends:
-  // A `SocketBackend` over `wasi:sockets`. WASI sockets are capability-based (the host grants
+  // A `Socket.Backend` over `wasi:sockets`. WASI sockets are capability-based (the host grants
   // network access with `wasmtime run -S inherit-network`) and asynchronous: `start-connect` /
   // `accept` are driven to completion by blocking on the socket's `pollable`. Only TCP is
   // supported — WASI has no Unix-domain sockets (those operations raise), and UDP is not yet
   // wired. `inline`, so the `call`s expand at the downstream summoning site, where the WASI
   // facades are on the classpath.
   @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
-  inline given wasiSockets: SocketBackend = new SocketBackend:
+  inline given wasiSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = WitHandle of "tcp-socket"
     type DatagramSocket = Unit
     type Exchange = WasiExchange
@@ -208,7 +208,7 @@ package socketBackends:
         exchange.socket.dispose()
 
     //── Stream server (TCP; Unix-domain unsupported) ─────────────────────────────────────────────
-    def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
+    def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
     :   WitHandle of "tcp-socket" =
 
       unsafely:
@@ -221,7 +221,7 @@ package socketBackends:
         socket.`finish-listen`.call[Unit]()
         socketHandle
 
-    def listenDomain(address: DomainSocket, options: List[SocketOption]): WitHandle of "tcp-socket" =
+    def listenDomain(address: DomainSocket, options: List[Socket.Option]): WitHandle of "tcp-socket" =
       unsafely(abort(ConnectionError(ConnectionError.Reason.Accept)))
 
     def accept(socketHandle: WitHandle of "tcp-socket"): Duplex raises ConnectionError =
@@ -240,7 +240,7 @@ package socketBackends:
     def shutdown(socketHandle: WitHandle of "tcp-socket"): Unit = socketHandle.dispose()
 
     //── Datagram server (unsupported on WASI for now) ────────────────────────────────────────────
-    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
+    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option]): Unit =
       ()
 
     def receive(socket: Unit): Packet raises ConnectionError =
@@ -254,15 +254,15 @@ package socketBackends:
 
     //── Request/response exchange (TCP; Unix-domain unsupported) ──────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
     :   WasiExchange =
       unsafely(connect(endpoint.remote, endpoint.port.number))
 
-    def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
+    def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
     :   WasiExchange =
       unsafely(connect(t"127.0.0.1", port.number))
 
-    def dialDomain(address: DomainSocket, options: List[SocketOption]): WasiExchange =
+    def dialDomain(address: DomainSocket, options: List[Socket.Option]): WasiExchange =
       unsafely(abort(ConnectionError(ConnectionError.Reason.Accept)))
 
     def request(exchange: WasiExchange, consume input: (Stream[Data] over Credit)^): Unit =
@@ -280,20 +280,20 @@ package socketBackends:
 
     //── Persistent duplex client (TCP; Unix-domain unsupported) ───────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
     :   Duplex =
       duplexOf(unsafely(connect(endpoint.remote, endpoint.port.number)))
 
-    def duplexDomain(address: DomainSocket, options: List[SocketOption]): Duplex =
+    def duplexDomain(address: DomainSocket, options: List[Socket.Option]): Duplex =
       duplexOf(unsafely(abort(ConnectionError(ConnectionError.Reason.Accept))))
 
     //── Fire-and-forget datagram courier (unsupported on WASI for now) ────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
     :   Unit =
       ()
 
-    def routeUdpPort(port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
+    def routeUdpPort(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option]): Unit =
       ()
 
     def dispatch(courier: Unit, consume input: (Stream[Data] over Credit)^): Unit = ()

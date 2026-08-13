@@ -162,7 +162,7 @@ package filesystemBackends:
           case 3 => Directory
           case 4 => Fifo
           case 5 => Symlink
-          case 7 => Socket
+          case 7 => Sock
           case _ => File
 
         def millis(time: Optional[(U64, U32)]): Optional[Long] =

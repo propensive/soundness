@@ -44,8 +44,8 @@ import vacuous.*
 import zephyrine.*
 
 object Serviceable:
-  given domainSocket: (backend: SocketBackend, tactic: Tactic[StreamError])
-  =>  (options: Every[SocketOption.Domain])
+  given domainSocket: (backend: Socket.Backend, tactic: Tactic[StreamError])
+  =>  (options: Every[Socket.Option.Domain])
   =>  ( (DomainSocket is Serviceable)^{tactic, caps.any} ) = new Serviceable:
     type Self = DomainSocket
     type Output = Data
@@ -63,8 +63,8 @@ object Serviceable:
     def close(connection: Connection): Unit = backend.hangUp(connection)
 
   given tcpEndpoint: Online
-  =>  (backend: SocketBackend, tactic: Tactic[StreamError])
-  =>  (options: Every[SocketOption.Tcp])
+  =>  (backend: Socket.Backend, tactic: Tactic[StreamError])
+  =>  (options: Every[Socket.Option.Tcp])
   =>  ( (Endpoint[Tcp.Port] is Serviceable)^{tactic} ) = new Serviceable:
     type Self = Endpoint[Tcp.Port]
     type Output = Data
@@ -81,8 +81,8 @@ object Serviceable:
     def receive(connection: Connection): (Stream[Data] over Credit)^{this, caps.any} =
       backend.response(connection)
 
-  given tcpPort: (backend: SocketBackend, tactic: Tactic[StreamError])
-  =>  (options: Every[SocketOption.Tcp])
+  given tcpPort: (backend: Socket.Backend, tactic: Tactic[StreamError])
+  =>  (options: Every[Socket.Option.Tcp])
   =>  ( (Tcp.Port is Serviceable)^{tactic} ) = new Serviceable:
     type Self = Tcp.Port
     type Output = Data

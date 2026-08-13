@@ -50,7 +50,7 @@ class GrpcSessional[endpoint: {Connectable, Showable}]
   ( using monitor:    Monitor,
           probate:    Probate,
           asyncError: Tactic[Async.Error],
-          loggable:   (SocketEvent is Loggable)^ )
+          loggable:   (Socket.Event is Loggable)^ )
 extends Sessional:
   type Self = Grpc.Endpoint[endpoint]
 

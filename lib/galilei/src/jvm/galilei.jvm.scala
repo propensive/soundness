@@ -54,7 +54,7 @@ extension [plane: Filesystem](path: Path on plane)
 
 object SocketCreation:
   // Binding a Unix-domain socket is inherently scoped under the new model: the block form
-  // provides the live, bound `Socket` and closes its channel when the scope ends (the socket
+  // provides the live, bound `Sock` and closes its channel when the scope ends (the socket
   // file remains, as before; an exception escaping the scope removes it). The no-block form
   // binds and immediately closes, leaving just the socket file.
   class SocketCreatable[filesystem <: Posix: Filesystem, path <: Path on filesystem]
@@ -62,14 +62,14 @@ object SocketCreation:
   extends Creatable:
 
     type Self = path
-    type Form = Socket
+    type Form = Sock
     type Operand = CreateFlag
     type Grants = Grant.Read & Grant.Write
-    type Result = Socket
+    type Result = Sock
 
     def create[result]
       ( value: path, flags: List[CreateFlag] )
-      ( block: (Socket & Granting[Grant.Read & Grant.Write]) ?=> result )
+      ( block: (Sock & Granting[Grant.Read & Grant.Write]) ?=> result )
     :   result =
 
       Creation.ensure(value, flags)
@@ -80,7 +80,7 @@ object SocketCreation:
       channel.bind(address)
 
       try
-        try block(using new Socket(channel) with Granting[Grant.Read & Grant.Write] {})
+        try block(using new Sock(channel) with Granting[Grant.Read & Grant.Write] {})
         catch case throwable: Throwable =>
           try backend.deleteIfExists(value) catch case _: Exception => ()
           throw throwable

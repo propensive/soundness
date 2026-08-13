@@ -30,34 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package galilei
 
-import vacuous.*
+import scala.language.experimental.pureFunctions
 
-// A socket option, applied to a freshly-constructed socket before it is bound or connected. Each
-// option is typed by the connection types it is valid for: the nested marker traits `Tcp`, `Udp`
-// and `Domain` (Unix-domain) each extend `SocketOption`, and every concrete option extends every
-// connection trait it applies to. A bind/connect site for a particular connection then collects
-// `Every[SocketOption.Tcp]` (or `.Udp`/`.Domain`), so only options valid for that connection are
-// ever gathered. Flag options that simply enable a feature are parameterless markers — their
-// presence is a deviation from the default-off baseline; only options carrying a real value (a
-// buffer size, a duration, a linger interval, a traffic class) take a parameter.
-object SocketOption:
-  sealed trait Tcp    extends SocketOption
-  sealed trait Udp    extends SocketOption
-  sealed trait Domain extends SocketOption
+import java.nio.channels as jnc
 
-  case object ReuseAddress                  extends Tcp, Udp, Domain  // SO_REUSEADDR
-  case object ReusePort                      extends Tcp, Udp         // SO_REUSEPORT (OS-dependent)
-  case class  ReceiveBuffer(bytes: Int)      extends Tcp, Udp, Domain // SO_RCVBUF
-  case class  SendBuffer(bytes: Int)         extends Tcp, Udp, Domain // SO_SNDBUF
-  case class  Timeout(milliseconds: Int)     extends Tcp, Udp, Domain // SO_TIMEOUT (blocking)
+object Sock extends UnixEntry
 
-  case object NoDelay                        extends Tcp              // TCP_NODELAY
-  case object KeepAlive                      extends Tcp              // SO_KEEPALIVE
-  case class  Linger(seconds: Optional[Int]) extends Tcp, Domain      // SO_LINGER
-  case class  TrafficClass(value: Int)       extends Tcp, Udp         // IP_TOS
-
-  case object Broadcast                      extends Udp              // SO_BROADCAST
-
-sealed trait SocketOption
+case class Sock(channel: jnc.ServerSocketChannel) extends UnixEntry

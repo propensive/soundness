@@ -56,8 +56,8 @@ import zephyrine.*
 // would freshen the capability types in its inferred `Result` member.
 class UrlSessional[url <: HttpUrl]
   ( using online:       Online,
-          backend:      SocketBackend,
-          options:      Every[SocketOption.Tcp],
+          backend:      Socket.Backend,
+          options:      Every[Socket.Option.Tcp],
           buffering:    Buffering,
           tls:          Tls,
           connectError: Tactic[ConnectError] )
@@ -129,8 +129,8 @@ extends Sessional:
 // (whose types are scheme-refined subtypes of `HttpUrl`) resolve the instance.
 given httpUrlSessional: [url <: HttpUrl]
 =>  (online: Online)
-=>  ( backend:      SocketBackend,
-      options:      Every[SocketOption.Tcp],
+=>  ( backend:      Socket.Backend,
+      options:      Every[Socket.Option.Tcp],
       buffering:    Buffering,
       tls:          Tls,
       connectError: Tactic[ConnectError] )
@@ -140,7 +140,7 @@ given httpUrlSessional: [url <: HttpUrl]
 // Open the TLS connection for an `https` exchange, offering `h2` and `http/1.1`
 // by ALPN, and mapping handshake and connection failures onto `ConnectError`.
 private[telekinesis] def secureConnect(host: Host, port: Int)
-  ( using online: Online, options: Every[SocketOption.Tcp], tls: Tls )
+  ( using online: Online, options: Every[Socket.Option.Tcp], tls: Tls )
   ( using Tactic[ConnectError] )
 :   Duplex =
 
