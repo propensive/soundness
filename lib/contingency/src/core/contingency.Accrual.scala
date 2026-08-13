@@ -62,7 +62,15 @@ object Accrual:
       record(error)
       throw accumulated
 
-    def certify(): Unit = ()
+    // If anything has accrued, surrender the block to its accumulated error (the throw unwinds
+    // to `accrueBody`'s `catch`, which reports the accrual to the outer tactic). Formerly a
+    // no-op, which broke the uniform `certify` contract for accruing scopes.
+    def certify(): Unit =
+      if changed then
+        import scala.unsafeExceptions.canThrowAny
+        throw accumulated
+
+    override def tainted: Boolean = changed
 
     def accumulated: accrual = ref.get().nn
     def changed: Boolean = ref.get().nn != initial

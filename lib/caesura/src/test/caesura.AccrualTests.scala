@@ -42,6 +42,15 @@ import dsvFormats.csvWithHeaderFormat
 
 case class ARecord(name: Text, age: Int, height: Int) derives CanEqual
 
+object CProbe:
+  @scala.caps.unsafe.untrackedCaptures
+  var constructions: Int = 0
+
+// The body statement observes construction: decoding must never construct from garbage
+// fallback values, so a decode with any failed cell must leave the counter untouched.
+case class CChecked(name: Text, age: Int) derives CanEqual:
+  CProbe.constructions += 1
+
 object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
 
   case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
@@ -89,6 +98,19 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
             case Dsv.Error.Reason.Unparseable(_, _) => true
             case _                                 => false
       . assert(identity)
+
+    suite(m"Gated construction"):
+      test(m"Constructor does not run when any cell failed"):
+        CProbe.constructions = 0
+        val issues = validateDsv(row(t"name,age\nZoe,young"))(_.as[CChecked])
+        (issues.items.length, CProbe.constructions)
+      . assert(_ == (1, 0))
+
+      test(m"Constructor runs exactly once when all cells are clean"):
+        CProbe.constructions = 0
+        validateDsv(row(t"name,age\nZoe,5"))(_.as[CChecked])
+        CProbe.constructions
+      . assert(_ == 1)
 
     suite(m"Multiple missing cells"):
       test(m"Two missing cells accrue two errors"):

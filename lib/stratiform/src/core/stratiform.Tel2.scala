@@ -239,6 +239,102 @@ trait Tel2 extends Tel3:
         Tel.Field(Tel.Parsable.fromDecodable(infer[derivation is Tel.Decodable]))
 
   object DecodableDerivation extends Derivable[Tel.Decodable]:
+    // The per-field decode, shared by the fail-fast and accruing traversals of `conjunction` —
+    // a plain method, NOT part of the inline expansion: inlining this body twice per derivation
+    // (once per traversal) pushed classes with many derived decoders over the JVM class-size
+    // limit.
+    // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
+    // plain method: the argument buffer must not be allocated inside an inline expansion,
+    // where its fresh root capability leaks into the expansion site's capture sets. Returns
+    // an unused null when any slot failed: the caller's accruing scope is tainted, so the
+    // result is discarded.
+    private def gate[derivation <: Product]
+      ( reflection: ProductReflection[derivation],
+        slots:      Array[Venture[Any]]^{},
+        active:     Boolean )
+    :   derivation =
+
+      var failed = false
+      var slot = 0
+
+      if active then
+        while slot < slots.length do
+          if !slots.readUnchecked(slot).ready then failed = true
+          slot += 1
+
+      if failed then null.asInstanceOf[derivation]
+      else
+        val arguments = Array[Any](slots.length)
+        slot = 0
+
+        while slot < slots.length do
+          arguments(slot) = slots.readUnchecked(slot).vouch
+          slot += 1
+
+        Tel.Parsable.assemble[derivation](reflection, Array.freeze(arguments))
+
+    private def decodeField[field]
+      ( ctx:        (Tel.Decodable { type Self = field })^,
+        telVal:     Tel,
+        keyword:    Text,
+        positional: scala.collection.immutable.List[Tel.Atom],
+        fallback:   Optional[field] )
+      ( using tactic: Tactic[Tel.Error] )
+    :   field =
+
+      given fulminate.Diagnostics = tactic.diagnostics
+
+      // A `List`/`Set` field (`ctx.repeatable`) is encoded as repeated
+      // keyword compounds, so gather them all into a Document for the
+      // collection decoder — positionally-assigned atoms first, since
+      // atoms precede children (§18.3 step 4). Every other field —
+      // scalar, nested product, `Optional`, `Map` (a single `entries`
+      // compound) — reads one match.
+      if ctx.repeatable then
+        val compounds =
+          if positional.isEmpty
+          then telVal.childCompounds.filter(_.keyword == keyword)
+          else
+            val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
+
+            // A flag's atom is its keyword, meaning presence: it
+            // becomes a bare compound, not an atom-bearing one.
+            positional.foreach: atom =>
+              buffer +=
+                ( if ctx.nature == Tel.Nature.Flag
+                  then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
+                  else Tel.Compound(keyword, Array.of(atom), Unset, Array.empty) )
+
+            telVal.childCompounds.each: compound =>
+              if compound.keyword == keyword then buffer += compound
+
+            Array.from(buffer)
+
+        ctx.decoded:
+          Tel.make
+            ( Tel.Document
+              ( Unset, Unset, Tel.LineEndings.Lf,
+               Array.of(Tel.Block(Array.empty, Unset, compounds, 0)) ) )
+      else
+        val match0 = telVal.field(keyword)
+
+        if positional.isEmpty then
+          match0.lay(fallback.or(ctx.absent()))(ctx.decoded(_))
+        else
+          // §20.2 step 5c: an inline atom plus a same-keyword
+          // child fills a non-repeatable member twice (E308).
+          // The atom wins — atoms precede children.
+          if match0.present
+          then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))
+
+          ctx.decoded:
+            Tel.make:
+              // A flag's atom is its keyword, meaning presence:
+              // it becomes a bare compound.
+              if ctx.nature == Tel.Nature.Flag
+              then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
+              else Tel.Compound(keyword, Array.of(positional.head), Unset, Array.empty)
+
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Decodable =
 
@@ -283,72 +379,52 @@ trait Tel2 extends Tel3:
               val assigned: Array[List[Tel.Atom]]^{} =
                 if atoms.length == 0 then Array.empty else Positional.assign(atoms, profiles)
 
-              build[derivation]: [field] =>
-                ctx =>
-                  val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
+              val foci = infer[Foci[Tel.Focus]]
 
-                  val positional: scala.collection.immutable.List[Tel.Atom] =
-                    if assigned.length == 0 then scala.collection.immutable.Nil
-                    else assigned(index).stdlib
+              // A SINGLE field traversal serving both modes, branching on `foci.active` per
+              // field. One traversal is load-bearing: every wisteria traversal re-summons each
+              // field's decoder (`summonInline`), recursively deriving nested types, so
+              // traversals multiply EXPONENTIALLY with nesting depth at compile time.
+              //
+              // Accruing mode: each slot is marked failed if its decode registered any focus,
+              // and the product is constructed only when every slot is clean — user constructor
+              // code never sees a garbage fallback value. On failure the returned value is
+              // never used (the caller's scope is tainted), and siblings keep accruing in the
+              // meantime. Fail-fast mode: the first recorded error escapes through the tactic,
+              // so no focus bookkeeping and no failure scan are needed.
+              val active = foci.active
 
-                  // Tag every error registered while decoding this field with its
-                  // keyword path, so that under a `validate[Tel.Focus]` boundary the
-                  // primitives' `raise … yet sentinel` accrue per-field rather than the
-                  // first malformed field aborting the whole record.
-                  focus({
-                    val base = prior.let(_.pointer).or(TelPath.Root)
-                    Tel.Focus(base.prepend(keyword))
-                  }):
-                    // A `List`/`Set` field (`ctx.repeatable`) is encoded as repeated
-                    // keyword compounds, so gather them all into a Document for the
-                    // collection decoder — positionally-assigned atoms first, since
-                    // atoms precede children (§18.3 step 4). Every other field —
-                    // scalar, nested product, `Optional`, `Map` (a single `entries`
-                    // compound) — reads one match.
-                    if ctx.repeatable then
-                      val compounds =
-                        if positional.isEmpty
-                        then telVal.childCompounds.filter(_.keyword == keyword)
-                        else
-                          val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
+              val slots: Array[Venture[Any]]^{} =
+                contexts[derivation]()[Venture[Any]]: [field] =>
+                  ctx =>
+                    val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
 
-                          // A flag's atom is its keyword, meaning presence: it
-                          // becomes a bare compound, not an atom-bearing one.
-                          positional.foreach: atom =>
-                            buffer +=
-                              ( if ctx.nature == Tel.Nature.Flag
-                                then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-                                else Tel.Compound(keyword, Array.of(atom), Unset, Array.empty) )
+                    val positional: scala.collection.immutable.List[Tel.Atom] =
+                      if assigned.length == 0 then scala.collection.immutable.Nil
+                      else assigned(index).stdlib
 
-                          telVal.childCompounds.each: compound =>
-                            if compound.keyword == keyword then buffer += compound
-
-                          Array.from(buffer)
-
-                      ctx.decoded:
-                        Tel.make
-                          ( Tel.Document
-                            ( Unset, Unset, Tel.LineEndings.Lf,
-                             Array.of(Tel.Block(Array.empty, Unset, compounds, 0)) ) )
+                    if !active then
+                      Venture:
+                        decodeField[field]
+                          (ctx, telVal, keyword, positional, default[Optional[field]])
                     else
-                      val match0 = telVal.field(keyword)
+                      // Tag every error registered while decoding this field with its
+                      // keyword path, so that under a `validate[Tel.Focus]` boundary the
+                      // primitives' `raise … yet sentinel` accrue per-field rather than the
+                      // first malformed field aborting the whole record.
+                      focus({
+                        val base = prior.let(_.pointer).or(TelPath.Root)
+                        Tel.Focus(base.prepend(keyword))
+                      }):
+                        val before = foci.length
 
-                      if positional.isEmpty then
-                        match0.lay(default.or(ctx.absent()))(ctx.decoded(_))
-                      else
-                        // §20.2 step 5c: an inline atom plus a same-keyword
-                        // child fills a non-repeatable member twice (E308).
-                        // The atom wins — atoms precede children.
-                        if match0.present
-                        then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))
+                        val value: field =
+                          decodeField[field]
+                            (ctx, telVal, keyword, positional, default[Optional[field]])
 
-                        ctx.decoded:
-                          Tel.make:
-                            // A flag's atom is its keyword, meaning presence:
-                            // it becomes a bare compound.
-                            if ctx.nature == Tel.Nature.Flag
-                            then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-                            else Tel.Compound(keyword, Array.of(positional.head), Unset, Array.empty)
+                        if foci.length > before then Venture.failed else Venture(value)
+
+              gate[derivation](infer[ProductReflection[derivation]], slots, active)
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Decodable =
       // A sum is a document whose single child compound is the chosen variant, keyed by
@@ -374,14 +450,22 @@ trait Tel2 extends Tel3:
                 val compounds = telVal.childCompounds
 
                 // A sum position with no child compound carries no variant to
-                // dispatch on: a decode-layer absence, not a crash.
-                if compounds.nil then abort(Tel.Error(Tel.Error.Reason.Absent))
+                // dispatch on: a decode-layer absence, not a crash. Under an
+                // accruing scope, record ONE error and skip the variant decode
+                // without killing the whole scope: the returned value is never
+                // used (the caller sees the focus delta, or the tracking scope
+                // is tainted), so siblings keep accruing. Fail-fast scopes
+                // abort as before.
+                if compounds.nil then
+                  if infer[Foci[Tel.Focus]].active
+                  then raise(Tel.Error(Tel.Error.Reason.Absent)) yet null.asInstanceOf[derivation]
+                  else abort(Tel.Error(Tel.Error.Reason.Absent))
+                else
+                  val variant: Tel = Tel.make(compounds.head)
+                  val variantKeyword: Text = labels(variant.keyword).or(variant.keyword)
 
-                val variant: Tel = Tel.make(compounds.head)
-                val variantKeyword: Text = labels(variant.keyword).or(variant.keyword)
-
-                delegate(variantKeyword): [variant <: derivation] =>
-                  ctx => ctx.decoded(variant)
+                  delegate(variantKeyword): [variant <: derivation] =>
+                    ctx => ctx.decoded(variant)
 
   object EncodableDerivation extends Derivable[Tel.Encodable]:
     inline def conjunction[derivation <: Product: ProductReflection]

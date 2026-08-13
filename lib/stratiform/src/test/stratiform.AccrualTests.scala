@@ -44,6 +44,15 @@ case class APerson(name: Text, age: Int, email: Text) derives CanEqual
 case class AContact(person: APerson, company: Text) derives CanEqual
 case class APair(width: Int, height: Int) derives CanEqual
 
+object TProbe:
+  @scala.caps.unsafe.untrackedCaptures
+  var constructions: Int = 0
+
+// The body statement observes construction: decoding must never construct from garbage
+// fallback values, so a decode with any failed field must leave the counter untouched.
+case class TChecked(name: Text, age: Int) derives CanEqual:
+  TProbe.constructions += 1
+
 object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
   case class Issues(items: List[(Text, Tel.Error)] = Nil)(using Diagnostics)
@@ -244,6 +253,21 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Single wrong-type field: one error"):
         val tel = t"width five\nheight 10\n".read[Tel]
         validateTel(tel)(_.as[APair]).items.length
+      . assert(_ == 1)
+
+    suite(m"Gated construction"):
+      test(m"Constructor does not run when any field failed"):
+        TProbe.constructions = 0
+        val tel = t"name Zoe\nage young\n".read[Tel]
+        val issues = validateTel(tel)(_.as[TChecked])
+        (issues.items.length, TProbe.constructions)
+      . assert(_ == (1, 0))
+
+      test(m"Constructor runs exactly once when all fields are clean"):
+        TProbe.constructions = 0
+        val tel = t"name Zoe\nage 5\n".read[Tel]
+        validateTel(tel)(_.as[TChecked])
+        TProbe.constructions
       . assert(_ == 1)
 
     suite(m"Multiple missing fields"):

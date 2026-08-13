@@ -46,6 +46,7 @@ extends Tactic[error]:
   def record(error: Diagnostics ?=> error): Unit = foci.register(error)
   def finish(): Unit = ()
   def certify(): Unit = if foci.tainted then boundary.break(None)
+  override def tainted: Boolean = foci.tainted
 
   def abort(error: Diagnostics ?=> error): Nothing =
     foci.register(error)

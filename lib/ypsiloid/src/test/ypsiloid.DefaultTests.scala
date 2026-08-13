@@ -51,6 +51,16 @@ case class Issues2(items: List[(Text, Yaml.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} validation issues"):
   def +(focus: Text, error: Yaml.Error): Issues2 = Issues2(items :+ (focus, error))
 
+object YProbe:
+  var constructions: Int = 0
+
+// The body statement observes construction: decoding must never construct from garbage
+// fallback values, so a decode with any failed field must leave the counter untouched.
+case class YChecked(name: Text, age: Int) derives CanEqual:
+  YProbe.constructions += 1
+
+case class YMix(shape: DShape, name: Text) derives CanEqual
+
 object DefaultPersonScope:
   given Default[DPerson] = () => DPerson(t"", 0, t"")
 
@@ -117,3 +127,23 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
         val yaml = t"foo: bar\n".read[Yaml]
         validateYaml(yaml)(_.as[DShape]).items.length
       . assert(_ == 1)
+
+    suite(m"Gated construction"):
+      test(m"Constructor does not run when any field failed"):
+        YProbe.constructions = 0
+        val yaml = t"name: Zoe\n".read[Yaml]
+        val issues = validateYaml(yaml)(_.as[YChecked])
+        (issues.items.length, YProbe.constructions)
+      . assert(_ == (1, 0))
+
+      test(m"Constructor runs exactly once when all fields are clean"):
+        YProbe.constructions = 0
+        val yaml = t"name: Zoe\nage: 5\n".read[Yaml]
+        validateYaml(yaml)(_.as[YChecked])
+        YProbe.constructions
+      . assert(_ == 1)
+
+      test(m"A failing sum field and a missing sibling both accrue"):
+        val yaml = t"shape:\n  foo: bar\n".read[Yaml]
+        validateYaml(yaml)(_.as[YMix]).items.map(_(0).s).to[Set]
+      . assert(_ == Set("#/shape", "#/name"))

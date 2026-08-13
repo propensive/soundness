@@ -122,6 +122,40 @@ trait Yaml2:
     case given Reflection[`value`]            => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Yaml]:
+    // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
+    // plain method: the argument buffer must not be allocated inside an inline expansion,
+    // where its fresh root capability leaks into the expansion site's capture sets. Returns
+    // an unused null when any slot failed: the caller's accruing scope is tainted, so the
+    // result is discarded.
+    private final class ArrayProduct(values: Array[Any]^{}) extends Product:
+      def canEqual(that: Any): Boolean = true
+      def productArity: Int = values.length
+      def productElement(index: Int): Any = values.readUnchecked(index)
+
+    private def gate[derivation <: Product]
+      ( reflection: ProductReflection[derivation],
+        slots:      Array[Venture[Any]]^{},
+        active:     Boolean )
+    :   derivation =
+
+      var failed = false
+      var slot = 0
+
+      if active then
+        while slot < slots.length do
+          if !slots.readUnchecked(slot).ready then failed = true
+          slot += 1
+
+      if failed then null.asInstanceOf[derivation]
+      else
+        val arguments = Array[Any](slots.length)
+        slot = 0
+
+        while slot < slots.length do
+          arguments(slot) = slots.readUnchecked(slot).vouch
+          slot += 1
+
+        reflection.fromProduct(ArrayProduct(Array.freeze(arguments)))
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Yaml =
 
@@ -178,41 +212,51 @@ trait Yaml2:
 
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( arr: Array[Any]^{} | Null )
-      ( using Foci[Yaml.Focus], Tactic[Yaml.Error] )
+      ( using foci: Foci[Yaml.Focus], tactic: Tactic[Yaml.Error] )
     :   derivation =
 
       // `@name[Yaml]` / bare `@name` renames: field name -> mapping key, read
       // back the same way they are written.
       val renames: Map[Text, Text] = relabelling[derivation, Yaml]
 
-      build[derivation]: [field] =>
-        context =>
-          val key: Text = renames(label).or(label)
-          val target = key.s
-          var found: Yaml.Ast | Null = null
+      def fieldAst(target: String): Yaml.Ast | Null =
+        var found: Yaml.Ast | Null = null
 
-          if arr != null then
-            val n = arr.length
-            var i = 0
+        if arr != null then
+          val n = arr.length
+          var i = 0
 
-            while i < n && found == null do
-              val entryKey = arr.readUnchecked(i).asInstanceOf[Yaml.Ast]
+          while i < n && found == null do
+            val entryKey = arr.readUnchecked(i).asInstanceOf[Yaml.Ast]
 
-              entryKey.asMatchable match
-                case s: String if s == target => found = arr.readUnchecked(i + 1).asInstanceOf[Yaml.Ast]
-                case _                        => ()
-              i += 2
-          // Each outer `focus` runs *after* the inner one
-          // (contingency's try/finally order), so we extend
-          // `prior` at the root side via `prepend` so a nested
-          // case-class error lands at `/outer/inner` rather than
-          // `/inner/outer`. See `feedback-xml-decoder-split-design`
-          // lesson 4.
-          focus({
-            val base = prior.let(_.pointer).or(YamlPath())
-            Yaml.Focus(base.prepend(key))
-          }):
-            if found != null then context.decoded(new Yaml(found))
+            entryKey.asMatchable match
+              case s: String if s == target =>
+                found = arr.readUnchecked(i + 1).asInstanceOf[Yaml.Ast]
+
+              case _ => ()
+            i += 2
+
+        found
+
+      // A SINGLE field traversal serving both modes, branching on `foci.active` per field. One
+      // traversal is load-bearing: every wisteria traversal re-summons each field's decoder
+      // (`summonInline`), recursively deriving nested types, so traversals multiply
+      // EXPONENTIALLY with nesting depth at compile time.
+      //
+      // Accruing mode: each slot is marked failed if its decode registered any focus, and the
+      // product is constructed only when every slot is clean — user constructor code never
+      // sees a garbage fallback value. On failure the returned value is never used (the
+      // caller's scope is tainted), and siblings keep accruing in the meantime. Fail-fast mode:
+      // the first recorded error escapes through the tactic, so no focus bookkeeping and no
+      // failure scan are needed.
+      val active = foci.active
+
+      val slots: Array[Venture[Any]]^{} =
+        contexts[derivation]()[Venture[Any]]: [field] =>
+          context =>
+            val key: Text = renames(label).or(label)
+            val found = fieldAst(key.s)
+
             // Missing field: try the case-class declared default
             // (Wisteria's `default`); if absent, hand the
             // `Yaml.Ast(Unset)` sentinel to the field's decoder.
@@ -220,7 +264,27 @@ trait Yaml2:
             // continue` with a zero/empty sentinel; nested
             // conjunctions detect wrong-shape and may further
             // short-circuit via a user-supplied `Default[Nested]`.
-            else default.or(context.decoded(new Yaml(Yaml.Ast(Unset))))
+            def decodeNow(): field =
+              if found != null then context.decoded(new Yaml(found))
+              else default.or(context.decoded(new Yaml(Yaml.Ast(Unset))))
+
+            if !active then Venture(decodeNow())
+            else
+              // Each outer `focus` runs *after* the inner one
+              // (contingency's try/finally order), so we extend
+              // `prior` at the root side via `prepend` so a nested
+              // case-class error lands at `/outer/inner` rather than
+              // `/inner/outer`. See `feedback-xml-decoder-split-design`
+              // lesson 4.
+              focus({
+                val base = prior.let(_.pointer).or(YamlPath())
+                Yaml.Focus(base.prepend(key))
+              }):
+                val before = foci.length
+                val value: field = decodeNow()
+                if foci.length > before then Venture.failed else Venture(value)
+
+      gate[derivation](infer[ProductReflection[derivation]], slots, active)
 
     // Sealed-trait disjunction picks a variant by mapping discriminator
     // (`type:` key). We screen the discriminator against
@@ -259,7 +323,13 @@ trait Yaml2:
                       raise(Yaml.Error(Reason.Absent)) yet derivationDefault()
 
                     case _ =>
-                      abort(Yaml.Error(Reason.Absent))
+                      // Under an accruing scope, record ONE error and skip the variant decode
+                      // without killing the whole scope: the returned value is never used (the
+                      // caller sees the focus delta, or the tracking scope is tainted), so
+                      // siblings keep accruing. Fail-fast scopes abort as before.
+                      if infer[Foci[Yaml.Focus]].active
+                      then raise(Yaml.Error(Reason.Absent)) yet null.asInstanceOf[derivation]
+                      else abort(Yaml.Error(Reason.Absent))
 
   object EncodableDerivation extends Derivable[Encodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]

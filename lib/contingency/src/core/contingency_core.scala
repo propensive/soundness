@@ -190,6 +190,13 @@ infix type mitigates [error <: Hazard, error2 <: Hazard] =
 
 infix type tracks [result, focus] = Foci[focus] ?=> result
 
+type Venture[+value] = Venture.Type[value]
+
+// The single capability a `venture` block receives: its delimiting tactic, which is also its own
+// skip-scope witness (`Guard`). A named alias rather than an inline intersection because the
+// parser cannot parse a parenthesized capturing intersection in context-function position.
+type Venturer[error <: Hazard] = Tactic[error] & Guard
+
 
 inline def focus[focus, result](using foci: Foci[focus])
   ( transform: (Optional[focus] aka "prior") ?=> focus )
@@ -243,10 +250,44 @@ extension [value](optional: Optional[value])
     catch case error: Exception => Unset
 
 
-def defer[result, error <: Hazard](body: Tactic[error]^ ?=> result)
-:   Deferred[result, error]^{body} =
+// Eagerly evaluates `block` under a `VentureTactic` interposed before the ambient tactic: every
+// error recorded in the block accrues into the ambient scope exactly as it would outside (with
+// declaration-site foci), but an `abort` — or a completed block that recorded anything — yields
+// `Venture.Failed` in place of a value, abandoning only the venture. Sibling ventures therefore
+// contribute their full error sets independently, and downstream code that forces the result is
+// skipped rather than fed a garbage fallback. Under a fail-fast ambient tactic, the forwarded
+// `record` escapes immediately: `venture` degrades to transparent eager evaluation.
+// The block receives ONE capability serving two interfaces — the venture's tactic, which is also
+// its `Guard` (both escape to the same boundary) — in a single context-function layer (see
+// `safely` above for why a second layer cannot be reconciled under capture checking; an
+// intersection rather than two parameters because the same capability cannot be passed twice
+// under separation checking).
+def venture[error <: Hazard](using tactic: Tactic[error]^, diagnostics: Diagnostics)[value]
+  ( block: Venturer[error] ?=> value )
+:   Venture[value] =
 
-  Deferred(body)
+  boundary: label ?=>
+    val inner = VentureTactic[error, value](tactic, label)
+    val value = block(using inner)
+
+    if inner.failed then Venture.failed else Venture(value)
+
+
+// Runs `block` only if the ambient tactic is clean: if any error has been recorded in the
+// enclosing aggregation scope, the block is skipped by certifying the tactic, which surrenders
+// the scope to its accumulated errors. Within the block, forcing a failed `Venture` escapes the
+// same way. Under a fail-fast tactic, `tainted` is truthfully always false (an error would
+// already have escaped), so `guard` is the identity.
+def guard[error <: Hazard](using tactic: Tactic[error]^, diagnostics: Diagnostics)[result]
+  ( block: Guard^ ?=> result )
+:   result =
+
+  def surrender(): Nothing =
+    tactic.certify()
+    panic(m"a tainted tactic failed to certify")
+
+  if tactic.tainted then surrender()
+  else block(using new Guard { def escape(): Nothing = surrender() })
 
 
 transparent inline def recover(inline handler: PartialFunction[Exception, Any]): Recovery[?] =
