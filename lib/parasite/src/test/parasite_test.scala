@@ -542,15 +542,15 @@ object Tests extends Suite(m"Parasite tests"):
 
         test(m"Retry surrenders on surrender"):
           val attempts = juca.AtomicInteger(0)
-          val result = capture[RetryError](retry: (surrender, persevere) ?=>
+          val result = capture[Tenacity.Error](retry: (surrender, persevere) ?=>
             attempts.incrementAndGet()
             surrender())
           (result, attempts.get())
-        . assert(_ == (RetryError(1), 1))
+        . assert(_ == (Tenacity.Error(1), 1))
 
-        test(m"Retry exceeds limit gives RetryError"):
+        test(m"Retry exceeds limit gives Tenacity.Error"):
           val attempts = juca.AtomicInteger(0)
-          val result = capture[RetryError](retry: (surrender, persevere) ?=>
+          val result = capture[Tenacity.Error](retry: (surrender, persevere) ?=>
             attempts.incrementAndGet()
             persevere())
           (attempts.get() <= 6, result.count == 5)
@@ -583,7 +583,7 @@ object Tests extends Suite(m"Parasite tests"):
 
         test(m"Tenacity.limit aborts after specified attempts"):
           val base = Tenacity.fixed(0.0*Milli(Second)).limit(3)
-          val result = capture[RetryError](base.delay(Prim + 3))
+          val result = capture[Tenacity.Error](base.delay(Prim + 3))
           result.count
         . assert(_ == 3)
 
@@ -773,7 +773,7 @@ object Tests extends Suite(m"Parasite tests"):
           given tenacity: Tenacity = Tenacity.fixed(40.0*Milli(Second)).limit(3)
           val attempts = juca.AtomicInteger(0)
           val start = jl.System.currentTimeMillis
-          val result = capture[RetryError]:
+          val result = capture[Tenacity.Error]:
             retry: (surrender, persevere) ?=>
               attempts.incrementAndGet()
               persevere()
@@ -1441,7 +1441,7 @@ object Tests extends Suite(m"Parasite tests"):
       suite(m"Tenacity exponential limits"):
         test(m"Exponential.limit aborts at limit"):
           val tenacity: Tenacity = Tenacity.exponential(1.0*Milli(Second), 1.5).limit(2)
-          val result = capture[RetryError](tenacity.delay(Prim + 2))
+          val result = capture[Tenacity.Error](tenacity.delay(Prim + 2))
           result.count
         . assert(_ == 2)
 
@@ -1449,7 +1449,7 @@ object Tests extends Suite(m"Parasite tests"):
           given tenacity: Tenacity = Tenacity.exponential(10.0*Milli(Second), 2.0).limit(4)
           val attempts = juca.AtomicInteger(0)
           val start = jl.System.currentTimeMillis
-          val result = capture[RetryError]:
+          val result = capture[Tenacity.Error]:
             retry: (surrender, persevere) ?=>
               attempts.incrementAndGet()
               persevere()

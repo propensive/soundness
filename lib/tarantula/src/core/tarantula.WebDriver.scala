@@ -999,7 +999,7 @@ object WebDriver:
     // The policy is the ambient `Tenacity` — `exponentialFiveTimesTenacity` and its siblings are
     // exported from `soundness` — so the schedule is the caller's to choose.
     def awaitElements[focus: Focusable](value: focus)
-      ( using Tenacity, Monitor, Tactic[RetryError] )
+      ( using Tenacity, Monitor, Tactic[Tenacity.Error] )
     :   List[Element] =
 
       retry: (surrender, persevere) ?=>
@@ -1007,14 +1007,14 @@ object WebDriver:
         if found.nil then persevere() else found
 
     def awaitElement[focus: Focusable](value: focus)
-      ( using Tenacity, Monitor, Tactic[RetryError] )
+      ( using Tenacity, Monitor, Tactic[Tenacity.Error] )
     :   Element =
 
       awaitElements(value).prim.lest(Error(Error.Reason.NoSuchElement, t"nothing matched", Nil))
 
     // The general form, for a condition the caller can evaluate without raising — comparing a
     // title, counting elements, reading a cookie.
-    def awaitUntil(condition: => Boolean)(using Tenacity, Monitor, Tactic[RetryError]): Unit =
+    def awaitUntil(condition: => Boolean)(using Tenacity, Monitor, Tactic[Tenacity.Error]): Unit =
       retry: (surrender, persevere) ?=>
         val satisfied = condition
         if satisfied then () else persevere()

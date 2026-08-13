@@ -405,7 +405,7 @@ object Tests extends Suite(m"Tarantula tests"):
           val fake = driver((_, path) => if path.ends(t"/elements") then value(t"[]") else none)
           given Http.Backend = fake
 
-          capture[RetryError]:
+          capture[Tenacity.Error]:
             WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
               browser.awaitElement(H1)
 
