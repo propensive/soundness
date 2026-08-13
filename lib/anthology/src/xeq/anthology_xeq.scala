@@ -147,7 +147,7 @@ object xeqEdges:
             buildId      = settings.buildId )
 
       mitigate:
-        case error: PackageError => Link.Error(Link.Error.Reason.Packaging(error.message.text))
+        case error: Packager.Error => Link.Error(Link.Error.Reason.Packaging(error.message.text))
 
       . protect:
           Deliverable.Product(Packager.pack(packaging))

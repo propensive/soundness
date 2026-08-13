@@ -73,30 +73,32 @@ object Packager:
   // The embedded JAR payload's label — must match the launcher templates' `get_offset "data"`.
   private val DataName: Text = t"data"
 
-  def pack(config: Packaging)(using WorkingDirectory): Path on Linux raises PackageError =
+  def pack(config: Packaging)(using WorkingDirectory): Path on Linux raises Packager.Error =
     val appJar: Path on Linux = config.dependencies.absolve match
       case Packaging.Dependencies.FatJar(jar) =>
         jar
 
       case Packaging.Dependencies.BurdockRemote(_) =>
-        abort(PackageError(m"Burdock remote dependencies are not yet supported (Stage C)"))
+        abort(Packager.Error(m"Burdock remote dependencies are not yet supported (Stage C)"))
 
     config.delivery match
       case Packaging.Delivery.Native if config.targets.stdlib.length != 1 =>
         val length: Int = config.targets.stdlib.length
-        abort(PackageError(m"Native delivery requires exactly one target, but $length were given"))
+
+        abort:
+          Packager.Error(m"Native delivery requires exactly one target, but $length were given")
 
       case _ =>
         ()
 
     mitigate:
-      case Http.Error(_, _)       => PackageError(m"A runner stub could not be downloaded")
-      case ConnectError(_)       => PackageError(m"Could not connect to download a runner stub")
-      case Url.Error(_, _, _)     => PackageError(m"A runner stub URL is invalid")
-      case AssemblyError(detail) => PackageError(detail)
-      case IoError(_, _, _, _)   => PackageError(m"A filesystem error occurred during packaging")
-      case StreamError(_)        => PackageError(m"A stream error occurred during packaging")
-      case Path.Error(_, _)       => PackageError(m"A path could not be resolved during packaging")
+      case Http.Error(_, _)        => Packager.Error(m"A runner stub could not be downloaded")
+      case ConnectError(_)         => Packager.Error(m"Could not connect to download a runner stub")
+      case Url.Error(_, _, _)      => Packager.Error(m"A runner stub URL is invalid")
+      case Assembler.Error(detail) => Packager.Error(detail)
+      case IoError(_, _, _, _)     => Packager.Error(m"A filesystem error occurred when packaging")
+      case StreamError(_)          => Packager.Error(m"A stream error occurred during packaging")
+      case Path.Error(_, _)        => Packager.Error(m"A path could not be resolved when packaging")
 
     . protect:
         val jdk: Boolean = config.java.bundle == Packaging.Bundle.Jdk
@@ -109,7 +111,7 @@ object Packager:
               val raw: Data = key.read[Data]
 
               if raw.length != Assembler.PublicKeyLength
-              then abort(PackageError(m"The signing public key is the wrong size"))
+              then abort(Packager.Error(m"The signing public key is the wrong size"))
 
               raw
 
@@ -126,14 +128,14 @@ object Packager:
 
             case Packaging.RunnerSource.Remote(baseUrl, hashes) =>
               val expected: Text =
-                hashes(label).lest(PackageError(m"No runner hash given for $label"))
+                hashes(label).lest(Packager.Error(m"No runner hash given for $label"))
 
               val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
               val runner: Data = mute[Http.Event](t"$base$name".as[HttpUrl].fetch().read[Data])
               val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
               if actual != expected
-              then abort(PackageError(m"The runner for $label has the wrong SHA-256 ($actual)"))
+              then abort(Packager.Error(m"The runner for $label has the wrong SHA-256 ($actual)"))
 
               runner
 
@@ -167,7 +169,7 @@ object Packager:
             // is built or published here — only the reusable stubs (published independently).
             val entries: List[(Text, Text, Text)] = config.runnerSource.absolve match
               case Packaging.RunnerSource.Local(_) =>
-                abort(PackageError(m"Download delivery requires a Remote runner source"))
+                abort(Packager.Error(m"Download delivery requires a Remote runner source"))
 
               case Packaging.RunnerSource.Remote(baseUrl, hashes) =>
                 val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
@@ -177,7 +179,7 @@ object Packager:
                     if label.starts(t"windows") then t"runner-$label.exe" else t"runner-$label"
 
                   val hash: Text =
-                    hashes(label).lest(PackageError(m"No runner hash given for $label"))
+                    hashes(label).lest(Packager.Error(m"No runner hash given for $label"))
 
                   (label, t"$base$name", hash)
 
@@ -193,3 +195,6 @@ object Packager:
       handle.write(Chain(data))
 
     output.executable() = true
+
+  // PackageError → Packager.Error
+  case class Error(detail: Message)(using Diagnostics) extends fulminate.Error(detail)

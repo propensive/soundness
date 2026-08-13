@@ -199,18 +199,18 @@ object Tests extends Suite(m"Ziggurat tests"):
 
       test(m"Burdock remote dependencies are rejected"):
         val dependencies = Packaging.Dependencies.BurdockRemote(tempDir()/t"app.jar")
-        capture[PackageError](Packager.pack(config(Packaging.Delivery.EmbedAll, dependencies)))
+        capture[Packager.Error](Packager.pack(config(Packaging.Delivery.EmbedAll, dependencies)))
       .assert(_ => true)
 
       test(m"remote runner with no hash for the target is rejected"):
         // Fails on the missing-hash check before any download is attempted.
         val remote = Packaging.RunnerSource.Remote(t"https://example.invalid/", Map())
-        capture[PackageError]:
+        capture[Packager.Error]:
           Packager.pack(config(Packaging.Delivery.Native, fatJar, remote))
       .assert(_ => true)
 
       test(m"native delivery with multiple targets is rejected"):
-        capture[PackageError]:
+        capture[Packager.Error]:
           Packager.pack(config(Packaging.Delivery.Native, fatJar, targets = labels))
       .assert(_ => true)
 

@@ -58,8 +58,6 @@ import filesystemOptions.overwritePreexisting.enabled
 
 import filesystemBackends.virtualMachineFilesystem
 
-case class AssemblyError(detail: Message)(using Diagnostics) extends Error(detail)
-
 // Produces a self-contained per-platform executable by patching a bare ethereal
 // runner binary's ETHRCFG block (build id, Java version policy, ML-DSA-44 public
 // key) and appending the application JAR at EOF. Shared by the
@@ -85,7 +83,7 @@ object Assembler:
       javaPreferred: Int,
       jdk:           Boolean,
       publicKey:     Data )           // 1312 raw bytes (all-zero disables upgrades)
-    ( using Tactic[AssemblyError] )
+    ( using Tactic[Assembler.Error] )
   :   Data =
 
     val bytes: scala.Array[Byte] = runner.readable.toArray
@@ -106,7 +104,7 @@ object Assembler:
         i += 1
 
       if found < 0
-      then abort(AssemblyError(m"The runner binary does not contain the ETHRCFG marker"))
+      then abort(Assembler.Error(m"The runner binary does not contain the ETHRCFG marker"))
 
       found
 
@@ -144,7 +142,7 @@ object Assembler:
     // Explicit `using` evidence instead of stacked `raises` sugar: the handle-loan lambdas
     // in the body cannot cross the nested context-function results the sugar desugars to
     // (the stacked-raises convention; see rep/DECISIONS.md).
-    ( using Tactic[AssemblyError], Tactic[IoError], Tactic[StreamError] )
+    ( using Tactic[Assembler.Error], Tactic[IoError], Tactic[StreamError] )
   :   Unit =
 
     val isWindows: Boolean = platformLabel.starts(t"windows")
@@ -176,9 +174,12 @@ object Assembler:
     // Left stale, the JVM declines to open the executable and the daemon dies mute (#1680).
     mitigate:
       case Zip.Error(_) =>
-        AssemblyError(m"The appended JAR's ZIP64 metadata could not be rebased")
+        Assembler.Error(m"The appended JAR's ZIP64 metadata could not be rebased")
 
     . protect:
         Zipfile.rebase(output, prefixSize.long)
 
     if !isWindows then output.executable() = true
+
+  // AssemblyError → Assembler.Error
+  case class Error(detail: Message)(using Diagnostics) extends fulminate.Error(detail)

@@ -50,8 +50,6 @@ import httpBackends.virtualMachineHttp
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
 
-case class RunnerError(detail: Message)(using Diagnostics) extends Error(detail)
-
 // The reusable native runner stubs are published independently of any application as a
 // GitHub release (`runners-<version>`), and verified against the committed
 // `etc/runners/<version>.tsv` manifest. The `-Dbuild.executable` self-packaging path
@@ -80,23 +78,27 @@ object Runners:
 
   // Download the bare reusable runner stub for `label` from the published release and verify
   // it against the hard-coded SHA-256 manifest.
-  def download(label: Text): Data raises RunnerError =
+  def download(label: Text): Data raises Runners.Error =
     val name: Text = runnerName(label)
 
     val expected: Text =
-      hashes(label).lest(RunnerError(m"There is no published runner stub for platform $label"))
+      hashes(label).lest(Runners.Error(m"There is no published runner stub for platform $label"))
 
     mitigate:
-      case Http.Error(_, _)   => RunnerError(m"Could not download the stub $name from $baseUrl")
-      case ConnectError(_)   => RunnerError(m"Could not connect to $baseUrl to download $name")
-      case Url.Error(_, _, _) => RunnerError(m"The runner stub URL for $name is not valid")
-      case StreamError(_)    => RunnerError(m"The download of the stub $name was interrupted")
+      case Http.Error(_, _)   => Runners.Error(m"Could not download the stub $name from $baseUrl")
+      case ConnectError(_)    => Runners.Error(m"Could not connect to $baseUrl to download $name")
+      case Url.Error(_, _, _) => Runners.Error(m"The runner stub URL for $name is not valid")
+      case StreamError(_)     => Runners.Error(m"The download of the stub $name was interrupted")
 
     . protect:
         val runner: Data = mute[Http.Event](t"$baseUrl/$name".as[HttpUrl].fetch().read[Data])
         val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
         if actual != expected
-        then abort(RunnerError(m"The downloaded runner stub $name has the wrong SHA-256 ($actual)"))
+        then abort:
+          Runners.Error(m"The downloaded runner stub $name has the wrong SHA-256 ($actual)")
 
         runner
+
+  // RunnerError → Runners.Error
+  case class Error(detail: Message)(using Diagnostics) extends fulminate.Error(detail)

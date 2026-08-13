@@ -44,21 +44,21 @@ extension (shell: Shell)
   // would hide the parameters, which the separation checker rejects.
   def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
     ( using WorkingDirectory, Enclave.Tool, Monitor, TemporaryDirectory )
-    ( using Tactic[TmuxError], (guillotine.Exec.Event is Loggable)^ )
+    ( using Tactic[Tmux.Error], (guillotine.Exec.Event is Loggable)^ )
   :   result =
 
     mitigate:
-      case guillotine.Exec.Error(_, _, _)   => TmuxError(TmuxError.Reason.ExecFailed)
-      case Number.Error(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
-      case IoError(_, _, _, _)  => TmuxError(TmuxError.Reason.ExecFailed)
-      case StreamError(_)       => TmuxError(TmuxError.Reason.ExecFailed)
+      case guillotine.Exec.Error(_, _, _)   => Tmux.Error(Tmux.Error.Reason.ExecFailed)
+      case Number.Error(_, _, _) => Tmux.Error(Tmux.Error.Reason.SessionDied)
+      case IoError(_, _, _, _)  => Tmux.Error(Tmux.Error.Reason.ExecFailed)
+      case StreamError(_)       => Tmux.Error(Tmux.Error.Reason.ExecFailed)
 
     . protect:
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
 
         val path =
           summon[Enclave.Tool].path.parent
-          . lay(abort(TmuxError(TmuxError.Reason.ExecFailed)))(_.encode)
+          . lay(abort(Tmux.Error(Tmux.Error.Reason.ExecFailed)))(_.encode)
 
         var psFile: Optional[Path on Linux] = Unset
 
@@ -72,7 +72,7 @@ extension (shell: Shell)
           import logging.silentLogging
 
           if sh"which $shellBinary".exec[Exit]() != Exit.Ok
-          then abort(TmuxError(TmuxError.Reason.ShellNotInstalled(shellBinary)))
+          then abort(Tmux.Error(Tmux.Error.Reason.ShellNotInstalled(shellBinary)))
 
         val shellInvocation = shell match
           case Shell.Zsh        => t"zsh -l"

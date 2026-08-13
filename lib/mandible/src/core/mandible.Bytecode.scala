@@ -1457,6 +1457,20 @@ object Bytecode:
         case Wide() | Breakpoint | Impdep1 | Impdep2 => stack
         case _: Opcode                               => stack
 
+  // BytecodeError → Bytecode.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case ClassfileMissing    extends Reason(1)
+      case ClassfileUnreadable extends Reason(2)
+
+    given communicable: Reason is Communicable =
+      case Reason.ClassfileMissing    => m"the generated classfile could not be opened"
+      case Reason.ClassfileUnreadable => m"the generated classfile could not be read"
+
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(295, reason.number)
+    ( m"the bytecode could not be extracted because $reason" )
+
 case class Bytecode
   ( sourceFile:   Optional[Text],
     instructions: List[Bytecode.Instruction],

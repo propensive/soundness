@@ -181,7 +181,7 @@ def cli[bus <: Matchable](using executive: Executive)
                 scala.caps.unsafe.unsafeAssumeSeparate(cacheRunner.open[File]()(file.read[Data]))
               else
                 mitigate:
-                  case RunnerError(detail) =>
+                  case Runners.Error(detail) =>
                     Out.println(detail.text)
                     Exit.Fail(1).terminate()
 
@@ -227,7 +227,7 @@ def cli[bus <: Matchable](using executive: Executive)
                   raw
 
             mitigate:
-              case AssemblyError(_) =>
+              case Assembler.Error(_) =>
                 Out.println(e"Runner binary does not contain the ETHRCFG\\x02 magic marker")
                 Exit.Fail(1).terminate()
 
