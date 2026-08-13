@@ -1072,7 +1072,6 @@ object Json extends Json2, Dynamic:
                 // venture delimits `absent()`'s abort (the `Tactic` is a call-time parameter,
                 // not resolution-captured), records it at this field's focus, and continues.
                 focus(descend(prior, keys.readUnchecked(index).tt)):
-                  given Diagnostics = tactic.diagnostics
                   val ventured = venture(entries.readUnchecked(index)(1).absent())
                   if ventured.ready then values(index) = ventured.vouch else failed = true
               else values(index) = entries.readUnchecked(index)(1).absent()

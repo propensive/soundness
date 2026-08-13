@@ -85,9 +85,13 @@ extension (cbor: Cbor.Ast)
     else if unset then Primitive.Undefined
     else Primitive.Null
 
+  // `raise`, not `abort` (jacinta's leaf pattern): under an accruing scope every mistyped or
+  // absent leaf registers its own error and continues with its caller's inconsequential `yet`
+  // fallback — the derived record decoder detects the failure by foci delta and never lets the
+  // fallback reach construction. Under a fail-fast tactic, the `raise` escapes identically.
   private def expected(expected: Primitive): Unit raises Cbor.Error =
-    if unset then abort(Cbor.Error(Reason.Absent))
-    else abort(Cbor.Error(Reason.NotType(primitive, expected)))
+    if unset then raise(Cbor.Error(Reason.Absent))
+    else raise(Cbor.Error(Reason.NotType(primitive, expected)))
 
   @unexported
   inline def elements: Int = Cbor.Ast.length(cbor)

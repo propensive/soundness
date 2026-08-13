@@ -107,11 +107,17 @@ object Sse:
             case "id"    => id = value
 
             case "retry" =>
-              retry = safely(value.as[Long]).lest(Sse.Error(Sse.Error.Reason.BadRetryValue))
+              // A bad retry value records its error and leaves `retry` unset, so the other
+              // fields of the frame keep accruing their own errors.
+              retry = safely(value.as[Long]).or:
+                raise(Sse.Error(Sse.Error.Reason.BadRetryValue))
+                Unset
 
             case _ => raise(Sse.Error(Sse.Error.Reason.UnknownField))
 
-      Sse(event, data.reverse, id, retry)
+      // Guarded: a frame with any malformed field is never delivered to the consumer as a
+      // half-populated but valid-looking event.
+      guard(Sse(event, data.reverse, id, retry))
 
   given encodable: Sse is Encodable in Text =
     sse =>

@@ -41,6 +41,17 @@ import proscenium.compat.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
+case class BadPerson(name: Int, age: Text) derives CanEqual
+
+object BProbe:
+  @scala.caps.unsafe.untrackedCaptures
+  var constructions: Int = 0
+
+// The body statement observes construction: decoding must never construct from garbage
+// fallback values, so a decode with any failed field must leave the counter untouched.
+case class BChecked(name: Text, age: Int) derives CanEqual:
+  BProbe.constructions += 1
+
 case class Point(x: Int, y: Int) derives CanEqual
 case class Person(name: Text, age: Int) derives CanEqual
 case class Wrapper(values: List[Int], label: Text) derives CanEqual
@@ -549,3 +560,42 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
         encoded(tree).read[Tree in Cbor]
       . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
+
+    suite(m"Validation accrual"):
+      case class CIssues(items: List[(Text, Cbor.Error)] = Nil)(using Diagnostics)
+      extends Error(m"${items.length} CBOR issues"):
+        def +(focus: Text, error: Cbor.Error): CIssues = CIssues(items :+ (focus, error))
+
+      // Inline, with a directly-constructed `Validate`; see rep/DECISIONS.md.
+      inline def collectCbor[result](cbor: Cbor)
+        (inline decode: Cbor => result raises Cbor.Error tracks Pointer)
+      :   CIssues =
+        Validate[CIssues, [r] =>> r raises Cbor.Error, Pointer]
+          (CIssues(), { case error: Cbor.Error => accrual + (prior.let(_.text).or(t"?"), error) })
+        . protect(decode(cbor))
+
+      test(m"Two mistyped fields both accrue, with their pointers"):
+        collectCbor(BadPerson(1, t"x").in[Cbor])(_.as[Person]).items.map(_(0).s).to[Set]
+      . assert(_ == Set("name", "age"))
+
+      test(m"Two missing fields both accrue"):
+        collectCbor(Point(1, 2).in[Cbor])(_.as[Person]).items.map(_(0).s).to[Set]
+      . assert(_ == Set("name", "age"))
+
+      test(m"A fully-valid record accrues nothing"):
+        collectCbor(Person(t"Ada", 36).in[Cbor])(_.as[Person]).items.length
+      . assert(_ == 0)
+
+      test(m"Constructor does not run when any field failed"):
+        val cbor = Point(1, 2).in[Cbor]
+        BProbe.constructions = 0
+        val issues = collectCbor(cbor)(_.as[BChecked])
+        (issues.items.length, BProbe.constructions)
+      . assert(_ == (2, 0))
+
+      test(m"Constructor runs exactly once when all fields are clean"):
+        val cbor = BChecked(t"Zoe", 5).in[Cbor]
+        BProbe.constructions = 0
+        collectCbor(cbor)(_.as[BChecked])
+        BProbe.constructions
+      . assert(_ == 1)

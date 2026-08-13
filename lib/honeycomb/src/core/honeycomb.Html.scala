@@ -956,7 +956,14 @@ object Html extends Tag.Container
 
       def next(): Unit =
         advance()
-        if !more then raise(ParseError(Html, currentPosition(), ExpectedMore))
+
+        if !more then
+          // Permissive mode records (and discards) the warning and lets the recovery paths
+          // finish the best-effort DOM. Strict mode ABORTS: continuing to read an exhausted
+          // cursor would only manufacture a cascade of `Unexpected(' ')` errors under an
+          // accruing caller.
+          if permissive then raise(ParseError(Html, currentPosition(), ExpectedMore))
+          else fail(ExpectedMore)
 
       // Non-inline: each `expect`/`expectInsensitive` call site otherwise
       // re-expands `advance` + `lay` + `fail` + `Issue.Unexpected.apply`,

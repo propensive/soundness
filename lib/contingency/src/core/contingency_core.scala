@@ -262,7 +262,7 @@ extension [value](optional: Optional[value])
 // `safely` above for why a second layer cannot be reconciled under capture checking; an
 // intersection rather than two parameters because the same capability cannot be passed twice
 // under separation checking).
-def venture[error <: Hazard](using tactic: Tactic[error]^, diagnostics: Diagnostics)[value]
+def venture[error <: Hazard](using tactic: Tactic[error]^)[value]
   ( block: Venturer[error] ?=> value )
 :   Venture[value] =
 
@@ -278,7 +278,7 @@ def venture[error <: Hazard](using tactic: Tactic[error]^, diagnostics: Diagnost
 // the scope to its accumulated errors. Within the block, forcing a failed `Venture` escapes the
 // same way. Under a fail-fast tactic, `tainted` is truthfully always false (an error would
 // already have escaped), so `guard` is the identity.
-def guard[error <: Hazard](using tactic: Tactic[error]^, diagnostics: Diagnostics)[result]
+def guard[error <: Hazard](using tactic: Tactic[error]^)[result]
   ( block: Guard^ ?=> result )
 :   result =
 

@@ -282,8 +282,6 @@ trait Tel2 extends Tel3:
       ( using tactic: Tactic[Tel.Error] )
     :   field =
 
-      given fulminate.Diagnostics = tactic.diagnostics
-
       // A `List`/`Set` field (`ctx.repeatable`) is encoded as repeated
       // keyword compounds, so gather them all into a Document for the
       // collection decoder — positionally-assigned atoms first, since

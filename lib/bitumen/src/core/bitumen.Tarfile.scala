@@ -168,94 +168,105 @@ object Tarfile:
 
             case head: Data =>
               val header = TarHeader.parse(head)
-              val checksum = TarHeader.decodeOctal(header.checksum, t"checksum")
-              TarHeader.verifyChecksum(head, checksum)
-              val size: Int = TarHeader.decodeOctal(header.size, t"size").long.toInt
-              val mtime: U32 = TarHeader.decodeOctal(header.mtime, t"mtime")
-              val mode = UnixMode.from(TarHeader.decodeOctal(header.mode, t"mode").long.toInt)
-              val uid = TarHeader.decodeOctal(header.uid, t"uid").long.toInt
-              val gid = TarHeader.decodeOctal(header.gid, t"gid").long.toInt
 
-              val unameText =
-                paxOverlay.get("uname".tt).orElse(globalOverlay.get("uname".tt))
-                . getOrElse(TarHeader.decodeNulText(header.uname))
+              val checksummed: Venture[Unit] = venture:
+                TarHeader.verifyChecksum(head, TarHeader.decodeOctal(header.checksum, t"checksum"))
 
-              val gnameText =
-                paxOverlay.get("gname".tt).orElse(globalOverlay.get("gname".tt))
-                . getOrElse(TarHeader.decodeNulText(header.gname))
+              // A block that fails its checksum cannot be trusted for anything — including the
+              // size that locates the next header — so parsing on would only manufacture
+              // cascade errors from corrupt bytes. Record the checksum error and end the walk.
+              if !checksummed.ready then finished = true else
+                val size: Int = TarHeader.decodeOctal(header.size, t"size").long.toInt
+                val mtime: U32 = TarHeader.decodeOctal(header.mtime, t"mtime")
+                val mode = UnixMode.from(TarHeader.decodeOctal(header.mode, t"mode").long.toInt)
+                val uid = TarHeader.decodeOctal(header.uid, t"uid").long.toInt
+                val gid = TarHeader.decodeOctal(header.gid, t"gid").long.toInt
 
-              val user = UnixUser(uid, if unameText.s.isEmpty then Unset else unameText)
-              val group = UnixGroup(gid, if gnameText.s.isEmpty then Unset else gnameText)
+                val unameText =
+                  paxOverlay.get("uname".tt).orElse(globalOverlay.get("uname".tt))
+                  . getOrElse(TarHeader.decodeNulText(header.uname))
 
-              header.typeFlag.toInt & 0xff match
-                case 'x' =>
-                  paxOverlay = Map.of(paxOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib)
+                val gnameText =
+                  paxOverlay.get("gname".tt).orElse(globalOverlay.get("gname".tt))
+                  . getOrElse(TarHeader.decodeNulText(header.gname))
 
-                case 'g' =>
-                  globalOverlay = Map.of(globalOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib)
+                val user = UnixUser(uid, if unameText.s.isEmpty then Unset else unameText)
+                val group = UnixGroup(gid, if gnameText.s.isEmpty then Unset else gnameText)
 
-                case 'L' =>
-                  longName = TarHeader.decodeNulText(takeData(cursor, size))
+                header.typeFlag.toInt & 0xff match
+                  case 'x' =>
+                    paxOverlay = Map.of(paxOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib)
 
-                case 'K' =>
-                  longLink = TarHeader.decodeNulText(takeData(cursor, size))
+                  case 'g' =>
+                    globalOverlay = Map.of(globalOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib)
 
-                case 'S' =>
-                  val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
-                  val path = decodePath(nameText)
+                  case 'L' =>
+                    longName = TarHeader.decodeNulText(takeData(cursor, size))
 
-                  val inlineSegments: List[SparseSegment] = readInlineSparseMap(head)
-                  val isExtended: Boolean = head.readUnchecked(482) != 0.toByte
+                  case 'K' =>
+                    longLink = TarHeader.decodeNulText(takeData(cursor, size))
 
-                  val realSize: Long =
-                    TarHeader.decodeOctal(head.slice(483, 495), t"realsize").long
+                  case 'S' =>
+                    val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
+                    val path = decodePath(nameText)
 
-                  val extSegments = readSparseExtensions(cursor, isExtended)
-                  val data = takeData(cursor, size)
+                    val inlineSegments: List[SparseSegment] = readInlineSparseMap(head)
+                    val isExtended: Boolean = head.readUnchecked(482) != 0.toByte
 
-                  val allSegments = (inlineSegments ::: extSegments).filter(_.length > 0)
+                    val realSize: Long =
+                      TarHeader.decodeOctal(head.slice(483, 495), t"realsize").long
 
-                  val extras: Map[Text, Text] =
-                    Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
-                      !structuralPaxKeys.has(k)
+                    val extSegments = readSparseExtensions(cursor, isExtended)
+                    val data = takeData(cursor, size)
 
-                  lookahead =
-                    Tar.Entry.Sparse
-                      ( path, mode, user, group, mtime, realSize, allSegments, Tar.Body(data),
-                        extras )
+                    val allSegments = (inlineSegments ::: extSegments).filter(_.length > 0)
 
-                case flag if flag == 0 || flag == '0' || flag == '7' =>
-                  val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
-                  val path = decodePath(nameText)
+                    val extras: Map[Text, Text] =
+                      Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
+                        !structuralPaxKeys.has(k)
 
-                  val extras: Map[Text, Text] =
-                    Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
-                      !structuralPaxKeys.has(k)
+                    lookahead =
+                      Tar.Entry.Sparse
+                        ( path, mode, user, group, mtime, realSize, allSegments, Tar.Body(data),
+                          extras )
 
-                  // The body pulls off the shared cursor; advancing to the
-                  // next entry drains whatever of it remains unread.
-                  val body =
-                    Tar.Body.deferred:
-                      // Erases the two independently-freshened `any.rd`s on the frozen
-                      // chunk type (result position vs parameter position).
-                      bodyPull(cursor, size, ((size + 511)/512)*512)
-                      . asInstanceOf[() => Optional[Data]]
+                  case flag if flag == 0 || flag == '0' || flag == '7' =>
+                    val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
+                    val path = decodePath(nameText)
 
-                  unread = body
-                  lookahead = Tar.Entry.File(path, mode, user, group, mtime, body, extras)
+                    val extras: Map[Text, Text] =
+                      Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
+                        !structuralPaxKeys.has(k)
 
-                case flag =>
-                  val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
-                  val linkText = resolveLink(header, paxOverlay, globalOverlay, longLink)
-                  val path = decodePath(nameText)
+                    // The body pulls off the shared cursor; advancing to the
+                    // next entry drains whatever of it remains unread.
+                    val body =
+                      Tar.Body.deferred:
+                        // Erases the two independently-freshened `any.rd`s on the frozen
+                        // chunk type (result position vs parameter position).
+                        bodyPull(cursor, size, ((size + 511)/512)*512)
+                        . asInstanceOf[() => Optional[Data]]
 
-                  val extras: Map[Text, Text] =
-                    Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
-                      !structuralPaxKeys.has(k)
+                    unread = body
+                    lookahead = Tar.Entry.File(path, mode, user, group, mtime, body, extras)
 
-                  lookahead =
-                    buildEntry(flag, path, mode, user, group, mtime, size, linkText, extras,
-                      header, cursor)
+                  case flag =>
+                    val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
+                    val linkText = resolveLink(header, paxOverlay, globalOverlay, longLink)
+                    val path = decodePath(nameText)
+
+                    val extras: Map[Text, Text] =
+                      Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
+                        !structuralPaxKeys.has(k)
+
+                    // Drained here, not in `buildEntry` (a `consume`d cursor cannot cross that
+                    // call): zero bytes for the known dataless kinds, and an unknown kind's
+                    // declared payload, keeping the cursor synchronized with the next header.
+                    val data = takeData(cursor, size)
+
+                    lookahead =
+                      buildEntry(flag, path, mode, user, group, mtime, linkText, extras,
+                        header, data)
 
         !lookahead.absent
 
@@ -266,11 +277,10 @@ object Tarfile:
       user:   UnixUser,
       group:  UnixGroup,
       mtime:  U32,
-      size:   Int,
       link:   Text,
       extras: Map[Text, Text],
       header: TarHeader,
-      cursor: Cursor[Data, {}]^ )
+      data:   Data )
   :   Tar.Entry raises Tar.Error =
 
     flag match
@@ -297,8 +307,11 @@ object Tarfile:
         Tar.Entry.Fifo(path, mode, user, group, mtime, extras)
 
       case other =>
+        // An unknown type flag records its error and degrades to a regular file — POSIX's
+        // prescribed treatment for unrecognised flags — never a directory, which would corrupt
+        // the archive's tree (children attaching beneath it, and `TarFilesystem` creating it).
         raise(Tar.Error(Tar.Error.Reason.UnknownTypeFlag(other.toByte)))
-        Tar.Entry.Directory(path, mode, user, group, mtime, extras)
+        Tar.Entry.File(path, mode, user, group, mtime, Tar.Body(data), extras)
 
   // The next 512-byte block, or `Unset` at clean end-of-archive; a partial
   // block raises. One allocation per header block.

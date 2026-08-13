@@ -2297,7 +2297,6 @@ object legerdemain extends Library:
   object test extends Tests(core, query, scintillate.server):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-    override def enabled = false
 
 object mandible extends Library:
   object core extends Component(anthology.`scala`, hellenism.jvm, escritoire.core,

@@ -997,7 +997,6 @@ object Tel extends Tel2:
                 // `absent()`'s abort (the `Tactic` is a call-time parameter, not
                 // resolution-captured), records it at this field's focus, and continues.
                 focus(descend(prior, Text(keys.readUnchecked(index)))):
-                  given Diagnostics = tactic.diagnostics
                   val ventured = venture(entries.readUnchecked(index)(1).absent())
                   if ventured.ready then values(index) = ventured.vouch else failedSlots = true
               else values(index) = entries.readUnchecked(index)(1).absent()

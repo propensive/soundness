@@ -78,15 +78,76 @@ object Query extends Dynamic:
           . flatMap(_.values)
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:
+    // Each outer `focus` runs *after* the inner one (contingency's try/finally order), so a
+    // nested record's error must be extended at the ROOT side, landing at `outer.inner` rather
+    // than `inner.outer`.
+    private def prepend(pointer: Pointer, root: Text): Pointer = pointer match
+      case Pointer.Self                 => Pointer(root)
+      case Pointer.Child(parent, label) => prepend(parent, root)(label)
+    // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
+    // plain method: the argument buffer must not be allocated inside an inline expansion,
+    // where its fresh root capability leaks into the expansion site's capture sets. Returns
+    // an unused null when any slot failed: the caller's accruing scope is tainted, so the
+    // result is discarded.
+    private final class ArrayProduct(values: Array[Any]^{}) extends Product:
+      def canEqual(that: Any): Boolean = true
+      def productArity: Int = values.length
+      def productElement(index: Int): Any = values.readUnchecked(index)
+
+    private def gate[derivation <: Product]
+      ( reflection: ProductReflection[derivation],
+        slots:      Array[Venture[Any]]^{},
+        active:     Boolean )
+    :   derivation =
+
+      var failed = false
+      var slot = 0
+
+      if active then
+        while slot < slots.length do
+          if !slots.readUnchecked(slot).ready then failed = true
+          slot += 1
+
+      if failed then null.asInstanceOf[derivation]
+      else
+        val arguments = Array[Any](slots.length)
+        slot = 0
+
+        while slot < slots.length do
+          arguments(slot) = slots.readUnchecked(slot).vouch
+          slot += 1
+
+        reflection.fromProduct(ArrayProduct(Array.freeze(arguments)))
+
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Query =
 
-      provide[Foci[Pointer]]:
-        value =>
-          build[derivation]:
+      // The `Foci` is threaded from the derivation site: a `provide` here would mint a fresh,
+      // inert instance, silently discarding the pointer of every accrued error and hiding the
+      // ambient scope's registrations — which is what stopped `validate` working over form
+      // decoding. A SINGLE field traversal (each additional wisteria traversal re-summons every
+      // field's decoder, multiplying inline expansion exponentially with nesting depth), with
+      // construction gated on all fields decoding cleanly, so refinement-typed constructors
+      // never run on fallback values and report phantom validation errors.
+      val foci = infer[Foci[Pointer]]
+
+      value =>
+        val active = foci.active
+
+        val slots: Array[Venture[Any]]^{} =
+          contexts[derivation]()[Venture[Any]]:
             [field] => context =>
-              focus(prior.lay(Pointer(label))(_(label))):
-                context.decoded(value(label))
+              if !active then Venture(context.decoded(value(label)))
+              else
+                // `focus`'s `Foci` is passed explicitly: an inline def's using parameter would
+                // otherwise resolve at this DEFINITION site (to the inert default), not at the
+                // expansion site where the validation scope's instance is in context.
+                focus(using foci)(prior.lay(Pointer(label))(prepend(_, label))):
+                  val before = foci.length
+                  val decoded: field = context.decoded(value(label))
+                  if foci.length > before then Venture.failed else Venture(decoded)
+
+        gate[derivation](infer[ProductReflection[derivation]], slots, active)
 
   given booleanEncodable: Boolean is Encodable in Query =
     boolean => if boolean then Query(t"on") else Query()
@@ -119,7 +180,17 @@ object Query extends Dynamic:
                 default()
 
             case _ =>
-              _().lest(Query.Error(Query.Error.Reason.Missing)).as
+              query =>
+                query().lay:
+                  // Under an accruing scope, a missing required parameter records its error
+                  // and returns an unused null — the caller's slot is marked failed via the
+                  // foci delta, so siblings keep accruing. Fail-fast scopes abort as before.
+                  if infer[Foci[Pointer]].active
+                  then
+                    raise(Query.Error(Query.Error.Reason.Missing))
+                    null.asInstanceOf[value]
+                  else abort(Query.Error(Query.Error.Reason.Missing))
+                . apply(_.as)
 
       case given ProductReflection[`value` & Product] =>
         DecodableDerivation.conjunction[value & Product].asInstanceOf[value is Decodable in Query]

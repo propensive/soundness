@@ -108,27 +108,74 @@ trait Cbor2:
     case given Reflection[`value`]            => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Cbor]:
+    // Each outer `focus` runs *after* the inner one (contingency's try/finally order), so a
+    // nested record's error must be extended at the ROOT side, landing at `outer.inner` rather
+    // than `inner.outer`.
+    private def prepend(pointer: Pointer, root: Text): Pointer = pointer match
+      case Pointer.Self                 => Pointer(root)
+      case Pointer.Child(parent, label) => prepend(parent, root)(label)
+
+    // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
+    // plain method: the argument buffer must not be allocated inside an inline expansion,
+    // where its fresh root capability leaks into the expansion site's capture sets. Returns
+    // an unused null when any slot failed: the caller's accruing scope is tainted, so the
+    // result is discarded.
+    private final class ArrayProduct(values: Array[Any]^{}) extends Product:
+      def canEqual(that: Any): Boolean = true
+      def productArity: Int = values.length
+      def productElement(index: Int): Any = values.readUnchecked(index)
+
+    private def gate[derivation <: Product]
+      ( reflection: ProductReflection[derivation],
+        slots:      Array[Venture[Any]]^{},
+        active:     Boolean )
+    :   derivation =
+
+      var failed = false
+      var slot = 0
+
+      if active then
+        while slot < slots.length do
+          if !slots.readUnchecked(slot).ready then failed = true
+          slot += 1
+
+      if failed then null.asInstanceOf[derivation]
+      else
+        val arguments = Array[Any](slots.length)
+        slot = 0
+
+        while slot < slots.length do
+          arguments(slot) = slots.readUnchecked(slot).vouch
+          slot += 1
+
+        reflection.fromProduct(ArrayProduct(Array.freeze(arguments)))
+
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Cbor =
 
-        // The `Tactic` is summoned at the derivation site and supplied explicitly to `decodeRecord`,
-        // rather than re-summoned via a `provide` inside the decoder body: that minted a distinct
-        // root capability that failed to unify with `build`'s polymorphic per-field lambda. A
-        // `Decodable` is `Pure`, so the SAM closing over the summoned `Tactic` adds nothing to its
+        // The `Tactic` and `Foci` are summoned at the derivation site and supplied explicitly
+        // to `decodeRecord`, rather than re-summoned via a `provide` inside the decoder body:
+        // that minted a distinct root capability that failed to unify with the polymorphic
+        // per-field lambda (and a fresh `Foci` would silently discard pointers). A `Decodable`
+        // is `Pure`, so the SAM closing over the summoned capabilities adds nothing to its
         // capture set.
       cbor =>
         decodeRecord[derivation](cbor)
-          (using infer[ProductReflection[derivation]], infer[Tactic[Cbor.Error]])
+          ( using infer[ProductReflection[derivation]],
+                  infer[Foci[Pointer]],
+                  infer[Tactic[Cbor.Error]] )
 
     private inline def decodeRecord[derivation <: Product]
       ( cbor: Cbor )
-      ( using ProductReflection[derivation], Tactic[Cbor.Error] )
+      ( using reflection: ProductReflection[derivation],
+              foci:       Foci[Pointer],
+              tactic:     Tactic[Cbor.Error] )
     :   derivation =
 
       val root = cbor.root
       val count = if root.isMap then root.entries else 0
 
-      // Built immutably: `build`'s per-field lambda is polymorphic and must be pure, so it may only
+      // Built immutably: the per-field lambda is polymorphic and must be pure, so it may only
       // close over pure values — a mutable map would be a capability.
       val values: Map[String, Ast] =
         val builder = scala.collection.immutable.Map.newBuilder[String, Ast]
@@ -143,13 +190,34 @@ trait Cbor2:
       // back the same way they are written.
       val renames: Map[Text, Text] = relabelling[derivation, Cbor]
 
-      build[derivation]: [field] =>
-        context =>
-          val key: Text = renames(label).or(label)
+      // A SINGLE field traversal serving both modes, branching on `foci.active` per field
+      // (each additional wisteria traversal re-summons every field's decoder, multiplying
+      // inline expansion exponentially with nesting depth). Accruing mode marks a slot failed
+      // if its decode registered any focus, and constructs only when every slot is clean —
+      // user constructor code never sees a garbage fallback value.
+      val active = foci.active
 
-          values.get(key.s) match
-            case Some(value) => context.decoded(new Cbor(value))
-            case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
+      val slots: Array[Venture[Any]]^{} =
+        contexts[derivation]()[Venture[Any]]: [field] =>
+          context =>
+            val key: Text = renames(label).or(label)
+
+            def decodeNow(): field =
+              values.get(key.s) match
+                case Some(value) => context.decoded(new Cbor(value))
+                case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
+
+            if !active then Venture(decodeNow())
+            else
+              // `focus`'s `Foci` is passed explicitly: an inline def's using parameter would
+              // otherwise resolve at this DEFINITION site (to the inert default), not at the
+              // expansion site where the validation scope's instance is in context.
+              focus(using foci)(prior.lay(Pointer(key))(prepend(_, key))):
+                val before = foci.length
+                val value: field = decodeNow()
+                if foci.length > before then Venture.failed else Venture(value)
+
+      gate[derivation](reflection, slots, active)
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Cbor =
       cbor =>
@@ -162,13 +230,21 @@ trait Cbor2:
             val variantNames: Map[Text, Text] = Map.from:
               variantRelabelling[derivation, Cbor].stdlib.map: (variant, wire) => wire -> variant
 
-            val wire: Text =
-              discriminable.discriminate(cbor).lest(Cbor.Error(Reason.Absent))
+            discriminable.discriminate(cbor).lay:
+              // Under an accruing scope, a missing discriminator records ONE error and skips
+              // the variant decode without killing the whole scope: the returned value is
+              // never used (the caller sees the focus delta, or the tracking scope is
+              // tainted), so siblings keep accruing. Fail-fast scopes abort as before.
+              if infer[Foci[Pointer]].active then
+                raise(Cbor.Error(Reason.Absent))
+                null.asInstanceOf[derivation]
+              else abort(Cbor.Error(Reason.Absent))
 
-            val discriminant: Text = variantNames(wire).or(wire)
+            . apply: wire =>
+                val discriminant: Text = variantNames(wire).or(wire)
 
-            delegate(discriminant): [variant <: derivation] =>
-              context => context.decoded(cbor)
+                delegate(discriminant): [variant <: derivation] =>
+                  context => context.decoded(cbor)
 
   object EncodableDerivation extends Derivable[Encodable in Cbor]:
     inline def conjunction[derivation <: Product: ProductReflection]

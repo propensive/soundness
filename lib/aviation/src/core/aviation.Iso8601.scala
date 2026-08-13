@@ -98,7 +98,12 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
       val firstMonday = jan4 - (Quanta(jan4.weekday.number.n0): Quanta[Days[1]])
       firstMonday + (Quanta(days): Quanta[Days[1]])
 
-    val date: Date = next() match
+    // The date is a `venture`: its errors accrue, but its in-expression fallbacks (`today()`,
+    // `2000-Jan-1`) are confined to the failed venture and can never masquerade as a parsed
+    // date. The time-and-zone tail below is guarded on it: ISO 8601 fields are variable-width,
+    // so after a date error the cursor is desynchronized and parsing on would only manufacture
+    // cascade errors from misaligned characters.
+    val parsedDate: Venture[Date] = venture(next() match
       case '-' =>
         next()
 
@@ -139,94 +144,97 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
           case _          => fail(Digit) yet 2000-Jan-1
 
       case _ =>
-        fail(Digit) yet 2000-Jan-1
+        fail(Digit) yet 2000-Jan-1)
 
-    // A `:60` second is a leap second; on the (leap-free) Unix line it collapses onto the next
-    // second (`23:59:60` ≡ the following `00:00:00`), so store `:59` and add one second.
-    def clockInstant(hour: Int, minute: Int, second: Int): Instant over Unix =
-      if second == 60 then
-        Clockface(Base24(hour), Base60(minute), Base60(59)).on(date).instant +
-          Quantity[Seconds[1]](1.0)
-      else
-        Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
+    guard:
+      val date: Date = parsedDate()
 
-    val instant: Instant over Unix = next() match
-      case '\u0000' => Clockface(Base24(0), Base60(0), Base60(0)).on(date).instant
+      // A `:60` second is a leap second; on the (leap-free) Unix line it collapses onto the
+      // next second (`23:59:60` ≡ the following `00:00:00`), so store `:59` and add one second.
+      def clockInstant(hour: Int, minute: Int, second: Int): Instant over Unix =
+        if second == 60 then
+          Clockface(Base24(hour), Base60(minute), Base60(59)).on(date).instant +
+            Quantity[Seconds[1]](1.0)
+        else
+          Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
 
-      case 'T' =>
-        val hour = next() yet number(2)
+      val instant: Instant over Unix = next() match
+        case '\u0000' => Clockface(Base24(0), Base60(0), Base60(0)).on(date).instant
 
-        next() match
-          case ':' =>
-            val minute = next() yet number(2)
+        case 'T' =>
+          val hour = next() yet number(2)
 
-            next() match
-              case '.' | ',' =>
-                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant +
-                  Quantity[Minutes[1]](fraction())
+          next() match
+            case ':' =>
+              val minute = next() yet number(2)
 
-              case ':' =>
-                val second = next() yet number(2)
+              next() match
+                case '.' | ',' =>
+                  Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant +
+                    Quantity[Minutes[1]](fraction())
 
-                next() match
-                  case '.' | ',' =>
-                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant +
-                      fraction()*Second
+                case ':' =>
+                  val second = next() yet number(2)
 
-                  case _ =>
-                    clockInstant(hour, minute, second)
+                  next() match
+                    case '.' | ',' =>
+                      Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant +
+                        fraction()*Second
 
-              case d if digit =>
-                val second = number(2)
-                next()
-                clockInstant(hour, minute, second)
+                    case _ =>
+                      clockInstant(hour, minute, second)
 
-              case _ =>
-                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
+                case d if digit =>
+                  val second = number(2)
+                  next()
+                  clockInstant(hour, minute, second)
 
-          case d if digit =>
-            val minute = number(2)
+                case _ =>
+                  Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
 
-            next() match
-              case '.' | ',' =>
-                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant +
-                  Quantity[Minutes[1]](fraction())
+            case d if digit =>
+              val minute = number(2)
 
-              case d if digit =>
-                val second = number(2)
+              next() match
+                case '.' | ',' =>
+                  Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant +
+                    Quantity[Minutes[1]](fraction())
 
-                next() match
-                  case '.' | ',' =>
-                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant +
-                      fraction()*Second
+                case d if digit =>
+                  val second = number(2)
 
-                  case _ =>
-                    clockInstant(hour, minute, second)
+                  next() match
+                    case '.' | ',' =>
+                      Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant +
+                        fraction()*Second
 
-              case _ =>
-                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
+                    case _ =>
+                      clockInstant(hour, minute, second)
 
-          case '.' | ',' =>
-            Clockface(Base24(hour), Base60(0), Base60(0)).on(date).instant +
-              Quantity[Hours[1]](fraction())
+                case _ =>
+                  Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
 
-          case _ =>
-            Clockface(Base24(hour), Base60(0), Base60(0)).on(date).instant
+            case '.' | ',' =>
+              Clockface(Base24(hour), Base60(0), Base60(0)).on(date).instant +
+                Quantity[Hours[1]](fraction())
 
-      case _ =>
-        0.00.am.on(date).instant
+            case _ =>
+              Clockface(Base24(hour), Base60(0), Base60(0)).on(date).instant
 
-    focus match
-      case 'Z' | '\u0000' => instant
+        case _ =>
+          0.00.am.on(date).instant
 
-      case '+' | '-' =>
-        val negate = focus == '-'
-        val hour = next() yet number(2)
+      focus match
+        case 'Z' | '\u0000' => instant
 
-        if next() == ':' then next()
-        val minute = number(2)
-        val offset = Quantity[Hours[1]](hour) + Quantity[Minutes[1]](minute)
-        if negate then instant + offset else instant - offset
+        case '+' | '-' =>
+          val negate = focus == '-'
+          val hour = next() yet number(2)
 
-      case _ =>
-        abort(TimeError(_.Format(text, Iso8601, index)(Timezone)))
+          if next() == ':' then next()
+          val minute = number(2)
+          val offset = Quantity[Hours[1]](hour) + Quantity[Minutes[1]](minute)
+          if negate then instant + offset else instant - offset
+
+        case _ =>
+          abort(TimeError(_.Format(text, Iso8601, index)(Timezone)))
