@@ -48,7 +48,6 @@ import fulminate.*
 // without recording anything further.
 class VentureTactic[error <: Hazard, value]
   ( outer: Tactic[error]^, label: boundary.Label[Venture[value]] )
-  ( using diagnostics0: Diagnostics )
 extends Tactic[error], Guard:
   private given boundary.Label[Venture[value]] = label
 
@@ -56,7 +55,7 @@ extends Tactic[error], Guard:
   // the tactic as `Stateful`, imposing update-method discipline on the whole `Tactic` interface.
   private val count: juca.AtomicInteger = juca.AtomicInteger(0)
 
-  def diagnostics: Diagnostics = diagnostics0
+  def diagnostics: Diagnostics = outer.diagnostics
 
   // Whether errors were recorded during THIS venture's evaluation — the condition under which the
   // completed block's value is discarded as `Failed`. Distinct from `tainted`, which also reflects
