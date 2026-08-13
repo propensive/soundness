@@ -78,10 +78,9 @@ do element.click()
 
 An open shadow root is reached with `shadowRoot()`, and searched with the same `element` and `/`.
 
-Note that `XPath` currently expresses only absolute paths of element steps with 1-indexed
-ordinals, plus a trailing attribute — `xp"/html[1]/body[1]/div[2]"`. The predicate forms XPath is
-usually reached for cannot be written yet; they will work here unchanged once Xylophone's XPath
-supports them.
+`XPath` covers the full XPath 1.0 grammar, so the predicate forms browser automation reaches
+for work directly — `xp"//button[text()='Submit']"`, `xp"//*[contains(@class,'active')]"` — as
+does typed construction: `XPath.deep(t"button").where(XPath.textual === t"Submit")`.
 
 ### Using elements
 
