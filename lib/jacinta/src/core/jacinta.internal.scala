@@ -337,8 +337,10 @@ object internal:
 
           recurOrigins[tail](pair :: acc)
 
+        // The Origins tuple is built innermost-first, so it is already reversed;
+        // prepend-accumulation restores source order (matching `recur` for the parts).
         case _ =>
-          acc.reverse
+          acc
 
     val partOrigins: List[(Int, Int)] = recurOrigins[origins](Nil)
 

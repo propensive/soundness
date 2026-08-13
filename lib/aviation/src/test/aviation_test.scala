@@ -2887,3 +2887,22 @@ object Tests extends Suite(m"Aviation Tests"):
         capture(Tzdb.parse(t"inline", lines))
       . matches:
           case _: Tzdb.Error =>
+
+    suite(m"Compile-time error positioning"):
+      test(m"a bad start segment underlines just that segment"):
+        demilitarize:
+          rec"R5/2024-99-01/P1D"
+        . map(_.focus)
+      . assert(_ == List("2024-99-01"))
+
+      test(m"a bad period segment underlines just that segment"):
+        demilitarize:
+          rec"R5/2024-01-01/P1Q"
+        . map(_.focus)
+      . assert(_ == List("P1Q"))
+
+      test(m"a bad repetition count underlines just that segment"):
+        demilitarize:
+          rec"Rx/2024-01-01/P1D"
+        . map(_.focus)
+      . assert(_ == List("Rx"))

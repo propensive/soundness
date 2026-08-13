@@ -423,3 +423,16 @@ object Tests extends Suite(m"Archimedes tests"):
       test(m"the fraction bar aligns with the surrounding baseline"):
         Mrow(Mi(t"y"), Mo(t"="), Mfrac(Mn(t"1"), Mn(t"2"))).draw
       .assert(_ == t"     1 \ny = ───\n     2 ")
+
+    suite(m"Compile-time error positioning"):
+      test(m"an unclosed group's focus falls on the last character"):
+        demilitarize:
+          ergo"(x + (y + 1)"
+        . map(_.focus)
+      . assert(_ == List(")"))
+
+      test(m"a bad opener's focus is the first character"):
+        demilitarize:
+          ergo"x + y"
+        . map(_.focus)
+      . assert(_ == List("x"))

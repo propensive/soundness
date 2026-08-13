@@ -39,6 +39,7 @@ import java.time as jt
 import scala.quoted.*
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -393,7 +394,9 @@ object internal:
   // is parsed by the timestamp parser (so its precise `Date`/`Timestamp`/`Moment` type flows out
   // via the transparent inline), and the period by the duration parser, tagged with the Gregorian
   // month radix so its calendar components add correctly.
-  def recInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[RecurrenceLiteral] =
+  def recInterpolator[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
+  :   Macro[RecurrenceLiteral] =
+
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
@@ -404,17 +407,30 @@ object internal:
 
     if parts.stdlib.length != 1 then halt(m"a recurrence literal cannot contain substitutions")
 
+    // The three `/`-separated segments have known extents within the (single-part) literal, so
+    // although the segment parsers report no offsets of their own, a failing segment can be
+    // underlined in full.
+    def segment(offset: Int, length: Int): Position =
+      Interpolation.sourcePosition
+        (parts, Interpolation.decodeOrigins[origins], 1, offset, length.max(1))
+
     parts.stdlib.head.tt.cut(t"/").map(_.s) match
       case List(repeats, start, period) =>
+        val startOffset = repeats.length + 1
+        val periodOffset = startOffset + start.length + 1
+
         val repetitions: Option[Int] =
           if repeats == "R" then None
           else if repeats.startsWith("R") && repeats.length > 1 && repeats.drop(1).forall(_.isDigit)
           then Some(repeats.drop(1).toInt)
-          else halt(m"$repeats is not a valid repetition count (expected `R` or `Rn`)")
+          else
+            halt
+              ( m"$repeats is not a valid repetition count (expected `R` or `Rn`)",
+                segment(0, repeats.length) )
 
         val periodExpr: Expr[Timespan of Month.type] = parseDuration(period) match
           case Left(error) =>
-            halt(error)
+            halt(error, segment(periodOffset, period.length))
 
           case Right((y, mo, w, d, h, mi, s)) =>
             '{Timespan(${Expr(y)}, ${Expr(mo)}, ${Expr(w)}, ${Expr(d)}, ${Expr(h)}, ${Expr(mi)},
@@ -432,7 +448,7 @@ object internal:
 
         parseTimestamp(start) match
           case Left(error) =>
-            halt(error)
+            halt(error, segment(startOffset, start.length))
 
           case Right(TsParsed.DateOnly(jdn)) =>
             build('{Date.julianDay(${Expr(jdn)})})
@@ -452,7 +468,9 @@ object internal:
                   .in(unsafely(Timezone(${Expr(zone)}.tt)))})
 
           case Right(_) =>
-            halt(m"a recurrence must start at a date or date-time, not a bare year or month")
+            halt
+              ( m"a recurrence must start at a date or date-time, not a bare year or month",
+                segment(startOffset, start.length) )
 
       case _ =>
         halt(m"a recurrence literal must have the form `R[n]/<start>/<period>`")

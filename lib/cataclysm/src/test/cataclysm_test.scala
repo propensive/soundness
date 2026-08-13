@@ -821,3 +821,16 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"two inline style sets join into one"):
         (css"color: red" + css"width: $width").text
       . assert(_ == t"color: red; width: 4px")
+
+    suite(m"Compile-time error positioning"):
+      test(m"an unterminated string clamps onto the last character"):
+        demilitarize:
+          css"color: red; background': blue"
+        . map(_.focus)
+      . assert(_ == List("e"))
+
+      test(m"an invalid-CSS message names the line and column"):
+        demilitarize:
+          css"""p { color: red /* unterminated"""
+        . map(_.message)
+      . assert(_.headOption.exists(_.contains("a comment was not terminated")))

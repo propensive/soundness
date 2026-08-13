@@ -218,9 +218,19 @@ object internal:
     val dynamicParts: List[Expr[Ascii]] = parts.absolve match
       case Varargs(parts) => parts.to(List)
 
-    val staticParts: List[Expr[Ascii]] = context.value.get.parts.to(List).map: part =>
-      val bytes: Array[Expr[Byte]]^{} = part.tt.chars.map: char =>
-        if char >= 128 then halt(824, m"$char is not a valid ASCII character")
+    val literalParts: List[String] = context.value.get.parts.to(List)
+    val origins = contextual.Interpolation.literalOrigins(context, literalParts.length)
+
+    val staticParts: List[Expr[Ascii]] = literalParts.zip(origins.stdlib).map: (part, origin) =>
+      val bytes: Array[Expr[Byte]]^{} = part.tt.chars.zipWithIndex.map: (char, index) =>
+        if char >= 128 then
+          val position =
+            contextual.Interpolation.sourcePosition
+              ( proscenium.List.of(scala.List(part)), proscenium.List.of(scala.List(origin)),
+                1, index )
+
+          halt(824, m"$char is not a valid ASCII character", position)
+
         Expr[Byte](char.toByte)
 
       '{Ascii(Data(${Varargs(bytes.readable.toSeq)}*))}

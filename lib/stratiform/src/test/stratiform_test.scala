@@ -2998,3 +2998,12 @@ object Tests extends Suite(m"Stratiform Tests"):
         val data: Data = Array.unsafeFrozen(tree.in[Tel].show.s.getBytes("UTF-8").nn)
         data.read[Tests.Tree in Tel]
       . assert(_ == Tests.Tree(t"root", List(Tests.Tree(t"a", Nil))))
+
+    suite(m"Compile-time error positioning"):
+      test(m"an odd-indentation error's focus lands inside the literal"):
+        demilitarize:
+          tel"""parent
+  child value
+   misindented value"""
+        . map(_.focus)
+      . assert(_.headOption.exists { focus => focus.length < 8 && focus.forall(_ == ' ') })

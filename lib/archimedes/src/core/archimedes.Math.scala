@@ -194,7 +194,7 @@ object Math:
       ( inline insertions: Any* )
     :   Math =
 
-      ${archimedes.internal.ergoInterpolator[parts]('insertions)}
+      ${archimedes.internal.ergoInterpolator[parts, origins]('insertions)}
 
 case class Math
   ( contents:   List[Mathml],

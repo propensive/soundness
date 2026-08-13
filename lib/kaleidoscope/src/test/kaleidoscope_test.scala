@@ -567,3 +567,15 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         . message
 
       . assert(_.contains("[↯SN-397.2] the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0"))
+
+      test(m"invalid quantifier focus is the offending character"):
+        demilitarize:
+          r"ab{3,1}c"
+        . map(_.focus)
+      . assert(_ == List("}"))
+
+      test(m"unclosed group focus falls on the last character"):
+        demilitarize:
+          r"hello (world"
+        . map(_.focus)
+      . assert(_ == List("d"))
