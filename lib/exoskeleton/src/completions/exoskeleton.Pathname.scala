@@ -59,22 +59,30 @@ object Pathname:
         val point = path.s.lastIndexOf('/', path.length - 2) + 1
         val prefix = path.keep(point)
         val core = path.skip(point)
-        Suggestion(core, Unset, incomplete = path != argument(), prefix = prefix)
+        // Only a directory leaves the completion mid-path; a file candidate is complete,
+        // and accepting it should advance to the next argument.
+        Suggestion(core, Unset, incomplete = path.ends(t"/"), prefix = prefix)
 
+      // Each branch adds to `prior` rather than replacing it: another extractor evaluated
+      // against the same argument (typically a `Subcommand`) must keep its suggestions.
       if argument() == t"." then argument.suggest:
         val wd: Path on Local = workingDirectory
-        List.of:
+        val listing = List.of:
           suggest(t"../") ::
             workingDirectory.children.stdlib.toList.filter(_.name.starts(t".")).map: path =>
               val directory = safely(path.entry() == galilei.Directory).or(false)
               suggest(if directory then path.name+t"/" else path.name)
 
+        listing ::: prior
+
       else if argument() == t".." then argument.suggest:
-        List.of:
+        val listing = List.of:
           suggest(t"../") ::
             workingDirectory.children.stdlib.toList.filter(_.name.starts(t"..")).map: path =>
               val directory = safely(path.entry() == galilei.Directory).or(false)
               suggest(if directory then path.name+t"/" else path.name)
+
+        listing ::: prior
 
       else if argument().nil then argument.suggest:
         val children0 = workingDirectory.children.stdlib.toList
@@ -82,10 +90,12 @@ object Pathname:
         val children =
           if !showAll then children0.filter(!_.name.starts(t".")) else children0
 
-        List.of:
+        val listing = List.of:
          children.map: path =>
           val directory = safely(path.entry() == galilei.Directory).or(false)
           suggest(if directory then path.name+t"/" else path.name)
+
+        listing ::: prior
 
       else
         val absolute = argument().starts(t"/")
@@ -105,12 +115,14 @@ object Pathname:
           val children2 =
             if !showAll then children.filter(!_.name.starts(t".")) else children
 
-          children2.map: path =>
+          val listing = children2.map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
             val slash = if directory then t"/" else t""
 
             suggest:
               if absolute then path.encode+slash else workingDirectory.toward(path).encode+slash
+
+          listing ::: prior
 
     scala.caps.unsafe.unsafeAssumeSeparate:
       safely(workingDirectory.resolve(argument())).option
