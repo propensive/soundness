@@ -33,4 +33,4 @@
 package profanity
 
 trait Question[answer]:
-  def apply(keypress: TerminalEvent): Question[answer]
+  def apply(keypress: Terminal.Event): Question[answer]

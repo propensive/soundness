@@ -42,11 +42,6 @@ import parasite.*
 import rudiments.*
 import turbulence.*
 
-// A union rather than a sealed trait: `Keypress` lives in `clavichord`, so that a browser driver
-// can name a keypress without depending on a terminal library, and a type in another module
-// cannot extend a sealed one here. Matching is unaffected — the union of enums is still checked
-// for exhaustivity.
-type TerminalEvent = Keypress | TerminalInfo | Interrupt | WindowsSignal
 
 // The canonical way a `Terminal` supplies the standard streams; a single instance, not a
 // choice, so it is a named toplevel given rather than a `stdios`-style package (which would

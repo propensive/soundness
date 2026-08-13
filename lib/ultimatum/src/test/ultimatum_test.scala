@@ -294,7 +294,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = ResizableRoot(10, 4)
 
-        val resize = new Iterator[TerminalEvent]:
+        val resize = new Iterator[Terminal.Event]:
           @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
@@ -302,7 +302,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
           def next() =
             pending = false
             root.resize(10, 2)
-            TerminalInfo.WindowSize(2, 10)
+            Terminal.Info.WindowSize(2, 10)
 
         Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
         root.render
@@ -739,15 +739,15 @@ object Tests extends Suite(m"Ultimatum Tests"):
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
 
-        val events = new Iterator[TerminalEvent]:
+        val events = new Iterator[Terminal.Event]:
           @scala.caps.unsafe.untrackedCaptures
           // Capture-carrying elements do not flow through the opaque List (boxing), so
           // this event queue deliberately stays a stdlib list.
-          private var remaining: scala.collection.immutable.List[() => TerminalEvent] =
+          private var remaining: scala.collection.immutable.List[() => Terminal.Event] =
             scala.collection.immutable.List(
               () => Interrupt.Winch,
-              () => TerminalInfo.CursorPosition(2, 1),
-              () => { w = 4; TerminalInfo.WindowSize(4, 4) },
+              () => Terminal.Info.CursorPosition(2, 1),
+              () => { w = 4; Terminal.Info.WindowSize(4, 4) },
               () => Keypress.Escape)
 
           def hasNext = remaining.nonEmpty
@@ -770,7 +770,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         given Stdio = stdio
         val root = new InlineRoot(() => 6, () => 4)
 
-        val events = List[TerminalEvent](
+        val events = List[Terminal.Event](
           Interrupt.Winch,
           Keypress.CharKey('x'),
           Keypress.Escape)
@@ -858,7 +858,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         var liveRows: Int = 4
         val root = new ScreenRoot(() => 10, () => liveRows)
 
-        val resize = new Iterator[TerminalEvent]:
+        val resize = new Iterator[Terminal.Event]:
           @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
@@ -866,7 +866,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
           def next() =
             pending = false
             liveRows = 2
-            TerminalInfo.WindowSize(2, 10)
+            Terminal.Info.WindowSize(2, 10)
 
         Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B"))))
         . run(resize)
@@ -926,7 +926,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val root = FlowExtent(TerminalBoard(10, 2), Rect(0, 0, 10, 2))
         val panes = Panes(panel()(Out.print(t"A")))
 
-        val events = new Iterator[TerminalEvent]:
+        val events = new Iterator[Terminal.Event]:
           @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
@@ -934,7 +934,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
           def next() =
             pending = false
             panes.append(panel()(Out.print(t"B")))
-            TerminalInfo.Redraw
+            Terminal.Info.Redraw
 
         Form(root, Occupancy.Fullscreen, stack(panes)).run(events)
         root.render

@@ -86,7 +86,7 @@ object Interaction:
       surface.put(t"\n")
       surface.flush()
 
-    override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
+    override def submits(event: Terminal.Event, editor: LineEditor): Boolean =
       editor.submitsOn(event)
 
     // Redraws the whole editor from its top-left each frame: `cursorPosition`
@@ -116,7 +116,7 @@ trait Interaction[result, question]:
   // Which event submits the answer, given the current state (default: Enter). A
   // multi-line editor overrides this to consult the editor's mode — e.g. submitting
   // on Shift+Enter, or on Enter only when the content is "complete".
-  def submits(event: TerminalEvent, state: question): Boolean = event match
+  def submits(event: Terminal.Event, state: question): Boolean = event match
     case Keypress.Enter => true
     case _              => false
 
@@ -124,13 +124,13 @@ trait Interaction[result, question]:
   // possibly-updated state and performing any side effects — e.g. requesting
   // completions on Tab and inserting a unique one. Returns the state unchanged by
   // default.
-  def react(state: question, event: TerminalEvent): question = state
+  def react(state: question, event: Terminal.Event): question = state
 
 
   @tailrec
   final def recur
-    ( events: Iterator[TerminalEvent], state: question, oldState: Optional[question] )
-    ( key: (question, TerminalEvent) => question )
+    ( events: Iterator[Terminal.Event], state: question, oldState: Optional[question] )
+    ( key: (question, Terminal.Event) => question )
   :   Optional[result] =
 
     render(oldState, state)
@@ -149,8 +149,8 @@ trait Interaction[result, question]:
         recur(events, key(reacted, other), state)(key)
 
 
-  def apply(events: Iterator[TerminalEvent], state: question)
-    ( key: (question, TerminalEvent) => question )
+  def apply(events: Iterator[Terminal.Event], state: question)
+    ( key: (question, Terminal.Event) => question )
   :   Optional[result] =
 
     before()

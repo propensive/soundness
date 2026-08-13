@@ -36,14 +36,17 @@ import scala.caps
 
 import ambience.*
 import anticipation.*
+import clavichord.Keypress
 import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
 import iridescence.*
 import parasite.*
+import prepositional.*
 import proscenium.compat.*
 import rudiments.*
+import spectacular.*
 import turbulence.*
 import zephyrine.*
 import vacuous.*
@@ -112,6 +115,35 @@ object Terminal:
       Out.print(enable)
       try body finally Out.print(disable)
 
+  // TerminalInfo → Terminal.Info
+  enum Info:
+    case WindowSize(rows: Int, columns: Int)
+    case BgColor(red: Int, green: Int, blue: Int)
+    case LoseFocus
+    case GainFocus
+    case Paste(text: Text)
+
+    // Where the terminal reported the cursor, in 1-based screen coordinates: the reply
+    // to the anchor query a resize sends before its size probe (classified by arrival
+    // order in the pump), or to a DECXCPR (`?`-prefixed) report, should a terminal
+    // volunteer one. A reflowing terminal keeps the cursor attached to the logical cell
+    // it was on, so after a resize this reveals where that cell landed — the datum an
+    // inline renderer needs to find its block again.
+    case CursorPosition(row: Int, column: Int)
+
+    // A synthetic event an application can put onto the terminal's event spool to
+    // wake the event loop and request a repaint — e.g. after a background task has
+    // changed the layout.
+    case Redraw
+
+
+  // TerminalEvent → Terminal.Event
+  // A union rather than a sealed trait: `Keypress` lives in `clavichord`, so that a browser driver
+  // can name a keypress without depending on a terminal library, and a type in another module
+  // cannot extend a sealed one here. Matching is unaffected — the union of enums is still checked
+  // for exhaustivity.
+  type Event = Keypress | Info | Interrupt | WindowsSignal
+
 // A `Terminal` is a *capability*: it holds the live raw-mode tty session — the `Monitor` and
 // `Probate` of its input-pump daemon, the event spool, and mutable size/brightness state —
 // whose lifetime is the `interactive` block that introduces it (raw mode and stdin are torn
@@ -119,7 +151,7 @@ object Terminal:
 // retain it past the teardown.
 case class Terminal()
   ( using console: Console, monitor: Monitor, probate: Probate, environment: Environment )
-extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
+extends Interactivity[Terminal.Event], caps.ExclusiveCapability:
 
   export console.stdio.{in, out, err}
 
@@ -175,13 +207,13 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
     val err = console.stdio.err
     val in = console.stdio.in
 
-  val events: Relay[TerminalEvent] = Relay()
+  val events: Relay[Terminal.Event] = Relay()
 
   // A fresh single-owner drain of the shared event queue per call, batching
   // queued events into windows across the producer boundary. Sealed: the
   // `Interactivity` interface is pure-typed, exactly as `Spool.iterator` was
   // before it — the endpoint is reachable only through this iterator.
-  def eventIterator(): Iterator[TerminalEvent] =
+  def eventIterator(): Iterator[Terminal.Event] =
     caps.unsafe.unsafeAssumePure(events.stream.records)
 
   // The handler is bound over block locals (not fields) so it stays pure: `Console.trap`
@@ -245,27 +277,27 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
           // error — so the session consuming the events always sees the input end.
           try
             keyboard0.asInstanceOf[Keyboard.Standard].process(chars).each:
-              case resize@TerminalInfo.WindowSize(rows2, columns2) =>
+              case resize@Terminal.Info.WindowSize(rows2, columns2) =>
                 // An anchor query and a size probe elicit byte-identical replies,
                 // which the decoder always parses as `WindowSize`; the expectation
                 // queue written by the resize trap tells them apart by arrival
                 // order. An anchor reply never touches the metrics — its
                 // coordinates are a cursor cell, not a terminal size.
                 if metrics0.reports.poll() == Terminal.Report.Anchor
-                then events0.put(TerminalInfo.CursorPosition(rows2, columns2))
+                then events0.put(Terminal.Info.CursorPosition(rows2, columns2))
                 else
                   metrics0.rows = rows2
                   metrics0.columns = columns2
                   events0.put(resize)
 
-              case position@TerminalInfo.CursorPosition(_, _) =>
+              case position@Terminal.Info.CursorPosition(_, _) =>
                 // The unambiguous `?`-form report, should a terminal volunteer it
                 // for a plain query: consume the outstanding anchor expectation so
                 // the size reply that follows stays correctly classified.
                 if metrics0.reports.peek() == Terminal.Report.Anchor then metrics0.reports.poll()
                 events0.put(position)
 
-              case bgColor@TerminalInfo.BgColor(red, green, blue) =>
+              case bgColor@Terminal.Info.BgColor(red, green, blue) =>
                 metrics0.mode =
                   if Terminal.dark(red, green, blue) then Brightness.Dark else Brightness.Light
 

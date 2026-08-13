@@ -148,7 +148,7 @@ object Keyboard:
       wait(deadline)
 
   class Standard()(using lookahead: Lookahead) extends Keyboard:
-    type Keypress = clavichord.Keypress | TerminalInfo
+    type Keypress = clavichord.Keypress | Terminal.Info
 
     def process(stream: Chain[Char]): Chain[Keypress] = stream match
       case '\u001b' #:: rest =>
@@ -176,7 +176,7 @@ object Keyboard:
               case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
                 val size = tail.stdlib.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~').stdlib)
                 val content = tail.take(size).map(_.show).join
-                TerminalInfo.Paste(content) #:: process(tail.drop(size + 6))
+                Terminal.Info.Paste(content) #:: process(tail.drop(size + 6))
 
               case other =>
                 val sequence = other.takeWhile(!_.isLetter)
@@ -202,15 +202,15 @@ object Keyboard:
                     val query: Boolean = raw.starts(t"?")
                     val fields: List[Text] = (if query then raw.skip(1) else raw).cut(';')
 
-                    val report: Optional[TerminalInfo] = fields match
+                    val report: Optional[Terminal.Info] = fields match
                       case List(rows, cols) =>
                         safely:
-                          if query then TerminalInfo.CursorPosition(rows.as[Int], cols.as[Int])
-                          else TerminalInfo.WindowSize(rows.as[Int], cols.as[Int])
+                          if query then Terminal.Info.CursorPosition(rows.as[Int], cols.as[Int])
+                          else Terminal.Info.WindowSize(rows.as[Int], cols.as[Int])
 
                       // DECXCPR at VT level 4 appends the page number.
                       case List(rows, cols, _) if query =>
-                        safely(TerminalInfo.CursorPosition(rows.as[Int], cols.as[Int]))
+                        safely(Terminal.Info.CursorPosition(rows.as[Int], cols.as[Int]))
 
                       case _ =>
                         Unset
@@ -218,10 +218,10 @@ object Keyboard:
                     report.lay(process(tail))(_ #:: process(tail))
 
                   case 'O' #:: tail =>
-                    TerminalInfo.LoseFocus #:: process(tail)
+                    Terminal.Info.LoseFocus #:: process(tail)
 
                   case 'I' #:: tail =>
-                    TerminalInfo.GainFocus #:: process(tail)
+                    Terminal.Info.GainFocus #:: process(tail)
 
                   case char #:: tail =>
                     Keypress.EscapeSeq(char, sequence*) #:: process(tail)
@@ -237,7 +237,7 @@ object Keyboard:
                 case List(red, green, blue) =>
                   def decimal(hex: Text): Int = Integer.parseInt(hex.s, 16)
 
-                  TerminalInfo.BgColor(decimal(red), decimal(green), decimal(blue)) #::
+                  Terminal.Info.BgColor(decimal(red), decimal(green), decimal(blue)) #::
                     process(continuation)
 
                 case _ =>

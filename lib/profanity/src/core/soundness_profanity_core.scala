@@ -36,8 +36,7 @@ export
   profanity
   . { Board, Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
       LineEditor, Question, SelectMenu, Interrupt, SignalResponse,
-      Terminal, TerminalEvent, TerminalInfo, TerminalBoard, InlineBoard, UnixSignal,
-      WindowsSignal }
+      Terminal, TerminalBoard, InlineBoard, UnixSignal, WindowsSignal }
 
 package keyboards:
   export profanity.keyboards.{numericKeyboard, rawKeyboard, standardKeyboard}

@@ -256,7 +256,7 @@ object Tests extends Suite(m"Profanity Tests"):
           . assert(_ == 1)
 
       // Pure state-transition tests, bypassing terminal IO. These exercise the
-      // Iterator[TerminalEvent] -> recur path with synthetic events and a no-op
+      // Iterator[Terminal.Event] -> recur path with synthetic events and a no-op
       // renderer, so they validate the widget logic without daemon-mode IO
       // latency that affects ESC-sequence parsing.
 
@@ -268,11 +268,11 @@ object Tests extends Suite(m"Profanity Tests"):
         def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
         def result(editor: LineEditor): Text = editor.value
 
-      def selected(events: TerminalEvent*): Optional[Text] =
+      def selected(events: Terminal.Event*): Optional[Text] =
         val menu = SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha")
         noopMenu(events.iterator, menu)(_(_))
 
-      def edited(events: TerminalEvent*): Optional[Text] =
+      def edited(events: Terminal.Event*): Optional[Text] =
         noopEditor(events.iterator, LineEditor())(_(_))
 
       // A no-op interaction whose submit decision follows the editor's own mode.
@@ -280,10 +280,10 @@ object Tests extends Suite(m"Profanity Tests"):
         def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
         def result(editor: LineEditor): Text = editor.value
 
-        override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
+        override def submits(event: Terminal.Event, editor: LineEditor): Boolean =
           editor.submitsOn(event)
 
-      def editedWith(editor: LineEditor)(events: TerminalEvent*): Optional[Text] =
+      def editedWith(editor: LineEditor)(events: Terminal.Event*): Optional[Text] =
         multilineEditor(events.iterator, editor)(_(_))
 
       val shiftSubmit: LineEditor = LineEditor(mode = LineEditor.Mode.Multiline(_ => false))
@@ -396,7 +396,7 @@ object Tests extends Suite(m"Profanity Tests"):
             def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
             def result(editor: LineEditor): Text = editor.value
 
-            override def react(editor: LineEditor, event: TerminalEvent): LineEditor =
+            override def react(editor: LineEditor, event: Terminal.Event): LineEditor =
               event match
                 case Keypress.Tab => LineEditor(t"${editor.value}ography")
                 case _            => editor
@@ -450,7 +450,7 @@ object Tests extends Suite(m"Profanity Tests"):
         supervise:
           Keyboard.Standard().process(Chain('\u001B', '[', '1', '2', ';', '3', '4', 'R')).head
       . assert:
-          case TerminalInfo.WindowSize(12, 34) => true
+          case Terminal.Info.WindowSize(12, 34) => true
           case _                               => false
 
       // The `?`-prefixed DECXCPR form is unambiguous: it can only be a cursor position.
@@ -460,7 +460,7 @@ object Tests extends Suite(m"Profanity Tests"):
           . process(Chain('\u001B', '[', '?', '1', '2', ';', '3', '4', 'R'))
           . head
       . assert:
-          case TerminalInfo.CursorPosition(12, 34) => true
+          case Terminal.Info.CursorPosition(12, 34) => true
           case _                                   => false
 
       // DECXCPR at VT level 4 appends the page number, which is ignored.
@@ -470,7 +470,7 @@ object Tests extends Suite(m"Profanity Tests"):
           . process(Chain('\u001B', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
           . head
       . assert:
-          case TerminalInfo.CursorPosition(12, 34) => true
+          case Terminal.Info.CursorPosition(12, 34) => true
           case _                                   => false
 
       test(m"a malformed report is dropped and the stream continues"):

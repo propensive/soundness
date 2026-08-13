@@ -165,7 +165,7 @@ def form(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
 :   Unit =
 
   // A container mutation wakes the loop by putting a redraw event on the spool.
-  val wake = () => terminal.events.put(TerminalInfo.Redraw)
+  val wake = () => terminal.events.put(Terminal.Info.Redraw)
 
   // A deferred repaint, woken after `delay` milliseconds (plus a small margin so it lands past the
   // window it was waiting for). Both modes need one: inline mode uses it for the debounced resize
@@ -173,7 +173,7 @@ def form(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   val scheduleWake = (delay: Long) =>
     async:
       snooze((delay + 16).toDouble*Milli(Second))
-      terminal.events.put(TerminalInfo.Redraw)
+      terminal.events.put(Terminal.Info.Redraw)
 
     ()
 

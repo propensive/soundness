@@ -43,7 +43,7 @@ case class SelectMenu[item](options: List[item], current: item)
 extends Question[item]:
   import Keypress.*
 
-  def apply(keypress: TerminalEvent): SelectMenu[item] =
+  def apply(keypress: Terminal.Event): SelectMenu[item] =
     try
       keypress match
         case Up   => copy(current = options.stdlib(0 max options.stdlib.indexOf(current) - 1))
@@ -57,10 +57,10 @@ extends Question[item]:
 
 
   def ask
-    ( using interactivity: Interactivity[TerminalEvent],
+    ( using interactivity: Interactivity[Terminal.Event],
             interaction:   Interaction[item, SelectMenu[item]] )
     [ result ]
-    ( lambda: Interactivity[TerminalEvent] ?=> item => result )
+    ( lambda: Interactivity[Terminal.Event] ?=> item => result )
     ( using Tactic[DismissError] )
   :   result =
 
