@@ -122,6 +122,40 @@ trait Yaml2:
     case given Reflection[`value`]            => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Yaml]:
+    // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
+    // plain method: the argument buffer must not be allocated inside an inline expansion,
+    // where its fresh root capability leaks into the expansion site's capture sets. Returns
+    // an unused null when any slot failed: the caller's accruing scope is tainted, so the
+    // result is discarded.
+    private final class ArrayProduct(values: Array[Any]^{}) extends Product:
+      def canEqual(that: Any): Boolean = true
+      def productArity: Int = values.length
+      def productElement(index: Int): Any = values.readUnchecked(index)
+
+    private def gate[derivation <: Product]
+      ( reflection: ProductReflection[derivation],
+        slots:      Array[Venture[Any]]^{},
+        active:     Boolean )
+    :   derivation =
+
+      var failed = false
+      var slot = 0
+
+      if active then
+        while slot < slots.length do
+          if !slots.readUnchecked(slot).ready then failed = true
+          slot += 1
+
+      if failed then null.asInstanceOf[derivation]
+      else
+        val arguments = Array[Any](slots.length)
+        slot = 0
+
+        while slot < slots.length do
+          arguments(slot) = slots.readUnchecked(slot).vouch
+          slot += 1
+
+        reflection.fromProduct(ArrayProduct(Array.freeze(arguments)))
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Yaml =
 
@@ -204,15 +238,25 @@ trait Yaml2:
 
         found
 
-      if !foci.active then
-        // Fail-fast path: the first recorded error escapes through the tactic, so decode and
-        // construct in a single traversal with no venture slots and no focus bookkeeping.
-        build[derivation]: [field] =>
+      // A SINGLE field traversal serving both modes, branching on `foci.active` per field. One
+      // traversal is load-bearing: every wisteria traversal re-summons each field's decoder
+      // (`summonInline`), recursively deriving nested types, so traversals multiply
+      // EXPONENTIALLY with nesting depth at compile time.
+      //
+      // Accruing mode: each slot is marked failed if its decode registered any focus, and the
+      // product is constructed only when every slot is clean — user constructor code never
+      // sees a garbage fallback value. On failure the returned value is never used (the
+      // caller's scope is tainted), and siblings keep accruing in the meantime. Fail-fast mode:
+      // the first recorded error escapes through the tactic, so no focus bookkeeping and no
+      // failure scan are needed.
+      val active = foci.active
+
+      val slots: Array[Venture[Any]]^{} =
+        contexts[derivation]()[Venture[Any]]: [field] =>
           context =>
             val key: Text = renames(label).or(label)
             val found = fieldAst(key.s)
 
-            if found != null then context.decoded(new Yaml(found))
             // Missing field: try the case-class declared default
             // (Wisteria's `default`); if absent, hand the
             // `Yaml.Ast(Unset)` sentinel to the field's decoder.
@@ -220,20 +264,12 @@ trait Yaml2:
             // continue` with a zero/empty sentinel; nested
             // conjunctions detect wrong-shape and may further
             // short-circuit via a user-supplied `Default[Nested]`.
-            else default.or(context.decoded(new Yaml(Yaml.Ast(Unset))))
+            def decodeNow(): field =
+              if found != null then context.decoded(new Yaml(found))
+              else default.or(context.decoded(new Yaml(Yaml.Ast(Unset))))
 
-      else
-        // Accruing path (as in jacinta's `decodeObject`): decode EVERY field into a venture
-        // slot first, marking a slot failed if its decode registered any focus, and construct
-        // only when all slots are clean — user constructor code never sees a garbage fallback
-        // value. On failure the returned value is never used (the caller's scope is tainted),
-        // and siblings keep accruing in the meantime.
-        val slots: Array[Venture[Any]] =
-          contexts[derivation]()[Venture[Any]]: [field] =>
-            context =>
-              val key: Text = renames(label).or(label)
-              val found = fieldAst(key.s)
-
+            if !active then Venture(decodeNow())
+            else
               // Each outer `focus` runs *after* the inner one
               // (contingency's try/finally order), so we extend
               // `prior` at the root side via `prepend` so a nested
@@ -245,22 +281,10 @@ trait Yaml2:
                 Yaml.Focus(base.prepend(key))
               }):
                 val before = foci.length
-
-                val value: field =
-                  if found != null then context.decoded(new Yaml(found))
-                  else default.or(context.decoded(new Yaml(Yaml.Ast(Unset))))
-
+                val value: field = decodeNow()
                 if foci.length > before then Venture.failed else Venture(value)
 
-        var failed = false
-        var slot = 0
-
-        while slot < slots.length do
-          if !slots.readUnchecked(slot).ready then failed = true
-          slot += 1
-
-        if failed then null.asInstanceOf[derivation]
-        else build[derivation]: [field] => context => slots.readUnchecked(index).asInstanceOf[Venture[field]].vouch
+      gate[derivation](infer[ProductReflection[derivation]], slots, active)
 
     // Sealed-trait disjunction picks a variant by mapping discriminator
     // (`type:` key). We screen the discriminator against

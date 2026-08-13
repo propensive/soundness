@@ -243,6 +243,36 @@ trait Tel2 extends Tel3:
     // a plain method, NOT part of the inline expansion: inlining this body twice per derivation
     // (once per traversal) pushed classes with many derived decoders over the JVM class-size
     // limit.
+    // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
+    // plain method: the argument buffer must not be allocated inside an inline expansion,
+    // where its fresh root capability leaks into the expansion site's capture sets. Returns
+    // an unused null when any slot failed: the caller's accruing scope is tainted, so the
+    // result is discarded.
+    private def gate[derivation <: Product]
+      ( reflection: ProductReflection[derivation],
+        slots:      Array[Venture[Any]]^{},
+        active:     Boolean )
+    :   derivation =
+
+      var failed = false
+      var slot = 0
+
+      if active then
+        while slot < slots.length do
+          if !slots.readUnchecked(slot).ready then failed = true
+          slot += 1
+
+      if failed then null.asInstanceOf[derivation]
+      else
+        val arguments = Array[Any](slots.length)
+        slot = 0
+
+        while slot < slots.length do
+          arguments(slot) = slots.readUnchecked(slot).vouch
+          slot += 1
+
+        Tel.Parsable.assemble[derivation](reflection, Array.freeze(arguments))
+
     private def decodeField[field]
       ( ctx:        (Tel.Decodable { type Self = field })^,
         telVal:     Tel,
@@ -351,11 +381,21 @@ trait Tel2 extends Tel3:
 
               val foci = infer[Foci[Tel.Focus]]
 
-              if !foci.active then
-                // Fail-fast path: the first recorded error escapes through the tactic, so
-                // decode and construct in a single traversal, with no venture slots and no
-                // focus bookkeeping.
-                build[derivation]: [field] =>
+              // A SINGLE field traversal serving both modes, branching on `foci.active` per
+              // field. One traversal is load-bearing: every wisteria traversal re-summons each
+              // field's decoder (`summonInline`), recursively deriving nested types, so
+              // traversals multiply EXPONENTIALLY with nesting depth at compile time.
+              //
+              // Accruing mode: each slot is marked failed if its decode registered any focus,
+              // and the product is constructed only when every slot is clean — user constructor
+              // code never sees a garbage fallback value. On failure the returned value is
+              // never used (the caller's scope is tainted), and siblings keep accruing in the
+              // meantime. Fail-fast mode: the first recorded error escapes through the tactic,
+              // so no focus bookkeeping and no failure scan are needed.
+              val active = foci.active
+
+              val slots: Array[Venture[Any]]^{} =
+                contexts[derivation]()[Venture[Any]]: [field] =>
                   ctx =>
                     val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
 
@@ -363,23 +403,11 @@ trait Tel2 extends Tel3:
                       if assigned.length == 0 then scala.collection.immutable.Nil
                       else assigned(index).stdlib
 
-                    decodeField[field](ctx, telVal, keyword, positional, default[Optional[field]])
-
-              else
-                // Accruing path (as in jacinta's `decodeObject`): decode EVERY field into a
-                // venture slot first, marking a slot failed if its decode registered any focus,
-                // and construct only when all slots are clean — user constructor code never
-                // sees a garbage fallback value. On failure the returned value is never used
-                // (the caller's scope is tainted), and siblings keep accruing in the meantime.
-                val slots: Array[Venture[Any]]^{} =
-                  contexts[derivation]()[Venture[Any]]: [field] =>
-                    ctx =>
-                      val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
-
-                      val positional: scala.collection.immutable.List[Tel.Atom] =
-                        if assigned.length == 0 then scala.collection.immutable.Nil
-                        else assigned(index).stdlib
-
+                    if !active then
+                      Venture:
+                        decodeField[field]
+                          (ctx, telVal, keyword, positional, default[Optional[field]])
+                    else
                       // Tag every error registered while decoding this field with its
                       // keyword path, so that under a `validate[Tel.Focus]` boundary the
                       // primitives' `raise … yet sentinel` accrue per-field rather than the
@@ -396,17 +424,7 @@ trait Tel2 extends Tel3:
 
                         if foci.length > before then Venture.failed else Venture(value)
 
-                var failed = false
-                var slot = 0
-
-                while slot < slots.length do
-                  if !slots.readUnchecked(slot).ready then failed = true
-                  slot += 1
-
-                if failed then null.asInstanceOf[derivation]
-                else
-                  build[derivation]: [field] =>
-                    ctx => slots.readUnchecked(index).asInstanceOf[Venture[field]].vouch
+              gate[derivation](infer[ProductReflection[derivation]], slots, active)
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Decodable =
       // A sum is a document whose single child compound is the chosen variant, keyed by

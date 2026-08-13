@@ -304,6 +304,62 @@ trait Json2 extends Json3:
                     infer[Foci[Json.Focus]],
                     infer[Tactic[Json.Error]] )
 
+    // The per-field decode and focus construction, shared by the fail-fast and accruing
+    // traversals of `decodeObject` — plain methods, NOT part of the inline expansion: inlining
+    // the field body twice per derivation (once per traversal) blew up compilation of large
+    // schema modules (apoplexy's OpenAPI) and can exceed the JVM class-size limit.
+    private def decodeField[field]
+      ( context:  (Json.Decodable { type Self = field })^,
+        values:   Map[String, Json.Ast],
+        key:      Text,
+        fallback: Optional[field] )
+    :   field =
+
+      values.get(key.s) match
+        case Some(value) => context.decoded(new Json(value))
+        case None        => fallback.or(context.decoded(new Json(Json.Ast(Unset))))
+
+    // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
+    // plain method: the argument buffer must not be allocated inside an inline expansion,
+    // where its fresh root capability leaks into the expansion site's capture sets. Returns
+    // an unused null when any slot failed: the caller's accruing scope is tainted, so the
+    // result is discarded.
+    private def gate[derivation <: Product]
+      ( reflection: ProductReflection[derivation],
+        slots:      Array[Venture[Any]]^{},
+        active:     Boolean )
+    :   derivation =
+
+      var failed = false
+      var slot = 0
+
+      if active then
+        while slot < slots.length do
+          if !slots.readUnchecked(slot).ready then failed = true
+          slot += 1
+
+      if failed then null.asInstanceOf[derivation]
+      else
+        val arguments = Array[Any](slots.length)
+        slot = 0
+
+        while slot < slots.length do
+          arguments(slot) = slots.readUnchecked(slot).vouch
+          slot += 1
+
+        Json.Parsable.assemble[derivation](reflection, Array.freeze(arguments))
+
+    private def fieldFocus(prior: Optional[Json.Focus], key: Text): Json.Focus =
+      val base = prior.let(_.pointer).or(JsonPointer())
+
+      val pointer =
+        JsonPointer
+          ( base.url,
+            Path[JsonPointer, JsonPointer.type, Tuple]
+              ( base.path.root, (base.path.descent :+ key).to(List) ) )
+
+      Json.Focus(pointer)
+
     private inline def decodeObject[derivation <: Product]
       ( json: Json )
       ( using reflection: ProductReflection[derivation],
@@ -330,60 +386,36 @@ trait Json2 extends Json3:
       // back the same way they are written.
       val renames: Map[Text, Text] = relabelling[derivation, Json]
 
-      if !foci.active then
-        // Fail-fast path: no accrual is possible (the first recorded error escapes through the
-        // tactic), so decode and construct in the single traversal, with no venture slots and no
-        // focus bookkeeping.
-        build[derivation]: [field] =>
+      // A SINGLE field traversal serving both modes, branching on `foci.active` per field.
+      // One traversal is load-bearing: every wisteria traversal re-summons each field's decoder
+      // (`summonInline`), recursively deriving nested types, so traversals multiply
+      // EXPONENTIALLY with nesting depth at compile time — a second one sent apoplexy's OpenAPI
+      // derivation into the compiler's heap limit.
+      //
+      // Accruing mode: each slot is marked failed if its decode registered any focus (the field
+      // decoders capture the resolution-scoped tactic, so a venture tactic cannot be interposed
+      // here; the foci delta detects the same thing), and the product is constructed only when
+      // every slot is clean — user code in constructors never sees a garbage fallback value. On
+      // any failure, the returned value is never used: this decode's own caller sees its focus
+      // delta (or, at top level, the tracking scope is tainted), so the result is discarded,
+      // and siblings keep accruing in the meantime. Fail-fast mode: the first recorded error
+      // escapes through the tactic, so no focus bookkeeping and no failure scan are needed.
+      val active = foci.active
+
+      val slots: Array[Venture[Any]]^{} =
+        contexts[derivation]()[Venture[Any]]: [field] =>
           context =>
             val key: Text = renames(label).or(label)
 
-            values.get(key.s) match
-              case Some(value) => context.decoded(new Json(value))
-              case None        => default.or(context.decoded(new Json(Json.Ast(Unset))))
-
-      else
-        // Accruing path: decode EVERY field first, marking each slot failed if its decode
-        // registered any focus (the field decoders capture the resolution-scoped tactic, so a
-        // venture tactic cannot be interposed here; the foci delta detects the same thing). Only
-        // if every slot is clean is the product constructed — user code in constructors never
-        // sees a garbage fallback value. On any failure, the returned value is never used: this
-        // decode's own caller sees its focus delta (or, at top level, the tracking scope is
-        // tainted), so the result is discarded, and siblings keep accruing in the meantime.
-        val slots: Array[Venture[Any]] =
-          contexts[derivation]()[Venture[Any]]: [field] =>
-            context =>
-              val key: Text = renames(label).or(label)
-
-              focus({
-                val base = prior.let(_.pointer).or(JsonPointer())
-
-                val newPointer =
-                  JsonPointer
-                    ( base.url,
-                      Path[JsonPointer, JsonPointer.type, Tuple]
-                        ( base.path.root, (base.path.descent :+ key).to(List) ) )
-
-                Json.Focus(newPointer)
-              }):
+            if !active
+            then Venture(decodeField[field](context, values, key, default[Optional[field]]))
+            else
+              focus(fieldFocus(prior, key)):
                 val before = foci.length
-
-                val value: field =
-                  values.get(key.s) match
-                    case Some(value) => context.decoded(new Json(value))
-                    case None        => default.or(context.decoded(new Json(Json.Ast(Unset))))
-
+                val value: field = decodeField[field](context, values, key, default[Optional[field]])
                 if foci.length > before then Venture.failed else Venture(value)
 
-        var failed = false
-        var slot = 0
-
-        while slot < slots.length do
-          if !slots.readUnchecked(slot).ready then failed = true
-          slot += 1
-
-        if failed then null.asInstanceOf[derivation]
-        else build[derivation]: [field] => context => slots.readUnchecked(index).asInstanceOf[Venture[field]].vouch
+      gate[derivation](reflection, slots, active)
 
     inline def disjunction[derivation: SumReflection]: derivation is Json.Decodable =
       // A sum encodes as a discriminated object. Its precise per-variant schema is

@@ -35,6 +35,10 @@ package facsimile
 
 import scala.caps
 
+// By name: `contingency.*` would otherwise shadow this package's own `Guard` (the PDF
+// standard-security handler) with contingency's skip-scope capability of the same name.
+import facsimile.Guard
+
 import anticipation.*
 import aviation.*
 import contingency.*

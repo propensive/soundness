@@ -353,6 +353,41 @@ object Dsv extends Dsv2:
       type Form = Dsv
       def decoded(row: Dsv): derivation = lambda(row)
 
+    // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
+    // plain method: the argument buffer must not be allocated inside an inline expansion,
+    // where its fresh root capability leaks into the expansion site's capture sets (see
+    // `Dsv.flatten`). Returns an unused null when any slot failed: the caller's accruing
+    // scope is tainted, so the result is discarded.
+    private final class ArrayProduct(values: Array[Any]^{}) extends Product:
+      def canEqual(that: Any): Boolean = true
+      def productArity: Int = values.length
+      def productElement(index: Int): Any = values.readUnchecked(index)
+
+    private def gate[derivation <: Product]
+      ( reflection: ProductReflection[derivation],
+        slots:      Array[Venture[Any]]^{},
+        active:     Boolean )
+    :   derivation =
+
+      var failed = false
+      var slot = 0
+
+      if active then
+        while slot < slots.length do
+          if !slots.readUnchecked(slot).ready then failed = true
+          slot += 1
+
+      if failed then null.asInstanceOf[derivation]
+      else
+        val arguments = Array[Any](slots.length)
+        slot = 0
+
+        while slot < slots.length do
+          arguments(slot) = slots.readUnchecked(slot).vouch
+          slot += 1
+
+        reflection.fromProduct(ArrayProduct(Array.freeze(arguments)))
+
     inline def conjunction[derivation <: Product: ProductReflection]
     :   (derivation is Decodable in Dsv)^ =
 
@@ -379,48 +414,34 @@ object Dsv extends Dsv2:
                 columns(label).lay(Dsv(Array.of[Text]())): i =>
                   Dsv(row.data.drop(i))
 
-            if !foci.active then
-              // Fail-fast path: the first recorded error escapes through the tactic, so decode
-              // and construct in a single traversal with no venture slots and no focus
-              // bookkeeping.
-              var count = 0
+            // A SINGLE field traversal serving both modes, branching on `foci.active` per
+            // field. One traversal is load-bearing: every wisteria traversal re-summons each
+            // field's decoder (`summonInline`), recursively deriving nested types, so
+            // traversals multiply EXPONENTIALLY with nesting depth at compile time.
+            //
+            // Accruing mode: each slot is marked failed if its decode registered any focus,
+            // and the record is constructed only when every slot is clean — user constructor
+            // code never sees a garbage fallback value. On failure the returned value is never
+            // used (the caller's scope is tainted), and siblings keep accruing in the
+            // meantime. Fail-fast mode: the first recorded error escapes through the tactic,
+            // so no focus bookkeeping and no failure scan are needed.
+            val active = foci.active
+            var count = 0
 
-              build[derivation]:
+            val slots: Array[Venture[Any]]^{} =
+              contexts[derivation]()[Venture[Any]]:
                 [field] => context =>
                   val row2 = fieldRow(label, count)
                   count += spans.readUnchecked(index)
-                  contextual.decoded(row2)
 
-            else
-              // Accruing path (as in jacinta's `decodeObject`): decode EVERY field into a
-              // venture slot first, marking a slot failed if its decode registered any focus,
-              // and construct only when all slots are clean — user constructor code never sees
-              // a garbage fallback value. On failure the returned value is never used (the
-              // caller's scope is tainted), and siblings keep accruing in the meantime.
-              var count = 0
-
-              val slots: Array[Venture[Any]]^{} =
-                contexts[derivation]()[Venture[Any]]:
-                  [field] => context =>
-                    val row2 = fieldRow(label, count)
-                    count += spans.readUnchecked(index)
-
+                  if !active then Venture(contextual.decoded(row2))
+                  else
                     focus(CellRef(Prim, label)):
                       val before = foci.length
                       val value: field = contextual.decoded(row2)
                       if foci.length > before then Venture.failed else Venture(value)
 
-              var failed = false
-              var slot = 0
-
-              while slot < slots.length do
-                if !slots.readUnchecked(slot).ready then failed = true
-                slot += 1
-
-              if failed then null.asInstanceOf[derivation]
-              else
-                build[derivation]:
-                  [field] => context => slots.readUnchecked(index).asInstanceOf[Venture[field]].vouch)
+            gate[derivation](infer[ProductReflection[derivation]], slots, active))
 
   object EncodableDerivation extends ProductDerivable[Encodable in Dsv]:
     inline def conjunction[derivation <: Product: ProductReflection]
