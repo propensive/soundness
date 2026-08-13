@@ -199,7 +199,15 @@ extends Cli:
 
         . filter(_.starts(focusText))
 
-      case Shell.Fish | Shell.Powershell =>
+      case Shell.Fish =>
+        // Every output line is a distinct candidate in fish, so `incomplete` cannot be
+        // rendered as a per-candidate duplicate without doubling the menu. Fish already
+        // completes a `/`-terminated candidate without a trailing space, and with several
+        // candidates their longest common prefix stops the insertion short anyway; only a
+        // sole, non-slash, incomplete candidate needs the trailing-space twin, which makes
+        // the LCP the candidate itself so fish inserts it without terminating the word.
+        val sole = items.stdlib.count(!_.hidden) == 1
+
         items.bind:
           case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
             if hidden then Nil else
@@ -209,7 +217,21 @@ extends Cli:
                   case description: Text     => t"$text\t$description"
                   case description: Teletype => t"$text\t${description.plain}"
 
-              if !incomplete then List.of(mainLines)
+              if !incomplete || !sole || suggestion.text.ends(t"/") then List.of(mainLines)
               else
                 List.of:
-                  mainLines ++ (suggestion.text :: aliases.stdlib).map { text => t"$text " }
+                  mainLines ++ (suggestion.text :: aliases.stdlib).map: text =>
+                    t"$text "
+
+      case Shell.Powershell =>
+        // PowerShell inserts a `CompletionResult` verbatim, so a trailing-space twin is
+        // just a visible duplicate; `incomplete` has no rendering there.
+        items.bind:
+          case suggestion@Suggestion(core, description, hidden, _, aliases, _, _, _) =>
+            if hidden then Nil else
+              List.of:
+                (suggestion.text :: aliases.stdlib).map: text =>
+                  description.absolve match
+                    case Unset                 => t"$text"
+                    case description: Text     => t"$text\t$description"
+                    case description: Teletype => t"$text\t${description.plain}"

@@ -59,7 +59,9 @@ object Pathname:
         val point = path.s.lastIndexOf('/', path.length - 2) + 1
         val prefix = path.keep(point)
         val core = path.skip(point)
-        Suggestion(core, Unset, incomplete = path != argument(), prefix = prefix)
+        // Only a directory leaves the completion mid-path; a file candidate is complete,
+        // and accepting it should advance to the next argument.
+        Suggestion(core, Unset, incomplete = path.ends(t"/"), prefix = prefix)
 
       // Each branch adds to `prior` rather than replacing it: another extractor evaluated
       // against the same argument (typically a `Subcommand`) must keep its suggestions.
