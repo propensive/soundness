@@ -36,11 +36,11 @@ import scala.quoted.*
 
 object Introspect:
   transparent inline def syntax[value](inline inlining: Boolean = false)(inline value: value)
-  :   TastyTree =
+  :   Tasty.Tree =
 
     ${hyperbole.internal.introspection[value]('value, 'inlining)}
 
 
-  inline def semantics[meta]: TastySymbol = ${hyperbole.internal.semantics[meta]}
-  inline def semantics(value: Any): TastySymbol = ${hyperbole.internal.semantics('value)}
-  inline def semantics(): TastySymbol = ${hyperbole.internal.semantics()}
+  inline def semantics[meta]: Tasty.Symbol = ${hyperbole.internal.semantics[meta]}
+  inline def semantics(value: Any): Tasty.Symbol = ${hyperbole.internal.semantics('value)}
+  inline def semantics(): Tasty.Symbol = ${hyperbole.internal.semantics()}

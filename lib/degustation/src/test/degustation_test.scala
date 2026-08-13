@@ -327,9 +327,9 @@ object Tests extends Suite(m"Degustation Tests"):
       import reliquary.*
       val path = TreePath(t"fixture/Alpha.tasty")
 
-      (Tasty.claims(path, Array.freeze(Array[Byte](0))),
-       Tasty.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](0))),
-       Tasty.claims(TreePath(t"readme.md"), Array.freeze(Array[Byte](0))))
+      (TastyDiscipline.claims(path, Array.freeze(Array[Byte](0))),
+       TastyDiscipline.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](0))),
+       TastyDiscipline.claims(TreePath(t"readme.md"), Array.freeze(Array[Byte](0))))
     . assert(_ == (true, true, false))
 
     test(m"a jvm-only lira assembles from a real compilation and verifies"):
@@ -340,7 +340,7 @@ object Tests extends Suite(m"Degustation Tests"):
         Compilation[Universe.Classfile](unsafely(out.s.tt.as[soundness.Path on Linux]), classpath)
 
       val input = LiraBundle(compilation)
-      val registry = Discipline.Registry(List(Tasty))
+      val registry = Discipline.Registry(List(TastyDiscipline))
 
       val bytes = LiraAssembler.assemble
         ( t"fixture-core",
@@ -385,7 +385,7 @@ object Tests extends Suite(m"Degustation Tests"):
         val sjsInput = LiraBundle(Compilation[Universe.Sjsir]
           (unsafely(sjsOut.s.tt.as[soundness.Path on Linux]), sjsClasspath))
 
-        val registry = Discipline.Registry(List(Tasty))
+        val registry = Discipline.Registry(List(TastyDiscipline))
 
         def contextClasspath(universe: Text): List[Text] =
           if universe == t"sjsir" then List.from(Text(sjsOut.s) :: sjsLibraryPaths)
@@ -421,7 +421,7 @@ object Tests extends Suite(m"Degustation Tests"):
       val binary = (TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](4)))
       val all = List.from(content.stdlib :+ binary)
       val context = Discipline.Context(t"jvm", classpath = List.from(libraryPaths))
-      val atomization = Tasty.atomize(all, context)
+      val atomization = TastyDiscipline.atomize(all, context)
 
       (atomization.discipline,
        atomization.atoms.stdlib.exists(_.key.s.startsWith("fixture.Overloads.f(")),

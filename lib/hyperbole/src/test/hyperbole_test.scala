@@ -49,14 +49,14 @@ object Tests extends Suite(m"Hyperbole Tests"):
     . assert: result =>
         result
         ==
-        TastyTree
+        Tasty.Tree
           ( ' ',
             "Unit",
             "Apply",
             "scala.Predef.println(\"hello world\")",
             "println(\"hello world\")",
             List
-              ( TastyTree
+              ( Tasty.Tree
                   ( ' ',
                     "",
                     "Ident",
@@ -66,7 +66,7 @@ object Tests extends Suite(m"Hyperbole Tests"):
                     "println",
                     true,
                     false ),
-                TastyTree
+                Tasty.Tree
                   ( 'a',
                     "\"hello world\"",
                     "Literal",

@@ -77,7 +77,7 @@ object StackResolver:
   // constructor from the first member declared beside it, or a lambda from its enclosing method,
   // but what the compiled name says about the frame's kind settles both; failing that, a name
   // which survived compilation unchanged identifies its definition outright.
-  def matches(method: Text, hint: Optional[Kind], definition: TastyDefinition): Boolean =
+  def matches(method: Text, hint: Optional[Kind], definition: Tasty.Definition): Boolean =
     hint match
       case Kind.Constructor => definition.name == t"<init>"
       case Kind.Lambda      => definition.kind == Kind.Lambda
@@ -100,7 +100,7 @@ object StackResolver:
 // cannot be matched up by name; but it also records the extent of every definition, and a line
 // table for the source file, so the line the frame already carries is enough to find it.
 class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
-  private val tastyFiles: mutable.HashMap[Text, Optional[TastyFile]] = mutable.HashMap()
+  private val tastyFiles: mutable.HashMap[Text, Optional[Tasty.File]] = mutable.HashMap()
   private val sourceFiles: mutable.HashMap[Text, Optional[List[Text]]] = mutable.HashMap()
   private val smaps: mutable.HashMap[Text, Optional[Smap]] = mutable.HashMap()
 
@@ -110,7 +110,7 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
     tastyFile(frame.jvmClass).lay(frame): tasty =>
       tasty.path.lay(frame): path =>
         val hint = StackResolver.hint(frame.jvmMethod)
-        val candidates = frame.line.lay(List[TastyDefinition]())(tasty.covering(_))
+        val candidates = frame.line.lay(List[Tasty.Definition]())(tasty.covering(_))
 
         val definition =
           candidates.find(StackResolver.matches(frame.jvmMethod, hint, _)).optional
@@ -170,7 +170,7 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
         tasty.path.let: path =>
           if path == origin.path then definitionSource(tasty, path, origin.line) else Unset
 
-  private def definitionSource(tasty: TastyFile, path: Text, line: Int)
+  private def definitionSource(tasty: Tasty.File, path: Text, line: Int)
   :   Optional[StackTrace.Frame.Source] =
 
     tasty.covering(line).prim.let: definition =>
@@ -179,7 +179,7 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
 
       StackTrace.Frame.Source(path, owner, name, definition.kind, sourceLine(path, line))
 
-  private def tastyFile(name: Text): Optional[TastyFile] =
+  private def tastyFile(name: Text): Optional[Tasty.File] =
     if name.s.isEmpty then Unset
     else tastyFiles.synchronized(tastyFiles.getOrElseUpdate(name, load(name.s)))
 
@@ -187,9 +187,9 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
   // resolves through the outermost class enclosing it, which is what stripping `$`-separated
   // segments from the right arrives at. Top-level definitions live in a `<name>$package` class,
   // whose TASTy is found before any segment is stripped.
-  private def load(name: String): Optional[TastyFile] =
+  private def load(name: String): Optional[Tasty.File] =
     val resource = (name.replace('.', '/').nn+".tasty").tt
-    val loaded: Optional[TastyFile] = classloader(resource).lay(Unset)(TastyFile(_))
+    val loaded: Optional[Tasty.File] = classloader(resource).lay(Unset)(TastyFiles(_))
 
     loaded.or:
       name.lastIndexOf('$') match

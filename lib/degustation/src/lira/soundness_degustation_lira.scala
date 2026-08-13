@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export degustation.Tasty
+export degustation.TastyDiscipline

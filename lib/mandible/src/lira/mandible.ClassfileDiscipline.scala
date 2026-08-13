@@ -52,7 +52,7 @@ import rudiments.*
 //
 // Registry order is load-bearing (§11.2): `Discipline.Registry` claims by first match, and
 // `tasty/1` claims `.class` atomless, so this discipline must precede it —
-// `Discipline.Registry(List(ClassfileDiscipline, Tasty))`. In the other order it claims nothing.
+// `Discipline.Registry(List(ClassfileDiscipline, TastyDiscipline))`. In the other order it claims nothing.
 object ClassfileDiscipline extends Discipline:
   def id: Text = ClassfileAtomizer.id
 

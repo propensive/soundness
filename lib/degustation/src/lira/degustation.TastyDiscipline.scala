@@ -30,24 +30,86 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hyperbole
+package degustation
 
 import anticipation.*
-import digression.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import reliquary.*
+import rudiments.*
 
-import StackTrace.Frame.Kind
+import errorDiagnostics.emptyDiagnostics
 
-// One definition the compiler recorded in a TASTy file, reduced to what resolving a stack frame
-// needs: what the definition is called, what encloses it, and which part of the source it covers.
-// `owners` runs innermost-first, and includes the package.
-case class TastyDefinition
-  ( name:      Text,
-    owners:    List[Text],
-    kind:      Kind,
-    start:     Int,
-    end:       Int,
-    firstLine: Int,
-    lastLine:  Int ):
+// The `tasty/1` discipline, adapted to reliquary's SPI. It claims `.tasty` files — the
+// interface carrier shared by the `jvm`, `sjsir` and `nir` universes — for atomization, and
+// claims the derived binaries (`.class`, `.sjsir`, `.nir`) *atomless*: their interface is
+// exactly the TASTy's, so they contribute no atoms of their own and never fall through to
+// `opaque/1`, where every rebuild would register as a major event.
+object TastyDiscipline extends Discipline:
+  def id: Text = t"tasty/1"
 
-  def span: Int = end - start
-  def covers(line: Int): Boolean = firstLine <= line && line <= lastLine
+  // The domain is the fixed set of TASTy-carrying universes (`tasty.md` §3) — not universal:
+  // the cross-section invariant (§9.6) binds exactly these, which is what makes "one API on
+  // every platform" checkable, while a universe that carries no TASTy lies outside the domain
+  // entirely, so L127 can reject a release that declares this discipline without one. Keying is
+  // by declaration (`tasty.md` §6): a TASTy reference names the declaring symbol, so an
+  // inherited member need not be re-atomized under each type that presents it. Classfile-level
+  // linkage is the JVM ecosystem profile's, not this discipline's, so only the TASTy level is
+  // certified here.
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"jvm", t"sjsir", t"nir"))
+  def keying: Discipline.Keying = Discipline.Keying.Declaration
+
+  def guarantees(universe: Text): Set[Discipline.Guarantee] =
+    Set(Discipline.Guarantee.Linkage, Discipline.Guarantee.Recompilation)
+
+  private val atomless: scala.List[String] = scala.List(".class", ".sjsir", ".nir")
+
+  def claims(path: TreePath, data: Data): Boolean =
+    val name = path.text.s
+    name.endsWith(".tasty") || atomless.exists: suffix => name.endsWith(suffix)
+
+  def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+  :   Atomization raises DisciplineError =
+
+    val tasty = content.stdlib.filter: pair => pair(0).text.s.endsWith(".tasty")
+
+    if tasty.isEmpty then Atomization.of(id, List()) else
+      // The compiler's unpickler reads files, so the claimed `.tasty` content is written to a
+      // throwaway directory for the duration of the inspection.
+      val directory = java.nio.file.Files.createTempDirectory("degustation").nn
+
+      try
+        val files = tasty.map: pair =>
+          val target = directory.resolve(pair(0).text.s).nn
+          java.nio.file.Files.createDirectories(target.getParent.nn)
+          java.nio.file.Files.write(target, Array.unsafeJvm(pair(1)))
+          Text(target.toString)
+
+        val scalaAtoms =
+          mitigate:
+            case DegustationError(reason) =>
+              DisciplineError(id, DisciplineError.Reason.Malformed(t"$reason"))
+
+          . protect(Inspection.atomize(List.from(files), context.classpath))
+
+        val atoms = scalaAtoms.map: atom =>
+          val references = atom.references.map:
+            case ScalaReference.Own(key)     => Atom.Reference.Own(key)
+            case ScalaReference.Foreign(key) => Atom.Reference.Foreign(key)
+
+          Atom
+            ( atom.key,
+              if atom.replaceable then Atom.Class.Replaceable else Atom.Class.Rigid,
+              Lira.Hash(Lira.Hash.Domain.Atom(id), atom.encoding),
+              references )
+
+        Atomization.of(id, atoms)
+
+      finally
+        val paths = java.nio.file.Files.walk(directory).nn
+
+        paths.sorted(java.util.Comparator.reverseOrder).nn.forEach: path =>
+          java.nio.file.Files.deleteIfExists(path)
+
+        paths.close()

@@ -134,13 +134,13 @@ private[hyperbole] object stacksInternal:
   // needs to understand only the handful that introduce a name or a nesting level. This mirrors
   // the traversal in the compiler's own `TastyPrinter`.
   class DefinitionSection(positions: Positions)
-  extends TastyUnpickler.SectionUnpickler[List[TastyDefinition]](ASTsSection):
+  extends TastyUnpickler.SectionUnpickler[List[Tasty.Definition]](ASTsSection):
 
     def unpickle(reader: TastyReader, nameAtRef: TastyUnpickler.NameTable)
-    :   List[TastyDefinition] =
+    :   List[Tasty.Definition] =
 
       import reader.*
-      val definitions = mutable.ListBuffer[TastyDefinition]()
+      val definitions = mutable.ListBuffer[Tasty.Definition]()
 
       def label(): Text = nameAtRef(readNameRef()).toString.tt
 
@@ -164,7 +164,7 @@ private[hyperbole] object stacksInternal:
 
           val first = positions.lines.line(start)
           val last = positions.lines.line(end)
-          definitions += TastyDefinition(name, owners, kind, start, end, first, last)
+          definitions += Tasty.Definition(name, owners, kind, start, end, first, last)
 
       def walk(owners: List[Text]): Unit =
         val address = currentAddr.index

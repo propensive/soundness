@@ -53,9 +53,9 @@ import symbolism.*
 import vacuous.*
 
 object internal:
-  def introspection[value](value: Expr[value], inlining: Expr[Boolean]): Macro[TastyTree] =
-    def serialize(tree: TastyTree): Expr[TastyTree] = tree match
-      case TastyTree(tag, typeName, name, expr, source, nodes, param, term, definitional) =>
+  def introspection[value](value: Expr[value], inlining: Expr[Boolean]): Macro[Tasty.Tree] =
+    def serialize(tree: Tasty.Tree): Expr[Tasty.Tree] = tree match
+      case Tasty.Tree(tag, typeName, name, expr, source, nodes, param, term, definitional) =>
         val nodes2 = nodes.map(serialize(_))
         // A concrete-scrutinee match, not an Optional combinator: an inline lambda whose
         // arms are quote literals crashes pickleQuotes (the aviation.internal caveat).
@@ -64,7 +64,7 @@ object internal:
           case param: Text => Expr(param)
 
         ' {
-            TastyTree
+            Tasty.Tree
               ( ${Expr(tag)},
                 ${Expr(typeName)},
                 ${Expr(name)},
@@ -78,7 +78,7 @@ object internal:
 
     serialize(tastyTree[value](value, inlining))
 
-  def tastyTree[value](expr: Expr[value], inlining0: Expr[Boolean])(using Quotes): TastyTree =
+  def tastyTree[value](expr: Expr[value], inlining0: Expr[Boolean])(using Quotes): Tasty.Tree =
     import quotes.reflect.*
 
     val inlining = inlining0.valueOrAbort
@@ -102,20 +102,20 @@ object internal:
       case _ =>
         t""
 
-    extension (tastyTree: TastyTree)
-      def children(nodes2: Tree*): TastyTree =
-        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TastyTree.expand(' ', _))))
+    extension (tastyTree: Tasty.Tree)
+      def children(nodes2: Tree*): Tasty.Tree =
+        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand(' ', _))))
 
-      def typeChildren(nodes2: TypeRepr*): TastyTree =
-        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TastyTree.expandType(_))))
+      def typeChildren(nodes2: TypeRepr*): Tasty.Tree =
+        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expandType(_))))
 
-      def typed(nodes2: Tree*): TastyTree =
-        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TastyTree.expand('t', _))))
+      def typed(nodes2: Tree*): Tasty.Tree =
+        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand('t', _))))
 
-      def add(tag: Char, nodes2: Tree*): TastyTree =
-        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TastyTree.expand(tag, _))))
+      def add(tag: Char, nodes2: Tree*): Tasty.Tree =
+        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand(tag, _))))
 
-    object TastyTree:
+    object TreeBuilder:
       def apply
         ( tag:       Char,
           typeName:  Text,
@@ -123,106 +123,106 @@ object internal:
           tree:      Optional[Tree],
           repr:      Optional[Text] = Unset,
           parameter: Optional[Text] = Unset )
-      :   TastyTree =
+      :   Tasty.Tree =
 
         val shown = tree.let(_.show.tt).or(repr.let(_.show)).or(t"")
         val code = tree.let(source(_)).or(t"")
 
-        new TastyTree(tag, typeName, name, shown, code, Nil, parameter, true, false)
+        new Tasty.Tree(tag, typeName, name, shown, code, Nil, parameter, true, false)
 
 
-      def repr(name: Text, repr: Optional[TypeRepr], parameter: Optional[Text] = Unset): TastyTree =
+      def repr(name: Text, repr: Optional[TypeRepr], parameter: Optional[Text] = Unset): Tasty.Tree =
         apply(' ', t"", name, Unset, repr.let(stenography.internal.name(_)), parameter).typeNode
 
-      def expandType(repr: TypeRepr): TastyTree =
+      def expandType(repr: TypeRepr): Tasty.Tree =
         repr match
-          case TypeRef(ref, name) => TastyTree.repr(t"TypeRef", repr, name)
+          case TypeRef(ref, name) => TreeBuilder.repr(t"TypeRef", repr, name)
 
           case AndType(left, right) =>
-            TastyTree.repr(t"AndType", repr).typeChildren(left, right)
+            TreeBuilder.repr(t"AndType", repr).typeChildren(left, right)
 
           case OrType(left, right) =>
-            TastyTree.repr(t"OrType", repr).typeChildren(left, right)
+            TreeBuilder.repr(t"OrType", repr).typeChildren(left, right)
 
           case AppliedType(tycon, arguments) =>
-            TastyTree.repr(t"AppliedType", repr).typeChildren(tycon :: arguments*)
+            TreeBuilder.repr(t"AppliedType", repr).typeChildren(tycon :: arguments*)
 
           case AnnotatedType(underlying, term) =>
-            TastyTree.repr(t"AnnotatedType", repr).typeChildren(underlying).children(term)
+            TreeBuilder.repr(t"AnnotatedType", repr).typeChildren(underlying).children(term)
 
           case Refinement(parent, name, info) =>
-            TastyTree.repr(t"Refinement", repr, name)
+            TreeBuilder.repr(t"Refinement", repr, name)
             . typeChildren(parent, info)
 
           case MatchType(bound, scrutinee, cases) =>
-            TastyTree.repr(t"MatchType", repr).typeChildren(bound :: scrutinee :: cases*)
+            TreeBuilder.repr(t"MatchType", repr).typeChildren(bound :: scrutinee :: cases*)
 
           case SuperType(thisType, superType) =>
-            TastyTree.repr(t"SuperType", repr).typeChildren(thisType, superType)
+            TreeBuilder.repr(t"SuperType", repr).typeChildren(thisType, superType)
 
           case ByNameType(byName) =>
-            TastyTree.repr(t"ByNameType", repr).typeChildren(byName)
+            TreeBuilder.repr(t"ByNameType", repr).typeChildren(byName)
 
           case ParamRef(lambdaType, n) =>
-            TastyTree.repr(t"ParamRef", repr, n.show).typeChildren(lambdaType)
+            TreeBuilder.repr(t"ParamRef", repr, n.show).typeChildren(lambdaType)
 
           case ThisType(thisType) =>
-            TastyTree.repr(t"ThisType", repr).typeChildren(thisType)
+            TreeBuilder.repr(t"ThisType", repr).typeChildren(thisType)
 
           case RecursiveThis(thisType) =>
-            TastyTree.repr(t"RecursiveThis", repr).typeChildren(thisType)
+            TreeBuilder.repr(t"RecursiveThis", repr).typeChildren(thisType)
 
           case RecursiveType(recursive) =>
-            TastyTree.repr(t"RecursiveType", repr).typeChildren(recursive)
+            TreeBuilder.repr(t"RecursiveType", repr).typeChildren(recursive)
 
           case MethodType(names, params, result) =>
-            TastyTree.repr(t"MethodType", repr, names.map(_.tt).join(t", "))
+            TreeBuilder.repr(t"MethodType", repr, names.map(_.tt).join(t", "))
             . typeChildren(params :+ result*)
 
           case PolyType(names, bounds, result) =>
-            TastyTree.repr(t"PolyType", repr, names.map(_.tt).join(t", "))
+            TreeBuilder.repr(t"PolyType", repr, names.map(_.tt).join(t", "))
             . typeChildren(bounds :+ result*)
 
           case TypeLambda(names, bounds, result) =>
-            TastyTree.repr(t"TypeLambda", repr, names.map(_.tt).join(t", "))
+            TreeBuilder.repr(t"TypeLambda", repr, names.map(_.tt).join(t", "))
             . typeChildren(bounds :+ result*)
 
           case MatchCase(pattern, rhs) =>
-            TastyTree.repr(t"MatchCase", repr).typeChildren(pattern, rhs)
+            TreeBuilder.repr(t"MatchCase", repr).typeChildren(pattern, rhs)
 
           case TypeBounds(low, high) =>
-            TastyTree.repr(t"TypeBounds", repr).typeChildren(low, high)
+            TreeBuilder.repr(t"TypeBounds", repr).typeChildren(low, high)
 
           case NoPrefix() =>
-            TastyTree.repr(t"NoPrefix", repr)
+            TreeBuilder.repr(t"NoPrefix", repr)
 
           case FlexibleType(tpe) =>
-            TastyTree.repr("FlexibleType", repr).typeChildren(tpe)
+            TreeBuilder.repr("FlexibleType", repr).typeChildren(tpe)
 
           case constant: ConstantType =>
             def value = constant.constant.value.toString.tt
 
             constant.constant.absolve match
-              case BooleanConstant(_) => TastyTree.repr(t"BooleanConstant", repr, value)
-              case ByteConstant(_)    => TastyTree.repr(t"ByteConstant", repr, value)
-              case ShortConstant(_)   => TastyTree.repr(t"ShortConstant", repr, value)
-              case IntConstant(_)     => TastyTree.repr(t"IntConstant", repr, value)
-              case LongConstant(_)    => TastyTree.repr(t"LongConstant", repr, value)
-              case FloatConstant(_)   => TastyTree.repr(t"FloatConstant", repr, value)
-              case DoubleConstant(_)  => TastyTree.repr(t"DoubleConstant", repr, value)
-              case CharConstant(_)    => TastyTree.repr(t"CharConstant", repr, value)
-              case StringConstant(_)  => TastyTree.repr(t"StringConstant", repr, value)
-              case UnitConstant()     => TastyTree.repr(t"UnitConstant", repr, t"()")
-              case NullConstant()     => TastyTree.repr(t"NullConstant", repr, t"null")
-              case ClassOfConstant(_) => TastyTree.repr(t"ClassOfConstant", repr, value)
+              case BooleanConstant(_) => TreeBuilder.repr(t"BooleanConstant", repr, value)
+              case ByteConstant(_)    => TreeBuilder.repr(t"ByteConstant", repr, value)
+              case ShortConstant(_)   => TreeBuilder.repr(t"ShortConstant", repr, value)
+              case IntConstant(_)     => TreeBuilder.repr(t"IntConstant", repr, value)
+              case LongConstant(_)    => TreeBuilder.repr(t"LongConstant", repr, value)
+              case FloatConstant(_)   => TreeBuilder.repr(t"FloatConstant", repr, value)
+              case DoubleConstant(_)  => TreeBuilder.repr(t"DoubleConstant", repr, value)
+              case CharConstant(_)    => TreeBuilder.repr(t"CharConstant", repr, value)
+              case StringConstant(_)  => TreeBuilder.repr(t"StringConstant", repr, value)
+              case UnitConstant()     => TreeBuilder.repr(t"UnitConstant", repr, t"()")
+              case NullConstant()     => TreeBuilder.repr(t"NullConstant", repr, t"null")
+              case ClassOfConstant(_) => TreeBuilder.repr(t"ClassOfConstant", repr, value)
 
           case TermRef(qual, name) =>
-            TastyTree.repr("TermRef", repr, name.tt).typeChildren(qual)
+            TreeBuilder.repr("TermRef", repr, name.tt).typeChildren(qual)
 
           case _ =>
-            TastyTree.repr(t"unknown", repr)
+            TreeBuilder.repr(t"unknown", repr)
 
-      def expand(tag: Char, tree: Tree): TastyTree =
+      def expand(tag: Char, tree: Tree): Tasty.Tree =
         val typeName =
           safely:
             tree.asExpr match
@@ -235,188 +235,188 @@ object internal:
           case typeTree: TypeTree => expandType(typeTree.tpe)
 
           case PackageClause(ref, chs) =>
-            TastyTree(tag, typeName, t"PackageClause", tree)
+            TreeBuilder(tag, typeName, t"PackageClause", tree)
             . add('r', ref)
             . children(chs*)
             . definition
 
           case Import(expr, selectors) =>
-            TastyTree(tag, typeName, t"Import", tree)
+            TreeBuilder(tag, typeName, t"Import", tree)
 
           case Export(tree, selectors) =>
-            TastyTree(tag, typeName, t"Export", tree)
+            TreeBuilder(tag, typeName, t"Export", tree)
 
           case ClassDef(name, constructor, parents, selfOpt, body) =>
-            TastyTree(tag, typeName, t"ClassDef", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"ClassDef", tree, parameter = name.tt)
             . children(body*)
             . definition
 
           case TypeDef(name, rhs) =>
-            TastyTree(tag, typeName, t"TypeDef", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"TypeDef", tree, parameter = name.tt)
             . children(rhs)
             . typeNode
             . definition
 
           case Wildcard() =>
-            TastyTree(tag, typeName, t"Wildcard", tree)
+            TreeBuilder(tag, typeName, t"Wildcard", tree)
 
           case This(qual) =>
-            TastyTree(tag, typeName, t"This", tree, parameter = qual.map(_.tt).getOrElse(t""))
+            TreeBuilder(tag, typeName, t"This", tree, parameter = qual.map(_.tt).getOrElse(t""))
 
           case New(tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TastyTree(tag, typeName, t"New", tree)
+            TreeBuilder(tag, typeName, t"New", tree)
             . children(tpt)
 
           case NamedArg(name, argument) =>
-            TastyTree(tag, typeName, t"NamedArg", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"NamedArg", tree, parameter = name.tt)
             . add('a', argument)
 
           case Bind(name, term) =>
-            TastyTree(tag, typeName, t"Bind", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"Bind", tree, parameter = name.tt)
             . children(term)
 
           case Typed(expr, tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TastyTree(tag, typeName, t"Typed", tree)
+            TreeBuilder(tag, typeName, t"Typed", tree)
             . children(expr)
             . typed(tpt)
 
           case TypedOrTest(focus, tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TastyTree(tag, typeName, t"TypedOrTest", tree)
+            TreeBuilder(tag, typeName, t"TypedOrTest", tree)
             . children(focus)
             . typed(tpt)
 
           case Inlined(call, bindings, child) =>
             if inlining then expand(tag, child) else
-              TastyTree(tag, typeName, t"Inlined", tree)
+              TreeBuilder(tag, typeName, t"Inlined", tree)
               . add('c', call.to(List)*)
               . add('b', bindings*)
               . children(child)
 
           case Apply(fun, arguments) =>
-            TastyTree(tag, typeName, t"Apply", tree)
+            TreeBuilder(tag, typeName, t"Apply", tree)
             . children(fun)
             . add('a', arguments*)
 
           case Assign(lhs, rhs) =>
-            TastyTree(tag, typeName, t"Assign", tree)
+            TreeBuilder(tag, typeName, t"Assign", tree)
             . add('d', lhs)
             . children(rhs)
 
           case TypeApply(fun, arguments) =>
-            TastyTree(tag, typeName, t"TypeApply", tree)
+            TreeBuilder(tag, typeName, t"TypeApply", tree)
             . children(fun)
             . add('a', arguments*)
 
           case Select(qualifier, name) =>
-            TastyTree(tag, typeName, t"Select", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"Select", tree, parameter = name.tt)
             . children(qualifier)
 
           case SelectOuter(qualifier, name, levels) =>
-            TastyTree(tag, typeName, t"SelectOuter", tree, parameter = t"$name^$levels")
+            TreeBuilder(tag, typeName, t"SelectOuter", tree, parameter = t"$name^$levels")
             . children(qualifier)
 
           case Singleton(ref) =>
-            TastyTree(tag, typeName, t"Singleton", tree)
+            TreeBuilder(tag, typeName, t"Singleton", tree)
             . typeNode
             . children(ref)
 
           case Super(qual, mix) =>
-            TastyTree(tag, typeName, t"Super", tree, parameter = mix.map(_.tt).getOrElse(t""))
+            TreeBuilder(tag, typeName, t"Super", tree, parameter = mix.map(_.tt).getOrElse(t""))
             . children(qual)
 
           case Ident(name) =>
-            TastyTree(tag, typeName, t"Ident", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"Ident", tree, parameter = name.tt)
 
           case If(cond, thenp, elsep) =>
-            TastyTree(tag, typeName, t"If", tree)
+            TreeBuilder(tag, typeName, t"If", tree)
             . add('p', cond)
             . add('t', thenp)
             . add('f', elsep)
 
           case While(cond, body) =>
-            TastyTree(tag, typeName, t"While", tree)
+            TreeBuilder(tag, typeName, t"While", tree)
             . add('p', cond)
             . children(body)
 
           case TypeIdent(name) =>
-            TastyTree(tag, typeName, t"TypeIdent", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"TypeIdent", tree, parameter = name.tt)
             . typeNode
 
           case TypeProjection(qualifier, name) =>
-            TastyTree(tag, typeName, t"TypeProjection", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"TypeProjection", tree, parameter = name.tt)
             . typeNode
             . children(qualifier)
 
           case TypeSelect(term, name) =>
-            TastyTree(tag, typeName, t"TypeIdent", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"TypeIdent", tree, parameter = name.tt)
             . typeNode
             . children(term)
 
           case Try(expr, cases, finalizer) =>
-            TastyTree(tag, typeName, t"Try", tree)
+            TreeBuilder(tag, typeName, t"Try", tree)
             . add('t', expr)
             . add('c', cases*)
             . add('f', finalizer.to(List)*)
 
           case Block(statements, last) =>
-            TastyTree(tag, typeName, t"Block", tree)
+            TreeBuilder(tag, typeName, t"Block", tree)
             . children(statements*)
             . add('r', last)
 
           case ByName(result) =>
-            TastyTree(tag, typeName, t"ByName", tree)
+            TreeBuilder(tag, typeName, t"ByName", tree)
             . children(result)
 
           case Closure(focus, tpe) =>
-            TastyTree(tag, typeName, t"Closure", tree)
+            TreeBuilder(tag, typeName, t"Closure", tree)
             . children(focus)
 
           case Literal(value) =>
-            TastyTree(tag, typeName, t"Literal", tree, parameter = value.show.tt)
+            TreeBuilder(tag, typeName, t"Literal", tree, parameter = value.show.tt)
 
           case Lambda(defs, term) =>
-            TastyTree(tag, typeName, t"Lambda", tree)
+            TreeBuilder(tag, typeName, t"Lambda", tree)
             . add('a', defs*)
             . children(term)
 
           case LambdaTypeTree(tparams, body) =>
-            TastyTree(tag, typeName, t"LambdaTypeTree", tree)
+            TreeBuilder(tag, typeName, t"LambdaTypeTree", tree)
             . add('a', tparams*)
             . children(body)
             . typeNode
 
           case TypeBoundsTree(low, high) =>
-            TastyTree(tag, typeName, t"TypeBoundsTree", tree)
+            TreeBuilder(tag, typeName, t"TypeBoundsTree", tree)
             . add('l', low)
             . add('h', high)
             . typeNode
 
           case WildcardTypeTree() =>
-            TastyTree(tag, typeName, t"WildcardTypeTree", tree)
+            TreeBuilder(tag, typeName, t"WildcardTypeTree", tree)
             . typeNode
 
           case TypeBind(name, tpt) =>
             val typeName = tpt.show.tt
-            TastyTree(tag, typeName, t"TypeBind", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"TypeBind", tree, parameter = name.tt)
             . typed(tpt)
 
           case TypeBlock(aliases, tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TastyTree(tag, typeName, t"TypeBlock", tree)
+            TreeBuilder(tag, typeName, t"TypeBlock", tree)
             . add('a', aliases*)
             . typed(tpt)
             . typeNode
 
           case Match(selector, cases) =>
-            TastyTree(tag, typeName, t"Match", tree)
+            TreeBuilder(tag, typeName, t"Match", tree)
             . add('s', selector)
             . add('c', cases*)
 
           case MatchTypeTree(bound, selector, cases) =>
-            TastyTree(tag, typeName, t"MatchTypeTree", tree)
+            TreeBuilder(tag, typeName, t"MatchTypeTree", tree)
             . add('b', bound.to(List)*)
             . add('s', selector)
             . add('c', cases*)
@@ -424,46 +424,46 @@ object internal:
 
           case Applied(tpt, arguments) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TastyTree(tag, typeName, t"Applied", tree)
+            TreeBuilder(tag, typeName, t"Applied", tree)
             . typed(tpt)
             . add('a', arguments*)
             . typeNode
 
           case Annotated(argument, annotation) =>
-            TastyTree(tag, typeName, t"Annotated", tree)
+            TreeBuilder(tag, typeName, t"Annotated", tree)
             . add('a', argument)
             . children(annotation)
 
           case Repeated(elems, tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TastyTree(tag, typeName, t"Repeated", tree)
+            TreeBuilder(tag, typeName, t"Repeated", tree)
             . children(elems*)
             . typed(tpt)
 
           case Refined(tpt, refinements) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TastyTree(tag, typeName, t"Refined", tree)
+            TreeBuilder(tag, typeName, t"Refined", tree)
             . typed(tpt)
             . add('m', refinements*)
             . typeNode
 
           case Return(expr, from) =>
-            TastyTree(tag, typeName, t"Return", tree)
+            TreeBuilder(tag, typeName, t"Return", tree)
             . children(expr)
 
           case Unapply(fun, implicits, patterns) =>
-            TastyTree(tag, typeName, t"Unapply", tree)
+            TreeBuilder(tag, typeName, t"Unapply", tree)
             . children(fun)
             . add('i', implicits*)
             . add('p', patterns*)
 
           case Alternatives(patterns) =>
-            TastyTree(tag, typeName, t"Alternatives", tree)
+            TreeBuilder(tag, typeName, t"Alternatives", tree)
             . add('p', patterns*)
             . typeNode
 
           case TypeCaseDef(pattern, rhs) =>
-            TastyTree(tag, typeName, t"TypeCaseDef", tree)
+            TreeBuilder(tag, typeName, t"TypeCaseDef", tree)
             . add('p', pattern)
             . children(rhs)
             . typeNode
@@ -473,51 +473,51 @@ object internal:
 
             val clauses = paramss.map:
               case TermParamClause(params) =>
-                TastyTree('a', typeName, t"TermParamClause", tree).add('a', params*)
+                TreeBuilder('a', typeName, t"TermParamClause", tree).add('a', params*)
 
               case TypeParamClause(params) =>
-                TastyTree('t', typeName, t"TypeParamClause", tree).add('a', params*)
+                TreeBuilder('t', typeName, t"TypeParamClause", tree).add('a', params*)
 
               case clause =>
                 panic(m"unexpected parameter clause: ${clause.toString}")
 
-            TastyTree(tag, typeName, t"DefDef", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"DefDef", tree, parameter = name.tt)
             . copy(nodes = List.of(clauses))
             . typed(tpt)
             . children(rhs.to(List)*)
             . definition
 
           case SummonFrom(cases) =>
-            TastyTree(tag, typeName, t"SummonFrom", tree)
+            TreeBuilder(tag, typeName, t"SummonFrom", tree)
             . add('c', cases*)
 
           case ValDef(name, tpt, rhs) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TastyTree(tag, typeName, t"ValDef", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, t"ValDef", tree, parameter = name.tt)
             . typed(tpt)
             . children(rhs.to(List)*)
             . definition
 
           case CaseDef(pattern, guard, rhs) =>
-            TastyTree(tag, typeName, t"CaseDef", tree)
+            TreeBuilder(tag, typeName, t"CaseDef", tree)
             . add('p', pattern)
             . add('g', guard.to(List)*)
             . children(rhs)
 
           case _ =>
-            TastyTree(tag, typeName, t"?${tree.toString}: ${tree.getClass.toString}", tree)
+            TreeBuilder(tag, typeName, t"?${tree.toString}: ${tree.getClass.toString}", tree)
 
-    TastyTree.expand(' ', expr.asTerm)
+    TreeBuilder.expand(' ', expr.asTerm)
 
-  def semantics[meta: Type]: Macro[TastySymbol] =
+  def semantics[meta: Type]: Macro[Tasty.Symbol] =
     import quotes.reflect.*
     introspect(TypeRepr.of[meta].dealias.typeSymbol)
 
-  def semantics(): Macro[TastySymbol] =
+  def semantics(): Macro[Tasty.Symbol] =
     import quotes.reflect.*
     introspect(Symbol.spliceOwner)
 
-  def semantics(expr: Expr[Any]): Macro[TastySymbol] =
+  def semantics(expr: Expr[Any]): Macro[Tasty.Symbol] =
     import quotes.reflect.*
 
     introspect:
@@ -525,10 +525,10 @@ object internal:
         case Inlined(_, _, value) => value.symbol
         case other                => other.symbol
 
-  def introspect(using Quotes)(symbol: quotes.reflect.Symbol): Expr[TastySymbol] =
+  def introspect(using Quotes)(symbol: quotes.reflect.Symbol): Expr[Tasty.Symbol] =
     serialize(tastySymbol(symbol))
 
-  def tastySymbol(using Quotes)(symbol: quotes.reflect.Symbol): TastySymbol =
+  def tastySymbol(using Quotes)(symbol: quotes.reflect.Symbol): Tasty.Symbol =
     import quotes.reflect.*
 
     def render(term: Term): Text = term match
@@ -672,9 +672,9 @@ object internal:
           t"Companion module" ->
             (if symbol.companionModule.exists then symbol.companionModule.fullName else t"") )
 
-    TastySymbol(prefix, symbol.name, flags, properties, details)
+    Tasty.Symbol(prefix, symbol.name, flags, properties, details)
 
-  def serialize(symbol: TastySymbol): Macro[TastySymbol] =
+  def serialize(symbol: Tasty.Symbol): Macro[Tasty.Symbol] =
     val flags = symbol.flags.stdlib.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
     val properties = symbol.properties.stdlib.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
 
@@ -687,7 +687,7 @@ object internal:
             '{(${Expr(key)}, List.of(${Expr.ofList((list: List[Text]).stdlib.map(Expr(_)))}))}
 
     ' {
-        TastySymbol
+        Tasty.Symbol
           ( ${Expr(symbol.prefix)},
             ${Expr(symbol.name)},
             List.of(${Expr.ofList(flags)}),
