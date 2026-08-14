@@ -1529,10 +1529,10 @@ object cosmopolite extends Library:
     override def enabled = false
 
 object dendrology extends Library:
-  object tree extends Component(anticipation.print, gossamer.core):
+  object tree extends Component(anticipation.print, gossamer.core, tessellate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object dag extends Component(acyclicity.core, anticipation.print):
+  object dag extends Component(acyclicity.core, anticipation.print, tessellate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object demo extends Internal(dag, turbulence.stdio, ambience.core):

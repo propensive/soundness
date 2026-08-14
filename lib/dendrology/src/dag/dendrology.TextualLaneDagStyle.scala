@@ -38,6 +38,7 @@ import scala.collection.immutable.{Map, Set}
 import anticipation.*
 import gossamer.*
 import gossamer.Textual.concatenable
+import hieroglyph.*
 import symbolism.*
 import vacuous.*
 
@@ -58,8 +59,10 @@ case class TextualLaneDagStyle[line: Textual]
     junction:   Text,
     crossing:   Text,
     node:       Text )
+  ( using metric: Text is Measurable )
 extends LaneDagStyle[line]:
-  def width(glyph: line): Int = summon[line is Textual].length(glyph)
+  // Display cells, not code units, so wide characters and combining marks lay out correctly.
+  def width(glyph: line): Int = metric.width(summon[line is Textual].text(glyph))
 
   def serialize
     ( tiles:  List[DagTile],

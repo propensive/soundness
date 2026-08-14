@@ -35,6 +35,7 @@ package dendrology
 import soundness.*
 
 import strategies.throwUnsafely
+import textMetrics.uniformMetric
 
 object Tests extends Suite(m"Dendrology tests"):
 
@@ -81,6 +82,28 @@ object Tests extends Suite(m"Dendrology tests"):
   def run(): Unit =
     import dagStyles.defaultDagStyle
     DagDiagram(types).render { node => t"▪ $node" }
+
+    test(m"Tree flow: node content wraps into follow-on rows"):
+      import treeStyles.defaultTreeStyle
+      TreeDiagram.by[Tree](_.children)
+        ( Tree(t"the quick brown fox"), Tree(t"leaf") )
+      . flow(11)(_.value).stdlib.to(List)
+    . assert(_ == List(t"├─the quick", t"│ brown fox", t"└─leaf"))
+
+    test(m"Tree flow: follow-on rows under a last child use space, not an extender"):
+      import treeStyles.defaultTreeStyle
+      TreeDiagram.by[Tree](_.children)
+        ( Tree(t"parent", List(Tree(t"the quick brown fox"))) )
+      . flow(13)(_.value).stdlib.to(List)
+    . assert(_ == List(t"└─parent", t"  └─the quick", t"    brown fox"))
+
+    test(m"Lane DAG: a wide glyph's column measures display cells, not chars"):
+      import laneDagStyles.defaultLaneDagStyle
+      import hieroglyph.textMetrics.wideCharacterWidthMetric
+      val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"))
+      val glyph = (n: Text) => if n == t"A" then t"日" else t"● "
+      LaneDagDiagram(dag).render(glyph, n => t" $n")
+    . assert(_ == List(t"日 A", t"│ ", t"●  B"))
 
     test(m"Lane DAG: linear chain"):
       import laneDagStyles.defaultLaneDagStyle

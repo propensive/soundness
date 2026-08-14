@@ -43,6 +43,9 @@ extends TreeStyle[line]:
   def serialize(tiles: List[TreeTile], node: line): line =
     textual.apply(tiles.map(text(_)).join)+node
 
+  override def followOn(tiles: List[TreeTile], node: line): line =
+    textual.apply(tiles.map(followOnText(_)).join)+node
+
   def text(tile: TreeTile): Text = tile match
     case TreeTile.Space    => space
     case TreeTile.Last     => last

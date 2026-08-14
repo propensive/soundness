@@ -34,8 +34,11 @@ package dendrology
 
 import anticipation.*
 import gossamer.*
+import hieroglyph.*
+import polysyllabic.*
 import rudiments.*
 import spectacular.*
+import tessellate.*
 
 import TreeTile.*
 
@@ -64,6 +67,27 @@ object TreeDiagram:
 case class TreeDiagram[node](lines: Chain[(List[TreeTile], node)]):
   def render[line](line: node => line)(using style: TreeStyle[line]): Chain[line] = map[line]:
     tiles => node => style.serialize(tiles, line(node))
+
+  // Render with word wrapping: each node's content flows into rows no wider than `width`
+  // (inclusive of its tile prefix), and continuation rows take the style's follow-on tiles —
+  // extenders continue beneath a branch, and space follows a last child.
+  def flow[line: Textual { type Result = Char }](width: Int)(line: node => line)
+    ( using style: TreeStyle[line] )
+    ( using Text is Measurable, Hyphenation )
+  :   Chain[line] =
+
+    lines.stdlib.to(Chain).flatMap: (tiles, node) =>
+      val content = line(node)
+      val textual = summon[line is Textual]
+      val prefix = style.serialize(tiles, textual(t"")).plain.metrics
+
+      val rows: scala.List[line] =
+        Flow.wrap(content, (width - prefix).max(1)).stdlib.to(scala.List)
+
+      if rows.isEmpty then Chain(style.serialize(tiles, content))
+      else
+        val continuations = rows.tail.map: row => style.followOn(tiles, row)
+        (style.serialize(tiles, rows.head) :: continuations).to(Chain)
 
   def map[row](line: List[TreeTile] => node => row): Chain[row] = lines.map(line(_)(_))
   def nodes: Chain[node] = lines.map(_(1))

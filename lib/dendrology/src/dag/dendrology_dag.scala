@@ -34,6 +34,7 @@ package dendrology
 
 import anticipation.*
 import gossamer.*
+import hieroglyph.*
 
 package dagStyles:
   given defaultDagStyle: [text: Textual] => TextualDagStyle[text] =
@@ -43,12 +44,14 @@ package dagStyles:
     TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)
 
 package laneDagStyles:
-  given defaultLaneDagStyle: [text: Textual] => TextualLaneDagStyle[text] =
+  given defaultLaneDagStyle: [text: Textual] => (Text is Measurable)
+  =>  TextualLaneDagStyle[text] =
     TextualLaneDagStyle
       ( "  ".tt, "│ ".tt, "──".tt, "╰─".tt, "╯ ".tt, "╭─".tt, "╮ ".tt,
         "┴─".tt, "┬─".tt, "├─".tt, "┤ ".tt, "┼─".tt, "──".tt, "● ".tt )
 
-  given asciiLaneDagStyle: [text: Textual] => TextualLaneDagStyle[text] =
+  given asciiLaneDagStyle: [text: Textual] => (Text is Measurable)
+  =>  TextualLaneDagStyle[text] =
     TextualLaneDagStyle
       ( "  ".tt, "| ".tt, "--".tt, "+-".tt, "+ ".tt, "+-".tt, "+ ".tt,
         "+-".tt, "+-".tt, "+-".tt, "+ ".tt, "+-".tt, "--".tt, "* ".tt )
