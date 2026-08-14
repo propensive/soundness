@@ -85,6 +85,21 @@ Scala.js IR, and `Universe.Nir` is Scala Native IR. The universe is a type param
 compiler flags each universe needs — `-scalajs`, or the Scala Native plugin — follow from it
 rather than being supplied by hand.
 
+The single-type-argument form targets the classfile universe, and `targeting` selects another
+explicitly:
+
+```scala
+val forJs = Scalac[3.8](options).targeting[Universe.Sjsir]
+```
+
+Each universe beyond the JVM's has runtime prerequisites, supplied on the classpath like any
+other. `Universe.Sjsir` needs `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`
+and `scala3-library_sjs1`; their absence surfaces as ordinary compiler diagnostics rather than
+as a distinct kind of failure. `Universe.Nir` needs `scalalib`, `scala3lib`, `javalib`,
+`auxlib`, `clib`, `posixlib` and `nativelib`, and additionally a `NirPlugin` in scope — evidence
+of where the Scala Native compiler plugin lives, since NIR is emitted by a plugin rather than by
+a backend built into the compiler.
+
 ### Producing artifacts
 
 Universes and application formats are nodes of a `Toolchain`, a directed acyclic graph whose edges
@@ -98,7 +113,7 @@ Toolchain(jarEdges()).produce
     Jar,
     destination,
     List(jarOptions.name(t"app.jar")),
-    List(EntryPoint(Fqcn(t"Main"))) )
+    List(EntryPoint(fqcn"com.example.Main")) )
 ```
 
 From classfiles come an executable `Jar`, a `Dex` archive of Dalvik bytecode, a complete, signed
@@ -117,6 +132,121 @@ through, and a setting that configures nothing on the path is rejected before an
 Edges whose tools have prerequisites come from providers that demand evidence of them, so an edge
 whose tooling is absent cannot be built: `sjsEdges.wasi()` needs a probed `WasiToolchain` and a
 `WitWorld`, and `nativeEdges()` probes for `clang`.
+
+Formats are values, and their identity is value equality, so wherever a parameter changes what a
+user receives, it is a constructor parameter and each parameterization is a distinct node: the
+module system a JavaScript host imports through, the WASI generation an artifact's ABI follows,
+the target triple a binary runs on, the delivery mode of a bundle. A binary for
+`Triple.Arm64MacOs` is as distinct from one for `Triple.X64Linux` as a JAR is from a JavaScript
+bundle; that they share a linker does not make them interchangeable. The node set is open, too —
+`Format`, `Tool` and `Edge` are ordinary public types, so registering an edge for a format
+Soundness has never heard of extends the graph.
+
+### Deliverables and paths
+
+The value flowing along a path is a `Deliverable`, and its case says where in the graph it
+belongs: `Sources` at a source node, an `Emission` — an output directory and the classpath it was
+compiled against — at an intermediate representation, and a `Product`, a linked or packaged file,
+at an application format.
+
+The path itself can be asked for directly, which is how a tool reports what it is about to run:
+
+```scala
+toolchain.path(Universe.Classfile, Apk).map(_.target.id)   // List(t"dex", t"apk")
+```
+
+The path is the *unique shortest* one. Where none exists, `path` raises `NoPath`; where two are
+equally short, it raises `AmbiguousPath`, resolved by producing an intermediate format explicitly
+in a separate step rather than by a tie-break the caller cannot see. Assembly is checked as
+strictly: `Toolchain` rejects a duplicate edge between the same pair of formats, and rejects a
+cycle.
+
+Each intermediate product on a multi-stage path is written below the destination under its
+format's `id`, and the final product to the destination itself. An APK, whose path runs
+`Classfile → Dex → Apk`, therefore dexes into `dex/` and packages from there — and nothing about
+that sequence is written into the APK tool.
+
+A staging rig, which must fold its own running classpath into the JARs it produces, pairs
+`Bundler.applicationClasspath` — the running application's classpath, introspected from the
+thread-context classloader — with its compiled output:
+
+```scala
+Toolchain(jarEdges()).produce
+  ( Deliverable.Emission(out, Bundler.applicationClasspath),
+    Universe.Classfile,
+    Jar,
+    out,
+    List(jarOptions.name(t"$uuid.jar")),
+    List(EntryPoint(executor)) )
+```
+
+### Settings
+
+A tool is configured by `Setting`s, which are addressed to the formats whose production they
+configure rather than to a tool directly. `produce` applies each setting, in order, to every edge
+on the path whose target it applies to; a setting matching no format on the path raises
+`InapplicableSetting` before any tool runs.
+
+Addressing settings to formats is what lets one setting configure several stages. An Android API
+level is a property of the application, but it governs both how D8 desugars and what the manifest
+declares, so `apkOptions.minApi` applies to `Dex` and `Apk` alike, dispatching to each node's own
+configuration type. The Scala.js settings — `linkerOptions.checkIr`, `sourceMaps`, `esVersion.*`
+and `optimize.*` — apply to every format the Scala.js linker produces, and the native settings
+cover the garbage collector (`nativeOptions.gc.*`), build mode (`mode.*`) and link-time
+optimization (`lto.*`).
+
+Entry points are ambient along the whole path in the same way, and each tool applies or ignores
+them as its format demands: an executable JAR takes at most one, as its `Main-Class`; a native
+binary and an APK require exactly one; a library JAR and a DEX archive ignore them entirely,
+since neither records an entry point.
+
+### WASI components
+
+A WASI component — a `Wasi(Wasi.Version.Wasip2)`, a component-model `.wasm` whose imports and
+exports are described by WIT — has two prerequisites beyond the linker, both demanded by the edge
+provider, so an edge without them cannot be constructed: a `WasiToolchain`, evidence that the
+native tools the link shells out to (`wasm-tools` and the scala-wasm fork of `wit-bindgen`) are
+present, obtainable only through the probing constructor `WasiToolchain()`; and a `WitWorld`,
+naming the directory of WIT packages and the world to link against:
+
+```scala
+given WasiToolchain = WasiToolchain()
+given WitWorld = WitWorld(witDirectory, t"my-world")
+
+val toolchain = Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())
+toolchain.produce(emission, Universe.Sjsir, OciImage, destination)
+```
+
+WASI generations are separate nodes because they determine an artifact's ABI: `Wasip1` is a flat,
+libc-style syscall interface on core modules, `Wasip2` is the component model, and `Wasip3` adds
+native asynchrony. Only `Wasip2` has an edge producing it, so asking for `Wasip3` raises `NoPath`
+rather than silently producing something else.
+
+Wrapping a component as an OCI artifact is a further edge, `Wasi(Wasip2) → OciImage`, rather than
+anything the component link knows about; the path composes the two. `Js(module)` and `Wasm`
+require no native tooling at all — the linker is an ordinary JVM library.
+
+### Native binaries
+
+The native edges shell out to `clang` and `clang++`, so `nativeEdges` probes for them once and
+raises `ToolchainError` if either is missing. It takes the triples to target, defaulting to the
+build host's own:
+
+```scala
+val toolchain = Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux))
+
+toolchain.produce
+  ( emission,
+    Universe.Nir,
+    Binary(Triple.X64Linux),
+    destination,
+    List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+    List(EntryPoint(fqcn"com.example.Main")) )
+```
+
+Each triple is its own node, rendered as an LLVM target triple such as `aarch64-apple-darwin` or
+`x86_64-unknown-linux-gnu`. Targets beyond the build host require a C toolchain capable of
+cross-compiling to them.
 
 ### Other languages
 

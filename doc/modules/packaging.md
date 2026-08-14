@@ -47,6 +47,30 @@ Packager.pack(packaging)
 The launchers are the same ones that run [daemonized applications](daemons.md): they locate or
 fetch a JVM within the configured version policy, and support signed self-upgrade.
 
+### Bundling as a toolchain format
+
+The same packaging is reachable as a [toolchain](compiler.md) format, so an application can be
+compiled and bundled in one path rather than packaged as a separate step afterwards. An `Xeq`
+bundle runs from `Jar` rather than from a universe, and the delivery mode is part of the node's
+identity, since each is a different distributable:
+
+```scala
+Toolchain(jarEdges(), xeqEdges()).produce
+  ( Deliverable.Emission(out, classpath),
+    Universe.Classfile,
+    Xeq(Packaging.Delivery.EmbedAll),
+    destination,
+    List(xeqOptions.name(t"mytool"), xeqOptions.runners.standard),
+    List(EntryPoint(fqcn"com.example.Main")) )
+```
+
+`xeqOptions.runners.standard` names the published runner release, verified against its committed
+manifest, while `runners.local` reads prebuilt stubs from a directory instead. Targets default to
+every platform the runner source names, and `xeqOptions.target` adds one explicitly.
+`xeqOptions.java` sets the minimum and preferred JVM versions, `bundle.jre` and `bundle.jdk`
+ship one alongside, and `signing` and `buildId` configure the self-upgrade signing and upgrade
+ordering recorded in each stub.
+
 ### Thin launchers
 
 Most of a fat JAR is dependencies that live on Maven Central. Wrapping the application's entry
