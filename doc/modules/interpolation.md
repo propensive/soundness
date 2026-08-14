@@ -71,6 +71,21 @@ Where different holes accept different things — a URL's port position takes a 
 position takes text — a `Substitution` carries an extra label distinguishing the positions, so
 each hole is checked against what belongs there.
 
+A `Substitution` is an `Insertion` with one more type parameter: a singleton `Label`. At runtime
+the two behave identically; the difference is at compiletime. Where an insertion tells the
+interpolator's parser only that *something* was substituted here, a substitution passes it that
+label, so the parser can proceed as though the hole contained a representative token of the
+substituted type — `"0"` for a number, `""""` for a string:
+
+```scala
+given Substitution[SqlInput, Int, "0"] = IntInput(_)
+given Substitution[SqlInput, Text, "\"\""] = StrInput(_)
+```
+
+The interpolator's compiletime interpretation of the literal can then depend on what was inserted,
+which is what allows an interpolator to check the *shape* of a literal containing holes rather
+than giving up wherever a hole appears.
+
 ### Patterns
 
 The same machinery runs in reverse. An `Extrapolable` instance lets an interpolated literal serve

@@ -169,6 +169,47 @@ List(prefix, domain, tld)
 // List(t"test", t"example", t"com")
 ```
 
+### Escaping
+
+Between source code and a compiled expression, escaping normally happens twice: once when the
+source is read as a string, and again when that string is read as a pattern. It is why matching a
+single backslash in Java means writing `Pattern.compile("\\\\")` — two backslashes for the
+expression, each doubled again for the string literal.
+
+Only the second level applies here. Inside `r"…"` or `r"""…"""`, a backslash is a backslash, so
+only the regular-expression escaping rules need to be thought about — an opening parenthesis is
+matched by `r"\("`, and nothing more. The one exception is `$`, which introduces a substitution
+and is written `$$` to mean itself.
+
+### Expressions as values
+
+The same interpolators are ordinary expressions outside a pattern, producing a `Regex`:
+
+```scala
+val ipAddress = r"([0-9]+\.){3}[0-9]+"
+```
+
+Such a value can be used as an extractor in a pattern, though it matches as a whole and cannot
+bind its capturing groups — those are available only where the pattern is written literally, since
+that is where the compiler can see them. The value carries its source `pattern` as `Text`, along
+with the position and nature of each of its groups.
+
+`Regex` is used throughout Soundness wherever a regular expression is called for, and — more to
+the point — `Text` is *never* used for one. A method's signature therefore says whether its
+argument is interpreted as a pattern or taken literally, which is a distinction that string-typed
+APIs leave to documentation and hope. Substitution in [text](text.md) is overloaded on exactly
+that basis:
+
+```scala
+text.sub(r"\s+", t" ")    // collapse runs of whitespace
+text.sub(t"\s+", t" ")    // replace the four literal characters
+```
+
+Because a glob compiles to a regular expression, a `g"…"` is a `Regex` too, and usable anywhere
+one is. Two that compile to the same pattern are equal — `g".local/*" == r"\.local/[^/\\]*"` — but
+the converse says nothing: two regular expressions can be unequal and yet match exactly the same
+inputs, as `r"[xy]"` and `r"[yx]"` do.
+
 ### Compiletime checking
 
 A regular expression that cannot be parsed is rejected where it is written, with a
