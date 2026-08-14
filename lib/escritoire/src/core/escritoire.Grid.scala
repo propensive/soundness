@@ -48,13 +48,17 @@ import tessellate.*
 import vacuous.*
 
 object Grid:
-  given printable: [text: {Textual, Printable as printable}] => (Text is Measurable)
+  given printable: [text]
+  =>  ( textual: text is Textual { type Result = Char }, printable: text is Printable )
+  =>  ( Text is Measurable )
   =>  Grid[text] is Printable =
 
     (layout, termcap) => layout.render.map(printable.print(_, termcap)).join(t"\n")
 
 case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
-  def render(using metrics: Text is Measurable, textual: text is Textual): Chain[text] =
+  def render
+    ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char } )
+  :   Chain[text] =
     val pad = t" "*style.padding
     val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")
 
@@ -71,10 +75,17 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
             widths.indices.map: index =>
               val cell = row(index)
 
-              if cell.minHeight > lineNumber
+              val offset = cell.verticalAlign match
+                case VerticalAlignment.Top    => 0
+                case VerticalAlignment.Middle => (row.height - cell.minHeight)/2
+                case VerticalAlignment.Bottom => row.height - cell.minHeight
+
+              val line = lineNumber - offset
+
+              if line >= 0 && line < cell.minHeight
               then
                 cell.textAlign.pad
-                  ( cell(lineNumber), widths.readUnchecked(index), lineNumber == cell.minHeight - 1 )
+                  ( cell(line), widths.readUnchecked(index), line == cell.minHeight - 1 )
 
               else
                 Textual((t" "*widths.readUnchecked(index)))

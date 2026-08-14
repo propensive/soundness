@@ -59,11 +59,14 @@ object Alignment:
       content.pad(width, Rtl)
 
   object Center extends Alignment:
+    // Odd spare space goes on the right, unlike gossamer's `center`, which puts it on the
+    // left.
     def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)
       ( using Text is Measurable )
     :   textual =
 
-      content.center(width)
+      val metrics = content.plain.metrics
+      content.pad(metrics + (width - metrics).max(0)/2, Rtl).pad(width)
 
   object Justify extends Alignment:
     def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)

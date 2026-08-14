@@ -36,13 +36,18 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import polysyllabic.*
-import vacuous.*
+import tessellate.*
 
+// A column-sizing strategy. `flex` describes the column's claim on the table's width — its
+// intrinsic bounds, its appetite for spare space, and whether it may collapse entirely when
+// the table cannot fit — given every logical line the column will display; `fit` then
+// arranges one cell's lines into the width the table settled on.
 trait Columnar:
-  def width[text: Textual](lines: Array[text]^{}, maxWidth: Int, slack: Double)
+  def flex[text: Textual { type Result = Char }](lines: Array[text]^{}, maxWidth: Int)
     ( using Text is Measurable )
-  :   Optional[Int]
+  :   Flex
 
-  def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
+  def fit[text: Textual { type Result = Char }]
+    ( lines: Array[text]^{}, width: Int, textAlign: TextAlignment )
     ( using Text is Measurable, Hyphenation )
   :   Sequence[text]

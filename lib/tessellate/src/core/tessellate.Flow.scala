@@ -205,19 +205,15 @@ object Flow:
     if width < 1 then Sequence.of(Vector(content))
     else Sequence.of(recur(0, 0, 0, Nil).stdlib.reverse.toVector)
 
-  // Confine a single line of content to exactly `width` cells: content wider than `width` is
-  // truncated (by cluster, so a wide character never straddles the cut) and suffixed with
-  // `ellipsis`; anything narrower is padded per `alignment`.
-  def fit[textual: Textual { type Result = Char }]
-    ( content:   textual,
-      width:     Int,
-      alignment: Alignment = Alignment.Left,
-      ellipsis:  Text = t"…",
-      last:      Boolean = true )
+  // Truncate content wider than `width` cells, marking the cut with `ellipsis`; content that
+  // already fits is returned unchanged. Truncation is by cluster, so a wide character never
+  // straddles the cut.
+  def shorten[textual: Textual { type Result = Char }]
+    ( content: textual, width: Int, ellipsis: Text = t"…" )
     ( using metric: Text is Measurable )
   :   textual =
 
-    if content.plain.metrics <= width then alignment.pad(content, width, last) else
+    if content.plain.metrics <= width then content else
       given Char is Measurable = charMetric
       val plain = content.plain.s
       val boundaries = GraphemeBreak.boundaries(content.plain)
@@ -230,7 +226,45 @@ object Flow:
       val kept =
         if keep == 0 then textual(t"") else content.segment(0.z thru boundaries.readable(keep).u)
 
-      alignment.pad(kept + textual(ellipsis), width, last)
+      kept + textual(ellipsis)
+
+  // Confine a single line of content to exactly `width` cells: content wider than `width` is
+  // truncated with `shorten`; anything narrower is padded per `alignment`.
+  def fit[textual: Textual { type Result = Char }]
+    ( content:   textual,
+      width:     Int,
+      alignment: Alignment = Alignment.Left,
+      ellipsis:  Text = t"…",
+      last:      Boolean = true )
+    ( using metric: Text is Measurable )
+  :   textual =
+
+    alignment.pad(shorten(content, width, ellipsis), width, last)
+
+  // Chop content into lines of at most `width` cells with no regard for word boundaries:
+  // character flow, by cluster, as a terminal itself would wrap it.
+  def chop[textual: Textual { type Result = Char }](content: textual, width: Int)
+    ( using Text is Measurable )
+  :   Sequence[textual] =
+
+    given Char is Measurable = charMetric
+    val plain = content.plain.s
+    val boundaries = GraphemeBreak.boundaries(content.plain)
+    val widths = prefixWidths(plain, boundaries)
+    val clusters = boundaries.readable.length - 1
+
+    def segment(fromCluster: Int, toCluster: Int): textual =
+      content.segment(boundaries.readable(fromCluster).z thru boundaries.readable(toCluster).u)
+
+    def recur(cluster: Int, lineStart: Int, acc: List[textual]): List[textual] =
+      if cluster >= clusters then
+        if lineStart == cluster then acc else segment(lineStart, cluster) :: acc
+      else if cluster > lineStart && widths.readable(cluster + 1) - widths.readable(lineStart) > width
+      then recur(cluster + 1, cluster, segment(lineStart, cluster) :: acc)
+      else recur(cluster + 1, lineStart, acc)
+
+    if width < 1 || clusters == 0 then Sequence.of(Vector(content))
+    else Sequence.of(recur(0, 0, Nil).stdlib.reverse.toVector)
 
   // The narrowest width into which `content` can wrap without overflow: the display width of
   // its widest space-delimited word (hard breaks also delimit).
