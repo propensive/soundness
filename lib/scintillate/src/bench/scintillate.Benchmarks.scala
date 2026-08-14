@@ -49,6 +49,7 @@ import rudiments.*
 import sedentary.*
 import symbolism.*
 import telekinesis.*
+import parasite.*, threading.virtualThreading
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
@@ -118,6 +119,10 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
 
   def run(): Unit =
     val bench = Bench()
+    // The real-socket rows: 2 GB heap, all cores (the machine itself is the resource under
+    // test), and G1 rather than the harness's default Serial collector, whose single-threaded
+    // stop-the-world pauses would dominate p99 latency in a saturated server workload.
+    val stress = Stress(heap = t"2g", gc = t"G1")
 
     val requestSize  = getRequest.length*Byte
     val responseSize = serializeResponse(okResponse)*Byte
@@ -134,3 +139,61 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
       bench(m"1000 pipelined GETs through serveConnection")
         ( target = 1*Second, operationSize = pipelineSize ):
         '{ scintillate.Benchmarks.drivePipeline() }
+
+    // Real-socket requests per second: see `HttpRivals` for the client, the servers,
+    // and the colocation caveats. The harness workers (the clients) run on virtual
+    // threads in every row — one cheap persistent connection each, identical across
+    // servers — while scintillate's two variants toggle the kind of thread the
+    // *server* handles connections on. The sweep suite doubles the client-connection
+    // count from 1 to 256, reading as each server's throughput-vs-N curve; the
+    // capacity suite searches for the maximum sustained rate with 99% of requests
+    // answered within 5 ms — each server's headline requests/sec figure. On loopback,
+    // an uncontended round-trip is tens of microseconds, so a 5 ms SLO measures
+    // queuing, scheduling and GC under load, not network noise.
+    suite(m"HTTP over real sockets: scaling sweep (N ≤ 256)"):
+      stress(m"Scintillate  SocketServer (virtual)")(target = 1*Second, sweep = 256):
+        '{
+            scintillate.HttpRivals.scintillateVirtual
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.scintillateVirtualPort)
+        }
+
+      stress(m"http4s  EmberServer")(target = 1*Second, sweep = 256):
+        '{
+            scintillate.HttpRivals.emberServer
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.emberPort)
+        }
+
+      stress(m"ZIO  zio-http Server")(target = 1*Second, sweep = 256):
+        '{
+            scintillate.HttpRivals.zioServer
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.zioPort)
+        }
+
+    suite(m"HTTP over real sockets: capacity search (99% ≤ 5 ms)"):
+      stress(m"Scintillate  SocketServer (virtual)")
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        '{
+            scintillate.HttpRivals.scintillateVirtual
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.scintillateVirtualPort)
+        }
+
+      stress(m"Scintillate  SocketServer (platform)")
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        '{
+            scintillate.HttpRivals.scintillatePlatform
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.scintillatePlatformPort)
+        }
+
+      stress(m"http4s  EmberServer")
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        '{
+            scintillate.HttpRivals.emberServer
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.emberPort)
+        }
+
+      stress(m"ZIO  zio-http Server")
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        '{
+            scintillate.HttpRivals.zioServer
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.zioPort)
+        }

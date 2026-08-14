@@ -2723,7 +2723,18 @@ object scintillate extends Library:
   object test extends Tests(server, servlet, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-  object bench extends Benchmarks(server, eucalyptus.core, quantitative.units)
+  // The wire-codec benchmarks are dependency-free; the real-socket RPS comparison pulls the
+  // rival servers (http4s ember for the FS2 ecosystem, and zio-http) from Maven Central,
+  // exactly as `turbulence.bench` pulls its rival streaming libraries.
+  object bench extends Benchmarks(server, eucalyptus.core, quantitative.units):
+    def mvnDeps = Seq(
+      mvn"org.http4s::http4s-ember-server:0.23.30",
+      mvn"org.http4s::http4s-dsl:0.23.30",
+      mvn"dev.zio::zio-http:3.3.3" )
+    // The rival servers' libraries don't build against explicit nulls and no-flexible-types;
+    // drop just those two for the benchmark sources, mirroring `turbulence.bench`.
+    override def scalacOptions = Task:
+      super.scalacOptions().filterNot(Set("-Yexplicit-nulls", "-Yno-flexible-types"))
 
 object sedentary extends Library:
   object core
