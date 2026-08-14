@@ -103,7 +103,7 @@ given overTransmissible: [transport, value]
 =>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
 =>  CharEncoder
 =>  (value over transport) is Transmissible =
-  payload => zephyrine.Stream(Frame.Text(true, format.encoded(codec.encoded(payload)).in[Data]).encode)
+  payload => zephyrine.Stream(Websocket.Frame.Text(true, format.encoded(codec.encoded(payload)).in[Data]).encode)
 
 // The decode direction. The `Decodable in Text`/`in transport` instances are
 // `Tactic`-conditional and don't resolve as nested given constraints, so we

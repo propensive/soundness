@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export perihelion.{Frame, Masking, Message, Websocket, WsSessional, overIngressive,
+export perihelion.{Masking, Message, Websocket, WsSessional, overIngressive,
     overTransmissible, webSocket}
 
 // `wsClient` and `wsSessional` are deliberately not exported: their types carry
