@@ -261,10 +261,25 @@ object HttpRivals:
 
     awaitReady(emberPort)
 
+  // zio-http's Netty event-loop threads are non-daemon (ZIO's own `ZScheduler` workers
+  // are daemon), so once the measurement JVM's `main` returns, the process would never
+  // exit and the harness would wait on it forever. The watchdog joins `main` from a
+  // daemon thread and halts the JVM the moment it finishes — by which point the
+  // results are already on stdout.
+  private def haltWhenMainExits(): Unit =
+    Thread.getAllStackTraces.nn.keySet.nn.forEach: thread =>
+      if thread.getName == "main" then
+        Thread.ofVirtual.nn.start: () =>
+          thread.join()
+          java.lang.Runtime.getRuntime.nn.halt(0)
+
   // zio-http on the default ZIO runtime, forked as a fiber; like ember, torn down
-  // only by JVM exit.
+  // only by JVM exit (which the watchdog above must force past Netty's non-daemon
+  // event loops).
   lazy val zioServer: Unit =
     import zio.http.*
+
+    haltWhenMainExits()
 
     val routes = Routes(Method.GET / "bench" -> handler(Response.text("Hello, World!")))
     val program = Server.serve(routes).provide(Server.defaultWithPort(zioPort))
