@@ -564,7 +564,7 @@ object Tests extends Suite(m"Hypotenuse tests"):
       . assert(_ == t"0.3333333333")
 
       test(m"division by zero raises"):
-        capture[DivisionError](Decimal(1).divide(Decimal(0L), 2, Decimal.Rounding.HalfUp))
+        capture[hypotenuse.Arithmetic.Error](Decimal(1).divide(Decimal(0L), 2, Decimal.Rounding.HalfUp))
       . assert(_ => true)
 
       test(m"rounding modes match the JDK"):

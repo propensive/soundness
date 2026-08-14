@@ -51,7 +51,7 @@ object ContentLength:
   // that the framed iterator (capturing the local `cursor`, built from `input`) reaches
   // `input` — the Scala.js pipeline infers neither the lambda's `this` nor the local's
   // reachability. (Compiler divergence; the JVM pipeline accepts the lambda.)
-  given framable: (tactic: Tactic[FrameError])
+  given framable: (tactic: Tactic[Framing.Error])
   =>  ( (Data is Framable by ContentLength)^{tactic} ) = new Framable:
     type Self = Data
     type Operand = ContentLength
@@ -64,7 +64,7 @@ object ContentLength:
       val colon: Byte = 58
       val space: Byte = 32
 
-      def fail(): Nothing = abort(FrameError(FrameError.Reason.ShortRead))
+      def fail(): Nothing = abort(Framing.Error(Framing.Error.Reason.ShortRead))
       def lower(byte: Byte): Byte = if byte >= 65 && byte <= 90 then (byte + 32).toByte else byte
 
       val name: Text = t"content-length"
@@ -117,7 +117,7 @@ object ContentLength:
 
               if matches && digits then length = value
 
-          if length < 0 then abort(FrameError(FrameError.Reason.MalformedLength))
+          if length < 0 then abort(Framing.Error(Framing.Error.Reason.MalformedLength))
           // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk;
           // the cast reasserts the frozen form, which `take` already guarantees.
           cursor.take(fail())(length).asInstanceOf[Data]

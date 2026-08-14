@@ -34,5 +34,5 @@ package soundness
 
 export
   obligatory
-  . { Associable, bare, CarriageReturn, ContentLength, CrLf, Framable, FrameError, frames,
+  . { Associable, bare, CarriageReturn, ContentLength, CrLf, Framable, Framing, frames,
       LengthPrefix, Linefeed, rpc, Rpc }

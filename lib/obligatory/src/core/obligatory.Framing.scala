@@ -30,11 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hypotenuse
-
-import scala.language.experimental.into
-
+package obligatory
 import fulminate.*
 
-case class DivisionError()(using Diagnostics)
-extends Error(868, 0)(m"the result is unrepresentable")
+// The act of delimiting messages in a byte stream, which `CrLf`, `ContentLength` and
+// `LengthPrefix` each implement. Named for the act rather than the frame: obligatory has
+// no `Frame` type, and the two that exist elsewhere — perihelion's WebSocket frame and
+// ultimatum's layout frame — are unrelated to both this and each other.
+object Framing:
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case ShortRead       extends Reason(1)
+      case MissingLineFeed extends Reason(2)
+      case MalformedLength extends Reason(3)
+      case UnknownHeader   extends Reason(4)
+
+    given communicable: Reason is Communicable =
+      case Reason.ShortRead       => m"the input ended before a complete frame could be read"
+      case Reason.MissingLineFeed => m"a carriage return was not followed by a line feed"
+      case Reason.MalformedLength => m"the content-length header value could not be parsed"
+      case Reason.UnknownHeader   => m"an unrecognized header was encountered"
+
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(142, reason.number)(m"could not deframe the message because $reason")

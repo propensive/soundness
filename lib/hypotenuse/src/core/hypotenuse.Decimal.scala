@@ -617,9 +617,9 @@ object decimalInternal:
       // Division to an explicit result scale and rounding policy — the quotient of two
       // decimals generally does not terminate, so both must be chosen by the caller.
       def divide(right: Decimal, scale: Int, rounding: Decimal.Rounding)
-      :   Decimal raises DivisionError =
+      :   Decimal raises Arithmetic.Error =
 
-        if right(0) == 0 then abort(DivisionError())
+        if right(0) == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
         else if left(0) == 0 then Decimal.Zero
         else
           val sign = left(0)*right(0)

@@ -30,22 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package hypotenuse
 
+import anticipation.*
 import fulminate.*
 
-object FrameError:
-  enum Reason(val number: Int) extends Clarification:
-    case ShortRead       extends Reason(1)
-    case MissingLineFeed extends Reason(2)
-    case MalformedLength extends Reason(3)
-    case UnknownHeader   extends Reason(4)
+// The failure of an arithmetic *operation*, as distinct from a value that cannot be
+// represented (`Decimal.Error`, `Rational.Error`). Division and overflow are separate
+// `Reason`s rather than separate types because they are one concept — an operation with no
+// representable result — and `arithmeticOptions.division` / `.overflow` remain independent
+// imports, so a caller still chooses which checks to switch on.
+object Arithmetic:
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case DivisionByZero extends Reason(1)
+      case Overflow       extends Reason(2)
 
-  given communicable: Reason is Communicable =
-    case Reason.ShortRead       => m"the input ended before a complete frame could be read"
-    case Reason.MissingLineFeed => m"a carriage return was not followed by a line feed"
-    case Reason.MalformedLength => m"the content-length header value could not be parsed"
-    case Reason.UnknownHeader   => m"an unrecognized header was encountered"
+    given communicable: Reason is Communicable =
+      case Reason.DivisionByZero => m"the divisor was zero"
+      case Reason.Overflow       => m"the result exceeded the range of its type"
 
-case class FrameError(reason: FrameError.Reason)(using Diagnostics)
-extends Error(142, reason.number)(m"could not deframe the message because $reason")
+  case class Error(reason: Arithmetic.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(868, reason.number)
+    ( m"the arithmetic operation could not be completed because $reason" )
