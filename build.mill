@@ -2622,7 +2622,7 @@ object punctuation extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object ansi extends Component(core, harlequin.core, harlequin.ansi, escapade.core,
-      polysyllabic.core):
+      polysyllabic.core, tessellate.core):
     override def scalaJs = false // depends on JVM-only `harlequin` (syntax highlighting)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
