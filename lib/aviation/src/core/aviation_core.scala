@@ -89,10 +89,10 @@ trait Unix
 trait Monotonic
 
 package instantDecodables:
-  given iso8601InstantDecodable: Tactic[TimeError] => (Instant over Unix) is Decodable in Text =
+  given iso8601InstantDecodable: Tactic[Moment.Error] => (Instant over Unix) is Decodable in Text =
     Iso8601.parse(_)
 
-  given rfc1123InstantDecodable: Tactic[TimeError] => (Instant over Unix) is Decodable in Text =
+  given rfc1123InstantDecodable: Tactic[Moment.Error] => (Instant over Unix) is Decodable in Text =
     Rfc1123.parse(_)
 
 package dateFormats:
@@ -455,7 +455,7 @@ package calendars:
       import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(28)))
 
-    given raiseErrorsLeapDay: Tactic[TimeError] => Anniversary.NonexistentLeapDay = year =>
+    given raiseErrorsLeapDay: Tactic[Moment.Error] => Anniversary.NonexistentLeapDay = year =>
       import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(29)))
 
@@ -478,8 +478,8 @@ package chronometries:
 package gapPolicies:
   given pushBackward: GapPolicy = (_, backward) => backward
 
-  given rejectGap: Tactic[TimeError] => GapPolicy =
-    (_, _) => abort(TimeError(_.Gap))
+  given rejectGap: Tactic[Moment.Error] => GapPolicy =
+    (_, _) => abort(Moment.Error(_.Gap))
 
 // Switch sub-day `Moment` arithmetic to count leap seconds (the default `LeapMode.Lenient` works on
 // the leap-free POSIX line). Import `leapModes.exact` so adding a duration that crosses an inserted
@@ -499,9 +499,9 @@ package monthEnds:
       val max = calendar.daysInMonth(month, year)
       unsafely(Date(year, month, Day(max))).addDays(day - max)
 
-  given raiseMonthEnd: Tactic[TimeError] => Disambiguation = new Disambiguation:
+  given raiseMonthEnd: Tactic[Moment.Error] => Disambiguation = new Disambiguation:
     def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
-      abort(TimeError(_.Invalid(year(), calendar.monthOrdinal(year, month) + 1, day, calendar)))
+      abort(Moment.Error(_.Invalid(year(), calendar.monthOrdinal(year, month) + 1, day, calendar)))
 
 def now()(using clock: Clock): Instant over Unix = clock()
 

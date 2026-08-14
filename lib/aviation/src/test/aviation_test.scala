@@ -58,19 +58,19 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"Month cannot be higher than 12"):
         capture(t"59-13-13".as[Date])
-      . assert(_ == TimeError(_.Unknown(t"13", t"month")))
+      . assert(_ == Moment.Error(_.Unknown(t"13", t"month")))
 
       test(m"Month cannot be less than 1"):
         capture(t"59-0-13".as[Date])
-      . assert(_ == TimeError(_.Unknown(t"0", t"month")))
+      . assert(_ == Moment.Error(_.Unknown(t"0", t"month")))
 
       test(m"Day cannot be over 31"):
         capture(t"59-11-32".as[Date])
-      . assert(_ == TimeError(_.Invalid(59, 11, 32, calendars.gregorianCalendar)))
+      . assert(_ == Moment.Error(_.Invalid(59, 11, 32, calendars.gregorianCalendar)))
 
       test(m"Day must exist in month"):
         capture(t"59-11-31".as[Date])
-      . assert(_ == TimeError(_.Invalid(59, 11, 31, calendars.gregorianCalendar)))
+      . assert(_ == Moment.Error(_.Invalid(59, 11, 31, calendars.gregorianCalendar)))
 
 
     suite(m"Leap Seconds tests"):
@@ -349,7 +349,7 @@ object Tests extends Suite(m"Aviation Tests"):
         import calendars.papalCutover
         val day = 10
         capture((1582-Oct-day).jdn)
-      . assert(_ == TimeError(_.Invalid(1582, 10, 10, calendars.papalCutover)))
+      . assert(_ == Moment.Error(_.Invalid(1582, 10, 10, calendars.papalCutover)))
 
       test(m"A pre-cutover date uses the Julian calendar under the Papal regime"):
         given papal: Regime = calendars.papalCutover
@@ -531,7 +531,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
         test(m"Date with single-digit day"):
           capture(t"Wed, 3 Jul 2002 17:45:00 GMT".as[Instant over Unix])
-        . assert(_ == TimeError(_.Format(t"Wed, 3 Jul 2002 17:45:00 GMT", Rfc1123, Prim + 6)(Rfc1123.Issue.Digit)))
+        . assert(_ == Moment.Error(_.Format(t"Wed, 3 Jul 2002 17:45:00 GMT", Rfc1123, Prim + 6)(Rfc1123.Issue.Digit)))
 
         test(m"Date with single-digit hour, minute, and second"):
           t"Tue, 02 Mar 2021 07:08:09 GMT".as[Instant over Unix]
@@ -840,15 +840,15 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"Month from invalid text"):
         capture(Month(t"foo"))
-      . assert(_ == TimeError(_.Unknown(t"foo", t"month")))
+      . assert(_ == Moment.Error(_.Unknown(t"foo", t"month")))
 
       test(m"Month from invalid number 0"):
         capture(Month(0))
-      . assert(_ == TimeError(_.Unknown(t"0", t"month")))
+      . assert(_ == Moment.Error(_.Unknown(t"0", t"month")))
 
       test(m"Month from invalid number 13"):
         capture(Month(13))
-      . assert(_ == TimeError(_.Unknown(t"13", t"month")))
+      . assert(_ == Moment.Error(_.Unknown(t"13", t"month")))
 
       test(m"Month.unapply on text matches"):
         t"jan" match
@@ -940,11 +940,11 @@ object Tests extends Suite(m"Aviation Tests"):
         (Feb - 29)(Year(2023))
       . assert(_ == 2023-Mar-1)
 
-      test(m"Feb 29 in non-leap year raiseErrors raises TimeError"):
+      test(m"Feb 29 in non-leap year raiseErrors raises Moment.Error"):
         given Anniversary.NonexistentLeapDay = nonexistentLeapDays.raiseErrorsLeapDay
         capture((Feb - 29)(Year(2023)))
       . matches:
-          case TimeError(_) =>
+          case Moment.Error(_) =>
 
       test(m"Feb 29 in a leap year is unaffected by rounding strategy"):
         given Anniversary.NonexistentLeapDay = nonexistentLeapDays.roundDownLeapDay
@@ -1052,7 +1052,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Day 366 in a common year is rejected"):
         capture(OrdinalCalendar(Year(2023), 366))
       . matches:
-          case _: TimeError =>
+          case _: Moment.Error =>
 
     suite(m"Holidays methods"):
       val holidays = Holidays(List
@@ -1403,22 +1403,22 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Non-digit at year start raises"):
         capture(t"abcd-01-01".as[Instant over Unix])
       . matches:
-          case _: TimeError =>
+          case _: Moment.Error =>
 
       test(m"Truncated year raises"):
         capture(t"20".as[Instant over Unix])
       . matches:
-          case _: TimeError =>
+          case _: Moment.Error =>
 
       test(m"Trailing junk after seconds raises"):
         capture(t"2024-01-01T12:00:00garbage".as[Instant over Unix])
       . matches:
-          case _: TimeError =>
+          case _: Moment.Error =>
 
       test(m"Bad week-date letter raises"):
         capture(t"2024-X21-1".as[Instant over Unix])
       . matches:
-          case _: TimeError =>
+          case _: Moment.Error =>
 
     suite(m"RFC 1123 parse error cases"):
       import instantDecodables.rfc1123InstantDecodable
@@ -1426,22 +1426,22 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Lowercase day name raises"):
         capture(t"sun, 06 Nov 1994 08:49:37 GMT".as[Instant over Unix])
       . matches:
-          case _: TimeError =>
+          case _: Moment.Error =>
 
       test(m"Wrong month abbreviation raises"):
         capture(t"Sun, 06 Jux 1994 08:49:37 GMT".as[Instant over Unix])
       . matches:
-          case _: TimeError =>
+          case _: Moment.Error =>
 
       test(m"Missing trailing GMT raises"):
         capture(t"Sun, 06 Nov 1994 08:49:37".as[Instant over Unix])
       . matches:
-          case _: TimeError =>
+          case _: Moment.Error =>
 
       test(m"Truncated input raises"):
         capture(t"Sun, ".as[Instant over Unix])
       . matches:
-          case _: TimeError =>
+          case _: Moment.Error =>
 
     suite(m"Instant arithmetic"):
       test(m"Instant + Hour quantity"):
@@ -2462,7 +2462,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Spring-forward gap can be rejected"):
         import gapPolicies.rejectGap
         capture(Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant)
-      . assert(_ == TimeError(_.Gap))
+      . assert(_ == Moment.Error(_.Gap))
 
       test(m"Timezone(t\"NotARealZone\") raises Timezone.Error"):
         capture(Timezone(t"NotARealZone"))
@@ -2667,7 +2667,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"A bare P is not a valid duration"):
         capture(t"P".as[Timespan])
-      . assert(_ == TimeError(_.Unknown(t"P", t"duration")))
+      . assert(_ == Timespan.Error(t"P"))
 
       test(m"A dur literal parses a duration at compile time"):
         dur"P1Y2M3DT4H5M6S"

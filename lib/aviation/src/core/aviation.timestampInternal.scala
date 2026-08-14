@@ -109,7 +109,7 @@ object timestampInternal:
         case r"$yr(\d{4})-$mn(\d{2})-$dy(\d{2})[ T]$hr(\d{2}):$mi(\d{2}):$sc(\d{2})" =>
           mitigate:
             case Number.Error(_, _, _) => Timestamp.Error(text, Timestamp.Error.Reason.BadNumber)
-            case TimeError(_)          => Timestamp.Error(text, Timestamp.Error.Reason.BadTime)
+            case Moment.Error(_)          => Timestamp.Error(text, Timestamp.Error.Reason.BadTime)
 
           . protect:
               Timestamp
@@ -171,7 +171,7 @@ object timestampInternal:
 
         . join(summon[Date.Separation].separator)
 
-    given dateDecoder: Tactic[TimeError] => Date is Decodable in Text = value =>
+    given dateDecoder: Tactic[Moment.Error] => Date is Decodable in Text = value =>
       import calendars.gregorianCalendar
 
       value.cut(t"-") match
@@ -179,7 +179,7 @@ object timestampInternal:
           Date(Year(year), Month(month), Day(day))
 
         case cnt =>
-          abort(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit)))
+          abort(Moment.Error(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit)))
 
     given dateEncodable: RomanCalendar => Date is Encodable in Text = date =>
       import hieroglyph.textMetrics.uniformMetric
@@ -317,7 +317,7 @@ object timestampInternal:
 
     inline def apply(using calendar: Calendar)
       ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
-    :   Date raises TimeError =
+    :   Date raises Moment.Error =
 
       calendar.jdn(year, month, day)
 

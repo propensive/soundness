@@ -57,7 +57,7 @@ object Outlet:
         if canPlay then scala.collection.immutable.List(Outlet(info))
         else scala.collection.immutable.Nil
 
-  // Outlet.Error → Outlet.Error
+  // OutletError → Outlet.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
       case Unavailable              extends Reason(1)

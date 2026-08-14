@@ -142,7 +142,7 @@ object Property:
     (value, name) =>
       decoder.decoded(value.lest(Property.Error(name)))
 
-  // Property.Error → Property.Error
+  // PropertyError → Property.Error
   case class Error(property: Text)(using Diagnostics)
   extends fulminate.Error(815, 0)(m"the system property $property was not defined")
 

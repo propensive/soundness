@@ -95,7 +95,7 @@ object Recurrence:
   // (e.g. `decode[Recurrence of Timestamp by (Timespan of Month.type)]`); the parsed duration is
   // tagged with it. A mismatched topic mis-reads the duration, so name the one the data uses.
   given decodable: [point: Decodable in Text, topic <: Radix]
-  =>  ( Tactic[Recurrence.Error], Tactic[TimeError] )
+  =>  ( Tactic[Recurrence.Error], Tactic[Moment.Error], Tactic[Timespan.Error] )
   =>  (Recurrence of point by (Timespan of topic)) is Decodable in Text =
 
     text =>

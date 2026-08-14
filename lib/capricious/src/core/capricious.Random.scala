@@ -52,7 +52,7 @@ object Random:
   def apply(seed: Seed)(using randomization: Randomization): Random =
     new Random(randomization.initialize())
 
-  // Random.Size → Random.Size
+  // RandomSize → Random.Size
   trait Size:
     def generate(random: Random): Int
 

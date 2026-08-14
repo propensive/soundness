@@ -218,7 +218,7 @@ object Tzdb:
 
     recur(1, lines)
 
-  // Tzdb.Error → Tzdb.Error
+  // TzdbError → Tzdb.Error
   object Error:
     given communicable: Reason is Communicable =
       case Reason.CouldNotParseTime(time) => m"could not parse time $time"

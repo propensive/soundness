@@ -1295,7 +1295,7 @@ object Http:
 
   class Redirection(val value: Int)
 
-  // Http.Session → Http.Session
+  // HttpSession → Http.Session
   // An HTTP session: a single client connection to one origin, over which several
   // requests are exchanged. The protocol is fixed for the session's lifetime — for
   // `https`, by ALPN during the TLS handshake (a multiplexed HTTP/2 session or a
@@ -1310,7 +1310,7 @@ object Http:
     update def fetch(request: Request)(using Tactic[ConnectError])
     :   Response^{this, caps.any}
 
-  // Http.Connection → Http.Connection
+  // HttpConnection → Http.Connection
   object Connection:
     // The sink that writes the response to (and closes) the client connection. `out` may
     // capture the live connection (a streamed body reading the request stream), and a

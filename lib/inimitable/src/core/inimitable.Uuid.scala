@@ -69,7 +69,7 @@ object Uuid extends Extractor[Text, Uuid]:
   given communicable: Uuid is Communicable = uuid => Message(uuid.text)
   given encodable: Uuid is Encodable in Text = _.text
 
-  // Uuid.Error → Uuid.Error
+  // UuidError → Uuid.Error
   case class Error(badUuid: Text)(using Diagnostics)
   extends fulminate.Error(349, 0)(m"$badUuid is not a valid UUID")
 

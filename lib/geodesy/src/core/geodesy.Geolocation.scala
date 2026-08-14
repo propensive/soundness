@@ -116,7 +116,7 @@ object Geolocation:
     val alt = altitude.lay(t""): a => t",$a"
     t"geo:${location.encode}$alt${uncertainty.lay(t"") { u => t";u=$u" }}"
 
-  // Geolocation.Error → Geolocation.Error
+  // GeolocationError → Geolocation.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
       case MissingEquals       extends Reason(1)

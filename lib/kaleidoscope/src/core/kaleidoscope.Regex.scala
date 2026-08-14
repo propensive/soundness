@@ -313,7 +313,7 @@ object Regex:
 
         makePattern(pattern, tail, head.outerEnd, partial.tt, end, index3)
 
-  // Regex.Error → Regex.Error
+  // RegexError → Regex.Error
   object Error:
     object Reason:
       given communicable: Reason is Communicable =

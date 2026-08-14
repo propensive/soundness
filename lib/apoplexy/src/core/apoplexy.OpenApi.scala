@@ -299,7 +299,7 @@ object OpenApi:
       if document.openapi.starts(t"3.") then document
       else abort(OpenApi.Error(OpenApi.Error.Reason.UnsupportedVersion(document.openapi)))
 
-  // OpenApi.Error → OpenApi.Error
+  // OpenApiError → OpenApi.Error
   object Error:
     object Reason:
       given Reason is Communicable =

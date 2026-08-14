@@ -46,12 +46,12 @@ object Month extends MonthRadix:
   given multiplicable: Int is Multiplicable by Month.type to (Timespan of Month.type) =
     Multiplicable: (n, _) => Timespan(Month, n)
 
-  inline def apply(index: Int): Month raises TimeError =
-    if index < 1 || index > 12 then abort(TimeError(_.Unknown(index.show, t"month")))
+  inline def apply(index: Int): Month raises Moment.Error =
+    if index < 1 || index > 12 then abort(Moment.Error(_.Unknown(index.show, t"month")))
     else all(index - 1)
 
-  inline def apply(name: Text): Month raises TimeError =
-    try Month.valueOf(name.s) catch case _: Exception => abort(TimeError(_.Unknown(name, t"month")))
+  inline def apply(name: Text): Month raises Moment.Error =
+    try Month.valueOf(name.s) catch case _: Exception => abort(Moment.Error(_.Unknown(name, t"month")))
 
   def unapply(value: Text): Option[Month] =
     try Some(Month.valueOf(value.lower.capitalize.s))

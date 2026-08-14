@@ -145,7 +145,7 @@ object Dot:
         List(t"}")
       ).flatten
 
-  // Dot.Id → Dot.Id
+  // DotId → Dot.Id
   // The naming plane for GraphViz DOT identifiers: `Name[Dot.Id]` is used for node
   // identifiers, edge endpoints, assignment targets and (sub)graph names alike.
   object Id:
@@ -153,7 +153,7 @@ object Dot:
 
   sealed trait Id
 
-  // Dot.Identifier → Dot.Identifier
+  // DotIdentifier → Dot.Identifier
   // A name usable as a GraphViz DOT identifier. Because identifiers are always
   // emitted as double-quoted strings, the rule is permissive: any non-empty text
   // that contains neither a double-quote nor a newline (so it serializes safely
