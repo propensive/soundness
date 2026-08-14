@@ -30,142 +30,63 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tessellate
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    telekinesis.Http2Tests()
-    //cosmopolite.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    telekinesis.Tests()
-    tessellate.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    vivisection.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import gossamer.*
+import gossamer.Textual.concatenable
+import hieroglyph.*
+import rudiments.*
+import symbolism.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    // turbulence.Tests() - deadlock
-    ()
+object Alignment:
+  // Vertical placement of content within a taller extent.
+  enum Vertical:
+    case Top, Middle, Bottom
+
+  object Left extends Alignment:
+    def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)
+      ( using Text is Measurable )
+    :   textual =
+
+      content.pad(width)
+
+  object Right extends Alignment:
+    def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)
+      ( using Text is Measurable )
+    :   textual =
+
+      content.pad(width, Rtl)
+
+  object Center extends Alignment:
+    def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)
+      ( using Text is Measurable )
+    :   textual =
+
+      content.center(width)
+
+  object Justify extends Alignment:
+    def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)
+      ( using Text is Measurable )
+    :   textual =
+
+      if last then content.pad(width) else
+        val words = content.cut(t" ").stdlib
+        val wordCount = words.length
+        val spare = width - words.sumBy(_.plain.metrics)
+
+        def recur(spare: Int, count: Int, done: textual): textual =
+          if count == 0 then done+Textual(t" "*spare) else
+            val space = spare/count
+            recur(spare - space, count - 1, done + Textual(t" "*space) + words(wordCount - count))
+
+        recur(spare, wordCount - 1, words.head)
+
+// Horizontal placement of a line of content within a wider extent, realized by `pad`, which
+// extends `content` to exactly `width` cells. `last` marks the final line of a paragraph,
+// which `Justify` pads at the end rather than stretching its word gaps.
+trait Alignment:
+  def pad[textual: Textual { type Result = Char }]
+    ( content: textual, width: Int, last: Boolean = true )
+    ( using Text is Measurable )
+  :   textual

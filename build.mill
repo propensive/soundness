@@ -753,7 +753,7 @@ object soundness extends Toolchain:
     surveillance.core, punctuation.ansi, hallucination.ansi, hallucination.canvas,
     hallucination.bmp, hallucination.gif, hallucination.jpeg, hallucination.png,
     hallucination.webp, hallucination.formats,
-    ziggurat.core, ziggurat.packager,
+    ziggurat.core, ziggurat.packager, tessellate.core,
     ultimatum.core, ultimatum.gauges, xenophile.native, exoskeleton.args, exoskeleton.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
 
@@ -1737,6 +1737,14 @@ object polysyllabic extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, escritoire.core, hellenism.core, quantitative.units)
+
+object tessellate extends Library:
+  object core extends Component(gossamer.core, polysyllabic.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
 
 object ethereal extends Library:
   object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core, zeppelin.core):
@@ -3292,7 +3300,7 @@ val allLibraries: Seq[Library] = Seq(
   probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, reliquary, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
-  surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
+  surveillance, symbolism, synesthesia, tarantula, telekinesis, tessellate, turbulence, typonym,
   ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, vivisection,
   wisteria, xenophile, xylophone,
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
