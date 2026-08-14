@@ -183,6 +183,37 @@ The implementation is pure Scala rather than a wrapper over the JVM's `BigDecima
 work on every platform — and nothing in it depends on 64-bit-native arithmetic, which matters
 where `Long` is emulated.
 
+### Overloading the operators
+
+`+`, `-`, `*` and `/` are not built into any of the types above. They come from typeclasses, and
+that is what allows arithmetic to mean something for types whose operands and results differ.
+
+Scala's own operators are methods, so a type may define `+` only where both sides and the result
+are known to it. That is enough for a number plus a number, and not enough for most of the
+interesting cases: multiplying a length by a length yields an *area*, adding a duration to an
+instant yields an instant, and dividing one quantity by another yields something whose type
+neither operand could have anticipated.
+
+The operators are therefore defined over `Addable`, `Subtractable`, `Multiplicable` and
+`Divisible`, each of which names both the operand and the result:
+
+```scala
+given Double is Addable by Double to Double = Addable(_ + _)
+```
+
+Reading it aloud gives the whole of it: a `Double` *is addable by* a `Double` *to* a `Double`. The
+result type is a member of the instance rather than a parameter of the operator, so
+`length*length` can produce `Quantity[Metres[2]]` while `length*number` produces
+`Quantity[Metres[1]]`, and both are found by the same `*`.
+
+`Negatable` and `Rootable` do the same for unary negation and for square and cube roots, and
+`Zeroic` and `Unital` supply the additive and multiplicative identities where an algorithm needs
+to start from one. This is the machinery beneath [quantities](quantities.md), where dimensional
+analysis is exactly the computation of the result type; beneath [complex numbers and
+matrices](mathematics.md), which are generic in an element type they only ever combine through
+these operators; and beneath the arithmetic that [derivation](derivation.md) can produce for a
+case class field by field.
+
 ### Ordinals
 
 Off-by-one errors come from a single ambiguity: whether "1" means the first element or the one

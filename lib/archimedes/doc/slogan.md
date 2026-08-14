@@ -1,1 +1,0 @@
-Mathematical markup for Scala

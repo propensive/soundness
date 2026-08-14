@@ -1,5 +1,0 @@
-- implements the JDWP wire protocol from scratch over a socket, with no `com.sun.jdi` dependency
-- launches a debuggee under the jdwp agent, or attaches to a running JVM
-- presents a capability-scoped debug session: breakpoints, stepping, threads and frames
-- correlates requests and replies asynchronously, so many commands may be in flight at once
-- decodes composite events into a typed event stream

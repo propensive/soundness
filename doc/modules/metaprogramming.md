@@ -68,6 +68,29 @@ parameter, for use from inside a macro implementation where the type is only kno
 The data stays in the type system, where macros can inspect it, until the moment a value is
 needed.
 
+### Abstracting over containers
+
+A great many types are *containers* in the same sense — `Optional`, `Attempt`, `Task`, a
+collection — in that a value can be put into one, mapped over, and flat-mapped through. Writing
+an operation once over all of them needs those capabilities as values rather than as methods that
+happen to share names.
+
+`Functor` supplies `point`, which lifts a value into the container, and mapping; `Monad` adds
+`bind`, which is `flatMap` under a name that does not collide with the method the container
+already has. Instances are constructed for any type that provides the requisite methods, so a
+container written without any of this in mind participates anyway.
+
+Two operations follow immediately, and are the reason it is worth having:
+
+```scala
+List(Some(1), Some(2), Some(3)).sequence      // Some(List(1, 2, 3))
+List(t"1", t"2", t"x").traverse(parseNumber)  // the failure, not a list of failures
+```
+
+`sequence` turns a collection of containers inside out, and `traverse` maps a fallible function
+over a collection and gathers the results in one container rather than a collection of them —
+which is the shape of "parse all of these, and fail if any of them fails".
+
 ### Types as source text
 
 Rendering a type in an error message or generated code should produce what the *user* would write —

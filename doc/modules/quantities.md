@@ -227,6 +227,56 @@ ampere), `Siemens` (ampere per volt), `Weber` (volt-second), `Tesla` (weber per 
 and `Sievert` (joule per kilogram), and `Katal` (mole per second). The CGS and imperial systems are
 provided alongside them — `Dyne`, `Erg`, `Gauss`, `Poise`, `Foot`, `Furlong`, `Dram` and the rest.
 
+### Mixed and non-decimal bases
+
+Not every measurement is a single number in a single unit. Before the metric system, quantities
+were expressed as a *cascade* of units in exact but non-decimal multiples — feet and inches,
+stones and pounds and ounces — and some still are: hours, minutes and seconds are exactly that,
+and so is a person's height in most of the English-speaking world. A `Quanta` represents one such
+value: a whole number of each unit in a descending cascade, with the carrying done for you.
+
+The type states the cascade, smallest unit first as the type parameter and the larger ones after
+`in`:
+
+```scala
+type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+type Height = Quanta[Inches[1]] in (Feet[1])
+```
+
+A value is written largest-first, as it is spoken, and each component is read back by naming its
+unit:
+
+```scala
+val weight: Weight = Quanta(1, 3, 2)   // 1 stone, 3 pounds, 2 ounces
+
+weight[Stones]   // 1
+weight[Ounces]   // 2
+```
+
+Arithmetic carries between the units as the ratios require, so twelve pounds nine ounces plus
+seven ounces is thirteen pounds, not twelve pounds sixteen:
+
+```scala
+val heavier: Weight = weight + Quanta(7)
+```
+
+The cascade is checked as it is written. Every unit in it must have the same dimension, so mixing
+seconds into a cascade of lengths does not compile, and the base must be a unit rather than an
+arbitrary type. `TimeSeconds` and `TimeMinutes` are provided for the two everyone needs.
+
+Because the units are real units, a `Quanta` converts to and from an ordinary `Quantity`, which is
+how a measurement crosses between the two worlds:
+
+```scala
+val length: Quantity[Metres[1]] = 5.9*Foot + 10.0*Inch
+val height = length.quanta[Height]   // 6 feet, 9 inches
+
+weight.quantity.convert[Pounds]      // back to a plain quantity
+```
+
+Showing one uses each unit's symbol — `1st 3lb 2oz` — and a `UnitsNames` given overrides the
+symbols where a cascade is conventionally written differently, so a height can render as `5' 9"`.
+
 ### Conversion ratios
 
 Converting between units needs the ratio between them, and that comes from a contextual `Ratio`

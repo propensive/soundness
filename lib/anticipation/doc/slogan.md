@@ -1,1 +1,0 @@
-Seamless integration with minimalistic typeclass interfaces foreseen
