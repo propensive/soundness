@@ -74,8 +74,8 @@ object Tzdb:
     case After(month: Month, day: Weekday, date: Int)
     case Before(month: Month, day: Weekday, date: Int)
 
-  def parseFile(name: Text): List[Tzdb.Entry] logs TimeEvent raises Tzdb.Error =
-    Log.fine(TimeEvent.ParseTzdb(name))
+  def parseFile(name: Text): List[Tzdb.Entry] logs Tzdb.Event raises Tzdb.Error =
+    Log.fine(Tzdb.Event.ParseTzdb(name))
 
     val lines: Chain[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
@@ -88,7 +88,7 @@ object Tzdb:
 
     parse(name, lines)
 
-  def parse(name: Text, lines: Chain[Text]): List[Tzdb.Entry] logs TimeEvent raises Tzdb.Error =
+  def parse(name: Text, lines: Chain[Text]): List[Tzdb.Entry] logs Tzdb.Event raises Tzdb.Error =
     def parseDuration(lineNo: Int, string: Text) = string.cut(t":") match
       case As[Base24](h) :: Nil                                   => Duration(h, 0, 0)
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Duration(h, m, 0)
@@ -243,4 +243,12 @@ object Tzdb:
   case class Error(reason: Tzdb.Error.Reason, line: Int)(using Diagnostics)
   extends fulminate.Error(385, reason.number)
     ( m"the timezone could not be parsed at line $line: $reason" )
+
+  // TimeEvent → Tzdb.Event
+  object Event:
+    given communicable: Event is Communicable =
+      case ParseTzdb(name) => m"parsing the timezone database file $name"
+
+  enum Event:
+    case ParseTzdb(name: Text) extends Event, Log.Time
 

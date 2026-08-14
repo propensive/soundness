@@ -363,39 +363,39 @@ package timeFormats:
       case Meridiem.Pm => t"p.m."
 
   package hours:
-    given twelveHourClock: (Meridiem is Showable) => TimeFormat:
+    given twelveHourClock: (Meridiem is Showable) => Clockface.Format:
       def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
       def halfDay: Boolean = true
       def seconds: Boolean = false
 
-    given twelveHourSecondsClock: (Meridiem is Showable) => TimeFormat:
+    given twelveHourSecondsClock: (Meridiem is Showable) => Clockface.Format:
       def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
       def halfDay: Boolean = true
       def seconds: Boolean = false
 
-    given twentyFourHourClock: TimeFormat:
+    given twentyFourHourClock: Clockface.Format:
       def postfix(meridiem: Meridiem): Text = t""
       def halfDay: Boolean = false
       def seconds: Boolean = false
 
-    given twentyFourHourSecondsClock: TimeFormat:
+    given twentyFourHourSecondsClock: Clockface.Format:
       def postfix(meridiem: Meridiem): Text = t""
       def halfDay: Boolean = false
       def seconds: Boolean = true
 
   package specificity:
-    given minutesSpecificity: TimeSpecificity = TimeSpecificity.Minutes
-    given secondsSpecificity: TimeSpecificity = TimeSpecificity.Seconds
+    given minutesSpecificity: Clockface.Specificity = Clockface.Specificity.Minutes
+    given secondsSpecificity: Clockface.Specificity = Clockface.Specificity.Seconds
 
   package numerics:
-    given fixedWidthTimeNumerics: TimeNumerics = TimeNumerics.FixedWidth
-    given variableWidthTimeNumerics: TimeNumerics = TimeNumerics.VariableWidth
+    given fixedWidthTimeNumerics: Clockface.Numerics = Clockface.Numerics.FixedWidth
+    given variableWidthTimeNumerics: Clockface.Numerics = Clockface.Numerics.VariableWidth
 
   package separators:
-    given dotTimeSeparator: TimeSeparation = () => t"."
-    given colonTimeSeparator: TimeSeparation = () => t":"
-    given noneTimeSeparator: TimeSeparation = () => t""
-    given frenchTimeSeparator: TimeSeparation = () => t"h"
+    given dotTimeSeparator: Clockface.Separation = () => t"."
+    given colonTimeSeparator: Clockface.Separation = () => t":"
+    given noneTimeSeparator: Clockface.Separation = () => t""
+    given frenchTimeSeparator: Clockface.Separation = () => t"h"
 
 // A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
 // "in 18 minutes", "8 minutes ago", "just now", and their French/German/Spanish equivalents. Only
@@ -525,13 +525,6 @@ given base24Extractable: [text <: Text] => (Text is Extractable to Int)
 
   case As[Int](value: Base24) => value
   case _                      => Unset
-
-object TimeEvent:
-  given communicable: TimeEvent is Communicable =
-    case ParseTzdb(name) => m"parsing the timezone database file $name"
-
-enum TimeEvent:
-  case ParseTzdb(name: Text) extends TimeEvent, Log.Time
 
 // Which occurrence of a wall-clock time a `Moment` denotes during a fall-back DST overlap, where
 // the same local time happens twice (clocks go back). `First` is the earlier instant (under the

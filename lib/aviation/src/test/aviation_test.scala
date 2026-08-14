@@ -2842,9 +2842,9 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == true)
 
     suite(m"TZDB parser"):
-      given TimeEvent is Loggable = new Loggable:
-        type Self = TimeEvent
-        def log(level: Level, timestamp: Long, event: => TimeEvent): Unit = ()
+      given Tzdb.Event is Loggable = new Loggable:
+        type Self = Tzdb.Event
+        def log(level: Level, timestamp: Long, event: => Tzdb.Event): Unit = ()
 
       test(m"parseFile on a non-existent file raises NoTzdbFile"):
         capture(Tzdb.parseFile(t"this-does-not-exist"))

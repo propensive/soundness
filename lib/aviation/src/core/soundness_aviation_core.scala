@@ -48,8 +48,8 @@ export
       following, occurrences, Unix, rec, Recurrence, recInterpolator,
       RecurrenceLiteral, RecurrenceSet, Recurrent, Regime, Resolution, Rfc1123, RomanCalendar,
       Rrule, Tai, until, WeekdayOrdinal, within,
-      Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, Timezone, today, ts, tsInterpolator, Tue, tz, Tzdb, Wed, Week, WeekDate, Weekday, Weekdays,
+      Sat, Sep, Sun, Thu, TimeError, Timespan, Timestamp, Timezone, today, ts, tsInterpolator,
+      Tue, tz, Tzdb, Wed, Week, WeekDate, Weekday, Weekdays,
       WorkingDays, Year, Years }
 
 package calendars:
