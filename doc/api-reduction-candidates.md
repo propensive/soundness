@@ -1,11 +1,12 @@
 # Public API surface — multi-word names remaining
 
-Regenerated from the `soundness_*` re-export files after seven nesting passes (#1764, #1765,
-#1770, #1775, #1779, and the current branch). This is the working list for the remainder.
+Regenerated from the `soundness_*` re-export files after eight nesting passes (#1764, #1765,
+#1770, #1775, #1779, #1790, and the current branch). This is the working list for the
+remainder.
 
-- exported multi-word type-level names still under review: **447**;
-  225 sit in a prefix family of two or more, across 65 families, and
-  222 are singletons. Names under "Reviewed items which should not be moved"
+- exported multi-word type-level names still under review: **441**;
+  217 sit in a prefix family of two or more, across 64 families, and
+  224 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -88,8 +89,8 @@ exclusive capture sets, not `Array`'s invariance).
 
 Blocked because the _outer_ name belongs to another library, which the family tables cannot
 show — resolve the outer name to a declaration before treating a shared prefix as evidence:
-`IoError`/`IoEvent` (galilei;
-`Io` is turbulence's), `Dag*` (dendrology; `Dag` is acyclicity's), `Oci*` (anthology; `Oci` is
+`IoError`/`IoEvent` (galilei; `Io` is turbulence's stdio sink — see the
+`FooError` section, where the alternatives are set out), `Dag*` (dendrology; `Dag` is acyclicity's), `Oci*` (anthology; `Oci` is
 embarcadero's), `Unix*` (galilei/bitumen/profanity; aviation's `Unix` is the epoch), `Time*`
 (aviation; quantitative's `Time` is a dimension), `Dts*`, `TeletypeFormattable`,
 `UdpResponse`, `LiraAssembler`, `LiraBundle`. (`Wasm*`, `Http*` and `WitWorld` were in this
@@ -149,7 +150,7 @@ for the rest in the seventh pass:
 | `KeystoreError`                  | `Keystore.Error`                   | `core-jvm` is a platform *source directory* of `core`, not a component |
 | `TimestampError`                 | `Timestamp.Error`                  | aviation has its own `Timestamp`; the one in embarcadero is unrelated |
 
-## `FooError` types — the seventh pass's subject
+## `FooError` types — the seventh and eighth passes' subject
 
 Compound error names were swept separately, because the host is almost always determinable:
 **the object that raises the error**. That heuristic found `Inspection` for
@@ -157,20 +158,54 @@ Compound error names were swept separately, because the host is almost always de
 for `PackageError`. Where the noun did not match its host, the *first* part was renamed —
 `AssemblyError` belongs to the `Assembler`, not to an "assembly".
 
-**37 of the 53 top-level `FooError` types nested**, leaving 16 — plus 7 that are already
+**41 of the 53 top-level `FooError` types have gone**, leaving 12 — plus 8 that are already
 nested inside another type but still carry a compound name. (Counted by declaration, so a
 type declared only as a `type` alias, or one living in a test module, is not included.)
 
+Two were split rather than moved, because one name was covering two failures:
+`TimeError` became `Moment.Error` and `Timespan.Error`; and two were *merged*, because two
+names covered one failure: `DivisionError` and `OverflowError` became `Arithmetic.Error`
+with distinct `Reason`s.
+
 | status | names |
 |---|---|
-| awaiting a ruling — the name is the failure mode, not a subject that *has* errors, so the namespace would have exactly one member and no independent meaning | `BoundsError`, `ConnectError`, `DivisionError`, `ExpectationError`, `InstallError`, `OverflowError`, `ServerError` |
+| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `BoundsError`, `ConnectError`, `ExpectationError`, `InstallError`, `ServerError` |
 | excluded by R2 (specification concept) | `CompileError` |
-| outer name owned by an unrelated type in the same package — **unverified**, and the two that were checked both turned out to be movable | `DataError`, `EscapeError`, `FrameError`, `IoError`, `RemoteError`, `StreamError`, `TimeError`, `UncheckedError` |
-| nested compound names, where the prefix is usually redundant with the enclosing type and could simply become `Error` (as `Wit.ParseError` → `Wit.Error` did) | `Ansi.AnsiError`, `Pty.EscapeError`, `Git.RefError`, `Repackager.RepackageError`, `Sh.ShError`, `Repackager.UserError`, `UrlInterpolatorError` |
+| outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `DataError`, `EscapeError`, `RemoteError`, `UncheckedError` |
+| structurally blocked, with the reason established | `IoError`, `StreamError` (below) |
+| nested compound names, where the prefix is usually redundant with the enclosing type and could simply become `Error` (as `Wit.ParseError` → `Wit.Error` did) | `Ansi.AnsiError`, `Pty.EscapeError`, `Git.RefError`, `Repackager.RepackageError`, `Sh.ShError`, `Repackager.UserError`, `UrlInterpolatorError`, `EvaluationError` |
+
+**`StreamError` cannot be nested.** `Stream` is not declared anywhere in this repository — it
+comes from the proscala fork's prelude via `-Yimports:proscenium` — so there is no companion
+of ours to move it into, and declaring `object Stream` would collide with the prelude type.
+zephyrine's `Stream[medium]` is an unrelated parse cursor.
+
+**`IoError`/`IoEvent` need a decision, not a host.** They are filesystem concepts wearing an
+I/O name: every `IoEvent` case extends `Log.Filesystem`, and `IoError` carries a
+`filesystem: path.Plane is Filesystem`. But `Io` is turbulence's stdio sink (`trait Io { def
+write; def print }`) and is exported, so galilei cannot claim the name; and serpentine's
+`Filesystem` — also exported — is a *path-syntax* typeclass (`separator`, `escape`, `name`)
+belonging to a library that performs no I/O, so it is the wrong host despite the name. The
+options are to rename turbulence's `Io`, to nest them under a galilei type such as `Entry`,
+or to leave them.
+
+**`Git.Error` already exists** (`CannotExecuteGit`, `CloneFailed`, `RepoDoesNotExist`, …), so
+`Git.RefError` cannot take that name and should not: one is "the git operation failed", the
+other is a pure syntax check on a ref name that never runs git.
 
 `RpcError` deserves a note: it nested as `Rpc.Error`, but it is **declared, exported and
 never raised anywhere in the repository**. Deleting it may be the better answer. Scan for
 others in the same state before finding them homes.
+
+## Todo — `Frame` means three unrelated things
+
+`perihelion.Frame` is a WebSocket protocol frame (`enum Frame(opcode: Int, payload: Data)`);
+`ultimatum.Frame` is a terminal layout frame (`Cell(sizing)` / `Split(sizing, arrangement,
+children)`); and obligatory's framing error was `FrameError` with no `Frame` at all, now
+`Framing.Error`. The first two are both exported, so the homonym is live in the umbrella and
+`import soundness.*` makes which one you get depend on nothing visible at the use site. This
+wants resolving on its own terms — "WebSocket frame" is the more established usage, so
+ultimatum's is the likelier one to rename.
 
 ## Remaining names by prefix family
 
@@ -178,7 +213,7 @@ others in the same state before finding them homes.
 |---|---|---|---|
 | `Attribute*` | cataclysm | 2 | `AttributeMatcher`, `AttributeTest` |
 | `Block*` | enigmatic, galilei | 4 | `BlockCipher`, `BlockCipherMode`, `BlockCipherPadding`, `BlockDevice` |
-| `Box*` | escritoire | 2 | `BoxDrawing`, `BoxLine` |
+| `Box*` | tessellate | 2 | `BoxDrawing`, `BoxLine` |
 | `C*` | xenophile | 2 | `CHeaderAtomizer`, `CHeaderDiscipline` |
 | `Char*` | escapade, galilei, hieroglyph | 4 | `CharDecoder`, `CharDevice`, `CharEncoder`, `CharSpan` |
 | `Class*` | honeycomb, mandible, proscenium, vivisection | 4 | `ClassList`, `ClassLoaderId`, `ClassSurface`, `ClassTag` |
@@ -188,7 +223,6 @@ others in the same state before finding them homes.
 | `Daemon*` | ethereal | 3 | `DaemonEvent`, `DaemonLogEvent`, `DaemonService` |
 | `Dag*` | dendrology | 3 | `DagDiagram`, `DagStyle`, `DagTile` |
 | `Deps*` | burdock | 2 | `DepsDev`, `DepsEvent` |
-| `Division*` | hypotenuse | 2 | `DivisionByZero`, `DivisionError` |
 | `Dom*` | nomenclature | 2 | `DomId`, `DomIdentifier` |
 | `Dts*` | xenophile | 2 | `DtsAtomizer`, `DtsDiscipline` |
 | `Dynamic*` | breviloquence, caesura, jacinta, stratiform, xylophone, ypsiloid | 6 | `DynamicCborEnabler`, `DynamicDsvEnabler`, `DynamicJsonEnabler`, `DynamicTelEnabler`, `DynamicXmlEnabler`, `DynamicYamlEnabler` |
@@ -196,7 +230,7 @@ others in the same state before finding them homes.
 | `File*` | galilei, octogenarian | 2 | `FileDiff`, `FileOpenable` |
 | `Filesystem*` | galilei | 2 | `FilesystemAttribute`, `FilesystemBackend` |
 | `Foreign*` | xenophile | 2 | `ForeignBuffer`, `ForeignLibrary` |
-| `Frame*` | obligatory, telekinesis, vivisection | 3 | `FrameError`, `FrameId`, `FrameReader` |
+| `Frame*` | telekinesis, vivisection | 2 | `FrameId`, `FrameReader` |
 | `Host*` | mandible | 3 | `HostArchive`, `HostContracts`, `HostRelease` |
 | `Hpack*` | telekinesis | 2 | `HpackEntry`, `HpackTable` |
 | `Http*` | anticipation, honeycomb, scintillate, urticose | 5 | `HttpEquiv`, `HttpRequests`, `HttpServer`, `HttpStreams`, `HttpUrl` |
@@ -209,7 +243,7 @@ others in the same state before finding them homes.
 | `Lane*` | dendrology | 2 | `LaneDagDiagram`, `LaneDagStyle` |
 | `Larceny*` | larceny | 2 | `LarcenyPlugin`, `LarcenyTransformer` |
 | `Leap*` | aviation | 2 | `LeapMode`, `LeapSeconds` |
-| `Line*` | escritoire, profanity, turbulence | 3 | `LineCharset`, `LineEditor`, `LineSeparation` |
+| `Line*` | profanity, tessellate, turbulence | 3 | `LineCharset`, `LineEditor`, `LineSeparation` |
 | `Lira*` | anthology, reliquary | 2 | `LiraAssembler`, `LiraBundle` |
 | `List*` | embarcadero, proscenium | 9 | `ListContainersRequest`, `ListContainersResponse`, `ListHasAsScala`, `ListImagesRequest`, `ListImagesResponse`, `ListNamespacesRequest`, `ListNamespacesResponse`, `ListTasksRequest`, `ListTasksResponse` |
 | `Local*` | hellenism, urticose | 2 | `LocalClasspath`, `LocalPart` |
@@ -223,14 +257,14 @@ others in the same state before finding them homes.
 | `Stack*` | digression, hyperbole | 3 | `StackResolver`, `StackTrace`, `StackTracePalette` |
 | `Start*` | embarcadero | 2 | `StartRequest`, `StartResponse` |
 | `Stream*` | turbulence | 2 | `StreamError`, `StreamOutputStream` |
-| `Table*` | escritoire | 5 | `TableCell`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle` |
+| `Table*` | escritoire, ultimatum | 6 | `TableCell`, `TableFixture`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle` |
 | `Tar*` | bitumen | 4 | `TarBuilder`, `TarDataOpenable`, `TarHeader`, `TarOpenable` |
 | `Tasty*` | degustation, hyperbole | 2 | `TastyDiscipline`, `TastyPalette` |
 | `Tel*` | stratiform | 3 | `TelBlueprint`, `TelPath`, `TelReader` |
 | `Text*` | escapade, escritoire, facsimile, fulminate, gossamer, hieroglyph, honeycomb | 7 | `TextAlignment`, `TextBuilder`, `TextEscapes`, `TextNode`, `TextRun`, `TextSanitizer`, `TextStyle` |
 | `Textual*` | dendrology | 3 | `TextualDagStyle`, `TextualLaneDagStyle`, `TextualTreeStyle` |
 | `Thread*` | vivisection | 2 | `ThreadGroupId`, `ThreadId` |
-| `Time*` | abacist, aviation | 8 | `TimeError`, `TimeEvent`, `TimeFormat`, `TimeMinutes`, `TimeNumerics`, `TimeSeconds`, `TimeSeparation`, `TimeSpecificity` |
+| `Time*` | abacist | 2 | `TimeMinutes`, `TimeSeconds` |
 | `Track*` | contingency | 2 | `TrackFoci`, `TrackTactic` |
 | `Tree*` | dendrology, proscenium, reliquary | 7 | `TreeDiagram`, `TreeEntry`, `TreeMap`, `TreePath`, `TreeSet`, `TreeStyle`, `TreeTile` |
 | `Type*` | bitumen, typonym | 5 | `TypeElement`, `TypeFlag`, `TypeList`, `TypeMap`, `TypeSet` |
@@ -273,7 +307,7 @@ others in the same state before finding them homes.
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (222)
+### Singletons (224)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
@@ -281,41 +315,41 @@ others in the same state before finding them homes.
 `BoundsError`, `BytecodePalette`, `CanonicalCbor`, `CanvasHandle`, `CapabilityDiscipline`,
 `CaptionLayout`, `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `ChangeKind`,
 `ChannelLayout`, `CheckOverflow`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`,
-`ColorDepth`, `CommonFormattable`, `ConnectError`, `ContainerConfig`, `CopyAttributes`, `CrLf`,
-`CtrlChar`, `CtSym`, `DataError`, `DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`,
-`DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`, `EcosystemProfile`, `EditorField`,
-`EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`,
-`EscapeError`, `EucalyptusGcp`, `ExpectationError`, `FastForward`, `FlowExtent`, `FluidOunce`,
-`FoldableRectoPanel`, `GapPolicy`, `GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`,
-`GithubActions`, `GivensPhase`, `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`,
-`HmacCipher`, `Html4Transitional`, `InitializationVector`, `InstallError`, `IntercardinalWind`,
-`InterfaceAddress`, `IpAddress`, `Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`,
-`JsigDiscipline`, `JsInvoke`, `JuxtapositionPalette`, `JvmProfile`, `KillRequest`,
-`LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LinkEvent`,
-`LocalhostDevice`, `LongNameFormat`, `LruCache`, `LspSessional`, `ManifestSigning`,
-`MarkdownPalette`, `MathmlReader`, `MediaType`, `MenuField`, `MethodId`, `MlDsa`,
-`MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NoteRef`, `NotFound`,
-`NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`, `OnlineClasspath`, `OpaqueDiscipline`,
-`OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`, `OverflowError`,
-`OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`,
-`PhysicalState`, `PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PolarGaussian`,
-`PollingWatcher`, `PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`,
-`ProcessStatus`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`,
-`RamFlag`, `RasterOpenable`, `RectoPanel`, `ReferenceTypeId`, `ReflogEntry`, `RemoteError`,
-`RequestServable`, `ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`,
-`SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`, `SelectorList`,
-`SemanticMessage`, `SeqHasAsJava`, `ServerError`, `ShaderPlugin`, `SiderealDays`,
-`SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`, `SolarDay`,
-`SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
+`ColorDepth`, `CommandGroup`, `CommonFormattable`, `ConnectError`, `ContainerConfig`,
+`CopyAttributes`, `CrLf`, `CtrlChar`, `CtSym`, `DataError`, `DecimalConverter`,
+`DecodableManifest`, `DereferenceSymlinks`, `DivisionByZero`, `DivOp`, `DnsLabel`, `DockerEvent`,
+`DomainSocket`, `EcosystemProfile`, `EditorField`, `EitherTactic`, `EmailAddress`,
+`EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`, `EscapeError`, `EucalyptusGcp`,
+`ExpectationError`, `FastForward`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `GapPolicy`,
+`GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`,
+`GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
+`InitializationVector`, `InstallError`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`,
+`Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`, `JsigDiscipline`, `JsInvoke`,
+`JuxtapositionPalette`, `JvmProfile`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`,
+`LazyEnvironment`, `LengthPrefix`, `LinkEvent`, `LocalhostDevice`, `LongNameFormat`, `LruCache`,
+`LspSessional`, `ManifestSigning`, `MarkdownPalette`, `MathmlReader`, `MediaType`, `MenuField`,
+`MethodId`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`,
+`NoteRef`, `NotFound`, `NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`,
+`OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`,
+`OrdinalCalendar`, `OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`,
+`PdfFile`, `PeriodicTable`, `PhysicalState`, `PixelOpaque`, `PlaceholderKind`,
+`PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`, `PositionTracking`, `PosixCommands`,
+`PrivateKey`, `ProcessingPermit`, `ProcessStatus`, `ProgrammingLanguage`, `ProgressBar`,
+`PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`, `RectoPanel`,
+`ReferenceTypeId`, `ReflogEntry`, `RemoteError`, `RequestServable`, `ResetMode`, `Rgb12Opaque`,
+`Rgb32Opaque`, `RomanCalendar`, `RootFs`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`,
+`SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ServerError`, `ShaderPlugin`,
+`SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`,
+`SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
 `StaticAnnotation`, `StringId`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`, `TeletypeFormattable`,
 `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `TestPalette`, `ThemeColor`,
 `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`,
 `TripleDes`, `TypescriptDialect`, `UdpResponse`, `UnboundedSizeComplexity`, `UncheckedError`,
 `UniformDistribution`, `UnitsNames`, `UnusedFeature`, `UrlPalette`, `UsedSets`, `UsesBlob`,
-`ValueToken`, `VersionResponse`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`,
-`WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`,
-`WireType`, `WritingBuilder`, `WsSessional`, `XeqConfiguration`, `XmlSchema`, `YamlPath`,
-`ZipBuilder`
+`ValueToken`, `VentureTactic`, `VersionResponse`, `VersoPanel`, `VerticalAlignment`,
+`VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`,
+`WideCharacterWidth`, `WireType`, `WritingBuilder`, `WsSessional`, `XeqConfiguration`,
+`XmlSchema`, `YamlPath`, `ZipBuilder`
 
 ## Retained from the original inventory
 
@@ -327,7 +361,7 @@ others in the same state before finding them homes.
 are now reachable. The rest are still live: `Attributive` (honeycomb, xylophone),
 `Completion` (exoskeleton, harlequin), `Diagnostic` (frontier, harlequin), `Executor`
 (apoplexy, superlunary), `Extensions` (decorum, gesticulate), `Frame` (perihelion,
-ultimatum), `Imports` (decorum, stenography), `Manifest` (embarcadero, revolution),
+ultimatum — see the `Frame` todo above), `Imports` (decorum, stenography), `Manifest` (embarcadero, revolution),
 `Proxy` (austronesian, vicarious), `Renderable` (honeycomb, xylophone), `Tag` (honeycomb,
 xylophone), `Timestamp` (aviation, embarcadero). An `@unexported` annotation whose comment
 cites a clash is the clearest signal that one of the pair wants a namespace.
