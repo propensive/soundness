@@ -131,6 +131,11 @@ import textMetrics.eastAsianScriptsMetric
 This metric is what text [padding and fitting](text.md) measure with, so a column of Japanese
 text aligns correctly where counting characters would not.
 
+The choice is also a performance one, which is why it is not simply always correct-by-default.
+Measuring a text under `uniformMetric` is its length, in constant time; measuring it under
+`eastAsianScriptsMetric` means inspecting every character and summing. Where the text is known to
+hold nothing wide, the uniform metric gives the same answer for nothing.
+
 ### Unicode properties
 
 A character answers questions about itself — whether it is whitespace, a control character, or

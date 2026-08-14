@@ -120,4 +120,12 @@ import affirmations.yesNoAffirmation
 t"the answer is ${true}"   // t"the answer is yes"
 ```
 
-`onOffAffirmation`, `trueFalseAffirmation` and `oneZeroAffirmation` are the other choices.
+`onOffAffirmation`, `trueFalseAffirmation` and `oneZeroAffirmation` are the other choices, and any
+other pair is one line:
+
+```scala
+given Affirmation = Affirmation(t"+", t"-")
+```
+
+Note that there is no default. Without an `Affirmation` in scope a boolean does not show at all,
+because presuming one would be presuming the context.

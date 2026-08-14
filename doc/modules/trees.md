@@ -111,7 +111,12 @@ TreeDiagram(root)
 ```
 
 The lines are produced lazily, so a large or deep tree is drawn as far as it is consumed rather
-than all at once.
+than all at once. Not entirely lazily, though, and the exception is inherent to the drawing rather
+than an implementation shortcut: rendering a line requires knowing how many children each of the
+current node's *ancestors* has. A node whose grandparent has later siblings needs a vertical line
+running down the grandparent's column; one whose grandparent was the last of its siblings needs
+that column blank. Nothing about the descendants of *later* nodes is needed until the traversal
+reaches them in its natural order, so an infinite tree still draws.
 
 ### Choosing a graph layout
 

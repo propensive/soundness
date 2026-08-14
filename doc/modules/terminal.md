@@ -37,8 +37,33 @@ val message = e"$Bold(Warning): ${Fg(WebColors.Red)}(disk full)"
 Out.println(message)
 ```
 
-`Bold`, `Italic`, `Underline` and their siblings mark spans; `Fg` and `Bg` color them. A
-`Teletype` behaves as [text](text.md) — it cuts, joins and pads, styles preserved — and renders
+`Bold`, `Italic`, `Underline` and their siblings mark spans; `Fg` and `Bg` color them.
+
+Colors nest, which raw ANSI does not allow. An escape code sets a color; it cannot restore the one
+that was there before, only reset to the default — so a colored region inside another colored
+region ends by clearing both. A `Teletype` tracks the style as a stack instead, so the enclosing
+color is restored where the inner region ends:
+
+```scala
+import WebColors.{Gold, Indigo, HotPink, White}
+
+e"$Gold(gold, $Indigo(indigo, $HotPink(hot pink), indigo) $White(and) gold)"
+```
+
+Each substitution is a *transformation* of the prevailing style rather than an absolute setting,
+which is what makes that work — and it means a substitution can depend on what it is modifying. A
+type becomes usable as one by giving it a `Stylize` instance:
+
+```scala
+case class Fade(amount: Double)
+
+given Stylize[Fade] = fade => Stylize(style => style.copy(fg = style.fg.hsv.shade(fade.amount).srgb))
+```
+
+`Fade(0.5)` then darkens whatever the text's color happens to be, leaving its hue alone, rather
+than replacing it with a fixed color.
+
+A `Teletype` behaves as [text](text.md) — it cuts, joins and pads, styles preserved — and renders
 per terminal: full 24-bit color on a capable terminal, the nearest palette color on an older one,
 and plain text when output is not a terminal at all, so logs never fill with escape codes.
 
@@ -58,6 +83,25 @@ interactive: terminal ?=>
 
 The decoding covers modifier combinations, function keys, the kitty keyboard protocol and
 bracketed paste, so `Ctrl(Alt(Left))` is a value to match, not a byte sequence to recognise.
+
+A `Keypress` is an ordinary `CharKey`, a `FunctionKey`, one of the named editing keys — `Tab`,
+`Enter`, `Backspace`, `Delete`, `Escape`, `Insert`, `Home`, `End`, `PageUp`, `PageDown` and the
+arrows — or an `EscapeSeq` for a sequence with no other name. Each may be wrapped in the modifiers
+held with it, nesting outwards:
+
+```scala
+Keypress.Ctrl('A')
+Keypress.Ctrl(Keypress.Shift(Keypress.Enter))
+```
+
+The wrappers accept only what can meaningfully be modified, so `Shift(CharKey('a'))` does not
+typecheck — a shifted `a` is `CharKey('A')`, and the shift has already been applied. A keypress
+renders with a Unicode symbol in brackets for each special key, joined to what it modifies with
+`+`: `[⇧]+[↵]`, `[⌃]+C`, `[⌥]+[→]`.
+
+The vocabulary is deliberately separate from anything that produces or consumes it: the terminal
+decodes escape sequences into these values, and [web automation](web-automation.md) renders them
+as the actions a browser understands, without either needing to know about the other.
 Optional capabilities — mouse tracking, focus reporting, the alternate screen — switch on by
 importing the corresponding `terminalFeatures` given, and are switched off again when the session
 ends.

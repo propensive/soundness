@@ -1,7 +1,0 @@
-- parse Markdown content
-- use different types for inline- and block-level content
-- static typechecking of Markdown using interpolated strings
-- support for substitutions of different types as formatted Markdown
-- simple Scala AST representing Markdown
-- convert inline- or block-level Markdown to HTML (using Honeycomb)
-- convert Markdown to styled ANSI terminal text (using Escapade)
