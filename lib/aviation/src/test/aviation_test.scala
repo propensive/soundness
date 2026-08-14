@@ -2913,9 +2913,9 @@ object Tests extends Suite(m"Aviation Tests"):
         def + : TimeIssues = TimeIssues(count + 1)
 
       // Inline, with a directly-constructed `Validate`; see rep/DECISIONS.md.
-      inline def collectTime(inline block: Unit raises TimeError tracks Text): TimeIssues =
-        Validate[TimeIssues, [r] =>> r raises TimeError, Text]
-          (TimeIssues(), { case _: TimeError => accrual.+ })
+      inline def collectTime(inline block: Unit raises Moment.Error tracks Text): TimeIssues =
+        Validate[TimeIssues, [r] =>> r raises Moment.Error, Text]
+          (TimeIssues(), { case _: Moment.Error => accrual.+ })
         . protect(block)
 
       test(m"An RFC 1123 timestamp with several bad fields accrues each error"):

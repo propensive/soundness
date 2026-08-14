@@ -3096,7 +3096,7 @@ object xenophile extends Library:
     override def scalaJs = false // adapts the disciplines to reliquary's JVM-only SPI
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  // The platform-neutral C front end (the `Native` ecosystem type markers and the `CHeaderDialect`
+  // The platform-neutral C front end (the `Native` ecosystem type markers and the `CHeader.Dialect`
   // header parser); shared by the JVM Panama backend and the Scala Native backend, so it carries no
   // platform runtime and cross-compiles to both.
   object cffi extends Component(core):
