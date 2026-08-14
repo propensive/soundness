@@ -56,6 +56,23 @@ t"name Alice\nage 30\n".read[Person in Tel]    // the same, in one step
 Encoding runs the other way: `tel` produces a `Tel` from a value, a compound per field, ready to
 render or to embed in a larger document.
 
+A literal document is written with the `tel"…"` interpolator, parsed as the code compiles, with
+each substitution encoded through its own static type. A malformed literal is a compile error
+positioned at the offending range of the Scala source, not at the start of the string:
+
+```scala
+val name = t"Alice"
+val contact = tel"name $name"
+```
+
+The same syntax is an extractor, binding the captures a pattern names:
+
+```scala
+contact match
+  case tel"name $name" => name.as[Text]
+  case _               => t"anonymous"
+```
+
 ### Verified navigation
 
 `verify` checks a document against the shape of a type and re-types it, after which its fields

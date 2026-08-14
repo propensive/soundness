@@ -75,8 +75,11 @@ P(src = "image.gif")  // does not compile: <p> has no src attribute
 ```
 
 What an element may hold and which attributes it accepts follow from the static type
-of its tag. Not every rule of the specification can be captured this way, so a few
-constructions are permitted that the specification would forbid.
+of its tag. Not every rule of the specification can be captured this way — some are stated in
+terms of more than a simple nesting relationship — and where a rule cannot be encoded, the
+checking is *more permissive* rather than more restrictive. So a construction that compiles may in
+rare cases still be non-conforming, but a construction the specification allows is never
+rejected.
 
 ### Writing HTML literally
 
