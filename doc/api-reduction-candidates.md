@@ -88,12 +88,21 @@ exclusive capture sets, not `Array`'s invariance).
 
 Blocked because the _outer_ name belongs to another library, which the family tables cannot
 show — resolve the outer name to a declaration before treating a shared prefix as evidence:
-`CssClass`/`CssIdentifier` (nomenclature; `Css` is cataclysm's), `IoError`/`IoEvent` (galilei;
+`IoError`/`IoEvent` (galilei;
 `Io` is turbulence's), `Dag*` (dendrology; `Dag` is acyclicity's), `Oci*` (anthology; `Oci` is
 embarcadero's), `Unix*` (galilei/bitumen/profanity; aviation's `Unix` is the epoch), `Time*`
 (aviation; quantitative's `Time` is a dimension), `Dts*`, `TeletypeFormattable`,
 `UdpResponse`, `LiraAssembler`, `LiraBundle`. (`Wasm*`, `Http*` and `WitWorld` were in this
 list and are resolved — see "No longer blocked".)
+
+`CssClass`/`CssIdentifier` are a stronger case than the rest of that list, and not merely a
+layering block. They are not CSS constructs: `CssClass` is a *naming plane*, so that
+`Name[CssClass]` means "a `Text` constrained to a valid CSS identifier", and `CssIdentifier`
+is the `Check` enforcing it. They sit in nomenclature beside `DomId`/`DomIdentifier` and
+`JavaIdentifier`, which have the same shape, and nomenclature is the greatest common ancestor
+of their two consumers — cataclysm *and* honeycomb, which types the HTML `class` attribute as
+`Name[CssClass]`. Moving them to cataclysm would make an HTML library depend on a CSS engine;
+an `object Css` in nomenclature would clash in the umbrella with cataclysm's.
 
 Blocked by shadowing that cannot be qualified away: `KotlinFacade` (`object Kotlin` names
 xenophile's own `Facade` about ten times). Blocked by capture inference: `MathmlReader`,
