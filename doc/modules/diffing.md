@@ -70,6 +70,16 @@ diff(italian, spanish).rdiff(_.proximity(_) < 4)
 Similar elements — here, words within a small edit distance — pair as substitutions, and only the
 genuinely new or removed remain as insertions and deletions.
 
+The pairing is done per changed *region*, and only where a region contains at least one deletion
+and at least one insertion, since only there is a substitution possible. Within such a region the
+order in which deletions and insertions are applied does not affect the result, which is what
+gives the algorithm the freedom to pair some of them and arrange the rest around the pairs.
+
+A second parameter, `subSize`, catches the case where similarity is the wrong test. A short
+region with equal numbers of insertions and deletions — one of each, by default — becomes
+substitutions regardless of what the predicate says, because at that size the correspondence is
+obvious even when the values have nothing textually in common.
+
 ### The unix format
 
 A diff of text serializes to the conventional format tools expect, and that format parses back to

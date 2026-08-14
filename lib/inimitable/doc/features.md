@@ -1,4 +1,0 @@
-- construct new UUIDs trivially
-- check hard-coded UUIDs at compiletime
-- parse UUIDs at runtime
-- XOR and invert UUIDs

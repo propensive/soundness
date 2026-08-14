@@ -98,6 +98,12 @@ Seed(42L).stochastic:
 Nesting is deterministic too: a scope's generator is derived from its enclosing one, so restoring
 the outer seed restores the inner sequence.
 
+The determinism is of the *sequence of draws*, though, which is only as reproducible as the code
+that makes them. Single-threaded code draws in a fixed order and reproduces exactly. Concurrent
+code drawing from one scope does not: the threads interleave differently on each run, so the same
+seed hands different values to different threads. Where a concurrent computation must be
+reproducible, each strand needs its own scope, seeded deterministically.
+
 ### Shuffling and coin-tosses
 
 A `Random` in scope also shuffles a sequence and answers a fair coin-toss, the small conveniences

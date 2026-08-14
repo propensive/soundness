@@ -45,6 +45,20 @@ t"Hello world".digest[Sha2[256]].serialize[Hex]
 The provider in scope supplies the algorithms — `javaStdlibProvider` for the SHA and MD5 family and
 CRC-32, and `soundnessProvider` for the pure-Scala BLAKE3.
 
+The algorithm need not be named where the expected type already says it. A digest carries its
+algorithm in its type — `Digest in Sha2[256]` — so a field declared that way fixes what `digest`
+computes without the call restating it:
+
+```scala
+case class Block(digest: Digest in Sha2[256], payload: Json)
+
+Block(payload.digest, payload)
+```
+
+That is the pattern throughout: digests, HMACs, keys and signatures are all bytes parameterized by
+the algorithm that produced them, so a value from one algorithm cannot be passed where another is
+expected, and the algorithm rarely has to be written twice.
+
 `javaStdlibProvider` names the JDK's `MessageDigest` where there is one. Off the JVM there is
 not, so the same import selects pure-Scala implementations of MD5, SHA-1, SHA-2 and CRC-32,
 validated byte for byte against the JDK's. Code that hashes therefore reads the same, and
