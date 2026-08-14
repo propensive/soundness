@@ -15,12 +15,19 @@ where almost every value has a rule.
 
 Time looks simple and is not. A physical instant — the striking of a bell, the
 arrival of a photon — can be ordered before or after another and measured against
-a regular reference, and that much is unambiguous. Everything humans build on top
-of it is not. Calendars divide the year into months of unequal length, weeks that
-ignore months entirely, and days that are themselves divided in
+a regular reference, and that much is unambiguous, *provided the two happen in the
+same place*. Even that qualification is real rather than pedantic: events at a
+distance are only [partially ordered](https://en.wikipedia.org/wiki/Special_relativity),
+related to one another through the speed of light rather than by a universal clock.
+
+Everything humans build on top of it is less certain still. Calendars divide the
+year into months of unequal length, weeks that ignore months entirely, and days
+that are themselves divided in
 [non-decimal](https://en.wikipedia.org/wiki/12-hour_clock) and
 [historically negotiable](https://en.wikipedia.org/wiki/Thirty_Days_Hath_September)
-ways.
+ways — the twelves and sixties being
+[highly composite numbers](https://en.wikipedia.org/wiki/Highly_composite_number),
+chosen because they divide well, long before anything needed to divide decimally.
 
 The relationship between physical and civil time is worse still. The length of a
 day drifts as the Earth's rotation changes, so civil time is corrected with
@@ -757,6 +764,12 @@ been inserted into [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Tim
 to keep clocks aligned with the Earth's slowing rotation. A `Unix` instant ignores
 them, so the elapsed seconds between two `Unix` instants can be short by the leap
 seconds that fell between them.
+
+Each insertion is a correction, decided from observations of the small variations in
+the Earth's rotation over the preceding months, and made to preserve one invariant:
+that solar noon at the Greenwich Meridian — the sun's greatest elevation — stays
+within a second of the moment a clock reads 12:00:00. That is the whole reason the
+discontinuities exist, and why they cannot be predicted years in advance.
 
 [International Atomic Time](https://en.wikipedia.org/wiki/International_Atomic_Time)
 (TAI) has no such discontinuities. Converting a `Unix` instant to the TAI timeline
