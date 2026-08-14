@@ -30,24 +30,37 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package tessellate
 
-enum LineCharset:
-  case Default, Rounded, Ascii
+import anticipation.*
+import gossamer.*
+import proscenium.compat.*
 
-  // Each branch is ascribed: the inferred union of the three frozen vals picks up a
-  // fresh `any.rd` that cannot flow back into `^{}`.
-  def apply(): Array[Char]^{} = this match
-    case Default => BoxDrawing.defaultChars: Array[Char]^{}
-    case Rounded => BoxDrawing.roundedChars: Array[Char]^{}
-    case Ascii   => BoxDrawing.asciiChars: Array[Char]^{}
+object BoxDrawing:
+  val asciiChars: Array[Char]^{} =
+    List
+      ( t" -- |+++|++  + +--- +++ +++ +++ --- +++++++  + +   -+ ++   -+ ++|+++|+++|+++    +++ +++ ",
+        t"+++     ++++++++++++    + +++ +++ ++    |++ |+++|++  + ++++ +++ +++ +++ +++ +++++ +  + +",
+        t"   -+ ++   -+ ++ + +     + +|+|++++     +++ +++  + +     + +|+|++ ++    + +++ ++" )
 
+    . join
+    . chars
 
-  def apply
-    ( top:    BoxLine = BoxLine.Blank,
-      right:  BoxLine = BoxLine.Blank,
-      bottom: BoxLine = BoxLine.Blank,
-      left:   BoxLine = BoxLine.Blank )
-  :   Char =
+  val defaultChars: Array[Char]^{} =
+    List
+      ( t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ",
+        t"┟╁╅     ┕┶┷╛┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗",
+        t"   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝     ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬" )
 
-    this().readable(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)
+    . join
+    . chars
+
+  val roundedChars: Array[Char]^{} = defaultChars.map:
+    case '┌'  => '╭'
+    case '┘'  => '╯'
+    case '┐'  => '╮'
+    case '└'  => '╰'
+    case char => char
+
+  def simple(vertical: BoxLine, horizontal: BoxLine, charset: LineCharset): Char =
+    charset(vertical, horizontal, vertical, horizontal)

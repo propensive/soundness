@@ -44,6 +44,7 @@ import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import tessellate.*
 import vacuous.*
 
 object Grid:

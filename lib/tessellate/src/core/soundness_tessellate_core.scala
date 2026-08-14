@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export tessellate.{Alignment, Flex, Flow, Metrics, Reflowable}
+export tessellate.{Alignment, BoxDrawing, BoxLine, Flex, Flow, LineCharset, Metrics, Reflowable}

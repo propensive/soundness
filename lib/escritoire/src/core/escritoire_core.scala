@@ -66,8 +66,8 @@ package columnAttenuation:
   given ignoreAttenuation: Attenuation = (minimum, available) => ()
 
 package tableStyles:
-  import BoxLine.*
-  import LineCharset.{Default, Rounded}
+  import tessellate.BoxLine.*
+  import tessellate.LineCharset.{Default, Rounded}
 
   given defaultTableStyle: TableStyle = TableStyle(1, Thick, Thick, Thin, Thick, Thin, Default)
   given thinRoundedTableStyle: TableStyle = TableStyle(1, Thin, Thin, Thin, Thin, Thin, Rounded)

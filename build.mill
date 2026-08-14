@@ -1722,7 +1722,7 @@ object escapade extends Library:
   object bench extends Benchmarks(core, quantitative.units)
 
 object escritoire extends Library:
-  object core extends Component(anticipation.print, gossamer.core, polysyllabic.core):
+  object core extends Component(anticipation.print, gossamer.core, polysyllabic.core, tessellate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
