@@ -35,8 +35,8 @@ package soundness
 export
   urticose
   . { Remotable, DnsLabel, EmailAddress, Endpoint, Host, Hostname, InterfaceAddress, Internet,
-      internet, ip, IpAddressError, Ipv4, Ipv4Subnet, Ipv6, Ipv6Subnet, Localhost, LocalPart, mac,
-      MacAddress, NetworkInterface, OfflineError, on, Online, online, Allocatable,
+      internet, ip, IpAddress, Ipv4, Ipv4Subnet, Ipv6, Ipv6Subnet, Localhost, LocalPart, mac,
+      MacAddress, NetworkInterface, on, Online, online, Allocatable,
       Port, Protocolic, Quic, serve, Service, subnet, Tcp, tcp, Udp, udp }
 
 package internetAccess:

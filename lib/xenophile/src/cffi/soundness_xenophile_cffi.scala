@@ -33,8 +33,8 @@
 package soundness
 
 // The platform-neutral C foreign-interface front end: the `Native` ecosystem (Scala↔C type
-// markers) and the `CHeaderDialect` header parser. Shared by the JVM Panama backend
+// markers) and the `CHeader.Dialect` header parser. Shared by the JVM Panama backend
 // (`xenophile.native`, `ForeignLibrary`) and the Scala Native backend (`xenophile.scalanative`,
 // `NativeInvoke`); it carries no platform runtime, so it cross-compiles to both.
-export xenophile.{Address, CHeaderDialect, Native}
+export xenophile.{Address, CHeader, Native}
 export xenophile.Address.{address, isNull}

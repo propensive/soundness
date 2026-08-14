@@ -34,7 +34,7 @@ package galilei
 
 import soundness.*
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object Tests extends Suite(m"Galilei tests"):
   def run(): Unit =

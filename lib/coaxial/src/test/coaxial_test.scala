@@ -53,7 +53,7 @@ import probates.awaitProbate
 
 import Control.*
 
-import socketBackends.virtualMachine
+import socketBackends.virtualMachineSockets
 
 object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:
@@ -194,21 +194,21 @@ object Tests extends Suite(m"Coaxial tests"):
         socket.at(t"/info") == DomainSocket.Endpoint(socket, t"/info")
       . assert(_ == true)
 
-    suite(m"BindError"):
+    suite(m"Bind.Error"):
       test(m"PortInUse has a descriptive message"):
-        BindError.Reason.PortInUse.communicate.text
+        Bind.Error.Reason.PortInUse.communicate.text
       . assert(_ == t"another process is already bound to the port")
 
       test(m"PermissionDenied has a descriptive message"):
-        BindError.Reason.PermissionDenied.communicate.text
+        Bind.Error.Reason.PermissionDenied.communicate.text
       . assert(_ == t"the user does not have permission to bind the port")
 
       test(m"AddressUnavailable has a descriptive message"):
-        BindError.Reason.AddressUnavailable.communicate.text
+        Bind.Error.Reason.AddressUnavailable.communicate.text
       . assert(_ == t"the requested address is not available on this host")
 
-      test(m"A BindError incorporates its reason"):
-        BindError(BindError.Reason.PortInUse).message.text
+      test(m"A Bind.Error incorporates its reason"):
+        Bind.Error(Bind.Error.Reason.PortInUse).message.text
       . assert(_ == t"the socket could not be bound because another process is already "+
           t"bound to the port")
 
@@ -293,7 +293,7 @@ object Tests extends Suite(m"Coaxial tests"):
       test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):
         import socketOptions.reuseAddressSocketOption
         val server = jn.ServerSocket()
-        configure(server, List.of(summon[Every[SocketOption.Tcp]].values))
+        configure(server, List.of(summon[Every[Socket.Option.Tcp]].values))
         server.getOption(java.net.StandardSocketOptions.SO_REUSEADDR).nn.booleanValue
           .also(server.close())
       . assert(_ == true)
@@ -301,24 +301,24 @@ object Tests extends Suite(m"Coaxial tests"):
       test(m"broadcast sets SO_BROADCAST on a configured UDP socket"):
         import socketOptions.broadcastSocketOption
         val socket = jn.DatagramSocket()
-        configure(socket, List.of(summon[Every[SocketOption.Udp]].values))
+        configure(socket, List.of(summon[Every[Socket.Option.Udp]].values))
         socket.getOption(java.net.StandardSocketOptions.SO_BROADCAST).nn.booleanValue
           .also(socket.close())
       . assert(_ == true)
 
       test(m"a UDP-only option is collected only for UDP connections"):
         import socketOptions.broadcastSocketOption
-        (summon[Every[SocketOption.Tcp]].values, summon[Every[SocketOption.Udp]].values)
-      . assert(_ == (Nil, List(SocketOption.Broadcast)))
+        (summon[Every[Socket.Option.Tcp]].values, summon[Every[Socket.Option.Udp]].values)
+      . assert(_ == (Nil, List(Socket.Option.Broadcast)))
 
       test(m"a shared option is collected for every connection type"):
         import socketOptions.reuseAddressSocketOption
-        ( summon[Every[SocketOption.Tcp]].values,
-          summon[Every[SocketOption.Udp]].values,
-          summon[Every[SocketOption.Domain]].values )
-      . assert(_ == (List(SocketOption.ReuseAddress),
-                     List(SocketOption.ReuseAddress),
-                     List(SocketOption.ReuseAddress)))
+        ( summon[Every[Socket.Option.Tcp]].values,
+          summon[Every[Socket.Option.Udp]].values,
+          summon[Every[Socket.Option.Domain]].values )
+      . assert(_ == (List(Socket.Option.ReuseAddress),
+                     List(Socket.Option.ReuseAddress),
+                     List(Socket.Option.ReuseAddress)))
 
       test(m"interfaceFor resolves a local interface by its hardware address"):
         var nic: java.net.NetworkInterface | Null = null

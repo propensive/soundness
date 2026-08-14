@@ -70,7 +70,7 @@ object JsigDiscipline extends Discipline:
     path.text.s.endsWith(".sig") || path.text.s.endsWith(".class")
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError =
+  :   Atomization raises Discipline.Error =
 
     val classes = content.stdlib.map: (path, data) =>
       // Same erasure; the parser reads the bytes and retains nothing of them.

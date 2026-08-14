@@ -526,7 +526,7 @@ object Tests extends Suite(m"Hypotenuse tests"):
       . assert(_ == t"0.00000025")
 
       test(m"a non-finite Double is refused"):
-        capture[DecimalError](Decimal(Double.NaN))
+        capture[Decimal.Error](Decimal(Double.NaN))
       . assert(_ => true)
 
       test(m"parsing accepts exponents and signs"):
@@ -534,7 +534,7 @@ object Tests extends Suite(m"Hypotenuse tests"):
       . assert(_ == t"-1234")
 
       test(m"parsing rejects malformed text"):
-        capture[DecimalError](Decimal.parse(t"1.2.3"))
+        capture[Decimal.Error](Decimal.parse(t"1.2.3"))
       . assert(_ => true)
 
       test(m"a numeric literal constructs a Decimal"):

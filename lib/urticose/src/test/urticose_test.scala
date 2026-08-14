@@ -155,31 +155,31 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"IP address byte out of range"):
         capture(t"100.300.200.0".as[Ipv4])
-      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv4ByteOutOfRange(300)))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv4ByteOutOfRange(300)))
 
       test(m"IPv4 address wrong number of bytes"):
         capture(t"10.3.20.0.8".as[Ipv4])
-      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfGroups(5)))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv4WrongNumberOfGroups(5)))
 
       test(m"IPv6 address non-hex value"):
         capture(t"::8:abcg:abc:1234".as[Ipv6])
-      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv6GroupNotHex(t"abcg")))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6GroupNotHex(t"abcg")))
 
       test(m"IPv6 address too many groups"):
         capture(t"1:2:3:4::5:6:7:8".as[Ipv6])
-      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv6TooManyNonzeroGroups(8)))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6TooManyNonzeroGroups(8)))
 
       test(m"IPv6 address wrong number of groups"):
         capture(t"1:2:3:4:5:6:7:8:9".as[Ipv6])
-      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv6WrongNumberOfGroups(9)))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6WrongNumberOfGroups(9)))
 
       test(m"IPv6 duplicate double-colon"):
         capture(t"1::3:7::9".as[Ipv6])
-      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv6MultipleDoubleColons))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6MultipleDoubleColons))
 
       test(m"IPv6 address wrong-length group"):
         capture(t"::8:abcde:abc:1234".as[Ipv6])
-      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv6GroupWrongLength(t"abcde")))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6GroupWrongLength(t"abcde")))
 
     suite(m"Subnet tests"):
       test(m"Create an IPv4 subnet at compiletime"):
@@ -208,19 +208,19 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"IPv4 subnet prefix out of range"):
         capture(t"10.0.0.0/40".as[Ipv4Subnet])
-      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv4SubnetPrefixOutOfRange(40)))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv4SubnetPrefixOutOfRange(40)))
 
       test(m"IPv6 subnet prefix out of range"):
         capture(t"2001:db8::/130".as[Ipv6Subnet])
-      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv6SubnetPrefixOutOfRange(130)))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6SubnetPrefixOutOfRange(130)))
 
       test(m"Subnet prefix not numeric"):
         capture(t"10.0.0.0/x".as[Ipv4Subnet])
-      . assert(_ == IpAddressError(IpAddressError.Reason.SubnetPrefixNotNumeric(t"x")))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.SubnetPrefixNotNumeric(t"x")))
 
       test(m"Subnet without a prefix is wrong format"):
         capture(t"10.0.0.0".as[Ipv4Subnet])
-      . assert(_ == IpAddressError(IpAddressError.Reason.SubnetWrongFormat(1)))
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.SubnetWrongFormat(1)))
 
       test(m"Invalid subnet prefix is compile error"):
         demilitarize(subnet"10.0.0.0/40").map(_.message)
@@ -327,7 +327,7 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"user@[not-an-ip]"):
         capture(t"user@[not-an-ip]".as[EmailAddress])
-      . assert(_ == EmailAddress.Error(InvalidDomain(IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfGroups(1)))))
+      . assert(_ == EmailAddress.Error(InvalidDomain(IpAddress.Error(IpAddress.Error.Reason.Ipv4WrongNumberOfGroups(1)))))
 
       test(m"i.like.underscores@but_they_are_not_allowed_in_this_part"):
         capture(t"i.like.underscores@but_they_are_not_allowed_in_this_part".as[EmailAddress])

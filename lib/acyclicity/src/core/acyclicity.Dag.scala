@@ -66,7 +66,7 @@ object Dag:
 
       Dot.Digraph(None, false, edges*)
 
-  // Dag.Error → Dag.Error
+  // DagError → Dag.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
       case NodeMissing(node: Text) extends Reason(1)

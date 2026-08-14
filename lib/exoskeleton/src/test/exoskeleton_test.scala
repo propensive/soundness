@@ -47,7 +47,7 @@ import backstops.silentBackstop
 
 import Shell.*
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
@@ -141,7 +141,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
       . sandbox:
           // Warmup runs to avoid timing issues in CI. A missing shell binary on the host
-          // should not abort the suite — individual tests will surface a `TmuxError`.
+          // should not abort the suite — individual tests will surface a `Tmux.Error`.
           safely(scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t""))))
           safely(scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t""))))
           safely(scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.completions(t""))))

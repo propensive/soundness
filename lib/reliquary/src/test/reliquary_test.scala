@@ -473,7 +473,7 @@ object Tests extends Suite(m"Reliquary Tests"):
           Set(Discipline.Guarantee.Recompilation)
 
         def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-        :   Atomization raises DisciplineError =
+        :   Atomization raises Discipline.Error =
 
           val atoms = content.map: (path, data) =>
             Atom(path.text, Atom.Class.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
@@ -551,8 +551,8 @@ object Tests extends Suite(m"Reliquary Tests"):
         val atom = Atom(t"same", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"1")))
         val other = Atom(t"same", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"2")))
 
-        capture[DisciplineError](Atomization.of(t"x/1", List(atom, other))).reason match
-          case DisciplineError.Reason.Duplicate(_) => true
+        capture[Discipline.Error](Atomization.of(t"x/1", List(atom, other))).reason match
+          case Discipline.Error.Reason.Duplicate(_) => true
           case _                                   => false
       . assert(identity)
 
@@ -854,7 +854,7 @@ object Tests extends Suite(m"Reliquary Tests"):
             Set(Discipline.Guarantee.Recompilation)
 
           def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-          :   Atomization raises DisciplineError =
+          :   Atomization raises Discipline.Error =
             Atomization.of(id, List())
 
         val claims = List(Resource(ResourceMode.Export, TreePath(t"r/taken.conf")))
@@ -1667,7 +1667,7 @@ object Tests extends Suite(m"Reliquary Tests"):
           def certifies: Set[Discipline.Guarantee] = Set(Discipline.Guarantee.Linkage)
 
           def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
-          :   List[EcosystemProfile.Violation] raises DisciplineError =
+          :   List[EcosystemProfile.Violation] raises Discipline.Error =
             List()
 
           override def coherence(releases: List[Lira.Manifest]): List[Text] =
@@ -1768,7 +1768,7 @@ object Tests extends Suite(m"Reliquary Tests"):
           Set(Discipline.Guarantee.Recompilation)
 
         def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-        :   Atomization raises DisciplineError =
+        :   Atomization raises Discipline.Error =
 
           val atoms = content.map: (path, data) =>
             Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
@@ -1894,7 +1894,7 @@ object Tests extends Suite(m"Reliquary Tests"):
             Set(Discipline.Guarantee.Linkage)
 
           def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-          :   Atomization raises DisciplineError =
+          :   Atomization raises Discipline.Error =
 
             val atoms = content.map: (path, data) =>
               Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
@@ -1943,16 +1943,16 @@ object Tests extends Suite(m"Reliquary Tests"):
       test(m"unsorted capability rows are rejected"):
         val listing = capabilities(t"capability\n  name sh\ncapability\n  name git\n")
 
-        capture[DisciplineError](atomsOf(listing)).reason match
-          case DisciplineError.Reason.Malformed(_) => true
+        capture[Discipline.Error](atomsOf(listing)).reason match
+          case Discipline.Error.Reason.Malformed(_) => true
           case _                                   => false
       . assert(identity)
 
       test(m"a duplicated capability is rejected"):
         val listing = capabilities(t"capability\n  name git\ncapability\n  name git\n")
 
-        capture[DisciplineError](atomsOf(listing)).reason match
-          case DisciplineError.Reason.Malformed(_) => true
+        capture[Discipline.Error](atomsOf(listing)).reason match
+          case Discipline.Error.Reason.Malformed(_) => true
           case _                                   => false
       . assert(identity)
 

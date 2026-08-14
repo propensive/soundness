@@ -51,7 +51,7 @@ import turbulence.*
 import vacuous.*
 
 import fulminate.errorDiagnostics.stackTracesDiagnostics
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.dereferenceSymlinks.enabled

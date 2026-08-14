@@ -62,7 +62,7 @@ object Timezone:
 
       ${aviation.internal.tzInterpolator[parts]('insertions)}
 
-  // Timezone.Error → Timezone.Error
+  // TimezoneError → Timezone.Error
   case class Error(name: Text)(using Diagnostics)
   extends fulminate.Error(929, 0)(m"the name $name does not refer to a known timezone")
 

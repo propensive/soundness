@@ -53,7 +53,7 @@ import turbulence.*
 import vacuous.*
 import contextual.*
 import xylophone.*
-import zephyrine.ParseError
+import zephyrine.Parse
 
 import Mathml.*
 
@@ -68,7 +68,7 @@ import Mathml.*
 
 object Math:
   given aggregable: (schema: XmlSchema)
-  =>  (parseTactic: Tactic[ParseError], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[Mathml.Error])
+  =>  (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[Mathml.Error])
   =>  ((Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
 
     source =>
@@ -76,7 +76,7 @@ object Math:
       Mathml.Parser.decodeMath(Mathml.Parser.rootElement(xml))
 
   given loadable: (XmlSchema)
-  =>  (parseTactic: Tactic[ParseError])
+  =>  (parseTactic: Tactic[Parse.Error])
   =>  (xmlTactic: Tactic[Xml.Error])
   =>  (mathmlTactic: Tactic[Mathml.Error])
   =>  ((Math is Loadable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =

@@ -34,12 +34,12 @@ package aviation
 
 // A `Disambiguation` resolves a day-of-month that overflows when months or years are added to a
 // date — e.g. Jan 31 + 1 month asks for the non-existent "Feb 31". The policy (clamp to the last
-// valid day, overflow into the following month, or raise a `TimeError`) is supplied contextually;
+// valid day, overflow into the following month, or raise a `Moment.Error`) is supplied contextually;
 // there is deliberately no default given, so calendar arithmetic that *could* overflow is a compile
 // error until a policy is imported (`import monthEnds.clampMonthEnd`, etc.).
 //
 // `resolve` is given a `(year, month, day)` where `day` may exceed the month's length, and produces
-// a valid `Date`. It is total in signature: the raising policy aborts through a `Tactic[TimeError]`
+// a valid `Date`. It is total in signature: the raising policy aborts through a `Tactic[Moment.Error]`
 // it captures when constructed, so it does not widen the effect type of plain calendar addition.
 
 trait Disambiguation:

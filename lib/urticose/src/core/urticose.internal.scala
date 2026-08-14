@@ -52,7 +52,7 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import IpAddressError.Reason, Reason.*
+import IpAddress.Error.Reason, Reason.*
 
 object internal:
   // Resolve `Ipv4` to the nested opaque type directly rather than via the
@@ -110,7 +110,7 @@ object internal:
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given encodable: Ipv4 is Encodable in Text = _.show
-      given decodable: (tactic: Tactic[IpAddressError])
+      given decodable: (tactic: Tactic[IpAddress.Error])
       =>  ((Ipv4 is Decodable in Text)^{tactic}) =
         parse(_)
 
@@ -121,25 +121,25 @@ object internal:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
 
-      def parse(text: Text): Ipv4 raises IpAddressError =
+      def parse(text: Text): Ipv4 raises IpAddress.Error =
         val bytes = text.cut(t".").stdlib
 
         if bytes.length == 4 then
           mitigate:
-            case error@NumberError(text, _, _) =>
+            case error@Number.Error(text, _, _) =>
               given diagnostics: Diagnostics = error.diagnostics
-              IpAddressError(Ipv4ByteNotNumeric(text))
+              IpAddress.Error(Ipv4ByteNotNumeric(text))
 
           . protect:
               bytes.map(Decodable.int.decoded(_)).pipe: bytes =>
                 for byte <- bytes do
                   if !(0 <= byte <= 255)
-                  then abort(IpAddressError(Ipv4ByteOutOfRange(byte)))
+                  then abort(IpAddress.Error(Ipv4ByteOutOfRange(byte)))
 
                 Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
 
         else
-          abort(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)))
+          abort(IpAddress.Error(Ipv4WrongNumberOfGroups(bytes.length)))
 
     object MacAddress:
       import MacAddress.Error.Reason.*
@@ -214,7 +214,7 @@ object internal:
       // transport-refined `Port over transport` (e.g. `Port over Tcp`); provide it explicitly.
       given showableOver: [transport] => (Port over transport) is Showable = _.number.show
 
-      given decodable: (numberTactic: Tactic[NumberError], portTactic: Tactic[Port.Error])
+      given decodable: (numberTactic: Tactic[Number.Error], portTactic: Tactic[Port.Error])
       =>  ((Port is Decodable in Text)^{numberTactic, portTactic}) =
         text => apply(text.as[Int])
 
@@ -277,34 +277,34 @@ object internal:
       def int: Int = ip
 
   def subnetPrefix(text: Text, max: Int)(outOfRange: Int => Reason)
-  :   (Tactic[IpAddressError]^) ?->{outOfRange} Int =
+  :   (Tactic[IpAddress.Error]^) ?->{outOfRange} Int =
 
     val prefix =
       mitigate:
-        case error@NumberError(_, _, _) =>
+        case error@Number.Error(_, _, _) =>
           given diagnostics: Diagnostics = error.diagnostics
-          IpAddressError(SubnetPrefixNotNumeric(text))
+          IpAddress.Error(SubnetPrefixNotNumeric(text))
 
       . protect:
           Decodable.int.decoded(text)
 
-    if !(0 <= prefix <= max) then abort(IpAddressError(outOfRange(prefix)))
+    if !(0 <= prefix <= max) then abort(IpAddress.Error(outOfRange(prefix)))
     prefix
 
   object Ipv4Subnet:
     given showable: Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
     given encodable: Ipv4Subnet is Encodable in Text = _.show
-    given decodable: (tactic: Tactic[IpAddressError])
+    given decodable: (tactic: Tactic[IpAddress.Error])
     =>  ((Ipv4Subnet is Decodable in Text)^{tactic}) =
       parse(_)
 
-    def parse(text: Text): Ipv4Subnet raises IpAddressError =
+    def parse(text: Text): Ipv4Subnet raises IpAddress.Error =
       text.cut(t"/") match
         case List(address, prefixText) =>
           Ipv4.parse(address).subnet(subnetPrefix(prefixText, 32)(Ipv4SubnetPrefixOutOfRange(_)))
 
         case other =>
-          abort(IpAddressError(SubnetWrongFormat(other.stdlib.length)))
+          abort(IpAddress.Error(SubnetWrongFormat(other.stdlib.length)))
 
   case class Ipv4Subnet(ipv4: Ipv4, size: Int)
 
@@ -320,7 +320,7 @@ object internal:
     =>  ((urticose.Host is Decodable in Text)^{tactic}) = text =>
       safely(text.as[Ipv6]).or(safely(text.as[Ipv4])).or(text.as[Hostname])
 
-    given decodable: (tactic: Tactic[IpAddressError])
+    given decodable: (tactic: Tactic[IpAddress.Error])
     =>  ((Ipv6 is Decodable in Text)^{tactic}) =
       parse(_)
 
@@ -344,12 +344,12 @@ object internal:
     def apply(g0: Int, g1: Int, g2: Int, g3: Int, g4: Int, g5: Int, g6: Int, g7: Int): Ipv6 =
       Ipv6(pack(List(g0, g1, g2, g3)), pack(List(g4, g5, g6, g7)))
 
-    def parseGroup(text: Text): Int raises IpAddressError =
-      if text.length > 4 then raise(IpAddressError(Ipv6GroupWrongLength(text)))
+    def parseGroup(text: Text): Int raises IpAddress.Error =
+      if text.length > 4 then raise(IpAddress.Error(Ipv6GroupWrongLength(text)))
 
       text.lower.chars.each: char =>
         if !('0' <= char <= '9' || 'a' <= char <= 'f')
-        then raise(IpAddressError(Ipv6GroupNotHex(text)))
+        then raise(IpAddress.Error(Ipv6GroupNotHex(text)))
 
       Integer.parseInt(text.s, 16)
 
@@ -359,7 +359,7 @@ object internal:
 
     private val zeroes: List[Text] = List.fill(8)(t"0")
 
-    def parse(text: Text): Ipv6 raises IpAddressError =
+    def parse(text: Text): Ipv6 raises IpAddress.Error =
       val groups: List[Text] = text.cut(t"::") match
         case List(left, right) =>
           val leftGroups = left.cut(t":").filter(_ != t"")
@@ -367,7 +367,7 @@ object internal:
 
           if leftGroups.length + rightGroups.length > 7
           then
-            raise(IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))
+            raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))
 
           leftGroups ::: List.fill(8 - leftGroups.length - rightGroups.length)(t"0") :::
             rightGroups
@@ -376,11 +376,11 @@ object internal:
           val groups = whole.cut(t":")
 
           if groups.length != 8
-          then abort(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))
+          then abort(IpAddress.Error(Ipv6WrongNumberOfGroups(groups.length)))
           else groups
 
         case _ =>
-          abort(IpAddressError(Ipv6MultipleDoubleColons))
+          abort(IpAddress.Error(Ipv6MultipleDoubleColons))
 
       Ipv6
         ( pack(groups.take(4).map(parseGroup)),
@@ -410,17 +410,17 @@ object internal:
       t"${Ipv6.showable.text(subnet.ipv6)}/${subnet.size}"
 
     given encodable: Ipv6Subnet is Encodable in Text = _.show
-    given decodable: (tactic: Tactic[IpAddressError])
+    given decodable: (tactic: Tactic[IpAddress.Error])
     =>  ((Ipv6Subnet is Decodable in Text)^{tactic}) =
       parse(_)
 
-    def parse(text: Text): Ipv6Subnet raises IpAddressError =
+    def parse(text: Text): Ipv6Subnet raises IpAddress.Error =
       text.cut(t"/") match
         case List(address, prefixText) =>
           Ipv6.parse(address).subnet(subnetPrefix(prefixText, 128)(Ipv6SubnetPrefixOutOfRange(_)))
 
         case other =>
-          abort(IpAddressError(SubnetWrongFormat(other.stdlib.length)))
+          abort(IpAddress.Error(SubnetWrongFormat(other.stdlib.length)))
 
   case class Ipv6Subnet(ipv6: Ipv6, size: Int)
 

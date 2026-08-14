@@ -69,12 +69,12 @@ trait Calendar extends Findable:
   def validDate(year: Year, month: Mensual, day: Day): Boolean =
     day() >= 1 && day() <= daysInMonth(month, year)
 
-  // `inline` so the `raises TimeError` context resolves at the call site: a non-inline `raises`
+  // `inline` so the `raises Moment.Error` context resolves at the call site: a non-inline `raises`
   // method called inside a deferred block (e.g. a test body) boxes the tactic it summons with the
   // block's own capability, which capture checking then rejects.
-  inline def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError =
+  inline def jdn(year: Year, month: Mensual, day: Day): Date raises Moment.Error =
     if !validDate(year, month, day)
-    then raise(TimeError(_.Invalid(year(), monthOrdinal(year, month) + 1, day(), this)))
+    then raise(Moment.Error(_.Invalid(year(), monthOrdinal(year, month) + 1, day(), this)))
 
     computeJdn(year, month, day)
 

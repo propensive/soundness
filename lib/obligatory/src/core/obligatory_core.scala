@@ -41,9 +41,14 @@ extension [element](stream: Iterator[element]^)
   :   Iterator[element]^{stream, framable} =
     framable.frames(stream)
 
-case class rpc() extends StaticAnnotation
+// These are declared inside `annotations` and exported, rather than at the top level, so that
+// `rpc` does not share a classfile name with `Rpc` on a case-insensitive filesystem.
+object annotations:
+  case class rpc() extends StaticAnnotation
 
-// Marks a single JSON-RPC method parameter as receiving the entire `params` value, rather than one
-// named field of a `params` object. Used for methods (such as the LSP `*/resolve` family) whose
-// wire `params` is a bare object decoded directly into the parameter.
-case class bare() extends StaticAnnotation
+  // Marks a single JSON-RPC method parameter as receiving the entire `params` value, rather than
+  // one named field of a `params` object. Used for methods (such as the LSP `*/resolve` family)
+  // whose wire `params` is a bare object decoded directly into the parameter.
+  case class bare() extends StaticAnnotation
+
+export annotations.{bare, rpc}

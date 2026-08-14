@@ -35,7 +35,7 @@ package soundness
 export
   escritoire
   . { Attenuation, BoxDrawing, BoxLine, Column, Columnar, Grid, LineCharset,
-      Scaffold, TableCell, TableError, TableRelabelling, TableRow, TableSection, TableStyle,
+      Scaffold, TableCell, Table, TableRelabelling, TableRow, TableSection, TableStyle,
       Tabulable, Tabular, Tabulation, tabulation, TextAlignment, VerticalAlignment }
 
 package columnAttenuation:

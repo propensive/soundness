@@ -468,7 +468,7 @@ object Tests extends Suite(m"Mandible tests"):
         def certifies: Set[Discipline.Guarantee] = Set(Discipline.Guarantee.Linkage)
 
         def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
-        :   List[EcosystemProfile.Violation] raises DisciplineError =
+        :   List[EcosystemProfile.Violation] raises Discipline.Error =
           List(EcosystemProfile.Violation(Discipline.Guarantee.Recompilation, t"out of scope"))
 
       val registry = EcosystemProfile.Registry(List(broken))

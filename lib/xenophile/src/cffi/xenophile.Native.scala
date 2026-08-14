@@ -36,7 +36,7 @@ import anticipation.*
 import prepositional.*
 
 // The C / native ecosystem: `Interoperable` markers associating Scala types with the C types
-// `CHeaderDialect` reads from header files. No runtime representation is involved.
+// `CHeader.Dialect` reads from header files. No runtime representation is involved.
 object Native:
   given int: (Int is Interoperable in Native of "int") =
     Interoperable[Int, Native, "int"]()
@@ -70,7 +70,7 @@ object Native:
     Interoperable[Address, Native, "pointer"]()
 
 trait Native extends Ecosystem:
-  type Grammar = CHeaderDialect.type
+  type Grammar = CHeader.Dialect.type
 
   // Two backends, one per target platform: `xenophile.native` lowers to a Panama downcall on the
   // JVM, `xenophile.scalanative` to a `dlsym`/`CFuncPtr` call on Scala Native. A build depends on

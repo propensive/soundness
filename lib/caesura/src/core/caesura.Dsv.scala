@@ -450,7 +450,7 @@ object Dsv extends Dsv2:
       value =>
         Dsv.flatten(fields(value) { [field] => field => contextual.encode(field).data })
 
-  // Dsv.Error → Dsv.Error
+  // DsvError → Dsv.Error
   object Error:
     given communicable: Reason is Communicable =
       case Reason.MisplacedQuote =>
@@ -493,7 +493,7 @@ object Dsv extends Dsv2:
         case _ =>
           m"could not decode the cell because $reason" )
 
-  // Dsv.Format → Dsv.Format
+  // DsvFormat → Dsv.Format
   case class Format(header: Boolean, delimiter: Char, quote: Char, escape: Char):
     val Delimiter: Char = delimiter
     val Quote: Char = quote
@@ -501,7 +501,7 @@ object Dsv extends Dsv2:
 
     def doublingEscapes: Boolean = quote == escape
 
-  // Dsv.Redesignation → Dsv.Redesignation
+  // DsvRedesignation → Dsv.Redesignation
   trait Redesignation:
     def transform(name: Text): Text
 

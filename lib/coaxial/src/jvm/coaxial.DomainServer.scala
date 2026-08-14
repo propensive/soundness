@@ -53,16 +53,16 @@ import vacuous.*
 // while a failure to *accept* skips one loop iteration; `stop()` unwinds the parked `accept()`.
 extension (domainSocket: DomainSocket)
   // A loan, like `Bindable.listen`: the running server is lent to `block` as a
-  // `SocketService` capability and always stopped afterwards.
+  // `Socket.Service` capability and always stopped afterwards.
   def listenConnections[result](using Monitor, Probate)(handler: Connection => Unit)
-    ( using (SocketEvent is Loggable)^ )
-    ( block: SocketService ?=> result )
+    ( using (Socket.Event is Loggable)^ )
+    ( block: Socket.Service ?=> result )
   :   result =
 
     val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
     channel.configureBlocking(true)
     channel.bind(jn.UnixDomainSocketAddress.of(domainSocket.address.s))
-    Log.info(SocketEvent.Listening(domainSocket.address))
+    Log.info(Socket.Event.Listening(domainSocket.address))
 
     val bindLoop = loop:
       safely:
@@ -80,10 +80,10 @@ extension (domainSocket: DomainSocket)
     // The loop is created and awaited under the same monitor; no aliased writer.
     val task = scala.caps.unsafe.unsafeAssumeSeparate(async(bindLoop.run()))
 
-    val service = SocketService: () =>
+    val service = Socket.Service: () =>
       bindLoop.stop()
       channel.close()
       scala.caps.unsafe.unsafeAssumeSeparate(safely(task.await()))
-      Log.fine(SocketEvent.Closed(domainSocket.address))
+      Log.fine(Socket.Event.Closed(domainSocket.address))
 
     try block(using service) finally service.stop()

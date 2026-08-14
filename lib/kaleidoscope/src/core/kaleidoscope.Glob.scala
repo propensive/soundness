@@ -67,7 +67,7 @@ object Glob:
 
     recur(0, Nil)
 
-  // Glob.Token → Glob.Token
+  // GlobToken → Glob.Token
   object Token:
     private val needsEscaping: Set[Char] = Set.from("\\.[]{}()<>*+-=!?^$|".iterator)
 

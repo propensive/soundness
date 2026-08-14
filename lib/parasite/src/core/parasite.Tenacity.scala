@@ -37,6 +37,7 @@ import scala.math
 import anticipation.*
 import contingency.*
 import denominative.*
+import fulminate.*
 import prepositional.*
 import vacuous.*
 
@@ -45,20 +46,24 @@ object Tenacity:
   :   Tenacity =
 
     new:
-      def delay(attempt: Ordinal): Optional[Long] raises RetryError =
+      def delay(attempt: Ordinal): Optional[Long] raises Tenacity.Error =
         if attempt == Prim then 0L else (initial.generic*math.pow(base, attempt.n0 - 1)).toLong
 
 
   def fixed[generic: Abstractable across Durations to Long](duration: generic): Tenacity = new:
-    def delay(attempt: Ordinal): Optional[Long] raises RetryError =
+    def delay(attempt: Ordinal): Optional[Long] raises Tenacity.Error =
       if attempt == Prim then 0L else duration.generic
+
+  // RetryError → Tenacity.Error
+  case class Error(count: Int)(using Diagnostics)
+  extends fulminate.Error(552, 0)(m"aborted repeated evaluation after $count attempts")
 
 // A `Tenacity` is a pure retry policy (it holds no capabilities), so it extends `Pure`; this keeps
 // `this` out of capture sets when combinators like `limit` return a fresh policy delegating to it.
 trait Tenacity extends scala.caps.Pure:
   private inline def tenacity: this.type = this
-  def delay(attempt: Ordinal): Optional[Long] raises RetryError
+  def delay(attempt: Ordinal): Optional[Long] raises Tenacity.Error
 
   def limit(n: Int): Tenacity = new:
-    def delay(attempt: Ordinal): Optional[Long] raises RetryError =
-      if attempt.n1 > n then abort(RetryError(attempt.n1 - 1)) else tenacity.delay(attempt)
+    def delay(attempt: Ordinal): Optional[Long] raises Tenacity.Error =
+      if attempt.n1 > n then abort(Tenacity.Error(attempt.n1 - 1)) else tenacity.delay(attempt)

@@ -569,12 +569,12 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == Nil)
 
       test(m"A wrong password is refused as Unreadable"):
-        capture[KeystoreError](guarded.open[Keystore](Password(t"wrong")) { () }).reason
-      . assert(_ == KeystoreError.Reason.Unreadable)
+        capture[Keystore.Error](guarded.open[Keystore](Password(t"wrong")) { () }).reason
+      . assert(_ == Keystore.Error.Reason.Unreadable)
 
       test(m"Opening a keystore for writing is refused"):
-        capture[KeystoreError](guarded.open[Keystore](Write, Password(t"sesame")) { () }).reason
-      . assert(_ == KeystoreError.Reason.WriteUnsupported)
+        capture[Keystore.Error](guarded.open[Keystore](Write, Password(t"sesame")) { () }).reason
+      . assert(_ == Keystore.Error.Reason.WriteUnsupported)
 
       test(m"A missing certificate alias is Unset"):
         guarded.open[Keystore](Password(t"sesame")):
@@ -927,19 +927,19 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, 11)), Asn1.Null)))
 
       test(m"A serial number of zero is refused"):
-        capture[CertificateError]:
+        capture[Certificate.Error]:
           val key = PrivateKey.generate[Rsa[2048]]()
           Certificate.selfSigned(subject, key, period, BigInt(0))
         . reason
-      . assert(_ == CertificateError.Reason.BadSerialNumber)
+      . assert(_ == Certificate.Error.Reason.BadSerialNumber)
 
       test(m"A validity period that ends before it starts is refused"):
-        capture[CertificateError]:
+        capture[Certificate.Error]:
           val key = PrivateKey.generate[Rsa[2048]]()
           val backwards = Instant(1_900_000_000_000L) ~ Instant(1_600_000_000_000L)
           Certificate.selfSigned(subject, key, backwards, BigInt(1))
         . reason
-      . assert(_ == CertificateError.Reason.BadValidity)
+      . assert(_ == Certificate.Error.Reason.BadValidity)
 
       test(m"A distinguished name encodes its attributes in conventional order"):
         val identifiers = Distinguished.sequence(subject) match

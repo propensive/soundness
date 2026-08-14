@@ -43,6 +43,7 @@ import java.util as ju
 import anticipation.*
 import aperture.*
 import contingency.*
+import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -77,7 +78,7 @@ object Keystore:
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Read-only until staged keystore writing lands.
   class KeystoreOpenable[path: Abstractable across Paths to Text]
-    ( using keystoreError: Tactic[KeystoreError] )
+    ( using keystoreError: Tactic[Keystore.Error] )
   extends Openable:
 
     type Self = path
@@ -91,7 +92,7 @@ object Keystore:
     :   result =
 
       if mode.atoms.has(Write)
-      then abort(KeystoreError(KeystoreError.Reason.WriteUnsupported))
+      then abort(Keystore.Error(Keystore.Error.Reason.WriteUnsupported))
 
       val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
 
@@ -112,9 +113,22 @@ object Keystore:
     def loadKeystore(keystore: js.KeyStore, in: ji.InputStream, password: scala.Array[Char] | Null)
     :   Unit =
       try keystore.load(in, password)
-      catch case error: Exception => abort(KeystoreError(KeystoreError.Reason.Unreadable))
+      catch case error: Exception => abort(Keystore.Error(Keystore.Error.Reason.Unreadable))
 
   given openable: [path: Abstractable across Paths to Text]
-  =>  (tactic: Tactic[KeystoreError])
+  =>  (tactic: Tactic[Keystore.Error])
   =>  ( KeystoreOpenable[path]^{tactic} ) =
     KeystoreOpenable[path]
+
+  // KeystoreError → Keystore.Error
+  object Error:
+    given communicable: Reason is Communicable =
+      case Reason.Unreadable       => m"the keystore could not be read with the given password"
+      case Reason.WriteUnsupported => m"keystores cannot yet be opened for writing"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Unreadable       extends Reason(1)
+      case WriteUnsupported extends Reason(2)
+
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(522, reason.number)(m"the keystore operation failed because $reason")

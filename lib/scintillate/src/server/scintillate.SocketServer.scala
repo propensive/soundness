@@ -53,7 +53,7 @@ import zephyrine.*
 // A raw-TCP HTTP/1.1 server backend, built on a `java.net.ServerSocket` rather
 // than `com.sun.net.httpserver`. Each accepted socket is handled on its own
 // Loom virtual thread (`daemon`). The handler API is identical to `HttpServer`'s
-// — a `(connection: HttpConnection) ?=> Http.Response^{connection}` — so the two
+// — a `(connection: Http.Connection) ?=> Http.Response^{connection}` — so the two
 // backends are interchangeable. The connection loop supports keep-alive and pipelining,
 // `Content-Length` and chunked request bodies, `100-continue`, request-size
 // limits, and `101` protocol upgrades. Supplying an `SSLContext` as `ssl` serves
@@ -160,7 +160,7 @@ extends RequestServable:
   // it is also the in-process entry point for tests and benchmarks, which feed a
   // `ByteArrayInputStream` of requests and capture the responses with no network
   // involvement. The caller owns the streams (closing, read timeouts).
-  def serveConnection(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
+  def serveConnection(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( in: ji.InputStream, out: ji.OutputStream )
     ( using (HttpServer.Event is Loggable)^ )
   :   Unit =
@@ -216,8 +216,8 @@ extends RequestServable:
           var keep = keepAlive(head)
 
           // The responder retains only per-request locals; no aliased writer.
-          val respond: HttpConnection.Respond^ = scala.caps.unsafe.unsafeAssumeSeparate:
-           new HttpConnection.Respond:
+          val respond: Http.Connection.Respond^ = scala.caps.unsafe.unsafeAssumeSeparate:
+           new Http.Connection.Respond:
             def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
               if response.status == Http.SwitchingProtocols then
                 // Switch to the upgraded protocol: write the handshake headers, then
@@ -233,7 +233,7 @@ extends RequestServable:
                 val bytes = Http.Response.serialize(response2, head.method != Http.Head, head.version)
                 writeAll(out, bytes)
 
-          val connection = new HttpConnection(request, ssl.present, port, respond)
+          val connection = new Http.Connection(request, ssl.present, port, respond)
           Log.fine(HttpServer.Event.Received(request))
           val started = System.currentTimeMillis
 
@@ -288,7 +288,7 @@ extends RequestServable:
 
   // A per-request server: handle every request (HTTP/1.1) or stream (HTTP/2)
   // with `handler`. The degenerate session with no per-connection setup.
-  def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
+  def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
     ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
   :   Service^ =
@@ -388,7 +388,7 @@ extends RequestServable:
                   // An HTTP/1.1 keep-alive connection is also a per-connection
                   // scope; its session `handle` serves the connection's requests.
                   val session: Http2Session^ = new Http2Session:
-                    def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
+                    def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
                     :   Unit =
                       self1.serveConnection(handler)(in, out)
 

@@ -156,7 +156,7 @@ object Path:
     transparent inline def toward[target <: Path: Precise](target: target): Optional[Relative] =
       ${serpentine.internal.toward[path, target]('left, 'target)}
 
-  // Path.Error → Path.Error
+  // PathError → Path.Error
   object Error:
     def apply(reason: Path.Error.Reason.type => Path.Error.Reason, path: Optional[Text] = Unset)
       ( using Diagnostics )

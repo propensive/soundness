@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export plutocrat.{Currency, isin, IsinError, Luhn, Money, Price}
+export plutocrat.{Currency, isin, Isin, Luhn, Money, Price}
 
 package currencyStyles:
   export plutocrat.currencyStyles.{genericCurrencyStyle, localCurrencyStyle}

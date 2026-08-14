@@ -40,7 +40,7 @@ export
       from,
       fuzzy, Grapheme, init, join, Joinable, kebab, keep, length, lines, lower,
       Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
-      RangeError, reversibleTextual, Rtl, search, offsetOf, SimpleTExtractor, skip, slices, snake, snip,
+      Range, reversibleTextual, Rtl, search, offsetOf, SimpleTExtractor, skip, slices, snake, snip,
       spaced, starts, sub, subscripts, superscripts, sysData, t, tail, text,
       TextBuilder,
       Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,

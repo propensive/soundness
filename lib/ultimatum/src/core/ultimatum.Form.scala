@@ -376,7 +376,7 @@ class Form
 
       refresh(changed)
 
-  def run(events: Iterator[TerminalEvent]): Unit =
+  def run(events: Iterator[Terminal.Event]): Unit =
     requestRefresh(Set())
     var running = true
 
@@ -417,7 +417,7 @@ class Form
       // The anchor query's reply: where the terminal moved the parked cursor during
       // the reflow. Stashed for the resize repaint; never widget input, never a
       // repaint by itself.
-      case TerminalInfo.CursorPosition(row, column) =>
+      case Terminal.Info.CursorPosition(row, column) =>
         anchor = (row, column)
 
       // A resize re-tiles to the new size; mark the geometry stale so the whole
@@ -425,7 +425,7 @@ class Form
       // next repaint clears the moved block (using the anchor reply, when one
       // arrived). The repaint is debounced until the drag pauses; typing is
       // unaffected.
-      case _: TerminalInfo.WindowSize =>
+      case _: Terminal.Info.WindowSize =>
         staleGeometry = true
         resizePending = true
         requestResizeRefresh()
@@ -435,7 +435,7 @@ class Form
       // reschedule the wake for the rest of the debounce window. An animation wake is consumed
       // here — the repaint that follows re-arms it — so a layout that stops animating stops the
       // timer of its own accord.
-      case TerminalInfo.Redraw =>
+      case Terminal.Info.Redraw =>
         animationPending = false
 
         if !resizePending then requestRefresh(Set())

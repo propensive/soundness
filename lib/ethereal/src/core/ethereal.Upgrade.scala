@@ -52,7 +52,7 @@ import filesystemOptions.deleteRecursively.disabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 // Apply an upgrade to the running ethereal application. The given `source`
 // must yield the bytes of a complete signed runner+JAR binary — exactly

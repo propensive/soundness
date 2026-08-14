@@ -38,6 +38,7 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import quantitative.*
@@ -96,13 +97,18 @@ object Timespan:
   given encodable: Timespan is Encodable in Text = renderDuration(_)
 
   // Runtime parse of an ISO-8601 duration; shares `parseDuration` with the `dur"…"` interpolator.
-  given decodable: Tactic[TimeError] => Timespan is Decodable in Text = text =>
+  // A duration is not a moment, so its parse failure is its own error rather than a `Reason`
+  // of `Moment.Error`.
+  case class Error(text: Text)(using Diagnostics)
+  extends fulminate.Error(334, 0)(m"$text is not a recognized duration")
+
+  given decodable: Tactic[Timespan.Error] => Timespan is Decodable in Text = text =>
     aviation.internal.parseDuration(text.s) match
       case Right((years, months, weeks, days, hours, minutes, seconds)) =>
         Timespan(years, months, weeks, days, hours, minutes, Quantity(seconds))
 
       case Left(_) =>
-        abort(TimeError(_.Unknown(text, t"duration")))
+        abort(Timespan.Error(text))
 
   // Compile-time `dur"P1Y2M3DT4H5M6S"` literal, validated by the same parser.
   given interpolable: Timespan is Interpolable:

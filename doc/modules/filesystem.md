@@ -222,7 +222,7 @@ unavailable, `watchers.polling` checks at an interval instead.
 Nothing above names a platform API. The primitive operations a filesystem must offer — stat,
 open, read, write, list, link, delete — are gathered into a `FilesystemBackend` for a plane,
 and everything else is defined in terms of them. The `java.nio` implementation is
-`filesystemBackends.virtualMachine`, and a WASI implementation over `wasi:filesystem` is
+`filesystemBackends.virtualMachineFilesystem`, and a WASI implementation over `wasi:filesystem` is
 supplied by `galilei.wasi`, so the same code reads and writes files on the JVM and inside a
 WebAssembly component. An operation a backend cannot support raises an `IoError` whose reason
 is `Unsupported`, rather than approximating it. Narrowing the platform's surface to a seam

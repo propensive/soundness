@@ -74,7 +74,7 @@ object DtsDiscipline extends Discipline:
   def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".d.ts")
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError =
+  :   Atomization raises Discipline.Error =
 
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
 
@@ -84,7 +84,7 @@ object DtsDiscipline extends Discipline:
       val declarations =
         mitigate:
           case Typescript.Error(reason) =>
-            DisciplineError(id, DisciplineError.Reason.Malformed(t"${path.text}: $reason"))
+            Discipline.Error(id, Discipline.Error.Reason.Malformed(t"${path.text}: $reason"))
 
         . protect(Typescript.Parser.parse(source))
 

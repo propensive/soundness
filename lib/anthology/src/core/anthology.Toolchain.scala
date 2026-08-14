@@ -42,6 +42,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import digression.*
+import fulminate.*
 import galilei.*
 import parasite.*
 import prepositional.*
@@ -50,12 +51,12 @@ import serpentine.*
 object Toolchain:
   // Assembles a toolchain from any number of edge groups, as the providers supply them:
   // `Toolchain(jarEdges(), dexEdges(), apkEdges())`.
-  def apply(edges: List[Edge]*): Toolchain raises LinkError =
+  def apply(edges: List[Edge]*): Toolchain raises Link.Error =
     val all = edges.toList.flatMap(_.stdlib)
 
     all.groupBy { edge => (edge.source, edge.target) }.foreach: (pair, group) =>
       if group.length > 1
-      then abort(LinkError(LinkError.Reason.DuplicateEdge(pair(0).id, pair(1).id)))
+      then abort(Link.Error(Link.Error.Reason.DuplicateEdge(pair(0).id, pair(1).id)))
 
     // Kahn's algorithm: a toolchain whose edges cannot be fully peeled from its indegree-zero
     // nodes contains a cycle.
@@ -77,9 +78,13 @@ object Toolchain:
         indegree(edge.target) = indegree(edge.target) - 1
         if indegree(edge.target) == 0 then queue = edge.target :: queue
 
-    if remaining > 0 then abort(LinkError(LinkError.Reason.CyclicToolchain))
+    if remaining > 0 then abort(Link.Error(Link.Error.Reason.CyclicToolchain))
 
     new Toolchain(List.of(all))
+
+  // ToolchainError → Toolchain.Error
+  case class Error(tool: Text)(using Diagnostics)
+  extends fulminate.Error(586, 0)(m"the native tool $tool is not available on the PATH")
 
 // An in-memory toolchain: a directed acyclic graph whose nodes are formats and whose edges are
 // tools. Producing one format from another is path search: the unique shortest edge sequence
@@ -92,7 +97,7 @@ case class Toolchain private (edges: List[Edge]):
   // The unique shortest path between two formats. No route raises `NoPath`; two or more
   // shortest routes raise `AmbiguousPath`, resolved by producing an explicit intermediate
   // format in a separate step.
-  def path(source: Format, target: Format): List[Edge] raises LinkError =
+  def path(source: Format, target: Format): List[Edge] raises Link.Error =
     if source == target then Nil else
       val adjacency = edges.stdlib.groupBy(_.source)
 
@@ -117,10 +122,10 @@ case class Toolchain private (edges: List[Edge]):
         frontier = next.keys.to(sci.List)
 
       if !visited.contains(target)
-      then abort(LinkError(LinkError.Reason.NoPath(source.id, target.id)))
+      then abort(Link.Error(Link.Error.Reason.NoPath(source.id, target.id)))
 
       if routes(target) > 1
-      then abort(LinkError(LinkError.Reason.AmbiguousPath(source.id, target.id)))
+      then abort(Link.Error(Link.Error.Reason.AmbiguousPath(source.id, target.id)))
 
       var route: List[Edge] = Nil
       var current: Format = target
@@ -144,14 +149,14 @@ case class Toolchain private (edges: List[Edge]):
       settings:    List[Setting] = Nil,
       entryPoints: List[EntryPoint] = Nil )
     ( using Monitor, System, WorkingDirectory )
-    ( using Tactic[LinkError], (LinkEvent is Loggable)^ )
+    ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
   :   Path on Linux =
 
     val route = path(source, target)
 
     settings.stdlib.foreach: setting =>
       if !route.stdlib.map(_.target).exists(setting.appliesTo(_))
-      then abort(LinkError(LinkError.Reason.InapplicableSetting))
+      then abort(Link.Error(Link.Error.Reason.InapplicableSetting))
 
     Log.info(LinkEvent.Start)
 
@@ -163,7 +168,7 @@ case class Toolchain private (edges: List[Edge]):
           if setting.appliesTo(edge.target) then
             try setting.edit(edge.target, settings0).asInstanceOf[tool.Settings]
             catch case suc.NonFatal(error) =>
-              abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+              abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))
           else
             settings0
 
@@ -187,4 +192,4 @@ case class Toolchain private (edges: List[Edge]):
         directory
 
       case _ =>
-        abort(LinkError(LinkError.Reason.UnexpectedInput(target.id)))
+        abort(Link.Error(Link.Error.Reason.UnexpectedInput(target.id)))

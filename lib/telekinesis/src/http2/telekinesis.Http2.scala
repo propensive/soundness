@@ -407,7 +407,7 @@ object Http2:
     ( using monitor:    Monitor,
             probate:    Probate,
             asyncError: Tactic[Async.Error],
-            loggable:   (SocketEvent is Loggable)^ )
+            loggable:   (Socket.Event is Loggable)^ )
   extends Sessional:
     type Self = Endpoint[endpoint]
     type Result = Http2.Connection^{caps.any}
@@ -424,7 +424,7 @@ object Http2:
   =>  ( monitor:    Monitor,
         probate:    Probate,
         asyncError: Tactic[Async.Error],
-        loggable:   (SocketEvent is Loggable)^ )
+        loggable:   (Socket.Event is Loggable)^ )
   =>  (EndpointSessional[endpoint]^{monitor, asyncError, loggable, caps.any}) =
     EndpointSessional[endpoint]()
 

@@ -105,7 +105,7 @@ extends Question[Text]:
   import Keypress.*
 
   // Whether (per `mode`) the given event submits the answer rather than editing it.
-  def submitsOn(event: TerminalEvent): Boolean = mode match
+  def submitsOn(event: Terminal.Event): Boolean = mode match
     case LineEditor.Mode.SingleLine =>
       event match
         case Enter => true
@@ -133,7 +133,7 @@ extends Question[Text]:
     val target = (current + rows).max(0).min(lines.length - 1)
     copy(position0 = starts.stdlib(target) + column.min(lines.stdlib(target).length))
 
-  def apply(keypress: TerminalEvent): LineEditor =
+  def apply(keypress: Terminal.Event): LineEditor =
     try
       keypress match
         case CharKey(ch) => copy(t"${value.keep(position)}$ch${value.skip(position)}", position + 1)
@@ -178,18 +178,18 @@ extends Question[Text]:
         case _ =>
           this
 
-    catch case e: RangeError => this
+    catch case e: Range.Error => this
 
 
   def ask
-    ( using interactivity: Interactivity[TerminalEvent],
+    ( using interactivity: Interactivity[Terminal.Event],
             interaction:   Interaction[Text, LineEditor] )
     [ result ]
-    ( lambda: Interactivity[TerminalEvent] ?=> Text => result )
-    ( using Tactic[DismissError] )
+    ( lambda: Interactivity[Terminal.Event] ?=> Text => result )
+    ( using Tactic[Question.Error] )
   :   result =
 
     val events = interactivity.eventIterator()
 
-    interaction(events, this)(_(_)).lay(abort(DismissError())):
+    interaction(events, this)(_(_)).lay(abort(Question.Error())):
       result => lambda(using Interactivity(events))(result)

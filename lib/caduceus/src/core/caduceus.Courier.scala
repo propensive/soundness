@@ -42,7 +42,7 @@ import fulminate.*
 import urticose.*
 
 object Courier:
-  // Courier.Error → Courier.Error
+  // CourierError → Courier.Error
   case class Error(from: EmailAddress, to: EmailAddress, subject: Text)(using Diagnostics)
   extends fulminate.Error(383, 0)(m"unable to send email from $from to $to with subject $subject")
 

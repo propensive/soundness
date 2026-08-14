@@ -96,7 +96,7 @@ object EcosystemProfile:
       declared: List[Lira.Manifest.Profile],
       previous: Evidence,
       next:     Evidence )
-  :   Audit raises Lira.Error raises DisciplineError =
+  :   Audit raises Lira.Error raises Discipline.Error =
 
     val unchecked = scala.collection.mutable.ListBuffer[Text]()
     val advisories = scala.collection.mutable.ListBuffer[Text]()
@@ -160,12 +160,12 @@ trait EcosystemProfile:
   def certifies: Set[Discipline.Guarantee]
 
   def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
-  :   List[EcosystemProfile.Violation] raises DisciplineError
+  :   List[EcosystemProfile.Violation] raises Discipline.Error
 
   // Findings short of violations, surfaced for reporting (`jvm.md` §7's changed constants are
   // the motivating case). Advisory only: nothing here affects the audit's verdict.
   def advisories(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
-  :   List[Text] raises DisciplineError =
+  :   List[Text] raises Discipline.Error =
     List()
 
   // §13.3 rule 6: the predicates this profile imposes over a whole buildpath, decidable from

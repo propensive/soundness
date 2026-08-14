@@ -51,7 +51,7 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemTraversal.preOrderTraversal
 import logging.silentLogging

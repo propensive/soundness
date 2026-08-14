@@ -165,7 +165,7 @@ private[jacinta] object Parser:
 
   private[jacinta] def borrow(): Parser^ = pool.get.nn.asInstanceOf[Parser^]
 
-  def parse(source: Data, mode: NumberMode = NumberMode.Full): Raw raises ParseError =
+  def parse(source: Data, mode: NumberMode = NumberMode.Full): Raw raises Parse.Error =
     val parser = borrow()
     parser.tracking = false
     parser.resetData(source)
@@ -173,7 +173,7 @@ private[jacinta] object Parser:
     parser.numberMode = mode
     caps.unsafe.unsafeAssumePure(parser.parse())
 
-  def parse(source: Data, holes: Boolean, mode: NumberMode): Raw raises ParseError =
+  def parse(source: Data, holes: Boolean, mode: NumberMode): Raw raises Parse.Error =
     val parser = borrow()
     parser.tracking = false
     parser.resetData(source)
@@ -181,7 +181,7 @@ private[jacinta] object Parser:
     parser.numberMode = mode
     caps.unsafe.unsafeAssumePure(parser.parse())
 
-  def parse(input: Iterator[Data], mode: NumberMode): Raw raises ParseError =
+  def parse(input: Iterator[Data], mode: NumberMode): Raw raises Parse.Error =
     val parser = borrow()
     parser.tracking = false
     parser.resetIterator(input)
@@ -189,7 +189,7 @@ private[jacinta] object Parser:
     parser.numberMode = mode
     caps.unsafe.unsafeAssumePure(parser.parse())
 
-  def parse(input: Iterator[Data], holes: Boolean, mode: NumberMode): Raw raises ParseError =
+  def parse(input: Iterator[Data], holes: Boolean, mode: NumberMode): Raw raises Parse.Error =
     val parser = borrow()
     parser.tracking = false
     parser.resetIterator(input)
@@ -198,7 +198,7 @@ private[jacinta] object Parser:
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(source: Data, mode: NumberMode = NumberMode.Full)
-  :   (Json.Ast, Json.PositionIndex) raises ParseError =
+  :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
 
     val parser = borrow()
     parser.tracking = true
@@ -209,7 +209,7 @@ private[jacinta] object Parser:
     (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
   def parseTracked(input: Iterator[Data], mode: NumberMode)
-  :   (Json.Ast, Json.PositionIndex) raises ParseError =
+  :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
 
     val parser = borrow()
     parser.tracking = true
@@ -219,7 +219,7 @@ private[jacinta] object Parser:
     val raw = caps.unsafe.unsafeAssumePure(parser.parse())
     (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
-  def parse(consume input: (Stream[Data] over Credit)^, mode: NumberMode): Raw raises ParseError =
+  def parse(consume input: (Stream[Data] over Credit)^, mode: NumberMode): Raw raises Parse.Error =
     val parser = borrow()
     parser.tracking = false
     // consume-to-consume forwarding is not admitted; the hop re-asserts the transfer
@@ -230,7 +230,7 @@ private[jacinta] object Parser:
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
-  :   (Json.Ast, Json.PositionIndex) raises ParseError =
+  :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
 
     val parser = borrow()
     parser.tracking = true
@@ -505,14 +505,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   protected inline update def advance(): Unit = pos += 1
 
   protected update def errorAt(issue: Issue, start: Optional[Cursor.Mark] = Unset)
-    ( using Tactic[ParseError] )
+    ( using Tactic[Parse.Error] )
   :   Nothing =
 
     syncTo()
     val end = cursorPosition.toInt
     val offset: Optional[Int] = start.let(_.absolute.toInt)
     val length: Optional[Int] = start.let: mark => end - mark.absolute.toInt
-    abort(ParseError(Json.Ast, Position(0, end, offset = offset, length = length), issue))
+    abort(Parse.Error(Json.Ast, Position(0, end, offset = offset, length = length), issue))
 
   // A `Region` is just a `Cursor.Mark` (an absolute `Long` position). With
   // the single-buffer model there's no need to remember the starting block
@@ -741,10 +741,10 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // ──────────────────────────────────────────────────────────────────────────
   // Parser body (unchanged from the previous abstract base).
 
-  protected inline update def must()(using Tactic[ParseError]): Byte =
+  protected inline update def must()(using Tactic[Parse.Error]): Byte =
     if more then peek else errorAt(Issue.PrematureEnd)
 
-  protected inline update def next()(using Tactic[ParseError]): Byte =
+  protected inline update def next()(using Tactic[Parse.Error]): Byte =
     advance()
     if more then peek else errorAt(Issue.PrematureEnd)
 
@@ -758,20 +758,20 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       }
     do advance()
 
-  private update def fromHex(ch: Byte)(using Tactic[ParseError]): Int =
+  private update def fromHex(ch: Byte)(using Tactic[Parse.Error]): Int =
     if ch <= Num9 && ch >= Num0 then ch - Num0
     else if ch <= UpperF && ch >= UpperA then ch - UpperA + 10
     else if ch <= LowerF && ch >= LowerA then ch - LowerA + 10
     else errorAt(Issue.ExpectedHexDigit(ch.toChar))
 
-  private update def parseUnicode()(using Tactic[ParseError]): Char =
+  private update def parseUnicode()(using Tactic[Parse.Error]): Char =
     var acc = fromHex(next()) << 12
     acc |= fromHex(next()) << 8
     acc |= fromHex(next()) << 4
     acc |= fromHex(next())
     acc.toChar
 
-  private update def parseString()(using Tactic[ParseError]): String =
+  private update def parseString()(using Tactic[Parse.Error]): String =
     // Buffer-local fast path, as `directString`: a plain-ASCII string that
     // closes inside the current window is materialized straight from the
     // local snapshot — no marks, no hold, no cursor sync — scanning eight
@@ -799,7 +799,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       out
     else parseStringGeneral()
 
-  private update def parseStringGeneral()(using Tactic[ParseError]): String = holding:
+  private update def parseStringGeneral()(using Tactic[Parse.Error]): String = holding:
     val region = begin()
 
     // Fast scan for plain printable ASCII that needs no escape handling.
@@ -826,7 +826,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // alias another key), so the lookup needs only two Long equality
   // checks — no byte-by-byte comparison and no hash-collision false
   // positives. Keys longer than 16 bytes bypass the cache.
-  private update def parseObjectKey()(using Tactic[ParseError]): String =
+  private update def parseObjectKey()(using Tactic[Parse.Error]): String =
     // Buffer-local fast path, as `directKeyName`: scan to the closing quote
     // within the current window and probe the intern cache straight from
     // the local snapshot; the general path (marks + slice) handles escapes
@@ -878,7 +878,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         out
     else parseObjectKeyGeneral()
 
-  private update def parseObjectKeyGeneral()(using Tactic[ParseError]): String = holding:
+  private update def parseObjectKeyGeneral()(using Tactic[Parse.Error]): String = holding:
     val region = begin()
 
     while more && StringScanContinue.readUnchecked(peek & 0xFF) != 0 do advance()
@@ -947,7 +947,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     out
 
-  private update def tail(start: Region)(using Tactic[ParseError], Cursor.Held): String =
+  private update def tail(start: Region)(using Tactic[Parse.Error], Cursor.Held): String =
     resetString()
     appendRegionToBuffer(start)
 
@@ -986,7 +986,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
             case bad       => errorAt(Issue.IncorrectEscape(bad.toChar), token)
 
         case _ =>
-          if ch == 0 && holes then appendChar(' ')
+          if ch == 0 && holes then appendChar('\u0000')
           else ((ch >> 5): @switch) match
             case 0                 => errorAt(Issue.NotEscaped(ch.toChar), token)
             case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
@@ -1013,10 +1013,10 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     advance()
     getString()
 
-  protected inline update def expect(byte: Byte, issue: Issue)(using Tactic[ParseError]): Unit =
+  protected inline update def expect(byte: Byte, issue: Issue)(using Tactic[Parse.Error]): Unit =
     if next() != byte then errorAt(issue)
 
-  private update def parseFalse()(using Tactic[ParseError]): false =
+  private update def parseFalse()(using Tactic[Parse.Error]): false =
     // Fast path: 5 bytes available in the local buffer. Pack them into a
     // Long and compare against `FalseWord` in one step. Falls back to the
     // byte-by-byte `expect` chain only at a buffer boundary.
@@ -1039,7 +1039,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       advance()
       false
 
-  private update def parseTrue()(using Tactic[ParseError]): true =
+  private update def parseTrue()(using Tactic[Parse.Error]): true =
     if pos + 4 <= bufEnd then
       val word: Int =
         (bytes(pos)     & 0xFF)         |
@@ -1057,7 +1057,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       advance()
       true
 
-  private update def parseNull()(using Tactic[ParseError]): Json.JsonNull.type =
+  private update def parseNull()(using Tactic[Parse.Error]): Json.JsonNull.type =
     if pos + 4 <= bufEnd then
       val word: Int =
         (bytes(pos)     & 0xFF)         |
@@ -1076,7 +1076,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       Json.JsonNull
 
   private update def parseNumber(first: Int, negative: Boolean, bcdOnly: Boolean = false)
-    ( using Tactic[ParseError] )
+    ( using Tactic[Parse.Error] )
   :   Double | Long | Bcd =
 
     var content: Long = first.toLong
@@ -1287,7 +1287,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // The flag has no effect on non-number values, so we don't need to
   // propagate it to `parseObject` / `parseArray` / `parseString`.
   private update def parseValue(minus: Boolean = false, bcdOnly: Boolean = false)
-    ( using Tactic[ParseError] )
+    ( using Tactic[Parse.Error] )
   :   Raw =
 
     if !more then errorAt(Issue.PrematureEnd)
@@ -1322,7 +1322,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     ( indexOut: ArrayBuffer[Int],
       minus:    Boolean = false,
       bcdOnly:  Boolean = false )
-    ( using Tactic[ParseError] )
+    ( using Tactic[Parse.Error] )
   :   Raw =
 
     if !more then errorAt(Issue.PrematureEnd)
@@ -1388,7 +1388,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     result
 
-  private update def parseArray()(using Tactic[ParseError]): Raw =
+  private update def parseArray()(using Tactic[Parse.Error]): Raw =
     // The array starts in "undecided" mode. Each element is parsed with
     // `bcdOnly = true`, so a number comes back as either a single-Long
     // BCD packing (count + sign + nibbles encoded in the Long itself) or
@@ -1596,7 +1596,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       startLine:   Int,
       startColumn: Int,
       startMark:   Long )
-    ( using Tactic[ParseError] )
+    ( using Tactic[Parse.Error] )
   :   Raw =
 
     var mode: Int = ModeUndecided
@@ -1789,7 +1789,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // Parse an object directly into the flat alternating-key/value layout. The
   // buffer always grows in pairs, so its length stays even, which is the
   // object/array parity invariant.
-  private update def parseObject()(using Tactic[ParseError]): Array[Any]^{} =
+  private update def parseObject()(using Tactic[Parse.Error]): Array[Any]^{} =
     val items: ArrayBuffer[Any] = getArrayBuffer()
     var continue = true
 
@@ -1840,13 +1840,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               must() match
                 case Comma =>
                   advance()
-                  items += " "
+                  items += "\u0000"
                   items += value
                   skip()
 
                 case CloseBrace =>
                   advance()
-                  items += " "
+                  items += "\u0000"
                   items += value
                   continue = false
 
@@ -1854,13 +1854,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
             case Comma =>
               advance()
-              items += " "
+              items += "\u0000"
               items += Unset
               skip()
 
             case CloseBrace =>
               advance()
-              items += " "
+              items += "\u0000"
               items += Unset
               continue = false
 
@@ -1887,7 +1887,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       startLine:   Int,
       startColumn: Int,
       startMark:   Long )
-    ( using Tactic[ParseError] )
+    ( using Tactic[Parse.Error] )
   :   Array[Any]^{} =
 
     val items: ArrayBuffer[Any] = getArrayBuffer()
@@ -1963,13 +1963,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               must() match
                 case Comma =>
                   advance()
-                  items += " "
+                  items += "\u0000"
                   items += value
                   skip()
 
                 case CloseBrace =>
                   advance()
-                  items += " "
+                  items += "\u0000"
                   items += value
                   continue = false
 
@@ -1989,7 +1989,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               indexScratch += 0
               indexEnds += indexScratch.length
               advance()
-              items += " "
+              items += "\u0000"
               items += Unset
               skip()
 
@@ -2007,7 +2007,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               indexScratch += 0
               indexEnds += indexScratch.length
               advance()
-              items += " "
+              items += "\u0000"
               items += Unset
               continue = false
 
@@ -2033,10 +2033,10 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     out.asInstanceOf[Array[Any]^{}]
 
-  update def parse()(using Tactic[ParseError]): Raw =
+  update def parse()(using Tactic[Parse.Error]): Raw =
     bom()
     skip()
-    if !more then abort(ParseError(Json.Ast, Position(0, 0), Issue.EmptyInput))
+    if !more then abort(Parse.Error(Json.Ast, Position(0, 0), Issue.EmptyInput))
 
     val result =
       if tracking then
@@ -2107,32 +2107,32 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   private update def directPop(): Unit = directDepth -= 1
 
-  private[jacinta] update def directBegin()(using Tactic[ParseError]): Unit =
+  private[jacinta] update def directBegin()(using Tactic[Parse.Error]): Unit =
     directDepth = 0
     bom()
     skip()
-    if !more then abort(ParseError(Json.Ast, Position(0, 0), Issue.EmptyInput))
+    if !more then abort(Parse.Error(Json.Ast, Position(0, 0), Issue.EmptyInput))
 
   // Trailing-content check, identical to the tail of `parse()`.
-  private[jacinta] update def directEnd()(using Tactic[ParseError]): Unit =
+  private[jacinta] update def directEnd()(using Tactic[Parse.Error]): Unit =
     while more do
       peek match
         case Tab | Return | Newline | Space => advance()
         case char                           => errorAt(Issue.SpuriousContent(char.toChar))
 
-  private[jacinta] update def directValue()(using Tactic[ParseError]): Raw =
+  private[jacinta] update def directValue()(using Tactic[Parse.Error]): Raw =
     skip()
     parseValue()
 
   // Structure-aware skip of one whole value: a validated scan that enforces
   // the same grammar (and raises the same `Issue`s) as `parseValue`'s loops,
   // but builds nothing — no AST nodes, no scratch buffers, no key strings.
-  update def directSkipValue()(using Tactic[ParseError]): Unit =
+  update def directSkipValue()(using Tactic[Parse.Error]): Unit =
     skip()
     skipValue1()
 
   // Positioned at the first byte of a value (no leading whitespace).
-  private update def skipValue1()(using Tactic[ParseError]): Unit =
+  private update def skipValue1()(using Tactic[Parse.Error]): Unit =
     val ch = must()
 
     if (ch & 0xF8) == Num0 || (ch & 0xFE) == 0x38 then
@@ -2162,7 +2162,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   // Mirrors `parseObject`'s loop structure and issues, without materializing
   // keys or values.
-  private update def skipObjectBody()(using Tactic[ParseError]): Unit =
+  private update def skipObjectBody()(using Tactic[Parse.Error]): Unit =
     var continue = true
     var first = true
 
@@ -2199,7 +2199,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       first = false
 
   // Mirrors `parseArray`'s loop structure and issues.
-  private update def skipArrayBody()(using Tactic[ParseError]): Unit =
+  private update def skipArrayBody()(using Tactic[Parse.Error]): Unit =
     var continue = true
     var first = true
 
@@ -2226,7 +2226,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // Skips a string, validating escapes, hex digits and character legality
   // exactly as `tail` does, without accumulating characters. Positioned
   // after the opening quote; consumes the closing quote.
-  private update def skipString()(using Tactic[ParseError]): Unit =
+  private update def skipString()(using Tactic[Parse.Error]): Unit =
     var continue = true
 
     while continue do
@@ -2284,7 +2284,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               else if (ch & 0xF8) == 0xF0 then { next(); next(); next(); advance() }
               else advance()
 
-  update def directString()(using Tactic[ParseError]): String =
+  update def directString()(using Tactic[Parse.Error]): String =
     skip()
     if must() == Quote then
       advance()
@@ -2316,14 +2316,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       else parseString()
     else errorAt(Issue.ExpectedString(peek.toChar))
 
-  update def directBoolean()(using Tactic[ParseError]): Boolean =
+  update def directBoolean()(using Tactic[Parse.Error]): Boolean =
     skip()
     must() match
       case LowerT => parseTrue()
       case LowerF => parseFalse()
       case ch     => errorAt(Issue.ExpectedBoolean(ch.toChar))
 
-  private[jacinta] update def directNull()(using Tactic[ParseError]): Unit =
+  private[jacinta] update def directNull()(using Tactic[Parse.Error]): Unit =
     skip()
     if must() == LowerN then { parseNull(); () } else errorAt(Issue.ExpectedNull)
 
@@ -2335,7 +2335,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   // One number token, in the same `Raw` forms the AST parser produces for a
   // top-level number (`Long`, `Double` or `Bcd` under `bcdOnly = false`).
-  private update def directNumber()(using Tactic[ParseError]): Raw =
+  private update def directNumber()(using Tactic[Parse.Error]): Raw =
     skip()
     val ch = must()
 
@@ -2360,7 +2360,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // fractions and exponents, a 19th digit, a leading zero (which must
   // raise), and numbers touching the window's end (more digits may follow
   // in the next chunk).
-  update def directLong()(using Tactic[ParseError]): Long =
+  update def directLong()(using Tactic[Parse.Error]): Long =
     skip()
     val start = pos
     val limit = bufEnd
@@ -2396,7 +2396,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // The numeric coercions mirror the `Json.Ast` accessors (`long`, `double`,
   // `bcd`) exactly, so a direct read of a number yields the same value the
   // AST path would decode.
-  private update def directLongGeneral()(using Tactic[ParseError]): Long =
+  private update def directLongGeneral()(using Tactic[Parse.Error]): Long =
     val raw: Any = directNumber()
 
     raw.asMatchable match
@@ -2415,7 +2415,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // the general path and bails out (a plain `pos` reset; nothing here
   // refills) for everything else: a sixteenth digit, a leading zero before
   // a digit, an out-of-range exponent, or the window's end.
-  update def directDouble()(using Tactic[ParseError]): Double =
+  update def directDouble()(using Tactic[Parse.Error]): Double =
     skip()
     val start = pos
     val limit = bufEnd
@@ -2503,7 +2503,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     pos = start
     directDoubleGeneral()
 
-  private update def directDoubleGeneral()(using Tactic[ParseError]): Double =
+  private update def directDoubleGeneral()(using Tactic[Parse.Error]): Double =
     val raw: Any = directNumber()
 
     raw.asMatchable match
@@ -2513,7 +2513,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toDouble
       case _                               => 0.0 // unreachable: only number forms are produced
 
-  private[jacinta] update def directBcd()(using Tactic[ParseError]): Bcd =
+  private[jacinta] update def directBcd()(using Tactic[Parse.Error]): Bcd =
     val raw: Any = directNumber()
 
     raw.asMatchable match
@@ -2527,7 +2527,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       case _ =>
         Bcd(BigDecimal(0L)) // unreachable
 
-  update def directOpenObject()(using Tactic[ParseError]): Unit =
+  update def directOpenObject()(using Tactic[Parse.Error]): Unit =
     skip()
 
     if must() == OpenBrace then
@@ -2537,7 +2537,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   // The next key of the current object (consuming any separator comma, the
   // key and its colon), or `null` after consuming the closing brace.
-  private[jacinta] update def directKey()(using Tactic[ParseError]): String | Null =
+  private[jacinta] update def directKey()(using Tactic[Parse.Error]): String | Null =
     skip()
 
     if directSeen() then
@@ -2575,7 +2575,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // instead of materializing it: `KeyTable.End` after consuming the closing
   // brace, `KeyTable.Unknown` for a key not in the table (the caller skips
   // its value), else the key's table index.
-  private[jacinta] update def directKeyIndex(table: Json.KeyTable)(using Tactic[ParseError])
+  private[jacinta] update def directKeyIndex(table: Json.KeyTable)(using Tactic[Parse.Error])
   :   Int =
 
     val fast = directKeyIndexFast(table)
@@ -2939,7 +2939,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     directKeyHigh = high
     low
 
-  private[jacinta] update def directKeyIndexGeneral(table: Json.KeyTable)(using Tactic[ParseError])
+  private[jacinta] update def directKeyIndexGeneral(table: Json.KeyTable)(using Tactic[Parse.Error])
   :   Int =
 
     skip()
@@ -2978,7 +2978,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // After the opening quote: pack the key straight from the window and look
   // it up, falling back to a materialized key (escapes, long keys, or the
   // window's end) compared by string; then the trailing colon.
-  private update def directKeyIndexTail(table: Json.KeyTable)(using Tactic[ParseError]): Int =
+  private update def directKeyIndexTail(table: Json.KeyTable)(using Tactic[Parse.Error]): Int =
     val start = pos
     val limit = bufEnd
     var i = start
@@ -3002,7 +3002,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     else errorAt(Issue.ExpectedColon(peek.toChar))
 
   // After the opening quote: the key itself and its trailing colon.
-  private update def directKeyTail()(using Tactic[ParseError]): String =
+  private update def directKeyTail()(using Tactic[Parse.Error]): String =
     val key = directKeyName()
     skip()
 
@@ -3017,7 +3017,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // handles escapes and window-crossing keys as the fallback). The cache
   // arrays are indexed through direct field paths only — binding one to a
   // local would hide the parser (see `reconcileLineation`).
-  private update def directKeyName()(using Tactic[ParseError]): String =
+  private update def directKeyName()(using Tactic[Parse.Error]): String =
     val start = pos
     val limit = bufEnd
     var i = start
@@ -3051,7 +3051,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         out
     else parseObjectKey()
 
-  update def directOpenArray()(using Tactic[ParseError]): Unit =
+  update def directOpenArray()(using Tactic[Parse.Error]): Unit =
     skip()
 
     if must() == OpenBracket then
@@ -3061,7 +3061,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   // True when another element follows (positioned at it, with any separator
   // comma consumed); false after consuming the closing bracket.
-  update def directElement()(using Tactic[ParseError]): Boolean =
+  update def directElement()(using Tactic[Parse.Error]): Boolean =
     // Buffer-local fast path, mirroring `directKeyIndexFast`.
     val limit = bufEnd
     var i = pos
@@ -3097,7 +3097,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // bracket and marks the depth; `directElementNext` expects a comma or the
   // closing bracket and consults no per-element state. Fallbacks preserve
   // `directElement`'s exact semantics.
-  update def directElementFirst()(using Tactic[ParseError]): Boolean =
+  update def directElementFirst()(using Tactic[Parse.Error]): Boolean =
     val limit = bufEnd
     var i = pos
 
@@ -3122,7 +3122,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     directElementGeneral()
 
-  update def directElementNext()(using Tactic[ParseError]): Boolean =
+  update def directElementNext()(using Tactic[Parse.Error]): Boolean =
     val limit = bufEnd
     var i = pos
 
@@ -3147,7 +3147,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     directElementGeneral()
 
-  private update def directElementGeneral()(using Tactic[ParseError]): Boolean =
+  private update def directElementGeneral()(using Tactic[Parse.Error]): Boolean =
     skip()
 
     if directSeen() then
@@ -3192,7 +3192,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // in the object. `null` when the object ends without the key, or when its
   // value is not a string — mirroring `discriminate`'s `Unset` on the AST
   // path. Malformed content raises exactly as parsing it would.
-  private[jacinta] update def directDiscriminant(key: String)(using Tactic[ParseError])
+  private[jacinta] update def directDiscriminant(key: String)(using Tactic[Parse.Error])
   :   String | Null =
 
     skip()
@@ -3225,7 +3225,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     directDepth = savedDepth
     result
 
-  private[jacinta] update def directFail(issue: Issue)(using Tactic[ParseError]): Nothing =
+  private[jacinta] update def directFail(issue: Issue)(using Tactic[Parse.Error]): Nothing =
     errorAt(issue)
 
   // No INLINE member may read this field: the synthesized `inline$cursor` accessor's

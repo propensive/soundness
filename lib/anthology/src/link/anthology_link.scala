@@ -98,11 +98,11 @@ object sjsEdges:
   // The component edge exists only where the WASI toolchain (`wasm-tools`, `wit-bindgen`) has
   // been probed and a WIT world chosen; a WASI link whose native tooling is absent is not
   // expressible.
-  def wasi()(using toolchain: WasiToolchain, world: WitWorld): Edge =
+  def wasi()(using toolchain: WasiToolchain, world: Wasi.World): Edge =
     edge(Wasi(Wasi.Version.Wasip2), wasiConfig(world), _ / "main.wasm")
 
   // The configuration mandated by a WASI component link against the given world.
-  private def wasiConfig(world: WitWorld): StandardConfig => StandardConfig =
+  private def wasiConfig(world: Wasi.World): StandardConfig => StandardConfig =
     _.withModuleKind(ModuleKind.WasmComponent)
     . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
     . withWasmFeatures: features =>
@@ -134,7 +134,7 @@ object sjsEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val (directory, classpath) = input.emission(node)
@@ -149,7 +149,7 @@ object sjsEdges:
       entryPoints: List[EntryPoint],
       out:         Path on Linux,
       artifact:    (Path on Linux) => (Path on Linux) )
-  :   Path on Linux logs LinkEvent raises LinkError =
+  :   Path on Linux logs LinkEvent raises Link.Error =
 
     val entries: List[jnf.Path] =
       jnf.Paths.get(directory.encode.s).nn ::
@@ -185,4 +185,4 @@ object sjsEdges:
       artifact(out)
 
     catch case suc.NonFatal(error) =>
-      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+      abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))

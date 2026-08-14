@@ -55,12 +55,12 @@ import errorDiagnostics.stackTracesDiagnostics
 import filesystemOptions.dereferenceSymlinks.enabled
 import interfaces.paths.pathOnLinux
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
   ( using classloader: Classloader )
-  ( using Tactic[BytecodeError] )
+  ( using Tactic[Bytecode.Error] )
 :   Bytecode =
 
   val uuid = Uuid()
@@ -73,8 +73,8 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
   given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
   mitigate:
-    case IoError(_, _, _, _) => BytecodeError(BytecodeError.Reason.ClassfileMissing)
-    case StreamError(_)      => BytecodeError(BytecodeError.Reason.ClassfileUnreadable)
+    case IoError(_, _, _, _) => Bytecode.Error(Bytecode.Error.Reason.ClassfileMissing)
+    case StreamError(_)      => Bytecode.Error(Bytecode.Error.Reason.ClassfileUnreadable)
 
   . protect:
       val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
@@ -82,7 +82,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
       staging.run(code)
       val classfile: Classfile = new Classfile(file.read[Data].readable)
       classfile.methods.stdlib.find(_.name == t"_code$$1").optional.let(_.bytecode)
-      . lay(abort(BytecodeError(BytecodeError.Reason.ClassfileUnreadable)))(_.embed(codepoint))
+      . lay(abort(Bytecode.Error(Bytecode.Error.Reason.ClassfileUnreadable)))(_.embed(codepoint))
 
 
 type BytecodePalette = Palette:
@@ -90,15 +90,3 @@ type BytecodePalette = Palette:
   def bytecode: Color in Srgb
   def sourceCode: Color in Srgb
   def outline: Color in Srgb
-
-object BytecodeError:
-  enum Reason(val number: Int) extends Clarification:
-    case ClassfileMissing    extends Reason(1)
-    case ClassfileUnreadable extends Reason(2)
-
-  given communicable: Reason is Communicable =
-    case Reason.ClassfileMissing    => m"the generated classfile could not be opened"
-    case Reason.ClassfileUnreadable => m"the generated classfile could not be read"
-
-case class BytecodeError(reason: BytecodeError.Reason)(using Diagnostics)
-extends Error(295, reason.number)(m"the bytecode could not be extracted because $reason")

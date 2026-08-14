@@ -38,10 +38,10 @@ import iridescence.*
 import prepositional.*
 
 extension [value](expr: Expr[value])(using Quotes)
-  def syntax: TastyTree = hyperbole.internal.tastyTree[value](expr, '{false})
+  def syntax: Tasty.Tree = hyperbole.internal.tastyTree[value](expr, '{false})
 
 extension [value](using Quotes)(symbol: quotes.reflect.Symbol)
-  def semantics: TastySymbol = hyperbole.internal.tastySymbol(symbol)
+  def semantics: Tasty.Symbol = hyperbole.internal.tastySymbol(symbol)
 
 type TastyPalette = Palette:
   type Form = Srgb

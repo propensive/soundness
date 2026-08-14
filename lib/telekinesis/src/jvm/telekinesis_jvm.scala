@@ -41,7 +41,7 @@ import proscenium.compat.*
 
 import anticipation.*
 import coaxial.*
-import coaxial.socketBackends.virtualMachine
+import coaxial.socketBackends.virtualMachineSockets
 import contingency.*
 import telekinesis.*
 import distillate.*
@@ -150,7 +150,7 @@ package httpBackends:
   // The JVM transport, using `java.net.http`. Other platforms (e.g. Scala.js)
   // or implementations (e.g. an HTTP/2 client) supply their own `Http.Backend`
   // given instead.
-  given virtualMachine: TlsAcceptance => Http.Backend = new Http.Backend:
+  given virtualMachineHttp: TlsAcceptance => Http.Backend = new Http.Backend:
     def request
       ( url:     Text,
         method:  Http.Method,
@@ -171,8 +171,8 @@ package httpBackends:
   // are drained eagerly before a connection is surrendered or closed, so
   // responses do not stream yet, and `101` upgrades are not supported (the
   // upgraded stream would never end).
-  given native: (online: Online)
-  =>  (backend: SocketBackend, options: Every[SocketOption.Tcp], buffering: Buffering, tls: Tls)
+  given nativeHttp: (online: Online)
+  =>  (backend: Socket.Backend, options: Every[Socket.Option.Tcp], buffering: Buffering, tls: Tls)
   =>  Http.Backend = new Http.Backend:
 
     def request
@@ -222,7 +222,7 @@ private def repackage(response: Http.Response, data: Data): Http.Response =
 
   response.status(response.textHeaders, body)
 
-// The pooled, kept-alive plaintext HTTP/1.1 exchange (see `httpBackends.native`).
+// The pooled, kept-alive plaintext HTTP/1.1 exchange (see `httpBackends.nativeHttp`).
 private def plaintextExchange
   ( host:    Host,
     tcpPort: Tcp.Port,
@@ -231,7 +231,7 @@ private def plaintextExchange
     method:  Http.Method,
     headers: List[Http.Header],
     body:    Spring[Data] )
-  ( using backend: SocketBackend, options: Every[SocketOption.Tcp], buffering: Buffering )
+  ( using backend: Socket.Backend, options: Every[Socket.Option.Tcp], buffering: Buffering )
   ( using Tactic[ConnectError] )
 :   Http.Response =
 
@@ -333,7 +333,7 @@ private def httpsExchange
     method:  Http.Method,
     headers: List[Http.Header],
     body:    Spring[Data] )
-  ( using online: Online, options: Every[SocketOption.Tcp], buffering: Buffering, tls: Tls )
+  ( using online: Online, options: Every[Socket.Option.Tcp], buffering: Buffering, tls: Tls )
   ( using Tactic[ConnectError] )
 :   Http.Response =
 

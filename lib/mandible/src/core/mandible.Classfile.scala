@@ -48,7 +48,7 @@ import turbulence.*
 import vacuous.*
 
 object Classfile:
-  // Classfile.Error → Classfile.Error
+  // ClassfileError → Classfile.Error
   case class Error()(using Diagnostics)
   extends fulminate.Error(293, 0)(m"there was an error reading the classfile")
 

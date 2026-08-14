@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export enigmatic.{Certificate, CertificateError, Distinguished, SignatureAlgorithm}
+export enigmatic.{Certificate, Distinguished, SignatureAlgorithm}

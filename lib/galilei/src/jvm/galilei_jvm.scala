@@ -48,7 +48,7 @@ import vacuous.*
 import IoError.{Operation, Reason}
 
 package filesystemBackends:
-  given virtualMachine: [plane: Filesystem] => FilesystemBackend on plane =
+  given virtualMachineFilesystem: [plane: Filesystem] => FilesystemBackend on plane =
     new FilesystemBackend:
       type Plane = plane
 
@@ -117,7 +117,7 @@ package filesystemBackends:
                   case  4096 => Fifo
                   case  8192 => CharDevice
                   case 24576 => BlockDevice
-                  case 49152 => Socket
+                  case 49152 => Sock
                   case _     => File
               catch case _: Exception => File
 

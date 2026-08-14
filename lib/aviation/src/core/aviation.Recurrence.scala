@@ -34,6 +34,7 @@ package aviation
 
 import anticipation.*
 import proscenium.compat.*
+import fulminate.*
 import rudiments.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
@@ -94,7 +95,7 @@ object Recurrence:
   // (e.g. `decode[Recurrence of Timestamp by (Timespan of Month.type)]`); the parsed duration is
   // tagged with it. A mismatched topic mis-reads the duration, so name the one the data uses.
   given decodable: [point: Decodable in Text, topic <: Radix]
-  =>  ( Tactic[RecurrenceError], Tactic[TimeError] )
+  =>  ( Tactic[Recurrence.Error], Tactic[Moment.Error], Tactic[Timespan.Error] )
   =>  (Recurrence of point by (Timespan of topic)) is Decodable in Text =
 
     text =>
@@ -106,14 +107,14 @@ object Recurrence:
 
               if repeats.starts(t"R") && digits.nonEmpty && digits.forall(_.isDigit)
               then digits.toInt
-              else abort(RecurrenceError(text))
+              else abort(Recurrence.Error(text))
 
           val span = period.as[Timespan].asInstanceOf[Timespan of topic]
 
           Recurrence(start.as[point], span, repetitions)
 
         case _ =>
-          abort(RecurrenceError(text))
+          abort(Recurrence.Error(text))
 
   // A `Recurrence` is `Recurrent`: its occurrences are `start`, `start + period`, … bounded by
   // `repetitions` if set, otherwise infinite. The `Addable` it needs is captured here, so generic
@@ -124,6 +125,10 @@ object Recurrence:
     sequence =>
       val all = Chain.iterate(sequence.start)(addable.add(_, sequence.period))
       sequence.repetitions.lay(all)(all.take(_))
+
+  // RecurrenceError → Recurrence.Error
+  case class Error(value: Text)(using Diagnostics)
+  extends fulminate.Error(m"the value $value is not a valid ISO 8601 repeating interval")
 
 trait Recurrence extends Topical, Operable:
   def start: Topic

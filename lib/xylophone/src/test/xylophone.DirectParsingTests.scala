@@ -334,8 +334,8 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
       . assert(_ == Set("/boss[1]"))
 
     suite(m"Malformed input"):
-      test(m"A mismatched close tag is a ParseError on the direct path too"):
-        capture[ParseError](t"<root><name>A</name><age>1</b></root>".read[PWorker in Xml])
+      test(m"A mismatched close tag is a Parse.Error on the direct path too"):
+        capture[Parse.Error](t"<root><name>A</name><age>1</b></root>".read[PWorker in Xml])
         . issue
       . assert: issue =>
           issue match
@@ -343,14 +343,14 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
             case _                                     => false
 
       test(m"A mismatched close tag inside a skipped element is still checked"):
-        capture[ParseError](t"<root><junk><a></b></junk></root>".read[PWorker in Xml]).issue
+        capture[Parse.Error](t"<root><junk><a></b></junk></root>".read[PWorker in Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.MismatchedTag(t"a", t"b") => true
             case _                                   => false
 
       test(m"An unclosed element is Incomplete on the direct path too"):
-        capture[ParseError](t"<root><name>A</name>".read[PWorker in Xml]).issue
+        capture[Parse.Error](t"<root><name>A</name>".read[PWorker in Xml]).issue
       . assert: issue =>
           issue match
             case Xml.Issue.Incomplete(t"root") => true

@@ -65,27 +65,27 @@ package wasiApis:
 // of the connection, and the socket itself (kept so it can be shut down and dropped).
 
 private case class WasiExchange
-  ( input:  WitHandle of "input-stream",
-    output: WitHandle of "output-stream",
-    socket: WitHandle of "tcp-socket" )
+  ( input:  Wasm.Handle of "input-stream",
+    output: Wasm.Handle of "output-stream",
+    socket: Wasm.Handle of "tcp-socket" )
 
 package socketBackends:
-  // A `SocketBackend` over `wasi:sockets`. WASI sockets are capability-based (the host grants
+  // A `Socket.Backend` over `wasi:sockets`. WASI sockets are capability-based (the host grants
   // network access with `wasmtime run -S inherit-network`) and asynchronous: `start-connect` /
   // `accept` are driven to completion by blocking on the socket's `pollable`. Only TCP is
   // supported — WASI has no Unix-domain sockets (those operations raise), and UDP is not yet
   // wired. `inline`, so the `call`s expand at the downstream summoning site, where the WASI
   // facades are on the classpath.
   @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
-  inline given wasi: SocketBackend = new SocketBackend:
-    type ServerSocket = WitHandle of "tcp-socket"
+  inline given wasiSockets: Socket.Backend = new Socket.Backend:
+    type ServerSocket = Wasm.Handle of "tcp-socket"
     type DatagramSocket = Unit
     type Exchange = WasiExchange
     type Courier = Unit
 
     // The shared `wasi:sockets` default network, opened once per operation and dropped after use.
-    private def network(): WitHandle of "network" =
-      Foreign["instance-network", Wit].`instance-network`.call[WitHandle of "network"]()
+    private def network(): Wasm.Handle of "network" =
+      Foreign["instance-network", Wit].`instance-network`.call[Wasm.Handle of "network"]()
 
     // Builds an `ip-socket-address` from a dotted-quad host and port. Only IPv4 literals are
     // handled; a host that is not a literal address (needing DNS) raises.
@@ -96,21 +96,21 @@ package socketBackends:
         ( U8(ip.byte0.toByte.bits), U8(ip.byte1.toByte.bits),
           U8(ip.byte2.toByte.bits), U8(ip.byte3.toByte.bits) )
 
-      WitVariant["ip-socket-address", "ipv4"]((U16(port.toShort.bits), octets))
+      Wasm.Variant["ip-socket-address", "ipv4"]((U16(port.toShort.bits), octets))
 
     // Creates a fresh IPv4 TCP socket. The interface root is bound to a `val` (with the refinement
     // `Foreign.apply`'s deferred inline expansion would otherwise leave implicit) so the
     // `ip-address-family` argument conversion can resolve its ecosystem.
-    private def createSocket(): WitHandle of "tcp-socket" =
+    private def createSocket(): Wasm.Handle of "tcp-socket" =
       val factory =
         Foreign["tcp-create-socket", Wit].asInstanceOf[Foreign of "tcp-create-socket" from Wit]
 
-      factory.`create-tcp-socket`(WitCase["ip-address-family"]("ipv4"))
-      . call[WitHandle of "tcp-socket"]()
+      factory.`create-tcp-socket`(Wasm.Case["ip-address-family"]("ipv4"))
+      . call[Wasm.Handle of "tcp-socket"]()
 
     // Opens a TCP connection to `host:port` and drives `start-connect` to completion, blocking on
     // the socket's pollable. Returns the connection's stream halves and the socket handle.
-    private def connect(host: Text, port: Int)(using Tactic[ConnectionError]): WasiExchange =
+    private def connect(host: Text, port: Int)(using Tactic[Socket.Error]): WasiExchange =
       val net = network()
       val socketHandle = createSocket()
       val socket: Foreign of "tcp-socket" from Wit = socketHandle
@@ -120,24 +120,25 @@ package socketBackends:
         await(socketHandle)
 
         val (input, output) =
-          socket.`finish-connect`.call[(WitHandle of "input-stream", WitHandle of "output-stream")]()
+          socket.`finish-connect`
+          . call[(Wasm.Handle of "input-stream", Wasm.Handle of "output-stream")]()
 
         WasiExchange(input, output, socketHandle)
-      catch case error: WitError =>
+      catch case error: Wasm.Error =>
         socketHandle.dispose()
-        abort(ConnectionError(ConnectionError.Reason.Accept))
+        abort(Socket.Error(Socket.Error.Reason.Accept))
 
     // Blocks until the socket is ready for the next step of a `start-`/`finish-` operation.
-    private def await(socketHandle: WitHandle of "tcp-socket"): Unit =
+    private def await(socketHandle: Wasm.Handle of "tcp-socket"): Unit =
       val socket: Foreign of "tcp-socket" from Wit = socketHandle
-      val pollableHandle = socket.subscribe.call[WitHandle of "pollable"]()
+      val pollableHandle = socket.subscribe.call[Wasm.Handle of "pollable"]()
       val pollable: Foreign of "pollable" from Wit = pollableHandle
       pollable.block.call[Unit]()
       pollableHandle.dispose()
 
     // A pull endpoint over a WASI `input-stream`: each refill is one `blocking-read`, whose result
-    // becomes the window; the peer closing the stream surfaces as a `WitError`, which ends it.
-    private def readStream(inputHandle: WitHandle of "input-stream")(using buffering: Buffering)
+    // becomes the window; the peer closing the stream surfaces as a `Wasm.Error`, which ends it.
+    private def readStream(inputHandle: Wasm.Handle of "input-stream")(using buffering: Buffering)
     :   (Stream[Data] over Credit)^{caps.any} =
 
       new Stream[Data]:
@@ -170,7 +171,7 @@ package socketBackends:
                 start0 = 0
                 limit0 = chunk.length
                 if limit0 == 0 then refill(demand) else limit0
-              catch case error: WitError =>
+              catch case error: Wasm.Error =>
                 ended = true
                 Unset
 
@@ -178,7 +179,9 @@ package socketBackends:
     // region. A hand-rolled drain loop rather than `sweep`: this body is pickled into the
     // enclosing inline given and re-typechecked in wasm guests, whose flag set cannot
     // elaborate `sweep`'s dependent-typed Region lambda.
-    private def drain(outputHandle: WitHandle of "output-stream", input: (Stream[Data] over Credit)^)
+    private def drain
+      ( outputHandle: Wasm.Handle of "output-stream",
+        input:        (Stream[Data] over Credit)^ )
     :   Unit =
 
       val stream: Foreign of "output-stream" from Wit = outputHandle
@@ -208,8 +211,8 @@ package socketBackends:
         exchange.socket.dispose()
 
     //── Stream server (TCP; Unix-domain unsupported) ─────────────────────────────────────────────
-    def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
-    :   WitHandle of "tcp-socket" =
+    def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
+    :   Wasm.Handle of "tcp-socket" =
 
       unsafely:
         val net = network()
@@ -221,10 +224,12 @@ package socketBackends:
         socket.`finish-listen`.call[Unit]()
         socketHandle
 
-    def listenDomain(address: DomainSocket, options: List[SocketOption]): WitHandle of "tcp-socket" =
-      unsafely(abort(ConnectionError(ConnectionError.Reason.Accept)))
+    def listenDomain(address: DomainSocket, options: List[Socket.Option])
+    :   Wasm.Handle of "tcp-socket" =
 
-    def accept(socketHandle: WitHandle of "tcp-socket"): Duplex raises ConnectionError =
+      unsafely(abort(Socket.Error(Socket.Error.Reason.Accept)))
+
+    def accept(socketHandle: Wasm.Handle of "tcp-socket"): Duplex raises Socket.Error =
       val socket: Foreign of "tcp-socket" from Wit = socketHandle
 
       try
@@ -232,38 +237,40 @@ package socketBackends:
 
         val (client, input, output) =
           socket.accept
-          . call[(WitHandle of "tcp-socket", WitHandle of "input-stream", WitHandle of "output-stream")]()
+          . call[( Wasm.Handle of "tcp-socket",
+                   Wasm.Handle of "input-stream",
+                   Wasm.Handle of "output-stream" )]()
 
         duplexOf(WasiExchange(input, output, client))
-      catch case error: WitError => abort(ConnectionError(ConnectionError.Reason.Accept))
+      catch case error: Wasm.Error => abort(Socket.Error(Socket.Error.Reason.Accept))
 
-    def shutdown(socketHandle: WitHandle of "tcp-socket"): Unit = socketHandle.dispose()
+    def shutdown(socketHandle: Wasm.Handle of "tcp-socket"): Unit = socketHandle.dispose()
 
     //── Datagram server (unsupported on WASI for now) ────────────────────────────────────────────
-    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
+    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option]): Unit =
       ()
 
-    def receive(socket: Unit): Packet raises ConnectionError =
-      abort(ConnectionError(ConnectionError.Reason.Accept))
+    def receive(socket: Unit): Packet raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Accept))
 
     def reply(socket: Unit, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
-    :   Unit raises ConnectionError =
-      abort(ConnectionError(ConnectionError.Reason.Transmit))
+    :   Unit raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def unbind(socket: Unit): Unit = ()
 
     //── Request/response exchange (TCP; Unix-domain unsupported) ──────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
     :   WasiExchange =
       unsafely(connect(endpoint.remote, endpoint.port.number))
 
-    def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
+    def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
     :   WasiExchange =
       unsafely(connect(t"127.0.0.1", port.number))
 
-    def dialDomain(address: DomainSocket, options: List[SocketOption]): WasiExchange =
-      unsafely(abort(ConnectionError(ConnectionError.Reason.Accept)))
+    def dialDomain(address: DomainSocket, options: List[Socket.Option]): WasiExchange =
+      unsafely(abort(Socket.Error(Socket.Error.Reason.Accept)))
 
     def request(exchange: WasiExchange, consume input: (Stream[Data] over Credit)^): Unit =
       drain(exchange.output, input)
@@ -280,20 +287,20 @@ package socketBackends:
 
     //── Persistent duplex client (TCP; Unix-domain unsupported) ───────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
     :   Duplex =
       duplexOf(unsafely(connect(endpoint.remote, endpoint.port.number)))
 
-    def duplexDomain(address: DomainSocket, options: List[SocketOption]): Duplex =
-      duplexOf(unsafely(abort(ConnectionError(ConnectionError.Reason.Accept))))
+    def duplexDomain(address: DomainSocket, options: List[Socket.Option]): Duplex =
+      duplexOf(unsafely(abort(Socket.Error(Socket.Error.Reason.Accept))))
 
     //── Fire-and-forget datagram courier (unsupported on WASI for now) ────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
     :   Unit =
       ()
 
-    def routeUdpPort(port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
+    def routeUdpPort(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option]): Unit =
       ()
 
     def dispatch(courier: Unit, consume input: (Stream[Data] over Credit)^): Unit = ()

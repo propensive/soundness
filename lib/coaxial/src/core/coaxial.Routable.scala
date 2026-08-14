@@ -41,7 +41,7 @@ import zephyrine.*
 import vacuous.*
 
 object Routable:
-  given udpEndpoint: (backend: SocketBackend, options: Every[SocketOption.Udp])
+  given udpEndpoint: (backend: Socket.Backend, options: Every[Socket.Option.Udp])
   =>  Endpoint[Udp.Port] is Routable:
     type Connection = backend.Courier
 
@@ -51,7 +51,7 @@ object Routable:
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       backend.dispatch(connection, input)
 
-  given udpPort: (backend: SocketBackend, options: Every[SocketOption.Udp]) => Udp.Port is Routable:
+  given udpPort: (backend: Socket.Backend, options: Every[Socket.Option.Udp]) => Udp.Port is Routable:
     type Connection = backend.Courier
 
     def connect(port: Udp.Port, interface: Optional[MacAddress]): Connection =

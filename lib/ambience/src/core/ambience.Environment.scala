@@ -60,7 +60,7 @@ object Environment extends Dynamic:
       // The error message reads only the reader's name; no aliased writer.
       scala.caps.unsafe.unsafeAssumeSeparate(abort(Environment.Error(reader.defaultName)))
 
-  // Environment.Error → Environment.Error
+  // EnvironmentError → Environment.Error
   case class Error(variable: Text)(using Diagnostics)
   extends fulminate.Error(869, 0)(m"the environment variable ${variable} was not defined")
 

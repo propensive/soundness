@@ -51,7 +51,7 @@ object Authority:
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host.show}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
   given decodable: (hostnameTactic: Tactic[Hostname.Error])
-  =>  (ipTactic: Tactic[IpAddressError])
+  =>  (ipTactic: Tactic[IpAddress.Error])
   =>  (urlTactic: Tactic[Url.Error])
   =>  ((Authority is Decodable in Text)^{hostnameTactic, ipTactic, urlTactic}) =
     parse(_)
@@ -60,7 +60,7 @@ object Authority:
   // result, so the nested `parsePort`/`parseHostPort` helpers may capture them; a `raises` chain
   // makes each a context-function result that an enclosing helper literal cannot capture under CC.
   private def parse(value: Text)
-      (using Tactic[Hostname.Error], Tactic[IpAddressError], Tactic[Url.Error])
+      (using Tactic[Hostname.Error], Tactic[IpAddress.Error], Tactic[Url.Error])
   :   Authority =
 
     import Url.Error.{Expectation, Reason}, Expectation.*, Reason.*

@@ -90,7 +90,7 @@ object Semver:
             safely(element.as[Long]).or(element)
 
           mitigate:
-            case NumberError(_, _, _) => Semver.Error(text, Semver.Error.Reason.BadFormat)
+            case Number.Error(_, _, _) => Semver.Error(text, Semver.Error.Reason.BadFormat)
 
           . protect:
               val major2 = major.as[Long]

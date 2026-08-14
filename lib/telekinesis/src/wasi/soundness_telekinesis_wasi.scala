@@ -35,7 +35,7 @@ package soundness
 export telekinesis.{WasiHttpApi}
 
 package httpBackends:
-  export telekinesis.httpBackends.wasi
+  export telekinesis.httpBackends.wasiHttp
 
 package wasiApis:
   export telekinesis.wasiApis.wasiHttpApi

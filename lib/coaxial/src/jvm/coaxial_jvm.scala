@@ -54,7 +54,7 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-// The `java.net`/`java.nio.channels` implementation of `SocketBackend`, split out of `coaxial.core`
+// The `java.net`/`java.nio.channels` implementation of `Socket.Backend`, split out of `coaxial.core`
 // so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI) supply their
 // own backend. Each handle type is a small ADT that preserves the exact Java representation each
 // role needs — a TCP server binds a stream `ServerSocket` (which honours `setSoTimeout`), a
@@ -75,7 +75,7 @@ private enum ClientExchange:
 private case class UdpCourier(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
 package socketBackends:
-  given virtualMachine: SocketBackend = new SocketBackend:
+  given virtualMachineSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = ServerBinding
     type DatagramSocket = jn.DatagramSocket
     type Exchange = ClientExchange
@@ -138,7 +138,7 @@ package socketBackends:
                 abort(StreamError(sent.b))
 
     //── Stream server (`Bindable` over TCP / Unix-domain) ──────────────────────────────────────
-    def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
+    def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
     :   ServerBinding =
 
       val address: Optional[jn.InetAddress] = interface.let(interfaceFor(_)).let(bindAddress(_))
@@ -149,7 +149,7 @@ package socketBackends:
       configure(socket, options)
       ServerBinding.Tcp(socket)
 
-    def listenDomain(address: DomainSocket, options: List[SocketOption]): ServerBinding =
+    def listenDomain(address: DomainSocket, options: List[Socket.Option]): ServerBinding =
       val socketAddress = jn.UnixDomainSocketAddress.of(address.address.s)
 
       val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
@@ -158,7 +158,7 @@ package socketBackends:
       channel.bind(socketAddress)
       ServerBinding.Domain(channel)
 
-    def accept(socket: ServerBinding): Duplex raises ConnectionError = socket match
+    def accept(socket: ServerBinding): Duplex raises Socket.Error = socket match
       case ServerBinding.Tcp(server) =>
         try
           val client = server.accept().nn
@@ -166,18 +166,18 @@ package socketBackends:
           streamsDuplex(client.getInputStream.nn, client.getOutputStream.nn): () =>
             client.close()
 
-        catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
+        catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
 
       case ServerBinding.Domain(channel) =>
         try channelDuplex(channel.accept().nn)
-        catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
+        catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
 
     def shutdown(socket: ServerBinding): Unit = socket match
       case ServerBinding.Tcp(server)     => server.close()
       case ServerBinding.Domain(channel) => channel.close()
 
     //── Datagram server (`Bindable` over UDP) ──────────────────────────────────────────────────
-    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption])
+    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
     :   jn.DatagramSocket =
 
       val socket = jn.DatagramSocket(port.number)
@@ -188,12 +188,12 @@ package socketBackends:
 
       socket
 
-    def receive(socket: jn.DatagramSocket): Packet raises ConnectionError =
+    def receive(socket: jn.DatagramSocket): Packet raises Socket.Error =
       val array = new scala.Array[Byte](1472)
       val packet = jn.DatagramPacket(array, 1472)
 
       try socket.receive(packet)
-      catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
+      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
 
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
 
@@ -215,7 +215,7 @@ package socketBackends:
           Port.unsafe[Udp](address.getPort) )
 
     def reply(socket: jn.DatagramSocket, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
-    :   Unit raises ConnectionError =
+    :   Unit raises Socket.Error =
 
       val ip: jn.InetAddress = sender.absolve match
         case ip: (Ipv4 @unchecked) =>
@@ -247,13 +247,13 @@ package socketBackends:
       val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
 
       try socket.send(packet)
-      catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
+      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def unbind(socket: jn.DatagramSocket): Unit = socket.close()
 
     //── Request/response exchange (`Serviceable`) ──────────────────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
     :   ClientExchange =
 
       val socket =
@@ -265,7 +265,7 @@ package socketBackends:
       configure(socket, options)
       ClientExchange.Tcp(socket)
 
-    def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[SocketOption])
+    def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
     :   ClientExchange =
 
       val socket =
@@ -277,7 +277,7 @@ package socketBackends:
       configure(socket, options)
       ClientExchange.Tcp(socket)
 
-    def dialDomain(address: DomainSocket, options: List[SocketOption]): ClientExchange =
+    def dialDomain(address: DomainSocket, options: List[Socket.Option]): ClientExchange =
       val socketAddress = jn.UnixDomainSocketAddress.of(jnf.Path.of(address.address.s))
       val channel = jnc.SocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
       configure(channel, options)
@@ -324,7 +324,7 @@ package socketBackends:
 
     //── Persistent duplex client (`Connectable`) ───────────────────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
     :   Duplex =
 
       val address = jn.InetSocketAddress(endpoint.remote.s, endpoint.port.number)
@@ -338,7 +338,7 @@ package socketBackends:
       channel.connect(address)
       channelDuplex(channel)
 
-    def duplexDomain(address: DomainSocket, options: List[SocketOption]): Duplex =
+    def duplexDomain(address: DomainSocket, options: List[Socket.Option]): Duplex =
       val socketAddress = jn.UnixDomainSocketAddress.of(jnf.Path.of(address.address.s))
       val channel = jnc.SocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
       channel.configureBlocking(true)
@@ -348,7 +348,7 @@ package socketBackends:
 
     //── Fire-and-forget datagram courier (`Routable`) ──────────────────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[SocketOption] )
+      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
     :   UdpCourier =
 
       val address = jn.InetAddress.getByName(endpoint.remote.s).nn
@@ -361,7 +361,7 @@ package socketBackends:
       UdpCourier(address, endpoint.port.number, socket)
 
     def routeUdpPort
-      ( port: Udp.Port, interface: Optional[MacAddress], options: List[SocketOption] )
+      ( port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option] )
     :   UdpCourier =
 
       val socket = jn.DatagramSocket()
@@ -380,7 +380,7 @@ package socketBackends:
 
       courier.socket.send(packet)
 
-// Applies `SocketOption`s to freshly-constructed sockets and resolves a `MacAddress` to a network
+// Applies `Socket.Option`s to freshly-constructed sockets and resolves a `MacAddress` to a network
 // interface. The Java socket kinds share no common Scala interface for `setOption`/`setSoTimeout`,
 // so each is adapted to a small `Configurable` and the option-mapping is written once. Options a
 // particular socket does not support are silently skipped (guarded by `supportedOptions`), which
@@ -394,23 +394,23 @@ private[coaxial] trait Configurable:
   def set[value](socketOption: jn.SocketOption[value], value: value): Unit =
     if supported.contains(socketOption) then option(socketOption, value)
 
-private[coaxial] def applyOptions(options: List[SocketOption])(target: Configurable): Unit =
+private[coaxial] def applyOptions(options: List[Socket.Option])(target: Configurable): Unit =
   import jn.StandardSocketOptions.*
   val yes: java.lang.Boolean = Boolean.box(true)
 
   options.each:
-    case SocketOption.ReuseAddress          => target.set(SO_REUSEADDR.nn, yes)
-    case SocketOption.ReusePort             => target.set(SO_REUSEPORT.nn, yes)
-    case SocketOption.NoDelay               => target.set(TCP_NODELAY.nn, yes)
-    case SocketOption.KeepAlive             => target.set(SO_KEEPALIVE.nn, yes)
-    case SocketOption.Broadcast             => target.set(SO_BROADCAST.nn, yes)
-    case SocketOption.ReceiveBuffer(n)      => target.set(SO_RCVBUF.nn, Int.box(n))
-    case SocketOption.SendBuffer(n)         => target.set(SO_SNDBUF.nn, Int.box(n))
-    case SocketOption.TrafficClass(n)       => target.set(IP_TOS.nn, Int.box(n))
-    case SocketOption.Linger(seconds)       => target.set(SO_LINGER.nn, Int.box(seconds.or(-1)))
-    case SocketOption.Timeout(milliseconds) => target.soTimeout(milliseconds)
+    case Socket.Option.ReuseAddress          => target.set(SO_REUSEADDR.nn, yes)
+    case Socket.Option.ReusePort             => target.set(SO_REUSEPORT.nn, yes)
+    case Socket.Option.NoDelay               => target.set(TCP_NODELAY.nn, yes)
+    case Socket.Option.KeepAlive             => target.set(SO_KEEPALIVE.nn, yes)
+    case Socket.Option.Broadcast             => target.set(SO_BROADCAST.nn, yes)
+    case Socket.Option.ReceiveBuffer(n)      => target.set(SO_RCVBUF.nn, Int.box(n))
+    case Socket.Option.SendBuffer(n)         => target.set(SO_SNDBUF.nn, Int.box(n))
+    case Socket.Option.TrafficClass(n)       => target.set(IP_TOS.nn, Int.box(n))
+    case Socket.Option.Linger(seconds)       => target.set(SO_LINGER.nn, Int.box(seconds.or(-1)))
+    case Socket.Option.Timeout(milliseconds) => target.soTimeout(milliseconds)
 
-private[coaxial] def configure(channel: jnc.NetworkChannel, options: List[SocketOption]): Unit =
+private[coaxial] def configure(channel: jnc.NetworkChannel, options: List[Socket.Option]): Unit =
   applyOptions(options):
     new Configurable:
       def supported: ju.Set[jn.SocketOption[?]] = channel.supportedOptions.nn
@@ -419,7 +419,7 @@ private[coaxial] def configure(channel: jnc.NetworkChannel, options: List[Socket
       def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
         channel.setOption(socketOption, value)
 
-private[coaxial] def configure(socket: jn.Socket, options: List[SocketOption]): Unit =
+private[coaxial] def configure(socket: jn.Socket, options: List[Socket.Option]): Unit =
   applyOptions(options):
     new Configurable:
       def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
@@ -428,7 +428,7 @@ private[coaxial] def configure(socket: jn.Socket, options: List[SocketOption]): 
       def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
         socket.setOption(socketOption, value)
 
-private[coaxial] def configure(socket: jn.ServerSocket, options: List[SocketOption]): Unit =
+private[coaxial] def configure(socket: jn.ServerSocket, options: List[Socket.Option]): Unit =
   applyOptions(options):
     new Configurable:
       def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
@@ -437,7 +437,7 @@ private[coaxial] def configure(socket: jn.ServerSocket, options: List[SocketOpti
       def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
         socket.setOption(socketOption, value)
 
-private[coaxial] def configure(socket: jn.DatagramSocket, options: List[SocketOption]): Unit =
+private[coaxial] def configure(socket: jn.DatagramSocket, options: List[Socket.Option]): Unit =
   applyOptions(options):
     new Configurable:
       def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn

@@ -180,7 +180,7 @@ object CheckFormat:
           case 'r'  => builder.append('\r'); cursor.advance(1)
           case '\\' => builder.append('\\'); cursor.advance(1)
           case '"'  => builder.append('"');  cursor.advance(1)
-          case '0'  => builder.append(' '); cursor.advance(1)
+          case '0'  => builder.append('\u0000'); cursor.advance(1)
           case 'x'  =>
             cursor.advance(1)
             val hex = cursor.takeWhile(c => isHexDigit(c))
@@ -263,7 +263,7 @@ object CheckFormat:
   private def isHexDigit(c: Char): Boolean = isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 
   private final class Cursor(val input: String, var position: Int):
-    def peek(): Char = if position < input.length then input.charAt(position) else ' '
+    def peek(): Char = if position < input.length then input.charAt(position) else '\u0000'
 
     def advance(n: Int): Unit = position += n
 

@@ -236,7 +236,7 @@ trait Json2 extends Json3:
   // does not (all pre-`Parsable` code), this resolves exactly as before.
   // Sealed like `Json.aggregable`; see the comment there.
   given aggregableDirect: [value: distillate.Decodable in Json]
-  =>  (tactic: Tactic[ParseError], jsonTactic: Tactic[Json.Error], tracking: PositionTracking)
+  =>  (tactic: Tactic[Parse.Error], jsonTactic: Tactic[Json.Error], tracking: PositionTracking)
   =>  ((value in Json) is Aggregable by Data) =
 
     caps.unsafe.unsafeAssumePure:
@@ -1305,7 +1305,7 @@ object Json extends Json2, Dynamic:
     def name: Text = "JSON"
 
     // Sealed per the codec-thunk pattern (see `Json.aggregable` and rep/DECISIONS.md).
-    given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
+    given parserAggregable: Tactic[Parse.Error] => Json.Ast is Aggregable by Data =
       caps.unsafe.unsafeAssumePure:
         new Aggregable:
           type Self = Json.Ast
@@ -1866,38 +1866,38 @@ object Json extends Json2, Dynamic:
     // `Raw` result is asserted into `Ast` directly (the unions are equal member for
     // member): passing it through `Ast.apply` freshens both unions' frozen-array
     // members to distinct `any.rd` roots that cannot flow into each other.
-    def parse(source: Data)(using mode: NumberMode): Json.Ast raises ParseError =
+    def parse(source: Data)(using mode: NumberMode): Json.Ast raises Parse.Error =
       Parser.parse(source, mode).asInstanceOf[Json.Ast]
 
-    def parse(source: Data, holes: Boolean)(using mode: NumberMode): Json.Ast raises ParseError =
+    def parse(source: Data, holes: Boolean)(using mode: NumberMode): Json.Ast raises Parse.Error =
       Parser.parse(source, holes, mode).asInstanceOf[Json.Ast]
 
-    def parse(input: Iterator[Data])(using mode: NumberMode): Json.Ast raises ParseError =
+    def parse(input: Iterator[Data])(using mode: NumberMode): Json.Ast raises Parse.Error =
       Parser.parse(input, mode).asInstanceOf[Json.Ast]
 
     def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
-    :   Json.Ast raises ParseError =
+    :   Json.Ast raises Parse.Error =
 
       Parser.parse(input, holes, mode).asInstanceOf[Json.Ast]
 
     def parseTracked(source: Data)(using mode: NumberMode)
-    :   (Json.Ast, Json.PositionIndex) raises ParseError =
+    :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
 
       Parser.parseTracked(source, mode)
 
     def parseTracked(input: Iterator[Data])(using mode: NumberMode)
-    :   (Json.Ast, Json.PositionIndex) raises ParseError =
+    :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
 
       Parser.parseTracked(input, mode)
 
     private[jacinta] def parse(consume input: (Stream[Data] over Credit)^)
-      ( using mode: NumberMode, tactic: Tactic[ParseError] )
+      ( using mode: NumberMode, tactic: Tactic[Parse.Error] )
     :   Json.Ast =
 
       Parser.parse(input, mode).asInstanceOf[Json.Ast]
 
     private[jacinta] def parseTracked(consume input: (Stream[Data] over Credit)^)
-      ( using mode: NumberMode, tactic: Tactic[ParseError] )
+      ( using mode: NumberMode, tactic: Tactic[Parse.Error] )
     :   (Json.Ast, Json.PositionIndex) =
 
       Parser.parseTracked(input, mode)
@@ -1912,15 +1912,15 @@ object Json extends Json2, Dynamic:
   // Defined on the companion directly (not as a `Json.type` extension) because
   // the companion's `Dynamic` parentage intercepts `Json.parseTracked(...)`
   // before extension-method resolution gets a chance.
-  def parseTracked(source: Data)(using NumberMode): Json raises ParseError =
+  def parseTracked(source: Data)(using NumberMode): Json raises Parse.Error =
     val (ast, index) = Json.Ast.parseTracked(source)
     new Json(ast, index)
 
-  def parseTracked(input: Iterator[Data])(using NumberMode): Json raises ParseError =
+  def parseTracked(input: Iterator[Data])(using NumberMode): Json raises Parse.Error =
     val (ast, index) = Json.Ast.parseTracked(input)
     new Json(ast, index)
 
-  def parseTracked(source: Text)(using NumberMode, CharEncoder): Json raises ParseError =
+  def parseTracked(source: Text)(using NumberMode, CharEncoder): Json raises Parse.Error =
     parseTracked(source.in[Data])
 
   // Parse a byte-chunk iterator into a `Json`, honouring the in-scope
@@ -1928,7 +1928,7 @@ object Json extends Json2, Dynamic:
   // positions are recorded and retained on the `Json` (locatable via
   // `Positionable`); when off, the throughput path is unchanged. This is the
   // single place the `read`/`load` givens branch on tracking.
-  private[jacinta] def readJson(input: Iterator[Data])(using Tactic[ParseError], PositionTracking)
+  private[jacinta] def readJson(input: Iterator[Data])(using Tactic[Parse.Error], PositionTracking)
   :   Json =
     summon[PositionTracking] match
       case PositionTracking.On =>
@@ -1945,7 +1945,7 @@ object Json extends Json2, Dynamic:
   // stream crosses to the consuming parser as a neutral reference — each accept
   // call delivers a stream that is used exactly once, by construction.
   private[jacinta] def readJson(input: (Stream[Data] over Credit)^)
-    ( using Tactic[ParseError], PositionTracking )
+    ( using Tactic[Parse.Error], PositionTracking )
   :   Json =
 
     val ref: AnyRef = input.asInstanceOf[AnyRef]
@@ -1967,7 +1967,7 @@ object Json extends Json2, Dynamic:
   // is the caller's value, not a `Json`).
   private def parseDirect[value]
     ( input: Iterator[Data], parsable: (value is Json.Parsable)^ )
-    ( using tactic: Tactic[ParseError], tracking: PositionTracking, mode: NumberMode )
+    ( using tactic: Tactic[Parse.Error], tracking: PositionTracking, mode: NumberMode )
   :   value =
 
     val parser = Parser.borrow()
@@ -1984,7 +1984,7 @@ object Json extends Json2, Dynamic:
   // no credit — the cursor reads the block in place.
   private def parseDirect[value]
     ( input: Data, parsable: (value is Json.Parsable)^ )
-    ( using tactic: Tactic[ParseError], tracking: PositionTracking, mode: NumberMode )
+    ( using tactic: Tactic[Parse.Error], tracking: PositionTracking, mode: NumberMode )
   :   value =
 
     val parser = Parser.borrow()
@@ -2001,7 +2001,7 @@ object Json extends Json2, Dynamic:
   // on the neutral-reference hop.
   private def parseDirect[value]
     ( input: (Stream[Data] over Credit)^, parsable: (value is Json.Parsable)^ )
-    ( using tactic: Tactic[ParseError], tracking: PositionTracking, mode: NumberMode )
+    ( using tactic: Tactic[Parse.Error], tracking: PositionTracking, mode: NumberMode )
   :   value =
 
     val ref: AnyRef = input.asInstanceOf[AnyRef]
@@ -2444,7 +2444,7 @@ object Json extends Json2, Dynamic:
   // rep/DECISIONS.md): the resolution-scoped tactic shares the instance's given-resolution
   // lifetime, and a capturing instance cannot be expressed via `new Aggregable` (its pure
   // base class forbids captured references in method bodies).
-  given aggregable: (tactic: Tactic[ParseError], tracking: PositionTracking)
+  given aggregable: (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  Json is Aggregable by Data =
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
@@ -2461,7 +2461,7 @@ object Json extends Json2, Dynamic:
   // resolves exactly as before. Sealed like `aggregable` above.
   given aggregableParsed: [value]
   =>  (parsable: (value is Json.Parsable)^)
-  =>  (tactic: Tactic[ParseError], tracking: PositionTracking)
+  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((value in Json) is Aggregable by Data) =
 
     caps.unsafe.unsafeAssumePure:
@@ -2486,7 +2486,7 @@ object Json extends Json2, Dynamic:
   // `aggregableParsed` above.
   given readableParsed: [value]
   =>  (parsable: (value is Json.Parsable)^)
-  =>  (tactic: Tactic[ParseError], tracking: PositionTracking)
+  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  (Data is Readable to (value in Json)) =
 
     caps.unsafe.unsafeAssumePure:
@@ -2508,12 +2508,12 @@ object Json extends Json2, Dynamic:
   // Laundered pure like the primitive codecs above; additionally, this instance is
   // summoned inside inline bodies that are expanded within staged quotes (superlunary's
   // `Stageable.json`), where a capturing instance cannot be pickled.
-  given decodable: (tactic: Tactic[ParseError])
+  given decodable: (tactic: Tactic[Parse.Error])
   =>  Json is distillate.Decodable in Text =
     caps.unsafe.unsafeAssumePure:
       text => Chain(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
 
-  given instantiable: (tactic: Tactic[ParseError])
+  given instantiable: (tactic: Tactic[Parse.Error])
   =>  Json is Instantiable across HttpRequests from Text =
     caps.unsafe.unsafeAssumePure:
       text => Chain(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
@@ -2621,14 +2621,14 @@ object Json extends Json2, Dynamic:
     // wrapped capabilities travel as neutral carriers (the `FrameReader`
     // pattern): the fields stay pure, and each accessor reasserts the type at
     // the rim — the audited point.
-    private[jacinta] def apply(parser: Parser^, tactic: Tactic[ParseError]): Json.Reader^ =
+    private[jacinta] def apply(parser: Parser^, tactic: Tactic[Parse.Error]): Json.Reader^ =
       new Json.Reader(parser.asInstanceOf[AnyRef], tactic.asInstanceOf[AnyRef])
 
   // The public, restricted rim of the JSON tokenizer, handed to `Json.Parsable`
   // instances so they can consume JSON tokens straight off the input without an
   // intermediate `Json.Ast`. Each method consumes exactly one token (or one
   // structural step), skipping any leading whitespace. The reader carries its
-  // own `Tactic[ParseError]`, so instance `parse` bodies need no error
+  // own `Tactic[Parse.Error]`, so instance `parse` bodies need no error
   // vocabulary: malformed input and mistyped values abort through the read
   // call's ambient tactic.
   //
@@ -2647,7 +2647,7 @@ object Json extends Json2, Dynamic:
     // this class's per-token forwarders (measured at ~3% of a parse).
     private[jacinta] def rawParser: AnyRef = parser0
     private[jacinta] def rawTactic: AnyRef = tactic0
-    private inline def tactic: Tactic[ParseError] = tactic0.asInstanceOf[Tactic[ParseError]]
+    private inline def tactic: Tactic[Parse.Error] = tactic0.asInstanceOf[Tactic[Parse.Error]]
 
     // ── Scalars: one JSON value each. Numbers coerce exactly as the
     // `Json.Ast` accessors do, so direct and AST reads yield equal values. ──

@@ -78,10 +78,10 @@ object ociEdges:
   private val incomingHandler = t"wasi:http/incoming-handler@0.2.0"
   private val proxy = t"wasi:http/proxy@0.2.0"
 
-  def apply()(using world: WitWorld): List[Edge] =
+  def apply()(using world: Wasi.World): List[Edge] =
     List(Edge(Wasi(Wasi.Version.Wasip2), OciImage, OciTool(world)))
 
-  private case class OciTool(world: WitWorld) extends Tool:
+  private case class OciTool(world: Wasi.World) extends Tool:
     type Settings = OciConfiguration
 
     def name: Text = t"oci"
@@ -93,7 +93,7 @@ object ociEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val component = input.product(OciImage)
@@ -102,10 +102,10 @@ object ociEdges:
   // The wrapping step itself: takes an already-linked component and writes the `oci-archive`.
   private def wrap
     ( form:      OciConfiguration,
-      world:     WitWorld,
+      world:     Wasi.World,
       component: Path on Linux,
       out:       Path on Linux )
-  :   Path on Linux logs LinkEvent raises LinkError =
+  :   Path on Linux logs LinkEvent raises Link.Error =
 
     val (imports, exports) = interfaces(world)
 
@@ -133,14 +133,14 @@ object ociEdges:
       archive
 
     catch case suc.NonFatal(error) =>
-      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+      abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))
 
   // The world's imports and exports, read from the `.wit` sources at the top of the WIT
   // directory. Only that top level is searched: `deps/` holds the packages the world draws on,
   // and none of them declares the world being linked. A world that cannot be found contributes
   // no interfaces rather than failing the link — the component is still valid, only less well
   // described.
-  private def interfaces(world: WitWorld): (List[Text], List[Text]) =
+  private def interfaces(world: Wasi.World): (List[Text], List[Text]) =
     val files = jnf.Paths.get(world.directory.encode.s).nn.toFile.nn.listFiles.nn
 
     def search(index: Int): Optional[WitDialect.World] =

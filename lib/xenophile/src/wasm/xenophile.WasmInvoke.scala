@@ -93,8 +93,8 @@ object WasmInvoke extends Materializer:
     //     raises an exception; an `Ok` becomes `()` or its recursively-decoded payload.
     //  -  A WIT `option<T>` (read as `T | none`) crosses as a `java.util.Optional` and becomes
     //     `Unset` or its recursively-decoded payload.
-    //  -  A named WIT type requested as a `WitHandle of topic` is a resource: its carrier is the
-    //     resource's facade class, and the raw handle is wrapped in a `WitHandle`.
+    //  -  A named WIT type requested as a `Wasm.Handle of topic` is a resource: its carrier is the
+    //     resource's facade class, and the raw handle is wrapped in a `Wasm.Handle`.
     //  -  A WIT `tuple<…>` (or a record, which shares its ABI) crosses as the scala-wasm `TupleN`
     //     of its recursively-derived element carriers and becomes the corresponding Scala tuple;
     //     a `list<T>` crosses as an `Array` of `T`'s carrier and becomes a `List`. The scala-wasm
@@ -121,11 +121,11 @@ object WasmInvoke extends Materializer:
       case _                                                   => Unset
 
     def isHandle(scala: TypeRepr): Boolean = scala.dealias match
-      case Refinement(base, "Topic", _) => base =:= TypeRepr.of[WitHandle]
+      case Refinement(base, "Topic", _) => base =:= TypeRepr.of[Wasm.Handle]
       case _                            => false
 
     def isCase(scala: TypeRepr): Boolean = scala.dealias match
-      case Refinement(base, "Topic", _) => base =:= TypeRepr.of[WitCase]
+      case Refinement(base, "Topic", _) => base =:= TypeRepr.of[Wasm.Case]
       case _                            => false
 
     def isTuple(scala: TypeRepr, arity: Int): Boolean = scala.dealias match
@@ -158,7 +158,7 @@ object WasmInvoke extends Materializer:
 
       val decode: Expr[Any] => Expr[Any] = call => scala.asType.absolve match
         case '[scala] =>
-          val handle = '{new WitHandle($call)}.asTerm
+          val handle = '{new Wasm.Handle($call)}.asTerm
           TypeApply(Select.unique(handle, "asInstanceOf"), List(TypeTree.of[scala])).asExprOf[Any]
 
       (facade.typeRef, decode)
@@ -183,13 +183,13 @@ object WasmInvoke extends Materializer:
 
             Select.unique(cast, "value").asExprOf[Any]
 
-          // An `Err` raises a `WitError` carrying the error value (e.g. an `error-code` case), so
-          // callers can recover which failure occurred (`WitError.name`) and translate it. The
+          // An `Err` raises a `Wasm.Error` carrying the error value (e.g. an `error-code` case), so
+          // callers can recover which failure occurred (`Wasm.Error.name`) and translate it. The
           // `canThrowAny` import supplies the `CanThrow` capability a checked `throw` needs in
           // the expansion.
           def raiseError(outcome: Expr[Any]): Expr[Nothing] =
             '{  import _root_.scala.unsafeExceptions.canThrowAny
-                throw new WitError(${payload(outcome, errType)})  }
+                throw new Wasm.Error(${payload(outcome, errType)})  }
 
           val decode: Expr[Any] => Expr[Any] =
             if scala =:= TypeRepr.of[Unit] then call =>
@@ -293,7 +293,7 @@ object WasmInvoke extends Materializer:
               case Foreign.Type.Named(name) if isHandle(scala) =>
                 handleDecode(name, scala)
 
-              // A variant (or enum) result requested as a `WitCase of topic`: the facade case
+              // A variant (or enum) result requested as a `Wasm.Case of topic`: the facade case
               // object arrives, and its lower-kebab-case name is recovered at runtime.
               // Payload-carrying cases lose their payload.
               case Foreign.Type.Named(name) if isCase(scala) =>
@@ -301,7 +301,7 @@ object WasmInvoke extends Materializer:
 
                 val decode: Expr[Any] => Expr[Any] = call => scala.asType.absolve match
                   case '[scala] =>
-                    val witCase = '{new WitCase(WitCase.caseName($call))}.asTerm
+                    val witCase = '{new Wasm.Case(Wasm.Case.caseName($call))}.asTerm
 
                     TypeApply(Select.unique(witCase, "asInstanceOf"), List(TypeTree.of[scala]))
                     . asExprOf[Any]
@@ -401,7 +401,7 @@ object WasmInvoke extends Materializer:
         halt(m"xenophile: the WIT type ${other.text} cannot cross a WIT boundary yet")
 
     // A resource method is imported under its Component Model name, `[method]resource.function`,
-    // and takes the resource's handle — the underlying value of the `WitHandle` receiver — as its
+    // and takes the resource's handle — the underlying value of the `Wasm.Handle` receiver — as its
     // first (borrow) parameter. A constructor or static function is addressed through the resource
     // (`[constructor]resource`, `[static]resource.function`) but takes no receiver.
     val importName: Text = prototype.resource.lay(function): resource =>
@@ -416,11 +416,11 @@ object WasmInvoke extends Materializer:
         val facade = facadeOf(resource)
 
         // The receiver's handle is recovered at runtime from the `Foreign` value's expression — a
-        // converted `WitHandle` is an `Expression.Literal` wrapping it — so the receiver may be a
+        // converted `Wasm.Handle` is an `Expression.Literal` wrapping it — so the receiver may be a
         // bound `val`, not only an inline chain.
         val handle =
           '{  ${receiverNode.asExprOf[Foreign.Expression]} match
-                case Foreign.Expression.Literal(handle: WitHandle) =>
+                case Foreign.Expression.Literal(handle: Wasm.Handle) =>
                   handle.value
 
                 case _ =>
@@ -445,11 +445,11 @@ object WasmInvoke extends Materializer:
     // their module-class name, with a trailing `$` to strip.
     def caseNameOf(child: Symbol): Text = child.name.stripSuffix("$").tt.uncamel.kebab
 
-    // A payload-less `variant` case argument (a `WitCase of topic`): the facade case object,
+    // A payload-less `variant` case argument (a `Wasm.Case of topic`): the facade case object,
     // selected by name at runtime from the sealed facade trait's children.
     def caseArgument(topic: Text, value: Term): (TypeRepr, Term) =
       val facade = facadeOf(topic)
-      val selector = '{${value.asExprOf[Any]}.asInstanceOf[WitCase].name.s}.asTerm
+      val selector = '{${value.asExprOf[Any]}.asInstanceOf[Wasm.Case].name.s}.asTerm
 
       val caseDefs: List[CaseDef] = facade.children.flatMap: child =>
         if child.flags.is(Flags.Module) then
@@ -466,11 +466,12 @@ object WasmInvoke extends Materializer:
       (facade.typeRef, Match(selector, caseDefs :+ missing))
 
     // The base class a (possibly multiply-)refined type refines, and the constant string / aliased
-    // type a named refinement member is set to — used to read `WitVariant`'s `Topic`/`Case`/
+    // type a named refinement member is set to — used to read `Wasm.Variant`'s `Topic`/`Case`/
     // `Payload` phantom members regardless of the order the compiler nests them.
     // `.dealias` at each step because the phantom members are carried through `of` — a type alias
-    // (`X of topic` = `of[X, topic]` = `X { type Topic = topic }`) — so a `WitVariant` argument
-    // reads as `of[WitVariant[payload], topic] { type Case = … }`, whose base and `Topic` member are
+    // (`X of topic` = `of[X, topic]` = `X { type Topic = topic }`) — so a `Wasm.Variant` argument
+    // reads as `of[Wasm.Variant[payload], topic] { type Case = … }`, whose base and `Topic`
+    // member are
     // hidden inside the unexpanded `of` until dealiased.
     def refinementBase(tpe: TypeRepr): TypeRepr = tpe.dealias match
       case Refinement(parent, _, _) => refinementBase(parent)
@@ -486,7 +487,7 @@ object WasmInvoke extends Materializer:
       case _ =>
         Unset
 
-    val witVariantClass = Symbol.requiredClass("xenophile.WitVariant")
+    val witVariantClass = Symbol.requiredClass("xenophile.Wasm.Variant")
     val witRecordAnnotation = Symbol.requiredClass("scala.scalajs.wit.annotation.WitRecord")
 
     // Constructs a scala-wasm facade value of WIT type `target` from a Scala `value`, recursing
@@ -530,9 +531,9 @@ object WasmInvoke extends Materializer:
             val encoded = '{$encodable.encoded(${value.asExprOf[leaf]}).value}.asTerm
             TypeApply(Select.unique(encoded, "asInstanceOf"), List(Inferred(target)))
 
-    // A payload-carrying `variant` case argument (a `WitVariant`): the facade case class named by
+    // A payload-carrying `variant` case argument (a `Wasm.Variant`): the facade case class named by
     // `caseName` (fixed at compile time, so no runtime dispatch), constructed with its record/
-    // tuple/primitive payload built from the `WitVariant`'s payload — cast back to the Scala type
+    // tuple/primitive payload built from the `Wasm.Variant`'s payload — cast back to the Scala type
     // `payloadType` the phantom `Payload` carried — and encoded element-wise.
     def variantArgument(topic: Text, caseName: Text, payloadType: TypeRepr, value: Term)
     :   (TypeRepr, Term) =
@@ -550,7 +551,7 @@ object WasmInvoke extends Materializer:
       val castPayload =
         TypeApply
           ( Select.unique
-              ( '{${value.asExprOf[Any]}.asInstanceOf[WitVariant[Any]].payload}.asTerm,
+              ( '{${value.asExprOf[Any]}.asInstanceOf[Wasm.Variant[Any]].payload}.asTerm,
                 "asInstanceOf" ),
             List(Inferred(payloadType)) )
 
@@ -565,25 +566,26 @@ object WasmInvoke extends Materializer:
         case tpe if tpe =:= TypeRepr.of[Unset] =>
           (optionClass.typeRef, '{java.util.Optional.empty[Any]().nn}.asTerm, true)
 
-        // A resource argument (a `WitHandle of topic`, e.g. the `fields` passed to
+        // A resource argument (a `Wasm.Handle of topic`, e.g. the `fields` passed to
         // `outgoing-request`'s constructor) crosses as its facade class, unwrapped to the raw
         // handle.
         case Refinement(base, "Topic", TypeBounds(_, ConstantType(StringConstant(topic))))
-        if base =:= TypeRepr.of[WitHandle] =>
-          val encoded = '{${value.asExprOf[Any]}.asInstanceOf[WitHandle].value}.asTerm
+        if base =:= TypeRepr.of[Wasm.Handle] =>
+          val encoded = '{${value.asExprOf[Any]}.asInstanceOf[Wasm.Handle].value}.asTerm
           (facadeOf(topic.tt).typeRef, encoded, false)
 
         case Refinement(base, "Topic", TypeBounds(_, ConstantType(StringConstant(topic))))
-        if base =:= TypeRepr.of[WitCase] =>
+        if base =:= TypeRepr.of[Wasm.Case] =>
           val (carrier, encoded) = caseArgument(topic.tt, value)
           (carrier, encoded, false)
 
-        // A payload-carrying `variant` case argument (a `WitVariant`, e.g. the `ip-socket-address`
+        // A payload-carrying `variant` case argument (a `Wasm.Variant`, e.g. the
+        // `ip-socket-address`
         // passed to `start-connect`): read its `Topic`/`Case` phantom members and payload type
         // argument, and build the named facade case around its payload.
         case tpe if refinementBase(tpe).typeSymbol == witVariantClass =>
-          val topic = refinedString(tpe, "Topic").or(halt(m"xenophile: WitVariant has no Topic"))
-          val caseName = refinedString(tpe, "Case").or(halt(m"xenophile: WitVariant has no Case"))
+          val topic = refinedString(tpe, "Topic").or(halt(m"xenophile: Wasm.Variant has no Topic"))
+          val caseName = refinedString(tpe, "Case").or(halt(m"xenophile: Wasm.Variant has no Case"))
           val payloadType = refinementBase(tpe).typeArgs.head
           val (carrier, encoded) = variantArgument(topic, caseName, payloadType, value)
           (carrier, encoded, false)
@@ -622,7 +624,7 @@ object WasmInvoke extends Materializer:
       val (carrier, encoded, alreadyOption) = parameterTuple(parameter) match
         // A `tuple<…>` (or a record, whose ABI it shares) parameter with a matching Scala tuple:
         // element-wise recursion, constructed as the scala-wasm `TupleN` of the element carriers —
-        // the mirror of the decode path. Nested tuples, `option<T>` and `WitCase` elements are
+        // the mirror of the decode path. Nested tuples, `option<T>` and `Wasm.Case` elements are
         // handled by the per-element recursion into `encodedArgument`.
         case elements: List[Foreign.Type] if isTuple(value.tpe.widen.dealias, elements.length) =>
           // Explicit loop, not a mapping lambda: minted quote capabilities must not leak into a
@@ -707,7 +709,7 @@ object WasmInvoke extends Materializer:
 
   // Releases a WIT resource: emits the `[resource-drop]<resource>` Component Model import for the
   // handle's resource type, passing the handle as its only parameter.
-  def dispose(self: Expr[WitHandle])(using quotes: Quotes): Expr[Unit] =
+  def dispose(self: Expr[Wasm.Handle])(using quotes: Quotes): Expr[Unit] =
     import quotes.reflect.*
 
     val topic: Text = self.asTerm.tpe.widen.dealias match

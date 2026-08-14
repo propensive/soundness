@@ -50,7 +50,7 @@ import vacuous.*
 
 import Git.Error.Reason.*
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object Worktree:
   def apply[abstractable: Abstractable across Paths to Text](path: abstractable)

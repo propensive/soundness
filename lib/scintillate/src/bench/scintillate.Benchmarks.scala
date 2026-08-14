@@ -84,7 +84,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
 
   lazy val okResponse: Http.Response = Http.Response(Http.Ok)(t"Hello, World!")
 
-  val handler: HttpConnection ?=> Http.Response = okResponse
+  val handler: Http.Connection ?=> Http.Response = okResponse
 
   // 1000 GET requests back-to-back, built once; each pipeline run wraps this in a
   // fresh (O(1)) `ByteArrayInputStream`, so the measurement excludes buffer setup.

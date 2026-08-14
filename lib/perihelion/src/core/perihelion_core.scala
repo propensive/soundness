@@ -39,7 +39,7 @@ import java.security.SecureRandom
 
 import anticipation.*
 import coaxial.*
-import coaxial.socketBackends.virtualMachine
+import coaxial.socketBackends.virtualMachineSockets
 import contingency.*
 import fulminate.Hazard
 import distillate.*
@@ -175,7 +175,7 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
 given wsClient: ( online:            Online,
                   monitor:           Monitor,
                   probate:           Probate,
-                  options:           Every[SocketOption.Tcp],
+                  options:           Every[Socket.Option.Tcp],
                   tls:               Tls,
                   websocketError:    Tactic[Websocket.Error],
                   httpResponseError: Tactic[Http.Response.Error],

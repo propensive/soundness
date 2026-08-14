@@ -94,7 +94,7 @@ object Http2Serve:
           // (+ DATA), driving the body block-by-block off its pull endpoint
           // exactly as the HTTP/1.1 `writeAll` does (never `memoize`, which a
           // transforming body such as a text encoder does not terminate under).
-          val respond: HttpConnection.Respond^ = new HttpConnection.Respond:
+          val respond: Http.Connection.Respond^ = new Http.Connection.Respond:
             def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
               // A `Trailer` header (RFC 7230 §4.4) names response headers to be
               // sent as HTTP/2 trailers — a trailing HEADERS block after the body
@@ -136,7 +136,7 @@ object Http2Serve:
                   if trailing then sendTrailers()
                   else connection0.sendData(streamId, Array.empty[Byte], endStream = true)
 
-          val connection1 = new HttpConnection(request, true, port, respond)
+          val connection1 = new Http.Connection(request, true, port, respond)
           connection1.respond(handler1(connection1.asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
 
   // Open the HTTP/2 connection over the socket's streams and run its session
@@ -187,11 +187,11 @@ object Http2Serve:
     // The session retains only the per-connection state; no aliased writer.
     val session: Http2Session^ = scala.caps.unsafe.unsafeAssumeSeparate:
      new Http2Session:
-      def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection}): Unit =
+      def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection}): Unit =
         // Rim the context-function handler to a neutral `AnyRef => AnyRef`, as
         // the accept loop does for the per-request path.
         val handler0: AnyRef =
-          ((ref: AnyRef) => handler(using ref.asInstanceOf[HttpConnection])).asInstanceOf[AnyRef]
+          ((ref: AnyRef) => handler(using ref.asInstanceOf[Http.Connection])).asInstanceOf[AnyRef]
 
         scala.caps.unsafe.unsafeAssumeSeparate:
           runStreams(connection, handler0, port)(using summon, probate)
@@ -204,7 +204,7 @@ object Http2Serve:
 // the enclosing scope set up. That state is confined by capture checking to the
 // connection, so it cannot leak to another client's connection.
 trait Http2Session:
-  def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection}): Unit
+  def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection}): Unit
 
 // A `Duplex` over a socket's raw byte streams: reads frame the inbound endpoint,
 // each `send` writes the whole chunk and flushes (the writer serialises one frame

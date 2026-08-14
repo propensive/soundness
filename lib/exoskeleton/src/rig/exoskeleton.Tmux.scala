@@ -39,13 +39,13 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 
 object Tmux:
-  def enter(keypresses: (Text | Char)*)(using tmux: Tmux): Unit raises TmuxError =
+  def enter(keypresses: (Text | Char)*)(using tmux: Tmux): Unit raises Tmux.Error =
     given WorkingDirectory = tmux.workingDirectory
 
     import logging.silentLogging
 
     mitigate:
-      case guillotine.Exec.Error(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
+      case guillotine.Exec.Error(_, _, _) => Tmux.Error(Tmux.Error.Reason.ExecFailed)
 
     . protect:
         keypresses.foreach:
@@ -59,22 +59,22 @@ object Tmux:
   // controls. Note `Tmux.width`/`height` record the CREATION size; after a resize,
   // read the live size from tmux itself if it matters.
   def resize(width: Int, height: Int)(using tmux: Tmux)(using WorkingDirectory)
-  :   Unit raises TmuxError =
+  :   Unit raises Tmux.Error =
 
     import logging.silentLogging
 
     mitigate:
-      case guillotine.Exec.Error(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
+      case guillotine.Exec.Error(_, _, _) => Tmux.Error(Tmux.Error.Reason.ExecFailed)
 
     . protect:
         sh"tmux resize-window -t ${tmux.id} -x $width -y $height".exec[Unit]()
 
-  def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot raises TmuxError =
+  def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot raises Tmux.Error =
     import logging.silentLogging
 
     mitigate:
-      case guillotine.Exec.Error(_, _, _)   => TmuxError(TmuxError.Reason.SessionDied)
-      case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
+      case guillotine.Exec.Error(_, _, _)   => Tmux.Error(Tmux.Error.Reason.SessionDied)
+      case Number.Error(_, _, _) => Tmux.Error(Tmux.Error.Reason.SessionDied)
 
     . protect:
         val content = Array.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().stdlib)
@@ -88,7 +88,7 @@ object Tmux:
   // Explicit `using` evidence instead of `raises` sugar: a context-function result would
   // hide the parameters, which the separation checker rejects.
   def attend(using tmux: Tmux)[result](block: => result)
-    ( using Monitor, WorkingDirectory, Tactic[TmuxError] )
+    ( using Monitor, WorkingDirectory, Tactic[Tmux.Error] )
   :   result =
 
     val init = screenshot().screen
@@ -100,7 +100,7 @@ object Tmux:
 
 
   def completions(text: Text)(using tool: Enclave.Tool, tmux: Tmux)
-    ( using Monitor, WorkingDirectory, Tactic[TmuxError] )
+    ( using Monitor, WorkingDirectory, Tactic[Tmux.Error] )
   :   Text =
 
     tmux.shell match
@@ -134,7 +134,7 @@ object Tmux:
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
     ( using tool: Enclave.Tool, tmux: Tmux )
-    ( using Monitor, WorkingDirectory, Tactic[TmuxError] )
+    ( using Monitor, WorkingDirectory, Tactic[Tmux.Error] )
   :   Text =
 
     enter(tool.command)
@@ -169,20 +169,21 @@ object Tmux:
 
     screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
 
+  // TmuxError → Tmux.Error
+  object Error:
+    enum Reason(val number: Int):
+      case ShellNotInstalled(shell: Text) extends Reason(1)
+      case SessionDied                    extends Reason(2)
+      case ExecFailed                     extends Reason(3)
 
-object TmuxError:
-  enum Reason(val number: Int):
-    case ShellNotInstalled(shell: Text) extends Reason(1)
-    case SessionDied                    extends Reason(2)
-    case ExecFailed                     extends Reason(3)
+    given communicable: Reason is Communicable =
+      case Reason.ShellNotInstalled(shell) => m"the shell binary `$shell` is not installed"
+      case Reason.SessionDied              => m"the tmux session terminated unexpectedly"
+      case Reason.ExecFailed               => m"could not execute tmux"
 
-  given Reason is Communicable =
-    case Reason.ShellNotInstalled(shell) => m"the shell binary `$shell` is not installed"
-    case Reason.SessionDied              => m"the tmux session terminated unexpectedly"
-    case Reason.ExecFailed               => m"could not execute tmux"
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(271, reason.number)(m"can't drive tmux: $reason")
 
-case class TmuxError(reason: TmuxError.Reason)(using Diagnostics)
-extends Error(271, reason.number)(m"can't drive tmux: $reason")
 
 // A `Tmux` is a *capability*: it identifies a live external tmux session whose lifetime is
 // the `tmux` block that creates it (killed after the block). `Exclusive` because a session

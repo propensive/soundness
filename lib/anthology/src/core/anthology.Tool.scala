@@ -56,5 +56,5 @@ trait Tool:
       entryPoints: List[EntryPoint],
       out:         Path on Linux )
     ( using Monitor, System, WorkingDirectory )
-    ( using Tactic[LinkError], (LinkEvent is Loggable)^ )
+    ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
   :   Deliverable

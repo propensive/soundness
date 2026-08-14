@@ -57,7 +57,7 @@ object Feed:
         if canRecord then scala.collection.immutable.List(Feed(info))
         else scala.collection.immutable.Nil
 
-  // Feed.Error → Feed.Error
+  // FeedError → Feed.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
       case Unavailable              extends Reason(1)

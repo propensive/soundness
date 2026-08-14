@@ -274,7 +274,7 @@ object Redraft:
 
     remaining
 
-  // Redraft.Error → Redraft.Error
+  // RedraftError → Redraft.Error
   object Error:
     object Reason:
       given communicable: Reason is Communicable =

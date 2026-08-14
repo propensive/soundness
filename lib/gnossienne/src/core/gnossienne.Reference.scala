@@ -37,6 +37,7 @@ import scala.annotation.*
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import prepositional.*
 
 object Reference:
@@ -54,6 +55,18 @@ object Reference:
     new Reference(operand):
       type Result = result
 
+  // ReferenceError → Reference.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case NotFound extends Reason(1)
+
+    given communicable: Reason is Communicable =
+      case Reason.NotFound => m"no target with that reference was found in the store"
+
+  case class Error(reference: Text, reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(519, reason.number)
+    ( m"the reference $reference could not be resolved because $reason" )
+
 trait Reference(private val rawKey: Any):
   type Result
 
@@ -61,5 +74,5 @@ trait Reference(private val rawKey: Any):
     rawKey.asInstanceOf[resolvable.Operand]
 
   def apply()(using resolvable: Result is Resolvable)
-  :   (Tactic[ReferenceError]^) ?->{this} Result =
+  :   (Tactic[Reference.Error]^) ?->{this} Result =
     resolvable.resolve(key.asInstanceOf[resolvable.Operand])

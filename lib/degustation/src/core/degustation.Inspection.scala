@@ -37,10 +37,11 @@ import scala.tasty.inspector as sti
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import vacuous.*
 
-import DegustationError.Reason
+import Inspection.Error.Reason
 
 // Drives the compiler's own TASTy unpickler — via the tasty-inspector wrapper — over a set of
 // `.tasty` files against a dependency classpath, and atomizes the API surface found there. The
@@ -49,7 +50,7 @@ import DegustationError.Reason
 object Inspection:
 
   def atomize(tastyFiles: List[Text], classpath: List[Text])
-  :   List[ScalaAtom] raises DegustationError =
+  :   List[ScalaAtom] raises Inspection.Error =
 
     var result: scala.List[ScalaAtom] = scala.Nil
     var failure: Optional[Text] = Unset
@@ -66,9 +67,24 @@ object Inspection:
           (tastyFiles.stdlib.map(_.s), scala.Nil, classpath.stdlib.map(_.s))(inspector)
 
       catch case error: Exception =>
-        abort(DegustationError(Reason.InspectionFailed(Text(error.getMessage.nn))))
+        abort(Inspection.Error(Reason.InspectionFailed(Text(error.getMessage.nn))))
 
-    failure.let: detail => abort(DegustationError(Reason.Unencodable(detail)))
-    if !ok then abort(DegustationError(Reason.InspectionFailed(t"the compiler reported errors")))
+    failure.let: detail => abort(Inspection.Error(Reason.Unencodable(detail)))
+    if !ok then abort(Inspection.Error(Reason.InspectionFailed(t"the compiler reported errors")))
 
     List.from(result)
+
+  // DegustationError → Inspection.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case InspectionFailed(detail: Text)  extends Reason(1)
+      case Unencodable(construct: Text)    extends Reason(2)
+      case DuplicateKey(key: Text)         extends Reason(3)
+
+    given communicable: Reason is Communicable =
+      case Reason.InspectionFailed(detail) => m"the TASTy could not be inspected: $detail"
+      case Reason.Unencodable(construct)   => m"no canonical encoding is defined for $construct"
+      case Reason.DuplicateKey(key)        => m"the key $key was produced twice"
+
+  case class Error(reason: Inspection.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(642, reason.number)(m"the Scala discipline failed because $reason")

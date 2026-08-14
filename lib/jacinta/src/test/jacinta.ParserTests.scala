@@ -54,7 +54,7 @@ import scala.compiletime.*
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistentParents.enabled
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object ParserTests extends Suite(m"Jacinta JSON parser tests"):
   def run(): Unit =
@@ -101,9 +101,9 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
     suite(m"Negative tests"):
       negativeCases.each: (name, data) =>
         test(Message(name.skip(5, Rtl))):
-          capture[ParseError](Json.Ast.parse(data))
+          capture[Parse.Error](Json.Ast.parse(data))
         .matches:
-          case ParseError(_, _, _) => true
+          case Parse.Error(_, _, _) => true
 
     suite(m"Number tests"):
       test(m"Parse 0e+1"):
@@ -263,43 +263,43 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         case other => other
 
       test(m"Hole as a top-level value"):
-        shape(Json.Ast.parse(bytes(t" "), holes = true))
+        shape(Json.Ast.parse(bytes(t"\u0000"), holes = true))
       . assert(_ == Unset)
 
       test(m"Hole as an array element"):
-        shape(Json.Ast.parse(bytes(t"[ ]"), holes = true))
+        shape(Json.Ast.parse(bytes(t"[\u0000]"), holes = true))
       . assert(_ == List(Unset))
 
       test(m"Hole as an object value"):
-        shape(Json.Ast.parse(bytes(t"""{"a":   }"""), holes = true))
+        shape(Json.Ast.parse(bytes(t"""{"a": \u0000 }"""), holes = true))
       . assert(_ == (List("a"), List(Unset)))
 
       test(m"Hole as an object rest, no other entries"):
-        shape(Json.Ast.parse(bytes(t"{ }"), holes = true))
+        shape(Json.Ast.parse(bytes(t"{\u0000}"), holes = true))
       . assert(_ == (List("\u0000"), List(Unset)))
 
       test(m"Hole as an object rest after literal entry"):
-        shape(Json.Ast.parse(bytes(t"""{"a": 1,   }"""), holes = true))
+        shape(Json.Ast.parse(bytes(t"""{"a": 1, \u0000 }"""), holes = true))
       . assert(_ == (List("a", "\u0000"), List(1L, Unset)))
 
       test(m"Hole inside a string is preserved"):
-        shape(Json.Ast.parse(bytes(t""" "x y" """), holes = true))
+        shape(Json.Ast.parse(bytes(t""" "x\u0000y" """), holes = true))
       . assert(_ == "x\u0000y")
 
       test(m"Plain mode rejects a value-position hole"):
-        capture[ParseError](Json.Ast.parse(bytes(t" ")))
+        capture[Parse.Error](Json.Ast.parse(bytes(t"\u0000")))
       . matches:
-          case ParseError(_, _, _) => true
+          case Parse.Error(_, _, _) => true
 
       test(m"Plain mode rejects a hole inside a string"):
-        capture[ParseError](Json.Ast.parse(bytes(t""" "a b" """)))
+        capture[Parse.Error](Json.Ast.parse(bytes(t""" "a\u0000b" """)))
       . matches:
-          case ParseError(_, _, _) => true
+          case Parse.Error(_, _, _) => true
 
     suite(m"Position ranges"):
       def asBytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
       def position(input: Text): Json.Ast.Position =
-        capture[ParseError](Json.Ast.parse(asBytes(input)))
+        capture[Parse.Error](Json.Ast.parse(asBytes(input)))
         . position.asInstanceOf[Json.Ast.Position]
 
       // Bad escape \q after the opening quote (raw to avoid Text-interpolator escaping).

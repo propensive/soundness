@@ -71,7 +71,7 @@ def passTool(label: Text): Tool = new Tool:
       entryPoints: List[EntryPoint],
       out:         soundness.Path on Linux )
     ( using Monitor, System, WorkingDirectory )
-    ( using Tactic[LinkError], (LinkEvent is Loggable)^ )
+    ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
   :   Deliverable =
 
     executionLog.entries = label :: executionLog.entries
@@ -137,23 +137,23 @@ object Tests extends Suite(m"Anthology Tests"):
     . assert(_ == Nil)
 
     test(m"No path exists against the direction of the edges"):
-      capture[LinkError](android.path(Apk, Universe.Classfile)).reason
-    . assert(_ == LinkError.Reason.NoPath(t"apk", t"classfile"))
+      capture[Link.Error](android.path(Apk, Universe.Classfile)).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"apk", t"classfile"))
 
     test(m"An unregistered edge leaves its format unreachable"):
-      capture[LinkError](Toolchain(jarEdges()).path(Universe.Classfile, Dex)).reason
-    . assert(_ == LinkError.Reason.NoPath(t"classfile", t"dex"))
+      capture[Link.Error](Toolchain(jarEdges()).path(Universe.Classfile, Dex)).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"classfile", t"dex"))
 
     test(m"Duplicate edges between the same formats are rejected"):
-      capture[LinkError](Toolchain(dexEdges(), dexEdges())).reason
-    . assert(_ == LinkError.Reason.DuplicateEdge(t"classfile", t"dex"))
+      capture[Link.Error](Toolchain(dexEdges(), dexEdges())).reason
+    . assert(_ == Link.Error.Reason.DuplicateEdge(t"classfile", t"dex"))
 
     test(m"A cyclic toolchain is rejected"):
       val a = TestIr(t"a")
       val b = TestIr(t"b")
       val cycle = List(Edge(a, b, passTool(t"ab")), Edge(b, a, passTool(t"ba")))
-      capture[LinkError](Toolchain(cycle)).reason
-    . assert(_ == LinkError.Reason.CyclicToolchain)
+      capture[Link.Error](Toolchain(cycle)).reason
+    . assert(_ == Link.Error.Reason.CyclicToolchain)
 
     test(m"Two shortest paths between formats are ambiguous"):
       val a = TestIr(t"a")
@@ -169,8 +169,8 @@ object Tests extends Suite(m"Anthology Tests"):
                 Edge(b1, c, passTool(t"b1-c")),
                 Edge(b2, c, passTool(t"b2-c")) ) )
 
-      capture[LinkError](diamond.path(a, c)).reason
-    . assert(_ == LinkError.Reason.AmbiguousPath(t"a", t"c"))
+      capture[Link.Error](diamond.path(a, c)).reason
+    . assert(_ == Link.Error.Reason.AmbiguousPath(t"a", t"c"))
 
     test(m"Native binaries for different triples are distinct formats"):
       Binary(Triple.Arm64MacOs) == Binary(Triple.X64Linux)
@@ -195,8 +195,8 @@ object Tests extends Suite(m"Anthology Tests"):
       test(m"A setting applying to no path format is rejected"):
         val inapplicable = Setting[Unit](_ => false)(settings => settings)
         val production = Deliverable.Product(scratch)
-        capture[LinkError](chain.produce(production, a, c, scratch, List(inapplicable))).reason
-      . assert(_ == LinkError.Reason.InapplicableSetting)
+        capture[Link.Error](chain.produce(production, a, c, scratch, List(inapplicable))).reason
+      . assert(_ == Link.Error.Reason.InapplicableSetting)
 
       // Cross-family settings are rejected before any tool runs, so these paths are checkable
       // without invoking D8, the Scala.js linker or the bundler.
@@ -206,27 +206,27 @@ object Tests extends Suite(m"Anthology Tests"):
         val settings = List(dexOptions.minApi(24))
         val toolchain = Toolchain(jarEdges())
 
-        capture[LinkError]
+        capture[Link.Error]
           ( toolchain.produce(emission, Universe.Classfile, anthology.Jar, scratch, settings) )
         . reason
-      . assert(_ == LinkError.Reason.InapplicableSetting)
+      . assert(_ == Link.Error.Reason.InapplicableSetting)
 
       test(m"An sjs setting is not applicable on a dex path"):
         val settings = List(linkerOptions.optimize.fast)
         val toolchain = Toolchain(dexEdges())
 
-        capture[LinkError](toolchain.produce(emission, Universe.Classfile, Dex, scratch, settings))
+        capture[Link.Error](toolchain.produce(emission, Universe.Classfile, Dex, scratch, settings))
         . reason
-      . assert(_ == LinkError.Reason.InapplicableSetting)
+      . assert(_ == Link.Error.Reason.InapplicableSetting)
 
       test(m"A native setting is not applicable on a JavaScript path"):
         val settings = List(nativeOptions.gc.immix)
         val target = anthology.Js(anthology.Js.Module.Es)
         val toolchain = Toolchain(sjsEdges())
 
-        capture[LinkError](toolchain.produce(emission, Universe.Sjsir, target, scratch, settings))
+        capture[Link.Error](toolchain.produce(emission, Universe.Sjsir, target, scratch, settings))
         . reason
-      . assert(_ == LinkError.Reason.InapplicableSetting)
+      . assert(_ == Link.Error.Reason.InapplicableSetting)
 
       // The xeq packaging edges, exercised up to (but never through) `Packager.pack`'s
       // filesystem and network work: every case below aborts before any stub is read.
@@ -235,24 +235,24 @@ object Tests extends Suite(m"Anthology Tests"):
 
       test(m"An xeq bundle requires a runner source"):
         val target = anthology.Xeq(ziggurat.Packaging.Delivery.EmbedAll)
-        capture[LinkError](bundles.produce(jarInput, anthology.Jar, target, scratch)).reason
-      . assert(_ == LinkError.Reason.MissingSetting(t"runners"))
+        capture[Link.Error](bundles.produce(jarInput, anthology.Jar, target, scratch)).reason
+      . assert(_ == Link.Error.Reason.MissingSetting(t"runners"))
 
       test(m"A local runner source cannot imply the targets"):
         val target = anthology.Xeq(ziggurat.Packaging.Delivery.EmbedAll)
         val settings = List(xeqOptions.runners.local(scratch))
 
-        capture[LinkError](bundles.produce(jarInput, anthology.Jar, target, scratch, settings))
+        capture[Link.Error](bundles.produce(jarInput, anthology.Jar, target, scratch, settings))
         . reason
-      . assert(_ == LinkError.Reason.MissingSetting(t"targets"))
+      . assert(_ == Link.Error.Reason.MissingSetting(t"targets"))
 
       test(m"Native delivery requires exactly one target"):
         val target = anthology.Xeq(ziggurat.Packaging.Delivery.Native)
         val settings = List(xeqOptions.runners.standard)
 
-        capture[LinkError](bundles.produce(jarInput, anthology.Jar, target, scratch, settings))
+        capture[Link.Error](bundles.produce(jarInput, anthology.Jar, target, scratch, settings))
         . reason match
-            case LinkError.Reason.Packaging(_) => true
+            case Link.Error.Reason.Packaging(_) => true
             case _                             => false
       . assert(_ == true)
 
@@ -261,33 +261,33 @@ object Tests extends Suite(m"Anthology Tests"):
     . assert(_ == List(t"jar", t"library-classfile", t"library-sjsir", t"library-nir"))
 
     test(m"A library JAR's universe must match its compilation's"):
-      capture[LinkError](Toolchain(jarEdges()).path(Universe.Sjsir, Library(Universe.Nir))).reason
-    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"library-nir"))
+      capture[Link.Error](Toolchain(jarEdges()).path(Universe.Sjsir, Library(Universe.Nir))).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"library-nir"))
 
     test(m"An sjsir compilation cannot be packaged as an executable JAR"):
-      capture[LinkError](Toolchain(jarEdges()).path(Universe.Sjsir, anthology.Jar)).reason
-    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"jar"))
+      capture[Link.Error](Toolchain(jarEdges()).path(Universe.Sjsir, anthology.Jar)).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"jar"))
 
     test(m"A classfile compilation cannot be linked as JavaScript"):
       val target = anthology.Js(anthology.Js.Module.Es)
-      capture[LinkError](Toolchain(sjsEdges()).path(Universe.Classfile, target)).reason
-    . assert(_ == LinkError.Reason.NoPath(t"classfile", t"js-es"))
+      capture[Link.Error](Toolchain(sjsEdges()).path(Universe.Classfile, target)).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"classfile", t"js-es"))
 
     test(m"WASI 0.3 is unreachable without an edge producing it"):
       val target = Wasi(Wasi.Version.Wasip3)
-      capture[LinkError](Toolchain(sjsEdges()).path(Universe.Sjsir, target)).reason
-    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"wasip3"))
+      capture[Link.Error](Toolchain(sjsEdges()).path(Universe.Sjsir, target)).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"wasip3"))
 
     // The `component` and `wasm-object` universes are nodes without edges: LIRA's registry
     // names them, and composition tools will register into them, but no Soundness tool yet
     // produces or consumes either.
     test(m"The component universe is a node awaiting edges"):
-      capture[LinkError](Toolchain(sjsEdges()).path(Universe.Sjsir, Component)).reason
-    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"component"))
+      capture[Link.Error](Toolchain(sjsEdges()).path(Universe.Sjsir, Component)).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"component"))
 
     test(m"The wasm-object universe is a node awaiting edges"):
-      capture[LinkError](Toolchain(sjsEdges()).path(WasmObject, Wasi(Wasi.Version.Wasip1))).reason
-    . assert(_ == LinkError.Reason.NoPath(t"wasm-object", t"wasip1"))
+      capture[Link.Error](Toolchain(sjsEdges()).path(WasmObject, Wasi(Wasi.Version.Wasip1))).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"wasm-object", t"wasip1"))
 
     test(m"The AXML encoder emits the binary-XML chunk header"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
@@ -330,7 +330,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
     // Aspirational: the handle's fresh capability and the borrow expressed in `compile`'s
     // result type record the intent, but rejecting these statically awaits further
-    // separation-checker support (as telekinesis's `HttpSession.fetch` notes for its own
+    // separation-checker support (as telekinesis's `Http.Session.fetch` notes for its own
     // borrow).
     test(m"A compiler session handle cannot escape its scope"):
       demilitarize:
@@ -353,16 +353,16 @@ object Tests extends Suite(m"Anthology Tests"):
     // edge, whose provider probes the WASI toolchain), so its graph shape is checkable without
     // `wasm-tools` installed.
     val ociToolchain =
-      val world = WitWorld(unsafely(temporaryDirectory / Uuid()), t"main")
+      val world = Wasi.World(unsafely(temporaryDirectory / Uuid()), t"main")
       Toolchain(ociEdges()(using world))
 
     test(m"An OCI image is unreachable from a classfile compilation"):
-      capture[LinkError](ociToolchain.path(Universe.Classfile, OciImage)).reason
-    . assert(_ == LinkError.Reason.NoPath(t"classfile", t"oci"))
+      capture[Link.Error](ociToolchain.path(Universe.Classfile, OciImage)).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"classfile", t"oci"))
 
     test(m"An OCI image is unreachable without the component edge"):
-      capture[LinkError](ociToolchain.path(Universe.Sjsir, OciImage)).reason
-    . assert(_ == LinkError.Reason.NoPath(t"sjsir", t"oci"))
+      capture[Link.Error](ociToolchain.path(Universe.Sjsir, OciImage)).reason
+    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"oci"))
 
     test(m"An OCI image config defaults to the wasm/wasip2 platform"):
       val config = OciConfiguration()
@@ -486,7 +486,7 @@ object Tests extends Suite(m"Anthology Tests"):
           val staged: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
           val bad = Map(t"bad.scala" -> t"class Bad:\n  def x: Int = \"nope\"\n")
 
-          capture[LinkError]
+          capture[Link.Error]
             ( toolchain.produce
                 ( Deliverable.Sources(bad, classpath),
                   Language.Scala,
@@ -494,7 +494,7 @@ object Tests extends Suite(m"Anthology Tests"):
                   staged ) )
 
           . reason match
-              case LinkError.Reason.CompilationFailed(errors) => errors > 0
+              case Link.Error.Reason.CompilationFailed(errors) => errors > 0
               case _                                          => false
         . assert(_ == true)
 

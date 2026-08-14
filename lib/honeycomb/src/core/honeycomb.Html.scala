@@ -151,19 +151,19 @@ object Html extends Tag.Container
   // Internal Tactic used by the permissive-variant givens. Recovery warnings
   // (`raise`) are discarded; truly unrecoverable conditions (`abort`) still
   // throw, since the caller hasn't supplied a way to handle them.
-  private def lenientTactic: Tactic[ParseError] = new Tactic[ParseError]:
+  private def lenientTactic: Tactic[Parse.Error] = new Tactic[Parse.Error]:
     given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
     def diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
-    def record(error: Diagnostics ?=> ParseError): Unit = ()
+    def record(error: Diagnostics ?=> Parse.Error): Unit = ()
 
-    def abort(error: Diagnostics ?=> ParseError): Nothing =
+    def abort(error: Diagnostics ?=> Parse.Error): Nothing =
       throw error(using diagnostics)
 
     def certify(): Unit = ()
 
   given strictAggregable: [content <: Label: Reifiable to List[String]]
   =>  ( dom:    Dom,
-        tactic: Tactic[ParseError],
+        tactic: Tactic[Parse.Error],
         strict: NotGiven[Html.Recovery.Permissive] )
   =>  (((Html of content) is Aggregable by Text)^{tactic, caps.any}) =
 
@@ -179,7 +179,7 @@ object Html extends Tag.Container
         val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
         HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
-  given strictAggregable2: (dom: Dom, tactic: Tactic[ParseError])
+  given strictAggregable2: (dom: Dom, tactic: Tactic[Parse.Error])
   =>  ( strict: NotGiven[Html.Recovery.Permissive] )
   =>  ((Html is Aggregable by Text)^{tactic, caps.any}) =
     new Aggregable:
@@ -194,7 +194,7 @@ object Html extends Tag.Container
         HtmlParser.fromStream(stream, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
-  given strictLoadable: (dom: Dom, tactic: Tactic[ParseError])
+  given strictLoadable: (dom: Dom, tactic: Tactic[Parse.Error])
   =>  ( strict: NotGiven[Html.Recovery.Permissive] )
   =>  ((Html is Loadable by Text)^{tactic, caps.any}) = stream =>
     val root = Tag.root(Set(t"html"))
@@ -207,16 +207,16 @@ object Html extends Tag.Container
       case html@Element("html", _, _, _)       => Document(html, dom)
 
       case _ =>
-        abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
+        abort(Parse.Error(Html, Position(1.u, 1.u), Issue.BadDocument))
 
   // Last-resort safety net for the permissive variants. Tokenizer-level
   // conditions that haven't been wired into the parser's per-site recovery
   // (e.g. EOF mid-comment) still call `fail`, which propagates as a thrown
-  // `ParseError`. Permissive callers haven't supplied a `Tactic[ParseError]`,
+  // `Parse.Error`. Permissive callers haven't supplied a `Tactic[Parse.Error]`,
   // so we swallow it here and yield an empty `Fragment` rather than letting
   // the exception escape — the permissive reader is contractually no-throw.
   private inline def lenient[result](inline fallback: => result)(inline body: => result): result =
-    try body catch case _: ParseError => fallback
+    try body catch case _: Parse.Error => fallback
 
   given permissiveAggregable: [content <: Label: Reifiable to List[String]]
   =>  ( dom: Dom )
@@ -228,14 +228,14 @@ object Html extends Tag.Container
       type Operand = Text
 
       def aggregate(input: Chain[Text]): Html of content =
-        given Tactic[ParseError] = lenientTactic
+        given Tactic[Parse.Error] = lenientTactic
         val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
 
         lenient(Fragment().of[content]):
           HtmlParser.fromIterator(input.stdlib.iterator, permissive = true).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
-        given Tactic[ParseError] = lenientTactic
+        given Tactic[Parse.Error] = lenientTactic
         val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
 
         lenient(Fragment().of[content]):
@@ -249,14 +249,14 @@ object Html extends Tag.Container
       type Operand = Text
 
       def aggregate(input: Chain[Text]): Html =
-        given Tactic[ParseError] = lenientTactic
+        given Tactic[Parse.Error] = lenientTactic
 
         lenient(Fragment()):
           HtmlParser.fromIterator(input.stdlib.iterator, permissive = true)
           . parseHtml(dom.generic, doctypes = false)
 
       override def accept(stream: (Stream[Text] over Credit)^): Html =
-        given Tactic[ParseError] = lenientTactic
+        given Tactic[Parse.Error] = lenientTactic
 
         lenient(Fragment()):
           HtmlParser.fromStream(stream, permissive = true)
@@ -265,7 +265,7 @@ object Html extends Tag.Container
   given permissiveLoadable: (dom: Dom)
   =>  Html.Recovery.Permissive
   =>  Html is Loadable by Text = stream =>
-    given Tactic[ParseError] = lenientTactic
+    given Tactic[Parse.Error] = lenientTactic
     val root = Tag.root(Set(t"html"))
 
     lenient(Document(Fragment(), dom)):
@@ -544,7 +544,7 @@ object Html extends Tag.Container
 
   // Bringing a `Recovery.Permissive` into scope selects the permissive HTML
   // reader, which recovers from a defined subset of malformed inputs instead
-  // of aborting and does not require a `Tactic[ParseError]`. To enable it,
+  // of aborting and does not require a `Tactic[Parse.Error]`. To enable it,
   // `import honeycomb.recoveries.permissiveRecovery` (defined in honeycomb_core.scala).
   object Recovery:
     class Permissive
@@ -925,7 +925,7 @@ object Html extends Tag.Container
 
     // The tactic is a plain using-parameter: a context-function result may not
     // hide `this`.
-    update def parseHtml(root: Tag, doctypes: Boolean = false)(using Tactic[ParseError]): Html =
+    update def parseHtml(root: Tag, doctypes: Boolean = false)(using Tactic[Parse.Error]): Html =
       // The snapshot fields initialize empty (a constructor may not derive field
       // values from its parameters under the provenance rule); sync them here.
       syncFrom()
@@ -938,7 +938,7 @@ object Html extends Tag.Container
     // that capture it, whereas a parameter capability may be captured freely.
     private update def parseHtml0
       ( root: Tag, doctypes: Boolean, state: HtmlParseState^ )
-      ( using Tactic[ParseError] )
+      ( using Tactic[Parse.Error] )
     :   Html =
       val buffer: jl.StringBuilder = jl.StringBuilder()
       def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
@@ -960,9 +960,9 @@ object Html extends Tag.Container
         if !more then
           // Permissive mode records (and discards) the warning and lets the recovery paths
           // finish the best-effort DOM. Strict mode ABORTS: continuing to read an exhausted
-          // cursor would only manufacture a cascade of `Unexpected(' ')` errors under an
+          // cursor would only manufacture a cascade of `Unexpected('\u0000')` errors under an
           // accruing caller.
-          if permissive then raise(ParseError(Html, currentPosition(), ExpectedMore))
+          if permissive then raise(Parse.Error(Html, currentPosition(), ExpectedMore))
           else fail(ExpectedMore)
 
       // Non-inline: each `expect`/`expectInsensitive` call site otherwise
@@ -987,9 +987,9 @@ object Html extends Tag.Container
           end:   Optional[Cursor.Mark] = Unset )
       :   Nothing =
 
-        abort(ParseError(Html, computePosition(start, end), issue))
+        abort(Parse.Error(Html, computePosition(start, end), issue))
 
-      def warn(issue: Issue): Unit = raise(ParseError(Html, currentPosition(), issue))
+      def warn(issue: Issue): Unit = raise(Parse.Error(Html, currentPosition(), issue))
 
       // While-loops rather than `@tailrec` over the inline `let`/`lay`
       // combinators: capture checking's beta-reduction of the inline lambdas
@@ -1792,7 +1792,7 @@ object Html extends Tag.Container
       fastforward: Int                               = 0,
       doctypes:    Boolean                           = false )
     ( using dom: Dom )
-    ( using Tactic[ParseError] )
+    ( using Tactic[Parse.Error] )
   :   Html =
 
     val parser = HtmlParser.fromIterator(input, permissive = false)

@@ -1142,7 +1142,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == Pdf.Error.Reason.MalformedOperator(t"w"))
 
       test(m"an inline image folds into one operator"):
-        operators(t"BI /W 2 /H 2 /L 4 ID  EI").stdlib match
+        operators(t"BI /W 2 /H 2 /L 4 ID \u0001\u0002\u0003\u0004 EI").stdlib match
           case List(Pdf.Operator.InlineImage(parameters, data)) =>
             (parameters(t"W"), data.length)
 

@@ -78,7 +78,7 @@ import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus]^{service} =
   service
@@ -181,7 +181,7 @@ def cli[bus <: Matchable](using executive: Executive)
                 scala.caps.unsafe.unsafeAssumeSeparate(cacheRunner.open[File]()(file.read[Data]))
               else
                 mitigate:
-                  case RunnerError(detail) =>
+                  case Runners.Error(detail) =>
                     Out.println(detail.text)
                     Exit.Fail(1).terminate()
 
@@ -227,7 +227,7 @@ def cli[bus <: Matchable](using executive: Executive)
                   raw
 
             mitigate:
-              case AssemblyError(_) =>
+              case Assembler.Error(_) =>
                 Out.println(e"Runner binary does not contain the ETHRCFG\\x02 magic marker")
                 Exit.Fail(1).terminate()
 
@@ -293,7 +293,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
 
   def makeClient(connection: Connection)(using Monitor, Stdio, Probate)
-    ( using Tactic[StreamError], Tactic[CharDecoder.Error], Tactic[NumberError],
+    ( using Tactic[StreamError], Tactic[CharDecoder.Error], Tactic[Number.Error],
             (DaemonLogEvent is Loggable)^ )
   :   Unit =
 
@@ -460,7 +460,7 @@ def cli[bus <: Matchable](using executive: Executive)
         // over its control channel. A launcher that never opened one (a pipe, or a stub built
         // before the channel existed) leaves the promise unfulfilled: the brief await expires
         // and the command runs with the raw mode it would have had anyway.
-        def setMode(mode: TerminalMode): Unit =
+        def setMode(mode: Tty): Unit =
           safely(clientState.control.await(0.1*Second)(using monitor = monitor0)).let: out =>
             out.write(mode.byte)
             out.flush()

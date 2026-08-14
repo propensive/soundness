@@ -278,8 +278,8 @@ object internal:
       case _ =>
         plain
 
-  private final val Marker: Char = ' '
-  private final val MarkerString: String = " "
+  private final val Marker: Char = '\u0000'
+  private final val MarkerString: String = "\u0000"
 
   // Strip the trailing sentinel pad (if present) from a parity-padded
   // heterogeneous array literal read at compile time, returning just the
@@ -403,13 +403,13 @@ object internal:
 
       macroPos
 
-    // Custom HaltTactic: translate parser ParseError positions to source-file ranges.
+    // Custom HaltTactic: translate parser Parse.Error positions to source-file ranges.
     val ast: Json.Ast =
       given diagnostics: Diagnostics = Diagnostics.omit
 
-      given parseTactic: HaltTactic[ParseError, Json.Ast] =
-        new HaltTactic[ParseError, Json.Ast]:
-          override def abort(error: Diagnostics ?=> ParseError): Nothing =
+      given parseTactic: HaltTactic[Parse.Error, Json.Ast] =
+        new HaltTactic[Parse.Error, Json.Ast]:
+          override def abort(error: Diagnostics ?=> Parse.Error): Nothing =
             val pe = error
             val off = pe.position.offset.or(0)
             val length = pe.position.length.or(0)

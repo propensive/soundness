@@ -63,14 +63,14 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
   import Issue.*
 
-  def parse(text: Text): Instant over Unix raises TimeError =
+  def parse(text: Text): Instant over Unix raises Moment.Error =
     import calendars.gregorianCalendar
 
     given Timezone = tz"UTC"
 
     var index: Ordinal = Prim
 
-    def fail(issue: Iso8601.Issue): Unit = raise(TimeError(_.Format(text, Iso8601, index)(issue)))
+    def fail(issue: Iso8601.Issue): Unit = raise(Moment.Error(_.Format(text, Iso8601, index)(issue)))
     def focus: Char = text(index).or('\u0000')
     def next(): Char = (index += 1) yet focus
     def digit: Boolean = focus >= '0' && focus <= '9'
@@ -237,4 +237,4 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
           if negate then instant + offset else instant - offset
 
         case _ =>
-          abort(TimeError(_.Format(text, Iso8601, index)(Timezone)))
+          abort(Moment.Error(_.Format(text, Iso8601, index)(Timezone)))

@@ -211,7 +211,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       . assert(_ == Set("#/shape", "#/name"))
 
     suite(m"Streaming-parse accrual"):
-      // The direct-parse path: `Tactic[ParseError]` comes from the ambient `throwUnsafely`
+      // The direct-parse path: `Tactic[Parse.Error]` comes from the ambient `throwUnsafely`
       // (token-level errors stay fail-fast; a malformed stream cannot be resynchronized), while
       // `Json.Error`s — absent required fields, discovered after the object is consumed — accrue.
       inline def validateRead[result](text: Text)

@@ -139,16 +139,16 @@ object Tests extends Suite(m"Monotonous tests"):
     . assert(_ == numberList)
 
     test(m"Intolerant BASE32"):
-      capture[SerializationError]:
+      capture[Serialization.Error]:
         import alphabets.base32StrictLowerCase
         t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
-    . assert(_ == SerializationError(0, 'A'))
+    . assert(_ == Serialization.Error(0, 'A'))
 
     test(m"Bad character offset"):
-      capture[SerializationError]:
+      capture[Serialization.Error]:
         import alphabets.base32LowerCase
         t"AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32].to[List]
-    . assert(_ == SerializationError(7, '?'))
+    . assert(_ == Serialization.Error(7, '?'))
 
     given Seed = Seed(1L)
 

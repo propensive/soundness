@@ -32,10 +32,10 @@
                                                                                                   */
 package soundness
 
-export xenophile.{Wasm, WasmInvoke, WitCase, WitError, WitHandle, WitVariant}
+export xenophile.{Wasm, WasmInvoke}
 
 // Releases a WIT resource handle, emitting its `[resource-drop]` Component Model import. Like
 // `invoke`, plain `inline` so the import materializes at the downstream (Wasm-linked) call site.
-extension (handle: xenophile.WitHandle)
+extension (handle: xenophile.Wasm.Handle)
   inline def dispose(): Unit =
     ${xenophile.WasmInvoke.dispose('handle)}

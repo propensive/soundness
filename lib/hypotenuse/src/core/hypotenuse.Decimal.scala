@@ -41,6 +41,7 @@ import scala.math
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -100,13 +101,13 @@ object decimalInternal:
     // A finite `Double` converts through its shortest round-tripping decimal representation
     // (`Double.toString`), so `Decimal(0.1)` is exactly `0.1` — not the 55-digit binary
     // expansion that `java.math.BigDecimal`'s `Double` constructor produces.
-    def apply(value: Double): Decimal raises DecimalError =
+    def apply(value: Double): Decimal raises Decimal.Error =
       if value == 0.0 then Zero
-      else if !java.lang.Double.isFinite(value) then abort(DecimalError(value.toString.tt))
+      else if !java.lang.Double.isFinite(value) then abort(Decimal.Error(value.toString.tt))
       else parse(value.toString.tt)
 
-    def parse(text: Text): Decimal raises DecimalError =
-      parsed(text).or(abort(DecimalError(text)))
+    def parse(text: Text): Decimal raises Decimal.Error =
+      parsed(text).or(abort(Decimal.Error(text)))
 
     // The grammar `[+|-] digits [. digits] [(e|E) [+|-] digits]`, with digits required on at
     // least one side of the point; `Unset` for anything else.
@@ -712,3 +713,7 @@ object decimalInternal:
       def double: Double = java.lang.Double.parseDouble(text.s)
 
       def whole: Boolean = left(1) <= 0
+
+    // DecimalError → Decimal.Error
+    case class Error(text: Text)(using Diagnostics)
+    extends fulminate.Error(740, 0)(m"$text is not a representable decimal number")

@@ -137,7 +137,7 @@ object Audio:
   given aggregable2: (tactic: Tactic[Audio.Error])
   =>  ((Audio is Aggregable by Data)^{tactic}) = Audio(_)
 
-  // Audio.Error → Audio.Error
+  // AudioError → Audio.Error
   case class Error(audible: Optional[Audible])(using Diagnostics)
   extends
     fulminate.Error(m"unable to read the audio in ${audible.lay("unspecified".tt)(_.name)} format")

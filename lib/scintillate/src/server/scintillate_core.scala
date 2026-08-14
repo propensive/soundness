@@ -68,7 +68,7 @@ package httpServers:
     type Server = Service
     // Alias with the explicit capture: a bare capability-class alias decorates the trait's
     // `Request ?=>` parameter on one side of the override only.
-    type Request = HttpConnection^
+    type Request = Http.Connection^
     type Response = Http.Response
 
     def server(port: Tcp.Port of port)(lambda: (request: Request) ?=> Response^{request})
@@ -80,7 +80,7 @@ package httpServers:
   type HttpServerFor[port] =
     Http is Protocolic
       { type Transport = Tcp.Port of port
-        type Request = HttpConnection^
+        type Request = Http.Connection^
         type Response = Http.Response
         type Server = Service }
 
@@ -111,8 +111,8 @@ package httpServers:
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies(key)
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
-  ( using connection: HttpConnection )
-  ( using Tactic[AuthError] )
+  ( using connection: Http.Connection )
+  ( using Tactic[Auth.Error] )
 :   Http.Response =
 
   connection.headers.authorization match

@@ -196,19 +196,19 @@ def supervise[result](block: Monitor ?=> result)(using threading: Threading, cod
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)
   ( using tenacity: Tenacity, monitor: Monitor )
-:   (Tactic[RetryError]^) ?->{evaluate, monitor} value =
+:   (Tactic[Tenacity.Error]^) ?->{evaluate, monitor} value =
 
   @tailrec
   def recur(attempt: Ordinal): value =
     boundary[Perseverance[value]]: label ?=>
-      monitor.snooze(summon[Tenacity].delay(attempt).lest(RetryError(attempt.n1)))
+      monitor.snooze(summon[Tenacity].delay(attempt).lest(Tenacity.Error(attempt.n1)))
       def surrender(): Nothing = boundary.break(Perseverance.Surrender)
       def persevere(): Nothing = boundary.break(Perseverance.Persevere)
 
       Perseverance.Prevail(evaluate(using surrender, persevere))
 
     . match
-      case Perseverance.Surrender      => abort(RetryError(attempt.n1))
+      case Perseverance.Surrender      => abort(Tenacity.Error(attempt.n1))
       case Perseverance.Prevail(value) => value
       case Perseverance.Persevere      => recur(attempt + 1)
 

@@ -101,15 +101,15 @@ object timestampInternal:
         Timespan(days = days, hours = hours, minutes = minutes, seconds = Quantity(seconds))
         . asInstanceOf[Difference]
 
-    given timestampDecodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
+    given timestampDecodable: Tactic[Timestamp.Error] => Timestamp is Decodable in Text = text =>
       import calendars.gregorianCalendar
       import errorDiagnostics.stackTracesDiagnostics
 
       text match
         case r"$yr(\d{4})-$mn(\d{2})-$dy(\d{2})[ T]$hr(\d{2}):$mi(\d{2}):$sc(\d{2})" =>
           mitigate:
-            case NumberError(_, _, _) => TimestampError(text, TimestampError.Reason.BadNumber)
-            case TimeError(_)         => TimestampError(text, TimestampError.Reason.BadTime)
+            case Number.Error(_, _, _) => Timestamp.Error(text, Timestamp.Error.Reason.BadNumber)
+            case Moment.Error(_)          => Timestamp.Error(text, Timestamp.Error.Reason.BadTime)
 
           . protect:
               Timestamp
@@ -120,7 +120,7 @@ object timestampInternal:
                       Base60(sc.as[Int]) ) )
 
         case value =>
-          abort(TimestampError(value, TimestampError.Reason.BadFormat))
+          abort(Timestamp.Error(value, Timestamp.Error.Reason.BadFormat))
 
     inline given dateUnderlying: Underlying[Date, Long] = !!
 
@@ -171,7 +171,7 @@ object timestampInternal:
 
         . join(summon[Date.Separation].separator)
 
-    given dateDecoder: Tactic[TimeError] => Date is Decodable in Text = value =>
+    given dateDecoder: Tactic[Moment.Error] => Date is Decodable in Text = value =>
       import calendars.gregorianCalendar
 
       value.cut(t"-") match
@@ -179,7 +179,7 @@ object timestampInternal:
           Date(Year(year), Month(month), Day(day))
 
         case cnt =>
-          abort(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit)))
+          abort(Moment.Error(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit)))
 
     given dateEncodable: RomanCalendar => Date is Encodable in Text = date =>
       import hieroglyph.textMetrics.uniformMetric
@@ -296,12 +296,28 @@ object timestampInternal:
       val total = monthstamp.year()*12 + monthstamp.month.ordinal + months
       Monthstamp(Year(Math.floorDiv(total, 12)), Month.fromOrdinal(Math.floorMod(total, 12)))
 
+    // TimestampError → Timestamp.Error
+    object Error:
+      enum Reason(val number: Int) extends Clarification:
+        case BadFormat extends Reason(1)
+        case BadNumber extends Reason(2)
+        case BadTime   extends Reason(3)
+
+      given communicable: Reason is Communicable =
+        case Reason.BadFormat => m"the input did not match the expected timestamp format"
+        case Reason.BadNumber => m"a numeric component could not be parsed as an integer"
+        case Reason.BadTime   => m"a date or time component was outside the valid range"
+
+    case class Error(value: Text, reason: Error.Reason)(using Diagnostics)
+    extends fulminate.Error(902, reason.number)
+      ( m"the time $value could not be parsed because $reason" )
+
   object Date:
     def julianDay(day: Int): Date = (day.toLong*aviation.internal.MillisPerDay).asInstanceOf[Date]
 
     inline def apply(using calendar: Calendar)
       ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
-    :   Date raises TimeError =
+    :   Date raises Moment.Error =
 
       calendar.jdn(year, month, day)
 

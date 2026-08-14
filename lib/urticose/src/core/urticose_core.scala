@@ -80,4 +80,4 @@ package internetAccess:
   // would force the enclosing package object to become a capability. Inlining mints a fresh
   // `Online` at each summon site instead.
   inline given online: Online = Online()
-  given offline: Tactic[OfflineError] => Online = abort(OfflineError())
+  given offline: Tactic[Internet.Error] => Online = abort(Internet.Error())

@@ -35,4 +35,4 @@ package soundness
 export galilei.{socketCreatable, Device, Ram, RamFlag}
 
 package filesystemBackends:
-  export galilei.filesystemBackends.virtualMachine
+  export galilei.filesystemBackends.virtualMachineFilesystem

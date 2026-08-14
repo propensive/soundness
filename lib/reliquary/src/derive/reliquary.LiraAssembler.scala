@@ -78,7 +78,7 @@ object LiraAssembler:
       classpath:   SectionInput => List[Text]     = { _ => List() },
       report:      Text => Unit                   = { _ => () },
       sign:        Lira.Manifest => Lira.Manifest  = identity(_) )
-  :   Data raises Lira.Error raises DisciplineError =
+  :   Data raises Lira.Error raises Discipline.Error =
 
     val inputs = sections.stdlib
 

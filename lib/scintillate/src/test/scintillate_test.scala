@@ -468,7 +468,7 @@ object Tests extends Suite(m"Scintillate tests"):
 
     // Drive the connection loop entirely in memory — no socket, no threads — by
     // feeding request bytes through `serveConnection` and capturing the response.
-    def inProcess(handler: HttpConnection ?=> Http.Response, request: Text): Text =
+    def inProcess(handler: Http.Connection ?=> Http.Response, request: Text): Text =
       val in = java.io.ByteArrayInputStream(request.s.getBytes("US-ASCII").nn)
       val out = java.io.ByteArrayOutputStream()
       SocketServer(0).serveConnection(handler)(in, out)

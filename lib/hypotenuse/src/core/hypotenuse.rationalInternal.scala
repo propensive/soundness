@@ -757,10 +757,10 @@ object rationalInternal:
         else if value < 0.0 then r64(magnitude | Long.MinValue)
         else r64(magnitude)
 
-    def parse(text: Text): R64 raises RationalError =
+    def parse(text: Text): R64 raises Rational.Error =
       if text.s == "NaR" then Nar else parsedRational(text) match
         case value: (Boolean, Long, Long) => build(value(0), value(1), value(2))
-        case _                            => abort(RationalError(text))
+        case _                            => abort(Rational.Error(text))
 
     // The signed three-way comparison behind `Orderable`, with NaR below everything; the
     // relational operators themselves treat NaR as unordered.
@@ -1049,10 +1049,10 @@ object rationalInternal:
         else if value < 0.0 then r32(magnitude.toInt | Int.MinValue)
         else r32(magnitude.toInt)
 
-    def parse(text: Text): R32 raises RationalError =
+    def parse(text: Text): R32 raises Rational.Error =
       if text.s == "NaR" then Nar else parsedRational(text) match
         case value: (Boolean, Long, Long) => build(value(0), value(1), value(2))
-        case _                            => abort(RationalError(text))
+        case _                            => abort(Rational.Error(text))
 
     // The signed three-way comparison behind `Orderable`, with NaR below everything; the
     // relational operators themselves treat NaR as unordered. Decoded numerators and

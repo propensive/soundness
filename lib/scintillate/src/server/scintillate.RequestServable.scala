@@ -43,7 +43,7 @@ trait RequestServable:
   // (`Http.Response^{connection}`): a streamed body — a chunked response, SSE,
   // or an upgraded protocol's raw stream — legitimately reads the live request
   // stream, and is written out by the server within the connection's lifetime.
-  def handle(handle: (connection: HttpConnection) ?=> Http.Response^{connection})
+  def handle(handle: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
     ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
   :   Service^

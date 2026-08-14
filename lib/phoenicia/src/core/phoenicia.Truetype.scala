@@ -57,21 +57,21 @@ object Truetype:
 case class Truetype(data: Data) extends Sfnt:
   ttf =>
 
-  def loca: LocaTable raises FontError =
+  def loca: LocaTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Loca).let: ref =>
       LocaTable(ref.offset, maxp.glyphCount, head.indexToLocFormat.int == 1)
 
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Loca)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Loca)))
 
-  def glyf: GlyfTable raises FontError =
+  def glyf: GlyfTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Glyf).let: ref => GlyfTable(ref.offset, loca)
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Glyf)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Glyf)))
 
   // A new font containing only the outlines needed to render the given characters — plus any
   // composite components they reference — with the original glyph numbering retained: unused
   // glyphs keep empty outlines, so character mappings, metrics and glyph references remain
   // valid. Every other table is carried over unchanged.
-  def subset(chars: Set[Char]): Truetype raises FontError =
+  def subset(chars: Set[Char]): Truetype raises Font.Error =
     val retained = glyphClosure(Set.of(chars.stdlib.map(glyph(_).id) + 0))
     val glyphs = glyf
     val count = maxp.glyphCount
@@ -106,7 +106,7 @@ case class Truetype(data: Data) extends Sfnt:
       newLoca(id*4 + 2) = (offsets(id) >> 8).toByte
       newLoca(id*4 + 3) = offsets(id).toByte
 
-    val headRef = tables(Sfnt.Table.Ttf.Head).lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
+    val headRef = tables(Sfnt.Table.Ttf.Head).lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
     val headData = data.slice(headRef.offset, headRef.offset + headRef.length)
     val newHead = Array[Byte](headData.length)
     newHead.copyFrom(headData, 0, 0, headData.length)
@@ -125,11 +125,11 @@ case class Truetype(data: Data) extends Sfnt:
 
     Truetype(Sfnt.assemble(data.slice(0, 4), List.of(entries)))
 
-  def subset(text: Text): Truetype raises FontError = subset(Set.from(text.chars.readable))
+  def subset(text: Text): Truetype raises Font.Error = subset(Set.from(text.chars.readable))
 
   // The transitive closure of a set of glyphs under composite-glyph components: every glyph
   // needed to render the given ones.
-  def glyphClosure(glyphIds: Set[Int]): Set[Int] raises FontError =
+  def glyphClosure(glyphIds: Set[Int]): Set[Int] raises Font.Error =
     val table = glyf
 
     def expand(pending: List[Int], seen: Set[Int]): Set[Int] = pending match

@@ -47,7 +47,7 @@ import vacuous.*
 // read loop parks in `read` instead of busy-polling, and applies socket options
 // (and, for TCP, a local interface bind) before connecting.
 object Connectable:
-  given domainSocket: (backend: SocketBackend, options: Every[SocketOption.Domain])
+  given domainSocket: (backend: Socket.Backend, options: Every[Socket.Option.Domain])
   =>  DomainSocket is Connectable:
     // A Unix-domain socket has no network interface, so `interface` is not applicable here.
     def connect(domainSocket: DomainSocket, interface: Optional[MacAddress]): Duplex =
@@ -56,7 +56,7 @@ object Connectable:
   // Honestly tracked: the instance is resolvable only with `Online` permission, so it is a
   // capability carrying that evidence in its capture set.
   given tcpEndpoint: (online: Online)
-  =>  (backend: SocketBackend, options: Every[SocketOption.Tcp])
+  =>  (backend: Socket.Backend, options: Every[Socket.Option.Tcp])
   =>  ((Endpoint[Tcp.Port] is Connectable)^{online, caps.any}) =
 
     new Connectable:

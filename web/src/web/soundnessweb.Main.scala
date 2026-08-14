@@ -61,7 +61,7 @@ val sections: List[Text] =
     ( "scala3", "principles", "dependent", "exceptions", "composability", "nulls",
       "construction", "prose", "declarative", "decoupled", "polymorphic" )
 
-def handle(using HttpConnection): Http.Response =
+def handle(using Http.Connection): Http.Response =
   whereas:
     case error@PathError(path, reason) =>
       Http.Response(page(Aside, P(t"Path $path did not work")))

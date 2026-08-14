@@ -54,9 +54,9 @@ import vacuous.*
 object WebIdlAtomizer:
   val id: Text = t"webidl/1"
 
-  private def malformed(detail: Text): DisciplineError =
+  private def malformed(detail: Text): Discipline.Error =
     import errorDiagnostics.emptyDiagnostics
-    DisciplineError(id, DisciplineError.Reason.Malformed(detail))
+    Discipline.Error(id, Discipline.Error.Reason.Malformed(detail))
 
   // --- canonical binary encoding -------------------------------------------------------------
 
@@ -157,7 +157,7 @@ object WebIdlAtomizer:
   // before atomization, exactly as the platform presents them. The merge is a set union keyed
   // by member selector, independent of definition order across files.
   private def resolved(definitions: List[WebIdl.Definition])
-  :   SList[WebIdl.Definition] raises DisciplineError =
+  :   SList[WebIdl.Definition] raises Discipline.Error =
 
     import WebIdl.Definition.*
 
@@ -233,7 +233,7 @@ object WebIdlAtomizer:
     if exposed.stdlib.isEmpty then name
     else Text(s"$name[${exposed.stdlib.map(_.s).sorted.mkString(",")}]")
 
-  def atomize(definitions: List[WebIdl.Definition]): List[Atom] raises DisciplineError =
+  def atomize(definitions: List[WebIdl.Definition]): List[Atom] raises Discipline.Error =
     import WebIdl.Definition.*
 
     val atoms = scala.collection.mutable.ListBuffer[Atom]()

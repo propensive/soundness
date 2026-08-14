@@ -55,7 +55,7 @@ object OpaqueDiscipline extends Discipline:
     Set(Discipline.Guarantee.Linkage, Discipline.Guarantee.Recompilation)
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError =
+  :   Atomization raises Discipline.Error =
 
     val atoms = content.map: (path, data) =>
       Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))

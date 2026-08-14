@@ -65,7 +65,7 @@ object WeekDate:
   // The `Date` for a given ISO (week-year, week, weekday): start from the Monday of week 1 (the
   // week containing 4 January) and step forward.
   def apply(weekYear: Year, week: Int, weekday: Weekday)(using RomanCalendar)
-  :   Date raises TimeError =
+  :   Date raises Moment.Error =
 
     val jan4 = Date(weekYear, Jan, Day(4))
     jan4.addDays(-jan4.weekday.ordinal + (week - 1)*7 + weekday.ordinal)

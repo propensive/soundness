@@ -51,7 +51,7 @@ import vacuous.*
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import classloaders.threadContextClassloader
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled

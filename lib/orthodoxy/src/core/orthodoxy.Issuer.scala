@@ -50,7 +50,7 @@ import vacuous.*
 import zephyrine.*
 
 import errorDiagnostics.stackTracesDiagnostics
-import httpBackends.virtualMachine
+import httpBackends.virtualMachineHttp
 import queryParameters.arbitraryQueryParameter
 
 object Issuer:
@@ -83,7 +83,7 @@ class Issuer
           case error@ConnectError(reason) =>
             OAuth.Error(OAuth.Error.Reason.Connection(exchange, reason))
 
-          case error@ParseError(_, _, _) =>
+          case error@Parse.Error(_, _, _) =>
             OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
 
           case error@Http.Error(status, _) =>

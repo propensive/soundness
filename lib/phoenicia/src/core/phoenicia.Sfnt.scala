@@ -202,14 +202,14 @@ trait Sfnt:
 
   // The glyph for a character in the font's preferred character mapping, or glyph 0 — the
   // missing-glyph — for a character the font does not map.
-  def glyph(char: Char): Glyph[sfnt.type] raises FontError = cmap.glyph(char)
+  def glyph(char: Char): Glyph[sfnt.type] raises Font.Error = cmap.glyph(char)
 
-  def advanceWidth(char: Char): Int raises FontError = hmtx.advanceWidth(glyph(char).id)
+  def advanceWidth(char: Char): Int raises Font.Error = hmtx.advanceWidth(glyph(char).id)
 
-  def width(text: Text): Quantity[Ems[1]] raises FontError =
+  def width(text: Text): Quantity[Ems[1]] raises Font.Error =
     text.chars.readable.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
 
-  def leftSideBearing(char: Char): Int raises FontError =
+  def leftSideBearing(char: Char): Int raises Font.Error =
     hmtx.leftSideBearing(glyph(char).id)
 
   lazy val tables: Map[Sfnt.Table.Tag, TableOffset] =
@@ -227,40 +227,40 @@ trait Sfnt:
 
     . pipe(Map.from(_))
 
-  def head: HeadTable raises FontError =
+  def head: HeadTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Head).let: ref =>
       data.unpackFrom[HeadTable](ref.offset).tap: table =>
-        if table.magicNumber != 0x5f0f3cf5.bits then raise(FontError(FontError.Reason.MagicNumber))
+        if table.magicNumber != 0x5f0f3cf5.bits then raise(Font.Error(Font.Error.Reason.MagicNumber))
 
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
 
-  def cmap: CmapTable raises FontError =
+  def cmap: CmapTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Cmap).let: ref => CmapTable(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Cmap)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Cmap)))
 
-  def hhea: HheaTable raises FontError =
+  def hhea: HheaTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Hhea).let: ref => data.unpackFrom[HheaTable](ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Hhea)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Hhea)))
 
-  def hmtx: HmtxTable raises FontError =
+  def hmtx: HmtxTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Hmtx).let: ref => HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Hmtx)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Hmtx)))
 
-  def maxp: MaxpTable raises FontError =
+  def maxp: MaxpTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Maxp).let: ref => MaxpTable(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Maxp)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Maxp)))
 
-  def post: PostTable raises FontError =
+  def post: PostTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Post).let: ref => PostTable(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Post)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Post)))
 
-  def os2: Os2Table raises FontError =
+  def os2: Os2Table raises Font.Error =
     tables(Sfnt.Table.Otf.Os2).let: ref => Os2Table(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Otf.Os2)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Otf.Os2)))
 
-  def name: NameTable raises FontError =
+  def name: NameTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Name).let: ref => NameTable(ref.offset)
-    . lest(FontError(FontError.Reason.MissingTable(Sfnt.Table.Ttf.Name)))
+    . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Name)))
 
   // The font's PostScript name, by which PDF and PostScript documents reference it.
   def fontName: Optional[Text] = safely(name(Sfnt.NameId.PostScriptName))
@@ -416,7 +416,7 @@ trait Sfnt:
       @scala.caps.unsafe.untrackedCaptures
       private var formatMemo: Optional[Format] = Unset
 
-      def format: Format raises FontError = mutex:
+      def format: Format raises Font.Error = mutex:
         formatMemo.or:
           val format = formatId match
             case 0 =>
@@ -447,7 +447,7 @@ trait Sfnt:
               Format12(B32(data, offset + 12).s32.int, offset + 16)
 
             case other =>
-              abort(FontError(FontError.Reason.UnknownFormat(other)))
+              abort(Font.Error(Font.Error.Reason.UnknownFormat(other)))
 
           format.also:
             formatMemo = format
@@ -531,5 +531,5 @@ trait Sfnt:
 
       if glyphEncodings.isEmpty then Unset else glyphEncodings.minBy(rank)
 
-    def glyph(char: Char): Glyph[sfnt.type] raises FontError =
-      best.lest(FontError(FontError.Reason.MissingEncoding)).format.glyph(char)
+    def glyph(char: Char): Glyph[sfnt.type] raises Font.Error =
+      best.lest(Font.Error(Font.Error.Reason.MissingEncoding)).format.glyph(char)

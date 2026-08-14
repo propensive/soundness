@@ -83,7 +83,7 @@ object nativeOptions:
 // the build host's own triple is the single target; targets beyond the host require a C
 // toolchain (and sysroot) capable of cross-compilation.
 object nativeEdges:
-  def apply(triples: Triple*)(using WorkingDirectory): List[Edge] raises ToolchainError =
+  def apply(triples: Triple*)(using WorkingDirectory): List[Edge] raises Toolchain.Error =
     val clang = probe(t"clang")
     val clangpp = probe(t"clang++")
 
@@ -91,14 +91,14 @@ object nativeEdges:
       // An unrecognized build host cannot name its own triple, and in any case has no Scala
       // Native runtime; report it as the C toolchain's absence.
       if triples.isEmpty
-      then List(Triple.host.or(abort(ToolchainError(t"clang"))))
+      then List(Triple.host.or(abort(Toolchain.Error(t"clang"))))
       else List(triples*)
 
     targets.map: triple => Edge(Universe.Nir, Binary(triple), NativeTool(triple, clang, clangpp))
 
-  private def probe(tool: Text)(using WorkingDirectory): Text raises ToolchainError =
+  private def probe(tool: Text)(using WorkingDirectory): Text raises Toolchain.Error =
     safely(mute[Exec.Event](sh"which $tool".exec[Text]())).let(_.trim)
-    . or(abort(ToolchainError(tool)))
+    . or(abort(Toolchain.Error(tool)))
 
   private case class NativeTool(triple: Triple, clang: Text, clangpp: Text) extends Tool:
     type Settings = NativeConfig
@@ -121,12 +121,12 @@ object nativeEdges:
         entryPoints: List[EntryPoint],
         out:         Path on Linux )
       ( using Monitor, System, WorkingDirectory )
-      ( using Tactic[LinkError], LinkEvent is Loggable )
+      ( using Tactic[Link.Error], LinkEvent is Loggable )
     :   Deliverable =
 
       val main = entryPoints match
         case List(entry) => entry.mainClass.text
-        case _           => abort(LinkError(LinkError.Reason.NoEntryPoint))
+        case _           => abort(Link.Error(Link.Error.Reason.NoEntryPoint))
 
       val (directory, classpath) = input.emission(Binary(triple))
 
@@ -154,4 +154,4 @@ object nativeEdges:
         Deliverable.Product(unsafely(artifact.toString.tt.as[Path on Linux]))
 
       catch case suc.NonFatal(error) =>
-        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+        abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))

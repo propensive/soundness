@@ -109,7 +109,7 @@ object AtomsBlob:
     import errorDiagnostics.emptyDiagnostics
 
     mitigate:
-      case DisciplineError(_, reason) => badBlob(t"the listing is inconsistent: $reason")
+      case Discipline.Error(_, reason) => badBlob(t"the listing is inconsistent: $reason")
 
     . protect(Atomization.of(discipline, List.from(atoms)))
 

@@ -36,6 +36,7 @@ import scala.quoted.*
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gigantism.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
@@ -53,28 +54,53 @@ object internal:
     value.asInstanceOf[Money in currency]
 
   object Isin:
-    def apply(isin: Text): Isin raises IsinError =
-      if isin.length != 12 then abort(IsinError(IsinError.WrongLength(isin.length))) else
+    def apply(isin: Text): Isin raises Isin.Error =
+      if isin.length != 12 then abort(Isin.Error(Isin.Error.WrongLength(isin.length))) else
         var result: Long = 0L
         val cc0 = isin.s.charAt(0)
 
         if 'A' <= cc0 <= 'Z' then result |= ((cc0.toLong - 'A') & 0b11111) << 59
-        else raise(IsinError(IsinError.BadCountryCode(isin.keep(2))))
+        else raise(Isin.Error(Isin.Error.BadCountryCode(isin.keep(2))))
 
         val cc1 = isin.s.charAt(1)
 
         if 'A' <= cc1 <= 'Z' then result |= ((cc1.toLong - 'A') & 0b11111) << 54
-        else raise(IsinError(IsinError.BadCountryCode(isin.keep(2))))
+        else raise(Isin.Error(Isin.Error.BadCountryCode(isin.keep(2))))
 
         for index <- 2 until 11 do
           val char = isin.s.charAt(index)
 
           if '0' <= char <= '9' || 'A' <= char <= 'Z'
           then result |= ((char.toLong - '0') & 0b111111) << (60 - index*6)
-          else raise(IsinError(IsinError.InvalidCharacter(index, char)))
+          else raise(Isin.Error(Isin.Error.InvalidCharacter(index, char)))
 
-        if result.isin != isin then abort(IsinError(IsinError.LuhnCheck))
+        if result.isin != isin then abort(Isin.Error(Isin.Error.LuhnCheck))
         result
+
+    // IsinError → Isin.Error
+    object Error:
+      enum Reason(val number: Int) extends Clarification:
+        case InvalidCharacter(index: Int, char: Char) extends Reason(1)
+        case BadCountryCode(code: Text)               extends Reason(2)
+        case WrongLength(length: Int)                 extends Reason(3)
+        case LuhnCheck                                extends Reason(4)
+
+      export Reason.*
+
+      given communicable: Reason is Communicable =
+        case BadCountryCode(code) => m"its country code $code was not valid"
+
+        case WrongLength(length) =>
+          m"it had length $length, but it should be 12 characters long"
+
+        case LuhnCheck =>
+          m"its last digit failed the Luhn check"
+
+        case InvalidCharacter(index, char) =>
+          m"the character $char at position $index is not a digit or uppercase letter"
+
+    case class Error(reason: Isin.Error.Reason)(using Diagnostics)
+    extends fulminate.Error(515, reason.number)(m"the ISIN number is not valid because $reason")
 
   extension (isin: Isin)
     private[internal] def payload: Text =

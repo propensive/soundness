@@ -857,20 +857,20 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"y": 3, "unknown": [1, {"a": false}], "x": 2}""".read[DirectPoint in Json]
       . assert(_ == DirectPoint(2, 3))
 
-      test(m"Trailing content after a direct read raises ParseError"):
-        capture[ParseError](t"42 true".read[Int in Json])
+      test(m"Trailing content after a direct read raises Parse.Error"):
+        capture[Parse.Error](t"42 true".read[Int in Json])
       . assert(_.issue match
           case Json.Ast.Issue.SpuriousContent(_) => true
           case _                                 => false)
 
-      test(m"Type mismatch on a direct read raises ParseError"):
-        capture[ParseError](t"\"abc\"".read[Int in Json])
+      test(m"Type mismatch on a direct read raises Parse.Error"):
+        capture[Parse.Error](t"\"abc\"".read[Int in Json])
       . assert(_.issue match
           case Json.Ast.Issue.ExpectedNumber('"') => true
           case _                                  => false)
 
-      test(m"Malformed JSON on a direct read raises ParseError"):
-        capture[ParseError](t"tru".read[Boolean in Json])
+      test(m"Malformed JSON on a direct read raises Parse.Error"):
+        capture[Parse.Error](t"tru".read[Boolean in Json])
       . assert(_.issue match
           case Json.Ast.Issue.PrematureEnd | Json.Ast.Issue.ExpectedTrue => true
           case _                                                         => false)
@@ -990,10 +990,10 @@ object Tests extends Suite(m"Jacinta Tests"):
         . read[List[Person] in Json]
       . assert(_ == List(Person(t"Amy", 50), Person(t"Bea", 60)))
 
-      test(m"A mistyped directly-parsed field raises ParseError"):
+      test(m"A mistyped directly-parsed field raises Parse.Error"):
         // On the AST path this is a `Json.Error`; token-level readers report
         // type mismatches as parse errors, with source positions.
-        capture[ParseError](t"""{"name": "Amy", "age": "x"}""".read[Person in Json])
+        capture[Parse.Error](t"""{"name": "Amy", "age": "x"}""".read[Person in Json])
       . assert(_.issue match
           case Json.Ast.Issue.ExpectedNumber('"') => true
           case _                                  => false)
@@ -1007,8 +1007,8 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(identity)
 
       test(m"A leading zero raises the same issue on both paths"):
-        val direct = capture[ParseError](t"""{"name": "Amy", "age": 0123}""".read[Person in Json])
-        val ast = capture[ParseError](t"""{"name": "Amy", "age": 0123}""".read[Json])
+        val direct = capture[Parse.Error](t"""{"name": "Amy", "age": 0123}""".read[Person in Json])
+        val ast = capture[Parse.Error](t"""{"name": "Amy", "age": 0123}""".read[Json])
         (direct.issue, ast.issue)
       . assert: (directIssue, astIssue) =>
           directIssue == astIssue
@@ -1017,8 +1017,8 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"name": "Amy", "age": -3}""".read[Person in Json]
       . assert(_ == Person(t"Amy", -3))
 
-      test(m"Malformed content inside a skipped field raises ParseError"):
-        capture[ParseError](t"""{"name": "Amy", "junk": {"x": }, "age": 50}""".read[Person in Json])
+      test(m"Malformed content inside a skipped field raises Parse.Error"):
+        capture[Parse.Error](t"""{"name": "Amy", "junk": {"x": }, "age": 50}""".read[Person in Json])
       . assert(_.issue match
           case Json.Ast.Issue.ExpectedSomeValue(_) => true
           case _                                   => false)
@@ -1098,8 +1098,8 @@ object Tests extends Suite(m"Jacinta Tests"):
         agree[Person](t"""{"name": "Amy", "name": "Bea", "age": 50}""")
       . assert(identity)
 
-      test(m"A staged parser rejects mistyped fields with ParseError"):
-        capture[ParseError](t"""{"name": "Amy", "age": "x"}""".read[Person in Json])
+      test(m"A staged parser rejects mistyped fields with Parse.Error"):
+        capture[Parse.Error](t"""{"name": "Amy", "age": "x"}""".read[Person in Json])
       . assert(_.issue match
           case Json.Ast.Issue.ExpectedNumber('"') => true
           case _                                  => false)

@@ -57,7 +57,7 @@ object Debugger:
     ( using monitor:    Monitor,
             probate:    Probate,
             asyncError: Tactic[Async.Error],
-            loggable:   (SocketEvent is Loggable)^,
+            loggable:   (Socket.Event is Loggable)^,
             tactic:     Tactic[Error],
             note:       Diagnostics )
   extends aperture.Sessional:
@@ -74,7 +74,7 @@ object Debugger:
   =>  ( monitor:    Monitor,
         probate:    Probate,
         asyncError: Tactic[Async.Error],
-        loggable:   (SocketEvent is Loggable)^,
+        loggable:   (Socket.Event is Loggable)^,
         tactic:     Tactic[Error],
         note:       Diagnostics )
   =>  ( Sessional[endpoint]^{monitor, asyncError, loggable, tactic, caps.any} ) =

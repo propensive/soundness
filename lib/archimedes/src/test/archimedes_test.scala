@@ -278,8 +278,8 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert(_ == Ergo.parse(t"(x = (-b ± √(b↗2 - 4 a c))/(2 a))"))
 
       test(m"an element outside the ergo subset is rejected"):
-        capture[ErgoError](Ergo.serialize(Math(List(Mtext(t"hi"))))).reason
-      .assert(_ == ErgoError.Reason.Unsupported(t"mtext"))
+        capture[Ergo.Error](Ergo.serialize(Math(List(Mtext(t"hi"))))).reason
+      .assert(_ == Ergo.Error.Reason.Unsupported(t"mtext"))
 
     suite(m"The ergo interpolator"):
       test(m"a literal is parsed at compile time to a Math value"):

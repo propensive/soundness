@@ -32,6 +32,8 @@
                                                                                                   */
 package vacuous
 
+import fulminate.{Diagnostics, m}
+
 import scala.caps
 
 import scala.language.experimental.pureFunctions
@@ -53,3 +55,7 @@ object Optional:
     if value == null then Unset else value
 
   inline def check[value]: Unit = ${internal.check[value]}
+
+  // UnsetError → Optional.Error
+  case class Error()(using Diagnostics)
+  extends fulminate.Error(591, 0)(m"the value was not set")

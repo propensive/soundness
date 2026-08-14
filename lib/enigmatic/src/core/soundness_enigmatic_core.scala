@@ -40,7 +40,7 @@ export
       Cleartext, cleartext, Cloak, Crypto, Ctr, decrypt, Decryptor,
       Des, Divulgence,
       Dsa, Ecb, Ecdsa, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
+      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto,
       MlDsa, NoPadding, Ofb, Pem, Password,
       Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
       Symmetric, SymmetricKey, TripleDes, uncloak }

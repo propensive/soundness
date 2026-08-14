@@ -61,7 +61,7 @@ import zephyrine.*
 // avoids any parser change.
 //
 // Errors reported by `Yaml.Parser` carry `(offset, length)` on the
-// `ParseError.position` (set by `Yaml.Parser.errorAt`); a custom
+// `Parse.Error.position` (set by `Yaml.Parser.errorAt`); a custom
 // `HaltTactic` translates those positions back through the
 // part-origins map to source-file ranges, so diagnostics highlight
 // the exact bad span in the user's `y"…"` template.
@@ -218,9 +218,9 @@ object internal:
     val ast: Yaml.Ast =
       given diagnostics: Diagnostics = Diagnostics.omit
 
-      given parseTactic: HaltTactic[ParseError, Yaml.Ast] =
-        new HaltTactic[ParseError, Yaml.Ast]:
-          override def abort(error: Diagnostics ?=> ParseError): Nothing =
+      given parseTactic: HaltTactic[Parse.Error, Yaml.Ast] =
+        new HaltTactic[Parse.Error, Yaml.Ast]:
+          override def abort(error: Diagnostics ?=> Parse.Error): Nothing =
             val pe = error
             val off = pe.position.offset.or(0)
             val length = pe.position.length.or(0)

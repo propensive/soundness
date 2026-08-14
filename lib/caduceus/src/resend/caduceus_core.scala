@@ -56,7 +56,7 @@ import charEncoders.utf8Encoder
 import environments.javaEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
-import httpBackends.virtualMachine
+import httpBackends.virtualMachineHttp
 import stdios.virtualMachineStdio
 import termcaps.environmentTermcap
 
@@ -113,7 +113,7 @@ package couriers:
 
         mitigate:
           case ConnectError(reason)     => Out.println(reason.communicate) yet error
-          case ParseError(_, _, reason) => Out.println(reason.describe) yet error
+          case Parse.Error(_, _, reason) => Out.println(reason.describe) yet error
           case Http.Error(status, _)     => Out.println(status.communicate) yet error
           case Json.Error(reason)        => Out.println(reason.communicate) yet error
           case MediaType.Error(_, _)     => error

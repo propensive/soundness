@@ -46,7 +46,7 @@ import vacuous.*
 // state, and reports the intrinsic size its current content needs — the hook the
 // reactive layout uses to grow or shrink a panel.
 trait Focus extends Fixture:
-  def handle(event: TerminalEvent): Unit
+  def handle(event: Terminal.Event): Unit
 
 // A focusable wrapping a `LineEditor`. Its intrinsic height is the number of
 // wrapped rows its current value occupies, so an editor that grows past one line
@@ -65,7 +65,7 @@ class EditorField(initial: LineEditor = LineEditor()) extends Focus:
     summon[Interaction[Text, LineEditor]].render(Unset, editor)
     canvas.cursor(focused)
 
-  def handle(event: TerminalEvent): Unit = editor = editor.apply(event)
+  def handle(event: Terminal.Event): Unit = editor = editor.apply(event)
 
   def measure(width: Int): (Int, Int) =
     val rows = LineEditor.cursorPosition(editor.value, editor.value.length, width.max(1))._1 + 1
@@ -103,6 +103,6 @@ class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
     canvas.flush()
     canvas.cursor(false)
 
-  def handle(event: TerminalEvent): Unit = menu = menu.apply(event)
+  def handle(event: Terminal.Event): Unit = menu = menu.apply(event)
 
   def measure(width: Int): (Int, Int) = (0, menu.options.stdlib.length)

@@ -35,7 +35,7 @@ package soundness
 export coaxial.{WasiSocketsApi}
 
 package socketBackends:
-  export coaxial.socketBackends.wasi
+  export coaxial.socketBackends.wasiSockets
 
 package wasiApis:
   export coaxial.wasiApis.wasiSocketsApi

@@ -94,7 +94,7 @@ object Grpc:
     =>  ( monitor:    Monitor,
           probate:    Probate,
           asyncError: Tactic[Async.Error],
-          loggable:   (SocketEvent is Loggable)^ )
+          loggable:   (Socket.Event is Loggable)^ )
     =>  ( GrpcSessional[endpoint]^{monitor, asyncError, loggable, caps.any} ) =
 
       GrpcSessional()

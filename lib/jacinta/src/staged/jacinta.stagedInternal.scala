@@ -402,7 +402,7 @@ object stagedInternal:
               val foci = infer[Foci[Json.Focus]]
               val focused = foci.active
               val parser = $reader.rawParser.asInstanceOf[Parser]
-              val ptactic = $reader.rawTactic.asInstanceOf[Tactic[ParseError]]
+              val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
               parser.directOpenArray()(using ptactic)
               var index = 0
               var continue = parser.directElementFirst()(using ptactic)
@@ -493,7 +493,7 @@ object stagedInternal:
         focused: Expr[Boolean],
         tactic:  Expr[Tactic[Json.Error]],
         parser:  Expr[Parser],
-        ptactic: Expr[Tactic[ParseError]] )
+        ptactic: Expr[Tactic[Parse.Error]] )
     :   Expr[product] =
 
       val owner = Symbol.spliceOwner
@@ -744,7 +744,7 @@ object stagedInternal:
       val focused = foci.active
       val tactic = infer[Tactic[Json.Error]]
       val parser = $reader.rawParser.asInstanceOf[Parser]
-      val ptactic = $reader.rawTactic.asInstanceOf[Tactic[ParseError]]
+      val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
       ${ body('foci, 'focused, 'tactic, 'parser, 'ptactic) }
     }
 

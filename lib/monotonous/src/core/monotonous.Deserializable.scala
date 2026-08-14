@@ -53,7 +53,7 @@ object Deserializable:
       override protected val atomicity = 8.lcm(base)/base
 
       def deserialize(previous: Text, text: Text, index0: Int, last: Boolean)
-      :   Data raises SerializationError =
+      :   Data raises Serialization.Error =
 
         val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
 
@@ -96,7 +96,7 @@ trait Deserializable extends Findable, caps.Pure:
   protected val atomicity: Int = 1
 
   def deserialize(previous: Text, current: Text, index0: Int, last: Boolean)
-  :   Data raises SerializationError
+  :   Data raises Serialization.Error
 
-  def deserialize(value: Text)(using Tactic[SerializationError]): Data =
+  def deserialize(value: Text)(using Tactic[Serialization.Error]): Data =
     deserialize(t"", value, 0, true)

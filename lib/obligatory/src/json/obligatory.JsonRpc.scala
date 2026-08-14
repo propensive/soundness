@@ -56,7 +56,7 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-import httpBackends.virtualMachine
+import httpBackends.virtualMachineHttp
 
 object JsonRpc:
   // Requests in flight, by correlation id. Concurrent and self-evicting: the requesting thread
@@ -168,7 +168,7 @@ object JsonRpc:
       recover:
         case MediaType.Error(_, _)   => promise.cancel()
         case ConnectError(_)        => promise.cancel()
-        case ParseError(_, _, _)    => promise.cancel()
+        case Parse.Error(_, _, _)    => promise.cancel()
         case Http.Error(_, _)        => promise.cancel()
         case Async.Error(_)          => promise.cancel()
 

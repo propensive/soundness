@@ -59,5 +59,5 @@ trait SignatureAlgorithm:
   type Self
 
   // `Unset` when the cipher and digest have no object identifier between them, which a caller
-  // turns into a `CertificateError` rather than an encoding that no verifier would recognize.
+  // turns into a `Certificate.Error` rather than an encoding that no verifier would recognize.
   def identifier(digest: Signature.Digest): Optional[Asn1]

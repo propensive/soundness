@@ -1073,13 +1073,13 @@ object Tests extends Suite(m"Xenophile tests"):
     test(m"an unreadable declaration file is an atomization error"):
       import errorDiagnostics.stackTracesDiagnostics
 
-      capture[DisciplineError]:
+      capture[Discipline.Error]:
         DtsDiscipline.atomize(content(t"export type T<A> = A extends string ? 1 : 2;"),
             Discipline.Context(t"jvm"))
 
       . reason
     . assert:
-        case DisciplineError.Reason.Malformed(_) => true
+        case Discipline.Error.Reason.Malformed(_) => true
         case _                                   => false
 
     test(m"the registry falls back to opaque for content the discipline does not claim"):
@@ -1202,8 +1202,8 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"an unsupported construct is an atomization error"):
         import errorDiagnostics.stackTracesDiagnostics
 
-        capture[DisciplineError](atomize(t"weird thing;")).reason match
-          case DisciplineError.Reason.Malformed(_) => true
+        capture[Discipline.Error](atomize(t"weird thing;")).reason match
+          case Discipline.Error.Reason.Malformed(_) => true
           case _                                   => false
       . assert(identity)
 
@@ -1326,8 +1326,8 @@ object Tests extends Suite(m"Xenophile tests"):
         val accepted = atomize(gated).atoms.stdlib.exists(_.key == t"a:pkg/one#get")
 
         val refused =
-          capture[DisciplineError](atomize(unstable)).reason match
-            case DisciplineError.Reason.Malformed(_) => true
+          capture[Discipline.Error](atomize(unstable)).reason match
+            case Discipline.Error.Reason.Malformed(_) => true
             case _                                   => false
 
         (accepted, refused)
@@ -1336,10 +1336,10 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"an unresolvable type reference is an error"):
         import errorDiagnostics.stackTracesDiagnostics
 
-        capture[DisciplineError]:
+        capture[Discipline.Error]:
           atomize(t"package a:pkg;\ninterface one { get: func() -> mystery; }")
         . reason match
-            case DisciplineError.Reason.Unresolved(_) => true
+            case Discipline.Error.Reason.Unresolved(_) => true
             case _                                    => false
       . assert(identity)
 
@@ -1427,8 +1427,8 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"an unsupported construct is an atomization error"):
         import errorDiagnostics.stackTracesDiagnostics
 
-        capture[DisciplineError](atomize(t"int x = 4;")).reason match
-          case DisciplineError.Reason.Malformed(_) => true
+        capture[Discipline.Error](atomize(t"int x = 4;")).reason match
+          case Discipline.Error.Reason.Malformed(_) => true
           case _                                   => false
       . assert(identity)
 

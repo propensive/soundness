@@ -366,12 +366,12 @@ object internal:
         scala.collection.immutable.Map()
     def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
-    // Custom HaltTactic: translate parser ParseError positions to source-file ranges.
+    // Custom HaltTactic: translate parser Parse.Error positions to source-file ranges.
     val html: Html =
       given diagnostics: Diagnostics = Diagnostics.omit
 
-      given parseTactic: HaltTactic[ParseError, Html] = new HaltTactic[ParseError, Html]:
-        override def abort(error: Diagnostics ?=> ParseError): Nothing =
+      given parseTactic: HaltTactic[Parse.Error, Html] = new HaltTactic[Parse.Error, Html]:
+        override def abort(error: Diagnostics ?=> Parse.Error): Nothing =
           val pe = error
           val off = pe.position.offset.or(0)
           val length = pe.position.length.or(0)

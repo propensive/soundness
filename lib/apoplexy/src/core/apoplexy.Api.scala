@@ -187,7 +187,7 @@ object Api:
           val response = dispatch(t"application/xml")
           compiletime.summonInline[(value is Conformant) over xylophone.Xml].read(response)
 
-  // Api.Error → Api.Error
+  // ApiError → Api.Error
   object Error:
     object Reason:
       given Reason is Communicable =

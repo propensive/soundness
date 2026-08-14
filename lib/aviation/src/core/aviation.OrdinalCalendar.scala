@@ -62,6 +62,6 @@ object OrdinalCalendar extends Calendar:
     base.zerothDayOfYear(year).addDays(day())
 
   // Construct directly from a year and a day-of-year, without the vestigial month.
-  inline def apply(year: Year, dayOfYear: Int): Date raises TimeError = jdn(year, Annus, Day(dayOfYear))
+  inline def apply(year: Year, dayOfYear: Int): Date raises Moment.Error = jdn(year, Annus, Day(dayOfYear))
 
   override def format(date: Date): Text = t"${annual(date)()}-${diurnal(date)()}"

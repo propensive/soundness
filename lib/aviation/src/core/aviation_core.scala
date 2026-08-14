@@ -89,10 +89,10 @@ trait Unix
 trait Monotonic
 
 package instantDecodables:
-  given iso8601InstantDecodable: Tactic[TimeError] => (Instant over Unix) is Decodable in Text =
+  given iso8601InstantDecodable: Tactic[Moment.Error] => (Instant over Unix) is Decodable in Text =
     Iso8601.parse(_)
 
-  given rfc1123InstantDecodable: Tactic[TimeError] => (Instant over Unix) is Decodable in Text =
+  given rfc1123InstantDecodable: Tactic[Moment.Error] => (Instant over Unix) is Decodable in Text =
     Rfc1123.parse(_)
 
 package dateFormats:
@@ -363,39 +363,39 @@ package timeFormats:
       case Meridiem.Pm => t"p.m."
 
   package hours:
-    given twelveHourClock: (Meridiem is Showable) => TimeFormat:
+    given twelveHourClock: (Meridiem is Showable) => Clockface.Format:
       def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
       def halfDay: Boolean = true
       def seconds: Boolean = false
 
-    given twelveHourSecondsClock: (Meridiem is Showable) => TimeFormat:
+    given twelveHourSecondsClock: (Meridiem is Showable) => Clockface.Format:
       def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
       def halfDay: Boolean = true
       def seconds: Boolean = false
 
-    given twentyFourHourClock: TimeFormat:
+    given twentyFourHourClock: Clockface.Format:
       def postfix(meridiem: Meridiem): Text = t""
       def halfDay: Boolean = false
       def seconds: Boolean = false
 
-    given twentyFourHourSecondsClock: TimeFormat:
+    given twentyFourHourSecondsClock: Clockface.Format:
       def postfix(meridiem: Meridiem): Text = t""
       def halfDay: Boolean = false
       def seconds: Boolean = true
 
   package specificity:
-    given minutesSpecificity: TimeSpecificity = TimeSpecificity.Minutes
-    given secondsSpecificity: TimeSpecificity = TimeSpecificity.Seconds
+    given minutesSpecificity: Clockface.Specificity = Clockface.Specificity.Minutes
+    given secondsSpecificity: Clockface.Specificity = Clockface.Specificity.Seconds
 
   package numerics:
-    given fixedWidthTimeNumerics: TimeNumerics = TimeNumerics.FixedWidth
-    given variableWidthTimeNumerics: TimeNumerics = TimeNumerics.VariableWidth
+    given fixedWidthTimeNumerics: Clockface.Numerics = Clockface.Numerics.FixedWidth
+    given variableWidthTimeNumerics: Clockface.Numerics = Clockface.Numerics.VariableWidth
 
   package separators:
-    given dotTimeSeparator: TimeSeparation = () => t"."
-    given colonTimeSeparator: TimeSeparation = () => t":"
-    given noneTimeSeparator: TimeSeparation = () => t""
-    given frenchTimeSeparator: TimeSeparation = () => t"h"
+    given dotTimeSeparator: Clockface.Separation = () => t"."
+    given colonTimeSeparator: Clockface.Separation = () => t":"
+    given noneTimeSeparator: Clockface.Separation = () => t""
+    given frenchTimeSeparator: Clockface.Separation = () => t"h"
 
 // A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
 // "in 18 minutes", "8 minutes ago", "just now", and their French/German/Spanish equivalents. Only
@@ -455,7 +455,7 @@ package calendars:
       import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(28)))
 
-    given raiseErrorsLeapDay: Tactic[TimeError] => Anniversary.NonexistentLeapDay = year =>
+    given raiseErrorsLeapDay: Tactic[Moment.Error] => Anniversary.NonexistentLeapDay = year =>
       import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(29)))
 
@@ -478,8 +478,8 @@ package chronometries:
 package gapPolicies:
   given pushBackward: GapPolicy = (_, backward) => backward
 
-  given rejectGap: Tactic[TimeError] => GapPolicy =
-    (_, _) => abort(TimeError(_.Gap))
+  given rejectGap: Tactic[Moment.Error] => GapPolicy =
+    (_, _) => abort(Moment.Error(_.Gap))
 
 // Switch sub-day `Moment` arithmetic to count leap seconds (the default `LeapMode.Lenient` works on
 // the leap-free POSIX line). Import `leapModes.exact` so adding a duration that crosses an inserted
@@ -499,9 +499,9 @@ package monthEnds:
       val max = calendar.daysInMonth(month, year)
       unsafely(Date(year, month, Day(max))).addDays(day - max)
 
-  given raiseMonthEnd: Tactic[TimeError] => Disambiguation = new Disambiguation:
+  given raiseMonthEnd: Tactic[Moment.Error] => Disambiguation = new Disambiguation:
     def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
-      abort(TimeError(_.Invalid(year(), calendar.monthOrdinal(year, month) + 1, day, calendar)))
+      abort(Moment.Error(_.Invalid(year(), calendar.monthOrdinal(year, month) + 1, day, calendar)))
 
 def now()(using clock: Clock): Instant over Unix = clock()
 
@@ -525,13 +525,6 @@ given base24Extractable: [text <: Text] => (Text is Extractable to Int)
 
   case As[Int](value: Base24) => value
   case _                      => Unset
-
-object TimeEvent:
-  given communicable: TimeEvent is Communicable =
-    case ParseTzdb(name) => m"parsing the timezone database file $name"
-
-enum TimeEvent:
-  case ParseTzdb(name: Text) extends TimeEvent, Log.Time
 
 // Which occurrence of a wall-clock time a `Moment` denotes during a fall-back DST overlap, where
 // the same local time happens twice (clocks go back). `First` is the earlier instant (under the

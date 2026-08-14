@@ -81,7 +81,7 @@ case class ResourceDiscipline(resources: List[Resource]) extends Discipline:
     || underScan(path)
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError =
+  :   Atomization raises Discipline.Error =
 
     val atoms = content.stdlib.flatMap: (path, data) =>
       if exports.stdlib.exists(_.text == path.text) then

@@ -44,7 +44,7 @@ import prepositional.*
 // `gapPolicies.rejectGap` to override it.
 //
 // `resolve` receives the two candidate instants and returns one (or aborts). The rejecting policy
-// captures a `Tactic[TimeError]` when constructed, so it doesn't widen grounding's effect type.
+// captures a `Tactic[Moment.Error]` when constructed, so it doesn't widen grounding's effect type.
 
 object GapPolicy:
   given pushForward: GapPolicy = (forward, _) => forward

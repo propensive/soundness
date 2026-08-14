@@ -70,15 +70,15 @@ object Tests extends Suite(m"Gnossienne Tests"):
         given resolvable: Person is Resolvable by Text = unsafely(Resolvable(people))
 
         unsafely:
-          capture[ReferenceError](resolvable.resolve(t"nobody@example.com")).reference
+          capture[Reference.Error](resolvable.resolve(t"nobody@example.com")).reference
       . assert(_ == t"nobody@example.com")
 
       test(m"An unresolvable reference reports why it failed"):
         given resolvable: Person is Resolvable by Text = unsafely(Resolvable(people))
 
         unsafely:
-          capture[ReferenceError](resolvable.resolve(t"nobody@example.com")).reason
-      . assert(_ == ReferenceError.Reason.NotFound)
+          capture[Reference.Error](resolvable.resolve(t"nobody@example.com")).reason
+      . assert(_ == Reference.Error.Reason.NotFound)
 
     suite(m"Reference tests"):
       test(m"A reference to an entity holds its key"):
@@ -110,7 +110,7 @@ object Tests extends Suite(m"Gnossienne Tests"):
         given resolvable: Person is Resolvable by Text = unsafely(Resolvable(people))
 
         unsafely:
-          capture[ReferenceError](Reference[Person](t"nobody@example.com")()).reference
+          capture[Reference.Error](Reference[Person](t"nobody@example.com")()).reference
       . assert(_ == t"nobody@example.com")
 
     suite(m"Reference codec tests"):
@@ -131,7 +131,7 @@ object Tests extends Suite(m"Gnossienne Tests"):
 
     suite(m"Error message tests"):
       test(m"A reference error explains what could not be found"):
-        val error = ReferenceError(t"nobody@example.com", ReferenceError.Reason.NotFound)
+        val error = Reference.Error(t"nobody@example.com", Reference.Error.Reason.NotFound)
         error.message.text
       . assert(_ == t"the reference nobody@example.com could not be resolved because no target "+
           t"with that reference was found in the store")

@@ -422,7 +422,7 @@ object WebDriver:
   // and a capability-classed `Element` constructed there is fresh at each construction, so a
   // `List` of them cannot be formed ("any² is not visible from any"); that is precisely the
   // failure recorded in rep/DECISIONS.md which caused the earlier attempt to be reverted. The
-  // `X^{this, caps.any}` borrow that `HttpSession#fetch` uses works for one value returned from a
+  // `X^{this, caps.any}` borrow that `Http.Session#fetch` uses works for one value returned from a
   // method; it does not survive being built in a lambda and collected into a container.
   //
   // Nothing is lost by leaving elements pure. A leaked element is a dangling id, not a live
@@ -767,7 +767,7 @@ object WebDriver:
     private given mediaTactic: (Tactic[MediaType.Error]^) =
       tactic.contramap(_ => Session.malformed(t"the media type was not valid")(using note))
 
-    private given base64Tactic: (Tactic[SerializationError]^) =
+    private given base64Tactic: (Tactic[Serialization.Error]^) =
       tactic.contramap(_ => Session.malformed(t"the screenshot was not valid Base64")(using note))
 
     private given decodeTactic: (Tactic[CharDecoder.Error]^) =
@@ -999,7 +999,7 @@ object WebDriver:
     // The policy is the ambient `Tenacity` — `exponentialFiveTimesTenacity` and its siblings are
     // exported from `soundness` — so the schedule is the caller's to choose.
     def awaitElements[focus: Focusable](value: focus)
-      ( using Tenacity, Monitor, Tactic[RetryError] )
+      ( using Tenacity, Monitor, Tactic[Tenacity.Error] )
     :   List[Element] =
 
       retry: (surrender, persevere) ?=>
@@ -1007,14 +1007,14 @@ object WebDriver:
         if found.nil then persevere() else found
 
     def awaitElement[focus: Focusable](value: focus)
-      ( using Tenacity, Monitor, Tactic[RetryError] )
+      ( using Tenacity, Monitor, Tactic[Tenacity.Error] )
     :   Element =
 
       awaitElements(value).prim.lest(Error(Error.Reason.NoSuchElement, t"nothing matched", Nil))
 
     // The general form, for a condition the caller can evaluate without raising — comparing a
     // title, counting elements, reading a cookie.
-    def awaitUntil(condition: => Boolean)(using Tenacity, Monitor, Tactic[RetryError]): Unit =
+    def awaitUntil(condition: => Boolean)(using Tenacity, Monitor, Tactic[Tenacity.Error]): Unit =
       retry: (surrender, persevere) ?=>
         val satisfied = condition
         if satisfied then () else persevere()

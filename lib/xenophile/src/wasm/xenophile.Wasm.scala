@@ -34,6 +34,8 @@ package xenophile
 
 import anticipation.*
 import distillate.*
+import fulminate.*
+import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
@@ -104,6 +106,95 @@ object Wasm:
 
   given dataDecodable: ((Data is Decodable in Wasm) { type Carrier = Array[Byte]^{} }) =
     dec[Data, Array[Byte]^{}](identity(_))
+
+  // WitError → Wasm.Error
+  object Error:
+    // The failing case's lower-kebab-case name (as a `Wasm.Case` would spell it), recovered from the
+    // error value's class.
+    private def nameOf(value: Any): Text =
+      val simple = value.getClass.getSimpleName.nn.tt
+      val stripped = if simple.ends(t"$$") then simple.skip(1, Rtl) else simple
+      stripped.uncamel.kebab
+
+  // The `err` arm of a WIT `result<…>`, raised by `invoke`'s decoder. The error value (e.g. a case
+  // of `wasi:filesystem`'s `error-code`) is held untyped, so this module never names its
+  // (Wasm-only) class; `name` recovers which case it is — the case's lower-kebab-case name, as a
+  // `Wasm.Case` would spell it — so callers can translate failures into their own error vocabulary.
+  // Raised from generated code, where no `Diagnostics` can be summoned, so it supplies its own.
+  case class Error(value: Any)
+  extends fulminate.Error(m"the WIT import returned the error ${Error.nameOf(value)}")
+    ( using errorDiagnostics.emptyDiagnostics ):
+
+    def name: Text = Error.nameOf(value)
+
+  // WitCase → Wasm.Case
+  // A payload-less case of a WIT `variant` (or `enum`), named by its lower-kebab-case Scala-side
+  // name (e.g. `get` or `dns-timeout`), for passing as an argument to a WIT function — such as the
+  // `method` taken by `wasi:http`'s `outgoing-request.set-method`. The phantom `Topic` records the
+  // variant type, so the value converts (via the `Interoperable` instance below) into an argument of
+  // that foreign type; `invoke` selects the corresponding facade case object at runtime.
+  object Case:
+    def apply[topic <: Label](name: Text): Case of topic =
+      new Case(name).asInstanceOf[Case of topic]
+
+    // The case's lower-kebab-case name, recovered from a facade case object's class (the same
+    // spelling `apply` accepts, and the same derivation as `Wasm.Error.name`).
+    def caseName(value: Any): Text =
+      val simple = value.getClass.getSimpleName.nn.tt
+      val stripped = if simple.ends(t"$$") then simple.skip(1, Rtl) else simple
+      stripped.uncamel.kebab
+
+    given interoperable: [topic <: Label]
+    =>  ( (Case of topic) is Interoperable in Wit of topic ) =
+      Interoperable()
+
+  final class Case(val name: Text) extends Topical
+
+  // WitHandle → Wasm.Handle
+  // An opaque handle to a WIT resource — a stateful foreign value such as an output stream or file
+  // descriptor — obtained by `invoke`ing a resource-returning WIT function. The underlying value (a
+  // `@WitResourceImport` facade instance, only meaningful in Wasm-compiled code) is held untyped, so
+  // this module never names it; the phantom `Topic` records the WIT resource type, so the handle can
+  // be navigated like any other foreign value (via the `Interoperable` instance below) to invoke the
+  // resource's methods, and eventually `dispose()`d.
+  object Handle:
+    given interoperable: [topic <: Label]
+    =>  ( (Handle of topic) is Interoperable in Wit of topic ) =
+      Interoperable()
+
+  final class Handle(val value: Any) extends Topical
+
+  // WitVariant → Wasm.Variant
+  // A payload-carrying case of a WIT `variant`, for passing as an argument to a WIT function — such
+  // as the `ip-socket-address` (an `ipv4`/`ipv6` case wrapping a socket-address record) taken by
+  // `wasi:sockets`'s `start-connect`. The phantom `Topic` records the variant type and `Case` the
+  // selected case (both lower-kebab-case names, given as literal type arguments), while `Payload`
+  // preserves the argument's Scala type so `invoke` can encode it; the case must be a compile-time
+  // literal because the payload type differs per case, so the facade case is built with no runtime
+  // dispatch. `Wasm.Case` is the payload-less counterpart.
+  //
+  // Written `Variant["ip-socket-address", "ipv4"](payload)`: the topic and case are explicit type
+  // arguments, the payload is inferred. At the downstream Wasm-link site `invoke` resolves the
+  // variant's facade, selects the named case, and constructs it — building any nested record/tuple
+  // payload from `payload` element-wise.
+  object Variant:
+    transparent inline def apply[topic <: Label, name <: Label]: Applier[topic, name] =
+      Applier()
+
+    // The topic and case are fixed by the type arguments above; this second application infers the
+    // payload's Scala type (which a single explicit type-argument list could not do alongside them).
+    // `invoke` reads the payload type from the `Variant`'s type argument and the topic and case
+    // from its phantom `Topic`/`Case` members.
+    class Applier[topic <: Label, name <: Label]():
+      transparent inline def apply[payload](payload: payload)
+      :   (Variant[payload] of topic) { type Case = name } =
+        new Variant(payload).asInstanceOf[(Variant[payload] of topic) { type Case = name }]
+
+    given interoperable: [topic <: Label, name <: Label, payload]
+    =>  ((Variant[payload] of topic) { type Case = name } is Interoperable in Wit of topic) =
+      Interoperable()
+
+  final class Variant[payload](val payload: payload) extends Topical
 
   // TODO: `F32`/`F64` (need the `Float`/`Double`->`F32`/`F64` constructors) and a WIT `list<T>`
   // codec (crosses the boundary as an `Array` of the element carrier) are not yet provided.

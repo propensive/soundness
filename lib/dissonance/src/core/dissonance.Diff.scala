@@ -143,7 +143,7 @@ object Diff:
 
         List(command) ::: delSeq ::: sep ::: insSeq
 
-  // Diff.Error → Diff.Error
+  // DiffError → Diff.Error
   case class Error(lineNo: Int, line: Text)(using Diagnostics)
   extends fulminate.Error(39, 0)(m"could not read the diff at line $lineNo: $line")
 

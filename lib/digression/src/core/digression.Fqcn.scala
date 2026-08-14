@@ -84,7 +84,7 @@ object Fqcn:
 
     builder.toString.tt
 
-  // Fqcn.Error → Fqcn.Error
+  // FqcnError → Fqcn.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
       case InvalidChar(char: Char)    extends Reason(1)

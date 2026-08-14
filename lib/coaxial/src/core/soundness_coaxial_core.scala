@@ -34,10 +34,10 @@ package soundness
 
 export
   coaxial
-  . { Bindable, BindError, Connectable, connectableSessional, ConnectionError, Control,
+  . { Bindable, Bind, Connectable, connectableSessional, Control,
       DomainSocket, duplex, Duplex, Duplexable, exchange, Ingressive,
-      listen, Packet, react, Routable, Transmitter, Serviceable, SocketBackend, SocketEvent,
-      SocketOption, SocketService, Transmissible, transmit, UdpResponse }
+      listen, Packet, react, Routable, Transmitter, Serviceable, Socket, Transmissible,
+      transmit, UdpResponse }
 
 package socketOptions:
   export

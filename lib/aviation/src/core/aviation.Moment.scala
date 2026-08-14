@@ -35,6 +35,8 @@ package aviation
 import java.time as jt
 
 import anticipation.*
+import denominative.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*
@@ -77,6 +79,36 @@ object Moment:
     val minute = pad(moment.time.minute, 2)
 
     t"$year-$month-${day}T$hour:$minute:${pad(second, 2)}${offset.tt}"
+
+  // TimeError → Moment.Error
+  object Error:
+    inline def apply(inline lambda: Reason.type => Reason)(using Diagnostics): Error =
+      Error(lambda(Reason))
+
+    object Reason:
+      given Reason is Communicable =
+        case reason@Format(text, format, offset) =>
+          m"$text does not conform to format ${format.name} (${reason.issue} at ${offset.n0})"
+
+        case Invalid(year, month, day, calendar) =>
+          m"$year-$month-$day does not exist in the calendar ${calendar.name}"
+
+        case Unknown(text, kind) =>
+          m"$text is not a recognized $kind"
+
+        case Gap =>
+          m"the wall-clock time does not exist in its timezone (a spring-forward DST gap)"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Format(text: Text, format: Date.Format, offset: Ordinal)(val issue: format.Issue)
+      extends Reason(1)
+
+      case Invalid(year: Int, month: Int, day: Int, calendar: Calendar) extends Reason(2)
+      case Unknown(text: Text, kind: Text) extends Reason(3)
+      case Gap extends Reason(4)
+
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(333, reason.number)(m"the date was not valid because $reason")
 
 case class Moment
   ( date:       Date,

@@ -57,15 +57,15 @@ object CHeaderDiscipline extends Discipline:
     Set(Discipline.Guarantee.Recompilation)
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
-  :   Atomization raises DisciplineError =
+  :   Atomization raises Discipline.Error =
 
     val declarations = content.stdlib.flatMap: (path, data) =>
       val source = Text(String(Array.unsafeJvm(data), "UTF-8"))
 
       mitigate:
-        case CHeaderError(reason) =>
-          DisciplineError(id, DisciplineError.Reason.Malformed(t"${path.text}: $reason"))
+        case CHeader.Error(reason) =>
+          Discipline.Error(id, Discipline.Error.Reason.Malformed(t"${path.text}: $reason"))
 
-      . protect(CHeaderParser.parse(source).stdlib)
+      . protect(CHeader.Parser.parse(source).stdlib)
 
     Atomization.of(id, CHeaderAtomizer.atomize(List.from(declarations)))

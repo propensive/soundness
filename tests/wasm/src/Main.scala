@@ -57,10 +57,10 @@ object Main extends Run:
 
   private def fs(): Unit =
     import galilei.{FilesystemBackend, Linux, OpenFlag}, galilei.wasiApis.wasiFilesystemApi
-    import galilei.filesystemBackends.wasi
+    import galilei.filesystemBackends.wasiFilesystem
     import serpentine.*
 
-    val backend: FilesystemBackend on Linux = galilei.filesystemBackends.wasi[Linux]
+    val backend: FilesystemBackend on Linux = galilei.filesystemBackends.wasiFilesystem[Linux]
 
     def path(parts: Text*): Path on Linux = Path[Linux, Text, Tuple](t"/", proscenium.List(parts.reverse*))
 
@@ -77,12 +77,12 @@ object Main extends Run:
     System.out.nn.println("fs: " + content.s)
 
   private def tcp(environment: ambience.Environment): Unit =
-    import coaxial.SocketBackend, coaxial.wasiApis.wasiSocketsApi
-    import coaxial.socketBackends.wasi
+    import coaxial.Socket, coaxial.wasiApis.wasiSocketsApi
+    import coaxial.socketBackends.wasiSockets
     import urticose.{Endpoint, Port, Tcp}
 
     val port = environment.variable(t"PORT").or(t"9099").s.toInt
-    val backend = summon[SocketBackend]
+    val backend = summon[Socket.Backend]
     val endpoint = Endpoint("127.0.0.1".tt, Port.unsafe[Tcp](port))
 
     val exchange = backend.dialTcp(endpoint, Unset, proscenium.Nil)
@@ -91,7 +91,7 @@ object Main extends Run:
 
   private def http(environment: ambience.Environment): Unit =
     import telekinesis.Http, telekinesis.wasiApis.wasiHttpApi
-    import telekinesis.httpBackends.wasi
+    import telekinesis.httpBackends.wasiHttp
     import zephyrine.Stream
 
     val url = environment.variable(t"URL").or(t"http://example.com/")

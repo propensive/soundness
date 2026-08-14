@@ -53,13 +53,13 @@ import zephyrine.*
 
 object JavaServlet:
   // JavaServletFn → JavaServlet.Fn
-  open class Fn(handle: HttpConnection => Http.Response)
+  open class Fn(handle: Http.Connection => Http.Response)
   extends JavaServlet(handle)
 
-// `handle` is a plain function (not a context function): with `HttpConnection` a capability,
+// `handle` is a plain function (not a context function): with `Http.Connection` a capability,
 // a context-function class parameter cannot be applied from the synthesized superclass
 // argument of subclasses like `JavaServlet.Fn` (capture-root unification).
-open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.HttpServlet:
+open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest)
     ( using Tactic[StreamError] )
   :   Stream[Data] over Credit =
@@ -70,7 +70,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
   protected def makeConnection
     ( request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse )
     ( using streamError: Tactic[StreamError], hostnameError: Tactic[Hostname.Error] )
-  :   HttpConnection^ =
+  :   Http.Connection^ =
 
     val uri = request.getRequestURI.nn.tt
     val query = Optional(request.getQueryString).let(_.tt)
@@ -103,7 +103,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
             . stream(in.asInstanceOf[ji.InputStream]),
           textHeaders = headers )
 
-    val respond: HttpConnection.Respond^ = new HttpConnection.Respond:
+    val respond: Http.Connection.Respond^ = new Http.Connection.Respond:
       def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
         val servletResponse1 = servletResponse0.asInstanceOf[jsh.HttpServletResponse]
         servletResponse1.setStatus(response.status.code)
@@ -145,7 +145,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
 
         out.close()
 
-    new HttpConnection(httpRequest, false, request.getServerPort, respond)
+    new Http.Connection(httpRequest, false, request.getServerPort, respond)
 
 
   def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =

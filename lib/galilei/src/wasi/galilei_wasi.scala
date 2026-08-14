@@ -66,17 +66,17 @@ package filesystemBackends:
   // imports only materialize in code compiled for a Wasm target. Summoning it requires
   // `wasiFilesystemApi` (and this module's WIT resource) to be visible at that site.
   //
-  // WASI error codes are recovered from the `WitError` raised by `call`'s decoder and mapped
+  // WASI error codes are recovered from the `Wasm.Error` raised by `call`'s decoder and mapped
   // onto `IoError.Reason` — so a quota failure reports `QuotaExceeded`, not a generic error.
   //
   // The per-site duplication the compiler warns about is the point: the instance must
   // materialize at the downstream summoning site, and a WASI-linked application summons it once.
   @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
-  inline given wasi: [plane: Filesystem] => FilesystemBackend on plane =
+  inline given wasiFilesystem: [plane: Filesystem] => FilesystemBackend on plane =
     new FilesystemBackend:
       type Plane = plane
 
-      private def reason(error: WitError): Reason = error.name.s match
+      private def reason(error: Wasm.Error): Reason = error.name.s match
         case "no-entry"                                    => Reason.Nonexistent
         case "exist"                                       => Reason.AlreadyExists
         case "not-directory"                               => Reason.IsNotDirectory
@@ -104,19 +104,19 @@ package filesystemBackends:
         ( using Tactic[IoError] )
       :   result =
 
-        try block catch case error: WitError => abort(IoError(path, operation, reason(error)))
+        try block catch case error: Wasm.Error => abort(IoError(path, operation, reason(error)))
 
       // The preopened directory granted by the host that covers `path` — by longest prefix —
       // paired with the path's remainder, relative to it (WASI paths are preopen-relative and
       // never begin with `/`).
       private def resolve(path: Path on Plane, operation: Operation)(using Tactic[IoError])
-      :   (WitHandle of "descriptor", Text) =
+      :   (Wasm.Handle of "descriptor", Text) =
 
         val target: Text = Path.encodable.encode(path)
 
         val preopens =
           Foreign["preopens", Wit].`get-directories`
-          . call[List[(WitHandle of "descriptor", Text)]]()
+          . call[List[(Wasm.Handle of "descriptor", Text)]]()
 
         def covers(preopen: Text): Boolean =
           target == preopen || preopen == t"/" || target.starts(t"$preopen/")
@@ -147,7 +147,7 @@ package filesystemBackends:
         (U8, U64, U64, Optional[(U64, U32)], Optional[(U64, U32)], Optional[(U64, U32)])
 
       private def statOf
-        ( descriptor: WitHandle of "descriptor", relative: Text, dereference: Boolean )
+        ( descriptor: Wasm.Handle of "descriptor", relative: Text, dereference: Boolean )
       :   Stat =
 
         val directory: Foreign of "descriptor" from Wit = descriptor
@@ -162,7 +162,7 @@ package filesystemBackends:
           case 3 => Directory
           case 4 => Fifo
           case 5 => Symlink
-          case 7 => Socket
+          case 7 => Sock
           case _ => File
 
         def millis(time: Optional[(U64, U32)]): Optional[Long] =
@@ -195,13 +195,13 @@ package filesystemBackends:
           try
             val listing =
               directory.`open-at`(follow(true), relative, U32(2.bits), U32(1.bits))
-              . call[WitHandle of "descriptor"]()
+              . call[Wasm.Handle of "descriptor"]()
 
             val target: Foreign of "descriptor" from Wit = listing
 
             try
               val streamHandle =
-                target.`read-directory`.call[WitHandle of "directory-entry-stream"]()
+                target.`read-directory`.call[Wasm.Handle of "directory-entry-stream"]()
 
               val stream: Foreign of "directory-entry-stream" from Wit = streamHandle
 
@@ -237,7 +237,7 @@ package filesystemBackends:
           // open-flags: create (1) | exclusive (4); descriptor-flags: write (2)
           val created =
             directory.`open-at`(follow(true), relative, U32(5.bits), U32(2.bits))
-            . call[WitHandle of "descriptor"]()
+            . call[Wasm.Handle of "descriptor"]()
 
           created.dispose()
 
@@ -248,7 +248,7 @@ package filesystemBackends:
         act(path, Operation.Delete): (directory, relative) =>
           val directoryEntry =
             try statOf(resolve(path, Operation.Delete)(0), relative, false).entry == Directory
-            catch case error: WitError => false
+            catch case error: Wasm.Error => false
 
           if directoryEntry then directory.`remove-directory-at`(relative).call[Unit]()
           else directory.`unlink-file-at`(relative).call[Unit]()
@@ -307,8 +307,8 @@ package filesystemBackends:
           directory.`set-times-at`
             ( follow(true),
               relative,
-              WitCase["new-timestamp"](t"now"),
-              WitCase["new-timestamp"](t"now") )
+              Wasm.Case["new-timestamp"](t"now"),
+              Wasm.Case["new-timestamp"](t"now") )
 
           . call[Unit]()
 
@@ -371,13 +371,13 @@ package filesystemBackends:
             val opened =
               directory
               . `open-at`(pathFlags, relative, U32(openFlags.bits), U32(descriptorFlags.bits))
-              . call[WitHandle of "descriptor"]()
+              . call[Wasm.Handle of "descriptor"]()
 
             val target: Foreign of "descriptor" from Wit = opened
 
             def read(): Chain[Data] =
               val streamHandle =
-                target.`read-via-stream`(U64(0L.bits)).call[WitHandle of "input-stream"]()
+                target.`read-via-stream`(U64(0L.bits)).call[Wasm.Handle of "input-stream"]()
 
               val stream: Foreign of "input-stream" from Wit = streamHandle
               var chunks: List[Data] = Nil
@@ -385,7 +385,7 @@ package filesystemBackends:
               try
                 while true do
                   chunks = stream.`blocking-read`(U64(65536L.bits)).call[Data]() :: chunks
-              catch case error: WitError => ()
+              catch case error: Wasm.Error => ()
 
               streamHandle.dispose()
               chunks.stdlib.reverse.to(Chain)
@@ -393,8 +393,8 @@ package filesystemBackends:
             def write(data: Chain[Data]): Unit =
               val streamHandle =
                 if flags.has(OpenFlag.Append)
-                then target.`append-via-stream`.call[WitHandle of "output-stream"]()
-                else target.`write-via-stream`(U64(0L.bits)).call[WitHandle of "output-stream"]()
+                then target.`append-via-stream`.call[Wasm.Handle of "output-stream"]()
+                else target.`write-via-stream`(U64(0L.bits)).call[Wasm.Handle of "output-stream"]()
 
               val stream: Foreign of "output-stream" from Wit = streamHandle
 

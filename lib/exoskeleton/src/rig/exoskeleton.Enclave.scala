@@ -63,7 +63,7 @@ import systems.javaSystem
 import threading.platformThreading
 import workingDirectories.javaWorkingDirectory
 
-import filesystemBackends.virtualMachine
+import filesystemBackends.virtualMachineFilesystem
 
 object Enclave:
   // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime
@@ -84,7 +84,7 @@ object Enclave:
     // Explicit `using` evidence instead of `raises` sugar: a context-function result would
     // hide the `block` parameter, which the separation checker rejects.
     def sandbox[result](block: (tool: Tool) ?=> result)
-      ( using Tactic[Exec.Error], Tactic[NumberError], Tactic[Path.Error] )
+      ( using Tactic[Exec.Error], Tactic[Number.Error], Tactic[Path.Error] )
     :   result =
 
       val completionScripts = sh"$path '{admin}' install".exec[Text]()
