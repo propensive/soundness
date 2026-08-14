@@ -51,6 +51,14 @@ an exception, an absent value, or a handled failure as the caller chooses.
 
 ### System properties
 
+The two sources are alike in carrying textual key/value data into a JVM, and differ in where they
+come from and how they are named. Environment variables are inherited from the shell that started
+the process and conventionally have upper-case names such as `PATH` or `XDG_CONFIG_HOME`. System
+properties are passed as `-D` arguments to `java` itself, and are named in dotted lower- or
+camel-case, such as `default.log.directory`. Both arrive as text whose format only the reading
+program knows, which is the argument for decoding them into structured types at the point of
+reading rather than passing strings inward.
+
 A JVM system property is read through `System.properties`, its dotted name written as a path of
 members ending in an application. Each property is decoded to its natural type:
 
@@ -83,6 +91,11 @@ Substituting an entirely different environment — `environments.emptyEnvironmen
 for a test — replaces every lookup within its scope, so code that reads the environment can be
 exercised without depending on the machine it runs on. `systems.emptySystem` does the same for
 system properties, so a test need not depend on the JVM it happens to run under either.
+
+Tests are not the only case. A resident [daemon](daemons.md) serves invocations from many
+different shells over its lifetime, each with its own environment, and the JVM's global one
+belongs to whichever shell happened to start the daemon. Taking the environment as a capability
+is what lets each invocation be served against the environment it actually came from.
 
 ### Standard directories
 

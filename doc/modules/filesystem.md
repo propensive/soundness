@@ -197,6 +197,16 @@ Home.Local.Bin()   // ~/.local/bin
 Base.Usr.Share()   // /usr/share
 ```
 
+Each object is named for the directory it stands for, capitalized, with any leading `.` dropped —
+`.` being the separator between members — so `$HOME/.local/bin` is `Home.Local.Bin` and `/var/lib`
+is `Base.Var.Lib`. Writing a standard location this way rather than as text means a
+mistyped directory is a compile error.
+
+The resolution honours the environment where the [specification](environment.md) says it should:
+`Home.Config` is normally `$HOME/.config`, but resolves to `$XDG_CONFIG_HOME` where the user has
+set it. Applying a layout constructs a value of whichever directory type is asked for, so the same
+names serve a `Path on Linux` and any other representation.
+
 ### Watching for changes
 
 A directory is watched by opening it as `Watch`, which yields a stream of `WatchEvent`s — a
