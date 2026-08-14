@@ -44,16 +44,52 @@ is declared as a given where it applies, and the consumer collects whatever is i
 
 ### Type-level values
 
-A macro parameterized by static data — a list of names, a mapping — can carry that data in a type
-and *reify* it to a runtime value:
+A type parameter is to typechecking what an ordinary parameter is to execution: a way of passing
+information to a place that will use it. Types are the poorer medium for it, though — type-level
+operations are far less expressive than value-level ones, and code written in them is harder to
+write and harder to read. Macros close the gap by letting the logic be written as ordinary
+value-level code that happens to *run* at compiletime, which leaves one thing missing: a way to
+carry a collection between the two worlds.
+
+That is what the type-level collections are for. A macro parameterized by static data — a list of
+names, a mapping — carries that data in a type and *reifies* it to a runtime value:
 
 ```scala
 reify[TypeList[("one", "two", "three")]]   // List("one", "two", "three")
 reify[TypeSet["yes" | "no" | "maybe"]]     // the members of the union
 ```
 
+Singleton types of `Int`, `String`, `Double` and `Boolean` map to and from their values directly;
+a `List` becomes a `Tuple` under `TypeList`, a `Set` a union under `TypeSet`, and a `Map` a tuple
+of pairs under `TypeMap`. `reify` also has a form taking a `Type` rather than a static type
+parameter, for use from inside a macro implementation where the type is only known abstractly, and
+`reifyAs` fixes the result type where inference needs the help.
+
 The data stays in the type system, where macros can inspect it, until the moment a value is
 needed.
+
+### Abstracting over containers
+
+A great many types are *containers* in the same sense — `Optional`, `Attempt`, `Task`, a
+collection — in that a value can be put into one, mapped over, and flat-mapped through. Writing
+an operation once over all of them needs those capabilities as values rather than as methods that
+happen to share names.
+
+`Functor` supplies `point`, which lifts a value into the container, and mapping; `Monad` adds
+`bind`, which is `flatMap` under a name that does not collide with the method the container
+already has. Instances are constructed for any type that provides the requisite methods, so a
+container written without any of this in mind participates anyway.
+
+Two operations follow immediately, and are the reason it is worth having:
+
+```scala
+List(Some(1), Some(2), Some(3)).sequence      // Some(List(1, 2, 3))
+List(t"1", t"2", t"x").traverse(parseNumber)  // the failure, not a list of failures
+```
+
+`sequence` turns a collection of containers inside out, and `traverse` maps a fallible function
+over a collection and gathers the results in one container rather than a collection of them —
+which is the shape of "parse all of these, and fail if any of them fails".
 
 ### Types as source text
 
@@ -82,7 +118,18 @@ Introspect.syntax(true):
 ```
 
 For a macro author, this replaces `println`-archaeology with a structured view of what an
-expansion actually produced.
+expansion actually produced. Both work from *outside* a macro too, on any expression in ordinary
+code, which makes them useful for answering questions about the language itself. Introspecting
+`1 + x` for a `val x = 5` shows the `Apply` of a `Select` over a `Literal` and an `Ident`; doing
+the same for a `val y: 5 = 5` shows a single `Literal`, because the singleton type let the
+compiler fold the addition away. Inside a macro, where a `Quotes` is available, the `syntax` and
+`semantics` extension methods do the same for an `Expr` or a `Symbol`, and the result is coloured
+through a `TastyPalette` so it reads at a terminal.
+
+A macro that must fail does so with `halt`, which takes a `Message` — so a macro's compile errors
+are built from the same structured messages as [runtime errors](errors.md), with their
+substitutions highlighted where the compiler's output supports it, and can be attached to a
+specific position in the source.
 
 ### Down to bytecode
 

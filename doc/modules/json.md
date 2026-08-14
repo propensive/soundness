@@ -261,8 +261,12 @@ data(t"a")(t"b")(t"c").as[Int]   // 42
 t"[10, 20, 30]".read[Json](1).as[Int]   // 20
 ```
 
-With dynamic access enabled, a field reads as though it were a member, which is
-convenient for exploring a document whose shape is known informally:
+A `Json` value is dynamically typed, and the compiler knows nothing about what fields it has —
+indeed nothing about whether it is an object, an array or a scalar at all. Often the programmer
+knows more, or is content to proceed as though they did, and the syntax should be allowed to say
+so. But it is a real loss of checking, so it is not on by default: with dynamic access enabled, a
+field reads as though it were a member, and a nonexistent one is discovered at runtime rather than
+where it is written.
 
 ```scala
 import dynamicJsonAccess.enabled

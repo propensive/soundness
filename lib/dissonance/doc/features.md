@@ -1,4 +1,0 @@
-- implements Myers' diff algorithm
-- can be used with any data type, not just strings
-- specify a custom comparison function enabling fine-grained merges on "similar" data
-- diffs are simple immutable structures of `Del`, `Ins` and `Par` nodes

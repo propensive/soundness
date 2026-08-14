@@ -53,6 +53,19 @@ substitutions are typed, so only a value that knows how to render itself into a 
 interpolated. That structure is what lets an error be rendered richly, inspected, or matched on
 later.
 
+What the structure preserves is the boundary between the fixed and the variable parts of the
+message. A `Message` may embed other `Message`s, and those embeddings remain identifiable rather
+than being flattened into the surrounding text, so the same message renders as
+[Markdown](markdown.md), [HTML](html.md) or [styled terminal text](terminal.md) with the
+interpolated values distinguished from the words around them. `text` flattens it to plain text
+where that is all that is wanted. Anything with a `Communicable` instance can be embedded, which
+covers the primitives, `Text`, and anything `Show`able; writing a `Communicable` instance by hand
+is how a type contributes more structure than its plain rendering would.
+
+An error that is not meant to be caught is a `Panic`. It takes a message explaining why the
+situation was believed to be impossible, and reaching one means a programmer's understanding was
+wrong — so it is not a failure to handle, and does not appear in any `raises` clause.
+
 ### Declaring that code can fail
 
 A method that can fail says so with `raises`, naming the error in its return type. Within such
@@ -66,6 +79,14 @@ def connect(port: Int): Connection raises PortError =
 The requirement propagates. A method that calls `connect` must itself either declare `raises
 PortError` or handle the failure, so the obligation cannot be dropped silently. A method that
 can fail in more than one way names each error with its own `raises`.
+
+`raises` is only a syntactic alias: `Connection raises PortError` *is* the context function type
+`Tactic[PortError] ?=> Connection`, which in turn is the same thing as a `(using
+Tactic[PortError])` parameter. So a method that declares `raises` is a method taking the
+error-handling policy as an argument, and `abort` is what calls into it. That is the whole
+mechanism, and it explains the shape of everything else here: a fallible method does not decide
+how failure is handled, it delegates that decision back to whoever called it — which means one
+implementation serves every strategy at once.
 
 ### Choosing a strategy
 
@@ -85,6 +106,29 @@ the error itself, for testing that the right failure is produced:
 ```scala
 safely(connect(8080))          // Optional[Connection] — Unset on failure
 capture[PortError](connect(80)).port   // 80
+```
+
+*Tactic* and *strategy* are the same type, `Tactic`, distinguished only by the scope they are
+meant for. A tactic is local — the `protect` block of a `recover` or `mitigate`, or a `safely` or
+`unsafely` block — while a strategy is imported once and applies broadly, as `throwUnsafely` does.
+The distinction is a matter of intent rather than of implementation, and it is worth naming
+because the two words appear throughout, and in the `strategies` package the choice is deliberate.
+
+Two further declarations widen the choice beyond a scope. An error marked `Unchecked` may be
+thrown without being handled — it is a marker typeclass with no members, so the given can be
+`erased`:
+
+```scala
+erased given AsciiError is Unchecked
+```
+
+An error declared `Fatal` ends the process, and says with what status. This suits failures during
+initialization, where there is no meaningful way to continue:
+
+```scala
+given InitError is Fatal = error =>
+  Log.info(m"error during initialization: $error")
+  Exit(127)
 ```
 
 ### Recovering
@@ -120,6 +164,54 @@ accrue(Invalid(Nil)) { (all, error) => all.add(error) }:
 
 Each field is checked even if an earlier one failed, and the accumulated `Invalid` carries all
 the problems at once.
+
+The difference between the two is in their return types. `abort` returns `Nothing`: there is no
+value to give back, so it leaves. `raise` returns a value — an *ersatz* value, a stand-in — so
+execution can carry on locally while the error is registered against the tactic. Once anything
+has been raised, the final result of the enclosing scope is discarded whatever it turns out to
+be, and the aggregation of the recorded errors is produced instead.
+
+That discarding is what makes ersatz values safe, but only as far as it goes: it covers the
+result, not the side effects. An ersatz value should be *inconsequential* — nothing downstream
+should depend on it, and in particular it should not provoke further errors of its own. A
+placeholder that flows into a validating constructor produces a complaint about a value nobody
+ever supplied, which is worse than no report at all.
+
+### Ventures and guards
+
+`venture` and `guard` remove that hazard by making the dependency structure explicit rather than
+hoping ersatz values stay harmless.
+
+`venture(…)` evaluates its block immediately, under the ambient tactic, so every error it raises
+accrues exactly as it would outside. What it yields is a `Venture[Value]`: the computed value if
+the block recorded nothing, or the `Failed` marker if it did. An `abort` inside a venture is
+*delimited* — it registers its error and abandons only that venture, not the whole aggregation
+scope — so sibling ventures each contribute their full error set independently:
+
+```scala
+def decodePerson(json: Json): Person raises Json.Error =
+  val name: Venture[Text] = venture(json.name.as[Text])
+  val role: Venture[Role] = venture(json.role.as[Role])
+
+  venture(checkConsistency(name(), role()))
+
+  guard:
+    Person(name(), role())
+```
+
+Forcing a venture with `name()` requires a *skip-scope* in context — an enclosing `venture` or
+`guard`, witnessed by a contextual `Guard` capability. Forcing a failed venture escapes to that
+scope without registering anything further, since its errors are already in the accrual: above,
+if `name` failed then the consistency check is skipped entirely, while `role`, evaluated eagerly
+at its declaration, still contributed its errors. Forcing outside any skip-scope is a compile
+error, because there would be nowhere well-defined to skip to.
+
+`guard` runs its block only if the ambient tactic is *clean* — nothing recorded so far in the
+aggregation scope. If the tactic is tainted, the block is skipped and the scope surrenders to the
+errors it has already gathered.
+
+None of this costs anything when accrual is not in play: under a fail-fast tactic any error has
+already escaped, so `guard` is the identity and `venture` is transparent eager evaluation.
 
 ### Saying where a failure was
 
@@ -193,3 +285,9 @@ accruing and optional strategies, and the choice is always at the call site.
 An `Error` can capture a stack trace or omit it, decided by the `Diagnostics` given in scope:
 `stackTracesDiagnostics` records the trace for debugging, while `emptyDiagnostics` drops it,
 which is cheaper where an error is expected and handled rather than investigated.
+
+That choice is available because none of this is built on throwing. `abort` and `raise` use
+Scala's `boundary` and `break`, so leaving a computation with an error does not construct a stack
+trace unless one was asked for, and an error is no more expensive to build than any other
+immutable value. Failure being a normal part of a program's behaviour rather than an exceptional
+one, it should not cost more than the code that succeeds.

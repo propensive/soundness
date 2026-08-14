@@ -121,6 +121,12 @@ Spannable.derived[Person].spans().to(List)   // List(1, 2, 1)
 Spannable.derived[Person].spans().sum        // 4 columns in total
 ```
 
+Positional decoding is inherently brittle, and worth being clear-eyed about: adding a field to a
+nested case class shifts every column after it, and nothing in the file says so. That is the
+nature of positional delimited data rather than a shortcoming of the decoder — which is why a
+format with headers is worth using where there is a choice, and why the header machinery below
+exists.
+
 An `Optional` field spans one column, and a row that stops short of it decodes it as `Unset`
 rather than failing — which is what a trailing optional column in a real spreadsheet means:
 

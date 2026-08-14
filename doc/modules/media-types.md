@@ -57,6 +57,19 @@ mediaType.at(t"charset")   // t"UTF-8"
 media"text/html"(charset = t"UTF-8")
 ```
 
+The four parts are those [RFC 2046](https://www.iana.org/go/rfc2046) defines. The *group* is one of
+exactly ten values — `application`, `audio`, `image`, `message`, `multipart`, `text`, `video`,
+`font`, `example` and `model` — and is called `group` rather than `type` only because `type` is a
+Scala keyword. The *subtype* is registered, vendor, personal or experimental, and which of those
+four it is, is part of the value rather than a matter of reading its prefix. There may be zero or
+more *suffixes*, of which `+xml`, `+json` and `+gzip` are the familiar ones. And *parameters* are
+key–value pairs, `charset` being much the most common.
+
+Registration is checked against a copy of IANA's published list carried on the classpath, so the
+check needs no network and no service. A newer or site-specific list placed earlier on the
+classpath supersedes it — the file is a newline-delimited list of media types with suffixes but
+without parameters.
+
 Text that is not a media type raises a `MediaTypeError` naming the reason — a missing slash, an
 invalid character, an unknown suffix.
 

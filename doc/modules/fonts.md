@@ -93,3 +93,9 @@ Subsetting is not simply a matter of keeping the glyphs a text maps to. A compos
 assembled from others, so the retained set is the transitive closure under composition — computed
 from the glyph outlines themselves, so an accented character keeps the components it is drawn
 from.
+
+Nor are the glyphs renumbered. Discarded glyphs keep their numbers and are left with empty
+outlines rather than being removed, so the character mapping, the metrics and every reference one
+glyph makes to another remain valid without rewriting; every other table is carried across
+unchanged. The result is a complete and valid font file, checksums included, ready to embed in a
+[PDF](pdf.md).

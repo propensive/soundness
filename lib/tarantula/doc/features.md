@@ -1,7 +1,0 @@
-- simulate keypresses, chords, clicks and drags in a web browser
-- automatically launch Chrome, Firefox, Safari or Edge, headless or not
-- or drive a driver already running, including a remote grid
-- uses the standard W3C WebDriver protocol
-- the session is a capability, confined to its block by capture checking
-- element locators are typed: CSS selectors, HTML tags, DOM ids and class lists
-- every failure is a typed `WebDriver.Error`, not an exception

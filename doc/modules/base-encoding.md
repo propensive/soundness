@@ -15,6 +15,13 @@ by bcrypt, by IMAP — all encode the same bytes into different characters, and 
 the result. Decoding raises the further question of what to do with a character that is not in the
 alphabet at all. Most APIs bury these choices in flags or fix them silently.
 
+It is worth being precise about what this is, since "encoding" is used for two different jobs.
+What happens here is *serialization*: bytes become text, and nothing about the bytes' meaning is
+consulted or preserved — the same bytes serialize identically whether they were an image or a
+signature. Turning a *value* into JSON or XML is the other job, and it is
+[encoding](json.md), which needs to know what the value is. The operations here are named
+accordingly, `serialize` and `deserialize`.
+
 Soundness makes the encoding a type and the alphabet an explicit value. The base — how many bits
 each character carries — is a type parameter, and the concrete alphabet is a given brought into
 scope by import, so the standard and URL-safe forms of Base64 are a one-line difference. Decoding

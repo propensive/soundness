@@ -1,1 +1,0 @@
-Precise navigation of paths

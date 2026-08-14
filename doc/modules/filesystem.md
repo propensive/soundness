@@ -145,6 +145,29 @@ base.open[Scratch](Read & Write): scratch ?=>
   (scratch/"file.txt").overwrite(t"data")
 ```
 
+### The opening pattern, generally
+
+`open` is not specific to files. A great many things share the same shape: a value says *where*
+something is — a path, a buffer in memory, a URL — and getting at its contents is a distinct,
+scoped act. Naming that pattern once means it reads the same everywhere it applies.
+
+An `Openable` instance relates a target to a *form*, which is why the form is a type argument
+rather than being implied by the target: the same path opens as a `File`, as a `Directory`, as a
+`Zip` [archive](archives.md), as a [PDF](pdf.md) or as an [image](images.md), and each is a
+different handle with a different repertoire. The form may be omitted where a target has only one
+instance; where it has several, the ambiguity is reported with the alternatives listed.
+
+Three things follow uniformly. The *mode* — `Read`, `Write`, `Exclusive` and their combinations —
+is carried in the handle's type, so the grants requested are the operations permitted. Flags after
+the mode belong to the instance, so they are specific to the kind of thing being opened, and
+irrelevant flags do not typecheck. And the handle is a capability confined to the block, so
+neither it nor anything derived from it can escape.
+
+`create` is the same pattern for something that does not yet exist, and `session` for a target
+whose access is a conversation with something running — a [browser](web-automation.md), a
+[debuggee](debugging.md) — rather than a handle over stored bytes. In each case the scope is the
+lifetime, and the end of the block is the end of the access.
+
 ### Memory-mapped access
 
 A file opened as `Ram` is memory-mapped, and serves positional reads and writes without
@@ -162,6 +185,17 @@ file.open[Ram](Read & Write): ram ?=>
 
 A path copies, moves, symlinks or deletes with operations that name the destination or act in
 place. Each consults the policy in scope for the awkward cases, and each may raise an `IoError`:
+
+Those policies are not defaults that can be left alone. Moving a file onto a path where something
+already exists either destroys that thing or refuses to; neither answer is right in general, and
+choosing one silently would make the wrong programs compile. So `moveTo` requires
+`overwritePreexisting` to be either `enabled` or `disabled` in scope, and calling it with neither
+is a compile error. The point is not only to be unpresumptuous but to be instructive: a reader who
+had not realised the question needed answering is told that it does.
+
+The choice also changes what must be handled. With `disabled` in scope a collision is a failure to
+deal with; with `enabled` it cannot arise, and the obligation goes away with it. Being contextual
+values, the policies can be imported for a file or narrowed to a single block.
 
 ```scala
 file.copyTo(directory/t"backup.txt")
@@ -196,6 +230,16 @@ Home.Cache()       // ~/.cache
 Home.Local.Bin()   // ~/.local/bin
 Base.Usr.Share()   // /usr/share
 ```
+
+Each object is named for the directory it stands for, capitalized, with any leading `.` dropped —
+`.` being the separator between members — so `$HOME/.local/bin` is `Home.Local.Bin` and `/var/lib`
+is `Base.Var.Lib`. Writing a standard location this way rather than as text means a
+mistyped directory is a compile error.
+
+The resolution honours the environment where the [specification](environment.md) says it should:
+`Home.Config` is normally `$HOME/.config`, but resolves to `$XDG_CONFIG_HOME` where the user has
+set it. Applying a layout constructs a value of whichever directory type is asked for, so the same
+names serve a `Path on Linux` and any other representation.
 
 ### Watching for changes
 

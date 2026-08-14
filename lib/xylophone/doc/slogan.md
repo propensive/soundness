@@ -1,1 +1,0 @@
-Typesafe XML for Scala

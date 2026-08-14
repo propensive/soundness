@@ -65,6 +65,17 @@ Eur(1.00) + Gbp(1.00)   // does not compile: different currencies
 There is no built-in exchange rate — converting between currencies is a business decision with a
 time and a source, not an arithmetic identity, so it is left to the program to define.
 
+An amount is a `Long` of minor units underneath, which means its `toString` is a `Long`'s: the raw
+count, with no currency and no decimal point. Rendering goes through `show` and the currency style,
+as below.
+
+A currency that is not among those provided is one line, giving its ISO code, name, symbol and the
+number of minor units in a major one:
+
+```scala
+given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
+```
+
 ### Splitting
 
 `share` divides an amount into a number of parts that sum exactly to the whole, distributing any
@@ -76,9 +87,15 @@ Eur(3.01).share(3)   // three shares, together exactly €3.01
 
 ### Prices and tax
 
-A `Price` is a principal amount and the tax on it, kept apart so that either is available exactly
-rather than reconstructed by division. `tax` builds one from a rate, and `inclusive` gives the
-total:
+Three parties look at the same price and see different numbers: the seller cares about the amount
+excluding tax, the buyer about the amount including it, and the tax authority about the difference.
+Hold all three in one type and it is easy to add tax to a figure that already had it, or to report
+the wrong one — a mistake that arithmetic cannot catch, because every one of those numbers is a
+valid amount of money.
+
+A `Price` is therefore a principal amount and the tax on it, kept apart so that either is available
+exactly rather than reconstructed by division. `tax` builds one from a rate, and `inclusive` gives
+the total:
 
 ```scala
 val priced = Gbp(2.30).tax(0.2)   // Price(Gbp(2.30), Gbp(0.46))

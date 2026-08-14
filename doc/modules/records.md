@@ -62,3 +62,27 @@ transparent inline def record(json: Json): Record = ${build('json)}
 
 From that point, every caller gets records typed by whatever the specification said at the moment
 the calling code was compiled.
+
+`record` must be `transparent inline` for any of this to work. Its declared return type is
+`Record`, but what it actually returns is a *structural refinement* of it — for a schema of three
+fields, the type
+
+```scala
+Record { def age: Double; def name: Text; def employed: Boolean }
+```
+
+— and only a transparent method lets that more precise type reach the call site. Declared as an
+ordinary `inline def`, every field access would fail to compile against the bare `Record`, which
+is the whole point lost.
+
+### Compilation order
+
+The schema object must live in a *different file* from the code that calls its `record` method.
+The macro runs during the compilation of the call site and evaluates the schema object as a
+runtime value — reading the JSON Schema document, querying the database — so that object must
+already be compiled. Scala guarantees this ordering for a macro's definition and its use provided
+they sit in separate files with no cycle between them; put them in one file and the schema is not
+yet available when the macro needs it.
+
+This is also what makes the pattern a type provider in the F# sense: the authoritative schema is
+consulted by the compiler, and the types the program is checked against are manufactured from it.

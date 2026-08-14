@@ -74,7 +74,16 @@ application(args):
 ```
 
 An `Argument` is more than its text: it remembers its position on the command line,
-which is what later lets a completion know which argument it is completing.
+which is what later lets a completion know which argument it is completing. (Positions are
+numbered from `0` for the first argument after the command, rather than from `1` as in most
+scripting languages.)
+
+It is worth separating two words that are often used interchangeably. *Arguments* are the flat
+sequence of textual values the shell hands over; *parameters* are what they mean once
+interpreted. The arguments of `grep -rA4 pattern` are `-rA4` and `pattern`; its parameters are
+"search recursively", "show four lines of trailing context" and "search for `pattern`". The
+interpreter in scope — `posixInterpreter`, `posixClusteringInterpreter`, `simpleInterpreter` —
+is what turns the first into the second, which is why it is chosen by import rather than fixed.
 
 ### Subcommands
 
@@ -131,10 +140,19 @@ imported.
 
 ### Tab completions
 
-A completion script in a shell usually re-implements the command's own logic, by hand,
-and falls out of step with it. Soundness takes the program itself as the only source of
-truth: the same code that interprets the arguments produces the completions, so they
-agree by construction.
+Tab completion is one of the most useful things a command-line program offers: it lets a user
+discover features, preview the flags and values that are available, and avoid typing mistakes
+outright. It is also, conventionally, maintained separately from the program itself — a
+different script per shell, often written by different people, each approximating the command's
+behaviour by hardcoding its subcommands and flags, and sometimes going further to keep mutually
+exclusive flags consistent with each other. The shells do not even agree on what a completion
+is: Bash offers the completion text alone, while Zsh and Fish can show a description beside it.
+The work is admirable and it is impossible to keep correct.
+
+Soundness takes the program itself as the only source of truth: the same code that interprets
+the arguments produces the completions, so they agree by construction. The per-shell scripts
+shrink to nothing of consequence — capture the incomplete command line, the cursor position and
+the shell's name, and hand them to the application in completions mode.
 
 Turning completions on replaces the default executive with the completions executive:
 
@@ -170,6 +188,46 @@ exactly the prelude that reads the value, so completion and execution can never
 disagree. The completions executive also withholds standard output from the prelude,
 since there is nowhere to send it while completing; `Out.println` is available only
 inside `execute`.
+
+The consequences run deeper than "a flag that is read is a flag that is offered", because the
+reading may be conditional — and then so is the offering, on *precisely the same condition*.
+Consider a command with a `-v` flag that turns on output, and a `--verbosity` flag meaningful
+only alongside it:
+
+```scala
+val verbose = Flag[Text](t"verbose", aliases = List('v'))()
+
+val verbosity: Optional[Verbosity] =
+  if verbose.present then Flag[Verbosity](t"verbosity")() else Unset
+```
+
+Pressing `tab` after a bare `-` runs this prelude. `-v` is checked for, and so becomes a
+candidate; if it is not yet on the command line, it is offered. If it *is* already there, the
+branch checking for `--verbosity` runs too, so `--verbosity` becomes a candidate as well — while
+`-v`, which makes sense only once, does not. No table of flag interdependencies was written
+anywhere; the conditional structure of the code is the conditional structure of the completions,
+however complex it becomes.
+
+### The executive, and effectful methods
+
+The *executive* is what determines the return type of an entry point's body and the contextual
+values available inside it. `directExecutive` expects an `Exit` and supplies `Stdio`;
+`completions` expects an `Execution` and withholds `Stdio` until `execute`. Choosing one by
+import is what lets the entry-point API stay uniform while imposing genuinely different
+requirements on the code inside it.
+
+An `execute` block also supplies an erased `Effectful`. Nothing consumes it internally; its
+purpose is that a user-defined method may *demand* it:
+
+```scala
+def deleteEverything()(using Effectful): Unit = …
+```
+
+Since an `Effectful` can be obtained only inside an `execute` block, such a method cannot be
+called from the prelude — which is to say, it cannot run while the user is merely pressing
+`tab`. Marking the genuinely irreversible operations this way makes it hard to invoke one by
+accident from code that completions will run. The `install` operation that writes completion
+scripts into place requires it, for exactly this reason.
 
 ### Completing values
 

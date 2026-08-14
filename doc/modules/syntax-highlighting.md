@@ -34,6 +34,11 @@ strings, modifiers — ready to render:
 val code = Scala.highlight(t"val xs = List(1, 2, 3)")
 ```
 
+The accents are the categories a palette assigns colors to: `Keyword` and `Modifier` distinguish
+modifier keywords from the rest, `Term` and `Typal` mark definitions, `Symbol` and `Parens` cover
+operators and brackets, `Number` and `String` the literals (including interpolated ones), and
+`Error` and `Unparsed` the tokens that did not come out cleanly.
+
 The default depth is tokenized, which needs nothing but the text; `Java.highlight` does the same
 for Java source. A palette given maps the accents to [colors](colors.md), and the ANSI renderers —
 numbered or plain — turn a `SourceCode` into terminal output; the Markdown integration renders

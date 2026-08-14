@@ -51,6 +51,11 @@ The first run starts the daemon; later runs connect to it and return at native-t
 completions gain the most: each completion request is an invocation, and a resident process
 answers in milliseconds.
 
+Output must go through `Out` and `Err`. Scala's own `println` writes to the JVM's global
+`System.out`, which belongs to the *daemon* process rather than to any client — so whatever it
+prints reaches no user and, in the ordinary case, is simply lost. `Out` and `Err` resolve the
+`Stdio` of the current invocation, which is the client's.
+
 ### Signals and shutdown
 
 An invocation traps the signals it cares about, and the response reaches the code of that
@@ -107,3 +112,62 @@ java -Dbuild.executable=mytool -jar mytool.jar
 The launcher finds or fetches a suitable JVM, starts the daemon when none is running, and — where a
 public key was built in — accepts only signed binaries when the application
 [upgrades itself](https://en.wikipedia.org/wiki/Digital_signature) in place.
+
+### Signing a release
+
+An application can ship with a public key baked in, which the launcher uses to verify any
+candidate upgrade before swapping it into place. Verification happens in the launcher, before the
+JVM starts, so no Scala code in the running application sits on the trust boundary.
+
+The `ethereal-sign` tool generates the keypair, once:
+
+```sh
+ethereal-sign keygen --out release-keys/myapp
+```
+
+This writes a 32-byte FIPS-204 signing-key seed and a 1312-byte ML-DSA-44 public key. **The seed
+belongs offline.** Anyone holding it can ship a binary that users' launchers will accept, and
+there is no revocation at the launcher level: the public key is baked into every shipped binary,
+and only a further release replaces it.
+
+Each release is then built and signed in two steps. The build bakes in the public key and a build
+identifier:
+
+```sh
+java -Dbuild.executable=dist/myapp \
+     -Dbuild.id=42 \
+     -Dethereal.publicKey=release-keys/myapp.pub \
+     -jar dist/myapp.jar
+```
+
+`build.id` must increase monotonically; the verifier compares it against the running launcher's
+own and rejects downgrades. Omitting `ethereal.publicKey` leaves the key slot zeroed, producing a
+binary whose launcher rejects *every* upgrade — the right default for a local build where the
+upgrade path is never exercised. Signing then produces the file to distribute:
+
+```sh
+ethereal-sign sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
+```
+
+That output is simultaneously a valid executable and a valid upgrade candidate. The application
+applies one by pointing `Upgrade` at any source of bytes:
+
+```scala
+Upgrade(url"https://releases.example.com/myapp.signed")
+```
+
+The bytes are written aside, a fresh launcher starts and the old process exits; the new launcher
+verifies the signature against its baked-in key, checks the build identifier, and either swaps the
+binary into place or discards the candidate and carries on with the existing one.
+
+What the signature covers is chosen so that each part of it defeats a specific attack: the
+launcher's own code, the bundled JAR, the build identifier (so an older legitimately-signed
+release cannot be replayed), the flag byte permitting a downgrade (so it cannot be turned on
+after the fact), and the baked-in public key itself (so a different release key cannot be
+substituted into an otherwise-legitimate binary). A deliberate rollback — shipping 42 over a
+broken 43 — is signed with `--allow-downgrade`, which sets that flag inside the signed payload.
+
+Rotating keys needs one bridging release: sign it with the **old** seed but bake in the **new**
+public key, so existing installs accept it through the normal upgrade path and trust the new key
+from then on. Skip that step and existing installs are stranded, holding a key that will reject
+everything signed thereafter.

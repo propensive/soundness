@@ -63,6 +63,12 @@ An address that is not valid does not compile:
 ip"192.168.0.0.0.1"   // does not compile: too many groups
 ```
 
+The `ip"…"` interpolator serves both address families, taking its type from what it is given, and
+the checks are the full ones for each. For IPv4: exactly four groups, each a number in the range
+0–255, with nothing but digits and dots. For IPv6: at most eight colon-separated groups, at most
+one `::`, and one to four hexadecimal characters in each group. A subnet prefix is checked against
+its family's range too — 0–32 or 0–128 — so an impossible mask is caught with the address.
+
 ### Email addresses
 
 An email address is written with `email"…"` and parsed from text with `as`, validated against the

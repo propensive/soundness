@@ -1,6 +1,0 @@
-- representations points in time and lengths of time, in both exact/universal and civil forms
-- types are all immutable and typesafe
-- intuitive constructors for civil date and time values
-- customisable rules for adding civil time units
-- supports different calendar systems
-- use and convert between different timezones and calendar systems

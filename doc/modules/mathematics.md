@@ -48,12 +48,24 @@ complex impedance keeps its units:
 Complex(1.0*Metre/Second, 9.0*Metre/Second).show   // t"(1.00 + 9.00ℐ) m·s¯¹"
 ```
 
-`modulus` and `argument` give the polar form, the argument as a typed angle.
+A complex number can equally be written by adding to a multiple of the imaginary unit, or given in
+polar form as a modulus and an `Angle`:
+
+```scala
+0.8 + 1.8*i                       // Complex(0.8, 1.8)
+Complex(12*Kilo(Gram), 0.3845.rad)   // from modulus and argument
+```
+
+`modulus` and `argument` give the polar form back, the argument as a typed angle, and the prefix
+`~` operator gives the complex conjugate.
 
 ### Vectors
 
-A `Vector` is a fixed number of components, the dimension in the type. Construction infers both the
-element type and the size, and a value of the wrong size does not compile:
+A `Vector` is a fixed number of components, the dimension in the type — in effect a hybrid of a
+`Tuple`, whose size is known statically, and a collection, whose elements share a type. That is
+what a Euclidean vector is, and it is why neither of the two ordinary choices quite fits it.
+Construction infers both the element type and the size, and a value of the wrong size does not
+compile:
 
 ```scala
 val v = Vector(1, 2, 3)               // Vector[Int, 3]
@@ -145,4 +157,20 @@ shuffle.inverse(shuffle(items)) == items   // always true
 
 Internally a permutation is stored as its [Lehmer code](https://en.wikipedia.org/wiki/Lehmer_code)
 in factorial-base form — a single integer that uniquely identifies it — which makes permutations
-compact to store and enumerate: `Permutation.bySize(n)` streams all `n!` of them.
+compact to store and enumerate: `Permutation.bySize(n)` streams all `n!` of them. A permutation of
+*n* elements occupies O(*n* log *n*) space, which is the information-theoretic minimum, since
+there are *n*! of them to tell apart.
+
+Since the number *is* the permutation, it can be given directly, and both representations can be
+read back:
+
+```scala
+Permutation(Factoradic(45)) == Permutation(Series(1, 4, 2, 3, 0))   // true
+
+shuffle.lehmer      // the Lehmer code, as a List[Int]
+shuffle.expansion   // the reordered indexes
+```
+
+Applying a permutation to a value out of range is not an error, either: a permutation fixes every
+point outside its domain, so applying it to a longer sequence rearranges the tail and leaves the
+excess prefix where it was.

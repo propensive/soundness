@@ -1,1 +1,0 @@
-Something which is _capricious_ is determined by chance, whimsy or impulse.

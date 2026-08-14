@@ -99,6 +99,13 @@ differing leaves marked: an age that differs by two, a list with one element sub
 with the changed characters banded. Sequences align through the same [diffing](diffing.md) used
 elsewhere, so an insertion shows as an insertion, not as every subsequent element "differing".
 
+Comparison alone can only say *same* or *different*, so a raw diff of two sequences reports a
+changed element as a deletion beside an unrelated insertion, and stops there. The report goes
+further by asking, within each region of differences, whether an element removed and an element
+added are *similar* — a board member with the same role but a different name, a record with the
+same identifier and a changed field. Where they are, the two are shown as one substitution broken
+down to the field that changed, rather than as two unrelated entries the reader must pair up.
+
 ### Asserting that code does not compile
 
 `demilitarize` compiles the code it encloses and, instead of failing the build, delivers the
@@ -115,6 +122,20 @@ test(m"a malformed version literal is rejected"):
 This is how Soundness's own guarantees are tested — that a wrong-currency addition, an invalid
 literal, an undeclared relation genuinely fails to compile — and any project building invariants
 into types needs the same: the *impossibility* is the feature, and this makes it testable.
+
+It works through a compiler plugin, and knowing roughly how is useful when it misbehaves. The
+plugin runs after parsing but before typechecking. Finding a `demilitarize` block in the untyped
+tree, it starts a *separate* compilation of the same file, on the same classpath but without the
+plugin, and expects it to fail; the errors falling inside the block are captured and replaced, in
+the main compilation, by code constructing the corresponding `CompileError` values. Typechecking
+then sees only those constructions, never the erroneous code, so the build succeeds as long as
+nothing outside a `demilitarize` block is wrong.
+
+One consequence is worth knowing. An error in an early phase can stop later phases running, so
+errors that would have come from those phases go uncaptured on the first pass. The plugin
+re-runs the compilation as many times as needed, removing more of the offending code each time,
+until the later phases are reached — which is why a file with several `demilitarize` blocks
+compiles more slowly than its size suggests.
 
 ### Measuring, not just asserting
 

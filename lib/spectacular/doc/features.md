@@ -1,7 +1,0 @@
-- typeclass-based means of converting values to text
-- defines the `Show` typeclass for text destined for end users
-- defines the `Debug` typeclass for text destined for the developer
-- extension methods `show` and `debug` will apply conversions using these typeclasses
-- the `show` method may fail if a `Show` is not available
-- the `debug` method will fall back to a `Show` method and then `toString` if no `Debug` instance exists
-- `Debug` instances are generically derived for products and coproducts

@@ -94,6 +94,11 @@ val nameLens = summon["name" is Lens from Json onto Json]
 nameLens.modify(document)(transform)
 ```
 
+Two lenses `compose` into one, so a path can be assembled from parts held separately — a lens onto
+a field, and a lens into what that field contains, joined into a lens reaching all the way
+through. Where the whole path is known in one place the syntax above says it more directly; where
+it is not, composition is how the pieces meet.
+
 ### Naming paths without traversing them
 
 The same path syntax that writes an update can name a position without going there. A `Specific`

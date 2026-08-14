@@ -22,7 +22,9 @@ the types; each mistake waits for runtime.
 
 `Text` presents the same underlying strings through a deliberately designed surface. Absence
 is an `Optional`, not a magic `-1`; a search returns a position that cannot be confused with
-a length; and the operations read as plain verbs. Because `Text` is opaque over `String`, the
+a length; and the operations read as plain verbs. Three rules hold throughout: nothing returns
+`null`, nothing returns a mutable array, and nothing takes `Any` and quietly calls `toString` on
+it. That last rule is why a value must say how it becomes text before it can be treated as text. Because `Text` is opaque over `String`, the
 safety is free — the two are the same bytes at runtime. Everything comes from the `soundness`
 package, with a text-metrics given in scope for the operations that measure width:
 
@@ -62,6 +64,12 @@ distinct final separator that reads naturally in English:
 List(t"one", t"two", t"three").join(t", ")            // t"one, two, three"
 List(t"one", t"two", t"three").join(t", ", t" and ")  // t"one, two and three"
 ```
+
+`join` is the counterpart of the standard library's `mkString`, and differs in the way that
+matters: `mkString` calls `toString` on every element without saying so, so a collection of
+anything at all produces text of some kind. `join` requires the elements to be textual, so a
+collection whose elements have no meaningful rendering does not compile rather than rendering
+badly.
 
 ### Slicing
 

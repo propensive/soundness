@@ -1,3 +1,0 @@
-- provides representations (with names) of the 118 chemical elements known since 2015
-- lightweight syntax for constructing molecules from multiples of elements
-- serialization to Unicode strings

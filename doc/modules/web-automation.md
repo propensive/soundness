@@ -68,6 +68,33 @@ and returns its result as `Json`. Modifiers, chords, hovers and drags go through
 the typed actions API; a failure of any kind arrives as a `WebDriver.Error` carrying the W3C
 error code the driver reported, its message and the browser-side stack trace.
 
+### Waiting
+
+Most of what makes browser automation flaky is timing, and the protocol helps with only part of
+it. WebDriver's *implicit* timeout covers find commands, and is set once for the session:
+
+```scala
+browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
+```
+
+Nothing else has a server-side notion of waiting. For a button that becomes enabled, or a heading
+whose text changes, `awaitElement`, `awaitElements` and `awaitUntil` poll under the retry policy
+in scope:
+
+```scala
+import retryTenacities.exponentialTenTimesTenacity
+
+browser.awaitElement(Name[DomId](t"result"))
+browser.awaitUntil(browser.title() == t"Done")
+```
+
+The policy is a `Tenacity` — the same [retry schedules](concurrency.md#retrying) used elsewhere —
+so the interval and the number of attempts belong to the caller,
+and exhausting them raises a `RetryError`. These poll the plural endpoint, which reports absence
+as an empty list rather than as an error, and that is deliberate: a session's error strategy is
+fixed when it opens, so a failure raised inside the polled block could not be caught here to drive
+the next attempt.
+
 ### Typed page scripting
 
 Behaviour attached to a page — an `onclick`, an `onchange` — is written as a typed DOM expression
