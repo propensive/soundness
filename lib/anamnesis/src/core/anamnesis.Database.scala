@@ -36,6 +36,7 @@ import proscenium.compat.*
 
 import beneficence.*
 import contingency.*
+import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -46,6 +47,17 @@ object Database:
   transparent inline def apply[relations <: Tuple](): Database of relations =
     val size = valueOf[Tuple.Size[relations]]
     new Database(size).asInstanceOf[Database of relations]
+
+  // DataError → Database.Error
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case UnknownReference extends Reason(1)
+
+    given communicable: Reason is Communicable =
+      case Reason.UnknownReference => m"the value has not been stored in the database"
+
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(229, reason.number)(m"the database operation failed because $reason")
 
 class Database(size: Int) extends Findable:
   import Database.Relation
@@ -89,15 +101,15 @@ class Database(size: Int) extends Findable:
 
     . asInstanceOf[Ref of left in this.type]
 
-  inline def ref[left](left: left): Ref of left in this.type raises DataError =
-    references(left).lest(DataError(DataError.Reason.UnknownReference))
+  inline def ref[left](left: left): Ref of left in this.type raises Database.Error =
+    references(left).lest(Database.Error(Database.Error.Reason.UnknownReference))
     . asInstanceOf[Ref of left in this.type]
 
 
   inline def assign[left, right]
     ( left: Ref of left in this.type, right: Ref of right in this.type )
     ( using (left -< right) <:< Tuple.Union[Topic] )
-  :   Unit raises DataError =
+  :   Unit raises Database.Error =
 
     val relationIndex = !![Topic].indexOf[left -< right]
     val relation = relate[left, right]
@@ -109,7 +121,7 @@ class Database(size: Int) extends Findable:
 
 
   inline def lookup[left, right](left: Ref of left in this.type)
-  :   Set[Ref of right in this.type] raises DataError =
+  :   Set[Ref of right in this.type] raises Database.Error =
 
     relate[left, right](left).or(Set()).asInstanceOf[Set[Ref of right in this.type]]
 
@@ -117,7 +129,7 @@ class Database(size: Int) extends Findable:
   inline def unassign[left, right]
     ( left: Ref of left in this.type, right: Ref of right in this.type )
     ( using (left -< right) <:< Tuple.Union[Topic] )
-  :   Unit raises DataError =
+  :   Unit raises Database.Error =
 
     val relationIndex = !![Topic].indexOf[left -< right]
     val relation = relate[left, right]

@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **441**;
+- exported multi-word type-level names still under review: **440**;
   217 sit in a prefix family of two or more, across 64 families, and
-  224 are singletons. Names under "Reviewed items which should not be moved"
+  223 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -165,13 +165,16 @@ type declared only as a `type` alias, or one living in a test module, is not inc
 Two were split rather than moved, because one name was covering two failures:
 `TimeError` became `Moment.Error` and `Timespan.Error`; and two were *merged*, because two
 names covered one failure: `DivisionError` and `OverflowError` became `Arithmetic.Error`
-with distinct `Reason`s.
+with distinct `Reason`s. `DataError` was renamed rather than merely moved: nothing in
+anamnesis is called `Data`, and the only `Data` in the codebase — anticipation's
+`Array[Byte]^{}` — is unrelated, so the name invited the wrong association. It is
+`Database.Error`.
 
 | status | names |
 |---|---|
 | awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `BoundsError`, `ConnectError`, `ExpectationError`, `InstallError`, `ServerError` |
 | excluded by R2 (specification concept) | `CompileError` |
-| outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `DataError`, `EscapeError`, `RemoteError`, `UncheckedError` |
+| outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `EscapeError`, `RemoteError`, `UncheckedError` |
 | structurally blocked, with the reason established | `IoError`, `StreamError` (below) |
 | nested compound names, where the prefix is usually redundant with the enclosing type and could simply become `Error` (as `Wit.ParseError` → `Wit.Error` did) | `Ansi.AnsiError`, `Pty.EscapeError`, `Git.RefError`, `Repackager.RepackageError`, `Sh.ShError`, `Repackager.UserError`, `UrlInterpolatorError`, `EvaluationError` |
 
@@ -307,7 +310,7 @@ ultimatum's is the likelier one to rename.
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (224)
+### Singletons (223)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
@@ -316,13 +319,13 @@ ultimatum's is the likelier one to rename.
 `CaptionLayout`, `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `ChangeKind`,
 `ChannelLayout`, `CheckOverflow`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`,
 `ColorDepth`, `CommandGroup`, `CommonFormattable`, `ConnectError`, `ContainerConfig`,
-`CopyAttributes`, `CrLf`, `CtrlChar`, `CtSym`, `DataError`, `DecimalConverter`,
-`DecodableManifest`, `DereferenceSymlinks`, `DivisionByZero`, `DivOp`, `DnsLabel`, `DockerEvent`,
-`DomainSocket`, `EcosystemProfile`, `EditorField`, `EitherTactic`, `EmailAddress`,
-`EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`, `EscapeError`, `EucalyptusGcp`,
-`ExpectationError`, `FastForward`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `GapPolicy`,
-`GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`,
-`GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
+`CopyAttributes`, `CrLf`, `CtrlChar`, `CtSym`, `DecimalConverter`, `DecodableManifest`,
+`DereferenceSymlinks`, `DivisionByZero`, `DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`,
+`EcosystemProfile`, `EditorField`, `EitherTactic`, `EmailAddress`, `EncodableManifest`,
+`EntryPoint`, `EnumerationHasAsScala`, `EscapeError`, `EucalyptusGcp`, `ExpectationError`,
+`FastForward`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `GapPolicy`, `GarbageCollection`,
+`GaugePalette`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`, `GraphemeBreak`,
+`GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
 `InitializationVector`, `InstallError`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`,
 `Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`, `JsigDiscipline`, `JsInvoke`,
 `JuxtapositionPalette`, `JvmProfile`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`,
