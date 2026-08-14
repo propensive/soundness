@@ -1249,7 +1249,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         import threading.platformThreading
 
         saturated(m"Soundness  Stream.decompress[Gzip]")
-          ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
           '{
               var total = 0L
 
@@ -1260,7 +1260,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           }
 
         saturated(m"FS2  Compression[IO].gunzip")
-          ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
           '{
               import cats.effect.unsafe.implicits.global
               val comp = fs2.compression.Compression.forSync[cats.effect.IO]
@@ -1271,7 +1271,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           }
 
         saturated(m"ZIO  ZPipeline.gunzip")
-          ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
           '{
               turbulence.Benchmarks.runZio:
                 zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallGzippedArray))
@@ -1284,7 +1284,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       // pool instead of one OS thread each — the fair comparison against the fiber
       // runtimes' sustained concurrency.
       saturated(m"Soundness  Stream.decompress[Gzip] (virtual workers)")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             var total = 0L
 
@@ -1323,7 +1323,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       import threading.platformThreading
 
       saturated(m"Soundness  Stream.delineate")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             var total = 0L
             turbulence.Benchmarks.smallText.stream.delineate.sweep(region => range => total += (range: Interval).size)
@@ -1331,7 +1331,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"FS2  text.lines")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
@@ -1339,7 +1339,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"ZIO  ZPipeline.splitLines")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             turbulence.Benchmarks.runZio:
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
@@ -1389,7 +1389,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       import threading.platformThreading
 
       saturated(m"Soundness  dec.enc.dec.enc.dec")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             var total = 0L
 
@@ -1403,7 +1403,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"FS2  utf8 decode/encode x2.5")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
@@ -1414,7 +1414,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"ZIO  utfDecode/utf8Encode x2.5")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             turbulence.Benchmarks.runZio:
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
@@ -1464,7 +1464,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       import threading.platformThreading
 
       saturated(m"Soundness  Confluence")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             supervise:
               val merged = Confluence(turbulence.Benchmarks.smallQuarters.map(q => q.stream)*)
@@ -1474,7 +1474,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"FS2  parJoinUnbounded")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO
@@ -1485,7 +1485,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"ZIO  mergeAllUnbounded")
-        ( target = 1*Second, sweep = 256, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             turbulence.Benchmarks.runZio:
               import zio.*, zio.stream.*
