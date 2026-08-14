@@ -139,5 +139,5 @@ elements `<mstack>`, `<mlongdiv>` and the rest.
 
 `Ergo.serialize` turns a MathML tree back into Ergo, and the two are inverse over the Ergo subset:
 a parsed expression serializes and re-parses to the same tree. An element outside that subset —
-`<mtext>`, say — is rejected with an `ErgoError` rather than serialized approximately, so the
+`<mtext>`, say — is rejected with an `Ergo.Error` rather than serialized approximately, so the
 round trip is a guarantee rather than a hope.

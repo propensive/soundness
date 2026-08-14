@@ -225,7 +225,7 @@ squared), `Pascal` (newton per square metre), `Joule` (newton-metre), `Watt` (jo
 ampere), `Siemens` (ampere per volt), `Weber` (volt-second), `Tesla` (weber per square metre),
 `Henry` (weber per ampere), `Lux` (candela per square metre), `Becquerel` (one per second), `Gray`
 and `Sievert` (joule per kilogram), and `Katal` (mole per second). The CGS and imperial systems are
-provided alongside them — `Dyne`, `Erg`, `Gauss`, `Poise`, `Foot`, `Furlong`, `Dram` and the rest.
+provided alongside them — `Dyne`, `Erg`, `Gauss`, `Poise`, `Foot`, `Furlong`, `Stone` and the rest.
 
 ### Mixed and non-decimal bases
 
