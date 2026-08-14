@@ -33,8 +33,12 @@
 package ultimatum
 
 // How a split arranges its children, and so which axis it divides. `Strip` places them side by
-// side, distributing width; `Stack` puts them one above another, distributing height. The names
-// match the `strip` and `stack` constructors that build each, so the value a split carries and the
-// call that produced it read the same.
+// side, distributing width; `Stack` puts them one above another, distributing height; `Grid`
+// flows them row-major into `columns` columns whose widths are negotiated across every row (so
+// cells in a column align, as in a table), with `gap` blank cells between columns and between
+// rows. The names match the `strip`, `stack` and `grid` constructors that build each, so the
+// value a split carries and the call that produced it read the same.
 enum Arrangement:
-  case Stack, Strip
+  case Stack
+  case Strip
+  case Grid(columns: Int, gap: Int = 0)

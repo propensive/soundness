@@ -93,6 +93,11 @@ def strip(panes: Pane*): Pane = Pane.Branch(Sizing(), Arrangement.Strip, Panes(p
 def strip(panes: Panes): Pane = Pane.Branch(Sizing(), Arrangement.Strip, panes)
 
 // A split whose children stack as rows (distributing height), on the `Rank` axis.
+// Arrange panes row-major in a grid of `columns` columns whose widths are negotiated across
+// every row, so cells in a column align; `gap` leaves blank cells between columns and rows.
+def grid(columns: Int, gap: Int = 0)(panes: Pane*): Pane =
+  Pane.Branch(Sizing(), Arrangement.Grid(columns, gap), Panes(panes*))
+
 def stack(panes: Pane*): Pane = Pane.Branch(Sizing(), Arrangement.Stack, Panes(panes*))
 
 // A row split over a live container, whose children can change while running.

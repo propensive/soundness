@@ -754,7 +754,8 @@ object soundness extends Toolchain:
     hallucination.bmp, hallucination.gif, hallucination.jpeg, hallucination.png,
     hallucination.webp, hallucination.formats,
     ziggurat.core, ziggurat.packager, tessellate.core,
-    ultimatum.core, ultimatum.gauges, xenophile.native, exoskeleton.args, exoskeleton.core):
+    ultimatum.core, ultimatum.gauges, ultimatum.tables, xenophile.native, exoskeleton.args,
+    exoskeleton.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
@@ -2990,6 +2991,11 @@ object ultimatum extends Library:
   object gauges extends Component(core, aviation.core, quantitative.units):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Live escritoire tables as panes; a separate component so that `escritoire` is not imposed
+  // on every `ultimatum.core` user.
+  object tables extends Component(core, escritoire.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object demo extends Internal(core, gauges, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
@@ -3024,7 +3030,7 @@ object ultimatum extends Library:
 
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
-  object test extends Tests(core, gauges):
+  object test extends Tests(core, gauges, tables):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

@@ -178,6 +178,92 @@ object Tests extends Suite(m"Ultimatum Tests"):
         frame.arrange(Rect(0, 0, 10, 4)).cells
       . assert(_ == List(Rect(0, 0, 5, 4), Rect(5, 0, 5, 2), Rect(5, 2, 5, 2)))
 
+    suite(m"Grid arrangement"):
+      def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
+
+      def grid(columns: Int, gap: Int = 0)(children: Frame*): Frame =
+        Frame.Split(Sizing(), ultimatum.Arrangement.Grid(columns, gap), children.to(List))
+
+      test(m"cells flow row-major into columns with content-sized rows"):
+        val frame = grid(2)
+          ( cell(Sizing(minHeight = 2)), cell(Sizing(minHeight = 2)),
+            cell(Sizing(minHeight = 3)), cell(Sizing(minHeight = 1)) )
+
+        frame.arrange(Rect(0, 0, 10, 10)).cells
+      . assert:
+          _ == List
+            ( Rect(0, 0, 5, 2), Rect(5, 0, 5, 2),
+              Rect(0, 2, 5, 3), Rect(5, 2, 5, 3) )
+
+      test(m"column widths are negotiated across every row"):
+        val frame = grid(2)
+          ( cell(Sizing(minWidth = 3, minHeight = 1)), cell(Sizing(minHeight = 1)),
+            cell(Sizing(minWidth = 7, minHeight = 1)), cell(Sizing(minHeight = 1)) )
+
+        frame.arrange(Rect(0, 0, 10, 4)).cells.map(_.width)
+      . assert(_ == List(7, 3, 7, 3))
+
+      test(m"gaps separate both columns and rows"):
+        val frame = grid(2, gap = 1)
+          ( cell(Sizing(minHeight = 2)), cell(Sizing(minHeight = 2)),
+            cell(Sizing(minHeight = 2)), cell(Sizing(minHeight = 2)) )
+
+        frame.arrange(Rect(0, 0, 11, 10)).cells
+      . assert:
+          _ == List
+            ( Rect(0, 0, 5, 2), Rect(6, 0, 5, 2),
+              Rect(0, 3, 5, 2), Rect(6, 3, 5, 2) )
+
+      test(m"an incomplete final row keeps its column's width"):
+        val frame = grid(2)
+          ( cell(Sizing(minHeight = 1)), cell(Sizing(minHeight = 1)),
+            cell(Sizing(minHeight = 1)) )
+
+        frame.arrange(Rect(0, 0, 10, 4)).cells
+      . assert(_ == List(Rect(0, 0, 5, 1), Rect(5, 0, 5, 1), Rect(0, 1, 5, 1)))
+
+      test(m"a grid's width minimum sums its column minima and gaps"):
+        val frame = grid(2, gap = 1)
+          ( cell(Sizing(minWidth = 4, minHeight = 1)), cell(Sizing(minWidth = 2, minHeight = 1)),
+            cell(Sizing(minWidth = 6, minHeight = 1)), cell(Sizing(minWidth = 5, minHeight = 1)) )
+
+        frame.measure(ultimatum.Arrangement.Strip)
+      . assert(_ == Limits(12, Unset))
+
+      test(m"a grid's height is rigid at its content-sized rows"):
+        val frame = grid(2, gap = 1)
+          ( cell(Sizing(minHeight = 2)), cell(Sizing(minHeight = 3)),
+            cell(Sizing(minHeight = 1)), cell(Sizing(minHeight = 1)) )
+
+        frame.measure(ultimatum.Arrangement.Stack)
+      . assert(_ == Limits(5, 5))
+
+    suite(m"TableFixture"):
+      import escritoire.{Column, Scaffold}
+      import tableStyles.thinRoundedTableStyle
+      import hyphenations.englishHyphenation
+      import textMetrics.uniformMetric
+
+      case class Entry(name: Text, total: Int)
+      val entries = List(Entry(t"alpha", 1), Entry(t"beta", 22))
+
+      def fixture(data: List[Entry]): TableFixture = TableFixture:
+        Scaffold[Entry, Teletype]
+          ( Column[Entry, Text, Teletype](e"Name")(_.name),
+            Column[Entry, Int, Teletype](e"Count")(_.total) )
+        . tabulate(data)
+
+      test(m"measure reports the table's rendered width and height"):
+        fixture(entries).measure(40)
+      . assert(_ == (17, 6))
+
+      test(m"a narrower width renegotiates the same table"):
+        val wrapping = List(Entry(t"the quick brown fox", 1))
+        val wide = fixture(wrapping).measure(40)(0)
+        val narrow = fixture(wrapping).measure(20)(0)
+        narrow < wide
+      . assert(_ == true)
+
     suite(m"layout / panel DSL"):
       test(m"side-by-side panels paint at their own offsets, no bleed"):
         val bytes = ji.ByteArrayOutputStream()

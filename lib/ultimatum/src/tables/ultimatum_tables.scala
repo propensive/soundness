@@ -30,22 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export
-  ultimatum
-  . { Arrangement, BorderStyle, dirtyCells, editor, EditorField, Extent, Fixture, FlowExtent,
-      Focus, form, Form, Frame, grid, InlineAnchoring, InlineGrowth, InlineRoot, InlineShrink,
-      layout, Limits, menu, MenuField, Occupancy, paint, Pane, Panes, panel, Placement, Rect,
-      ScreenRoot, Sizing, stack, strip, Tick }
+import anticipation.*
+import escapade.*
+import escritoire.*
+import hieroglyph.*
+import polysyllabic.*
 
-package inlineAnchoring:
-  export
-    ultimatum.inlineAnchoring
-    . { bottomDocked, topAnchored, topAfterResize, fullscreen, inline }
+// A pane hosting a live table.
+def tabular(content: => Tabulation[Teletype])
+  ( using TableStyle, Text is Measurable, Hyphenation )
+:   Pane =
 
-package inlineGrowth:
-  export ultimatum.inlineGrowth.{scrollIntoScrollback, clampToScreen}
-
-package inlineShrink:
-  export ultimatum.inlineShrink.{redockBottom, keepTop}
+  Pane.Widget(Sizing(), TableFixture(content))
