@@ -83,9 +83,30 @@ formulas. Which arrow a chemist writes carries information, and the equation kee
 ### Charge and state
 
 An ion carries its charge as part of the molecule, so a charged species is a distinct value from
-its neutral counterpart and the two cannot be confused when balancing. Physical state is
-annotation rather than identity — it affects how a species renders, not what it is — so
-`H₂O(aq)` and `H₂O(l)` describe the same substance in different conditions.
+its neutral counterpart and the two cannot be confused when balancing. A unit charge is a prefix
+`+` or `-`, and any other charge comes from `ion`:
+
+```scala
++Na                     // the sodium cation
+-(C[2]*H[3]*O[2])       // acetate
+Fe.ion(3)               // iron(III)
+```
+
+Charges add as species combine, so `+Na*(-Cl)` is neutral — which is what makes an ionic compound
+come out right without stating its charge separately.
+
+Physical state is annotation rather than identity — it affects how a species renders, not what it
+is — so `H₂O(aq)` and `H₂O(l)` describe the same substance in different conditions. `inState`
+applies one, and the parentheses matter:
+
+```scala
+(Na*Cl).inState(PhysicalState.Aqueous)   // aqueous salt
+Na*Cl.inState(PhysicalState.Aqueous)     // the state is set on the chlorine, then lost
+```
+
+Combining two molecules leaves the result's state unset, because the state of a combination
+cannot be inferred from the states of its parts. So a state applied before a bond is formed is
+discarded by it, and a state must be applied to the finished species.
 
 ### Building blocks
 

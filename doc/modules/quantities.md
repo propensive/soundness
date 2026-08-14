@@ -107,12 +107,12 @@ width*depth         // 1.8288 square metres
 
 ### Converting
 
-A quantity converts explicitly to another compatible unit with `to`, naming the
+A quantity converts explicitly to another compatible unit with `convert`, naming the
 target unit family:
 
 ```scala
-(3*Foot).to[Metres]   // 0.9144 metres
-(3*Metre).to[Feet]    // 9.8425… feet
+(3*Foot).convert[Metres]   // 0.9144 metres
+(3*Metre).convert[Feet]    // 9.8425… feet
 ```
 
 `normalize` does the same, written with the fully-powered unit type:
@@ -204,6 +204,75 @@ Even an unusual combination resolves to its physical name:
 (Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension   // t"chemical potential"
 ```
 
+### The SI units
+
+Seven base dimensions are defined, each with its units type and the value naming one of them:
+
+| Dimension           | Units       | Unit      |
+|---------------------|-------------|-----------|
+| `Distance`          | `Metres`    | `Metre`   |
+| `Mass`              | `Kilograms` | `Gram`    |
+| `Time`              | `Seconds`   | `Second`  |
+| `Current`           | `Amperes`   | `Ampere`  |
+| `Luminosity`        | `Candelas`  | `Candela` |
+| `AmountOfSubstance` | `Moles`     | `Mole`    |
+| `Heat`              | `Kelvins`   | `Kelvin`  |
+
+The named derived units are defined in terms of those, so each carries its full dimensions rather
+than being a distinct kind of thing: `Hertz` (one per second), `Newton` (metre-kilogram per second
+squared), `Pascal` (newton per square metre), `Joule` (newton-metre), `Watt` (joule per second),
+`Coulomb` (second-ampere), `Volt` (watt per ampere), `Farad` (coulomb per volt), `Ohm` (volt per
+ampere), `Siemens` (ampere per volt), `Weber` (volt-second), `Tesla` (weber per square metre),
+`Henry` (weber per ampere), `Lux` (candela per square metre), `Becquerel` (one per second), `Gray`
+and `Sievert` (joule per kilogram), and `Katal` (mole per second). The CGS and imperial systems are
+provided alongside them — `Dyne`, `Erg`, `Gauss`, `Poise`, `Foot`, `Furlong`, `Dram` and the rest.
+
+### Conversion ratios
+
+Converting between units needs the ratio between them, and that comes from a contextual `Ratio`
+for the pair — one unit at power `1`, the other at power `-1` — with the rate as a singleton
+literal `Double`:
+
+```scala
+inline given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
+```
+
+The rate being a *type* rather than a value is what makes this cost nothing. Its value is known at
+compiletime, so arithmetic on it folds as the code compiles, and the given itself can be erased —
+which is why a conversion between two units contributes no runtime work beyond the multiplication
+it actually denotes.
+
+### Defining a unit of your own
+
+A unit that measures something the SI does not have a dimension for needs both a dimension and a
+units type. Suppose FLOPS, a processor's floating-point instructions per second. Written as a bare
+value, `1.0/Second` is usable in arithmetic but says nothing about what it counts:
+
+```scala
+val SimpleFlop = 1.0/Second
+```
+
+Wrapping it as a `MetricUnit` at least makes the metric prefixes apply, so `Mega(Flop)` becomes
+writable — but the result is still just a number in units of inverse seconds. Giving it a
+dimension of its own makes it distinct from every frequency:
+
+```scala
+trait CpuPerformance extends Dimension
+trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+
+val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
+```
+
+The `power` parameter is required, and is bounded by `Nat` — an alias for `Int & Singleton`. With
+these, `Mega(Flop)*Minute` has the type `Quantity[Flops[1] & Seconds[1]]`, and a
+`Designation` gives it a symbol for display:
+
+```scala
+given Designation[Flops[1]] = () => t"FLOPS"
+```
+
+Both traits may be `sealed`, since nothing implements them at runtime.
+
 ### Displaying
 
 A quantity renders through `show`. The rendering needs a `Decimalizer` in scope to
@@ -215,6 +284,10 @@ given Decimalizer = Decimalizer(3)
 (7.567*Metre).show      // t"7.57 m"
 (1.4*Metre*Metre).show  // t"1.40 m²"
 ```
+
+`show` is the only correct way to render one. Because a `Quantity` is an opaque type over a
+`Double`, its `toString` is the `Double`'s — the bare number, with no units at all — so a quantity
+interpolated into a plain string silently loses the very thing that distinguishes it.
 
 Compound units render with a middle dot and superscript powers, and very large or
 small values switch to scientific notation:

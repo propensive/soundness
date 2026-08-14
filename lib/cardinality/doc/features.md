@@ -1,5 +1,0 @@
-- introduces `Double`s which are constrained to a numeric range, checked at compile time
-- intuitive `a ~ b` syntax for representing a ranged `Double`
-- ordinary `Double` literals can be used in positions which expect a ranged type
-- numeric ranges compose under arithmetic operations
-- escape-hatch (called `force`) for unsafe but easy conversions

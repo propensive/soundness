@@ -1,3 +1,0 @@
-- efficient representation of permutations of collection elements
-- bijection between positive integers and permutations
-- provides a binary serialization of permutations

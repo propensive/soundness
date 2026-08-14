@@ -183,6 +183,46 @@ The implementation is pure Scala rather than a wrapper over the JVM's `BigDecima
 work on every platform — and nothing in it depends on 64-bit-native arithmetic, which matters
 where `Long` is emulated.
 
+### Ordinals
+
+Off-by-one errors come from a single ambiguity: whether "1" means the first element or the one
+after the first. `Ordinal` removes it by being a different type from `Int` altogether. There is,
+fundamentally, no zeroth ordinal — the first is `Prim`, then `Sec`, `Ter`, `Quat`, `Quin`, `Sen`
+and `Sept`, from "primary", "secondary", "tertiary" and so on — and an `Int` cannot be used where
+an `Ordinal` is expected, or the reverse. It is an opaque type over an `Int`, so it costs nothing.
+
+Crossing between the two is explicit, and says which convention is being crossed *from*: `z`
+reads a zero-indexed count as an ordinal, `u` a one-indexed one. So `0.z` and `1.u` are both
+`Prim`, and the source of a number — a wire protocol counting from zero, a specification counting
+from one — is recorded where the number enters rather than remembered thereafter.
+
+Only the arithmetic that means something is available. Adding a cardinal to an ordinal gives an
+ordinal, and subtracting two ordinals gives the cardinal distance between them; multiplying two
+ordinals does not typecheck, because it does not mean anything:
+
+```scala
+Ter + 3      // Sen
+Sept - Quin  // 2, an Int
+```
+
+The last elements of a sequence are named rather than computed: `ult` is the last ("ultimate"),
+`pen` the second-to-last, and `ant` the third. Each returns an `Optional`, since a sequence may
+be too short to have one, and each is available on any type with a `Countable` instance.
+
+A range of ordinals is an `Interval`, built with `thru` for an inclusive end, `till` for an
+exclusive one, or `span` for a length:
+
+```scala
+Ter thru Sen    // Ter, Quat, Quin, Sen
+Ter till Sen    // Ter, Quat, Quin
+Ter span 3      // Ter, Quat, Quin
+```
+
+An interval knows its `start`, `end` and `size`, and iterates with `each` or folds with `fuse`,
+exactly as a collection does. `extent` gives the whole of a countable value as an interval, which
+is how a traversal states its bounds in terms of the value it is traversing rather than in raw
+integers.
+
 ### Bounded numbers
 
 A number can carry its permitted range in its type, written with `~`. A literal outside the
@@ -202,4 +242,18 @@ val doubled: -2.0 ~ 2.0 = portion*2.0
 
 The bound travels with the value through a calculation, and a step that could break it does
 not compile — the same discipline as [physical quantities](quantities.md), applied to plain
-ranges.
+ranges. The inference is precise rather than conservative: it takes account of whether each
+operand is a bounded value, a literal, or a `Double` about which nothing is known statically, and
+composes through a whole expression.
+
+```scala
+val x: 0.0 ~ 1.0 = 0.2
+val y: -1.0 ~ 1.0 = 0.2
+val z: 1e3 ~ 1e8 = 10000
+
+(x + y*3.0)*z   // inferred as -2.0e8 ~ 3.0e8
+```
+
+Ordinary unbounded `Double`s are everywhere, though, and one has to be able to enter this world
+from outside it. `force` asserts a bound that the compiler cannot check — which makes it the one
+operation here that can be wrong, and so the one to use deliberately.
