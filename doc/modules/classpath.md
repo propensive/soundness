@@ -57,8 +57,10 @@ so a program can check for an optional resource rather than handle a failure.
 
 ### Choosing a classloader
 
-Which classloader resolves a resource is decided by the `given Classloader` in scope, chosen
-by import. The thread's context classloader suits most applications; the system, platform
+A resource reference names a path, not a thing: two classloaders may resolve the same path to
+different resources, or one to nothing at all, which is why the choice cannot be implicit in the
+reference and has to come from the context in which it is read. Which classloader resolves a
+resource is decided by the `given Classloader` in scope, chosen by import. The thread's context classloader suits most applications; the system, platform
 and Scala classloaders are the other standard choices:
 
 ```scala

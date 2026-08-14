@@ -163,6 +163,17 @@ file.open[Ram](Read & Write): ram ?=>
 A path copies, moves, symlinks or deletes with operations that name the destination or act in
 place. Each consults the policy in scope for the awkward cases, and each may raise an `IoError`:
 
+Those policies are not defaults that can be left alone. Moving a file onto a path where something
+already exists either destroys that thing or refuses to; neither answer is right in general, and
+choosing one silently would make the wrong programs compile. So `moveTo` requires
+`overwritePreexisting` to be either `enabled` or `disabled` in scope, and calling it with neither
+is a compile error. The point is not only to be unpresumptuous but to be instructive: a reader who
+had not realised the question needed answering is told that it does.
+
+The choice also changes what must be handled. With `disabled` in scope a collision is a failure to
+deal with; with `enabled` it cannot arise, and the obligation goes away with it. Being contextual
+values, the policies can be imported for a file or narrowed to a single block.
+
 ```scala
 file.copyTo(directory/t"backup.txt")
 file.moveTo(directory/t"renamed.txt")

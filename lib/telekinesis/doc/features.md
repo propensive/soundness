@@ -1,9 +1,0 @@
-- immutable API optimized for Scala 3 and lightweight concurrency with Loom
-- Simple and flexible request handling
-- HTTP server can be run standalone or wrap a servlet container
-- typesafe representations of HTTP request and response headers and MIME types
-- transparent typeclass-based request body query parameter serialization and deserialization
-- optional pattern-matching on requests
-- fast streaming without complexity
-- safe parameter and header access
-- typesafe representation of URLs

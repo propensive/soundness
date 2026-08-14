@@ -163,6 +163,28 @@ time in the morning whatever time it began, but one can still be woken in the ni
 *hibernates* until a particular time in the spring and cannot easily be roused. And a train's
 *delay* is quoted as a duration, but once it has one, nothing cancels it.
 
+### Retrying
+
+Work that fails for a transient reason should be tried again, and the *schedule* on which it is
+retried is a value rather than a loop written at each call site. `retry` runs a block under the
+`Tenacity` in scope, which decides how long to wait before each attempt and when to stop:
+
+```scala
+import retryTenacities.exponentialTenTimesTenacity
+
+retry(fetchRemoteValue())
+```
+
+The provided schedules cover the usual choices — `exponentialForeverTenacity`,
+`exponentialFiveTimesTenacity` and `exponentialTenTimesTenacity` back off geometrically, while
+the `fixedNoDelay` variants retry immediately, forever or a bounded number of times — and
+`Tenacity.exponential` and `Tenacity.fixed`, with `limit`, build others. Running out of attempts
+raises a `RetryError` naming how many were made.
+
+Within the block, `surrender()` gives up immediately without consuming further attempts, and
+`persevere()` asks for another, so a body can distinguish a failure worth retrying from one that
+never will be.
+
 ### Promises
 
 A `Promise` is a value that will be supplied later, perhaps by another thread. One side awaits it and
@@ -223,6 +245,20 @@ Waiting is not free, and it is not invisible. Awaiting a task or a promise, slee
 all *suspend* the running strand, and each demands a `Monitor` capability in scope. A method that
 can block therefore says so in its signature, exactly as a method that can fail says so with
 `raises`.
+
+That suspension is allowed to be *blocking* is itself a design decision worth defending, since
+blocking has a poor reputation. It began as a convenience — if a value is not ready, wait for it,
+rather than failing or writing out both the ready and the unready cases — and the convenience is
+real: code that blocks is code written in terms of values rather than callbacks. What earned it
+its reputation was the cost. A platform thread waiting is a thread not working, and an application
+holding thousands of them spends more of its capacity waiting than computing; the servers are
+provisioned for the waiting.
+
+Virtual threads change that arithmetic. Orders of magnitude more calls can sit in a blocking state
+at once without meaningful overhead, which means the convenience can be had at the price the
+callback-based alternatives were invented to avoid. Blocking where it reads most clearly, on
+threads cheap enough that blocking does not matter, is the shape of everything here — and of
+[streaming](streams.md), which pulls on the consumer's own thread for the same reason.
 
 Underneath, the unit of execution is a `Strand` rather than a thread: an abstraction with the four
 operations suspension needs — interrupt, join, park and unpark. A supervisor supplies strands, and

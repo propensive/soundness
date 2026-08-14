@@ -1,4 +1,0 @@
-- Represent URLs, MAC addresses and IP addresses with immutable datatypes
-- IPv4 addresses and MAC addresses are represented efficiently as opaque primitives
-- Compile-time parsing of URLs, MAC addresses and IP addresses with string interpolators
-- Runtime parsing and serialization, with parsing errors handled using capabilities

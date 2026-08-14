@@ -49,6 +49,12 @@ val entry = Zip.Entry(t"hello.txt".as[Path on Zip], t"Hello world".in[Data])
 Zipfile.write(path)(List(entry))
 ```
 
+`write` also takes an optional `prefix` of raw bytes to place before the archive proper. The ZIP
+format locates its own directory from the end of the file rather than the start, so an archive
+concatenated onto arbitrary leading bytes still reads correctly — which is how a self-extracting
+or directly-executable archive is made, and how the [packaged](packaging.md) launchers carry their
+own JAR.
+
 An archive can also be *opened*, which makes its entries available for the duration of a scope
 and closes the underlying source at the end of it, in the same way as a
 [file](filesystem.md#reading-and-writing):

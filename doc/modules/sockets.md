@@ -46,6 +46,11 @@ supervise:
   server.stop()
 ```
 
+The endpoint decides the shape of the handler, on both sides. A stateful endpoint hands the
+handler something it can hold a conversation through; a stateless one hands it a payload and
+takes an answer back. So the same `listen` reads correctly for a TCP connection and for a UDP
+datagram without the handler having to state which it is dealing with.
+
 A UDP handler receives a `Packet` — the datagram with its sender — and answers with a reply or
 silence:
 
