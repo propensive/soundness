@@ -2980,7 +2980,7 @@ object typonym extends Library:
       settings.sep(super.scalacOptions())
 
 object ultimatum extends Library:
-  object core extends Component(profanity.core, escapade.core, yossarian.core):
+  object core extends Component(profanity.core, escapade.core, yossarian.core, tessellate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Gauges — spinners, progress bars, meters and step indicators — are a separate component so

@@ -32,9 +32,8 @@
                                                                                                   */
 package ultimatum
 
-import proscenium.compat.*
-
 import rudiments.*
+import tessellate.*
 import vacuous.*
 
 object Frame:
@@ -67,110 +66,6 @@ object Frame:
       lesser(acc, child.max)
 
     Limits(own.min.max(minMax), lesser(own.max, maxMin))
-
-  // Distribute `available` cells among children by fraction. Iteratively fix any
-  // child whose fair share violates its min or max (removing it from the pool and
-  // redistributing) until a fixed point, then hand the still-free children their
-  // fractional shares with largest-remainder (Hamilton) rounding so the sizes sum
-  // to exactly `available`.
-  def distribute(fractions: List[Double], limits: List[Limits], available: Int): Sequence[Int] =
-    val n = fractions.stdlib.length
-
-    // The working state, hoisted once into index-aligned local arrays so every read in
-    // the fixed-point loops below is total `Array` indexing (`i` ranges over `0 until n`
-    // throughout). A `limits` list shorter than `fractions` (a violated caller contract)
-    // degrades to zero minima and unbounded maxima rather than a panic.
-    val frac = scala.Array.fill(n)(0.0)
-    val min = scala.Array.fill(n)(0)
-    val max = scala.Array.fill[Optional[Int]](n)(Unset)
-    val pinned = scala.Array.fill[Optional[Int]](n)(Unset)
-
-    var index = 0
-    val fractionCells = fractions.stdlib.iterator
-
-    while index < n && fractionCells.hasNext do
-      frac(index) = fractionCells.next()
-      index += 1
-
-    index = 0
-    val limitCells = limits.stdlib.iterator
-
-    while index < n && limitCells.hasNext do
-      val limit = limitCells.next()
-      min(index) = limit.min
-      max(index) = limit.max
-      index += 1
-
-    def poolAndWeight(): (Int, Double) =
-      var used = 0
-      var weight = 0.0
-      var i = 0
-
-      while i < n do
-        pinned(i).let(used += _).or(weight += frac(i))
-        i += 1
-
-      ((available - used).max(0), weight)
-
-    var changed = true
-
-    while changed do
-      changed = false
-      val (pool, weight) = poolAndWeight()
-      var i = 0
-
-      while i < n do
-        if pinned(i).absent then
-          val ideal = if weight <= 0.0 then 0.0 else pool*frac(i)/weight
-
-          if ideal < min(i) then
-            pinned(i) = min(i)
-            changed = true
-          else
-            max(i).let: hi =>
-              if ideal > hi then
-                pinned(i) = hi
-                changed = true
-
-        i += 1
-
-    val (pool, weight) = poolAndWeight()
-    val sizes = scala.Array.fill(n)(0)
-    val remainders = scala.Array.fill(n)(0.0)
-    var floorSum = 0
-    var i = 0
-
-    while i < n do
-      pinned(i).let { size => sizes(i) = size }.or:
-        val raw = if weight <= 0.0 then 0.0 else pool*frac(i)/weight
-        val floor = raw.toInt
-        sizes(i) = floor
-        remainders(i) = raw - floor
-        floorSum += floor
-
-      i += 1
-
-    var remainder = pool - floorSum
-
-    while remainder > 0 do
-      var best = -1
-      var bestRemainder = -1.0
-      var j = 0
-
-      while j < n do
-        if pinned(j).absent && remainders(j) > bestRemainder then
-          bestRemainder = remainders(j)
-          best = j
-
-        j += 1
-
-      if best < 0 then remainder = 0
-      else
-        sizes(best) += 1
-        remainders(best) = -1.0
-        remainder -= 1
-
-    Sequence.from(sizes.iterator)
 
 // A node in a layout tree: a `Cell` (a leaf panel that hosts content) or a
 // `Split` that divides its space among children along an `Arrangement`. Solving against
@@ -210,19 +105,26 @@ enum Frame:
         case Arrangement.Strip => rect.width
         case Arrangement.Stack => rect.height
 
-      val limits = children.map(_.measure(arrangement))
-      val fractions = children.map(_.sizing.fraction)
-      val sizes = Frame.distribute(fractions, limits, available)
+      // Each child is a flex track: its measured minimum, its fraction as the weight with
+      // which it claims spare space, and its measured maximum as a hard cap. No track is
+      // collapsible, so every solved size is defined.
+      val tracks: List[Flex] =
+        children.map: child =>
+          val limits = child.measure(arrangement)
+          Flex(Metrics(limits.min), child.sizing.fraction, limits.max)
+
+      val sizes =
+        Flex.solve(Sequence.of(tracks.stdlib.toVector), available).stdlib.map(_.or(0))
 
       val start = arrangement match
         case Arrangement.Strip => rect.left
         case Arrangement.Stack => rect.top
 
-      val offsets = sizes.stdlib.scanLeft(start)(_ + _)
+      val offsets = sizes.scanLeft(start)(_ + _)
 
       // Zip each child directly with its solved size and offset (`scanLeft` yields n + 1
       // offsets; the zip truncates to the n children), so no re-indexing is needed.
-      val placements = children.stdlib.lazyZip(sizes.stdlib).lazyZip(offsets).map:
+      val placements = children.stdlib.lazyZip(sizes).lazyZip(offsets).map:
         (child, size, offset) =>
           val childRect = arrangement match
             case Arrangement.Strip => Rect(offset, rect.top, size, rect.height)

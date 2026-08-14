@@ -35,7 +35,9 @@ package ultimatum
 import anticipation.*
 import escapade.*
 import gossamer.*
+import hieroglyph.*
 import symbolism.*
+import tessellate.*
 import vacuous.*
 
 object Checklist:
@@ -90,13 +92,12 @@ enum Checklist:
         case Standing.Pending   => if plain then t"." else t"·"
 
     def pad(content: Teletype): Teletype =
-      val used = gauging.cells(content.plain)
-      if used >= width then content else e"$content${t" "*(width - used)}"
+      given Text is Measurable = gauging.metric
+      Alignment.Left.pad(content, width)
 
     def clip(text: Text, cells: Int): Text =
-      if text.length <= cells then text
-      else if cells <= 1 then t"…"
-      else t"${text.keep(cells - 1)}…"
+      given Text is Measurable = gauging.metric
+      Flow.shorten(text, cells)
 
     this match
       case Rows =>

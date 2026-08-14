@@ -35,7 +35,9 @@ package ultimatum
 import anticipation.*
 import escapade.*
 import gossamer.*
+import hieroglyph.*
 import symbolism.*
+import tessellate.*
 
 object CaptionLayout:
   // The no-import default: the label follows the gauge, one space away.
@@ -65,11 +67,9 @@ case class CaptionLayout(gap: Int, trailing: Boolean, elide: Boolean):
     val composed =
       if room <= 0 then gauge else if trailing then e"$gauge$spacer$text" else e"$text$spacer$gauge"
 
-    val used = gauging.cells(composed.plain)
-    if used >= width then composed else e"$composed${t" "*(width - used)}"
+    given Text is Measurable = gauging.metric
+    Alignment.Left.pad(composed, width)
 
   private def shorten(caption: Text, room: Int, gauging: Gauging): Text =
-    if room <= 0 then t""
-    else if gauging.cells(caption) <= room then caption
-    else if room == 1 then t"…"
-    else t"${caption.keep(room - 1)}…"
+    given Text is Measurable = gauging.metric
+    if room <= 0 then t"" else Flow.shorten(caption, room)
