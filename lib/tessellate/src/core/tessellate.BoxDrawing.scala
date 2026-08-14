@@ -30,79 +30,37 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package dendrology
-
-// Deliberate stdlib opt-out, as in the diagram implementations.
-import scala.collection.immutable.{Map, Set}
+package tessellate
 
 import anticipation.*
 import gossamer.*
-import gossamer.Textual.concatenable
-import hieroglyph.*
-import symbolism.*
-import vacuous.*
+import proscenium.compat.*
 
-import DagTile.*
+object BoxDrawing:
+  val asciiChars: Array[Char]^{} =
+    List
+      ( t" -- |+++|++  + +--- +++ +++ +++ --- +++++++  + +   -+ ++   -+ ++|+++|+++|+++    +++ +++ ",
+        t"+++     ++++++++++++    + +++ +++ ++    |++ |+++|++  + ++++ +++ +++ +++ +++ +++++ +  + +",
+        t"   -+ ++   -+ ++ + +     + +|+|++++     +++ +++  + +     + +|+|++ ++    + +++ ++" )
 
-case class TextualLaneDagStyle[line: Textual]
-  ( space:      Text,
-    vertical:   Text,
-    horizontal: Text,
-    cornerNe:   Text,
-    cornerNw:   Text,
-    cornerSe:   Text,
-    cornerSw:   Text,
-    teeN:       Text,
-    teeS:       Text,
-    teeE:       Text,
-    teeW:       Text,
-    junction:   Text,
-    crossing:   Text,
-    node:       Text )
-  ( using metric: Text is Measurable )
-extends LaneDagStyle[line]:
-  // Display cells, not code units, so wide characters and combining marks lay out correctly.
-  def width(glyph: line): Int = metric.width(summon[line is Textual].text(glyph))
+    . join
+    . chars
 
-  def serialize
-    ( tiles:  List[DagTile],
-      glyphs: Map[Int, line],
-      widths: List[Int],
-      label:  Optional[line] )
-  :   line =
+  val defaultChars: Array[Char]^{} =
+    List
+      ( t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ",
+        t"┟╁╅     ┕┶┷╛┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗",
+        t"   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝     ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬" )
 
-    val parts = tiles.stdlib.zip(widths.stdlib).zipWithIndex.map:
-      case ((Node, w), i) =>
-        val g = glyphs.getOrElse(i, line(node))
-        val gw = width(g)
-        if gw >= w then g else g+line(Text(" ".repeat(w - gw).nn))
+    . join
+    . chars
 
-      case ((t, w), _) =>
-        val base = text(t)
+  val roundedChars: Array[Char]^{} = defaultChars.map:
+    case '┌'  => '╭'
+    case '┘'  => '╯'
+    case '┐'  => '╮'
+    case '└'  => '╰'
+    case char => char
 
-        val cell =
-          if base.s.length >= 1 then base.s.charAt(0).toString else " "
-
-        val filler =
-          if base.s.length >= 2 then base.s.charAt(1).toString else " "
-
-        val padding = if w > 1 then filler.repeat(w - 1).nn else ""
-        line(Text(cell + padding))
-
-    parts.fold(line(t""))(_+_)+label.or(line(t""))
-
-  def text(tile: DagTile): Text = tile match
-    case Space      => space
-    case Vertical   => vertical
-    case Horizontal => horizontal
-    case CornerNe   => cornerNe
-    case CornerNw   => cornerNw
-    case CornerSe   => cornerSe
-    case CornerSw   => cornerSw
-    case TeeN       => teeN
-    case TeeS       => teeS
-    case TeeE       => teeE
-    case TeeW       => teeW
-    case Junction   => junction
-    case Crossing   => crossing
-    case Node       => this.node
+  def simple(vertical: BoxLine, horizontal: BoxLine, charset: LineCharset): Char =
+    charset(vertical, horizontal, vertical, horizontal)

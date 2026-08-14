@@ -144,6 +144,7 @@ object Tests extends Suite(m"Soundness tests"):
     symbolism.Tests()
     tarantula.Tests()
     telekinesis.Tests()
+    tessellate.Tests()
     typonym.Tests()
     ultimatum.Tests()
     ulysses.Tests()

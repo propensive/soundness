@@ -36,9 +36,11 @@ import anticipation.*
 import denominative.*
 import escapade.*
 import gossamer.*
+import hieroglyph.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import tessellate.*
 import vacuous.*
 
 object Bar:
@@ -240,5 +242,5 @@ enum Bar:
     e"$filled$edge$rest"
 
   private def pad(content: Teletype, width: Int, gauging: Gauging): Teletype =
-    val used = gauging.cells(content.plain)
-    if used >= width then content else e"$content${t" "*(width - used)}"
+    given Text is Measurable = gauging.metric
+    Alignment.Left.pad(content, width)

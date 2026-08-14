@@ -41,6 +41,7 @@ import scala.util.*
 import anticipation.*
 import denominative.*
 import gossamer.*
+import hieroglyph.*
 import mercator.*
 import prepositional.*
 import rudiments.*
@@ -65,6 +66,11 @@ object Teletype:
   given concatenable: Teletype is Concatenable:
     type Operand = Teletype
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
+
+  // Styled text occupies exactly the cells of its plain content: SGR styling and OSC
+  // insertions are zero-width, so display width is the plain text's width under the
+  // contextual metric.
+  given measurable: (Text is Measurable) => Teletype is Measurable = _.plain.metrics
 
   // In `Teletype`'s companion (implicit scope for `Teletype is Reversible`), delegating to gossamer's
   // shared textual reversal so `teletype.reverse` resolves through the single `rudiments` `reverse`.

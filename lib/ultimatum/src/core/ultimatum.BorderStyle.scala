@@ -33,23 +33,43 @@
 package ultimatum
 
 import anticipation.*
-import gossamer.*
+import tessellate.*
 
 object BorderStyle:
+  // A view over tessellate's box-drawing table: every glyph is looked up by the weights of
+  // the edges meeting at it, so a style built this way always has coherent corners.
+  def apply(charset: LineCharset, line: BoxLine): BorderStyle =
+    def glyph
+      ( top:    BoxLine = BoxLine.Blank,
+        right:  BoxLine = BoxLine.Blank,
+        bottom: BoxLine = BoxLine.Blank,
+        left:   BoxLine = BoxLine.Blank )
+    :   Text =
+
+      charset(top, right, bottom, left).toString.tt
+
+    BorderStyle
+      ( horizontal  = glyph(right = line, left = line),
+        vertical    = glyph(top = line, bottom = line),
+        topLeft     = glyph(right = line, bottom = line),
+        topRight    = glyph(bottom = line, left = line),
+        bottomLeft  = glyph(top = line, right = line),
+        bottomRight = glyph(top = line, left = line) )
+
   // Light single lines with square corners (the default).
-  val light: BorderStyle = BorderStyle(t"─", t"│", t"┌", t"┐", t"└", t"┘")
+  val light: BorderStyle = BorderStyle(LineCharset.Default, BoxLine.Thin)
 
   // Light single lines with rounded corners.
-  val rounded: BorderStyle = BorderStyle(t"─", t"│", t"╭", t"╮", t"╰", t"╯")
+  val rounded: BorderStyle = BorderStyle(LineCharset.Rounded, BoxLine.Thin)
 
   // Heavy single lines with square corners.
-  val heavy: BorderStyle = BorderStyle(t"━", t"┃", t"┏", t"┓", t"┗", t"┛")
+  val heavy: BorderStyle = BorderStyle(LineCharset.Default, BoxLine.Thick)
 
   // Double lines.
-  val double: BorderStyle = BorderStyle(t"═", t"║", t"╔", t"╗", t"╚", t"╝")
+  val double: BorderStyle = BorderStyle(LineCharset.Default, BoxLine.Double)
 
   // ASCII-only, for terminals without box-drawing glyphs.
-  val ascii: BorderStyle = BorderStyle(t"-", t"|", t"+", t"+", t"+", t"+")
+  val ascii: BorderStyle = BorderStyle(LineCharset.Ascii, BoxLine.Thin)
 
 // The glyphs a `border` draws with: a horizontal rule, a vertical rule, and the
 // four corners. An edge fills its rectangle by repeating its rule, so a single

@@ -36,10 +36,12 @@ import anticipation.*
 import denominative.*
 import escapade.*
 import gossamer.*
+import hieroglyph.*
 import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import tessellate.*
 import vacuous.*
 
 object Dial:
@@ -85,8 +87,8 @@ enum Dial:
       Dial.levels.at(index.z).let(_.show).or(t" ")
 
     def pad(content: Teletype): Teletype =
-      val used = gauging.cells(content.plain)
-      if used >= width then content else e"$content${t" "*(width - used)}"
+      given Text is Measurable = gauging.metric
+      Alignment.Left.pad(content, width)
 
     this match
       case Column =>

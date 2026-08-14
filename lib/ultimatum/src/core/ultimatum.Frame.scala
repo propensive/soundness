@@ -32,9 +32,10 @@
                                                                                                   */
 package ultimatum
 
-import proscenium.compat.*
+import scala.collection.immutable.Vector
 
 import rudiments.*
+import tessellate.*
 import vacuous.*
 
 object Frame:
@@ -68,109 +69,47 @@ object Frame:
 
     Limits(own.min.max(minMax), lesser(own.max, maxMin))
 
-  // Distribute `available` cells among children by fraction. Iteratively fix any
-  // child whose fair share violates its min or max (removing it from the pool and
-  // redistributing) until a fixed point, then hand the still-free children their
-  // fractional shares with largest-remainder (Hamilton) rounding so the sizes sum
-  // to exactly `available`.
-  def distribute(fractions: List[Double], limits: List[Limits], available: Int): Sequence[Int] =
-    val n = fractions.stdlib.length
+  // Each grid column's limits, folded over the children occupying it (row-major order): a
+  // column must hold its widest child minimum and may not exceed any child's cap.
+  private def gridColumns(childWidths: Vector[Limits], columns: Int): Vector[Limits] =
+    val cols = columns.max(1).min(childWidths.length.max(1))
 
-    // The working state, hoisted once into index-aligned local arrays so every read in
-    // the fixed-point loops below is total `Array` indexing (`i` ranges over `0 until n`
-    // throughout). A `limits` list shorter than `fractions` (a violated caller contract)
-    // degrades to zero minima and unbounded maxima rather than a panic.
-    val frac = scala.Array.fill(n)(0.0)
-    val min = scala.Array.fill(n)(0)
-    val max = scala.Array.fill[Optional[Int]](n)(Unset)
-    val pinned = scala.Array.fill[Optional[Int]](n)(Unset)
+    Vector.tabulate(cols): column =>
+      val members = childWidths.indices.filter(_%cols == column).map(childWidths(_))
+      val min = members.map(_.min).maxOption.getOrElse(0)
+      val max = members.map(_.max).foldLeft(Unset: Optional[Int])(lesser)
+      Limits(min, max)
 
-    var index = 0
-    val fractionCells = fractions.stdlib.iterator
+  // Each grid row's height: content-sized, at the tallest minimum among the row's children.
+  private def gridRows(childHeights: Vector[Limits], columns: Int): Vector[Int] =
+    val cols = columns.max(1).min(childHeights.length.max(1))
 
-    while index < n && fractionCells.hasNext do
-      frac(index) = fractionCells.next()
-      index += 1
+    childHeights.grouped(cols).to(Vector).map: row =>
+      row.map(_.min).maxOption.getOrElse(0)
 
-    index = 0
-    val limitCells = limits.stdlib.iterator
+  // A grid's width limits: its columns laid side by side with gaps, like a strip of the
+  // per-column folds.
+  private def gridWidthLimits
+    ( own: Limits, childWidths: Vector[Limits], columns: Int, gap: Int )
+  :   Limits =
 
-    while index < n && limitCells.hasNext do
-      val limit = limitCells.next()
-      min(index) = limit.min
-      max(index) = limit.max
-      index += 1
+    val cols = gridColumns(childWidths, columns)
+    val gaps = gap*(cols.length - 1).max(0)
+    val minSum = cols.map(_.min).sum + gaps
 
-    def poolAndWeight(): (Int, Double) =
-      var used = 0
-      var weight = 0.0
-      var i = 0
+    val maxSum: Optional[Int] = cols.foldLeft(gaps: Optional[Int]): (acc, column) =>
+      acc.let { total => column.max.let(total + _) }
 
-      while i < n do
-        pinned(i).let(used += _).or(weight += frac(i))
-        i += 1
+    Limits(own.min.max(minSum), lesser(own.max, maxSum))
 
-      ((available - used).max(0), weight)
+  // A grid's height limits: its rows are content-sized, so the grid is rigid at their total.
+  private def gridHeightLimits
+    ( own: Limits, childHeights: Vector[Limits], columns: Int, gap: Int )
+  :   Limits =
 
-    var changed = true
-
-    while changed do
-      changed = false
-      val (pool, weight) = poolAndWeight()
-      var i = 0
-
-      while i < n do
-        if pinned(i).absent then
-          val ideal = if weight <= 0.0 then 0.0 else pool*frac(i)/weight
-
-          if ideal < min(i) then
-            pinned(i) = min(i)
-            changed = true
-          else
-            max(i).let: hi =>
-              if ideal > hi then
-                pinned(i) = hi
-                changed = true
-
-        i += 1
-
-    val (pool, weight) = poolAndWeight()
-    val sizes = scala.Array.fill(n)(0)
-    val remainders = scala.Array.fill(n)(0.0)
-    var floorSum = 0
-    var i = 0
-
-    while i < n do
-      pinned(i).let { size => sizes(i) = size }.or:
-        val raw = if weight <= 0.0 then 0.0 else pool*frac(i)/weight
-        val floor = raw.toInt
-        sizes(i) = floor
-        remainders(i) = raw - floor
-        floorSum += floor
-
-      i += 1
-
-    var remainder = pool - floorSum
-
-    while remainder > 0 do
-      var best = -1
-      var bestRemainder = -1.0
-      var j = 0
-
-      while j < n do
-        if pinned(j).absent && remainders(j) > bestRemainder then
-          bestRemainder = remainders(j)
-          best = j
-
-        j += 1
-
-      if best < 0 then remainder = 0
-      else
-        sizes(best) += 1
-        remainders(best) = -1.0
-        remainder -= 1
-
-    Sequence.from(sizes.iterator)
+    val rows = gridRows(childHeights, columns)
+    val height = rows.sum + gap*(rows.length - 1).max(0)
+    Limits(own.min.max(height), lesser(own.max, height))
 
 // A node in a layout tree: a `Cell` (a leaf panel that hosts content) or a
 // `Split` that divides its space among children along an `Arrangement`. Solving against
@@ -184,15 +123,23 @@ enum Frame:
   case Cell(sizing: Sizing)
   case Split(sizing: Sizing, arrangement: Arrangement, children: List[Frame])
 
-  // The resolved (min, max) of this frame along `axis`.
+  // The resolved (min, max) of this frame along the axis `arrangement` selects: `Strip` for
+  // width, anything else for height.
   def measure(arrangement: Arrangement): Limits =
     val own = arrangement match
       case Arrangement.Strip => Limits(sizing.minWidth, sizing.maxWidth)
-      case Arrangement.Stack => Limits(sizing.minHeight, sizing.maxHeight)
+      case _                 => Limits(sizing.minHeight, sizing.maxHeight)
 
     this match
       case Cell(_) =>
         own
+
+      case Split(_, Arrangement.Grid(columns, gap), children) =>
+        val childLimits = children.map(_.measure(arrangement)).stdlib.toVector
+
+        arrangement match
+          case Arrangement.Strip => Frame.gridWidthLimits(own, childLimits, columns, gap)
+          case _                 => Frame.gridHeightLimits(own, childLimits, columns, gap)
 
       case Split(_, splitArrangement, children) =>
         val childLimits = children.map(_.measure(arrangement))
@@ -205,28 +152,63 @@ enum Frame:
     case Cell(_) =>
       Placement.Cell(rect)
 
+    case Split(_, Arrangement.Grid(columns, gap), children) =>
+      // Column widths are negotiated across every row with the shared solver (each column's
+      // fold of its members' limits, weighted by its members' largest fraction); rows are
+      // content-sized and stacked, clamped to the grid's rectangle.
+      val childList = children.stdlib.toVector
+      val widthLimits = childList.map(_.measure(Arrangement.Strip))
+      val cols = columns.max(1).min(childList.length.max(1))
+
+      val tracks = Vector.tabulate(cols): column =>
+        val members = childList.indices.filter(_%cols == column)
+        val limits = Frame.gridColumns(widthLimits, cols)(column)
+        val weight = members.map(childList(_).sizing.fraction).maxOption.getOrElse(1.0)
+        Flex(Metrics(limits.min), weight, limits.max)
+
+      val colWidths = Flex.solve(Sequence.of(tracks), rect.width, gap).stdlib.map(_.or(0))
+      val xs = colWidths.scanLeft(rect.left)((x, width) => x + width + gap)
+      val rowHeights = Frame.gridRows(childList.map(_.measure(Arrangement.Stack)), cols)
+      val ys = rowHeights.scanLeft(rect.top)((y, height) => y + height + gap)
+
+      val placements = childList.indices.map: index =>
+        val row = index/cols
+        val column = index%cols
+        val top = ys(row)
+        val height = rowHeights(row).min((rect.top + rect.height - top).max(0))
+        childList(index).arrange(Rect(xs(column), top, colWidths(column), height))
+
+      Placement.Split(rect, List.of(placements.to(scala.List)))
+
     case Split(_, arrangement, children) =>
       val available = arrangement match
         case Arrangement.Strip => rect.width
-        case Arrangement.Stack => rect.height
+        case _                 => rect.height
 
-      val limits = children.map(_.measure(arrangement))
-      val fractions = children.map(_.sizing.fraction)
-      val sizes = Frame.distribute(fractions, limits, available)
+      // Each child is a flex track: its measured minimum, its fraction as the weight with
+      // which it claims spare space, and its measured maximum as a hard cap. No track is
+      // collapsible, so every solved size is defined.
+      val tracks: List[Flex] =
+        children.map: child =>
+          val limits = child.measure(arrangement)
+          Flex(Metrics(limits.min), child.sizing.fraction, limits.max)
+
+      val sizes =
+        Flex.solve(Sequence.of(tracks.stdlib.toVector), available).stdlib.map(_.or(0))
 
       val start = arrangement match
         case Arrangement.Strip => rect.left
-        case Arrangement.Stack => rect.top
+        case _                 => rect.top
 
-      val offsets = sizes.stdlib.scanLeft(start)(_ + _)
+      val offsets = sizes.scanLeft(start)(_ + _)
 
       // Zip each child directly with its solved size and offset (`scanLeft` yields n + 1
       // offsets; the zip truncates to the n children), so no re-indexing is needed.
-      val placements = children.stdlib.lazyZip(sizes.stdlib).lazyZip(offsets).map:
+      val placements = children.stdlib.lazyZip(sizes).lazyZip(offsets).map:
         (child, size, offset) =>
           val childRect = arrangement match
             case Arrangement.Strip => Rect(offset, rect.top, size, rect.height)
-            case Arrangement.Stack => Rect(rect.left, offset, rect.width, size)
+            case _                 => Rect(rect.left, offset, rect.width, size)
 
           child.arrange(childRect)
 

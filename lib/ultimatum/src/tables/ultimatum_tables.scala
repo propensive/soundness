@@ -30,46 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package ultimatum
 
 import anticipation.*
-import gossamer.*
-import gossamer.Textual.concatenable
+import escapade.*
+import escritoire.*
 import hieroglyph.*
-import rudiments.*
-import symbolism.*
+import polysyllabic.*
 
-object TextAlignment:
-  object Right extends TextAlignment:
-    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text =
-      Textual(t" "*(width - text.plain.metrics))+text
+// A pane hosting a live table.
+def tabular(content: => Tabulation[Teletype])
+  ( using TableStyle, Text is Measurable, Hyphenation )
+:   Pane =
 
-  object Left extends TextAlignment:
-    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text =
-      text+Textual(t" "*(width - text.plain.metrics))
-
-  object Center extends TextAlignment:
-    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text =
-      val space = width - text.plain.metrics
-      val before = Textual(t" "*(space/2))
-      val after = Textual(t" "*(space - space/2))
-
-      before+text+after
-
-  object Justify extends TextAlignment:
-    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text =
-      if last then text+Textual(t" "*(width - text.plain.metrics))
-      else
-        val words = text.cut(t" ").stdlib
-        val wordCount = words.length
-        val spare = width - words.sumBy(_.plain.metrics)
-
-        def recur(spare: Int, count: Int, done: text): text =
-          if count == 0 then done+Textual(t" "*spare) else
-            val space = spare/count
-            recur(spare - space, count - 1, done + Textual(t" "*space) + words(wordCount - count))
-
-        recur(spare, wordCount - 1, words.head)
-
-trait TextAlignment:
-  def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text
+  Pane.Widget(Sizing(), TableFixture(content))

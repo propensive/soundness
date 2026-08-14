@@ -34,7 +34,7 @@ package soundness
 
 export
   escritoire
-  . { Attenuation, BoxDrawing, BoxLine, Column, Columnar, Grid, LineCharset,
+  . { Attenuation, Column, Columnar, Grid,
       Scaffold, TableCell, Table, TableRelabelling, TableRow, TableSection, TableStyle,
       Tabulable, Tabular, Tabulation, tabulation, TextAlignment, VerticalAlignment }
 

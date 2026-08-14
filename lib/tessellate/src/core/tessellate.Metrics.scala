@@ -30,7 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package tessellate
 
-enum BoxLine:
-  case Blank, Thin, Thick, Double
+object Metrics:
+  def apply(width: Int): Metrics = Metrics(width, width)
+
+// The intrinsic widths of some content along one axis: `min` is the narrowest extent into
+// which the content can be arranged without overflowing (its min-content width), and
+// `natural` is the extent it would occupy given unlimited space (its max-content width).
+case class Metrics(min: Int, natural: Int):
+  def max(that: Metrics): Metrics = Metrics(min.max(that.min), natural.max(that.natural))

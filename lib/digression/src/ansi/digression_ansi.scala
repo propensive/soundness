@@ -43,6 +43,7 @@ import iridescence.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import tessellate.*
 import vacuous.*
 
 trait StackTracePalette extends iridescence.Palette:

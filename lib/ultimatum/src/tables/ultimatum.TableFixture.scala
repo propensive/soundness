@@ -30,37 +30,69 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package ultimatum
+
+import scala.caps
 
 import anticipation.*
-import proscenium.compat.*
-import gossamer.*
+import denominative.*
+import escapade.*
+import escritoire.*
+import hieroglyph.*
+import polysyllabic.*
+import profanity.*
 
-object BoxDrawing:
-  val asciiChars: Array[Char]^{} =
-    List
-      ( t" -- |+++|++  + +--- +++ +++ +++ --- +++++++  + +   -+ ++   -+ ++|+++|+++|+++    +++ +++ ",
-        t"+++     ++++++++++++    + +++ +++ ++    |++ |+++|++  + ++++ +++ +++ +++ +++ +++++ +  + +",
-        t"   -+ ++   -+ ++ + +     + +|+|++++     +++ +++  + +     + +|+|++ ++    + +++ ++" )
+object TableFixture:
+  // The supplier genuinely captures the caller's data source and escapes into the long-lived
+  // fixture — the same growing capture set `Reading` reconciles, sound for the same reasons:
+  // it is only invoked from measure/render while the hosting form is live. Hence the single,
+  // localised `unsafeAssumePure`.
+  def apply(content: => Tabulation[Teletype])
+    ( using TableStyle, Text is Measurable, Hyphenation )
+  :   TableFixture =
 
-    . join
-    . chars
+    new TableFixture(caps.unsafe.unsafeAssumePure { () => content })
 
-  val defaultChars: Array[Char]^{} =
-    List
-      ( t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ",
-        t"┟╁╅     ┕┶┷╛┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗",
-        t"   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝     ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬" )
+// A live table pane: each measure lays the table out afresh at the offered width, so its
+// columns renegotiate — wrapping, shrinking or collapsing — as the terminal resizes or the
+// data changes, and rendering replays the lines the measure settled on. Call `refresh()`
+// after changing the underlying data to wake the form and re-render.
+class TableFixture(content: () -> Tabulation[Teletype])
+  ( using style: TableStyle, metric: Text is Measurable, hyphenation: Hyphenation )
+extends Fixture:
 
-    . join
-    . chars
+  // A no-op until the fixture is bound into a running form; see `bindWake`.
+  @scala.caps.unsafe.untrackedCaptures
+  private var wakeForm: () -> Unit = () => ()
 
-  val roundedChars: Array[Char]^{} = defaultChars.map:
-    case '┌'  => '╭'
-    case '┘'  => '╯'
-    case '┐'  => '╮'
-    case '└'  => '╰'
-    case char => char
+  @scala.caps.unsafe.untrackedCaptures
+  private var measuredWidth: Int = -1
 
-  def simple(vertical: BoxLine, horizontal: BoxLine, charset: LineCharset): Char =
-    charset(vertical, horizontal, vertical, horizontal)
+  @scala.caps.unsafe.untrackedCaptures
+  private var lines: scala.List[Teletype] = scala.Nil
+
+  def refresh(): Unit = wakeForm()
+
+  // As in `Panes.bindWake`: the callback captures the running form's event loop and escapes
+  // into this longer-lived fixture, re-bound on every run — hence the localised assumption.
+  override private[ultimatum] def bindWake(wake: () => Unit): Unit =
+    wakeForm = caps.unsafe.unsafeAssumePure(wake)
+
+  // A fixture cannot raise, so an unsatisfiable width renders overflowing rather than failing.
+  private def layout(width: Int): scala.List[Teletype] =
+    given Attenuation = escritoire.columnAttenuation.ignoreAttenuation
+    content().grid(width).render.stdlib.to(scala.List)
+
+  def measure(width: Int): (Int, Int) =
+    lines = layout(width)
+    measuredWidth = width
+    val widest = lines.map(_.plain.metrics).maxOption.getOrElse(0)
+    (widest, lines.length)
+
+  def render(canvas: Board^, focused: Boolean): Unit =
+    val rows = if canvas.width == measuredWidth then lines else layout(canvas.width)
+
+    rows.zipWithIndex.foreach: (line, row) =>
+      if row < canvas.height then
+        canvas.move(Prim, row.z)
+        canvas.put(line)

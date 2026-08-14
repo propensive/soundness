@@ -46,10 +46,12 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
+import tessellate.*
 import vacuous.*
 
 object Tabulation:
-  given printable: [text: {Textual as textual, Printable as printable}]
+  given printable: [text]
+  =>  ( textual: text is Textual { type Result = Char }, printable: text is Printable )
   =>  ( Text is Measurable, TableStyle, Attenuation, polysyllabic.Hyphenation )
   =>  Tabulation[text] is Printable =
 
@@ -66,70 +68,59 @@ abstract class Tabulation[text: ClassTag]():
 
 
   def grid(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable, textual: text is Textual )
+    ( using style: TableStyle, metrics: Text is Measurable )
+    ( using textual: text is Textual { type Result = Char } )
     ( using attenuation: Attenuation^, hyphenation: polysyllabic.Hyphenation )
   :   Grid[text] =
 
-    case class Layout(slack: Double, indices: Array[Int]^{}, widths: Array[Int]^{}, totalWidth: Int):
-      lazy val include: sci.BitSet = indices.readable.to(sci.BitSet)
+    // Every logical line each column will display, across both titles and data.
+    val columnLines: IndexedSeq[Array[text]^{}] =
+      columns.indices.map: index =>
+        Array.from:
+          titles.stdlib.flatMap(_(index).readable) ++ rows.stdlib.flatMap(_(index).readable)
 
-      lazy val columnWidths: Array[(Int, Column[Row, text], Int)]^{} = Array.from:
-        indices.readable.indices.map: index =>
-          val columnIndex = indices.readable(index)
-          (columnIndex, columns.readable(columnIndex), widths.readable(index))
+    val flexes: IndexedSeq[Flex] =
+      columns.indices.map: index =>
+        columns.readUnchecked(index).sizing.flex[text](columnLines(index), width)
 
-    def bisect(include: Int => Boolean): (Layout, Layout) =
-      def shrink(slack: Double): Layout =
-        val widths: IndexedSeq[Optional[Int]] =
-          columns.indices.map: index =>
-            val dataMax =
-              if !include(index) then 0 else rows.map: cells =>
-                columns.readUnchecked(index).sizing.width[text](cells.readUnchecked(index), width, slack).or(0)
+    // A column that can never occupy any width (e.g. a `Paragraph` column whose every cell is
+    // empty) vanishes entirely, as it would otherwise still cost padding and a rule.
+    val visible: IndexedSeq[Int] =
+      columns.indices.filter: index =>
+        flexes(index).metrics.min > 0 || flexes(index).max.or(flexes(index).metrics.natural) > 0
 
-              . stdlib.maxOption.getOrElse(0)
+    // The chrome around k columns is k*columnCost + 1 = (k - 1) gaps of columnCost, plus one
+    // more columnCost and the closing edge — so the solver sees those two constants deducted
+    // and the rest as inter-track gaps, and its collapse decisions account for the chrome a
+    // dropped column saves.
+    val solved =
+      Flex.solve
+        ( Sequence.of(visible.map(flexes(_)).toVector),
+          width - style.columnCost - 1,
+          style.columnCost )
 
-            val titleMax =
-              if !include(index) then 0 else titles.map: cells =>
-                columns.readUnchecked(index).sizing.width[text](cells.readUnchecked(index), width, slack).or(0)
+    val survivors: IndexedSeq[(Int, Int)] =
+      visible.indices.flatMap: position =>
+        solved.stdlib(position).let { cellWidth => (visible(position), cellWidth) }.option
 
-              . stdlib.maxOption.getOrElse(0)
+    val totalWidth = survivors.map(_(1)).sum + style.cost(survivors.size)
 
-            dataMax.max(titleMax).puncture(0)
-
-        val indices: IndexedSeq[Int] =
-          widths.indices.map { index => widths(index).let(index.waive) }.compact
-
-        val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.size)
-
-        Layout(slack, Array.from(indices), Array.from(widths.compact), totalWidth)
-
-      def recur(min: Layout, max: Layout, gas: Int = 8): (Layout, Layout) =
-        if gas == 0 || max.totalWidth - min.totalWidth <= 1 then (min, max)
-        else
-          val point = shrink((min.slack + max.slack)/2)
-
-          if point.totalWidth == width then (point, point)
-          else if point.totalWidth > width then recur(min, point, gas - 1)
-          else recur(point, max, gas - 1)
-
-      recur(shrink(0), shrink(1), 8)
-
-    val rowLayout = bisect(_ => true)(0)
-    val rowLayout2 = bisect(rowLayout.include(_))(0)
-
-    // We may be able to increase the slack in some of the remaining columns
-    if rowLayout2.totalWidth > width then attenuation(rowLayout2.totalWidth, width)
+    if totalWidth > width then attenuation(totalWidth, width)
 
     def lines(data: List[Array[Array[text]^{}]^{}]): Chain[TableRow[text]] =
       data.stdlib.to(Chain).map: cells =>
-        val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
-          val lines = column.sizing.fit(cells(index), width, column.textAlign)
-          TableCell(width, 1, lines, lines.length, column.textAlign)
+        val tableCells = Array.from:
+          survivors.map: (index, cellWidth) =>
+            val column = columns.readUnchecked(index)
+            val lines = column.sizing.fit[text](cells(index), cellWidth, column.textAlign)
+
+            TableCell
+              ( cellWidth, 1, lines, lines.length, column.textAlign, column.verticalAlign )
 
         val height = tableCells.readable.maxBy(_.minHeight).minHeight
 
         TableRow(tableCells, false, height)
 
-    val widths = rowLayout2.columnWidths.map(_(2))
+    val widths = Array.from(survivors.map(_(1)))
 
     Grid(List(TableSection(widths, lines(titles)), TableSection(widths, lines(rows))), style)

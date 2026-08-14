@@ -39,10 +39,12 @@ import denominative.*
 import escapade.*
 import gigantism.*
 import gossamer.*
+import hieroglyph.textMetrics.wideCharacterWidthMetric
 import polysyllabic.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
+import tessellate.*
 import vacuous.*
 
 // Renders a parsed `Markdown` document into an Escapade `Teletype`, suitable
@@ -54,7 +56,7 @@ import vacuous.*
 object Renderer:
 
   // U+2010 HYPHEN — the visible-but-not-soft variant used at wrap points.
-  private val Hyphen: Teletype = Teletype(t"‐")
+  private val Hyphen: Text = t"‐"
   private val Space: Teletype = Teletype(t" ")
   private val Newline: Teletype = Teletype(t"\n")
 
@@ -263,86 +265,14 @@ object Renderer:
   private def joinLines(lines: List[Teletype]): Teletype =
     lines.join(Newline)
 
-  // Wrap an inline `Teletype` into width-bounded lines, applying soft
-  // hyphenation via `polysyllabic` when a single word would overflow but a
-  // syllable break would fit.
+  // Wrap an inline `Teletype` into width-bounded lines via the shared `tessellate` flow
+  // engine: display-width measurement (wide characters occupy two cells), soft hyphenation
+  // via `polysyllabic`, and embedded '\n' hard breaks.
   private def wrap
     ( content: Teletype, width: Int )
     ( using hyphenation: Hyphenation )
   :   List[Teletype] =
 
-    if width < 1 then return List(content)
+    val lines = Flow.wrap(content, width, hyphen = Hyphen).stdlib
 
-    // Hard line-breaks (Linebreak) embedded as '\n' produce a forced break.
-    // Split on them first, wrap each segment independently, then concatenate.
-    val segments = content.cut(t"\n")
-    segments.bind(wrapSegment(_, width))
-
-
-  private def wrapSegment
-    ( segment: Teletype, width: Int )
-    ( using hyphenation: Hyphenation )
-  :   List[Teletype] =
-
-    val out = scala.collection.mutable.ListBuffer[Teletype]()
-    var line: Teletype = Teletype.empty
-    var col: Int = 0
-
-    inline def flush(): Unit =
-      out += line
-      line = Teletype.empty
-      col = 0
-
-    def placeWord(word: Teletype): Unit =
-      val wlen = word.plain.length
-
-      if wlen == 0 then ()
-      else
-        val needsSpace = col > 0
-        val needed = if needsSpace then wlen + 1 else wlen
-
-        if col + needed <= width then
-          // Fits on current line.
-          if needsSpace then
-            line = line + Space
-            col += 1
-
-          line = line + word
-          col += wlen
-        else
-          // Doesn't fit. Try hyphenation.
-          val avail = if needsSpace then (width - col - 1).max(0) else width - col
-          val breaks = word.plain.breakPoints
-          var best = -1
-          var k = 0
-
-          while k < breaks.length do
-            val b = breaks.readUnchecked(k)
-            // After break, prefix is `b` chars; we add a hyphen, total `b + 1`.
-            if b + 1 <= avail && b > best then best = b
-            k += 1
-
-          if best >= 1 then
-            if needsSpace then
-              line = line + Space
-              col += 1
-
-            line = line + word.takeChars(best) + Hyphen
-            flush()
-            placeWord(word.dropChars(best))
-          else if col > 0 then
-            // Move to a new line and try again.
-            flush()
-            placeWord(word)
-          else
-            // Word exceeds the width and has no break point. Emit it on its
-            // own line, overflowing if necessary.
-            line = word
-            col = wlen
-            flush()
-
-    segment.cut(t" ").each: word => placeWord(word)
-
-    if col > 0 then flush()
-
-    if out.isEmpty then List(Teletype.empty) else out.to(List)
+    if lines.isEmpty then List(Teletype.empty) else List.of(lines.to(scala.List))

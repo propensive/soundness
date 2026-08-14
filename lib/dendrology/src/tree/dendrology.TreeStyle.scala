@@ -36,3 +36,8 @@ import beneficence.*
 
 trait TreeStyle[line] extends Findable:
   def serialize(tiles: List[TreeTile], node: line): line
+
+  // A continuation row of a multi-line node: the same lanes, but with no branch glyph —
+  // extenders continue and a last child's branch gives way to space. A style that draws no
+  // distinct continuation prefix repeats its ordinary serialization.
+  def followOn(tiles: List[TreeTile], node: line): line = serialize(tiles, node)

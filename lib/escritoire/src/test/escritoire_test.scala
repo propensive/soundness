@@ -231,6 +231,79 @@ object Tests extends Suite(m"Escritoire tests"):
             t"│ 333 │",
             t"╰─────╯" )
 
+    // ─── Display-width sizing, collapse and vertical alignment ─────────────
+
+    test(m"wide characters size the column by display width"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      import hieroglyph.textMetrics.wideCharacterWidthMetric
+      val cjk = Scaffold[Person, Text](Column(t"N")(_ => t"日本"))
+      cjk.tabulate(List(Person(t"Alice", 30))).grid(40).render.stdlib.to(List)
+    . assert:
+        _ == List
+          ( t"╭──────╮",
+            t"│ N    │",
+            t"├──────┤",
+            t"│ 日本 │",
+            t"╰──────╯" )
+
+    test(m"a Collapsible column is dropped when space is scarce"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+
+      val collapsing =
+        Scaffold[Person, Text]
+          ( Column(t"Name")(_.name),
+            Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
+
+      render(collapsing, people, 14)
+    . assert:
+        _ == List
+          ( t"╭───────╮",
+            t"│ Name  │",
+            t"├───────┤",
+            t"│ Alice │",
+            t"│ Bob   │",
+            t"╰───────╯" )
+
+    test(m"a Collapsible column survives when there is room"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+
+      val collapsing =
+        Scaffold[Person, Text]
+          ( Column(t"Name")(_.name),
+            Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
+
+      render(collapsing, people, 30)
+    . assert:
+        _ == List
+          ( t"╭───────┬────────────╮",
+            t"│ Name  │ Note       │",
+            t"├───────┼────────────┤",
+            t"│ Alice │ annotation │",
+            t"│ Bob   │ annotation │",
+            t"╰───────┴────────────╯" )
+
+    test(m"Bottom vertical alignment pads short cells from above"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+
+      val aligned =
+        Scaffold[Person, Text]
+          ( Column(t"A")(_ => t"one two"),
+            Column(t"B", verticalAlign = VerticalAlignment.Bottom)(_ => t"x") )
+
+      render(aligned, List(Person(t"Alice", 30)), 13)
+    . assert:
+        _ == List
+          ( t"╭───────┬───╮",
+            t"│ A     │ B │",
+            t"├───────┼───┤",
+            t"│ one   │   │",
+            t"│ two   │ x │",
+            t"╰───────┴───╯" )
+
     // ─── Attenuation ────────────────────────────────────────────────────────
 
     test(m"failAttenuation raises a Table.Error when the table is too wide"):

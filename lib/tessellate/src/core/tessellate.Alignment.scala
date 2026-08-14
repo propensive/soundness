@@ -30,79 +30,66 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package dendrology
-
-// Deliberate stdlib opt-out, as in the diagram implementations.
-import scala.collection.immutable.{Map, Set}
+package tessellate
 
 import anticipation.*
 import gossamer.*
 import gossamer.Textual.concatenable
 import hieroglyph.*
+import rudiments.*
 import symbolism.*
-import vacuous.*
 
-import DagTile.*
+object Alignment:
+  // Vertical placement of content within a taller extent.
+  enum Vertical:
+    case Top, Middle, Bottom
 
-case class TextualLaneDagStyle[line: Textual]
-  ( space:      Text,
-    vertical:   Text,
-    horizontal: Text,
-    cornerNe:   Text,
-    cornerNw:   Text,
-    cornerSe:   Text,
-    cornerSw:   Text,
-    teeN:       Text,
-    teeS:       Text,
-    teeE:       Text,
-    teeW:       Text,
-    junction:   Text,
-    crossing:   Text,
-    node:       Text )
-  ( using metric: Text is Measurable )
-extends LaneDagStyle[line]:
-  // Display cells, not code units, so wide characters and combining marks lay out correctly.
-  def width(glyph: line): Int = metric.width(summon[line is Textual].text(glyph))
+  object Left extends Alignment:
+    def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)
+      ( using Text is Measurable )
+    :   textual =
 
-  def serialize
-    ( tiles:  List[DagTile],
-      glyphs: Map[Int, line],
-      widths: List[Int],
-      label:  Optional[line] )
-  :   line =
+      content.pad(width)
 
-    val parts = tiles.stdlib.zip(widths.stdlib).zipWithIndex.map:
-      case ((Node, w), i) =>
-        val g = glyphs.getOrElse(i, line(node))
-        val gw = width(g)
-        if gw >= w then g else g+line(Text(" ".repeat(w - gw).nn))
+  object Right extends Alignment:
+    def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)
+      ( using Text is Measurable )
+    :   textual =
 
-      case ((t, w), _) =>
-        val base = text(t)
+      content.pad(width, Rtl)
 
-        val cell =
-          if base.s.length >= 1 then base.s.charAt(0).toString else " "
+  object Center extends Alignment:
+    // Odd spare space goes on the right, unlike gossamer's `center`, which puts it on the
+    // left.
+    def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)
+      ( using Text is Measurable )
+    :   textual =
 
-        val filler =
-          if base.s.length >= 2 then base.s.charAt(1).toString else " "
+      val metrics = content.plain.metrics
+      content.pad(metrics + (width - metrics).max(0)/2, Rtl).pad(width)
 
-        val padding = if w > 1 then filler.repeat(w - 1).nn else ""
-        line(Text(cell + padding))
+  object Justify extends Alignment:
+    def pad[textual: Textual { type Result = Char }](content: textual, width: Int, last: Boolean)
+      ( using Text is Measurable )
+    :   textual =
 
-    parts.fold(line(t""))(_+_)+label.or(line(t""))
+      if last then content.pad(width) else
+        val words = content.cut(t" ").stdlib
+        val wordCount = words.length
+        val spare = width - words.sumBy(_.plain.metrics)
 
-  def text(tile: DagTile): Text = tile match
-    case Space      => space
-    case Vertical   => vertical
-    case Horizontal => horizontal
-    case CornerNe   => cornerNe
-    case CornerNw   => cornerNw
-    case CornerSe   => cornerSe
-    case CornerSw   => cornerSw
-    case TeeN       => teeN
-    case TeeS       => teeS
-    case TeeE       => teeE
-    case TeeW       => teeW
-    case Junction   => junction
-    case Crossing   => crossing
-    case Node       => this.node
+        def recur(spare: Int, count: Int, done: textual): textual =
+          if count == 0 then done+Textual(t" "*spare) else
+            val space = spare/count
+            recur(spare - space, count - 1, done + Textual(t" "*space) + words(wordCount - count))
+
+        recur(spare, wordCount - 1, words.head)
+
+// Horizontal placement of a line of content within a wider extent, realized by `pad`, which
+// extends `content` to exactly `width` cells. `last` marks the final line of a paragraph,
+// which `Justify` pads at the end rather than stretching its word gaps.
+trait Alignment:
+  def pad[textual: Textual { type Result = Char }]
+    ( content: textual, width: Int, last: Boolean = true )
+    ( using Text is Measurable )
+  :   textual

@@ -32,6 +32,7 @@
                                                                                                   */
 package escritoire
 
+import tessellate.*
 import vacuous.*
 
 case class TableStyle

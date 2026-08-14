@@ -753,8 +753,9 @@ object soundness extends Toolchain:
     surveillance.core, punctuation.ansi, hallucination.ansi, hallucination.canvas,
     hallucination.bmp, hallucination.gif, hallucination.jpeg, hallucination.png,
     hallucination.webp, hallucination.formats,
-    ziggurat.core, ziggurat.packager,
-    ultimatum.core, ultimatum.gauges, xenophile.native, exoskeleton.args, exoskeleton.core):
+    ziggurat.core, ziggurat.packager, tessellate.core,
+    ultimatum.core, ultimatum.gauges, ultimatum.tables, xenophile.native, exoskeleton.args,
+    exoskeleton.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
@@ -1528,10 +1529,10 @@ object cosmopolite extends Library:
     override def enabled = false
 
 object dendrology extends Library:
-  object tree extends Component(anticipation.print, gossamer.core):
+  object tree extends Component(anticipation.print, gossamer.core, tessellate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object dag extends Component(acyclicity.core, anticipation.print):
+  object dag extends Component(acyclicity.core, anticipation.print, tessellate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object demo extends Internal(dag, turbulence.stdio, ambience.core):
@@ -1722,7 +1723,7 @@ object escapade extends Library:
   object bench extends Benchmarks(core, quantitative.units)
 
 object escritoire extends Library:
-  object core extends Component(anticipation.print, gossamer.core, polysyllabic.core):
+  object core extends Component(anticipation.print, gossamer.core, polysyllabic.core, tessellate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -1737,6 +1738,14 @@ object polysyllabic extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, escritoire.core, hellenism.core, quantitative.units)
+
+object tessellate extends Library:
+  object core extends Component(gossamer.core, polysyllabic.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
 
 object ethereal extends Library:
   object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core, zeppelin.core):
@@ -2614,7 +2623,7 @@ object punctuation extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object ansi extends Component(core, harlequin.core, harlequin.ansi, escapade.core,
-      polysyllabic.core):
+      polysyllabic.core, tessellate.core):
     override def scalaJs = false // depends on JVM-only `harlequin` (syntax highlighting)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2972,7 +2981,7 @@ object typonym extends Library:
       settings.sep(super.scalacOptions())
 
 object ultimatum extends Library:
-  object core extends Component(profanity.core, escapade.core, yossarian.core):
+  object core extends Component(profanity.core, escapade.core, yossarian.core, tessellate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Gauges — spinners, progress bars, meters and step indicators — are a separate component so
@@ -2980,6 +2989,11 @@ object ultimatum extends Library:
   // are not imposed on every `ultimatum.core` user. Only the `Fixture` and `Tick` hooks live in
   // core.
   object gauges extends Component(core, aviation.core, quantitative.units):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Live escritoire tables as panes; a separate component so that `escritoire` is not imposed
+  // on every `ultimatum.core` user.
+  object tables extends Component(core, escritoire.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object demo extends Internal(core, gauges, ethereal.core, exoskeleton.completions):
@@ -3016,7 +3030,7 @@ object ultimatum extends Library:
 
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
-  object test extends Tests(core, gauges):
+  object test extends Tests(core, gauges, tables):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3292,7 +3306,7 @@ val allLibraries: Seq[Library] = Seq(
   probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, reliquary, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
-  surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
+  surveillance, symbolism, synesthesia, tarantula, telekinesis, tessellate, turbulence, typonym,
   ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, vivisection,
   wisteria, xenophile, xylophone,
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
