@@ -40,8 +40,11 @@ import rudiments.*
 import vacuous.*
 
 case class Subcommand
-  ( name: Text, description: Optional[Text | Teletype] = Unset, hidden: Boolean = false ):
+  ( name:        Text,
+    description: Optional[Text | Teletype]  = Unset,
+    hidden:      Boolean                    = false,
+    group:       Optional[CommandGroup]     = Unset ):
 
   def unapply(argument: Argument)(using Cli): Boolean =
-    argument.suggest(Suggestion(name, description, hidden) :: prior)
+    argument.suggest(Suggestion(name, description, hidden, group = group) :: prior)
     argument() == name

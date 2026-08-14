@@ -85,7 +85,7 @@ trait Cli extends Console, caps.ExclusiveCapability:
   def workingDirectory: WorkingDirectory
   def proceed: Boolean
   def login: Login
-  def register(flag: Flag, discoverable: Discoverable): Unit = ()
+  def register(flag: Flag, discoverable: Discoverable, operand: Optional[Text]): Unit = ()
   def present(flag: Flag): Unit = ()
   def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit = ()
 

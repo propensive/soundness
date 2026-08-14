@@ -49,10 +49,11 @@ object Suggestion:
       aliases:     List[Text]                = Nil,
       prefix:      Text                      = t"",
       suffix:      Text                      = t"",
-      expanded:    Boolean                   = false )
+      expanded:    Boolean                   = false,
+      group:       Optional[CommandGroup]    = Unset )
   :   Suggestion =
 
-    new Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, expanded)
+    new Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, expanded, group)
 
 
 case class Suggestion
@@ -63,6 +64,7 @@ case class Suggestion
     aliases:     List[Text],
     prefix:      Text,
     suffix:      Text,
-    expanded:    Boolean ):
+    expanded:    Boolean,
+    group:       Optional[CommandGroup] ):
 
   def text: Text = prefix+core+suffix

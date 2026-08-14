@@ -1866,7 +1866,7 @@ object exoskeleton extends Library:
   object args extends Component(escapade.core, profanity.core, ambience.core, quantitative.units):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object core extends Component(args, galilei.jvm, digression.ansi):
+  object core extends Component(args, escritoire.core, galilei.jvm, digression.ansi):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
