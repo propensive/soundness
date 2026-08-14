@@ -71,7 +71,8 @@ def helpTree
   ( using interpreter: Interpreter )
 :   Help =
 
-  def probe(prefix: List[Text]): (List[Suggestion], List[Flag]) =
+  def probe(prefix: List[Text])
+  :   (List[Suggestion], List[Flag], Set[Flag], scala.collection.Map[Flag, Text]) =
     val focus = prefix.length
     val textArguments = prefix :+ t""
     val synthesized = Cli.arguments(textArguments.stdlib, focus, Unset, Prim)
@@ -91,35 +92,57 @@ def helpTree
           login )
 
     block(using completion)
-    (completion.cursorSuggestions, completion.flags.keySet.to(List))
+
+    ( completion.cursorSuggestions,
+      completion.flags.keySet.to(List),
+      completion.globalFlags.foldLeft(Set[Flag]())(_ + _),
+      completion.operandNames )
 
   def build
     ( prefix:      List[Text],
       command:     Text,
       description: Optional[Text | Teletype],
-      seen:        Set[List[Text]] )
+      group:       Optional[CommandGroup],
+      seen:        Set[List[Text]],
+      inherited:   Set[Flag] )
   :   Help =
 
-    if seen.has(prefix) then Help(command, description, Nil, Nil) else
-      val (suggestions, flags) = probe(prefix)
+    if seen.has(prefix) then Help(command, description, Nil, Nil, group) else
+      val (suggestions, flags, globals, operands) = probe(prefix)
 
-      val parameters = flags.map: flag =>
+      // Flags already attributed to an ancestor re-register at every deeper prefix, since each
+      // probe re-runs the whole program; they belong to the ancestor, so drop them here.
+      val ownFlags = flags.filter(!inherited.has(_))
+
+      val parameters = ownFlags.map: flag =>
         Help.Param
           ( Flag.serialize(flag.name),
             flag.aliases.map(Flag.serialize(_)),
             flag.description,
-            flag.repeatable )
+            flag.repeatable,
+            globals.has(flag),
+            operands.get(flag).optional )
+
+      val known = flags.stdlib.foldLeft(inherited)(_ + _)
 
       val children =
         List.of(suggestions.stdlib.distinctBy(_.core)).bind: suggestion =>
           val childPrefix = prefix :+ suggestion.core
 
           if suggestion.hidden || suggestion.incomplete then Nil
-          else List(build(childPrefix, suggestion.core, suggestion.description, seen + prefix))
+          else
+            List
+              ( build
+                  ( childPrefix,
+                    suggestion.core,
+                    suggestion.description,
+                    suggestion.group,
+                    seen + prefix,
+                    known ) )
 
-      Help(command, description, parameters, children.sort(_.command))
+      Help(command, description, parameters, children.sort(_.command), group)
 
-  build(Nil, command, Unset, Set())
+  build(Nil, command, Unset, Unset, Set(), Set())
 
 package executives:
   given completions: (backstop: Backstop) => Executive:

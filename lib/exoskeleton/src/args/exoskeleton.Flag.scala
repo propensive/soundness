@@ -76,7 +76,7 @@ extends Topical:
     ( using cli: Cli )
   :   Unit =
 
-    cli.register(this, discoverable)
+    cli.register(this, discoverable, interpretable.operandName)
 
 
   def matches(key: Argument): Boolean =
@@ -94,7 +94,7 @@ extends Topical:
             suggestions:   (? <: Topic) is Discoverable = Discoverable.noSuggestions )
   :   Optional[Topic] =
 
-    cli.register(this, suggestions)
+    cli.register(this, suggestions, interpretable.operandName)
     cli.parameter(this)
 
 

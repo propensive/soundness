@@ -524,31 +524,58 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         import interpreters.posixInterpreter
         import stdios.muteStdio
 
+        val admin = CommandGroup(t"Admin commands", t"Commands for user administration.")
+
+        class Delay(text: Text)
+
+        given Delay is Interpretable:
+          override def placeholder: Optional[Text] = t"seconds"
+
+          def interpret(arguments: List[Argument]): Optional[Delay] = arguments match
+            case argument :: _ => Delay(argument())
+            case _             => Unset
+
         val Alpha = Subcommand(t"alpha", e"a command to run")
         val Beta = Subcommand(t"beta", e"another command to run")
         val Gamma = Subcommand(t"gamma", e"a hidden command", hidden = true)
         val Distribution = Subcommand(t"distribution", e"a different command to run")
         val Ubuntu = Subcommand(t"ubuntu", e"Ubuntu")
         val RedHat = Subcommand(t"red hat", e"Red Hat Linux")
+        val UserAdd = Subcommand(t"useradd", e"add a user account", group = admin)
+        val UserDel = Subcommand(t"userdel", e"remove a user account", group = admin)
 
-        def app(using Cli): Execution = arguments match
-          case Alpha() :: _ => execute(Exit.Ok)
-          case Beta() :: _  => execute(Exit.Ok)
-          case Gamma() :: _ => execute(Exit.Ok)
+        def app(using Cli): Execution =
+          Flag(t"verbose", description = t"verbose output")()
 
-          case Distribution() :: rest => rest match
-            case Ubuntu() :: _ =>
-              Flag(t"one", description = t"the first one")()
-              Flag(t"two", description = t"the second one")()
+          arguments match
+            case Alpha() :: _ => execute(Exit.Ok)
+            case Beta() :: _  => execute(Exit.Ok)
+            case Gamma() :: _ => execute(Exit.Ok)
+
+            case Distribution() :: rest => rest match
+              case Ubuntu() :: _ =>
+                Flag(t"one", description = t"the first one")()
+                Flag(t"two", description = t"the second one")()
+                execute(Exit.Ok)
+
+              case RedHat() :: _ =>
+                Flag(t"only", description = t"there is only one")()
+                execute(Exit.Ok)
+
+              case _ => execute(Exit.Ok)
+
+            case UserAdd() :: _ =>
+              Flag(t"home", description = t"specify the home directory")()
+              Flag(t"groups", repeatable = true, description = t"add the user to a group")()
+              Flag(t"force", description = t"do not ask for confirmation")()
               execute(Exit.Ok)
 
-            case RedHat() :: _ =>
-              Flag(t"only", description = t"there is only one")()
+            case UserDel() :: _ =>
+              Flag(t"force", description = t"do not ask for confirmation")()
+              Flag[Delay](t"wait", description = t"delay the deletion")()
               execute(Exit.Ok)
 
-            case _ => execute(Exit.Ok)
-
-          case _ => execute(Exit.Fail(1))
+            case _ => execute(Exit.Fail(1))
 
         lazy val tree: Help =
           helpTree
@@ -561,7 +588,25 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
       test(m"Help root lists visible subcommands"):
         HelpApp.tree.subcommands.map(_.command)
-      .assert(_ == List(t"alpha", t"beta", t"distribution"))
+      .assert(_ == List(t"alpha", t"beta", t"distribution", t"useradd", t"userdel"))
+
+      test(m"Flags checked before subcommand dispatch are global root parameters"):
+        HelpApp.tree.parameters
+      .assert(_ == List(Help.Param(t"--verbose", Nil, t"verbose output", false, true, t"value")))
+
+      test(m"Operand placeholders are derived from the operand type"):
+        HelpApp.tree.subcommands
+         .filter(_.command == t"userdel").bind(_.parameters)
+         .filter(_.name == t"--wait").map(_.operand)
+      .assert(_ == List(t"seconds"))
+
+      test(m"Global flags are not repeated in subcommand nodes"):
+        HelpApp.tree.subcommands.bind(_.parameters).map(_.name).has(t"--verbose")
+      .assert(_ == false)
+
+      test(m"Subcommands carry their command group"):
+        HelpApp.tree.subcommands.filter(_.command == t"useradd").map(_.group)
+      .assert(_ == List(HelpApp.admin))
 
       test(m"Help excludes hidden subcommands"):
         HelpApp.tree.subcommands.map(_.command).has(t"gamma")
@@ -581,3 +626,49 @@ object Tests extends Suite(m"Exoskeleton Tests"):
       test(m"Help renders as Printable text mentioning a subcommand"):
         summon[Help is Printable].print(HelpApp.tree, stdios.muteStdio.termcap)
       .assert(_.contains(t"alpha"))
+
+      test(m"Help wraps descriptions at the terminal width, aligned to the description column"):
+        val narrow: Termcap = new Termcap:
+          def ansi: Boolean = false
+          def color: ColorDepth = ColorDepth.NoColor
+          override def width: Int = 45
+
+        summon[Help is Printable].print(HelpApp.tree, narrow).cut(t"\n")
+      .assert: lines =>
+        lines.has(t"    --force <value>      do not ask for")
+          && lines.has(t"                         confirmation")
+
+      test(m"Help renders in aligned man-page style"):
+        summon[Help is Printable].print(HelpApp.tree, stdios.muteStdio.termcap)
+      .assert:
+        _.cut(t"\n") == List
+              (t"Usage: mytool [--verbose <value>] <command> [options]",
+               t"",
+               t"Global options:",
+               t"  --verbose <value>      verbose output",
+               t"",
+               t"Commands:",
+               t"  alpha                  a command to run",
+               t"  beta                   another command to run",
+               t"",
+               t"  distribution           a different command to run",
+               t"",
+               t"    red hat              Red Hat Linux",
+               t"      --only <value>     there is only one",
+               t"",
+               t"    ubuntu               Ubuntu",
+               t"      --one <value>      the first one",
+               t"      --two <value>      the second one",
+               t"",
+               t"Admin commands:",
+               t"  Commands for user administration.",
+               t"",
+               t"  useradd                add a user account",
+               t"    --groups <value>...  add the user to a group",
+               t"    --home <value>       specify the home directory",
+               t"",
+               t"  userdel                remove a user account",
+               t"    --wait <seconds>     delay the deletion",
+               t"",
+               t"  Common options:",
+               t"    --force <value>      do not ask for confirmation")

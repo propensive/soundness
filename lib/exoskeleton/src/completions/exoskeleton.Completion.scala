@@ -67,7 +67,15 @@ extends Cli:
   private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)
 
   val flags: scm.HashMap[Flag, Discoverable] = scm.HashMap()
+  val operandNames: scm.HashMap[Flag, Text] = scm.HashMap()
+  val globalFlags: scm.HashSet[Flag] = scm.HashSet()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
+
+  // Whether any suggestions have been offered yet for the focused argument. Flags registered
+  // before this point were checked before subcommand dispatch, so they are "global": they apply
+  // regardless of (and may influence) which subcommand is chosen.
+  @scala.caps.unsafe.untrackedCaptures
+  private var dispatchSuggested: Boolean = false
 
   @scala.caps.unsafe.untrackedCaptures
   var explanation: Optional[Text] = Unset
@@ -93,7 +101,7 @@ extends Cli:
       case Argument.Format.CharFlag(ordinal) => false
       case Argument.Format.FlagSuffix        => focusPosition.let(_.z > Sec).or(true)
 
-  override def register(flag: Flag, discoverable: Discoverable): Unit =
+  override def register(flag: Flag, discoverable: Discoverable, operand: Optional[Text]): Unit =
     val operands = interpreter.find(parameters, flag)
 
     interpreter.focus(parameters).let: argument =>
@@ -105,7 +113,10 @@ extends Cli:
         val allSuggestions = discoverable.discover(tab).to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
-    if !flag.secret then flags(flag) = discoverable
+    if !flag.secret then
+      flags(flag) = discoverable
+      operand.let(operandNames(flag) = _)
+      if !dispatchSuggested then globalFlags += flag
 
   override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
 
@@ -119,6 +130,7 @@ extends Cli:
       suffix:   Text ) =
 
     if focused(argument) then
+      dispatchSuggested = true
       cursorSuggestions = update(using cursorSuggestions.aka["prior"]).map: suggestion =>
         if suggestion.expanded then suggestion
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
@@ -163,7 +175,7 @@ extends Cli:
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
 
         val itemLines: List[Command] = items.bind:
-          case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _) =>
+          case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _, _) =>
             val hiddenParam = if hidden then sh"-n" else sh""
             val shortFlag = focusText.starts(t"-") && !focusText.starts(t"--")
             val aliasText = if shortFlag then core0 else aliases.join(t" ").fit(aliasesWidth)
@@ -209,7 +221,7 @@ extends Cli:
         val sole = items.stdlib.count(!_.hidden) == 1
 
         items.bind:
-          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
+          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _, _) =>
             if hidden then Nil else
               val mainLines = (suggestion.text :: aliases.stdlib).map: text =>
                 description.absolve match
@@ -227,7 +239,7 @@ extends Cli:
         // PowerShell inserts a `CompletionResult` verbatim, so a trailing-space twin is
         // just a visible duplicate; `incomplete` has no rendering there.
         items.bind:
-          case suggestion@Suggestion(core, description, hidden, _, aliases, _, _, _) =>
+          case suggestion@Suggestion(core, description, hidden, _, aliases, _, _, _, _) =>
             if hidden then Nil else
               List.of:
                 (suggestion.text :: aliases.stdlib).map: text =>

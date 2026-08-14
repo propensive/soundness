@@ -35,37 +35,9 @@ package exoskeleton
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
-import distillate.*
-import gossamer.*
-import prepositional.*
+import escapade.*
 import vacuous.*
 
-object Interpretable:
-  given unit: Unit is Interpretable:
-    override def operand: Boolean = false
-    def interpret(arguments: List[Argument]): Unit = ()
-
-  given decoder: [operand: Decodable in Text] => operand is Interpretable = arguments =>
-    arguments.stdlib.headOption.absolve match
-      case Some(value) => value().as[operand]
-
-trait Interpretable extends Typeclass:
-  def operand: Boolean = true
-
-  // The display name for this operand type in `help` output, e.g. the `file` of `--log <file>`.
-  // `Unset` means the type suggests no particular name, and a generic `value` is shown instead.
-  def placeholder: Optional[Text] = Unset
-
-  // The name to display for the operand, or `Unset` if the type takes no operand at all.
-  def operandName: Optional[Text] = if operand then placeholder.or(t"value") else Unset
-
-  def interpret(arguments: List[Argument]): Optional[Self]
-
-  def map[self2](lambda: Self => self2): (self2 is Interpretable)^{this, lambda} =
-    new Interpretable:
-      type Self = self2
-      override def operand: Boolean = Interpretable.this.operand
-      override def placeholder: Optional[Text] = Interpretable.this.placeholder
-
-      def interpret(arguments: List[Argument]): Optional[Self] =
-        Interpretable.this.interpret(arguments).let(lambda(_))
+// A named grouping of related subcommands, under which they are listed together (with the
+// group's description, if given) in `help` output.
+case class CommandGroup(name: Text, description: Optional[Text | Teletype] = Unset)
