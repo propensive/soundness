@@ -38,6 +38,7 @@ import java.util.concurrent as juc
 
 import anticipation.Data
 import denominative.*
+import vacuous.*
 
 // A sink into which a value of one medium is written in pieces. The same producing code can be
 // driven two ways without duplicating it: `Producer.collect` runs it synchronously and returns the
@@ -52,11 +53,16 @@ object Producer:
   type Bytes = Producer[Data] { type Operand = Byte }
 
   // Streaming: chunks are queued (with backpressure) and drained through `iterator`. The producing
-  // code must run on a separate fiber, since `put` blocks once the queue is full.
-  def apply[medium](block: Int = 4096, depth: Int = 2)(using addr: medium is Addressable)
+  // code must run on a separate fiber, since `put` blocks once the queue is full. The staging
+  // block defaults to the buffering policy's capacity for the medium; `depth` keeps its own
+  // shallow default rather than adopting `Buffering.depth`, since this queue holds materialized
+  // chunks rather than recycled transfer blocks, so a conduit-deep queue would multiply retention
+  // for no measured benefit.
+  def apply[medium](block: Optional[Int] = Unset, depth: Int = 2)
+    ( using addr: medium is Addressable, buffering: Buffering )
   :   (Channel[medium] { type Operand = addr.Operand })^ =
 
-    Channel(block, depth)(using addr)
+    Channel(block.or(buffering.capacity(addr.substrate)), depth)(using addr)
 
   // Synchronous: run `body`, accumulating directly into a builder, and return the whole value. No
   // concurrency, no chunk buffer, and none of the streaming path's single-thread deadlock risk.

@@ -189,6 +189,12 @@ object Divergence:
 
                   case _ =>
                     panic(m"unexpected value in manifold hand-off")
+
+          // A departing subscriber closes its own ring: buffered blocks are
+          // discarded, a pump parked on this ring is released, and later offers
+          // are dropped — so an abandoned slow subscriber cannot wedge the
+          // fan-out for every other subscriber.
+          override update def close(): Unit = queue.close()
         )
 
       // The cast target elides the elements' `^`: the cast is erased either way, and a

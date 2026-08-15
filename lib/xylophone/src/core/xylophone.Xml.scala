@@ -1679,7 +1679,7 @@ object Xml extends Tag.Container
     ( using formatting: Formatting, monitor: Monitor, probate: Probate )
   :   Iterator[Text] =
 
-    val producer = Producer[Text](4096)
+    val producer = Producer[Text]()
 
     async:
       writeDocument(producer, formatting, document)

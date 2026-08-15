@@ -417,6 +417,22 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
 
       . assert(_ == (4, 6, 3))
 
+      test(m"one release wakes every waiter parked on an empty window"):
+        supervise:
+          val window = FlowWindow(0)
+          val first: Promise[Int] = Promise()
+          val second: Promise[Int] = Promise()
+          async(first.offer(window.acquire(2)))
+          async(second.offer(window.acquire(2)))
+
+          // `release` signals all waiters, and each requests no more than half the
+          // grant, so both must complete whichever order they park and wake; a
+          // single-signal implementation would leave one parked forever.
+          window.release(4)
+          (first.await(), second.await())
+
+      . assert(_ == (2, 2))
+
       test(m"a response larger than the connection window streams intact"):
         supervise:
           val (clientSide, serverSide) = pair()
@@ -456,6 +472,64 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           (received.length, received.to[List] == payload.to[List])
 
       . assert(_ == (200000, true))
+
+      // Receive-side flow control: the client advertises a small window and
+      // does not read the body, so the server's send side must stall at window
+      // exhaustion — after four full 1000-byte chunks (the fifth takes only the
+      // 96-byte remainder and parks). Draining the body replenishes the window
+      // in batched WINDOW_UPDATEs and the transfer completes.
+      test(m"a peer stalls at a small advertised window until the body drains"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val server = Http2.ServerConnection(serverSide)
+          val serverRef: AnyRef = server.asInstanceOf[AnyRef]
+          val sent = java.util.concurrent.atomic.AtomicInteger(0)
+
+          daemon:
+            safely:
+              val server0 = serverRef.asInstanceOf[Http2.ServerConnection]
+
+              server0.accepted.stream.records.each: stream =>
+                unsafely:
+                  stream.headers.await()
+                  server0.sendHeaders(stream.id, List(HpackEntry(t":status", t"200")), false)
+                  var index = 0
+
+                  while index < 20 do
+                    val chunk: Data = Array.tabulate(1000)(i => ((index*1000 + i)%256).toByte)
+                    server0.sendData(stream.id, chunk, endStream = index == 19)
+                    sent.incrementAndGet()
+                    index += 1
+
+          val client = Http2.Connection(clientSide, window = 4096)
+          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
+          client.start()
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            serverStarted.await()
+
+          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/slow", Nil,
+              () => Http.emptyBody())
+
+          val (_, response) = client.fetch(request, t"http", t"unix")
+
+          // Bounded poll until the sender goes quiet: a too-early sample can
+          // only under-read, and a correct implementation freezes at four.
+          var frozen = -1
+          var stable = 0
+          var attempts = 0
+
+          while stable < 5 && attempts < 500 do
+            val current = sent.get()
+            if current == frozen then stable += 1 else { frozen = current; stable = 0 }
+            Thread.sleep(10)
+            attempts += 1
+
+          val received = response.body.stream.memoize
+          client.close()
+          server.close()
+          (frozen, received.length, sent.get())
+
+      . assert(_ == (4, 20000, 20))
 
       test(m"a session lends one connection to several multiplexed requests"):
         supervise:
