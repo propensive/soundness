@@ -519,11 +519,42 @@ object Tests extends Suite(m"Turbulence tests"):
         else if chunk == 0 then input.stream.delineate.records.to(List)
         else input.s.grouped(chunk).map(_.tt).stream.delineate.records.to(List)
 
+      // The same input through the byte-level duct (`Stream[Data].delineate`
+      // under a UTF-8 decoder, which is ASCII-transparent, so the separators are
+      // found in the bytes and each line is decoded whole). Fragmenting by BYTES
+      // rather than characters is the point: it cuts multi-byte characters in
+      // half at a window boundary, which the byte duct must carry through.
+      def splitBytes(input: Text, chunk: Int)(using LineSeparation): List[Text] =
+        // A `Data` is a frozen byte array, so each freshly-copied range is frozen
+        // by the cast. The chunking is an explicit loop rather than `grouped` +
+        // `map`: mapping a cast over an iterator of fresh arrays is not
+        // capture-polymorphic enough to typecheck.
+        val bytes = input.s.getBytes("UTF-8").nn
+        val pieces = scala.collection.mutable.ListBuffer[Data]()
+        var index = 0
+
+        if chunk == 0 then pieces += bytes.asInstanceOf[Data] else
+          while index < bytes.length do
+            val size = chunk.min(bytes.length - index)
+            pieces += java.util.Arrays.copyOfRange(bytes, index, index + size).nn.asInstanceOf[Data]
+            index += size
+
+        pieces.iterator.stream.delineate.records.to(List)
+
       def check(policy: Text, cases: List[(Text, List[Text])])(using LineSeparation): Unit =
         for fragment <- List(-1, 0, 1, 3) do
           cases.stdlib.zipWithIndex.each: (row, index) =>
             test(m"$policy, case $index, chunk size $fragment"):
               splitLines(row(0), fragment)
+            . assert(_ == row(1))
+
+        // Differential: the char duct above is the reference implementation, and
+        // the byte duct must agree with it on every policy, every case and every
+        // fragmentation.
+        for fragment <- List(0, 1, 3) do
+          cases.stdlib.zipWithIndex.each: (row, index) =>
+            test(m"$policy, case $index, byte chunk size $fragment"):
+              splitBytes(row(0), fragment)
             . assert(_ == row(1))
 
       suite(m"adaptive linefeeds"):
@@ -606,6 +637,28 @@ object Tests extends Suite(m"Turbulence tests"):
           val input = long + t"\ny"
           input.s.grouped(7).map(_.tt).stream.delineate.records.to(List)
         . assert(_ == List(Text(String(scala.Array.fill(10000)('x'))), t"y"))
+
+        // Characters of two, three and four bytes, fragmented at every byte
+        // boundary: each window boundary lands mid-character, so the byte duct
+        // is forced to accumulate a partial character and decode it only once
+        // the whole line is present. (The char-level harness cannot cover this:
+        // fragmenting *characters* would split the surrogate pair of `🚀`.)
+        val multiByte = t"café\n— dash\n数据\r\n🚀 rocket"
+        val multiByteLines = List(t"café", t"— dash", t"数据", t"🚀 rocket")
+
+        for chunk <- List(1, 2, 3, 5, 7) do
+          test(m"multi-byte characters split across windows, byte chunk size $chunk"):
+            splitBytes(multiByte, chunk)
+          . assert(_ == multiByteLines)
+
+        // Lines far longer than any window, of three-byte characters, fragmented
+        // three bytes at a time. Compared as a boolean: the values themselves run
+        // to twelve kilobytes, which the report cannot usefully render.
+        for size <- List(10, 100, 700, 1000, 4000) do
+          test(m"a long line of multi-byte characters is decoded whole, $size chars"):
+            val long = Text(String(scala.Array.fill(size)('数')))
+            splitBytes(long + t"\n" + long, 3) == List(long, long)
+          . assert(_ == true)
 
         test(m"lines of an empty byte stream is empty"):
           Iterator.empty[Data].stream.delineate.records.to(List)
