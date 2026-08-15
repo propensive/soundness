@@ -220,15 +220,28 @@ object Reactor:
           if facts.chunked || SocketServer.expectsContinue(head, facts)
               || SocketServer.isUpgrade(facts)
               || facts.contentLength.or(0) > inlineBodyLimit
-          then
-            // TODO(fallback): hand the channel and buffered bytes to the
-            // thread-per-connection path. Until then, refuse politely.
-            refuse(Http.NotImplemented)
+          then handoff(reactor)
           else
             keep = SocketServer.keepAlive(head, facts)
             contentLength = facts.contentLength.or(0)
             needed = headEnd + contentLength
             pendingHead = head
+
+    // Leave the reactor: cancel the key (flushing the cancellation with a
+    // `selectNow()` on this lane's own selector, without which the channel may not
+    // return to blocking mode), and hand the channel plus every accumulated byte to
+    // the thread-per-connection path. No further events reach this connection — its
+    // key is dead — so its state is abandoned wholesale.
+    private update def handoff(reactor: Reactor^): Unit =
+      closing = true
+      key.cancel()
+
+      try
+        key.selector.nn.selectNow()
+        channel.configureBlocking(true)
+        reactor.escalate(channel, java.util.Arrays.copyOfRange(accumulator, 0, end).nn)
+      catch case _: java.io.IOException =>
+        try channel.close() catch case _: java.io.IOException => ()
 
     // Serve one complete request inline: mint the body stream over the accumulated
     // bytes (zero-copy for the empty case; one bounded copy for a fixed body), run the
@@ -362,7 +375,7 @@ object Reactor:
 final class Reactor
   ( val port: Int, local: Boolean = true, loops: Int = 0 )
   ( handler: (connection: Http.Connection) ?=> Http.Response^{connection} )
-  ( using errorPage: WebserverErrorPage ):
+  ( using errorPage: WebserverErrorPage, loggable: (HttpServer.Event is Loggable)^ ):
 
   import Reactor.*
 
@@ -370,6 +383,32 @@ final class Reactor
     handler(using connection)
 
   private[Reactor] def errors: WebserverErrorPage = errorPage
+
+  // The thread-per-connection twin, for connections the fast path cannot serve inline;
+  // constructing it opens no socket — `serveConnection` is its in-process seam.
+  private val fallback: SocketServer = SocketServer(port, local)
+
+  // Escalate a connection to the blocking path: by the time this is called, its key is
+  // cancelled and the channel is back in blocking mode. The already-accumulated bytes
+  // are replayed ahead of the channel, so the blocking loop re-parses the request head
+  // it takes over — full replay semantics, exactly as if it had owned the socket from
+  // accept. A virtual thread, as the thread-per-connection front-end would use; created
+  // directly since the reactor holds no `Monitor`.
+  private[Reactor] def escalate(channel: jnc.SocketChannel, buffered: scala.Array[Byte])
+  :   Unit =
+
+    Thread.ofVirtual.nn.start: () =>
+      try
+        channel.socket.nn.setSoTimeout(30000)
+
+        val in: java.io.InputStream =
+          java.io.SequenceInputStream
+            ( java.io.ByteArrayInputStream(buffered), jnc.Channels.newInputStream(channel).nn )
+
+        val out: java.io.OutputStream = jnc.Channels.newOutputStream(channel).nn
+        fallback.serveConnection(handler)(in, out)
+      catch case _: java.io.IOException => ()
+      finally try channel.close() catch case _: java.io.IOException => ()
 
   private val count: Int =
     if loops > 0 then loops else Runtime.getRuntime.nn.availableProcessors

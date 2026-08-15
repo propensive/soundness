@@ -153,6 +153,48 @@ object Tests extends Suite(m"Scintillate tests"):
 
         . assert(_ == true)
 
+        test(m"A chunked request body escalates to the blocking path"):
+          val port = freePort()
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+          try
+            rawRequest
+              ( port,
+                t"POST / HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n" )
+          finally reactor.stop()
+
+        . assert(_.contains(t"hello"))
+
+        test(m"A body above the inline limit escalates and reaches the handler"):
+          val port = freePort()
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(t"length:${request.body().memoize.length}")
+
+          try
+            val body = String("x".repeat(100000).nn).tt
+            rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 100000\r\n\r\n$body")
+          finally reactor.stop()
+
+        . assert(_.contains(t"length:100000"))
+
+        test(m"Expect: 100-continue escalates and gets an interim response"):
+          val port = freePort()
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+          try
+            rawRequest
+              ( port,
+                t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\nExpect: 100-continue\r\n\r\nworld" )
+          finally reactor.stop()
+
+        . assert: response =>
+            response.contains(t"100 Continue") && response.contains(t"world")
+
         test(m"An oversized head is refused with 431"):
           val port = freePort()
           val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"no"))
