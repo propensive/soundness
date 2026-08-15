@@ -44,7 +44,7 @@ object FilesystemAttribute:
 
     def apply(): Boolean = backend.attribute(path, Attribute.Readable)
 
-    def update(value: Boolean): Unit raises IoError =
+    def update(value: Boolean): Unit raises Io.Error =
       backend.update(path, Attribute.Readable, value)
 
   class Writable[plane: Filesystem](path: Path on plane)
@@ -52,7 +52,7 @@ object FilesystemAttribute:
 
     def apply(): Boolean = backend.attribute(path, Attribute.Writable)
 
-    def update(value: Boolean): Unit raises IoError =
+    def update(value: Boolean): Unit raises Io.Error =
       backend.update(path, Attribute.Writable, value)
 
   class Executable[plane <: Posix: Filesystem](path: Path on plane)
@@ -60,5 +60,5 @@ object FilesystemAttribute:
 
     def apply(): Boolean = backend.attribute(path, Attribute.Executable)
 
-    def update(value: Boolean): Unit raises IoError =
+    def update(value: Boolean): Unit raises Io.Error =
       backend.update(path, Attribute.Executable, value)

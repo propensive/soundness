@@ -185,7 +185,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     Out.println(detail.text)
                     Exit.Fail(1).terminate()
 
-                  case IoError(_, _, _, _) =>
+                  case Io.Error(_, _, _, _) =>
                     Out.println(e"Could not cache the downloaded runner stub $runnerName")
                     Exit.Fail(1).terminate()
 

@@ -42,7 +42,7 @@ import serpentine.*
 import spectacular.*
 import vacuous.*
 
-import IoError.{Operation, Reason}
+import Io.Error.{Operation, Reason}
 
 // The form for transient working directories: `parent.open[Scratch](Read & Write)` creates a
 // fresh, uniquely-named directory beneath `parent`, provides a `Directory.Handle` over it for
@@ -53,7 +53,7 @@ trait Scratch
 
 object Scratch:
   class ScratchOpenable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
-    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[IoError] )
+    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
   extends Openable:
 
     type Self = path
@@ -67,7 +67,7 @@ object Scratch:
     :   result =
 
       if backend.stat(value, true).entry != Directory
-      then abort(IoError(value, Operation.Open, Reason.IsNotDirectory))
+      then abort(Io.Error(value, Operation.Open, Reason.IsNotDirectory))
 
       // A fresh name under `value`: no other scope can denote it, so unlike opening an
       // existing directory, a scratch scope needs no access-register arbitration.
@@ -92,6 +92,6 @@ object Scratch:
 
   given openable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend: FilesystemBackend on filesystem,
-        tactic:  Tactic[IoError] )
+        tactic:  Tactic[Io.Error] )
   =>  ( ScratchOpenable[filesystem, path]^{tactic} ) =
     ScratchOpenable[filesystem, path]

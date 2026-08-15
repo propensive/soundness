@@ -54,7 +54,7 @@ import filesystemBackends.virtualMachineFilesystem
 private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]
     ( root: Path on plane, path: Path on plane )
-    ( using DereferenceSymlinks, Tactic[IoError], Tactic[Tar.Error] )
+    ( using DereferenceSymlinks, Tactic[Io.Error], Tactic[Tar.Error] )
   :   Tar.Entry =
 
     val ref = relativize(root, path)
@@ -95,7 +95,7 @@ private[bitumen] object TarFilesystem:
     ( root: Path on plane, entry: Tar.Entry )
     ( using CreateNonexistentParents on plane,
             OverwritePreexisting on plane,
-            Tactic[IoError],
+            Tactic[Io.Error],
             Tactic[Tar.Error] )
   :   Unit =
 
@@ -187,7 +187,7 @@ private[bitumen] object TarFilesystem:
 
     . protect(text.as[Relative on Tar])
 
-  private def readMode(javaPath: jnf.Path)(using Tactic[IoError]): UnixMode =
+  private def readMode(javaPath: jnf.Path)(using Tactic[Io.Error]): UnixMode =
     try (jnf.Files.getAttribute(javaPath, "unix:mode").nn: Any) match
       case n: Int => UnixMode.from(n & 0xfff)
       case _      => UnixMode()
@@ -195,7 +195,7 @@ private[bitumen] object TarFilesystem:
       case _: UnsupportedOperationException                => UnixMode()
       case _: jnf.attribute.UserPrincipalNotFoundException => UnixMode()
 
-  private def readOwner(javaPath: jnf.Path)(using Tactic[IoError]): (Int, Int) =
+  private def readOwner(javaPath: jnf.Path)(using Tactic[Io.Error]): (Int, Int) =
     try
       val uid = (jnf.Files.getAttribute(javaPath, "unix:uid").nn: Any) match
         case n: Int => n
@@ -208,7 +208,7 @@ private[bitumen] object TarFilesystem:
       (uid, gid)
     catch case _: UnsupportedOperationException => (0, 0)
 
-  private def readDeviceNumbers(javaPath: jnf.Path)(using Tactic[IoError]): (Int, Int) =
+  private def readDeviceNumbers(javaPath: jnf.Path)(using Tactic[Io.Error]): (Int, Int) =
     try
       val rdev = (jnf.Files.getAttribute(javaPath, "unix:rdev").nn: Any) match
         case n: Long => n

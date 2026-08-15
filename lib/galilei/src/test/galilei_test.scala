@@ -126,13 +126,13 @@ object Tests extends Suite(m"Galilei tests"):
             doomed.extant()
       . assert(_ == false)
 
-      test(m"Opening a non-directory raises IoError"):
+      test(m"Opening a non-directory raises Io.Error"):
         import errorDiagnostics.emptyDiagnostics
         unsafely:
           val plainFile: Path on Linux = root / "plain.txt"
           plainFile.write(t"not a directory")
-          capture[IoError](plainFile.open[Directory]() { () }).reason
-      . assert(_ == IoError.Reason.IsNotDirectory)
+          capture[Io.Error](plainFile.open[Directory]() { () }).reason
+      . assert(_ == Io.Error.Reason.IsNotDirectory)
 
       test(m"A write operation without the Write grant does not compile"):
         demilitarize:
@@ -170,8 +170,8 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           val target: Path on Linux = base / "once.txt"
           target.create[File]()
-          capture[IoError](target.create[File]()).reason
-      . assert(_ == IoError.Reason.AlreadyExists)
+          capture[Io.Error](target.create[File]()).reason
+      . assert(_ == Io.Error.Reason.AlreadyExists)
 
       test(m"Replace permits re-creation"):
         unsafely:
@@ -184,8 +184,8 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"Creating beneath a missing parent fails without Parents"):
         unsafely:
           val target: Path on Linux = base / "no" / "such" / "deep"
-          capture[IoError](target.create[Directory]()).reason
-      . assert(_ == IoError.Reason.Nonexistent)
+          capture[Io.Error](target.create[Directory]()).reason
+      . assert(_ == Io.Error.Reason.Nonexistent)
 
       test(m"Parents creates missing ancestors"):
         unsafely:
@@ -210,11 +210,11 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           val target: Path on Linux = base / "doomed-dir"
 
-          capture[IoError]:
+          capture[Io.Error]:
             scala.caps.unsafe.unsafeAssumeSeparate:
              target.create[Directory](): dir ?=>
               (dir / "x.txt").overwrite(t"data")
-              abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
+              abort(Io.Error(target, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
 
           target.existent()
       . assert(_ == false)
@@ -233,11 +233,11 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           val target: Path on Linux = base / "doomed.txt"
 
-          capture[IoError]:
+          capture[Io.Error]:
             scala.caps.unsafe.unsafeAssumeSeparate:
              target.create[File](): handle ?=>
               handle.write(Chain(t"data".in[Data]))
-              abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
+              abort(Io.Error(target, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
 
           target.existent()
       . assert(_ == false)
@@ -266,11 +266,11 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           var stem: Optional[Path on Linux] = Unset
 
-          capture[IoError]:
+          capture[Io.Error]:
             scala.caps.unsafe.unsafeAssumeSeparate:
              base.open[Scratch](Read & Write): scratch ?=>
               stem = scratch.stem
-              abort(IoError(base, IoError.Operation.Write, IoError.Reason.Unsupported))
+              abort(Io.Error(base, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
 
           stem.let(_.existent()).or(true)
       . assert(_ == false)
@@ -356,8 +356,8 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"Creating a mapping without Size is refused"):
         unsafely:
           val target: Path on Linux = ramBase / "unsized.bin"
-          capture[IoError](target.create[Ram]() { () }).reason
-      . assert(_ == IoError.Reason.Unsupported)
+          capture[Io.Error](target.create[Ram]() { () }).reason
+      . assert(_ == Io.Error.Reason.Unsupported)
 
     suite(m"The access register"):
       import filesystemOptions.createNonexistentParents.enabled
@@ -383,22 +383,22 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"An Exclusive open conflicts with an overlapping open"):
         import errorDiagnostics.emptyDiagnostics
         unsafely:
-          capture[IoError]:
+          capture[Io.Error]:
             scala.caps.unsafe.unsafeAssumeSeparate:
              outer.open[Directory](): a ?=>
               inner.open[Directory](Read & Exclusive) { () }
           . reason
-      . assert(_ == IoError.Reason.Busy)
+      . assert(_ == Io.Error.Reason.Busy)
 
       test(m"An open under an Exclusive open conflicts"):
         import errorDiagnostics.emptyDiagnostics
         unsafely:
-          capture[IoError]:
+          capture[Io.Error]:
             scala.caps.unsafe.unsafeAssumeSeparate:
               outer.open[Directory](Read & Exclusive): a ?=>
                 inner.open[Directory]() { () }
           . reason
-      . assert(_ == IoError.Reason.Busy)
+      . assert(_ == Io.Error.Reason.Busy)
 
       test(m"An Exclusive open of a sibling does not conflict"):
         unsafely:

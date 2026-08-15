@@ -45,7 +45,7 @@ import rudiments.*
 // freshens `Handle`'s (capability) field types in the inferred `Result` member, which then
 // fails to conform to the declared `to Handle` refinement.
 class FileOpenable[filesystem: Filesystem, path <: Path on filesystem]
-  ( using backend: FilesystemBackend on filesystem, ioError: Tactic[IoError] )
+  ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
 extends Openable:
 
   type Self = path

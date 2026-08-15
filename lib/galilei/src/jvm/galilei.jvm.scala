@@ -58,7 +58,7 @@ object SocketCreation:
   // file remains, as before; an exception escaping the scope removes it). The no-block form
   // binds and immediately closes, leaving just the socket file.
   class SocketCreatable[filesystem <: Posix: Filesystem, path <: Path on filesystem]
-    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[IoError] )
+    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error] )
   extends Creatable:
 
     type Self = path
@@ -87,7 +87,7 @@ object SocketCreation:
       finally channel.close()
 
   given socket: [filesystem <: Posix: Filesystem, path <: Path on filesystem]
-  =>  ( FilesystemBackend on filesystem, Tactic[IoError] )
+  =>  ( FilesystemBackend on filesystem, Tactic[Io.Error] )
   =>  SocketCreatable[filesystem, path] =
     SocketCreatable[filesystem, path]
 

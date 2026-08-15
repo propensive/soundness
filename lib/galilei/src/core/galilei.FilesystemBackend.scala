@@ -45,10 +45,10 @@ import serpentine.*
 //
 // Operations that compose several primitives (recursive deletion, copy-into, creating parents)
 // live in the user-facing API, not here; an operation a backend cannot support raises an
-// `IoError` with `Reason.Unsupported` rather than approximating. `dereference` selects whether a
-// final-component symlink is followed. Errors are raised as `IoError`s, with each backend
+// `Io.Error` with `Reason.Unsupported` rather than approximating. `dereference` selects whether a
+// final-component symlink is followed. Errors are raised as `Io.Error`s, with each backend
 // responsible for mapping its native failures (exceptions, error codes) to the common
-// `IoError.Reason` vocabulary — as informatively as it can.
+// `Io.Error.Reason` vocabulary — as informatively as it can.
 object FilesystemBackend:
   enum Attribute:
     case Readable, Writable, Executable
@@ -56,36 +56,36 @@ object FilesystemBackend:
 trait FilesystemBackend extends Planar:
   // The entry's type, size and timestamps, in one read. (`created` is `Unset` on filesystems
   // that do not record creation times.)
-  def stat(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Stat
+  def stat(path: Path on Plane, dereference: Boolean)(using Tactic[Io.Error]): Stat
 
   def exists(path: Path on Plane, dereference: Boolean): Boolean
 
   // The names (not paths) of the directory's immediate children.
-  def children(path: Path on Plane)(using Tactic[IoError]): Chain[Text]
+  def children(path: Path on Plane)(using Tactic[Io.Error]): Chain[Text]
 
-  def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit
-  def createFile(path: Path on Plane)(using Tactic[IoError]): Unit
-  def createFifo(path: Path on Plane)(using Tactic[IoError]): Unit
-  def delete(path: Path on Plane)(using Tactic[IoError]): Unit
-  def deleteIfExists(path: Path on Plane)(using Tactic[IoError]): Unit
+  def createDirectory(path: Path on Plane)(using Tactic[Io.Error]): Unit
+  def createFile(path: Path on Plane)(using Tactic[Io.Error]): Unit
+  def createFifo(path: Path on Plane)(using Tactic[Io.Error]): Unit
+  def delete(path: Path on Plane)(using Tactic[Io.Error]): Unit
+  def deleteIfExists(path: Path on Plane)(using Tactic[Io.Error]): Unit
 
-  def symlink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit
-  def hardLink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit
+  def symlink(link: Path on Plane, target: Path on Plane)(using Tactic[Io.Error]): Unit
+  def hardLink(link: Path on Plane, target: Path on Plane)(using Tactic[Io.Error]): Unit
 
   def copy(source: Path on Plane, destination: Path on Plane, dereference: Boolean)
-    ( using Tactic[IoError] )
+    ( using Tactic[Io.Error] )
   :   Unit
 
   def move(source: Path on Plane, destination: Path on Plane, atomic: Boolean, dereference: Boolean)
-    ( using Tactic[IoError] )
+    ( using Tactic[Io.Error] )
   :   Unit
 
   // Sets the modification time to the present moment.
-  def touch(path: Path on Plane)(using Tactic[IoError]): Unit
+  def touch(path: Path on Plane)(using Tactic[Io.Error]): Unit
 
-  def hidden(path: Path on Plane)(using Tactic[IoError]): Boolean
-  def volume(path: Path on Plane)(using Tactic[IoError]): Volume
-  def hardLinkCount(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Int
+  def hidden(path: Path on Plane)(using Tactic[Io.Error]): Boolean
+  def volume(path: Path on Plane)(using Tactic[Io.Error]): Volume
+  def hardLinkCount(path: Path on Plane, dereference: Boolean)(using Tactic[Io.Error]): Int
 
   // Coarse-grained permission flags on the entry, from the perspective of the current user.
   // These express the *current* model; a richer permissions API can be layered on later without
@@ -93,11 +93,11 @@ trait FilesystemBackend extends Planar:
   def attribute(path: Path on Plane, attribute: FilesystemBackend.Attribute): Boolean
 
   def update(path: Path on Plane, attribute: FilesystemBackend.Attribute, value: Boolean)
-    ( using Tactic[IoError] )
+    ( using Tactic[Io.Error] )
   :   Unit
 
   // Opens the entry's content for streaming, applies `lambda` to the open handle, and closes it,
   // whatever the outcome.
   def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
-    ( using Tactic[IoError] )
+    ( using Tactic[Io.Error] )
   :   result

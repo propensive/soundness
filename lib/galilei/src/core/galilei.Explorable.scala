@@ -46,7 +46,7 @@ object Explorable:
   =>  plane is Explorable =
 
     // `children` cannot raise through its lazy result, so backend failures propagate as
-    // thrown `IoError`s (the pre-backend per-platform instances did the same).
+    // thrown `Io.Error`s (the pre-backend per-platform instances did the same).
     path =>
       import strategies.throwUnsafely
       backend.children(path).map: name => unsafely(path.child(name))

@@ -96,7 +96,7 @@ object Packager:
       case ConnectError(_)         => Packager.Error(m"Could not connect to download a runner stub")
       case Url.Error(_, _, _)      => Packager.Error(m"A runner stub URL is invalid")
       case Assembler.Error(detail) => Packager.Error(detail)
-      case IoError(_, _, _, _)     => Packager.Error(m"A filesystem error occurred when packaging")
+      case Io.Error(_, _, _, _)     => Packager.Error(m"A filesystem error occurred when packaging")
       case StreamError(_)          => Packager.Error(m"A stream error occurred during packaging")
       case Path.Error(_, _)        => Packager.Error(m"A path could not be resolved when packaging")
 
@@ -189,7 +189,7 @@ object Packager:
 
 
   private def write(output: Path on Linux, data: Data)
-  :   Unit raises IoError raises StreamError =
+  :   Unit raises Io.Error raises StreamError =
 
     output.create[File](CreateFlag.Parents, CreateFlag.Replace): handle ?=>
       handle.write(Chain(data))

@@ -4,8 +4,8 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **438**;
-  217 sit in a prefix family of two or more, across 64 families, and
+- exported multi-word type-level names still under review: **436**;
+  215 sit in a prefix family of two or more, across 63 families, and
   221 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
@@ -89,8 +89,7 @@ exclusive capture sets, not `Array`'s invariance).
 
 Blocked because the _outer_ name belongs to another library, which the family tables cannot
 show — resolve the outer name to a declaration before treating a shared prefix as evidence:
-`IoError`/`IoEvent` (galilei; `Io` is turbulence's stdio sink — see the
-`FooError` section, where the alternatives are set out), `Dag*` (dendrology; `Dag` is acyclicity's), `Oci*` (anthology; `Oci` is
+`Dag*` (dendrology; `Dag` is acyclicity's), `Oci*` (anthology; `Oci` is
 embarcadero's), `Unix*` (galilei/bitumen/profanity; aviation's `Unix` is the epoch), `Time*`
 (aviation; quantitative's `Time` is a dimension), `Dts*`, `TeletypeFormattable`,
 `UdpResponse`, `LiraAssembler`, `LiraBundle`. (`Wasm*`, `Http*` and `WitWorld` were in this
@@ -186,7 +185,7 @@ looks misnamed may be one the codebase already has.
 | awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `ConnectError`, `ExpectationError`, `InstallError` |
 | excluded by R2 (specification concept) | `CompileError` |
 | outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `EscapeError`, `RemoteError`, `UncheckedError` |
-| structurally blocked, with the reason established | `IoError`, `StreamError` (below) |
+| structurally blocked, with the reason established | `StreamError` (below) |
 | nested compound names, where the prefix is usually redundant with the enclosing type and could simply become `Error` (as `Wit.ParseError` → `Wit.Error` did) | `Ansi.AnsiError`, `Pty.EscapeError`, `Git.RefError`, `Repackager.RepackageError`, `Sh.ShError`, `Repackager.UserError`, `UrlInterpolatorError`, `EvaluationError` |
 
 **`StreamError` cannot be nested.** `Stream` is not declared anywhere in this repository — it
@@ -194,14 +193,15 @@ comes from the proscala fork's prelude via `-Yimports:proscenium` — so there i
 of ours to move it into, and declaring `object Stream` would collide with the prelude type.
 zephyrine's `Stream[medium]` is an unrelated parse cursor.
 
-**`IoError`/`IoEvent` need a decision, not a host.** They are filesystem concepts wearing an
-I/O name: every `IoEvent` case extends `Log.Filesystem`, and `IoError` carries a
-`filesystem: path.Plane is Filesystem`. But `Io` is turbulence's stdio sink (`trait Io { def
-write; def print }`) and is exported, so galilei cannot claim the name; and serpentine's
-`Filesystem` — also exported — is a *path-syntax* typeclass (`separator`, `escape`, `name`)
-belonging to a library that performs no I/O, so it is the wrong host despite the name. The
-options are to rename turbulence's `Io`, to nest them under a galilei type such as `Entry`,
-or to leave them.
+**`IoError`/`IoEvent` are now `Io.Error`/`Io.Event`.** They are filesystem concepts — every
+`Io.Event` case extends `Log.Filesystem`, and `Io.Error` carries a `filesystem: path.Plane is
+Filesystem` — but `Filesystem` is serpentine's *path-syntax* typeclass, in a library that
+performs no I/O, so it was the wrong host despite the name. The name `Io` was freed instead:
+turbulence's `trait Io` had two abstract members, exactly one implementer (`Stdio`, which
+defined both concretely), and no signature anywhere took one, so it was deleted rather than
+renamed. `Io.Error`'s reasons are the POSIX errno table — `Nonexistent` is `ENOENT`,
+`NotSameVolume` is `EXDEV`, `Physical` is `EIO` — which is worth keeping in mind before
+anyone proposes narrowing it.
 
 **`Git.Error` already exists** (`CannotExecuteGit`, `CloneFailed`, `RepoDoesNotExist`, …), so
 `Git.RefError` cannot take that name and should not: one is "the git operation failed", the
@@ -250,7 +250,6 @@ ultimatum's is the likelier one to rename.
 | `Http*` | anticipation, honeycomb, scintillate, urticose | 5 | `HttpEquiv`, `HttpRequests`, `HttpServer`, `HttpStreams`, `HttpUrl` |
 | `Image*` | embarcadero | 2 | `ImageOpenable`, `ImageRecord` |
 | `Inline*` | profanity, ultimatum | 5 | `InlineAnchoring`, `InlineBoard`, `InlineGrowth`, `InlineRoot`, `InlineShrink` |
-| `Io*` | galilei | 2 | `IoError`, `IoEvent` |
 | `Java*` | anthology, diuretic, enigmatic, gastronomy, scintillate | 11 | `JavaIoFile`, `JavaLongDuration`, `JavaLongInstant`, `JavaNetUrl`, `JavaNioPath`, `JavaServlet`, `JavaStdlibCrypto`, `JavaStdlibHashing`, `JavaTimeInstant`, `JavaUtilDate`, `JavaVersion` |
 | `Json*` | jacinta, obligatory | 4 | `JsonBlueprint`, `JsonPointer`, `JsonRpc`, `JsonSchema` |
 | `Kotlin*` | xenophile | 5 | `KotlinDialect`, `KotlinFacade`, `KotlinInvoke`, `KotlinMetadataAtomizer`, `KotlinMetadataDiscipline` |

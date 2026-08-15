@@ -174,7 +174,7 @@ object Repackager:
   :   Summary raises RepackageError =
 
     mitigate:
-      case IoError(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
+      case Io.Error(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
       case StreamError(_)       => RepackageError(m"a stream error occurred while repackaging")
       case Zip.Error(reason)     => RepackageError(m"the JAR could not be read or written ($reason)")
       case Path.Error(_, _)      => RepackageError(m"a path could not be resolved while repackaging")

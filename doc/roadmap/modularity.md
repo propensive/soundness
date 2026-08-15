@@ -268,7 +268,7 @@ Horizon: near–mid
   layering inside `stratiform.editing`, deliberately, with a test that pins which instance a
   read-write source selects.
 - **turbulence.stdio** — the concrete answer to "turbulence needs a clearer purpose":
-  *streams* and *the standard streams* are different modules. Verified: Stdio, Io, In, Out
+  *streams* and *the standard streams* are different modules. Verified: Stdio, In, Out
   and Err never touch the streaming algebra (they import only java.io, anticipation.print,
   rudiments and beneficence). They move to a module **below** turbulence
   (`Component(anticipation.print, rudiments.core, beneficence.core)`, ~290 lines including

@@ -47,7 +47,7 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
-import IoError.{Operation, Reason}
+import Io.Error.{Operation, Reason}
 
 package filesystemBackends:
   given native: [plane: Filesystem] => FilesystemBackend on plane =
@@ -65,7 +65,7 @@ package filesystemBackends:
       // Inline, as the core `Path.protect`: the thunk must not cross a checked boundary.
       private inline def protect[result](path: Path on Plane, operation: Operation)
         (inline block: result)
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   result =
 
         import Reason.*
@@ -86,7 +86,7 @@ package filesystemBackends:
           else if message.contains(t"operation not permitted") then PermissionDenied
           else Unsupported
 
-        def fail(reason: Reason): Nothing = abort(IoError(path, operation, reason))
+        def fail(reason: Reason): Nothing = abort(Io.Error(path, operation, reason))
 
         try block catch
           case break: boundary.Break[?]               => throw break
@@ -104,7 +104,7 @@ package filesystemBackends:
           case error: ji.IOException                  => fail(Physical)
           case other                                  => fail(Unsupported)
 
-      def stat(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Stat =
+      def stat(path: Path on Plane, dereference: Boolean)(using Tactic[Io.Error]): Stat =
         protect(path, Operation.Metadata):
           // Individual-argument varargs calls, never an array splice: under the Scala Native
           // javalib the varargs formals are pure Scala arrays, which no array value can
@@ -153,7 +153,7 @@ package filesystemBackends:
         if dereference then jnf.Files.exists(javaPath(path))
         else jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
 
-      def children(path: Path on Plane)(using Tactic[IoError]): Chain[Text] =
+      def children(path: Path on Plane)(using Tactic[Io.Error]): Chain[Text] =
         protect(path, Operation.Read):
           if !jnf.Files.isDirectory(javaPath(path)) then Chain()
           else
@@ -171,34 +171,34 @@ package filesystemBackends:
                 stream.iterator().nn.asScala.map(_.getFileName.nn.toString.tt).toList
             finally stream.close()
 
-      def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def createDirectory(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Create)(jnf.Files.createDirectory(javaPath(path)))
 
-      def createFile(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def createFile(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Create)(jnf.Files.createFile(javaPath(path)))
 
-      def createFifo(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def createFifo(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Create):
           val process =
             new ProcessBuilder("mkfifo", Path.encodable.encode(path).s).start().nn
 
-          if process.waitFor() != 0 then abort(IoError(path, Operation.Create, Reason.Unsupported))
+          if process.waitFor() != 0 then abort(Io.Error(path, Operation.Create, Reason.Unsupported))
 
-      def delete(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def delete(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Delete)(jnf.Files.delete(javaPath(path)))
 
-      def deleteIfExists(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def deleteIfExists(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Delete)(jnf.Files.deleteIfExists(javaPath(path)))
 
-      def symlink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit =
+      def symlink(link: Path on Plane, target: Path on Plane)(using Tactic[Io.Error]): Unit =
         protect(link, Operation.Create):
           jnf.Files.createSymbolicLink(javaPath(link), javaPath(target))
 
-      def hardLink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit =
+      def hardLink(link: Path on Plane, target: Path on Plane)(using Tactic[Io.Error]): Unit =
         protect(link, Operation.Create)(jnf.Files.createLink(javaPath(link), javaPath(target)))
 
       def copy(source: Path on Plane, destination: Path on Plane, dereference: Boolean)
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   Unit =
 
         protect(source, Operation.Copy):
@@ -212,7 +212,7 @@ package filesystemBackends:
           destination: Path on Plane,
           atomic:      Boolean,
           dereference: Boolean )
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   Unit =
 
         protect(source, Operation.Move):
@@ -233,21 +233,21 @@ package filesystemBackends:
                 ( javaPath(source), javaPath(destination), jnf.LinkOption.NOFOLLOW_LINKS,
                   jnf.StandardCopyOption.ATOMIC_MOVE )
 
-      def touch(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def touch(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Metadata):
           jnf.Files.setLastModifiedTime
             ( javaPath(path),
               jnfa.FileTime.fromMillis(java.lang.System.currentTimeMillis) )
 
-      def hidden(path: Path on Plane)(using Tactic[IoError]): Boolean =
+      def hidden(path: Path on Plane)(using Tactic[Io.Error]): Boolean =
         protect(path, Operation.Metadata)(jnf.Files.isHidden(javaPath(path)))
 
-      def volume(path: Path on Plane)(using Tactic[IoError]): Volume =
+      def volume(path: Path on Plane)(using Tactic[Io.Error]): Volume =
         protect(path, Operation.Metadata):
           val fileStore = jnf.Files.getFileStore(javaPath(path)).nn
           Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
 
-      def hardLinkCount(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Int =
+      def hardLinkCount(path: Path on Plane, dereference: Boolean)(using Tactic[Io.Error]): Int =
         protect(path, Operation.Metadata):
           ( if dereference then jnf.Files.getAttribute(javaPath(path), "unix:nlink")
             else jnf.Files.getAttribute
@@ -262,7 +262,7 @@ package filesystemBackends:
           case FilesystemBackend.Attribute.Executable => jnf.Files.isExecutable(javaPath(path))
 
       def update(path: Path on Plane, attribute: FilesystemBackend.Attribute, value: Boolean)
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   Unit =
 
         protect(path, Operation.Metadata):
@@ -273,10 +273,10 @@ package filesystemBackends:
             case FilesystemBackend.Attribute.Writable   => file.setWritable(value)
             case FilesystemBackend.Attribute.Executable => file.setExecutable(value)
 
-          if !success then abort(IoError(path, Operation.Metadata, Reason.PermissionDenied))
+          if !success then abort(Io.Error(path, Operation.Metadata, Reason.PermissionDenied))
 
       def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   result =
 
         val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.map:

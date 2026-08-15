@@ -215,7 +215,7 @@ object Completions:
   :   Installation.InstallResult =
 
     mitigate:
-      case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
+      case Io.Error(_, _, _, _) => InstallError(InstallError.Reason.Io)
       case Name.Error(_, _, _)  => InstallError(InstallError.Reason.Io)
       case Path.Error(_, _)     => InstallError(InstallError.Reason.Io)
       case StreamError(_)      => InstallError(InstallError.Reason.Io)

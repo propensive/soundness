@@ -98,7 +98,7 @@ available at the call site (for example, a `serpentine.Path on plane` whose
 textual form depends on its `plane`), capture the rendered `Text` *there*:
 
 ```scala
-Log.info(IoEvent.Move(source.show, destination.show))   // path rendering needs `plane`
+Log.info(Io.Event.Move(source.show, destination.show))   // path rendering needs `plane`
 ```
 
 This is correct, not a compromise: the `.show` runs at the (by-name) call site
@@ -140,7 +140,7 @@ transcribing it into its own event, rather than duplicating process cases:
 given execEvent: GitEvent transcribes ExecEvent = GitEvent.Exec(_)
 ```
 
-(existing pattern: `GitEvent`, `CliEvent`, `IoEvent`).
+(existing pattern: `GitEvent`, `CliEvent`, `Io.Event`).
 
 ## 5. Message style
 

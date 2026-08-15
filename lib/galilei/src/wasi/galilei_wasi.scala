@@ -48,7 +48,7 @@ import vacuous.*
 import soundness.{call, dispose}
 import xenophile.*
 
-import IoError.{Operation, Reason}
+import Io.Error.{Operation, Reason}
 
 // The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
@@ -67,7 +67,7 @@ package filesystemBackends:
   // `wasiFilesystemApi` (and this module's WIT resource) to be visible at that site.
   //
   // WASI error codes are recovered from the `Wasm.Error` raised by `call`'s decoder and mapped
-  // onto `IoError.Reason` — so a quota failure reports `QuotaExceeded`, not a generic error.
+  // onto `Io.Error.Reason` — so a quota failure reports `QuotaExceeded`, not a generic error.
   //
   // The per-site duplication the compiler warns about is the point: the instance must
   // materialize at the downstream summoning site, and a WASI-linked application summons it once.
@@ -101,15 +101,15 @@ package filesystemBackends:
       // `inline given` expands at a downstream summoning site under capture checking.
       private def protect[result](path: Path on Plane, operation: Operation)
         ( block: ->{caps.any} result )
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   result =
 
-        try block catch case error: Wasm.Error => abort(IoError(path, operation, reason(error)))
+        try block catch case error: Wasm.Error => abort(Io.Error(path, operation, reason(error)))
 
       // The preopened directory granted by the host that covers `path` — by longest prefix —
       // paired with the path's remainder, relative to it (WASI paths are preopen-relative and
       // never begin with `/`).
-      private def resolve(path: Path on Plane, operation: Operation)(using Tactic[IoError])
+      private def resolve(path: Path on Plane, operation: Operation)(using Tactic[Io.Error])
       :   (Wasm.Handle of "descriptor", Text) =
 
         val target: Text = Path.encodable.encode(path)
@@ -126,7 +126,7 @@ package filesystemBackends:
 
         if covering.isEmpty then
           preopens.each(_(0).dispose())
-          abort(IoError(path, operation, Reason.PermissionDenied))
+          abort(Io.Error(path, operation, Reason.PermissionDenied))
         else
           val (descriptor, prefix) = covering.maxBy(_(1).s.length)
 
@@ -175,7 +175,7 @@ package filesystemBackends:
             millis(fields(3)).or(0L),
             Unset )
 
-      def stat(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Stat =
+      def stat(path: Path on Plane, dereference: Boolean)(using Tactic[Io.Error]): Stat =
         protect(path, Operation.Metadata):
           val (descriptor, relative) = resolve(path, Operation.Metadata)
           try statOf(descriptor, relative, dereference) finally descriptor.dispose()
@@ -187,7 +187,7 @@ package filesystemBackends:
           stat(path, dereference) yet true
         catch case error: Exception => false
 
-      def children(path: Path on Plane)(using Tactic[IoError]): Chain[Text] =
+      def children(path: Path on Plane)(using Tactic[Io.Error]): Chain[Text] =
         protect(path, Operation.Read):
           val (descriptor, relative) = resolve(path, Operation.Read)
           val directory: Foreign of "descriptor" from Wit = descriptor
@@ -219,7 +219,7 @@ package filesystemBackends:
 
       private def act(path: Path on Plane, operation: Operation)
         ( block: (Foreign of "descriptor" from Wit, Text) => Unit )
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   Unit =
 
         protect(path, operation):
@@ -228,11 +228,11 @@ package filesystemBackends:
 
           try block(directory, relative) finally descriptor.dispose()
 
-      def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def createDirectory(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         act(path, Operation.Create): (directory, relative) =>
           directory.`create-directory-at`(relative).call[Unit]()
 
-      def createFile(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def createFile(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         act(path, Operation.Create): (directory, relative) =>
           // open-flags: create (1) | exclusive (4); descriptor-flags: write (2)
           val created =
@@ -241,10 +241,10 @@ package filesystemBackends:
 
           created.dispose()
 
-      def createFifo(path: Path on Plane)(using Tactic[IoError]): Unit =
-        abort(IoError(path, Operation.Create, Reason.Unsupported))
+      def createFifo(path: Path on Plane)(using Tactic[Io.Error]): Unit =
+        abort(Io.Error(path, Operation.Create, Reason.Unsupported))
 
-      def delete(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def delete(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         act(path, Operation.Delete): (directory, relative) =>
           val directoryEntry =
             try statOf(resolve(path, Operation.Delete)(0), relative, false).entry == Directory
@@ -253,14 +253,14 @@ package filesystemBackends:
           if directoryEntry then directory.`remove-directory-at`(relative).call[Unit]()
           else directory.`unlink-file-at`(relative).call[Unit]()
 
-      def deleteIfExists(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def deleteIfExists(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         if exists(path, false) then delete(path)
 
-      def symlink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit =
+      def symlink(link: Path on Plane, target: Path on Plane)(using Tactic[Io.Error]): Unit =
         act(link, Operation.Create): (directory, relative) =>
           directory.`symlink-at`(Path.encodable.encode(target), relative).call[Unit]()
 
-      def hardLink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit =
+      def hardLink(link: Path on Plane, target: Path on Plane)(using Tactic[Io.Error]): Unit =
         protect(link, Operation.Create):
           val (source, sourceRelative) = resolve(target, Operation.Create)
           val directory: Foreign of "descriptor" from Wit = source
@@ -275,7 +275,7 @@ package filesystemBackends:
           finally source.dispose()
 
       def copy(source: Path on Plane, destination: Path on Plane, dereference: Boolean)
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   Unit =
 
         val content = open(source, List(OpenFlag.Read))(_.reader())
@@ -288,7 +288,7 @@ package filesystemBackends:
           destination: Path on Plane,
           atomic:      Boolean,
           dereference: Boolean )
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   Unit =
 
         protect(source, Operation.Move):
@@ -302,7 +302,7 @@ package filesystemBackends:
             finally to.dispose()
           finally from.dispose()
 
-      def touch(path: Path on Plane)(using Tactic[IoError]): Unit =
+      def touch(path: Path on Plane)(using Tactic[Io.Error]): Unit =
         act(path, Operation.Metadata): (directory, relative) =>
           directory.`set-times-at`
             ( follow(true),
@@ -312,16 +312,16 @@ package filesystemBackends:
 
           . call[Unit]()
 
-      def hidden(path: Path on Plane)(using Tactic[IoError]): Boolean =
+      def hidden(path: Path on Plane)(using Tactic[Io.Error]): Boolean =
         path.descent.to(List).prim.let(_.starts(t".")).or(false)
 
-      def volume(path: Path on Plane)(using Tactic[IoError]): Volume =
-        abort(IoError(path, Operation.Metadata, Reason.Unsupported))
+      def volume(path: Path on Plane)(using Tactic[Io.Error]): Volume =
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
 
-      def hardLinkCount(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Int =
+      def hardLinkCount(path: Path on Plane, dereference: Boolean)(using Tactic[Io.Error]): Int =
         stat2(path, dereference)
 
-      private def stat2(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Int =
+      private def stat2(path: Path on Plane, dereference: Boolean)(using Tactic[Io.Error]): Int =
         protect(path, Operation.Metadata):
           val (descriptor, relative) = resolve(path, Operation.Metadata)
           val directory: Foreign of "descriptor" from Wit = descriptor
@@ -340,13 +340,13 @@ package filesystemBackends:
           case _                                      => exists(path, true)
 
       def update(path: Path on Plane, attribute: FilesystemBackend.Attribute, value: Boolean)
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   Unit =
 
-        abort(IoError(path, Operation.Metadata, Reason.Unsupported))
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
 
       def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
-        ( using Tactic[IoError] )
+        ( using Tactic[Io.Error] )
       :   result =
 
         protect(path, Operation.Open):

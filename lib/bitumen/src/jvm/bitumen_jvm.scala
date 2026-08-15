@@ -64,7 +64,7 @@ extension (companion: Tarfile.type)
     ( using DereferenceSymlinks,
             TraversalOrder,
             plane is Explorable,
-            Tactic[IoError],
+            Tactic[Io.Error],
             Tactic[Tar.Error] )
   :   Tarfile =
 
@@ -78,7 +78,7 @@ extension (tarfile: Tarfile)
   def extractTo[plane <: Posix: Filesystem](root: Path on plane)
     ( using CreateNonexistentParents on plane,
             OverwritePreexisting on plane,
-            Tactic[IoError],
+            Tactic[Io.Error],
             Tactic[Tar.Error] )
   :   Unit =
 

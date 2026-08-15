@@ -142,7 +142,7 @@ object Assembler:
     // Explicit `using` evidence instead of stacked `raises` sugar: the handle-loan lambdas
     // in the body cannot cross the nested context-function results the sugar desugars to
     // (the stacked-raises convention; see rep/DECISIONS.md).
-    ( using Tactic[Assembler.Error], Tactic[IoError], Tactic[StreamError] )
+    ( using Tactic[Assembler.Error], Tactic[Io.Error], Tactic[StreamError] )
   :   Unit =
 
     val isWindows: Boolean = platformLabel.starts(t"windows")

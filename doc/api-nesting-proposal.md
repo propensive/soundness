@@ -154,7 +154,7 @@ stays); `AuthError`, `ConnectError`, `BindError`, `InstallError`, `Serialization
 `DecimalError`, `DivisionError`, `OverflowError`, `BoundsError`, `RangeError`,
 `EscapeError`, `UncheckedError`, `UnsetError`, `DataError`, `RemoteError`,
 `DegustationError`, `FontError`, `RruleError`, `RecurrenceError`, `OfflineError`,
-`CertificateError`, `LinkError`/`LinkEvent`, `IoError`/`IoEvent`, `StreamError`,
+`CertificateError`, `LinkError`/`LinkEvent`, `Io.Error`/`Io.Event`, `StreamError`,
 `FrameError`, `RpcError` — no meaningful same-component outer type; all keep their
 compound names. (Some may gain namespaces later if the outer concepts are ever reified.)
 

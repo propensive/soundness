@@ -14,8 +14,8 @@ message:
 
 ```scala
 recover:
-  case IoError(path, _, IoError.Reason.Nonexistent, _)      => create(path)
-  case IoError(_, _, IoError.Reason.PermissionDenied, _)    => escalate()
+  case Io.Error(path, _, Io.Error.Reason.Nonexistent, _)      => create(path)
+  case Io.Error(_, _, Io.Error.Reason.PermissionDenied, _)    => escalate()
 . protect(openConfiguration())
 ```
 

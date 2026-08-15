@@ -47,7 +47,7 @@ import turbulence.{Aggregable, Streamable}
 import zephyrine.Credit
 import vacuous.*
 
-import IoError.{Operation, Reason}
+import Io.Error.{Operation, Reason}
 
 final val C: Drive = Drive('C')
 final val D: Drive = Drive('D')
@@ -83,7 +83,7 @@ extension [plane: Filesystem](path: Path on plane)
   // hide the `streamable` parameter, which the separation checker rejects.
   def write[content](content: content)
     ( using streamable: (content is Streamable by Data over Credit)^ )
-    ( using Tactic[IoError]^ )
+    ( using Tactic[Io.Error]^ )
   :   Unit =
     val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
     protect(Operation.Write)(jnf.Files.write(nioPath, Array.unsafeJvm(bytes)))
@@ -91,21 +91,21 @@ extension [plane: Filesystem](path: Path on plane)
   // Inline, so the thunk never crosses a checked context-function boundary (which would
   // hide the `block` parameter); the body is checked at each expansion site instead.
   private[galilei] inline def protect[result](operation: Operation)(inline block: result)
-  :   result raises IoError =
+  :   result raises Io.Error =
 
     import Reason.*
 
     try block catch
       case break: boundary.Break[?]          => throw break
-      case _: jnf.NoSuchFileException        => abort(IoError(path, operation, Nonexistent))
-      case _: jnf.FileAlreadyExistsException => abort(IoError(path, operation, AlreadyExists))
-      case _: jnf.DirectoryNotEmptyException => abort(IoError(path, operation, DirectoryNotEmpty))
-      case _: jnf.AccessDeniedException      => abort(IoError(path, operation, PermissionDenied))
-      case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
-      case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
-      case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
-      case _: jnf.FileSystemException        => abort(IoError(path, operation, IsDirectory))
-      case other                             => abort(IoError(path, operation, Unsupported))
+      case _: jnf.NoSuchFileException        => abort(Io.Error(path, operation, Nonexistent))
+      case _: jnf.FileAlreadyExistsException => abort(Io.Error(path, operation, AlreadyExists))
+      case _: jnf.DirectoryNotEmptyException => abort(Io.Error(path, operation, DirectoryNotEmpty))
+      case _: jnf.AccessDeniedException      => abort(Io.Error(path, operation, PermissionDenied))
+      case _: jnf.NotDirectoryException      => abort(Io.Error(path, operation, IsNotDirectory))
+      case _: SecurityException              => abort(Io.Error(path, operation, PermissionDenied))
+      case _: jnf.FileSystemLoopException    => abort(Io.Error(path, operation, Cycle))
+      case _: jnf.FileSystemException        => abort(Io.Error(path, operation, IsDirectory))
+      case other                             => abort(Io.Error(path, operation, Unsupported))
 
   // Internal only: the public `java.nio` interop lives in `galilei.jvm`, whose `javaPath` and
   // `javaFile` are the ones users reach for. This one exists because `core`'s own operations
@@ -114,7 +114,7 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
-  :   Chain[Path on plane] raises IoError =
+  :   Chain[Path on plane] raises Io.Error =
 
     path.children.bind: child =>
       summon[TraversalOrder] match
@@ -122,7 +122,7 @@ extension [plane: Filesystem](path: Path on plane)
         case TraversalOrder.PostOrder => child.descendants #::: Chain(child)
 
 
-  def size()(using plane is Explorable, FilesystemBackend on plane): Bytes raises IoError =
+  def size()(using plane is Explorable, FilesystemBackend on plane): Bytes raises Io.Error =
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
 
@@ -131,36 +131,36 @@ extension [plane: Filesystem](path: Path on plane)
 
   def delete()(using deleteRecursively: DeleteRecursively on plane)
     ( using backend: FilesystemBackend on plane )
-  ( using Tactic[IoError], (IoEvent is Loggable)^ )
+  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
     scala.caps.unsafe.unsafeAssumeSeparate:
       deleteRecursively.conditionally(path)(backend.delete(path))
-    Log.info(IoEvent.Delete(path.show))
+    Log.info(Io.Event.Delete(path.show))
     path
 
 
-  def wipe()(using deleteRecursively: DeleteRecursively on plane)(using io: Tactic[IoError])
+  def wipe()(using deleteRecursively: DeleteRecursively on plane)(using io: Tactic[Io.Error])
     ( using backend: FilesystemBackend on plane )
-    ( using (IoEvent is Loggable)^ )
+    ( using (Io.Event is Loggable)^ )
   :   Path on plane =
 
     // As above: same ambient tactic on both sides.
     scala.caps.unsafe.unsafeAssumeSeparate:
       deleteRecursively.conditionally(path)(backend.deleteIfExists(path))
-    Log.info(IoEvent.Delete(path.show))
+    Log.info(Io.Event.Delete(path.show))
     path
 
 
-  def volume()(using backend: FilesystemBackend on plane): Volume raises IoError =
+  def volume()(using backend: FilesystemBackend on plane): Volume raises Io.Error =
     backend.volume(path)
 
   def hardLinkTo(destination: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
-  ( using Tactic[IoError], (IoEvent is Loggable)^ )
+  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
@@ -169,13 +169,13 @@ extension [plane: Filesystem](path: Path on plane)
         overwritePreexisting(destination):
           backend.hardLink(destination, path)
 
-    Log.info(IoEvent.HardLink(path.show, destination.show))
+    Log.info(Io.Event.HardLink(path.show, destination.show))
     destination
 
 
   def entry()(using symlinks: DereferenceSymlinks)
     ( using backend: FilesystemBackend on plane )
-  :   Entry raises IoError =
+  :   Entry raises Io.Error =
 
     backend.stat(path, symlinks.dereference).entry
 
@@ -185,7 +185,7 @@ extension [plane: Filesystem](path: Path on plane)
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
     ( using FilesystemBackend on plane )
-  ( using Tactic[IoError], (IoEvent is Loggable)^ )
+  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
@@ -194,7 +194,7 @@ extension [plane: Filesystem](path: Path on plane)
         overwritePreexisting(destination):
           summon[FilesystemBackend on plane].copy(path, destination, dereferenceSymlinks.dereference)
 
-    Log.info(IoEvent.Copy(path.show, destination.show))
+    Log.info(Io.Event.Copy(path.show, destination.show))
     destination
 
 
@@ -203,7 +203,7 @@ extension [plane: Filesystem](path: Path on plane)
             dereferenceSymlinks:  DereferenceSymlinks,
             substantiable:        (Path on plane) is Substantiable )
     ( using FilesystemBackend on plane )
-  :   Path on plane raises IoError =
+  :   Path on plane raises Io.Error =
 
     given CreateNonexistentParents on plane =
       filesystemOptions.createNonexistentParents.enabled[plane]
@@ -218,7 +218,7 @@ extension [plane: Filesystem](path: Path on plane)
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
     ( using backend: FilesystemBackend on plane )
-  ( using Tactic[IoError], (IoEvent is Loggable)^ )
+  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
@@ -227,7 +227,7 @@ extension [plane: Filesystem](path: Path on plane)
         overwritePreexisting(destination):
           backend.move(path, destination, moveAtomically.atomic, dereferenceSymlinks.dereference)
 
-    Log.info(IoEvent.Move(path.show, destination.show))
+    Log.info(Io.Event.Move(path.show, destination.show))
     destination
 
 
@@ -238,7 +238,7 @@ extension [plane: Filesystem](path: Path on plane)
             substantiable:        (Path on plane) is Substantiable,
             dereferenceSymlinks:  DereferenceSymlinks )
     ( using FilesystemBackend on plane )
-  :   Path on plane raises IoError =
+  :   Path on plane raises Io.Error =
 
     import filesystemOptions.createNonexistentParents.enabled
     moveTo(unsafely(destination.child(path.descent.head)))
@@ -248,7 +248,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
-  ( using Tactic[IoError], (IoEvent is Loggable)^ )
+  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
@@ -257,7 +257,7 @@ extension [plane: Filesystem](path: Path on plane)
         overwritePreexisting(destination):
           backend.symlink(destination, path)
 
-    Log.info(IoEvent.Symlink(destination.show, path.show))
+    Log.info(Io.Event.Symlink(destination.show, path.show))
     destination
 
 
@@ -268,7 +268,7 @@ extension [plane: Filesystem](path: Path on plane)
             substantiable:        (Path on plane) is Substantiable,
             dereferenceSymlinks:  DereferenceSymlinks )
     ( using FilesystemBackend on plane )
-  :   Path on plane raises IoError =
+  :   Path on plane raises Io.Error =
 
     import filesystemOptions.createNonexistentParents.enabled
     symlinkTo(unsafely(destination.child(path.descent.head)))
@@ -276,13 +276,13 @@ extension [plane: Filesystem](path: Path on plane)
 
   def modified[instant: Instantiable across Instants from Long as instantiable]()
     ( using backend: FilesystemBackend on plane )
-  :   instant raises IoError =
+  :   instant raises Io.Error =
 
     instantiable.apply(backend.stat(path, true).modified)
 
   def accessed[instant: Instantiable across Instants from Long as instantiable]()
     ( using backend: FilesystemBackend on plane )
-  :   instant raises IoError =
+  :   instant raises Io.Error =
 
     instantiable.apply(backend.stat(path, true).accessed)
 
@@ -292,23 +292,23 @@ extension [plane: Filesystem](path: Path on plane)
   def writable(using FilesystemBackend on plane): FilesystemAttribute.Writable[plane] =
     FilesystemAttribute.Writable(path)
 
-  def hidden()(using backend: FilesystemBackend on plane): Boolean raises IoError =
+  def hidden()(using backend: FilesystemBackend on plane): Boolean raises Io.Error =
     backend.hidden(path)
 
   def touch()(using backend: FilesystemBackend on plane)
-    ( using Tactic[IoError], (IoEvent is Loggable)^ )
+    ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
   :   Unit =
     backend.touch(path)
-    Log.fine(IoEvent.Touch(path.show))
+    Log.fine(Io.Event.Touch(path.show))
 
 extension (path: Path on Windows)
   def created[instant: Instantiable across Instants from Long as instantiable]()
     ( using backend: FilesystemBackend on Windows )
-  :   instant raises IoError =
+  :   instant raises Io.Error =
 
     instantiable.apply:
       backend.stat(path, true).created.or:
-        abort(IoError(path, Operation.Metadata, Reason.Unsupported))
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
 
 extension [plane <: Posix: Filesystem](path: Path on plane)
   def executable(using FilesystemBackend on plane): FilesystemAttribute.Executable[plane] =
@@ -316,7 +316,7 @@ extension [plane <: Posix: Filesystem](path: Path on plane)
 
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks)
     ( using backend: FilesystemBackend on plane )
-  :   Int raises IoError =
+  :   Int raises Io.Error =
 
     backend.hardLinkCount(path, dereferenceSymlinks.dereference)
 
@@ -349,12 +349,12 @@ package filesystemOptions:
 
       type Plane = plane
 
-      def recur(path: Path on plane): Unit raises IoError =
+      def recur(path: Path on plane): Unit raises Io.Error =
         path.children.each(recur(_))
         backend.delete(path)
 
       def conditionally[result](path: Path on Plane)(operation: => result)
-      :   (Tactic[IoError]^) ?->{operation} result =
+      :   (Tactic[Io.Error]^) ?->{operation} result =
         path.children.each(recur(_)) yet operation
 
     given disabled: [plane: {Filesystem, Explorable}] => DeleteRecursively on plane:
@@ -362,9 +362,9 @@ package filesystemOptions:
       type Plane = plane
 
       def conditionally[result](path: Path on Plane)(operation: => result)
-      :   (Tactic[IoError]^) ?->{operation} result =
+      :   (Tactic[Io.Error]^) ?->{operation} result =
         if !path.children.nil
-        then abort(IoError(path, IoError.Operation.Delete, Reason.DirectoryNotEmpty))
+        then abort(Io.Error(path, Io.Error.Operation.Delete, Reason.DirectoryNotEmpty))
         else operation
 
   object overwritePreexisting:
@@ -375,7 +375,7 @@ package filesystemOptions:
       type Plane = plane
 
       def apply[result](path: Path on Plane)(operation: => result)
-      :   (Tactic[IoError]^) ?->{operation} result =
+      :   (Tactic[Io.Error]^) ?->{operation} result =
         deleteRecursively.conditionally(path)(operation)
 
     // The backend raises `AlreadyExists` itself when the operation collides with an existing
@@ -385,7 +385,7 @@ package filesystemOptions:
       type Plane = plane
 
       def apply[result](path: Path on Plane)(operation: => result)
-      :   (Tactic[IoError]^) ?->{operation} result =
+      :   (Tactic[Io.Error]^) ?->{operation} result =
         operation
 
   object createNonexistentParents:
@@ -394,7 +394,7 @@ package filesystemOptions:
     =>  CreateNonexistentParents on plane:
 
       def apply[result](path: Path on plane)(operation: => result)
-      :   (Tactic[IoError]^) ?->{operation} result =
+      :   (Tactic[Io.Error]^) ?->{operation} result =
         def ensure(directory: Path on plane): Unit =
           if !backend.exists(directory, true) then
             safely(directory.parent).let(ensure(_))
@@ -408,5 +408,5 @@ package filesystemOptions:
       type Plane = plane
 
       def apply[result](path: Path on plane)(block: => result)
-      :   (Tactic[IoError]^) ?->{block} result =
+      :   (Tactic[Io.Error]^) ?->{block} result =
         block
