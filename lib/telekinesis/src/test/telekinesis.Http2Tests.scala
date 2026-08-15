@@ -417,6 +417,22 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
 
       . assert(_ == (4, 6, 3))
 
+      test(m"one release wakes every waiter parked on an empty window"):
+        supervise:
+          val window = FlowWindow(0)
+          val first: Promise[Int] = Promise()
+          val second: Promise[Int] = Promise()
+          async(first.offer(window.acquire(2)))
+          async(second.offer(window.acquire(2)))
+
+          // `release` signals all waiters, and each requests no more than half the
+          // grant, so both must complete whichever order they park and wake; a
+          // single-signal implementation would leave one parked forever.
+          window.release(4)
+          (first.await(), second.await())
+
+      . assert(_ == (2, 2))
+
       test(m"a response larger than the connection window streams intact"):
         supervise:
           val (clientSide, serverSide) = pair()
