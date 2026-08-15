@@ -500,6 +500,10 @@ object Http2:
     // otherwise.
     private[telekinesis] val defaultWindow: Int = 65535
 
+    // The HTTP/2 default maximum frame size (RFC 7540 §6.5.2): the largest
+    // DATA payload we may send until the peer's SETTINGS raise it.
+    private[telekinesis] val defaultMaxFrame: Int = 16384
+
     // Our advertised receive budget, per stream and (via an initial
     // connection-level WINDOW_UPDATE) per connection: the peer may have at most
     // this many unconsumed bytes in flight, which is what bounds the inbound
@@ -523,8 +527,16 @@ object Http2:
       ( using Tactic[Http2.Error] )
     :   Boolean =
       frame match
-        case Frame.Settings(_, ack) =>
+        case Frame.Settings(settings, ack) =>
           if !ack then
+            // Adopt the peer's advertised initial per-stream send window and
+            // maximum frame size, which bound our request-body DATA frames.
+            settings.stdlib.find(_.id == SettingId.InitialWindowSize.id).foreach: setting =>
+              conn.peerInitialWindow.set(setting.value.toInt)
+
+            settings.stdlib.find(_.id == SettingId.MaxFrameSize.id).foreach: setting =>
+              conn.peerMaxFrame.set(setting.value.toInt)
+
             conn.send(Frame.Settings(Nil, ack = true))
             conn.started.offer(())
 
@@ -566,9 +578,19 @@ object Http2:
             stream.end()
             conn.streams.remove(id)
 
+          conn.streamWindows.remove(id)
           true
 
-        case Frame.WindowUpdate(_, _) | Frame.Continuation(_, _, _) | Frame.Ignored(_, _) =>
+        // An inbound WINDOW_UPDATE grants send credit: on stream 0 it tops up
+        // the connection window, otherwise the named stream's window (RFC 7540
+        // §6.9) — releasing a request-body upload parked at exhaustion.
+        case Frame.WindowUpdate(id, increment) =>
+          if id == 0 then conn.connWindow.release(increment)
+          else conn.streamWindows.get(id).foreach(_.release(increment))
+
+          true
+
+        case Frame.Continuation(_, _, _) | Frame.Ignored(_, _) =>
           true
 
   // One outbound request stream's receive side: a promise for its response header
@@ -594,6 +616,18 @@ object Http2:
     // per DATA frame.
     private val connPending: juca.AtomicInteger = juca.AtomicInteger(0)
     private val threshold: Int = (window/2).max(1)
+
+    // Send-side flow control (RFC 7540 §6.9), as the server role: the
+    // connection window, per-stream windows created lazily at the peer's
+    // advertised initial size, and the peer's advertised limits from SETTINGS.
+    private[telekinesis] val connWindow: FlowWindow = FlowWindow(defaultWindow)
+    private[telekinesis] val streamWindows: scc.TrieMap[Int, FlowWindow] = scc.TrieMap()
+
+    private[telekinesis] val peerInitialWindow: juca.AtomicInteger =
+      juca.AtomicInteger(defaultWindow)
+
+    private[telekinesis] val peerMaxFrame: juca.AtomicInteger =
+      juca.AtomicInteger(defaultMaxFrame)
 
     private def send(frame: Frame): Unit = outbound.put(frame)
 
@@ -700,7 +734,14 @@ object Http2:
 
       send(Frame.Headers(id, encoder.encode(headerBlock), endStream = noBody, endHeaders = true))
 
-      body.let: payload => send(Frame.Data(id, payload, endStream = true))
+      // The body drains under the peer's flow-control windows and frame-size
+      // limit, so a large upload parks this (requesting) fiber at window
+      // exhaustion until the peer's WINDOW_UPDATEs grant more.
+      body.let: payload =>
+        val streamWindow = streamWindows.getOrElseUpdate(id, FlowWindow(peerInitialWindow.get))
+
+        sendFlowControlled
+          (id, payload, endStream = true, connWindow, streamWindow, peerMaxFrame.get, send)
 
       stream
 
@@ -824,6 +865,40 @@ object Http2:
       if !trailers.ready then trailers.offer(Nil)
       body.stop()
 
+  // Send `payload` as DATA frames on `streamId`, honouring the peer's
+  // flow-control windows (RFC 7540 §6.9) and its maximum frame size (§6.5.2):
+  // each chunk is bounded by the connection window, the stream window and
+  // SETTINGS_MAX_FRAME_SIZE, and the calling fiber parks when a window is
+  // exhausted until an inbound WINDOW_UPDATE tops it up. An empty payload
+  // carries no data and is sent immediately (its only role is `endStream`);
+  // otherwise `endStream` rides the final chunk. Shared by both roles: the
+  // server's response bodies and the client's request bodies drain identically.
+  private def sendFlowControlled
+    ( streamId:     Int,
+      payload:      Bytes,
+      endStream:    Boolean,
+      connWindow:   FlowWindow,
+      streamWindow: FlowWindow,
+      maxFrame:     Int,
+      emit:         Frame => Unit )
+  :   Unit =
+
+    if payload.length == 0 then emit(Frame.Data(streamId, payload, endStream)) else
+      var offset = 0
+
+      while offset < payload.length do
+        val remaining = (payload.length - offset).min(maxFrame.max(1))
+        // Acquire connection credit first, then stream credit up to that, and
+        // return any connection surplus the stream could not match.
+        val connChunk = connWindow.acquire(remaining)
+        val streamChunk = streamWindow.acquire(connChunk)
+        if streamChunk < connChunk then connWindow.release(connChunk - streamChunk)
+
+        val chunk: Bytes = payload.slice(offset, offset + streamChunk)
+        val last: Boolean = endStream && offset + streamChunk == payload.length
+        emit(Frame.Data(streamId, chunk, last))
+        offset += streamChunk
+
   // Http2ServerConnection → Http2.ServerConnection
   object ServerConnection:
     // Our advertised SETTINGS: our receive-side stream window (see
@@ -850,6 +925,9 @@ object Http2:
             // retroactively adjusted — a deliberate simplification).
             settings.stdlib.find(_.id == SettingId.InitialWindowSize.id).foreach: setting =>
               conn.peerInitialWindow.set(setting.value.toInt)
+
+            settings.stdlib.find(_.id == SettingId.MaxFrameSize.id).foreach: setting =>
+              conn.peerMaxFrame.set(setting.value.toInt)
 
             conn.send(Frame.Settings(Nil, ack = true))
             conn.started.offer(())
@@ -947,6 +1025,9 @@ object Http2:
     private[telekinesis] val connWindow: FlowWindow = FlowWindow(defaultWindow)
     private[telekinesis] val streamWindows: scc.TrieMap[Int, FlowWindow] = scc.TrieMap()
     private[telekinesis] val peerInitialWindow: juca.AtomicInteger = juca.AtomicInteger(defaultWindow)
+
+    private[telekinesis] val peerMaxFrame: juca.AtomicInteger =
+      juca.AtomicInteger(Connection.defaultMaxFrame)
 
     // Streams opened by the client, in arrival order; the serve loop takes each
     // and runs its handler. Stopped when the connection ends.
@@ -1055,28 +1136,12 @@ object Http2:
       send(Frame.Headers(streamId, encoder.encode(entries), endStream, endHeaders = true))
 
     // Send `payload` as DATA on `streamId`, honouring the peer's flow-control
-    // windows (RFC 7540 §6.9): the payload drains in chunks bounded by the
-    // connection and stream send windows, blocking the calling (per-stream) fiber
-    // when a window is exhausted until an inbound WINDOW_UPDATE tops it up. An
-    // empty payload carries no data and is sent immediately (its only role is
-    // `endStream`). `endStream` rides the final chunk.
+    // windows and frame-size limit; see `sendFlowControlled`. Blocks the
+    // calling (per-stream) fiber at window exhaustion.
     def sendData(streamId: Int, payload: Bytes, endStream: Boolean): Unit =
-      if payload.length == 0 then send(Frame.Data(streamId, payload, endStream)) else
-        val streamWindow = streamWindows.getOrElseUpdate(streamId, FlowWindow(peerInitialWindow.get))
-        var offset = 0
-
-        while offset < payload.length do
-          val remaining = payload.length - offset
-          // Acquire connection credit first, then stream credit up to that, and
-          // return any connection surplus the stream could not match.
-          val connChunk = connWindow.acquire(remaining)
-          val streamChunk = streamWindow.acquire(connChunk)
-          if streamChunk < connChunk then connWindow.release(connChunk - streamChunk)
-
-          val chunk: Bytes = payload.slice(offset, offset + streamChunk)
-          val last: Boolean = endStream && offset + streamChunk == payload.length
-          send(Frame.Data(streamId, chunk, last))
-          offset += streamChunk
+      val streamWindow = streamWindows.getOrElseUpdate(streamId, FlowWindow(peerInitialWindow.get))
+      sendFlowControlled
+        (streamId, payload, endStream, connWindow, streamWindow, peerMaxFrame.get, send)
 
     // Send a trailing HEADERS block (always end-stream) on `streamId` — the
     // response trailers, e.g. gRPC's `grpc-status`. A response with trailers must
