@@ -27,50 +27,24 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
-┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package scintillate
 
-import scala.caps
+// The engine `SocketServer.handle` serves with. `ThreadPerConnection` (the default)
+// spawns a virtual-thread daemon per accepted socket: any handler, streaming responses,
+// TLS, HTTP/2, per-connection sessions. `Reactive` serves cleartext HTTP/1.1 on the
+// selector-loop `Reactor` — the higher-throughput choice for *non-blocking* handlers
+// with fixed-extent responses; requests it cannot serve inline escalate to the blocking
+// path per connection, and a TLS-configured server ignores the selection entirely.
+enum Frontend:
+  case ThreadPerConnection, Reactive
 
-// `as` (decode an HTTP request body, via the `Acceptable` typeclass) clashes in
-// the umbrella with distillate's generic `Decodable`-based `as`; reach this one
-// via `scintillate.as`.
-export
-  scintillate
-  . { Acceptable, basicAuth, cookie, Frontend, HttpServer, NoCache, NotFound, Reactor,
-      Redirect, request, RequestServable, Responder, ServerError, SocketServer, Unfulfilled,
-      WebserverErrorPage }
+object Frontend:
+  // The companion default, outranked by a `frontends` given imported by name.
+  given default: Frontend = Frontend.ThreadPerConnection
 
+// The choice package: `import frontends.reactive` selects the reactor.
 package frontends:
-  export scintillate.frontends.{threadPerConnection, reactive}
-
-package httpServers:
-  // Hand-written forwarders rather than an `export`: synthesized export forwarders lose the
-  // givens' capture-annotated refinement types (the zephyrine through/accepting finding).
-  given stdlibHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic:  contingency.Tactic[scintillate.ServerError],
-        monitor: parasite.Monitor,
-        probate: parasite.Probate )
-  =>  ( loggable:  scintillate.HttpServer.Event is anticipation.Loggable,
-        errorPage: scintillate.WebserverErrorPage )
-  =>  ((scintillate.httpServers.HttpServerFor[port])^{tactic, monitor, caps.any}) =
-    // One erasing cast at the forwarding boundary (the wisteria `fieldInstance` pattern):
-    // resolution finds the annotated instance, but its capture roots do not re-root through
-    // a second given; the declared result type above restores the honest captures.
-    scintillate.httpServers.stdlibHttpServer[port]
-    . asInstanceOf[scintillate.httpServers.HttpServerFor[port]]
-
-  given stdlibPublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic:  contingency.Tactic[scintillate.ServerError],
-        monitor: parasite.Monitor,
-        probate: parasite.Probate )
-  =>  ( loggable:  scintillate.HttpServer.Event is anticipation.Loggable,
-        errorPage: scintillate.WebserverErrorPage )
-  =>  ((scintillate.httpServers.HttpServerFor[port])^{tactic, monitor, caps.any}) =
-    scintillate.httpServers.stdlibPublicHttpServer[port]
-    . asInstanceOf[scintillate.httpServers.HttpServerFor[port]]
-
-package webserverErrorPages:
-  export scintillate.webserverErrorPages.{minimalErrorPage, stackTracesErrorPage, standardErrorPage}
+  given threadPerConnection: Frontend = Frontend.ThreadPerConnection
+  given reactive: Frontend = Frontend.Reactive

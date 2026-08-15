@@ -225,6 +225,17 @@ object Tests extends Suite(m"Scintillate tests"):
 
         . assert(_.s.split("200 OK").nn.length == 65)
 
+        test(m"SocketServer.handle serves through the reactor when selected"):
+          import frontends.reactive
+          val port = freePort()
+
+          supervise:
+            val service = SocketServer(port).handle(Http.Response(Http.Ok)(t"via frontend"))
+            try rawRequest(port, t"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+            finally service.cancel()
+
+        . assert(_.contains(t"via frontend"))
+
         test(m"An oversized head is refused with 431"):
           val port = freePort()
           val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"no"))

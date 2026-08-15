@@ -344,14 +344,30 @@ extends RequestServable:
           while continue && !cursor.finished do continue = serveRequest(cursor)
 
   // A per-request server: handle every request (HTTP/1.1) or stream (HTTP/2)
-  // with `handler`. The degenerate session with no per-connection setup.
+  // with `handler`. The degenerate session with no per-connection setup. The
+  // `Frontend` given selects the engine: the reactive selector loop for cleartext
+  // servers (`import frontends.reactive`), or a virtual-thread daemon per
+  // connection. A TLS server always takes the daemon path (`SSLSocket` cannot ride
+  // a selector), as does `handleSession` (per-connection state is a per-thread
+  // affair). Sessions and TLS aside, the two engines serve identical handlers.
   def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
     ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
+    ( using frontend: Frontend )
   :   Service^ =
 
-    handleSession: session ?=>
-      session.handle(handler)
+    frontend match
+      case Frontend.Reactive if ssl.absent =>
+        // The reactor (which captures the handler and log evidence for its lifetime)
+        // crosses into the service's cancel thunk as a neutral carrier, so the fresh
+        // `Service^` does not hide the method's parameters — the same boundary idiom
+        // as the per-request `bodyRef`.
+        val reactor0: AnyRef = Reactor(port, local)(handler).asInstanceOf[AnyRef]
+        Service(() => reactor0.asInstanceOf[Reactor].stop())
+
+      case _ =>
+        handleSession: session ?=>
+          session.handle(handler)
 
   // A per-connection session server: `scope` runs once when a connection is
   // established (an HTTP/2 connection, or an HTTP/1.1 keep-alive socket) and may
