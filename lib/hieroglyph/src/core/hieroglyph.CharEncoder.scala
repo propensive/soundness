@@ -59,7 +59,10 @@ extends Encodable, Findable:
   type Self = Text
   type Form = Data
 
-  def encoded(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(encoding.name.s).nn)
+  // The `Charset` itself, not its name: `getBytes(String)` looks the charset up
+  // by name on every call, which showed as 4.7% of an HTTP pipeline's profile.
+  // `encoding.charset` resolves once, being a `lazy val`.
+  def encoded(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(encoding.charset).nn)
 
   // Chunk boundaries are not character boundaries: a surrogate pair may be
   // split across two chunks, so encoding each chunk independently (as this
