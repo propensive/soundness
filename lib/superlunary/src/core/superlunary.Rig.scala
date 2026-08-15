@@ -37,6 +37,7 @@ import proscenium.compat.*
 import java.nio.file as jnf
 import java.util.function as juf
 
+import fulminate.*
 import galilei.*
 import scala.quoted.*
 
@@ -46,13 +47,34 @@ import anticipation.*
 import contingency.*
 import digression.*
 import distillate.*
+import gossamer.*
 import hellenism.*
 import inimitable.*
 import prepositional.*
 import serpentine.*
+import spectacular.*
 
 import interfaces.paths.pathOnLinux
 import systems.javaSystem
+
+object Rig:
+  // RemoteError → Rig.Error
+  // The failure of the marshalling boundary, not of the staged code: a value could not be
+  // written into the rig's `Transport`, or read back out of it.
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case Serialization   extends Reason(1)
+      case Deserialization extends Reason(2)
+      case Unknown         extends Reason(3)
+
+    given Reason is Showable =
+      case Reason.Serialization   => t"the output could not be serialized"
+      case Reason.Deserialization => t"the input could not be deserialized"
+      case Reason.Unknown         => t"of an unknown reason"
+
+  case class Error(reason: Rig.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(306, reason.number)
+    ( m"failed to perform a remote operation because $reason" )
 
 trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transportive:
   type Result[output]
@@ -92,7 +114,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             properties: System,
             directory:  TemporaryDirectory,
             stageable:  Stageable over Transport in Form )
-  :   Result[output] raises Compiler.Error raises RemoteError =
+  :   Result[output] raises Compiler.Error raises Rig.Error =
 
     val references: References over Transport = References[Transport]()
 

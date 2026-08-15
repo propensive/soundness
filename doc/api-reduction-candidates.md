@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **436**;
+- exported multi-word type-level names still under review: **435**;
   215 sit in a prefix family of two or more, across 63 families, and
-  221 are singletons. Names under "Reviewed items which should not be moved"
+  220 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -184,7 +184,7 @@ looks misnamed may be one the codebase already has.
 |---|---|
 | awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `ConnectError`, `ExpectationError`, `InstallError` |
 | excluded by R2 (specification concept) | `CompileError` |
-| outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `EscapeError`, `RemoteError`, `UncheckedError` |
+| outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `EscapeError`, `UncheckedError` |
 | structurally blocked, with the reason established | `StreamError` (below) |
 | nested compound names, where the prefix is usually redundant with the enclosing type and could simply become `Error` (as `Wit.ParseError` → `Wit.Error` did) | `Ansi.AnsiError`, `Pty.EscapeError`, `Git.RefError`, `Repackager.RepackageError`, `Sh.ShError`, `Repackager.UserError`, `UrlInterpolatorError`, `EvaluationError` |
 
@@ -202,6 +202,13 @@ defined both concretely), and no signature anywhere took one, so it was deleted 
 renamed. `Io.Error`'s reasons are the POSIX errno table — `Nonexistent` is `ENOENT`,
 `NotSameVolume` is `EXDEV`, `Physical` is `EIO` — which is worth keeping in mind before
 anyone proposes narrowing it.
+
+**`RemoteError` is `Rig.Error`.** superlunary stages code — it compiles a quoted `Expr` at
+runtime and runs it in a `Rig`, a separate classloader — so despite the name it has nothing
+to do with RPC, and obligatory owns `Rpc` in any case. The error is the *marshalling*
+boundary: its reasons are `Serialization`, `Deserialization` and `Unknown`, and every raise
+site is in `object Stageable`. Downstream signatures now read `raises Compiler.Error raises
+Rig.Error`, naming the two things that can go wrong.
 
 **`Git.Error` already exists** (`CannotExecuteGit`, `CloneFailed`, `RepoDoesNotExist`, …), so
 `Git.RefError` cannot take that name and should not: one is "the git operation failed", the
@@ -320,7 +327,7 @@ ultimatum's is the likelier one to rename.
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (221)
+### Singletons (220)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
@@ -349,9 +356,9 @@ ultimatum's is the likelier one to rename.
 `PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`, `PositionTracking`, `PosixCommands`,
 `PrivateKey`, `ProcessingPermit`, `ProcessStatus`, `ProgrammingLanguage`, `ProgressBar`,
 `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`, `RectoPanel`,
-`ReferenceTypeId`, `ReflogEntry`, `RemoteError`, `RequestServable`, `ResetMode`, `Rgb12Opaque`,
-`Rgb32Opaque`, `RomanCalendar`, `RootFs`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`,
-`SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`, `SiderealDays`,
+`ReferenceTypeId`, `ReflogEntry`, `RequestServable`, `ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`,
+`RomanCalendar`, `RootFs`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`,
+`SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`, `SiderealDays`,
 `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`, `SolarDay`,
 `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
 `StaticAnnotation`, `StringId`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`, `TeletypeFormattable`,

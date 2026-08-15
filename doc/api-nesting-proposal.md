@@ -141,22 +141,39 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | ypsiloid.core | `YamlError→Yaml.Error`, `YamlPrimitive→Yaml.Primitive`, `YamlPathError→YamlPath.Error` (`YamlPath` stays whole, per R2) |
 | zeppelin.core | `ZipError→Zip.Error`, `ZipEvent→Zip.Event`, `ZipHandle→Zip.Handle` (deferred: `ZipOpenable`/`ZipDataOpenable` share `ZipHandle`'s file — hoist first) |
 
-## Kept whole after verification — no outer concept exists as a type
+## Kept whole after verification — mostly overturned by later passes
 
-`TableCell`/`TableError`/`TableRow`/`TableSection`/`TableStyle`/`TableRelabelling`
-(escritoire has `Tabular`/`Tabulation`, no `Table`); `DaemonEvent`/`DaemonLogEvent`/
-`DaemonService` (no `Daemon` type; inventing `object Daemon` is possible but not proposed);
-`ExecError`/`ExecEvent` (no `Exec`); `IpAddressError` (only `Ipv4`/`Ipv6`);
-`PortError`/`PortType` (no `Port`); `RetryError` (no `Retry`); `IsinError` (no `Isin`);
-`NameError`/`NameExtractor` (nomenclature's `Name` is an opaque type inside
-`object internal` — same blocker as aviation's `Timestamp`, whose `TimestampError` also
-stays); `AuthError`, `ConnectError`, `BindError`, `InstallError`, `SerializationError`,
-`DecimalError`, `DivisionError`, `OverflowError`, `BoundsError`, `RangeError`,
-`EscapeError`, `UncheckedError`, `UnsetError`, `DataError`, `RemoteError`,
-`DegustationError`, `FontError`, `RruleError`, `RecurrenceError`, `OfflineError`,
-`CertificateError`, `LinkError`/`LinkEvent`, `Io.Error`/`Io.Event`, `StreamError`,
-`FrameError`, `RpcError` — no meaningful same-component outer type; all keep their
-compound names. (Some may gain namespaces later if the outer concepts are ever reified.)
+This section listed thirty-odd names as having "no meaningful same-component outer type".
+**Twenty-six of them have since moved.** The verification behind it was a search for a
+top-level type of the same name, which missed opaque types, companions nested inside an
+`internal` object, platform source directories mistaken for components, and — most often —
+a perfectly good host under a *different* name than the error's own prefix.
+
+What the later passes actually did with them:
+
+- an object already existed, or a companion was added: `RetryError→Tenacity.Error`,
+  `IsinError→Isin.Error`, `AuthError→Auth.Error`, `BindError→Bind.Error`,
+  `SerializationError→Serialization.Error`, `DecimalError→Decimal.Error`,
+  `RangeError→Range.Error`, `UnsetError→Optional.Error`, `DataError→Database.Error`,
+  `RemoteError→Rig.Error`, `DegustationError→Inspection.Error`, `FontError→Font.Error`,
+  `RruleError→Rrule.Error`, `RecurrenceError→Recurrence.Error`,
+  `OfflineError→Internet.Error`, `CertificateError→Certificate.Error`,
+  `LinkError→Link.Error`, `TableError→Table.Error`, `IpAddressError→IpAddress.Error`,
+  `TimestampError→Timestamp.Error`, `RpcError→Rpc.Error`, `FrameError→Framing.Error`,
+  `IoError`/`IoEvent`→`Io.Error`/`Io.Event`
+- two names turned out to be one concept: `DivisionError` and `OverflowError` are
+  `Arithmetic.Error` with distinct `Reason`s
+- one was a duplicate of a reason the codebase already had, and was **deleted**:
+  `BoundsError` restated `JsonBlueprint.Error.Reason.IntOutOfRange`
+
+Still compound, and for reasons now recorded in `api-reduction-candidates.md`:
+`ConnectError`, `InstallError`, `EscapeError`, `UncheckedError`, `LinkEvent`,
+`StreamError` (whose `Stream` is the proscala prelude's, so there is no companion to nest
+into), and `CompileError` (excluded under R2).
+
+**The lesson for the next pass**: "no outer type of that name exists" is not the same as
+"no host exists". Resolve the outer name to a file and a component, and consider hosts whose
+name differs from the error's prefix, before recording anything as blocked.
 
 ## Component-blocked (R6) — compound names stay
 
