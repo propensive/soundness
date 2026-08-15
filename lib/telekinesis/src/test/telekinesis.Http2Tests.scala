@@ -531,6 +531,103 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
 
       . assert(_ == (4, 20000, 20))
 
+      // The reverse direction: the server advertises a small window and the
+      // client's request-body upload must stall at exactly that window until
+      // WINDOW_UPDATEs grant more — previously the client ignored flow control
+      // entirely and sent the whole body as one frame. A hand-rolled
+      // frame-level peer observes the wire directly, so receipt is counted
+      // without consuming anything.
+      test(m"a client upload stalls at the peer's advertised window"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val received = java.util.concurrent.atomic.AtomicLong(0)
+          val streamId = java.util.concurrent.atomic.AtomicInteger(0)
+
+          daemon:
+            safely:
+              serverSide.send(zephyrine.Stream(Frame.Settings(
+                  List(Setting(SettingId.InitialWindowSize.id, 4096)), ack = false).serialize))
+
+              val source = serverSide.source
+              var skipped = 0
+
+              while skipped < 24 do source.refill(zephyrine.Credit(4096)) match
+                case count: Int =>
+                  if count > 0 then
+                    val take = count.min(24 - skipped)
+                    source.skip(take)
+                    skipped += take
+
+                case _ =>
+                  skipped = 24
+
+              val reader = FrameReader(source)
+              var continue = true
+
+              while continue do (reader.next(): @unchecked) match
+                case Unset    => continue = false
+                case f: Frame => f match
+                  case Frame.Settings(_, false) =>
+                    serverSide.send(zephyrine.Stream(Frame.Settings(Nil, ack = true).serialize))
+
+                  case Frame.Headers(id, _, _, _) => streamId.set(id)
+                  case Frame.Data(_, payload, _)  => received.addAndGet(payload.length)
+                  case _                          => ()
+
+          val client = Http2.Connection(clientSide)
+          client.start()
+
+          val payload: Data = Array.tabulate(20000)(i => (i%256).toByte)
+
+          val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/upload",
+              Nil, () => Stream(payload))
+
+          val fetched = scala.caps.unsafe.unsafeAssumeSeparate:
+            async:
+              val (_, response) = client.fetch(request, t"http", t"unix")
+              response.status.code
+
+          // Wait for the first DATA to land, then poll until the wire goes
+          // quiet: a too-early sample can only under-read, and a correct
+          // client freezes at exactly the advertised window.
+          var warm = 0
+
+          while received.get() == 0 && warm < 500 do
+            Thread.sleep(10)
+            warm += 1
+
+          var frozen = -1L
+          var stable = 0
+          var attempts = 0
+
+          while stable < 5 && attempts < 500 do
+            val current = received.get()
+            if current == frozen then stable += 1 else { frozen = current; stable = 0 }
+            Thread.sleep(10)
+            attempts += 1
+
+          // Grant more credit: the parked upload must resume and complete.
+          serverSide.send(zephyrine.Stream(Frame.WindowUpdate(0, 65535).serialize))
+          serverSide.send(zephyrine.Stream(Frame.WindowUpdate(streamId.get, 65535).serialize))
+
+          var drained = 0
+
+          while received.get() < 20000 && drained < 500 do
+            Thread.sleep(10)
+            drained += 1
+
+          val hpack = Hpack()
+          val respHeaders = hpack.encode(List(HpackEntry(t":status", t"200")))
+
+          serverSide.send:
+            zephyrine.Stream(Frame.Headers(streamId.get, respHeaders, true, true).serialize)
+
+          val status = scala.caps.unsafe.unsafeAssumeSeparate(fetched.await())
+          client.close()
+          (frozen, received.get(), status)
+
+      . assert(_ == ((4096L, 20000L, 200)))
+
       test(m"a session lends one connection to several multiplexed requests"):
         supervise:
           val (clientSide, serverSide) = pair()
