@@ -368,9 +368,13 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
     // Line splitting: UTF-8 decode then split the 4 MB corpus into lines,
-    // counting them. Soundness' `delineate` emits boxed `Array[Text]^{}` windows
-    // of lines and counts records per window with no per-line intermediate;
-    // FS2/ZIO allocate a string per line.
+    // counting them. All three allocate one string per line — `delineate` emits
+    // boxed `Array[Text]^{}` windows and counts records per window, but each
+    // record is still a `Text`. (An earlier comment here claimed Soundness had
+    // "no per-line intermediate"; it did, and the row was slower than FS2 for
+    // it.) The interesting differences are how many times each line is copied on
+    // the way into that string, and how the separator is found: FS2 slices
+    // strings its decoder already built, with the intrinsified `String.indexOf`.
     suite(m"Line splitting (4 MB)"):
       bench(m"Soundness  Stream.delineate")
         ( target = 1*Second, operationSize = textSize ):
@@ -1888,10 +1892,23 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               ZStream.mergeAllUnbounded()(streams*).runCount
         }
 
-    // Example T: profiles — where the time actually goes in the two pipelines the
+    // Example T: profiles — where the time actually goes in the pipelines the
     // stress suites measure. Each renders as a histogram of the hottest methods
     // (self time, from JFR execution samples), coloured by package.
     suite(m"Profile: pipeline hotspots"):
+      // Line splitting is two stages — the UTF-8 decode duct and the separator
+      // duct — so this profile attributes between them, and shows what remains
+      // per line once the fast path has removed the second copy.
+      profile(m"Stream.delineate (4 MB of text)")(target = 5*Second):
+        '{
+            var total = 0L
+
+            turbulence.Benchmarks.textData.stream.delineate
+            . sweep(region => range => total += (range: Interval).size)
+
+            total
+        }
+
       profile(m"Conduit hand-off (4 MB in 64 KiB chunks)")(target = 5*Second):
         '{
             val (intake, stream) = Conduit[Data]()

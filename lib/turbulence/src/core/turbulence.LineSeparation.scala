@@ -104,11 +104,17 @@ object LineSeparation:
           private var out1: Text = "".tt
           private var emitted: Int = 0
 
+          // Stage a line that is already built. `step`'s fast path constructs a
+          // line straight from the source window and stages it here, so the
+          // common case never touches `partial`.
+          private update def emit(line: Text): Unit =
+            if emitted == 0 then out0 = line else out1 = line
+            emitted += 1
+
           private update def newline(): Unit =
             val line = partial.toString.tt
             partial.setLength(0)
-            if emitted == 0 then out0 = line else out1 = line
-            emitted += 1
+            emit(line)
 
           // Apply `action` to the current line state, staging completed lines.
           private update def act(action: LineSeparation.Action): Unit = action match
@@ -138,6 +144,34 @@ object LineSeparation:
               emitted = 0
 
             written
+
+          // The index of the next separator at or after `from`, or `stop` if the
+          // window holds none. An ordinary char is rejected by a single
+          // comparison — both '\n' (10) and '\r' (13) are below 14, so only the
+          // rarer control chars need the exact re-check — and runs are skipped
+          // eight at a time, as `Ductile`'s UTF-8 kernel skips ASCII runs. That
+          // kernel combines its eight with a bitwise OR, which cannot serve here:
+          // OR only sets bits, so it cannot spot a low char among high ones. The
+          // minimum can, and compiles to conditional moves rather than branches.
+          private def scan(chars: scala.Array[Char], from: Int, stop: Int): Int =
+            inline def least(left: Int, right: Int): Int = if left < right then left else right
+
+            inline def lowest(at: Int): Int =
+              least
+               ( least(least(chars(at), chars(at + 1)), least(chars(at + 2), chars(at + 3))),
+                 least(least(chars(at + 4), chars(at + 5)), least(chars(at + 6), chars(at + 7))) )
+
+            var index: Int = from
+            var found: Int = -1
+
+            while found < 0 && index < stop do
+              while index + 8 <= stop && lowest(index) > 13 do index += 8
+
+              if index < stop then
+                val char = chars(index)
+                if char == '\n' || char == '\r' then found = index else index += 1
+
+            if found < 0 then stop else found
 
           update def step(source: Region[Text])(range: Interval in source.type)
             ( target: Slate[Array[Text]^{}] )(space: Interval in target.type)
@@ -195,16 +229,40 @@ object LineSeparation:
                     produced += deliver(slots, targetOffset + produced)
                   else pending = 13
                 else
-                  // Bulk-append the run of ordinary chars up to the next
-                  // separator (or the window's end).
+                  // The run of ordinary chars up to the next separator (or the
+                  // window's end).
                   val start = sourceOffset + consumed
                   val stop = sourceOffset + sourceLength
-                  var end = start
+                  val end = scan(chars, start, stop)
+                  val length = end - start
 
-                  while end < stop && { val c = chars(end); c != '\n' && c != '\r' } do end += 1
+                  // How many chars of a separator the fast path may take, or 0 if
+                  // it does not apply. It applies when no line is carried from an
+                  // earlier window, this line's separator lies inside the window
+                  // with the char that resolves a two-char sequence present, and
+                  // the policy maps that sequence to a plain line break. The line
+                  // is then built with a single copy straight from the source
+                  // window, leaving `partial` out of the common path — and with it
+                  // the second copy, and the coder that `setLength` never resets,
+                  // so a line with a non-Latin-1 char no longer taxes every line
+                  // after it. Everything else falls through to the state machine
+                  // above, which keeps owning every subtle case.
+                  val separator: Int =
+                    if end >= stop || end + 1 >= stop || partial.length > 0 then 0
+                    else if chars(end) == '\n' then
+                      if chars(end + 1) == '\r' then (if stage.lfcr == Action.Nl then 2 else 0)
+                      else if stage.lf == Action.Nl then 1 else 0
+                    else
+                      if chars(end + 1) == '\n' then (if stage.crlf == Action.Nl then 2 else 0)
+                      else if stage.cr == Action.Nl then 1 else 0
 
-                  partial.append(chars, start, end - start)
-                  consumed += end - start
+                  if separator > 0 then
+                    emit(String(chars, start, length).tt)
+                    consumed += length + separator
+                    produced += deliver(slots, targetOffset + produced)
+                  else
+                    partial.append(chars, start, length)
+                    consumed += length
 
             Duct.Progress(consumed, produced)
 
