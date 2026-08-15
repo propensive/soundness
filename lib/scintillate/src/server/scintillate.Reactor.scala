@@ -452,14 +452,16 @@ final class Reactor
     scala.IArray.tabulate(count): index =>
       val lane = fleet(index)
 
-      Thread.ofPlatform.nn.name(s"scintillate-lane-$index").nn.start: () =>
+      // Daemon: the reactor must never pin a JVM whose main thread has ended (the
+      // zio-http Netty wedge, avoided); `stop()` still joins for orderly shutdown.
+      Thread.ofPlatform.nn.daemon(true).nn.name(s"scintillate-lane-$index").nn.start: () =>
         while running.get do lane.iterate(this)
       . nn
 
   // The boss thread: a blocking accept loop distributing connections round-robin. A
   // platform thread too: it spends its life in `accept()`.
   private val boss: Thread =
-    Thread.ofPlatform.nn.name("scintillate-accept").nn.start: () =>
+    Thread.ofPlatform.nn.daemon(true).nn.name("scintillate-accept").nn.start: () =>
       var next = 0
 
       while running.get do
