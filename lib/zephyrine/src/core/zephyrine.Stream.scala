@@ -49,10 +49,17 @@ import vacuous.*
 // threads and no synchronization, executing as nested calls on the consumer's
 // thread.
 object Stream:
-  // A single-chunk in-memory stream. The chunk is copied into fresh storage
-  // once, at construction, so the region can be exposed mutably.
+  // A single-chunk in-memory stream. An immutable medium that exposes its backing
+  // (`Data`) is shared by reference — the same zero-copy hand-off `Conduit`, `Cursor`
+  // and `Duct` already make, and regions of this stream are only ever read (see
+  // `regionStable`). Any other medium is copied into fresh storage once, on first
+  // refill, so the region can be exposed mutably.
   def apply[medium](value: medium)(using addressable0: medium is Addressable)
   :   (Stream[medium] over Credit)^ =
+
+    // Cast-erased optional carrier, as `Cursor` holds it.
+    val backing0: Optional[AnyRef] =
+      addressable0.backing(value).asInstanceOf[Optional[AnyRef]]
 
     new Stream[medium]:
       type Transport = Credit
@@ -61,10 +68,11 @@ object Stream:
       // Untracked, cast-erased: reached only through this endpoint.
       @caps.unsafe.untrackedCaptures
       private val storage: addressable0.Storage =
-        addressable0.allocate(size.max(1)).asInstanceOf[addressable0.Storage]
+        backing0.or(addressable0.allocate(size.max(1)).asInstanceOf[AnyRef])
+        . asInstanceOf[addressable0.Storage]
       private var start0: Int = 0
       private var limit0: Int = 0
-      private var loaded: Boolean = false
+      private var loaded: Boolean = backing0.present
 
       // The single buffer is filled once and only ever read thereafter, so its
       // region ranges stay valid indefinitely — safe to share by reference.
