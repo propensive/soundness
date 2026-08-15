@@ -129,13 +129,13 @@ object Completions:
   def install(force: Boolean = false)(using entrypoint: Entrypoint^)(using erased effectful: Effectful)
     ( using WorkingDirectory, Diagnostics )
   ( using (CliEvent is Loggable)^ )
-  ( using Tactic[InstallError] )
+  ( using Tactic[Install.Error] )
   :   Installation =
 
     mitigate:
-      case Path.Error(_, _)    => InstallError(InstallError.Reason.Environment)
-      case Name.Error(_, _, _) => InstallError(InstallError.Reason.Environment)
-      case guillotine.Exec.Error(_, _, _) => InstallError(InstallError.Reason.Environment)
+      case Path.Error(_, _)    => Install.Error(Install.Error.Reason.Environment)
+      case Name.Error(_, _, _) => Install.Error(Install.Error.Reason.Environment)
+      case guillotine.Exec.Error(_, _, _) => Install.Error(Install.Error.Reason.Environment)
 
     . protect:
         val scriptPath: Optional[Path on Local] =
@@ -211,14 +211,14 @@ object Completions:
     ( using erased effectful: Effectful )
     ( using Diagnostics )
   ( using (CliEvent is Loggable)^ )
-  ( using Tactic[InstallError] )
+  ( using Tactic[Install.Error] )
   :   Installation.InstallResult =
 
     mitigate:
-      case Io.Error(_, _, _, _) => InstallError(InstallError.Reason.Io)
-      case Name.Error(_, _, _)  => InstallError(InstallError.Reason.Io)
-      case Path.Error(_, _)     => InstallError(InstallError.Reason.Io)
-      case StreamError(_)      => InstallError(InstallError.Reason.Io)
+      case Io.Error(_, _, _, _) => Install.Error(Install.Error.Reason.Io)
+      case Name.Error(_, _, _)  => Install.Error(Install.Error.Reason.Io)
+      case Path.Error(_, _)     => Install.Error(Install.Error.Reason.Io)
+      case Truncation.Error(_)      => Install.Error(Install.Error.Reason.Io)
 
     . protect:
         dirs.seek { dir => dir.existent() && dir.writable() }.let: dir =>

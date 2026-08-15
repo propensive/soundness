@@ -43,7 +43,7 @@ val esc = 0x1b.toChar
 val moved = pty.consume(t"$esc[3;5HX")   // cursor to row 3, column 5, then an X
 ```
 
-A malformed escape sequence raises a `Pty.EscapeError` naming the fault — a test discovers that its
+A malformed escape sequence raises a `Pty.Error` naming the fault — a test discovers that its
 application emits broken sequences, rather than a real terminal quietly mangling them.
 
 ### Inspecting the screen

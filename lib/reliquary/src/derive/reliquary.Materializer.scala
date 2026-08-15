@@ -57,7 +57,7 @@ import filesystemOptions.overwritePreexisting.enabled
 object Materializer:
 
   def classpath(liras: List[Lira], universe: Text, cache: Path on Linux)
-  :   LocalClasspath raises Lira.Error raises Io.Error raises StreamError =
+  :   LocalClasspath raises Lira.Error raises Io.Error raises Truncation.Error =
 
     // `host` sections are never materialized onto any artifact path (§13.5): a host contract's
     // content describes the environment and joins nothing.

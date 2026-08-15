@@ -44,7 +44,7 @@ import vacuous.*
 import zephyrine.*
 
 object Serviceable:
-  given domainSocket: (backend: Socket.Backend, tactic: Tactic[StreamError])
+  given domainSocket: (backend: Socket.Backend, tactic: Tactic[Truncation.Error])
   =>  (options: Every[Socket.Option.Domain])
   =>  ( (DomainSocket is Serviceable)^{tactic, caps.any} ) = new Serviceable:
     type Self = DomainSocket
@@ -63,7 +63,7 @@ object Serviceable:
     def close(connection: Connection): Unit = backend.hangUp(connection)
 
   given tcpEndpoint: Online
-  =>  (backend: Socket.Backend, tactic: Tactic[StreamError])
+  =>  (backend: Socket.Backend, tactic: Tactic[Truncation.Error])
   =>  (options: Every[Socket.Option.Tcp])
   =>  ( (Endpoint[Tcp.Port] is Serviceable)^{tactic} ) = new Serviceable:
     type Self = Endpoint[Tcp.Port]
@@ -81,7 +81,7 @@ object Serviceable:
     def receive(connection: Connection): (Stream[Data] over Credit)^{this, caps.any} =
       backend.response(connection)
 
-  given tcpPort: (backend: Socket.Backend, tactic: Tactic[StreamError])
+  given tcpPort: (backend: Socket.Backend, tactic: Tactic[Truncation.Error])
   =>  (options: Every[Socket.Option.Tcp])
   =>  ( (Tcp.Port is Serviceable)^{tactic} ) = new Serviceable:
     type Self = Tcp.Port
@@ -102,6 +102,6 @@ object Serviceable:
 trait Serviceable extends Routable:
   // A fresh pull endpoint over the connection's read side; single-use, like the
   // connection itself. The endpoint may retain this instance's capabilities (a
-  // `Tactic[StreamError]`), so the result is instance-relative rather than fresh.
+  // `Tactic[Truncation.Error]`), so the result is instance-relative rather than fresh.
   def receive(connection: Connection): (Stream[Data] over Credit)^{this, caps.any}
   def close(connection: Connection): Unit

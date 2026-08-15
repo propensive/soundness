@@ -226,7 +226,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
 
 extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)
   def transmit[transmissible: Transmissible](message: transmissible)
-    ( using Monitor, Tactic[StreamError], (Socket.Event is Loggable)^ )
+    ( using Monitor, Tactic[Truncation.Error], (Socket.Event is Loggable)^ )
   :   Unit =
 
     Log.fine(Socket.Event.Connected(endpoint.show))

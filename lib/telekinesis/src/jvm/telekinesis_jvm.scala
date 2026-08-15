@@ -309,7 +309,7 @@ private def plaintextExchange
 
     try attempt(duplex) catch
       case error: Http.Response.Error => duplex.close(); abort(ConnectError(Unknown))
-      case error: StreamError       => duplex.close(); abort(ConnectError(Unknown))
+      case error: Truncation.Error       => duplex.close(); abort(ConnectError(Unknown))
       case error: ji.IOException    => duplex.close(); abort(ConnectError(Unknown))
 
   borrow() match
@@ -318,7 +318,7 @@ private def plaintextExchange
     case duplex: Duplex =>
       try attempt(duplex) catch
         case error: Http.Response.Error => duplex.close(); fresh()
-        case error: StreamError       => duplex.close(); fresh()
+        case error: Truncation.Error       => duplex.close(); fresh()
         case error: ji.IOException    => duplex.close(); fresh()
 
 // The TLS exchange: ALPN offers `h2` then `http/1.1` during the handshake, and
@@ -371,7 +371,7 @@ private def httpsExchange
       catch
         case error: Http2.Error  => abort(ConnectError(Unknown))
         case error: Async.Error  => abort(ConnectError(Unknown))
-        case error: StreamError => abort(ConnectError(Unknown))
+        case error: Truncation.Error => abort(ConnectError(Unknown))
 
     case _ =>
       // One-shot HTTP/1.1 over the negotiated connection. `Connection: close`
@@ -411,7 +411,7 @@ private def sequentialFetch(duplex: Duplex, request: Http.Request)
 
   catch
     case error: Http.Response.Error => abort(ConnectError(Unknown))
-    case error: StreamError       => abort(ConnectError(Unknown))
+    case error: Truncation.Error       => abort(ConnectError(Unknown))
     case error: ji.IOException    => abort(ConnectError(Unknown))
 
 // A request is transmitted over a raw socket as its HTTP/1.1 wire form.
@@ -428,7 +428,7 @@ given domainSocketFetchable: DomainSocket.Endpoint is Fetchable onto DomainSocke
     def text(endpoint: DomainSocket.Endpoint): Text = endpoint.path
     def hostname(endpoint: DomainSocket.Endpoint): Host = Localhost
 
-given domainSocketHttpClient: Tactic[StreamError] => Http.Client onto DomainSocket =
+given domainSocketHttpClient: Tactic[Truncation.Error] => Http.Client onto DomainSocket =
   new Http.Client:
     type Target = DomainSocket
 

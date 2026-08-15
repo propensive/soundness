@@ -61,7 +61,7 @@ object JavaServlet:
 // argument of subclasses like `JavaServlet.Fn` (capture-root unification).
 open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest)
-    ( using Tactic[StreamError] )
+    ( using Tactic[Truncation.Error] )
   :   Stream[Data] over Credit =
 
     Streamable.inputStream.stream(request.getInputStream().nn)
@@ -69,7 +69,7 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
 
   protected def makeConnection
     ( request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse )
-    ( using streamError: Tactic[StreamError], hostnameError: Tactic[Hostname.Error] )
+    ( using streamError: Tactic[Truncation.Error], hostnameError: Tactic[Hostname.Error] )
   :   Http.Connection^ =
 
     val uri = request.getRequestURI.nn.tt
@@ -89,7 +89,7 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
     // re-typed at each use site.
     val in: AnyRef = request.getInputStream().nn
     val servletResponse0: AnyRef = servletResponse
-    val streamError0: AnyRef = summon[Tactic[StreamError]].asInstanceOf[AnyRef]
+    val streamError0: AnyRef = summon[Tactic[Truncation.Error]].asInstanceOf[AnyRef]
 
     val httpRequest =
       Http.Request
@@ -99,12 +99,12 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
           target      = target,
           body        = () =>
             Streamable.inputStream
-              (using streamError0.asInstanceOf[Tactic[StreamError]])
+              (using streamError0.asInstanceOf[Tactic[Truncation.Error]])
             . stream(in.asInstanceOf[ji.InputStream]),
           textHeaders = headers )
 
     val respond: Http.Connection.Respond^ = new Http.Connection.Respond:
-      def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
+      def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
         val servletResponse1 = servletResponse0.asInstanceOf[jsh.HttpServletResponse]
         servletResponse1.setStatus(response.status.code)
 
@@ -150,7 +150,7 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
 
   def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     recover:
-      case error @ StreamError(_) =>
+      case error @ Truncation.Error(_) =>
         error.printStackTrace(System.out)
 
       case error @ Hostname.Error(_, _) =>

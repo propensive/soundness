@@ -73,7 +73,7 @@ object Socket:
   // user-facing API and stay platform-neutral. Each opaque handle type is threaded back to the
   // backend and never inspected by the API. An operation a backend cannot support (e.g. Unix-domain
   // sockets or TLS on WASI) raises the appropriate error rather than approximating; each backend
-  // maps its native failures onto coaxial's `Socket.Error`/`StreamError` vocabulary. `options`
+  // maps its native failures onto coaxial's `Socket.Error`/`Truncation.Error` vocabulary. `options`
   // are coaxial's abstract `Option`s, applied by the backend in whatever terms its platform
   // understands (unsupported options are silently skipped).
   trait Backend:
@@ -119,7 +119,7 @@ object Socket:
     // single-use pull endpoint whose refill blocks until data arrives or the peer half-closes.
     def request(exchange: Exchange, consume input: (Stream[Data] over Credit)^): Unit
 
-    def response(exchange: Exchange)(using buffering: Buffering, tactic: Tactic[StreamError])
+    def response(exchange: Exchange)(using buffering: Buffering, tactic: Tactic[Truncation.Error])
     :   (Stream[Data] over Credit)^{tactic, caps.any}
 
     def hangUp(exchange: Exchange): Unit

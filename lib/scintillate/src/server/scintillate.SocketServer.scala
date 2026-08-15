@@ -160,7 +160,7 @@ extends RequestServable:
   private def writeAll
     ( out: ji.OutputStream, consume stream: (Stream[Data] over Credit)^,
       flushEach: Boolean = true )
-    ( using Tactic[StreamError] )
+    ( using Tactic[Truncation.Error] )
   :   Unit =
 
     var count: Int = 0
@@ -181,7 +181,7 @@ extends RequestServable:
     if !flushEach && !failed then
       try out.flush() catch case error: ji.IOException => failed = true
 
-    if failed then abort(StreamError(count.b))
+    if failed then abort(Truncation.Error(count.b))
 
   // Frame the request body off the shared connection cursor: chunked decoding
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
@@ -231,7 +231,7 @@ extends RequestServable:
           safely(writeAll(out, Http.Response.serialize(response)))
           false
 
-        case StreamError(_) =>
+        case Truncation.Error(_) =>
           // A read error or timeout while a request is in flight: best-effort 408
           // (the socket may still be writable on a read timeout), then close.
           val response = Http.Response(Http.RequestTimeout)() + closeHeader
@@ -274,7 +274,7 @@ extends RequestServable:
           // The responder retains only per-request locals; no aliased writer.
           val respond: Http.Connection.Respond^ = scala.caps.unsafe.unsafeAssumeSeparate:
            new Http.Connection.Respond:
-            def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
+            def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
               if response.status == Http.SwitchingProtocols then
                 // Switch to the upgraded protocol: write the handshake headers, then
                 // pipe its raw stream until it ends. This blocks for the lifetime of
@@ -330,7 +330,7 @@ extends RequestServable:
     // unexpected failure is left to propagate out of the per-connection daemon, where
     // the `trap` installed in `handle` logs it and isolates it to this connection.
     recover:
-      case StreamError(length) =>
+      case Truncation.Error(length) =>
         Log.warn(HttpServer.Event.BrokenStream(length))
 
     . protect:

@@ -51,7 +51,7 @@ extension (shell: Shell)
       case guillotine.Exec.Error(_, _, _)   => Tmux.Error(Tmux.Error.Reason.ExecFailed)
       case Number.Error(_, _, _) => Tmux.Error(Tmux.Error.Reason.SessionDied)
       case Io.Error(_, _, _, _)  => Tmux.Error(Tmux.Error.Reason.ExecFailed)
-      case StreamError(_)       => Tmux.Error(Tmux.Error.Reason.ExecFailed)
+      case Truncation.Error(_)       => Tmux.Error(Tmux.Error.Reason.ExecFailed)
 
     . protect:
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)

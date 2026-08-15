@@ -92,7 +92,7 @@ object Upgrade:
       case Property.Error(_)    => Upgrade.Error(Upgrade.Error.Reason.CannotResolveLauncher)
       case Io.Error(_, _, _, _) => Upgrade.Error(Upgrade.Error.Reason.CannotWritePending)
       case Name.Error(_, _, _)  => Upgrade.Error(Upgrade.Error.Reason.CannotWritePending)
-      case StreamError(_)      => Upgrade.Error(Upgrade.Error.Reason.CannotReadSource)
+      case Truncation.Error(_)      => Upgrade.Error(Upgrade.Error.Reason.CannotReadSource)
 
     . protect:
         val name: Text = System.properties.ethereal.name[Text]()

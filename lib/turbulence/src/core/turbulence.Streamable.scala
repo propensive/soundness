@@ -53,7 +53,7 @@ import zephyrine.{stream as _, *}
 // over a mutable buffer (formerly a `Chain`; the kernel shape was
 // incubated as `Source`, which remains as an alias). Instances needing
 // buffers or error contexts capture them as contextual values of the given
-// (`Buffering`, `Tactic[StreamError]`), so the typeclass itself remains a
+// (`Buffering`, `Tactic[Truncation.Error]`), so the typeclass itself remains a
 // single abstract method.
 object Streamable:
   given bytes: Data is Streamable by Data over Credit = Stream(_)
@@ -76,21 +76,21 @@ object Streamable:
   // request or response body can be `read` directly.
   given httpBody: Buffering => HttpStreams.Body is Streamable by Data over Credit = _.stream
 
-  given inputStream: [input <: ji.InputStream] => (tactic: Tactic[StreamError], buffering: Buffering)
+  given inputStream: [input <: ji.InputStream] => (tactic: Tactic[Truncation.Error], buffering: Buffering)
   =>  ((input is Streamable by Data over Credit)^{tactic}) =
     // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
     val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
 
     value =>
-      Streamable.stream(jn.channels.Channels.newChannel(value).nn)(using t().asInstanceOf[Tactic[StreamError]^], summon[Buffering])
+      Streamable.stream(jn.channels.Channels.newChannel(value).nn)(using t().asInstanceOf[Tactic[Truncation.Error]^], summon[Buffering])
 
-  given channel: (tactic: Tactic[StreamError], buffering: Buffering)
+  given channel: (tactic: Tactic[Truncation.Error], buffering: Buffering)
   =>  ((jn.channels.ReadableByteChannel is Streamable by Data over Credit)^{tactic}) =
     // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
     val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
-    value => Streamable.stream(value)(using t().asInstanceOf[Tactic[StreamError]^], summon[Buffering])
+    value => Streamable.stream(value)(using t().asInstanceOf[Tactic[Truncation.Error]^], summon[Buffering])
 
-  given reader: [input <: ji.Reader] => (tactic: Tactic[StreamError], buffering: Buffering)
+  given reader: [input <: ji.Reader] => (tactic: Tactic[Truncation.Error], buffering: Buffering)
   =>  ((input is Streamable by Text over Credit)^{tactic}) =
     // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
     val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
@@ -136,7 +136,7 @@ object Streamable:
                 ended = true
                 try value.close() catch case _: Exception => ()
                 { val received: Long = total
-                abort(StreamError(received.b))(using t().asInstanceOf[Tactic[StreamError]^]) }
+                abort(Truncation.Error(received.b))(using t().asInstanceOf[Tactic[Truncation.Error]^]) }
 
         override update def close(): Unit =
           ended = true
@@ -146,7 +146,7 @@ object Streamable:
   // directly into the stream's own storage, at most one granted block at a
   // time.
   private def stream(input: jn.channels.ReadableByteChannel)
-    ( using tactic: Tactic[StreamError], buffering: Buffering )
+    ( using tactic: Tactic[Truncation.Error], buffering: Buffering )
   :   (Stream[Data] over Credit)^{tactic, caps.any} =
 
     new Stream[Data]:
@@ -194,7 +194,7 @@ object Streamable:
             catch case error: Exception =>
               ended = true
               try input.close() catch case _: Exception => ()
-              { val received: Long = total; abort(StreamError(received.b)) }
+              { val received: Long = total; abort(Truncation.Error(received.b)) }
 
       override update def close(): Unit =
         ended = true

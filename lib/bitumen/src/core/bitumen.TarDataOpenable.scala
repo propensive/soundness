@@ -55,7 +55,7 @@ import scala.caps
 import aperture.*
 import pneumatic.*
 
-class TarDataOpenable(using Tactic[Tar.Error], Tactic[StreamError]) extends Openable:
+class TarDataOpenable(using Tactic[Tar.Error], Tactic[Truncation.Error]) extends Openable:
   type Self = Data
   type Form = Tar
   type Operand = Tar.Flag

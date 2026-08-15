@@ -168,4 +168,4 @@ private[telekinesis] object Sessions:
       catch
         case error: Http2.Error  => abort(ConnectError(Unknown))
         case error: Async.Error  => abort(ConnectError(Unknown))
-        case error: StreamError => abort(ConnectError(Unknown))
+        case error: Truncation.Error => abort(ConnectError(Unknown))

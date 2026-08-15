@@ -34,7 +34,7 @@ package soundness
 
 export
   exoskeleton
-  . { Application, application, Backstop, Effectful, effectful, Entrypoint, Executive, InstallError,
+  . { Application, application, Backstop, Effectful, effectful, Entrypoint, Executive, Install,
       Help, Invocation, trap }
 
 package backstops:

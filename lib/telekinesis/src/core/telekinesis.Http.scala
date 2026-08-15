@@ -260,7 +260,7 @@ object Http:
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
-        try request.body().memoize.utf8 catch case error: StreamError  => t"[-/-]"
+        try request.body().memoize.utf8 catch case error: Truncation.Error  => t"[-/-]"
 
       val headers: Text =
         request.textHeaders.map: (header: Header) =>
@@ -1374,7 +1374,7 @@ object Http:
     // using-parameter, not a curried context-function result — a value of curried dependent
     // context-function type is not yet supported — so nothing escapes `apply`.
     trait Respond:
-      def apply(response: Response^)(using Tactic[StreamError]): Unit
+      def apply(response: Response^)(using Tactic[Truncation.Error]): Unit
 
   // One live request/response exchange, as the handler sees it: the request, plus the
   // means of answering it. `Exclusive` because an exchange has a single owner and may be

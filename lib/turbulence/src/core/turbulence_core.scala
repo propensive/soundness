@@ -77,7 +77,7 @@ extension [value](value: value)
 
 
   def writeTo[target](target: target)[element]
-    // Capture-polymorphic evidence: writers built from an `Emit[StreamError]` capture it; the
+    // Capture-polymorphic evidence: writers built from an `Emit[Truncation.Error]` capture it; the
     // write completes within this call, so nothing is retained and the result stays `Unit`.
     ( using streamable: (value is Streamable by element over Credit)^,
             writable:   (target is Writable by element)^ )

@@ -4,8 +4,8 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **433**;
-  215 sit in a prefix family of two or more, across 63 families, and
+- exported multi-word type-level names still under review: **431**;
+  213 sit in a prefix family of two or more, across 62 families, and
   218 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
@@ -182,17 +182,20 @@ looks misnamed may be one the codebase already has.
 
 | status | names |
 |---|---|
-| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `ConnectError`, `InstallError` |
+| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `ConnectError` |
 | excluded by R2 (specification concept) | `CompileError` |
 | outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `UncheckedError` |
-| structurally blocked, with the reason established | `StreamError` (below) |
-| nested compound names, where the prefix repeats the enclosing type | `Repackager.RepackageError` and `Repackager.UserError` (only one can be `Error`), `UrlInterpolatorError` |
-| nested, but the prefix is doing real work — the enclosing type already has an `Error` meaning something else | `XPath.EvaluationError` (evaluating vs parsing an XPath; `XPath.Error`'s reason numbers are documented as append-only), `Git.RefError` (a ref-name syntax check that never runs git), `Pty.EscapeError` |
 
-**`StreamError` cannot be nested.** `Stream` is not declared anywhere in this repository — it
-comes from the proscala fork's prelude via `-Yimports:proscenium` — so there is no companion
-of ours to move it into, and declaring `object Stream` would collide with the prelude type.
-zephyrine's `Stream[medium]` is an unrelated parse cursor.
+| nested compound names, where the prefix repeats the enclosing type | `Repackager.RepackageError` and `Repackager.UserError` (only one can be `Error`), `UrlInterpolatorError` |
+| nested, but the prefix is doing real work — the enclosing type already has an `Error` meaning something else | `XPath.EvaluationError` (evaluating vs parsing an XPath; `XPath.Error`'s reason numbers are documented as append-only), `Git.RefError` (a ref-name syntax check that never runs git) |
+
+**`StreamError` is `Truncation.Error`.** `Stream` is not declared anywhere in this repository
+— it comes from the proscala fork's prelude via `-Yimports:proscenium` — so there was no
+companion of ours to nest into, and three different typeclasses (`Streamable`, `Writable`,
+`Sink`) raise it, so no raiser owned it either. It is named for the state of the data
+instead: a stream that ended before delivering everything. `InstallError` is `Install.Error`
+on the same reasoning — `exoskeleton.Completions` and `ethereal.Installer` both raise it, so
+it belongs to the act of installing rather than to either installer.
 
 **`IoError`/`IoEvent` are now `Io.Error`/`Io.Event`.** They are filesystem concepts — every
 `Io.Event` case extends `Log.Filesystem`, and `Io.Error` carries a `filesystem: path.Plane is
@@ -277,7 +280,6 @@ ultimatum's is the likelier one to rename.
 | `Scala*` | degustation, harlequin | 3 | `ScalaAtom`, `ScalaReference`, `ScalaSyntaxPalette` |
 | `Stack*` | digression, hyperbole | 3 | `StackResolver`, `StackTrace`, `StackTracePalette` |
 | `Start*` | embarcadero | 2 | `StartRequest`, `StartResponse` |
-| `Stream*` | turbulence | 2 | `StreamError`, `StreamOutputStream` |
 | `Table*` | escritoire, ultimatum | 6 | `TableCell`, `TableFixture`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle` |
 | `Tar*` | bitumen | 4 | `TarBuilder`, `TarDataOpenable`, `TarHeader`, `TarOpenable` |
 | `Tasty*` | degustation, hyperbole | 2 | `TastyDiscipline`, `TastyPalette` |
@@ -343,7 +345,7 @@ ultimatum's is the likelier one to rename.
 `EnumerationHasAsScala`, `EucalyptusGcp`, `FastForward`, `FlowExtent`, `FluidOunce`,
 `FoldableRectoPanel`, `GapPolicy`, `GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`,
 `GithubActions`, `GivensPhase`, `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`,
-`HmacCipher`, `Html4Transitional`, `InitializationVector`, `InstallError`, `IntercardinalWind`,
+`HmacCipher`, `Html4Transitional`, `InitializationVector`, `IntercardinalWind`,
 `InterfaceAddress`, `IpAddress`, `Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`,
 `JsigDiscipline`, `JsInvoke`, `JuxtapositionPalette`, `JvmProfile`, `KillRequest`,
 `LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LinkEvent`,
@@ -361,12 +363,12 @@ ultimatum's is the likelier one to rename.
 `SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`,
 `SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`,
 `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
-`StaticAnnotation`, `StringId`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`, `TeletypeFormattable`,
-`TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `TestPalette`, `ThemeColor`,
-`ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`,
-`TripleDes`, `TypescriptDialect`, `UdpResponse`, `UnboundedSizeComplexity`, `UncheckedError`,
-`UniformDistribution`, `UnitsNames`, `UnusedFeature`, `UrlPalette`, `UsedSets`, `UsesBlob`,
-`ValueToken`, `VentureTactic`, `VersionResponse`, `VersoPanel`, `VerticalAlignment`,
+`StaticAnnotation`, `StreamOutputStream`, `StringId`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`,
+`TeletypeFormattable`, `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `TestPalette`,
+`ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`,
+`TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`, `UnboundedSizeComplexity`,
+`UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnusedFeature`, `UrlPalette`, `UsedSets`,
+`UsesBlob`, `ValueToken`, `VentureTactic`, `VersionResponse`, `VersoPanel`, `VerticalAlignment`,
 `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`,
 `WideCharacterWidth`, `WireType`, `WritingBuilder`, `WsSessional`, `XeqConfiguration`,
 `XmlSchema`, `YamlPath`, `ZipBuilder`

@@ -31,22 +31,26 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package exoskeleton
-
 import anticipation.*
 import fulminate.*
 
-object InstallError:
-  object Reason:
-    given communicable: Reason is Communicable =
-      case Environment =>
-        m"it was not possible to get enough information about the install environment"
+// Installing something onto the host: exoskeleton writes shell completion scripts,
+// ethereal writes the daemon. Both fail the same two ways, so the error belongs to the
+// act rather than to either installer.
+object Install:
+  // InstallError → Install.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case Environment =>
+          m"it was not possible to get enough information about the install environment"
 
-      case Io =>
-        m"an I/O error occurred when trying to write an installation file"
+        case Io =>
+          m"an I/O error occurred when trying to write an installation file"
 
-  enum Reason(val number: Int) extends Clarification:
-    case Environment extends Reason(1)
-    case Io          extends Reason(2)
+    enum Reason(val number: Int) extends Clarification:
+      case Environment extends Reason(1)
+      case Io          extends Reason(2)
 
-case class InstallError(reason: InstallError.Reason)(using Diagnostics)
-extends Error(822, reason.number)(m"the installation failed because $reason")
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(822, reason.number)(m"the installation failed because $reason")

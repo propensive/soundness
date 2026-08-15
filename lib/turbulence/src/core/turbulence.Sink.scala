@@ -48,11 +48,11 @@ import zephyrine.*
 // A target which can be opened as a push endpoint: the successor to
 // `Writable`, accepting writes incrementally through an `Intake` instead of
 // consuming a whole `Chain`. As with `Writable`, a write failure `raise`s
-// a typed `StreamError` through an `Emit` captured by the given — a writer
+// a typed `Truncation.Error` through an `Emit` captured by the given — a writer
 // only reports a cut, never aborts. `finish` closes the underlying resource,
 // matching `Writable`'s end-of-stream behaviour.
 object Sink:
-  given outputStream: [output <: ji.OutputStream] => (streamCut: Emit[StreamError], buffering: Buffering)
+  given outputStream: [output <: ji.OutputStream] => (streamCut: Emit[Truncation.Error], buffering: Buffering)
   =>  ((output is Sink by Data over Credit)^{streamCut}) =
     // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
     // SAM expansion turns this given into an anonymous class that hides the
@@ -93,7 +93,7 @@ object Sink:
           // Pre-read into a local: `raise`'s capture-polymorphic argument may not
           // hide this instance's state.
           val written: Long = total
-          try value.close() catch case _: ji.IOException => raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^])
+          try value.close() catch case _: ji.IOException => raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^])
 
         private update def drain(): Unit =
           if mark0 > 0 && !broken then
@@ -103,11 +103,11 @@ object Sink:
               total += mark0
             catch case _: ji.IOException =>
               broken = true
-              { val written: Long = total; raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^]) }
+              { val written: Long = total; raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^]) }
 
           mark0 = 0
 
-  given channel: (streamCut: Emit[StreamError], buffering: Buffering)
+  given channel: (streamCut: Emit[Truncation.Error], buffering: Buffering)
   =>  ((jn.channels.WritableByteChannel is Sink by Data over Credit)^{streamCut}) =
     // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
     // SAM expansion turns this given into an anonymous class that hides the
@@ -145,7 +145,7 @@ object Sink:
           drain()
           // Pre-read into a local, as above.
           val written: Long = total
-          try value.close() catch case _: Exception => raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^])
+          try value.close() catch case _: Exception => raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^])
 
         private update def drain(): Unit =
           if mark0 > 0 && !broken then
@@ -155,12 +155,12 @@ object Sink:
               while buffer.hasRemaining do
                 if value.write(buffer) == -1 then
                   broken = true
-                  { val written: Long = total; raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^]) }
+                  { val written: Long = total; raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^]) }
 
               total += mark0
             catch case _: Exception =>
               broken = true
-              { val written: Long = total; raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^]) }
+              { val written: Long = total; raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^]) }
 
           mark0 = 0
 

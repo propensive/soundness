@@ -81,7 +81,7 @@ extends RequestServable:
     def handle(exchange: csnh.HttpExchange | Null): Unit =
       try
         recover:
-          case StreamError(length) =>
+          case Truncation.Error(length) =>
             Log.warn(HttpServer.Event.BrokenStream(length))
 
           case error @ Hostname.Error(_, _) =>

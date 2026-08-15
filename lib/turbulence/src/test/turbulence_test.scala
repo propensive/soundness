@@ -718,7 +718,7 @@ object Tests extends Suite(m"Turbulence tests"):
         output.toByteArray.nn.length
       . assert(_ == payload.readable.length*2)
 
-      test(m"a sink write failure raises StreamError"):
+      test(m"a sink write failure raises Truncation.Error"):
         import unsafeExceptions.canThrowAny
 
         val broken = new ji.OutputStream():
@@ -728,9 +728,9 @@ object Tests extends Suite(m"Turbulence tests"):
 
         val sink = summon[ji.OutputStream is Sink by Data over Credit]
 
-        capture[StreamError]:
+        capture[Truncation.Error]:
           summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(broken))
-      . assert(_ == StreamError(0.b))
+      . assert(_ == Truncation.Error(0.b))
 
       test(m"cancelling a blocked conduit writer releases it"):
         supervise:

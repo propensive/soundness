@@ -276,7 +276,7 @@ package socketBackends:
       drain(exchange.output, input)
       exchange.output.dispose()
 
-    def response(exchange: WasiExchange)(using Buffering, Tactic[StreamError])
+    def response(exchange: WasiExchange)(using Buffering, Tactic[Truncation.Error])
     :   (Stream[Data] over Credit)^{caps.any} =
       readStream(exchange.input)
 

@@ -175,7 +175,7 @@ object Repackager:
 
     mitigate:
       case Io.Error(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
-      case StreamError(_)       => RepackageError(m"a stream error occurred while repackaging")
+      case Truncation.Error(_)       => RepackageError(m"a stream error occurred while repackaging")
       case Zip.Error(reason)     => RepackageError(m"the JAR could not be read or written ($reason)")
       case Path.Error(_, _)      => RepackageError(m"a path could not be resolved while repackaging")
       case Number.Error(_, _, _) => RepackageError(m"the manifest contained malformed data")

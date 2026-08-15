@@ -55,15 +55,15 @@ object Tests extends Suite(m"Eucalyptus tests"):
       zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
       . each(capture.queue.put)
 
-  // A `Writable` that `raise`s a `StreamError` for each line, to exercise the typed `handle` path.
+  // A `Writable` that `raise`s a `Truncation.Error` for each line, to exercise the typed `handle` path.
   case class Failing()
 
   object Failing:
-    given writable: (streamCut: Emit[StreamError])
+    given writable: (streamCut: Emit[Truncation.Error])
     =>  ((Failing is Writable by Text)^{streamCut}) =
       (failing, stream) =>
         zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
-        . each(_ => raise(StreamError(0.b)))
+        . each(_ => raise(Truncation.Error(0.b)))
 
   // An event enum whose cases carry *different* categories. Because the marker traits are
   // transparent, `Log.info(Signal.Net(…))` is typed at the general `Signal`, so the concrete case's
@@ -106,7 +106,7 @@ object Tests extends Suite(m"Eucalyptus tests"):
       val errors: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
       handle:
-        case StreamError(_) => errors.put(t"cut")
+        case Truncation.Error(_) => errors.put(t"cut")
       . protect:
           // The test logger is this test's single owner; no aliased writer.
           given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(Failing()))

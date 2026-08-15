@@ -97,7 +97,7 @@ object Packager:
       case Url.Error(_, _, _)      => Packager.Error(m"A runner stub URL is invalid")
       case Assembler.Error(detail) => Packager.Error(detail)
       case Io.Error(_, _, _, _)     => Packager.Error(m"A filesystem error occurred when packaging")
-      case StreamError(_)          => Packager.Error(m"A stream error occurred during packaging")
+      case Truncation.Error(_)          => Packager.Error(m"A stream error occurred during packaging")
       case Path.Error(_, _)        => Packager.Error(m"A path could not be resolved when packaging")
 
     . protect:
@@ -189,7 +189,7 @@ object Packager:
 
 
   private def write(output: Path on Linux, data: Data)
-  :   Unit raises Io.Error raises StreamError =
+  :   Unit raises Io.Error raises Truncation.Error =
 
     output.create[File](CreateFlag.Parents, CreateFlag.Replace): handle ?=>
       handle.write(Chain(data))

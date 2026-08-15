@@ -48,13 +48,13 @@ import turbulence.*
 import zephyrine.*
 import vacuous.*
 
-import Pty.EscapeError.Reason, Reason.*
+import Pty.Error.Reason, Reason.*
 
 object Pty:
   def apply(width: Int, height: Int): Pty =
     Pty(Screen(width, height), Pty.State(scrollBottom = (height - 1).z), Relay())
 
-  def stream(pty: Pty, in: Chain[Text]): Chain[Pty] raises Pty.EscapeError = in match
+  def stream(pty: Pty, in: Chain[Text]): Chain[Pty] raises Pty.Error = in match
     case head #:: tail =>
       val pty2 = pty.consume(head)
       pty2 #:: stream(pty2, tail)
@@ -62,8 +62,8 @@ object Pty:
     case _ =>
       Chain()
 
-  // PtyEscapeError → Pty.EscapeError
-  object EscapeError:
+  // PtyEscapeError → Pty.Error
+  object Error:
     object Reason:
       given communicable: Reason is Communicable =
         case BadSgrParameters(ns)         => m"${ns} is not a valid SGR parameter sequence"
@@ -89,7 +89,7 @@ object Pty:
       case BadCsiEscape(char: Char)               extends Reason(7)
       case BadFeEscape(char: Char)                extends Reason(8)
 
-  case class EscapeError(reason: Pty.EscapeError.Reason)(using Diagnostics)
+  case class Error(reason: Pty.Error.Reason)(using Diagnostics)
   extends fulminate.Error(537, reason.number)
     ( m"an ANSI escape code could not be handled because $reason" )
 
@@ -118,7 +118,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
   def cursor: Ordinal = state.cursor
   def cursorVisible: Boolean = !state.hideCursor
 
-  def consume(input: Text): Pty raises Pty.EscapeError =
+  def consume(input: Text): Pty raises Pty.Error =
     val escBuffer = StringBuilder()
     val buffer2: Screen[Style] = buffer.copy()
 
@@ -210,13 +210,13 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
         cursor() = Prim
 
       case n =>
-        raise(Pty.EscapeError(BadCsiParameter(n, t"ED")))
+        raise(Pty.Error(BadCsiParameter(n, t"ED")))
 
     def el(n: Int): Unit = n match
       case 0 => for x <- cursor.x.n0 until buffer2.width do set(x.z, cursor.y, Grapheme(" "))
       case 1 => for x <- 0 to cursor.x.n0 do set(x.z, cursor.y, Grapheme(" "))
       case 2 => for x <- 0 until buffer2.width do set(x.z, cursor.y, Grapheme(" "))
-      case n => raise(Pty.EscapeError(BadCsiParameter(n, t"EL")))
+      case n => raise(Pty.Error(BadCsiParameter(n, t"EL")))
 
     def title(text: Text): Unit = state2 = state2.copy(title = text)
     def setLink(text: Text): Unit = link = text
@@ -437,7 +437,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
     def osc(command: Text): Unit = command match
       case r"8;([^;]*);$text(.*)" => setLink(text)
       case r"0;$text(.*)"         => title(text)
-      case parameter              => raise(Pty.EscapeError(BadOscParameter(parameter)))
+      case parameter              => raise(Pty.Error(BadOscParameter(parameter)))
 
     import Style.{Bit, Foreground, Background}, Bit.*
 
@@ -479,14 +479,14 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
           case n if 100 <= n <= 107          => Background(style) = palette(n - 92)
 
           case _ =>
-            abort(Pty.EscapeError(BadSgrParameters(params.map(_.show).join(t";"))))
+            abort(Pty.Error(BadSgrParameters(params.map(_.show).join(t";"))))
 
         sgr(tail)
 
     def parseInt(text: Text, default: Int): Int =
       if text.nil then default
       else text.s.toIntOption.getOrElse:
-        abort(Pty.EscapeError(NonintegerSgrParameter(text)))
+        abort(Pty.Error(NonintegerSgrParameter(text)))
 
     def parseInts(text: Text): List[Int] =
       if text.nil then Nil
@@ -507,7 +507,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
       case (t"?2004", 'h') => bcp(true)
       case (t"?2004", 'l') => bcp(false)
       case (_, 'h' | 'l')  => () // unknown DEC private modes are silently ignored
-      case _               => raise(Pty.EscapeError(BadCsiCommand(params, char)))
+      case _               => raise(Pty.Error(BadCsiCommand(params, char)))
 
     def csi(params: Text, char: Char): Unit =
       if params.starts(t"?") then privateMode(params, char) else char match
@@ -547,7 +547,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
         case 'c' if params.nil || params == t"0"                 => primaryDa()
         case 'c' if params.starts(t">")                          => secondaryDa()
 
-        case _ => raise(Pty.EscapeError(BadCsiCommand(params, char)))
+        case _ => raise(Pty.Error(BadCsiCommand(params, char)))
 
     def palette(n: Int): Chroma = n match
       case 0  => Chroma(001, 001, 001)
@@ -583,7 +583,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
         Chroma(r*42 + r/2, g*42 + g/2, b*42 + b/2)
 
       case n =>
-        abort(Pty.EscapeError(BadColor(n)))
+        abort(Pty.Error(BadColor(n)))
 
     def recur(index: Int, context: Context): Pty =
       inline def proceed(context: Context): Pty =
@@ -680,7 +680,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
               case '\\'                  => proceed(Normal) // bare ST is ignored
 
               case char =>
-                raise(Pty.EscapeError(BadFeEscape(char)))
+                raise(Pty.Error(BadFeEscape(char)))
                 proceed(Normal)
 
           case EatString =>
@@ -721,7 +721,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
           case Csi =>
             current match
               case char if '\u0000' <= char <= '\u001f' =>
-                raise(Pty.EscapeError(BadCsiEscape(char)))
+                raise(Pty.Error(BadCsiEscape(char)))
                 proceed(Csi)
 
               case char if '\u0020' <= char <= '\u002f' =>
@@ -737,7 +737,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
                 proceed(Normal)
 
               case char =>
-                raise(Pty.EscapeError(BadCsiEscape(char)))
+                raise(Pty.Error(BadCsiEscape(char)))
                 proceed(Normal)
 
           case Csi2 =>
@@ -751,7 +751,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
                 proceed(Normal)
 
               case char =>
-                raise(Pty.EscapeError(BadCsiEscape(char)))
+                raise(Pty.Error(BadCsiEscape(char)))
                 proceed(Normal)
 
     recur(0, Normal)
