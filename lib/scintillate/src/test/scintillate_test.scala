@@ -81,6 +81,47 @@ object Tests extends Suite(m"Scintillate tests"):
       response.tt
 
     supervise:
+      // The reactor skeleton: echo-level, proving the loop/registration/attachment
+      // machinery over real sockets before the HTTP fast path lands.
+      suite(m"Reactor skeleton"):
+        test(m"Bytes written to a reactor connection are echoed back"):
+          val port = freePort()
+          val reactor = Reactor(port, loops = 2)
+
+          try
+            val socket = java.net.Socket("localhost", port)
+            val out = socket.getOutputStream.nn
+            out.write("hello, reactor".getBytes("US-ASCII").nn)
+            out.flush()
+            val buffer = new scala.Array[Byte](64)
+            val count = socket.getInputStream.nn.read(buffer)
+            socket.close()
+            String(buffer, 0, count, "US-ASCII").tt
+          finally reactor.stop()
+
+        . assert(_ == t"hello, reactor")
+
+        test(m"Concurrent connections on distinct lanes echo independently"):
+          val port = freePort()
+          val reactor = Reactor(port, loops = 2)
+
+          try
+            val sockets = scala.List.tabulate(8): index =>
+              val socket = java.net.Socket("localhost", port)
+              socket.getOutputStream.nn.write(s"client-$index".getBytes("US-ASCII").nn)
+              socket.getOutputStream.nn.flush()
+              socket
+
+            sockets.zipWithIndex.map: (socket, index) =>
+              val buffer = new scala.Array[Byte](64)
+              val count = socket.getInputStream.nn.read(buffer)
+              socket.close()
+              String(buffer, 0, count, "US-ASCII") == s"client-$index"
+            . forall(identity)
+          finally reactor.stop()
+
+        . assert(_ == true)
+
       suite(m"Native socket server"):
         test(m"GET returns the handler's response body"):
           val port = freePort()
