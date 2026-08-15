@@ -33,6 +33,7 @@
 package telekinesis
 
 import scala.annotation.nowarn
+import java.nio.charset.StandardCharsets
 import proscenium.compat.*
 
 import anticipation.*
@@ -89,7 +90,7 @@ package httpBackends:
         case List(host, path) => (host, t"/$path")
         case _                => (afterScheme, t"/")
 
-      def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
+      def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(StandardCharsets.UTF_8).nn)
 
       // Request headers travel in a `fields` resource, whose ownership passes into the
       // `outgoing-request`, whose ownership in turn passes into `handle` — so neither is
@@ -212,7 +213,7 @@ object WasiHttpServer:
     ( inline handler: Http.Request => Http.Response )
   :   Unit =
 
-    def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
+    def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(StandardCharsets.UTF_8).nn)
 
     val requestHandle = new Wasm.Handle(request).asInstanceOf[Wasm.Handle of "incoming-request"]
     val incoming: Foreign of "incoming-request" from Wit = requestHandle

@@ -39,6 +39,7 @@ import scala.quoted.*
 import scala.reflect.*
 import scala.util.*
 
+import java.nio.charset.StandardCharsets
 import symbolism.*
 
 object internal:
@@ -51,7 +52,8 @@ object internal:
 
     def apply(string: String): Text = make(string)
     def apply(chars: Array[Char]^{}): Text = make(String(chars.asInstanceOf[scala.Array[Char]]))
-    def apply(bytes: Array[Byte]^{}): Text = make(String(bytes.asInstanceOf[scala.Array[Byte]], "ASCII"))
+    def apply(bytes: Array[Byte]^{}): Text =
+      make(String(bytes.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII))
 
     extension (text: Text) inline def s: String = text.asInstanceOf[String]
 

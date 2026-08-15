@@ -32,6 +32,7 @@
                                                                                                   */
 package phoenicia
 
+import java.nio.charset.StandardCharsets
 import proscenium.compat.*
 
 import anticipation.*
@@ -168,7 +169,7 @@ object Sfnt:
     sorted.indices.each: index =>
       val (tag, table) = sorted(index)
       val directory = 12 + index*16
-      val tagBytes = tag.s.getBytes("US-ASCII").nn
+      val tagBytes = tag.s.getBytes(StandardCharsets.US_ASCII).nn
 
       (0 until 4).each: position => buffer(directory + position) = tagBytes(position)
 
@@ -215,7 +216,7 @@ trait Sfnt:
   lazy val tables: Map[Sfnt.Table.Tag, TableOffset] =
     (0 until numTables).flatMap: n =>
       val start = 12 + n*16
-      val tableTag = String(Array.unsafeJvm(data), start, 4, "ASCII").tt
+      val tableTag = String(Array.unsafeJvm(data), start, 4, StandardCharsets.US_ASCII).tt
       val checksum = B32(data, start + 4)
       val offset = B32(data, start + 8).s32.int
       val length = B32(data, start + 12).s32.int
@@ -379,7 +380,7 @@ trait Sfnt:
 
           case _ =>
             try String(bytes, start, length, "x-MacRoman").tt
-            catch case _: Exception => String(bytes, start, length, "ISO-8859-1").tt
+            catch case _: Exception => String(bytes, start, length, StandardCharsets.ISO_8859_1).tt
 
     lazy val records: Array[Record]^{} =
       Array.from:
