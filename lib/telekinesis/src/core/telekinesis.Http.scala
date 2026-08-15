@@ -402,10 +402,32 @@ object Http:
 
       def upTo(stop: Char, limit: Int, reason: Reason): Text = cursor.hold:
         val start = cursor.mark
+        val target: Byte = stop.toByte
+        var found = false
 
-        while !cursor.finished && !(cursor.peek == stop) do
+        // Scan the cursor's buffered region directly rather than stepping it one
+        // datum at a time. Each `peek`/`next` pair goes through
+        // `addressable.storageAddress`, which erases to an `invokeinterface`
+        // returning `Object` plus an unbox — "a major hot-path tax" in
+        // `zephyrine.Cursor`'s own words — and a request head pays it per
+        // character of every method, target, name and value. The local index is
+        // pushed back to the cursor before any refill, the protocol the
+        // ypsiloid, xylophone and honeycomb parsers follow, and which this file
+        // already uses for chunked bodies. The size limit is checked once per
+        // buffer rather than once per character, which is equivalent: the limit
+        // is an offset bound, and no single buffer can cross it unnoticed.
+        while !found && cursor.more do
           if cursor.position.n0 > limit then abort(Http.Request.Error(reason))
-          cursor.next()
+
+          val bytes = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
+          val from = cursor.unsafePos(using Unsafe)
+          val end = cursor.unsafeWriteEnd(using Unsafe)
+          var index = from
+
+          while index < end && bytes(index) != target do index += 1
+
+          cursor.unsafeAdvanceBy(index - from)(using Unsafe)
+          found = index < end
 
         Ascii(cursor.grab(start, cursor.mark)).show
 
@@ -442,7 +464,9 @@ object Http:
           val key: Text = upTo(':', headerLimit, Reason.HeadersTooLarge)
           cursor.next()
 
-          while cursor.peek == ' ' || cursor.peek == '\t' do cursor.next()
+          // One `peek` per iteration, not two: each goes through the cursor's
+          // `storageAddress` indirection.
+          while { val char = cursor.peek; char == ' ' || char == '\t' } do cursor.next()
 
           val value: Text = upTo('\r', headerLimit, Reason.HeadersTooLarge)
           cursor.next()

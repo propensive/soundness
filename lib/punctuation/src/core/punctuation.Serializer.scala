@@ -92,6 +92,7 @@ private[punctuation] object Serializer:
   // inline construct when the output is re-parsed. We escape conservatively:
   // every occurrence, not only "active" ones. CommonMark is happy to accept
   // backslash escapes ahead of any ASCII punctuation character.
+  //
   private inline def inlineSpecial(char: Char): Boolean = char match
     case '\\' | '`' | '*' | '_' | '[' | ']' | '<' | '>' | '&' => true
     case _                                                    => false
@@ -106,16 +107,25 @@ private[punctuation] object Serializer:
 
   private def escapeTextual(text: Text): Text =
     val s = text.s
-    val buf = StringBuilder()
-    var i = 0
+    var first = 0
 
-    while i < s.length do
-      val c = s.charAt(i)
-      if inlineSpecial(c) then buf.add('\\')
-      buf.add(c)
-      i += 1
+    // Most textual spans contain nothing to escape, and the builder below copies
+    // every character whether or not any of them needed it. Scan first, and
+    // return the original unchanged when nothing does; only a span that really
+    // contains a special character pays for a copy.
+    while first < s.length && !inlineSpecial(s.charAt(first)) do first += 1
 
-    buf.text
+    if first == s.length then text else
+      val buf = StringBuilder()
+      var i = 0
+
+      while i < s.length do
+        val c = s.charAt(i)
+        if inlineSpecial(c) then buf.add('\\')
+        buf.add(c)
+        i += 1
+
+      buf.text
 
   private def escapeLinkLabel(text: Text): Text =
     val s = text.s
