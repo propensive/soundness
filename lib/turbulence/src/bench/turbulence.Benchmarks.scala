@@ -210,6 +210,15 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     acc
 
+  // A fresh copy of a corpus chunk. The slow-consumer rows hand off
+  // producer-allocated data, as a socket or file read would: passing the shared
+  // corpus by reference would let an unbounded hand-off buffer an arbitrary lead
+  // for the cost of its queue nodes alone, hiding exactly the retention the rows
+  // exist to measure.
+  def freshChunk(chunk: Data): Data =
+    java.util.Arrays.copyOf(chunk.asInstanceOf[scala.Array[Byte]], chunk.length).nn
+    . asInstanceOf[Data]
+
   // Int rather than Long: ZIO's `take`/`drop` are `Int`-counted, and both values
   // fit; Soundness's and FS2's `Long`-counted versions widen automatically.
   val dropBytes: Int = 65536
@@ -1061,7 +1070,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each(intake.put)
+              turbulence.Benchmarks.inputChunks.each: chunk =>
+                intake.put(turbulence.Benchmarks.freshChunk(chunk))
               intake.finish())
             var total = 0L
             stream.sweep: region =>
@@ -1077,7 +1087,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
             val end = new Object
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
+              turbulence.Benchmarks.inputChunks.each: chunk =>
+                queue.put(turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[AnyRef])
               queue.put(end))
             var total = 0L
             var running = true
@@ -1094,7 +1105,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val relay = Relay[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each(relay.put)
+              turbulence.Benchmarks.inputChunks.each: chunk =>
+                relay.put(turbulence.Benchmarks.freshChunk(chunk))
               relay.stop())
             var total = 0L
             relay.stream.records.each: chunk =>
@@ -1110,7 +1122,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val program = fs2.concurrent.Channel.unbounded[IO, fs2.Chunk[Byte]].flatMap: channel =>
               val produce =
                 turbulence.Benchmarks.inputChunkList.foldLeft(IO.unit): (io, chunk) =>
-                  io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[scala.Array[Byte]])).void
+                  io *> channel.send(fs2.Chunk.array(
+                    turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[scala.Array[Byte]])).void
                 *> channel.close.void
               produce.start *> channel.stream.compile.fold(0L): (acc, chunk) =>
                 acc + chunk.size + (turbulence.Benchmarks.burn(chunk.size) & 1L)
@@ -1123,7 +1136,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               import zio.*, zio.stream.*
               val source =
                 ZStream.fromIterable
-                  (turbulence.Benchmarks.inputChunkList.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
+                  (turbulence.Benchmarks.inputChunkList.map: c =>
+                    Chunk.fromArray(turbulence.Benchmarks.freshChunk(c).asInstanceOf[scala.Array[Byte]]))
               for
                 queue <- Queue.unbounded[Take[Nothing, Chunk[Byte]]]
                 _     <- source.runIntoQueue(queue).fork
@@ -1288,7 +1302,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each(intake.put)
+              turbulence.Benchmarks.inputChunks.each: chunk =>
+                intake.put(turbulence.Benchmarks.freshChunk(chunk))
               intake.finish())
             var total = 0L
             stream.sweep: region =>
@@ -1304,7 +1319,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
             val end = new Object
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
+              turbulence.Benchmarks.inputChunks.each: chunk =>
+                queue.put(turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[AnyRef])
               queue.put(end))
             var total = 0L
             var running = true
@@ -1321,7 +1337,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val relay = Relay[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each(relay.put)
+              turbulence.Benchmarks.inputChunks.each: chunk =>
+                relay.put(turbulence.Benchmarks.freshChunk(chunk))
               relay.stop())
             var total = 0L
             relay.stream.records.each: chunk =>
@@ -1337,7 +1354,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val program = fs2.concurrent.Channel.unbounded[IO, fs2.Chunk[Byte]].flatMap: channel =>
               val produce =
                 turbulence.Benchmarks.inputChunkList.foldLeft(IO.unit): (io, chunk) =>
-                  io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[scala.Array[Byte]])).void
+                  io *> channel.send(fs2.Chunk.array(
+                    turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[scala.Array[Byte]])).void
                 *> channel.close.void
               produce.start *> channel.stream.compile.fold(0L): (acc, chunk) =>
                 acc + chunk.size + (turbulence.Benchmarks.burn(chunk.size) & 1L)
@@ -1350,7 +1368,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               import zio.*, zio.stream.*
               val source =
                 ZStream.fromIterable
-                  (turbulence.Benchmarks.inputChunkList.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
+                  (turbulence.Benchmarks.inputChunkList.map: c =>
+                    Chunk.fromArray(turbulence.Benchmarks.freshChunk(c).asInstanceOf[scala.Array[Byte]]))
               for
                 queue <- Queue.unbounded[Take[Nothing, Chunk[Byte]]]
                 _     <- source.runIntoQueue(queue).fork
@@ -1370,7 +1389,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each(intake.put)
+              turbulence.Benchmarks.inputChunks.each: chunk =>
+                intake.put(turbulence.Benchmarks.freshChunk(chunk))
               intake.finish())
             var total = 0L
             stream.sweep: region =>
@@ -1386,7 +1406,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
             val end = new Object
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
+              turbulence.Benchmarks.inputChunks.each: chunk =>
+                queue.put(turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[AnyRef])
               queue.put(end))
             var total = 0L
             var running = true
@@ -1403,7 +1424,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val relay = Relay[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each(relay.put)
+              turbulence.Benchmarks.inputChunks.each: chunk =>
+                relay.put(turbulence.Benchmarks.freshChunk(chunk))
               relay.stop())
             var total = 0L
             relay.stream.records.each: chunk =>

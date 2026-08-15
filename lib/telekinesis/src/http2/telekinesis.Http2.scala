@@ -495,11 +495,26 @@ object Http2:
     // precedes the first SETTINGS frame in prior-knowledge h2c.
     private[telekinesis] val connectionPreface: Bytes = t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".in[Bytes]
 
-    // Our advertised SETTINGS: disable server push; a generous stream window.
-    private[telekinesis] val initialSettings: List[Setting] =
+    // The HTTP/2 default flow-control window (RFC 7540 §6.9.2): the initial
+    // send budget for the connection, and for a stream until SETTINGS say
+    // otherwise.
+    private[telekinesis] val defaultWindow: Int = 65535
+
+    // Our advertised receive budget, per stream and (via an initial
+    // connection-level WINDOW_UPDATE) per connection: the peer may have at most
+    // this many unconsumed bytes in flight, which is what bounds the inbound
+    // body relays — they are unbounded structures bounded by protocol credit.
+    // Replenishment is consumption-driven and batched: a WINDOW_UPDATE goes out
+    // once half the budget is pending, so a stalled consumer stalls the peer's
+    // sender rather than accumulating its output.
+    private[telekinesis] val receiveWindow: Int = 1024*1024
+
+    // Our advertised SETTINGS: disable server push; our receive-side stream
+    // window.
+    private[telekinesis] def initialSettings(window: Int): List[Setting] =
       List
         ( Setting(SettingId.EnablePush.id, 0),
-          Setting(SettingId.InitialWindowSize.id, 0x7fffffff) )
+          Setting(SettingId.InitialWindowSize.id, window) )
 
     // Dispatch one decoded frame. Lives on the companion — taking the connection as a
     // plain parameter — so the reader daemon's body stays free of `this` captures.
@@ -535,11 +550,10 @@ object Http2:
 
         case Frame.Data(id, payload, endStream) =>
           conn.streams.get(id).foreach: stream =>
+            // No replenishment here: the peer's window refills only as the
+            // application drains the body (see `Stream.Body`), so an unread
+            // body backpressures the peer at the advertised window.
             stream.acceptData(payload)
-            // Replenish the peer's flow-control window for what we consumed.
-            if payload.length > 0 then
-              conn.send(Frame.WindowUpdate(0, payload.length))
-              conn.send(Frame.WindowUpdate(id, payload.length))
 
             if endStream then
               stream.end()
@@ -567,7 +581,7 @@ object Http2:
   // `Spool[Frame]` to the socket, serialising all writes (so no lock is needed); a
   // reader daemon parses inbound frames and dispatches them by stream id. Must be
   // created within a `supervise`-provided `Monitor`.
-  class Connection(duplex: Duplex)(using Monitor, Probate):
+  class Connection(duplex: Duplex, window: Int = Connection.receiveWindow)(using Monitor, Probate):
     import Http2.Connection.*
 
     private val streams: scc.TrieMap[Int, Http2.Stream] = scc.TrieMap()
@@ -575,7 +589,35 @@ object Http2:
     private val outbound: Relay[Frame] = Relay()
     private val started: Promise[Unit] = Promise()
 
+    // Consumed-but-unreplenished inbound bytes at connection level, and the
+    // batching threshold: one WINDOW_UPDATE per half-window consumed, not one
+    // per DATA frame.
+    private val connPending: juca.AtomicInteger = juca.AtomicInteger(0)
+    private val threshold: Int = (window/2).max(1)
+
     private def send(frame: Frame): Unit = outbound.put(frame)
+
+    // Consumption-driven replenishment: the body's accounted stream reports
+    // each drained record's bytes, which accumulate per stream and per
+    // connection until the threshold releases them as WINDOW_UPDATEs.
+    private[telekinesis] def consumed(stream: Http2.Stream, count: Int): Unit =
+      stream.unreplenished.addAndGet(count)
+      connPending.addAndGet(count)
+      replenish(stream.unreplenished, stream.id)
+      replenish(connPending, 0)
+
+    // CAS-drain: emit one WINDOW_UPDATE for everything pending once the
+    // threshold is crossed; concurrent consumers of different streams race
+    // safely on the connection counter.
+    private def replenish(pending: juca.AtomicInteger, id: Int): Unit =
+      var continue = true
+
+      while continue do
+        val value = pending.get
+        if value < threshold then continue = false
+        else if pending.compareAndSet(value, 0) then
+          send(Frame.WindowUpdate(id, value))
+          continue = false
 
     // Tear the connection down after an unrecoverable reader/writer failure: unblock a
     // pending handshake, end every open stream so awaiters of its headers/body/trailers
@@ -634,14 +676,24 @@ object Http2:
     // Plain using-parameters, de-sugared from `raises`: a context-function result may
     // not hide `this`.
     def start()(using Tactic[Async.Error]): Unit =
-      send(Frame.Settings(initialSettings, ack = false))
+      send(Frame.Settings(initialSettings(window), ack = false))
+
+      // The connection window has no SETTINGS entry: raise it from the RFC
+      // default to our receive budget. It can only be raised, so a budget below
+      // the default leaves the connection at the default and the stream window
+      // is what gates.
+      if window > defaultWindow then send(Frame.WindowUpdate(0, window - defaultWindow))
       started.await()
 
     // Open a new client stream, send its header block (and optional body), and return
     // the stream handle whose promises/spool the reader will populate.
     def request(headerBlock: List[HpackEntry], body: Optional[Bytes]): Http2.Stream =
       val id = nextId.getAndAdd(2)
-      val stream = Http2.Stream(id)
+
+      // The consumption callback reaches only JMM-safe state (atomic counters
+      // and the thread-safe outbound relay), so it is laundered pure at this
+      // rim rather than tracked into the stream.
+      val stream = Http2.Stream(id, scala.caps.unsafe.unsafeAssumePure(consumed))
       streams(id) = stream
       val encoder = Hpack()
       val noBody = body.absent
@@ -679,11 +731,78 @@ object Http2:
       writer.cancel()
       duplex.close()
 
+  object Stream:
+    // The inbound body buffer: an unbounded relay whose effective buffering is
+    // bounded by protocol credit — the peer may have at most the advertised
+    // receive window in flight beyond what the consumer has drained. Draining
+    // through `stream` accounts each record's bytes via `onConsume` at the
+    // point data actually leaves the buffer for the application, and the
+    // connection turns the accumulation into deferred, batched WINDOW_UPDATEs.
+    class Body(onConsume: Int -> Unit):
+      private val relay: Relay[Bytes] = Relay()
+
+      private[telekinesis] def put(data: Bytes): Unit = relay.put(data)
+      private[telekinesis] def stop(): Unit = relay.stop()
+
+      def stream
+        ( using addressable: (Array[Bytes]^{}) is Addressable, buffering: Buffering )
+      :   (zephyrine.Stream[Array[Bytes]^{}] over Credit)^ =
+
+        accounted(relay.stream)
+
+      // A pass-through wrapper counting the bytes of each record the consumer
+      // skips past — the single point where records leave the relay's window.
+      private def accounted
+        ( consume underlying0: (zephyrine.Stream[Array[Bytes]^{}] over Credit)^ )
+        ( using addressable: (Array[Bytes]^{}) is Addressable )
+      :   (zephyrine.Stream[Array[Bytes]^{}] over Credit)^ =
+
+        new zephyrine.Stream[Array[Bytes]^{}](using addressable):
+          type Transport = Credit
+
+          // The adopted stream is held through a neutral carrier: an exclusive
+          // field would be read-only, so the accessor re-asserts the ownership
+          // this wrapper took at construction.
+          private val held: AnyRef = underlying0.asInstanceOf[AnyRef]
+
+          private def underlying: (zephyrine.Stream[Array[Bytes]^{}] over Credit)^ =
+            held.asInstanceOf[(zephyrine.Stream[Array[Bytes]^{}] over Credit)^]
+
+          update def refill(demand: Credit): Optional[Int] = underlying.refill(demand)
+
+          protected def storage0: AnyRef =
+            val current = underlying
+            current.storage(using Unsafe).asInstanceOf[AnyRef]
+
+          def start: Int = underlying.start
+          def limit: Int = underlying.limit
+
+          update def skip(count: Int): Unit =
+            val window = storage0.asInstanceOf[scala.Array[AnyRef]]
+            val offset = underlying.start
+            var index = 0
+            var bytes = 0
+
+            while index < count do
+              bytes += window(offset + index).asInstanceOf[Bytes].length
+              index += 1
+
+            underlying.skip(count)
+            if bytes > 0 then onConsume(bytes)
+
+          override update def close(): Unit = underlying.close()
+
   // Http2.Stream -> Http2.Stream
-  class Stream(val id: Int):
+  class Stream(val id: Int, onConsume: (Http2.Stream, Int) -> Unit = (_, _) => ()):
     val headers: Promise[List[HpackEntry]] = Promise()
     val trailers: Promise[List[HpackEntry]] = Promise()
-    val body: Relay[Bytes] = Relay()
+
+    // Consumed-but-unreplenished inbound bytes, drained by the connection's
+    // batched replenishment.
+    private[telekinesis] val unreplenished: juca.AtomicInteger = juca.AtomicInteger(0)
+
+    val body: Stream.Body = Stream.Body(count => onConsume(this, count))
+
     // Untracked: written only by the connection's single reader daemon.
     @caps.unsafe.untrackedCaptures
     private var headersSeen: Boolean = false
@@ -707,15 +826,11 @@ object Http2:
 
   // Http2ServerConnection → Http2.ServerConnection
   object ServerConnection:
-    // The HTTP/2 default flow-control window (RFC 7540 §6.9.2): the initial send
-    // budget for the connection, and for a stream until the peer's SETTINGS say
-    // otherwise.
-    private val defaultWindow: Int = 65535
-
-    // Our advertised SETTINGS: a generous stream window. (`EnablePush` is a
-    // client-only setting, so the server sends only the window.)
-    private val serverSettings: List[Setting] =
-      List(Setting(SettingId.InitialWindowSize.id, 0x7fffffff))
+    // Our advertised SETTINGS: our receive-side stream window (see
+    // `Connection.receiveWindow`). `EnablePush` is a client-only setting, so
+    // the server sends only the window.
+    private def serverSettings(window: Int): List[Setting] =
+      List(Setting(SettingId.InitialWindowSize.id, window))
 
     // Dispatch one decoded frame, in the server role: the peer is a client, so a
     // HEADERS frame for an unknown (client-initiated, odd) stream id CREATES the
@@ -760,7 +875,10 @@ object Http2:
                 conn.streams.remove(id)
 
             case None =>
-              val stream = Http2.Stream(id)
+              // The consumption callback reaches only JMM-safe state (atomic
+              // counters and the thread-safe outbound relay), so it is
+              // laundered pure at this rim rather than tracked into the stream.
+              val stream = Http2.Stream(id, scala.caps.unsafe.unsafeAssumePure(conn.consumed))
               conn.streams(id) = stream
               stream.acceptHeaders(decoder.decode(block))
               if endStream then stream.end() else ()
@@ -770,11 +888,10 @@ object Http2:
 
         case Frame.Data(id, payload, endStream) =>
           conn.streams.get(id).foreach: stream =>
+            // No replenishment here: the peer's window refills only as the
+            // handler drains the request body (see `Stream.Body`), so an
+            // unread body backpressures the peer at the advertised window.
             stream.acceptData(payload)
-            // Replenish the peer's flow-control window for what we consumed.
-            if payload.length > 0 then
-              conn.send(Frame.WindowUpdate(0, payload.length))
-              conn.send(Frame.WindowUpdate(id, payload.length))
 
             if endStream then
               stream.end()
@@ -811,8 +928,10 @@ object Http2:
   // each header block is encoded with a fresh (always-literal) HPACK encoder, so
   // no encoder state is shared. Must be created within a `supervise`-provided
   // `Monitor`.
-  class ServerConnection(duplex: Duplex^)(using Monitor, Probate):
+  class ServerConnection(duplex: Duplex^, window: Int = Connection.receiveWindow)
+    ( using Monitor, Probate ):
     import Http2.ServerConnection.*
+    import Http2.Connection.defaultWindow
 
     // A socket-backed `Duplex` captures its I/O capabilities, so it crosses into
     // the reader/writer daemons (and reaches `close`) as a neutral `AnyRef` rim.
@@ -833,7 +952,29 @@ object Http2:
     // and runs its handler. Stopped when the connection ends.
     private[telekinesis] val accepted: Relay[Http2.Stream] = Relay()
 
+    // Receive-side replenishment state, as `Connection`'s: consumed bytes
+    // accumulate per stream and per connection, released as batched
+    // WINDOW_UPDATEs at the half-window threshold.
+    private val connPending: juca.AtomicInteger = juca.AtomicInteger(0)
+    private val threshold: Int = (window/2).max(1)
+
     private[telekinesis] def send(frame: Frame): Unit = outbound.put(frame)
+
+    private[telekinesis] def consumed(stream: Http2.Stream, count: Int): Unit =
+      stream.unreplenished.addAndGet(count)
+      connPending.addAndGet(count)
+      replenish(stream.unreplenished, stream.id)
+      replenish(connPending, 0)
+
+    private def replenish(pending: juca.AtomicInteger, id: Int): Unit =
+      var continue = true
+
+      while continue do
+        val value = pending.get
+        if value < threshold then continue = false
+        else if pending.compareAndSet(value, 0) then
+          send(Frame.WindowUpdate(id, value))
+          continue = false
 
     // Tear the connection down after an unrecoverable reader/writer failure or a
     // bad preface: unblock a pending handshake, end every open stream, and stop
@@ -893,7 +1034,11 @@ object Http2:
     // await the client's (which the dispatch acks). Plain using-parameters,
     // de-sugared from `raises`: a context-function result may not hide `this`.
     def start()(using Tactic[Async.Error]): Unit =
-      send(Frame.Settings(serverSettings, ack = false))
+      send(Frame.Settings(serverSettings(window), ack = false))
+
+      // Raise the connection window from the RFC default to our receive
+      // budget, as `Connection.start` does.
+      if window > defaultWindow then send(Frame.WindowUpdate(0, window - defaultWindow))
       started.await()
 
     // Run `handler` for each client-initiated stream as it arrives, on the
