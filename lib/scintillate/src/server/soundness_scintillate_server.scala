@@ -40,7 +40,7 @@ import scala.caps
 export
   scintillate
   . { Acceptable, basicAuth, cookie, Frontend, HttpServer, NoCache, NotFound, Reactor,
-      Redirect, request, RequestServable, Responder, ServerError, SocketServer, Unfulfilled,
+      Redirect, request, RequestServable, Responder, SocketServer, Unfulfilled,
       WebserverErrorPage }
 
 package frontends:
@@ -50,7 +50,7 @@ package httpServers:
   // Hand-written forwarders rather than an `export`: synthesized export forwarders lose the
   // givens' capture-annotated refinement types (the zephyrine through/accepting finding).
   given stdlibHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic:  contingency.Tactic[scintillate.ServerError],
+  =>  ( tactic:  contingency.Tactic[scintillate.HttpServer.Error],
         monitor: parasite.Monitor,
         probate: parasite.Probate )
   =>  ( loggable:  scintillate.HttpServer.Event is anticipation.Loggable,
@@ -63,7 +63,7 @@ package httpServers:
     . asInstanceOf[scintillate.httpServers.HttpServerFor[port]]
 
   given stdlibPublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic:  contingency.Tactic[scintillate.ServerError],
+  =>  ( tactic:  contingency.Tactic[scintillate.HttpServer.Error],
         monitor: parasite.Monitor,
         probate: parasite.Probate )
   =>  ( loggable:  scintillate.HttpServer.Event is anticipation.Loggable,

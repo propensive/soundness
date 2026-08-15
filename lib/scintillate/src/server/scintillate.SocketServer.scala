@@ -352,7 +352,7 @@ extends RequestServable:
   // affair). Sessions and TLS aside, the two engines serve identical handlers.
   def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
-    ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
+    ( using (HttpServer.Event is Loggable)^, Tactic[HttpServer.Error] )
     ( using frontend: Frontend )
   :   Service^ =
 
@@ -376,12 +376,12 @@ extends RequestServable:
   // confines the state to its connection.
   def handleSession(scope: (session: Http2Session^) ?=> Unit)
     ( using Monitor, Probate )
-    ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
+    ( using (HttpServer.Event is Loggable)^, Tactic[HttpServer.Error] )
   :   Service^ =
 
     val idleTimeout: Int = 30000
 
-    def startServer(): jn.ServerSocket raises ServerError =
+    def startServer(): jn.ServerSocket raises HttpServer.Error =
       try
         val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
 
@@ -401,7 +401,7 @@ extends RequestServable:
               ()
 
           socket
-      catch case error: jn.BindException => abort(ServerError(port))
+      catch case error: jn.BindException => abort(HttpServer.Error(port))
 
     val serverSocket = startServer()
 

@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **440**;
+- exported multi-word type-level names still under review: **439**;
   217 sit in a prefix family of two or more, across 64 families, and
-  223 are singletons. Names under "Reviewed items which should not be moved"
+  222 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -168,11 +168,14 @@ names covered one failure: `DivisionError` and `OverflowError` became `Arithmeti
 with distinct `Reason`s. `DataError` was renamed rather than merely moved: nothing in
 anamnesis is called `Data`, and the only `Data` in the codebase — anticipation's
 `Array[Byte]^{}` — is unrelated, so the name invited the wrong association. It is
-`Database.Error`.
+`Database.Error`. `ServerError` likewise: in an HTTP library that name reads as a 5xx
+response — which is what `Http.Status.Category.ServerError` actually means, in a library
+scintillate depends on — rather than a listener that could not bind. It is
+`HttpServer.Error`, beside the `HttpServer.Event` that both server backends already share.
 
 | status | names |
 |---|---|
-| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `BoundsError`, `ConnectError`, `ExpectationError`, `InstallError`, `ServerError` |
+| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `BoundsError`, `ConnectError`, `ExpectationError`, `InstallError` |
 | excluded by R2 (specification concept) | `CompileError` |
 | outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `EscapeError`, `RemoteError`, `UncheckedError` |
 | structurally blocked, with the reason established | `IoError`, `StreamError` (below) |
@@ -310,7 +313,7 @@ ultimatum's is the likelier one to rename.
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (223)
+### Singletons (222)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
@@ -341,9 +344,9 @@ ultimatum's is the likelier one to rename.
 `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`, `RectoPanel`,
 `ReferenceTypeId`, `ReflogEntry`, `RemoteError`, `RequestServable`, `ResetMode`, `Rgb12Opaque`,
 `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`,
-`SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ServerError`, `ShaderPlugin`,
-`SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`,
-`SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
+`SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`, `SiderealDays`,
+`SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`, `SolarDay`,
+`SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
 `StaticAnnotation`, `StringId`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`, `TeletypeFormattable`,
 `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `TestPalette`, `ThemeColor`,
 `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`,

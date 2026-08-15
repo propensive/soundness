@@ -57,7 +57,7 @@ package httpServers:
   // declared refinement (the galilei `FileOpenable` finding). Honestly tracked: the instance
   // retains its tactic and monitor (rep/DECISIONS.md ruling: server givens are capabilities).
   private class HttpProtocolic[port <: (80 | 443 | 8080 | 8000)](native: Boolean, local: Boolean)
-    ( using tactic:    Tactic[ServerError],
+    ( using tactic:    Tactic[HttpServer.Error],
             monitor:   Monitor,
             probate:   Probate,
             loggable:  HttpServer.Event is Loggable,
@@ -85,25 +85,25 @@ package httpServers:
         type Server = Service }
 
   given stdlibHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
+  =>  ( tactic: Tactic[HttpServer.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](false, true)
 
   given stdlibPublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
+  =>  ( tactic: Tactic[HttpServer.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](false, false)
 
   given nativeHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
+  =>  ( tactic: Tactic[HttpServer.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](true, true)
 
   given nativePublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
+  =>  ( tactic: Tactic[HttpServer.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](true, false)
