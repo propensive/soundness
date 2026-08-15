@@ -81,46 +81,88 @@ object Tests extends Suite(m"Scintillate tests"):
       response.tt
 
     supervise:
-      // The reactor skeleton: echo-level, proving the loop/registration/attachment
-      // machinery over real sockets before the HTTP fast path lands.
-      suite(m"Reactor skeleton"):
-        test(m"Bytes written to a reactor connection are echoed back"):
+      // The reactor front-end: the HTTP fast path over real sockets — accumulation,
+      // end-of-head scanning, preset-cursor parsing, inline handlers and coalesced
+      // writes, across lanes.
+      suite(m"Reactor front-end"):
+        test(m"A GET is served by the reactor"):
           val port = freePort()
-          val reactor = Reactor(port, loops = 2)
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"from the reactor"))
+          try rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+          finally reactor.stop()
+
+        . assert(_.contains(t"from the reactor"))
+
+        test(m"A fixed POST body reaches an inline handler"):
+          val port = freePort()
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+          try
+            rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nhello")
+          finally reactor.stop()
+
+        . assert(_.contains(t"hello"))
+
+        test(m"Two pipelined requests get two responses on one connection"):
+          val port = freePort()
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"pong"))
+
+          try
+            val request = t"GET /a HTTP/1.1\r\nHost: x\r\n\r\nGET /b HTTP/1.1\r\nHost: x\r\n\r\n"
+            rawRequest(port, request)
+          finally reactor.stop()
+
+        . assert(_.s.split("200 OK").nn.length == 3)
+
+        test(m"A request split across many tiny writes is accumulated and served"):
+          val port = freePort()
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"assembled"))
 
           try
             val socket = java.net.Socket("localhost", port)
             val out = socket.getOutputStream.nn
-            out.write("hello, reactor".getBytes("US-ASCII").nn)
-            out.flush()
-            val buffer = new scala.Array[Byte](64)
-            val count = socket.getInputStream.nn.read(buffer)
+            val request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes("US-ASCII").nn
+
+            request.foreach: byte =>
+              out.write(scala.Array(byte))
+              out.flush()
+
+            socket.shutdownOutput()
+            val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
             socket.close()
-            String(buffer, 0, count, "US-ASCII").tt
+            response.tt
           finally reactor.stop()
 
-        . assert(_ == t"hello, reactor")
+        . assert(_.contains(t"assembled"))
 
-        test(m"Concurrent connections on distinct lanes echo independently"):
+        test(m"Concurrent connections across lanes are served independently"):
           val port = freePort()
-          val reactor = Reactor(port, loops = 2)
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(request.target)
 
           try
-            val sockets = scala.List.tabulate(8): index =>
-              val socket = java.net.Socket("localhost", port)
-              socket.getOutputStream.nn.write(s"client-$index".getBytes("US-ASCII").nn)
-              socket.getOutputStream.nn.flush()
-              socket
+            val results = scala.List.tabulate(8): index =>
+              rawRequest(port, t"GET /client-$index HTTP/1.1\r\nHost: x\r\n\r\n")
 
-            sockets.zipWithIndex.map: (socket, index) =>
-              val buffer = new scala.Array[Byte](64)
-              val count = socket.getInputStream.nn.read(buffer)
-              socket.close()
-              String(buffer, 0, count, "US-ASCII") == s"client-$index"
-            . forall(identity)
+            results.zipWithIndex.forall: (response, index) =>
+              response.contains(t"/client-$index")
           finally reactor.stop()
 
         . assert(_ == true)
+
+        test(m"An oversized head is refused with 431"):
+          val port = freePort()
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"no"))
+
+          try
+            val padding = String("x".repeat(80000).nn)
+            rawRequest(port, t"GET / HTTP/1.1\r\nHost: x\r\nPad: ${padding.tt}\r\n\r\n")
+          finally reactor.stop()
+
+        . assert(_.contains(t"431"))
 
       suite(m"Native socket server"):
         test(m"GET returns the handler's response body"):
