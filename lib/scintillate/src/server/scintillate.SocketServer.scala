@@ -101,6 +101,57 @@ extends RequestServable:
 
     if failed then abort(StreamError(count.b))
 
+  // Case-insensitive substring search over the raw strings, allocation-free: the
+  // header facts below are computed on every request, and `.lower` would allocate a
+  // fresh `Text` per header per request.
+  private def containsIgnoreCase(value: String, token: String): Boolean =
+    val max = value.length - token.length
+    var index = 0
+    var found = false
+
+    while !found && index <= max do
+      if value.regionMatches(true, index, token, 0, token.length) then found = true
+      else index += 1
+
+    found
+
+  // The per-request header facts, gathered in one allocation-free pass. The former
+  // helpers (`keepAlive`, `isUpgrade`, `expectsContinue`, and `requestBody`'s framing
+  // scan) each rescanned the header list, lowercasing every key and value they
+  // touched — a measurable share of the per-request CPU on the JFR profile.
+  private class HeadFacts extends scala.caps.Stateful:
+    var connectionClose: Boolean = false
+    var connectionKeepAlive: Boolean = false
+    var connectionUpgrade: Boolean = false
+    var upgradePresent: Boolean = false
+    var expectContinue: Boolean = false
+    var chunked: Boolean = false
+    var contentLength: Optional[Int] = Unset
+
+  private def factsOf(head: Http.Request.Head): HeadFacts^ =
+    val facts = HeadFacts()
+
+    head.headers.each: header =>
+      val key = header.key.s
+
+      if key.equalsIgnoreCase("connection") then
+        val value = header.value.s
+        if containsIgnoreCase(value, "close") then facts.connectionClose = true
+        if containsIgnoreCase(value, "keep-alive") then facts.connectionKeepAlive = true
+        if containsIgnoreCase(value, "upgrade") then facts.connectionUpgrade = true
+      else if key.equalsIgnoreCase("upgrade") then
+        facts.upgradePresent = true
+      else if key.equalsIgnoreCase("expect") then
+        if containsIgnoreCase(header.value.s, "100-continue") then facts.expectContinue = true
+      else if key.equalsIgnoreCase("transfer-encoding") then
+        if containsIgnoreCase(header.value.s, "chunked") then facts.chunked = true
+      else if key.equalsIgnoreCase("content-length") then
+        // The first such header governs, as the former `.prim` selection did.
+        if facts.contentLength.absent
+        then facts.contentLength = safely(Integer.parseInt(header.value.s.trim.nn))
+
+    facts
+
   // Frame the request body off the shared connection cursor: chunked decoding
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
   // when neither is given. The framed stream stops exactly at the body's end so
@@ -108,45 +159,32 @@ extends RequestServable:
   // Upstream #1570's kernel-stream body with this branch's cursor convention
   // (`Cursor[Data, {}]^`: a concrete cap argument, never `?`, which collapses inline
   // receiver proxies to read-only).
-  private def requestBody(cursor: Cursor[Data, {}]^, head: Http.Request.Head)
+  private def requestBody(cursor: Cursor[Data, {}]^, facts: HeadFacts^)
   :   (Stream[Data] over Credit)^{cursor} =
    // The stream's own fresh capability is laundered into the declared result, which
    // tracks the single-owner cursor.
    scala.caps.unsafe.unsafeAssumePure:
-
-     val chunked: Boolean = head.headers.exists: header =>
-       header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
-
-     if chunked then Http.Request.chunkedBody(cursor) else
-       val length: Optional[Int] =
-         head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
-         . lay(Unset: Optional[Int]): text =>
-             safely(Integer.parseInt(text.s.trim.nn))
-
-       length.lay(Http.emptyBody())(Http.Request.fixedBody(cursor, _))
+     if facts.chunked then Http.Request.chunkedBody(cursor)
+     else facts.contentLength.lay(Http.emptyBody())(Http.Request.fixedBody(cursor, _))
 
   // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
   // HTTP/1.0 closes unless `Connection: keep-alive`.
-  private def keepAlive(head: Http.Request.Head): Boolean =
-    val connection = head.headers.filter(_.key.lower == t"connection").map(_.value.lower)
-
+  private def keepAlive(head: Http.Request.Head, facts: HeadFacts^): Boolean =
     head.version match
-      case 1.1 => !connection.exists(_.contains(t"close"))
-      case _   => connection.exists(_.contains(t"keep-alive"))
+      case 1.1 => !facts.connectionClose
+      case _   => facts.connectionKeepAlive
 
   // A request asks to upgrade the protocol (e.g. to WebSocket) when it carries
   // `Connection: Upgrade` together with an `Upgrade` header. Such a request's
   // body is the unbounded remainder of the connection, so a frame reader can
   // keep receiving bytes after the handshake.
-  private def isUpgrade(head: Http.Request.Head): Boolean =
-    head.headers.filter(_.key.lower == t"connection").exists(_.value.lower.contains(t"upgrade")) &&
-      head.headers.exists(_.key.lower == t"upgrade")
+  private def isUpgrade(facts: HeadFacts^): Boolean =
+    facts.connectionUpgrade && facts.upgradePresent
 
   // A client may withhold a request body until the server agrees to receive it
   // with an interim `100 Continue` (RFC 7231 §5.1.1).
-  private def expectsContinue(head: Http.Request.Head): Boolean =
-    head.version == 1.1 && head.headers.exists: header =>
-      header.key.lower == t"expect" && header.value.lower.contains(t"100-continue")
+  private def expectsContinue(head: Http.Request.Head, facts: HeadFacts^): Boolean =
+    head.version == 1.1 && facts.expectContinue
 
   private def streaming(response: Http.Response^): Boolean = response.body match
     case Http.Body.Flowing(_) => true
@@ -199,10 +237,11 @@ extends RequestServable:
 
       . protect:
           val head = Http.Request.parseHead(cursor)
-          val upgrade = isUpgrade(head)
+          val facts = factsOf(head)
+          val upgrade = isUpgrade(facts)
 
           // Tell a waiting client it may send the body before we read it.
-          if expectsContinue(head) then writeAll(out, continueResponse.stream)
+          if expectsContinue(head, facts) then writeAll(out, continueResponse.stream)
 
           // The framed body, minted once and lent single-owner: the handler and
           // the post-response drain share it, so the handler pulls what it
@@ -212,7 +251,7 @@ extends RequestServable:
           val bodyStream: (Stream[Data] over Credit)^{cursor} =
             // Both branches produce a stream over the same single-owner cursor.
             scala.caps.unsafe.unsafeAssumePure:
-              if upgrade then streamOf(cursor) else requestBody(cursor, head)
+              if upgrade then streamOf(cursor) else requestBody(cursor, facts)
 
           // Neutral carrier: the spring re-lends the same single-owner stream.
           val bodyRef: AnyRef = bodyStream.asInstanceOf[AnyRef]
@@ -227,7 +266,7 @@ extends RequestServable:
                 () => bodyRef.asInstanceOf[Stream[Data] over Credit] )
 
           var upgraded = false
-          var keep = keepAlive(head)
+          var keep = keepAlive(head, facts)
 
           // The responder retains only per-request locals; no aliased writer.
           val respond: Http.Connection.Respond^ = scala.caps.unsafe.unsafeAssumeSeparate:

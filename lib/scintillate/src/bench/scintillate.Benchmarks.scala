@@ -123,6 +123,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
     // test), and G1 rather than the harness's default Serial collector, whose single-threaded
     // stop-the-world pauses would dominate p99 latency in a saturated server workload.
     val stress = Stress(heap = t"2g", gc = t"G1")
+    val profile = Profile(heap = t"2g")
 
     val requestSize  = getRequest.length*Byte
     val responseSize = serializeResponse(okResponse)*Byte
@@ -193,6 +194,23 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
 
       stress(m"ZIO  zio-http Server")
         ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        '{
+            scintillate.HttpRivals.zioServer
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.zioPort)
+        }
+
+    // Where the round-trip's CPU goes, for scintillate and (as the reference) zio-http.
+    // The single profiled client thread's frames are identical in both rows, so any
+    // difference between the histograms is server-side. CPU-only: parked time (the
+    // client awaiting the response, the server awaiting a request) is invisible.
+    suite(m"Profile: HTTP round-trip hotspots"):
+      profile(m"Scintillate  socket round-trip")(target = 5*Second):
+        '{
+            scintillate.HttpRivals.scintillateVirtual
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.scintillateVirtualPort)
+        }
+
+      profile(m"ZIO  zio-http socket round-trip")(target = 5*Second):
         '{
             scintillate.HttpRivals.zioServer
             scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.zioPort)
