@@ -508,7 +508,7 @@ Horizon: mid — after mod-4, so nothing moves twice.
   The CSI item is not a deduplication at all: `escapade.csi` is a *writer* -- `cuu`, `cud`, `sgr`
   and friends generate sequences -- and contains no parser, so this means writing a tokenizer,
   not moving one. The two consumers then differ in the ways that make a tokenizer hard to share:
-  yossarian parses a complete buffer with a pure state machine and *raises* `PtyEscapeError` on
+  yossarian parses a complete buffer with a pure state machine and *raises* `Pty.EscapeError` on
   malformed input, as a terminal emulator must; profanity reads a live TTY where the parse is
   entangled with timing -- its `Lookahead` exists to decide whether a bare ESC is the Escape key
   or the start of a sequence split across a packet boundary -- and it degrades to

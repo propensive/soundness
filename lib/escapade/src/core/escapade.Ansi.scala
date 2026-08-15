@@ -286,8 +286,8 @@ object Ansi extends Ansi2:
               state.appendChars(text)
               state
 
-      catch case error: EscapeError => error match
-        case EscapeError(message) => throw AnsiError(message)
+      catch case error: TextEscapes.Error => error match
+        case TextEscapes.Error(message) => throw Error(message)
 
     def insert(state: State, value: Input): State = value match
       case Input.TextInput(text) =>
@@ -311,7 +311,7 @@ object Ansi extends Ansi2:
 
     def complete(state: State): Teletype =
       if state.stack.nonEmpty
-      then throw AnsiError(m"the closing brace does not match an opening brace")
+      then throw Error(m"the closing brace does not match an opening brace")
 
       val tail = if state.linkArmed then StyleWord.HyperlinkChange else 0L
       state.styles += tail
@@ -327,7 +327,7 @@ object Ansi extends Ansi2:
           state.insertions.to(TreeMap),
           newBoundaries )
 
-  case class AnsiError(detail: Message)
+  case class Error(detail: Message)
   extends Exception(s"escapade: ${detail.text.s}")
 
   // TerminalEscapes → Ansi.Escapes, StandardEscapes → Ansi.Escapes.Standard

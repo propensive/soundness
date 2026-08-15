@@ -34,7 +34,7 @@ package soundness
 
 export
   fulminate
-  . { Clarification, Communicable, communicate, Diagnostics, Error, EscapeError, halt, Hazard, m,
+  . { Clarification, Communicable, communicate, Diagnostics, Error, halt, Hazard, m,
       Message,
       Panic, panic, TextEscapes, UncheckedError, warn }
 

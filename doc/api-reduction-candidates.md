@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **435**;
+- exported multi-word type-level names still under review: **433**;
   215 sit in a prefix family of two or more, across 63 families, and
-  220 are singletons. Names under "Reviewed items which should not be moved"
+  218 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -182,11 +182,12 @@ looks misnamed may be one the codebase already has.
 
 | status | names |
 |---|---|
-| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `ConnectError`, `ExpectationError`, `InstallError` |
+| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `ConnectError`, `InstallError` |
 | excluded by R2 (specification concept) | `CompileError` |
-| outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `EscapeError`, `UncheckedError` |
+| outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `UncheckedError` |
 | structurally blocked, with the reason established | `StreamError` (below) |
-| nested compound names, where the prefix is usually redundant with the enclosing type and could simply become `Error` (as `Wit.ParseError` → `Wit.Error` did) | `Ansi.AnsiError`, `Pty.EscapeError`, `Git.RefError`, `Repackager.RepackageError`, `Sh.ShError`, `Repackager.UserError`, `UrlInterpolatorError`, `EvaluationError` |
+| nested compound names, where the prefix repeats the enclosing type | `Repackager.RepackageError` and `Repackager.UserError` (only one can be `Error`), `UrlInterpolatorError` |
+| nested, but the prefix is doing real work — the enclosing type already has an `Error` meaning something else | `XPath.EvaluationError` (evaluating vs parsing an XPath; `XPath.Error`'s reason numbers are documented as append-only), `Git.RefError` (a ref-name syntax check that never runs git), `Pty.EscapeError` |
 
 **`StreamError` cannot be nested.** `Stream` is not declared anywhere in this repository — it
 comes from the proscala fork's prelude via `-Yimports:proscenium` — so there is no companion
@@ -327,7 +328,7 @@ ultimatum's is the likelier one to rename.
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (220)
+### Singletons (218)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
@@ -339,28 +340,27 @@ ultimatum's is the likelier one to rename.
 `CtrlChar`, `CtSym`, `DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`,
 `DivisionByZero`, `DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`, `EcosystemProfile`,
 `EditorField`, `EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`,
-`EnumerationHasAsScala`, `EscapeError`, `EucalyptusGcp`, `ExpectationError`, `FastForward`,
-`FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `GapPolicy`, `GarbageCollection`,
-`GaugePalette`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`, `GraphemeBreak`,
-`GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
-`InitializationVector`, `InstallError`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`,
-`Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`, `JsigDiscipline`, `JsInvoke`,
-`JuxtapositionPalette`, `JvmProfile`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`,
-`LazyEnvironment`, `LengthPrefix`, `LinkEvent`, `LocalhostDevice`, `LongNameFormat`, `LruCache`,
-`LspSessional`, `ManifestSigning`, `MarkdownPalette`, `MathmlReader`, `MediaType`, `MenuField`,
-`MethodId`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`,
-`NoteRef`, `NotFound`, `NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`,
-`OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`,
-`OrdinalCalendar`, `OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`,
-`PdfFile`, `PeriodicTable`, `PhysicalState`, `PixelOpaque`, `PlaceholderKind`,
-`PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`, `PositionTracking`, `PosixCommands`,
-`PrivateKey`, `ProcessingPermit`, `ProcessStatus`, `ProgrammingLanguage`, `ProgressBar`,
-`PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`, `RectoPanel`,
-`ReferenceTypeId`, `ReflogEntry`, `RequestServable`, `ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`,
-`RomanCalendar`, `RootFs`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`,
-`SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`, `SiderealDays`,
-`SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`, `SolarDay`,
-`SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
+`EnumerationHasAsScala`, `EucalyptusGcp`, `FastForward`, `FlowExtent`, `FluidOunce`,
+`FoldableRectoPanel`, `GapPolicy`, `GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`,
+`GithubActions`, `GivensPhase`, `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`,
+`HmacCipher`, `Html4Transitional`, `InitializationVector`, `InstallError`, `IntercardinalWind`,
+`InterfaceAddress`, `IpAddress`, `Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`,
+`JsigDiscipline`, `JsInvoke`, `JuxtapositionPalette`, `JvmProfile`, `KillRequest`,
+`LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LinkEvent`,
+`LocalhostDevice`, `LongNameFormat`, `LruCache`, `LspSessional`, `ManifestSigning`,
+`MarkdownPalette`, `MathmlReader`, `MediaType`, `MenuField`, `MethodId`, `MlDsa`,
+`MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NoteRef`, `NotFound`,
+`NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`, `OnlineClasspath`, `OpaqueDiscipline`,
+`OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`, `OverwritePreexisting`,
+`PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`, `PhysicalState`,
+`PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`,
+`PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`, `ProcessStatus`,
+`ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`,
+`RasterOpenable`, `RectoPanel`, `ReferenceTypeId`, `ReflogEntry`, `RequestServable`, `ResetMode`,
+`Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `SchemaSignature`, `ScreenRoot`,
+`SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`,
+`SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`,
+`SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
 `StaticAnnotation`, `StringId`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`, `TeletypeFormattable`,
 `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `TestPalette`, `ThemeColor`,
 `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`,

@@ -127,7 +127,7 @@ def throwErrors[error <: Hazard](using CanThrow[error])[success]
 
 def capture[error <: Hazard: ClassTag](using erased void: Void)[success]
   ( block: Tactic[error]^ ?=> success )
-  ( using Tactic[ExpectationError[success]]^, Diagnostics )
+  ( using Tactic[Expectation.Error[success]]^, Diagnostics )
 :   error =
 
   try
@@ -136,7 +136,7 @@ def capture[error <: Hazard: ClassTag](using erased void: Void)[success]
 
     value match
       case Left(error)  => error
-      case Right(value) => abort(ExpectationError(value))
+      case Right(value) => abort(Expectation.Error(value))
 
   catch
     case exception: `error`   => exception

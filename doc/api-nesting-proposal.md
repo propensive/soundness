@@ -167,9 +167,10 @@ What the later passes actually did with them:
   `BoundsError` restated `JsonBlueprint.Error.Reason.IntOutOfRange`
 
 Still compound, and for reasons now recorded in `api-reduction-candidates.md`:
-`ConnectError`, `InstallError`, `EscapeError`, `UncheckedError`, `LinkEvent`,
-`StreamError` (whose `Stream` is the proscala prelude's, so there is no companion to nest
-into), and `CompileError` (excluded under R2).
+`ConnectError`, `InstallError`, `UncheckedError`, `LinkEvent`, `StreamError` (whose
+`Stream` is the proscala prelude's, so there is no companion to nest into), and
+`CompileError` (excluded under R2). `EscapeError` joined the moved list as
+`TextEscapes.Error`.
 
 **The lesson for the next pass**: "no outer type of that name exists" is not the same as
 "no host exists". Resolve the outer name to a file and a component, and consider hosts whose
