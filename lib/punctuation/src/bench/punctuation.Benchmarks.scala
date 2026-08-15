@@ -41,7 +41,9 @@ import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
+import prepositional.*
 import probably.*
+import spectacular.show
 import proscenium.*
 import proscenium.compat.*
 import quantitative.*
@@ -79,6 +81,13 @@ object Benchmarks extends Suite(m"Punctuation benchmarks"):
 
   def parseNative(text: Text): Int = Parser.parse(text).children.length
 
+  // Parsed once, outside the timed region, so the serialization rows measure
+  // `.show` alone rather than a parse-and-show round trip.
+  lazy val mediumDoc:    Markdown of Layout = Parser.parse(medium)
+  lazy val stressMixDoc: Markdown of Layout = Parser.parse(stressMix)
+
+  def serializeNative(doc: Markdown of Layout): Int = doc.show.s.length
+
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
   def run(): Unit =
@@ -88,6 +97,19 @@ object Benchmarks extends Suite(m"Punctuation benchmarks"):
     val mediumSize:         Quantity[Bytes[1]] = medium.s.getBytes("UTF-8").nn.length*Byte
     val stressMixSize:      Quantity[Bytes[1]] = stressMix.s.getBytes("UTF-8").nn.length*Byte
     val emphasisStressSize: Quantity[Bytes[1]] = emphasisStress.s.getBytes("UTF-8").nn.length*Byte
+
+    // Serialization had no coverage at all, though `escapeTextual` runs once per
+    // character of every textual span — the counterpart of the parse side's
+    // batched `isSpecial` scan, and the place a character-class test on this
+    // side actually costs something.
+    suite(m"Markdown serialization throughput"):
+      bench(m"serialize medium (~19 KB, real README)")
+        ( target = 1*Second, operationSize = mediumSize ):
+        '{ punctuation.Benchmarks.serializeNative(punctuation.Benchmarks.mediumDoc) }
+
+      bench(m"serialize stress-mix (~38 KB, every feature)")
+        ( target = 1*Second, operationSize = stressMixSize ):
+        '{ punctuation.Benchmarks.serializeNative(punctuation.Benchmarks.stressMixDoc) }
 
     suite(m"Markdown parsing throughput"):
       bench(m"parse small (~2 KB, mixed prose)")
