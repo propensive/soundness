@@ -381,6 +381,12 @@ object Http:
     // with `peek`/`next` rather than `seek` so it works on a bare `Cursor[Data, ?]`
     // parameter (which loses the `tracked` `Operand = Byte` refinement that
     // `seek`'s signature relies on).
+    // The last successfully-parsed `Host` header, memoized across requests; see the
+    // comment at its use in `parseHead`. Untracked: an immutable pair behind a benign
+    // read-mostly race, not a capability-bearing state.
+    @scala.caps.unsafe.untrackedCaptures @volatile
+    private var hostMemo: (Text, Host) | Null = null
+
     // `maxRequestLine` and `maxHeaders` bound how many bytes the request line and
     // the header block may occupy, yielding `414`/`431` (rather than reading an
     // unbounded amount) — the scan aborts mid-token once the cap is crossed.
@@ -445,13 +451,26 @@ object Http:
 
       val headers = readHeaders(Nil).reverse
 
-      val hostText: Optional[Text] = headers.filter(_.key.lower == t"host").prim.let(_.value)
+      val hostText: Optional[Text] =
+        headers.filter(_.key.s.equalsIgnoreCase("host")).prim.let(_.value)
 
       val host: Host = hostText.lay(abort(Http.Request.Error(Http.Request.Error.Reason.Host(t"")))):
         text =>
-          safely(text.as[Host]).or:
-            safely(text.cut(t":").prim.or(text).as[Host]).or:
-              abort(Http.Request.Error(Http.Request.Error.Reason.Host(text)))
+          // The typed parse of the union (`Hostname | Ipv4 | Ipv6`, trying each form) is
+          // the costliest step of parsing a request, yet every request on a keep-alive
+          // connection repeats the same bytes, and host cardinality per server is tiny.
+          // Only a successful parse is memoized, so a missing or invalid host still
+          // aborts here; a stale memo under concurrency merely reparses.
+          hostMemo match
+            case (cached, host0) if cached == text => host0
+            case _ =>
+              val parsed =
+                safely(text.as[Host]).or:
+                  safely(text.cut(t":").prim.or(text).as[Host]).or:
+                    abort(Http.Request.Error(Http.Request.Error.Reason.Host(text)))
+
+              hostMemo = (text, parsed)
+              parsed
 
       Head(method, version, host, target, headers)
 
@@ -768,10 +787,14 @@ object Http:
       // server adds `Connection: close`), so its body is written raw.
       val chunkable: Boolean = version != 1.0 && version != 0.9
 
+      // Case-insensitive on the raw strings: `.lower` would allocate a fresh `Text` per
+      // header per response on this hot path.
       val explicitChunked: Boolean = response.textHeaders.exists: header =>
-        header.key.lower == t"transfer-encoding" && header.value.lower == t"chunked"
+        header.key.s.equalsIgnoreCase("transfer-encoding")
+          && header.value.s.equalsIgnoreCase("chunked")
 
-      val hasContentLength: Boolean = response.textHeaders.exists(_.key.lower == t"content-length")
+      val hasContentLength: Boolean =
+        response.textHeaders.exists(_.key.s.equalsIgnoreCase("content-length"))
 
       val (extraHeaders, chunked): (List[Header], Boolean) =
         if upgrade then (Nil, false) else response.body match
