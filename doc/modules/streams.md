@@ -201,6 +201,37 @@ supervise(Confluence(first, second, third))
 materialized once and shared immutably between them. A full subscriber queue parks the pump, so
 the slowest subscriber gates the source — the correct behaviour for replication.
 
+### Tuning backpressure
+
+Every stage that allocates a buffer consults the `Buffering` policy in scope, so one given
+tunes a whole pipeline. Its members are:
+
+ - `capacity(substrate)` — the staging block size: 4096 bytes, 2048 characters or 256 records
+   by default. Staging blocks want to stay cache-resident.
+ - `transfer(substrate)` — the size of a block crossing an asynchronous boundary, sixteen
+   staging blocks by default. Every such block costs a synchronized hand-off, so boundary
+   blocks want to be much larger than staging blocks.
+ - `depth` — the number of transfer blocks of headroom a `Conduit` holds between its writer and
+   reader, 16 by default. A conduit's in-flight data is bounded by `(depth + 1)` transfer
+   blocks; hand-off throughput collapses at very shallow depths (a depth of 2 reaches less than
+   a tenth of the default's throughput in the benchmark sweep) and plateaus around the default
+   for a producer and consumer in lockstep, but bursty pipelines still gain from a depth
+   covering their burst size in transfer blocks.
+ - `recycle` — whether drained transfer blocks return to the writer for reuse (on by default);
+   a shared, size-capped pool amortizes block allocation across conduit instances.
+
+Backpressure applies wherever data crosses between threads: a `Conduit` writer parks on a full
+ring, `Divergence`'s pump parks on the slowest subscriber's ring (closing a subscriber's stream
+releases it), `Confluence`'s pumps park uniformly on the shared queue, and HTTP/2 applies
+credit-based flow control in both directions — the advertised receive window (1 MiB by default,
+tunable per connection) bounds how far a peer can run ahead of a consumer that has stopped
+reading, with the window replenished only as the body is actually drained.
+
+One structure deliberately opts out: `Relay` is the many-producer record bus, and its contract
+is that producers never block. HTTP/2's outbound frame multiplexer depends on that — a blocking
+`put` there would risk distributed deadlock between streams — so a relay's discipline is its
+single consumer, not a bound.
+
 ### Compression
 
 A byte stream compresses and decompresses with a named scheme, as a stage in a pipeline or over

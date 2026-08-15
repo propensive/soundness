@@ -50,6 +50,12 @@ import zephyrine.*
 // instead of paying one hand-off per element. (`Conduit` is the byte/char
 // counterpart: strictly SPSC and block-structured. A relay is for
 // many-producer, record-granularity traffic: events, notifications, messages.)
+//
+// Unbounded BY CONTRACT, not oversight: producers must never block, because a
+// relay is the bus that fans many writers into one drain — HTTP/2's outbound
+// frame multiplexer relies on it, where a blocking `put` would risk
+// distributed deadlock between streams. Anything needing a bounded hand-off is
+// a `Conduit`; a relay's discipline is its single consumer.
 object Relay:
   private object Termination extends scala.caps.Pure
 
