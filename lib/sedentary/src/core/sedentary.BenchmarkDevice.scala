@@ -64,9 +64,14 @@ trait BenchmarkDevice extends Findable:
   // that many cores with `taskset`. Note that without OS-level pinning (macOS localhost),
   // raw platform threads still schedule across all cores, so the limit is advisory there —
   // for hard CPU isolation, run against a Linux `NetworkDevice`.
+  //
+  // `gc` names the measurement JVM's collector, in `-XX:+Use<gc>GC` syntax (`t"G1"`,
+  // `t"Parallel"`, `t"Z"`); when unset, `Serial` applies. Serial's single-threaded,
+  // deterministic pauses suit microbenchmarks, but its stop-the-world pauses dominate tail
+  // latency in saturated multi-threaded workloads, which should select `G1`.
   def invoke
     ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
-      cpus: Optional[Int] = Unset )
+      cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
   :   Text raises Bench.Error
 
   def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error
@@ -76,12 +81,14 @@ object NetworkDevice:
     NetworkDeviceSessional()
 
   // The measurement JVM's invocation, shared by the per-call and session forms; see
-  // `BenchmarkDevice.invoke` for the meaning of `heap` and `cpus`.
+  // `BenchmarkDevice.invoke` for the meaning of `heap`, `cpus` and `gc`.
   private[sedentary] def measurement
-    ( path: Path on Linux, input: Text, heap: Optional[Text], cpus: Optional[Int] )
+    ( path: Path on Linux, input: Text, heap: Optional[Text], cpus: Optional[Int],
+      gc: Optional[Text] )
   :   Command =
 
     val size = heap.or(t"1g")
+    val collector = gc.or(t"Serial")
 
     val pin = cpus.lay(List[Text]()): n => List(t"taskset", t"-c", t"0-${n - 1}")
 
@@ -94,7 +101,7 @@ object NetworkDevice:
         -Xms$size
         -Xmx$size
         -XX:CICompilerCount=2
-        -XX:+UseSerialGC
+        -XX:+Use${collector}GC
         $processors
         -jar ${path.name}
         '$input'
@@ -115,12 +122,12 @@ object NetworkDevice:
 
     def invoke
       ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
-        cpus: Optional[Int] = Unset )
+        cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
     :   Text raises Bench.Error =
 
       val user = device.user
       val host = device.host
-      val command = NetworkDevice.measurement(path, input, heap, cpus)
+      val command = NetworkDevice.measurement(path, input, heap, cpus, gc)
 
       safely(sh"""ssh -o ControlPath=$socket $user@$host ${command.escape}""".exec[Text]())
       . lest(Bench.Error())
@@ -140,12 +147,12 @@ class NetworkDevice(val user: Text, val host: Hostname) extends BenchmarkDevice:
 
   def invoke
     ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
-      cpus: Optional[Int] = Unset )
+      cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
   :   Text raises Bench.Error =
 
     val user = this.user
     val host = this.host
-    val command = NetworkDevice.measurement(path, input, heap, cpus)
+    val command = NetworkDevice.measurement(path, input, heap, cpus, gc)
 
     safely(sh"""ssh $user@$host ${command.escape}""".exec[Text]()).lest(Bench.Error())
 
@@ -179,14 +186,16 @@ object LocalhostDevice extends BenchmarkDevice:
 
   def invoke
     ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
-      cpus: Optional[Int] = Unset )
+      cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
   :   Text raises Bench.Error =
 
     val size = heap.or(t"1g")
+    val collector = gc.or(t"Serial")
 
     val processors = cpus.lay(List[Text]()): n => List(t"-XX:ActiveProcessorCount=$n")
 
-    val opts = sh"-XX:+AlwaysPreTouch -Xms$size -Xmx$size -XX:CICompilerCount=2 -XX:+UseSerialGC"
+    val opts =
+      sh"-XX:+AlwaysPreTouch -Xms$size -Xmx$size -XX:CICompilerCount=2 -XX:+Use${collector}GC"
     val cmd = sh"java $opts $processors -jar $path $input"
     safely(cmd.exec[Text]()).lest(Bench.Error())
 

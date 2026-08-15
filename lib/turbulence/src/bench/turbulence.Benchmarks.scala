@@ -147,6 +147,29 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   lazy val brotliInput: Data = input.stream.compress[Brotli].memoize
   lazy val brotliInputArray: scala.Array[Byte] = brotliInput.asInstanceOf[scala.Array[Byte]]
 
+  // ── Small (256 KiB) per-operation corpora for the saturated stress suites. A 4 MB
+  //    pipeline operation runs for tens of milliseconds serially — coarser than the
+  //    latency SLO a capacity search holds it to — so the saturated rows work in 256 KiB
+  //    units, keeping serial operation latency well under the threshold. ──────────────
+  lazy val smallInput: Data = slice(0, 256*1024)
+  lazy val smallInputArray: scala.Array[Byte] = smallInput.asInstanceOf[scala.Array[Byte]]
+  lazy val smallGzipped: Data = smallInput.stream.compress[Gzip].memoize
+  lazy val smallGzippedArray: scala.Array[Byte] = smallGzipped.asInstanceOf[scala.Array[Byte]]
+
+  // Built from whole text units, as `textData` is — not a byte-slice of it, which could
+  // cut a multi-byte character at the corpus end.
+  lazy val smallText: Data =
+    val unit = t"The quick brown fox — jümps over the lazy dog. café ☕ 数据 🚀\n"
+    val builder = new java.lang.StringBuilder(256*1024 + 128)
+    while builder.length < 256*1024 do builder.append(unit.s)
+    Data(builder.toString.getBytes("UTF-8").nn*)
+  lazy val smallTextArray: scala.Array[Byte] = smallText.asInstanceOf[scala.Array[Byte]]
+
+  // The 256 KiB split into four equal parts, one per source stream for saturated fan-in.
+  lazy val smallQuarters: IndexedSeq[Data] =
+    val q = smallInput.length/4
+    IndexedSeq.tabulate(4)(i => Array.frozen(smallInput.readable.slice(i*q, (i + 1)*q)))
+
   // AES-256 key + a fixed key/IV for the JDK reference, generated/derived once.
   lazy val aesKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
     import enigmatic.cloaks.cloakHeap
@@ -175,6 +198,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     val stress = Stress()
     val constrained = Stress(heap = t"128m")
     val gated = Stress(heap = t"2g", cpus = 4)
+    val saturated = Stress(heap = t"2g")
     val profile = Profile()
     val size = input.length*Byte
     val textSize = textData.length*Byte
@@ -1169,6 +1193,305 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             stream.sweep(region => range => total += (range: Interval).size)
             producer.join()
             total
+        }
+
+    // Examples U–X: saturated whole-pipeline comparisons — the three-way rows above
+    // measure single pipelines, and Example S searches for capacity, but only for the
+    // hand-off primitive. These promote four representative pipelines to saturated
+    // three-way rows, on all cores (no `cpus` gate: the machine itself is the resource
+    // under test), in 256 KiB operations (see the small corpora). Each pipeline gets
+    // two suites: a sweep, doubling the pipeline count from 1 to 128 so the table reads
+    // as each library's throughput-vs-N curve up to and past core count; and a capacity
+    // search for the maximum sustained rate with 99% of operations within 10 ms — each
+    // library's headline ops/sec figure on a saturated machine. One uniform SLO keeps
+    // the pipelines comparable; 10 ms is roughly ten times a 256 KiB operation's serial
+    // latency. The four cover distinct regimes: gzip decompression (CPU-bound compute),
+    // line splitting (allocation-heavy text), the transcode cascade (pure streaming
+    // machinery, five stages) and fan-in (the one pipeline that is itself concurrent,
+    // so scheduler runs on scheduler). Not promoted: base64 (no ZIO codec, so 2-way
+    // only), Brotli (no rivals), the checksum fold (a per-element boxing microbenchmark,
+    // not a pipeline) and Divergence fan-out (the same class as fan-in).
+
+    // Example U: saturated gzip decompression.
+    suite(m"Stress: saturated gzip decompression sweep (256 KiB, N ≤ 128)"):
+      import threading.platformThreading
+
+      saturated(m"Soundness  Stream.decompress[Gzip]")(target = 1*Second, sweep = 128):
+        '{
+            var total = 0L
+
+            turbulence.Benchmarks.smallGzipped.stream.decompress[Gzip]
+            . sweep(region => range => total += (range: Interval).size)
+
+            total
+        }
+
+      saturated(m"FS2  Compression[IO].gunzip")(target = 1*Second, sweep = 128):
+        '{
+            import cats.effect.unsafe.implicits.global
+            val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallGzippedArray))
+            . covary[cats.effect.IO]
+            . through(comp.gunzip()).flatMap(_.content)
+            . compile.count.unsafeRunSync()
+        }
+
+      saturated(m"ZIO  ZPipeline.gunzip")(target = 1*Second, sweep = 128):
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallGzippedArray))
+              . via(zio.stream.ZPipeline.gunzip())
+              . runCount
+        }
+
+    suite(m"Stress: saturated gzip decompression capacity (99% ≤ 10 ms, 256 KiB)"):
+      locally:
+        import threading.platformThreading
+
+        saturated(m"Soundness  Stream.decompress[Gzip]")
+          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+          '{
+              var total = 0L
+
+              turbulence.Benchmarks.smallGzipped.stream.decompress[Gzip]
+              . sweep(region => range => total += (range: Interval).size)
+
+              total
+          }
+
+        saturated(m"FS2  Compression[IO].gunzip")
+          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+          '{
+              import cats.effect.unsafe.implicits.global
+              val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+              fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallGzippedArray))
+              . covary[cats.effect.IO]
+              . through(comp.gunzip()).flatMap(_.content)
+              . compile.count.unsafeRunSync()
+          }
+
+        saturated(m"ZIO  ZPipeline.gunzip")
+          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+          '{
+              turbulence.Benchmarks.runZio:
+                zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallGzippedArray))
+                . via(zio.stream.ZPipeline.gunzip())
+                . runCount
+          }
+
+      // The harness workers on virtual threads (the file's ambient
+      // `virtualThreading`), as in Example S: pipelines multiplex over the carrier
+      // pool instead of one OS thread each — the fair comparison against the fiber
+      // runtimes' sustained concurrency.
+      saturated(m"Soundness  Stream.decompress[Gzip] (virtual workers)")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            var total = 0L
+
+            turbulence.Benchmarks.smallGzipped.stream.decompress[Gzip]
+            . sweep(region => range => total += (range: Interval).size)
+
+            total
+        }
+
+    // Example V: saturated line splitting (UTF-8 decode + split).
+    suite(m"Stress: saturated line splitting sweep (256 KiB, N ≤ 128)"):
+      import threading.platformThreading
+
+      saturated(m"Soundness  Stream.delineate")(target = 1*Second, sweep = 128):
+        '{
+            var total = 0L
+            turbulence.Benchmarks.smallText.stream.delineate.sweep(region => range => total += (range: Interval).size)
+            total
+        }
+
+      saturated(m"FS2  text.lines")(target = 1*Second, sweep = 128):
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).through(fs2.text.lines).compile.count.unsafeRunSync()
+        }
+
+      saturated(m"ZIO  ZPipeline.splitLines")(target = 1*Second, sweep = 128):
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.splitLines).runCount
+        }
+
+    suite(m"Stress: saturated line splitting capacity (99% ≤ 10 ms, 256 KiB)"):
+      import threading.platformThreading
+
+      saturated(m"Soundness  Stream.delineate")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            var total = 0L
+            turbulence.Benchmarks.smallText.stream.delineate.sweep(region => range => total += (range: Interval).size)
+            total
+        }
+
+      saturated(m"FS2  text.lines")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).through(fs2.text.lines).compile.count.unsafeRunSync()
+        }
+
+      saturated(m"ZIO  ZPipeline.splitLines")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.splitLines).runCount
+        }
+
+    // Example W: saturated UTF-8 transcode cascade. Unlike chained example Q's
+    // `memoize` row, every library aggregates counts per window (the fold shape), so
+    // no row retains its output.
+    suite(m"Stress: saturated transcode cascade sweep (256 KiB, N ≤ 128)"):
+      import threading.platformThreading
+
+      saturated(m"Soundness  dec.enc.dec.enc.dec")(target = 1*Second, sweep = 128):
+        '{
+            var total = 0L
+
+            turbulence.Benchmarks.smallText.stream
+            . via(summon[CharDecoder]).via(summon[CharEncoder])
+            . via(summon[CharDecoder]).via(summon[CharEncoder])
+            . via(summon[CharDecoder])
+            . sweep(region => range => total += (range: Interval).size)
+
+            total
+        }
+
+      saturated(m"FS2  utf8 decode/encode x2.5")(target = 1*Second, sweep = 128):
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.decode)
+            . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+        }
+
+      saturated(m"ZIO  utfDecode/utf8Encode x2.5")(target = 1*Second, sweep = 128):
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+              . via(zio.stream.ZPipeline.utfDecode)
+              . map(_.length).runSum
+        }
+
+    suite(m"Stress: saturated transcode cascade capacity (99% ≤ 10 ms, 256 KiB)"):
+      import threading.platformThreading
+
+      saturated(m"Soundness  dec.enc.dec.enc.dec")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            var total = 0L
+
+            turbulence.Benchmarks.smallText.stream
+            . via(summon[CharDecoder]).via(summon[CharEncoder])
+            . via(summon[CharDecoder]).via(summon[CharEncoder])
+            . via(summon[CharDecoder])
+            . sweep(region => range => total += (range: Interval).size)
+
+            total
+        }
+
+      saturated(m"FS2  utf8 decode/encode x2.5")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.decode)
+            . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+        }
+
+      saturated(m"ZIO  utfDecode/utf8Encode x2.5")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+              . via(zio.stream.ZPipeline.utfDecode)
+              . map(_.length).runSum
+        }
+
+    // Example X: saturated fan-in. Each operation is itself concurrent (four sources
+    // merging), so at high N this measures each library's scheduler multiplexing many
+    // small concurrent merges — thread hand-offs against fiber wakeups. If this
+    // pipeline's serial latency proves to exceed a couple of milliseconds, its SLO
+    // (alone) should rise to 20 ms.
+    suite(m"Stress: saturated fan-in sweep (256 KiB over 4 streams, N ≤ 128)"):
+      import threading.platformThreading
+
+      saturated(m"Soundness  Confluence")(target = 1*Second, sweep = 128):
+        '{
+            supervise:
+              val merged = Confluence(turbulence.Benchmarks.smallQuarters.map(q => q.stream)*)
+              var total = 0L
+              merged.sweep(region => range => total += (range: Interval).size)
+              total
+        }
+
+      saturated(m"FS2  parJoinUnbounded")(target = 1*Second, sweep = 128):
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO
+            val streams =
+              turbulence.Benchmarks.smallQuarters.map: q =>
+                fs2.Stream.chunk(fs2.Chunk.array(q.asInstanceOf[scala.Array[Byte]])).covary[IO]
+            fs2.Stream.emits(streams).parJoinUnbounded.compile.count.unsafeRunSync()
+        }
+
+      saturated(m"ZIO  mergeAllUnbounded")(target = 1*Second, sweep = 128):
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              val streams =
+                turbulence.Benchmarks.smallQuarters.map(q => ZStream.fromChunk(Chunk.fromArray(q.asInstanceOf[scala.Array[Byte]])))
+              ZStream.mergeAllUnbounded()(streams*).runCount
+        }
+
+    suite(m"Stress: saturated fan-in capacity (99% ≤ 10 ms, 256 KiB over 4 streams)"):
+      import threading.platformThreading
+
+      saturated(m"Soundness  Confluence")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            supervise:
+              val merged = Confluence(turbulence.Benchmarks.smallQuarters.map(q => q.stream)*)
+              var total = 0L
+              merged.sweep(region => range => total += (range: Interval).size)
+              total
+        }
+
+      saturated(m"FS2  parJoinUnbounded")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO
+            val streams =
+              turbulence.Benchmarks.smallQuarters.map: q =>
+                fs2.Stream.chunk(fs2.Chunk.array(q.asInstanceOf[scala.Array[Byte]])).covary[IO]
+            fs2.Stream.emits(streams).parJoinUnbounded.compile.count.unsafeRunSync()
+        }
+
+      saturated(m"ZIO  mergeAllUnbounded")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              val streams =
+                turbulence.Benchmarks.smallQuarters.map(q => ZStream.fromChunk(Chunk.fromArray(q.asInstanceOf[scala.Array[Byte]])))
+              ZStream.mergeAllUnbounded()(streams*).runCount
         }
 
     // Example T: profiles — where the time actually goes in the two pipelines the

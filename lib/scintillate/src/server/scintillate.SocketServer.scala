@@ -69,16 +69,19 @@ extends RequestServable:
 
   private val continueResponse: Data = t"HTTP/1.1 100 Continue\r\n\r\n".in[Data]
 
-  private def writeAll(out: ji.OutputStream, consume stream: (Stream[Data] over Credit)^)
+  // With `flushEach` (the default), the stream is flushed after every block: a streaming
+  // body (chunked response, SSE, or an upgraded WebSocket) may never end, so its bytes
+  // must reach the client as they are produced rather than be forced into memory or sit
+  // unflushed in the buffer. A response whose extent is known (a fixed or empty body)
+  // instead passes `flushEach = false` and flushes once at the end, so its head and body
+  // coalesce in the connection's write buffer into a single socket write.
+  private def writeAll
+    ( out: ji.OutputStream, consume stream: (Stream[Data] over Credit)^,
+      flushEach: Boolean = true )
     ( using Tactic[StreamError] )
   :   Unit =
 
     var count: Int = 0
-
-    // Consume the stream one block at a time and flush after each: a streaming
-    // body (chunked response, SSE, or an upgraded WebSocket) may never end, so
-    // its bytes must reach the client as they are produced rather than be forced
-    // into memory or sit unflushed in the buffer.
     var failed: Boolean = false
 
     stream.sweep: region =>
@@ -89,9 +92,12 @@ extends RequestServable:
           try
             out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                 interval.size)
-            out.flush()
+            if flushEach then out.flush()
             count += interval.size
           catch case error: ji.IOException => failed = true
+
+    if !flushEach && !failed then
+      try out.flush() catch case error: ji.IOException => failed = true
 
     if failed then abort(StreamError(count.b))
 
@@ -161,9 +167,17 @@ extends RequestServable:
   // `ByteArrayInputStream` of requests and capture the responses with no network
   // involvement. The caller owns the streams (closing, read timeouts).
   def serveConnection(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
-    ( in: ji.InputStream, out: ji.OutputStream )
+    ( in: ji.InputStream, sink: ji.OutputStream )
     ( using (HttpServer.Event is Loggable)^ )
   :   Unit =
+
+    // One buffered layer per connection: a fixed-extent response's head and body
+    // coalesce into a single socket write (see `writeAll`), where the raw socket
+    // stream would pay one syscall per block. Streaming responses flush per block
+    // through it, preserving their delivery guarantees; a block at or above the
+    // buffer's size bypasses it, so large bodies keep their direct, copy-free
+    // writes.
+    val out: ji.BufferedOutputStream = ji.BufferedOutputStream(sink, 8192)
 
     val closeHeader: Http.Header = Http.Header(t"connection", t"close")
 
@@ -231,7 +245,8 @@ extends RequestServable:
                 if head.version != 1.1 && streaming(response) then keep = false
                 val response2 = if keep then response else response + closeHeader
                 val bytes = Http.Response.serialize(response2, head.method != Http.Head, head.version)
-                writeAll(out, bytes)
+
+                writeAll(out, bytes, flushEach = streaming(response))
 
           val connection = new Http.Connection(request, ssl.present, port, respond)
           Log.fine(HttpServer.Event.Received(request))
@@ -363,6 +378,9 @@ extends RequestServable:
 
               try
                 socket1.setSoTimeout(idleTimeout)
+                // Small responses must not wait on Nagle's algorithm for the previous
+                // segment's ACK; every mainstream HTTP server disables it.
+                socket1.setTcpNoDelay(true)
 
                 val in = socket1.getInputStream.nn
                 val out = socket1.getOutputStream.nn

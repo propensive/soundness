@@ -86,7 +86,10 @@ import workingDirectories.javaWorkingDirectory
 // which honestly answers "how many concurrent pipelines, each completing promptly?".
 //
 // `cpus` limits the measurement JVM's processors (see `BenchmarkDevice.invoke` for the
-// pinning caveat), and `heap` its memory, so the search runs under pinned resources.
+// pinning caveat), and `heap` its memory, so the search runs under pinned resources. `gc`
+// selects its collector (`-XX:+Use<gc>GC`, default `Serial`): Serial keeps microbenchmark
+// pauses deterministic, but a saturated multi-threaded workload measuring tail latency
+// should select `t"G1"` so single-threaded stop-the-world pauses don't dominate p99.
 //
 // The contextual `Threading` (from parasite: `threading.platformThreading`,
 // `threading.virtualThreading` or `threading.adaptiveThreading`) selects the workers' thread
@@ -95,7 +98,8 @@ import workingDirectories.javaWorkingDirectory
 // the model a massively-concurrent application would use. Worker allocation is still fully
 // accounted: virtual-thread allocation is attributed to its carrier, which
 // `getTotalThreadAllocatedBytes` covers.
-case class Stress(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset)
+case class Stress
+  ( heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
   ( using Classloader, Environment )
   ( using device: BenchmarkDevice )
 extends Rig:
@@ -463,4 +467,4 @@ extends Rig:
   protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
-    stage.remote: input => unsafely(device.invoke(stage.target, input, heap, cpus))
+    stage.remote: input => unsafely(device.invoke(stage.target, input, heap, cpus, gc))
