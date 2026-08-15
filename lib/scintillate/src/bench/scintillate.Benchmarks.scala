@@ -217,6 +217,14 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
     // difference between the histograms is server-side. CPU-only: parked time (the
     // client awaiting the response, the server awaiting a request) is invisible.
     suite(m"Profile: HTTP round-trip hotspots"):
+      // The connection loop with no sockets under it: where the socket rows
+      // below spend most of their samples parked in `kqueue`/`poll` — which is
+      // honest for a round-trip, but drowns everything else — this one puts
+      // every sample inside the HTTP stack itself. The right instrument for
+      // asking where a request's CPU and allocation actually go.
+      profile(m"1000 pipelined GETs through serveConnection")(target = 5*Second):
+        '{ scintillate.Benchmarks.drivePipeline() }
+
       profile(m"Scintillate  socket round-trip")(target = 5*Second):
         '{
             scintillate.HttpRivals.scintillateVirtual

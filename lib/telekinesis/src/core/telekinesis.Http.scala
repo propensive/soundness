@@ -56,6 +56,7 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
+import java.lang as jl
 import java.net as jn
 import scala.util.NotGiven
 
@@ -841,20 +842,28 @@ object Http:
             val key = header.key.lower
             key != t"transfer-encoding" && key != t"content-length"
 
-      val head: Text = Text.build:
-        append(t"HTTP/1.1 ")
-        append(response.status.code.toString.tt)
-        append(t" ")
-        append(response.status.description)
-        append(t"\r\n")
+      // Built into a pre-sized buffer rather than through `Text.build`, whose
+      // builder starts at the default sixteen characters and reallocates its way
+      // up to the few hundred a head occupies: `AbstractStringBuilder.newCapacity`
+      // was 13% of this pipeline's profile, more than any other frame. The status
+      // code is appended as an `Int`, which also saves rendering it to a `Text`
+      // first.
+      val head: Text =
+        val builder = jl.StringBuilder(256)
+        builder.append("HTTP/1.1 ")
+        builder.append(response.status.code)
+        builder.append(' ')
+        builder.append(response.status.description.s)
+        builder.append("\r\n")
 
         headers.each: header =>
-          append(header.key)
-          append(t": ")
-          append(header.value)
-          append(t"\r\n")
+          builder.append(header.key.s)
+          builder.append(": ")
+          builder.append(header.value.s)
+          builder.append("\r\n")
 
-        append(t"\r\n")
+        builder.append("\r\n")
+        builder.toString.tt
 
       // Materialize successive blocks off a pull endpoint as a chunk iterator.
       def pulls(endpoint: (Stream[Data] over Credit)^): Iterator[Data]^{endpoint} =
