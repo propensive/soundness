@@ -188,6 +188,28 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     def capacity(substrate: Substrate): Int = n
     def depth: Int = 4
 
+  // A fixed-capacity, fixed-depth `Buffering`, for the ring-depth sweep. The
+  // standard 4096-byte capacity keeps the transfer block at its standard 64 KiB,
+  // so only the ring depth varies between rows.
+  def buffering(n: Int, depth0: Int): Buffering = new Buffering:
+    def capacity(substrate: Substrate): Int = n
+    def depth: Int = depth0
+
+  // Deterministic, data-independent CPU work proportional to `count`: the
+  // slow-consumer rows charge every rival's consumer the same per-block drag, so
+  // the producer runs ahead and what differs between rows is the hand-off's
+  // buffering policy. Callers fold the result into theirs (`& 1L`), keeping the
+  // loop alive under JIT.
+  def burn(count: Int): Long =
+    var acc: Long = 0L
+    var index: Int = 0
+
+    while index < count*4 do
+      acc = acc*31 + index
+      index += 1
+
+    acc
+
   // Int rather than Long: ZIO's `take`/`drop` are `Int`-counted, and both values
   // fit; Soundness's and FS2's `Long`-counted versions widen automatically.
   val dropBytes: Int = 65536
@@ -955,6 +977,209 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                   ZIO.foreachPar(streams)(_.runCount).map(_.sum)
         }
 
+    // Example N2: ring-depth sweep for the cross-thread hand-off — the tuning
+    // data behind `Buffering.depth`'s conservative default of 16 (its comment
+    // records hand-off throughput still improving at 64). Depth multiplies the
+    // worst-case in-flight blocks of every copy-path conduit, so the win must
+    // justify the memory; each row is Example L's pipeline with only the ring
+    // depth varied.
+    suite(m"Conduit depth sweep (4 MB in 64 KiB chunks)"):
+      bench(m"depth 2")(target = 1*Second, operationSize = size):
+        '{
+            given Buffering = turbulence.Benchmarks.buffering(4096, 2)
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep(region => range => total += (range: Interval).size)
+            producer.join()
+            total
+        }
+
+      bench(m"depth 4")(target = 1*Second, operationSize = size):
+        '{
+            given Buffering = turbulence.Benchmarks.buffering(4096, 4)
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep(region => range => total += (range: Interval).size)
+            producer.join()
+            total
+        }
+
+      bench(m"depth 16 (standard)")(target = 1*Second, operationSize = size):
+        '{
+            given Buffering = turbulence.Benchmarks.buffering(4096, 16)
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep(region => range => total += (range: Interval).size)
+            producer.join()
+            total
+        }
+
+      bench(m"depth 64")(target = 1*Second, operationSize = size):
+        '{
+            given Buffering = turbulence.Benchmarks.buffering(4096, 64)
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep(region => range => total += (range: Interval).size)
+            producer.join()
+            total
+        }
+
+      bench(m"depth 256")(target = 1*Second, operationSize = size):
+        '{
+            given Buffering = turbulence.Benchmarks.buffering(4096, 256)
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep(region => range => total += (range: Interval).size)
+            producer.join()
+            total
+        }
+
+    // Example N3: the price and payoff of backpressure. Every row funnels the
+    // same 4 MB through a cross-thread hand-off to a consumer slowed by a fixed
+    // amount of per-block CPU work (`burn` — data-independent, so every rival's
+    // consumer drags identically). Throughput is consumer-gated for every row;
+    // the differentiating columns are allocation and peak heap, where the
+    // unbounded models buffer the producer's entire lead and the bounded ones
+    // hold it to the ring.
+    suite(m"Backpressure vs unbounded model: slow consumer (4 MB)"):
+      bench(m"Soundness  Conduit depth 16")(target = 1*Second, operationSize = size):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep: region =>
+              range =>
+                val count = (range: Interval).size
+                total += count + (turbulence.Benchmarks.burn(count) & 1L)
+            producer.join()
+            total
+        }
+
+      bench(m"Unbounded  LinkedBlockingQueue")(target = 1*Second, operationSize = size):
+        '{
+            val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
+            val end = new Object
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
+              queue.put(end))
+            var total = 0L
+            var running = true
+            while running do
+              val item = queue.take()
+              if item eq end then running = false else
+                val count = item.asInstanceOf[Data].length
+                total += count + (turbulence.Benchmarks.burn(count) & 1L)
+            producer.join()
+            total
+        }
+
+      bench(m"Unbounded  Relay[Data]")(target = 1*Second, operationSize = size):
+        '{
+            val relay = Relay[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(relay.put)
+              relay.stop())
+            var total = 0L
+            relay.stream.records.each: chunk =>
+              total += chunk.length + (turbulence.Benchmarks.burn(chunk.length) & 1L)
+            producer.join()
+            total
+        }
+
+      bench(m"FS2  Channel.unbounded")(target = 1*Second, operationSize = size):
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO, cats.syntax.all.*
+            val program = fs2.concurrent.Channel.unbounded[IO, fs2.Chunk[Byte]].flatMap: channel =>
+              val produce =
+                turbulence.Benchmarks.inputChunkList.foldLeft(IO.unit): (io, chunk) =>
+                  io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[scala.Array[Byte]])).void
+                *> channel.close.void
+              produce.start *> channel.stream.compile.fold(0L): (acc, chunk) =>
+                acc + chunk.size + (turbulence.Benchmarks.burn(chunk.size) & 1L)
+            program.unsafeRunSync()
+        }
+
+      bench(m"ZIO  Queue.unbounded")(target = 1*Second, operationSize = size):
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              val source =
+                ZStream.fromIterable
+                  (turbulence.Benchmarks.inputChunkList.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
+              for
+                queue <- Queue.unbounded[Take[Nothing, Chunk[Byte]]]
+                _     <- source.runIntoQueue(queue).fork
+                total <- ZStream.fromQueue(queue).flattenTake.runFold(0L): (acc, c) =>
+                           acc + c.size + (turbulence.Benchmarks.burn(c.size) & 1L)
+              yield total
+        }
+
+    // Example N4: fan-out with one dragging subscriber. Every library gates the
+    // source on its slowest subscriber (the correct replication semantics), so
+    // these rows quantify what that gating costs each of them when one of three
+    // consumers carries the Example N3 per-block drag.
+    suite(m"Divergence with one slow subscriber (4 MB in, 12 MB consumed)"):
+      bench(m"Soundness  Divergence")(target = 1*Second, operationSize = size):
+        '{
+            supervise:
+              val ticket = new java.util.concurrent.atomic.AtomicInteger(0)
+              val subscribers = Divergence(turbulence.Benchmarks.input.stream, 3)
+              val tasks = subscribers.map: subscriber =>
+                async:
+                  val slow = ticket.getAndIncrement() == 0
+                  var total = 0L
+                  subscriber.sweep: region =>
+                    range =>
+                      val count = (range: Interval).size
+                      total += count
+                      if slow then total += turbulence.Benchmarks.burn(count) & 1L
+                  total
+              tasks.map(_.await()).sum
+        }
+
+      bench(m"FS2  broadcastThrough")(target = 1*Second, operationSize = size):
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO, cats.syntax.all.*
+            val counter: fs2.Pipe[IO, Byte, Long] = _.chunks.foldMap(chunk => chunk.size.toLong)
+            val slow: fs2.Pipe[IO, Byte, Long] = _.chunks.foldMap: chunk =>
+              chunk.size.toLong + (turbulence.Benchmarks.burn(chunk.size) & 1L)
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[IO]
+            . broadcastThrough(slow, counter, counter).compile.foldMonoid.unsafeRunSync()
+        }
+
+      bench(m"ZIO  broadcast")(target = 1*Second, operationSize = size):
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              ZIO.scoped:
+                ZStream.fromChunk(Chunk.fromArray(turbulence.Benchmarks.inputArray)).broadcast(3, 16).flatMap: streams =>
+                  ZIO.foreachPar(streams.zipWithIndex): (stream, index) =>
+                    if index == 0 then
+                      stream.chunks.runFold(0L): (acc, chunk) =>
+                        acc + chunk.size + (turbulence.Benchmarks.burn(chunk.size) & 1L)
+                    else stream.runCount
+                  . map(_.sum)
+        }
+
     // Example O: stress rows — the memory profile of the cross-thread hand-off
     // pipeline from Example L, run as 16 concurrent pipelines for a fixed
     // wall-clock window. The throughput rows above measure speed; these measure
@@ -1047,6 +1272,144 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                 _     <- source.runIntoQueue(queue).fork
                 total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
               yield total
+        }
+
+    // Example P2: what the absence of backpressure costs. The Example N3
+    // pipeline — a producer racing ahead of a CPU-slowed consumer — in a pinned
+    // 128 MB heap, doubling the pipeline count towards 64. A bounded hand-off
+    // holds each pipeline's in-flight data to its ring, so the sweep should keep
+    // climbing; the unbounded models buffer each producer's entire 4 MB lead, so
+    // their sweeps are expected to die early on OutOfMemoryError or GC thrash —
+    // the largest N each row reaches is the finding.
+    suite(m"Stress: unbounded-model blowup (slow consumer, 128 MB heap, N ≤ 64)"):
+      import threading.platformThreading
+
+      constrained(m"Soundness  Conduit depth 16")(target = 1*Second, sweep = 64):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep: region =>
+              range =>
+                val count = (range: Interval).size
+                total += count + (turbulence.Benchmarks.burn(count) & 1L)
+            producer.join()
+            total
+        }
+
+      constrained(m"Unbounded  LinkedBlockingQueue")(target = 1*Second, sweep = 64):
+        '{
+            val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
+            val end = new Object
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
+              queue.put(end))
+            var total = 0L
+            var running = true
+            while running do
+              val item = queue.take()
+              if item eq end then running = false else
+                val count = item.asInstanceOf[Data].length
+                total += count + (turbulence.Benchmarks.burn(count) & 1L)
+            producer.join()
+            total
+        }
+
+      constrained(m"Unbounded  Relay[Data]")(target = 1*Second, sweep = 64):
+        '{
+            val relay = Relay[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(relay.put)
+              relay.stop())
+            var total = 0L
+            relay.stream.records.each: chunk =>
+              total += chunk.length + (turbulence.Benchmarks.burn(chunk.length) & 1L)
+            producer.join()
+            total
+        }
+
+      constrained(m"FS2  Channel.unbounded")(target = 1*Second, sweep = 64):
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO, cats.syntax.all.*
+            val program = fs2.concurrent.Channel.unbounded[IO, fs2.Chunk[Byte]].flatMap: channel =>
+              val produce =
+                turbulence.Benchmarks.inputChunkList.foldLeft(IO.unit): (io, chunk) =>
+                  io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[scala.Array[Byte]])).void
+                *> channel.close.void
+              produce.start *> channel.stream.compile.fold(0L): (acc, chunk) =>
+                acc + chunk.size + (turbulence.Benchmarks.burn(chunk.size) & 1L)
+            program.unsafeRunSync()
+        }
+
+      constrained(m"ZIO  Queue.unbounded")(target = 1*Second, sweep = 64):
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              val source =
+                ZStream.fromIterable
+                  (turbulence.Benchmarks.inputChunkList.map(c => Chunk.fromArray(c.asInstanceOf[scala.Array[Byte]])))
+              for
+                queue <- Queue.unbounded[Take[Nothing, Chunk[Byte]]]
+                _     <- source.runIntoQueue(queue).fork
+                total <- ZStream.fromQueue(queue).flattenTake.runFold(0L): (acc, c) =>
+                           acc + c.size + (turbulence.Benchmarks.burn(c.size) & 1L)
+              yield total
+        }
+
+    // Example P3: the same slow-consumer pipeline at a fixed N=16 in the roomy
+    // default heap — the headline retained/peakHeap comparison. The bounded
+    // conduit's live set stays flat at the ring bound; the unbounded models'
+    // grows with the producer's lead, and the retained column shows it.
+    suite(m"Stress: retained memory under slow consumption (4 MB, N=16)"):
+      import threading.platformThreading
+
+      stress(m"Soundness  Conduit depth 16")(target = 2*Second, concurrency = 16):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep: region =>
+              range =>
+                val count = (range: Interval).size
+                total += count + (turbulence.Benchmarks.burn(count) & 1L)
+            producer.join()
+            total
+        }
+
+      stress(m"Unbounded  LinkedBlockingQueue")(target = 2*Second, concurrency = 16):
+        '{
+            val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
+            val end = new Object
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
+              queue.put(end))
+            var total = 0L
+            var running = true
+            while running do
+              val item = queue.take()
+              if item eq end then running = false else
+                val count = item.asInstanceOf[Data].length
+                total += count + (turbulence.Benchmarks.burn(count) & 1L)
+            producer.join()
+            total
+        }
+
+      stress(m"Unbounded  Relay[Data]")(target = 2*Second, concurrency = 16):
+        '{
+            val relay = Relay[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(relay.put)
+              relay.stop())
+            var total = 0L
+            relay.stream.records.each: chunk =>
+              total += chunk.length + (turbulence.Benchmarks.burn(chunk.length) & 1L)
+            producer.join()
+            total
         }
 
     // Example Q: gzip-decompression memory — the pipeline from Example 1b run as
