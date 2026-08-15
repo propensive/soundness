@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **431**;
+- exported multi-word type-level names still under review: **430**;
   213 sit in a prefix family of two or more, across 62 families, and
-  218 are singletons. Names under "Reviewed items which should not be moved"
+  217 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -182,8 +182,8 @@ looks misnamed may be one the codebase already has.
 
 | status | names |
 |---|---|
-| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `ConnectError` |
-| excluded by R2 (specification concept) | `CompileError` |
+
+| **not an error, and a name used as data** — kept | `CompileError` |
 | outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `UncheckedError` |
 
 | nested compound names, where the prefix repeats the enclosing type | `Repackager.RepackageError` and `Repackager.UserError` (only one can be `Error`), `UrlInterpolatorError` |
@@ -195,7 +195,23 @@ companion of ours to nest into, and three different typeclasses (`Streamable`, `
 `Sink`) raise it, so no raiser owned it either. It is named for the state of the data
 instead: a stream that ended before delivering everything. `InstallError` is `Install.Error`
 on the same reasoning — `exoskeleton.Completions` and `ethereal.Installer` both raise it, so
-it belongs to the act of installing rather than to either installer.
+it belongs to the act of installing rather than to either installer. `ConnectError` is
+`Connect.Error`, with a caveat recorded in its source: telekinesis already has `Http.Connect`
+(the CONNECT method) and `Http.Connection`, so inside `object Http` the bare `Connect` still
+resolves to the method and the four references there are qualified.
+
+**`CompileError` is kept, and not under R2.** It is not an error at all: `case class
+CompileError(reason, message, focus, start, offset)` does not extend `fulminate.Error` and is
+never raised — it is the data record larceny's plugin builds for a captured compiler
+diagnostic, and `demilitarize` returns a `List` of them. It is also a name used as data: the
+plugin synthesises `Select(Select(Ident(nme.ROOTPKG), "larceny"), "CompileError")`, so a
+rename must update that string, and a mistake would surface in *user* code at the
+`demilitarize` call site rather than in larceny.
+
+**`UncheckedError` is still open.** `Unchecked` is unavailable — contingency exports a
+`trait Unchecked` marking error types that may be raised unchecked, and it sits above
+fulminate. `Error.Unchecked`, nested in fulminate's own `Error` companion, does work: the
+subject *is* `Error`, and `Error.apply` is the single raise site.
 
 **`IoError`/`IoEvent` are now `Io.Error`/`Io.Event`.** They are filesystem concepts — every
 `Io.Event` case extends `Log.Filesystem`, and `Io.Error` carries a `filesystem: path.Plane is
@@ -330,7 +346,7 @@ ultimatum's is the likelier one to rename.
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (218)
+### Singletons (217)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
@@ -338,31 +354,31 @@ ultimatum's is the likelier one to rename.
 `BytecodePalette`, `CanonicalCbor`, `CanvasHandle`, `CapabilityDiscipline`, `CaptionLayout`,
 `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `ChangeKind`, `ChannelLayout`,
 `CheckOverflow`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`, `ColorDepth`,
-`CommandGroup`, `CommonFormattable`, `ConnectError`, `ContainerConfig`, `CopyAttributes`, `CrLf`,
-`CtrlChar`, `CtSym`, `DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`,
-`DivisionByZero`, `DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`, `EcosystemProfile`,
-`EditorField`, `EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`,
-`EnumerationHasAsScala`, `EucalyptusGcp`, `FastForward`, `FlowExtent`, `FluidOunce`,
-`FoldableRectoPanel`, `GapPolicy`, `GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`,
-`GithubActions`, `GivensPhase`, `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`,
-`HmacCipher`, `Html4Transitional`, `InitializationVector`, `IntercardinalWind`,
-`InterfaceAddress`, `IpAddress`, `Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`,
-`JsigDiscipline`, `JsInvoke`, `JuxtapositionPalette`, `JvmProfile`, `KillRequest`,
-`LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LinkEvent`,
-`LocalhostDevice`, `LongNameFormat`, `LruCache`, `LspSessional`, `ManifestSigning`,
-`MarkdownPalette`, `MathmlReader`, `MediaType`, `MenuField`, `MethodId`, `MlDsa`,
-`MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NoteRef`, `NotFound`,
-`NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`, `OnlineClasspath`, `OpaqueDiscipline`,
-`OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`, `OverwritePreexisting`,
-`PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`, `PhysicalState`,
-`PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`,
-`PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`, `ProcessStatus`,
-`ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`,
-`RasterOpenable`, `RectoPanel`, `ReferenceTypeId`, `ReflogEntry`, `RequestServable`, `ResetMode`,
-`Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `SchemaSignature`, `ScreenRoot`,
-`SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`,
-`SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`,
-`SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
+`CommandGroup`, `CommonFormattable`, `ContainerConfig`, `CopyAttributes`, `CrLf`, `CtrlChar`,
+`CtSym`, `DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`, `DivisionByZero`,
+`DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`, `EcosystemProfile`, `EditorField`,
+`EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`,
+`EucalyptusGcp`, `FastForward`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `GapPolicy`,
+`GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`,
+`GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
+`InitializationVector`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`, `Ipv4Subnet`,
+`Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`, `JsigDiscipline`, `JsInvoke`,
+`JuxtapositionPalette`, `JvmProfile`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`,
+`LazyEnvironment`, `LengthPrefix`, `LinkEvent`, `LocalhostDevice`, `LongNameFormat`, `LruCache`,
+`LspSessional`, `ManifestSigning`, `MarkdownPalette`, `MathmlReader`, `MediaType`, `MenuField`,
+`MethodId`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`,
+`NoteRef`, `NotFound`, `NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`,
+`OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`,
+`OrdinalCalendar`, `OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`,
+`PdfFile`, `PeriodicTable`, `PhysicalState`, `PixelOpaque`, `PlaceholderKind`,
+`PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`, `PositionTracking`, `PosixCommands`,
+`PrivateKey`, `ProcessingPermit`, `ProcessStatus`, `ProgrammingLanguage`, `ProgressBar`,
+`PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`, `RectoPanel`,
+`ReferenceTypeId`, `ReflogEntry`, `RequestServable`, `ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`,
+`RomanCalendar`, `RootFs`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`,
+`SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`, `SiderealDays`,
+`SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`, `SolarDay`,
+`SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
 `StaticAnnotation`, `StreamOutputStream`, `StringId`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`,
 `TeletypeFormattable`, `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `TestPalette`,
 `ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`,

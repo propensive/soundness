@@ -61,7 +61,7 @@ package jsonPointerRegistries:
       protected def lookup(url: HttpUrl): Optional[Json] =
         recover:
           case wisteria.Variant.Error(_, _, _) => Unset
-          case ConnectError(_)       => Unset
+          case Connect.Error(_)       => Unset
           case Http.Error(_, _)       => Unset
           case Parse.Error(_, _, _)   => Unset
           case Json.Error(_)          => Unset

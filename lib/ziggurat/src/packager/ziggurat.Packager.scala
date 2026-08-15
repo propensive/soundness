@@ -93,7 +93,7 @@ object Packager:
 
     mitigate:
       case Http.Error(_, _)        => Packager.Error(m"A runner stub could not be downloaded")
-      case ConnectError(_)         => Packager.Error(m"Could not connect to download a runner stub")
+      case Connect.Error(_)         => Packager.Error(m"Could not connect to download a runner stub")
       case Url.Error(_, _, _)      => Packager.Error(m"A runner stub URL is invalid")
       case Assembler.Error(detail) => Packager.Error(detail)
       case Io.Error(_, _, _, _)     => Packager.Error(m"A filesystem error occurred when packaging")

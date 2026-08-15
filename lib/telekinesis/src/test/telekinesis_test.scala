@@ -845,94 +845,94 @@ object Tests extends Suite(m"Telekinesis tests"):
 
     suite(m"DNS Errors"):
       test(m"Nonexistent DNS"):
-        capture[ConnectError](url"http://www.asorbkxoreuatoehudncak.com/".fetch())
+        capture[Connect.Error](url"http://www.asorbkxoreuatoehudncak.com/".fetch())
 
-      . aspire(_ == ConnectError(ConnectError.Reason.Dns))
+      . aspire(_ == Connect.Error(Connect.Error.Reason.Dns))
 
     suite(m"badssl.com SSL certificate tests"):
-      import ConnectError.Reason.*, ConnectError.Reason.Ssl.Reason.*
+      import Connect.Error.Reason.*, Connect.Error.Reason.Ssl.Reason.*
 
       suite(m"Certificate Validation"):
         test(m"Expired SSL certificate"):
-          capture[ConnectError](url"https://expired.badssl.com/".fetch())
+          capture[Connect.Error](url"https://expired.badssl.com/".fetch())
 
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
         test(m"SSL certificate with wrong host"):
-          capture[ConnectError](url"https://wrong.host.badssl.com/".fetch())
+          capture[Connect.Error](url"https://wrong.host.badssl.com/".fetch())
 
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
         test(m"Self-signed certificate"):
-          capture[ConnectError](url"https://self-signed.badssl.com/".fetch())
+          capture[Connect.Error](url"https://self-signed.badssl.com/".fetch())
 
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
         test(m"SSL certificate with untrusted root"):
-          capture[ConnectError](url"https://untrusted-root.badssl.com/".fetch())
+          capture[Connect.Error](url"https://untrusted-root.badssl.com/".fetch())
 
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
       suite(m"Interception Certificates"):
-        test(m"superfish")(capture[ConnectError](url"https://superfish.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"superfish")(capture[Connect.Error](url"https://superfish.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"edellroot")(capture[ConnectError](url"https://edellroot.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"edellroot")(capture[Connect.Error](url"https://edellroot.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"dsdtestprovider")(capture[ConnectError](url"https://dsdtestprovider.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"dsdtestprovider")(capture[Connect.Error](url"https://dsdtestprovider.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"preact-cli")(capture[ConnectError](url"https://preact-cli.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"preact-cli")(capture[Connect.Error](url"https://preact-cli.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"webpack-dev-server")(capture[ConnectError](url"https://webpack-dev-server.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"webpack-dev-server")(capture[Connect.Error](url"https://webpack-dev-server.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
       suite(m"Broken cryptography"):
-        test(m"rc4")(capture[ConnectError](url"https://rc4.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"rc4")(capture[Connect.Error](url"https://rc4.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"rc4-md5")(capture[ConnectError](url"https://rc4-md5.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"rc4-md5")(capture[Connect.Error](url"https://rc4-md5.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"dh480")(capture[ConnectError](url"https://dh480.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"dh480")(capture[Connect.Error](url"https://dh480.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"dh512")(capture[ConnectError](url"https://dh512.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"dh512")(capture[Connect.Error](url"https://dh512.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"dh1024")(capture[ConnectError](url"https://dh1024.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"dh1024")(capture[Connect.Error](url"https://dh1024.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"null")(capture[ConnectError](url"https://null.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"null")(capture[Connect.Error](url"https://null.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
       suite(m"Legacy cryptography"):
-        test(m"tls-v1-0")(capture[ConnectError](url"https://tls-v1-0.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"tls-v1-0")(capture[Connect.Error](url"https://tls-v1-0.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"tls-v1-1")(capture[ConnectError](url"https://tls-v1-1.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"tls-v1-1")(capture[Connect.Error](url"https://tls-v1-1.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"cbc")(capture[ConnectError](url"https://cbc.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"cbc")(capture[Connect.Error](url"https://cbc.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"3des")(capture[ConnectError](url"https://3des.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"3des")(capture[Connect.Error](url"https://3des.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"dh2048")(capture[ConnectError](url"https://dh2048.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"dh2048")(capture[Connect.Error](url"https://dh2048.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
       suite(m"Domain Security Policies"):
-        test(m"revoked")(capture[ConnectError](url"https://revoked.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"revoked")(capture[Connect.Error](url"https://revoked.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"pinning-test")(capture[ConnectError](url"https://pinning-test.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"pinning-test")(capture[Connect.Error](url"https://pinning-test.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
-        test(m"no-sct")(capture[ConnectError](url"https://no-sct.badssl.com/".fetch()))
-        . aspire(_ == ConnectError(Ssl(Handshake)))
+        test(m"no-sct")(capture[Connect.Error](url"https://no-sct.badssl.com/".fetch()))
+        . aspire(_ == Connect.Error(Ssl(Handshake)))
 
     suite(m"TLS acceptance materialization"):
       test(m"strict acceptance verifies hostnames"):

@@ -112,7 +112,7 @@ package couriers:
         def error = Courier.Error(envelope.from, envelope.to.stdlib.head, envelope.subject)
 
         mitigate:
-          case ConnectError(reason)     => Out.println(reason.communicate) yet error
+          case Connect.Error(reason)     => Out.println(reason.communicate) yet error
           case Parse.Error(_, _, reason) => Out.println(reason.describe) yet error
           case Http.Error(status, _)     => Out.println(status.communicate) yet error
           case Json.Error(reason)        => Out.println(reason.communicate) yet error

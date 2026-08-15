@@ -74,7 +74,7 @@ object Api:
   def send(request: Api.Request, accept: Text)
     ( using Online,
             Http.Event is Loggable,
-            Tactic[ConnectError],
+            Tactic[Connect.Error],
             Tactic[Url.Error] )
     ( using client: Http.Client onto Origin["http" | "https"] )
   :   Http.Response =
@@ -168,7 +168,7 @@ object Api:
       ( using erased default: value is Defaulting to Unit )
       ( using online:   Online,
               loggable: Http.Event is Loggable,
-              connect:  Tactic[ConnectError],
+              connect:  Tactic[Connect.Error],
               urlError: Tactic[Url.Error],
               client:   Http.Client onto Origin["http" | "https"] )
     :   value =

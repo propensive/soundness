@@ -70,29 +70,29 @@ private[telekinesis] object Sessions:
     // framed stream is a capability, crossing the field as an `AnyRef`.
     private var pending: Optional[AnyRef] = Unset
 
-    update def fetch(request: Http.Request)(using Tactic[ConnectError])
+    update def fetch(request: Http.Request)(using Tactic[Connect.Error])
     :   Http.Response^{this, caps.any} =
 
-      import ConnectError.Reason.*
+      import Connect.Error.Reason.*
 
       pending.let: stream =>
         try stream.asInstanceOf[(Stream[Data] over Credit)^].sweep { _ => _ => () } catch
-          case error: ji.IOException => abort(ConnectError(Unknown))
+          case error: ji.IOException => abort(Connect.Error(Unknown))
 
       pending = Unset
 
       try duplex.send(Http.Request.serialize(request)) catch
-        case error: ji.IOException => abort(ConnectError(Unknown))
+        case error: ji.IOException => abort(Connect.Error(Unknown))
 
       val cursor = Cursor[Data](duplex.source)
 
       val head: Http.Response.Head =
         try unsafely(Http.Response.parseHead(cursor)) catch
-          case error: Http.Response.Error => abort(ConnectError(Unknown))
-          case error: ji.IOException    => abort(ConnectError(Unknown))
+          case error: Http.Response.Error => abort(Connect.Error(Unknown))
+          case error: ji.IOException    => abort(Connect.Error(Unknown))
 
       // A `101` body is the upgraded protocol's unending stream; refuse it.
-      if head.status == Http.SwitchingProtocols then abort(ConnectError(Unknown))
+      if head.status == Http.SwitchingProtocols then abort(Connect.Error(Unknown))
 
       val code: Int = head.status.code
 
@@ -134,10 +134,10 @@ private[telekinesis] object Sessions:
   // the response is pure and the borrow ends immediately.
   class Multiplexed private[telekinesis] (connection: Http2.Connection^, authority: Text)
   extends Http.Session:
-    update def fetch(request: Http.Request)(using Tactic[ConnectError])
+    update def fetch(request: Http.Request)(using Tactic[Connect.Error])
     :   Http.Response^{this, caps.any} =
 
-      import ConnectError.Reason.*
+      import Connect.Error.Reason.*
 
       // RFC 7540 §8.1.2.2: connection-specific headers must not appear in h2.
       val headers: List[Http.Header] = request.textHeaders.filter: header =>
@@ -166,6 +166,6 @@ private[telekinesis] object Sessions:
         response.status(response.textHeaders, body)
 
       catch
-        case error: Http2.Error  => abort(ConnectError(Unknown))
-        case error: Async.Error  => abort(ConnectError(Unknown))
-        case error: Truncation.Error => abort(ConnectError(Unknown))
+        case error: Http2.Error  => abort(Connect.Error(Unknown))
+        case error: Async.Error  => abort(Connect.Error(Unknown))
+        case error: Truncation.Error => abort(Connect.Error(Unknown))

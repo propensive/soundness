@@ -77,7 +77,7 @@ package httpBackends:
         method:  Http.Method,
         headers: List[Http.Header],
         body:    Spring[Data] )
-      ( using Tactic[ConnectError] )
+      ( using Tactic[Connect.Error] )
     :   Http.Response =
 
       // The URL arrives fully resolved; split it into the scheme, authority and path-with-query
@@ -163,14 +163,14 @@ package httpBackends:
 
       val responseHandle =
         try future.get.call[Optional[Wasm.Handle of "incoming-response"]]().or:
-          abort(ConnectError(ConnectError.Reason.Unknown))
-        catch case error: Wasm.Error => abort(ConnectError(ConnectError.Reason.Unknown))
+          abort(Connect.Error(Connect.Error.Reason.Unknown))
+        catch case error: Wasm.Error => abort(Connect.Error(Connect.Error.Reason.Unknown))
 
       futureHandle.dispose()
       val response: Foreign of "incoming-response" from Wit = responseHandle
 
       val status: Http.Status = Http.Status.unapply(response.status.call[U16]().int).getOrElse:
-        abort(ConnectError(ConnectError.Reason.Unknown))
+        abort(Connect.Error(Connect.Error.Reason.Unknown))
 
       val headersHandle = response.headers.call[Wasm.Handle of "fields"]()
       val responseFields: Foreign of "fields" from Wit = headersHandle

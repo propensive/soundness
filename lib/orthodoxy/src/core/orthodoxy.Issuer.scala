@@ -80,7 +80,7 @@ class Issuer
           case error@Path.Error(reason, path) =>
             OAuth.Error(OAuth.Error.Reason.Other)
 
-          case error@ConnectError(reason) =>
+          case error@Connect.Error(reason) =>
             OAuth.Error(OAuth.Error.Reason.Connection(exchange, reason))
 
           case error@Parse.Error(_, _, _) =>

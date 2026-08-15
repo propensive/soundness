@@ -65,7 +65,7 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
   def request
      ( url: Text, method: Http.Method, headers: List[Http.Header],
         body: Spring[Data]^ )
-     ( using Tactic[ConnectError] )
+     ( using Tactic[Connect.Error] )
   :   Http.Response =
     lastUrl = url
     lastMethod = method
