@@ -103,7 +103,7 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
     test(m"Get some values in a list"):
       capture:
         record.children.map { elem => elem.height }
-    . assert(_ == BoundsError(100, 1, 99))
+    . assert(_ == JsonBlueprint.Error(JsonBlueprint.Error.Reason.IntOutOfRange(100, 1, 99)))
 
     test(m"Get a boolean value"):
       record.active

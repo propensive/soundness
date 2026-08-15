@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **439**;
+- exported multi-word type-level names still under review: **438**;
   217 sit in a prefix family of two or more, across 64 families, and
-  222 are singletons. Names under "Reviewed items which should not be moved"
+  221 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -173,9 +173,17 @@ response — which is what `Http.Status.Category.ServerError` actually means, in
 scintillate depends on — rather than a listener that could not bind. It is
 `HttpServer.Error`, beside the `HttpServer.Event` that both server backends already share.
 
+`BoundsError` was **deleted** rather than renamed. It duplicated
+`JsonBlueprint.Error`'s `IntOutOfRange` reason — the same failure, the same three fields,
+raised from the same object — and the duplicate was the cruder of the two, modelling an
+absent bound as `Double.MinValue`/`Double.MaxValue` where `IntOutOfRange` uses
+`Optional[Int]`. It was declared and exported by gossamer, which never used it. Worth
+checking the next candidate for the same shape before finding it a host: an error that
+looks misnamed may be one the codebase already has.
+
 | status | names |
 |---|---|
-| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `BoundsError`, `ConnectError`, `ExpectationError`, `InstallError` |
+| awaiting a ruling — the name is the failure mode, not a subject that *has* errors | `ConnectError`, `ExpectationError`, `InstallError` |
 | excluded by R2 (specification concept) | `CompileError` |
 | outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `EscapeError`, `RemoteError`, `UncheckedError` |
 | structurally blocked, with the reason established | `IoError`, `StreamError` (below) |
@@ -313,20 +321,20 @@ ultimatum's is the likelier one to rename.
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (222)
+### Singletons (221)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
 `BaseLayout`, `BenchmarkDevice`, `BeneficencePlugin`, `BlobStream`, `BloomFilter`, `BorderStyle`,
-`BoundsError`, `BytecodePalette`, `CanonicalCbor`, `CanvasHandle`, `CapabilityDiscipline`,
-`CaptionLayout`, `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `ChangeKind`,
-`ChannelLayout`, `CheckOverflow`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`,
-`ColorDepth`, `CommandGroup`, `CommonFormattable`, `ConnectError`, `ContainerConfig`,
-`CopyAttributes`, `CrLf`, `CtrlChar`, `CtSym`, `DecimalConverter`, `DecodableManifest`,
-`DereferenceSymlinks`, `DivisionByZero`, `DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`,
-`EcosystemProfile`, `EditorField`, `EitherTactic`, `EmailAddress`, `EncodableManifest`,
-`EntryPoint`, `EnumerationHasAsScala`, `EscapeError`, `EucalyptusGcp`, `ExpectationError`,
-`FastForward`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `GapPolicy`, `GarbageCollection`,
+`BytecodePalette`, `CanonicalCbor`, `CanvasHandle`, `CapabilityDiscipline`, `CaptionLayout`,
+`CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `ChangeKind`, `ChannelLayout`,
+`CheckOverflow`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`, `ColorDepth`,
+`CommandGroup`, `CommonFormattable`, `ConnectError`, `ContainerConfig`, `CopyAttributes`, `CrLf`,
+`CtrlChar`, `CtSym`, `DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`,
+`DivisionByZero`, `DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`, `EcosystemProfile`,
+`EditorField`, `EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`,
+`EnumerationHasAsScala`, `EscapeError`, `EucalyptusGcp`, `ExpectationError`, `FastForward`,
+`FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `GapPolicy`, `GarbageCollection`,
 `GaugePalette`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`, `GraphemeBreak`,
 `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
 `InitializationVector`, `InstallError`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`,

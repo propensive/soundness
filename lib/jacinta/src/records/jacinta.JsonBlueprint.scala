@@ -76,26 +76,30 @@ object JsonBlueprint:
 
 
   given boundedInteger
-  :   ("integer!" is Intensional in JsonBlueprint from Json to (Int raises BoundsError)) =
+  :   ("integer!" is Intensional in JsonBlueprint from Json to (Int raises JsonBlueprint.Error)) =
 
     new Intensional:
       type Self = "integer!"
       type Origin = Json
       type Form = JsonBlueprint
-      type Result = Int raises BoundsError
+      type Result = Int raises JsonBlueprint.Error
 
-      def transform(json: Json, params: List[Text]): Int raises BoundsError =
+      def transform(json: Json, params: List[Text]): Int raises JsonBlueprint.Error =
         val int = json.as[Int]
+
+        def outOfRange(minimum: Optional[Int], maximum: Optional[Int]): Nothing =
+          abort:
+            JsonBlueprint.Error(JsonBlueprint.Error.Reason.IntOutOfRange(int, minimum, maximum))
 
         params.absolve match
           case As[Int](min) :: As[Int](max) :: Nil =>
-            if int < min || int > max then abort(BoundsError(int, min, max)) else int
+            if int < min || int > max then outOfRange(min, max) else int
 
           case As[Int](min) :: _ :: Nil =>
-            if int < min then abort(BoundsError(int, min, Double.MaxValue)) else int
+            if int < min then outOfRange(min, Unset) else int
 
           case _ :: As[Int](max) :: Nil =>
-            if int > max then abort(BoundsError(int, Double.MinValue, max)) else int
+            if int > max then outOfRange(Unset, max) else int
 
 
   given number: ("number" is Intensional in JsonBlueprint from Json to Double) =

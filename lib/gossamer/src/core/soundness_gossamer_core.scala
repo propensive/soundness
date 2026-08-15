@@ -34,7 +34,7 @@ package soundness
 
 export
   gossamer
-  . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank, BoundsError,
+  . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank,
       broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, chomp,
       contains, count, cut, Cuttable, Decimalizer, ends, erase, extract, fill, fit,
       from,
