@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
+
 import soundness.*
 
 import proscenium.compat.*
@@ -1112,6 +1114,252 @@ object Tests extends Suite(m"Zephyrine tests"):
           (lent, rest)
         . assert(_ == (List[Byte](0, 1, 2, 3, 4), List[Byte](5, 6)))
 
+        // The ring holds `Integer.highestOneBit(depth.max(2)*2 - 1)` blocks — two, at
+        // depth 2 — so publishing exactly that many staging blocks single-threadedly
+        // fills it without ever blocking, and demand must then be exactly zero: the
+        // state in which the next hand-off would park the writer.
+        test(m"demand reaches zero exactly when a hand-off would park"):
+          given Buffering = probeBuffering(16, 2)
+
+          Conduit[Data]() match
+           case (intake, stream) =>
+            for _ <- 1 to 2 do
+              intake.reserve(16)
+              intake.commit(16)
+
+            intake.demand.count
+        . assert(_ == 0L)
+
+        test(m"demand recovers block-by-block as the reader drains"):
+          given Buffering = probeBuffering(16, 2)
+
+          Conduit[Data]() match
+           case (intake, stream) =>
+            for _ <- 1 to 2 do
+              intake.reserve(16)
+              intake.commit(16)
+
+            def drain(): Long =
+              stream.refill(Credit(16)) match
+                case count: Int => stream.skip(count)
+                case _          => ()
+
+              intake.demand.count
+
+            (drain(), drain())
+        . assert(_ == ((16L, 32L)))
+
+        // Each block-sized `put` is one ring hand-off: the third parks the writer, so
+        // its progress counter freezes at two, and each block the reader drains lets
+        // exactly one more hand-off through before the writer parks again.
+        test(m"a writer parks on a full conduit and resumes when drained"):
+          given Buffering = probeBuffering(16, 2)
+
+          Conduit[Data]() match
+           case (intake, stream) =>
+            val chunk: Data = Data.fill(16)(_.toByte)
+            val written = AtomicInteger(0)
+
+            val writer = scala.caps.unsafe.unsafeAssumeSeparate:
+              onThread: () =>
+                for _ <- 1 to 8 do
+                  intake.put(chunk)
+                  written.incrementAndGet()
+
+                intake.finish()
+
+            awaitProgress(2, written)
+            val parked = awaitParked(writer)
+            val frozen = written.get()
+
+            stream.refill(Credit(16)) match
+              case count: Int => stream.skip(count)
+              case _          => ()
+
+            // The unpark is asynchronous, so wait for the released hand-off to land
+            // before observing the writer parked again on the next full ring.
+            awaitProgress(3, written)
+            val reparked = awaitParked(writer)
+            val advanced = written.get()
+
+            def drain(total: Int): Int = stream.refill(Credit(16)) match
+              case count: Int =>
+                stream.skip(count)
+                drain(total + count)
+
+              case _ => total
+
+            val rest = drain(0)
+            writer.join(10000)
+            (parked, frozen, reparked, advanced, 16 + rest)
+        . assert(_ == ((true, 2, true, 3, 128)))
+
+        // Committed-but-unconsumed data can occupy at most the ring (two blocks), the
+        // writer's staging block and one sub-block chunk mid-copy: sampling after
+        // every drained window must never observe more, however the threads
+        // interleave. An unbounded hand-off would exceed this by orders of magnitude.
+        test(m"in-flight conduit data never exceeds the configured bound"):
+          given Buffering = probeBuffering(16, 2)
+
+          Conduit[Data]() match
+           case (intake, stream) =>
+            val chunk: Data = Data.fill(8)(_.toByte)
+            val produced = AtomicLong(0)
+
+            val writer = scala.caps.unsafe.unsafeAssumeSeparate:
+              onThread: () =>
+                for _ <- 1 to 2048 do
+                  intake.put(chunk)
+                  produced.addAndGet(8)
+
+                intake.finish()
+
+            var consumed: Long = 0
+            var worst: Long = 0
+
+            def loop(): Unit = stream.refill(Credit(64)) match
+              case count: Int =>
+                stream.skip(count)
+                consumed += count
+                worst = worst.max(produced.get() - consumed)
+                loop()
+
+              case _ => ()
+
+            loop()
+            writer.join(10000)
+            (consumed, worst <= 64L)
+        . assert(_ == ((16384L, true)))
+
+        // With the ring full, the intake's demand is zero: the pump's refill is
+        // granted nothing, it falls into the `reserve(1)` branch, and the writer
+        // parks handing off the next block. Draining the reader side releases it and
+        // the transfer completes.
+        test(m"a pump into a full conduit parks and completes after draining"):
+          given Buffering = probeBuffering(16, 2)
+
+          Conduit[Data]() match
+           case (intake, stream) =>
+            for _ <- 1 to 2 do
+              intake.reserve(16)
+              intake.commit(16)
+
+            val payload: Data = Data.fill(64)(_.toByte)
+
+            val writer = scala.caps.unsafe.unsafeAssumeSeparate:
+              onThread(() => payload.stream.pump(intake))
+
+            val parked = awaitParked(writer)
+
+            def drain(total: Int): Int = stream.refill(Credit(1000)) match
+              case count: Int =>
+                stream.skip(count)
+                drain(total + count)
+
+              case _ => total
+
+            val total = drain(0)
+            writer.join(10000)
+            (parked, total)
+        . assert(_ == ((true, 96)))
+
+        test(m"a two-stage duct chain compounds demand translation"):
+          val recorder = Recorder(small.stream)
+          val gather = Gather()
+          gather.credit = 20
+
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            recorder.viaDuct(Doubler()).viaDuct(Doubler()).pump(gather)
+
+          recorder.demands.last
+        . assert(_ == 5L)
+
+        test(m"a terminal sweep demands the transfer credit from its source"):
+          val recorder = Recorder(small.stream)
+
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            recorder.sweep: region =>
+              range => ()
+
+          recorder.demands.last
+        . assert(_ == summon[Buffering].transfer(Substrate.Bytes).toLong)
+
+      suite(m"Handoff backpressure tests"):
+        test(m"offer parks only when the ring is full"):
+          val handoff = Handoff(2)
+          handoff.offer("a")
+          handoff.offer("b")
+          val producer = onThread(() => handoff.offer("c"))
+          val parked = awaitParked(producer)
+          handoff.take()
+          producer.join(10000)
+          (parked, producer.isAlive)
+        . assert(_ == ((true, false)))
+
+        test(m"take parks on an empty ring until an offer"):
+          val handoff = Handoff(2)
+          val received = AtomicReference[AnyRef | Null](null)
+          val consumer = onThread(() => received.set(handoff.take()))
+          val parked = awaitParked(consumer)
+          handoff.offer("x")
+          consumer.join(10000)
+          (parked, received.get())
+        . assert(_ == ((true, "x")))
+
+        test(m"interrupting a parked producer raises InterruptedException"):
+          val handoff = Handoff(2)
+          handoff.offer("a")
+          handoff.offer("b")
+          val caught = AtomicReference[Throwable | Null](null)
+
+          val producer = onThread: () =>
+            try handoff.offer("c") catch case error: InterruptedException => caught.set(error)
+
+          val parked = awaitParked(producer)
+          producer.interrupt()
+          producer.join(10000)
+          (parked, caught.get() != null)
+        . assert(_ == ((true, true)))
+
+        test(m"interrupting a parked consumer raises InterruptedException"):
+          val handoff = Handoff(2)
+          val caught = AtomicReference[Throwable | Null](null)
+
+          val consumer = onThread: () =>
+            try handoff.take() catch case error: InterruptedException => caught.set(error)
+
+          val parked = awaitParked(consumer)
+          consumer.interrupt()
+          consumer.join(10000)
+          (parked, caught.get() != null)
+        . assert(_ == ((true, true)))
+
+        test(m"close releases a parked producer and discards later offers"):
+          val handoff = Handoff(2)
+          handoff.offer("a")
+          handoff.offer("b")
+          val producer = onThread(() => handoff.offer("c"))
+          val parked = awaitParked(producer)
+          handoff.close()
+          producer.join(10000)
+          handoff.offer("d")
+          (parked, producer.isAlive, handoff.size)
+        . assert(_ == ((true, false, 0)))
+
+        test(m"free tracks occupancy across offers and takes"):
+          val handoff = Handoff(4)
+          val initial = handoff.free
+          handoff.offer("a")
+          val one = handoff.free
+          handoff.offer("b")
+          val two = handoff.free
+          handoff.take()
+          val three = handoff.free
+          handoff.take()
+          val four = handoff.free
+          (initial, one, two, three, four)
+        . assert(_ == ((4, 3, 2, 3, 4)))
+
 
   // A reference-typed record for the boxed-medium (record stream) tests.
   case class Row(id: Int)
@@ -1246,3 +1494,38 @@ object Tests extends Suite(m"Zephyrine tests"):
     def start: Int = underlying.start
     def limit: Int = underlying.limit
     update def skip(count: Int): Unit = underlying.skip(count)
+
+  // A tiny buffering policy for the backpressure tests: staging, transfer and
+  // hand-off blocks all collapse to `block` and recycling is off, so blocking
+  // states are reached with a few tens of bytes and the block arithmetic in
+  // assertions is exact.
+  def probeBuffering(block: Int, depth0: Int): Buffering = new Buffering:
+    def capacity(substrate: Substrate): Int = block
+    def depth: Int = depth0
+    override def transfer(substrate: Substrate): Int = block
+    override def recycle: Boolean = false
+
+  // A platform thread running `action`: the park-observation tests inspect the
+  // thread's state, which a virtual thread does not report as `WAITING`.
+  def onThread(action: () => Unit): Thread = Thread.ofPlatform().nn.start(() => action()).nn
+
+  // Poll (bounded) until `counter` reaches `expected`; a counter frozen short of it
+  // fails the caller's assertion. Only ever used to await progress the test has made
+  // inevitable: the bound is the test's patience, not synchronization.
+  def awaitProgress(expected: Int, counter: AtomicInteger): Unit =
+    var attempts: Int = 0
+
+    while counter.get() < expected && attempts < 5000 do
+      attempts += 1
+      Thread.sleep(1)
+
+  // Poll (bounded) until `thread` is parked. Only ever used to await a state the
+  // test has made inevitable: the bound is the test's patience, not synchronization.
+  def awaitParked(thread: Thread): Boolean =
+    var attempts: Int = 0
+
+    while thread.getState != Thread.State.WAITING && attempts < 5000 do
+      attempts += 1
+      Thread.sleep(1)
+
+    thread.getState == Thread.State.WAITING
