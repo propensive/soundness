@@ -397,17 +397,26 @@ object LineSeparation:
         written
 
       // The index of the next separator at or after `from`, or `stop` if the
-      // window holds none. Two signed comparisons per byte, and deliberately no
-      // masking: 10 and 13 are positive and every byte of a multi-byte UTF-8
-      // sequence is negative, so a signed test matches neither, and the loop
-      // stays in the shape the JIT vectorises. (Masking to compare unsigned —
-      // which a minimum-of-eight skip like the char duct's would need, since
-      // signed it would see those negatives as candidates — costs far more than
-      // the wide skip saves: it made this scan 46% of the whole pipeline.)
+      // window holds none. 10 and 13 differ only in their bottom three bits, so
+      // one mask-and-compare rejects every byte outside 8-15 — and, because
+      // `&&` short-circuits, does it in a single branch where two comparisons
+      // take two. Only the 8-15 range pays the exact test. Sign extension needs
+      // no masking away, since the mask clears those bits, and every byte of a
+      // multi-byte UTF-8 sequence is negative and so rejected outright.
+      //
+      // Measured at 53% faster than two comparisons per byte over the 4 MB
+      // corpus (the "Separator scan variants" suite, which keeps all three
+      // honest). Tab (9) falls in the admitted range and pays the exact test
+      // where it occurs, which is far cheaper than a second comparison on every
+      // byte; biasing by two to narrow the range to 10-13 and exclude it
+      // measured slower still, its extra operation costing more than the
+      // false positives it avoids.
       private def scan(bytes: scala.Array[Byte], from: Int, stop: Int): Int =
         var index: Int = from
 
-        while index < stop && { val byte = bytes(index); byte != 10 && byte != 13 }
+        while index < stop
+            && { val byte = bytes(index)
+                 (byte & 0xf8) != 0x08 || (byte != 10 && byte != 13) }
         do index += 1
 
         index

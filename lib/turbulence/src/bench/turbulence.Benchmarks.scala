@@ -177,6 +177,72 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   lazy val jdkKeyBytes: scala.Array[Byte] = scala.Array.tabulate(32)(i => (i*7 + 1).toByte)
   lazy val jdkIvBytes:  scala.Array[Byte] = scala.Array.tabulate(16)(i => (i*13 + 3).toByte)
 
+  // ── Separator-scan variants (see the "Separator scan" suite) ───────────────
+  //
+  // Each mimics the byte duct's real call pattern — scan to the next separator,
+  // step over it, resume — rather than one pass over the corpus, since entering
+  // and leaving the loop once per line is part of what is being measured. All
+  // three return the line count, so a variant that mis-detects shows up as a
+  // different result.
+
+  // What the duct does today: two comparisons and, because `&&` short-circuits,
+  // two branches per byte.
+  def scanPairwise(bytes: scala.Array[Byte]): Int =
+    var position = 0
+    var lines = 0
+
+    while position < bytes.length do
+      var index = position
+
+      while index < bytes.length && { val byte = bytes(index); byte != 10 && byte != 13 }
+      do index += 1
+
+      lines += 1
+      position = index + 1
+
+    lines
+
+  // 10 and 13 share their top five bits, so one mask-and-compare rejects every
+  // byte outside 8-15 with a single branch; only that range takes the exact
+  // test. Sign extension needs no masking away — the mask clears those bits.
+  // Admits tab (9) as a false positive, which is common in real text.
+  def scanMasked(bytes: scala.Array[Byte]): Int =
+    var position = 0
+    var lines = 0
+
+    while position < bytes.length do
+      var index = position
+
+      while index < bytes.length
+          && { val byte = bytes(index)
+               (byte & 0xf8) != 0x08 || (byte != 10 && byte != 13) }
+      do index += 1
+
+      lines += 1
+      position = index + 1
+
+    lines
+
+  // Adding two maps 10 and 13 onto 12 and 15, which share six bits, so the mask
+  // admits only 10-13: one more operation per byte, but no false positive on
+  // tab — only on VT and FF, which are vanishingly rare.
+  def scanBiased(bytes: scala.Array[Byte]): Int =
+    var position = 0
+    var lines = 0
+
+    while position < bytes.length do
+      var index = position
+
+      while index < bytes.length
+          && { val byte = bytes(index) + 2
+               (byte & 0xfc) != 0x0c || (byte != 12 && byte != 15) }
+      do index += 1
+
+      lines += 1
+      position = index + 1
+
+    lines
+
   // ── Shared run helpers (referenced from the staged bodies) ──────────────────
 
   // ZIO's unsafe-run entry point, wrapping each ZIO benchmark's effect.
@@ -1891,6 +1957,25 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                 turbulence.Benchmarks.smallQuarters.map(q => ZStream.fromChunk(Chunk.fromArray(q.asInstanceOf[scala.Array[Byte]])))
               ZStream.mergeAllUnbounded()(streams*).runCount
         }
+
+    // Separator scan: the byte duct's inner loop in isolation, over the 4 MB
+    // corpus, one call per line. The question is whether replacing two
+    // comparisons (and, with short-circuiting, two branches) per byte with a
+    // mask-and-compare (one branch) pays, and whether biasing by two to narrow
+    // the false-positive range from 8-15 to 10-13 pays for its extra operation.
+    // Note this corpus has no tabs, which the five-bit mask admits and the
+    // six-bit one does not — on tab-heavy text the biased variant would fare
+    // relatively better than it does here.
+    suite(m"Separator scan variants (4 MB)"):
+      bench(m"Two comparisons per byte")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.scanPairwise(turbulence.Benchmarks.textArray) }
+
+      bench(m"Mask and compare (admits 8-15)")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.scanMasked(turbulence.Benchmarks.textArray) }
+
+      bench(m"Bias by two, mask and compare (admits 10-13)")
+        ( target = 1*Second, operationSize = textSize ):
+        '{ turbulence.Benchmarks.scanBiased(turbulence.Benchmarks.textArray) }
 
     // Example T: profiles — where the time actually goes in the pipelines the
     // stress suites measure. Each renders as a histogram of the hottest methods
