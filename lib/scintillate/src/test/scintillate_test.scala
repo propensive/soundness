@@ -81,6 +81,172 @@ object Tests extends Suite(m"Scintillate tests"):
       response.tt
 
     supervise:
+      // The reactor front-end: the HTTP fast path over real sockets — accumulation,
+      // end-of-head scanning, preset-cursor parsing, inline handlers and coalesced
+      // writes, across lanes.
+      suite(m"Reactor front-end"):
+        test(m"A GET is served by the reactor"):
+          val port = freePort()
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"from the reactor"))
+          try rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+          finally reactor.stop()
+
+        . assert(_.contains(t"from the reactor"))
+
+        test(m"A fixed POST body reaches an inline handler"):
+          val port = freePort()
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+          try
+            rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nhello")
+          finally reactor.stop()
+
+        . assert(_.contains(t"hello"))
+
+        test(m"Two pipelined requests get two responses on one connection"):
+          val port = freePort()
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"pong"))
+
+          try
+            val request = t"GET /a HTTP/1.1\r\nHost: x\r\n\r\nGET /b HTTP/1.1\r\nHost: x\r\n\r\n"
+            rawRequest(port, request)
+          finally reactor.stop()
+
+        . assert(_.s.split("200 OK").nn.length == 3)
+
+        test(m"A request split across many tiny writes is accumulated and served"):
+          val port = freePort()
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"assembled"))
+
+          try
+            val socket = java.net.Socket("localhost", port)
+            val out = socket.getOutputStream.nn
+            val request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes("US-ASCII").nn
+
+            request.foreach: byte =>
+              out.write(scala.Array(byte))
+              out.flush()
+
+            socket.shutdownOutput()
+            val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
+            socket.close()
+            response.tt
+          finally reactor.stop()
+
+        . assert(_.contains(t"assembled"))
+
+        test(m"Concurrent connections across lanes are served independently"):
+          val port = freePort()
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(request.target)
+
+          try
+            val results = scala.List.tabulate(8): index =>
+              rawRequest(port, t"GET /client-$index HTTP/1.1\r\nHost: x\r\n\r\n")
+
+            results.zipWithIndex.forall: (response, index) =>
+              response.contains(t"/client-$index")
+          finally reactor.stop()
+
+        . assert(_ == true)
+
+        test(m"A chunked request body escalates to the blocking path"):
+          val port = freePort()
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+          try
+            rawRequest
+              ( port,
+                t"POST / HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n" )
+          finally reactor.stop()
+
+        . assert(_.contains(t"hello"))
+
+        test(m"A body above the inline limit escalates and reaches the handler"):
+          val port = freePort()
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(t"length:${request.body().memoize.length}")
+
+          try
+            val body = String("x".repeat(100000).nn).tt
+            rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 100000\r\n\r\n$body")
+          finally reactor.stop()
+
+        . assert(_.contains(t"length:100000"))
+
+        test(m"Expect: 100-continue escalates and gets an interim response"):
+          val port = freePort()
+
+          val reactor = Reactor(port, loops = 2):
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+          try
+            rawRequest
+              ( port,
+                t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\nExpect: 100-continue\r\n\r\nworld" )
+          finally reactor.stop()
+
+        . assert: response =>
+            response.contains(t"100 Continue") && response.contains(t"world")
+
+        test(m"A slow reader is backpressured and still receives every response"):
+          val port = freePort()
+          val block = String("y".repeat(32768).nn).tt
+
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(block))
+
+          try
+            // Pipeline 64 requests (2 MiB of responses, far past the high-water mark)
+            // without reading a byte, so the connection's write queue fills, its read
+            // interest is withdrawn, and service resumes only as we drain.
+            val socket = java.net.Socket("localhost", port)
+            val out = socket.getOutputStream.nn
+            val request = "GET / HTTP/1.1\r\nHost: x\r\n\r\n".getBytes("US-ASCII").nn
+
+            var index = 0
+            while index < 64 do
+              out.write(request)
+              index += 1
+
+            out.flush()
+            Thread.sleep(200)
+            socket.shutdownOutput()
+            val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
+            socket.close()
+            response.tt
+
+          finally reactor.stop()
+
+        . assert(_.s.split("200 OK").nn.length == 65)
+
+        test(m"SocketServer.handle serves through the reactor when selected"):
+          import frontends.reactive
+          val port = freePort()
+
+          supervise:
+            val service = SocketServer(port).handle(Http.Response(Http.Ok)(t"via frontend"))
+            try rawRequest(port, t"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+            finally service.cancel()
+
+        . assert(_.contains(t"via frontend"))
+
+        test(m"An oversized head is refused with 431"):
+          val port = freePort()
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"no"))
+
+          try
+            val padding = String("x".repeat(80000).nn)
+            rawRequest(port, t"GET / HTTP/1.1\r\nHost: x\r\nPad: ${padding.tt}\r\n\r\n")
+          finally reactor.stop()
+
+        . assert(_.contains(t"431"))
+
       suite(m"Native socket server"):
         test(m"GET returns the handler's response body"):
           val port = freePort()

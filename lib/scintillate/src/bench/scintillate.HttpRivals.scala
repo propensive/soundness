@@ -75,6 +75,7 @@ object HttpRivals:
   val scintillatePlatformPort: Int = 18081
   val emberPort: Int = 18082
   val zioPort: Int = 18083
+  val reactorPort: Int = 18084
 
   // ── The client ─────────────────────────────────────────────────────────────
 
@@ -236,6 +237,11 @@ object HttpRivals:
 
   lazy val scintillateVirtual: Unit =
     startScintillate(scintillateVirtualPort)(using threading.virtualThreading)
+
+  // The event-loop front-end: handlers inline on the selector lanes.
+  lazy val scintillateReactor: Unit =
+    val server = Reactor(reactorPort)(okHandler)
+    awaitReady(reactorPort)
 
   lazy val scintillatePlatform: Unit =
     startScintillate(scintillatePlatformPort)(using threading.platformThreading)

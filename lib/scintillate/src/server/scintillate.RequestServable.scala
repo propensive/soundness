@@ -43,7 +43,14 @@ trait RequestServable:
   // (`Http.Response^{connection}`): a streamed body — a chunked response, SSE,
   // or an upgraded protocol's raw stream — legitimately reads the live request
   // stream, and is written out by the server within the connection's lifetime.
+  //
+  // The `Frontend` given selects the serving engine where a backend offers a
+  // choice (`SocketServer`: thread-per-connection or the reactive selector loop);
+  // a parameter rather than a summon inside the implementation, since a given
+  // resolved at the definition site would always find the companion default,
+  // never the caller's `frontends` import.
   def handle(handle: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
     ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
+    ( using Frontend )
   :   Service^

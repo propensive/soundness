@@ -58,10 +58,92 @@ import zephyrine.*
 // `Content-Length` and chunked request bodies, `100-continue`, request-size
 // limits, and `101` protocol upgrades. Supplying an `SSLContext` as `ssl` serves
 // over TLS instead of cleartext.
+object SocketServer:
+  // Case-insensitive substring search over the raw strings, allocation-free: the
+  // header facts below are computed on every request, and `.lower` would allocate a
+  // fresh `Text` per header per request.
+  private[scintillate] def containsIgnoreCase(value: String, token: String): Boolean =
+    val max = value.length - token.length
+    var index = 0
+    var found = false
+
+    while !found && index <= max do
+      if value.regionMatches(true, index, token, 0, token.length) then found = true
+      else index += 1
+
+    found
+
+  // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
+  // HTTP/1.0 closes unless `Connection: keep-alive`.
+  // The per-request header facts, gathered in one allocation-free pass. The former
+  // helpers (`keepAlive`, `isUpgrade`, `expectsContinue`, and `requestBody`'s framing
+  // scan) each rescanned the header list, lowercasing every key and value they
+  // touched — a measurable share of the per-request CPU on the JFR profile.
+  private[scintillate] class HeadFacts extends scala.caps.Stateful:
+    var connectionClose: Boolean = false
+    var connectionKeepAlive: Boolean = false
+    var connectionUpgrade: Boolean = false
+    var upgradePresent: Boolean = false
+    var expectContinue: Boolean = false
+    var chunked: Boolean = false
+    var contentLength: Optional[Int] = Unset
+
+  private[scintillate] def factsOf(head: Http.Request.Head): HeadFacts^ =
+    val facts = HeadFacts()
+
+    head.headers.each: header =>
+      val key = header.key.s
+
+      if key.equalsIgnoreCase("connection") then
+        val value = header.value.s
+        if containsIgnoreCase(value, "close") then facts.connectionClose = true
+        if containsIgnoreCase(value, "keep-alive") then facts.connectionKeepAlive = true
+        if containsIgnoreCase(value, "upgrade") then facts.connectionUpgrade = true
+      else if key.equalsIgnoreCase("upgrade") then
+        facts.upgradePresent = true
+      else if key.equalsIgnoreCase("expect") then
+        if containsIgnoreCase(header.value.s, "100-continue") then facts.expectContinue = true
+      else if key.equalsIgnoreCase("transfer-encoding") then
+        if containsIgnoreCase(header.value.s, "chunked") then facts.chunked = true
+      else if key.equalsIgnoreCase("content-length") then
+        // The first such header governs, as the former `.prim` selection did.
+        if facts.contentLength.absent
+        then facts.contentLength = safely(Integer.parseInt(header.value.s.trim.nn))
+
+    facts
+
+  // A request asks to upgrade the protocol (e.g. to WebSocket) when it carries
+  // `Connection: Upgrade` together with an `Upgrade` header. Such a request's
+  // body is the unbounded remainder of the connection, so a frame reader can
+  // keep receiving bytes after the handshake.
+  private[scintillate] def isUpgrade(facts: HeadFacts^): Boolean =
+    facts.connectionUpgrade && facts.upgradePresent
+
+  private[scintillate] def keepAlive(head: Http.Request.Head, facts: HeadFacts^): Boolean =
+    head.version match
+      case 1.1 => !facts.connectionClose
+      case _   => facts.connectionKeepAlive
+
+  // A client may withhold a request body until the server agrees to receive it
+  // with an interim `100 Continue` (RFC 7231 §5.1.1).
+  private[scintillate] def expectsContinue(head: Http.Request.Head, facts: HeadFacts^): Boolean =
+    head.version == 1.1 && facts.expectContinue
+
+  // Map a request-parsing failure to the status the client should see.
+  private[scintillate] def errorStatus(reason: Http.Request.Error.Reason): Http.Status =
+    import Http.Request.Error.Reason
+
+    reason match
+      case Reason.UriTooLong      => Http.UriTooLong
+      case Reason.HeadersTooLarge => Http.RequestHeaderFieldsTooLarge
+      case _                      => Http.BadRequest
+
 case class SocketServer
   ( port: Int, local: Boolean = true, ssl: Optional[jns.SSLContext] = Unset )
   ( using errorPage: WebserverErrorPage )
 extends RequestServable:
+  import SocketServer.{containsIgnoreCase, HeadFacts, factsOf, keepAlive, isUpgrade,
+      expectsContinue, errorStatus}
 
   // Cap on the bytes an unconsumed request body will be drained before the
   // connection is closed rather than read in full to reach the next request.
@@ -101,57 +183,6 @@ extends RequestServable:
 
     if failed then abort(StreamError(count.b))
 
-  // Case-insensitive substring search over the raw strings, allocation-free: the
-  // header facts below are computed on every request, and `.lower` would allocate a
-  // fresh `Text` per header per request.
-  private def containsIgnoreCase(value: String, token: String): Boolean =
-    val max = value.length - token.length
-    var index = 0
-    var found = false
-
-    while !found && index <= max do
-      if value.regionMatches(true, index, token, 0, token.length) then found = true
-      else index += 1
-
-    found
-
-  // The per-request header facts, gathered in one allocation-free pass. The former
-  // helpers (`keepAlive`, `isUpgrade`, `expectsContinue`, and `requestBody`'s framing
-  // scan) each rescanned the header list, lowercasing every key and value they
-  // touched — a measurable share of the per-request CPU on the JFR profile.
-  private class HeadFacts extends scala.caps.Stateful:
-    var connectionClose: Boolean = false
-    var connectionKeepAlive: Boolean = false
-    var connectionUpgrade: Boolean = false
-    var upgradePresent: Boolean = false
-    var expectContinue: Boolean = false
-    var chunked: Boolean = false
-    var contentLength: Optional[Int] = Unset
-
-  private def factsOf(head: Http.Request.Head): HeadFacts^ =
-    val facts = HeadFacts()
-
-    head.headers.each: header =>
-      val key = header.key.s
-
-      if key.equalsIgnoreCase("connection") then
-        val value = header.value.s
-        if containsIgnoreCase(value, "close") then facts.connectionClose = true
-        if containsIgnoreCase(value, "keep-alive") then facts.connectionKeepAlive = true
-        if containsIgnoreCase(value, "upgrade") then facts.connectionUpgrade = true
-      else if key.equalsIgnoreCase("upgrade") then
-        facts.upgradePresent = true
-      else if key.equalsIgnoreCase("expect") then
-        if containsIgnoreCase(header.value.s, "100-continue") then facts.expectContinue = true
-      else if key.equalsIgnoreCase("transfer-encoding") then
-        if containsIgnoreCase(header.value.s, "chunked") then facts.chunked = true
-      else if key.equalsIgnoreCase("content-length") then
-        // The first such header governs, as the former `.prim` selection did.
-        if facts.contentLength.absent
-        then facts.contentLength = safely(Integer.parseInt(header.value.s.trim.nn))
-
-    facts
-
   // Frame the request body off the shared connection cursor: chunked decoding
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
   // when neither is given. The framed stream stops exactly at the body's end so
@@ -167,37 +198,9 @@ extends RequestServable:
      if facts.chunked then Http.Request.chunkedBody(cursor)
      else facts.contentLength.lay(Http.emptyBody())(Http.Request.fixedBody(cursor, _))
 
-  // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
-  // HTTP/1.0 closes unless `Connection: keep-alive`.
-  private def keepAlive(head: Http.Request.Head, facts: HeadFacts^): Boolean =
-    head.version match
-      case 1.1 => !facts.connectionClose
-      case _   => facts.connectionKeepAlive
-
-  // A request asks to upgrade the protocol (e.g. to WebSocket) when it carries
-  // `Connection: Upgrade` together with an `Upgrade` header. Such a request's
-  // body is the unbounded remainder of the connection, so a frame reader can
-  // keep receiving bytes after the handshake.
-  private def isUpgrade(facts: HeadFacts^): Boolean =
-    facts.connectionUpgrade && facts.upgradePresent
-
-  // A client may withhold a request body until the server agrees to receive it
-  // with an interim `100 Continue` (RFC 7231 §5.1.1).
-  private def expectsContinue(head: Http.Request.Head, facts: HeadFacts^): Boolean =
-    head.version == 1.1 && facts.expectContinue
-
   private def streaming(response: Http.Response^): Boolean = response.body match
     case Http.Body.Flowing(_) => true
     case _                    => false
-
-  // Map a request-parsing failure to the status the client should see.
-  private def errorStatus(reason: Http.Request.Error.Reason): Http.Status =
-    import Http.Request.Error.Reason
-
-    reason match
-      case Reason.UriTooLong      => Http.UriTooLong
-      case Reason.HeadersTooLarge => Http.RequestHeaderFieldsTooLarge
-      case _                      => Http.BadRequest
 
   // Drive the HTTP/1.1 keep-alive loop over an arbitrary byte source and sink,
   // independent of any socket. `handle` calls this once per accepted connection;
@@ -341,14 +344,30 @@ extends RequestServable:
           while continue && !cursor.finished do continue = serveRequest(cursor)
 
   // A per-request server: handle every request (HTTP/1.1) or stream (HTTP/2)
-  // with `handler`. The degenerate session with no per-connection setup.
+  // with `handler`. The degenerate session with no per-connection setup. The
+  // `Frontend` given selects the engine: the reactive selector loop for cleartext
+  // servers (`import frontends.reactive`), or a virtual-thread daemon per
+  // connection. A TLS server always takes the daemon path (`SSLSocket` cannot ride
+  // a selector), as does `handleSession` (per-connection state is a per-thread
+  // affair). Sessions and TLS aside, the two engines serve identical handlers.
   def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
     ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
+    ( using frontend: Frontend )
   :   Service^ =
 
-    handleSession: session ?=>
-      session.handle(handler)
+    frontend match
+      case Frontend.Reactive if ssl.absent =>
+        // The reactor (which captures the handler and log evidence for its lifetime)
+        // crosses into the service's cancel thunk as a neutral carrier, so the fresh
+        // `Service^` does not hide the method's parameters — the same boundary idiom
+        // as the per-request `bodyRef`.
+        val reactor0: AnyRef = Reactor(port, local)(handler).asInstanceOf[AnyRef]
+        Service(() => reactor0.asInstanceOf[Reactor].stop())
+
+      case _ =>
+        handleSession: session ?=>
+          session.handle(handler)
 
   // A per-connection session server: `scope` runs once when a connection is
   // established (an HTTP/2 connection, or an HTTP/1.1 keep-alive socket) and may

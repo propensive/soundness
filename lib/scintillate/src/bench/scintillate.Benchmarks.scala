@@ -152,6 +152,12 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
     // an uncontended round-trip is tens of microseconds, so a 5 ms SLO measures
     // queuing, scheduling and GC under load, not network noise.
     suite(m"HTTP over real sockets: scaling sweep (N ≤ 256)"):
+      stress(m"Scintillate  Reactor")(target = 1*Second, sweep = 256):
+        '{
+            scintillate.HttpRivals.scintillateReactor
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.reactorPort)
+        }
+
       stress(m"Scintillate  SocketServer (virtual)")(target = 1*Second, sweep = 256):
         '{
             scintillate.HttpRivals.scintillateVirtual
@@ -171,6 +177,13 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
         }
 
     suite(m"HTTP over real sockets: capacity search (99% ≤ 5 ms)"):
+      stress(m"Scintillate  Reactor")
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        '{
+            scintillate.HttpRivals.scintillateReactor
+            scintillate.HttpRivals.roundtrip(scintillate.HttpRivals.reactorPort)
+        }
+
       stress(m"Scintillate  SocketServer (virtual)")
         ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
         '{

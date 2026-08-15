@@ -64,9 +64,12 @@ object HttpServer:
 
 case class HttpServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
 extends RequestServable:
+  // The `Frontend` given is accepted for `RequestServable` uniformity and ignored:
+  // the JDK backend has one engine.
   def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
     ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
+    ( using Frontend )
   :   Service^ =
 
     def handle(exchange: csnh.HttpExchange | Null): Unit =
