@@ -400,7 +400,7 @@ object Tests extends Suite(m"Scintillate tests"):
             caps.unsafe.unsafeAssumePure:
               Http.Response(Http.Ok):
                 Http.Body.Flowing: () =>
-                  val producer = Producer[Data](4096)
+                  val producer = Producer[Data]()
 
                   async:
                     var i = 0

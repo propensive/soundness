@@ -304,7 +304,7 @@ object Protobuf extends Protobuf2:
   // fiber. The bytes themselves are already assembled (Protobuf length-prefixes nested messages, so
   // their lengths must be known up front); this hands them out in bounded chunks.
   def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data] =
-    val producer = Producer[Data](4096)
+    val producer = Producer[Data]()
 
     async:
       producer.put(value.payload)

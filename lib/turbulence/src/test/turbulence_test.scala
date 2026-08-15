@@ -857,6 +857,37 @@ object Tests extends Suite(m"Turbulence tests"):
             counter.get() )
       . assert(_ == ((true, 4096, 4096, 4096L)))
 
+      // Closing a subscriber's stream closes its ring: the pump, parked on the
+      // abandoned subscriber, is released, its later offers to that ring are
+      // discarded, and the surviving subscriber still receives the full payload.
+      test(m"closing a divergence subscriber releases the pump"):
+        supervise:
+          given Buffering = probeBuffering(16, 2)
+          val counter = AtomicLong(0)
+          val subscribers = Divergence(Meter(chunkStream(256), counter), 2)
+          val eager = subscribers(0)
+          val abandoned = subscribers(1)
+          awaitStability(sci.IndexedSeq(counter))
+          scala.caps.unsafe.unsafeAssumeSeparate(abandoned.close())
+          val gather = Gather2()
+          scala.caps.unsafe.unsafeAssumeSeparate(eager.pump(gather))
+
+          ( scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.length,
+            counter.get() )
+      . assert(_ == ((4096, 4096L)))
+
+      test(m"sink.buffered stages by the buffering block size"):
+        given Buffering = probeBuffering(7, 2)
+        var sizes: sci.List[Int] = sci.Nil
+
+        val intake = Sink.buffered[Unit, Data]
+          ((), (_, chunks) => sizes = chunks.stdlib.to(sci.List).map(_.length))
+
+        intake.put(Data.fill(8)(_.toByte))
+        intake.finish()
+        sizes
+      . assert(_ == sci.List(7, 1))
+
       // `OutputStream.write` permits the caller to reuse its array afterwards, and the chunk
       // is read only when the stream is consumed, so aliasing the caller's array would let a
       // later write rewrite bytes already handed over.

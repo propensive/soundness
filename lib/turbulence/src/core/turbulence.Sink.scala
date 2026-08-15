@@ -169,13 +169,13 @@ object Sink:
   // transitional `Writable` bridges below.
   def buffered[target, medium]
     ( target: target, write: (target, Chain[medium]) => Unit )
-    ( using addressable0: medium is Addressable )
+    ( using addressable0: medium is Addressable, buffering: Buffering )
   :   (Intake[medium] over Credit)^{write, caps.any} =
 
     new Intake[medium]:
       type Transport = Credit
 
-      private val block: Int = 2048
+      private val block: Int = buffering.capacity(addressable0.substrate)
       // Untracked, cast-erased: reached only through this endpoint.
       @caps.unsafe.untrackedCaptures
       private val storage: addressable0.Storage =
@@ -183,6 +183,9 @@ object Sink:
       private var mark0: Int = 0
       private var chunks: List[medium] = Nil
 
+      // Honestly unbounded: this intake accumulates every chunk until `finish`
+      // hands them to `write`, so it truly accepts everything — a bound here
+      // would be a fiction, not backpressure.
       def demand: Credit = Credit(Long.MaxValue)
       protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
       def mark: Int = mark0

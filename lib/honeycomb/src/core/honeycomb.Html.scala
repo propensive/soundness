@@ -288,7 +288,7 @@ object Html extends Tag.Container
   =>  ((Document[Html] is Streamable by Text over Credit)^{monitor, caps.any}) = document =>
     val formatting = summon[Formatting]
     val dom = document.metadata
-    val producer = Producer[Text](4096)
+    val producer = Producer[Text]()
     val block = formatting.indented
 
     async:
