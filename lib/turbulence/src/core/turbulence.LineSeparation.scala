@@ -396,33 +396,21 @@ object LineSeparation:
 
         written
 
-      // As the char duct's `scan`, over bytes. The comparison is on the
-      // unsigned value: every byte of a multi-byte UTF-8 sequence has its high
-      // bit set, so unsigned it exceeds 13 and is skipped with the ordinary
-      // bytes, where signed it would be negative and fall to the re-check —
-      // which would forfeit the wide skip on exactly the non-ASCII text that
-      // needs it most.
+      // The index of the next separator at or after `from`, or `stop` if the
+      // window holds none. Two signed comparisons per byte, and deliberately no
+      // masking: 10 and 13 are positive and every byte of a multi-byte UTF-8
+      // sequence is negative, so a signed test matches neither, and the loop
+      // stays in the shape the JIT vectorises. (Masking to compare unsigned —
+      // which a minimum-of-eight skip like the char duct's would need, since
+      // signed it would see those negatives as candidates — costs far more than
+      // the wide skip saves: it made this scan 46% of the whole pipeline.)
       private def scan(bytes: scala.Array[Byte], from: Int, stop: Int): Int =
-        inline def least(left: Int, right: Int): Int = if left < right then left else right
-
-        inline def lowest(at: Int): Int =
-          least
-           ( least(least(bytes(at) & 0xff, bytes(at + 1) & 0xff),
-                   least(bytes(at + 2) & 0xff, bytes(at + 3) & 0xff)),
-             least(least(bytes(at + 4) & 0xff, bytes(at + 5) & 0xff),
-                   least(bytes(at + 6) & 0xff, bytes(at + 7) & 0xff)) )
-
         var index: Int = from
-        var found: Int = -1
 
-        while found < 0 && index < stop do
-          while index + 8 <= stop && lowest(index) > 13 do index += 8
+        while index < stop && { val byte = bytes(index); byte != 10 && byte != 13 }
+        do index += 1
 
-          if index < stop then
-            val byte = bytes(index)
-            if byte == 10 || byte == 13 then found = index else index += 1
-
-        if found < 0 then stop else found
+        index
 
       update def step(source: Region[Data])(range: Interval in source.type)
         ( target: Slate[Array[Text]^{}] )(space: Interval in target.type)
