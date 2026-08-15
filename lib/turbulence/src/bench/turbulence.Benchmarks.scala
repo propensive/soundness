@@ -1426,14 +1426,22 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Example X: saturated fan-in. Each operation is itself concurrent (four sources
     // merging), so at high N this measures each library's scheduler multiplexing many
-    // small concurrent merges — thread hand-offs against fiber wakeups. If this
-    // pipeline's serial latency proves to exceed a couple of milliseconds, its SLO
-    // (alone) should rise to 20 ms.
+    // small concurrent merges — and almost all of the operation's cost is the *setup*
+    // of that concurrency, since the stable sources share their windows by reference.
+    // The suite-level `platformThreading` pins only the harness workers; the Soundness
+    // bodies re-import `virtualThreading` so that `Confluence`'s internal pumps (one
+    // strand per source, forked per operation) are virtual threads — the counterpart
+    // of the rivals' per-merge fiber spawns, and the configuration a
+    // massively-concurrent application would use. On platform threads the row measures
+    // OS thread creation, ~two orders of magnitude dearer than a fiber spawn, not
+    // merging. If this pipeline's serial latency proves to exceed a couple of
+    // milliseconds, its SLO (alone) should rise to 20 ms.
     suite(m"Stress: saturated fan-in sweep (256 KiB over 4 streams, N ≤ 128)"):
       import threading.platformThreading
 
       saturated(m"Soundness  Confluence")(target = 1*Second, sweep = 128):
         '{
+            import threading.virtualThreading
             supervise:
               val merged = Confluence(turbulence.Benchmarks.smallQuarters.map(q => q.stream)*)
               var total = 0L
@@ -1466,6 +1474,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       saturated(m"Soundness  Confluence")
         ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
+            import threading.virtualThreading
             supervise:
               val merged = Confluence(turbulence.Benchmarks.smallQuarters.map(q => q.stream)*)
               var total = 0L
