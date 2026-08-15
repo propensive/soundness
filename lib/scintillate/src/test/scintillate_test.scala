@@ -195,6 +195,36 @@ object Tests extends Suite(m"Scintillate tests"):
         . assert: response =>
             response.contains(t"100 Continue") && response.contains(t"world")
 
+        test(m"A slow reader is backpressured and still receives every response"):
+          val port = freePort()
+          val block = String("y".repeat(32768).nn).tt
+
+          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(block))
+
+          try
+            // Pipeline 64 requests (2 MiB of responses, far past the high-water mark)
+            // without reading a byte, so the connection's write queue fills, its read
+            // interest is withdrawn, and service resumes only as we drain.
+            val socket = java.net.Socket("localhost", port)
+            val out = socket.getOutputStream.nn
+            val request = "GET / HTTP/1.1\r\nHost: x\r\n\r\n".getBytes("US-ASCII").nn
+
+            var index = 0
+            while index < 64 do
+              out.write(request)
+              index += 1
+
+            out.flush()
+            Thread.sleep(200)
+            socket.shutdownOutput()
+            val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
+            socket.close()
+            response.tt
+
+          finally reactor.stop()
+
+        . assert(_.s.split("200 OK").nn.length == 65)
+
         test(m"An oversized head is refused with 431"):
           val port = freePort()
           val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"no"))

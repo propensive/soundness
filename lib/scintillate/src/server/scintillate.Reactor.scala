@@ -89,6 +89,13 @@ object Reactor:
 
   private val closeHeader: Http.Header = Http.Header(t"connection", t"close")
 
+  // The write-queue watermarks: above `highWater` queued response bytes, a connection's
+  // read interest is dropped — `Pace.Halted` in zephyrine's demand vocabulary: stop
+  // producing (reading requests) until demand reappears — and re-armed once the queue
+  // drains to `lowWater` (`Pace.Free`). The hysteresis stops interest flapping.
+  private val highWater: Long = 262144L
+  private val lowWater: Long = 65536L
+
   // One registration queue per lane: a channel accepted by the boss loop is posted here
   // and registered by the owning lane on its next wake-up (`SocketChannel.register`
   // blocks against an in-progress `select()` on another thread). Deliberately a plain
@@ -126,7 +133,12 @@ object Reactor:
 
     // Serialized responses awaiting the channel: normally drained immediately after
     // serving; a partial write leaves the remainder here with `OP_WRITE` armed.
+    // `queued` accounts the outstanding bytes (the write side's natural `Credit`
+    // measure); `halted` records that read interest has been withdrawn until the
+    // queue drains — the explicit backpressure a slow reader earns.
     private val outbound: java.util.ArrayDeque[jnio.ByteBuffer] = java.util.ArrayDeque()
+    private var queued: Long = 0L
+    private var halted: Boolean = false
 
     private update def ensure(capacity: Int): Unit =
       if accumulator.length < capacity then
@@ -297,6 +309,7 @@ object Reactor:
 
     private update def enqueue(bytes: Data): Unit =
       outbound.add(jnio.ByteBuffer.wrap(bytes.asInstanceOf[scala.Array[Byte]]).nn)
+      queued += bytes.asInstanceOf[scala.Array[Byte]].length
       write()
 
     update def writable(): Unit = write()
@@ -307,18 +320,25 @@ object Reactor:
       try
         while !blocked && !outbound.isEmpty do
           val pending = outbound.peek.nn
+          val before = pending.remaining
           channel.write(pending)
+          queued -= before - pending.remaining
           if pending.hasRemaining then blocked = true else outbound.poll()
       catch case _: java.io.IOException =>
         outbound.clear()
+        queued = 0L
         close()
 
       if key.isValid then
-        if blocked
-        then key.interestOps(jnc.SelectionKey.OP_READ | jnc.SelectionKey.OP_WRITE)
-        else
-          key.interestOps(jnc.SelectionKey.OP_READ)
-          if closing then close()
+        if halted then { if queued <= lowWater then halted = false }
+        else if queued > highWater then halted = true
+
+        val interest =
+          (if blocked then jnc.SelectionKey.OP_WRITE else 0)
+            | (if halted then 0 else jnc.SelectionKey.OP_READ)
+
+        key.interestOps(interest)
+        if !blocked && closing then close()
 
     update def close(): Unit =
       key.cancel()
