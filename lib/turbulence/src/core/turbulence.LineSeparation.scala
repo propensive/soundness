@@ -35,7 +35,9 @@ package turbulence
 import proscenium.compat.*
 import rudiments.reverse
 
+import java.io as ji
 import java.lang as jl
+import java.nio.charset as jnc
 
 import anticipation.*
 import contingency.*
@@ -305,6 +307,241 @@ object LineSeparation:
               count += 1
 
             count
+
+  // Whether a `0x0A` or `0x0D` byte in this encoding can only be a line
+  // terminator. UTF-8 is self-synchronising — every byte of a multi-byte
+  // sequence has its high bit set — and the single-byte encodings are
+  // ASCII-transparent by construction, so in all of these a terminator can be
+  // found without decoding first. UTF-16 emphatically is not: `0x0A` occurs
+  // inside its code units, and splitting its bytes would cut characters in half.
+  def asciiTransparent(charset: jnc.Charset): Boolean =
+    charset == jnc.StandardCharsets.UTF_8 || charset == jnc.StandardCharsets.US_ASCII
+      || charset == jnc.StandardCharsets.ISO_8859_1
+
+  // The byte-level twin of `lines`, for an ASCII-transparent encoding: it finds
+  // terminators in the raw bytes and decodes each completed line in one step
+  // with `String(bytes, …, charset)`, the JDK's fused decode-and-construct. That
+  // removes the separate decoding stage and its intermediate `char[]` — the JFR
+  // profile of the 4 MB corpus attributed 53% of line splitting to decoding,
+  // against 44% to the splitting itself — and, because only whole lines are ever
+  // decoded, a multi-byte character split across two windows needs no handling
+  // at all: its bytes simply accumulate like any others.
+  //
+  // Deliberately not a `given`: it is applied by name from `delineate`, which
+  // has checked the encoding, rather than found by `via`'s implicit search,
+  // which has not. `lines` above remains the reference implementation, and the
+  // test harness runs every policy and every fragmentation through both.
+  def byteLines(consume policy: LineSeparation^, charset: jnc.Charset)(using Buffering)
+  :   (Duct[Data, Array[Text]^{}] { type Transport = Credit; type Upstream = Credit })^ =
+
+    new Duct[Data, Array[Text]^{}]:
+      type Transport = Credit
+      type Upstream = Credit
+
+      // The incomplete current line's bytes, carried across steps: the
+      // counterpart of the char duct's `StringBuilder`, and free of its coder
+      // trap, since bytes carry no encoding state to inflate.
+      private val partial: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(64)
+
+      // A separator's first byte at a window boundary (10 or 13; 0 = none).
+      private var pending: Int = 0
+
+      private var drained: Boolean = false
+      private var tail: List[Text] = Nil
+
+      def regulation: Credit is Regulation = summon[Credit is Regulation]
+
+      // One byte completes at most one line, so line-credit is a sound
+      // byte-credit; surplus consumption is carried in `partial`.
+      def translate(demand: Credit): Credit = demand
+
+      override def quantum: Int = 2
+
+      private var out0: Text = "".tt
+      private var out1: Text = "".tt
+      private var emitted: Int = 0
+
+      private update def emit(line: Text): Unit =
+        if emitted == 0 then out0 = line else out1 = line
+        emitted += 1
+
+      private update def newline(): Unit =
+        val line = partial.toString(charset).nn.tt
+        partial.reset()
+        emit(line)
+
+      private update def act(action: LineSeparation.Action): Unit = action match
+        case Action.Nl   => newline()
+        case Action.NlCr => newline(); partial.write(13)
+        case Action.NlLf => newline(); partial.write(10)
+        case Action.CrNl => partial.write(13); newline()
+        case Action.NlNl => newline(); newline()
+        case Action.Cr   => partial.write(13)
+        case Action.Lf   => partial.write(10)
+        case Action.LfNl => partial.write(10); newline()
+        case Action.Skip => ()
+
+      private update def deliver(slots: scala.Array[AnyRef]^, at: Int): Int =
+        var written: Int = 0
+
+        if emitted > 0 then
+          slots(at) = out0.asInstanceOf[AnyRef]
+          written = 1
+
+          if emitted == 2 then
+            slots(at + 1) = out1.asInstanceOf[AnyRef]
+            written = 2
+
+          emitted = 0
+
+        written
+
+      // As the char duct's `scan`, over bytes. The comparison is on the
+      // unsigned value: every byte of a multi-byte UTF-8 sequence has its high
+      // bit set, so unsigned it exceeds 13 and is skipped with the ordinary
+      // bytes, where signed it would be negative and fall to the re-check —
+      // which would forfeit the wide skip on exactly the non-ASCII text that
+      // needs it most.
+      private def scan(bytes: scala.Array[Byte], from: Int, stop: Int): Int =
+        inline def least(left: Int, right: Int): Int = if left < right then left else right
+
+        inline def lowest(at: Int): Int =
+          least
+           ( least(least(bytes(at) & 0xff, bytes(at + 1) & 0xff),
+                   least(bytes(at + 2) & 0xff, bytes(at + 3) & 0xff)),
+             least(least(bytes(at + 4) & 0xff, bytes(at + 5) & 0xff),
+                   least(bytes(at + 6) & 0xff, bytes(at + 7) & 0xff)) )
+
+        var index: Int = from
+        var found: Int = -1
+
+        while found < 0 && index < stop do
+          while index + 8 <= stop && lowest(index) > 13 do index += 8
+
+          if index < stop then
+            val byte = bytes(index)
+            if byte == 10 || byte == 13 then found = index else index += 1
+
+        if found < 0 then stop else found
+
+      update def step(source: Region[Data])(range: Interval in source.type)
+        ( target: Slate[Array[Text]^{}] )(space: Interval in target.type)
+      :   Duct.Progress =
+
+        val sourceInterval: Interval = range
+        val sourceOffset = sourceInterval.start.n0
+        val sourceLength = sourceInterval.size
+        val targetInterval: Interval = space
+        val targetOffset = targetInterval.start.n0
+        val targetSpace = targetInterval.size
+        val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+
+        val slots: scala.Array[AnyRef]^ =
+          unsafely(target.raw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+
+        var consumed: Int = 0
+        var produced: Int = 0
+
+        while consumed < sourceLength && produced + 2 <= targetSpace do
+          if pending != 0 then
+            val first = pending
+            pending = 0
+            val byte = bytes(sourceOffset + consumed)
+
+            if first == 10 then
+              if byte == 13 then { consumed += 1; act(policy.lfcr) } else act(policy.lf)
+            else
+              if byte == 10 then { consumed += 1; act(policy.crlf) } else act(policy.cr)
+
+            produced += deliver(slots, targetOffset + produced)
+          else
+            val byte = bytes(sourceOffset + consumed)
+
+            if byte == 10 then
+              consumed += 1
+
+              if consumed < sourceLength then
+                if bytes(sourceOffset + consumed) == 13
+                then { consumed += 1; act(policy.lfcr) }
+                else act(policy.lf)
+
+                produced += deliver(slots, targetOffset + produced)
+              else pending = 10
+            else if byte == 13 then
+              consumed += 1
+
+              if consumed < sourceLength then
+                if bytes(sourceOffset + consumed) == 10
+                then { consumed += 1; act(policy.crlf) }
+                else act(policy.cr)
+
+                produced += deliver(slots, targetOffset + produced)
+              else pending = 13
+            else
+              val start = sourceOffset + consumed
+              val stop = sourceOffset + sourceLength
+              val end = scan(bytes, start, stop)
+              val length = end - start
+
+              // The fast path, as in the char duct: no line carried, the
+              // separator inside the window with its resolving byte present,
+              // and a policy that maps the sequence to a plain line break — so
+              // the line's bytes go straight to the decoder in one call.
+              val separator: Int =
+                if end >= stop || end + 1 >= stop || partial.size > 0 then 0
+                else if bytes(end) == 10 then
+                  if bytes(end + 1) == 13 then (if policy.lfcr == Action.Nl then 2 else 0)
+                  else if policy.lf == Action.Nl then 1 else 0
+                else
+                  if bytes(end + 1) == 10 then (if policy.crlf == Action.Nl then 2 else 0)
+                  else if policy.cr == Action.Nl then 1 else 0
+
+              if separator > 0 then
+                emit(String(bytes, start, length, charset).tt)
+                consumed += length + separator
+                produced += deliver(slots, targetOffset + produced)
+              else
+                partial.write(bytes, start, length)
+                consumed += length
+
+        Duct.Progress(consumed, produced)
+
+      override update def flush(target: Slate[Array[Text]^{}])(space: Interval in target.type)
+      :   Int =
+
+        val targetInterval: Interval = space
+        val targetOffset = targetInterval.start.n0
+        val targetSpace = targetInterval.size
+
+        if !drained then
+          drained = true
+          var lines: List[Text] = Nil
+
+          if pending == 10 then act(policy.lf) else if pending == 13 then act(policy.cr)
+          pending = 0
+
+          if emitted > 0 then
+            lines ::= out0
+            if emitted == 2 then lines ::= out1
+            emitted = 0
+
+          if partial.size > 0 then
+            lines ::= partial.toString(charset).nn.tt
+            partial.reset()
+
+          tail = lines.reverse
+
+        var count: Int = 0
+
+        val slots: scala.Array[AnyRef]^ =
+          unsafely(target.raw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+
+        while count < targetSpace && tail.nonEmpty do
+          slots(targetOffset + count) = tail.head.asInstanceOf[AnyRef]
+          tail = tail.tail
+          count += 1
+
+        count
 
   enum NewlineSeq:
     case Cr, Lf, CrLf, LfCr

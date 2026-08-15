@@ -139,14 +139,22 @@ extension (data: Data)
     decoder.decoded(data).delineate
 
 extension (consume stream: (Stream[Data] over Credit)^)
-  // Split a byte stream into its lines: character decoding under the ambient
-  // `CharDecoder`, then line splitting as above.
+  // Split a byte stream into its lines. Where the encoding is ASCII-transparent
+  // — UTF-8 and the single-byte encodings, in which a `0x0A` byte can only be a
+  // terminator — the separators are found in the raw bytes and each line is
+  // decoded whole, in one fused JDK call, with no separate decoding stage and no
+  // intermediate `char[]`. Any other encoding (UTF-16 above all, whose code
+  // units contain `0x0A` bytes) decodes first and splits the characters.
   @targetName("delineateData")
   def delineate
     ( using decoder: CharDecoder, lineSeparation: LineSeparation, buffering: Buffering )
   :   (Stream[Array[Text]^{}] over Credit)^ =
 
-    stream.via(decoder).asInstanceOf[(Stream[Text] over Credit)^].delineate
+    val charset = decoder.encoding.charset
+
+    if LineSeparation.asciiTransparent(charset)
+    then stream.viaDuct(LineSeparation.byteLines(lineSeparation, charset))
+    else stream.via(decoder).asInstanceOf[(Stream[Text] over Credit)^].delineate
 
 extension (consume stream: (Stream[Data] over Credit)^)
   // View a pull endpoint as a `java.io.InputStream` for handing to JDK APIs:
