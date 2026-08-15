@@ -35,6 +35,7 @@ package turbulence
 import scala.caps
 
 import java.io as ji
+import java.util.concurrent.atomic.AtomicLong
 
 import soundness.*
 import proscenium.compat.*
@@ -45,6 +46,7 @@ import strategies.throwUnsafely
 import probates.panicProbate
 import errorDiagnostics.emptyDiagnostics
 
+import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
 object Tests extends Suite(m"Turbulence tests"):
@@ -478,6 +480,18 @@ object Tests extends Suite(m"Turbulence tests"):
           unsafely(scala.caps.unsafe.unsafeAssumeSeparate(reader.await()))
       . assert(_ == Set.from(for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}"))
 
+      // The relay's contract is that producers never block: it is the many-producer
+      // record bus (HTTP/2's outbound frame mux relies on this to avoid distributed
+      // deadlock), so its buffering is unbounded by design. A bounded relay would
+      // wedge this test, which writes far more than any plausible bound with no
+      // reader attached.
+      test(m"relay puts never block, even with no reader"):
+        val relay = Relay[Text]()
+        for _ <- 1 to 100000 do relay.put(t"x")
+        relay.stop()
+        relay.stream.records.to(List).length
+      . assert(_ == 100000)
+
       test(m"per-producer order is preserved through the relay"):
         supervise:
           val relay = Relay[Text]()
@@ -760,6 +774,89 @@ object Tests extends Suite(m"Turbulence tests"):
             true
       . assert(identity)
 
+      // With no reader, the four pumps may pull at most the shared queue's capacity
+      // plus one in-flight block each before parking, and no source may run ahead of
+      // that bound: the payload is fifty times larger, so an ungated merge fails by
+      // an order of magnitude. Draining afterwards proves the parked pumps recover.
+      test(m"a slow reader parks every confluence pump uniformly"):
+        supervise:
+          given Buffering = probeBuffering(16, 2)
+          val counters = sci.IndexedSeq.fill(4)(AtomicLong(0))
+          val builder = scala.collection.immutable.List.newBuilder[AnyRef]
+          var index = 0
+
+          while index < 4 do
+            builder += Meter(chunkStream(256), counters(index)).asInstanceOf[AnyRef]
+            index += 1
+
+          val merged = Confluence(builder.result().map(_.asInstanceOf[Stream[Data] over Credit])*)
+          awaitStability(counters)
+
+          // Queue capacity is `depth.max(sources.length)` transfer blocks: four, plus
+          // one snapshotted block in flight per parked pump.
+          val bounded = counters.map(_.get()).forall(_ <= 80L)
+          val gather = Gather2()
+          merged.pump(gather)
+
+          ( bounded,
+            counters.map(_.get()).forall(_ == 4096L),
+            scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.length )
+      . assert(_ == ((true, true, 16384)))
+
+      test(m"cancelling the confluence scope releases parked pumps"):
+        supervise:
+          val counters = sci.IndexedSeq.fill(4)(AtomicLong(0))
+
+          val outer = async:
+            given Buffering = probeBuffering(16, 2)
+            val builder = scala.collection.immutable.List.newBuilder[AnyRef]
+            var index = 0
+
+            while index < 4 do
+              builder += Meter(chunkStream(256), counters(index)).asInstanceOf[AnyRef]
+              index += 1
+
+            val merged =
+              Confluence(builder.result().map(_.asInstanceOf[Stream[Data] over Credit])*)
+
+            // Never read: the pumps fill the queue and park, and only cancellation
+            // of this scope may release them. The sleep is interrupted by `cancel`.
+            Thread.sleep(3600000)
+
+          awaitStability(counters)
+          outer.cancel()
+          true
+      . assert(identity)
+
+      // One subscriber is never refilled, so its full ring parks the pump: the
+      // metered source must stop within the ring-plus-in-flight bound even while the
+      // other subscriber drains freely. Draining the stalled subscriber then releases
+      // the pump and both must receive the complete payload.
+      test(m"the slowest subscriber gates the divergence pump"):
+        supervise:
+          given Buffering = probeBuffering(16, 2)
+          val counter = AtomicLong(0)
+          val subscribers = Divergence(Meter(chunkStream(256), counter), 2)
+          val eager = subscribers(0)
+          val stalled = subscribers(1)
+          val gatherA = Gather2()
+
+          val taskA = caps.unsafe.unsafeAssumePure:
+            async:
+              scala.caps.unsafe.unsafeAssumeSeparate(eager.pump(gatherA))
+              scala.caps.unsafe.unsafeAssumeSeparate(gatherA.data).readable.length
+
+          awaitStability(sci.IndexedSeq(counter))
+          val gated = counter.get()
+          val gatherB = Gather2()
+          scala.caps.unsafe.unsafeAssumeSeparate(stalled.pump(gatherB))
+
+          ( gated <= 64L,
+            taskA.await(),
+            scala.caps.unsafe.unsafeAssumeSeparate(gatherB.data).readable.length,
+            counter.get() )
+      . assert(_ == ((true, 4096, 4096, 4096L)))
+
       // `OutputStream.write` permits the caller to reuse its array afterwards, and the chunk
       // is read only when the stream is consumed, so aliasing the caller's array would let a
       // later write rewrite bytes already handed over.
@@ -807,3 +904,63 @@ class Gather2() extends Intake[Data]:
     if mark1 > 0 then
       addressable.cloneStorage(storage, 0, mark1)(target)
       mark1 = 0
+
+// Passes refills through unchanged, counting the bytes the consumer skips past
+// into an external counter, so backpressure tests can observe how far a pump has
+// pulled a source without touching the live endpoint.
+class Meter(consume underlying0: (Stream[Data] over Credit)^, counter: AtomicLong)
+extends Stream[Data]:
+  type Transport = Credit
+
+  // The adopted stream is held through a neutral carrier: Stream is deliberately not
+  // Unscoped, so an exclusive field would be read-only; the accessor re-asserts the
+  // ownership this wrapper took at construction.
+  private val held: AnyRef = underlying0.asInstanceOf[AnyRef]
+
+  private def underlying: (Stream[Data] over Credit)^ =
+    held.asInstanceOf[(Stream[Data] over Credit)^]
+
+  update def refill(demand: Credit): Optional[Int] = underlying.refill(demand)
+
+  protected def storage0: AnyRef =
+    val current = underlying
+    unsafely(current.storage).asInstanceOf[AnyRef]
+
+  def start: Int = underlying.start
+  def limit: Int = underlying.limit
+
+  update def skip(count: Int): Unit =
+    counter.addAndGet(count.toLong)
+    underlying.skip(count)
+
+  override update def close(): Unit = underlying.close()
+
+// A tiny buffering policy for the backpressure tests: staging, transfer and
+// hand-off blocks all collapse to `block` and recycling is off, so blocking
+// states are reached with a few tens of bytes and the block arithmetic in
+// assertions is exact.
+def probeBuffering(block: Int, depth0: Int): Buffering = new Buffering:
+  def capacity(substrate: Substrate): Int = block
+  def depth: Int = depth0
+  override def transfer(substrate: Substrate): Int = block
+  override def recycle: Boolean = false
+
+// A transient (non-region-stable) source of `chunks` sixteen-byte blocks: fan-in
+// and fan-out snapshot such sources block-by-block, which is the bounded path
+// the gating tests exercise.
+def chunkStream(chunks: Int): (Stream[Data] over Credit)^ =
+  Iterator.fill(chunks)(Data.fill(16)(_.toByte)).stream
+
+// Poll (bounded) until two consecutive samples of every counter agree, i.e. the
+// pumps have gone quiet. A too-early return can only under-read a counter, so a
+// correct implementation can never fail its bound by sampling here.
+def awaitStability(counters: sci.IndexedSeq[AtomicLong]): Unit =
+  var previous: sci.IndexedSeq[Long] = counters.map(_.get())
+  var stable: Boolean = false
+  var attempts: Int = 0
+
+  while !stable && attempts < 500 do
+    Thread.sleep(10)
+    val current = counters.map(_.get())
+    if current == previous then stable = true else previous = current
+    attempts += 1
