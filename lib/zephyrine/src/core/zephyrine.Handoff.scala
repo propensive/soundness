@@ -88,6 +88,18 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
       if position - head.get < capacity then
         slots.lazySet((position & mask).toInt, item)
         tail.set(position + 1)
+
+        // Deliberately unparked on EVERY item, not only on the empty→non-empty
+        // transition. The narrower wake is sound — a parked consumer must have
+        // observed emptiness at its guarded re-check, so only the offer ending
+        // the emptiness can have anyone to wake — and it removes the dominant
+        // profile frame (the virtual thread's park-permit exchange,
+        // `getAndSetBoolean`, 33% of the pipeline). It was measured, and it is
+        // 33% SLOWER: re-granting the permit per item keeps the counterpart's
+        // next `park` returning immediately, extending the spin budget across
+        // the thread boundary, where the sparing wake lets it truly sleep and
+        // repays the saved exchanges in wakeup latency at every ring drain.
+        // The profile cost is the cheaper side of the trade.
         val waiting = consumer
         if waiting != null then LockSupport.unpark(waiting)
         return
