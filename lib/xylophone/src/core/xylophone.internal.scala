@@ -1561,14 +1561,14 @@ object internal:
                 firstWins:
                   '{
                     Xml.Parsable.focusing($foci, $keyText):
-                      $reader.text().or { $reader.fault(); t"" }
+                      $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" }
                   }.asTerm
 
               case StringK =>
                 firstWins:
                   '{
                     Xml.Parsable.focusing($foci, $keyText):
-                      ($reader.text().or { $reader.fault(); t"" }).s
+                      ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s
                   }.asTerm
 
               case InstanceK =>
@@ -1836,7 +1836,7 @@ object internal:
             }
 
           override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
-            raise(Xml.Error())
+            raise(Xml.Error(Xml.Error.Reason.Missing))
 
             fallback.lay
               ( ${

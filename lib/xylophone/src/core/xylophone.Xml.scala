@@ -69,6 +69,8 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
+import Xml.Error.Reason
+
 object Xml extends Tag.Container
   ( label = "xml", admissible = Set("head", "body") ), Format, Xml2:
   // Controls how an `Xml` tree is serialized. `indent` is the whitespace unit emitted per nesting
@@ -152,55 +154,61 @@ object Xml extends Tag.Container
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try Integer.parseInt(text.s).nn
-        catch case _: NumberFormatException => raise(Xml.Error()) yet 0
+        catch case _: NumberFormatException =>
+          raise(Xml.Error(Reason.Malformed(text, t"Int"))) yet 0
 
       . or:
-          raise(Xml.Error()) yet 0
+          raise(Xml.Error(Reason.Untextual(t"Int"))) yet 0
 
   given long: (tactic: Tactic[Xml.Error]) => Long is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Long.parseLong(text.s).nn
-        catch case _: NumberFormatException => raise(Xml.Error()) yet 0L
+        catch case _: NumberFormatException =>
+          raise(Xml.Error(Reason.Malformed(text, t"Long"))) yet 0L
 
       . or:
-          raise(Xml.Error()) yet 0L
+          raise(Xml.Error(Reason.Untextual(t"Long"))) yet 0L
 
   given short: (tactic: Tactic[Xml.Error]) => Short is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Short.parseShort(text.s).nn
-        catch case _: NumberFormatException => raise(Xml.Error()) yet 0.toShort
+        catch case _: NumberFormatException =>
+          raise(Xml.Error(Reason.Malformed(text, t"Short"))) yet 0.toShort
 
       . or:
-          raise(Xml.Error()) yet 0.toShort
+          raise(Xml.Error(Reason.Untextual(t"Short"))) yet 0.toShort
 
   given byte: (tactic: Tactic[Xml.Error]) => Byte is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Byte.parseByte(text.s).nn
-        catch case _: NumberFormatException => raise(Xml.Error()) yet 0.toByte
+        catch case _: NumberFormatException =>
+          raise(Xml.Error(Reason.Malformed(text, t"Byte"))) yet 0.toByte
 
       . or:
-          raise(Xml.Error()) yet 0.toByte
+          raise(Xml.Error(Reason.Untextual(t"Byte"))) yet 0.toByte
 
   given double: (tactic: Tactic[Xml.Error]) => Double is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Double.parseDouble(text.s).nn
-        catch case _: NumberFormatException => raise(Xml.Error()) yet 0.0
+        catch case _: NumberFormatException =>
+          raise(Xml.Error(Reason.Malformed(text, t"Double"))) yet 0.0
 
       . or:
-          raise(Xml.Error()) yet 0.0
+          raise(Xml.Error(Reason.Untextual(t"Double"))) yet 0.0
 
   given float: (tactic: Tactic[Xml.Error]) => Float is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Float.parseFloat(text.s).nn
-        catch case _: NumberFormatException => raise(Xml.Error()) yet 0.0f
+        catch case _: NumberFormatException =>
+          raise(Xml.Error(Reason.Malformed(text, t"Float"))) yet 0.0f
 
       . or:
-          raise(Xml.Error()) yet 0.0f
+          raise(Xml.Error(Reason.Untextual(t"Float"))) yet 0.0f
 
   given boolean: (tactic: Tactic[Xml.Error]) => Boolean is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
@@ -208,10 +216,10 @@ object Xml extends Tag.Container
         text.s match
           case "true"  => true
           case "false" => false
-          case _       => raise(Xml.Error()) yet false
+          case _       => raise(Xml.Error(Reason.Malformed(text, t"Boolean"))) yet false
 
       . or:
-          raise(Xml.Error()) yet false
+          raise(Xml.Error(Reason.Untextual(t"Boolean"))) yet false
 
   // The encoding counterpart of the `boolean` decodable above. The other
   // primitives encode through the blanket `encodable`'s `Encodable in Text`
@@ -356,8 +364,8 @@ object Xml extends Tag.Container
       xml =>
         provide[Tactic[Xml.Error]]:
           val text: Text =
-            if xml eq Absent then raise(Xml.Error()) yet t""
-            else textOf(xml).or(raise(Xml.Error()) yet t"")
+            if xml eq Absent then raise(Xml.Error(Reason.Missing)) yet t""
+            else textOf(xml).or(raise(Xml.Error(Reason.Empty)) yet t"")
 
           summon[`value` is Decodable in Text].decoded(text)
 
@@ -423,11 +431,11 @@ object Xml extends Tag.Container
           // its own missing-field error.
           summonFrom:
             case derivationDefault: Default[`derivation`] =>
-              raise(Xml.Error())
+              raise(Xml.Error(Reason.AbsentProduct(typeName)))
               derivationDefault()
 
             case _ =>
-              raise(Xml.Error())
+              raise(Xml.Error(Reason.AbsentProduct(typeName)))
               buildWith[derivation](Element(t"", Attributes.empty, Array.empty))
 
     // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
@@ -590,10 +598,17 @@ object Xml extends Tag.Container
             provide[Tactic[Variant.Error]]:
               val discriminable = infer[derivation is Discriminable in Xml]
 
+              // Hoisted so the failure branch can name the discriminant it did not recognise.
+              val wireName: Optional[Text] = discriminable.discriminate(xml)
+
               val resolved: Optional[Text] =
-                discriminable.discriminate(xml).let: wire =>
+                wireName.let: wire =>
                   val discriminant = variantNames(wire).or(wire)
                   if labels.has(discriminant) then discriminant else Unset
+
+              def unknown: Xml.Error.Reason =
+                wireName.lay(Reason.AbsentVariant(typeName)): wire =>
+                  Reason.UnknownVariant(wire, typeName)
 
               resolved.let: discriminant =>
                 delegate(discriminant): [variant <: derivation] =>
@@ -602,7 +617,7 @@ object Xml extends Tag.Container
               . or:
                   summonFrom:
                     case derivationDefault: Default[`derivation`] =>
-                      raise(Xml.Error()) yet derivationDefault()
+                      raise(Xml.Error(unknown)) yet derivationDefault()
 
                     case _ =>
                       // Under an accruing scope, record ONE error and skip the variant decode
@@ -610,8 +625,8 @@ object Xml extends Tag.Container
                       // caller sees the focus delta, or the tracking scope is tainted), so
                       // siblings keep accruing. Fail-fast scopes abort as before.
                       if infer[Foci[Xml.Focus]].active
-                      then raise(Xml.Error()) yet null.asInstanceOf[derivation]
-                      else abort(Xml.Error())
+                      then raise(Xml.Error(unknown)) yet null.asInstanceOf[derivation]
+                      else abort(Xml.Error(unknown))
 
   // A sum discriminated by an attribute on the value's element —
   // `<payment type="Card">…</payment>`. This is the shape a sum nested
@@ -766,7 +781,8 @@ object Xml extends Tag.Container
     // the bridge delegates to its decoder over `Absent`; a derived product
     // expands per sub-field). Takes the read-site `Foci` so that per-sub-
     // field expansion registers the same paths as the AST path's.
-    def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Self = abort(Xml.Error())
+    def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Self =
+      abort(Xml.Error(Reason.Missing))
 
     // How a field of this type reads from an attribute value — the direct
     // counterpart of the AST derivation decoding `TextNode(text)` for a
@@ -981,7 +997,7 @@ object Xml extends Tag.Container
     // A required primitive field whose name never arrived: the primitives'
     // `absent()` semantics — raise and continue with the sentinel.
     def missing[value](sentinel: value)(using Tactic[Xml.Error]): value =
-      raise(Xml.Error()) yet sentinel
+      raise(Xml.Error(Reason.Missing)) yet sentinel
 
     // Focus bookkeeping for one field read, compiled away when the read
     // site's `Foci` is the inert default — the same short-circuit as the
@@ -1179,7 +1195,7 @@ object Xml extends Tag.Container
         override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus])
         :   derivation =
 
-          raise(Xml.Error())
+          raise(Xml.Error(Reason.AbsentProduct(typeName)))
           fallback.lay(absentBuild()): instantiate => instantiate()
 
         private def absentBuild()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus])
@@ -1260,21 +1276,22 @@ object Xml extends Tag.Container
   // `validate[Xml.Focus]` boundary behaves identically on both paths.
   // Genuinely pure — parse-time raising happens through the tactics the
   // reader carries.
-  private def primitiveParsable[value](sentinel: value)(convert: Text -> Optional[value])
+  private def primitiveParsable[value](sentinel: value, expected: Text)
+    ( convert: Text -> Optional[value] )
   :   value is Xml.Parsable =
 
     new Xml.Parsable:
       type Self = value
 
       def parse(reader: Xml.Reader^): value =
-        reader.text().lay(reader.fault() yet sentinel): text =>
-          convert(text).or(reader.fault() yet sentinel)
+        reader.text().lay(reader.fault(Reason.Untextual(expected)) yet sentinel): text =>
+          convert(text).or(reader.fault(Reason.Malformed(text, expected)) yet sentinel)
 
       override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
-        raise(Xml.Error()) yet sentinel
+        raise(Xml.Error(Reason.Absent(expected))) yet sentinel
 
       override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
-        convert(text).or(raise(Xml.Error()) yet sentinel)
+        convert(text).or(raise(Xml.Error(Reason.Malformed(text, expected))) yet sentinel)
 
   // `Int`/`Long`/`Double`/`Boolean` read their value straight from the
   // buffered content chars (`reader.int()`/`long()`/`double()`/`boolean()`),
@@ -1283,58 +1300,65 @@ object Xml extends Tag.Container
   // fallback, which parses exactly as the primitives here would have.
   given intParsable: Int is Xml.Parsable = new Xml.Parsable:
     type Self = Int
-    def parse(reader: Xml.Reader^): Int = reader.int().or(reader.fault() yet 0)
+    def parse(reader: Xml.Reader^): Int =
+      reader.int().or(reader.fault(Reason.Untextual(t"Int")) yet 0)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Int =
-      raise(Xml.Error()) yet 0
+      raise(Xml.Error(Reason.Absent(t"Int"))) yet 0
 
     override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Int =
       try Integer.parseInt(text.s)
-      catch case _: NumberFormatException => raise(Xml.Error()) yet 0
+      catch case _: NumberFormatException =>
+          raise(Xml.Error(Reason.Malformed(text, t"Int"))) yet 0
 
   given longParsable: Long is Xml.Parsable = new Xml.Parsable:
     type Self = Long
-    def parse(reader: Xml.Reader^): Long = reader.long().or(reader.fault() yet 0L)
+    def parse(reader: Xml.Reader^): Long =
+      reader.long().or(reader.fault(Reason.Untextual(t"Long")) yet 0L)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Long =
-      raise(Xml.Error()) yet 0L
+      raise(Xml.Error(Reason.Absent(t"Long"))) yet 0L
 
     override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Long =
       try jl.Long.parseLong(text.s)
-      catch case _: NumberFormatException => raise(Xml.Error()) yet 0L
+      catch case _: NumberFormatException =>
+          raise(Xml.Error(Reason.Malformed(text, t"Long"))) yet 0L
 
-  given shortParsable: Short is Xml.Parsable = primitiveParsable(0.toShort): text =>
+  given shortParsable: Short is Xml.Parsable = primitiveParsable(0.toShort, t"Short"): text =>
     try jl.Short.parseShort(text.s) catch case _: NumberFormatException => Unset
 
-  given byteParsable: Byte is Xml.Parsable = primitiveParsable(0.toByte): text =>
+  given byteParsable: Byte is Xml.Parsable = primitiveParsable(0.toByte, t"Byte"): text =>
     try jl.Byte.parseByte(text.s) catch case _: NumberFormatException => Unset
 
   given doubleParsable: Double is Xml.Parsable = new Xml.Parsable:
     type Self = Double
-    def parse(reader: Xml.Reader^): Double = reader.double().or(reader.fault() yet 0.0)
+    def parse(reader: Xml.Reader^): Double =
+      reader.double().or(reader.fault(Reason.Untextual(t"Double")) yet 0.0)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Double =
-      raise(Xml.Error()) yet 0.0
+      raise(Xml.Error(Reason.Absent(t"Double"))) yet 0.0
 
     override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Double =
       try jl.Double.parseDouble(text.s)
-      catch case _: NumberFormatException => raise(Xml.Error()) yet 0.0
+      catch case _: NumberFormatException =>
+          raise(Xml.Error(Reason.Malformed(text, t"Double"))) yet 0.0
 
-  given floatParsable: Float is Xml.Parsable = primitiveParsable(0.0f): text =>
+  given floatParsable: Float is Xml.Parsable = primitiveParsable(0.0f, t"Float"): text =>
     try jl.Float.parseFloat(text.s) catch case _: NumberFormatException => Unset
 
   given booleanParsable: Boolean is Xml.Parsable = new Xml.Parsable:
     type Self = Boolean
-    def parse(reader: Xml.Reader^): Boolean = reader.boolean().or(reader.fault() yet false)
+    def parse(reader: Xml.Reader^): Boolean =
+      reader.boolean().or(reader.fault(Reason.Untextual(t"Boolean")) yet false)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Boolean =
-      raise(Xml.Error()) yet false
+      raise(Xml.Error(Reason.Absent(t"Boolean"))) yet false
 
     override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Boolean =
       text.s match
         case "true"  => true
         case "false" => false
-        case _       => raise(Xml.Error()) yet false
+        case _       => raise(Xml.Error(Reason.Malformed(text, t"Boolean"))) yet false
 
   // Element-wise `Xml.Field` for collections, resolved during derivation:
   // the element's own parser comes from the fallback chain, so nested
@@ -1383,10 +1407,10 @@ object Xml extends Tag.Container
       type Self = value
 
       def parse(reader: Xml.Reader^): value =
-        codec.decoded(reader.text().or(reader.fault() yet t""))
+        codec.decoded(reader.text().or(reader.fault(Reason.Empty) yet t""))
 
       override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
-        raise(Xml.Error())
+        raise(Xml.Error(Reason.Missing))
         codec.decoded(t"")
 
       override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
@@ -4043,8 +4067,48 @@ object Xml extends Tag.Container
       XPathEngine.evaluate(xml, xpath.expression, variables)
 
   // XmlError → Xml.Error
-  case class Error()(using Diagnostics)
-  extends fulminate.Error(149, 0)(m"there was an XML error")
+  //
+  // These are *raise-and-continue* errors: a record with several bad fields accrues one
+  // per field rather than bailing at the first, so the reason is the only thing that
+  // distinguishes them. `Foci[Xml.Focus]` carries *where*; the reason says *what*.
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      // A value was there, but wrong.
+      case Malformed(text: Text, expected: Text)         extends Reason(1)
+      case Untextual(expected: Text)                     extends Reason(2)
+
+      // Nothing was there.
+      case Absent(expected: Text)                        extends Reason(3)
+      case AbsentProduct(product: Text)                  extends Reason(4)
+      case AbsentVariant(sum: Text)                      extends Reason(5)
+
+      // The shape was wrong.
+      case UnknownVariant(discriminant: Text, sum: Text) extends Reason(6)
+
+      // The type being read is not nameable at the raise site — the generic text bridges.
+      case Empty                                         extends Reason(7)
+      case Missing                                       extends Reason(8)
+
+    given communicable: Reason is Communicable =
+      case Reason.Malformed(text, expected) => m"the text $text is not a valid $expected"
+      case Reason.Untextual(expected)       => m"the element has no text to read as $expected"
+
+      case Reason.Absent(expected) =>
+        m"no element or attribute supplied the required $expected"
+      case Reason.Empty                     => m"the element has no text"
+      case Reason.Missing                   => m"the element or attribute was not present"
+
+      case Reason.AbsentProduct(product) =>
+        m"no element supplied the required $product, which has no default"
+
+      case Reason.AbsentVariant(sum) =>
+        m"no element supplied the required $sum, which has no default"
+
+      case Reason.UnknownVariant(discriminant, sum) =>
+        m"$discriminant does not name a variant of $sum"
+
+  case class Error(reason: Xml.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(149, reason.number)(m"the XML could not be read because $reason")
 
   // XmlReader → Xml.Reader
   object Reader:
@@ -4170,8 +4234,11 @@ object Xml extends Tag.Container
 
     // Raise an `Xml.Error` through the read-site tactic and continue — for leaf
     // instances that reject an element's content, preserving the AST
-    // primitives' raise-and-continue accrual.
-    update def fault(): Unit = raise(Xml.Error())(using errorTactic)
+    // primitives' raise-and-continue accrual. The caller supplies the reason:
+    // every call site knows which of `int()`/`text()`/a codec conversion failed,
+    // and on what, so none of it needs to be discarded here.
+    update def fault(reason: Xml.Error.Reason): Unit =
+      raise(Xml.Error(reason))(using errorTactic)
 
 
 sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
