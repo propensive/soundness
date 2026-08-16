@@ -37,6 +37,7 @@ import proscenium.compat.*
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -51,13 +52,17 @@ import zephyrine.*
 object XPath extends Format:
   def name: Text = t"XPath"
 
-  // `offset` is the character index, within the path text, where the error was detected;
-  // consumers (the `xp"…"` interpolator) use it to position a compile-time error precisely.
-  // `Location` is taken here for a node's place within a document, so this is `Position`,
-  // which is also the name `Xml` uses for the same role.
-  case class Position(override val offset: Optional[Int]) extends Format.Position:
-    def describe: Text = offset.lay(t"an unknown position"): offset =>
-      t"character ${offset + 1}"
+  // An XPath is a line-less source, so the span is `Offset`-mode: a character index into
+  // the expression text, which the `xp"…"` interpolator maps back onto a source-file caret.
+  // `Location` is taken here for a node's place within a *document*, so this is `Position`,
+  // the name every other `Format` uses for the same role.
+  case class Position(override val span: Span) extends Format.Position:
+    def describe: Text = span.offset.lay(t"an unknown position"): offset =>
+      t"character ${offset.n1}"
+
+  object Position:
+    // The parser detects a fault at a point, not over a range, so spans are zero-length.
+    def at(offset: Int): Position = Position(Span.offset(offset.z, 0))
 
   // The thirteen XPath 1.0 axes (§2.2). `keyword` is the spelling used in the
   // unabbreviated `axis::test` syntax.

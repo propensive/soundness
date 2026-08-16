@@ -529,7 +529,7 @@ object internal:
 
     val expression: Expression =
       try unsafely(XPathReader.parse(joined.tt, holes = true)) catch
-        case error: Parse.Error => halt(error.message, translate(error.position.offset.or(0)))
+        case error: Parse.Error => halt(error.message, translate(error.span.offset.lay(0)(_.n0)))
 
     '{XPath(${liftExpression(expression)})}
 
