@@ -328,6 +328,17 @@ object Tests extends Suite(m"Pneumatic tests"):
         brotliVaried.compress[Brotli].decompress[Brotli].to[List]
       . assert(_ == brotliVaried.to[List])
 
+      // The benchmark corpus, exactly as `turbulence.Benchmarks` generates it: 4 MB of
+      // semi-compressible bytes. The benchmark row only counts the decoded length, so
+      // this pins the content — a decoder change that produced the right length of
+      // wrong bytes would score there and fail here. Compared as a boolean: the
+      // values run to four megabytes, which the report cannot usefully render.
+      test(m"Roundtrip the 4 MB benchmark corpus (Brotli)"):
+        val corpus: Data = Data.fill(4 << 20)(i => ((i*31 + (i >> 6)) & 0xff).toByte)
+        val decoded = corpus.stream.compress[Brotli].decompress[Brotli].memoize
+        decoded.to[List] == corpus.to[List]
+      . assert(_ == true)
+
       test(m"Brotli actually compresses a repetitive payload"):
         val payload = (t"the quick brown fox jumped " * 500).in[Data]
         payload.compress[Brotli].length < payload.length
