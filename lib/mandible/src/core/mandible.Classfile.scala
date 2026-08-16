@@ -36,6 +36,7 @@ import java.lang.classfile as jlc
 import java.lang.classfile.attribute as jlca
 import java.lang.classfile.instruction as jlci
 
+import java.nio.charset.StandardCharsets
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -82,7 +83,7 @@ class Classfile(data: scala.IArray[Byte]):
   val sourceDebugExtension: Optional[Text] =
     model.attributes.nn.to[List].stdlib.collect:
       case attribute: jlca.SourceDebugExtensionAttribute =>
-        String(attribute.contents.nn, "UTF-8").tt
+        String(attribute.contents.nn, StandardCharsets.UTF_8).tt
 
     . headOption.getOrElse(Unset)
 

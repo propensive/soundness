@@ -33,6 +33,7 @@
 package ypsiloid
 
 import scala.collection.immutable.Vector
+import java.nio.charset.StandardCharsets
 import proscenium.compat.*
 
 import scala.caps
@@ -2044,7 +2045,7 @@ object Yaml extends Yaml2, Dynamic:
     private var blockParentIndent: Int = -1
 
     update def resetText(input: Text): Unit =
-      val data: Data = Array.unsafeFrozen(input.s.getBytes("UTF-8").nn)
+      val data: Data = Array.unsafeFrozen(input.s.getBytes(StandardCharsets.UTF_8).nn)
       val cursor0 = makeCursor(data)
       cursor1 = cursor0.asInstanceOf[AnyRef]
       resetParserState()

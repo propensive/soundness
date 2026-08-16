@@ -40,6 +40,7 @@ import scala.collection.immutable.Seq
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
+import java.nio.charset.StandardCharsets
 import anticipation.*
 import denominative.*
 import fulminate.*
@@ -168,7 +169,7 @@ object internal:
 
       given showable: Ascii is Showable =
         // Read-only use of the underlying JVM array: the `String` constructor copies.
-        ascii => String(ascii.asInstanceOf[scala.Array[Byte]], "ASCII").nn.tt
+        ascii => String(ascii.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII).nn.tt
 
       given concatenable: Ascii is Concatenable:
         type Operand = Ascii
@@ -190,7 +191,8 @@ object internal:
         def single(operand: Byte): Ascii = scala.IArray(operand)
         def fromChar(char: Char): Byte = char.toByte
         def length(ascii: Ascii): Int = ascii.size
-        def text(ascii: Ascii): Text = String(ascii.asInstanceOf[scala.Array[Byte]], "ASCII").nn.tt
+        def text(ascii: Ascii): Text =
+          String(ascii.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII).nn.tt
         def access(ascii: Ascii, index: Ordinal): Byte =
           import scala.IArray.apply
           ascii(index.n0)

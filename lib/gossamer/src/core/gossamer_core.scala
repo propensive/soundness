@@ -42,6 +42,7 @@ import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
 import java.lang as jl
+import java.nio.charset.StandardCharsets
 import java.net.{URLEncoder, URLDecoder}
 import java.util.regex as jur
 
@@ -100,7 +101,7 @@ extension (module: Text.type)
     block(using builder.aka["builder"])
     builder()
 
-  def ascii(bytes: Data): Text = new String(Array.unsafeJvm(bytes), "ASCII").tt
+  def ascii(bytes: Data): Text = new String(Array.unsafeJvm(bytes), StandardCharsets.US_ASCII).tt
 
   def fill(length: Int)(lambda: Int => Char): Text =
     val buffer = Array.scribe[Char](length): scribe =>
@@ -119,9 +120,9 @@ extension (context: StringContext)
   def t = SimpleTExtractor(context.parts.head.tt)
 
 extension (bytes: Data)
-  def utf8: Text = String(Array.unsafeJvm(bytes), "UTF-8").tt
-  def utf16: Text = String(Array.unsafeJvm(bytes), "UTF-16").tt
-  def ascii: Text = String(Array.unsafeJvm(bytes), "ASCII").tt
+  def utf8: Text = String(Array.unsafeJvm(bytes), StandardCharsets.UTF_8).tt
+  def utf16: Text = String(Array.unsafeJvm(bytes), StandardCharsets.UTF_16).tt
+  def ascii: Text = String(Array.unsafeJvm(bytes), StandardCharsets.US_ASCII).tt
 
   // Printable Unicode Encoding
   def pue: Text =

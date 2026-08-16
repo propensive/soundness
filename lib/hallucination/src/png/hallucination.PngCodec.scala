@@ -33,6 +33,7 @@
 package hallucination
 
 import java.io as ji
+import java.nio.charset.StandardCharsets
 import proscenium.compat.*
 
 import scala.collection.mutable as scm
@@ -354,7 +355,7 @@ private[hallucination] object PngCodec:
     // stream has), and `OutputStream.write` only reads the array it is given.
     def chunk(chunkType: String, body: Data): Unit =
       writeInt(output, body.length)
-      val typeBytes = chunkType.getBytes("UTF-8").nn
+      val typeBytes = chunkType.getBytes(StandardCharsets.UTF_8).nn
       output.write(typeBytes)
       output.write(Array.unsafeJvm(body))
       writeInt(output, corpuscular.Crc32.checksum(Array.unsafeFrozen(typeBytes), body))

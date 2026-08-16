@@ -36,6 +36,7 @@ import scala.collection.immutable.Vector
 
 import scala.caps
 
+import java.nio.charset.StandardCharsets
 import fulminate.*
 import proscenium.compat.*
 
@@ -407,7 +408,7 @@ object Cbor extends Cbor2, Dynamic:
 
         else if cbor.isTextString then
           val text = cbor.asInstanceOf[String]
-          val bytes = Array.unsafeFrozen(text.getBytes("UTF-8").nn)
+          val bytes = Array.unsafeFrozen(text.getBytes(StandardCharsets.UTF_8).nn)
           head(out, 3, bytes.length.toLong)
           out.put(bytes)
 

@@ -35,6 +35,7 @@ package telekinesis
 import scala.collection.mutable as scm
 import proscenium.compat.*
 
+import java.nio.charset.StandardCharsets
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -83,7 +84,7 @@ object Hpack:
       buf.add(rest.toByte)
 
   private def writeString(buf: ByteBuf^, text: Text): Unit =
-    val raw: Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
+    val raw: Data = Array.unsafeFrozen(text.s.getBytes(StandardCharsets.US_ASCII).nn)
     val huffed: Data = Huffman.encode(raw)
 
     // Use whichever encoding is shorter (RFC permits either); flag Huffman in bit 7.

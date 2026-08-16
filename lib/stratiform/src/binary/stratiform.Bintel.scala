@@ -33,6 +33,7 @@
 package stratiform
 
 import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
 import proscenium.compat.*
 
 import scala.language.unsafeNulls
@@ -338,7 +339,7 @@ object Bintel:
         cursor.offset += len.toInt
 
         val text =
-          try Text(new String(bytes, "UTF-8"))
+          try Text(new String(bytes, StandardCharsets.UTF_8))
           catch case _: Exception => abort(Bintel.Error(Bintel.Error.Reason.BadUtf8))
 
         Tel.Element.Value(kidx.toInt, s, text)
@@ -546,7 +547,7 @@ object Bintel:
 
   private def encodeValue(out: ByteArrayOutputStream, value: Tel.Element.Value): Unit =
     writeVarint(out, value.keywordIndex.toLong)
-    val bytes = value.text.s.getBytes("UTF-8")
+    val bytes = value.text.s.getBytes(StandardCharsets.UTF_8)
     writeVarint(out, bytes.length.toLong)
     out.write(bytes)
 

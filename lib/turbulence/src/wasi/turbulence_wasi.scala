@@ -32,6 +32,7 @@
                                                                                                   */
 package turbulence
 
+import java.nio.charset.StandardCharsets
 import proscenium.compat.*
 
 import java.io as ji
@@ -108,7 +109,7 @@ package stdios:
           catch case error: Wasm.Error => -1
           finally handle.dispose()
 
-    def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
+    def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(StandardCharsets.UTF_8).nn)
 
     new Stdio:
       val termcap: Termcap = termcap0
