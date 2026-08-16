@@ -52,82 +52,94 @@ import zephyrine.*
 // the entire window; the encoder because it chooses its framing from the total length), so `accept`
 // accumulates input and `finish` produces the transformed bytes in one pass.
 private[pneumatic] trait BrotliEngine extends caps.Mutable:
-  protected val pending: scala.collection.mutable.ArrayBuffer[Byte] =
-    scala.collection.mutable.ArrayBuffer()
-
+  // The engine's produced-but-undelivered output: a flat byte array drained by bulk
+  // copies. This was a `scala.collection.mutable.ArrayBuffer[Byte]`, which is not
+  // specialized — its backing store is an `Object[]` — so a 4 MB decode built a 32 MB
+  // pointer array through millions of boxed appends, then unboxed every byte again on
+  // the way out: an envelope that cost more than the Brotli decode inside it.
+  private var pending: scala.Array[Byte] = new scala.Array[Byte](0)
+  private var limit: Int = 0
   private var delivered: Int = 0
+
+  // Installs the engine's finished output, taken whole from the codec.
+  protected update def install(consume bytes: scala.Array[Byte]): Unit =
+    pending = bytes
+    limit = bytes.length
+    delivered = 0
 
   update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
   update def finish(): Unit
 
   update def deliver(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
-    var produced = 0
+    val count = (limit - delivered).min(space)
 
-    while delivered < pending.length && produced < space do
-      target(offset + produced) = pending(delivered)
-      delivered += 1
-      produced += 1
+    if count > 0 then
+      System.arraycopy(pending, delivered, target, offset, count)
+      delivered += count
 
-    if delivered == pending.length then
-      pending.clear()
-      delivered = 0
+      if delivered == limit then
+        pending = new scala.Array[Byte](0)
+        limit = 0
+        delivered = 0
 
-    produced
+    count
 
   update def gather(): Data =
-    val result = Array[Byte](pending.length - delivered)
-    var i = 0
-
-    while delivered < pending.length do
-      result(i) = pending(delivered)
-      i += 1
-      delivered += 1
-
-    pending.clear()
+    val count = limit - delivered
+    val result = new scala.Array[Byte](count)
+    System.arraycopy(pending, delivered, result, 0, count)
+    pending = new scala.Array[Byte](0)
+    limit = 0
     delivered = 0
-    Array.freeze(result)
+    Array.unsafeFrozen(result)
+
+// Accumulates its input as a flat, doubling byte array: the counterpart of the
+// output side above, replacing another boxing `ArrayBuffer` (and a per-byte
+// generic `readUnchecked`, an unspecialized `ScalaRunTime.array_apply`) with two
+// bulk copies per accepted window.
+private[pneumatic] trait BrotliAccumulator extends caps.Mutable:
+  private var input: scala.Array[Byte] = new scala.Array[Byte](8192)
+  private var length0: Int = 0
+
+  protected def accumulated: scala.Array[Byte] = input
+  protected def accumulatedLength: Int = length0
+
+  protected update def accumulate(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int)
+  :   Unit =
+
+    if length0 + length > input.length then
+      var size = input.length*2
+      while size < length0 + length do size *= 2
+      val grown = new scala.Array[Byte](size)
+      System.arraycopy(input, 0, grown, 0, length0)
+      input = grown
+
+    System.arraycopy(bytes.asInstanceOf[scala.Array[Byte]], offset, input, length0, length)
+    length0 += length
 
 // Accumulates the whole compressed stream, then decodes it in one pass (see `BrotliDecoder`).
-private[pneumatic] class BrotliDecoderEngine extends BrotliEngine:
-  private val input: scala.collection.mutable.ArrayBuffer[Byte] =
-    scala.collection.mutable.ArrayBuffer()
-
+private[pneumatic] class BrotliDecoderEngine extends BrotliEngine, BrotliAccumulator:
   private var finished = false
 
   update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
-    var i = 0
-    while i < length do { input += bytes.readUnchecked(offset + i); i += 1 }
+    accumulate(bytes, offset, length)
 
   update def finish(): Unit =
     if !finished then
       finished = true
-      val array: scala.Array[Byte]^ = new scala.Array[Byte](input.length)
-      var k = 0
-      while k < input.length do { array(k) = input(k); k += 1 }
-      val decoded = BrotliDecoder.decode(array, array.length)
-      var i = 0
-      while i < decoded.length do { pending += decoded(i); i += 1 }
+      install(BrotliDecoder.decode(accumulated, accumulatedLength))
 
 // Accumulates the whole payload, then emits it as Brotli (see `BrotliEncoder`).
-private[pneumatic] class BrotliEncoderEngine extends BrotliEngine:
-  private val input: scala.collection.mutable.ArrayBuffer[Byte] =
-    scala.collection.mutable.ArrayBuffer()
-
+private[pneumatic] class BrotliEncoderEngine extends BrotliEngine, BrotliAccumulator:
   private var finished = false
 
   update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
-    var i = 0
-    while i < length do { input += bytes.readUnchecked(offset + i); i += 1 }
+    accumulate(bytes, offset, length)
 
   update def finish(): Unit =
     if !finished then
       finished = true
-      val array: scala.Array[Byte]^ = new scala.Array[Byte](input.length)
-      var k = 0
-      while k < input.length do { array(k) = input(k); k += 1 }
-      val encoded = BrotliEncoder.encode(array, array.length)
-      var i = 0
-      while i < encoded.length do { pending += encoded(i); i += 1 }
+      install(BrotliEncoder.encode(accumulated, accumulatedLength))
 
 // The `Duct` stage: a thin wrapper presenting a Brotli engine to the streaming kernel, draining the
 // engine's retained `pending` buffer into whatever space each step or flush offers. The shape
