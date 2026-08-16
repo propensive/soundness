@@ -1195,10 +1195,20 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  Conduit depth 16")(target = 1*Second, operationSize = size):
         '{
             val (intake, stream) = Conduit[Data]()
+
+            // The producer signals end-of-stream even if it dies: an
+            // `OutOfMemoryError` in this thread is invisible to the harness's
+            // OOM tolerance, which catches only in the worker's own thread, and
+            // a consumer parked on a hand-off whose producer died silently
+            // waits forever — wedging the whole sweep at its `join`. `finish`
+            // allocates nothing, so the `finally` cannot itself fail.
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each: chunk =>
-                intake.put(turbulence.Benchmarks.freshChunk(chunk))
-              intake.finish())
+              try
+                turbulence.Benchmarks.inputChunks.each: chunk =>
+                  intake.put(turbulence.Benchmarks.freshChunk(chunk))
+              catch case _: java.lang.OutOfMemoryError => ()
+              finally intake.finish())
+
             var total = 0L
             stream.sweep: region =>
               range =>
@@ -1212,10 +1222,26 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
             val end = new Object
+
+            // This row's whole point is to blow up the heap, and the blowup
+            // lands in THIS thread (it does the allocating), where the
+            // harness's OOM tolerance cannot see it. The sentinel must still
+            // reach the consumer or it blocks in `take` forever and the sweep
+            // wedges at `join` — so it goes in a `finally`, and because
+            // `put` itself allocates a queue node, it retries until the
+            // consumer has drained enough for one node to fit.
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each: chunk =>
-                queue.put(turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[AnyRef])
-              queue.put(end))
+              try
+                turbulence.Benchmarks.inputChunks.each: chunk =>
+                  queue.put(turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[AnyRef])
+              catch case _: java.lang.OutOfMemoryError => ()
+              finally
+                var sent = false
+                while !sent do
+                  try
+                    queue.put(end)
+                    sent = true
+                  catch case _: java.lang.OutOfMemoryError => Thread.sleep(10))
             var total = 0L
             var running = true
             while running do
@@ -1230,10 +1256,22 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Unbounded  Relay[Data]")(target = 1*Second, operationSize = size):
         '{
             val relay = Relay[Data]()
+
+            // As the queue row above: the termination must arrive even if the
+            // producer dies of the OOM it is built to cause, and `stop` puts a
+            // sentinel — an allocation — so it retries.
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each: chunk =>
-                relay.put(turbulence.Benchmarks.freshChunk(chunk))
-              relay.stop())
+              try
+                turbulence.Benchmarks.inputChunks.each: chunk =>
+                  relay.put(turbulence.Benchmarks.freshChunk(chunk))
+              catch case _: java.lang.OutOfMemoryError => ()
+              finally
+                var sent = false
+                while !sent do
+                  try
+                    relay.stop()
+                    sent = true
+                  catch case _: java.lang.OutOfMemoryError => Thread.sleep(10))
             var total = 0L
             relay.stream.records.each: chunk =>
               total += chunk.length + (turbulence.Benchmarks.burn(chunk.length) & 1L)
@@ -1266,7 +1304,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                     Chunk.fromArray(turbulence.Benchmarks.freshChunk(c).asInstanceOf[scala.Array[Byte]]))
               for
                 queue <- Queue.unbounded[Take[Nothing, Chunk[Byte]]]
-                _     <- source.runIntoQueue(queue).fork
+                // `ensuring` runs on defects too, so a producer-side
+                // `OutOfMemoryError` (a defect) still delivers end-of-stream
+                // rather than stranding the consumer.
+                _     <- source.runIntoQueue(queue).ensuring(queue.offer(Take.end)).fork
                 total <- ZStream.fromQueue(queue).flattenTake.runFold(0L): (acc, c) =>
                            acc + c.size + (turbulence.Benchmarks.burn(c.size) & 1L)
               yield total
@@ -1463,10 +1504,20 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       constrained(m"Soundness  Conduit depth 16")(target = 1*Second, sweep = 64):
         '{
             val (intake, stream) = Conduit[Data]()
+
+            // The producer signals end-of-stream even if it dies: an
+            // `OutOfMemoryError` in this thread is invisible to the harness's
+            // OOM tolerance, which catches only in the worker's own thread, and
+            // a consumer parked on a hand-off whose producer died silently
+            // waits forever — wedging the whole sweep at its `join`. `finish`
+            // allocates nothing, so the `finally` cannot itself fail.
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each: chunk =>
-                intake.put(turbulence.Benchmarks.freshChunk(chunk))
-              intake.finish())
+              try
+                turbulence.Benchmarks.inputChunks.each: chunk =>
+                  intake.put(turbulence.Benchmarks.freshChunk(chunk))
+              catch case _: java.lang.OutOfMemoryError => ()
+              finally intake.finish())
+
             var total = 0L
             stream.sweep: region =>
               range =>
@@ -1480,10 +1531,26 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
             val end = new Object
+
+            // This row's whole point is to blow up the heap, and the blowup
+            // lands in THIS thread (it does the allocating), where the
+            // harness's OOM tolerance cannot see it. The sentinel must still
+            // reach the consumer or it blocks in `take` forever and the sweep
+            // wedges at `join` — so it goes in a `finally`, and because
+            // `put` itself allocates a queue node, it retries until the
+            // consumer has drained enough for one node to fit.
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each: chunk =>
-                queue.put(turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[AnyRef])
-              queue.put(end))
+              try
+                turbulence.Benchmarks.inputChunks.each: chunk =>
+                  queue.put(turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[AnyRef])
+              catch case _: java.lang.OutOfMemoryError => ()
+              finally
+                var sent = false
+                while !sent do
+                  try
+                    queue.put(end)
+                    sent = true
+                  catch case _: java.lang.OutOfMemoryError => Thread.sleep(10))
             var total = 0L
             var running = true
             while running do
@@ -1498,10 +1565,22 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       constrained(m"Unbounded  Relay[Data]")(target = 1*Second, sweep = 64):
         '{
             val relay = Relay[Data]()
+
+            // As the queue row above: the termination must arrive even if the
+            // producer dies of the OOM it is built to cause, and `stop` puts a
+            // sentinel — an allocation — so it retries.
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each: chunk =>
-                relay.put(turbulence.Benchmarks.freshChunk(chunk))
-              relay.stop())
+              try
+                turbulence.Benchmarks.inputChunks.each: chunk =>
+                  relay.put(turbulence.Benchmarks.freshChunk(chunk))
+              catch case _: java.lang.OutOfMemoryError => ()
+              finally
+                var sent = false
+                while !sent do
+                  try
+                    relay.stop()
+                    sent = true
+                  catch case _: java.lang.OutOfMemoryError => Thread.sleep(10))
             var total = 0L
             relay.stream.records.each: chunk =>
               total += chunk.length + (turbulence.Benchmarks.burn(chunk.length) & 1L)
@@ -1509,6 +1588,13 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
+      // Known exposure, unlike its siblings: cats-effect does not run
+      // finalizers on fatal throwables, so no `guarantee` can deliver
+      // `channel.close` after a producer-fiber `OutOfMemoryError`, and a
+      // consumer could strand as the thread-based rows once did. In practice
+      // the allocation happens inside `send`'s effect on the calling fiber and
+      // surfaces as the sweep's expected OOM; if this row ever wedges a run,
+      // this is why.
       constrained(m"FS2  Channel.unbounded")(target = 1*Second, sweep = 64):
         '{
             import cats.effect.unsafe.implicits.global
@@ -1534,7 +1620,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                     Chunk.fromArray(turbulence.Benchmarks.freshChunk(c).asInstanceOf[scala.Array[Byte]]))
               for
                 queue <- Queue.unbounded[Take[Nothing, Chunk[Byte]]]
-                _     <- source.runIntoQueue(queue).fork
+                // `ensuring` runs on defects too, so a producer-side
+                // `OutOfMemoryError` (a defect) still delivers end-of-stream
+                // rather than stranding the consumer.
+                _     <- source.runIntoQueue(queue).ensuring(queue.offer(Take.end)).fork
                 total <- ZStream.fromQueue(queue).flattenTake.runFold(0L): (acc, c) =>
                            acc + c.size + (turbulence.Benchmarks.burn(c.size) & 1L)
               yield total
@@ -1550,10 +1639,20 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       stress(m"Soundness  Conduit depth 16")(target = 2*Second, concurrency = 16):
         '{
             val (intake, stream) = Conduit[Data]()
+
+            // The producer signals end-of-stream even if it dies: an
+            // `OutOfMemoryError` in this thread is invisible to the harness's
+            // OOM tolerance, which catches only in the worker's own thread, and
+            // a consumer parked on a hand-off whose producer died silently
+            // waits forever — wedging the whole sweep at its `join`. `finish`
+            // allocates nothing, so the `finally` cannot itself fail.
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each: chunk =>
-                intake.put(turbulence.Benchmarks.freshChunk(chunk))
-              intake.finish())
+              try
+                turbulence.Benchmarks.inputChunks.each: chunk =>
+                  intake.put(turbulence.Benchmarks.freshChunk(chunk))
+              catch case _: java.lang.OutOfMemoryError => ()
+              finally intake.finish())
+
             var total = 0L
             stream.sweep: region =>
               range =>
@@ -1567,10 +1666,26 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
             val end = new Object
+
+            // This row's whole point is to blow up the heap, and the blowup
+            // lands in THIS thread (it does the allocating), where the
+            // harness's OOM tolerance cannot see it. The sentinel must still
+            // reach the consumer or it blocks in `take` forever and the sweep
+            // wedges at `join` — so it goes in a `finally`, and because
+            // `put` itself allocates a queue node, it retries until the
+            // consumer has drained enough for one node to fit.
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each: chunk =>
-                queue.put(turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[AnyRef])
-              queue.put(end))
+              try
+                turbulence.Benchmarks.inputChunks.each: chunk =>
+                  queue.put(turbulence.Benchmarks.freshChunk(chunk).asInstanceOf[AnyRef])
+              catch case _: java.lang.OutOfMemoryError => ()
+              finally
+                var sent = false
+                while !sent do
+                  try
+                    queue.put(end)
+                    sent = true
+                  catch case _: java.lang.OutOfMemoryError => Thread.sleep(10))
             var total = 0L
             var running = true
             while running do
@@ -1585,10 +1700,22 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       stress(m"Unbounded  Relay[Data]")(target = 2*Second, concurrency = 16):
         '{
             val relay = Relay[Data]()
+
+            // As the queue row above: the termination must arrive even if the
+            // producer dies of the OOM it is built to cause, and `stop` puts a
+            // sentinel — an allocation — so it retries.
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.each: chunk =>
-                relay.put(turbulence.Benchmarks.freshChunk(chunk))
-              relay.stop())
+              try
+                turbulence.Benchmarks.inputChunks.each: chunk =>
+                  relay.put(turbulence.Benchmarks.freshChunk(chunk))
+              catch case _: java.lang.OutOfMemoryError => ()
+              finally
+                var sent = false
+                while !sent do
+                  try
+                    relay.stop()
+                    sent = true
+                  catch case _: java.lang.OutOfMemoryError => Thread.sleep(10))
             var total = 0L
             relay.stream.records.each: chunk =>
               total += chunk.length + (turbulence.Benchmarks.burn(chunk.length) & 1L)
