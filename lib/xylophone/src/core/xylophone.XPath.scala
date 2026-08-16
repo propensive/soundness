@@ -43,8 +43,22 @@ import gossamer.*
 import murmuration.*
 import prepositional.*
 import vacuous.*
+import zephyrine.*
 
-object XPath:
+// `XPath` is a `Format`, so a malformed *expression* is a `Parse.Error` like any other
+// parse failure, carrying the offset at which it was detected. `XPath.Error` is reserved
+// for the distinct failure of *evaluating* an expression that parsed.
+object XPath extends Format:
+  def name: Text = t"XPath"
+
+  // `offset` is the character index, within the path text, where the error was detected;
+  // consumers (the `xp"…"` interpolator) use it to position a compile-time error precisely.
+  // `Location` is taken here for a node's place within a document, so this is `Position`,
+  // which is also the name `Xml` uses for the same role.
+  case class Position(override val offset: Optional[Int]) extends Format.Position:
+    def describe: Text = offset.lay(t"an unknown position"): offset =>
+      t"character ${offset + 1}"
+
   // The thirteen XPath 1.0 axes (§2.2). `keyword` is the spelling used in the
   // unabbreviated `axis::test` syntax.
   enum Axis(val keyword: Text) derives CanEqual:
@@ -328,7 +342,7 @@ object XPath:
 
       if valid && digits then java.lang.Double.parseDouble(trimmed) else Double.NaN
 
-  object EvaluationError:
+  object Error:
     enum Reason(val number: Int) extends Clarification:
       case UnknownFunction(name: Text) extends Reason(1)
       case BadArity(name: Text)        extends Reason(2)
@@ -345,7 +359,7 @@ object XPath:
       case Reason.Unsupported(feature)  => m"$feature is not supported"
       case Reason.Unresolved            => m"the expression contains an unresolved substitution"
 
-  case class EvaluationError(reason: XPath.EvaluationError.Reason)(using Diagnostics)
+  case class Error(reason: XPath.Error.Reason)(using Diagnostics)
   extends fulminate.Error(563, reason.number)(m"the XPath could not be evaluated because $reason")
 
   // Operator precedence levels, loosest-first, following the grammar's
@@ -483,46 +497,33 @@ object XPath:
 
   // Parses any XPath 1.0 expression — location paths, absolute or relative,
   // and the full expression language — reporting the offset of any error.
-  given decodable: (tactic: Tactic[XPath.Error]) => ((XPath is Decodable in Text)^{tactic}) = text =>
+  given decodable: (tactic: Tactic[Parse.Error]) => ((XPath is Decodable in Text)^{tactic}) = text =>
     XPath(XPathReader.parse(text, holes = false))
 
-  // XPathError → XPath.Error
-  object Error:
-    // Reasons are append-only: `number` values are stable identifiers within
-    // the error 562 envelope and must never be reassigned. `ExpectedSlash`
-    // and `BadStep` were raised by the pre-AST positional parser and are
-    // retained only for numbering.
-    enum Reason(val number: Int) extends Clarification:
-      case ExpectedSlash        extends Reason(1)
-      case BadStep              extends Reason(2)
-      case UnexpectedCharacter  extends Reason(3)
-      case UnterminatedLiteral  extends Reason(4)
-      case UnknownAxis          extends Reason(5)
-      case ExpectedNodeTest     extends Reason(6)
-      case ExpectedExpression   extends Reason(7)
-      case ExpectedCloseParen   extends Reason(8)
-      case ExpectedCloseBracket extends Reason(9)
-      case UnexpectedEnd        extends Reason(10)
-      case UnexpectedToken      extends Reason(11)
+  // Was `XPath.Error.Reason`, whose numbering was append-only within the 562 envelope;
+  // as `Issue`s they need no numbers, so `ExpectedSlash` and `BadStep` — retained only
+  // for numbering, and raised by the pre-AST positional parser — are gone.
+  enum Issue extends Format.Issue:
+    case UnexpectedCharacter
+    case UnterminatedLiteral
+    case UnknownAxis
+    case ExpectedNodeTest
+    case ExpectedExpression
+    case ExpectedCloseParen
+    case ExpectedCloseBracket
+    case UnexpectedEnd
+    case UnexpectedToken
 
-    given communicable: Reason is Communicable =
-      case Reason.ExpectedSlash        => m"an XPath must begin with '/'"
-      case Reason.BadStep              => m"the path step is not a valid XPath step"
-      case Reason.UnexpectedCharacter  => m"the character is not valid in an XPath"
-      case Reason.UnterminatedLiteral  => m"the string literal is not terminated"
-      case Reason.UnknownAxis          => m"the axis name is not one of the thirteen XPath axes"
-      case Reason.ExpectedNodeTest     => m"a node test was expected"
-      case Reason.ExpectedExpression   => m"an expression was expected"
-      case Reason.ExpectedCloseParen   => m"a closing parenthesis was expected"
-      case Reason.ExpectedCloseBracket => m"a closing square bracket was expected"
-      case Reason.UnexpectedEnd        => m"the XPath ends prematurely"
-      case Reason.UnexpectedToken      => m"the token was not expected at this position"
-
-  // `offset` is the character index, within the path text, where the error was
-  // detected; consumers (e.g. the `xp"…"` interpolator) use it to position a
-  // compile-time error precisely.
-  case class Error(reason: XPath.Error.Reason, offset: Int)(using Diagnostics)
-  extends fulminate.Error(562, reason.number)(m"the XPath was not valid because $reason")
+    def describe: Message = this match
+      case UnexpectedCharacter  => m"the character is not valid in an XPath"
+      case UnterminatedLiteral  => m"the string literal is not terminated"
+      case UnknownAxis          => m"the axis name is not one of the thirteen XPath axes"
+      case ExpectedNodeTest     => m"a node test was expected"
+      case ExpectedExpression   => m"an expression was expected"
+      case ExpectedCloseParen   => m"a closing parenthesis was expected"
+      case ExpectedCloseBracket => m"a closing square bracket was expected"
+      case UnexpectedEnd        => m"the XPath ends prematurely"
+      case UnexpectedToken      => m"the token was not expected at this position"
 
 case class XPath(expression: XPath.Expression = XPath.Expression.Route(XPath.Origin.Root, Nil))
 derives CanEqual:

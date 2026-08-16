@@ -39,17 +39,17 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import vacuous.*
+import zephyrine.*
 
 // A hand-written lexer and recursive-descent parser for the full XPath 1.0
 // grammar (one method per production of the W3C recommendation), reporting
-// every failure as an `XPath.Error` carrying the character offset at which it
-// was detected, which the `xp"…"` interpolator maps back onto a source-file
-// caret. With `holes` enabled, a NUL (`\u0000`) marker (as inserted between the
+// every failure as a `Parse.Error` over the `XPath` format, carrying the
+// character offset at which it was detected, which the `xp"…"` interpolator
+// maps back onto a source-file caret. With `holes` enabled, a NUL (`\u0000`) marker (as inserted between the
 // parts of an interpolated literal) lexes as a numbered hole and parses as an
 // `Expression.Substitution` wherever a primary expression is permitted.
 private[xylophone] object XPathReader:
   import XPath.{Axis, Expression, NodeTest, Origin, Step}
-  import XPath.Error.Reason
 
   private enum Token derives CanEqual:
     case Slash, DoubleSlash, Pipe, Plus, Minus, Equals, Unequals, Less, LessOrEqual, Greater,
@@ -104,7 +104,7 @@ private[xylophone] object XPathReader:
     case "self"               => Axis.Self
     case _                    => Unset
 
-  private def tokenize(string: String, holes: Boolean)(using Tactic[XPath.Error])
+  private def tokenize(string: String, holes: Boolean)(using Tactic[Parse.Error])
   :   scm.ArrayBuffer[Positioned] =
 
     val tokens = scm.ArrayBuffer[Positioned]()
@@ -129,7 +129,7 @@ private[xylophone] object XPathReader:
     def scanLiteral(start: Int): Unit =
       val quote = string.charAt(start)
       val close = string.indexOf(quote, start + 1)
-      if close < 0 then abort(XPath.Error(Reason.UnterminatedLiteral, start))
+      if close < 0 then abort(Parse.Error(XPath, XPath.Position(start), XPath.Issue.UnterminatedLiteral))
       push(Token.LiteralToken(string.substring(start + 1, close).nn.tt), start)
       offset = close + 1
 
@@ -156,7 +156,7 @@ private[xylophone] object XPathReader:
           case "or"  => push(Token.OrKeyword, start)
           case "div" => push(Token.DivKeyword, start)
           case "mod" => push(Token.ModKeyword, start)
-          case _     => abort(XPath.Error(Reason.UnexpectedToken, start))
+          case _     => abort(Parse.Error(XPath, XPath.Position(start), XPath.Issue.UnexpectedToken))
 
         offset = end
       else
@@ -176,17 +176,17 @@ private[xylophone] object XPathReader:
             local = string.substring(end + 1, localEnd).nn
             end = localEnd
           else
-            abort(XPath.Error(Reason.UnexpectedCharacter, end))
+            abort(Parse.Error(XPath, XPath.Position(end), XPath.Issue.UnexpectedCharacter))
 
         val ahead = skipSpace(end)
 
         if ahead + 1 < length && string.charAt(ahead) == ':' && string.charAt(ahead + 1) == ':'
         then
-          if prefix != Unset then abort(XPath.Error(Reason.UnknownAxis, start))
+          if prefix != Unset then abort(Parse.Error(XPath, XPath.Position(start), XPath.Issue.UnknownAxis))
 
           axisFor(local) match
             case axis: Axis => push(Token.AxisToken(axis), start)
-            case _          => abort(XPath.Error(Reason.UnknownAxis, start))
+            case _          => abort(Parse.Error(XPath, XPath.Position(start), XPath.Issue.UnknownAxis))
 
           offset = ahead + 2
         else if ahead < length && string.charAt(ahead) == '(' then
@@ -233,7 +233,7 @@ private[xylophone] object XPathReader:
             push(Token.Unequals, start)
             offset += 2
           else
-            abort(XPath.Error(Reason.UnexpectedCharacter, start))
+            abort(Parse.Error(XPath, XPath.Position(start), XPath.Issue.UnexpectedCharacter))
 
         case '<' =>
           if offset + 1 < length && string.charAt(offset + 1) == '=' then
@@ -283,7 +283,7 @@ private[xylophone] object XPathReader:
               push(Token.VariableToken(Unset, first.tt), start)
               offset = end
           else
-            abort(XPath.Error(Reason.UnexpectedCharacter, start))
+            abort(Parse.Error(XPath, XPath.Position(start), XPath.Issue.UnexpectedCharacter))
 
         case '\u0000' if holes =>
           push(Token.HoleToken(holeCount), start)
@@ -293,13 +293,13 @@ private[xylophone] object XPathReader:
         case other =>
           if other >= '0' && other <= '9' then scanNumber(start)
           else if nameStart(other) then scanName(start)
-          else abort(XPath.Error(Reason.UnexpectedCharacter, start))
+          else abort(Parse.Error(XPath, XPath.Position(start), XPath.Issue.UnexpectedCharacter))
 
     tokens
 
   private val descendantStep: Step = Step(Axis.DescendantOrSelf, NodeTest.Node, Nil)
 
-  def parse(text: Text, holes: Boolean)(using Tactic[XPath.Error]): Expression =
+  def parse(text: Text, holes: Boolean)(using Tactic[Parse.Error]): Expression =
     val tokens = tokenize(text.s, holes)
     val end = text.s.length
     var index = 0
@@ -309,13 +309,13 @@ private[xylophone] object XPathReader:
     def here: Int = if more then tokens(index).offset else end
     def advance(): Unit = index += 1
 
-    def expect(token: Token, reason: Reason): Unit =
+    def expect(token: Token, issue: XPath.Issue): Unit =
       if more && current == token then advance()
-      else abort(XPath.Error(reason, here))
+      else abort(Parse.Error(XPath, XPath.Position(here), issue))
 
     def parseAll(): Expression =
       val result = parseOr()
-      if more then abort(XPath.Error(Reason.UnexpectedToken, here))
+      if more then abort(Parse.Error(XPath, XPath.Position(here), XPath.Issue.UnexpectedToken))
       result
 
     def parseOr(): Expression =
@@ -421,7 +421,7 @@ private[xylophone] object XPathReader:
         false
 
     def parsePath(): Expression =
-      if !more then abort(XPath.Error(Reason.ExpectedExpression, here))
+      if !more then abort(Parse.Error(XPath, XPath.Position(here), XPath.Issue.ExpectedExpression))
 
       current match
         case Token.Slash =>
@@ -453,7 +453,7 @@ private[xylophone] object XPathReader:
       List.of(steps.toList)
 
     def parseStep(): Step =
-      if !more then abort(XPath.Error(Reason.ExpectedNodeTest, here))
+      if !more then abort(Parse.Error(XPath, XPath.Position(here), XPath.Issue.ExpectedNodeTest))
 
       current match
         case Token.Dot =>
@@ -480,7 +480,7 @@ private[xylophone] object XPathReader:
       Step(axis, test, parsePredicates())
 
     def parseNodeTest(): NodeTest =
-      if !more then abort(XPath.Error(Reason.ExpectedNodeTest, here))
+      if !more then abort(Parse.Error(XPath, XPath.Position(here), XPath.Issue.ExpectedNodeTest))
 
       current match
         case Token.NameToken(prefix, local) =>
@@ -497,7 +497,7 @@ private[xylophone] object XPathReader:
 
         case Token.NodeTypeToken(name) =>
           advance()
-          expect(Token.OpenParen, Reason.UnexpectedToken)
+          expect(Token.OpenParen, XPath.Issue.UnexpectedToken)
 
           name.s match
             case "processing-instruction" =>
@@ -511,23 +511,23 @@ private[xylophone] object XPathReader:
                     Unset
                 else Unset
 
-              expect(Token.CloseParen, Reason.ExpectedCloseParen)
+              expect(Token.CloseParen, XPath.Issue.ExpectedCloseParen)
               NodeTest.Instruction(target)
 
             case "node" =>
-              expect(Token.CloseParen, Reason.ExpectedCloseParen)
+              expect(Token.CloseParen, XPath.Issue.ExpectedCloseParen)
               NodeTest.Node
 
             case "text" =>
-              expect(Token.CloseParen, Reason.ExpectedCloseParen)
+              expect(Token.CloseParen, XPath.Issue.ExpectedCloseParen)
               NodeTest.Textual
 
             case _ =>
-              expect(Token.CloseParen, Reason.ExpectedCloseParen)
+              expect(Token.CloseParen, XPath.Issue.ExpectedCloseParen)
               NodeTest.Comment
 
         case _ =>
-          abort(XPath.Error(Reason.ExpectedNodeTest, here))
+          abort(Parse.Error(XPath, XPath.Position(here), XPath.Issue.ExpectedNodeTest))
 
     def parsePredicates(): List[Expression] =
       val predicates = scm.ListBuffer[Expression]()
@@ -535,7 +535,7 @@ private[xylophone] object XPathReader:
       while more && current == Token.OpenBracket do
         advance()
         predicates += parseOr()
-        expect(Token.CloseBracket, Reason.ExpectedCloseBracket)
+        expect(Token.CloseBracket, XPath.Issue.ExpectedCloseBracket)
 
       List.of(predicates.toList)
 
@@ -553,7 +553,7 @@ private[xylophone] object XPathReader:
       else Expression.Route(Origin.Filter(primary, predicates), Nil)
 
     def parsePrimary(): Expression =
-      if !more then abort(XPath.Error(Reason.ExpectedExpression, here))
+      if !more then abort(Parse.Error(XPath, XPath.Position(here), XPath.Issue.ExpectedExpression))
 
       current match
         case Token.VariableToken(prefix, name) =>
@@ -575,12 +575,12 @@ private[xylophone] object XPathReader:
         case Token.OpenParen =>
           advance()
           val expression = parseOr()
-          expect(Token.CloseParen, Reason.ExpectedCloseParen)
+          expect(Token.CloseParen, XPath.Issue.ExpectedCloseParen)
           expression
 
         case Token.FunctionToken(prefix, local) =>
           advance()
-          expect(Token.OpenParen, Reason.ExpectedExpression)
+          expect(Token.OpenParen, XPath.Issue.ExpectedExpression)
 
           if more && current == Token.CloseParen then
             advance()
@@ -593,10 +593,10 @@ private[xylophone] object XPathReader:
               advance()
               arguments += parseOr()
 
-            expect(Token.CloseParen, Reason.ExpectedCloseParen)
+            expect(Token.CloseParen, XPath.Issue.ExpectedCloseParen)
             Expression.Call(prefix, local, List.of(arguments.toList))
 
         case _ =>
-          abort(XPath.Error(Reason.ExpectedExpression, here))
+          abort(Parse.Error(XPath, XPath.Position(here), XPath.Issue.ExpectedExpression))
 
     parseAll()

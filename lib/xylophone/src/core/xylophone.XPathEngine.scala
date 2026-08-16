@@ -43,19 +43,19 @@ import gossamer.*
 import vacuous.*
 
 private[xylophone] object XPathEngine:
-  import XPath.{Axis, EvaluationError, Expression, Locus, NodeTest, Origin, Step, Value}
-  import EvaluationError.Reason
+  import XPath.{Axis, Error, Expression, Locus, NodeTest, Origin, Step, Value}
+  import Error.Reason
 
   private case class Context
     ( locus: Locus, position: Int, size: Int, variables: Map[Text, Value] )
 
   def evaluate(xml: Xml, expression: Expression, variables: Map[Text, Value])
-    ( using Tactic[EvaluationError] )
+    ( using Tactic[Error] )
   :   Value =
 
     evaluate(expression, Context(Locus.root(xml), 1, 1, variables))
 
-  private def evaluate(expression: Expression, context: Context)(using Tactic[EvaluationError])
+  private def evaluate(expression: Expression, context: Context)(using Tactic[Error])
   :   Value =
 
     expression match
@@ -107,7 +107,7 @@ private[xylophone] object XPathEngine:
             Value.NodeSet(List.of(sortDedup(left.stdlib ++ right.stdlib)))
 
           case _ =>
-            abort(EvaluationError(Reason.NotNodeSet))
+            abort(Error(Reason.NotNodeSet))
 
       case Expression.Literal(text)  => Value.Textual(text)
       case Expression.Number(value)  => Value.Numeric(value)
@@ -117,12 +117,12 @@ private[xylophone] object XPathEngine:
 
         context.variables.get(key) match
           case Some(value) => value
-          case None        => abort(EvaluationError(Reason.UnboundVariable(key)))
+          case None        => abort(Error(Reason.UnboundVariable(key)))
 
       case Expression.Call(prefix, name, arguments) =>
         prefix match
           case prefix: Text =>
-            abort(EvaluationError(Reason.UnknownFunction(XPath.qualify(prefix, name))))
+            abort(Error(Reason.UnknownFunction(XPath.qualify(prefix, name))))
 
           case _ =>
             call(name, arguments.stdlib.map(evaluate(_, context)), context)
@@ -131,7 +131,7 @@ private[xylophone] object XPathEngine:
         Value.NodeSet(List.of(route(origin, steps.stdlib, context)))
 
       case Expression.Substitution(_) =>
-        abort(EvaluationError(Reason.Unresolved))
+        abort(Error(Reason.Unresolved))
 
   // Comparison semantics (§3.4): node-sets compare existentially over their
   // members' string-values (or numbers, for relational operators); mixed
@@ -326,7 +326,7 @@ private[xylophone] object XPathEngine:
       case _ =>
         sci.Nil
 
-  private def axisLoci(axis: Axis, locus: Locus)(using Tactic[EvaluationError])
+  private def axisLoci(axis: Axis, locus: Locus)(using Tactic[Error])
   :   sci.List[Locus] =
 
     axis match
@@ -344,7 +344,7 @@ private[xylophone] object XPathEngine:
       case Axis.Attribute        => attributeLoci(locus)
 
       case Axis.Namespace =>
-        abort(EvaluationError(Reason.Unsupported(t"the namespace axis")))
+        abort(Error(Reason.Unsupported(t"the namespace axis")))
 
   // Node tests, with the principal node type of the axis (§2.3): a name or
   // wildcard on the attribute axis matches attributes; on every other axis,
@@ -413,7 +413,7 @@ private[xylophone] object XPathEngine:
     ( candidates: sci.List[Locus],
       predicates: sci.List[Expression],
       variables:  Map[Text, Value] )
-    ( using Tactic[EvaluationError] )
+    ( using Tactic[Error] )
   :   sci.List[Locus] =
 
     predicates.foldLeft(candidates): (current, predicate) =>
@@ -428,7 +428,7 @@ private[xylophone] object XPathEngine:
 
   private def evaluateStep
     ( step: Step, inputs: sci.List[Locus], variables: Map[Text, Value] )
-    ( using Tactic[EvaluationError] )
+    ( using Tactic[Error] )
   :   sci.List[Locus] =
 
     val collected = inputs.flatMap: input =>
@@ -438,7 +438,7 @@ private[xylophone] object XPathEngine:
     sortDedup(collected)
 
   private def route(origin: Origin, steps: sci.List[Step], context: Context)
-    ( using Tactic[EvaluationError] )
+    ( using Tactic[Error] )
   :   sci.List[Locus] =
 
     val start: sci.List[Locus] = origin match
@@ -451,7 +451,7 @@ private[xylophone] object XPathEngine:
             filterPredicates(sortDedup(loci.stdlib), predicates.stdlib, context.variables)
 
           case _ =>
-            abort(EvaluationError(Reason.NotNodeSet))
+            abort(Error(Reason.NotNodeSet))
 
     steps.foldLeft(start) { (loci, step) => evaluateStep(step, loci, context.variables) }
 
@@ -475,16 +475,16 @@ private[xylophone] object XPathEngine:
   // `number`, `string-length`, `normalize-space`, `name` and friends default
   // to the context node.
   private def call(name: Text, arguments: sci.List[Value], context: Context)
-    ( using Tactic[EvaluationError] )
+    ( using Tactic[Error] )
   :   Value =
 
     def arity(minimum: Int, maximum: Int): Unit =
       if arguments.length < minimum || arguments.length > maximum
-      then abort(EvaluationError(Reason.BadArity(name)))
+      then abort(Error(Reason.BadArity(name)))
 
     def nodeSetArgument(value: Value): sci.List[Locus] = value match
       case Value.NodeSet(loci) => sortDedup(loci.stdlib)
-      case _                   => abort(EvaluationError(Reason.NotNodeSet))
+      case _                   => abort(Error(Reason.NotNodeSet))
 
     def defaulted: Value =
       if arguments.isEmpty then Value.NodeSet(List(context.locus)) else arguments.head
@@ -503,7 +503,7 @@ private[xylophone] object XPathEngine:
         Value.Numeric(nodeSetArgument(arguments.head).length)
 
       case "id" =>
-        abort(EvaluationError(Reason.Unsupported(t"the id() function")))
+        abort(Error(Reason.Unsupported(t"the id() function")))
 
       case "local-name" | "name" | "namespace-uri" =>
         arity(0, 1)
@@ -527,7 +527,7 @@ private[xylophone] object XPathEngine:
         Value.Textual(defaulted.text)
 
       case "concat" =>
-        if arguments.length < 2 then abort(EvaluationError(Reason.BadArity(name)))
+        if arguments.length < 2 then abort(Error(Reason.BadArity(name)))
         val builder = StringBuilder()
         arguments.foreach { argument => builder.append(argument.text.s) }
         Value.Textual(builder.toString.nn.tt)
@@ -679,4 +679,4 @@ private[xylophone] object XPathEngine:
         Value.Numeric(xpathRound(arguments.head.number))
 
       case _ =>
-        abort(EvaluationError(Reason.UnknownFunction(name)))
+        abort(Error(Reason.UnknownFunction(name)))

@@ -4005,7 +4005,7 @@ object Xml extends Tag.Container
   // yields their values through `selectText` or `evaluate` instead, since
   // attributes are not tree nodes.
   extension (xml: Xml)
-    def select(xpath: XPath)(using Tactic[XPath.EvaluationError]): Fragment =
+    def select(xpath: XPath)(using Tactic[XPath.Error]): Fragment =
       XPathEngine.evaluate(xml, xpath.expression, Map()) match
         case XPath.Value.NodeSet(loci) =>
           val nodes = loci.stdlib.flatMap: locus =>
@@ -4019,12 +4019,12 @@ object Xml extends Tag.Container
           new Fragment(nodes*)
 
         case _ =>
-          abort(XPath.EvaluationError(XPath.EvaluationError.Reason.NotNodeSet))
+          abort(XPath.Error(XPath.Error.Reason.NotNodeSet))
 
     // The string-value of the first matching node (`Unset` when nothing
     // matches), or of the expression's value for non-node-set results. This is
     // the way to read an attribute selected by path: `xml.selectText(xp"//a/@href")`.
-    def selectText(xpath: XPath)(using Tactic[XPath.EvaluationError]): Optional[Text] =
+    def selectText(xpath: XPath)(using Tactic[XPath.Error]): Optional[Text] =
       XPathEngine.evaluate(xml, xpath.expression, Map()) match
         case XPath.Value.NodeSet(loci) => loci.stdlib.headOption match
           case Some(locus) => locus.stringValue
@@ -4037,7 +4037,7 @@ object Xml extends Tag.Container
     // types: `count(//div)` is a number, `//a` a node-set. Variables referenced
     // as `$name` resolve from `variables`, keyed by qualified name.
     def evaluate(xpath: XPath, variables: Map[Text, XPath.Value] = Map())
-      ( using Tactic[XPath.EvaluationError] )
+      ( using Tactic[XPath.Error] )
     :   XPath.Value =
 
       XPathEngine.evaluate(xml, xpath.expression, variables)
