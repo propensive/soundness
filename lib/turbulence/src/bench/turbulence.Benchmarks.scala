@@ -81,8 +81,10 @@ import pneumatic.*
 //   * FS2/ZIO wrap the input array without copying (`Chunk.array`/`Chunk.fromArray`);
 //     `value.stream` copies once at construction. Kyo is fed an `ArraySeq`
 //     wrapper (no copy) but boxes per element.
-//   * Kyo has no gzip pipeline and no incremental UTF-8 decoder, so it appears
-//     only in the checksum fold (like locomotion's "… only" rows).
+//   * Kyo has no gzip pipeline and no incremental UTF-8 decoder, so those
+//     suites stay without a Kyo row; it appears where its own primitives
+//     correspond — the checksum fold, the `Channel` hand-off rows, `Stream`
+//     fan-in (`collectAll`) and fan-out (`broadcast3`).
 
 object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 / Kyo"):
   sealed trait Information extends Dimension
@@ -987,6 +989,24 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               yield total
         }
 
+      bench(m"Kyo  Channel")(target = 1*Second, operationSize = size):
+        '{
+            import kyo.*
+            import AllowUnsafe.embrace.danger
+
+            val program =
+              for
+                channel  <- Channel.initUnscoped[AnyRef](8)
+                producer <- Fiber.initUnscoped:
+                              channel.putBatch(turbulence.Benchmarks.inputChunkList.asInstanceOf[scala.collection.immutable.List[AnyRef]])
+                chunks   <- channel.takeExactly(turbulence.Benchmarks.inputChunkList.length)
+                _        <- producer.get
+              yield chunks.foldLeft(0L): (acc, chunk) =>
+                acc + chunk.asInstanceOf[Data].length
+
+            Abort.run(KyoApp.Unsafe.runAndBlock(Duration.Infinity)(program)).eval.getOrThrow
+        }
+
     // Example M: `Confluence` fan-in — merge four streams. A stable in-memory
     // source's window is shared by reference, exactly as the references pass
     // immutable chunks.
@@ -1018,6 +1038,25 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               val streams =
                 turbulence.Benchmarks.quarters.map(q => ZStream.fromChunk(Chunk.fromArray(q.asInstanceOf[scala.Array[Byte]])))
               ZStream.mergeAllUnbounded()(streams*).runCount
+        }
+
+      bench(m"Kyo  Stream.collectAll")(target = 1*Second, operationSize = size):
+        '{
+            import kyo.*
+            import AllowUnsafe.embrace.danger
+
+            val streams =
+              turbulence.Benchmarks.quarters.map: quarter =>
+                Stream.init:
+                  scala.collection.immutable.ArraySeq.unsafeWrapArray
+                    (quarter.asInstanceOf[scala.Array[Byte]])
+
+            val program =
+              Stream.collectAll(streams.toSeq)
+              . mapChunkPure { chunk => scala.collection.immutable.Seq(chunk.size.toLong) }
+              . fold(0L)(_ + _)
+
+            Abort.run(KyoApp.Unsafe.runAndBlock(Duration.Infinity)(program)).eval.getOrThrow
         }
 
     // Example N: `Divergence` fan-out — broadcast to three consumers. The source
@@ -1062,6 +1101,23 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // worst-case in-flight blocks of every copy-path conduit, so the win must
     // justify the memory; each row is Example L's pipeline with only the ring
     // depth varied.
+      bench(m"Kyo  broadcast3")(target = 1*Second, operationSize = size):
+        '{
+            import kyo.*
+            import AllowUnsafe.embrace.danger
+
+            def count(stream: Stream[Byte, Async]): Long < Async =
+              stream.mapChunkPure { chunk => scala.collection.immutable.Seq(chunk.size.toLong) }
+              . fold(0L)(_ + _)
+
+            val program =
+              Scope.run:
+                Stream.init(turbulence.Benchmarks.inputSeq).broadcast3(16).map: (s1, s2, s3) =>
+                  Async.zip(count(s1), count(s2), count(s3)).map { (a, b, c) => a + b + c }
+
+            Abort.run(KyoApp.Unsafe.runAndBlock(Duration.Infinity)(program)).eval.getOrThrow
+        }
+
     suite(m"Conduit depth sweep (4 MB in 64 KiB chunks)"):
       bench(m"depth 2")(target = 1*Second, operationSize = size):
         '{
@@ -1310,6 +1366,24 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                 total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
               yield total
         }
+      stress(m"Kyo  Channel")(target = 2*Second, concurrency = 16):
+        '{
+            import kyo.*
+            import AllowUnsafe.embrace.danger
+
+            val program =
+              for
+                channel  <- Channel.initUnscoped[AnyRef](8)
+                producer <- Fiber.initUnscoped:
+                              channel.putBatch(turbulence.Benchmarks.inputChunkList.asInstanceOf[scala.collection.immutable.List[AnyRef]])
+                chunks   <- channel.takeExactly(turbulence.Benchmarks.inputChunkList.length)
+                _        <- producer.get
+              yield chunks.foldLeft(0L): (acc, chunk) =>
+                acc + chunk.asInstanceOf[Data].length
+
+            Abort.run(KyoApp.Unsafe.runAndBlock(Duration.Infinity)(program)).eval.getOrThrow
+        }
+
     // Example P: constrained-heap scaling sweep — the same hand-off pipeline in a
     // pinned 128 MB heap, with the pipeline count doubling from 1 towards 64.
     // Each step is reported as its own row, so the table reads as the
@@ -1365,6 +1439,24 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // climbing; the unbounded models buffer each producer's entire 4 MB lead, so
     // their sweeps are expected to die early on OutOfMemoryError or GC thrash —
     // the largest N each row reaches is the finding.
+      constrained(m"Kyo  Channel")(target = 1*Second, sweep = 64):
+        '{
+            import kyo.*
+            import AllowUnsafe.embrace.danger
+
+            val program =
+              for
+                channel  <- Channel.initUnscoped[AnyRef](8)
+                producer <- Fiber.initUnscoped:
+                              channel.putBatch(turbulence.Benchmarks.inputChunkList.asInstanceOf[scala.collection.immutable.List[AnyRef]])
+                chunks   <- channel.takeExactly(turbulence.Benchmarks.inputChunkList.length)
+                _        <- producer.get
+              yield chunks.foldLeft(0L): (acc, chunk) =>
+                acc + chunk.asInstanceOf[Data].length
+
+            Abort.run(KyoApp.Unsafe.runAndBlock(Duration.Infinity)(program)).eval.getOrThrow
+        }
+
     suite(m"Stress: unbounded-model blowup (slow consumer, 128 MB heap, N ≤ 64)"):
       import threading.platformThreading
 
@@ -1629,6 +1721,25 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                   _     <- source.runIntoQueue(queue).fork
                   total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
                 yield total
+          }
+
+        gated(m"Kyo  Channel")
+          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+          '{
+              import kyo.*
+              import AllowUnsafe.embrace.danger
+
+              val program =
+                for
+                  channel  <- Channel.initUnscoped[AnyRef](8)
+                  producer <- Fiber.initUnscoped:
+                                channel.putBatch(turbulence.Benchmarks.inputChunkList.asInstanceOf[scala.collection.immutable.List[AnyRef]])
+                  chunks   <- channel.takeExactly(turbulence.Benchmarks.inputChunkList.length)
+                  _        <- producer.get
+                yield chunks.foldLeft(0L): (acc, chunk) =>
+                  acc + chunk.asInstanceOf[Data].length
+
+              Abort.run(KyoApp.Unsafe.runAndBlock(Duration.Infinity)(program)).eval.getOrThrow
           }
 
       // The same Soundness pipeline with the harness workers on virtual threads
@@ -1923,6 +2034,25 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               ZStream.mergeAllUnbounded()(streams*).runCount
         }
 
+      saturated(m"Kyo  Stream.collectAll")(target = 1*Second, sweep = 128):
+        '{
+            import kyo.*
+            import AllowUnsafe.embrace.danger
+
+            val streams =
+              turbulence.Benchmarks.smallQuarters.map: quarter =>
+                Stream.init:
+                  scala.collection.immutable.ArraySeq.unsafeWrapArray
+                    (quarter.asInstanceOf[scala.Array[Byte]])
+
+            val program =
+              Stream.collectAll(streams.toSeq)
+              . mapChunkPure { chunk => scala.collection.immutable.Seq(chunk.size.toLong) }
+              . fold(0L)(_ + _)
+
+            Abort.run(KyoApp.Unsafe.runAndBlock(Duration.Infinity)(program)).eval.getOrThrow
+        }
+
     suite(m"Stress: saturated fan-in capacity (99% ≤ 10 ms, 256 KiB over 4 streams)"):
       import threading.platformThreading
 
@@ -1966,6 +2096,26 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // Note this corpus has no tabs, which the five-bit mask admits and the
     // six-bit one does not — on tab-heavy text the biased variant would fare
     // relatively better than it does here.
+      saturated(m"Kyo  Stream.collectAll")
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        '{
+            import kyo.*
+            import AllowUnsafe.embrace.danger
+
+            val streams =
+              turbulence.Benchmarks.smallQuarters.map: quarter =>
+                Stream.init:
+                  scala.collection.immutable.ArraySeq.unsafeWrapArray
+                    (quarter.asInstanceOf[scala.Array[Byte]])
+
+            val program =
+              Stream.collectAll(streams.toSeq)
+              . mapChunkPure { chunk => scala.collection.immutable.Seq(chunk.size.toLong) }
+              . fold(0L)(_ + _)
+
+            Abort.run(KyoApp.Unsafe.runAndBlock(Duration.Infinity)(program)).eval.getOrThrow
+        }
+
     suite(m"Separator scan variants (4 MB)"):
       bench(m"Two comparisons per byte")(target = 1*Second, operationSize = textSize):
         '{ turbulence.Benchmarks.scanPairwise(turbulence.Benchmarks.textArray) }
