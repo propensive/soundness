@@ -75,13 +75,20 @@ object Tels extends Tels2:
   // variant from the merged SelectDefinition.
   sealed trait Member
 
+  // `key` marks the identifying field of the enclosing Struct (§20:
+  // E219–E221 at schema level, E314 at instance level; monotone under
+  // layer merge). It is declared last for source compatibility with
+  // positional construction — the TELS keyword order, in which `key`
+  // precedes `default` (load-bearing for the atom phase, §20.5), is
+  // fixed by the Axiom's member list, not by this parameter order.
   case class Field
     ( required:    Polarity,
       repeatable:  Polarity,
       keyword:     Text,
       fieldType:   Type,
       default:     Optional[Text],
-      description: Optional[Text] = Unset )
+      description: Optional[Text] = Unset,
+      key:         Boolean = false )
   extends Member
 
   case class SelectRef
@@ -105,7 +112,9 @@ object Tels extends Tels2:
 
   case class Struct(members: Array[Member]^{}, validators: Array[Text]^{}) extends Type
 
-  case class Scalar(validators: Array[Text]^{}) extends Type
+  // `encoding` names the codec (§21.7) defining the scalar's binary
+  // representation in BinTEL, or is absent for UTF-8 text scalars.
+  case class Scalar(validators: Array[Text]^{}, encoding: Optional[Text] = Unset) extends Type
 
   case object Flag extends Type
 
@@ -125,7 +134,8 @@ object Tels extends Tels2:
   case class ScalarDefinition
     ( name:        Text,
       validators:  Array[Text]^{},
-      description: Optional[Text] = Unset )
+      description: Optional[Text] = Unset,
+      encoding:    Optional[Text] = Unset )
 
   case class SelectDefinition
     ( name:        Text,
@@ -153,9 +163,9 @@ object Tels extends Tels2:
     val Sigil:      Text = t"Sigil"
     val Flag:       Text = t"Flag"
 
-  // Hand-encoded `tel-schema` axiom per §20.5 of the TEL specification.
-  // This Scala literal mirrors the canonical `tel-schema.tel` document
-  // (saved at `res/test/stratiform/corpus/tel-schema.tel`) verbatim.
+  // Hand-encoded `tels` axiom per §20.5 of the TEL specification.
+  // This Scala literal mirrors the canonical `tels.tel` document
+  // (saved at `res/test/stratiform/corpus/tels.tel`) verbatim.
   object Axiom:
     import Polarity.*
 
@@ -166,10 +176,11 @@ object Tels extends Tels2:
         fieldType:  Type,
         required:   Polarity = Implicit,
         repeatable: Polarity = Implicit,
-        default:    Optional[Text] = Unset )
+        default:    Optional[Text] = Unset,
+        key:        Boolean = false )
     :   Field =
 
-      Field(required, repeatable, kebab(keyword), fieldType, default)
+      Field(required, repeatable, kebab(keyword), fieldType, default, key = key)
 
     private inline def selectRef
       ( reference:  String,
@@ -207,7 +218,7 @@ object Tels extends Tels2:
     private val stringRef:     Type = Reference(kebab("String"))
 
     // The schema's root struct, mirroring the `document` block in the
-    // canonical tel-schema.tel.
+    // canonical tels.tel.
     private val documentStruct: Struct = Struct(
       members = Array.of(
         field("name",     identifierRef),
@@ -220,7 +231,7 @@ object Tels extends Tels2:
       validators = Array.empty)
 
     val tels: Tels = Tels(
-      name     = kebab("tel-schema"),
+      name     = kebab("tels"),
       document = documentStruct,
       layers   = Array.empty,
       sigil    = Unset,
@@ -233,6 +244,9 @@ object Tels extends Tels2:
           field("required",     Flag,       required = Loose),
           field("repeatable",   Flag,       required = Loose),
           field("irrepeatable", Flag,       required = Loose),
+          // `key` must precede `default`, so a trailing `key` atom is
+          // consumed as a flag rather than as a default value (§20.5).
+          field("key",          Flag,       required = Loose),
           field("default",      stringRef,  required = Loose),
           field("description",  stringRef,  required = Loose)),
 
@@ -257,9 +271,10 @@ object Tels extends Tels2:
           field("description", stringRef, required = Loose)),
 
         record("Scalar",
-          "A scalar declaration: a named scalar definition with one or more validators.",
+          "A scalar declaration: a named scalar definition with one or more validators and an optional encoding.",
           field("name",        typeNameRef),
           field("validate",    identifierRef, repeatable = Loose),
+          field("encoding",    identifierRef, required = Loose),
           field("description", stringRef, required = Loose)),
 
         record("Select",
@@ -399,7 +414,10 @@ object Tels extends Tels2:
                          default     = existing.default,
                          // §20.3: a layer's non-null description overrides
                          // the base's; otherwise the base's is inherited.
-                         description = f.description.or(existing.description) )
+                         description = f.description.or(existing.description),
+                         // §20.3: monotone OR — a layer may mark a field
+                         // as key; nothing can clear it.
+                         key         = existing.key || f.key )
 
                   case _ => abort(Tel.Error(Reason.LayerFieldTypeMismatch))
 
@@ -486,8 +504,16 @@ object Tels extends Tels2:
         if existing >= 0 then
           val mergedValidators = Array.frozen((out(existing).validators.readable ++ newDef.validators.readable).distinct)
 
+          // §20.3/§21.7: an encoding, once declared, cannot be changed
+          // (E218). Restating the base's encoding is a benign no-op;
+          // declaring one where the base has none adds it. Removal has
+          // no syntax.
+          val mergedEncoding = out(existing).encoding.lay(newDef.encoding): base =>
+            newDef.encoding.let { layer => if layer != base then abort(Tel.Error(Reason.EncodingConflict)) }
+            base
+
           out(existing) = ScalarDefinition(newDef.name, mergedValidators,
-              newDef.description.or(out(existing).description))
+              newDef.description.or(out(existing).description), mergedEncoding)
         else
           if records.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
           then abort(Tel.Error(Reason.DuplicateDefinition))
@@ -541,8 +567,64 @@ object Tels extends Tels2:
       SelectDefinition(base.name, Array.from(variants), mergedValidators,
           layer.description.or(base.description))
 
+  // Post-composition schema validity (§20.1). The key-field constraints
+  // (E219–E221) are checked against each *composed* Struct, after all
+  // layers have been applied, since a layer may both key a field and
+  // tighten its polarity (§20.3).
+  object Validation:
+
+    // Compose `schema`'s layers, then check the composed schema; returns
+    // the composed schema for further use.
+    def validate(schema: Tels): Tels raises Tel.Error =
+      val composed = Layers.compose(schema)
+      checkStruct(composed.document, composed)
+
+      composed.records.each: record =>
+        checkStruct(Struct(record.members, record.validators), composed)
+
+      composed
+
+    // The Scalar a type resolves to through the composed namespace and
+    // the built-ins (§20.5), or Unset for any non-Scalar resolution.
+    private def scalarOf(t: Type, schema: Tels): Optional[Scalar] = t match
+      case scalar: Scalar => scalar
+
+      case Reference(name) =>
+        schema.scalars.readable.find(_.name == name) match
+          case scala.Some(definition) => Scalar(definition.validators, definition.encoding)
+
+          case scala.None =>
+            if name == Builtin.String || name == Builtin.Identifier
+              || name == Builtin.TypeName || name == Builtin.Sigil
+            then Scalar(Array.empty)
+            else Unset
+
+      case _ => Unset
+
+    private def checkStruct(struct: Struct, schema: Tels): Unit raises Tel.Error =
+      var keys = 0
+
+      struct.members.each:
+        case field: Field =>
+          // Merge-produced nested Structs are checked regardless of `key`.
+          field.fieldType match
+            case nested: Struct => checkStruct(nested, schema)
+            case _              => ()
+
+          if field.key then
+            keys += 1
+            if keys > 1 then abort(Tel.Error(Reason.MultipleKeyFields))
+            if scalarOf(field.fieldType, schema).absent
+            then abort(Tel.Error(Reason.KeyOnNonScalar))
+
+            val required   = field.required != Polarity.Loose
+            val repeatable = field.repeatable == Polarity.Loose
+            if !required || repeatable then abort(Tel.Error(Reason.KeyOnLooseMember))
+
+        case _ => ()
+
   // Inverse of the §20.5 schema-of-schemas: given a Tel.Document whose
-  // surface matches the canonical tel-schema vocabulary, reconstruct
+  // surface matches the canonical tels vocabulary, reconstruct
   // a Tels value.
   object Reconstructor:
 
@@ -566,7 +648,7 @@ object Tels extends Tels2:
 
     private def memberEq(a: Member, b: Member): Boolean = (a, b) match
       case (a: Field, b: Field) =>
-        a.required == b.required && a.repeatable == b.repeatable &&
+        a.required == b.required && a.repeatable == b.repeatable && a.key == b.key &&
           a.keyword == b.keyword && typeEq(a.fieldType, b.fieldType) &&
           a.default == b.default && a.description == b.description
 
@@ -578,7 +660,9 @@ object Tels extends Tels2:
 
     private def typeEq(a: Type, b: Type): Boolean = (a, b) match
       case (a: Struct, b: Struct)         => structEq(a, b)
-      case (a: Scalar, b: Scalar)         => seqEq(a.validators, b.validators, textEq)
+
+      case (a: Scalar, b: Scalar) =>
+        seqEq(a.validators, b.validators, textEq) && a.encoding == b.encoding
       case (Flag, Flag)                   => true
       case (Reference(n1), Reference(n2)) => n1 == n2
       case _                              => false
@@ -590,7 +674,7 @@ object Tels extends Tels2:
 
     private def scalarEq(a: ScalarDefinition, b: ScalarDefinition): Boolean =
       a.name == b.name && seqEq(a.validators, b.validators, textEq) &&
-        a.description == b.description
+        a.description == b.description && a.encoding == b.encoding
 
     private def selectEq(a: SelectDefinition, b: SelectDefinition): Boolean =
       a.name == b.name &&
@@ -695,7 +779,12 @@ object Tels extends Tels2:
       val validators = children.bind: cc =>
         if cc.keyword == t"validate" then atomTexts(cc) else Array.empty[Text]
 
-      ScalarDefinition(scName, validators, descriptionOf(children))
+      var encoding: Optional[Text] = Unset
+
+      children.each: cc =>
+        if cc.keyword == t"encoding" && encoding.absent then encoding = firstAtomText(cc)
+
+      ScalarDefinition(scName, validators, descriptionOf(children), encoding)
 
     private def parseSelect(c: Tel.Compound): SelectDefinition raises Tel.Error =
       val seName = firstAtomText(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
@@ -777,28 +866,39 @@ object Tels extends Tels2:
 
       var required:   Polarity = Polarity.Implicit
       var repeatable: Polarity = Polarity.Implicit
+      var key:        Boolean = false
       var default:    Optional[Text] = Unset
 
       var j = 2
 
+      // Atom phase against the Field record's member order (§20.5):
+      // flag-matching atoms set their flag; the first non-flag atom fills
+      // `default`, which follows `key` in member order — a trailing `key`
+      // atom is therefore a flag, never a default value.
       while j < ats.length do
         ats.readUnchecked(j).s match
           case "optional"     => required   = Polarity.Loose
           case "required"     => required   = Polarity.Tight
           case "repeatable"   => repeatable = Polarity.Loose
           case "irrepeatable" => repeatable = Polarity.Tight
-
-          case "default" =>
-            if j + 1 < ats.length then
-              default = ats.readUnchecked(j + 1): Optional[Text]
-              j += 1
-
-          case _              => ()
+          case "key"          => key        = true
+          case text           => if default.absent then default = Text(text)
 
         j += 1
 
+      // Child compounds may supply the same members in compound form.
+      childCompounds(c).each: cc =>
+        cc.keyword.s match
+          case "optional"     => required   = Polarity.Loose
+          case "required"     => required   = Polarity.Tight
+          case "repeatable"   => repeatable = Polarity.Loose
+          case "irrepeatable" => repeatable = Polarity.Tight
+          case "key"          => key        = true
+          case "default"      => firstAtomText(cc).let { text => default = text }
+          case _              => ()
+
       Field(required, repeatable, keyword, fieldType, default,
-          descriptionOf(childCompounds(c)))
+          descriptionOf(childCompounds(c)), key)
 
     private def parseSelectRef(c: Tel.Compound): SelectRef raises Tel.Error =
       val ats = atomTexts(c)
@@ -824,7 +924,7 @@ object Tels extends Tels2:
 
   // Inverse of `Tel.Type.assign` for schema documents: reconstruct a
   // `Tels` from the type-assigned semantic model produced by decoding an
-  // embedded schema body (BinTEL §6.2) under the hardwired `tel-schema`
+  // embedded schema body (BinTEL §6.2) under the hardwired `tels`
   // axiom. The element children are in §7.2 canonical order — grouped by
   // member, source order within a member — so iterating them in order
   // rebuilds each member sequence. The flat keyword indices below mirror
@@ -902,7 +1002,7 @@ object Tels extends Tels2:
       children.collect { case Tel.Element.Value(j, _, t) if j == idx => t }
 
     // Field meta: keyword=0, type=1, optional=2, required=3, repeatable=4,
-    // irrepeatable=5, default=6, description=7.
+    // irrepeatable=5, key=6, default=7, description=8.
     private def fieldFromElement(element: Tel.Element): Field =
       val ch = childrenOf(element)
 
@@ -911,8 +1011,9 @@ object Tels extends Tels2:
           repeatable  = polarity(ch, 4, 5),
           keyword     = textAt(ch, 0).or(t""),
           fieldType   = typeFromText(textAt(ch, 1).or(t"")),
-          default     = textAt(ch, 6),
-          description = textAt(ch, 7) )
+          default     = textAt(ch, 7),
+          description = textAt(ch, 8),
+          key         = present(ch, 6) )
 
     // SelectRef meta: reference=0, optional=1, required=2, repeatable=3,
     // irrepeatable=4.
@@ -958,10 +1059,10 @@ object Tels extends Tels2:
       val (members, validators) = membersFromBody(ch, 1, 2, 3)
       RecordDefinition(textAt(ch, 0).or(t""), members, validators, textAt(ch, 4))
 
-    // Scalar meta: name=0, validate=1, description=2.
+    // Scalar meta: name=0, validate=1, encoding=2, description=3.
     private def scalarFromElement(element: Tel.Element): ScalarDefinition =
       val ch = childrenOf(element)
-      ScalarDefinition(textAt(ch, 0).or(t""), textsAt(ch, 1), textAt(ch, 2))
+      ScalarDefinition(textAt(ch, 0).or(t""), textsAt(ch, 1), textAt(ch, 3), textAt(ch, 2))
 
     // Select meta: name=0, SelectChild{variant=1, exclude=2, validate=3}, description=4.
     private def selectFromElement(element: Tel.Element): SelectDefinition =

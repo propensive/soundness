@@ -1144,7 +1144,7 @@ object Tel extends Tel2:
 
             case None =>
               schema.scalars.find(_.name == name) match
-                case Some(scalarDef) => Tels.Scalar(scalarDef.validators)
+                case Some(scalarDef) => Tels.Scalar(scalarDef.validators, scalarDef.encoding)
 
                 case None =>
                   schema.selects.find(_.name == name) match
@@ -1490,6 +1490,80 @@ object Tel extends Tel2:
             then recoverNode(Reason.NonRepeatableTooMany)(())
 
           case _: Tels.Exclude => ()
+
+        flatStart += width
+        memberIdx += 1
+
+      // §21.6 Key Uniqueness (E314): among the keyed children filling this
+      // parent's effectively repeatable members — across all such members
+      // and keywords — key values must be pairwise distinct. Children are
+      // complete by now (assignment is bottom-up), so positionally-assigned
+      // key atoms and default-supplied key values are already materialized;
+      // a keyed child whose key field is absent with no default simply has
+      // no key Value and is excluded. Self-contained per §19.5: record and
+      // continue, treating the duplicate as present.
+      val seenKeys = scala.collection.mutable.HashSet.empty[Text]
+
+      def keyValueOf(element: Tel.Element): Optional[Text] = element match
+        case node: Tel.Element.Node => resolveType(node.elementType, schema) match
+          case struct: Tels.Struct =>
+            var keyFlat: Optional[Int] = Unset
+            var acc = 0
+            var i = 0
+
+            while i < struct.members.length do
+              struct.members.readUnchecked(i) match
+                case f: Tels.Field => if f.key && keyFlat.absent then keyFlat = acc
+                case _             => ()
+
+              acc += flatWidth(struct.members.readUnchecked(i))
+              i += 1
+
+            keyFlat.let: keyIdx =>
+              var value: Optional[Text] = Unset
+              node.children.readable.foreach:
+                case Tel.Element.Value(idx, _, text) => if idx == keyIdx && value.absent then value = text
+                case _                               => ()
+              value
+
+          case _ => Unset
+
+        case _ => Unset
+
+      memberIdx = 0
+      flatStart = 0
+
+      while memberIdx < parent.members.length do
+        val member = parent.members.readUnchecked(memberIdx)
+        val width = flatWidth(member)
+
+        val repeatable = member match
+          case f: Tels.Field     => repeatableOf(f)
+          case s: Tels.SelectRef => repeatableOf(s)
+          case _: Tels.Exclude   => false
+
+        def keywordAt(idx: Int): Text = member match
+          case f: Tels.Field => f.keyword
+
+          case s: Tels.SelectRef =>
+            val definition = selectDefinitionOf(s, schema)
+
+            if idx - flatStart < definition.variants.length
+            then definition.variants.readUnchecked(idx - flatStart).keyword
+            else t""
+
+          case _: Tels.Exclude => t""
+
+        if repeatable then results.foreach: element =>
+          val idx = indexOf(element)
+          if idx >= flatStart && idx < flatStart + width then
+            keyValueOf(element).let: keyValue =>
+              if !seenKeys.add(keyValue) then
+                focus({
+                  val base = prior.let(_.pointer).or(TelPath.Root)
+                  Tel.Focus(base.prepend(keywordAt(idx)))
+                }):
+                  recoverNode(Reason.DuplicateKeyValue)(())
 
         flatStart += width
         memberIdx += 1

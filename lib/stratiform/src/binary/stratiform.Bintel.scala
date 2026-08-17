@@ -188,7 +188,7 @@ object Bintel:
     out.toByteArray.asInstanceOf[Array[Byte]^{}]
 
   // §6.2 self-contained encoding of the TEL document `tel`, whose schema is given
-  // as the TEL document `schemaDoc` (parseable under the tel-schema axiom). The
+  // as the TEL document `schemaDoc` (parseable under the tels axiom). The
   // schema's signature and bintel body are embedded so that a receiver holding
   // only the axiom can decode the result with no external schema resolution.
   def selfContained(tel: Tel, schemaDoc: Tel)
@@ -202,7 +202,7 @@ object Bintel:
     frameSelfContained(signature, schemaBody, tel.bintel(schema))
 
   // §6.2 decoder. Decode a complete self-contained BinTEL document. The
-  // embedded schema body is decoded under the tel-schema axiom and used to
+  // embedded schema body is decoded under the tels axiom and used to
   // reconstruct the composed schema (B12 on any failure); its signature is
   // recomputed and verified byte-for-byte against the carried signature
   // (B11 on mismatch) before the document root is decoded under the
@@ -487,7 +487,7 @@ object Bintel:
 
         case None =>
           schema.scalars.find(_.name == name) match
-            case Some(sc) => Tels.Scalar(sc.validators)
+            case Some(sc) => Tels.Scalar(sc.validators, sc.encoding)
             case None     => t
 
     case other => other
@@ -663,7 +663,7 @@ object Bintel:
           """
 
         case EmbeddedSchemaUndecodable =>
-          m"the embedded schema body does not decode as a valid TEL document under tel-schema"
+          m"the embedded schema body does not decode as a valid TEL document under tels"
 
     enum Reason(val number: Int) extends Clarification:
       case BadMagic            extends Reason(1)
