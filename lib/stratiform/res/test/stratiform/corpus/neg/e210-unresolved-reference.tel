@@ -1,6 +1,0 @@
-tel 1.0 https://tel-lang.org/schema/tel-schema
-
-name e212-test
-
-document
-  field foo does-not-exist

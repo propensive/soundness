@@ -646,8 +646,8 @@ object Tests extends Suite(m"Stratiform Tests"):
           case _                          => false
       . assert(!_)
 
-    suite(m"tel-schema self-consistency"):
-      // Phase-3 partial: parse the canonical tel-schema.tel and verify
+    suite(m"tels self-consistency"):
+      // Phase-3 partial: parse the canonical tels.tel and verify
       // it produces a valid presentation AST. Full self-consistency
       // (type-assign against the axiom and reconstruct a Tels
       // value equal to Tels.Axiom.tels) is the phase-3 merge
@@ -655,8 +655,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       // the canonical document's vocabulary verbatim, including the
       // `Body` record indirection and the `Member` / `SelectChild`
       // top-level Selects.
-      test(m"canonical tel-schema.tel parses without error"):
-        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+      test(m"canonical tels.tel parses without error"):
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tels.tel").nn
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
@@ -665,10 +665,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         bytes.read[Tel].childCompounds.readable.length
       . assert(_ > 0)
 
-      test(m"canonical tel-schema.tel type-assigns against the axiom"):
+      test(m"canonical tels.tel type-assigns against the axiom"):
         // §20.5 self-consistency: the canonical document must type-assign
         // cleanly under the hand-encoded axiom.
-        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tels.tel").nn
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
@@ -681,11 +681,11 @@ object Tests extends Suite(m"Stratiform Tests"):
         catch case e: Tel.Error => s"failed-with-${e.reason}"
       . assert(_ == "ok")
 
-      test(m"canonical tel-schema.tel reconstructs structurally equal to the axiom"):
+      test(m"canonical tels.tel reconstructs structurally equal to the axiom"):
         // The strongest §20.5 property: reconstruct a Tels from the
         // canonical document and assert it is structurally identical to
         // the hand-encoded axiom.
-        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tels.tel").nn
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
@@ -697,9 +697,9 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(identity)
 
     suite(m"Schema axiom"):
-      test(m"tel-schema axiom has the documented name"):
+      test(m"tels axiom has the documented name"):
         Tels.Axiom.tels.name
-      . assert(_ == t"tel-schema")
+      . assert(_ == t"tels")
 
       test(m"axiom declares the Field record"):
         Tels.Axiom.tels.records.exists(_.name == t"Field")
@@ -2688,7 +2688,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"BinTEL §8.1 schema signature from document"):
       test(m"single-component signature for a no-layer schema is 33 bytes"):
-        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tels.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
@@ -2699,7 +2699,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == 33)
 
       test(m"no-layer schema signature begins with the 32-byte BLAKE3 value hash"):
-        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tels.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
@@ -2768,8 +2768,8 @@ object Tests extends Suite(m"Stratiform Tests"):
         t"name Alice\n".read[Tel].valueHash(nameSchema).data.readable.length
       . assert(_ == 32)
 
-      test(m"§3 canonical tel-schema.tel value hash is deterministic"):
-        val stream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+      test(m"§3 canonical tels.tel value hash is deterministic"):
+        val stream = getClass.getResourceAsStream("/stratiform/corpus/tels.tel").nn
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
@@ -2780,14 +2780,14 @@ object Tests extends Suite(m"Stratiform Tests"):
         (a.length, a == b)
       . assert(_ == (32, true))
 
-      test(m"§3 — canonical tel-schema.tel encodes byte-for-byte against reference"):
-        val telStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+      test(m"§3 — canonical tels.tel encodes byte-for-byte against reference"):
+        val telStream = getClass.getResourceAsStream("/stratiform/corpus/tels.tel").nn
         val telBytes  =
           val arr = telStream.readAllBytes().nn
           telStream.close()
           Array.unsafeFrozen(arr)
 
-        val refStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.bintel.hex").nn
+        val refStream = getClass.getResourceAsStream("/stratiform/corpus/tels.bintel.hex").nn
         val refHex    =
           val arr = refStream.readAllBytes().nn
           refStream.close()
@@ -2798,10 +2798,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         element.bintel(Tels.Axiom.tels).readable.toSeq == refBytes
       . assert(_ == true)
 
-      test(m"§3 — tel-schema.tel matches the normative BLAKE3-256 value hash"):
+      test(m"§3 — tels.tel matches the normative BLAKE3-256 value hash"):
         // The single vector to which §3 of BinTEL and §20.5 of the TEL
         // Specification are both pinned.
-        val telStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.tel").nn
+        val telStream = getClass.getResourceAsStream("/stratiform/corpus/tels.tel").nn
         val telBytes  =
           val arr = telStream.readAllBytes().nn
           telStream.close()
@@ -2809,7 +2809,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val digest = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels)
         digest.data.readable.toSeq.map(b => f"${b & 0xff}%02x").mkString
-      . assert(_ == "d4289b0fc6b7f666c9269a135d509ff3973bcea734fbe777b8f907045d3df8a9")
+      . assert(_ == "780979f62e3232703a733e260689a5d2dfa2ce82ce0ee950715ebdfac473cb8a")
 
     suite(m"BinTEL §6.2 self-contained mode"):
       val schemaDoc = """name greeting
@@ -2872,6 +2872,10 @@ object Tests extends Suite(m"Stratiform Tests"):
     RecordsTests()
     VerifyTests()
     AccrualTests()
+    SchemaCorpusTests()
+    KeyTests()
+    TelpTests()
+    CodecTests()
     PositionalTests()
     PositionTests()
     EquivalenceTests()

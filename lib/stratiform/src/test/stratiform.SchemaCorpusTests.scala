@@ -1,0 +1,121 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.64.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package stratiform
+
+import soundness.*
+
+import proscenium.compat.*
+
+import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
+import charEncoders.utf8Encoder
+
+// Corpus-driven schema-validity (E2xx) and validation (E3xx) conformance:
+// the sibling of `stratiform_test.scala`'s "Negative corpus (E1xx parsing)"
+// suite, for the codes that require the schema component. Each negative
+// case is parsed, its governing schema resolved by the corpus fixture
+// convention (the tels URL selects the built-in axiom; any other URL tail
+// names a sibling `<name>.tel` / `_<name>.tel` schema document), and every
+// error raised during schema construction, schema validity checking, and
+// type assignment is collected. The case passes when the collected codes
+// meet the fixture's expected codes.
+object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
+
+  // Codes this implementation can raise. Corpus cases whose expected codes
+  // fall wholly outside this set are pending-implementation and skipped,
+  // mirroring the E1xx suite's `< 200` gate. E312/E313 are excluded: no
+  // corpus fixture exercises them (codec rejection needs a configured
+  // binding, which the corpus convention cannot supply).
+  val implemented: scala.collection.immutable.Set[Int] =
+    scala.collection.immutable.Set
+      ( 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217,
+        218, 219, 220, 221,
+        301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 314 )
+
+  case class Collected(codes: List[Int] = Nil)(using Diagnostics)
+  extends Error(m"${codes.length} collected codes"):
+    def +(code: Int): Collected = Collected(codes :+ code)
+
+  // Every error code observable from a document and its resolved schema:
+  // type-assignment errors accrue; schema-validity errors abort schema
+  // construction and are captured. Order: compose and check the schema
+  // first (its E2xx aborts also imply the document cannot be checked
+  // further), then assign the document under an accrual boundary.
+  private def collectCodes(source: Data, schema: Tels): List[Int] =
+    val tel = source.read[Tel]
+    try
+      val composed = Tels.Validation.validate(schema)
+
+      val issues =
+        validate[Tel.Focus](Collected()):
+          case error: Tel.Error => accrual + error.reason.number
+        . protect:
+            Tel.Type.assign(tel, composed)
+            ()
+
+      issues.codes
+    catch case error: Tel.Error => List(error.reason.number)
+
+  def run(): Unit =
+    suite(m"Negative corpus (E2xx schema validity, E3xx validation)"):
+      CorpusLoader.negative.each: testcase =>
+        val codes = CorpusLoader.expectedCodes(testcase)
+        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ >= 200)
+            && codes.stdlib.exists(implemented.contains)
+        then
+          test(m"raises an expected error on ${testcase.stem}"):
+            val document = testcase.source.load[Tel]
+            val url = document.metadata.pragma.let(_.schema)
+
+            val schema: Optional[Tels] = url.let(CorpusLoader.urlTail(_)).let: tail =>
+              if tail == t"tels" then Tels.Axiom.tels: Optional[Tels]
+              else CorpusLoader.auxiliarySchema(t"neg", tail).let: aux =>
+                Tels.Reconstructor.fromTel(aux.read[Tel])
+
+            schema.let { schema => collectCodes(testcase.source, schema) }
+            . or(Nil)
+            . stdlib.exists(codes.has(_))
+          . assert(_ == true)
+
+    suite(m"Positive corpus (schema-bearing cases stay clean)"):
+      // Positive fixtures governed by an auxiliary schema must produce no
+      // errors at all through schema checking and assignment.
+      CorpusLoader.positive.each: testcase =>
+        val document = testcase.source.load[Tel]
+        val tail = document.metadata.pragma.let(_.schema).let(CorpusLoader.urlTail(_))
+
+        tail.let: tail =>
+          if tail != t"tels" then CorpusLoader.auxiliarySchema(t"pos", tail).let: aux =>
+            test(m"no schema or validation errors on ${testcase.stem}"):
+              val schema = Tels.Reconstructor.fromTel(aux.read[Tel])
+              collectCodes(testcase.source, schema).stdlib.isEmpty
+            . assert(_ == true)

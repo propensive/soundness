@@ -1,0 +1,8 @@
+tel 1.0 https://tel-lang.org/schema/keyed-schema
+
+owner amy
+
+contact amy
+  email amy@example.com
+contact bea
+contact chu

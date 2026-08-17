@@ -96,6 +96,42 @@ object CorpusLoader:
     val fromName = expectedCode(testcase.stem).lay(List.empty[Int])(List(_))
     List.of(fromName.stdlib ::: fromCheck.stdlib).distinct
 
+  // The tail segment of a corpus pragma's schema URL, mirroring the Rust
+  // harness's `extract_url_tail`: the fixture convention maps
+  // `https://tel-lang.org/schema/<name>` onto a sibling `<name>.tel` (or
+  // auxiliary `_<name>.tel`) schema document in the same category
+  // directory. Only URL-shaped identifiers participate (a bare BASE-256
+  // signature has no tail); the tail must be kebab-case.
+  def urlTail(url: Text): Optional[Text] =
+    val s = url.s
+    if !s.contains("://") then Unset else
+      val bare =
+        val hash = s.indexOf('#')
+        val cut1 = if hash >= 0 then s.substring(0, hash) else s
+        val query = cut1.indexOf('?')
+        if query >= 0 then cut1.substring(0, query) else cut1
+
+      val tail = bare.substring(bare.lastIndexOf('/') + 1)
+
+      def kebab(t: String): Boolean =
+        t.nonEmpty && t.charAt(0).isLower && t.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
+        && !t.startsWith("-") && !t.endsWith("-") && !t.contains("--")
+
+      if kebab(tail) then tail.tt else Unset
+
+  // An auxiliary schema document for a corpus case, by URL-tail name:
+  // `<name>.tel` in the category directory, falling back to the
+  // underscore-prefixed form (`_`-stems are excluded from case
+  // enumeration but exist exactly to serve as schemas for sibling
+  // fixtures, e.g. `_keyed-schema.tel`).
+  def auxiliarySchema(category: Text, name: Text): Optional[Data] =
+    def attempt(stem: Text): Optional[Data] =
+      val stream = getClass.getResourceAsStream(t"/stratiform/corpus/$category/$stem.tel".s)
+      if stream == null then Unset
+      else try Array.unsafeFrozen(stream.readAllBytes().nn) finally stream.close()
+
+    attempt(name).or(attempt(t"_$name"))
+
   private def readIndex(category: Text): List[Text] =
     val text = readResourceText(t"/stratiform/corpus/$category.index")
     text.cut(t"\n").map(_.trim).filter(_ != t"")

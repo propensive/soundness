@@ -7,7 +7,7 @@ Document {
                 0,
             ),
             schema: Some(
-                "https://tel-lang.org/schema/tel-schema",
+                "https://tel-lang.org/schema/tels",
             ),
             sigil: None,
         },

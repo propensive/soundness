@@ -1,4 +1,4 @@
-tel 1.0 https://tel-lang.org/schema/tel-schema
+tel 1.0 https://tel-lang.org/schema/tels
 
 # A worked example of a TEL schema: a "contact" record type.
 #
@@ -20,7 +20,7 @@ tel 1.0 https://tel-lang.org/schema/tel-schema
 #
 # To see what a document conforming to this schema looks like, see the
 # accompanying `contact-document.tel`. This schema document is itself
-# validated against the tel-schema (the schema-for-schemas) at parse time.
+# validated against the tels (the schema-for-schemas) at parse time.
 
 name contact
 

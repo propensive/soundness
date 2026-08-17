@@ -1,0 +1,16 @@
+tel 1.0 https://tel-lang.org/schema/tels
+
+name e218-layer-encoding-conflict
+
+scalar Token
+  validate hex
+  encoding hex-bytes
+
+document
+  field token Token
+
+layer
+  name conflicting-tokens
+  scalar Token
+    validate decimal
+    encoding decimal-varint

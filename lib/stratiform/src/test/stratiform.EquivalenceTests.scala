@@ -56,8 +56,8 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
     validate[Tel.Focus](Issues()):
       case error: Tel.Error =>
         // Explicit: `Tel.given` is in scope, whose blanket Tel encodable
-        // would otherwise beat `TelPath`'s text form under `.encode`.
-        accrual + (prior.let { focus => TelPath.encodable.encoded(focus.pointer) }.or(t"#"), error)
+        // would otherwise beat `Telp`'s text form under `.encode`.
+        accrual + (prior.let { focus => Telp.encodable.encoded(focus.pointer) }.or(t"/"), error)
     . protect(Tel.Type.assign(tel, schema))
 
   // Projects the semantic tree to (path-of-flat-keyword-indexes, text) pairs

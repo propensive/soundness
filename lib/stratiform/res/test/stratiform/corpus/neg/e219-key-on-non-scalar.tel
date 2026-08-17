@@ -1,0 +1,12 @@
+tel 1.0 https://tel-lang.org/schema/tels
+
+name e219-test
+
+record Item
+  field label String
+
+record Box
+  field contents Item key
+
+document
+  field box Box optional repeatable

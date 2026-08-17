@@ -1,0 +1,10 @@
+tel 1.0 https://tel-lang.org/schema/tels
+
+name key-schema
+
+record Contact
+  field name Identifier key
+  field email String optional repeatable
+
+document
+  field contact Contact optional repeatable
