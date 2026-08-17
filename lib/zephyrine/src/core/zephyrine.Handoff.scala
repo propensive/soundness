@@ -70,6 +70,10 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
   // sides in lockstep keep exchanging without kernel transitions.
   private inline val spins = 1024
 
+  // The ring's slot count: the largest burst a `drain` can move, so the
+  // consumer can size its adoption buffer to never truncate one.
+  def width: Int = capacity
+
   // Approximate occupancy, for advisory demand calculations; never used for
   // synchronization.
   def size: Int = (tail.get - head.get).toInt.max(0)
@@ -121,6 +125,53 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
     done = true
     val waiting = consumer
     if waiting != null then LockSupport.unpark(waiting)
+
+  // Consumer side: adopt every buffered item in one synchronized step —
+  // blocking, like `take`, until at least one item is available or the
+  // producer has finished. Up to `into.length` items are moved into the
+  // caller's (consumer-owned, unsynchronized) buffer, with a single `head`
+  // publication and a single producer unpark for the whole burst, where a
+  // `take` loop pays one of each per item. Returns the number of items moved:
+  // zero only once the producer has finished and the ring is drained.
+  def drain(into: scala.Array[AnyRef | Null]): Int =
+    // See `offer` for the interruption contract.
+    import unsafeExceptions.canThrowAny
+    val position = head.get
+    var spun: Int = 0
+
+    while true do
+      val limit = tail.get
+
+      if position < limit then
+        val count = (limit - position).toInt.min(into.length)
+        // The write view of the caller's buffer: single-consumer ownership is
+        // the caller's discipline, as with every consumer-side operation.
+        val burst = into.asInstanceOf[scala.Array[AnyRef | Null]^]
+        var moved = 0
+
+        while moved < count do
+          val index = ((position + moved) & mask).toInt
+          burst(moved) = slots.get(index)
+          slots.lazySet(index, null)
+          moved += 1
+
+        head.set(position + count)
+        val waiting = producer
+        if waiting != null then LockSupport.unpark(waiting)
+        return count
+      else if done then return 0
+      else if spun < spins then
+        spun += 1
+        Thread.onSpinWait()
+      else
+        consumer = Thread.currentThread.nn
+        if position == tail.get && !done then LockSupport.park()
+        consumer = null
+
+        // Interruption is cancellation: see `offer`.
+        if Thread.interrupted() then throw InterruptedException()
+
+    0 // unreachable
 
   // Consumer side: the next item, or `null` once the producer has finished
   // and the ring is drained.

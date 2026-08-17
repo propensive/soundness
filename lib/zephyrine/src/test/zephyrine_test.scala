@@ -1130,7 +1130,10 @@ object Tests extends Suite(m"Zephyrine tests"):
             intake.demand.count
         . assert(_ == 0L)
 
-        test(m"demand recovers block-by-block as the reader drains"):
+        // The reader adopts the ring's whole buffered burst in one step, so the
+        // first refill frees every occupied slot at once and demand recovers in
+        // full, not block-by-block.
+        test(m"demand recovers in a burst as the reader adopts the ring"):
           given Buffering = probeBuffering(16, 2)
 
           Conduit[Data]() match
@@ -1147,11 +1150,12 @@ object Tests extends Suite(m"Zephyrine tests"):
               intake.demand.count
 
             (drain(), drain())
-        . assert(_ == ((16L, 32L)))
+        . assert(_ == ((32L, 32L)))
 
         // Each block-sized `put` is one ring hand-off: the third parks the writer, so
-        // its progress counter freezes at two, and each block the reader drains lets
-        // exactly one more hand-off through before the writer parks again.
+        // its progress counter freezes at two. A refill adopts the ring's whole
+        // burst, so it releases both occupied slots at once: the writer lands two
+        // more hand-offs before parking again on the next full ring.
         test(m"a writer parks on a full conduit and resumes when drained"):
           given Buffering = probeBuffering(16, 2)
 
@@ -1178,7 +1182,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
             // The unpark is asynchronous, so wait for the released hand-off to land
             // before observing the writer parked again on the next full ring.
-            awaitProgress(3, written)
+            awaitProgress(4, written)
             val reparked = awaitParked(writer)
             val advanced = written.get()
 
@@ -1192,12 +1196,14 @@ object Tests extends Suite(m"Zephyrine tests"):
             val rest = drain(0)
             writer.join(10000)
             (parked, frozen, reparked, advanced, 16 + rest)
-        . assert(_ == ((true, 2, true, 3, 128)))
+        . assert(_ == ((true, 2, true, 4, 128)))
 
         // Committed-but-unconsumed data can occupy at most the ring (two blocks), the
-        // writer's staging block and one sub-block chunk mid-copy: sampling after
-        // every drained window must never observe more, however the threads
-        // interleave. An unbounded hand-off would exceed this by orders of magnitude.
+        // reader's adoption buffer (two more, since a burst adoption frees the ring
+        // for the writer to refill), the writer's staging block and one sub-block
+        // chunk mid-copy: sampling after every drained window must never observe
+        // more, however the threads interleave. An unbounded hand-off would exceed
+        // this by orders of magnitude.
         test(m"in-flight conduit data never exceeds the configured bound"):
           given Buffering = probeBuffering(16, 2)
 
@@ -1228,7 +1234,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
             loop()
             writer.join(10000)
-            (consumed, worst <= 64L)
+            (consumed, worst <= 96L)
         . assert(_ == ((16384L, true)))
 
         // With the ring full, the intake's demand is zero: the pump's refill is

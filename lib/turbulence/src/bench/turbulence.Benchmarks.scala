@@ -1446,6 +1446,26 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
+      // The same pipeline with BOTH endpoints on virtual threads, so every
+      // hand-off park is a fiber-style suspension on the carrier pool rather
+      // than a kernel park of a platform worker — the scheduling model the
+      // fiber runtimes (Kyo, ZIO) scale on. 2N virtual threads multiplex on
+      // ~cores carriers, so pipeline count no longer oversubscribes the OS
+      // scheduler.
+      constrained(m"Soundness  Conduit VT both")(target = 1*Second, sweep = 64):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            val consumer = Thread.ofVirtual.start(() =>
+              stream.sweep(region => range => total += (range: Interval).size))
+            consumer.join()
+            producer.join()
+            total
+        }
+
       constrained(m"FS2  Channel.bounded")(target = 1*Second, sweep = 64):
         '{
             import cats.effect.unsafe.implicits.global
