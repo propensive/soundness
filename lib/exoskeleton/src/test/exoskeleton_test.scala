@@ -49,6 +49,12 @@ import Shell.*
 
 import filesystemBackends.virtualMachineFilesystem
 
+// Statuses must be declared at the top level: capture checking rejects
+// `value.type <: value.type | other.type` for singletons of method-local definitions
+// (soundness#1811), which would stop the union of statuses from forming.
+object CannotConnect extends Status(1, t"the server could not be reached")
+object BadConfig extends Status(2, t"the configuration file was invalid")
+
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
     CaptureTests()
@@ -544,7 +550,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         val UserAdd = Subcommand(t"useradd", e"add a user account", group = admin)
         val UserDel = Subcommand(t"userdel", e"remove a user account", group = admin)
 
-        def app(using Cli): Execution =
+        def app(using cli: Cli): Execution =
           Flag(t"verbose", description = t"verbose output")()
 
           arguments match
@@ -568,12 +574,18 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               Flag(t"home", description = t"specify the home directory")()
               Flag(t"groups", repeatable = true, description = t"add the user to a group")()
               Flag(t"force", description = t"do not ask for confirmation")()
-              execute(Exit.Ok)
+
+              // Read outside the `execute` block, so a help-tree probe observes it.
+              val config = cli.environment.variable(t"MYTOOL_CONFIG")
+
+              execute:
+                if config.absent then CannotConnect.exit else BadConfig.exit
 
             case UserDel() :: _ =>
               Flag(t"force", description = t"do not ask for confirmation")()
               Flag[Delay](t"wait", description = t"delay the deletion")()
-              execute(Exit.Ok)
+              cli.environment.variable(t"MYTOOL_HOME")
+              execute(CannotConnect.exit)
 
             case _ => execute(Exit.Fail(1))
 
@@ -622,6 +634,32 @@ object Tests extends Suite(m"Exoskeleton Tests"):
          .filter(_.command == t"distribution").bind(_.subcommands)
          .filter(_.command == t"ubuntu").bind(_.parameters.map(_.name))
       .assert(_ == List(t"--one", t"--two"))
+
+      test(m"Statuses a subcommand can return are discovered from its execute block"):
+        HelpApp.tree.subcommands.filter(_.command == t"useradd").bind(_.statuses).map(_.code)
+         .sort(identity)
+      .assert(_ == List(1, 2))
+
+      test(m"A single status is discovered without widening to Status"):
+        HelpApp.tree.subcommands.filter(_.command == t"userdel").bind(_.statuses).map(_.code)
+      .assert(_ == List(1))
+
+      test(m"A command returning a plain Exit contributes no statuses"):
+        HelpApp.tree.subcommands.filter(_.command == t"alpha").bind(_.statuses)
+      .assert(_ == Nil)
+
+      test(m"Status descriptions are carried through to the help tree"):
+        HelpApp.tree.subcommands.filter(_.command == t"userdel").bind(_.statuses)
+         .map(_.description)
+      .assert(_ == List(t"the server could not be reached"))
+
+      test(m"Environment variables read before execute are discovered"):
+        HelpApp.tree.subcommands.filter(_.command == t"useradd").bind(_.variables)
+      .assert(_.has(t"MYTOOL_CONFIG"))
+
+      test(m"Environment variables are attributed to the command that reads them"):
+        HelpApp.tree.subcommands.filter(_.command == t"alpha").bind(_.variables)
+      .assert(_ == Nil)
 
       test(m"Help renders as Printable text mentioning a subcommand"):
         summon[Help is Printable].print(HelpApp.tree, stdios.muteStdio.termcap)
@@ -723,6 +761,36 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               && page.contains(t"\\fB\\-\\-verbose <value>\\fP")
               && page.contains(t".SS \"Admin commands\"")
               && page.contains(t"\\fBuseradd\\fP")
+
+        test(m"Discovered statuses render as an EXIT STATUS section"):
+          HelpApp.tree.roff.serialize
+        . assert: page =>
+            page.contains(t".SH \"EXIT STATUS\"")
+              && page.contains(t"\\fB1\\fP")
+              && page.contains(t"the server could not be reached")
+
+        test(m"Discovered environment variables render as an ENVIRONMENT section"):
+          HelpApp.tree.roff.serialize
+        . assert: page =>
+            page.contains(t".SH \"ENVIRONMENT\"")
+              && page.contains(t"\\fBMYTOOL_CONFIG\\fP")
+              && page.contains(t"\\fBMYTOOL_HOME\\fP")
+
+        test(m"A hand-written description overrides a discovered status's"):
+          val overridden =
+            Manual(exitStatuses = List(Manual.ExitStatus(1, t"could not reach the daemon")))
+
+          HelpApp.tree.roff(using overridden).serialize
+        . assert: page =>
+            page.contains(t"could not reach the daemon")
+              && !page.contains(t"the server could not be reached")
+
+        test(m"A hand-written environment description is attached to a discovered variable"):
+          val described =
+            Manual(environment = List(Manual.EnvironmentVariable(t"MYTOOL_HOME", t"the home dir")))
+
+          HelpApp.tree.roff(using described).serialize.cut(t"\n")
+        . assert(_.has(t"the home dir"))
 
         test(m"The manpage synopsis matches the help text usage line"):
           HelpApp.tree.roff.serialize.cut(t"\n")

@@ -94,6 +94,10 @@ object Tests extends Suite(m"Virility Tests"):
         . serialize
       . assert(_ == List(t".TP", t"\\fB\\-\\-verbose\\fP", t"Print more detail."))
 
+      test(m"A tagged paragraph with no body emits only its tag"):
+        Roff.Block.Tagged(List(Roff.Inline.bold(t"HOME")), Nil).serialize
+      . assert(_ == List(t".TP", t"\\fBHOME\\fP"))
+
       test(m"Sections nest their blocks and indentation closes with RE"):
         Roff
          (t"demo", 1, t"2026-08-17", t"demo 1.0", t"User Commands",

@@ -123,7 +123,12 @@ case class Help
     description: Optional[Text | Teletype],
     parameters:  List[Help.Param],
     subcommands: List[Help],
-    group:       Optional[CommandGroup] = Unset ):
+    group:       Optional[CommandGroup] = Unset,
+    // The exit statuses this command's `execute` block can return, and the environment
+    // variables it consults, both discovered while the tree was built. Empty for a `Help`
+    // constructed by hand.
+    statuses:    List[Status]           = Nil,
+    variables:   List[Text]             = Nil ):
 
   def teletype(width: Int = Int.MaxValue)(using Hyphenation): Teletype =
     val globalParams: scala.List[Help.Param] = parameters.stdlib.filter(_.global)

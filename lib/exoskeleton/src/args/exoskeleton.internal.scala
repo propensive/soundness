@@ -32,100 +32,36 @@
                                                                                                   */
 package exoskeleton
 
-import scala.caps
+import scala.collection.immutable as sci
+import scala.quoted.*
 
-import java.util.concurrent.atomic as juca
+object internal:
+  // Reify a union of `Status` singleton types as the list of their values. Each member of the
+  // union is a `TermRef` — the singleton type of the stable value the application declared —
+  // so the status values are recovered by referring to those terms again. `Nothing`, the
+  // instantiation when a block returns no status at all, contributes nothing.
+  def admissible[result: Type](using Quotes): Expr[result is Status.Admissible] =
+    import quotes.reflect.*
 
-import ambience.*
-import anticipation.*
-import contingency.*
-import denominative.*
-import gossamer.*
-import parasite.*
-import profanity.*
-import quantitative.*
-import rudiments.*
-import symbolism.*
-import vacuous.*
+    def decompose(repr: TypeRepr): sci.List[TypeRepr] = repr.dealias match
+      case OrType(left, right) => decompose(left) ++ decompose(right)
+      case other               => sci.List(other)
 
-object Cli:
-  @scala.caps.unsafe.untrackedCaptures
-  private var messages: List[Text] = Nil
-  @scala.caps.unsafe.untrackedCaptures
-  private var trigger: Promise[Unit] = Promise()
+    // A status declared as `object CannotConnect extends Status(…)` appears in the union as a
+    // `TypeRef` to its module class, and one referred to by a stable path as a `TermRef`; both
+    // yield the term to refer to again. Anything else — `Nothing` when a block returns no
+    // status, or a type which is not a singleton — contributes nothing.
+    val values: sci.List[Expr[Status]] =
+      decompose(TypeRepr.of[result]).distinct.flatMap: repr =>
+        if repr =:= TypeRepr.of[Nothing] then sci.Nil else repr match
+          case ref: TermRef => sci.List(Ref.term(ref).asExprOf[Status])
 
-  def prepare(): Unit =
-    messages = Nil
-    trigger = Promise()
+          case other =>
+            val symbol = other.termSymbol
+            if symbol.exists then sci.List(Ref(symbol).asExprOf[Status]) else sci.Nil
 
-  def done(): Unit = trigger.offer(())
-  def log(input: Text): Unit = messages ::= input
-  def await()(using Monitor^): List[Text] =
-    safely(trigger.await(10.0*Second)) yet messages.reverse
-
-
-  def arguments
-    ( textArguments: Iterable[Text],
-      focus:         Optional[Int]     = Unset,
-      position:      Optional[Int]     = Unset,
-      tab:           Optional[Ordinal] = Unset )
-  :   List[Argument] =
-
-    List.of:
-      textArguments.toList.padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
-        Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
-
-
-// A `Cli` is a *capability*: it carries the live stdio, signal-dispatch and completion state of
-// one command-line invocation, whose lifetime is the `process` scope that introduces it.
-// `Exclusive` because an invocation has a single owner; nothing may retain it past the exit.
-trait Cli extends Console, caps.ExclusiveCapability:
-  def arguments: List[Argument]
-  def environment: Environment
-  def workingDirectory: WorkingDirectory
-  def proceed: Boolean
-  def login: Login
-  def register(flag: Flag, discoverable: Discoverable, operand: Optional[Text]): Unit = ()
-  def record(statuses: List[Status]): Unit = ()
-  def present(flag: Flag): Unit = ()
-  def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit = ()
-
-  private val signalHandlers:
-  juca.AtomicReference[List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]]] =
-    juca.AtomicReference(Nil)
-
-  override def trap
-    ( handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse] )
-  :   Unit =
-
-    signalHandlers.updateAndGet(list => List.of(handler :: list.nn.stdlib))
-
-
-  def dispatchSignal(signal: UnixSignal | WindowsSignal): SignalResponse =
-    def loop(handlers: List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]])
-    :   SignalResponse =
-
-      handlers match
-        case Nil =>
-          SignalResponse.Reject
-
-        case pf :: rest =>
-          if pf.isDefinedAt(signal) then pf(signal) match
-            case SignalResponse.Defer => loop(rest)
-            case decided              => decided
-          else loop(rest)
-
-    loop(signalHandlers.get.nn)
-
-  def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
-  :   Optional[operand]
-
-
-  def suggest
-    ( argument: Argument,
-      update:   (List[Suggestion] aka "prior") ?=> List[Suggestion],
-      prefix:   Text,
-      suffix:   Text )
-  :   Unit =
-
-    return
+    '{
+        new Status.Admissible:
+          type Self = result
+          def statuses: List[Status] = List.of(${Expr.ofList(values)})
+     }

@@ -30,117 +30,45 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package virility
+package exoskeleton
 
 import anticipation.*
-import gossamer.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
-import vacuous.*
 
-object Roff:
-  given showable: Roff is Showable = _.serialize
-  given encodable: Roff is Encodable in Text = _.serialize
+// A meaningful exit status, declared alongside the `Flag`s and `Subcommand`s it accompanies,
+// as an object:
+//
+//     object CannotConnect extends Status(1, t"the server could not be reached")
+//
+// Returning one from an `execute` block both sets the process's exit code and makes the status
+// discoverable: each `Status.exit` demands a `Registry` for its own singleton type, so the
+// block's `execute` accumulates the union of every status it can return, and documents them
+// without the application having to list them twice.
+//
+// A status must be an object rather than a `val`, because capture checking currently rejects
+// `value.type <: value.type | other.type` for the singleton type of a `val` (soundness#1811),
+// which would stop that union from forming. Module singletons are unaffected.
+object Status:
+  // Contravariant, so that each `Registry[status.type]` demanded within a block adds a lower
+  // bound to the block's `result` type, which then instantiates to the union of them all —
+  // the same mechanism by which `Tactic[-error]` accumulates a `raises` union. The `Precise`
+  // context bound on `execute` is what stops that union being widened to `Status`.
+  trait Registry[-status]
 
-  // Escaping is unconditional: every `-` becomes the hyphen-minus escape `\-` so that options
-  // and command names remain searchable and copy-pasteable in rendered output, and `\` becomes
-  // `\[rs]`. A newline within a logical line would let subsequent text be misread as a roff
-  // control line, so newlines become spaces; the line-start cases that remain (`.` and `'`)
-  // are protected with `\&` in `line`, which every serialized text line passes through.
-  // Quoted macro arguments (`.TH`/`.SH` titles, dates) escape `"`, which delimits them, but
-  // not `-`: hyphens there are prose, and an escaped hyphen in the `.TH` date defeats
-  // mandoc's date parsing.
-  def escape(text: Text): Text = escape(text, quotable = false)
+  object Admissible:
+    // Union types cannot be decomposed by recursive given resolution (the compiler will not
+    // unify `a | b` with a concrete union, and instantiates both to `Nothing`), so the members
+    // are read off the type directly. The type already carries the answer; this only reifies
+    // it, and never inspects the block's code.
+    transparent inline given derived: [result] => result is Admissible =
+      ${exoskeleton.internal.admissible[result]}
 
-  private def escape(text: Text, quotable: Boolean): Text =
-    val builder = StringBuilder()
+  trait Admissible:
+    type Self
+    def statuses: List[Status]
 
-    text.s.foreach:
-      case '\\'             => builder.append("\\[rs]")
-      case '-' if !quotable => builder.append("\\-")
-      case '\n'             => builder.append(' ')
-      case '"' if quotable  => builder.append("\\[dq]")
-      case other            => builder.append(other)
-
-    builder.toString.nn.tt
-
-  def quote(text: Text): Text = t"\"${escape(text, quotable = true)}\""
-
-  private def line(text: Text): Text =
-    if text.starts(t".") || text.starts(t"'") then t"\\&$text" else text
-
-  // Cons on the opaque `List` routes through the compat conversion to the stdlib `List`, so
-  // sequences are assembled here by concatenation instead of `::`.
-  private def concat[element](lists: List[element]*): List[element] =
-    List.of(lists.toList.flatMap(_.stdlib))
-
-  // A `.P` directly after `.SH`/`.SS` is redundant (mandoc lints it), so a section's leading
-  // paragraph contributes only its text line.
-  private def sectionBody(blocks: List[Block]): List[Text] = blocks match
-    case Block.Paragraph(prose) :: rest =>
-      concat(List(line(prose.map(_.serialize).join)), rest.flatMap(_.serialize))
-
-    case other => other.flatMap(_.serialize)
-
-  object Inline:
-    def plain(text: Text): List[Inline] = List(Inline.Plain(text))
-    def bold(text: Text): Inline = Inline.Bold(plain(text))
-    def italic(text: Text): Inline = Inline.Italic(plain(text))
-
-  enum Inline:
-    case Plain(text: Text)
-    case Bold(inlines: List[Inline])
-    case Italic(inlines: List[Inline])
-
-    def serialize: Text = this match
-      case Plain(text)     => escape(text)
-      case Bold(inlines)   => t"\\fB${inlines.map(_.serialize).join}\\fP"
-      case Italic(inlines) => t"\\fI${inlines.map(_.serialize).join}\\fP"
-
-  enum Block:
-    case Section(title: Text, blocks: List[Block])
-    case Subsection(title: Text, blocks: List[Block])
-    case Paragraph(prose: List[Inline])
-    case Tagged(tag: List[Inline], body: List[Inline])
-    case Example(lines: List[Text])
-    case Indented(blocks: List[Block])
-
-    def serialize: List[Text] = this match
-      case Section(title, blocks) =>
-        concat(List(t".SH ${quote(title)}"), sectionBody(blocks))
-
-      case Subsection(title, blocks) =>
-        concat(List(t".SS ${quote(title)}"), sectionBody(blocks))
-
-      case Paragraph(prose) => List(t".P", line(prose.map(_.serialize).join))
-
-      case Example(lines) =>
-        concat(List(t".EX"), lines.map { text => line(escape(text)) }, List(t".EE"))
-
-      // A tagged paragraph with nothing to say still names its subject; emitting an empty body
-      // line would leave a stray blank line in the rendered page.
-      case Tagged(tag, body) =>
-        val label = line(tag.map(_.serialize).join)
-
-        if body.stdlib.isEmpty then List(t".TP", label)
-        else List(t".TP", label, line(body.map(_.serialize).join))
-
-      case Indented(blocks) => concat(List(t".RS"), blocks.flatMap(_.serialize), List(t".RE"))
-
-case class Roff
-  ( title:   Text,
-    section: Int,
-    date:    Optional[Text]   = Unset,
-    source:  Optional[Text]   = Unset,
-    manual:  Optional[Text]   = Unset,
-    blocks:  List[Roff.Block] = Nil ):
-
-  def serialize: Text =
-    val arguments =
-      List(title.upper, section.show, date.or(t""), source.or(t""), manual.or(t""))
-      . stdlib.reverse.dropWhile(_ == t"").reverse
-
-    val header = Roff.concat(List(t".TH"), List.of(arguments).map(Roff.quote)).join(t" ")
-
-    Roff.concat(List(header), blocks.flatMap(_.serialize)).join(t"", t"\n", t"\n")
+// `caps.Pure`: a status is a plain datum which may never hold a live capability, and so its
+// singleton type carries no capture set to obstruct the union.
+open class Status(val code: Int, val description: Text) extends scala.caps.Pure:
+  def exit(using Status.Registry[this.type]): Exit = Exit(code)

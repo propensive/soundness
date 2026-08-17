@@ -34,6 +34,8 @@ package exoskeleton
 
 import proscenium.compat.*
 
+import scala.collection.mutable as scm
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -44,18 +46,49 @@ import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import guillotine.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
 
-def execute(block: (erased effectful: Effectful) ?=> Invocation ?=> Exit)(using cli: Cli): Execution =
+// The block's `result` type is the union of the singleton types of every `Status` it can
+// return, accumulated through the contravariant `Status.Registry` capability and kept precise
+// (rather than widened to `Status`) by the `Precise` bound. Those statuses are recorded on the
+// `Cli` even in completion mode — where the block itself is never run — so that a help-tree
+// probe can discover them for documentation.
+// `scala.Precise`, not the `Precise` which `-Yimports:proscenium` supplies: the prelude's
+// `export scala.Precise` yields a distinct alias symbol which the compiler's union-widening
+// suppression does not recognise, so the bound would silently do nothing and the union of
+// statuses would be widened to `Status` (soundness#1811).
+def execute[result: scala.Precise]
+   ( block: (erased effectful: Effectful) ?=> Status.Registry[result] ?=> Invocation ?=> Exit )
+   ( using cli: Cli )
+   ( using admissible: result is Status.Admissible )
+:   Execution to result =
+
+  val statuses = admissible.statuses
+  cli.record(statuses)
+
   cli.absolve match
-    case completion: Completion => Execution(Exit.Ok)
-    case invocation: Invocation => Execution(block(using !!)(using invocation))
+    case completion: Completion => Execution.of[result](Exit.Ok, statuses)
+
+    case invocation: Invocation =>
+      val registry = new Status.Registry[result] {}
+      Execution.of[result](block(using !!)(using registry)(using invocation), statuses)
 
 def explain(explanation: (Optional[Text] aka "prior") ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation(using Unset.aka["prior"]))
+
+// Everything one run of the application's pure portion, at one argument prefix, reveals about
+// its interface.
+case class Probe
+  ( suggestions: List[Suggestion],
+    flags:       List[Flag],
+    globals:     Set[Flag],
+    operands:    scala.collection.Map[Flag, Text],
+    statuses:    List[Status],
+    variables:   List[Text] )
 
 // Build a structured `Help` tree for an application by re-running its pure portion in
 // tab-completion mode with synthesized argument prefixes. In completion mode `execute` does no
@@ -71,17 +104,26 @@ def helpTree
   ( using interpreter: Interpreter )
 :   Help =
 
-  def probe(prefix: List[Text])
-  :   (List[Suggestion], List[Flag], Set[Flag], scala.collection.Map[Flag, Text]) =
+  def probe(prefix: List[Text]): Probe =
     val focus = prefix.length
     val textArguments = prefix :+ t""
     val synthesized = Cli.arguments(textArguments.stdlib, focus, Unset, Prim)
+
+    // A recording view of the environment: every variable the application reads while its
+    // structure is being probed is noted, so that the variables it consults can be documented
+    // without being listed by hand. Only reads made before the `execute` block are seen, since
+    // that block is not run in completion mode.
+    val variables: scm.LinkedHashSet[Text] = scm.LinkedHashSet()
+
+    val recording: Environment = name =>
+      variables += name
+      environment.variable(name)
 
     val completion =
       Completion
         ( synthesized,
           synthesized,
-          environment,
+          recording,
           workingDirectory,
           Shell.Zsh,
           focus,
@@ -93,10 +135,13 @@ def helpTree
 
     block(using completion)
 
-    ( completion.cursorSuggestions,
-      completion.flags.keySet.to(List),
-      completion.globalFlags.foldLeft(Set[Flag]())(_ + _),
-      completion.operandNames )
+    Probe
+      ( completion.cursorSuggestions,
+        completion.flags.keySet.to(List),
+        completion.globalFlags.foldLeft(Set[Flag]())(_ + _),
+        completion.operandNames,
+        List.of(completion.statuses.to(scala.List)),
+        List.of(variables.to(scala.List)) )
 
   def build
     ( prefix:      List[Text],
@@ -108,7 +153,7 @@ def helpTree
   :   Help =
 
     if seen.has(prefix) then Help(command, description, Nil, Nil, group) else
-      val (suggestions, flags, globals, operands) = probe(prefix)
+      val Probe(suggestions, flags, globals, operands, statuses, variables) = probe(prefix)
 
       // Flags already attributed to an ancestor re-register at every deeper prefix, since each
       // probe re-runs the whole program; they belong to the ancestor, so drop them here.
@@ -140,7 +185,14 @@ def helpTree
                     seen + prefix,
                     known ) )
 
-      Help(command, description, parameters, children.sort(_.command), group)
+      Help
+        ( command,
+          description,
+          parameters,
+          children.sort(_.command),
+          group,
+          statuses,
+          variables )
 
   build(Nil, command, Unset, Unset, Set(), Set())
 
