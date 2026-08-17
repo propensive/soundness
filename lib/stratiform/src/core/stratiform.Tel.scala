@@ -6096,10 +6096,7 @@ object Tel extends Tel2:
           m"the tabulated row has a different indent from its tabulation line"
 
         case HardSpaceWrongPosition =>
-          m"a hard space on the tabulated row does not end at a column boundary"
-
-        case ConsecutiveSpacesInValue =>
-          m"consecutive spaces appear within a keyword or column value"
+          m"a hard space or consecutive-space run does not end at a column boundary"
 
         case ColumnValueTooWide =>
           m"the column value exceeds the maximum width for its column"
@@ -6118,7 +6115,6 @@ object Tel extends Tel2:
 
         case DuplicateKeywordInStruct => m"the same keyword appears more than once in a struct"
         case EmptySelectVariants      => m"the SelectDefinition has an empty variants list"
-        case RootRequiredAtom         => m"the root struct has a required atom-assignable member"
         case DefaultOnOptional        => m"a non-required member must not specify a default"
         case DuplicateLayerName       => m"two or more layers share the same name"
         case LayerKeywordCollision    => m"the layer introduces a keyword colliding with the base"
@@ -6144,6 +6140,16 @@ object Tel extends Tel2:
         case ReferenceKindMismatch =>
           m"a Reference / SelectRef resolves to a Definition of the wrong kind"
 
+        case EncodingConflict =>
+          m"a layer declares an encoding conflicting with the base ScalarDefinition's"
+
+        case KeyOnNonScalar           => m"a key field's type does not resolve to a Scalar"
+
+        case KeyOnLooseMember =>
+          m"a key field must be effectively required and non-repeatable"
+
+        case MultipleKeyFields        => m"more than one member of the Struct is key-flagged"
+
         case NonStructCompound =>
           m"the compound's type is not a Struct"
 
@@ -6157,6 +6163,12 @@ object Tel extends Tel2:
         case MembersNonContiguous     => m"compound children of the same member are not contiguous"
         case ValidatorRejected        => m"a scalar value or struct failed a named validator"
         case FlagWithContent          => m"the Flag-typed compound has atoms or compound children"
+        case EncodingRejected         => m"a scalar value was rejected by its encoding's codec"
+        case EncodingUnresolved       => m"a scalar's declared encoding is not bound to a codec"
+
+        case DuplicateKeyValue =>
+          m"two keyed children of the same parent have equal key values"
+
         case Absent                   => m"a required value was absent"
 
         case NotScalar(value, expected) =>
@@ -6186,7 +6198,6 @@ object Tel extends Tel2:
         case UnclosedLiteral          => Recovery.PayloadToEof
         case RowWrongIndent           => Recovery.SuppressColumnAlignment
         case HardSpaceWrongPosition   => Recovery.SuppressColumnAlignment
-        case ConsecutiveSpacesInValue => Recovery.SuppressColumnAlignment
         case ColumnValueTooWide       => Recovery.SuppressColumnAlignment
         case BadTabulationHeading     => Recovery.SuppressColumnAlignment
         case BadLineEnding            => Recovery.CollapseLineEndings
@@ -6196,16 +6207,18 @@ object Tel extends Tel2:
         // E2xx and E3xx recoveries: discard the offending node and
         // continue validation; the document is reported as invalid but
         // remaining nodes are still inspected.
-        case DuplicateKeywordInStruct | EmptySelectVariants | RootRequiredAtom
+        case DuplicateKeywordInStruct | EmptySelectVariants
           | DefaultOnOptional | DuplicateLayerName | LayerKeywordCollision
           | LayerFieldTypeMismatch | BadSchemaSigil | TelKeywordReserved
           | UnresolvedReference | DuplicateDefinition | ExcludeMissingVariant
           | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
           | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
+          | EncodingConflict | KeyOnNonScalar | KeyOnLooseMember | MultipleKeyFields
           | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
           | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
           | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
-          | ValidatorRejected | FlagWithContent =>
+          | ValidatorRejected | FlagWithContent | EncodingRejected | EncodingUnresolved
+          | DuplicateKeyValue =>
           Recovery.IgnoreErroneousNode
 
         // E4xx decode reasons and implementation-reserved resource errors have
@@ -6230,33 +6243,40 @@ object Tel extends Tel2:
       case DuplicateLiteral        extends Reason(114)
       case UnclosedLiteral         extends Reason(115)
       case RowWrongIndent          extends Reason(116)
+      // Spec E117 covers both the hard-space misalignment and the
+      // consecutive-space cases; the former `ConsecutiveSpacesInValue`
+      // (never raised) is folded in.
       case HardSpaceWrongPosition  extends Reason(117)
-      case ConsecutiveSpacesInValue extends Reason(118)
-      case ColumnValueTooWide      extends Reason(119)
-      case BadTabulationHeading    extends Reason(120)
-      case BadLineEnding           extends Reason(121)
-      case BadSchemaIdentifier     extends Reason(122)
-      case ExtraPragmaContent      extends Reason(123)
+      case ColumnValueTooWide      extends Reason(118)
+      case BadTabulationHeading    extends Reason(119)
+      case BadLineEnding           extends Reason(120)
+      case BadSchemaIdentifier     extends Reason(121)
+      case ExtraPragmaContent      extends Reason(122)
+      // Spec E123 (ill-formed UTF-8) is unimplemented: input arrives as
+      // already-decoded text, so the condition cannot arise here.
 
       // E2xx — schema validity errors per §20.1.
       case DuplicateKeywordInStruct extends Reason(201)
       case EmptySelectVariants     extends Reason(202)
-      case RootRequiredAtom        extends Reason(203)
-      case DefaultOnOptional       extends Reason(204)
-      case DuplicateLayerName      extends Reason(205)
-      case LayerKeywordCollision   extends Reason(206)
-      case LayerFieldTypeMismatch  extends Reason(207)
-      case BadSchemaSigil          extends Reason(208)
-      case TelKeywordReserved      extends Reason(209)
-      case UnresolvedReference     extends Reason(210)
-      case DuplicateDefinition     extends Reason(211)
-      case ExcludeMissingVariant   extends Reason(212)
-      case ExcludeEmptiesRequired  extends Reason(213)
-      case LayerVariantAddition    extends Reason(214)
-      case LayerLoosenRequired     extends Reason(215)
-      case LayerLoosenRepeatable   extends Reason(216)
-      case ExcludeOutsideSelect    extends Reason(217)
-      case ReferenceKindMismatch   extends Reason(218)
+      case DefaultOnOptional       extends Reason(203)
+      case DuplicateLayerName      extends Reason(204)
+      case LayerKeywordCollision   extends Reason(205)
+      case LayerFieldTypeMismatch  extends Reason(206)
+      case BadSchemaSigil          extends Reason(207)
+      case TelKeywordReserved      extends Reason(208)
+      case UnresolvedReference     extends Reason(209)
+      case DuplicateDefinition     extends Reason(210)
+      case ExcludeMissingVariant   extends Reason(211)
+      case ExcludeEmptiesRequired  extends Reason(212)
+      case LayerVariantAddition    extends Reason(213)
+      case LayerLoosenRequired     extends Reason(214)
+      case LayerLoosenRepeatable   extends Reason(215)
+      case ExcludeOutsideSelect    extends Reason(216)
+      case ReferenceKindMismatch   extends Reason(217)
+      case EncodingConflict        extends Reason(218)
+      case KeyOnNonScalar          extends Reason(219)
+      case KeyOnLooseMember        extends Reason(220)
+      case MultipleKeyFields       extends Reason(221)
 
       // E3xx — validation errors per §19.3 / §21.
       case NonStructCompound       extends Reason(301)
@@ -6270,6 +6290,9 @@ object Tel extends Tel2:
       case MembersNonContiguous    extends Reason(309)
       case ValidatorRejected       extends Reason(310)
       case FlagWithContent         extends Reason(311)
+      case EncodingRejected        extends Reason(312)
+      case EncodingUnresolved      extends Reason(313)
+      case DuplicateKeyValue       extends Reason(314)
 
       // E4xx — decode errors (mapping a TEL value onto a Scala type). Surfaced via
       // `Foci`-based accrual at decode time, not the §19.5 parser/validation
