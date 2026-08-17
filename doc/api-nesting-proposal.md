@@ -541,13 +541,70 @@ A new namespace object also collides the same way a nested one does. `ExecEvent`
 both put a new name into scope wherever the family is used.
 
 
+## Corrections from the seventh and eighth passes (2026-08-13 to 2026-08-17)
+
+The `FooError` sweep, and the families around it. Forty-eight names, and six rules — five of
+them about not breaking something while moving something else.
+
+- **Import the outer, never the member.** A rename to `Foo.Error` breaks two import forms
+  that look harmless: `import lib.FooError` becomes `import lib.Foo.Error`, which imports the
+  *member* and leaves `Foo` out of scope, so every `Foo.Error` in the file fails to resolve;
+  and `import lib.{FooError, x}` becomes a dotted path inside a brace selector, which does not
+  parse. Both bit. The convention is `import lib.Foo` and write `Foo.Error`.
+- **A capitalised name cannot share its spelling with a lowercase top-level class or object
+  in the same package.** On a case-insensitive filesystem — the default on macOS — `Rpc.class`
+  and `rpc.class` are one file, and the second written destroys the first. It surfaces far
+  away, as `Not found: type rpc` inside a macro in a different component, and survives
+  incremental rebuilds until `mill clean`. `obligatory`'s `@rpc` annotation hit this; moving
+  it into `object annotations` and exporting it frees the name. Nested lowercase objects are
+  safe — hypotenuse's `arithmeticOptions.division` does not block `Division`.
+- **An inner wildcard import shadows the outer ones.** Gathering files into one object means
+  merging their imports, and a nested object that re-imports only its *distinctive* imports
+  loses the rest: `object Dialect` with `import proscenium.compat.*` inside it stopped seeing
+  the `map` that `rudiments`/`gossamer` supply at file level. Give a nested object its source
+  file's complete block, or hoist nothing.
+- **A nested `Error` captures a bare `Error` in the same object.** `Httpd.Event
+  .ConnectionFailed(error: Error)` named `fulminate.Error` through a wildcard import; adding
+  a sibling `Httpd.Error` silently rebinds it, because a member of the enclosing object
+  outranks a wildcard import. It failed to compile here, but in a position accepting any
+  `Error` subtype it would not have.
+- **A rename to `.Error` can collide two previously-distinct anonymous givens.** `given
+  Tactic[StreamError]` and `given Tactic[Http2.Error]` in one scope synthesise different
+  names; after the rename both are `given_Tactic_Error`. Three separate occurrences.
+- **Check the donor file's *other* declarations before moving it.** A file named for one type
+  may hold four. `profanity.TerminalInfo.scala` held `Interrupt`, `WindowsSignal` and
+  `CtrlChar` as well, and moving the file wholesale deleted three exported types and silently
+  rebound a union. The filename is not evidence of the file's contents.
+
+**Homonyms are the recurring hazard, and the compiler catches most but not all.** Six in these
+two passes: `ParseError` (zephyrine's and `Wit`'s, plus an MCP wire constant `val ParseError =
+-32700`), `ServerError` (scintillate's and `Http.Status.Category`'s 5xx), `Frame` (perihelion's
+WebSocket frame and ultimatum's layout frame), `EscapeError` (fulminate's and `Pty`'s),
+`ConnectError` (telekinesis' and `Http2.ErrorCode`'s RFC 9113 `CONNECT_ERROR`), and
+`HttpServer` (scintillate's and the JDK's `com.sun.net.httpserver.HttpServer`, which appears
+inside the very file being renamed). Scope every sweep to the libraries that use *this* type,
+and read the diff.
+
+**Three findings that were not renames at all.** An error that looks misnamed may be one the
+codebase already has: `BoundsError` duplicated `JsonBlueprint.Error.Reason.IntOutOfRange`,
+same failure and same three fields, and was deleted. A supertype with one subtype and no
+callers can go: turbulence's `trait Io` freed the name for galilei. And a type declared in one
+library but raised only in another is misplaced, not misnamed — `BoundsError` was gossamer's,
+`InstallError` is exoskeleton's but raised by ethereal too.
+
+**Naming, where no single raiser owns an error.** Name the act (`Framing`, `Install`) or the
+state (`Truncation`), not one of several raisers. `Streamable`, `Writable` and `Sink` all
+report a cut stream, so none of them owns it.
+
+
 ## Execution shape
 
 One library per commit (the pilot shape). Each commit: move the types, delete donor files,
 fix the export file, sweep references (`grep -a`), clean-compile the library and its test
 module. `make attest` gates each PR.
 
-Three passes have run this shape to completion; the rename table above is exhausted. What
-is left is recorded under "Next actions" in `api-reduction-candidates.md`: the three
-taxonomy containers, `TarHeader`, and the two independent pieces of work (`caps.Pure` for
-L2, and the namespace-wildcard survey).
+Eight passes have run this shape to completion; the rename table above is exhausted, and the
+`FooError` family with it — 48 of the 53 compound error names have gone. What is left is
+recorded under "Next actions" in `api-reduction-candidates.md`. `TarHeader` is named there
+for a reason worth repeating: `readUnchecked` clears the capture-checking blocker, but two of
+its sites rely on the bounds check it removes, so that one waits on tightening the guards.
