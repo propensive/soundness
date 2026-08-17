@@ -78,14 +78,14 @@ object Installer:
 
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
     ( using Environment, System )
-    ( using Tactic[InstallError], (DaemonLogEvent is Loggable)^ )
+    ( using Tactic[Install.Error], (DaemonLogEvent is Loggable)^ )
   :   List[Path on Linux] =
 
     mitigate:
-      case Path.Error(_, _)     => InstallError(InstallError.Reason.Environment)
-      case Environment.Error(_) => InstallError(InstallError.Reason.Environment)
-      case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
-      case Name.Error(_, _, _)  => InstallError(InstallError.Reason.Io)
+      case Path.Error(_, _)     => Install.Error(Install.Error.Reason.Environment)
+      case Environment.Error(_) => Install.Error(Install.Error.Reason.Environment)
+      case Io.Error(_, _, _, _) => Install.Error(Install.Error.Reason.Io)
+      case Name.Error(_, _, _)  => Install.Error(Install.Error.Reason.Io)
 
     . protect:
         val paths: List[Path on Linux] = Environment.path
@@ -110,21 +110,21 @@ object Installer:
     ( using service: DaemonService[?], environment: Environment )
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-    ( using Tactic[InstallError], (DaemonLogEvent is Loggable)^ )
+    ( using Tactic[Install.Error], (DaemonLogEvent is Loggable)^ )
   :   Result =
 
     import workingDirectories.javaWorkingDirectory
     import systems.javaSystem
 
     mitigate:
-      case Path.Error(_, _)      => InstallError(InstallError.Reason.Environment)
-      case Property.Error(_)     => InstallError(InstallError.Reason.Environment)
-      case Number.Error(_, _, _) => InstallError(InstallError.Reason.Environment)
-      case IoError(_, _, _, _)  => InstallError(InstallError.Reason.Io)
-      case Name.Error(_, _, _)   => InstallError(InstallError.Reason.Io)
-      case guillotine.Exec.Error(_, _, _)   => InstallError(InstallError.Reason.Io)
-      case StreamError(_)       => InstallError(InstallError.Reason.Io)
-      case Zip.Error(_)          => InstallError(InstallError.Reason.Io)
+      case Path.Error(_, _)      => Install.Error(Install.Error.Reason.Environment)
+      case Property.Error(_)     => Install.Error(Install.Error.Reason.Environment)
+      case Number.Error(_, _, _) => Install.Error(Install.Error.Reason.Environment)
+      case Io.Error(_, _, _, _)  => Install.Error(Install.Error.Reason.Io)
+      case Name.Error(_, _, _)   => Install.Error(Install.Error.Reason.Io)
+      case guillotine.Exec.Error(_, _, _)   => Install.Error(Install.Error.Reason.Io)
+      case Truncation.Error(_)       => Install.Error(Install.Error.Reason.Io)
+      case Zip.Error(_)          => Install.Error(Install.Error.Reason.Io)
 
     . protect:
         val command: Text = service.script
@@ -139,7 +139,7 @@ object Installer:
           val prefixSize = fileSize - payloadSize - jarSize
 
           val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
-            abort(InstallError(InstallError.Reason.Environment))
+            abort(Install.Error(Install.Error.Reason.Environment))
 
           val file: Path on Linux = installDirectory/command
           val installFile: Optional[Path on Linux] = file.create[File](CreateFlag.Replace)

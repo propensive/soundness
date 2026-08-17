@@ -1,11 +1,12 @@
 # Public API surface — multi-word names remaining
 
-Regenerated from the `soundness_*` re-export files after seven nesting passes (#1764, #1765,
-#1770, #1775, #1779, and the current branch). This is the working list for the remainder.
+Regenerated from the `soundness_*` re-export files after eight nesting passes (#1764, #1765,
+#1770, #1775, #1779, #1790, and the current branch). This is the working list for the
+remainder.
 
-- exported multi-word type-level names still under review: **447**;
-  225 sit in a prefix family of two or more, across 65 families, and
-  222 are singletons. Names under "Reviewed items which should not be moved"
+- exported multi-word type-level names still under review: **426**;
+  210 sit in a prefix family of two or more, across 61 families, and
+  216 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -52,10 +53,20 @@ kinds, none of which is a simple rename.
   `Toolchain` was in a component `linker` already depends on, and enigmatic's `core-jvm` is a
   *platform source directory* of `core`, not a component at all. **Resolve the outer name to
   a file and a component before recording anything here as blocked.**
-- **Mechanically blocked.** `TarHeader` and `MathmlReader` both index an `Array[T]^{}` inside
-  a method that the enclosing object requires at `^{any}`; `HpackTable`/`HpackEntry` fail the
-  same way. `caps.Pure` fixes the cross-file variant of this (verified on `HpackEntry`) but
-  not the nesting variant, and is worth doing for L2 compliance regardless.
+- **Mechanically blocked — mostly cleared.** Four names indexed an `Array[T]^{}` inside a
+  method the enclosing object requires at `^{any}`. `proscenium`'s `readUnchecked` resolves
+  it, and `MathmlReader`, `HpackTable` and `HpackEntry` are now `Mathml.Reader`,
+  `Hpack.Table` and `Hpack.Entry`.
+
+  **`TarHeader` stays, and not for a capture-checking reason.** `readUnchecked` skips the
+  bounds check, and two of its sites rely on one: `Header.parse` reads `block(156)` after a
+  truncation check that `raise`s rather than `abort`s — so a recovering caller reaches it
+  with a short block — and `verifyChecksum` loops to `blockSize` with no relation to
+  `block.length`. Both currently fail with an `IndexOutOfBoundsException` on a truncated
+  archive; under `readUnchecked` they would read out of bounds. A parser over untrusted
+  input should not trade that for a name. Nesting it needs the guards tightened first
+  (`abort` rather than `raise`, or an explicit length bound), which is a behaviour change
+  worth making on its own terms.
 - **Wildcard imports over namespace objects** — 104 in the tree. The constant-table uses
   (`Vp8Tables`, `FlateTables`, `PeriodicTable`, `DagTile`) are legitimate; the type-holding
   ones (`Lsp` ×14, `Mathml` ×6, `Control` ×5, `Binary` ×5) are what makes nesting fragile,
@@ -74,7 +85,7 @@ kinds, none of which is a simple rename.
 | foreign interop (diuretic)                | `JavaIoFile`, `JavaNioPath`, `JavaUtilDate`                                                                                               | deliberately name the foreign type                                                                                 |
 | platform interfaces                       | `Wasi*Api`                                                                                                                                | one per library, loaded as a unit                                                                                  |
 | render palettes                           | `MarkdownPalette`, `StackTracePalette`, `TestPalette`                                                                                     | cross-component by design                                                                                          |
-| specification concepts (R2)               | `JsonPointer`, `YamlPath`, `TelPath`, `JsonSchema`, `XmlSchema`, `MediaType`, `SymmetricKey`, `HttpServer`, `BlockCipher`, `CompileError` | the compound names a thing with its own specification — the test is whether it would appear as a heading in a spec |
+| specification concepts (R2)               | `JsonPointer`, `YamlPath`, `TelPath`, `JsonSchema`, `XmlSchema`, `MediaType`, `SymmetricKey`, `BlockCipher`, `CompileError` | the compound names a thing with its own specification — the test is whether it would appear as a heading in a spec |
 | ~~reflectively loaded~~ (disproved) | `TypescriptDialect`, `WebIdlDialect`, `WitDialect`                                                                                        | **no longer excluded.** `CHeaderDialect` became `CHeader.Dialect` in the seventh pass; the loader derived the class name from `fullName`, which is dotted between owners — see "No longer blocked" |
 | component-blocked (R6)                    | `TarOpenable`, `PdfFile`, `ImageRecord`, `HmacCipher`, `JsonSchema`, `JsonBlueprint`, `LiraBundle`, `KotlinMetadataAtomizer`              | outer companion is in another component                                                                            |
 
@@ -88,8 +99,7 @@ exclusive capture sets, not `Array`'s invariance).
 
 Blocked because the _outer_ name belongs to another library, which the family tables cannot
 show — resolve the outer name to a declaration before treating a shared prefix as evidence:
-`IoError`/`IoEvent` (galilei;
-`Io` is turbulence's), `Dag*` (dendrology; `Dag` is acyclicity's), `Oci*` (anthology; `Oci` is
+`Dag*` (dendrology; `Dag` is acyclicity's), `Oci*` (anthology; `Oci` is
 embarcadero's), `Unix*` (galilei/bitumen/profanity; aviation's `Unix` is the epoch), `Time*`
 (aviation; quantitative's `Time` is a dimension), `Dts*`, `TeletypeFormattable`,
 `UdpResponse`, `LiraAssembler`, `LiraBundle`. (`Wasm*`, `Http*` and `WitWorld` were in this
@@ -149,7 +159,7 @@ for the rest in the seventh pass:
 | `KeystoreError`                  | `Keystore.Error`                   | `core-jvm` is a platform *source directory* of `core`, not a component |
 | `TimestampError`                 | `Timestamp.Error`                  | aviation has its own `Timestamp`; the one in embarcadero is unrelated |
 
-## `FooError` types — the seventh pass's subject
+## `FooError` types — the seventh and eighth passes' subject
 
 Compound error names were swept separately, because the host is almost always determinable:
 **the object that raises the error**. That heuristic found `Inspection` for
@@ -157,20 +167,100 @@ Compound error names were swept separately, because the host is almost always de
 for `PackageError`. Where the noun did not match its host, the *first* part was renamed —
 `AssemblyError` belongs to the `Assembler`, not to an "assembly".
 
-**37 of the 53 top-level `FooError` types nested**, leaving 16 — plus 7 that are already
+**41 of the 53 top-level `FooError` types have gone**, leaving 12 — plus 8 that are already
 nested inside another type but still carry a compound name. (Counted by declaration, so a
 type declared only as a `type` alias, or one living in a test module, is not included.)
 
+Two were split rather than moved, because one name was covering two failures:
+`TimeError` became `Moment.Error` and `Timespan.Error`; and two were *merged*, because two
+names covered one failure: `DivisionError` and `OverflowError` became `Arithmetic.Error`
+with distinct `Reason`s. `DataError` was renamed rather than merely moved: nothing in
+anamnesis is called `Data`, and the only `Data` in the codebase — anticipation's
+`Array[Byte]^{}` — is unrelated, so the name invited the wrong association. It is
+`Database.Error`. `ServerError` likewise: in an HTTP library that name reads as a 5xx
+response — which is what `Http.Status.Category.ServerError` actually means, in a library
+scintillate depends on — rather than a listener that could not bind. It is
+`Httpd.Error`, beside the `Httpd.Event` that both server backends already share. `HttpServer`
+itself has since become `Httpd` — a single word for the same thing, which also takes it out of
+the R2 exclusion table, since there is no longer a compound name to justify. Its family went
+with it: `HttpServerFor`, `stdlibHttpServer` and `stdlibPublicHttpServer` are `HttpdFor`,
+`stdlibHttpd` and `stdlibPublicHttpd`.
+
+`BoundsError` was **deleted** rather than renamed. It duplicated
+`JsonBlueprint.Error`'s `IntOutOfRange` reason — the same failure, the same three fields,
+raised from the same object — and the duplicate was the cruder of the two, modelling an
+absent bound as `Double.MinValue`/`Double.MaxValue` where `IntOutOfRange` uses
+`Optional[Int]`. It was declared and exported by gossamer, which never used it. Worth
+checking the next candidate for the same shape before finding it a host: an error that
+looks misnamed may be one the codebase already has.
+
 | status | names |
 |---|---|
-| awaiting a ruling — the name is the failure mode, not a subject that *has* errors, so the namespace would have exactly one member and no independent meaning | `BoundsError`, `ConnectError`, `DivisionError`, `ExpectationError`, `InstallError`, `OverflowError`, `ServerError` |
-| excluded by R2 (specification concept) | `CompileError` |
-| outer name owned by an unrelated type in the same package — **unverified**, and the two that were checked both turned out to be movable | `DataError`, `EscapeError`, `FrameError`, `IoError`, `RemoteError`, `StreamError`, `TimeError`, `UncheckedError` |
-| nested compound names, where the prefix is usually redundant with the enclosing type and could simply become `Error` (as `Wit.ParseError` → `Wit.Error` did) | `Ansi.AnsiError`, `Pty.EscapeError`, `Git.RefError`, `Repackager.RepackageError`, `Sh.ShError`, `Repackager.UserError`, `UrlInterpolatorError` |
+
+| **not an error, and a name used as data** — kept | `CompileError` |
+| outer name owned by an unrelated type in the same package — **unverified**, and every one checked so far has turned out movable | `UncheckedError` |
+
+| nested compound names, where the prefix repeats the enclosing type | `Repackager.RepackageError` and `Repackager.UserError` (only one can be `Error`), `UrlInterpolatorError` |
+| nested, but the prefix is doing real work — the enclosing type already has an `Error` meaning something else | `XPath.EvaluationError` (evaluating vs parsing an XPath; `XPath.Error`'s reason numbers are documented as append-only), `Git.RefError` (a ref-name syntax check that never runs git) |
+
+**`StreamError` is `Truncation.Error`.** `Stream` is not declared anywhere in this repository
+— it comes from the proscala fork's prelude via `-Yimports:proscenium` — so there was no
+companion of ours to nest into, and three different typeclasses (`Streamable`, `Writable`,
+`Sink`) raise it, so no raiser owned it either. It is named for the state of the data
+instead: a stream that ended before delivering everything. `InstallError` is `Install.Error`
+on the same reasoning — `exoskeleton.Completions` and `ethereal.Installer` both raise it, so
+it belongs to the act of installing rather than to either installer. `ConnectError` is
+`Connect.Error`, with a caveat recorded in its source: telekinesis already has `Http.Connect`
+(the CONNECT method) and `Http.Connection`, so inside `object Http` the bare `Connect` still
+resolves to the method and the four references there are qualified.
+
+**`CompileError` is kept, and not under R2.** It is not an error at all: `case class
+CompileError(reason, message, focus, start, offset)` does not extend `fulminate.Error` and is
+never raised — it is the data record larceny's plugin builds for a captured compiler
+diagnostic, and `demilitarize` returns a `List` of them. It is also a name used as data: the
+plugin synthesises `Select(Select(Ident(nme.ROOTPKG), "larceny"), "CompileError")`, so a
+rename must update that string, and a mistake would surface in *user* code at the
+`demilitarize` call site rather than in larceny.
+
+**`UncheckedError` is still open.** `Unchecked` is unavailable — contingency exports a
+`trait Unchecked` marking error types that may be raised unchecked, and it sits above
+fulminate. `Error.Unchecked`, nested in fulminate's own `Error` companion, does work: the
+subject *is* `Error`, and `Error.apply` is the single raise site.
+
+**`IoError`/`IoEvent` are now `Io.Error`/`Io.Event`.** They are filesystem concepts — every
+`Io.Event` case extends `Log.Filesystem`, and `Io.Error` carries a `filesystem: path.Plane is
+Filesystem` — but `Filesystem` is serpentine's *path-syntax* typeclass, in a library that
+performs no I/O, so it was the wrong host despite the name. The name `Io` was freed instead:
+turbulence's `trait Io` had two abstract members, exactly one implementer (`Stdio`, which
+defined both concretely), and no signature anywhere took one, so it was deleted rather than
+renamed. `Io.Error`'s reasons are the POSIX errno table — `Nonexistent` is `ENOENT`,
+`NotSameVolume` is `EXDEV`, `Physical` is `EIO` — which is worth keeping in mind before
+anyone proposes narrowing it.
+
+**`RemoteError` is `Rig.Error`.** superlunary stages code — it compiles a quoted `Expr` at
+runtime and runs it in a `Rig`, a separate classloader — so despite the name it has nothing
+to do with RPC, and obligatory owns `Rpc` in any case. The error is the *marshalling*
+boundary: its reasons are `Serialization`, `Deserialization` and `Unknown`, and every raise
+site is in `object Stageable`. Downstream signatures now read `raises Compiler.Error raises
+Rig.Error`, naming the two things that can go wrong.
+
+**`Git.Error` already exists** (`CannotExecuteGit`, `CloneFailed`, `RepoDoesNotExist`, …), so
+`Git.RefError` cannot take that name and should not: one is "the git operation failed", the
+other is a pure syntax check on a ref name that never runs git.
 
 `RpcError` deserves a note: it nested as `Rpc.Error`, but it is **declared, exported and
 never raised anywhere in the repository**. Deleting it may be the better answer. Scan for
 others in the same state before finding them homes.
+
+## Todo — `Frame` means three unrelated things
+
+`perihelion.Frame` is a WebSocket protocol frame (`enum Frame(opcode: Int, payload: Data)`);
+`ultimatum.Frame` is a terminal layout frame (`Cell(sizing)` / `Split(sizing, arrangement,
+children)`); and obligatory's framing error was `FrameError` with no `Frame` at all, now
+`Framing.Error`. The first two are both exported, so the homonym is live in the umbrella and
+`import soundness.*` makes which one you get depend on nothing visible at the use site. This
+wants resolving on its own terms — "WebSocket frame" is the more established usage, so
+ultimatum's is the likelier one to rename.
 
 ## Remaining names by prefix family
 
@@ -178,7 +268,7 @@ others in the same state before finding them homes.
 |---|---|---|---|
 | `Attribute*` | cataclysm | 2 | `AttributeMatcher`, `AttributeTest` |
 | `Block*` | enigmatic, galilei | 4 | `BlockCipher`, `BlockCipherMode`, `BlockCipherPadding`, `BlockDevice` |
-| `Box*` | escritoire | 2 | `BoxDrawing`, `BoxLine` |
+| `Box*` | tessellate | 2 | `BoxDrawing`, `BoxLine` |
 | `C*` | xenophile | 2 | `CHeaderAtomizer`, `CHeaderDiscipline` |
 | `Char*` | escapade, galilei, hieroglyph | 4 | `CharDecoder`, `CharDevice`, `CharEncoder`, `CharSpan` |
 | `Class*` | honeycomb, mandible, proscenium, vivisection | 4 | `ClassList`, `ClassLoaderId`, `ClassSurface`, `ClassTag` |
@@ -188,7 +278,6 @@ others in the same state before finding them homes.
 | `Daemon*` | ethereal | 3 | `DaemonEvent`, `DaemonLogEvent`, `DaemonService` |
 | `Dag*` | dendrology | 3 | `DagDiagram`, `DagStyle`, `DagTile` |
 | `Deps*` | burdock | 2 | `DepsDev`, `DepsEvent` |
-| `Division*` | hypotenuse | 2 | `DivisionByZero`, `DivisionError` |
 | `Dom*` | nomenclature | 2 | `DomId`, `DomIdentifier` |
 | `Dts*` | xenophile | 2 | `DtsAtomizer`, `DtsDiscipline` |
 | `Dynamic*` | breviloquence, caesura, jacinta, stratiform, xylophone, ypsiloid | 6 | `DynamicCborEnabler`, `DynamicDsvEnabler`, `DynamicJsonEnabler`, `DynamicTelEnabler`, `DynamicXmlEnabler`, `DynamicYamlEnabler` |
@@ -196,20 +285,18 @@ others in the same state before finding them homes.
 | `File*` | galilei, octogenarian | 2 | `FileDiff`, `FileOpenable` |
 | `Filesystem*` | galilei | 2 | `FilesystemAttribute`, `FilesystemBackend` |
 | `Foreign*` | xenophile | 2 | `ForeignBuffer`, `ForeignLibrary` |
-| `Frame*` | obligatory, telekinesis, vivisection | 3 | `FrameError`, `FrameId`, `FrameReader` |
+| `Frame*` | telekinesis, vivisection | 2 | `FrameId`, `FrameReader` |
 | `Host*` | mandible | 3 | `HostArchive`, `HostContracts`, `HostRelease` |
-| `Hpack*` | telekinesis | 2 | `HpackEntry`, `HpackTable` |
-| `Http*` | anticipation, honeycomb, scintillate, urticose | 5 | `HttpEquiv`, `HttpRequests`, `HttpServer`, `HttpStreams`, `HttpUrl` |
+| `Http*` | anticipation, honeycomb, urticose | 4 | `HttpEquiv`, `HttpRequests`, `HttpStreams`, `HttpUrl` |
 | `Image*` | embarcadero | 2 | `ImageOpenable`, `ImageRecord` |
 | `Inline*` | profanity, ultimatum | 5 | `InlineAnchoring`, `InlineBoard`, `InlineGrowth`, `InlineRoot`, `InlineShrink` |
-| `Io*` | galilei | 2 | `IoError`, `IoEvent` |
 | `Java*` | anthology, diuretic, enigmatic, gastronomy, scintillate | 11 | `JavaIoFile`, `JavaLongDuration`, `JavaLongInstant`, `JavaNetUrl`, `JavaNioPath`, `JavaServlet`, `JavaStdlibCrypto`, `JavaStdlibHashing`, `JavaTimeInstant`, `JavaUtilDate`, `JavaVersion` |
 | `Json*` | jacinta, obligatory | 4 | `JsonBlueprint`, `JsonPointer`, `JsonRpc`, `JsonSchema` |
 | `Kotlin*` | xenophile | 5 | `KotlinDialect`, `KotlinFacade`, `KotlinInvoke`, `KotlinMetadataAtomizer`, `KotlinMetadataDiscipline` |
 | `Lane*` | dendrology | 2 | `LaneDagDiagram`, `LaneDagStyle` |
 | `Larceny*` | larceny | 2 | `LarcenyPlugin`, `LarcenyTransformer` |
 | `Leap*` | aviation | 2 | `LeapMode`, `LeapSeconds` |
-| `Line*` | escritoire, profanity, turbulence | 3 | `LineCharset`, `LineEditor`, `LineSeparation` |
+| `Line*` | profanity, tessellate, turbulence | 3 | `LineCharset`, `LineEditor`, `LineSeparation` |
 | `Lira*` | anthology, reliquary | 2 | `LiraAssembler`, `LiraBundle` |
 | `List*` | embarcadero, proscenium | 9 | `ListContainersRequest`, `ListContainersResponse`, `ListHasAsScala`, `ListImagesRequest`, `ListImagesResponse`, `ListNamespacesRequest`, `ListNamespacesResponse`, `ListTasksRequest`, `ListTasksResponse` |
 | `Local*` | hellenism, urticose | 2 | `LocalClasspath`, `LocalPart` |
@@ -222,15 +309,14 @@ others in the same state before finding them homes.
 | `Scala*` | degustation, harlequin | 3 | `ScalaAtom`, `ScalaReference`, `ScalaSyntaxPalette` |
 | `Stack*` | digression, hyperbole | 3 | `StackResolver`, `StackTrace`, `StackTracePalette` |
 | `Start*` | embarcadero | 2 | `StartRequest`, `StartResponse` |
-| `Stream*` | turbulence | 2 | `StreamError`, `StreamOutputStream` |
-| `Table*` | escritoire | 5 | `TableCell`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle` |
+| `Table*` | escritoire, ultimatum | 6 | `TableCell`, `TableFixture`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle` |
 | `Tar*` | bitumen | 4 | `TarBuilder`, `TarDataOpenable`, `TarHeader`, `TarOpenable` |
 | `Tasty*` | degustation, hyperbole | 2 | `TastyDiscipline`, `TastyPalette` |
 | `Tel*` | stratiform | 3 | `TelBlueprint`, `TelPath`, `TelReader` |
 | `Text*` | escapade, escritoire, facsimile, fulminate, gossamer, hieroglyph, honeycomb | 7 | `TextAlignment`, `TextBuilder`, `TextEscapes`, `TextNode`, `TextRun`, `TextSanitizer`, `TextStyle` |
 | `Textual*` | dendrology | 3 | `TextualDagStyle`, `TextualLaneDagStyle`, `TextualTreeStyle` |
 | `Thread*` | vivisection | 2 | `ThreadGroupId`, `ThreadId` |
-| `Time*` | abacist, aviation | 8 | `TimeError`, `TimeEvent`, `TimeFormat`, `TimeMinutes`, `TimeNumerics`, `TimeSeconds`, `TimeSeparation`, `TimeSpecificity` |
+| `Time*` | abacist | 2 | `TimeMinutes`, `TimeSeconds` |
 | `Track*` | contingency | 2 | `TrackFoci`, `TrackTactic` |
 | `Tree*` | dendrology, proscenium, reliquary | 7 | `TreeDiagram`, `TreeEntry`, `TreeMap`, `TreePath`, `TreeSet`, `TreeStyle`, `TreeTile` |
 | `Type*` | bitumen, typonym | 5 | `TypeElement`, `TypeFlag`, `TypeList`, `TypeMap`, `TypeSet` |
@@ -273,49 +359,47 @@ others in the same state before finding them homes.
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (222)
+### Singletons (216)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
 `BaseLayout`, `BenchmarkDevice`, `BeneficencePlugin`, `BlobStream`, `BloomFilter`, `BorderStyle`,
-`BoundsError`, `BytecodePalette`, `CanonicalCbor`, `CanvasHandle`, `CapabilityDiscipline`,
-`CaptionLayout`, `CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `ChangeKind`,
-`ChannelLayout`, `CheckOverflow`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`,
-`ColorDepth`, `CommonFormattable`, `ConnectError`, `ContainerConfig`, `CopyAttributes`, `CrLf`,
-`CtrlChar`, `CtSym`, `DataError`, `DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`,
+`BytecodePalette`, `CanonicalCbor`, `CanvasHandle`, `CapabilityDiscipline`, `CaptionLayout`,
+`CardinalWind`, `CarriageReturn`, `CaseSensitivity`, `CellRef`, `ChangeKind`, `ChannelLayout`,
+`CheckOverflow`, `ClasspathIndex`, `CliEvent`, `CollectionConverters`, `ColorDepth`,
+`CommandGroup`, `CommonFormattable`, `ContainerConfig`, `CopyAttributes`, `CrLf`, `CtrlChar`,
+`CtSym`, `DecimalConverter`, `DecodableManifest`, `DereferenceSymlinks`, `DivisionByZero`,
 `DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`, `EcosystemProfile`, `EditorField`,
 `EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`,
-`EscapeError`, `EucalyptusGcp`, `ExpectationError`, `FastForward`, `FlowExtent`, `FluidOunce`,
-`FoldableRectoPanel`, `GapPolicy`, `GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`,
-`GithubActions`, `GivensPhase`, `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`,
-`HmacCipher`, `Html4Transitional`, `InitializationVector`, `InstallError`, `IntercardinalWind`,
-`InterfaceAddress`, `IpAddress`, `Ipv4Subnet`, `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`,
-`JsigDiscipline`, `JsInvoke`, `JuxtapositionPalette`, `JvmProfile`, `KillRequest`,
-`LanguageFeature`, `LayeredDagDiagram`, `LazyEnvironment`, `LengthPrefix`, `LinkEvent`,
-`LocalhostDevice`, `LongNameFormat`, `LruCache`, `LspSessional`, `ManifestSigning`,
-`MarkdownPalette`, `MathmlReader`, `MediaType`, `MenuField`, `MethodId`, `MlDsa`,
-`MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NoteRef`, `NotFound`,
-`NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`, `OnlineClasspath`, `OpaqueDiscipline`,
-`OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`, `OverflowError`,
+`EucalyptusGcp`, `FastForward`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `GapPolicy`,
+`GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`,
+`GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
+`InitializationVector`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`, `Ipv4Subnet`,
+`Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`, `JsigDiscipline`, `JsInvoke`,
+`JuxtapositionPalette`, `JvmProfile`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`,
+`LazyEnvironment`, `LengthPrefix`, `LinkEvent`, `LocalhostDevice`, `LongNameFormat`, `LruCache`,
+`LspSessional`, `ManifestSigning`, `MarkdownPalette`, `MediaType`, `MenuField`, `MethodId`,
+`MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NoteRef`,
+`NotFound`, `NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`, `OnlineClasspath`,
+`OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`,
 `OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`,
 `PhysicalState`, `PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PolarGaussian`,
 `PollingWatcher`, `PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`,
 `ProcessStatus`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`,
-`RamFlag`, `RasterOpenable`, `RectoPanel`, `ReferenceTypeId`, `ReflogEntry`, `RemoteError`,
-`RequestServable`, `ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`,
-`SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`, `SelectorList`,
-`SemanticMessage`, `SeqHasAsJava`, `ServerError`, `ShaderPlugin`, `SiderealDays`,
-`SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`, `SolarDay`,
-`SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
-`StaticAnnotation`, `StringId`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`, `TeletypeFormattable`,
-`TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `TestPalette`, `ThemeColor`,
-`ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`, `TrieMap`,
-`TripleDes`, `TypescriptDialect`, `UdpResponse`, `UnboundedSizeComplexity`, `UncheckedError`,
-`UniformDistribution`, `UnitsNames`, `UnusedFeature`, `UrlPalette`, `UsedSets`, `UsesBlob`,
-`ValueToken`, `VersionResponse`, `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`,
-`WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`,
-`WireType`, `WritingBuilder`, `WsSessional`, `XeqConfiguration`, `XmlSchema`, `YamlPath`,
-`ZipBuilder`
+`RamFlag`, `RasterOpenable`, `RectoPanel`, `ReferenceTypeId`, `ReflogEntry`, `RequestServable`,
+`ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `SchemaSignature`,
+`ScreenRoot`, `SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`,
+`ShaderPlugin`, `SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`,
+`SocketServer`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`,
+`StandardMetadata`, `StaticAnnotation`, `StreamOutputStream`, `StringId`, `SubOp`, `SymmetricKey`,
+`SyntaxMatcher`, `TeletypeFormattable`, `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`,
+`TestPalette`, `ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`,
+`TraversalOrder`, `TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`,
+`UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnusedFeature`,
+`UrlPalette`, `UsedSets`, `UsesBlob`, `ValueToken`, `VentureTactic`, `VersionResponse`,
+`VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`,
+`WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WritingBuilder`, `WsSessional`,
+`XeqConfiguration`, `XmlSchema`, `YamlPath`, `ZipBuilder`
 
 ## Retained from the original inventory
 
@@ -327,7 +411,7 @@ others in the same state before finding them homes.
 are now reachable. The rest are still live: `Attributive` (honeycomb, xylophone),
 `Completion` (exoskeleton, harlequin), `Diagnostic` (frontier, harlequin), `Executor`
 (apoplexy, superlunary), `Extensions` (decorum, gesticulate), `Frame` (perihelion,
-ultimatum), `Imports` (decorum, stenography), `Manifest` (embarcadero, revolution),
+ultimatum — see the `Frame` todo above), `Imports` (decorum, stenography), `Manifest` (embarcadero, revolution),
 `Proxy` (austronesian, vicarious), `Renderable` (honeycomb, xylophone), `Tag` (honeycomb,
 xylophone), `Timestamp` (aviation, embarcadero). An `@unexported` annotation whose comment
 cites a clash is the clearest signal that one of the pair wants a namespace.

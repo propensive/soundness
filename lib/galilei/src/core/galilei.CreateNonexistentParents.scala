@@ -38,4 +38,4 @@ import serpentine.*
 
 trait CreateNonexistentParents extends Planar:
   def apply[ResultType](path: Path on Plane)(operation: => ResultType)
-  :   (Tactic[IoError]^) ?->{operation} ResultType
+  :   (Tactic[Io.Error]^) ?->{operation} ResultType

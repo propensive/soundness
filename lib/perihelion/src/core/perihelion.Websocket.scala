@@ -40,6 +40,7 @@ import coaxial.*
 import contingency.*
 import fulminate.*
 import gastronomy.*
+import hypotenuse.*
 import gossamer.*
 import hieroglyph.*
 import monotonous.*
@@ -68,8 +69,8 @@ object Message:
   // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can
   // flow through Coaxial's `Control.Reply`/`Conclude` and be written verbatim.
   given transmissible: Message is Transmissible =
-    case Text(text)   => zephyrine.Stream(Frame.Text(true, text.in[Data]).encode)
-    case Binary(data) => zephyrine.Stream(Frame.Binary(true, data).encode)
+    case Text(text)   => zephyrine.Stream(Websocket.Frame.Text(true, text.in[Data]).encode)
+    case Binary(data) => zephyrine.Stream(Websocket.Frame.Binary(true, data).encode)
 
 // A complete WebSocket message: text frames are reassembled and UTF-8-decoded;
 // binary frames are reassembled as raw bytes. Control frames (Ping/Pong/Close)
@@ -123,7 +124,7 @@ class Channel()(using masking: Masking, buffering: Buffering):
 
   def close(code: Int = 1000): Unit logs Websocket.Event =
     Log.info(Websocket.Event.Closed(code))
-    enqueue(Frame.Close(code, Data()).encode)
+    enqueue(Websocket.Frame.Close(code, Data()).encode)
     stop()
 
 // Reads client frames off the connection, reassembles fragmented messages,
@@ -175,27 +176,27 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error
         else extend(text, data, fin)
 
       def recur(partial: Optional[(Boolean, Data)]): Chain[Message] =
-        (Frame.parse(cursor): @unchecked) match
+        (Websocket.Frame.parse(cursor): @unchecked) match
           case Unset =>
             Chain()
 
-          case Frame.Ping(data) =>
-            channel.enqueue(Frame.Pong(data).encode)
+          case Websocket.Frame.Ping(data) =>
+            channel.enqueue(Websocket.Frame.Pong(data).encode)
             recur(partial)
 
-          case Frame.Pong(_) =>
+          case Websocket.Frame.Pong(_) =>
             recur(partial)
 
-          case Frame.Close(code, reason) =>
+          case Websocket.Frame.Close(code, reason) =>
             if !validUtf8(reason, true) then abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
-            channel.enqueue(Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
+            channel.enqueue(Websocket.Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
             channel.stop()
             Chain()
 
-          case Frame.Text(fin, data)   => started(fin, true, data, partial)
-          case Frame.Binary(fin, data) => started(fin, false, data, partial)
+          case Websocket.Frame.Text(fin, data)   => started(fin, true, data, partial)
+          case Websocket.Frame.Binary(fin, data) => started(fin, false, data, partial)
 
-          case Frame.Continuation(fin, data) =>
+          case Websocket.Frame.Continuation(fin, data) =>
             partial.lay(abort(Websocket.Error(Websocket.Error.Reason.BadFragmentation))):
               (text, accumulated) =>
                 extend(text, accumulated ++ data, fin)
@@ -311,6 +312,141 @@ object Websocket:
       channel.stop()
       safely(pump.attend())
       duplex.close()
+
+  // Frame → Websocket.Frame
+  object Frame:
+    // A per-frame payload cap (16 MiB); larger frames close the connection (1009).
+    val maxPayload: Long = 1L << 24
+    val maxControlPayload: Int = 125
+
+    def closeData(code: Int, reason: Data): Data =
+      Data((code >> 8).toByte, code.toByte) ++ reason
+
+    // Close codes a client may legitimately send (RFC 6455 §7.4.1 plus the
+    // registered application range). Everything else — including 1004/1005/1006,
+    // which never appear on the wire, and the unassigned 1012–2999 band — is a
+    // protocol error.
+    def validCloseCode(code: Int): Boolean =
+      (code >= 1000 && code <= 1003) || (code >= 1007 && code <= 1011) ||
+        (code >= 3000 && code <= 4999)
+
+    // Decode one frame off `cursor` — consuming exactly its bytes and unmasking the
+    // payload — or `Unset` at a clean end of stream. The byte-level counterpart of
+    // `Frame.encode`. `Masking` fixes the direction: a server requires the frame to be
+    // masked (a client's), a client requires it to be unmasked (a server's). Uses
+    // `peek`/`advance`/`take` (not `lay`/`seek`), which don't reference the cursor's
+    // erased `Operand` type, so it works on a bare `Cursor[Data, ?]` parameter.
+    // Header bytes are consumed with `advance()` rather than `next()`: `next`'s
+    // trailing `more` forces a blocking refill, so for a zero-payload unmasked frame
+    // (an empty server→client Ping/Pong/Close, whose last byte is `byte1`) it would
+    // stall the completed frame until the peer happened to send another (issue #1301).
+    // Blocking is intended only at the head of a frame — the `finished` guard below.
+    def parse(cursor: Cursor[Data, {}]^)(using masking: Masking)
+      ( using Tactic[Websocket.Error] )
+    :   Optional[Frame] =
+      if cursor.finished then Unset else
+        val byte0 = cursor.peek.asInt
+        cursor.advance()
+        val fin = (byte0 & 0x80) != 0
+
+        // RFC 6455 §5.2: RSV1/2/3 must be zero unless an extension negotiated them,
+        // and we negotiate none.
+        if (byte0 & 0x70) != 0 then abort(Websocket.Error(Websocket.Error.Reason.ReservedBits))
+
+        val opcode = byte0 & 0x0f
+
+        val byte1 = cursor.peek.asInt
+        cursor.advance()
+        val masked = (byte1 & 0x80) != 0
+
+        // RFC 6455 §5.1: a server must reject an unmasked client frame; a client must
+        // likewise reject a masked server frame.
+        if masking.inbound && !masked then abort(Websocket.Error(Websocket.Error.Reason.Unmasked))
+        if !masking.inbound && masked then abort(Websocket.Error(Websocket.Error.Reason.Masked))
+
+        val length: Long = (byte1 & 0x7f) match
+          case 126 => B16(cursor.take(Data())(2)).u16.long
+          case 127 => B64(cursor.take(Data())(8)).s64.long
+          case n   => n.toLong
+
+        // A 64-bit length with the high bit set decodes negative; treat it, and any
+        // length past the cap, as too large to buffer.
+        if length < 0 || length > maxPayload
+        then abort(Websocket.Error(Websocket.Error.Reason.TooLarge(length)))
+
+        // Control frames must not be fragmented and carry at most 125 bytes.
+        if opcode >= 0x8 && (!fin || length > maxControlPayload)
+        then abort(Websocket.Error(Websocket.Error.Reason.BadControl))
+
+        val mask = if masked then cursor.take(Data())(4) else Data()
+        val payload = unmask(cursor.take(Data())(length.toInt), mask)
+
+        opcode match
+          case 0x0 => Continuation(fin, payload)
+          case 0x1 => Text(fin, payload)
+          case 0x2 => Binary(fin, payload)
+          case 0x9 => Ping(payload)
+          case 0xa => Pong(payload)
+
+          case 0x8 =>
+            // A close payload is either empty or a 2-byte code plus an optional
+            // reason; a lone byte is malformed. `1005` is the internal "no code
+            // present" sentinel and must never travel on the wire.
+            if payload.length == 1 then abort(Websocket.Error(Websocket.Error.Reason.BadClose))
+            val code =
+              if payload.length >= 2 then B16(payload.take(2)).u16.int else 1005
+
+            if payload.length >= 2 && !validCloseCode(code)
+            then abort(Websocket.Error(Websocket.Error.Reason.BadClose))
+
+            val reason = if payload.length > 2 then payload.drop(2) else Data()
+            Close(code, reason)
+
+          case other => abort(Websocket.Error(Websocket.Error.Reason.BadOpcode(other)))
+
+    // Filled with an explicit loop rather than `Data.fill`: the lambda would capture `bytes`
+    // and `mask`, and inside this object a read of a `Data` element is then required at
+    // `^{any}` rather than the read-only `^{}` the type carries.
+    def unmask(bytes: Data, mask: Data): Data =
+      if mask.length == 0 then bytes else
+        val out = Array[Byte](bytes.length)
+        var index = 0
+
+        while index < bytes.length do
+          out(index) = (bytes.readUnchecked(index)^mask.readUnchecked(index%4)).toByte
+          index += 1
+
+        Array.freeze(out)
+
+  enum Frame(val opcode: Int, val payload: Data):
+    case Continuation(last: Boolean, data: Data) extends Frame(0x0, data)
+    case Text(last: Boolean, data: Data)         extends Frame(0x1, data)
+    case Binary(last: Boolean, data: Data)       extends Frame(0x2, data)
+    case Close(code: Int, reason: Data)          extends Frame(0x8, Frame.closeData(code, reason))
+    case Ping(data: Data)                        extends Frame(0x9, data)
+    case Pong(data: Data)                        extends Frame(0xa, data)
+
+    def fin: Boolean = this match
+      case Continuation(last, _) => last
+      case Text(last, _)         => last
+      case Binary(last, _)       => last
+      case _                     => true
+
+    // Encode as a server-to-client (unmasked) frame.
+    def encode: Data =
+      val length = payload.length
+      val flags = ((if fin then 0x80 else 0x00) | opcode).toByte
+
+      val header: Data =
+        if length <= 125 then Data(flags, length.toByte)
+        else if length <= 0xffff then Data(flags, 126.toByte, (length >> 8).toByte, length.toByte)
+        else
+          Data
+            ( flags, 127.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, (length >> 24).toByte,
+              (length >> 16).toByte, (length >> 8).toByte, length.toByte )
+
+      // Sealed: see `closeData`.
+      header ++ payload
 
 // The `Servable` carrier for a WebSocket handler. On serve it produces the `101`
 // handshake response whose body is the outgoing frame stream; the handler runs

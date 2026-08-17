@@ -73,8 +73,8 @@ object internal:
       . parts.toList
 
     val escapedParts: List[String] = rawParts.map: part =>
-      try TextEscapes.escape(part.tt).s catch case error: EscapeError => error match
-        case EscapeError(msg) => halt(msg)
+      try TextEscapes.escape(part.tt).s catch case error: TextEscapes.Error => error match
+        case TextEscapes.Error(msg) => halt(msg)
 
     val insertionExprs: List[Expr[Any]] = insertions.absolve match
       case Varargs(exprs) => exprs.toList

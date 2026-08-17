@@ -43,7 +43,7 @@ import spectacular.*
 import vacuous.*
 
 import CreateFlag.*
-import IoError.{Operation, Reason}
+import Io.Error.{Operation, Reason}
 
 // The `Creatable` instances for filesystem entries, replacing the earlier standalone
 // `Creatable` typeclass. `path.create[Directory]()` and `path.create[File]()` instantiate an
@@ -58,7 +58,7 @@ object Creation:
   // `Parents` flag.
   private[galilei] def ensure[filesystem: Filesystem]
     ( path: Path on filesystem, flags: List[CreateFlag] )
-    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[IoError] )
+    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error] )
   :   Unit =
 
     if flags.has(Parents) then
@@ -71,14 +71,14 @@ object Creation:
 
   private[galilei] def replace[filesystem: Filesystem]
     ( path: Path on filesystem, flags: List[CreateFlag] )
-    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[IoError] )
+    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error] )
   :   Unit =
 
     if flags.has(Replace) && backend.exists(path, false) then wipe(path)
 
   // Public: shared with `Scratch`-style cleanup and called from creation rollback.
   def wipe[filesystem: Filesystem](path: Path on filesystem)
-    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[IoError] )
+    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error] )
   :   Unit =
 
     if backend.stat(path, false).entry == Directory
@@ -87,8 +87,8 @@ object Creation:
 
   class DirectoryCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
     ( using backend: FilesystemBackend on filesystem,
-            ioError: Tactic[IoError],
-            loggable: (IoEvent is Loggable)^ )
+            ioError: Tactic[Io.Error],
+            loggable: (Io.Event is Loggable)^ )
   extends Creatable:
 
     type Self = path
@@ -98,7 +98,7 @@ object Creation:
     type Result = Directory.Handle { type Under = filesystem }
 
     override def make(value: path, flags: List[CreateFlag]): Unit =
-      Log.info(IoEvent.Create((value: Path on filesystem).show))
+      Log.info(Io.Event.Create((value: Path on filesystem).show))
       ensure(value, flags)
       replace(value, flags)
       backend.createDirectory(value)
@@ -118,7 +118,7 @@ object Creation:
 
       if !AccessRegister.acquire(real, atoms) then
         wipe(value)
-        abort(IoError(value, Operation.Create, Reason.Busy))
+        abort(Io.Error(value, Operation.Create, Reason.Busy))
 
       try
         val handle =
@@ -135,8 +135,8 @@ object Creation:
 
   class FileCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
     ( using backend: FilesystemBackend on filesystem,
-            ioError: Tactic[IoError],
-            loggable: (IoEvent is Loggable)^ )
+            ioError: Tactic[Io.Error],
+            loggable: (Io.Event is Loggable)^ )
   extends Creatable:
 
     type Self = path
@@ -146,7 +146,7 @@ object Creation:
     type Result = Handle
 
     override def make(value: path, flags: List[CreateFlag]): Unit =
-      Log.info(IoEvent.Create((value: Path on filesystem).show))
+      Log.info(Io.Event.Create((value: Path on filesystem).show))
       ensure(value, flags)
       replace(value, flags)
       backend.createFile(value)
@@ -159,17 +159,17 @@ object Creation:
       ( block: ((Handle & Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
-      Log.info(IoEvent.Create((value: Path on filesystem).show))
+      Log.info(Io.Event.Create((value: Path on filesystem).show))
       ensure(value, flags)
 
       if !flags.has(Replace) && backend.exists(value, false)
-      then abort(IoError(value, Operation.Create, Reason.AlreadyExists))
+      then abort(Io.Error(value, Operation.Create, Reason.AlreadyExists))
 
       // `peer` needs a statically-known `Topic`, which an abstract `path` lacks, so the
       // temporary sibling is built through the parent instead.
       val temporary: Path on filesystem =
         safely(value.parent).let(_.child(t".${value.name}.part")(using Unsafe))
-          .or(abort(IoError(value, Operation.Create, Reason.Unsupported)))
+          .or(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))
 
       try
         val outcome =
@@ -184,8 +184,8 @@ object Creation:
 
   class FifoCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
     ( using backend: FilesystemBackend on filesystem,
-            ioError: Tactic[IoError],
-            loggable: (IoEvent is Loggable)^ )
+            ioError: Tactic[Io.Error],
+            loggable: (Io.Event is Loggable)^ )
   extends Creatable:
 
     type Self = path
@@ -195,7 +195,7 @@ object Creation:
     type Result = Fifo
 
     override def make(value: path, flags: List[CreateFlag]): Unit =
-      Log.info(IoEvent.Create((value: Path on filesystem).show))
+      Log.info(Io.Event.Create((value: Path on filesystem).show))
       ensure(value, flags)
       replace(value, flags)
       backend.createFifo(value)
@@ -207,4 +207,4 @@ object Creation:
       ( block: ((Fifo & Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
-      abort(IoError(value, Operation.Create, Reason.Unsupported))
+      abort(Io.Error(value, Operation.Create, Reason.Unsupported))

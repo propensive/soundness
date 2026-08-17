@@ -39,4 +39,4 @@ import serpentine.*
 
 trait DeleteRecursively extends Planar, Findable:
   def conditionally[ResultType](path: Path on Plane)(operation: => ResultType)
-  :   (Tactic[IoError]^) ?->{operation} ResultType
+  :   (Tactic[Io.Error]^) ?->{operation} ResultType

@@ -234,7 +234,7 @@ the machinery beneath every "which field failed" report in the format modules.
 Three related operations turn a failure into a value rather than a control-flow event.
 
 `capture` runs a block that is expected to fail and returns the error, which is what a test
-asserting on a failure needs. A block that succeeds is itself an error — an `ExpectationError` —
+asserting on a failure needs. A block that succeeds is itself an error — an `Expectation.Error` —
 since the test was checking the wrong thing:
 
 ```scala

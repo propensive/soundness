@@ -68,7 +68,7 @@ object Subtree:
     transparent inline def contents[result]
       ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Read])^ )
       ( using filesystem: handle.Under is Filesystem )
-      ( using readable: (Data is Readable to result)^, tactic: Tactic[IoError] )
+      ( using readable: (Data is Readable to result)^, tactic: Tactic[Io.Error] )
     :   result =
       readResolved[handle.Under, result](handle.resolve(path))
 
@@ -76,7 +76,7 @@ object Subtree:
       ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Write])^ )
       ( using filesystem: handle.Under is Filesystem )
       ( using streamable: (content is Streamable by Data over Credit)^ )
-      ( using tactic: Tactic[IoError] )
+      ( using tactic: Tactic[Io.Error] )
     :   Unit =
       writeResolved(handle.resolve(path), content)
 
@@ -90,7 +90,7 @@ object Subtree:
     transparent inline def entries
       ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Read])^ )
       ( using filesystem: handle.Under is Filesystem )
-      ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[IoError] )
+      ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[Io.Error] )
     :   Chain[Path on plane] =
       entriesResolved(handle.resolve(path)).map: child =>
         path.child(child.name)(using Unsafe)
@@ -98,7 +98,7 @@ object Subtree:
     transparent inline def remove()
       ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Write])^ )
       ( using filesystem: handle.Under is Filesystem )
-      ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[IoError] )
+      ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[Io.Error] )
     :   Unit =
       removeResolved(handle.resolve(path))
 
@@ -106,14 +106,14 @@ object Subtree:
   // generate inline-accessor bridges whose fresh capability roots fail capture checking.
   def readResolved[under <: Platform, result](path: Path on under)
     ( using filesystem: under is Filesystem )
-    ( using readable: (Data is Readable to result)^, tactic: Tactic[IoError] )
+    ( using readable: (Data is Readable to result)^, tactic: Tactic[Io.Error] )
   :   result =
     Platform.pathReadable[under, result].read(path)
 
   def writeResolved[under, content](path: Path on under, content: content)
     ( using filesystem: under is Filesystem )
     ( using streamable: (content is Streamable by Data over Credit)^ )
-    ( using tactic: Tactic[IoError] )
+    ( using tactic: Tactic[Io.Error] )
   :   Unit =
     path.write(content)
 
@@ -125,13 +125,13 @@ object Subtree:
 
   def entriesResolved[under](path: Path on under)
     ( using filesystem: under is Filesystem )
-    ( using backend: FilesystemBackend on under, tactic: Tactic[IoError] )
+    ( using backend: FilesystemBackend on under, tactic: Tactic[Io.Error] )
   :   Chain[Path on under] =
     path.children
 
   def removeResolved[under](path: Path on under)
     ( using filesystem: under is Filesystem )
-    ( using backend: FilesystemBackend on under, tactic: Tactic[IoError] )
+    ( using backend: FilesystemBackend on under, tactic: Tactic[Io.Error] )
   :   Unit =
     import filesystemOptions.deleteRecursively.disabled
     path.delete()

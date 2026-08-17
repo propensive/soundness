@@ -30,22 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package hypotenuse
 
+import anticipation.*
 import fulminate.*
-import gossamer.*
-import spectacular.*
 
-object RemoteError:
-  enum Reason(val number: Int) extends Clarification:
-    case Serialization   extends Reason(1)
-    case Deserialization extends Reason(2)
-    case Unknown         extends Reason(3)
+// The failure of an arithmetic *operation*, as distinct from a value that cannot be
+// represented (`Decimal.Error`, `Rational.Error`). Division and overflow are separate
+// `Reason`s rather than separate types because they are one concept — an operation with no
+// representable result — and `arithmeticOptions.division` / `.overflow` remain independent
+// imports, so a caller still chooses which checks to switch on.
+object Arithmetic:
+  object Error:
+    enum Reason(val number: Int) extends Clarification:
+      case DivisionByZero extends Reason(1)
+      case Overflow       extends Reason(2)
 
-  given Reason is Showable =
-    case Reason.Serialization   => t"the output could not be serialized"
-    case Reason.Deserialization => t"the input could not be deserialized"
-    case Reason.Unknown         => t"of an unknown reason"
+    given communicable: Reason is Communicable =
+      case Reason.DivisionByZero => m"the divisor was zero"
+      case Reason.Overflow       => m"the result exceeded the range of its type"
 
-case class RemoteError(reason: RemoteError.Reason)(using Diagnostics)
-extends Error(306, reason.number)(m"failed to perform a remote operation because $reason")
+  case class Error(reason: Arithmetic.Error.Reason)(using Diagnostics)
+  extends fulminate.Error(868, reason.number)
+    ( m"the arithmetic operation could not be completed because $reason" )

@@ -61,7 +61,7 @@ object Image:
   // *path* as an image (`path.open[Image]`) lives in the JVM-only source set.
   given dataOpenable
   :   ( ociTactic: Tactic[Oci.Error], tarTactic: Tactic[Tar.Error],
-        streamTactic: Tactic[StreamError] )
+        streamTactic: Tactic[Truncation.Error] )
   =>  ( Image.DataOpenable^{ociTactic, tarTactic, streamTactic} ) =
     Image.DataOpenable()
 
@@ -298,7 +298,7 @@ object Image:
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Opening in-memory `Data` as an OCI image; opening a filesystem
   // *path* (`ImageOpenable`) lives in the JVM-only source set. Read-only for now.
-  class DataOpenable(using Tactic[Oci.Error], Tactic[Tar.Error], Tactic[StreamError])
+  class DataOpenable(using Tactic[Oci.Error], Tactic[Tar.Error], Tactic[Truncation.Error])
   extends Openable:
 
     type Self = Data

@@ -72,15 +72,15 @@ object Manpages:
   def install(page: Roff, force: Boolean = false)
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-  (using (IoEvent is Loggable)^)
-  ( using Tactic[InstallError] )
+  ( using (Io.Event is Loggable)^ )
+  ( using Tactic[Install.Error] )
   :   InstallResult =
 
     mitigate:
-      case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
-      case Name.Error(_, _, _) => InstallError(InstallError.Reason.Io)
-      case Path.Error(_, _)    => InstallError(InstallError.Reason.Io)
-      case StreamError(_)      => InstallError(InstallError.Reason.Io)
+      case Io.Error(_, _, _, _) => Install.Error(Install.Error.Reason.Io)
+      case Name.Error(_, _, _)  => Install.Error(Install.Error.Reason.Io)
+      case Path.Error(_, _)     => Install.Error(Install.Error.Reason.Io)
+      case Truncation.Error(_)  => Install.Error(Install.Error.Reason.Io)
 
     . protect:
         safely:

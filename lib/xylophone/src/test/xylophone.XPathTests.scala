@@ -218,26 +218,26 @@ object XPathTests extends Suite(m"Xylophone XPath evaluation tests"):
         try
           document.evaluate(XPath(XPath.variable(t"missing")))
           t"evaluated"
-        catch case error: XPath.EvaluationError => t"unbound"
+        catch case error: XPath.Error => t"unbound"
       . assert(_ == t"unbound")
 
       test(m"an unknown function raises an error"):
         try
           document.evaluate(xp"frobnicate()")
           t"evaluated"
-        catch case error: XPath.EvaluationError => t"unknown"
+        catch case error: XPath.Error => t"unknown"
       . assert(_ == t"unknown")
 
       test(m"the namespace axis is unsupported"):
         try
           document.select(xp"//namespace::x")
           t"selected"
-        catch case error: XPath.EvaluationError => t"unsupported"
+        catch case error: XPath.Error => t"unsupported"
       . assert(_ == t"unsupported")
 
       test(m"the id function is unsupported"):
         try
           document.evaluate(xp"id('main')")
           t"evaluated"
-        catch case error: XPath.EvaluationError => t"unsupported"
+        catch case error: XPath.Error => t"unsupported"
       . assert(_ == t"unsupported")

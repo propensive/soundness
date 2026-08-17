@@ -108,34 +108,34 @@ private def buildJavaRequest
 
   request.build().nn
 
-private def send(request: jnh.HttpRequest)(using Tactic[ConnectError], TlsAcceptance)
+private def send(request: jnh.HttpRequest)(using Tactic[Connect.Error], TlsAcceptance)
 :   jnh.HttpResponse[ji.InputStream] =
 
-  import ConnectError.Reason.*, Ssl.Reason.*
+  import Connect.Error.Reason.*, Ssl.Reason.*
 
   try javaClient.send(request, jnh.HttpResponse.BodyHandlers.ofInputStream()).nn catch
-    case error: jns.SSLHandshakeException       => abort(ConnectError(Ssl(Handshake)))
-    case error: jns.SSLProtocolException        => abort(ConnectError(Ssl(Protocol)))
-    case error: jns.SSLPeerUnverifiedException  => abort(ConnectError(Ssl(Peer)))
-    case error: jns.SSLKeyException             => abort(ConnectError(Ssl(Key)))
-    case error: jn.UnknownHostException         => abort(ConnectError(Dns))
-    case error: jnh.HttpConnectTimeoutException => abort(ConnectError(Timeout))
+    case error: jns.SSLHandshakeException       => abort(Connect.Error(Ssl(Handshake)))
+    case error: jns.SSLProtocolException        => abort(Connect.Error(Ssl(Protocol)))
+    case error: jns.SSLPeerUnverifiedException  => abort(Connect.Error(Ssl(Peer)))
+    case error: jns.SSLKeyException             => abort(Connect.Error(Ssl(Key)))
+    case error: jn.UnknownHostException         => abort(Connect.Error(Dns))
+    case error: jnh.HttpConnectTimeoutException => abort(Connect.Error(Timeout))
 
     case error: jn.ConnectException =>
       error.getMessage() match
-        case "Connection refused"                    => abort(ConnectError(Refused))
-        case "Connection timed out"                  => abort(ConnectError(Timeout))
-        case "HTTP connect timed out"                => abort(ConnectError(Timeout))
-        case error                                   => abort(ConnectError(Unknown))
+        case "Connection refused"                    => abort(Connect.Error(Refused))
+        case "Connection timed out"                  => abort(Connect.Error(Timeout))
+        case "HTTP connect timed out"                => abort(Connect.Error(Timeout))
+        case error                                   => abort(Connect.Error(Unknown))
 
     case error: ji.IOException =>
-      abort(ConnectError(Unknown))
+      abort(Connect.Error(Unknown))
 
-private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tactic[ConnectError])
+private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tactic[Connect.Error])
 :   Http.Response =
 
   val status: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
-    abort(ConnectError(ConnectError.Reason.Unknown))
+    abort(Connect.Error(Connect.Error.Reason.Unknown))
 
   val headers: List[Http.Header] = response.headers.nn.map().nn.to[List].bind:
     (key, values) => values.to[List].map: value => Http.Header(key.tt, value.tt)
@@ -156,7 +156,7 @@ package httpBackends:
         method:  Http.Method,
         headers: List[Http.Header],
         body:    Spring[Data] )
-      ( using Tactic[ConnectError] )
+      ( using Tactic[Connect.Error] )
     :   Http.Response =
 
       buildResponse(send(buildJavaRequest(jn.URI.create(url.s).nn, method, headers, body)))
@@ -180,21 +180,21 @@ package httpBackends:
         method:  Http.Method,
         headers: List[Http.Header],
         body:    Spring[Data] )
-      ( using Tactic[ConnectError] )
+      ( using Tactic[Connect.Error] )
     :   Http.Response =
 
-      import ConnectError.Reason.*
+      import Connect.Error.Reason.*
 
-      val parsed: HttpUrl = safely(url.as[HttpUrl]).or(abort(ConnectError(Unknown)))
+      val parsed: HttpUrl = safely(url.as[HttpUrl]).or(abort(Connect.Error(Unknown)))
       val scheme: Text = parsed.scheme.name
 
-      if scheme != t"http" && scheme != t"https" then abort(ConnectError(Unknown))
+      if scheme != t"http" && scheme != t"https" then abort(Connect.Error(Unknown))
 
       val secure: Boolean = scheme == t"https"
       val defaultPort: Int = if secure then 443 else 80
-      val host: Host = parsed.host.or(abort(ConnectError(Dns)))
+      val host: Host = parsed.host.or(abort(Connect.Error(Dns)))
       val port: Int = parsed.authority.lay(defaultPort)(_.port.or(defaultPort))
-      val tcpPort: Tcp.Port = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
+      val tcpPort: Tcp.Port = safely(Port[Tcp](port)).or(abort(Connect.Error(Unknown)))
       val origin: Text = t"${host.show}:$port"
 
       // An origin-form URL has an empty path; its request target is `/`.
@@ -232,24 +232,24 @@ private def plaintextExchange
     headers: List[Http.Header],
     body:    Spring[Data] )
   ( using backend: Socket.Backend, options: Every[Socket.Option.Tcp], buffering: Buffering )
-  ( using Tactic[ConnectError] )
+  ( using Tactic[Connect.Error] )
 :   Http.Response =
 
-  import ConnectError.Reason.*
+  import Connect.Error.Reason.*
 
   val httpRequest = Http.Request(method, 1.1, host, target, headers, body)
 
   def connect(): Duplex =
     try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, List.of(options.values)) catch
-      case error: jn.UnknownHostException => abort(ConnectError(Dns))
+      case error: jn.UnknownHostException => abort(Connect.Error(Dns))
 
       case error: jn.ConnectException =>
         error.getMessage() match
-          case "Connection refused"   => abort(ConnectError(Refused))
-          case "Connection timed out" => abort(ConnectError(Timeout))
-          case _                      => abort(ConnectError(Unknown))
+          case "Connection refused"   => abort(Connect.Error(Refused))
+          case "Connection timed out" => abort(Connect.Error(Timeout))
+          case _                      => abort(Connect.Error(Unknown))
 
-      case error: ji.IOException => abort(ConnectError(Unknown))
+      case error: ji.IOException => abort(Connect.Error(Unknown))
 
   def borrow(): Duplex | Null =
     val queue = idleConnections.get(origin)
@@ -278,7 +278,7 @@ private def plaintextExchange
     // so a pooled connection is not pointlessly retried).
     if response.status == Http.SwitchingProtocols then
       duplex.close()
-      abort(ConnectError(Unknown))
+      abort(Connect.Error(Unknown))
 
     val data: Data = unsafely(response.body.stream.memoize)
 
@@ -308,9 +308,9 @@ private def plaintextExchange
     val duplex = connect()
 
     try attempt(duplex) catch
-      case error: Http.Response.Error => duplex.close(); abort(ConnectError(Unknown))
-      case error: StreamError       => duplex.close(); abort(ConnectError(Unknown))
-      case error: ji.IOException    => duplex.close(); abort(ConnectError(Unknown))
+      case error: Http.Response.Error => duplex.close(); abort(Connect.Error(Unknown))
+      case error: Truncation.Error       => duplex.close(); abort(Connect.Error(Unknown))
+      case error: ji.IOException    => duplex.close(); abort(Connect.Error(Unknown))
 
   borrow() match
     case null => fresh()
@@ -318,7 +318,7 @@ private def plaintextExchange
     case duplex: Duplex =>
       try attempt(duplex) catch
         case error: Http.Response.Error => duplex.close(); fresh()
-        case error: StreamError       => duplex.close(); fresh()
+        case error: Truncation.Error       => duplex.close(); fresh()
         case error: ji.IOException    => duplex.close(); fresh()
 
 // The TLS exchange: ALPN offers `h2` then `http/1.1` during the handshake, and
@@ -334,10 +334,10 @@ private def httpsExchange
     headers: List[Http.Header],
     body:    Spring[Data] )
   ( using online: Online, options: Every[Socket.Option.Tcp], buffering: Buffering, tls: Tls )
-  ( using Tactic[ConnectError] )
+  ( using Tactic[Connect.Error] )
 :   Http.Response =
 
-  import ConnectError.Reason.*
+  import Connect.Error.Reason.*
 
   val duplex: Duplex = secureConnect(host, port)
 
@@ -369,9 +369,9 @@ private def httpsExchange
             finally connection.close()
 
       catch
-        case error: Http2.Error  => abort(ConnectError(Unknown))
-        case error: Async.Error  => abort(ConnectError(Unknown))
-        case error: StreamError => abort(ConnectError(Unknown))
+        case error: Http2.Error  => abort(Connect.Error(Unknown))
+        case error: Async.Error  => abort(Connect.Error(Unknown))
+        case error: Truncation.Error => abort(Connect.Error(Unknown))
 
     case _ =>
       // One-shot HTTP/1.1 over the negotiated connection. `Connection: close`
@@ -387,13 +387,13 @@ private def httpsExchange
 // One sequential HTTP/1.1 exchange over an open connection: send the request,
 // parse the framed response, drain its body, and leave the connection open,
 // positioned at the next response. `101` upgrades are refused (the upgraded
-// stream would never end); failures map onto `ConnectError`.
+// stream would never end); failures map onto `Connect.Error`.
 private def sequentialFetch(duplex: Duplex, request: Http.Request)
   ( using Buffering )
-  ( using Tactic[ConnectError] )
+  ( using Tactic[Connect.Error] )
 :   Http.Response =
 
-  import ConnectError.Reason.*
+  import Connect.Error.Reason.*
 
   try
     duplex.send(Http.Request.serialize(request))
@@ -405,14 +405,14 @@ private def sequentialFetch(duplex: Duplex, request: Http.Request)
     val response: Http.Response =
       unsafely(Http.Response.parse(input, request.method == Http.Head))
 
-    if response.status == Http.SwitchingProtocols then abort(ConnectError(Unknown))
+    if response.status == Http.SwitchingProtocols then abort(Connect.Error(Unknown))
 
     repackage(response, unsafely(response.body.stream.memoize))
 
   catch
-    case error: Http.Response.Error => abort(ConnectError(Unknown))
-    case error: StreamError       => abort(ConnectError(Unknown))
-    case error: ji.IOException    => abort(ConnectError(Unknown))
+    case error: Http.Response.Error => abort(Connect.Error(Unknown))
+    case error: Truncation.Error       => abort(Connect.Error(Unknown))
+    case error: ji.IOException    => abort(Connect.Error(Unknown))
 
 // A request is transmitted over a raw socket as its HTTP/1.1 wire form.
 given requestTransmissible: Http.Request is Transmissible = Http.Request.serialize(_)
@@ -428,7 +428,7 @@ given domainSocketFetchable: DomainSocket.Endpoint is Fetchable onto DomainSocke
     def text(endpoint: DomainSocket.Endpoint): Text = endpoint.path
     def hostname(endpoint: DomainSocket.Endpoint): Host = Localhost
 
-given domainSocketHttpClient: Tactic[StreamError] => Http.Client onto DomainSocket =
+given domainSocketHttpClient: Tactic[Truncation.Error] => Http.Client onto DomainSocket =
   new Http.Client:
     type Target = DomainSocket
 

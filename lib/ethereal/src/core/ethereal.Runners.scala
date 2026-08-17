@@ -86,9 +86,9 @@ object Runners:
 
     mitigate:
       case Http.Error(_, _)   => Runners.Error(m"Could not download the stub $name from $baseUrl")
-      case ConnectError(_)    => Runners.Error(m"Could not connect to $baseUrl to download $name")
+      case Connect.Error(_)    => Runners.Error(m"Could not connect to $baseUrl to download $name")
       case Url.Error(_, _, _) => Runners.Error(m"The runner stub URL for $name is not valid")
-      case StreamError(_)     => Runners.Error(m"The download of the stub $name was interrupted")
+      case Truncation.Error(_)     => Runners.Error(m"The download of the stub $name was interrupted")
 
     . protect:
         val runner: Data = mute[Http.Event](t"$baseUrl/$name".as[HttpUrl].fetch().read[Data])

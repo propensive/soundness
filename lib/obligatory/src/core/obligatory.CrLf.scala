@@ -45,7 +45,7 @@ object CrLf:
   // the framed iterator (capturing the local `cursor`, built from `input`) reaches `input` — the
   // Scala.js pipeline infers neither the lambda's `this` nor the local's reachability. (Compiler
   // divergence; the JVM pipeline accepts the lambda.)
-  given framable: (tactic: Tactic[FrameError])
+  given framable: (tactic: Tactic[Framing.Error])
   =>  ( (Text is Framable by CrLf)^{tactic} ) = new Framable:
     type Self = Text
     type Operand = CrLf
@@ -63,7 +63,7 @@ object CrLf:
               cursor.next()
 
               if !cursor.lay(false)(_ == Lf)
-              then abort(FrameError(FrameError.Reason.MissingLineFeed))
+              then abort(Framing.Error(Framing.Error.Reason.MissingLineFeed))
               else cursor.next()
             else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
 

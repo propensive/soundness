@@ -529,7 +529,7 @@ object internal:
 
     val expression: Expression =
       try unsafely(XPathReader.parse(joined.tt, holes = true)) catch
-        case error: XPath.Error => halt(error.message, translate(error.offset))
+        case error: Parse.Error => halt(error.message, translate(error.span.offset.lay(0)(_.n0)))
 
     '{XPath(${liftExpression(expression)})}
 
@@ -1561,14 +1561,14 @@ object internal:
                 firstWins:
                   '{
                     Xml.Parsable.focusing($foci, $keyText):
-                      $reader.text().or { $reader.fault(); t"" }
+                      $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" }
                   }.asTerm
 
               case StringK =>
                 firstWins:
                   '{
                     Xml.Parsable.focusing($foci, $keyText):
-                      ($reader.text().or { $reader.fault(); t"" }).s
+                      ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s
                   }.asTerm
 
               case InstanceK =>
@@ -1836,7 +1836,7 @@ object internal:
             }
 
           override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
-            raise(Xml.Error())
+            raise(Xml.Error(Xml.Error.Reason.Missing))
 
             fallback.lay
               ( ${

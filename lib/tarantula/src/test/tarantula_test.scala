@@ -86,7 +86,7 @@ class FakeDriver(route: (Http.Method, Text, Int) -> Http.Response) extends Http.
   // driver whose answer changes over time — which is what testing a retry needs.
   def request
      ( url: Text, method: Http.Method, headers: List[Http.Header], body: Spring[Data]^ )
-     ( using Tactic[ConnectError] )
+     ( using Tactic[Connect.Error] )
   :   Http.Response =
 
     val data = body().memoize

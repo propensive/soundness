@@ -49,7 +49,7 @@ object Syslog:
     given hieroglyph.CharEncoder = hieroglyph.CharEncoder.system
 
     recover:
-      case StreamError(_)     => ()
+      case Truncation.Error(_)     => ()
       case guillotine.Exec.Error(_, _, _) => ()
 
     . protect:

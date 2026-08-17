@@ -55,21 +55,21 @@ import Http2.Error.Reason
 object PseudoHeaders:
   // Build the HPACK header list for a request. `scheme`/`authority` come from the
   // connection context, since an `Http.Request` carries them separately.
-  def request(request: Http.Request, scheme: Text, authority: Text): List[HpackEntry] =
+  def request(request: Http.Request, scheme: Text, authority: Text): List[Hpack.Entry] =
     val pseudo =
       List
-        ( HpackEntry(t":method", request.method.show),
-          HpackEntry(t":scheme", scheme),
-          HpackEntry(t":authority", authority),
-          HpackEntry(t":path", request.target) )
+        ( Hpack.Entry(t":method", request.method.show),
+          Hpack.Entry(t":scheme", scheme),
+          Hpack.Entry(t":authority", authority),
+          Hpack.Entry(t":path", request.target) )
 
-    val regular = request.textHeaders.map: header => HpackEntry(header.key.lower, header.value)
+    val regular = request.textHeaders.map: header => Hpack.Entry(header.key.lower, header.value)
 
     List.of(pseudo.stdlib ++ regular.stdlib)
 
   // Reconstruct an `Http.Response` from a decoded HEADERS block and the body stream.
   // `:status` selects the `Http.Status`; other fields become response headers.
-  def response(headerBlock: List[HpackEntry], body: Chain[Data])
+  def response(headerBlock: List[Hpack.Entry], body: Chain[Data])
   :   Http.Response raises Http2.Error =
 
     var statusText: Optional[Text] = Unset
@@ -93,7 +93,7 @@ object PseudoHeaders:
   // The inverse of `request`, used by the server role.
   // Plain using-parameter, de-sugared from `raises`: a context-function result
   // may not hide the capturing request.
-  def requestOf(headerBlock: List[HpackEntry], consume body: Spring[Data]^)
+  def requestOf(headerBlock: List[Hpack.Entry], consume body: Spring[Data]^)
     ( using Tactic[Http2.Error] )
   :   Http.Request^ =
 
@@ -124,14 +124,14 @@ object PseudoHeaders:
   // Build the HPACK header list for a response: `:status` first, then the
   // regular headers lowercased, with connection-specific headers stripped
   // (RFC 7540 §8.1.2.2). The inverse of `response`, used by the server role.
-  def entries(response: Http.Response^): List[HpackEntry] =
+  def entries(response: Http.Response^): List[Hpack.Entry] =
     val forbidden: List[Text] =
       List(t"connection", t"keep-alive", t"transfer-encoding", t"upgrade", t"proxy-connection")
 
     val regular = response.textHeaders.map: header =>
-      HpackEntry(header.key.lower, header.value)
+      Hpack.Entry(header.key.lower, header.value)
 
     . filter: entry =>
         !forbidden.has(entry.name)
 
-    List.of(HpackEntry(t":status", response.status.code.show) :: regular.stdlib)
+    List.of(Hpack.Entry(t":status", response.status.code.show) :: regular.stdlib)

@@ -270,7 +270,7 @@ object Reactor:
       val keep0 = keep
 
       val respond: Http.Connection.Respond^{this} = new Http.Connection.Respond:
-        def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
+        def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
           val response2 = if keep0 then response else response + closeHeader
           // `memoize` forces the whole serialized response, including a `Flowing`
           // body, to completion on the lane: the reactive front-end's non-blocking
@@ -395,7 +395,7 @@ object Reactor:
 final class Reactor
   ( val port: Int, local: Boolean = true, loops: Int = 0 )
   ( handler: (connection: Http.Connection) ?=> Http.Response^{connection} )
-  ( using errorPage: WebserverErrorPage, loggable: (HttpServer.Event is Loggable)^ ):
+  ( using errorPage: WebserverErrorPage, loggable: (Httpd.Event is Loggable)^ ):
 
   import Reactor.*
 

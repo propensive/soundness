@@ -30,85 +30,106 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package galilei
 
-import java.net as jn
-
-import anticipation.Log
-import com.sun.net.httpserver as csnh
+import scala.annotation.*
 
 import anticipation.*
-import contingency.*
-import digression.*
 import fulminate.*
-import parasite.*
-import rudiments.*
-import telekinesis.*
-import turbulence.*
-import urticose.*
+import serpentine.*
 
-object HttpServer:
-  // HttpServerEvent → HttpServer.Event
+// Galilei's I/O vocabulary. `Error`'s reasons are the POSIX errno table — `Nonexistent`
+// is `ENOENT`, `NotSameVolume` is `EXDEV`, `Physical` is `EIO` — so the failures a
+// filesystem can report are named once, here, and the backends map onto them.
+object Io:
+  // IoError → Io.Error
+  object Error:
+    enum Operation:
+      case Read, Write, Create, Copy, Move, Delete, Metadata, Open, Access
+
+    enum Reason:
+      case
+        PermissionDenied, Nonexistent, AlreadyExists, IsNotDirectory, IsDirectory,
+        DirectoryNotEmpty, NotSameVolume, Unsupported, Cycle, Busy, ReadOnly, TooManyLinks,
+        NameTooLong, QuotaExceeded, StorageFull, InvalidData, Interrupted, Physical
+
+    @targetName("apply2")
+    def apply(path: Path, operation: Operation, reason: Reason)
+      ( using filesystem: path.Plane is Filesystem, diagnostics: Diagnostics )
+    :   Error =
+
+      new Error(path, operation, reason, filesystem)
+
+
+    given Reason is Communicable =
+      case Reason.PermissionDenied  => m"the user did not have sufficient permissions"
+      case Reason.Nonexistent       => m"the entry does not exist"
+      case Reason.AlreadyExists     => m"an entry at this path already exists"
+      case Reason.IsNotDirectory    => m"the entry is not a directory"
+      case Reason.IsDirectory       => m"the entry is a directory"
+      case Reason.DirectoryNotEmpty => m"the directory is not empty"
+      case Reason.NotSameVolume     => m"the source and destination are on different volumes"
+      case Reason.Unsupported       => m"it is not supported by the filesystem"
+      case Reason.Cycle             => m"a cycle was detected on the filesystem"
+      case Reason.Busy              => m"the entry is in use"
+      case Reason.ReadOnly          => m"the filesystem is read-only"
+      case Reason.TooManyLinks      => m"too many hard links point to the entry"
+      case Reason.NameTooLong       => m"the entry's name is too long for the filesystem"
+      case Reason.QuotaExceeded     => m"the user's storage quota would be exceeded"
+      case Reason.StorageFull       => m"the filesystem has no space remaining"
+      case Reason.InvalidData       => m"the entry's data is invalid"
+      case Reason.Interrupted       => m"the operation was interrupted"
+      case Reason.Physical          => m"of a physical input/output error"
+
+    given Operation is Communicable =
+      case Operation.Read     => m"read"
+      case Operation.Access   => m"access"
+      case Operation.Write    => m"write"
+      case Operation.Open     => m"open"
+      case Operation.Copy     => m"copy"
+      case Operation.Create   => m"create"
+      case Operation.Move     => m"move"
+      case Operation.Delete   => m"delete"
+      case Operation.Metadata => m"metadata"
+
+    private def describe
+      ( path:       Path,
+        operation:  Operation,
+        reason:     Reason,
+        filesystem: path.Plane is Filesystem )
+      ( using Diagnostics )
+    :   Message =
+
+      given path.Plane is Filesystem = filesystem
+      m"the $operation operation at ${path.encode} on ${filesystem.name} failed because $reason"
+
+  case class Error
+    ( path:       Path,
+      operation:  Error.Operation,
+      reason:     Error.Reason,
+      filesystem: path.Plane is Filesystem )
+    ( using Diagnostics )
+  // The message is computed in a companion method: a local `given` alias in the super-argument
+  // block is a lazy val whose initialization references `this` before the super constructor,
+  // which the Scala.js linker rejects (the JVM tolerates it).
+  extends fulminate.Error(Error.describe(path, operation, reason, filesystem))
+
+  // IoEvent → Io.Event
   object Event:
     given communicable: Event is Communicable =
-      case Received(request)            => m"received the request $request"
-      case Processed(request, duration) => m"processed the request $request in ${duration}ms"
-      case BrokenStream(length)         => m"sending the response was aborted after $length"
-      case ConnectionFailed(error)      => m"the connection handler failed: ${error.message}"
+      case Create(path)          => m"created $path"
+      case Delete(path)          => m"deleted $path"
+      case Move(from, to)        => m"moved $from to $to"
+      case Copy(from, to)        => m"copied $from to $to"
+      case HardLink(from, to)    => m"hard-linked $from to $to"
+      case Symlink(link, target) => m"symlinked $link to $target"
+      case Touch(path)           => m"touched $path"
 
   enum Event:
-    case Received(request: Http.Request) extends Event, Log.Network, Log.Protocol
-    case Processed(request: Http.Request, duration: Long) extends Event, Log.Network
-    case BrokenStream(length: Bytes) extends Event, Log.Network
-    case ConnectionFailed(error: Error) extends Event, Log.Network
-
-case class HttpServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
-extends RequestServable:
-  // The `Frontend` given is accepted for `RequestServable` uniformity and ignored:
-  // the JDK backend has one engine.
-  def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
-    ( using Monitor, Probate )
-    ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
-    ( using Frontend )
-  :   Service^ =
-
-    def handle(exchange: csnh.HttpExchange | Null): Unit =
-      try
-        recover:
-          case StreamError(length) =>
-            Log.warn(HttpServer.Event.BrokenStream(length))
-
-          case error @ Hostname.Error(_, _) =>
-            Log.warn(HttpServer.Event.ConnectionFailed(error))
-
-            try
-              exchange.nn.sendResponseHeaders(400, -1)
-              exchange.nn.close()
-            catch case NonFatal(_) => ()
-
-        . protect:
-            val connection = Connections(exchange.nn)
-
-            connection.respond:
-              try handler(using connection) catch case throwable: Throwable =>
-                errorPage.handle(throwable, connection)
-
-      catch case NonFatal(exception) =>
-        Log.fail(HttpServer.Event.ConnectionFailed(fulminate.Error(exception)))
-
-    def startServer()(using Tactic[ServerError]): com.sun.net.httpserver.HttpServer =
-      try
-        val host = if local then "localhost" else "0.0.0.0"
-        val httpServer = csnh.HttpServer.create(jn.InetSocketAddress(host, port), 0).nn
-        httpServer.createContext("/").nn.setHandler(handle(_))
-        httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
-        httpServer.start()
-        httpServer
-      catch
-        case error: jn.BindException => abort(ServerError(port))
-
-    val cancel: Promise[Unit] = Promise[Unit]()
-    val server = startServer()
-    val asyncTask = async(cancel.attend() yet server.stop(1))
-
-    Service: () => safely(cancel.fulfill(()))
+    case Create(path: Text) extends Event, Log.Filesystem
+    case Delete(path: Text) extends Event, Log.Filesystem
+    case Move(from: Text, to: Text) extends Event, Log.Filesystem
+    case Copy(from: Text, to: Text) extends Event, Log.Filesystem
+    case HardLink(from: Text, to: Text) extends Event, Log.Filesystem
+    case Symlink(link: Text, target: Text) extends Event, Log.Filesystem
+    case Touch(path: Text) extends Event, Log.Filesystem

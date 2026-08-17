@@ -85,7 +85,7 @@ package socketBackends:
     // blocking until data arrives; EOF (`-1`) runs `onEnd` and terminates; an I/O failure aborts
     // with the bytes read so far.
     private def channelSource(channel: jnc.ReadableByteChannel)(onEnd: () -> Unit)
-      ( using buffering: Buffering, tactic: Tactic[StreamError] )
+      ( using buffering: Buffering, tactic: Tactic[Truncation.Error] )
     :   (Stream[Data] over Credit)^{tactic, caps.any} =
 
       new Stream[Data]:
@@ -135,7 +135,7 @@ package socketBackends:
                 // Pre-read into a local: `abort`'s capture-polymorphic argument may
                 // not hide this instance's state.
                 val sent: Long = total
-                abort(StreamError(sent.b))
+                abort(Truncation.Error(sent.b))
 
     //── Stream server (`Bindable` over TCP / Unix-domain) ──────────────────────────────────────
     def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
@@ -306,7 +306,7 @@ package socketBackends:
 
         channel.shutdownOutput()
 
-    def response(exchange: ClientExchange)(using buffering: Buffering, tactic: Tactic[StreamError])
+    def response(exchange: ClientExchange)(using buffering: Buffering, tactic: Tactic[Truncation.Error])
     :   (Stream[Data] over Credit)^{tactic, caps.any} =
 
       exchange match

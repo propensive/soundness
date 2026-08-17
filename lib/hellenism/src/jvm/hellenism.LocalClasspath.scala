@@ -74,7 +74,7 @@ object LocalClasspath:
   def apply[path: Abstractable across Paths to Text]
     ( path: path )
     ( using Tactic[Path.Error],
-            Tactic[IoError],
+            Tactic[Io.Error],
             DereferenceSymlinks )
   :   LocalClasspath =
 
@@ -82,7 +82,7 @@ object LocalClasspath:
 
 
   given paths: [path: Abstractable across Paths to Text]
-  =>  ( pathTactic: Tactic[Path.Error], ioTactic: Tactic[IoError], deref: DereferenceSymlinks )
+  =>  ( pathTactic: Tactic[Path.Error], ioTactic: Tactic[Io.Error], deref: DereferenceSymlinks )
   =>  ((LocalClasspath is Addable by path to LocalClasspath)^{pathTactic, ioTactic}) =
 
     (classpath, path) =>

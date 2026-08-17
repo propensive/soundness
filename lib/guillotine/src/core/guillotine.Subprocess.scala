@@ -44,9 +44,9 @@ import zephyrine.*
 // as `java.lang.Process`), so that `Computable` instances — and future non-JVM backends — never
 // mention one. The JVM implementation is `Job`.
 trait Subprocess:
-  def stdout()(using Tactic[StreamError]): (Stream[Data] over Credit)^
-  def stderr()(using Tactic[StreamError]): (Stream[Data] over Credit)^
+  def stdout()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^
+  def stderr()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^
   def text(): Text
   def errorText(): Text
-  def lines()(using Tactic[StreamError]): (Stream[Array[Text]^{}] over Credit)^
+  def lines()(using Tactic[Truncation.Error]): (Stream[Array[Text]^{}] over Credit)^
   def status(): Int

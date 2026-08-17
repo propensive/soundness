@@ -77,7 +77,7 @@ object Masking:
         if index == 1 then (frame.readUnchecked(1).toInt | 0x80).toByte else frame.readUnchecked(index)
 
       val prefix: Data = header ++ key
-      val unmasked = Frame.unmask(frame.drop(headerLength), key)
+      val unmasked = Websocket.Frame.unmask(frame.drop(headerLength), key)
       prefix ++ unmasked
 
 trait Masking:

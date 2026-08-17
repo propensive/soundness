@@ -163,7 +163,7 @@ The exception is a value whose rendering depends on context available only at th
 site, which should be rendered there, into the event:
 
 ```scala
-Log.info(IoEvent.Move(source.show, destination.show))
+Log.info(Io.Event.Move(source.show, destination.show))
 ```
 
 The `show` still runs only when the event is logged, because the argument is by name.

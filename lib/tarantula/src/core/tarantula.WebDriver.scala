@@ -758,7 +758,7 @@ object WebDriver:
     // `Error` here rather than raised at the caller, so that driving a browser has one
     // error type and not five. `contramap` builds each translating tactic once, from the caller's
     // own, so the caller's diagnostics and recovery strategy still apply.
-    private given connectTactic: (Tactic[ConnectError]^) =
+    private given connectTactic: (Tactic[Connect.Error]^) =
       tactic.contramap(_ => Session.malformed(t"the WebDriver could not be reached")(using note))
 
     private given jsonTactic: (Tactic[Json.Error]^) =

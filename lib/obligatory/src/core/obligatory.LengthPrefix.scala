@@ -41,13 +41,13 @@ import zephyrine.*
 object LengthPrefix:
   // See `CarriageReturn.framable`: explicit `new` (the Scala.js pipeline mis-infers the SAM
   // lambda's `this`) plus a relabel of the local cursor's reachability of `input`.
-  given framable: (tactic: Tactic[FrameError])
+  given framable: (tactic: Tactic[Framing.Error])
   =>  ( (Data is Framable by LengthPrefix)^{tactic} ) = new Framable:
     type Self = Data
     type Operand = LengthPrefix
 
     def frames(input: Iterator[Data]^): Iterator[Data]^{input, this} =
-      def fail() = abort(FrameError(FrameError.Reason.ShortRead))
+      def fail() = abort(Framing.Error(Framing.Error.Reason.ShortRead))
 
       val cursor = Cursor(input)
 

@@ -185,11 +185,11 @@ def cli[bus <: Matchable](using executive: Executive)
                     Out.println(detail.text)
                     Exit.Fail(1).terminate()
 
-                  case IoError(_, _, _, _) =>
+                  case Io.Error(_, _, _, _) =>
                     Out.println(e"Could not cache the downloaded runner stub $runnerName")
                     Exit.Fail(1).terminate()
 
-                  case StreamError(_) =>
+                  case Truncation.Error(_) =>
                     Out.println(e"The runner stub download was interrupted")
                     Exit.Fail(1).terminate()
 
@@ -293,7 +293,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
 
   def makeClient(connection: Connection)(using Monitor, Stdio, Probate)
-    ( using Tactic[StreamError], Tactic[CharDecoder.Error], Tactic[Number.Error],
+    ( using Tactic[Truncation.Error], Tactic[CharDecoder.Error], Tactic[Number.Error],
             (DaemonLogEvent is Loggable)^ )
   :   Unit =
 

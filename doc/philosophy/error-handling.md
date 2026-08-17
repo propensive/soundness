@@ -15,7 +15,7 @@ An operation says what it can fail with, in its return type, and says nothing ab
 should happen:
 
 ```scala
-def loadConfiguration(path: Path on Linux): Configuration raises IoError raises JsonError
+def loadConfiguration(path: Path on Linux): Configuration raises Io.Error raises JsonError
 ```
 
 The caller supplies the response, as a contextual value. The same body serves every
@@ -31,7 +31,7 @@ safely(loadConfiguration(path)).or(Configuration.default)   // fall back
 
 ```scala
 recover:
-  case IoError(path, _, _) => Configuration.default
+  case Io.Error(path, _, _) => Configuration.default
   case error: JsonError    => abort(StartupError(error))
 . protect(loadConfiguration(path))                          // handle each case
 ```

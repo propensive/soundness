@@ -42,26 +42,26 @@ def enumerate[entity <: Entity: Listable]: Iterable[Reference[entity]] = entity.
 
 extension [left](using db: Database)(left: Ref of left in db.type)
   inline def unassign[right](right: Ref of right in db.type)(using db.Has[left -< right])
-  :   Unit raises DataError =
+  :   Unit raises Database.Error =
 
     db.unassign(left, right)
 
 
   inline def lookup[right](using db.Has[left -< right])
-  :   Set[Ref of right in db.type] raises DataError =
+  :   Set[Ref of right in db.type] raises Database.Error =
 
     db.lookup[left, right](left)
 
 
   inline def assign[right](right: Ref of right in db.type)(using db.Has[left -< right])
-  :   Unit raises DataError =
+  :   Unit raises Database.Error =
 
     db.assign(left, right)
 
 
 extension [left](using db: Database)(left: left)
   inline def store(): Ref of left in db.type = db.store(left)
-  inline def reference(): Ref of left in db.type raises DataError = db.ref(left)
+  inline def reference(): Ref of left in db.type raises Database.Error = db.ref(left)
 
 export anamnesis.internal.Ref
 export anamnesis.internal.Reference

@@ -65,7 +65,7 @@ object Sh:
 
   case class Parameters(params: Text*)
 
-  case class ShError(detail: Message, offset: Int)
+  case class Error(detail: Message, offset: Int)
   extends Exception(s"guillotine: ${detail.text.s}")
 
   object Runtime:
@@ -75,13 +75,13 @@ object Sh:
     def complete(state: State): Command =
       val arguments = state.current match
         case Quotes2 =>
-          throw ShError(m"this double quote is never closed", state.quoteStart)
+          throw Error(m"this double quote is never closed", state.quoteStart)
 
         case Quotes1 =>
-          throw ShError(m"this single quote is never closed", state.quoteStart)
+          throw Error(m"this single quote is never closed", state.quoteStart)
 
         case _ if state.escape =>
-          throw ShError(m"a command cannot end with an escape character", state.offset - 1)
+          throw Error(m"a command cannot end with an escape character", state.offset - 1)
 
         case _ =>
           state.arguments
@@ -94,7 +94,7 @@ object Sh:
     def insert(state: State, value: Parameters): State = value.params.toList match
       case head :: tail =>
         if state.escape then
-          throw ShError
+          throw Error
             ( m"an escape character cannot appear immediately before a substitution",
               state.offset - 1 )
 

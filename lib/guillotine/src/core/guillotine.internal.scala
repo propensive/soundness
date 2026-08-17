@@ -128,7 +128,7 @@ object internal:
 
     def rethrow[result](block: => result): result =
       try block
-      catch case error: Sh.ShError => halt(error.detail, position(error.offset, 1))
+      catch case error: Sh.Error => halt(error.detail, position(error.offset, 1))
 
     var checkState = rethrow(Sh.Runtime.parse(Sh.Runtime.initial, parts.head.tt))
 

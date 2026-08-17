@@ -68,7 +68,7 @@ trait Inlinable extends Typeclass:
     (using Quotes, Type[Self])
   :   Expr[Self] =
 
-    '{ abort(Xml.Error())(using $tactic) }
+    '{ abort(Xml.Error(Xml.Error.Reason.Missing))(using $tactic) }
 
 object Inlinable:
   // Generates a monomorphic `Xml.Parsable` for a case class at compile
@@ -228,7 +228,7 @@ object Inlinable:
     type Self = Text
 
     def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.text().or { $reader.fault(); t"" } }
+      '{ $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" } }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[Text])
@@ -240,7 +240,7 @@ object Inlinable:
     type Self = String
 
     def parse(reader: Expr[Xml.Reader])(using Quotes, Type[String]): Expr[String] =
-      '{ ($reader.text().or { $reader.fault(); t"" }).s }
+      '{ ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[String])

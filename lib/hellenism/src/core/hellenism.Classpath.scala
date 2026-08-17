@@ -89,7 +89,7 @@ object Classpath extends Root(t""):
     // Built over `throwUnsafely` (unscoped, merely throws) and the pure classloader, so the
     // instance retains no scoped capability; laundered pure (the codec-thunk seal pattern).
     caps.unsafe.unsafeAssumePure:
-      given Tactic[StreamError] = strategies.throwUnsafely
+      given Tactic[Truncation.Error] = strategies.throwUnsafely
 
       Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
@@ -99,7 +99,7 @@ object Classpath extends Root(t""):
 
     // See `streamable` above; laundered pure for the same reason.
     caps.unsafe.unsafeAssumePure:
-      given Tactic[StreamError] = strategies.throwUnsafely
+      given Tactic[Truncation.Error] = strategies.throwUnsafely
 
       Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 

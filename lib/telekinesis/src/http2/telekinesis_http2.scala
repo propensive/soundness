@@ -60,29 +60,29 @@ class UrlSessional[url <: HttpUrl]
           options:      Every[Socket.Option.Tcp],
           buffering:    Buffering,
           tls:          Tls,
-          connectError: Tactic[ConnectError] )
+          connectError: Tactic[Connect.Error] )
 extends Sessional:
   type Self = url
   type Result = Http.Session^{caps.any}
 
   def session[result](target: url)(lambda: (session: Result) ?=> result): result =
-    import ConnectError.Reason.*
+    import Connect.Error.Reason.*
 
     val scheme: Text = target.scheme.name
     val secure: Boolean = scheme == t"https"
 
-    if scheme != t"http" && scheme != t"https" then abort(ConnectError(Unknown))
+    if scheme != t"http" && scheme != t"https" then abort(Connect.Error(Unknown))
 
     val defaultPort: Int = if secure then 443 else 80
-    val host: Host = target.host.or(abort(ConnectError(Dns)))
+    val host: Host = target.host.or(abort(Connect.Error(Dns)))
     val port: Int = target.authority.lay(defaultPort)(_.port.or(defaultPort))
 
     if !secure then
-      val tcpPort: Tcp.Port = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
+      val tcpPort: Tcp.Port = safely(Port[Tcp](port)).or(abort(Connect.Error(Unknown)))
 
       val duplex: Duplex =
         try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, List.of(options.values)) catch
-          case error: ji.IOException => abort(ConnectError(Unknown))
+          case error: ji.IOException => abort(Connect.Error(Unknown))
 
       try lambda(using Sessions.Sequential(duplex)) finally duplex.close()
 
@@ -115,8 +115,8 @@ extends Sessional:
                   finally connection.close()
 
             catch
-              case error: Http2.Error => abort(ConnectError(Unknown))
-              case error: Async.Error => abort(ConnectError(Unknown))
+              case error: Http2.Error => abort(Connect.Error(Unknown))
+              case error: Async.Error => abort(Connect.Error(Unknown))
 
           case _ =>
             lambda(using Sessions.Sequential(duplex))
@@ -133,18 +133,18 @@ given httpUrlSessional: [url <: HttpUrl]
       options:      Every[Socket.Option.Tcp],
       buffering:    Buffering,
       tls:          Tls,
-      connectError: Tactic[ConnectError] )
+      connectError: Tactic[Connect.Error] )
 =>  (UrlSessional[url]^{online, connectError, caps.any}) =
   UrlSessional[url]()
 
 // Open the TLS connection for an `https` exchange, offering `h2` and `http/1.1`
-// by ALPN, and mapping handshake and connection failures onto `ConnectError`.
+// by ALPN, and mapping handshake and connection failures onto `Connect.Error`.
 private[telekinesis] def secureConnect(host: Host, port: Int)
   ( using online: Online, options: Every[Socket.Option.Tcp], tls: Tls )
-  ( using Tactic[ConnectError] )
+  ( using Tactic[Connect.Error] )
 :   Duplex =
 
-  import ConnectError.Reason.*, Ssl.Reason.*
+  import Connect.Error.Reason.*, Ssl.Reason.*
 
   val alpn: Tls = Tls(tls.context, tls.verify, List(t"h2", t"http/1.1"), tls.versions)
 
@@ -152,16 +152,16 @@ private[telekinesis] def secureConnect(host: Host, port: Int)
     SecureEndpoint.connectable(using online)(using options, alpn)
     . connect(SecureEndpoint(host.show, port), Unset)
   catch
-    case error: jns.SSLHandshakeException      => abort(ConnectError(Ssl(Handshake)))
-    case error: jns.SSLProtocolException       => abort(ConnectError(Ssl(Protocol)))
-    case error: jns.SSLPeerUnverifiedException => abort(ConnectError(Ssl(Peer)))
-    case error: jns.SSLKeyException            => abort(ConnectError(Ssl(Key)))
-    case error: jn.UnknownHostException        => abort(ConnectError(Dns))
+    case error: jns.SSLHandshakeException      => abort(Connect.Error(Ssl(Handshake)))
+    case error: jns.SSLProtocolException       => abort(Connect.Error(Ssl(Protocol)))
+    case error: jns.SSLPeerUnverifiedException => abort(Connect.Error(Ssl(Peer)))
+    case error: jns.SSLKeyException            => abort(Connect.Error(Ssl(Key)))
+    case error: jn.UnknownHostException        => abort(Connect.Error(Dns))
 
     case error: jn.ConnectException =>
       error.getMessage() match
-        case "Connection refused"   => abort(ConnectError(Refused))
-        case "Connection timed out" => abort(ConnectError(Timeout))
-        case _                      => abort(ConnectError(Unknown))
+        case "Connection refused"   => abort(Connect.Error(Refused))
+        case "Connection timed out" => abort(Connect.Error(Timeout))
+        case _                      => abort(Connect.Error(Unknown))
 
-    case error: ji.IOException => abort(ConnectError(Unknown))
+    case error: ji.IOException => abort(Connect.Error(Unknown))

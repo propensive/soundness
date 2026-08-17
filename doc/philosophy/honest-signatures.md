@@ -69,7 +69,7 @@ Because they are minimal, the clauses that *are* present mean something:
 
 ```scala
 def fetch(url: HttpUrl)(using Online): Http.Response
-def loadConfiguration(path: Path on Linux): Configuration raises IoError
+def loadConfiguration(path: Path on Linux): Configuration raises Io.Error
 def install(target: Path on Linux): Unit logs InstallEvent
 def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text]
 ```

@@ -36,5 +36,5 @@ package soundness
 // `Mathml` object (as `Mathml.Mi`, `Mathml.Mrow`, …) rather than exported flat, so their generic
 // names do not collide with unrelated modules in the `soundness` namespace. Import
 // `soundness.Mathml.*` for the bare element names where MathML is being authored by hand.
-export archimedes.{Math, Mathml, Display, MathmlReader, mathmlNamespace,
+export archimedes.{Math, Mathml, Display, mathmlNamespace,
     Ergo, ergo, mathml, math, Cell, cell, draw}

@@ -49,7 +49,7 @@ import turbulence.Readable
 import turbulence.Writable
 import vacuous.*
 
-import IoError.Operation
+import Io.Error.Operation
 
 // `Platform` is the common base of galilei's OS filesystem platform types (`Posix`/`Linux`/`MacOs`/
 // `Windows`/`Local`). It exists so that givens placed in its companion — notably the whole-file
@@ -68,7 +68,7 @@ object Platform:
   // `path.read[…]` resolve through turbulence's `read` with no extra import for any `Path on …`.
   given pathReadable: [plane <: Platform: Filesystem, result]
   =>  ( readable: (Data is Readable to result)^ )
-  =>  ( tactic: Tactic[IoError] )
+  =>  ( tactic: Tactic[Io.Error] )
   =>  (((Path on plane) is Readable to result)^{readable, tactic}) =
     path =>
       val bytes: Data = path.protect(Operation.Read):
@@ -81,7 +81,7 @@ object Platform:
   // generic writers — such as the write-back of `open[Tel]` — resolve for any
   // `Path on <platform>` with no import.
   given pathWritable: [plane <: Platform: Filesystem]
-  =>  ( tactic: Tactic[IoError] )
+  =>  ( tactic: Tactic[Io.Error] )
   =>  (((Path on plane) is Writable by Data)^{tactic}) =
     (path, stream) =>
       val bytes: Data = summon[Data is Aggregable by Data].accept(stream)
@@ -92,7 +92,7 @@ object Platform:
   // no import, and while `File` is a path's only form, `path.open(...)` can infer it.
   given openable: [filesystem: Filesystem, path <: Path on filesystem]
   =>  ( backend: FilesystemBackend on filesystem,
-        tactic:  Tactic[IoError] )
+        tactic:  Tactic[Io.Error] )
   =>  ( FileOpenable[filesystem, path]^{tactic} ) =
     FileOpenable[filesystem, path]
 
@@ -101,7 +101,7 @@ object Platform:
   // the form must be stated: `path.open[File](...)` or `path.open[Directory](...)`.
   given directoryOpenable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend: FilesystemBackend on filesystem,
-        tactic:  Tactic[IoError] )
+        tactic:  Tactic[Io.Error] )
   =>  ( Directory.Openable[filesystem, path]^{tactic} ) =
     Directory.Openable[filesystem, path]
 
@@ -110,22 +110,22 @@ object Platform:
   // any `Path on <platform>` with no import.
   given directoryCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend:  FilesystemBackend on filesystem,
-        tactic:   Tactic[IoError],
-        loggable: (IoEvent is Loggable)^ )
+        tactic:   Tactic[Io.Error],
+        loggable: (Io.Event is Loggable)^ )
   =>  ( Creation.DirectoryCreatable[filesystem, path]^{tactic, loggable} ) =
     Creation.DirectoryCreatable[filesystem, path]
 
   given fileCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend:  FilesystemBackend on filesystem,
-        tactic:   Tactic[IoError],
-        loggable: (IoEvent is Loggable)^ )
+        tactic:   Tactic[Io.Error],
+        loggable: (Io.Event is Loggable)^ )
   =>  ( Creation.FileCreatable[filesystem, path]^{tactic, loggable} ) =
     Creation.FileCreatable[filesystem, path]
 
   given fifoCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend:  FilesystemBackend on filesystem,
-        tactic:   Tactic[IoError],
-        loggable: (IoEvent is Loggable)^ )
+        tactic:   Tactic[Io.Error],
+        loggable: (Io.Event is Loggable)^ )
   =>  ( Creation.FifoCreatable[filesystem, path]^{tactic, loggable} ) =
     Creation.FifoCreatable[filesystem, path]
 

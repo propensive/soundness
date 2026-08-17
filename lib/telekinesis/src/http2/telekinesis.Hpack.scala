@@ -52,7 +52,7 @@ import scala.caps
 object Hpack:
   // Builder mutation lives here rather than in class methods, which would force a
   // `uses` clause onto the class itself.
-  private[telekinesis] def encodeEntries(headers: List[HpackEntry], table: HpackTable): Data =
+  private[telekinesis] def encodeEntries(headers: List[Entry], table: Table): Data =
     val buf: ByteBuf^ = ByteBuf()
 
     // A while-loop rather than `each`: the closure may not capture the exclusive buffer.
@@ -95,8 +95,119 @@ object Hpack:
       writeInteger(buf, 0, 7, raw.length)
       buf.addAll(raw)
 
+  // Entry → Hpack.Entry, Table → Hpack.Table
+  // An HPACK header field: a name and value. The encoded byte size used for dynamic
+  // table accounting is `name + value + 32` (RFC 7541 §4.1).
+  case class Entry(name: Text, value: Text):
+    def size: Int = name.s.length + value.s.length + 32
+
+  object Table:
+    // The 61-entry static table (RFC 7541, Appendix A). Index 1 is element 0 here.
+    val static: Array[Entry]^{} = Array.of[Entry](
+      Entry(t":authority", t""),
+      Entry(t":method", t"GET"),
+      Entry(t":method", t"POST"),
+      Entry(t":path", t"/"),
+      Entry(t":path", t"/index.html"),
+      Entry(t":scheme", t"http"),
+      Entry(t":scheme", t"https"),
+      Entry(t":status", t"200"),
+      Entry(t":status", t"204"),
+      Entry(t":status", t"206"),
+      Entry(t":status", t"304"),
+      Entry(t":status", t"400"),
+      Entry(t":status", t"404"),
+      Entry(t":status", t"500"),
+      Entry(t"accept-charset", t""),
+      Entry(t"accept-encoding", t"gzip, deflate"),
+      Entry(t"accept-language", t""),
+      Entry(t"accept-ranges", t""),
+      Entry(t"accept", t""),
+      Entry(t"access-control-allow-origin", t""),
+      Entry(t"age", t""),
+      Entry(t"allow", t""),
+      Entry(t"authorization", t""),
+      Entry(t"cache-control", t""),
+      Entry(t"content-disposition", t""),
+      Entry(t"content-encoding", t""),
+      Entry(t"content-language", t""),
+      Entry(t"content-length", t""),
+      Entry(t"content-location", t""),
+      Entry(t"content-range", t""),
+      Entry(t"content-type", t""),
+      Entry(t"cookie", t""),
+      Entry(t"date", t""),
+      Entry(t"etag", t""),
+      Entry(t"expect", t""),
+      Entry(t"expires", t""),
+      Entry(t"from", t""),
+      Entry(t"host", t""),
+      Entry(t"if-match", t""),
+      Entry(t"if-modified-since", t""),
+      Entry(t"if-none-match", t""),
+      Entry(t"if-range", t""),
+      Entry(t"if-unmodified-since", t""),
+      Entry(t"last-modified", t""),
+      Entry(t"link", t""),
+      Entry(t"location", t""),
+      Entry(t"max-forwards", t""),
+      Entry(t"proxy-authenticate", t""),
+      Entry(t"proxy-authorization", t""),
+      Entry(t"range", t""),
+      Entry(t"referer", t""),
+      Entry(t"refresh", t""),
+      Entry(t"retry-after", t""),
+      Entry(t"server", t""),
+      Entry(t"set-cookie", t""),
+      Entry(t"strict-transport-security", t""),
+      Entry(t"transfer-encoding", t""),
+      Entry(t"user-agent", t""),
+      Entry(t"vary", t""),
+      Entry(t"via", t""),
+      Entry(t"www-authenticate", t"") )
+
+  // The HPACK dynamic table: a FIFO of recently-seen header fields, bounded by a
+  // byte-size limit, with oldest-first eviction. Combined with the static table it
+  // forms the HPACK address space: index 1..61 is static; 62.. is the dynamic table,
+  // most-recently-inserted first (RFC 7541 §2.3.3).
+  class Table(initialMaxSize: Int = 4096):
+    // Untracked: the dynamic table is confined to its owning `Hpack` codec, which
+    // is itself confined to one connection's reader or writer daemon.
+    @caps.unsafe.untrackedCaptures
+    private val entries: scm.ArrayDeque[Entry] = scm.ArrayDeque.empty[Entry]
+    @caps.unsafe.untrackedCaptures
+    private var maxSize: Int = initialMaxSize
+    @caps.unsafe.untrackedCaptures
+    private var currentSize: Int = 0
+
+    def size: Int = currentSize
+    def capacity: Int = maxSize
+
+    // Resize (HPACK dynamic-table-size-update); evicts to fit the new bound.
+    def resize(newMax: Int): Unit =
+      maxSize = newMax
+      evict()
+
+    private def evict(): Unit =
+      while currentSize > maxSize && entries.nonEmpty do currentSize -= entries.removeLast().size
+
+    // Insert at the front (most recent). An entry larger than the whole table
+    // clears it and is itself not stored (RFC 7541 §4.4).
+    def add(entry: Entry): Unit =
+      currentSize += entry.size
+      entries.prepend(entry)
+      evict()
+
+    // Resolve an HPACK index (1-based) to its entry: static for 1..61, then dynamic.
+    def lookup(index: Int): Optional[Entry] =
+      if index >= 1 && index <= Table.static.length then Table.static.readUnchecked(index - 1)
+      else
+        val dynamicIndex = index - Table.static.length - 1
+
+        if dynamicIndex >= 0 && dynamicIndex < entries.length then entries(dynamicIndex) else Unset
+
 class Hpack(maxTableSize: Int = 4096):
-  private val table = HpackTable(maxTableSize)
+  private val table = Hpack.Table(maxTableSize)
 
   // ─── integer representation (RFC 7541 §5.1) ───────────────────────────────
   //
@@ -138,18 +249,18 @@ class Hpack(maxTableSize: Int = 4096):
 
   // ─── decode a complete header block ────────────────────────────────────────
 
-  def decode(data: Data): List[HpackEntry] raises Http2.Error =
-    val builder = scala.collection.immutable.List.newBuilder[HpackEntry]
+  def decode(data: Data): List[Hpack.Entry] raises Http2.Error =
+    val builder = scala.collection.immutable.List.newBuilder[Hpack.Entry]
     var pos = 0
 
-    def nameValue(index: Int, after: Int): (HpackEntry, Int) =
+    def nameValue(index: Int, after: Int): (Hpack.Entry, Int) =
       // `index == 0` → literal name follows; otherwise name comes from the table.
       val (name, valueStart) =
         if index == 0 then readString(data, after)
         else (table.lookup(index).lest(Http2.Error(Reason.BadIndex(index))).name, after)
 
       val (value, next) = readString(data, valueStart)
-      (HpackEntry(name, value), next)
+      (Hpack.Entry(name, value), next)
 
     while pos < data.length do
       val byte = data.readUnchecked(pos) & 0xff
@@ -189,4 +300,4 @@ class Hpack(maxTableSize: Int = 4096):
   // ahead of regular headers by the caller (RFC 7540 §8.1.2.1).
   // Delegates to the companion: builder mutation inside a class method would
   // force a `uses` clause onto the class itself.
-  def encode(headers: List[HpackEntry]): Data = Hpack.encodeEntries(headers, table)
+  def encode(headers: List[Hpack.Entry]): Data = Hpack.encodeEntries(headers, table)

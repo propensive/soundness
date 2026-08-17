@@ -260,7 +260,7 @@ object Http:
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
-        try request.body().memoize.utf8 catch case error: StreamError  => t"[-/-]"
+        try request.body().memoize.utf8 catch case error: Truncation.Error  => t"[-/-]"
 
       val headers: Text =
         request.textHeaders.map: (header: Header) =>
@@ -735,7 +735,7 @@ object Http:
         method:  Http.Method,
         headers: List[Http.Header],
         body:    Spring[Data]^ )
-      ( using Tactic[ConnectError] )
+      ( using Tactic[telekinesis.Connect.Error] )
     :   Http.Response
 
   object Response extends Dynamic:
@@ -1248,7 +1248,7 @@ object Http:
       case 301 | 302 | 303 | 307 | 308 => true
       case _                           => false
 
-    given httpStrict: (tactic: Tactic[ConnectError])
+    given httpStrict: (tactic: Tactic[telekinesis.Connect.Error])
     =>  Online
     =>  Redirects.Disabled
     =>  ( backend: Http.Backend )
@@ -1266,7 +1266,7 @@ object Http:
           logResponse:
             backend.request(url.show, httpRequest.method, httpRequest.textHeaders, httpRequest.body)
 
-    given http: (tactic: Tactic[ConnectError])
+    given http: (tactic: Tactic[telekinesis.Connect.Error])
     =>  Online
     =>  NotGiven[Redirects.Disabled]
     =>  ( redirection: Http.Redirection )
@@ -1363,7 +1363,7 @@ object Http:
   // `telekinesis.http2`. It was `sealed` while class and implementations shared a file;
   // they no longer can, so the implementations are `private[telekinesis]` instead.
   abstract class Session extends caps.ExclusiveCapability, caps.Stateful:
-    update def fetch(request: Request)(using Tactic[ConnectError])
+    update def fetch(request: Request)(using Tactic[telekinesis.Connect.Error])
     :   Response^{this, caps.any}
 
   // HttpConnection → Http.Connection
@@ -1374,7 +1374,7 @@ object Http:
     // using-parameter, not a curried context-function result — a value of curried dependent
     // context-function type is not yet supported — so nothing escapes `apply`.
     trait Respond:
-      def apply(response: Response^)(using Tactic[StreamError]): Unit
+      def apply(response: Response^)(using Tactic[Truncation.Error]): Unit
 
   // One live request/response exchange, as the handler sees it: the request, plus the
   // means of answering it. `Exclusive` because an exchange has a single owner and may be

@@ -24,7 +24,7 @@ does not split at all — it becomes a namespace for its own satellites.
 - **R2 KEEP + NAMESPACE**: the compound is an established concept independent of its
   prefix. `JsonPointer` (RFC 6901) does not become `Json.Pointer`; instead
   `JsonPointerError → JsonPointer.Error`. Likewise `MediaType`, `JsonSchema` and
-  `XmlSchema` (external standards), `HttpServer`, `BlockCipher`, `CompileError`,
+  `XmlSchema` (external standards), `Httpd`, `BlockCipher`, `CompileError`,
   `WebDriver`, `WorkingDirectory`, `DomainSocket`, `JsonRpc`, `OAuth`, `StackTrace`,
   `JsonBlueprint`, `SymmetricKey` (parallel with `PrivateKey`/`PublicKey`; the
   `Symmetric` trait is a separate abstraction). This resolves July's internal conflict:
@@ -121,7 +121,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | profanity.core | `TerminalError→Terminal.Error`, `TerminalEvent→Terminal.Event`, `TerminalFeature→Terminal.Feature`, `TerminalInfo→Terminal.Info` (`TerminalBoard`/`InlineBoard` stay: they are `Board` variants, not Terminal satellites) |
 | revolution.core | `ManifestAttribute→Manifest.Attribute`, `ManifestEntry→Manifest.Entry`, `SemverError→Semver.Error` |
 | savagery.core | `SvgError→Svg.Error`, `SvgParser→Svg.Parser` |
-| scintillate.server | `HttpServerEvent→HttpServer.Event` (new companion for `HttpServer`) |
+| scintillate.server | `HttpServerEvent→Httpd.Event` (new companion for `Httpd`) |
 | scintillate.servlet | `JavaServletFn→JavaServlet.Fn` |
 | sedentary.core | `BenchError→Bench.Error` |
 | serpentine.core | `PathError→Path.Error` |
@@ -141,22 +141,39 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | ypsiloid.core | `YamlError→Yaml.Error`, `YamlPrimitive→Yaml.Primitive`, `YamlPathError→YamlPath.Error` (`YamlPath` stays whole, per R2) |
 | zeppelin.core | `ZipError→Zip.Error`, `ZipEvent→Zip.Event`, `ZipHandle→Zip.Handle` (deferred: `ZipOpenable`/`ZipDataOpenable` share `ZipHandle`'s file — hoist first) |
 
-## Kept whole after verification — no outer concept exists as a type
+## Kept whole after verification — mostly overturned by later passes
 
-`TableCell`/`TableError`/`TableRow`/`TableSection`/`TableStyle`/`TableRelabelling`
-(escritoire has `Tabular`/`Tabulation`, no `Table`); `DaemonEvent`/`DaemonLogEvent`/
-`DaemonService` (no `Daemon` type; inventing `object Daemon` is possible but not proposed);
-`ExecError`/`ExecEvent` (no `Exec`); `IpAddressError` (only `Ipv4`/`Ipv6`);
-`PortError`/`PortType` (no `Port`); `RetryError` (no `Retry`); `IsinError` (no `Isin`);
-`NameError`/`NameExtractor` (nomenclature's `Name` is an opaque type inside
-`object internal` — same blocker as aviation's `Timestamp`, whose `TimestampError` also
-stays); `AuthError`, `ConnectError`, `BindError`, `InstallError`, `SerializationError`,
-`DecimalError`, `DivisionError`, `OverflowError`, `BoundsError`, `RangeError`,
-`EscapeError`, `UncheckedError`, `UnsetError`, `DataError`, `RemoteError`,
-`DegustationError`, `FontError`, `RruleError`, `RecurrenceError`, `OfflineError`,
-`CertificateError`, `LinkError`/`LinkEvent`, `IoError`/`IoEvent`, `StreamError`,
-`FrameError`, `RpcError` — no meaningful same-component outer type; all keep their
-compound names. (Some may gain namespaces later if the outer concepts are ever reified.)
+This section listed thirty-odd names as having "no meaningful same-component outer type".
+**Twenty-six of them have since moved.** The verification behind it was a search for a
+top-level type of the same name, which missed opaque types, companions nested inside an
+`internal` object, platform source directories mistaken for components, and — most often —
+a perfectly good host under a *different* name than the error's own prefix.
+
+What the later passes actually did with them:
+
+- an object already existed, or a companion was added: `RetryError→Tenacity.Error`,
+  `IsinError→Isin.Error`, `AuthError→Auth.Error`, `BindError→Bind.Error`,
+  `SerializationError→Serialization.Error`, `DecimalError→Decimal.Error`,
+  `RangeError→Range.Error`, `UnsetError→Optional.Error`, `DataError→Database.Error`,
+  `RemoteError→Rig.Error`, `DegustationError→Inspection.Error`, `FontError→Font.Error`,
+  `RruleError→Rrule.Error`, `RecurrenceError→Recurrence.Error`,
+  `OfflineError→Internet.Error`, `CertificateError→Certificate.Error`,
+  `LinkError→Link.Error`, `TableError→Table.Error`, `IpAddressError→IpAddress.Error`,
+  `TimestampError→Timestamp.Error`, `RpcError→Rpc.Error`, `FrameError→Framing.Error`,
+  `IoError`/`IoEvent`→`Io.Error`/`Io.Event`
+- two names turned out to be one concept: `DivisionError` and `OverflowError` are
+  `Arithmetic.Error` with distinct `Reason`s
+- one was a duplicate of a reason the codebase already had, and was **deleted**:
+  `BoundsError` restated `JsonBlueprint.Error.Reason.IntOutOfRange`
+
+Still compound, and for reasons now recorded in `api-reduction-candidates.md`:
+`ConnectError`, `UncheckedError`, `LinkEvent` and `CompileError` (excluded under R2).
+`EscapeError`, `InstallError` and `StreamError` joined the moved list as
+`TextEscapes.Error`, `Install.Error` and `Truncation.Error`.
+
+**The lesson for the next pass**: "no outer type of that name exists" is not the same as
+"no host exists". Resolve the outer name to a file and a component, and consider hosts whose
+name differs from the error's prefix, before recording anything as blocked.
 
 ## Component-blocked (R6) — compound names stay
 
@@ -231,7 +248,7 @@ constraint*, and the name should be read as load-bearing until proven otherwise.
   `Error` in its own `extends` clause self-referential — qualify as
   `extends fulminate.Error(...)`. Move the donor file's imports with the body.
 - **New companions needed** (L3-ordered before their types): `Cipher`, `BlockCipher`,
-  `Compiler`, `HttpServer`.
+  `Compiler`, `Httpd`.
 - **Mega-file mitigation**: `ypsiloid.Yaml.scala` and `stratiform.Tel.scala` are ~6,100
   lines. Nesting their satellites is in scope; keep the files manageable by hoisting
   existing companion bulk into mixin traits in their own files — the codebase already
@@ -524,13 +541,70 @@ A new namespace object also collides the same way a nested one does. `ExecEvent`
 both put a new name into scope wherever the family is used.
 
 
+## Corrections from the seventh and eighth passes (2026-08-13 to 2026-08-17)
+
+The `FooError` sweep, and the families around it. Forty-eight names, and six rules — five of
+them about not breaking something while moving something else.
+
+- **Import the outer, never the member.** A rename to `Foo.Error` breaks two import forms
+  that look harmless: `import lib.FooError` becomes `import lib.Foo.Error`, which imports the
+  *member* and leaves `Foo` out of scope, so every `Foo.Error` in the file fails to resolve;
+  and `import lib.{FooError, x}` becomes a dotted path inside a brace selector, which does not
+  parse. Both bit. The convention is `import lib.Foo` and write `Foo.Error`.
+- **A capitalised name cannot share its spelling with a lowercase top-level class or object
+  in the same package.** On a case-insensitive filesystem — the default on macOS — `Rpc.class`
+  and `rpc.class` are one file, and the second written destroys the first. It surfaces far
+  away, as `Not found: type rpc` inside a macro in a different component, and survives
+  incremental rebuilds until `mill clean`. `obligatory`'s `@rpc` annotation hit this; moving
+  it into `object annotations` and exporting it frees the name. Nested lowercase objects are
+  safe — hypotenuse's `arithmeticOptions.division` does not block `Division`.
+- **An inner wildcard import shadows the outer ones.** Gathering files into one object means
+  merging their imports, and a nested object that re-imports only its *distinctive* imports
+  loses the rest: `object Dialect` with `import proscenium.compat.*` inside it stopped seeing
+  the `map` that `rudiments`/`gossamer` supply at file level. Give a nested object its source
+  file's complete block, or hoist nothing.
+- **A nested `Error` captures a bare `Error` in the same object.** `Httpd.Event
+  .ConnectionFailed(error: Error)` named `fulminate.Error` through a wildcard import; adding
+  a sibling `Httpd.Error` silently rebinds it, because a member of the enclosing object
+  outranks a wildcard import. It failed to compile here, but in a position accepting any
+  `Error` subtype it would not have.
+- **A rename to `.Error` can collide two previously-distinct anonymous givens.** `given
+  Tactic[StreamError]` and `given Tactic[Http2.Error]` in one scope synthesise different
+  names; after the rename both are `given_Tactic_Error`. Three separate occurrences.
+- **Check the donor file's *other* declarations before moving it.** A file named for one type
+  may hold four. `profanity.TerminalInfo.scala` held `Interrupt`, `WindowsSignal` and
+  `CtrlChar` as well, and moving the file wholesale deleted three exported types and silently
+  rebound a union. The filename is not evidence of the file's contents.
+
+**Homonyms are the recurring hazard, and the compiler catches most but not all.** Six in these
+two passes: `ParseError` (zephyrine's and `Wit`'s, plus an MCP wire constant `val ParseError =
+-32700`), `ServerError` (scintillate's and `Http.Status.Category`'s 5xx), `Frame` (perihelion's
+WebSocket frame and ultimatum's layout frame), `EscapeError` (fulminate's and `Pty`'s),
+`ConnectError` (telekinesis' and `Http2.ErrorCode`'s RFC 9113 `CONNECT_ERROR`), and
+`HttpServer` (scintillate's and the JDK's `com.sun.net.httpserver.HttpServer`, which appears
+inside the very file being renamed). Scope every sweep to the libraries that use *this* type,
+and read the diff.
+
+**Three findings that were not renames at all.** An error that looks misnamed may be one the
+codebase already has: `BoundsError` duplicated `JsonBlueprint.Error.Reason.IntOutOfRange`,
+same failure and same three fields, and was deleted. A supertype with one subtype and no
+callers can go: turbulence's `trait Io` freed the name for galilei. And a type declared in one
+library but raised only in another is misplaced, not misnamed — `BoundsError` was gossamer's,
+`InstallError` is exoskeleton's but raised by ethereal too.
+
+**Naming, where no single raiser owns an error.** Name the act (`Framing`, `Install`) or the
+state (`Truncation`), not one of several raisers. `Streamable`, `Writable` and `Sink` all
+report a cut stream, so none of them owns it.
+
+
 ## Execution shape
 
 One library per commit (the pilot shape). Each commit: move the types, delete donor files,
 fix the export file, sweep references (`grep -a`), clean-compile the library and its test
 module. `make attest` gates each PR.
 
-Three passes have run this shape to completion; the rename table above is exhausted. What
-is left is recorded under "Next actions" in `api-reduction-candidates.md`: the three
-taxonomy containers, `TarHeader`, and the two independent pieces of work (`caps.Pure` for
-L2, and the namespace-wildcard survey).
+Eight passes have run this shape to completion; the rename table above is exhausted, and the
+`FooError` family with it — 48 of the 53 compound error names have gone. What is left is
+recorded under "Next actions" in `api-reduction-candidates.md`. `TarHeader` is named there
+for a reason worth repeating: `readUnchecked` clears the capture-checking blocker, but two of
+its sites rely on the bounds check it removes, so that one waits on tightening the guards.

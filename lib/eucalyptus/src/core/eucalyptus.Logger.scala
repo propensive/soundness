@@ -87,7 +87,7 @@ object Logger:
     new Logger(level, categories, enqueue)
 
   // The write runs in a fire-and-forget daemon. A daemon body is hygienic — it cannot capture an
-  // enclosing handler to discharge a write failure — so it handles its own errors: a `StreamError`
+  // enclosing handler to discharge a write failure — so it handles its own errors: a `Truncation.Error`
   // ends the current stream, and the loop re-establishes a fresh `spool.stream` from the same queue,
   // so one failure does not permanently silence the logger. The loop ends only once the spool is
   // stopped.
@@ -112,7 +112,7 @@ object Logger:
       daemon:
         while !stopped.get() do
           try writable0.write(destination, spool.stream(using addressable0))
-          catch case _: StreamError => ()
+          catch case _: Truncation.Error => ()
 
       Os.intercept[Shutdown]:
         stopped.set(true)

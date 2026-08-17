@@ -49,7 +49,7 @@ import rudiments.*
 // `FileOpenable`. Archives open read-only: a `Write` mode is refused with
 // `Tar.Error.Reason.WriteUnsupported` until writing lands.
 class TarOpenable[path: Abstractable across Paths to Text]
-  ( using Tactic[Tar.Error], Tactic[StreamError] )
+  ( using Tactic[Tar.Error], Tactic[Truncation.Error] )
 extends Openable:
 
   type Self = path

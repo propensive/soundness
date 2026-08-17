@@ -61,7 +61,7 @@ private[scintillate] object Connections:
   // in the body cannot cross the nested context-function results the sugar desugars to (the
   // stacked-raises convention; see rep/DECISIONS.md).
   def apply(exchange: csnh.HttpExchange)
-    ( using (HttpServer.Event is Loggable)^, Tactic[Hostname.Error] )
+    ( using (Httpd.Event is Loggable)^, Tactic[Hostname.Error] )
   :   Http.Connection^ =
 
     val uri = exchange.getRequestURI.nn
@@ -107,13 +107,13 @@ private[scintillate] object Connections:
           body        = () => source.stream(in),
           textHeaders = headers )
 
-    Log.fine(HttpServer.Event.Received(request))
+    Log.fine(Httpd.Event.Received(request))
 
     val port = Option(exchange.getRequestURI.nn.getPort).filter(_ > 0).getOrElse:
       exchange.getLocalAddress.nn.getPort
 
     val respond: Http.Connection.Respond^ = new Http.Connection.Respond:
-      def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
+      def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
         var chunked = false
 
         response.textHeaders.each:
@@ -138,7 +138,7 @@ private[scintillate] object Connections:
               responseBody.write(Array.unsafeJvm(data))
               count += data.length
               responseBody.flush()
-            catch case _: ji.IOException => abort(StreamError(count.b))
+            catch case _: ji.IOException => abort(Truncation.Error(count.b))
 
           case Http.Body.Flowing(source) =>
             val stream = source()
@@ -155,7 +155,7 @@ private[scintillate] object Connections:
 
                   count += size
                   responseBody.flush()
-                catch case _: ji.IOException => abort(StreamError(count.b))
+                catch case _: ji.IOException => abort(Truncation.Error(count.b))
 
                 stream.skip(size)
                 // Tail re-entry over the same single-owner stream.
@@ -167,7 +167,7 @@ private[scintillate] object Connections:
 
           case Http.Body.Empty =>
             try responseBody.flush()
-            catch case _: ji.IOException => abort(StreamError(count.b))
+            catch case _: ji.IOException => abort(Truncation.Error(count.b))
 
         exchange.close()
 

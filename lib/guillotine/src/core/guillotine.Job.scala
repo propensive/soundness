@@ -61,7 +61,7 @@ object Job:
     (process, stream) => process.stdin(stream)
 
   given writableText: [command <: Label, result, job <: Job[command, result]^]
-  =>  (streamCut: Emit[StreamError])
+  =>  (streamCut: Emit[Truncation.Error])
   =>  ((job is Writable by Text)^{streamCut}) =
 
     (process, stream) =>
@@ -91,10 +91,10 @@ extends Subprocess, Process.Ref, caps.ExclusiveCapability:
   // The process's standard output (or error) as a single-owner pull endpoint:
   // each call reads on from the live pipe, and explicit `memoize` replaces any
   // implicit caching.
-  def stdout()(using Tactic[StreamError]): (Stream[Data] over Credit)^ =
+  def stdout()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
     summon[ji.InputStream is Streamable by Data over Credit].stream(process.getInputStream.nn)
 
-  def stderr()(using Tactic[StreamError]): (Stream[Data] over Credit)^ =
+  def stderr()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
     summon[ji.InputStream is Streamable by Data over Credit].stream(process.getErrorStream.nn)
 
   def text(): Text = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
@@ -103,7 +103,7 @@ extends Subprocess, Process.Ref, caps.ExclusiveCapability:
   // Standard output as a record stream of its lines: UTF-8 through the duct
   // kernel, with adaptive line separation — matching the treatment of `\n`,
   // `\r\n` and `\r` by `BufferedReader.readLine`, which this replaces.
-  def lines()(using Tactic[StreamError]): (Stream[Array[Text]^{}] over Credit)^ =
+  def lines()(using Tactic[Truncation.Error]): (Stream[Array[Text]^{}] over Credit)^ =
     import hieroglyph.charDecoders.utf8Decoder, hieroglyph.textSanitizers.substituteSanitizer
     import turbulence.lineSeparation.adaptiveLinefeedLineSeparation
     stdout().delineate

@@ -50,7 +50,7 @@ object Resource:
   =>  resource is Streamable by Data =
     // See `Classpath.streamable`: unscoped throwing tactic + pure classloader; laundered pure.
     caps.unsafe.unsafeAssumePure:
-      given Tactic[StreamError | Classpath.Error] = strategies.throwUnsafely
+      given Tactic[Truncation.Error | Classpath.Error] = strategies.throwUnsafely
 
       // The lambda and the codec share only the unscoped throwing tactic; no aliased writer.
       scala.caps.unsafe.unsafeAssumeSeparate:
@@ -62,7 +62,7 @@ object Resource:
   =>  resource is Streamable by Data over Credit =
     // See `streamable` above: unscoped throwing tactic + pure classloader; laundered pure.
     caps.unsafe.unsafeAssumePure:
-      given Tactic[StreamError | Classpath.Error] = strategies.throwUnsafely
+      given Tactic[Truncation.Error | Classpath.Error] = strategies.throwUnsafely
 
       // As `streamable` above.
       scala.caps.unsafe.unsafeAssumeSeparate:

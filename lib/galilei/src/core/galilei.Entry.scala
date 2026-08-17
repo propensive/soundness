@@ -42,7 +42,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import vacuous.*
-import IoError.{Operation, Reason}
+import Io.Error.{Operation, Reason}
 
 trait Entry
 
@@ -83,7 +83,7 @@ case object Directory extends WindowsEntry, UnixEntry:
   // `FileOpenable`. Opening verifies that the entry exists and is a directory, so a handle
   // always denotes a real directory at the moment it is granted.
   class Openable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
-    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[IoError] )
+    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
   extends aperture.Openable:
 
     type Self = path
@@ -97,14 +97,14 @@ case object Directory extends WindowsEntry, UnixEntry:
     :   result =
 
       if backend.stat(value, true).entry != Directory
-      then abort(IoError(value, Operation.Open, Reason.IsNotDirectory))
+      then abort(Io.Error(value, Operation.Open, Reason.IsNotDirectory))
 
       // The register works on real paths, so two routes to one directory (via symlinks, or via
       // `.` and repeated separators) register as the same subtree.
       val real: Text = value.nioPath.toRealPath().nn.toString.tt
 
       if !AccessRegister.acquire(real, mode.atoms)
-      then abort(IoError(value, Operation.Open, Reason.Busy))
+      then abort(Io.Error(value, Operation.Open, Reason.Busy))
 
       try
         val handle =

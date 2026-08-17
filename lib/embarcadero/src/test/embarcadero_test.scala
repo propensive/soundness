@@ -379,10 +379,10 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
                   fields.stdlib.find(_.name == t"containerd-namespace").foreach: entry =>
                     namespace.offer(entry.value)
 
-                  val status = hpack.encode(List(HpackEntry(t":status", t"200"),
-                      HpackEntry(t"content-type", t"application/grpc")))
+                  val status = hpack.encode(List(Hpack.Entry(t":status", t"200"),
+                      Hpack.Entry(t"content-type", t"application/grpc")))
 
-                  val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
+                  val trailer = hpack.encode(List(Hpack.Entry(t"grpc-status", t"0")))
                   serverSide.send(zephyrine.Stream(Frame.Headers(id, status, false, true).serialize))
                   serverSide.send(zephyrine.Stream(Frame.Data(id, body, false).serialize))
                   serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
@@ -606,19 +606,19 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
                   val path = fields.find(_.name == t":path").map(_.value).getOrElse(t"")
                   calls.synchronized(calls.append(path))
 
-                  val status = hpack.encode(List(HpackEntry(t":status", t"200"),
-                      HpackEntry(t"content-type", t"application/grpc")))
+                  val status = hpack.encode(List(Hpack.Entry(t":status", t"200"),
+                      Hpack.Entry(t"content-type", t"application/grpc")))
 
                   serverSide.send(zephyrine.Stream(Frame.Headers(id, status, false, true).serialize))
 
                   if failures.has(path) then
-                    val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"3")))
+                    val trailer = hpack.encode(List(Hpack.Entry(t"grpc-status", t"3")))
                     serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
                   else
                     val body =
                       responses(path).or(Grpc.Framing.encode(Empty().in[Protobuf].encode))
 
-                    val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
+                    val trailer = hpack.encode(List(Hpack.Entry(t"grpc-status", t"0")))
                     serverSide.send(zephyrine.Stream(Frame.Data(id, body, false).serialize))
                     serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
 

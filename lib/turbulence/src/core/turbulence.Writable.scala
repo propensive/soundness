@@ -48,10 +48,10 @@ import zephyrine.{stream as _, *}
 object Writable:
   // Drain a byte stream into an `OutputStream`, window by window, straight
   // from the stream's own storage. A write failure `raise`s a typed
-  // `StreamError` (an `Emit`, not a `Tactic`: a writer only reports a cut,
+  // `Truncation.Error` (an `Emit`, not a `Tactic`: a writer only reports a cut,
   // never aborts) and stops writing; the target closes either way.
   private def drain(outputStream: ji.OutputStream, stream: (Stream[Data] over Credit)^)
-    ( using streamCut: Emit[StreamError], buffering: Buffering )
+    ( using streamCut: Emit[Truncation.Error], buffering: Buffering )
   :   Unit =
 
     var total: Long = 0L
@@ -69,20 +69,20 @@ object Writable:
             total += interval.size
           catch case error: ji.IOException => failed = true
 
-    if failed then raise(StreamError(total.b))
+    if failed then raise(Truncation.Error(total.b))
     else
       try
         outputStream.flush()
         outputStream.close()
-      catch case error: ji.IOException => raise(StreamError(total.b))
+      catch case error: ji.IOException => raise(Truncation.Error(total.b))
 
   given outputStreamData: [output <: ji.OutputStream]
-  =>  (streamCut: Emit[StreamError], buffering: Buffering)
+  =>  (streamCut: Emit[Truncation.Error], buffering: Buffering)
   =>  ((output is Writable by Data)^{streamCut}) =
 
     (outputStream, stream) => drain(outputStream, stream)
 
-  given outputStreamText: (streamCut: Emit[StreamError], encoder: CharEncoder,
+  given outputStreamText: (streamCut: Emit[Truncation.Error], encoder: CharEncoder,
       buffering: Buffering)
   =>  ((ji.OutputStream is Writable by Text)^{streamCut}) =
 
@@ -129,7 +129,7 @@ object Writable:
             (stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[medium]^{}] over Credit)^]
               . records) )
 
-  given channel: (streamCut: Emit[StreamError], buffering: Buffering)
+  given channel: (streamCut: Emit[Truncation.Error], buffering: Buffering)
   =>  ((jn.channels.WritableByteChannel is Writable by Data)^{streamCut}) =
 
     (channel, stream) =>
@@ -151,7 +151,7 @@ object Writable:
               total += interval.size
             catch case error: Exception => failed = true
 
-      if failed then raise(StreamError(total.b))
+      if failed then raise(Truncation.Error(total.b))
 
 // A target which accepts a whole stream of `Operand` chunks and writes it to
 // completion: the stream parameter is a single-owner pull endpoint which the

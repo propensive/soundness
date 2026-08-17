@@ -1115,16 +1115,18 @@ object stagedInternal:
 
     // A user-supplied `Default[product]` collapses a missing nested value
     // to a single error, exactly as the derived engine's `fallback` does.
+    val productName: Expr[Text] = '{ ${Expr(Type.show[product])}.tt }
+
     Expr.summon[Default[product]] match
       case Some(default) =>
         '{
-          raise(Xml.Error())(using $tactic)
+          raise(Xml.Error(Xml.Error.Reason.AbsentProduct($productName)))(using $tactic)
           $default()
         }
 
       case None =>
         '{
-          raise(Xml.Error())(using $tactic)
+          raise(Xml.Error(Xml.Error.Reason.AbsentProduct($productName)))(using $tactic)
           ${ build() }
         }
 
@@ -1165,20 +1167,26 @@ object stagedInternal:
 
     val arity = variants.length
 
-    def fallback(tactic: Expr[Tactic[Xml.Error]]): Expr[sum] =
+    val sumName: Expr[Text] = '{ ${Expr(Type.show[sum])}.tt }
+
+    // `wire` is threaded in so the failure can name the discriminant it did not recognise.
+    def fallback(wire: Expr[String], tactic: Expr[Tactic[Xml.Error]]): Expr[sum] =
+      val reason: Expr[Xml.Error.Reason] =
+        '{ Xml.Error.Reason.UnknownVariant($wire.tt, $sumName) }
+
       Expr.summon[Default[sum]] match
         case Some(default) =>
           '{
             $reader.skipElement()
-            raise(Xml.Error())(using $tactic)
+            raise(Xml.Error($reason))(using $tactic)
             $default()
           }
 
         case None =>
-          '{ abort(Xml.Error())(using $tactic) }
+          '{ abort(Xml.Error($reason))(using $tactic) }
 
     def dispatch(index: Int, wire: Expr[String], tactic: Expr[Tactic[Xml.Error]]): Expr[sum] =
-      if index == arity then fallback(tactic)
+      if index == arity then fallback(wire, tactic)
       else variants(index)(1).asType match
         case '[type variantType <: sum; variantType] =>
           val instance = resolve[variantType](cache).getOrElse:
@@ -1204,15 +1212,17 @@ object stagedInternal:
   private[xylophone] def sumAbsent[sum: Type](tactic: Expr[Tactic[Xml.Error]])(using Quotes)
   :   Expr[sum] =
 
+    val sumName: Expr[Text] = '{ ${Expr(Type.show[sum])}.tt }
+
     Expr.summon[Default[sum]] match
       case Some(default) =>
         '{
-          raise(Xml.Error())(using $tactic)
+          raise(Xml.Error(Xml.Error.Reason.AbsentVariant($sumName)))(using $tactic)
           $default()
         }
 
       case None =>
-        '{ abort(Xml.Error())(using $tactic) }
+        '{ abort(Xml.Error(Xml.Error.Reason.AbsentVariant($sumName)))(using $tactic) }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Xml.Parsable] =

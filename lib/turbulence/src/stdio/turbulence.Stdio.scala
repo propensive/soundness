@@ -77,7 +77,7 @@ object Stdio:
     override def close(): Unit = ()
     override def available(): Int = 0
 
-trait Stdio extends Io, Findable:
+trait Stdio extends Findable:
   val termcap: Termcap
   val out: ji.PrintStream
   val err: ji.PrintStream

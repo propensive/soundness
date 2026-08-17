@@ -58,7 +58,7 @@ object OAuth:
   // OAuthError → OAuth.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
-      case Connection(url: HttpUrl, reason: ConnectError.Reason) extends Reason(1)
+      case Connection(url: HttpUrl, reason: Connect.Error.Reason) extends Reason(1)
       case InvalidJsonResponse                                   extends Reason(2)
       case UnexpectedHttpStatus(status: Http.Status)             extends Reason(3)
       case InsufficientPrivileges(scope: Text)                   extends Reason(4)

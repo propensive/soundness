@@ -22,7 +22,7 @@ flag arguments or fixed by the method chosen, invisible in the type. A program t
 wrong destroys data.
 
 Soundness lifts these into the types. A path carries its platform, so its rules are known; an
-operation declares `raises IoError` and the specific reason it can fail — a missing file, a
+operation declares `raises Io.Error` and the specific reason it can fail — a missing file, a
 permission denied, a directory that is not empty; and each policy is an explicit contextual value,
 so overwriting or recursing is a decision the code states rather than a default it inherits.
 Everything comes from the `soundness` package, with the system capabilities and the policies the
@@ -52,7 +52,7 @@ file.create[File]()
 
 `create[File]()` and `create[Directory]()` bring the entry into being, and refuse to destroy
 anything by default: creating over something that exists, or under a parent that does not, is an
-`IoError`. Where that is the intent, a flag says so at the call site rather than an import saying
+`Io.Error`. Where that is the intent, a flag says so at the call site rather than an import saying
 it for the whole file:
 
 ```scala
@@ -117,7 +117,7 @@ directory.open[Directory](Read & Exclusive): dir ?=>
 
 Two ordinary reads may coexist. An exclusive open conflicts with an overlapping open in either
 direction — whether the exclusive scope is the outer or the inner one — and the conflict is an
-`IoError` whose reason is `Busy`, raised at the point of the second open rather than discovered
+`Io.Error` whose reason is `Busy`, raised at the point of the second open rather than discovered
 as corruption later. The claim is released when the scope ends, however it ends.
 
 For a *file* rather than a directory, `Exclusive` additionally takes an operating-system lock, so
@@ -184,7 +184,7 @@ file.open[Ram](Read & Write): ram ?=>
 ### Copying, moving and deleting
 
 A path copies, moves, symlinks or deletes with operations that name the destination or act in
-place. Each consults the policy in scope for the awkward cases, and each may raise an `IoError`:
+place. Each consults the policy in scope for the awkward cases, and each may raise an `Io.Error`:
 
 Those policies are not defaults that can be left alone. Moving a file onto a path where something
 already exists either destroys that thing or refuses to; neither answer is right in general, and
@@ -268,6 +268,6 @@ open, read, write, list, link, delete — are gathered into a `FilesystemBackend
 and everything else is defined in terms of them. The `java.nio` implementation is
 `filesystemBackends.virtualMachineFilesystem`, and a WASI implementation over `wasi:filesystem` is
 supplied by `galilei.wasi`, so the same code reads and writes files on the JVM and inside a
-WebAssembly component. An operation a backend cannot support raises an `IoError` whose reason
+WebAssembly component. An operation a backend cannot support raises an `Io.Error` whose reason
 is `Unsupported`, rather than approximating it. Narrowing the platform's surface to a seam
 this small is [decoupling](../philosophy/decoupling.md) applied within a module.

@@ -49,7 +49,7 @@ import serpentine.*
 import vacuous.*
 import zephyrine.*
 
-import IoError.{Operation, Reason}
+import Io.Error.{Operation, Reason}
 
 // The form for random access to a file's bytes through memory mapping:
 // `path.open[Ram](Read & Write)`. The handle serves positional reads with `ram(offset, length)`
@@ -115,7 +115,7 @@ object Ram:
   // `FileOpenable`. An `Exclusive` mode implies a writable channel, since OS exclusive locks
   // require one.
   class RamOpenable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
-    ( using ioError: Tactic[IoError] )
+    ( using ioError: Tactic[Io.Error] )
   extends Openable:
 
     type Self = path
@@ -142,7 +142,7 @@ object Ram:
 
           // `MappedByteBuffer` addresses with `Int`, so mapping beyond 2GiB needs segmented
           // mapping, which can follow if it proves necessary.
-          if size > Int.MaxValue then abort(IoError(value, Operation.Open, Reason.Unsupported))
+          if size > Int.MaxValue then abort(Io.Error(value, Operation.Open, Reason.Unsupported))
 
           val lock =
             if mode.atoms.has(Exclusive) then
@@ -150,7 +150,7 @@ object Ram:
                 case _: jnc.OverlappingFileLockException => None
             else Some(null)
 
-          if lock.isEmpty then abort(IoError(value, Operation.Open, Reason.Busy))
+          if lock.isEmpty then abort(Io.Error(value, Operation.Open, Reason.Busy))
 
           try
             val write = mode.atoms.has(Write)
@@ -160,7 +160,7 @@ object Ram:
         finally channel.close()
 
   given openable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
-  =>  Tactic[IoError]
+  =>  Tactic[Io.Error]
   =>  RamOpenable[filesystem, path] =
     RamOpenable[filesystem, path]
 
@@ -168,7 +168,7 @@ object Ram:
   // since an empty mapping is useless and growth is not supported. The named file is
   // created, sized, mapped read-write for the scope, and removed if the scope fails.
   class RamCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
-    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[IoError] )
+    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
   extends Creatable:
 
     type Self = path
@@ -183,17 +183,17 @@ object Ram:
     :   result =
 
       val size: Long = flags.collectFirst { case RamFlag.Size(bytes) => bytes }
-        . getOrElse(abort(IoError(value, Operation.Create, Reason.Unsupported)))
+        . getOrElse(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))
 
       if size <= 0 || size > Int.MaxValue
-      then abort(IoError(value, Operation.Create, Reason.Unsupported))
+      then abort(Io.Error(value, Operation.Create, Reason.Unsupported))
 
       val createFlags = flags.collect { case flag: CreateFlag => flag }
       Creation.ensure(value, createFlags)
       Creation.replace(value, createFlags)
 
       if backend.exists(value, false)
-      then abort(IoError(value, Operation.Create, Reason.AlreadyExists))
+      then abort(Io.Error(value, Operation.Create, Reason.AlreadyExists))
 
       value.protect(Operation.Create):
         val channel =
@@ -216,6 +216,6 @@ object Ram:
         finally channel.close()
 
   given creatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
-  =>  ( FilesystemBackend on filesystem, Tactic[IoError] )
+  =>  ( FilesystemBackend on filesystem, Tactic[Io.Error] )
   =>  RamCreatable[filesystem, path] =
     RamCreatable[filesystem, path]

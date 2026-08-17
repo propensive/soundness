@@ -85,7 +85,7 @@ object Git:
     // `cut(r"[\n\r]")`. The stderr line iterator is laundered pure (exactly as
     // the old `toProgression` bridge did) so the progress iterator is a plain,
     // single-owner value the fetching `Job` carries alongside its result.
-    val stages = safely[StreamError]:
+    val stages = safely[Truncation.Error]:
       val lines = caps.unsafe.unsafeAssumePure(process.stderr().delineate.records)
 
       lines.collect:
@@ -116,7 +116,7 @@ object Git:
   :   Worktree =
 
     try
-      throwErrors[Path.Error | IoError]:
+      throwErrors[Path.Error | Io.Error]:
         val target: Path on Linux = targetPath.generic.as[Path on Linux]
         val branchOpt = initialBranch.lay(sh""): branch => sh"--initial-branch=$branch"
         sh"$command init $branchOpt $target".exec[Exit]()
@@ -125,7 +125,7 @@ object Git:
 
     catch
       case error: Path.Error => abort(Git.Error(InvalidRepoPath))
-      case error: IoError   => abort(Git.Error(InvalidRepoPath))
+      case error: Io.Error   => abort(Git.Error(InvalidRepoPath))
 
 
   def initBare
@@ -140,7 +140,7 @@ object Git:
   :   Git.Repo =
 
     try
-      throwErrors[Path.Error | IoError]:
+      throwErrors[Path.Error | Io.Error]:
         val target: Path on Linux = targetPath.generic.as[Path on Linux]
         val branchOpt = initialBranch.lay(sh""): branch => sh"--initial-branch=$branch"
         sh"$command init --bare $branchOpt $target".exec[Exit]()
@@ -149,7 +149,7 @@ object Git:
 
     catch
       case error: Path.Error => abort(Git.Error(InvalidRepoPath))
-      case error: IoError   => abort(Git.Error(InvalidRepoPath))
+      case error: Io.Error   => abort(Git.Error(InvalidRepoPath))
 
 
   inline def cloneCommit[source <: Matchable, path: Abstractable across Paths to Text]
@@ -269,8 +269,8 @@ object Git:
     Git.Process[Worktree](progress(process)):
       process.await() match
         case Exit.Ok =>
-          try throwErrors[IoError](Worktree(Git.Repo((target/".git")), target))
-          catch case error: IoError => abort(Git.Error(CloneFailed))
+          try throwErrors[Io.Error](Worktree(Git.Repo((target/".git")), target))
+          catch case error: Io.Error => abort(Git.Error(CloneFailed))
 
         case _ =>
           abort(Git.Error(CloneFailed))
@@ -304,8 +304,8 @@ object Git:
     Git.Process[Git.Repo](progress(process)):
       process.await() match
         case Exit.Ok =>
-          try throwErrors[IoError](Git.Repo(target))
-          catch case error: IoError => abort(Git.Error(CloneFailed))
+          try throwErrors[Io.Error](Git.Repo(target))
+          catch case error: Io.Error => abort(Git.Error(CloneFailed))
 
         case _ =>
           abort(Git.Error(CloneFailed))
@@ -490,7 +490,7 @@ object Git:
   // GitRepo → Git.Repo
   object Repo:
     def at[abstractable: Abstractable across Paths to Text](path: abstractable)
-      ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], Tactic[IoError] )
+      ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], Tactic[Io.Error] )
     :   Git.Repo =
 
       unsafely(path.generic.as[Path on Linux]).pipe: path =>

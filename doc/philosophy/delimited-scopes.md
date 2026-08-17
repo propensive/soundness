@@ -18,7 +18,7 @@ path.open[File](Write): handle ?=>       // a file, open for this block
   handle.write(data)
 
 recover:
-  case error: IoError => fallback
+  case error: Io.Error => fallback
 . protect(readConfiguration())           // a handler, for this block
 
 supervise:                               // a supervisor, for this block

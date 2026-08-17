@@ -43,7 +43,7 @@ object TextEscapes:
 
 
   def standardEscape(text: Text, cur: Int, esc: Boolean)
-  :   (Int, Int, Boolean) throws EscapeError =
+  :   (Int, Int, Boolean) throws TextEscapes.Error =
 
     text.s.charAt(cur) match
       case '\\' if !esc => (-1, cur + 1, true)
@@ -59,7 +59,7 @@ object TextEscapes:
       case '\'' if esc  => ('\'', cur + 1, false)
 
       case ch if esc =>
-        throw EscapeError
+        throw TextEscapes.Error
           ( Message
               ( List("the character ".tt, " should not be escaped".tt),
                 List(Message(ch.toString.tt)) ) )
@@ -68,12 +68,12 @@ object TextEscapes:
         (ch, cur + 1, false)
 
 
-  private def parseUnicode(chars: String): Char throws EscapeError =
+  private def parseUnicode(chars: String): Char throws TextEscapes.Error =
     if chars.length < 4
-    then throw EscapeError(Message("the unicode escape is incomplete".tt))
+    then throw TextEscapes.Error(Message("the unicode escape is incomplete".tt))
     else Integer.parseInt(chars, 16).toChar
 
-  def escape(text: Text): Text throws EscapeError =
+  def escape(text: Text): Text throws TextEscapes.Error =
     val buffer: StringBuilder = StringBuilder()
 
     @tailrec
@@ -84,8 +84,12 @@ object TextEscapes:
         recur(index, escape)
       else if esc
       then
-        throw EscapeError(Message("the final character cannot be an escape".tt))
+        throw TextEscapes.Error(Message("the final character cannot be an escape".tt))
 
     recur(0, false)
 
     buffer.toString.tt
+
+  // TextEscapes.Error → TextEscapes.Error
+  case class Error(initMessage: Message)(using Diagnostics)
+  extends fulminate.Error(421, 0)(initMessage)

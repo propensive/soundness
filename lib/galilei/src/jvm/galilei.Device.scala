@@ -59,20 +59,20 @@ object Device:
             overwritePreexisting:     OverwritePreexisting on plane,
             working:                  WorkingDirectory,
             loggable:                 guillotine.Exec.Event is Loggable )
-  :   Path on plane raises IoError =
+  :   Path on plane raises Io.Error =
 
     createNonexistentParents(path):
       overwritePreexisting(path):
         mitigate:
           case guillotine.Exec.Error(_, _, _) =>
             import errorDiagnostics.stackTracesDiagnostics
-            IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
+            Io.Error(path, Io.Error.Operation.Create, Io.Error.Reason.Unsupported)
 
         . protect:
             sh"mknod $path ${kind.flag} $major $minor"() match
               case Exit.Ok => ()
 
               case _ =>
-                raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
+                raise(Io.Error(path, Io.Error.Operation.Create, Io.Error.Reason.PermissionDenied))
 
     path

@@ -37,7 +37,7 @@ export
   . { Aggregable, deduplicate,
       delineate, Document, Documentary, drop, Eof, inputStream,
       Line, LineSeparation, load, Loadable, more, read, Relay, shred, source,
-      Confluence, Divergence, Readable, Sink, Streamable, StreamError,
+      Confluence, Divergence, Readable, Sink, Streamable, Truncation,
       StreamOutputStream, strict, take, Writable, writeTo, flow }
 
 package lineSeparation:

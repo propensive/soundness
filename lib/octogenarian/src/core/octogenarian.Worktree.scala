@@ -54,7 +54,7 @@ import filesystemBackends.virtualMachineFilesystem
 
 object Worktree:
   def apply[abstractable: Abstractable across Paths to Text](path: abstractable)
-    ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], Tactic[IoError] )
+    ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], Tactic[Io.Error] )
   :   Worktree =
 
     unsafely(path.generic.as[Path on Linux]).pipe: path =>

@@ -63,11 +63,11 @@ object Http2Serve:
   // all streams.
   private def runStreams
     ( connection: Http2.ServerConnection^, handler0: AnyRef, port: Int )
-    ( using Monitor, Probate, (HttpServer.Event is Loggable)^ )
+    ( using Monitor, Probate, (Httpd.Event is Loggable)^ )
   :   Unit =
 
-    given Tactic[Http2.Error] = strategies.throwUnsafely
-    given Tactic[StreamError] = strategies.throwUnsafely
+    given http2Tactic: Tactic[Http2.Error] = strategies.throwUnsafely
+    given truncationTactic: Tactic[Truncation.Error] = strategies.throwUnsafely
 
     val connectionRef: AnyRef = connection.asInstanceOf[AnyRef]
 
@@ -95,7 +95,7 @@ object Http2Serve:
           // exactly as the HTTP/1.1 `writeAll` does (never `memoize`, which a
           // transforming body such as a text encoder does not terminate under).
           val respond: Http.Connection.Respond^ = new Http.Connection.Respond:
-            def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
+            def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
               // A `Trailer` header (RFC 7230 §4.4) names response headers to be
               // sent as HTTP/2 trailers — a trailing HEADERS block after the body
               // (e.g. gRPC's `grpc-status`) — rather than in the initial block.
@@ -153,15 +153,15 @@ object Http2Serve:
      // capturing the caller's `Probate` capability would make this call — and so
      // the accept-daemon body — impure.
      import probates.cancelProbate
-     given Tactic[Async.Error] = strategies.throwUnsafely
-     given Tactic[StreamError] = strategies.throwUnsafely
+     given asyncTactic: Tactic[Async.Error] = strategies.throwUnsafely
+     given truncationTactic: Tactic[Truncation.Error] = strategies.throwUnsafely
      val connection = Http2.ServerConnection(StreamDuplex(in, out))
      connection.start()
      connection
 
   def serve
     ( handler: AnyRef => AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
-    ( using Monitor, (HttpServer.Event is Loggable)^ )
+    ( using Monitor, (Httpd.Event is Loggable)^ )
   :   Unit =
 
     val connection = open(in, out)
@@ -178,7 +178,7 @@ object Http2Serve:
   // `AnyRef => Unit` rim (a session-scope function value re-hides otherwise).
   def serveSession
     ( scope0: AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
-    ( using Monitor, (HttpServer.Event is Loggable)^ )
+    ( using Monitor, (Httpd.Event is Loggable)^ )
   :   Unit =
 
     val connection = open(in, out)
@@ -209,7 +209,7 @@ trait Http2Session:
 // A `Duplex` over a socket's raw byte streams: reads frame the inbound endpoint,
 // each `send` writes the whole chunk and flushes (the writer serialises one frame
 // per send). Used to drive `Http2.ServerConnection` over a scintillate socket.
-class StreamDuplex(in: ji.InputStream, out: ji.OutputStream)(using Tactic[StreamError])
+class StreamDuplex(in: ji.InputStream, out: ji.OutputStream)(using Tactic[Truncation.Error])
 extends Duplex:
   def source(using Buffering): (Stream[Data] over Credit)^ = Streamable.inputStream.stream(in)
 

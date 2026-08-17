@@ -77,7 +77,7 @@ object Tar:
 
   // Anchored here so `data.open[Tar](...)` resolves with no import. Opening a filesystem
   // *path* as TAR (`path.open[Tar]`) lives in `bitumen.jvm`, alongside the disk backend.
-  given dataOpenable: (tarTactic: Tactic[Tar.Error], streamTactic: Tactic[StreamError])
+  given dataOpenable: (tarTactic: Tactic[Tar.Error], streamTactic: Tactic[Truncation.Error])
   =>  (TarDataOpenable^{tarTactic, streamTactic}) =
     TarDataOpenable()
 
@@ -523,7 +523,7 @@ object Tar:
 
   object Handle:
     private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[Tar.Flag])
-      ( using tarTactic: Tactic[Tar.Error], streamTactic: Tactic[StreamError], buffering: Buffering )
+      ( using tarTactic: Tactic[Tar.Error], streamTactic: Tactic[Truncation.Error], buffering: Buffering )
     :   Iterator[Tar.Entry]^{tarTactic, streamTactic} =
 
       Tarfile.read:

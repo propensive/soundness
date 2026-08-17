@@ -51,6 +51,6 @@ trait RequestServable:
   // never the caller's `frontends` import.
   def handle(handle: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
-    ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
+    ( using (Httpd.Event is Loggable)^, Tactic[Httpd.Error] )
     ( using Frontend )
   :   Service^

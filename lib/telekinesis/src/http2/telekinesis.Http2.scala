@@ -721,7 +721,7 @@ object Http2:
 
     // Open a new client stream, send its header block (and optional body), and return
     // the stream handle whose promises/spool the reader will populate.
-    def request(headerBlock: List[HpackEntry], body: Optional[Bytes]): Http2.Stream =
+    def request(headerBlock: List[Hpack.Entry], body: Optional[Bytes]): Http2.Stream =
       val id = nextId.getAndAdd(2)
 
       // The consumption callback reaches only JMM-safe state (atomic counters
@@ -835,8 +835,8 @@ object Http2:
 
   // Http2.Stream -> Http2.Stream
   class Stream(val id: Int, onConsume: (Http2.Stream, Int) -> Unit = (_, _) => ()):
-    val headers: Promise[List[HpackEntry]] = Promise()
-    val trailers: Promise[List[HpackEntry]] = Promise()
+    val headers: Promise[List[Hpack.Entry]] = Promise()
+    val trailers: Promise[List[Hpack.Entry]] = Promise()
 
     // Consumed-but-unreplenished inbound bytes, drained by the connection's
     // batched replenishment.
@@ -850,7 +850,7 @@ object Http2:
 
     // Record an incoming HEADERS block: the first becomes the response headers, a
     // subsequent one (always end-stream) becomes the trailers.
-    def acceptHeaders(block: List[HpackEntry]): Unit =
+    def acceptHeaders(block: List[Hpack.Entry]): Unit =
       if !headersSeen then
         headersSeen = true
         headers.offer(block)
@@ -1131,7 +1131,7 @@ object Http2:
 
     // Send a response header block on `streamId`, encoded with a fresh
     // (always-literal) HPACK encoder. `endStream` marks a bodiless response.
-    def sendHeaders(streamId: Int, entries: List[HpackEntry], endStream: Boolean): Unit =
+    def sendHeaders(streamId: Int, entries: List[Hpack.Entry], endStream: Boolean): Unit =
       val encoder = Hpack()
       send(Frame.Headers(streamId, encoder.encode(entries), endStream, endHeaders = true))
 
@@ -1147,7 +1147,7 @@ object Http2:
     // response trailers, e.g. gRPC's `grpc-status`. A response with trailers must
     // leave `endStream` unset on its HEADERS and DATA, so this block closes the
     // stream. Encoded with a fresh (always-literal) HPACK encoder.
-    def sendTrailers(streamId: Int, entries: List[HpackEntry]): Unit =
+    def sendTrailers(streamId: Int, entries: List[Hpack.Entry]): Unit =
       val encoder = Hpack()
       send(Frame.Headers(streamId, encoder.encode(entries), endStream = true, endHeaders = true))
 

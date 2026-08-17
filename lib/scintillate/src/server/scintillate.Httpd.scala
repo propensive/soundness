@@ -30,10 +30,91 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package scintillate
 
+import java.net as jn
+
+import anticipation.Log
+import com.sun.net.httpserver as csnh
+
+import anticipation.*
+import contingency.*
+import digression.*
 import fulminate.*
+import parasite.*
 import rudiments.*
+import telekinesis.*
+import turbulence.*
+import urticose.*
 
-case class StreamError(total: Bytes)(using Diagnostics)
-extends Error(264, 0)(m"the stream was cut prematurely after $total")
+object Httpd:
+  // HttpServerEvent → Httpd.Event
+  object Event:
+    given communicable: Event is Communicable =
+      case Received(request)            => m"received the request $request"
+      case Processed(request, duration) => m"processed the request $request in ${duration}ms"
+      case BrokenStream(length)         => m"sending the response was aborted after $length"
+      case ConnectionFailed(error)      => m"the connection handler failed: ${error.message}"
+
+  enum Event:
+    case Received(request: Http.Request) extends Event, Log.Network, Log.Protocol
+    case Processed(request: Http.Request, duration: Long) extends Event, Log.Network
+    case BrokenStream(length: Bytes) extends Event, Log.Network
+    // Qualified: the sibling `Httpd.Error` would otherwise capture this bare name,
+    // since a member of the enclosing object outranks a wildcard import.
+    case ConnectionFailed(error: fulminate.Error) extends Event, Log.Network
+
+  // Httpd.Error → Httpd.Error
+  case class Error(port: Int)(using Diagnostics)
+  extends fulminate.Error(632, 0)(m"could not start an HTTP server on port $port")
+
+case class Httpd(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
+extends RequestServable:
+  // The `Frontend` given is accepted for `RequestServable` uniformity and ignored:
+  // the JDK backend has one engine.
+  def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
+    ( using Monitor, Probate )
+    ( using (Httpd.Event is Loggable)^, Tactic[Httpd.Error] )
+    ( using Frontend )
+  :   Service^ =
+
+    def handle(exchange: csnh.HttpExchange | Null): Unit =
+      try
+        recover:
+          case Truncation.Error(length) =>
+            Log.warn(Httpd.Event.BrokenStream(length))
+
+          case error @ Hostname.Error(_, _) =>
+            Log.warn(Httpd.Event.ConnectionFailed(error))
+
+            try
+              exchange.nn.sendResponseHeaders(400, -1)
+              exchange.nn.close()
+            catch case NonFatal(_) => ()
+
+        . protect:
+            val connection = Connections(exchange.nn)
+
+            connection.respond:
+              try handler(using connection) catch case throwable: Throwable =>
+                errorPage.handle(throwable, connection)
+
+      catch case NonFatal(exception) =>
+        Log.fail(Httpd.Event.ConnectionFailed(fulminate.Error(exception)))
+
+    def startServer()(using Tactic[Httpd.Error]): com.sun.net.httpserver.HttpServer =
+      try
+        val host = if local then "localhost" else "0.0.0.0"
+        val httpServer = csnh.HttpServer.create(jn.InetSocketAddress(host, port), 0).nn
+        httpServer.createContext("/").nn.setHandler(handle(_))
+        httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
+        httpServer.start()
+        httpServer
+      catch
+        case error: jn.BindException => abort(Httpd.Error(port))
+
+    val cancel: Promise[Unit] = Promise[Unit]()
+    val server = startServer()
+    val asyncTask = async(cancel.attend() yet server.stop(1))
+
+    Service: () => safely(cancel.fulfill(()))

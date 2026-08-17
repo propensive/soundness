@@ -30,22 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
-
+package exoskeleton
+import anticipation.*
 import fulminate.*
 
-object FrameError:
-  enum Reason(val number: Int) extends Clarification:
-    case ShortRead       extends Reason(1)
-    case MissingLineFeed extends Reason(2)
-    case MalformedLength extends Reason(3)
-    case UnknownHeader   extends Reason(4)
+// Installing something onto the host: exoskeleton writes shell completion scripts,
+// ethereal writes the daemon. Both fail the same two ways, so the error belongs to the
+// act rather than to either installer.
+object Install:
+  // InstallError → Install.Error
+  object Error:
+    object Reason:
+      given communicable: Reason is Communicable =
+        case Environment =>
+          m"it was not possible to get enough information about the install environment"
 
-  given communicable: Reason is Communicable =
-    case Reason.ShortRead       => m"the input ended before a complete frame could be read"
-    case Reason.MissingLineFeed => m"a carriage return was not followed by a line feed"
-    case Reason.MalformedLength => m"the content-length header value could not be parsed"
-    case Reason.UnknownHeader   => m"an unrecognized header was encountered"
+        case Io =>
+          m"an I/O error occurred when trying to write an installation file"
 
-case class FrameError(reason: FrameError.Reason)(using Diagnostics)
-extends Error(142, reason.number)(m"could not deframe the message because $reason")
+    enum Reason(val number: Int) extends Clarification:
+      case Environment extends Reason(1)
+      case Io          extends Reason(2)
+
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(822, reason.number)(m"the installation failed because $reason")

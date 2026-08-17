@@ -76,7 +76,7 @@ object Bundler:
 
   private[anthology] def assemble
     ( classpath: LocalClasspath, jarfile: Path on Linux, main: Optional[Fqcn] )
-  :   Path on Linux raises Zip.Error raises Path.Error raises IoError raises StreamError =
+  :   Path on Linux raises Zip.Error raises Path.Error raises Io.Error raises Truncation.Error =
 
     val manifest =
       main.let(MainClass(_)).let: main =>

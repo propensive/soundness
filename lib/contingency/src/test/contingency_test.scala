@@ -238,8 +238,8 @@ object Tests extends Suite(m"Contingency"):
         capture[ErrorA](failA(11))
       . assert(_.value == 11)
 
-      test(m"capture aborts via ExpectationError if body succeeds"):
-        safely[ExpectationError[String]]:
+      test(m"capture aborts via Expectation.Error if body succeeds"):
+        safely[Expectation.Error[String]]:
           capture[ErrorA](succeedStr("clean"))
         . absent
       . assert(_ == true)
@@ -465,7 +465,7 @@ object Tests extends Suite(m"Contingency"):
         v.values
       . assert(_ == List(7, 8))
 
-    suite(m"Errors / Validation / ExpectationError"):
+    suite(m"Errors / Validation / Expectation.Error"):
       test(m"Errors with no entries communicates the count"):
         Errors().message.text.starts(t"0 accrued errors")
       . assert(_ == true)
@@ -505,8 +505,8 @@ object Tests extends Suite(m"Contingency"):
         v(Pointer(t"f")).let { case m: Message => m.text }.or(t"")
       . assert(_ == t"bad")
 
-      test(m"ExpectationError communicates the result type"):
-        ExpectationError("anything").message.text.contains(t"expected to fail")
+      test(m"Expectation.Error communicates the result type"):
+        Expectation.Error("anything").message.text.contains(t"expected to fail")
       . assert(_ == true)
 
     suite(m"Mitigable / Fatal / Unchecked / strategies"):

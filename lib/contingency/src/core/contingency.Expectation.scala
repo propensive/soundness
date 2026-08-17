@@ -30,26 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gossamer
+package contingency
 
 import anticipation.*
 import fulminate.*
-import spectacular.*
 
-import decimalConverters.javaDecimalConverter
-
-object BoundsError:
-  def range(minimum: Double, maximum: Double): Text = minimum match
-    case Double.MinValue =>
-      maximum.match
-        case Double.MaxValue => "not a valid number"
-        case maximum         => t"? ≤ $maximum"
-
-    case minimum =>
-      maximum match
-        case Double.MaxValue => t"$minimum ≤ ?"
-        case maximum         => t"$minimum ≤ ? ≤ $maximum"
-
-case class BoundsError(value: Double, minimum: Double, maximum: Double)(using Diagnostics)
-extends Error(947, 0)
-  ( m"the value ${value.show} is not in the range ${BoundsError.range(minimum, maximum)}" )
+// `capture` expects its body to fail, and returns the error it raised. `Expectation` names
+// that expectation so its disappointment has somewhere to live: the body succeeded, and the
+// value it produced is carried so the caller can see what was returned instead.
+object Expectation:
+  // ExpectationError → Expectation.Error
+  case class Error[result](result: result)(using Diagnostics)
+  extends fulminate.Error(841, 0)(m"the expression was expected to fail, but succeeded")

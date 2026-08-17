@@ -49,12 +49,12 @@ object Stageable:
     type Form = Text
 
     inline def deserialize(text: Text | Null): scala.Array[Object] =
-      provide[Tactic[RemoteError]]:
-        given jsonRemote: RemoteError mitigates Json.Error =
-          error => RemoteError(RemoteError.Reason.Deserialization)
+      provide[Tactic[Rig.Error]]:
+        given jsonRemote: Rig.Error mitigates Json.Error =
+          error => Rig.Error(Rig.Error.Reason.Deserialization)
 
-        given parseRemote: RemoteError mitigates zephyrine.Parse.Error =
-          error => RemoteError(RemoteError.Reason.Deserialization)
+        given parseRemote: Rig.Error mitigates zephyrine.Parse.Error =
+          error => Rig.Error(Rig.Error.Reason.Deserialization)
 
         // `Json.decodable` is named explicitly rather than left to `provide`'s deferred
         // search: this inline body expands inside staged programs, where the search is
@@ -67,9 +67,9 @@ object Stageable:
 
     inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.in[Json])
 
-    inline def extract[entity](json: Json): entity = provide[Tactic[RemoteError]]:
-      given jsonRemote: RemoteError mitigates Json.Error =
-        error => RemoteError(RemoteError.Reason.Unknown)
+    inline def extract[entity](json: Json): entity = provide[Tactic[Rig.Error]]:
+      given jsonRemote: Rig.Error mitigates Json.Error =
+        error => Rig.Error(Rig.Error.Reason.Unknown)
       provide[entity is Decodable in Json](json.as[entity])
 
   given pojo: Stageable:

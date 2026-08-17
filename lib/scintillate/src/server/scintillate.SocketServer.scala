@@ -52,7 +52,7 @@ import zephyrine.*
 
 // A raw-TCP HTTP/1.1 server backend, built on a `java.net.ServerSocket` rather
 // than `com.sun.net.httpserver`. Each accepted socket is handled on its own
-// Loom virtual thread (`daemon`). The handler API is identical to `HttpServer`'s
+// Loom virtual thread (`daemon`). The handler API is identical to `Httpd`'s
 // — a `(connection: Http.Connection) ?=> Http.Response^{connection}` — so the two
 // backends are interchangeable. The connection loop supports keep-alive and pipelining,
 // `Content-Length` and chunked request bodies, `100-continue`, request-size
@@ -160,7 +160,7 @@ extends RequestServable:
   private def writeAll
     ( out: ji.OutputStream, consume stream: (Stream[Data] over Credit)^,
       flushEach: Boolean = true )
-    ( using Tactic[StreamError] )
+    ( using Tactic[Truncation.Error] )
   :   Unit =
 
     var count: Int = 0
@@ -181,7 +181,7 @@ extends RequestServable:
     if !flushEach && !failed then
       try out.flush() catch case error: ji.IOException => failed = true
 
-    if failed then abort(StreamError(count.b))
+    if failed then abort(Truncation.Error(count.b))
 
   // Frame the request body off the shared connection cursor: chunked decoding
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
@@ -209,7 +209,7 @@ extends RequestServable:
   // involvement. The caller owns the streams (closing, read timeouts).
   def serveConnection(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( in: ji.InputStream, sink: ji.OutputStream )
-    ( using (HttpServer.Event is Loggable)^ )
+    ( using (Httpd.Event is Loggable)^ )
   :   Unit =
 
     // One buffered layer per connection: a fixed-extent response's head and body
@@ -231,7 +231,7 @@ extends RequestServable:
           safely(writeAll(out, Http.Response.serialize(response)))
           false
 
-        case StreamError(_) =>
+        case Truncation.Error(_) =>
           // A read error or timeout while a request is in flight: best-effort 408
           // (the socket may still be writable on a read timeout), then close.
           val response = Http.Response(Http.RequestTimeout)() + closeHeader
@@ -274,7 +274,7 @@ extends RequestServable:
           // The responder retains only per-request locals; no aliased writer.
           val respond: Http.Connection.Respond^ = scala.caps.unsafe.unsafeAssumeSeparate:
            new Http.Connection.Respond:
-            def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
+            def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
               if response.status == Http.SwitchingProtocols then
                 // Switch to the upgraded protocol: write the handshake headers, then
                 // pipe its raw stream until it ends. This blocks for the lifetime of
@@ -291,7 +291,7 @@ extends RequestServable:
                 writeAll(out, bytes, flushEach = streaming(response))
 
           val connection = new Http.Connection(request, ssl.present, port, respond)
-          Log.fine(HttpServer.Event.Received(request))
+          Log.fine(Httpd.Event.Received(request))
           val started = System.currentTimeMillis
 
           // The response is produced and delivered over the same single-owner connection.
@@ -300,7 +300,7 @@ extends RequestServable:
               try handler(using connection)
               catch case throwable: Throwable => errorPage.handle(throwable, connection)
 
-          Log.info(HttpServer.Event.Processed(request, System.currentTimeMillis - started))
+          Log.info(Httpd.Event.Processed(request, System.currentTimeMillis - started))
 
           if upgraded || !keep then false else
             // Drain any body the handler did not consume so the cursor reaches the
@@ -330,8 +330,8 @@ extends RequestServable:
     // unexpected failure is left to propagate out of the per-connection daemon, where
     // the `trap` installed in `handle` logs it and isolates it to this connection.
     recover:
-      case StreamError(length) =>
-        Log.warn(HttpServer.Event.BrokenStream(length))
+      case Truncation.Error(length) =>
+        Log.warn(Httpd.Event.BrokenStream(length))
 
     . protect:
         // The connection cursor pulls straight from the socket's endpoint;
@@ -352,7 +352,7 @@ extends RequestServable:
   // affair). Sessions and TLS aside, the two engines serve identical handlers.
   def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
-    ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
+    ( using (Httpd.Event is Loggable)^, Tactic[Httpd.Error] )
     ( using frontend: Frontend )
   :   Service^ =
 
@@ -376,12 +376,12 @@ extends RequestServable:
   // confines the state to its connection.
   def handleSession(scope: (session: Http2Session^) ?=> Unit)
     ( using Monitor, Probate )
-    ( using (HttpServer.Event is Loggable)^, Tactic[ServerError] )
+    ( using (Httpd.Event is Loggable)^, Tactic[Httpd.Error] )
   :   Service^ =
 
     val idleTimeout: Int = 30000
 
-    def startServer(): jn.ServerSocket raises ServerError =
+    def startServer(): jn.ServerSocket raises Httpd.Error =
       try
         val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
 
@@ -401,7 +401,7 @@ extends RequestServable:
               ()
 
           socket
-      catch case error: jn.BindException => abort(ServerError(port))
+      catch case error: jn.BindException => abort(Httpd.Error(port))
 
     val serverSocket = startServer()
 
@@ -412,7 +412,7 @@ extends RequestServable:
     // aliased writer.
     scala.caps.unsafe.unsafeAssumeSeparate:
      contain:
-      case error => Log.fail(HttpServer.Event.ConnectionFailed(error)); Remedy.Accept
+      case error => Log.fail(Httpd.Event.ConnectionFailed(error)); Remedy.Accept
 
      . protect:
         // Daemon bodies must be pure context functions, so the server, the handler and each
@@ -425,7 +425,7 @@ extends RequestServable:
           session => scope(using session.asInstanceOf[Http2Session^])
         val scope0: AnyRef = scope1.asInstanceOf[AnyRef]
         // The (capability-typed) Loggable evidence crosses as an `AnyRef` rim too.
-        val loggable0: AnyRef = summon[(HttpServer.Event is Loggable)^].asInstanceOf[AnyRef]
+        val loggable0: AnyRef = summon[(Httpd.Event is Loggable)^].asInstanceOf[AnyRef]
 
         val acceptLoop = loop:
           safely(serverSocket.accept().nn).let: socket =>
@@ -442,7 +442,7 @@ extends RequestServable:
 
                 val in = socket1.getInputStream.nn
                 val out = socket1.getOutputStream.nn
-                given HttpServer.Event is Loggable = loggable0.asInstanceOf[HttpServer.Event is Loggable]
+                given Httpd.Event is Loggable = loggable0.asInstanceOf[Httpd.Event is Loggable]
                 val scope2 = scope0.asInstanceOf[AnyRef => Unit]
                 val self1 = self.asInstanceOf[SocketServer]
 

@@ -74,12 +74,12 @@ object Process:
   // never surfaces `java.io.OutputStream` in guillotine's public API. The `Writable` instances
   // delegate to turbulence's `OutputStream` writers.
   object Input:
-    given data: (streamCut: Emit[StreamError])
+    given data: (streamCut: Emit[Truncation.Error])
     =>  ((Process.Input is Writable by Data)^{streamCut}) =
       (stdin, stream) =>
         summon[(ji.OutputStream is Writable by Data)^].write(stdin.outputStream, stream)
 
-    given text: (streamCut: Emit[StreamError], encoder: CharEncoder)
+    given text: (streamCut: Emit[Truncation.Error], encoder: CharEncoder)
     =>  ((Process.Input is Writable by Text)^{streamCut}) =
       (stdin, stream) =>
         summon[(ji.OutputStream is Writable by Text)^].write(stdin.outputStream, stream)

@@ -101,7 +101,7 @@ object internal:
     val checkState = Ansi.Runtime.initial
 
     def rethrow[result](block: => result): result =
-      try block catch case error: Ansi.AnsiError => halt(error.detail)
+      try block catch case error: Ansi.Error => halt(error.detail)
 
     val firstPart = adjustedPart(0)
     rethrow(Ansi.Runtime.parse(checkState, firstPart.tt))
