@@ -57,10 +57,10 @@ package httpServers:
   // declared refinement (the galilei `FileOpenable` finding). Honestly tracked: the instance
   // retains its tactic and monitor (rep/DECISIONS.md ruling: server givens are capabilities).
   private class HttpProtocolic[port <: (80 | 443 | 8080 | 8000)](native: Boolean, local: Boolean)
-    ( using tactic:    Tactic[HttpServer.Error],
+    ( using tactic:    Tactic[Httpd.Error],
             monitor:   Monitor,
             probate:   Probate,
-            loggable:  HttpServer.Event is Loggable,
+            loggable:  Httpd.Event is Loggable,
             errorPage: WebserverErrorPage )
   extends Protocolic:
     type Transport = Tcp.Port of port
@@ -74,38 +74,38 @@ package httpServers:
     def server(port: Tcp.Port of port)(lambda: (request: Request) ?=> Response^{request})
     :   Server^ =
       if native then SocketServer(port.number, local).handle(lambda)
-      else HttpServer(port.number, local).handle(lambda)
+      else Httpd(port.number, local).handle(lambda)
 
   // Public: the soundness bundle's hand-written forwarder givens name this alias.
-  type HttpServerFor[port] =
+  type HttpdFor[port] =
     Http is Protocolic
       { type Transport = Tcp.Port of port
         type Request = Http.Connection^
         type Response = Http.Response
         type Server = Service }
 
-  given stdlibHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic: Tactic[HttpServer.Error], monitor: Monitor, probate: Probate )
-  =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
-  =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
+  given stdlibHttpd: [port <: (80 | 443 | 8080 | 8000)]
+  =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
+  =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
+  =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](false, true)
 
-  given stdlibPublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic: Tactic[HttpServer.Error], monitor: Monitor, probate: Probate )
-  =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
-  =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
+  given stdlibPublicHttpd: [port <: (80 | 443 | 8080 | 8000)]
+  =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
+  =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
+  =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](false, false)
 
   given nativeHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic: Tactic[HttpServer.Error], monitor: Monitor, probate: Probate )
-  =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
-  =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
+  =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
+  =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
+  =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](true, true)
 
   given nativePublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( tactic: Tactic[HttpServer.Error], monitor: Monitor, probate: Probate )
-  =>  ( loggable: HttpServer.Event is Loggable, errorPage: WebserverErrorPage )
-  =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
+  =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
+  =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
+  =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](true, false)
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies(key)

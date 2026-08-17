@@ -44,7 +44,7 @@ object CaptureTests extends Suite(m"Connection confinement tests"):
     test(m"the connection cannot be stashed in an outer variable"):
       demilitarize:
         def attempt(server: SocketServer)
-          ( using Monitor, Probate, (HttpServer.Event is Loggable)^, Tactic[HttpServer.Error] )
+          ( using Monitor, Probate, (Httpd.Event is Loggable)^, Tactic[Httpd.Error] )
         :   Unit =
           var stash: () => Unit = () => ()
 
@@ -61,7 +61,7 @@ object CaptureTests extends Suite(m"Connection confinement tests"):
     test(m"a response body may not capture a foreign stream"):
       demilitarize:
         def attempt(server: SocketServer, foreign: (Stream[Data] over Credit)^)
-          ( using Monitor, Probate, (HttpServer.Event is Loggable)^, Tactic[HttpServer.Error] )
+          ( using Monitor, Probate, (Httpd.Event is Loggable)^, Tactic[Httpd.Error] )
         :   Unit =
           server.handle:
             Http.Response(Http.Ok)(Http.Body.Flowing(() => foreign))

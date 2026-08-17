@@ -61,7 +61,7 @@ private[scintillate] object Connections:
   // in the body cannot cross the nested context-function results the sugar desugars to (the
   // stacked-raises convention; see rep/DECISIONS.md).
   def apply(exchange: csnh.HttpExchange)
-    ( using (HttpServer.Event is Loggable)^, Tactic[Hostname.Error] )
+    ( using (Httpd.Event is Loggable)^, Tactic[Hostname.Error] )
   :   Http.Connection^ =
 
     val uri = exchange.getRequestURI.nn
@@ -107,7 +107,7 @@ private[scintillate] object Connections:
           body        = () => source.stream(in),
           textHeaders = headers )
 
-    Log.fine(HttpServer.Event.Received(request))
+    Log.fine(Httpd.Event.Received(request))
 
     val port = Option(exchange.getRequestURI.nn.getPort).filter(_ > 0).getOrElse:
       exchange.getLocalAddress.nn.getPort

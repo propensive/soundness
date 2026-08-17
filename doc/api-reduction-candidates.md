@@ -4,8 +4,8 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **430**;
-  213 sit in a prefix family of two or more, across 62 families, and
+- exported multi-word type-level names still under review: **429**;
+  212 sit in a prefix family of two or more, across 62 families, and
   217 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
@@ -75,7 +75,7 @@ kinds, none of which is a simple rename.
 | foreign interop (diuretic)                | `JavaIoFile`, `JavaNioPath`, `JavaUtilDate`                                                                                               | deliberately name the foreign type                                                                                 |
 | platform interfaces                       | `Wasi*Api`                                                                                                                                | one per library, loaded as a unit                                                                                  |
 | render palettes                           | `MarkdownPalette`, `StackTracePalette`, `TestPalette`                                                                                     | cross-component by design                                                                                          |
-| specification concepts (R2)               | `JsonPointer`, `YamlPath`, `TelPath`, `JsonSchema`, `XmlSchema`, `MediaType`, `SymmetricKey`, `HttpServer`, `BlockCipher`, `CompileError` | the compound names a thing with its own specification — the test is whether it would appear as a heading in a spec |
+| specification concepts (R2)               | `JsonPointer`, `YamlPath`, `TelPath`, `JsonSchema`, `XmlSchema`, `MediaType`, `SymmetricKey`, `BlockCipher`, `CompileError` | the compound names a thing with its own specification — the test is whether it would appear as a heading in a spec |
 | ~~reflectively loaded~~ (disproved) | `TypescriptDialect`, `WebIdlDialect`, `WitDialect`                                                                                        | **no longer excluded.** `CHeaderDialect` became `CHeader.Dialect` in the seventh pass; the loader derived the class name from `fullName`, which is dotted between owners — see "No longer blocked" |
 | component-blocked (R6)                    | `TarOpenable`, `PdfFile`, `ImageRecord`, `HmacCipher`, `JsonSchema`, `JsonBlueprint`, `LiraBundle`, `KotlinMetadataAtomizer`              | outer companion is in another component                                                                            |
 
@@ -170,7 +170,11 @@ anamnesis is called `Data`, and the only `Data` in the codebase — anticipation
 `Database.Error`. `ServerError` likewise: in an HTTP library that name reads as a 5xx
 response — which is what `Http.Status.Category.ServerError` actually means, in a library
 scintillate depends on — rather than a listener that could not bind. It is
-`HttpServer.Error`, beside the `HttpServer.Event` that both server backends already share.
+`Httpd.Error`, beside the `Httpd.Event` that both server backends already share. `HttpServer`
+itself has since become `Httpd` — a single word for the same thing, which also takes it out of
+the R2 exclusion table, since there is no longer a compound name to justify. Its family went
+with it: `HttpServerFor`, `stdlibHttpServer` and `stdlibPublicHttpServer` are `HttpdFor`,
+`stdlibHttpd` and `stdlibPublicHttpd`.
 
 `BoundsError` was **deleted** rather than renamed. It duplicated
 `JsonBlueprint.Error`'s `IntOutOfRange` reason — the same failure, the same three fields,
@@ -274,7 +278,7 @@ ultimatum's is the likelier one to rename.
 | `Frame*` | telekinesis, vivisection | 2 | `FrameId`, `FrameReader` |
 | `Host*` | mandible | 3 | `HostArchive`, `HostContracts`, `HostRelease` |
 | `Hpack*` | telekinesis | 2 | `HpackEntry`, `HpackTable` |
-| `Http*` | anticipation, honeycomb, scintillate, urticose | 5 | `HttpEquiv`, `HttpRequests`, `HttpServer`, `HttpStreams`, `HttpUrl` |
+| `Http*` | anticipation, honeycomb, urticose | 4 | `HttpEquiv`, `HttpRequests`, `HttpStreams`, `HttpUrl` |
 | `Image*` | embarcadero | 2 | `ImageOpenable`, `ImageRecord` |
 | `Inline*` | profanity, ultimatum | 5 | `InlineAnchoring`, `InlineBoard`, `InlineGrowth`, `InlineRoot`, `InlineShrink` |
 | `Java*` | anthology, diuretic, enigmatic, gastronomy, scintillate | 11 | `JavaIoFile`, `JavaLongDuration`, `JavaLongInstant`, `JavaNetUrl`, `JavaNioPath`, `JavaServlet`, `JavaStdlibCrypto`, `JavaStdlibHashing`, `JavaTimeInstant`, `JavaUtilDate`, `JavaVersion` |

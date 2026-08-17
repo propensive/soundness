@@ -47,8 +47,8 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 
-object HttpServer:
-  // HttpServerEvent → HttpServer.Event
+object Httpd:
+  // HttpServerEvent → Httpd.Event
   object Event:
     given communicable: Event is Communicable =
       case Received(request)            => m"received the request $request"
@@ -60,21 +60,21 @@ object HttpServer:
     case Received(request: Http.Request) extends Event, Log.Network, Log.Protocol
     case Processed(request: Http.Request, duration: Long) extends Event, Log.Network
     case BrokenStream(length: Bytes) extends Event, Log.Network
-    // Qualified: the sibling `HttpServer.Error` would otherwise capture this bare name,
+    // Qualified: the sibling `Httpd.Error` would otherwise capture this bare name,
     // since a member of the enclosing object outranks a wildcard import.
     case ConnectionFailed(error: fulminate.Error) extends Event, Log.Network
 
-  // HttpServer.Error → HttpServer.Error
+  // Httpd.Error → Httpd.Error
   case class Error(port: Int)(using Diagnostics)
   extends fulminate.Error(632, 0)(m"could not start an HTTP server on port $port")
 
-case class HttpServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
+case class Httpd(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
 extends RequestServable:
   // The `Frontend` given is accepted for `RequestServable` uniformity and ignored:
   // the JDK backend has one engine.
   def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
     ( using Monitor, Probate )
-    ( using (HttpServer.Event is Loggable)^, Tactic[HttpServer.Error] )
+    ( using (Httpd.Event is Loggable)^, Tactic[Httpd.Error] )
     ( using Frontend )
   :   Service^ =
 
@@ -82,10 +82,10 @@ extends RequestServable:
       try
         recover:
           case Truncation.Error(length) =>
-            Log.warn(HttpServer.Event.BrokenStream(length))
+            Log.warn(Httpd.Event.BrokenStream(length))
 
           case error @ Hostname.Error(_, _) =>
-            Log.warn(HttpServer.Event.ConnectionFailed(error))
+            Log.warn(Httpd.Event.ConnectionFailed(error))
 
             try
               exchange.nn.sendResponseHeaders(400, -1)
@@ -100,9 +100,9 @@ extends RequestServable:
                 errorPage.handle(throwable, connection)
 
       catch case NonFatal(exception) =>
-        Log.fail(HttpServer.Event.ConnectionFailed(fulminate.Error(exception)))
+        Log.fail(Httpd.Event.ConnectionFailed(fulminate.Error(exception)))
 
-    def startServer()(using Tactic[HttpServer.Error]): com.sun.net.httpserver.HttpServer =
+    def startServer()(using Tactic[Httpd.Error]): com.sun.net.httpserver.HttpServer =
       try
         val host = if local then "localhost" else "0.0.0.0"
         val httpServer = csnh.HttpServer.create(jn.InetSocketAddress(host, port), 0).nn
@@ -111,7 +111,7 @@ extends RequestServable:
         httpServer.start()
         httpServer
       catch
-        case error: jn.BindException => abort(HttpServer.Error(port))
+        case error: jn.BindException => abort(Httpd.Error(port))
 
     val cancel: Promise[Unit] = Promise[Unit]()
     val server = startServer()

@@ -24,7 +24,7 @@ does not split at all — it becomes a namespace for its own satellites.
 - **R2 KEEP + NAMESPACE**: the compound is an established concept independent of its
   prefix. `JsonPointer` (RFC 6901) does not become `Json.Pointer`; instead
   `JsonPointerError → JsonPointer.Error`. Likewise `MediaType`, `JsonSchema` and
-  `XmlSchema` (external standards), `HttpServer`, `BlockCipher`, `CompileError`,
+  `XmlSchema` (external standards), `Httpd`, `BlockCipher`, `CompileError`,
   `WebDriver`, `WorkingDirectory`, `DomainSocket`, `JsonRpc`, `OAuth`, `StackTrace`,
   `JsonBlueprint`, `SymmetricKey` (parallel with `PrivateKey`/`PublicKey`; the
   `Symmetric` trait is a separate abstraction). This resolves July's internal conflict:
@@ -121,7 +121,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | profanity.core | `TerminalError→Terminal.Error`, `TerminalEvent→Terminal.Event`, `TerminalFeature→Terminal.Feature`, `TerminalInfo→Terminal.Info` (`TerminalBoard`/`InlineBoard` stay: they are `Board` variants, not Terminal satellites) |
 | revolution.core | `ManifestAttribute→Manifest.Attribute`, `ManifestEntry→Manifest.Entry`, `SemverError→Semver.Error` |
 | savagery.core | `SvgError→Svg.Error`, `SvgParser→Svg.Parser` |
-| scintillate.server | `HttpServerEvent→HttpServer.Event` (new companion for `HttpServer`) |
+| scintillate.server | `HttpServerEvent→Httpd.Event` (new companion for `Httpd`) |
 | scintillate.servlet | `JavaServletFn→JavaServlet.Fn` |
 | sedentary.core | `BenchError→Bench.Error` |
 | serpentine.core | `PathError→Path.Error` |
@@ -248,7 +248,7 @@ constraint*, and the name should be read as load-bearing until proven otherwise.
   `Error` in its own `extends` clause self-referential — qualify as
   `extends fulminate.Error(...)`. Move the donor file's imports with the body.
 - **New companions needed** (L3-ordered before their types): `Cipher`, `BlockCipher`,
-  `Compiler`, `HttpServer`.
+  `Compiler`, `Httpd`.
 - **Mega-file mitigation**: `ypsiloid.Yaml.scala` and `stratiform.Tel.scala` are ~6,100
   lines. Nesting their satellites is in scope; keep the files manageable by hoisting
   existing companion bulk into mixin traits in their own files — the codebase already
