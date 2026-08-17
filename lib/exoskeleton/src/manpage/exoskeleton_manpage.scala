@@ -122,13 +122,33 @@ extension (help: Help)
 
         caption ::: scala.List(Block.Example(List(example.command)))
 
+    // Statuses and environment variables are documented once for the whole tool, so they are
+    // gathered from every command in the tree rather than just its root.
+    def gather[element](node: Help)(select: Help => List[element]): scala.List[element] =
+      select(node).stdlib ::: node.subcommands.stdlib.flatMap(gather(_)(select))
+
+    // A status discovered from an `execute` block and one declared in the `Manual` may describe
+    // the same code; the hand-written description wins.
     val exitStatusBlocks: scala.List[Block] =
-      manual.exitStatuses.stdlib.map: status =>
-        Block.Tagged(List(Inline.bold(status.code.show)), prose(status.description))
+      val declared: scala.collection.Map[Int, Text] =
+        manual.exitStatuses.stdlib.map { status => status.code -> status.description }.toMap
+
+      val detected: scala.List[(Int, Text)] =
+        gather(help)(_.statuses).map { status => status.code -> status.description }
+
+      (detected ::: declared.toList)
+      . map { (code, description) => code -> declared.getOrElse(code, description) }
+      . distinctBy(_._1)
+      . sortBy(_._1)
+      . map: (code, description) =>
+          Block.Tagged(List(Inline.bold(code.show)), prose(description))
 
     val environmentBlocks: scala.List[Block] =
-      manual.environment.stdlib.map: variable =>
-        Block.Tagged(List(Inline.bold(variable.name)), prose(variable.description))
+      val described: scala.collection.Map[Text, Text] =
+        manual.environment.stdlib.map { variable => variable.name -> variable.description }.toMap
+
+      (gather(help)(_.variables) ::: described.keys.toList).distinct.sorted.map: name =>
+        Block.Tagged(List(Inline.bold(name)), prose(described.get(name).optional))
 
     val fileBlocks: scala.List[Block] =
       manual.files.stdlib.map: file =>

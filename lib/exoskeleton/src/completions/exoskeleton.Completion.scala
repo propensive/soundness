@@ -70,6 +70,7 @@ extends Cli:
   val operandNames: scm.HashMap[Flag, Text] = scm.HashMap()
   val globalFlags: scm.HashSet[Flag] = scm.HashSet()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
+  val statuses: scm.LinkedHashSet[Status] = scm.LinkedHashSet()
 
   // Whether any suggestions have been offered yet for the focused argument. Flags registered
   // before this point were checked before subcommand dispatch, so they are "global": they apply
@@ -117,6 +118,8 @@ extends Cli:
       flags(flag) = discoverable
       operand.let(operandNames(flag) = _)
       if !dispatchSuggested then globalFlags += flag
+
+  override def record(statuses: List[Status]): Unit = statuses.each(this.statuses += _)
 
   override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
 
