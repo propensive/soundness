@@ -30,143 +30,112 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package virility
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    telekinesis.Http2Tests()
-    //cosmopolite.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    telekinesis.Tests()
-    tessellate.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    virility.Tests()
-    vivisection.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    // turbulence.Tests() - deadlock
-    ()
+object Roff:
+  given showable: Roff is Showable = _.serialize
+  given encodable: Roff is Encodable in Text = _.serialize
+
+  // Escaping is unconditional: every `-` becomes the hyphen-minus escape `\-` so that options
+  // and command names remain searchable and copy-pasteable in rendered output, and `\` becomes
+  // `\[rs]`. A newline within a logical line would let subsequent text be misread as a roff
+  // control line, so newlines become spaces; the line-start cases that remain (`.` and `'`)
+  // are protected with `\&` in `line`, which every serialized text line passes through.
+  // Quoted macro arguments (`.TH`/`.SH` titles, dates) escape `"`, which delimits them, but
+  // not `-`: hyphens there are prose, and an escaped hyphen in the `.TH` date defeats
+  // mandoc's date parsing.
+  def escape(text: Text): Text = escape(text, quotable = false)
+
+  private def escape(text: Text, quotable: Boolean): Text =
+    val builder = StringBuilder()
+
+    text.s.foreach:
+      case '\\'             => builder.append("\\[rs]")
+      case '-' if !quotable => builder.append("\\-")
+      case '\n'             => builder.append(' ')
+      case '"' if quotable  => builder.append("\\[dq]")
+      case other            => builder.append(other)
+
+    builder.toString.nn.tt
+
+  def quote(text: Text): Text = t"\"${escape(text, quotable = true)}\""
+
+  private def line(text: Text): Text =
+    if text.starts(t".") || text.starts(t"'") then t"\\&$text" else text
+
+  // Cons on the opaque `List` routes through the compat conversion to the stdlib `List`, so
+  // sequences are assembled here by concatenation instead of `::`.
+  private def concat[element](lists: List[element]*): List[element] =
+    List.of(lists.toList.flatMap(_.stdlib))
+
+  // A `.P` directly after `.SH`/`.SS` is redundant (mandoc lints it), so a section's leading
+  // paragraph contributes only its text line.
+  private def sectionBody(blocks: List[Block]): List[Text] = blocks match
+    case Block.Paragraph(prose) :: rest =>
+      concat(List(line(prose.map(_.serialize).join)), rest.flatMap(_.serialize))
+
+    case other => other.flatMap(_.serialize)
+
+  object Inline:
+    def plain(text: Text): List[Inline] = List(Inline.Plain(text))
+    def bold(text: Text): Inline = Inline.Bold(plain(text))
+    def italic(text: Text): Inline = Inline.Italic(plain(text))
+
+  enum Inline:
+    case Plain(text: Text)
+    case Bold(inlines: List[Inline])
+    case Italic(inlines: List[Inline])
+
+    def serialize: Text = this match
+      case Plain(text)     => escape(text)
+      case Bold(inlines)   => t"\\fB${inlines.map(_.serialize).join}\\fP"
+      case Italic(inlines) => t"\\fI${inlines.map(_.serialize).join}\\fP"
+
+  enum Block:
+    case Section(title: Text, blocks: List[Block])
+    case Subsection(title: Text, blocks: List[Block])
+    case Paragraph(prose: List[Inline])
+    case Tagged(tag: List[Inline], body: List[Inline])
+    case Example(lines: List[Text])
+    case Indented(blocks: List[Block])
+
+    def serialize: List[Text] = this match
+      case Section(title, blocks) =>
+        concat(List(t".SH ${quote(title)}"), sectionBody(blocks))
+
+      case Subsection(title, blocks) =>
+        concat(List(t".SS ${quote(title)}"), sectionBody(blocks))
+
+      case Paragraph(prose) => List(t".P", line(prose.map(_.serialize).join))
+
+      case Example(lines) =>
+        concat(List(t".EX"), lines.map { text => line(escape(text)) }, List(t".EE"))
+
+      case Tagged(tag, body) =>
+        List(t".TP", line(tag.map(_.serialize).join), line(body.map(_.serialize).join))
+
+      case Indented(blocks) => concat(List(t".RS"), blocks.flatMap(_.serialize), List(t".RE"))
+
+case class Roff
+  ( title:   Text,
+    section: Int,
+    date:    Optional[Text]   = Unset,
+    source:  Optional[Text]   = Unset,
+    manual:  Optional[Text]   = Unset,
+    blocks:  List[Roff.Block] = Nil ):
+
+  def serialize: Text =
+    val arguments =
+      List(title.upper, section.show, date.or(t""), source.or(t""), manual.or(t""))
+      . stdlib.reverse.dropWhile(_ == t"").reverse
+
+    val header = Roff.concat(List(t".TH"), List.of(arguments).map(Roff.quote)).join(t" ")
+
+    Roff.concat(List(header), blocks.flatMap(_.serialize)).join(t"", t"\n", t"\n")

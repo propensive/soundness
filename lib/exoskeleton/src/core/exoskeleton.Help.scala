@@ -61,7 +61,7 @@ object Help:
     case Label(depth: Int, text: Text)
     case Blank
 
-  private def label(param: Param): Text =
+  private[exoskeleton] def label(param: Param): Text =
     val names: Text = ((param.name :: param.aliases): List[Text]).join(t", ")
 
     val core: Text = param.operand.absolve match
@@ -69,6 +69,26 @@ object Help:
       case operand: Text => t"$names <$operand>"
 
     if param.repeatable then t"$core..." else core
+
+  // Global flags precede the subcommand on the command line; flags belonging to this command
+  // or to any subcommand follow it. Each part appears only if such flags actually exist, and
+  // when only a single flag is possible, it is named outright rather than called `options`.
+  // Shared by the `teletype` renderer and the manpage renderer, so their synopses agree.
+  private[exoskeleton] def summarize(params: scala.List[Param], plural: Text): Text =
+    if params.isEmpty then t""
+    else if params.length == 1 then
+      val param = params.head
+
+      val core: Text = param.operand.absolve match
+        case Unset         => param.name
+        case operand: Text => t"${param.name} <$operand>"
+
+      if param.repeatable then t" [$core]..." else t" [$core]"
+    else
+      t" [$plural]"
+
+  private[exoskeleton] def descendants(node: Help): scala.List[Param] =
+    node.parameters.stdlib ::: node.subcommands.stdlib.flatMap(descendants)
 
   private def paramItems(params: scala.List[Param], depth: Int): scala.List[Row] =
     params.map: param => Row.Item(depth, label(param), false, param.description)
@@ -210,31 +230,15 @@ case class Help
             if lines.isEmpty then scala.List(padded)
             else e"$padded  ${lines.head}" :: lines.tail.map: line => e"$margin$line"
 
-    // Global flags precede the subcommand on the command line; flags belonging to this command
-    // or to any subcommand follow it. Each part appears only if such flags actually exist, and
-    // when only a single flag is possible, it is named outright rather than called `options`.
-    def summarize(params: scala.List[Help.Param], plural: Text): Text =
-      if params.isEmpty then t""
-      else if params.length == 1 then
-        val param = params.head
-
-        val core: Text = param.operand.absolve match
-          case Unset         => param.name
-          case operand: Text => t"${param.name} <$operand>"
-
-        if param.repeatable then t" [$core]..." else t" [$core]"
-      else
-        t" [$plural]"
-
     val usage: Teletype =
-      if leaf then e"$Bold(Usage:) $command${summarize(parameters.stdlib, t"options")}"
+      if leaf then e"$Bold(Usage:) $command${Help.summarize(parameters.stdlib, t"options")}"
       else
-        def descendants(node: Help): scala.List[Help.Param] =
-          node.parameters.stdlib ::: node.subcommands.stdlib.flatMap(descendants)
+        val globals: Text = Help.summarize(globalParams, t"global options")
 
-        val globals: Text = summarize(globalParams, t"global options")
-        val posterior = (localParams ::: subcommands.stdlib.flatMap(descendants)).distinct
-        val locals: Text = summarize(posterior, t"options")
+        val posterior =
+          (localParams ::: subcommands.stdlib.flatMap(Help.descendants)).distinct
+
+        val locals: Text = Help.summarize(posterior, t"options")
 
         e"$Bold(Usage:) $command$globals <command>$locals"
 

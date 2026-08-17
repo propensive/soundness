@@ -30,143 +30,70 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package exoskeleton
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    telekinesis.Http2Tests()
-    //cosmopolite.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    telekinesis.Tests()
-    tessellate.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    virility.Tests()
-    vivisection.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import ambience.*, environments.javaEnvironment, systems.javaSystem
+import anticipation.*
+import aperture.*
+import contingency.*
+import fulminate.*
+import galilei.*
+import gossamer.*
+import nomenclature.*
+import prepositional.*
+import serpentine.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
+import virility.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    // turbulence.Tests() - deadlock
-    ()
+import filesystemBackends.virtualMachineFilesystem
+
+// Installs a rendered manpage into the XDG man hierarchy, mirroring how `Completions.install`
+// places shell-completion scripts. `$XDG_DATA_HOME/man` is on the default manpath of modern
+// man-db, so no `MANPATH` mutation is needed. The target directory and filename come from the
+// page itself: `man<section>/<title>.<section>`.
+object Manpages:
+  object InstallResult:
+    given communicable: InstallResult is Communicable =
+      case Installed(path)        => m"The manpage was installed to $path."
+      case AlreadyInstalled(path) => m"A manpage already exists at $path."
+      case NoWritableLocation     => m"No writable install location could be found."
+
+  enum InstallResult:
+    case Installed(path: Text)
+    case AlreadyInstalled(path: Text)
+    case NoWritableLocation
+
+    def pathname: Optional[Text] = this.only:
+      case Installed(path)        => path
+      case AlreadyInstalled(path) => path
+
+  def install(page: Roff, force: Boolean = false)
+    ( using erased effectful: Effectful )
+    ( using Diagnostics )
+  (using (IoEvent is Loggable)^)
+  ( using Tactic[InstallError] )
+  :   InstallResult =
+
+    mitigate:
+      case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
+      case Name.Error(_, _, _) => InstallError(InstallError.Reason.Io)
+      case Path.Error(_, _)    => InstallError(InstallError.Reason.Io)
+      case StreamError(_)      => InstallError(InstallError.Reason.Io)
+
+    . protect:
+        safely:
+          val dir: Path on Linux =
+            Xdg.dataHome[Path on Linux]/Name[Linux](t"man")/Name[Linux](t"man${page.section}")
+
+          if !dir.existent() then dir.create[Directory](CreateFlag.Parents)
+
+          val path = dir/Name[Linux](t"${page.title}.${page.section}")
+
+          if path.existent() && !force then InstallResult.AlreadyInstalled(path.encode)
+          else
+            path.write(page.serialize.sysData)
+            InstallResult.Installed(path.encode)
+
+        . or(InstallResult.NoWritableLocation)
