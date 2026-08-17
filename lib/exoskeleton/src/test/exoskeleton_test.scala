@@ -672,3 +672,58 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                t"",
                t"  Common options:",
                t"    --force <value>      do not ask for confirmation")
+
+      suite(m"Manpage tests"):
+        val manual = Manual
+          ( version  = v"1.2.3",
+            authors  = List(t"Jon Pretty"),
+            examples = List(Manual.Example(t"Run the tool", t"demo --verbose")),
+            seeAlso  = List(Manual.Reference(t"bash")),
+            homepage = url"https://soundness.dev/" )
+
+        val leafHelp = Help
+          ( t"demo",
+            t"a demonstration tool",
+            List(Help.Param(t"--verbose", List(t"-v"), t"print more detail", false, false,
+                t"value")),
+            Nil )
+
+        test(m"A leaf command renders as a complete manpage"):
+          leafHelp.roff(using manual).serialize.cut(t"\n")
+        . assert(_ == List
+                       (t".TH \"DEMO\" \"1\" \"\" \"demo 1.2.3\" \"User Commands\"",
+                        t".SH \"NAME\"",
+                        t"demo \\- a demonstration tool",
+                        t".SH \"SYNOPSIS\"",
+                        t"\\fBdemo\\fP [\\-\\-verbose <value>]",
+                        t".SH \"DESCRIPTION\"",
+                        t"a demonstration tool",
+                        t".SH \"OPTIONS\"",
+                        t".TP",
+                        t"\\fB\\-\\-verbose, \\-v <value>\\fP",
+                        t"print more detail",
+                        t".SH \"EXAMPLES\"",
+                        t"Run the tool",
+                        t".EX",
+                        t"demo \\-\\-verbose",
+                        t".EE",
+                        t".SH \"AUTHORS\"",
+                        t"Jon Pretty",
+                        t".SH \"SEE ALSO\"",
+                        t"\\fBbash\\fP(1)",
+                        t".P",
+                        t"Homepage: https://soundness.dev/",
+                        t""))
+
+        test(m"The discovered help tree renders global options and grouped commands"):
+          HelpApp.tree.roff.serialize
+        . assert: page =>
+            page.contains(t".TH \"MYTOOL\" \"1\" \"\" \"\" \"User Commands\"")
+              && page.contains(t".SH \"GLOBAL OPTIONS\"")
+              && page.contains(t"\\fB\\-\\-verbose <value>\\fP")
+              && page.contains(t".SS \"Admin commands\"")
+              && page.contains(t"\\fBuseradd\\fP")
+
+        test(m"The manpage synopsis matches the help text usage line"):
+          HelpApp.tree.roff.serialize.cut(t"\n")
+        . assert(_.has(t"\\fBmytool\\fP [\\-\\-verbose <value>] <command> [options]"))
