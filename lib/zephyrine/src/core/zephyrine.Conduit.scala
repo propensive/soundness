@@ -48,6 +48,20 @@ import vacuous.*
 // synchronized component of a pipeline; every other stage is single-owner mutable state
 // on one side of a conduit or the other.
 //
+// Threading matters more than anything else on this boundary, and the right
+// choice depends on scale. A handful of pipelines on otherwise-idle cores run
+// fastest on platform threads, whose spin budget catches most exchanges
+// without a kernel transition. Under heavy load — more pipelines than cores —
+// run BOTH endpoints on virtual threads: every park then suspends fiber-style
+// on the carrier pool instead of oversubscribing the OS scheduler, and
+// throughput keeps climbing with pipeline count rather than collapsing.
+// Measured in the constrained-heap sweep (128 MB, 64 KiB blocks): platform
+// pairs peak at ~145k op/s at two pipelines and fall to ~90k at sixty-four,
+// where virtual pairs reach ~350k — ahead of every fiber runtime benchmarked,
+// at a fraction of their allocation — because between parks the exchange is
+// still a lock-free ring with no effect-system overhead. Mixed pairs sit in
+// between: the platform side's kernel parks dominate.
+//
 // The two endpoints are separate exclusive capabilities: a single object owning both
 // sides could not give two threads separated exclusive access. They share a
 // `SharedCapability`-classified core — correctly exempt from separation checking, since
@@ -100,8 +114,11 @@ object Conduit:
     // synchronized queue transfer. With recycling, every block is physically
     // `ceiling`-sized (so any drained block fits any future reservation and the
     // pool stays single-size), while `capacity` still bounds the usable prefix,
-    // leaving the publish cadence unchanged. The memory bound is `depth + 1`
-    // blocks of at most `ceiling` either way.
+    // leaving the publish cadence unchanged. The memory bound is the ring plus
+    // the reader's adoption buffer (each up to the ring's slot count) plus the
+    // staging block — roughly `2*depth + 1` blocks of at most `ceiling` either
+    // way: the price of burst adoption, which frees the whole ring for the
+    // writer in one step.
     val intake: (Intake[medium] over Credit)^ = new Intake[medium](using addressable0):
       type Transport = Credit
 
@@ -235,6 +252,30 @@ object Conduit:
       // backing (the caller's immutable data, never to be recycled).
       private var recyclable0: Boolean = false
 
+      // Blocks adopted from the ring in a burst (`drain`), served without
+      // further synchronization: one `head` publication and one producer
+      // unpark per burst, not per block. Consumer-owned, like `storage`.
+      @caps.unsafe.untrackedCaptures
+      private val adopted: scala.Array[AnyRef | Null] =
+        new scala.Array[AnyRef | Null](core.handoff.width)
+
+      private var adoptedIndex: Int = 0
+      private var adoptedCount: Int = 0
+
+      // The next buffered block, draining a fresh burst from the ring if none
+      // remains: `null` only once the producer has finished and the ring is
+      // empty.
+      private update def adopt(): AnyRef | Null =
+        if adoptedIndex >= adoptedCount then
+          adoptedCount = core.handoff.drain(adopted)
+          adoptedIndex = 0
+
+        if adoptedCount == 0 then null else
+          val item = adopted(adoptedIndex)
+          adopted.asInstanceOf[scala.Array[AnyRef | Null]^](adoptedIndex) = null
+          adoptedIndex += 1
+          item
+
       protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
@@ -259,7 +300,7 @@ object Conduit:
             limit0 += (end0 - limit0).min(granted)
             limit0 - start0
           else
-            core.handoff.take() match
+            adopt() match
               case null =>
                 ended = true
 
