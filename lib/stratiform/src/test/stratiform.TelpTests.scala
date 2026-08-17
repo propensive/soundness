@@ -277,7 +277,7 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
 
       test(m"the failing component's index is reported"):
         given Tels = schema
-        capture[Telp.Error](Telp.parse(t"/contact/zed").resolve(root)).component
+        capture[Telp.Error](Telp.parse(t"/contact/zed").resolve(root)).index
       . assert(_ == 1)
 
     suite(m"Delimiter switch (§10)"):

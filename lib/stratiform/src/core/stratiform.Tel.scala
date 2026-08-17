@@ -100,7 +100,7 @@ object Tel extends Tel2:
   // `tel.locate(pointer)` / `tel.locateKey(pointer)`, so a root parsed without
   // position tracking (hence no `positionIndex`) leaves `span` empty and the
   // success path pays nothing.
-  case class Focus(pointer: TelPath = TelPath.Root, span: Span = Span.empty)
+  case class Focus(pointer: Telp = Telp.Root, span: Span = Span.empty)
   derives CanEqual:
     def withSpan(tel: Tel): Focus = copy(span = tel.locate(pointer).lay(Span.empty)(_.span))
 
@@ -593,7 +593,7 @@ object Tel extends Tel2:
     private def descend(base0: Optional[Tel.Focus], keyword: Text, span: Span = Span.empty)
     :   Tel.Focus =
 
-      val pointer = base0.let(_.pointer).or(TelPath.Root).prepend(keyword)
+      val pointer = base0.let(_.pointer).or(Telp.Root).prepend(keyword)
       val inherited = base0.let(_.span).or(Span.empty)
 
       Tel.Focus(pointer, if inherited.exists then inherited else span)
@@ -1392,7 +1392,7 @@ object Tel extends Tel2:
         // errors carry a pointer (and, for a tracked root, a source position via
         // `Focus.withPosition`) instead of the bare document root.
         focus({
-          val base = prior.let(_.pointer).or(TelPath.Root)
+          val base = prior.let(_.pointer).or(Telp.Root)
           Tel.Focus(base.prepend(compound.keyword))
         }):
           // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
@@ -1465,7 +1465,7 @@ object Tel extends Tel2:
             // position Unset (locate finds no node) — but the pointer still names
             // the absent field.
             if requiredOf(f) && fillCount == 0 then focus({
-              val base = prior.let(_.pointer).or(TelPath.Root)
+              val base = prior.let(_.pointer).or(Telp.Root)
               Tel.Focus(base.prepend(f.keyword))
             }):
               resolveType(f.fieldType, schema) match
@@ -1560,7 +1560,7 @@ object Tel extends Tel2:
             keyValueOf(element).let: keyValue =>
               if !seenKeys.add(keyValue) then
                 focus({
-                  val base = prior.let(_.pointer).or(TelPath.Root)
+                  val base = prior.let(_.pointer).or(Telp.Root)
                   Tel.Focus(base.prepend(keywordAt(idx)))
                 }):
                   recoverNode(Reason.DuplicateKeyValue)(())
@@ -2039,24 +2039,24 @@ object Tel extends Tel2:
 
     Array.frozen(scala.IArray.unsafeFromArray(build(document, 1, 1, 0, 0, 0)))
 
-  // Resolves a `TelPath` to the source `Position` recorded in a tracked `Tel`'s
+  // Resolves a `Telp` to the source `Position` recorded in a tracked `Tel`'s
   // `PositionIndex`. Exposed uniformly as `tel.locate(path)` / `tel.locateKey(path)`
   // through zephyrine's `Positionable`, matching `jacinta.Json` and `ypsiloid.Yaml`:
   // `locate` gives the value — the compound's inline atoms, falling back to the
   // keyword when it has none — and `locateKey` gives the keyword.
-  given positionable: Tel is Positionable by TelPath to Tel.Error.Position =
+  given positionable: Tel is Positionable by Telp to Tel.Error.Position =
     new Positionable:
       type Self    = Tel
-      type Operand = TelPath
+      type Operand = Telp
       type Result  = Tel.Error.Position
 
-      def locate(value: Tel, path: TelPath): Optional[Tel.Error.Position] =
+      def locate(value: Tel, path: Telp): Optional[Tel.Error.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, Sequence.from(path.keywords.stdlib), 0, false)
+          walkIndex(value.subtree, index.ints, 0, Sequence.from(path.components.stdlib), 0, false)
 
-      def locateKey(value: Tel, path: TelPath): Optional[Tel.Error.Position] =
+      def locateKey(value: Tel, path: Telp): Optional[Tel.Error.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, Sequence.from(path.keywords.stdlib), 0, true)
+          walkIndex(value.subtree, index.ints, 0, Sequence.from(path.components.stdlib), 0, true)
 
   // Walk the packed `PositionIndex` alongside the AST, following `segments`
   // (a root-first keyword path) from the descriptor at `offset`.
