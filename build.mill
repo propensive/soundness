@@ -755,7 +755,7 @@ object soundness extends Toolchain:
     hallucination.webp, hallucination.formats,
     ziggurat.core, ziggurat.packager, tessellate.core,
     ultimatum.core, ultimatum.gauges, ultimatum.tables, xenophile.native, exoskeleton.args,
-    exoskeleton.core):
+    exoskeleton.core, virility.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
@@ -3085,6 +3085,17 @@ object vicarious extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
+object virility extends Library:
+  // A document model and serializer for roff using the man(7) macro set, primarily for
+  // generating Unix manual pages. Owns roff's escaping rules; emits width-independent source
+  // (no wrapping — nroff fills).
+  object core extends Component(gossamer.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
 object vivisection extends Library:
   // A from-scratch JDWP debugger client: coaxial sockets carry the wire protocol, guillotine
   // launches the debuggee, digression supplies SMAP-aware line translation, and parasite runs
@@ -3318,7 +3329,8 @@ val allLibraries: Seq[Library] = Seq(
   proscenium, punctuation, quantitative, querencia, reliquary, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, tessellate, turbulence, typonym,
-  ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, vivisection,
+  ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, virility,
+  vivisection,
   wisteria, xenophile, xylophone,
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
 )

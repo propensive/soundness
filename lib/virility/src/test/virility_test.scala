@@ -30,143 +30,80 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package virility
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    telekinesis.Http2Tests()
-    //cosmopolite.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    telekinesis.Tests()
-    tessellate.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    virility.Tests()
-    vivisection.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import soundness.*
 
-object FailingTests extends Suite(m"Failing tests"):
+object Tests extends Suite(m"Virility Tests"):
   def run(): Unit =
-    // turbulence.Tests() - deadlock
-    ()
+    suite(m"Escaping tests"):
+      test(m"Hyphens become hyphen-minus escapes"):
+        Roff.escape(t"list-files")
+      . assert(_ == t"list\\-files")
+
+      test(m"Backslashes become the rs escape"):
+        Roff.escape(t"C:\\Users")
+      . assert(_ == t"C:\\[rs]Users")
+
+      test(m"A backslash before a hyphen escapes both independently"):
+        Roff.escape(t"a\\-b")
+      . assert(_ == t"a\\[rs]\\-b")
+
+      test(m"Newlines become spaces"):
+        Roff.escape(t"one\ntwo")
+      . assert(_ == t"one two")
+
+      test(m"Quoted arguments escape embedded double quotes"):
+        Roff.quote(t"a\"b")
+      . assert(_ == t"\"a\\[dq]b\"")
+
+      test(m"Quoted arguments keep hyphens verbatim"):
+        Roff.quote(t"2026-08-17")
+      . assert(_ == t"\"2026-08-17\"")
+
+    suite(m"Serialization tests"):
+      test(m"A minimal document is a TH line with trailing arguments dropped"):
+        Roff(t"grep", 1).serialize
+      . assert(_ == t".TH \"GREP\" \"1\"\n")
+
+      test(m"Unset middle arguments are kept when later ones are set"):
+        Roff(t"grep", 1, Unset, Unset, t"User Commands").serialize
+      . assert(_ == t".TH \"GREP\" \"1\" \"\" \"\" \"User Commands\"\n")
+
+      test(m"A paragraph starting with a dot is protected"):
+        Roff.Block.Paragraph(Roff.Inline.plain(t".profile is read at startup")).serialize
+      . assert(_ == List(t".P", t"\\&.profile is read at startup"))
+
+      test(m"A paragraph starting with a quote is protected"):
+        Roff.Block.Paragraph(Roff.Inline.plain(t"'quoted' words")).serialize
+      . assert(_ == List(t".P", t"\\&'quoted' words"))
+
+      test(m"Bold and italic serialize as font alternations"):
+        Roff.Block.Paragraph
+         (List(Roff.Inline.bold(t"ls"), Roff.Inline.Plain(t" "), Roff.Inline.italic(t"file")))
+        . serialize
+      . assert(_ == List(t".P", t"\\fBls\\fP \\fIfile\\fP"))
+
+      test(m"Examples pass through EX/EE with escaping"):
+        Roff.Block.Example(List(t"grep -r pattern .", t".hidden")).serialize
+      . assert(_ == List(t".EX", t"grep \\-r pattern .", t"\\&.hidden", t".EE"))
+
+      test(m"A tagged paragraph emits TP, tag line and body line"):
+        Roff.Block.Tagged
+         (List(Roff.Inline.bold(t"--verbose")), Roff.Inline.plain(t"Print more detail."))
+        . serialize
+      . assert(_ == List(t".TP", t"\\fB\\-\\-verbose\\fP", t"Print more detail."))
+
+      test(m"Sections nest their blocks and indentation closes with RE"):
+        Roff
+         (t"demo", 1, t"2026-08-17", t"demo 1.0", t"User Commands",
+          List
+           (Roff.Block.Section
+             (t"Name",
+              List
+               (Roff.Block.Paragraph(Roff.Inline.plain(t"demo - a demonstration")),
+                Roff.Block.Indented
+                 (List(Roff.Block.Paragraph(Roff.Inline.plain(t"indented"))))))))
+        . serialize
+      . assert(_ == t".TH \"DEMO\" \"1\" \"2026-08-17\" \"demo 1.0\" \"User Commands\"\n"
+                    + t".SH \"Name\"\ndemo \\- a demonstration\n.RS\n.P\nindented\n.RE\n")
