@@ -492,7 +492,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
               server0.accepted.stream.records.each: stream =>
                 unsafely:
                   stream.headers.await()
-                  server0.sendHeaders(stream.id, List(HpackEntry(t":status", t"200")), false)
+                  server0.sendHeaders(stream.id, List(Hpack.Entry(t":status", t"200")), false)
                   var index = 0
 
                   while index < 20 do
@@ -617,7 +617,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
             drained += 1
 
           val hpack = Hpack()
-          val respHeaders = hpack.encode(List(HpackEntry(t":status", t"200")))
+          val respHeaders = hpack.encode(List(Hpack.Entry(t":status", t"200")))
 
           serverSide.send:
             zephyrine.Stream(Frame.Headers(streamId.get, respHeaders, true, true).serialize)
