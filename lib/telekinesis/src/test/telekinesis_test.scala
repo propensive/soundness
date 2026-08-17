@@ -778,7 +778,7 @@ object Tests extends Suite(m"Telekinesis tests"):
                     write(Frame.Settings(Nil, ack = true))
 
                   case Frame.Headers(id, _, _, _) =>
-                    val head = hpack.encode(List(HpackEntry(t":status", t"200")))
+                    val head = hpack.encode(List(Hpack.Entry(t":status", t"200")))
                     write(Frame.Headers(id, head, false, true))
                     write(Frame.Data(id, t"h2-native".in[Data], true))
 

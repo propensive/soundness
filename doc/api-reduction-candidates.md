@@ -4,9 +4,9 @@ Regenerated from the `soundness_*` re-export files after eight nesting passes (#
 #1770, #1775, #1779, #1790, and the current branch). This is the working list for the
 remainder.
 
-- exported multi-word type-level names still under review: **429**;
-  212 sit in a prefix family of two or more, across 62 families, and
-  217 are singletons. Names under "Reviewed items which should not be moved"
+- exported multi-word type-level names still under review: **426**;
+  210 sit in a prefix family of two or more, across 61 families, and
+  216 are singletons. Names under "Reviewed items which should not be moved"
   are excluded from both counts
 - passes three to six removed 63, 8, 31 and 33 names respectively, and added six that had to
   become reachable: `YamlPath` (so `YamlPath.Error` stays exported), `Css.Syntax` (previously
@@ -53,10 +53,20 @@ kinds, none of which is a simple rename.
   `Toolchain` was in a component `linker` already depends on, and enigmatic's `core-jvm` is a
   *platform source directory* of `core`, not a component at all. **Resolve the outer name to
   a file and a component before recording anything here as blocked.**
-- **Mechanically blocked.** `TarHeader` and `MathmlReader` both index an `Array[T]^{}` inside
-  a method that the enclosing object requires at `^{any}`; `HpackTable`/`HpackEntry` fail the
-  same way. `caps.Pure` fixes the cross-file variant of this (verified on `HpackEntry`) but
-  not the nesting variant, and is worth doing for L2 compliance regardless.
+- **Mechanically blocked — mostly cleared.** Four names indexed an `Array[T]^{}` inside a
+  method the enclosing object requires at `^{any}`. `proscenium`'s `readUnchecked` resolves
+  it, and `MathmlReader`, `HpackTable` and `HpackEntry` are now `Mathml.Reader`,
+  `Hpack.Table` and `Hpack.Entry`.
+
+  **`TarHeader` stays, and not for a capture-checking reason.** `readUnchecked` skips the
+  bounds check, and two of its sites rely on one: `Header.parse` reads `block(156)` after a
+  truncation check that `raise`s rather than `abort`s — so a recovering caller reaches it
+  with a short block — and `verifyChecksum` loops to `blockSize` with no relation to
+  `block.length`. Both currently fail with an `IndexOutOfBoundsException` on a truncated
+  archive; under `readUnchecked` they would read out of bounds. A parser over untrusted
+  input should not trade that for a name. Nesting it needs the guards tightened first
+  (`abort` rather than `raise`, or an explicit length bound), which is a behaviour change
+  worth making on its own terms.
 - **Wildcard imports over namespace objects** — 104 in the tree. The constant-table uses
   (`Vp8Tables`, `FlateTables`, `PeriodicTable`, `DagTile`) are legitimate; the type-holding
   ones (`Lsp` ×14, `Mathml` ×6, `Control` ×5, `Binary` ×5) are what makes nesting fragile,
@@ -277,7 +287,6 @@ ultimatum's is the likelier one to rename.
 | `Foreign*` | xenophile | 2 | `ForeignBuffer`, `ForeignLibrary` |
 | `Frame*` | telekinesis, vivisection | 2 | `FrameId`, `FrameReader` |
 | `Host*` | mandible | 3 | `HostArchive`, `HostContracts`, `HostRelease` |
-| `Hpack*` | telekinesis | 2 | `HpackEntry`, `HpackTable` |
 | `Http*` | anticipation, honeycomb, urticose | 4 | `HttpEquiv`, `HttpRequests`, `HttpStreams`, `HttpUrl` |
 | `Image*` | embarcadero | 2 | `ImageOpenable`, `ImageRecord` |
 | `Inline*` | profanity, ultimatum | 5 | `InlineAnchoring`, `InlineBoard`, `InlineGrowth`, `InlineRoot`, `InlineShrink` |
@@ -350,7 +359,7 @@ ultimatum's is the likelier one to rename.
 | `West*` | geodesy | 2 | `WestNorthwest`, `WestSouthwest` |
 | `Working*` | ambience, aviation | 2 | `WorkingDays`, `WorkingDirectory` |
 
-### Singletons (217)
+### Singletons (216)
 
 `AdaptiveSupervisor`, `AddOp`, `AlexandrianCalendar`, `AmalgamateTactic`, `AmountOfSubstance`,
 `AnyMessage`, `ArrowAssoc`, `AsciiBuilder`, `AsyncTactic`, `AtomsBlob`, `AttemptTactic`,
@@ -369,29 +378,28 @@ ultimatum's is the likelier one to rename.
 `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`, `JsigDiscipline`, `JsInvoke`,
 `JuxtapositionPalette`, `JvmProfile`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`,
 `LazyEnvironment`, `LengthPrefix`, `LinkEvent`, `LocalhostDevice`, `LongNameFormat`, `LruCache`,
-`LspSessional`, `ManifestSigning`, `MarkdownPalette`, `MathmlReader`, `MediaType`, `MenuField`,
-`MethodId`, `MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`,
-`NoteRef`, `NotFound`, `NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`,
-`OnlineClasspath`, `OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`,
-`OrdinalCalendar`, `OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`,
-`PdfFile`, `PeriodicTable`, `PhysicalState`, `PixelOpaque`, `PlaceholderKind`,
-`PlatformSupervisor`, `PolarGaussian`, `PollingWatcher`, `PositionTracking`, `PosixCommands`,
-`PrivateKey`, `ProcessingPermit`, `ProcessStatus`, `ProgrammingLanguage`, `ProgressBar`,
-`PropertyDef`, `PublicKey`, `RadioGroup`, `RamFlag`, `RasterOpenable`, `RectoPanel`,
-`ReferenceTypeId`, `ReflogEntry`, `RequestServable`, `ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`,
-`RomanCalendar`, `RootFs`, `SchemaSignature`, `ScreenRoot`, `SecureEndpoint`, `SelectMenu`,
-`SelectorList`, `SemanticMessage`, `SeqHasAsJava`, `ShaderPlugin`, `SiderealDays`,
-`SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`, `SocketServer`, `SolarDay`,
-`SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`, `StandardMetadata`,
-`StaticAnnotation`, `StreamOutputStream`, `StringId`, `SubOp`, `SymmetricKey`, `SyntaxMatcher`,
-`TeletypeFormattable`, `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`, `TestPalette`,
-`ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`, `TraversalOrder`,
-`TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`, `UnboundedSizeComplexity`,
-`UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnusedFeature`, `UrlPalette`, `UsedSets`,
-`UsesBlob`, `ValueToken`, `VentureTactic`, `VersionResponse`, `VersoPanel`, `VerticalAlignment`,
-`VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`, `WeekDate`, `WeekdayOrdinal`,
-`WideCharacterWidth`, `WireType`, `WritingBuilder`, `WsSessional`, `XeqConfiguration`,
-`XmlSchema`, `YamlPath`, `ZipBuilder`
+`LspSessional`, `ManifestSigning`, `MarkdownPalette`, `MediaType`, `MenuField`, `MethodId`,
+`MlDsa`, `MonotonicClock`, `MoveAtomically`, `MulOp`, `NirPlugin`, `NonFatal`, `NoteRef`,
+`NotFound`, `NumberMode`, `NumericRange`, `ObjectId`, `OffsetCalendar`, `OnlineClasspath`,
+`OpaqueDiscipline`, `OpensslCrypto`, `OperationSize`, `OptionalTactic`, `OrdinalCalendar`,
+`OverwritePreexisting`, `PanamaInvoke`, `PartiallyOrdered`, `PcmFlag`, `PdfFile`, `PeriodicTable`,
+`PhysicalState`, `PixelOpaque`, `PlaceholderKind`, `PlatformSupervisor`, `PolarGaussian`,
+`PollingWatcher`, `PositionTracking`, `PosixCommands`, `PrivateKey`, `ProcessingPermit`,
+`ProcessStatus`, `ProgrammingLanguage`, `ProgressBar`, `PropertyDef`, `PublicKey`, `RadioGroup`,
+`RamFlag`, `RasterOpenable`, `RectoPanel`, `ReferenceTypeId`, `ReflogEntry`, `RequestServable`,
+`ResetMode`, `Rgb12Opaque`, `Rgb32Opaque`, `RomanCalendar`, `RootFs`, `SchemaSignature`,
+`ScreenRoot`, `SecureEndpoint`, `SelectMenu`, `SelectorList`, `SemanticMessage`, `SeqHasAsJava`,
+`ShaderPlugin`, `SiderealDays`, `SignalResponse`, `SignatureAlgorithm`, `SimpleTExtractor`,
+`SocketServer`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`,
+`StandardMetadata`, `StaticAnnotation`, `StreamOutputStream`, `StringId`, `SubOp`, `SymmetricKey`,
+`SyntaxMatcher`, `TeletypeFormattable`, `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`,
+`TestPalette`, `ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`,
+`TraversalOrder`, `TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`,
+`UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnusedFeature`,
+`UrlPalette`, `UsedSets`, `UsesBlob`, `ValueToken`, `VentureTactic`, `VersionResponse`,
+`VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`,
+`WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WritingBuilder`, `WsSessional`,
+`XeqConfiguration`, `XmlSchema`, `YamlPath`, `ZipBuilder`
 
 ## Retained from the original inventory
 

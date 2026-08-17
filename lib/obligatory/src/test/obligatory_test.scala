@@ -153,12 +153,12 @@ object Tests extends Suite(m"Obligatory Tests"):
       def pair(): (Duplex, Duplex) = Duplex.pair()
 
       def okHeaders(hpack: Hpack, id: Int): Frame =
-        val block = hpack.encode(List(HpackEntry(t":status", t"200"),
-            HpackEntry(t"content-type", t"application/grpc")))
+        val block = hpack.encode(List(Hpack.Entry(t":status", t"200"),
+            Hpack.Entry(t"content-type", t"application/grpc")))
 
         Frame.Headers(id, block, endStream = false, endHeaders = true)
 
-      def trailers(hpack: Hpack, id: Int, fields: List[HpackEntry], endStream: Boolean): Frame =
+      def trailers(hpack: Hpack, id: Int, fields: List[Hpack.Entry], endStream: Boolean): Frame =
         Frame.Headers(id, hpack.encode(fields), endStream, endHeaders = true)
 
       // A minimal in-process gRPC server: completes the HTTP/2 handshake, then on the
@@ -212,7 +212,7 @@ object Tests extends Suite(m"Obligatory Tests"):
             List
               ( okHeaders(hpack, id),
                 Frame.Data(id, Grpc.Framing.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
-                trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
+                trailers(hpack, id, List(Hpack.Entry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
@@ -230,7 +230,7 @@ object Tests extends Suite(m"Obligatory Tests"):
             List
               ( okHeaders(hpack, id),
                 Frame.Data(id, Grpc.Framing.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
-                trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
+                trailers(hpack, id, List(Hpack.Entry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
@@ -245,8 +245,8 @@ object Tests extends Suite(m"Obligatory Tests"):
           val (clientSide, serverSide) = pair()
 
           runServer(serverSide, (hpack, id) =>
-            List(trailers(hpack, id, List(HpackEntry(t":status", t"200"),
-                HpackEntry(t"grpc-status", t"5"), HpackEntry(t"grpc-message", t"absent")), true)))
+            List(trailers(hpack, id, List(Hpack.Entry(t":status", t"200"),
+                Hpack.Entry(t"grpc-status", t"5"), Hpack.Entry(t"grpc-message", t"absent")), true)))
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
@@ -270,7 +270,7 @@ object Tests extends Suite(m"Obligatory Tests"):
             List
               ( okHeaders(hpack, id),
                 Frame.Data(id, body, endStream = false),
-                trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
+                trailers(hpack, id, List(Hpack.Entry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
@@ -288,7 +288,7 @@ object Tests extends Suite(m"Obligatory Tests"):
             List
               ( okHeaders(hpack, id),
                 Frame.Data(id, Grpc.Framing.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
-                trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
+                trailers(hpack, id, List(Hpack.Entry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex

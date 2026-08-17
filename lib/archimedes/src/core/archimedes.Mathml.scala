@@ -477,6 +477,48 @@ object Mathml:
 
         case other             => abort(Mathml.Error(Mathml.Error.Reason.UnknownElement(other)))
 
+  // MathmlReader → Mathml.Reader
+  // Extracts MathML embedded in HTML. Honeycomb parses `<math>` as a foreign
+  // element with its own (non-xylophone) `Element`/`Node` types, so the reader
+  // walks the honeycomb tree, finds the first `<math>` subtree, transcribes it
+  // into a xylophone `Xml` element, and hands that to `Mathml.Parser` to reuse the
+  // same label-dispatch decoding used for standalone XML.
+
+  object Reader:
+    def read(html: Html)(using Tactic[Mathml.Error]): Math =
+      findMath(html).lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))): element =>
+        Mathml.Parser.decodeMath(toXmlElement(element))
+
+    def findMath(html: Html): Optional[honeycomb.Element] = html match
+      case element: honeycomb.Element =>
+        if element.label == t"math" then element else searchNodes(element.children)
+
+      case fragment: honeycomb.Fragment => searchNodes(Array.from(fragment.nodes))
+      case _                            => Unset
+
+    private def searchNodes(nodes: Array[honeycomb.Node]^{}): Optional[honeycomb.Element] =
+      var result: Optional[honeycomb.Element] = Unset
+      var index = 0
+
+      while index < nodes.length && result.absent do
+        result = findMath(nodes.readUnchecked(index))
+        index += 1
+
+      result
+
+    private def toXmlElement(element: honeycomb.Element): Element =
+      val pairs: List[(Text, Text)] =
+        element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(List)
+
+      val nodes: Array[Node]^{} = element.children.map(toXmlNode)
+      Element(element.label, Attributes(pairs*), nodes)
+
+    private def toXmlNode(node: honeycomb.Node): Node = node match
+      case element: honeycomb.Element   => toXmlElement(element)
+      case textNode: honeycomb.TextNode => TextNode(textNode.text)
+      case comment: honeycomb.Comment   => Comment(comment.text)
+      case _                            => TextNode(t"")
+
 trait Mathml:
   def label: Text
   def attributes: List[(Text, Text)]

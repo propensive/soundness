@@ -142,12 +142,12 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
 
     suite(m"HPACK encode → decode round-trip"):
       val headers = List(
-        HpackEntry(t":method", t"POST"),
-        HpackEntry(t":scheme", t"http"),
-        HpackEntry(t":path", t"/foo/bar"),
-        HpackEntry(t":authority", t"unix"),
-        HpackEntry(t"content-type", t"application/grpc"),
-        HpackEntry(t"te", t"trailers"))
+        Hpack.Entry(t":method", t"POST"),
+        Hpack.Entry(t":scheme", t"http"),
+        Hpack.Entry(t":path", t"/foo/bar"),
+        Hpack.Entry(t":authority", t"unix"),
+        Hpack.Entry(t"content-type", t"application/grpc"),
+        Hpack.Entry(t"te", t"trailers"))
 
       test(m"a request's pseudo-headers + headers survive a round-trip"):
         val encoded = Hpack().encode(headers)
@@ -259,10 +259,10 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
                 serverSide.send(zephyrine.Stream(Frame.Settings(Nil, ack = true).serialize))
 
               case Frame.Headers(id, _, _, _) =>
-                val respHeaders = hpack.encode(List(HpackEntry(t":status", t"200"),
-                    HpackEntry(t"content-type", t"application/grpc")))
+                val respHeaders = hpack.encode(List(Hpack.Entry(t":status", t"200"),
+                    Hpack.Entry(t"content-type", t"application/grpc")))
 
-                val trailers = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
+                val trailers = hpack.encode(List(Hpack.Entry(t"grpc-status", t"0")))
                 serverSide.send(zephyrine.Stream(Frame.Headers(id, respHeaders, false, true).serialize))
                 serverSide.send(zephyrine.Stream(Frame.Data(id, ascii(t"pong"), false).serialize))
                 serverSide.send(zephyrine.Stream(Frame.Headers(id, trailers, true, true).serialize))
@@ -376,10 +376,10 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
                   stream.headers.await()
                   // HEADERS + DATA left open, then a trailing HEADERS block
                   // (gRPC status) closes the stream.
-                  val head = List(HpackEntry(t":status", t"200"))
+                  val head = List(Hpack.Entry(t":status", t"200"))
                   server0.sendHeaders(stream.id, head, endStream = false)
                   server0.sendData(stream.id, ascii(t"body"), endStream = false)
-                  server0.sendTrailers(stream.id, List(HpackEntry(t"grpc-status", t"0")))
+                  server0.sendTrailers(stream.id, List(Hpack.Entry(t"grpc-status", t"0")))
 
           val client = Http2.Connection(clientSide)
           val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
@@ -453,7 +453,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
               server0.accepted.stream.records.each: stream =>
                 unsafely:
                   stream.headers.await()
-                  server0.sendHeaders(stream.id, List(HpackEntry(t":status", t"200")), false)
+                  server0.sendHeaders(stream.id, List(Hpack.Entry(t":status", t"200")), false)
                   server0.sendData(stream.id, body, endStream = true)
 
           val client = Http2.Connection(clientSide)

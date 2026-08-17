@@ -32,5 +32,5 @@
                                                                                                   */
 package soundness
 
-export telekinesis.{HpackEntry, HpackTable, Http2, Hpack, Huffman, FrameReader,
+export telekinesis.{ Http2, Hpack, Huffman, FrameReader,
     PseudoHeaders}

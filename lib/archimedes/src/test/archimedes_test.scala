@@ -109,7 +109,7 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert(_.contains(t"<math"))
 
       test(m"Extract MathML back out of the HTML tree"):
-        MathmlReader.read(expression.html)
+        Mathml.Reader.read(expression.html)
       .assert(_ == expression)
 
     def body(ergo: Text): Text =
