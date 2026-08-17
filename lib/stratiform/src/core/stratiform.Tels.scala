@@ -331,6 +331,15 @@ object Tels extends Tels2:
         Tel.Type.assign(tel, schema, validators)
         tel
 
+      // Same again, additionally checking declared encodings (§21.7)
+      // against the codec bindings in scope.
+      def validate
+        ( using schema: Tels, validators: Tel.Validator.Registry, codecs: Tel.Codec.Bindings )
+      :   Tel raises Tel.Error tracks Tel.Focus =
+
+        Tel.Type.assign(tel, schema, validators, codecs)
+        tel
+
       // Convenience: validate-then-decode in a single call.
       inline def asValidated[value: Decodable in Tel](using schema: Tels)
       :   value raises Tel.Error tracks Tel.Focus =
@@ -582,6 +591,17 @@ object Tels extends Tels2:
       composed.records.each: record =>
         checkStruct(Struct(record.members, record.validators), composed)
 
+      composed.selects.each: select =>
+        // E202: a SelectDefinition must have at least one variant. E201
+        // also covers duplicates within one SelectDefinition's variants,
+        // and E208 reserves `tel` among variant keywords.
+        if select.variants.nil then abort(Tel.Error(Reason.EmptySelectVariants))
+        val seen = scala.collection.mutable.HashSet.empty[Text]
+
+        select.variants.each: variant =>
+          if variant.keyword == t"tel" then abort(Tel.Error(Reason.TelKeywordReserved))
+          if !seen.add(variant.keyword) then abort(Tel.Error(Reason.DuplicateKeywordInStruct))
+
       composed
 
     // The Scalar a type resolves to through the composed namespace and
@@ -602,24 +622,43 @@ object Tels extends Tels2:
       case _ => Unset
 
     private def checkStruct(struct: Struct, schema: Tels): Unit raises Tel.Error =
+      val keywords = scala.collection.mutable.HashSet.empty[Text]
       var keys = 0
+
+      // E201: keyword uniqueness spans the Field keywords and the variant
+      // keywords of SelectRef-referenced SelectDefinitions alike.
+      def claim(keyword: Text): Unit raises Tel.Error =
+        if keyword == t"tel" then abort(Tel.Error(Reason.TelKeywordReserved))
+        if !keywords.add(keyword) then abort(Tel.Error(Reason.DuplicateKeywordInStruct))
 
       struct.members.each:
         case field: Field =>
+          claim(field.keyword)
+
           // Merge-produced nested Structs are checked regardless of `key`.
           field.fieldType match
             case nested: Struct => checkStruct(nested, schema)
             case _              => ()
+
+          val required   = field.required != Polarity.Loose
+          val repeatable = field.repeatable == Polarity.Loose
+
+          // E203: a default is only permitted on a required, Scalar-typed
+          // member (it supplies the value of a required-but-elided field).
+          if field.default.present && (!required || scalarOf(field.fieldType, schema).absent)
+          then abort(Tel.Error(Reason.DefaultOnOptional))
 
           if field.key then
             keys += 1
             if keys > 1 then abort(Tel.Error(Reason.MultipleKeyFields))
             if scalarOf(field.fieldType, schema).absent
             then abort(Tel.Error(Reason.KeyOnNonScalar))
-
-            val required   = field.required != Polarity.Loose
-            val repeatable = field.repeatable == Polarity.Loose
             if !required || repeatable then abort(Tel.Error(Reason.KeyOnLooseMember))
+
+        case select: SelectRef =>
+          schema.selects.readable.find(_.name == select.reference) match
+            case scala.Some(definition) => definition.variants.each { variant => claim(variant.keyword) }
+            case scala.None             => ()
 
         case _ => ()
 
@@ -750,6 +789,15 @@ object Tels extends Tels2:
     private def parseType(name: Text): Type =
       if name == t"Flag" then Flag else Reference(name)
 
+    // A Definition's name: the first inline atom, or (per the §20.5
+    // atom/compound interchangeability rule) an explicit `name <value>`
+    // child compound.
+    private def nameOf(c: Tel.Compound): Optional[Text] =
+      firstAtomText(c).or:
+        childCompounds(c).find(_.keyword == t"name") match
+          case Some(cc) => scalarAtomText(cc)
+          case None     => Unset
+
     // The text of a scalar-valued child compound, taking its first atom
     // (inline, source, or literal) — used for both `default` and the §20
     // `description` child, whose prose is typically a source atom (§14).
@@ -767,13 +815,13 @@ object Tels extends Tels2:
         case None    => Unset
 
     private def parseRecord(c: Tel.Compound): RecordDefinition raises Tel.Error =
-      val recName = firstAtomText(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
+      val recName = nameOf(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
       val children = childCompounds(c)
       val (members, validators) = parseMembersAndValidators(children)
       RecordDefinition(recName, members, validators, descriptionOf(children))
 
     private def parseScalar(c: Tel.Compound): ScalarDefinition raises Tel.Error =
-      val scName = firstAtomText(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
+      val scName = nameOf(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
       val children = childCompounds(c)
 
       val validators = children.bind: cc =>
@@ -787,7 +835,7 @@ object Tels extends Tels2:
       ScalarDefinition(scName, validators, descriptionOf(children), encoding)
 
     private def parseSelect(c: Tel.Compound): SelectDefinition raises Tel.Error =
-      val seName = firstAtomText(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
+      val seName = nameOf(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
       val children   = childCompounds(c)
       val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
@@ -814,7 +862,9 @@ object Tels extends Tels2:
       Optional(Struct(members, validators))
 
     private def parseLayer(c: Tel.Compound): Layer raises Tel.Error =
-      val lyName = firstAtomText(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
+      // §20.5: the name is carried either as the first inline atom
+      // (`layer auth`) or as an explicit `name <value>` child compound.
+      var name: Optional[Text] = firstAtomText(c)
       val recs = scala.collection.mutable.ArrayBuffer.empty[RecordDefinition]
       val scs  = scala.collection.mutable.ArrayBuffer.empty[ScalarDefinition]
       val sels = scala.collection.mutable.ArrayBuffer.empty[SelectDefinition]
@@ -822,11 +872,14 @@ object Tels extends Tels2:
 
       childCompounds(c).each: cc =>
         cc.keyword.s match
+          case "name"    => if name.absent then name = scalarAtomText(cc)
           case "record"  => recs += parseRecord(cc)
           case "scalar"  => scs  += parseScalar(cc)
           case "select"  => sels += parseSelect(cc)
           case "overlay" => overlay = parseBody(cc)
           case _         => abort(Tel.Error(Reason.UnknownKeyword))
+
+      val lyName = name.or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
 
       Layer
         ( name    = lyName,

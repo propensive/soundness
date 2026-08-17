@@ -52,12 +52,12 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
 
   // Codes this implementation can raise. Corpus cases whose expected codes
   // fall wholly outside this set are pending-implementation and skipped,
-  // mirroring the E1xx suite's `< 200` gate. E312/E313 are excluded: no
-  // corpus fixture exercises them (codec rejection needs a configured
-  // binding, which the corpus convention cannot supply).
+  // mirroring the E1xx suite's `< 200` gate. E207 (bad sigil), E211/E212
+  // (exclude checks), E312/E313 (codec rejection needs a configured
+  // binding, which the corpus convention cannot supply) are excluded.
   val implemented: scala.collection.immutable.Set[Int] =
     scala.collection.immutable.Set
-      ( 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217,
+      ( 201, 202, 203, 204, 205, 206, 208, 209, 210, 213, 214, 215, 216, 217,
         218, 219, 220, 221,
         301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 314 )
 
@@ -65,25 +65,43 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
   extends Error(m"${codes.length} collected codes"):
     def +(code: Int): Collected = Collected(codes :+ code)
 
-  // Every error code observable from a document and its resolved schema:
-  // type-assignment errors accrue; schema-validity errors abort schema
-  // construction and are captured. Order: compose and check the schema
-  // first (its E2xx aborts also imply the document cannot be checked
-  // further), then assign the document under an accrual boundary.
-  private def collectCodes(source: Data, schema: Tels): List[Int] =
-    val tel = source.read[Tel]
-    try
-      val composed = Tels.Validation.validate(schema)
+  // The codes accrued type-assigning and validator-checking `tel` under
+  // the composed `schema`.
+  private def assignCodes(tel: Tel, schema: Tels): List[Int] =
+    validate[Tel.Focus](Collected()):
+      case error: Tel.Error => accrual + error.reason.number
+    . protect:
+        Tel.Type.assign(tel, schema, Tel.Validator.Registry.builtins)
+        ()
+    . codes
 
-      val issues =
-        validate[Tel.Focus](Collected()):
-          case error: Tel.Error => accrual + error.reason.number
-        . protect:
-            Tel.Type.assign(tel, composed)
-            ()
+  // Every error code observable from a corpus document: E3xx from
+  // assigning it under its governing schema, and — when the document is
+  // itself a schema document (the tels URL) — E2xx from constructing and
+  // checking the schema it defines. Schema-validity errors abort, so the
+  // first is captured; assignment errors accrue.
+  private def collectCodes(testcase: CorpusLoader.Case, category: Text): List[Int] =
+    val tel = testcase.source.read[Tel]
+    val document = testcase.source.utf8.load[Tel]
+    val tail = document.metadata.pragma.let(_.schema).let(CorpusLoader.urlTail(_))
 
-      issues.codes
-    catch case error: Tel.Error => List(error.reason.number)
+    tail.let: tail =>
+      if tail == t"tels" then
+        val assigned = assignCodes(tel, Tels.Axiom.tels)
+
+        val constructed: scala.List[Int] =
+          try
+            Tels.Validation.validate(Tels.Reconstructor.fromTel(tel))
+            scala.Nil
+          catch case error: Tel.Error => scala.List(error.reason.number)
+
+        proscenium.List.from(assigned.stdlib ::: constructed)
+      else
+        CorpusLoader.auxiliarySchema(category, tail).let: aux =>
+          try assignCodes(tel, Tels.Validation.validate(Tels.Reconstructor.fromTel(aux.read[Tel])))
+          catch case error: Tel.Error => proscenium.List(error.reason.number)
+        . or(proscenium.List.empty[Int])
+    . or(proscenium.List.empty[Int])
 
   def run(): Unit =
     suite(m"Negative corpus (E2xx schema validity, E3xx validation)"):
@@ -93,29 +111,13 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
             && codes.stdlib.exists(implemented.contains)
         then
           test(m"raises an expected error on ${testcase.stem}"):
-            val document = testcase.source.load[Tel]
-            val url = document.metadata.pragma.let(_.schema)
-
-            val schema: Optional[Tels] = url.let(CorpusLoader.urlTail(_)).let: tail =>
-              if tail == t"tels" then Tels.Axiom.tels: Optional[Tels]
-              else CorpusLoader.auxiliarySchema(t"neg", tail).let: aux =>
-                Tels.Reconstructor.fromTel(aux.read[Tel])
-
-            schema.let { schema => collectCodes(testcase.source, schema) }
-            . or(Nil)
-            . stdlib.exists(codes.has(_))
+            collectCodes(testcase, t"neg").stdlib.exists(codes.has(_))
           . assert(_ == true)
 
     suite(m"Positive corpus (schema-bearing cases stay clean)"):
-      // Positive fixtures governed by an auxiliary schema must produce no
+      // Positive fixtures governed by a resolvable schema must produce no
       // errors at all through schema checking and assignment.
       CorpusLoader.positive.each: testcase =>
-        val document = testcase.source.load[Tel]
-        val tail = document.metadata.pragma.let(_.schema).let(CorpusLoader.urlTail(_))
-
-        tail.let: tail =>
-          if tail != t"tels" then CorpusLoader.auxiliarySchema(t"pos", tail).let: aux =>
-            test(m"no schema or validation errors on ${testcase.stem}"):
-              val schema = Tels.Reconstructor.fromTel(aux.read[Tel])
-              collectCodes(testcase.source, schema).stdlib.isEmpty
-            . assert(_ == true)
+        test(m"no schema or validation errors on ${testcase.stem}"):
+          collectCodes(testcase, t"pos")
+        . assert(_.stdlib.isEmpty)

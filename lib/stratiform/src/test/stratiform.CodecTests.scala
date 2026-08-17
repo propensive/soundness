@@ -73,7 +73,7 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
     Tels.Validation.validate(Tels.Reconstructor.fromTel(text.read[Tel]))
 
   private val amountSchema: Text =
-    t"""|tel 1.0
+    Text("""|tel 1.0
         |
         |name codec-demo
         |
@@ -83,7 +83,7 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
         |
         |document
         |  field amount Amount
-        |""".stripMargin
+        |""".stripMargin)
 
   case class Collected(codes: List[Int] = Nil)(using Diagnostics)
   extends Error(m"${codes.length} collected codes"):
@@ -101,12 +101,16 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
     . codes
 
   // The first scalar Value reachable from an element tree, depth-first.
-  private def firstValue(element: Tel.Element): Optional[Text] = element.absolve match
+  private def firstValue(element: Tel.Element): Optional[Text] = element match
     case value: Tel.Element.Value => value.text
+
     case node: Tel.Element.Node =>
-      node.children.readable.to(LazyList).map(firstValue(_)).collectFirst:
-        case text: Text => text
-      . getOrElse(Unset)
+      var result: Optional[Text] = Unset
+
+      node.children.readable.foreach: child =>
+        if result.absent then result = firstValue(child)
+
+      result
 
   private def bytesOf(values: Int*): Data = Array.from(values.map(_.toByte))
 
@@ -119,29 +123,29 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
       . assert(_ == true)
 
       test(m"C2: decode inverts encode over accepted texts"):
-        List(t"0", t"127", t"128", t"300", t"18446744073709551", t"1")
-        . map: text =>
+        scala.List(t"0", t"127", t"128", t"300", t"18446744073709551", t"1")
+        . forall: text =>
             DecimalVarint.encode(text).absolve match
               case Tel.Codec.Encoded.Bytes(bytes) => DecimalVarint.decode(bytes).absolve match
                 case Tel.Codec.Decoded.Value(recovered) => recovered == text
-      . assert(_.stdlib.forall(identity))
+      . assert(_ == true)
 
       test(m"C3: encode inverts decode over canonical byte sequences"):
-        List(0L, 127L, 128L, 300L)
-        . map: n =>
+        scala.List(0L, 127L, 128L, 300L)
+        . forall: n =>
             val bytes = Varint.encode(n)
             DecimalVarint.decode(bytes).absolve match
               case Tel.Codec.Decoded.Value(text) => DecimalVarint.encode(text).absolve match
                 case Tel.Codec.Encoded.Bytes(re) => re.readable.toSeq == bytes.readable.toSeq
-      . assert(_.stdlib.forall(identity))
+      . assert(_ == true)
 
       test(m"non-canonical texts are rejected"):
-        List(t"", t"007", t"12a", t"-1", t" 3")
-        . map: text =>
+        scala.List(t"", t"007", t"12a", t"-1", t" 3")
+        . forall: text =>
             DecimalVarint.encode(text) match
               case Tel.Codec.Encoded.Invalid(_) => true
               case _                            => false
-      . assert(_.stdlib.forall(identity))
+      . assert(_ == true)
 
     suite(m"Validation-time encoding checks (E312/E313)"):
       test(m"a codec-rejected value accrues E312"):
@@ -153,7 +157,7 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
       . assert(_ == List())
 
       test(m"an unresolved encoding name accrues E313"):
-        val schema = t"""|tel 1.0
+        val schema = Text("""|tel 1.0
                          |
                          |name codec-demo
                          |
@@ -163,7 +167,7 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
                          |
                          |document
                          |  field amount Amount
-                         |""".stripMargin
+                         |""".stripMargin)
 
         validationCodes(schema, t"tel 1.0\n\namount 300\n")
       . assert(_ == List(313))
@@ -189,7 +193,7 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
       . assert(_ == bytesOf(0x01, 0x00, 0x02, 0xAC, 0x02).readable.toSeq)
 
       test(m"atom-derived and default-derived scalars pass through the codec"):
-        val schema = schemaOf(t"""|tel 1.0
+        val schema = schemaOf(Text("""|tel 1.0
                                   |
                                   |name codec-demo
                                   |
@@ -207,7 +211,7 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
                                   |
                                   |document
                                   |  field item Item
-                                  |""".stripMargin)
+                                  |""".stripMargin))
 
         val element = Tel.Type.assign(t"tel 1.0\n\nitem 300\n".read[Tel], schema)
         Bintel.encode(element, schema, bindings).readable.toSeq
@@ -217,9 +221,9 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
       test(m"the value hash is taken over the codec bytes"):
         val schema = schemaOf(amountSchema)
         val element = Tel.Type.assign(t"tel 1.0\n\namount 300\n".read[Tel], schema)
-        val digest = Bintel.encode(element, schema, bindings).digest[Blake3]
-        val expected = bytesOf(0x01, 0x00, 0x02, 0xAC, 0x02).digest[Blake3]
-        digest.data.readable.toSeq == expected.data.readable.toSeq
+        val digest = Blake3.hashOf(Bintel.encode(element, schema, bindings), 32)
+        val expected = Blake3.hashOf(bytesOf(0x01, 0x00, 0x02, 0xAC, 0x02), 32)
+        digest.readable.toSeq == expected.readable.toSeq
       . assert(_ == true)
 
       test(m"encoding a codec-rejected value raises"):

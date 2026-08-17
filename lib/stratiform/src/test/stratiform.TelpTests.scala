@@ -47,7 +47,7 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
 
   // The §10 example schema and document.
   private val menagerie: Text =
-    t"""|tel 1.0
+    Text("""|tel 1.0
         |
         |name menagerie
         |
@@ -73,10 +73,10 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
         |  field owner Contact
         |  field contact Contact optional repeatable
         |  select Pet optional repeatable
-        |""".stripMargin
+        |""".stripMargin)
 
   private val document: Text =
-    t"""|tel 1.0
+    Text("""|tel 1.0
         |
         |owner amy
         |contact bea
@@ -88,7 +88,7 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
         |  toy  ball of string
         |dog rex
         |cat tom
-        |""".stripMargin
+        |""".stripMargin)
 
   private lazy val schema: Tels =
     Tels.Validation.validate(Tels.Reconstructor.fromTel(menagerie.read[Tel]))
@@ -162,8 +162,10 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
       . assert(_ == t"/")
 
       test(m"a component containing a slash switches the delimiter"):
+        // `/` and `.` both occur in `a.b/c`, so the encoder falls through
+        // to the first free delimiter of §3's set, `!`.
         Telp(List(t"contact", t"a.b/c", t"email", t"0")).encode
-      . assert(_ == t":contact:a.b/c:email:0")
+      . assert(_ == t"!contact!a.b/c!email!0")
 
       test(m"parse then render round-trips"):
         Telp.parse(Telp(List(t"cat", t"felix", t"toy", t"0")).encode)
@@ -248,14 +250,14 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
       . assert(_ == Telp.Error.Reason.NonStructDescent)
 
       test(m"an absent optional member fails"):
-        val extra = t"""|tel 1.0
+        val extra = Text("""|tel 1.0
                         |name t
                         |record Person
                         |  field name Identifier key
                         |  field nickname String optional
                         |document
                         |  field person Person optional repeatable
-                        |""".stripMargin
+                        |""".stripMargin)
 
         val schema = Tels.Validation.validate(Tels.Reconstructor.fromTel(extra.read[Tel]))
         val element = Tel.Type.assign(t"tel 1.0\n\nperson amy\n".read[Tel], schema)
@@ -282,12 +284,12 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
 
     suite(m"Delimiter switch (§10)"):
       test(m"a key containing the conventional delimiters uses another"):
-        val doc = t"""|tel 1.0
+        val doc = Text("""|tel 1.0
                       |
                       |owner amy
                       |contact a.b/c
                       |  email x@example.com
-                      |""".stripMargin
+                      |""".stripMargin)
 
         val element = Tel.Type.assign(doc.read[Tel], schema)
         given Tels = schema

@@ -1104,11 +1104,29 @@ object Tel extends Tel2:
     :   Tel.Element raises Tel.Error tracks Tel.Focus =
 
       val element = assign(tel, schema)
-      validateElement(element, validators)
+      validateElement(element, validators, Unset)
+      element
+
+    // As above, additionally checking each scalar's declared encoding
+    // (§21.7) against `codecs`: the encoder must accept the value (E312)
+    // and the name must resolve (E313). Callers of the codec-free
+    // overloads skip encoding checks entirely, mirroring §21.4's
+    // no-callback rule.
+    def assign
+      ( tel:        Tel,
+        schema:     Tels,
+        validators: Tel.Validator.Registry,
+        codecs:     Tel.Codec.Bindings )
+    :   Tel.Element raises Tel.Error tracks Tel.Focus =
+
+      val element = assign(tel, schema)
+      validateElement(element, validators, Tel.Codec.Resolver(codecs))
       element
 
     private def validateElement
-      ( element: Tel.Element, registry: Tel.Validator.Registry )
+      ( element: Tel.Element,
+        registry: Tel.Validator.Registry,
+        codecs:   Optional[Tel.Codec.Resolver] )
     :   Unit raises Tel.Error tracks Tel.Focus =
 
       element match
@@ -1120,8 +1138,19 @@ object Tel extends Tel2:
               case Tel.Validator.Response.Invalid(_) =>
                 recoverNode(Reason.ValidatorRejected)(())
 
+          // §21.7: the encoding check runs after the declared validators,
+          // in the same AND-conjunction.
+          scalarType.encoding.let: name =>
+            codecs.let: resolver =>
+              resolver(name) match
+                case codec: Tel.Codec => codec.encode(text) match
+                  case Tel.Codec.Encoded.Bytes(_)   => ()
+                  case Tel.Codec.Encoded.Invalid(_) => recoverNode(Reason.EncodingRejected)(())
+
+                case _ => recoverNode(Reason.EncodingUnresolved)(())
+
         case Tel.Element.Node(_, elementType, children) =>
-          children.each(validateElement(_, registry))
+          children.each(validateElement(_, registry, codecs))
 
           elementType match
             case s: Tels.Struct =>
@@ -1733,6 +1762,43 @@ object Tel extends Tel2:
 
     trait Registry:
       def apply(request: Request): Response
+
+  // Scalar encodings per §21.7: a codec pairs an encoder from accepted
+  // scalar texts to byte sequences with a decoder succeeding on exactly
+  // the encoder's image (laws C1–C3). Codecs are application-defined;
+  // this module defines only the interface and the binding mechanism.
+  // The `tels` schema declares no encodings, so schema parsing and the
+  // BinTEL self-contained bootstrap never require a codec.
+  object Codec:
+    enum Encoded:
+      case Bytes(data: Data)
+      case Invalid(message: Text)
+
+    enum Decoded:
+      case Value(text: Text)
+      case Failure(message: Text)
+
+    // The resolution point for encoding names (§21.4-style callback):
+    // `Unset` means the name is not recognised (E313 at validation, B13
+    // at BinTEL decode). Distinct from having *no* binding configured —
+    // an absent binding skips encoding checks entirely, whereas a
+    // configured binding that resolves nothing must report the error.
+    trait Bindings:
+      def apply(name: Text): Optional[Tel.Codec]
+
+    // Resolve-once cache (§21.7): each distinct encoding name is
+    // resolved at most once per run, a cached `Unset` recording a
+    // definitive "unknown name" answer.
+    final class Resolver(bindings: Bindings):
+      private val cache =
+        scala.collection.mutable.HashMap.empty[Text, Optional[Tel.Codec]]
+
+      def apply(name: Text): Optional[Tel.Codec] =
+        cache.getOrElseUpdate(name, bindings(name))
+
+  trait Codec:
+    def encode(text: Text): Tel.Codec.Encoded
+    def decode(bytes: Data): Tel.Codec.Decoded
 
   object Element:
     case class Node
@@ -3903,8 +3969,11 @@ object Tel extends Tel2:
       val pragmaSigil: Optional[Char] =
         if parts.length >= 4 && parts.stdlib(3).length == 1 then
           val c = parts.stdlib(3).charAt(0)
+          // §6 sigil validity: not a letter or digit, and not one of the
+          // eight parenthetical symbols.
           // §19.5 UseDefaultSigil: an invalid sigil is dropped, keeping the default.
-          if c.isLetterOrDigit then recoverAt(Reason.BadSigil, line, offsets.stdlib(3) + 1, 1)(Unset)
+          if c.isLetterOrDigit || "()[]{}<>".indexOf(c.toInt) >= 0
+          then recoverAt(Reason.BadSigil, line, offsets.stdlib(3) + 1, 1)(Unset)
           else
             sigil = c.toByte
             c: Optional[Char]
@@ -4756,17 +4825,9 @@ object Tel extends Tel2:
           documentEndsWithLf = false
           done = true
         else if head.blank then
-          // Probe across blanks to see if more source follows. The mark must
-          // survive several nested fillHead calls so the probe runs inside its
-          // own hold; the cursor is free to compact again once the probe ends.
+          // Scan across blanks to see if more source follows; the blanks'
+          // fate depends on what ends the run (§14).
           done = inHold:
-            val mk = beginMark()
-
-            val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
-                                      head.eof, head.startLine)
-
-            val savedBoundary = prevLineWasBoundary
-            val savedLineNo = lineNo
             var blanks = 0
 
             while !head.eof && head.blank do
@@ -4780,21 +4841,13 @@ object Tel extends Tel2:
               pendingBlanks += blanks
               false
             else
-              // Rewind.
-              syncTo()
-              cursor.cue(mk)
-              syncFrom()
-              head.leadingSpaces = firstBlankSnapshot._1
-              head.indentLevels  = firstBlankSnapshot._2
-              head.blank         = firstBlankSnapshot._3
-              head.eof           = firstBlankSnapshot._4
-              head.startLine     = firstBlankSnapshot._5
-              prevLineWasBoundary = savedBoundary
-              lineNo = savedLineNo
-              var i = 0
-
-              while i < firstBlankSnapshot._1 && more && peek == SP do advance(); i += 1
-
+              // Trailing blanks: §14 discards them — they are not part of
+              // the atom, and they are consumed rather than being left for
+              // the enclosing block machinery, so a dedented sibling after
+              // them continues the same block. The head already points at
+              // the terminating dedent line (or EOF, whose blank lines'
+              // final LF is likewise discarded).
+              if head.eof then documentEndsWithLf = false
               true
         else if head.leadingSpaces >= sourceIndent then
           // Read content: skip the first sourceIndent spaces — but wait, the

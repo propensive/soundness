@@ -73,9 +73,37 @@ object Bintel:
   // Encode a `Tel.Element` tree to its BinTEL body bytes. The element is
   // expected to be the document root (a Node with `keywordIndex = Unset`
   // and `elementType = Tels.Struct`), as produced by `Tel.Type.assign`.
-  def encode(element: Tel.Element, schema: Tels): Data =
+  // With no codec binding, encountering a scalar with a declared encoding
+  // (§21.7) is a configuration failure of the encoder: B13, and nothing
+  // is emitted. The E312 mitigation is unreachable on this path — a codec
+  // can only reject a value where a binding resolved one.
+  def encode(element: Tel.Element, schema: Tels): Data raises Bintel.Error =
+    import errorDiagnostics.emptyDiagnostics
+
+    mitigate:
+      case _: Tel.Error => Bintel.Error(Bintel.Error.Reason.CodecUnresolved)
+
+    . protect(encodeAll(element, schema, Unset))
+
+  // Codec-aware encoding: scalars with a declared encoding are written as
+  // the bound codec's bytes (§7.1 two-form payload; framing is identical
+  // to the UTF-8 form). An unresolved encoding name raises B13
+  // (`Bintel.Error`); a value the codec's encoder rejects raises
+  // `Tel.Error(EncodingRejected)` — the E312 condition, since the
+  // document is invalid under its schema. Either way, nothing is emitted.
+  def encode(element: Tel.Element, schema: Tels, codecs: Tel.Codec.Bindings)
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
+  :   Data =
+
+    encodeAll(element, schema, Tel.Codec.Resolver(codecs))
+
+  private def encodeAll
+    ( element: Tel.Element, schema: Tels, codecs: Optional[Tel.Codec.Resolver] )
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
+  :   Data =
+
     val out = new ByteArrayOutputStream
-    encodeRoot(out, element, schema)
+    encodeRoot(out, element, schema, codecs)
     out.toByteArray.asInstanceOf[Array[Byte]^{}]
 
   // Is `signature` a syntactically-valid palimpsest? Recovers the cadence
@@ -166,6 +194,15 @@ object Bintel:
     val framed = unframe(data)
     Document(framed.signature, decode(framed.body, schema))
 
+  // Codec-aware §6 decoding; see `decode` for the B13/B14/B15 rules.
+  def decodeDocument
+    ( data: Data, schema: Tels, codecs: Tel.Codec.Bindings,
+      checkCanonical: Boolean = false )
+  :   Document raises Bintel.Error =
+
+    val framed = unframe(data)
+    Document(framed.signature, decode(framed.body, schema, codecs, checkCanonical))
+
   // §6.2 self-contained framing: magic_BC, signature (length varint +
   // bytes), embedded schema body (length varint + bytes), document root.
   // The signature length MUST be a valid palimpsest length; otherwise
@@ -208,6 +245,21 @@ object Bintel:
   // (B11 on mismatch) before the document root is decoded under the
   // reconstructed schema.
   def decodeDocumentSelfContained(data: Data): Document raises Bintel.Error =
+    decodeSelfContainedAll(data, Unset, false)
+
+  // Codec-aware §6.2 decoding: the binding applies only to the *outer*
+  // document root. The embedded schema body is governed by `tels`, which
+  // declares no encodings, so the bootstrap never requires a codec.
+  def decodeDocumentSelfContained
+    ( data: Data, codecs: Tel.Codec.Bindings, checkCanonical: Boolean = false )
+  :   Document raises Bintel.Error =
+
+    decodeSelfContainedAll(data, Tel.Codec.Resolver(codecs), checkCanonical)
+
+  private def decodeSelfContainedAll
+    ( data: Data, codecs: Optional[Tel.Codec.Resolver], checkCanonical: Boolean )
+  :   Document raises Bintel.Error =
+
     import errorDiagnostics.emptyDiagnostics
 
     if data.length < magicSelfContained.length then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
@@ -258,7 +310,7 @@ object Bintel:
     if !bytesEqual(recomputed, signature)
     then abort(Bintel.Error(Bintel.Error.Reason.EmbeddedSignatureMismatch))
 
-    Document(signature, decode(docBody, composed))
+    Document(signature, decodeAll(docBody, composed, codecs, checkCanonical))
 
   private def bytesEqual(a: Data, b: Data): Boolean =
     a.length == b.length && {
@@ -289,14 +341,38 @@ object Bintel:
   // composed schema used at encode time. Any framing or schema
   // mismatch raises `Bintel.Error`.
   def decode(data: Data, schema: Tels): Tel.Element raises Bintel.Error =
+    decodeAll(data, schema, Unset, false)
+
+  // Codec-aware decoding: an encoded scalar's value bytes are passed to
+  // the bound codec (B13 when the name does not resolve or no binding is
+  // configured; B14 when the codec rejects the bytes). `checkCanonical`
+  // additionally performs the OPTIONAL re-encode verification of §21.7:
+  // B15 when `encode(decode(b)) ≠ b`.
+  def decode
+    ( data: Data, schema: Tels, codecs: Tel.Codec.Bindings,
+      checkCanonical: Boolean = false )
+  :   Tel.Element raises Bintel.Error =
+
+    decodeAll(data, schema, Tel.Codec.Resolver(codecs), checkCanonical)
+
+  private def decodeAll
+    ( data: Data, schema: Tels, codecs: Optional[Tel.Codec.Resolver],
+      checkCanonical: Boolean )
+  :   Tel.Element raises Bintel.Error =
+
     val cursor = Cursor(data, 0)
-    val root = decodeStructBody(cursor, schema.document, schema, keywordIndex = Unset)
+
+    val root =
+      decodeStructBody(cursor, schema.document, schema, keywordIndex = Unset, codecs,
+        checkCanonical)
+
     if cursor.offset != data.length then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
     root
 
   private def decodeStructBody
     ( cursor: Cursor, struct: Tels.Struct, schema: Tels,
-      keywordIndex: Optional[Int] )
+      keywordIndex: Optional[Int], codecs: Optional[Tel.Codec.Resolver],
+      checkCanonical: Boolean )
   :   Tel.Element raises Bintel.Error =
 
     val flat = flattenKeywords(struct, schema)
@@ -305,13 +381,14 @@ object Bintel:
     var i = 0
 
     while i < childCount.toInt do
-      children(i) = decodeElement(cursor, flat, schema)
+      children(i) = decodeElement(cursor, flat, schema, codecs, checkCanonical)
       i += 1
 
     Tel.Element.Node(keywordIndex, struct, children.asInstanceOf[Array[Tel.Element]^{}])
 
   private def decodeElement
-    ( cursor: Cursor, flat: Array[(Text, Tels.Type)]^{}, schema: Tels )
+    ( cursor: Cursor, flat: Array[(Text, Tels.Type)]^{}, schema: Tels,
+      codecs: Optional[Tel.Codec.Resolver], checkCanonical: Boolean )
   :   Tel.Element raises Bintel.Error =
 
     val kidx = readVarint(cursor)
@@ -321,9 +398,11 @@ object Bintel:
 
     resolved match
       case s: Tels.Struct =>
-        decodeStructBody(cursor, s, schema, keywordIndex = kidx.toInt)
+        decodeStructBody(cursor, s, schema, keywordIndex = kidx.toInt, codecs, checkCanonical)
 
       case s: Tels.Scalar =>
+        // The value's byte length is read before any codec is consulted,
+        // so a B13 failure below is precise, not a parse ambiguity.
         val len = readVarint(cursor)
 
         if cursor.offset + len > cursor.data.length
@@ -338,9 +417,33 @@ object Bintel:
 
         cursor.offset += len.toInt
 
-        val text =
-          try Text(new String(bytes, StandardCharsets.UTF_8))
-          catch case _: Exception => abort(Bintel.Error(Bintel.Error.Reason.BadUtf8))
+        val text = s.encoding.let: name =>
+          val codec = codecs.let(_(name))
+          . or(abort(Bintel.Error(Bintel.Error.Reason.CodecUnresolved)))
+
+          val frozen = bytes.asInstanceOf[Data]
+
+          codec.decode(frozen) match
+            case Tel.Codec.Decoded.Failure(_) =>
+              abort(Bintel.Error(Bintel.Error.Reason.CodecDecodeFailed))
+
+            case Tel.Codec.Decoded.Value(decoded) =>
+              // OPTIONAL §21.7 canonicality verification: the bytes must
+              // be the re-encoding of their decoded text (also failing
+              // when the encoder rejects its own decoder's output).
+              if checkCanonical then codec.encode(decoded) match
+                case Tel.Codec.Encoded.Bytes(re) =>
+                  if !bytesEqual(re, frozen)
+                  then abort(Bintel.Error(Bintel.Error.Reason.CodecNoncanonical))
+
+                case Tel.Codec.Encoded.Invalid(_) =>
+                  abort(Bintel.Error(Bintel.Error.Reason.CodecNoncanonical))
+
+              decoded
+
+        . or:
+            try Text(new String(bytes, StandardCharsets.UTF_8))
+            catch case _: Exception => abort(Bintel.Error(Bintel.Error.Reason.BadUtf8))
 
         Tel.Element.Value(kidx.toInt, s, text)
 
@@ -494,7 +597,12 @@ object Bintel:
 
   private final class Cursor(val data: Data, @scala.caps.unsafe.untrackedCaptures var offset: Int)
 
-  private def encodeRoot(out: ByteArrayOutputStream, element: Tel.Element, schema: Tels): Unit =
+  private def encodeRoot
+    ( out: ByteArrayOutputStream, element: Tel.Element, schema: Tels,
+      codecs: Optional[Tel.Codec.Resolver] )
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
+  :   Unit =
+
     element match
       case Tel.Element.Node(_, parent: Tels.Struct, children) =>
         val ordered = canonicalOrder(children, parent, schema)
@@ -502,26 +610,34 @@ object Bintel:
         var i = 0
 
         while i < ordered.length do
-          encodeElement(out, ordered(i), schema)
+          encodeElement(out, ordered(i), schema, codecs)
           i += 1
 
       case Tel.Element.Node(_, _, children) =>
         writeVarint(out, children.length.toLong)
         var i = 0
-        while i < children.length do { encodeElement(out, children(i), schema); i += 1 }
+        while i < children.length do { encodeElement(out, children(i), schema, codecs); i += 1 }
 
       case _: Tel.Element.Value =>
         writeVarint(out, 1L)
-        encodeElement(out, element, schema)
+        encodeElement(out, element, schema, codecs)
 
-  private def encodeElement(out: ByteArrayOutputStream, element: Tel.Element, schema: Tels)
+  private def encodeElement
+    ( out: ByteArrayOutputStream, element: Tel.Element, schema: Tels,
+      codecs: Optional[Tel.Codec.Resolver] )
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Unit =
 
     element match
-      case node: Tel.Element.Node   => encodeNode(out, node, schema)
-      case value: Tel.Element.Value => encodeValue(out, value)
+      case node: Tel.Element.Node   => encodeNode(out, node, schema, codecs)
+      case value: Tel.Element.Value => encodeValue(out, value, codecs)
 
-  private def encodeNode(out: ByteArrayOutputStream, node: Tel.Element.Node, schema: Tels): Unit =
+  private def encodeNode
+    ( out: ByteArrayOutputStream, node: Tel.Element.Node, schema: Tels,
+      codecs: Optional[Tel.Codec.Resolver] )
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
+  :   Unit =
+
     val kidx = node.keywordIndex.or(0).toLong
     writeVarint(out, kidx)
 
@@ -532,7 +648,7 @@ object Bintel:
         var i = 0
 
         while i < ordered.length do
-          encodeElement(out, ordered(i), schema)
+          encodeElement(out, ordered(i), schema, codecs)
           i += 1
 
       case Tels.Flag =>
@@ -545,9 +661,31 @@ object Bintel:
         // resolved during assignment. Encode no further bytes.
         ()
 
-  private def encodeValue(out: ByteArrayOutputStream, value: Tel.Element.Value): Unit =
+  // §7.1 two-form scalar payload: UTF-8 text bytes for an unencoded
+  // scalar, the bound codec's bytes for an encoded one. The framing —
+  // keyword index, byte length, bytes — is identical in both forms.
+  private def encodeValue
+    ( out: ByteArrayOutputStream, value: Tel.Element.Value,
+      codecs: Optional[Tel.Codec.Resolver] )
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
+  :   Unit =
+
+    import errorDiagnostics.emptyDiagnostics
+
     writeVarint(out, value.keywordIndex.toLong)
-    val bytes = value.text.s.getBytes(StandardCharsets.UTF_8)
+
+    val bytes = value.scalarType.encoding.let: name =>
+      val codec = codecs.let(_(name))
+      . or(abort(Bintel.Error(Bintel.Error.Reason.CodecUnresolved)))
+
+      codec.encode(value.text) match
+        case Tel.Codec.Encoded.Bytes(data) => data.asInstanceOf[scala.Array[Byte]]
+
+        case Tel.Codec.Encoded.Invalid(_) =>
+          abort(Tel.Error(Tel.Error.Reason.EncodingRejected))
+
+    . or(value.text.s.getBytes(StandardCharsets.UTF_8).nn)
+
     writeVarint(out, bytes.length.toLong)
     out.write(bytes)
 
@@ -665,6 +803,15 @@ object Bintel:
         case EmbeddedSchemaUndecodable =>
           m"the embedded schema body does not decode as a valid TEL document under tels"
 
+        case CodecUnresolved =>
+          m"a scalar's declared encoding is not resolved by the codec binding"
+
+        case CodecDecodeFailed =>
+          m"an encoded scalar's value bytes are rejected by the bound codec"
+
+        case CodecNoncanonical =>
+          m"an encoded scalar's value bytes are not the re-encoding of their decoded text"
+
     enum Reason(val number: Int) extends Clarification:
       case BadMagic            extends Reason(1)
       case VarintError          extends Reason(2)
@@ -678,6 +825,9 @@ object Bintel:
       case ReferenceUnresolved extends Reason(10)
       case EmbeddedSignatureMismatch extends Reason(11)
       case EmbeddedSchemaUndecodable extends Reason(12)
+      case CodecUnresolved           extends Reason(13)
+      case CodecDecodeFailed         extends Reason(14)
+      case CodecNoncanonical         extends Reason(15)
 
   case class Error(reason: Bintel.Error.Reason)(using Diagnostics)
   extends fulminate.Error(609, reason.number)(m"the BinTEL stream is invalid because $reason")

@@ -73,7 +73,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
   // A schema whose repeatable `contact` member and `cat`/`dog` Select
   // variants are all keyed records, with `owner`/`admin` non-repeatable.
   private val menagerie: Text =
-    t"""|tel 1.0
+    Text("""|tel 1.0
         |
         |name menagerie
         |
@@ -96,7 +96,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
         |  field admin Contact optional
         |  field contact Contact optional repeatable
         |  select Pet optional repeatable
-        |""".stripMargin
+        |""".stripMargin)
 
   def run(): Unit =
     suite(m"TELS axiom ordering"):
@@ -118,45 +118,45 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
 
     suite(m"Field declaration atom phase (§20.5)"):
       test(m"a trailing key atom sets the flag, not the default"):
-        val schema = schemaOf(t"""|tel 1.0
+        val schema = schemaOf(Text("""|tel 1.0
                                   |name t
                                   |record User
                                   |  field username Identifier key
                                   |document
                                   |  field user User
-                                  |""".stripMargin)
+                                  |""".stripMargin))
         val field = schema.records.readable.find(_.name == t"User").get.members.readable.head
         field.absolve match
           case f: Tels.Field => (f.key, f.default.absent)
       . assert(_ == (true, true))
 
       test(m"the first non-flag atom after the type is the default"):
-        val schema = schemaOf(t"""|tel 1.0
+        val schema = schemaOf(Text("""|tel 1.0
                                   |name t
                                   |document
                                   |  field country String England
-                                  |""".stripMargin)
+                                  |""".stripMargin))
         schema.document.members.readable.head.absolve match
           case f: Tels.Field => (f.key, f.default)
       . assert(_ == (false, t"England"))
 
       test(m"key then default: both are read, in flags-before-default order"):
-        val schema = schemaOf(t"""|tel 1.0
+        val schema = schemaOf(Text("""|tel 1.0
                                   |name t
                                   |document
                                   |  field id Identifier key fallback
-                                  |""".stripMargin)
+                                  |""".stripMargin))
         schema.document.members.readable.head.absolve match
           case f: Tels.Field => (f.key, f.default)
       . assert(_ == (true, t"fallback"))
 
       test(m"key as a compound child also sets the flag"):
-        val schema = schemaOf(t"""|tel 1.0
+        val schema = schemaOf(Text("""|tel 1.0
                                   |name t
                                   |document
                                   |  field username Identifier
                                   |    key
-                                  |""".stripMargin)
+                                  |""".stripMargin))
         schema.document.members.readable.head.absolve match
           case f: Tels.Field => f.key
       . assert(_ == true)
@@ -164,7 +164,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
     suite(m"Layer merge (§20.3)"):
       test(m"a layer may mark a base field as key (monotone OR)"):
         val composed = Tels.Validation.validate:
-          schemaOf(t"""|tel 1.0
+          schemaOf(Text("""|tel 1.0
                        |name t
                        |record User
                        |  field username Identifier
@@ -173,13 +173,13 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                        |layer keyed
                        |  record User
                        |    field username Identifier key
-                       |""".stripMargin)
+                       |""".stripMargin))
         composed.records.readable.find(_.name == t"User").get.members.readable.head.absolve match
           case f: Tels.Field => f.key
       . assert(_ == true)
 
       test(m"restating an existing key is benign, not E221"):
-        schemaCode(t"""|tel 1.0
+        schemaCode(Text("""|tel 1.0
                        |name t
                        |record User
                        |  field username Identifier key
@@ -188,12 +188,12 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                        |layer restate
                        |  record User
                        |    field username Identifier key
-                       |""".stripMargin)
+                       |""".stripMargin))
       . assert(_ == 0)
 
       test(m"a layer keying a base-optional field must also declare required"):
         // The composed member is required, so E220 is not raised (§20.3).
-        schemaCode(t"""|tel 1.0
+        schemaCode(Text("""|tel 1.0
                        |name t
                        |record User
                        |  field username Identifier optional
@@ -202,12 +202,12 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                        |layer keyed
                        |  record User
                        |    field username Identifier required key
-                       |""".stripMargin)
+                       |""".stripMargin))
       . assert(_ == 0)
 
     suite(m"Schema validity (E219–E221)"):
       test(m"E219: key on a field whose type is not a Scalar"):
-        schemaCode(t"""|tel 1.0
+        schemaCode(Text("""|tel 1.0
                        |name t
                        |record Inner
                        |  field label String
@@ -215,31 +215,31 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                        |  field inner Inner key
                        |document
                        |  field outer Outer optional repeatable
-                       |""".stripMargin)
+                       |""".stripMargin))
       . assert(_ == 219)
 
       test(m"E220: key on an optional field"):
-        schemaCode(t"""|tel 1.0
+        schemaCode(Text("""|tel 1.0
                        |name t
                        |record Item
                        |  field label Identifier optional key
                        |document
                        |  field item Item optional repeatable
-                       |""".stripMargin)
+                       |""".stripMargin))
       . assert(_ == 220)
 
       test(m"E220: key on a repeatable field"):
-        schemaCode(t"""|tel 1.0
+        schemaCode(Text("""|tel 1.0
                        |name t
                        |record Item
                        |  field label Identifier repeatable key
                        |document
                        |  field item Item optional repeatable
-                       |""".stripMargin)
+                       |""".stripMargin))
       . assert(_ == 220)
 
       test(m"E220: a layer keying a still-optional base field"):
-        schemaCode(t"""|tel 1.0
+        schemaCode(Text("""|tel 1.0
                        |name t
                        |record User
                        |  field username Identifier optional
@@ -248,22 +248,22 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                        |layer keyed
                        |  record User
                        |    field username Identifier key
-                       |""".stripMargin)
+                       |""".stripMargin))
       . assert(_ == 220)
 
       test(m"E221: two key fields in one record"):
-        schemaCode(t"""|tel 1.0
+        schemaCode(Text("""|tel 1.0
                        |name t
                        |record Pair
                        |  field first Identifier key
                        |  field second Identifier key
                        |document
                        |  field pair Pair optional repeatable
-                       |""".stripMargin)
+                       |""".stripMargin))
       . assert(_ == 221)
 
       test(m"E221: a layer keying a second field of a keyed record"):
-        schemaCode(t"""|tel 1.0
+        schemaCode(Text("""|tel 1.0
                        |name t
                        |record Pair
                        |  field first Identifier key
@@ -273,99 +273,99 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                        |layer second
                        |  record Pair
                        |    field second Identifier key
-                       |""".stripMargin)
+                       |""".stripMargin))
       . assert(_ == 221)
 
     suite(m"Key uniqueness (E314, §21.6)"):
       test(m"duplicate key values among repeatable children raise E314"):
-        assignCodes(menagerie, t"""|tel 1.0
+        assignCodes(menagerie, Text("""|tel 1.0
                                    |
                                    |owner amy
                                    |contact bea
                                    |contact bea
-                                   |""".stripMargin)
+                                   |""".stripMargin))
       . assert(_ == List(314))
 
       test(m"distinct key values are clean"):
-        assignCodes(menagerie, t"""|tel 1.0
+        assignCodes(menagerie, Text("""|tel 1.0
                                    |
                                    |owner amy
                                    |contact bea
                                    |contact chu
-                                   |""".stripMargin)
+                                   |""".stripMargin))
       . assert(_ == List())
 
       test(m"a compound-child key value participates in uniqueness"):
-        assignCodes(menagerie, t"""|tel 1.0
+        assignCodes(menagerie, Text("""|tel 1.0
                                    |
                                    |owner amy
                                    |contact bea
                                    |contact
                                    |  name bea
-                                   |""".stripMargin)
+                                   |""".stripMargin))
       . assert(_ == List(314))
 
       test(m"non-repeatable members are exempt: owner and admin may collide"):
-        assignCodes(menagerie, t"""|tel 1.0
+        assignCodes(menagerie, Text("""|tel 1.0
                                    |
                                    |owner amy
                                    |admin amy
                                    |contact amy
-                                   |""".stripMargin)
+                                   |""".stripMargin))
       . assert(_ == List())
 
       test(m"key values are unique across keywords of the same parent"):
-        assignCodes(menagerie, t"""|tel 1.0
+        assignCodes(menagerie, Text("""|tel 1.0
                                    |
                                    |owner amy
                                    |cat felix
                                    |dog felix
-                                   |""".stripMargin)
+                                   |""".stripMargin))
       . assert(_ == List(314))
 
       test(m"same-variant duplicates raise E314"):
-        assignCodes(menagerie, t"""|tel 1.0
+        assignCodes(menagerie, Text("""|tel 1.0
                                    |
                                    |owner amy
                                    |cat felix
                                    |dog rex
                                    |cat felix
-                                   |""".stripMargin)
+                                   |""".stripMargin))
       . assert(_ == List(314))
 
       test(m"default-supplied key values collide"):
-        val schema = t"""|tel 1.0
+        val schema = Text("""|tel 1.0
                          |name t
                          |record Item
                          |  field label Identifier key anonymous
                          |  field note String optional
                          |document
                          |  field item Item optional repeatable
-                         |""".stripMargin
+                         |""".stripMargin)
 
-        assignCodes(schema, t"""|tel 1.0
+        assignCodes(schema, Text("""|tel 1.0
                                 |
                                 |item
                                 |  note first
                                 |item
                                 |  note second
-                                |""".stripMargin)
+                                |""".stripMargin))
       . assert(_ == List(314))
 
       test(m"an explicit key never collides with a differing default"):
-        val schema = t"""|tel 1.0
+        val schema = Text("""|tel 1.0
                          |name t
                          |record Item
                          |  field label Identifier key anonymous
                          |  field note String optional
                          |document
                          |  field item Item optional repeatable
-                         |""".stripMargin
+                         |""".stripMargin)
 
-        assignCodes(schema, t"""|tel 1.0
+        assignCodes(schema, Text("""|tel 1.0
                                 |
                                 |item named
                                 |item
                                 |  note second
-                                |""".stripMargin)
+                                |""".stripMargin))
       . assert(_ == List())
