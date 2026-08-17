@@ -30,143 +30,54 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package exoskeleton
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    telekinesis.Http2Tests()
-    //cosmopolite.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    telekinesis.Tests()
-    tessellate.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    virility.Tests()
-    vivisection.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import aviation.*
+import gossamer.*
+import revolution.*
+import urticose.*
+import vacuous.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    // turbulence.Tests() - deadlock
-    ()
+// The static metadata a manpage needs beyond what the `Help` tree discovers at runtime.
+// Declared once as a `given Manual` in the application object; every field is optional, so an
+// application without one still renders a complete, if spartan, page. Per-command and
+// per-flag descriptions do NOT belong here: they stay on `Subcommand`, `Flag` and
+// `CommandGroup` declarations, which the `Help` tree already carries.
+object Manual:
+  enum Section:
+    case UserCommands, SystemCalls, LibraryFunctions, Devices, FileFormats, Games,
+      Miscellanea, SystemAdministration
+
+    def number: Int = ordinal + 1
+
+    def title: Text = this match
+      case UserCommands         => t"User Commands"
+      case SystemCalls          => t"System Calls"
+      case LibraryFunctions     => t"Library Functions"
+      case Devices              => t"Devices"
+      case FileFormats          => t"File Formats"
+      case Games                => t"Games"
+      case Miscellanea          => t"Miscellanea"
+      case SystemAdministration => t"System Administration"
+
+  case class Reference(name: Text, section: Int = 1)
+  case class ExitStatus(code: Int, description: Text)
+  case class EnvironmentVariable(name: Text, description: Text)
+  case class ManFile(path: Text, description: Text)
+  case class Example(caption: Optional[Text], command: Text)
+
+case class Manual
+  ( synopsisName: Optional[Text]                   = Unset,
+    section:      Manual.Section                   = Manual.Section.UserCommands,
+    version:      Optional[Semver]                 = Unset,
+    date:         Optional[Date]                   = Unset,
+    prose:        Optional[Text]                   = Unset,
+    authors:      List[Text]                       = Nil,
+    examples:     List[Manual.Example]             = Nil,
+    exitStatuses: List[Manual.ExitStatus]          = Nil,
+    environment:  List[Manual.EnvironmentVariable] = Nil,
+    files:        List[Manual.ManFile]             = Nil,
+    seeAlso:      List[Manual.Reference]           = Nil,
+    bugs:         Optional[Text]                   = Unset,
+    homepage:     Optional[HttpUrl]                = Unset )
