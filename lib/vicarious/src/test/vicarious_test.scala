@@ -66,7 +66,7 @@ object Tests extends Suite(m"Vicarious Tests"):
 
     suite(m"Specific builder tests"):
       test(m"Specific records the overridden paths"):
-        orgSpecific.instances.keySet
+        orgSpecific.instances.keys
       . assert(_ == Set("cto.name", "ceo.age"))
 
       test(m"Specific stores the instance for a path"):

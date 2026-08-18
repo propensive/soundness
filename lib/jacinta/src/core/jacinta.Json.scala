@@ -2431,7 +2431,7 @@ object Json extends Json2, Dynamic:
       caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, encodable.shape()))
 
     Json.Encodable(shape): map =>
-      val keys: List[key] = map.keys.to(List)
+      val keys: List[key] = map.keys.to[List]
       val values = Array.from(keys.stdlib.map(map(_).encode.root))
       val keysArr = Array.from(keys.stdlib.map(_.encode.s))
       Json.ast(Json.Ast.obj(keysArr.asInstanceOf[Array[String]^{}], values.asInstanceOf[Array[Any]^{}]))

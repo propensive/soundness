@@ -509,7 +509,7 @@ class Html4Transitional() extends Dom:
   val Var = Tag.container["var", Inline, Html4Transitional]()
 
   val elements: Dictionary[Tag] =
-    Dictionary(this.membersOfType[Tag].bi.map(_.label -> _).toSeq*)
+    Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }.toSeq*)
 
   val entities: Dictionary[Text] =
     val list = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
@@ -521,7 +521,7 @@ class Html4Transitional() extends Dom:
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =
       Html4Transitional.membersOfType[honeycomb.Attribute]
-      . foldLeft(proscenium.Map[Text, Attribute]()): (map, next) =>
+      . fold(proscenium.Map[Text, Attribute]()): (map, next) =>
         val coerced = next.asInstanceOf[Attribute]
         val merged =
           map.get(coerced.label).optional.let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced)

@@ -178,7 +178,7 @@ object Contrastable:
 
         Juxtaposition.Collation
           ( name,
-            keys.to(List).map: key =>
+            keys.to[List].map: key =>
               key -> juxtaposition(t"", left(key).or(missing), right(key).or(missing)),
             leftName,
             rightName )
@@ -190,7 +190,7 @@ object Contrastable:
             val missing = Decomposition.Primitive(t"", t"", Unset)
 
             val entries =
-              keys.to(List).map: key =>
+              keys.to[List].map: key =>
                 key -> juxtaposition(t"", left(key).or(missing), right(key).or(missing))
 
             val name = if lname == rname then lname else t"$lname/$rname"

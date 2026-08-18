@@ -152,6 +152,27 @@ object Tests extends Suite(m"Rudiments Tests"):
         xs.occupied.let(_.last)
       . assert(_ == 3)
 
+    suite(m"Keyed tests"):
+      test(m"Map keys are a Set"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.keys
+      . assert(_ == Set(t"a", t"b"))
+
+      test(m"Map values are a List"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.values.to[Set]
+      . assert(_ == Set(1, 2))
+
+      test(m"Ledger keys are an insertion-ordered List"):
+        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        ledger.keys
+      . assert(_ == List(t"c", t"a", t"b"))
+
+      test(m"Ledger values preserve insertion order"):
+        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        ledger.values
+      . assert(_ == List(3, 1, 2))
+
     suite(m"Definable tests"):
       test(m"define replaces a sequence element positionally"):
         val xs: Sequence[Int] = Sequence(1, 2, 3)

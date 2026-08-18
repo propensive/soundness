@@ -963,7 +963,7 @@ extends caps.ExclusiveCapability:
   // The next free object number, one past the largest the original file used.
   @scala.caps.unsafe.untrackedCaptures
   private[facsimile] var nextNumber: Int =
-    (xref.entries.keys.maxOption.getOrElse(0).max(trailer(t"Size").let(_.long).or(0L).toInt - 1)) + 1
+    (xref.entries.keys.most.or(0).max(trailer(t"Size").let(_.long).or(0L).toInt - 1)) + 1
 
   // Payloads for streams created during the write scope. A `Cos.Body` locates its bytes by a
   // file offset; a new stream has none, so it is given a negative sentinel `start` that keys
