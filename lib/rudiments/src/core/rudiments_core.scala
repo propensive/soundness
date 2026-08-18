@@ -221,6 +221,30 @@ extension [self](self: self)(using traversable: self is Traversable)
   inline def all(predicate: traversable.Operand => Boolean): Boolean =
     traversable.traverse(self).forall(predicate)
 
+  // The `Traversable` siblings of the `Iterable` `total`/`product` below, so the opaque
+  // collections sum and multiply through the same names. Explicit return types (#1410).
+  transparent inline def total
+    ( using addable:  traversable.Operand is Addable by traversable.Operand,
+            equality: addable.Result =:= traversable.Operand )
+  :   Optional[traversable.Operand] =
+
+    compiletime.summonFrom:
+      case zeroic: ((? <: traversable.Operand) is Zeroic) =>
+        traversable.traverse(self).foldLeft(zeroic.zero)(addable.add)
+
+      case _ =>
+        val iterator = traversable.traverse(self)
+        if !iterator.hasNext then Unset
+        else iterator.foldLeft(iterator.next())(addable.add)
+
+  def product
+    ( using unital:        traversable.Operand is Unital,
+            multiplicable: traversable.Operand is Multiplicable by traversable.Operand,
+            equality:      multiplicable.Result =:= traversable.Operand )
+  :   traversable.Operand =
+
+    traversable.traverse(self).foldLeft(unital.one)(multiplicable.multiply)
+
 // The `Populated` producer: one non-emptiness check, recorded in the type, so the operations
 // below are total on the result. The presence check *is* the proof, in the same way a confined
 // ordinal's range check is (`Ordinal in value.type`).
@@ -233,6 +257,13 @@ extension [self](value: self)(using traversable: self is Traversable)
 // once). Stdlib members shadow these for stdlib receivers while the aliases remain transparent.
 extension [self <: Populated](value: self)(using traversable: self is Traversable)
   def head: traversable.Operand = traversable.traverse(value).next()
+
+  // Forces the whole traversal; on a `Populated` receiver that is the caller's stated intent.
+  def last: traversable.Operand =
+    val iterator = traversable.traverse(value)
+    var element = iterator.next()
+    while iterator.hasNext do element = iterator.next()
+    element
 
   def reduce(lambda: (traversable.Operand, traversable.Operand) => traversable.Operand)
   :   traversable.Operand =

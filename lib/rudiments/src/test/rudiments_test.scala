@@ -131,6 +131,27 @@ object Tests extends Suite(m"Rudiments Tests"):
         m.remap { (key, value) => value -> key }
       . assert(_ == Map(1 -> t"a", 2 -> t"b"))
 
+    suite(m"Query tests"):
+      test(m"minimize finds the element with the least key"):
+        val xs: List[Text] = List(t"epsilon", t"mu", t"beta")
+        xs.minimize(_.length)
+      . assert(_ == t"mu")
+
+      test(m"maximize finds the element with the greatest key"):
+        val xs: List[Text] = List(t"epsilon", t"mu", t"beta")
+        xs.maximize(_.length)
+      . assert(_ == t"epsilon")
+
+      test(m"minimize of empty is Unset"):
+        val xs: List[Int] = List()
+        xs.minimize(identity(_))
+      . assert(_ == Unset)
+
+      test(m"last on an occupied chain"):
+        val xs: Chain[Int] = Chain(1, 2, 3)
+        xs.occupied.let(_.last)
+      . assert(_ == 3)
+
     suite(m"Ordered reshaping tests"):
       test(m"Map sorts into a Ledger iterating in sorted order"):
         val m: Map[Text, Int] = Map(t"b" -> 2, t"c" -> 3, t"a" -> 1)
