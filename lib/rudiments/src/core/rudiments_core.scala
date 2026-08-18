@@ -533,6 +533,13 @@ extension (bytes: Data)
 extension [value: Segmentable as segmentable](inline value: value)
   inline def segment(interval: Interval): value = segmentable.segment(value, interval)
 
+// The write-twin of `at`: a copy of the container in which `at(index)` yields `result` —
+// positionally for `Ordinal`-indexed containers, by key for maps. Total: an out-of-range
+// ordinal returns the container unchanged, and an absent key defines a new entry.
+extension [self](value: self)(using definable: self is Definable)
+  def define(index: definable.Operand, result: definable.Result): self =
+    definable.define(value, index, result)
+
 // The generic positional operations, over any value that can be segmented and counted: one
 // definition serves the collections and, through the instances `Textual` extends, every textual
 // type — shape-preservingly, since a segment of a styled text keeps its styling. (Moved here

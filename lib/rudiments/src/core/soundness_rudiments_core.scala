@@ -86,6 +86,12 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   :   vacuous.Optional[applicable.Result] =
     rudiments.at(value)(ordinal)
 
+// Re-declared for the same reason as the `Deindex` group above: the typeclass evidence is a
+// dependent leading `using` clause, which synthesized export forwarders cannot carry.
+extension [self](value: self)(using definable: denominative.Definable { type Self = self })
+  def define(index: definable.Operand, result: definable.Result): self =
+    definable.define(value, index, result)
+
 extension [element](sequence: proscenium.List[element])
   // Mirrors the ungated `List` special case in `rudiments.Deindex` (same non-`inline`
   // rationale); duplicated because `rudiments.prim` resolves to the `Applicable`-bound

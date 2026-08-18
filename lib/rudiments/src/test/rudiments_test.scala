@@ -152,6 +152,32 @@ object Tests extends Suite(m"Rudiments Tests"):
         xs.occupied.let(_.last)
       . assert(_ == 3)
 
+    suite(m"Definable tests"):
+      test(m"define replaces a sequence element positionally"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        xs.define(Sec, 20)
+      . assert(_ == Sequence(1, 20, 3))
+
+      test(m"define outside the sequence returns it unchanged"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        xs.define(Quat, 40)
+      . assert(_ == Sequence(1, 2, 3))
+
+      test(m"define replaces a map value by key"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.define(t"b", 20)
+      . assert(_ == Map(t"a" -> 1, t"b" -> 20))
+
+      test(m"define adds an absent key"):
+        val m: Map[Text, Int] = Map(t"a" -> 1)
+        m.define(t"b", 2)
+      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+
+      test(m"define replaces a frozen array element"):
+        val xs: Array[Int]^{} = Array.tabulate(3)(_ + 1)
+        xs.define(Prim, 10).to[List]
+      . assert(_ == List(10, 2, 3))
+
     suite(m"Ordered reshaping tests"):
       test(m"Map sorts into a Ledger iterating in sorted order"):
         val m: Map[Text, Int] = Map(t"b" -> 2, t"c" -> 3, t"a" -> 1)
