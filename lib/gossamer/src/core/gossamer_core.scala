@@ -584,6 +584,22 @@ extension [textual: {Joinable, Textual}](values: Chain[textual])
   def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
     values.stdlib.join(left, separator, penultimate, right)
 
+// Opaque `Sequence` and `Set` are likewise not `Iterable`, so each needs its own bridging
+// block; a `Set`'s join order is its iteration order, which the caller accepts by joining.
+extension [textual: {Joinable, Textual}](values: Sequence[textual])
+  def join: textual = values.stdlib.join
+  def join(separator: textual): textual = values.stdlib.join(separator)
+
+  def join(left: textual, separator: textual, right: textual): textual =
+    values.stdlib.join(left, separator, right)
+
+extension [textual: {Joinable, Textual}](values: Set[textual])
+  def join: textual = values.stdlib.join
+  def join(separator: textual): textual = values.stdlib.join(separator)
+
+  def join(left: textual, separator: textual, right: textual): textual =
+    values.stdlib.join(left, separator, right)
+
 extension (builder: StringBuilder)
   def add(text: Text): Unit = builder.append(text.s)
   def add(char: Char): Unit = builder.append(char)
