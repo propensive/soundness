@@ -153,11 +153,8 @@ extension [textual: Textual { type Result = Char }](words: List[textual])
   def kebab: textual = words.stdlib.kebab
   def spaced: textual = words.stdlib.spaced
 
-extension [value: {Segmentable, Countable}](value: value)
-  def before(ordinal: Ordinal): value = value.segment(Prim till ordinal)
-  def upto(ordinal: Ordinal): value = value.segment(Prim thru ordinal)
-  def from(ordinal: Ordinal): value = value.segment(ordinal thru value.limit)
-  def after(ordinal: Ordinal): value = value.segment((ordinal + 1) till value.limit)
+// The ordinal-bounded `before`/`upto`/`from`/`after` now live in `rudiments`, alongside the
+// other generic positional operations over `Segmentable` and `Countable`.
 
 // A textual value reverses to its own type. Exposed as a factory rather than a blanket given because
 // `Reversible`'s companion (in `rudiments`) cannot reference `Textual`, so a generic given would not
@@ -181,6 +178,20 @@ def reversibleTextual[textual](using textual0: textual is Textual)
 
       builder()
 
+// A textual value traverses its own elements. A factory for the same reason as
+// `reversibleTextual` above: each textual type publishes `given … is Traversable by <Result> =
+// traversableTextual` in its own companion, which is what makes the generic predicate forms of
+// `keep` and `skip` (in `rudiments`) serve it — traversal finds the boundary, and the rebuild
+// goes through `segment`, so styled texts stay styled.
+def traversableTextual[textual](using textual0: textual is Textual)
+:   textual is Traversable { type Operand = textual0.Result } =
+  new Traversable:
+    type Self = textual
+    type Operand = textual0.Result
+
+    def traverse(text: textual): Iterator[Operand] =
+      scala.Iterator.range(0, textual0.length(text)).map { index => textual0.access(text, index.z) }
+
 extension [textual: Textual as instance](text: textual)
   inline def length: Int = textual.length(text)
   def plain: Text = textual.text(text)
@@ -203,21 +214,13 @@ extension [textual: Textual as instance](text: textual)
     List.tabulate[textual]((length - 1)/size + 1): i =>
       text.segment((i*size).z thru ((i + 1)*size).min(length).u)
 
-  def skip(count: Int, bidi: Bidi = Ltr): textual = bidi match
-    case Ltr => text.segment(count.z till text.limit)
-    case Rtl => text.segment(Prim till text.limit - count)
-
-  def keep(count: Int, bidi: Bidi = Ltr): textual = bidi match
-    case Ltr => text.segment(Interval.initial(count))
-    case Rtl => text.segment(text.limit - count till text.limit)
-
+  // `keep`, `skip` and `snip` are no longer defined here: the generic positional operations in
+  // `rudiments`, over `Segmentable` and `Countable`, serve every textual type through the
+  // instances `Textual` extends.
   inline def tail: textual = text.skip(1, Ltr)
   inline def init: textual = text.skip(1, Rtl)
 
   def chars: Array[Char]^{} = Array.unsafeFrozen(textual.text(text).s.toCharArray.nn)
-
-  def snip(n: Int): (textual, textual) =
-    (text.segment(Prim till n.z), text.segment(n.z till text.limit))
 
   def punch(n: Ordinal): (textual, textual) =
     (text.segment(Prim till n), text.segment((n + 1) till text.limit))
@@ -287,18 +290,6 @@ extension [textual: Textual { type Result = Char } as instance](text: textual)
 
     recur()
 
-  def skip(predicate: Char => Boolean): textual = text.skip(predicate, Ltr)
-
-  def skip(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
-    case Ltr => text.pinpoint(!predicate(_)).lay(textual.empty)(text.from(_))
-    case Rtl => text.pinpoint(!predicate(_), bidi = Rtl).lay(textual.empty)(text.upto(_))
-
-  def keep(predicate: Char => Boolean): textual = text.keep(predicate, Ltr)
-
-  def keep(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
-    case Ltr => text.pinpoint(!predicate(_)).lay(text)(text.before(_))
-    case Rtl => text.pinpoint(!predicate(_), bidi = Rtl).lay(text)(text.after(_))
-
   def capitalize: textual = textual.concat(text.keep(1).upper, text.after(Prim))
   def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))
 
@@ -309,7 +300,11 @@ extension [textual: Textual { type Result = Char } as instance](text: textual)
     val end = text.pinpoint(!_.isWhitespace, bidi = Rtl).or(Prim)
     text.segment(start thru end)
 
-  def trim(bidi: Bidi): textual = text.skip(_.isWhitespace, bidi)
+  // Not `skip(_.isWhitespace, bidi)`: `pinpoint` reaches the boundary by direct access, where
+  // the generic `skip` would traverse.
+  def trim(bidi: Bidi): textual = bidi match
+    case Ltr => text.pinpoint(!_.isWhitespace).lay(textual.empty)(text.from(_))
+    case Rtl => text.pinpoint(!_.isWhitespace, bidi = Rtl).lay(textual.empty)(text.upto(_))
 
   def pinpoint(predicate: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
   :   Optional[Ordinal] =
@@ -329,17 +324,8 @@ extension [textual: Textual { type Result = Char } as instance](text: textual)
 
     recur(first)
 
-  def before(predicate: Char => Boolean): textual =
-    val end: Ordinal = text.pinpoint(predicate).or(text.limit - 1)
-    text.before(end)
-
-  def upto(predicate: Char => Boolean): textual =
-    val end: Ordinal = text.pinpoint(predicate).or(text.limit - 1)
-    text.upto(end)
-
-  def snip(predicate: Char => Boolean, index: Ordinal = Prim): Optional[(textual, textual)] =
-    text.pinpoint(predicate, index).let(_.n0).let(text.snip(_))
-
+  // The predicate forms of `before`/`upto`/`snip` now live in `rudiments` with the other
+  // generic positional operations, generalized from characters to any traversable element.
   def tr(lambda: Char => Char): textual = textual.map(text)(lambda)
 
   def erase(chars: Char*): textual =

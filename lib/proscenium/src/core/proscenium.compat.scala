@@ -201,10 +201,6 @@ extension [element](list: List[element])
   inline def dropWhile(predicate: element => Boolean): List[element] =
     List.of(list.stdlib.dropWhile(predicate))
 
-  inline def span(predicate: element => Boolean): (List[element], List[element]) =
-    val (left, right) = list.stdlib.span(predicate)
-    (List.of(left), List.of(right))
-
   inline def splitAt(index: Int): (List[element], List[element]) =
     val (left, right) = list.stdlib.splitAt(index)
     (List.of(left), List.of(right))
@@ -350,10 +346,6 @@ extension [element](sequence: Sequence[element])
 
   inline def dropWhile(predicate: element => Boolean): Sequence[element] =
     Sequence.of(sequence.stdlib.dropWhile(predicate))
-
-  inline def span(predicate: element => Boolean): (Sequence[element], Sequence[element]) =
-    val (left, right) = sequence.stdlib.span(predicate)
-    (Sequence.of(left), Sequence.of(right))
 
   inline def splitAt(index: Int): (Sequence[element], Sequence[element]) =
     val (left, right) = sequence.stdlib.splitAt(index)

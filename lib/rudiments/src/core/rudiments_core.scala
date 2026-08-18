@@ -502,6 +502,92 @@ extension (bytes: Data)
 extension [value: Segmentable as segmentable](inline value: value)
   inline def segment(interval: Interval): value = segmentable.segment(value, interval)
 
+// The generic positional operations, over any value that can be segmented and counted: one
+// definition serves the collections and, through the instances `Textual` extends, every textual
+// type — shape-preservingly, since a segment of a styled text keeps its styling. (Moved here
+// from gossamer, which retains only the genuinely textual operations.)
+extension [value: {Segmentable, Countable}](value: value)
+  def before(ordinal: Ordinal): value = value.segment(Prim till ordinal)
+  def upto(ordinal: Ordinal): value = value.segment(Prim thru ordinal)
+  def from(ordinal: Ordinal): value = value.segment(ordinal thru value.limit)
+  def after(ordinal: Ordinal): value = value.segment((ordinal + 1) till value.limit)
+
+  def keep(count: Int, bidi: Bidi = Bidi.Ltr): value = bidi match
+    case Bidi.Ltr => value.segment(Interval.initial(count))
+    case Bidi.Rtl => value.segment(value.limit - count till value.limit)
+
+  def skip(count: Int, bidi: Bidi = Bidi.Ltr): value = bidi match
+    case Bidi.Ltr => value.segment(count.z till value.limit)
+    case Bidi.Rtl => value.segment(Prim till value.limit - count)
+
+  def snip(count: Int): (value, value) =
+    (value.segment(Prim till count.z), value.segment(count.z till value.limit))
+
+// The predicate forms find the boundary of the leading (or trailing) run satisfying the
+// predicate by traversal, then rebuild by segmentation — never element-by-element, so styled
+// texts stay styled. The typeclass is bound at the extension so the lambda's parameter type is
+// known before it elaborates.
+extension [value](value: value)
+  ( using traversable: value is Traversable,
+          segmentable: value is Segmentable,
+          countable:   value is Countable )
+
+  def keep(predicate: traversable.Operand => Boolean): value = value.keep(predicate, Bidi.Ltr)
+
+  def keep(predicate: traversable.Operand => Boolean, bidi: Bidi): value = bidi match
+    case Bidi.Ltr => value.segment(Interval.initial(leading(predicate)))
+    case Bidi.Rtl => value.segment(value.limit - trailing(predicate) till value.limit)
+
+  def skip(predicate: traversable.Operand => Boolean): value = value.skip(predicate, Bidi.Ltr)
+
+  def skip(predicate: traversable.Operand => Boolean, bidi: Bidi): value = bidi match
+    case Bidi.Ltr => value.segment(leading(predicate).z till value.limit)
+    case Bidi.Rtl => value.segment(Prim till value.limit - trailing(predicate))
+
+  // Everything strictly before (or up to and including) the first element satisfying
+  // `predicate`; without a match, everything before (or up to) the last element.
+  def before(predicate: traversable.Operand => Boolean): value =
+    value.before(locate(predicate, 0).lay(value.limit - 1)(_.z))
+
+  def upto(predicate: traversable.Operand => Boolean): value =
+    value.upto(locate(predicate, 0).lay(value.limit - 1)(_.z))
+
+  // The two sides of the first element at or after `index` satisfying `predicate`, the
+  // element itself starting the right side; `Unset` when nothing matches.
+  def snip(predicate: traversable.Operand => Boolean, index: Ordinal = Prim)
+  :   Optional[(value, value)] =
+
+    locate(predicate, index.n0).let(value.snip(_))
+
+  // The length of the longest leading run satisfying `predicate`.
+  private def leading(predicate: traversable.Operand => Boolean): Int =
+    val iterator = traversable.traverse(value)
+    var count = 0
+
+    while iterator.hasNext && predicate(iterator.next()) do count += 1
+
+    count
+
+  // The length of the longest trailing run satisfying `predicate`.
+  private def trailing(predicate: traversable.Operand => Boolean): Int =
+    var count = 0
+
+    traversable.traverse(value).foreach: element =>
+      count = if predicate(element) then count + 1 else 0
+
+    count
+
+  // The position of the first element at or after `start` satisfying `predicate`.
+  private def locate(predicate: traversable.Operand => Boolean, start: Int): Optional[Int] =
+    val iterator = traversable.traverse(value).drop(start)
+    var index = start
+    var result: Optional[Int] = Unset
+
+    while result.absent && iterator.hasNext do
+      if predicate(iterator.next()) then result = index else index += 1
+
+    result
+
 extension (bs: Int)
   def b: Bytes = Bytes(bs)
   def kib: Bytes = Bytes(bs*1024L)

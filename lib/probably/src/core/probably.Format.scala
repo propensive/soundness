@@ -35,6 +35,7 @@ package probably
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 

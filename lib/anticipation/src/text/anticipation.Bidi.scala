@@ -30,10 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gossamer
+package anticipation
 
-import scala.language.experimental.into
-import scala.language.experimental.pureFunctions
-
+// The reading direction of a positional operation: `Ltr` anchors at the start, `Rtl` at the
+// end. Owned by `anticipation` (rather than `gossamer`, where it originated) so that the
+// generic positional operations (`keep`, `skip`, `snip`) in `rudiments` can share one
+// vocabulary with the textual operations built on them.
 enum Bidi:
   case Ltr, Rtl

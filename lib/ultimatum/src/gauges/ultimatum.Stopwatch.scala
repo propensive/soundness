@@ -38,6 +38,7 @@ import escapade.*
 import gossamer.*
 import iridescence.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 

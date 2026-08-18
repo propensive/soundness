@@ -76,6 +76,11 @@ object Teletype:
   // shared textual reversal so `teletype.reverse` resolves through the single `rudiments` `reverse`.
   given reversible: (Teletype is Reversible { type Result = Teletype }) = reversibleTextual
 
+  // Likewise for traversal: this is what lets the generic predicate forms of `keep` and `skip`
+  // (in `rudiments`) serve `Teletype`, boundary-by-traversal and rebuild-by-`segment`, so
+  // styling survives.
+  given traversable: (Teletype is Traversable { type Operand = Char }) = traversableTextual
+
   given textual: Teletype is Textual:
     type Result = Char
     type Show[value] = value is Teletypeable
