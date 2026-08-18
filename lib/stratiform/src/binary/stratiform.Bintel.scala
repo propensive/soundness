@@ -573,6 +573,20 @@ object Bintel:
     if parser.offset != data.length then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
     result
 
+  // Codec-aware direct parsing: leaves whose type declares a §21.7
+  // encoding (the `Tel.Encoded` marker) read codec bytes through the
+  // binding, with B13/B14 and, under `checkCanonical`, B15 — matching
+  // the AST decoder's rules exactly.
+  def parse[value](data: Data, codecs: Tel.Codec.Bindings, checkCanonical: Boolean = false)
+    ( using parsable: (value is Bintel.Parsable)^ )
+    ( using tactic: Tactic[Bintel.Error] )
+  :   value =
+
+    val parser = BintelParser(data, Tel.Codec.Resolver(codecs), checkCanonical)
+    val result = parsable.parse(BintelReader(parser, tactic))
+    if parser.offset != data.length then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
+    result
+
   // Decode BinTEL body bytes to a typed value, deriving the schema from the value's type
   // — the inverse of `value.bintel`.
   def read[value: Tel.Decodable](data: Data)
@@ -582,6 +596,17 @@ object Bintel:
 
     val schema = Tels.tels[value](Text("root"))
     present(decode(data, schema), schema).as[value]
+
+  // As above, decoding scalars whose derived schema declares a §21.7
+  // encoding through the codec binding.
+  def read[value: Tel.Decodable]
+    ( data: Data, codecs: Tel.Codec.Bindings, checkCanonical: Boolean = false )
+    ( using value is TelSchematic over Tels.Type )
+    ( using Tactic[Bintel.Error], Tactic[Tel.Error] )
+  :   value =
+
+    val schema = Tels.tels[value](Text("root"))
+    present(decode(data, schema, codecs, checkCanonical), schema).as[value]
 
   private def resolveType(t: Tels.Type, schema: Tels): Tels.Type = t match
     case Tels.Reference(name) =>

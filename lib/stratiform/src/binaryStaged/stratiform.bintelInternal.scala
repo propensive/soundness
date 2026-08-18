@@ -256,7 +256,7 @@ object bintelInternal:
   private enum Elem:
     case Scalar(kind: Int)
     case Nested(instance: BintelInlinable, tpe: Any)
-    case SeamText(decoder: Any)
+    case SeamText(decoder: Any, encoding: Option[String])
 
   private enum Plan:
     case Leaf(kind: Int)
@@ -264,7 +264,7 @@ object bintelInternal:
     case OptionalLeaf(kind: Int)
     case OptionalNested(instance: BintelInlinable, innerType: Any)
     case Gather(element: Elem, elementType: Any)
-    case SeamText(decoder: Any)
+    case SeamText(decoder: Any, encoding: Option[String])
 
   private def resolve[field: Type](cache: Cache)(using Quotes): Option[BintelInlinable] =
     import quotes.reflect.*
@@ -287,6 +287,26 @@ object bintelInternal:
 
     case other =>
       other
+
+  // The §21.7 encoding a field type declares via the `Tel.Encoded`
+  // marker, read from the literal name type of the resolved instance at
+  // expansion time — so the generated leaf pays nothing at runtime to
+  // discover it. `None` for undeclared types (the UTF-8 text form).
+  private def staticEncoding[fieldType: Type](using Quotes): Option[String] =
+    import quotes.reflect.*
+
+    Implicits.search(TypeRepr.of[fieldType is Tel.Encoded[?]]) match
+      case success: ImplicitSearchSuccess =>
+        val encodedSymbol = TypeRepr.of[Tel.Encoded[?]].typeSymbol
+
+        success.tree.tpe.baseType(encodedSymbol) match
+          case AppliedType(_, List(name)) => name.dealias match
+            case ConstantType(StringConstant(text)) => Some(text)
+            case _                                  => None
+
+          case _ => None
+
+      case _ => None
 
   // A custom scalar leaf: its `Decodable in Text`, resolved at expansion
   // time with a reflection-level search and an erasing cast across the
@@ -395,7 +415,8 @@ object bintelInternal:
                       case _ =>
                         textDecoder[element] match
                           case Some(decoder) =>
-                            Plan.Gather(Elem.SeamText(decoder), elementType)
+                            Plan.Gather
+                              (Elem.SeamText(decoder, staticEncoding[element]), elementType)
 
                           case None =>
                             reject("a collection of an unsupported element")
@@ -413,7 +434,7 @@ object bintelInternal:
 
               case _ =>
                 textDecoder[field] match
-                  case Some(decoder) => Plan.SeamText(decoder)
+                  case Some(decoder) => Plan.SeamText(decoder, staticEncoding[field])
 
                   case None =>
                     if cache.active.contains(tpe.show) then reject("recursive")
@@ -603,10 +624,17 @@ object bintelInternal:
         case KText    => '{ t"" }
         case KString  => Expr("")
 
-      def seamRead(decoder: Any): Expr[Any] =
+      def seamRead(decoder: Any, encoding: Option[String]): Expr[Any] =
         val found = decoder.asInstanceOf[Expr[Any]]
-        '{ $found.asInstanceOf[Any is Decodable in Text]
-             . decoded(Text($parser.directScalar()(using $btactic))) }
+
+        // An encoded leaf (§21.7) reads codec bytes; the decoded semantic
+        // text then flows through the same `Decodable in Text` as the
+        // UTF-8 form, so value semantics are identical either way.
+        val atom: Expr[String] = encoding match
+          case Some(name) => '{ $parser.directEncodedScalar(${Expr(name)})(using $btactic) }
+          case None       => '{ $parser.directScalar()(using $btactic) }
+
+        '{ $found.asInstanceOf[Any is Decodable in Text].decoded(Text($atom)) }
 
       // Per-field gathering state for repeatable fields.
       val builders: scala.collection.immutable.Map[Int, Symbol] =
@@ -696,11 +724,11 @@ object bintelInternal:
 
                 focusedOver[fieldType]('{ $raw.asInstanceOf[fieldType] }).asTerm
 
-          case Plan.SeamText(decoder) =>
+          case Plan.SeamText(decoder, encoding) =>
             fieldTypes(index).asType match
               case '[fieldType] =>
                 focusedOver[fieldType]
-                  ('{ ${seamRead(decoder)}.asInstanceOf[fieldType] }).asTerm
+                  ('{ ${seamRead(decoder, encoding)}.asInstanceOf[fieldType] }).asTerm
 
           case Plan.Gather(element, elementType0) =>
             val elementType = elementType0.asInstanceOf[TypeRepr]
@@ -718,8 +746,8 @@ object bintelInternal:
                     instance0.asInstanceOf[BintelInlinable { type Self = element }]
                     . parse(reader)
 
-                  case Elem.SeamText(decoder) =>
-                    '{ ${seamRead(decoder)}.asInstanceOf[element] }
+                  case Elem.SeamText(decoder, encoding) =>
+                    '{ ${seamRead(decoder, encoding)}.asInstanceOf[element] }
 
                 '{ $builder += ${ focusedOver[element](occurrence) } }.asTerm
 
@@ -800,7 +828,7 @@ object bintelInternal:
                 instance.asInstanceOf[BintelInlinable { type Self = fieldType }]
                 . absent(tactic)
 
-              case Plan.SeamText(_) =>
+              case Plan.SeamText(_, _) =>
                 '{ abort(Tel.Error(Tel.Error.Reason.Absent))(using $tactic) }
 
               case Plan.Gather(_, _) =>

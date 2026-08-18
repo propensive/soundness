@@ -34,6 +34,7 @@ package stratiform
 
 import anticipation.*
 import contingency.*
+import vacuous.*
 
 // Reads BinTEL body bytes for direct parsing (`Bintel.Parsable`): the
 // document structure is fully count-driven and self-delimiting, so the
@@ -45,7 +46,11 @@ import contingency.*
 // The class is public — generated parsers, spliced into user modules, bind
 // it once per read and step through its direct rim — but only stratiform's
 // read path can construct one.
-final class BintelParser private[stratiform] (input: Data):
+final class BintelParser private[stratiform]
+  ( input: Data,
+    codecs: Optional[Tel.Codec.Resolver] = Unset,
+    checkCanonical: Boolean = false ):
+
   @scala.caps.unsafe.untrackedCaptures
   private[stratiform] val data: scala.Array[Byte] = input.asInstanceOf[scala.Array[Byte]]
 
@@ -92,13 +97,39 @@ final class BintelParser private[stratiform] (input: Data):
     offset += length
     result
 
-  // One scalar payload's raw bytes, without UTF-8 decoding: the leaf a
-  // codec-aware staged parser would use for encoded scalars (§21.7).
-  // The staged layer derives its plans from Scala types, which declare
-  // no encodings, so nothing generates calls to this yet; full staged
-  // codec support is deferred until derived schemas can. Framing is
-  // codec-independent, so `directSkipScalar` already skips encoded
-  // scalars correctly.
+  // One scalar payload through the §21.7 codec named `encoding`: the raw
+  // bytes are read via `directScalarBytes` and decoded by the bound codec
+  // — B13 when no binding is configured or the name does not resolve, B14
+  // when the codec rejects the bytes, and B15 under the OPTIONAL
+  // re-encode canonicality check. Generated parsers call this at leaves
+  // whose type declares an encoding via the `Tel.Encoded` marker.
+  def directEncodedScalar(encoding: String)(using Tactic[Bintel.Error]): String =
+    val bytes = directScalarBytes()
+
+    val codec = codecs.let(_(Text(encoding)))
+    . or(abort(Bintel.Error(Bintel.Error.Reason.CodecUnresolved)))
+
+    val frozen = bytes.asInstanceOf[Data]
+
+    codec.decode(frozen) match
+      case Tel.Codec.Decoded.Failure(_) =>
+        abort(Bintel.Error(Bintel.Error.Reason.CodecDecodeFailed))
+
+      case Tel.Codec.Decoded.Value(text) =>
+        if checkCanonical then codec.encode(text) match
+          case Tel.Codec.Encoded.Bytes(re) =>
+            if !java.util.Arrays.equals(re.asInstanceOf[scala.Array[Byte]], bytes)
+            then abort(Bintel.Error(Bintel.Error.Reason.CodecNoncanonical))
+
+          case Tel.Codec.Encoded.Invalid(_) =>
+            abort(Bintel.Error(Bintel.Error.Reason.CodecNoncanonical))
+
+        text.s
+
+  // One scalar payload's raw bytes, without UTF-8 decoding: the leaf
+  // `directEncodedScalar` reads before applying its codec. Framing is
+  // codec-independent, so `directSkipScalar` skips encoded scalars
+  // correctly too.
   def directScalarBytes()(using Tactic[Bintel.Error]): scala.Array[Byte] =
     val length = directCount()
 
