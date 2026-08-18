@@ -71,6 +71,10 @@ object Lsp:
 
   object Range:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: Range is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: Range is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -87,6 +91,10 @@ object Lsp:
 
   object Location:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: Location is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: Location is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -95,6 +103,10 @@ object Lsp:
 
   object Envelope:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: Envelope is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: Envelope is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -174,6 +186,10 @@ object Lsp:
 
   object InitializeResult:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: InitializeResult is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: InitializeResult is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -188,6 +204,10 @@ object Lsp:
   case class CompletionContext(triggerKind: Int, triggerCharacter: Optional[Text] = Unset)
 
   object CompletionItem:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: CompletionItem is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: CompletionItem is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -206,6 +226,10 @@ object Lsp:
 
   object CompletionList:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: CompletionList is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: CompletionList is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -214,6 +238,10 @@ object Lsp:
 
   object Hover:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: Hover is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: Hover is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -224,6 +252,10 @@ object Lsp:
 
   object DocumentSymbol:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: DocumentSymbol is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: DocumentSymbol is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -239,6 +271,10 @@ object Lsp:
   case class FormattingOptions(tabSize: Int, insertSpaces: Boolean)
   object TextEdit:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: TextEdit is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: TextEdit is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -246,6 +282,10 @@ object Lsp:
   case class TextEdit(range: Range, newText: Text)
 
   object WorkspaceEdit:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: WorkspaceEdit is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: WorkspaceEdit is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -259,6 +299,10 @@ object Lsp:
   case class CodeActionContext(diagnostics: List[Diagnostic] = Nil)
 
   object CodeAction:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: CodeAction is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: CodeAction is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -282,6 +326,10 @@ object Lsp:
 
   object SignatureHelp:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: SignatureHelp is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: SignatureHelp is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -293,6 +341,10 @@ object Lsp:
 
   object DocumentHighlight:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: DocumentHighlight is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: DocumentHighlight is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -301,6 +353,10 @@ object Lsp:
 
   object FoldingRange:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: FoldingRange is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: FoldingRange is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -315,6 +371,10 @@ object Lsp:
 
   object SelectionRange:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: SelectionRange is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: SelectionRange is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -328,6 +388,10 @@ object Lsp:
     ( title: Text, command: Text, arguments: Optional[Json] = Unset )
 
   object CodeLens:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: CodeLens is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: CodeLens is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -340,6 +404,10 @@ object Lsp:
     ( range: Range, command: Optional[Command] = Unset, data: Optional[Json] = Unset )
 
   object DocumentLink:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: DocumentLink is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: DocumentLink is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -359,6 +427,10 @@ object Lsp:
   case class Color(red: Double, green: Double, blue: Double, alpha: Double)
   object ColorInformation:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: ColorInformation is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: ColorInformation is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -367,6 +439,10 @@ object Lsp:
 
   object ColorPresentation:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: ColorPresentation is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: ColorPresentation is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -379,6 +455,10 @@ object Lsp:
   // Call and type hierarchies
 
   object CallHierarchyItem:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: CallHierarchyItem is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: CallHierarchyItem is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -399,6 +479,10 @@ object Lsp:
 
   object CallHierarchyIncomingCall:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: CallHierarchyIncomingCall is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: CallHierarchyIncomingCall is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -406,6 +490,10 @@ object Lsp:
   case class CallHierarchyIncomingCall(from: CallHierarchyItem, fromRanges: List[Range])
   object CallHierarchyOutgoingCall:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: CallHierarchyOutgoingCall is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: CallHierarchyOutgoingCall is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -413,6 +501,10 @@ object Lsp:
   case class CallHierarchyOutgoingCall(to: CallHierarchyItem, fromRanges: List[Range])
 
   object TypeHierarchyItem:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: TypeHierarchyItem is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: TypeHierarchyItem is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -436,6 +528,10 @@ object Lsp:
   case class SemanticTokensLegend(tokenTypes: List[Text], tokenModifiers: List[Text])
   object SemanticTokens:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: SemanticTokens is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: SemanticTokens is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -445,6 +541,10 @@ object Lsp:
 
   object SemanticTokensDelta:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: SemanticTokensDelta is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: SemanticTokensDelta is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -455,6 +555,10 @@ object Lsp:
   // Inlay hints, inline values, linked editing and monikers
 
   object InlayHint:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: InlayHint is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: InlayHint is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -473,6 +577,10 @@ object Lsp:
       data:         Optional[Json]          = Unset )
 
   object InlineValueContext:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: InlineValueContext is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: InlineValueContext is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -484,6 +592,10 @@ object Lsp:
   case class InlineValueContext(frameId: Int, stoppedLocation: Range)
   object InlineValueText:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: InlineValueText is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: InlineValueText is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -492,6 +604,10 @@ object Lsp:
 
   object LinkedEditingRanges:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: LinkedEditingRanges is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: LinkedEditingRanges is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -499,6 +615,10 @@ object Lsp:
   case class LinkedEditingRanges(ranges: List[Range], wordPattern: Optional[Text] = Unset)
   object Moniker:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: Moniker is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: Moniker is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -509,6 +629,10 @@ object Lsp:
 
   object DocumentDiagnosticReport:
     // Pure and throwing, like the other derivation anchors; see `CompletionItem.decodable`.
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: DocumentDiagnosticReport is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: DocumentDiagnosticReport is Json.Decodable =
       import strategies.throwUnsafely
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
@@ -519,6 +643,10 @@ object Lsp:
   // Workspace
 
   object WorkspaceSymbol:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: WorkspaceSymbol is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: WorkspaceSymbol is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -536,6 +664,10 @@ object Lsp:
       data:          Optional[Json]            = Unset )
 
   object FileEvent:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: FileEvent is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: FileEvent is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -547,6 +679,10 @@ object Lsp:
   case class FileEvent(uri: Text, `type`: FileChangeType)
 
   object WorkspaceFoldersChangeEvent:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: WorkspaceFoldersChangeEvent is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: WorkspaceFoldersChangeEvent is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -558,6 +694,10 @@ object Lsp:
   case class WorkspaceFoldersChangeEvent(added: List[Folder], removed: List[Folder])
 
   object FileCreate:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: FileCreate is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: FileCreate is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -569,6 +709,10 @@ object Lsp:
   case class FileCreate(uri: Text)
 
   object FileRename:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: FileRename is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: FileRename is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -580,6 +724,10 @@ object Lsp:
   case class FileRename(oldUri: Text, newUri: Text)
 
   object FileDelete:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: FileDelete is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: FileDelete is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
@@ -593,6 +741,10 @@ object Lsp:
   // Diagnostics and window messages
 
   object Diagnostic:
+    // Encoder anchor: derived once here so use sites share it instead of re-deriving.
+    given encodable: Diagnostic is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
     given decodable: Diagnostic is Json.Decodable =
       // A pure, throwing instance: each internal summon of the derivation mints its own
       // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
