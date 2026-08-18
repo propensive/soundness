@@ -52,12 +52,12 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
 
   // Codes this implementation can raise. Corpus cases whose expected codes
   // fall wholly outside this set are pending-implementation and skipped,
-  // mirroring the E1xx suite's `< 200` gate. E207 (bad sigil), E211/E212
-  // (exclude checks), E312/E313 (codec rejection needs a configured
-  // binding, which the corpus convention cannot supply) are excluded.
+  // mirroring the E1xx suite's `< 200` gate. E312/E313 are excluded: codec
+  // rejection needs a configured binding, which the corpus convention
+  // cannot supply.
   val implemented: scala.collection.immutable.Set[Int] =
     scala.collection.immutable.Set
-      ( 201, 202, 203, 204, 205, 206, 208, 209, 210, 213, 214, 215, 216, 217,
+      ( 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217,
         218, 219, 220, 221,
         301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 314 )
 
