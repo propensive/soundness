@@ -32,7 +32,6 @@
                                                                                                   */
 package anthology
 
-import proscenium.compat.*
 
 import ambience.*
 import anticipation.*

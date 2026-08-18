@@ -32,7 +32,6 @@
                                                                                                   */
 package escapade
 
-import proscenium.compat.*
 
 import anticipation.*
 import gossamer.*

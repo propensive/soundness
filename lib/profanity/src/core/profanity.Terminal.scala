@@ -44,7 +44,6 @@ import gossamer.*
 import iridescence.*
 import parasite.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

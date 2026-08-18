@@ -34,7 +34,6 @@ package pneumatic
 
 import scala.caps
 
-import proscenium.compat.*
 import vacuous.*
 
 // Shared definitions for the pure-Scala DEFLATE implementation, ported faithfully from JZlib

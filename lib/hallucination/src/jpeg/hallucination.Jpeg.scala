@@ -32,7 +32,6 @@
                                                                                                   */
 package hallucination
 
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

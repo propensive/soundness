@@ -32,7 +32,6 @@
                                                                                                   */
 package pneumatic
 
-import proscenium.compat.*
 
 // Shared LZMA model constants: the standard LZMA parameters (match lengths 2..273, 12 states,
 // 4 reps, 64 distance slots, a 16-entry alignment tree), documented in the LZMA specification.

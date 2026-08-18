@@ -34,7 +34,6 @@ package hallucination
 
 import anticipation.*
 import contingency.*
-import proscenium.compat.*
 
 // PNG through the pure Scala codec, used wherever `javax.imageio` is unavailable (Scala.js and WASI).
 private[hallucination] object PngBackend:

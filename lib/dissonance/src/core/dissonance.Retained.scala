@@ -34,7 +34,6 @@ package dissonance
 
 import scala.compiletime.*
 
-import proscenium.compat.*
 
 import vacuous.*
 

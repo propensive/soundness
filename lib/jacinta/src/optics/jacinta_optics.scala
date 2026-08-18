@@ -39,7 +39,6 @@ import contingency.*
 import denominative.*
 import panopticon.*
 import prepositional.*
-import proscenium.compat.*
 import vacuous.*
 
 // The panopticon lens and optic instances for `Json`. These are the only reason `jacinta.core`

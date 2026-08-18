@@ -34,7 +34,6 @@ package escapade
 
 import anticipation.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import symbolism.*
 import turbulence.*

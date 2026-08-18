@@ -32,7 +32,6 @@
                                                                                                   */
 package charisma
 
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

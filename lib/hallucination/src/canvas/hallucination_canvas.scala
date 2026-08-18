@@ -33,7 +33,6 @@
 package hallucination
 
 import aperture.*
-import proscenium.compat.*
 
 // `Canvas`'s `Openable` instance. It was a member of `Canvas`'s companion, and so in implicit
 // scope; it lives here with `CanvasHandle` and `RasterOpenable` so that decoding an image does
