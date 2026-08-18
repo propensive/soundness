@@ -131,6 +131,36 @@ object Tests extends Suite(m"Rudiments Tests"):
         m.remap { (key, value) => value -> key }
       . assert(_ == Map(1 -> t"a", 2 -> t"b"))
 
+    suite(m"Ordered reshaping tests"):
+      test(m"Map sorts into a Ledger iterating in sorted order"):
+        val m: Map[Text, Int] = Map(t"b" -> 2, t"c" -> 3, t"a" -> 1)
+        m.sort { (key, value) => key }.to[List]
+      . assert(_ == List(t"a" -> 1, t"b" -> 2, t"c" -> 3))
+
+      test(m"Map sort result is a Ledger"):
+        val m: Map[Text, Int] = Map(t"b" -> 2, t"a" -> 1)
+        val sorted: Ledger[Text, Int] = m.sort { (key, value) => key }
+        sorted.to[List]
+      . assert(_ == List(t"a" -> 1, t"b" -> 2))
+
+      test(m"Ledger filter preserves insertion order and shape"):
+        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        val filtered: Ledger[Text, Int] = ledger.filter { (key, value) => value != 1 }
+        filtered.to[List]
+      . assert(_ == List(t"c" -> 3, t"b" -> 2))
+
+      test(m"Ledger sorts into a Ledger"):
+        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        val sorted: Ledger[Text, Int] = ledger.sort { (key, value) => value }
+        sorted.to[List]
+      . assert(_ == List(t"a" -> 1, t"b" -> 2, t"c" -> 3))
+
+      test(m"Map non-pair stable reshape still yields a List"):
+        val m: Map[Text, Int] = Map(t"b" -> 2, t"a" -> 1)
+        val traced: List[Int] = m.trace(0) { (total, pair) => total + pair(1) }
+        traced
+      . assert(_ == List(0, 2, 3))
+
     suite(m"Confined index tests"):
       val text = t"hello"
       val array = Array.of(10, 20, 30)

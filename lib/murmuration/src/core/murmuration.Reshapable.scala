@@ -92,10 +92,31 @@ object Reshapable extends Reshapable.Fallback:
   =>  Map[key, value] is Reshapable by (key2, value2) to Map[key2, value2] =
     Map.from(_)
 
-  trait Fallback:
-    // …but a `Map` rebuilt from non-pair elements naturally yields a `List` — a more precise
-    // result than the stdlib's `Iterable`. Lower priority than `map` above (companion-parent
-    // placement), so pair results still prefer the `Map` shape.
+  // A `Ledger` rebuilt from pairs remains a `Ledger`, and legitimately `Stable`: insertion
+  // order is its identity, so it carries the whole order-sensitive surface (`sort`, `distinct`,
+  // `trace`, `zip`).
+  given ledger: [key, value, key2, value2]
+  =>  Ledger[key, value] is Reshapable.Stable by (key2, value2) to Ledger[key2, value2] =
+    Ledger.from(_)
+
+  trait Fallback extends Fallback2:
+    // A `Stable` pair-rebuild of a `Map` yields a `Ledger`: the unordered `Map` shape cannot
+    // honestly receive an order-sensitive result, but the insertion-ordered map can — so
+    // `map.sort(…)` is an ordered map iterating in sorted order. Lower priority than `map`
+    // above, so plain reshapes (`filter`, pairwise `bind`) still rebuild the cheaper `Map`.
+    given mapToLedger: [key, value, key2, value2]
+    =>  Map[key, value] is Reshapable.Stable by (key2, value2) to Ledger[key2, value2] =
+      Ledger.from(_)
+
+    // A `Ledger` rebuilt from non-pair elements naturally yields a `List`, order preserved.
+    given ledgerToList: [key, value, element2]
+    =>  Ledger[key, value] is Reshapable.Stable by element2 to List[element2] =
+      List.from(_)
+
+  trait Fallback2:
+    // …and a `Map` rebuilt from non-pair elements likewise yields a `List` — a more precise
+    // result than the stdlib's `Iterable`. Lowest priority, so pair results prefer the `Map`
+    // (plain) or `Ledger` (`Stable`) shapes above.
     given mapToList: [key, value, element2]
     =>  Map[key, value] is Reshapable.Stable by element2 to List[element2] =
       List.from(_)
