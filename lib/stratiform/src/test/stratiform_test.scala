@@ -2873,6 +2873,7 @@ object Tests extends Suite(m"Stratiform Tests"):
     VerifyTests()
     AccrualTests()
     SchemaCorpusTests()
+    SchemaValidityTests()
     KeyTests()
     TelpTests()
     CodecTests()

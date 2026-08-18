@@ -137,11 +137,16 @@ object Tels extends Tels2:
       description: Optional[Text] = Unset,
       encoding:    Optional[Text] = Unset )
 
+  // `excludes` is layer-only: the variant keywords a layer's `exclude`
+  // children remove from the merged SelectDefinition (§20.3). A base-side
+  // SelectDefinition must have none (E216), and composition consumes them,
+  // so a composed schema's excludes are always empty.
   case class SelectDefinition
     ( name:        Text,
       variants:    Array[Variant]^{},
       validators:  Array[Text]^{},
-      description: Optional[Text] = Unset )
+      description: Optional[Text] = Unset,
+      excludes:    Array[Text]^{} = Array.empty )
 
   // A Layer applies incremental refinements per §20.3. `overlay` is the
   // (possibly empty) Struct merged into the document root; the three
@@ -553,6 +558,9 @@ object Tels extends Tels2:
           if records.exists(_.name == newDef.name) || scalars.exists(_.name == newDef.name)
           then abort(Tel.Error(Reason.DuplicateDefinition))
 
+          // A layer-introduced fresh SelectDefinition has no base to
+          // exclude from, so any exclude it carries is E211.
+          if !newDef.excludes.nil then abort(Tel.Error(Reason.ExcludeMissingVariant))
           out += newDef
 
         i += 1
@@ -571,6 +579,16 @@ object Tels extends Tels2:
         if existingIdx < 0 then abort(Tel.Error(Reason.LayerVariantAddition))
         i += 1
 
+      // §20.3: apply the layer's excludes, removing each named variant
+      // from the merged SelectDefinition. An exclude naming no variant of
+      // the base is E211; whether the removals empty a SelectDefinition
+      // that a required SelectRef references (E212) is checked against
+      // the composed schema, where the referencing members are known.
+      layer.excludes.each: keyword =>
+        val idx = variants.indexWhere(_.keyword == keyword)
+        if idx < 0 then abort(Tel.Error(Reason.ExcludeMissingVariant))
+        variants.remove(idx)
+
       val mergedValidators = Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
 
       SelectDefinition(base.name, Array.from(variants), mergedValidators,
@@ -582,9 +600,26 @@ object Tels extends Tels2:
   // tighten its polarity (§20.3).
   object Validation:
 
-    // Compose `schema`'s layers, then check the composed schema; returns
-    // the composed schema for further use.
+    // Check the base-side constraints, compose `schema`'s layers, then
+    // check the composed schema; returns the composed schema for
+    // further use.
     def validate(schema: Tels): Tels raises Tel.Error =
+      // E207: the schema sigil must be sigil-valid per §6. (An invalid
+      // *pragma* sigil is E105 at parse time; this covers the schema
+      // model itself, however it was constructed.)
+      schema.sigil.let: sigil =>
+        if !sigilValid(sigil) then abort(Tel.Error(Reason.BadSchemaSigil))
+
+      // Base-side select constraints, checked before composition: a
+      // *declared* SelectDefinition must have at least one variant
+      // (E202) and no excludes (E216 — exclude is layer-only). Neither
+      // applies to the composed result: a layer's excludes may
+      // legitimately empty a select (E212 below covers the required
+      // case), and composition consumes them.
+      schema.selects.each: select =>
+        if select.variants.nil then abort(Tel.Error(Reason.EmptySelectVariants))
+        if !select.excludes.nil then abort(Tel.Error(Reason.ExcludeOutsideSelect))
+
       val composed = Layers.compose(schema)
       checkStruct(composed.document, composed)
 
@@ -592,10 +627,8 @@ object Tels extends Tels2:
         checkStruct(Struct(record.members, record.validators), composed)
 
       composed.selects.each: select =>
-        // E202: a SelectDefinition must have at least one variant. E201
-        // also covers duplicates within one SelectDefinition's variants,
-        // and E208 reserves `tel` among variant keywords.
-        if select.variants.nil then abort(Tel.Error(Reason.EmptySelectVariants))
+        // E201 also covers duplicates within one SelectDefinition's
+        // variants, and E208 reserves `tel` among variant keywords.
         val seen = scala.collection.mutable.HashSet.empty[Text]
 
         select.variants.each: variant =>
@@ -603,6 +636,14 @@ object Tels extends Tels2:
           if !seen.add(variant.keyword) then abort(Tel.Error(Reason.DuplicateKeywordInStruct))
 
       composed
+
+    // §6 sigil validity: a single character that is not whitespace, not
+    // a letter or digit, and not a parenthetical symbol. Mirrors the
+    // built-in `sigil` validator.
+    private def sigilValid(sigil: Char): Boolean =
+      !(sigil == ' ' || sigil == '\n' || sigil == '\r' || sigil == '\t')
+        && !sigil.isLetterOrDigit
+        && "()[]{}<>".indexOf(sigil.toInt) < 0
 
     // The Scalar a type resolves to through the composed namespace and
     // the built-ins (§20.5), or Unset for any non-Scalar resolution.
@@ -657,8 +698,19 @@ object Tels extends Tels2:
 
         case select: SelectRef =>
           schema.selects.readable.find(_.name == select.reference) match
-            case scala.Some(definition) => definition.variants.each { variant => claim(variant.keyword) }
-            case scala.None             => ()
+            case scala.Some(definition) =>
+              definition.variants.each { variant => claim(variant.keyword) }
+
+              // E212: a layer's excludes must not empty a
+              // SelectDefinition that an effectively required SelectRef
+              // references — the member could then never be filled.
+              // Checked against the composed schema, where both the
+              // post-exclusion variant lists and the referencing members
+              // are known.
+              if definition.variants.nil && select.required != Polarity.Loose
+              then abort(Tel.Error(Reason.ExcludeEmptiesRequired))
+
+            case scala.None => ()
 
         case _ => ()
 
@@ -720,7 +772,8 @@ object Tels extends Tels2:
         seqEq(a.variants, b.variants, (x, y) => x.keyword == y.keyword &&
           typeEq(x.variantType, y.variantType) && x.description == y.description) &&
         seqEq(a.validators, b.validators, textEq) &&
-        a.description == b.description
+        a.description == b.description &&
+        seqEq(a.excludes, b.excludes, textEq)
 
     private def layerEq(a: Layer, b: Layer): Boolean =
       a.name == b.name && structEq(a.overlay, b.overlay) &&
@@ -839,11 +892,12 @@ object Tels extends Tels2:
       val children   = childCompounds(c)
       val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
+      val excludes   = scala.collection.mutable.ArrayBuffer.empty[Text]
 
       children.each: cc =>
         cc.keyword.s match
           case "validate"    => validators ++= atomTexts(cc).readable
-          case "exclude"     => ()
+          case "exclude"     => scalarAtomText(cc).let { keyword => excludes += keyword }
           case "description" => ()
 
           case "variant" =>
@@ -855,7 +909,8 @@ object Tels extends Tels2:
             abort(Tel.Error(Reason.UnknownKeyword))
 
       SelectDefinition
-        ( seName, Array.from(variants), Array.from(validators), descriptionOf(children) )
+        ( seName, Array.from(variants), Array.from(validators), descriptionOf(children),
+          Array.from(excludes) )
 
     private def parseBody(c: Tel.Compound): Optional[Struct] raises Tel.Error =
       val (members, validators) = parseMembersAndValidators(childCompounds(c))
@@ -1122,6 +1177,7 @@ object Tels extends Tels2:
       val ch = childrenOf(element)
       val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
+      val excludes   = scala.collection.mutable.ArrayBuffer.empty[Text]
       var i = 0
 
       while i < ch.length do
@@ -1129,6 +1185,10 @@ object Tels extends Tels2:
 
         kidx(e) match
           case 1 => variants += variantFromElement(e)
+
+          case 2 => e match
+            case Tel.Element.Value(_, _, t) => excludes += t
+            case _                          => ()
 
           case 3 => e match
             case Tel.Element.Value(_, _, t) => validators += t
@@ -1139,7 +1199,7 @@ object Tels extends Tels2:
         i += 1
 
       SelectDefinition(textAt(ch, 0).or(t""), Array.from(variants), Array.from(validators),
-          textAt(ch, 4))
+          textAt(ch, 4), Array.from(excludes))
 
     // Body meta: Member{field=0, select=1, validate=2}.
     private def bodyFromElement(element: Tel.Element): Struct =
