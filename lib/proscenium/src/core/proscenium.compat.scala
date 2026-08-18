@@ -243,6 +243,9 @@ extension [element](list: List[element])
   inline def minBy[key](lambda: element => key)(using math.Ordering[key]): element =
     list.stdlib.minBy(lambda)
 
+  inline def sortBy[key](lambda: element => key)(using math.Ordering[key]): List[element] =
+    List.of(list.stdlib.sortBy(lambda))
+
   inline def max(using math.Ordering[element]): element = list.stdlib.max
   inline def min(using math.Ordering[element]): element = list.stdlib.min
   inline def sum(using numeric: scala.math.Numeric[element]): element = list.stdlib.sum

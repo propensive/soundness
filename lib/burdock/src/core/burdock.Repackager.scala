@@ -260,7 +260,7 @@ object Repackager:
         val entries: List[Zip.Entry] =
           List.of((bootstrap :: keptEntries.stdlib ++ inlined.stdlib).distinctBy(_.ref.show))
 
-        Zipfile.write(outputJar)(manifestEntry :: entries)
+        Zipfile.write(outputJar)((manifestEntry :: entries).stdlib)
 
         // The output also carries the manifest entry, hence `entries.length + 1`.
         Summary

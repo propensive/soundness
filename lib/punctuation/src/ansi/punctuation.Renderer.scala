@@ -240,7 +240,7 @@ object Renderer:
             (mk + Space + head) :: tail.map(indent(_, hang))
 
       if tight then rendered.flat
-      else interleaveBlanks(rendered.map(List.of(_)))
+      else interleaveBlanks(rendered)
 
 
   // -- helpers --------------------------------------------------------------

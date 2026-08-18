@@ -83,7 +83,7 @@ object Hostname:
         builder.clear()
 
         if index < text.limit then recur(index + 1, dnsLabels2) else
-          if dnsLabels2.map(_.text.length + 1).sum > 254
+          if dnsLabels2.map(_.text.length + 1).total > 254
           then raise(Hostname.Error(text, LongHostname))
 
           Hostname(dnsLabels2.reverse*)
