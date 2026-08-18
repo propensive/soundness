@@ -17,7 +17,7 @@ cacophony 1
 caduceus 1
 caesura 5
 capricious 2
-cataclysm 5
+cataclysm 1
 charisma 2
 chiaroscuro 3
 coaxial 3
@@ -85,7 +85,7 @@ savagery 2
 scintillate 4
 sedentary 3
 serpentine 1
-spectacular 2
+spectacular 1
 stenography 1
 stratiform 21
 superlunary 2

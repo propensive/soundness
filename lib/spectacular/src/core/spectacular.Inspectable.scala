@@ -43,7 +43,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import denominative.*
 import prepositional.*
-import proscenium.compat.{mkString, head, tail, isEmpty, nonEmpty, length}
+import proscenium.compat.{head, tail}
 import rudiments.*
 import vacuous.*
 import wisteria.*
@@ -56,8 +56,8 @@ object Inspectable extends Inspectable2:
           val text = contextual.text(field)
           if tuple then text else s"$label:$text"
 
-        if rendered.isEmpty && !tuple then typeName
-        else rendered.mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+        if rendered.readable.isEmpty && !tuple then typeName
+        else rendered.readable.mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
     inline def disjunction[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):
@@ -134,7 +134,7 @@ object Inspectable extends Inspectable2:
       entries.remap: (key, value) =>
         inspKey().text(key).s+" → "+inspValue().text(value).s
 
-      . mkString("{", ", ", "}").tt
+      . stdlib.mkString("{", ", ", "}").tt
 
 
   given sequence: [element] => (inspectable: => element is Inspectable)
@@ -152,7 +152,7 @@ object Inspectable extends Inspectable2:
   =>  List[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
-    _.map(insp().text(_)).mkString("[", ", ", "]").tt
+    _.map(insp().text(_)).stdlib.mkString("[", ", ", "]").tt
 
   given array: [element] => (inspectable: => element is Inspectable)
   =>  scala.Array[element] is Inspectable =
