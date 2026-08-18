@@ -108,41 +108,54 @@ object Serializable:
           if padding then (full + (if rem > 0 then 1 else 0))*4
           else full*4 + (if rem == 1 then 2 else if rem == 2 then 3 else 0)
 
-        // The one raw gate of this kernel: the alphabet table is indexed by *value* (each
-        // index is a masked 6-bit group), which branding cannot express.
+        // Two raw gates in this kernel. The alphabet table is indexed by *value* (each
+        // index is a masked 6-bit group), which branding cannot express; and the loop
+        // reads and writes both arrays at computed indices, because `length` above is
+        // the output size *exactly*, so every store is in range by construction. The
+        // safe `Scribe.append` costs a buffer re-derivation, a bounds test and a cursor
+        // field write-back for each of the four output bytes per input triple, and
+        // `triples` reaches its elements through `Applicable.access`; together they were
+        // the whole of this kernel's gap to `java.util.Base64`'s scalar path.
         val table = Array.unsafeJvm(lookup)
+        val in = Array.unsafeJvm(src)
+        val out = new scala.Array[Byte](length)
+        // `n - 2` rather than the equivalent `full*3`: both bound the loop to whole
+        // triples, but this form lets the JIT prove `i + 2` is in range from the loop
+        // condition alone, folding away two of the three load bounds-checks. The three
+        // bytes are then assembled into one integer and sliced into four 6-bit groups,
+        // as `java.util.Base64` does, which keeps the dependency chain shorter than
+        // masking and recombining each pair.
+        val stop = n - 2
+        var i: Int = 0
+        var o: Int = 0
 
-        Array.scribe[Byte](length): scribe =>
-          _ =>
-            val remainder = src.triples: (byte0, byte1, byte2) =>
-              val b0 = byte0 & 0xff
-              val b1 = byte1 & 0xff
-              val b2 = byte2 & 0xff
-              scribe.append(table(b0 >>> 2))
-              scribe.append(table(((b0 & 0x3) << 4) | (b1 >>> 4)))
-              scribe.append(table(((b1 & 0xf) << 2) | (b2 >>> 6)))
-              scribe.append(table(b2 & 0x3f))
+        while i < stop do
+          val bits = ((in(i) & 0xff) << 16) | ((in(i + 1) & 0xff) << 8) | (in(i + 2) & 0xff)
+          out(o) = table((bits >>> 18) & 0x3f)
+          out(o + 1) = table((bits >>> 12) & 0x3f)
+          out(o + 2) = table((bits >>> 6) & 0x3f)
+          out(o + 3) = table(bits & 0x3f)
+          i += 3
+          o += 4
 
-            if rem == 1 then
-              src.iterate(remainder): index =>
-                val b0 = src.at(index) & 0xff
-                scribe.append(table(b0 >>> 2))
-                scribe.append(table((b0 & 0x3) << 4))
-            else if rem == 2 then
-              var b0 = 0
-              var first = true
+        if rem == 1 then
+          val b0 = in(i) & 0xff
+          out(o) = table(b0 >>> 2)
+          out(o + 1) = table((b0 & 0x3) << 4)
+          o += 2
+        else if rem == 2 then
+          val b0 = in(i) & 0xff
+          val b1 = in(i + 1) & 0xff
+          out(o) = table(b0 >>> 2)
+          out(o + 1) = table(((b0 & 0x3) << 4) | (b1 >>> 4))
+          out(o + 2) = table((b1 & 0xf) << 2)
+          o += 3
 
-              src.iterate(remainder): index =>
-                if first then
-                  b0 = src.at(index) & 0xff
-                  first = false
-                else
-                  val b1 = src.at(index) & 0xff
-                  scribe.append(table(b0 >>> 2))
-                  scribe.append(table(((b0 & 0x3) << 4) | (b1 >>> 4)))
-                  scribe.append(table((b1 & 0xf) << 2))
+        while o < length do
+          out(o) = padByte
+          o += 1
 
-            while scribe.mark < length do scribe.append(padByte)
+        out.asInstanceOf[Array[Byte]^{}]
 
       // Base32: five input bytes become eight characters; trailing groups of
       // 1/2/3/4 bytes emit 2/4/5/7 characters, padded to a multiple of eight.
