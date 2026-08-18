@@ -36,6 +36,7 @@ import scala.collection.immutable.IndexedSeq
 
 import scala.reflect.ClassTag
 
+import anticipation.*
 import prepositional.*
 
 // The rebuild relation behind the transforming operations (`map`, `filter`, `flatMap`, …): from a
@@ -61,6 +62,12 @@ object Reshapable extends Reshapable.Fallback:
 
   given set: [element, element2] => Set[element] is Reshapable by element2 to Set[element2] =
     Set.from(_)
+
+  // `Text` rebuilds from its own characters, so the generic operations (`keep`, `skip`, `filter`,
+  // …) serve text as well as collections, with no competing text-only extension at the umbrella.
+  // Rebuilding from anything else is deliberately absent: it would have no natural result shape.
+  given text: [text <: Text] => text is Reshapable.Stable by Char to Text =
+    chars => Text(String(chars.toArray))
 
   given sequence: [element, element2]
   =>  Sequence[element] is Reshapable.Stable by element2 to Sequence[element2] =
