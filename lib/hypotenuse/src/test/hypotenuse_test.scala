@@ -653,62 +653,111 @@ object Tests extends Suite(m"Hypotenuse tests"):
 
       . assert(_.forall(identity))
 
-    suite(m"R64 tests"):
+    suite(m"Q64 tests"):
       import strategies.throwUnsafely
 
       def gcd(a: Long, b: Long): Long = if b == 0L then a else gcd(b, a%b)
 
       test(m"one half renders as 1/2"):
-        R64(1, 2).text
+        Q64(1, 2).text
       . assert(_ == t"1/2")
 
       test(m"whole values render without a denominator"):
-        R64(7, 1).text
+        Q64(7, 1).text
       . assert(_ == t"7")
 
       test(m"negative values render with a leading minus"):
-        R64(-5, 3).text
+        Q64(-5, 3).text
       . assert(_ == t"-5/3")
 
       test(m"zero renders as 0"):
-        R64(0).text
+        Q64(0).text
       . assert(_ == t"0")
 
       test(m"encoding is canonical, so equal values are bit-equal"):
-        R64(6, 4)
-      . assert(_ == R64(3, 2))
+        Q64(6, 4)
+      . assert(_ == Q64(3, 2))
 
       test(m"a negative denominator moves the sign"):
-        R64(5, -3)
-      . assert(_ == R64(-5, 3))
+        Q64(5, -3)
+      . assert(_ == Q64(-5, 3))
+
+      test(m"the backslash operator constructs a fraction"):
+        1 \ 3
+      . assert(_ == Q64(1, 3))
+
+      test(m"backslash binds tighter than addition"):
+        1 \ 3 + 1 \ 6
+      . assert(_ == Q64(1, 2))
+
+      test(m"backslash binds tighter than multiplication"):
+        2 \ 3*3 \ 4
+      . assert(_ == Q64(1, 2))
+
+      test(m"backslash carries a negative numerator"):
+        -5 \ 3
+      . assert(_ == Q64(-5, 3))
+
+      test(m"backslash with a zero denominator is NaR"):
+        (1 \ 0).nar
+      . assert(identity)
+
+      test(m"backslash works on `Long`s"):
+        3L \ 4L
+      . assert(_ == Q64(3, 4))
+
+      test(m"a rational scales by an `Int`"):
+        1 \ 3*3
+      . assert(_ == Q64(1))
+
+      test(m"a rational scales by a `Long`"):
+        1 \ 3*3L
+      . assert(_ == Q64(1))
+
+      test(m"a rational divides by an `Int`"):
+        2 \ 3/2
+      . assert(_ == Q64(1, 3))
+
+      test(m"a rational divides by a `Long`"):
+        2 \ 3/2L
+      . assert(_ == Q64(1, 3))
+
+      test(m"dividing a rational by zero is NaR"):
+        (2 \ 3/0).nar
+      . assert(identity)
+
+      test(m"a rational destructures into numerator and denominator"):
+        Q64(3, 4) match
+          case numerator /: denominator => (numerator, denominator)
+      . assert(_ == (3L, 4L))
 
       test(m"division by zero is NaR"):
-        R64(1, 0).nar
+        Q64(1, 0).nar
       . assert(identity)
 
       test(m"355/113 round-trips through its encoding"):
-        (R64(355, 113).numerator, R64(355, 113).denominator)
+        (Q64(355, 113).numerator, Q64(355, 113).denominator)
       . assert(_ == (355L, 113L))
 
       test(m"the largest integer is 2³¹−2"):
-        R64(2147483646L).numerator
+        Q64(2147483646L).numerator
       . assert(_ == 2147483646L)
 
       test(m"the smallest positive fraction is 1/(2³¹−1)"):
-        R64(1, 2147483647L).denominator
+        Q64(1, 2147483647L).denominator
       . assert(_ == 2147483647L)
 
       test(m"Long.MaxValue saturates to the largest integer"):
-        R64(Long.MaxValue)
-      . assert(_ == R64(2147483646L))
+        Q64(Long.MaxValue)
+      . assert(_ == Q64(2147483646L))
 
       test(m"integer literals convert"):
-        val value: R64 = 42
+        val value: Q64 = 42
         value
-      . assert(_ == R64(42))
+      . assert(_ == Q64(42))
 
       test(m"decimal literals convert exactly"):
-        val value: R64 = 3.14
+        val value: Q64 = 3.14
         (value.numerator, value.denominator)
       . assert(_ == (157L, 50L))
 
@@ -720,120 +769,120 @@ object Tests extends Suite(m"Hypotenuse tests"):
           val b = random.nextLong(2048L) + 1L
           val c = random.nextLong(4097L) - 2048L
           val d = random.nextLong(2048L) + 1L
-          val left = R64(a, b)
-          val right = R64(c, d)
+          val left = Q64(a, b)
+          val right = Q64(c, d)
 
-          val sums = left + right == R64(a*d + c*b, b*d)
-          val differences = left - right == R64(a*d - c*b, b*d)
-          val products = left*right == R64(a*c, b*d)
-          val quotients = c == 0L || left/right == R64(a*d, b*c)
+          val sums = left + right == Q64(a*d + c*b, b*d)
+          val differences = left - right == Q64(a*d - c*b, b*d)
+          val products = left*right == Q64(a*c, b*d)
+          val quotients = c == 0L || left/right == Q64(a*d, b*c)
 
           val comparisons =
-            R64.comparison(left, right).sign == java.lang.Long.compare(a*d, c*b).sign
+            Q64.comparison(left, right).sign == java.lang.Long.compare(a*d, c*b).sign
 
           sums && differences && products && quotients && comparisons
 
       . assert(_.forall(identity))
 
       test(m"an unrepresentable result rounds to a semiconvergent"):
-        R64(2000000011L, 2000000010L)
-      . assert(_ == R64(1073741824L, 1073741823L))
+        Q64(2000000011L, 2000000010L)
+      . assert(_ == Q64(1073741824L, 1073741823L))
 
       test(m"NaR propagates through addition"):
-        (R64.Nar + R64(1)).nar
+        (Q64.Nar + Q64(1)).nar
       . assert(identity)
 
       test(m"NaR propagates through multiplication"):
-        (R64.Nar*R64(2)).nar
+        (Q64.Nar*Q64(2)).nar
       . assert(identity)
 
       test(m"NaR comparisons are all false"):
-        !(R64.Nar < R64(1)) && !(R64.Nar > R64(1)) && !(R64.Nar <= R64(1))
-          && !(R64.Nar >= R64(1))
+        !(Q64.Nar < Q64(1)) && !(Q64.Nar > Q64(1)) && !(Q64.Nar <= Q64(1))
+          && !(Q64.Nar >= Q64(1))
       . assert(identity)
 
       test(m"square roots of perfect squares are exact"):
-        R64(9).sqrt
-      . assert(_ == R64(3))
+        Q64(9).sqrt
+      . assert(_ == Q64(3))
 
       test(m"square roots of square fractions are exact"):
-        R64(9, 4).sqrt
-      . assert(_ == R64(3, 2))
+        Q64(9, 4).sqrt
+      . assert(_ == Q64(3, 2))
 
       test(m"the square root of two approximates √2 to full depth"):
-        val root = R64(2).sqrt
+        val root = Q64(2).sqrt
         (math.abs(root.double - math.sqrt(2.0)) < 1e-13, root.denominator > 1000000L)
       . assert(_ == (true, true))
 
       test(m"the square root of a negative value is NaR"):
-        R64(-1).sqrt.nar
+        Q64(-1).sqrt.nar
       . assert(identity)
 
       test(m"mean of rationals is exact"):
-        List(R64(1, 2), R64(1, 3), R64(1, 6)).mean
-      . assert(_.lay(false)(_ == R64(1, 3)))
+        List(Q64(1, 2), Q64(1, 3), Q64(1, 6)).mean
+      . assert(_.lay(false)(_ == Q64(1, 3)))
 
       test(m"median of rationals"):
-        List(R64(1, 2), R64(1, 3), R64(1, 6)).median
-      . assert(_.lay(false)(_ == R64(1, 3)))
+        List(Q64(1, 2), Q64(1, 3), Q64(1, 6)).median
+      . assert(_.lay(false)(_ == Q64(1, 3)))
 
       test(m"variance of rationals is exact"):
-        List(R64(1), R64(2), R64(3)).variance
-      . assert(_.lay(false)(_ == R64(2, 3)))
+        List(Q64(1), Q64(2), Q64(3)).variance
+      . assert(_.lay(false)(_ == Q64(2, 3)))
 
       test(m"std resolves with the rationalDivision import"):
-        import arithmeticOptions.rationalDivision.r64
-        List(R64(1), R64(2), R64(3)).std
+        import arithmeticOptions.rationalDivision.q64
+        List(Q64(1), Q64(2), Q64(3)).std
       . assert(_.lay(false) { value => math.abs(value.double - math.sqrt(2.0/3.0)) < 1e-12 })
 
       test(m"rationals destructure into numerator and denominator"):
-        R64(3, 4) match
+        Q64(3, 4) match
           case n /: d => (n, d)
           case _      => (0L, 0L)
       . assert(_ == (3L, 4L))
 
       test(m"floor of a negative fraction"):
-        R64(-3, 2).floor
-      . assert(_ == R64(-2))
+        Q64(-3, 2).floor
+      . assert(_ == Q64(-2))
 
       test(m"ceiling of a fraction"):
-        R64(3, 2).ceiling
-      . assert(_ == R64(2))
+        Q64(3, 2).ceiling
+      . assert(_ == Q64(2))
 
       test(m"rounding is half-up"):
-        (R64(5, 2).round, R64(-5, 2).round)
+        (Q64(5, 2).round, Q64(-5, 2).round)
       . assert(_ == (3L, -2L))
 
       test(m"reciprocal of zero is NaR"):
-        R64.Zero.reciprocal.nar
+        Q64.Zero.reciprocal.nar
       . assert(identity)
 
       test(m"reciprocal swaps numerator and denominator"):
-        R64(-3, 4).reciprocal
-      . assert(_ == R64(-4, 3))
+        Q64(-3, 4).reciprocal
+      . assert(_ == Q64(-4, 3))
 
       test(m"double conversion is exact for representables"):
-        R64(1, 2).double
+        Q64(1, 2).double
       . assert(_ == 0.5)
 
       test(m"doubles convert to exact rationals when possible"):
-        R64(0.375)
-      . assert(_ == R64(3, 8))
+        Q64(0.375)
+      . assert(_ == Q64(3, 8))
 
       test(m"parse reads fraction notation"):
-        R64.parse(t"-5/3")
-      . assert(_ == R64(-5, 3))
+        Q64.parse(t"-5/3")
+      . assert(_ == Q64(-5, 3))
 
       test(m"parse reads NaR"):
-        R64.parse(t"NaR").nar
+        Q64.parse(t"NaR").nar
       . assert(identity)
 
       test(m"text round-trips through parse"):
         val random = scala.util.Random(87654321L)
 
         (0 until 200).map: _ =>
-          val value = R64(random.nextLong(4097L) - 2048L, random.nextLong(2048L) + 1L)
-          R64.parse(value.text) == value
+          val value = Q64(random.nextLong(4097L) - 2048L, random.nextLong(2048L) + 1L)
+          Q64.parse(value.text) == value
 
       . assert(_.forall(identity))
 
@@ -844,31 +893,52 @@ object Tests extends Suite(m"Hypotenuse tests"):
           val a = random.nextLong(4096L) + 1L
           val b = random.nextLong(4096L) + 1L
           val divisor = gcd(a, b)
-          val value = R64(a, b)
+          val value = Q64(a, b)
           value.numerator == a/divisor && value.denominator == b/divisor
 
       . assert(_.forall(identity))
 
-    suite(m"R32 tests"):
+    suite(m"Q32 tests"):
 
       test(m"encoding is canonical, so equal values are bit-equal"):
-        R32(6, 4)
-      . assert(_ == R32(3, 2))
+        Q32(6, 4)
+      . assert(_ == Q32(3, 2))
+
+      test(m"a rational scales by an `Int`"):
+        Q32(1, 3)*3
+      . assert(_ == Q32(1))
+
+      test(m"a rational scales by a `Long`"):
+        Q32(1, 3)*3L
+      . assert(_ == Q32(1))
+
+      test(m"a rational divides by an `Int`"):
+        Q32(2, 3)/2
+      . assert(_ == Q32(1, 3))
+
+      test(m"a rational divides by a `Long`"):
+        Q32(2, 3)/2L
+      . assert(_ == Q32(1, 3))
+
+      test(m"a rational destructures into numerator and denominator"):
+        Q32(3, 4) match
+          case numerator /: denominator => (numerator, denominator)
+      . assert(_ == (3L, 4L))
 
       test(m"division by zero is NaR"):
-        R32(1, 0).nar
+        Q32(1, 0).nar
       . assert(identity)
 
       test(m"the largest integer is 2¹⁵−2"):
-        R32(32766).numerator
+        Q32(32766).numerator
       . assert(_ == 32766L)
 
       test(m"32767 saturates to the largest integer"):
-        R32(32767)
-      . assert(_ == R32(32766))
+        Q32(32767)
+      . assert(_ == Q32(32766))
 
       test(m"the smallest positive fraction is 1/(2¹⁵−1)"):
-        R32(1, 32767).denominator
+        Q32(1, 32767).denominator
       . assert(_ == 32767L)
 
       test(m"differential arithmetic against exact fractions"):
@@ -879,41 +949,41 @@ object Tests extends Suite(m"Hypotenuse tests"):
           val b = random.nextLong(32L) + 1L
           val c = random.nextLong(65L) - 32L
           val d = random.nextLong(32L) + 1L
-          val left = R32(a, b)
-          val right = R32(c, d)
+          val left = Q32(a, b)
+          val right = Q32(c, d)
 
-          val sums = left + right == R32(a*d + c*b, b*d)
-          val differences = left - right == R32(a*d - c*b, b*d)
-          val products = left*right == R32(a*c, b*d)
-          val quotients = c == 0L || left/right == R32(a*d, b*c)
+          val sums = left + right == Q32(a*d + c*b, b*d)
+          val differences = left - right == Q32(a*d - c*b, b*d)
+          val products = left*right == Q32(a*c, b*d)
+          val quotients = c == 0L || left/right == Q32(a*d, b*c)
 
           val comparisons =
-            R32.comparison(left, right).sign == java.lang.Long.compare(a*d, c*b).sign
+            Q32.comparison(left, right).sign == java.lang.Long.compare(a*d, c*b).sign
 
           sums && differences && products && quotients && comparisons
 
       . assert(_.forall(identity))
 
       test(m"square roots of square fractions are exact"):
-        R32(9, 4).sqrt
-      . assert(_ == R32(3, 2))
+        Q32(9, 4).sqrt
+      . assert(_ == Q32(3, 2))
 
       test(m"mean of rationals is exact"):
-        List(R32(1, 2), R32(1, 3), R32(1, 6)).mean
-      . assert(_.lay(false)(_ == R32(1, 3)))
+        List(Q32(1, 2), Q32(1, 3), Q32(1, 6)).mean
+      . assert(_.lay(false)(_ == Q32(1, 3)))
 
-      test(m"widening to R64 is exact"):
-        R32(3, 4).r64
-      . assert(_ == R64(3, 4))
+      test(m"widening to Q64 is exact"):
+        Q32(3, 4).q64
+      . assert(_ == Q64(3, 4))
 
       test(m"narrowing a representable value is exact"):
-        R64(3, 4).r32
-      . assert(_ == R32(3, 4))
+        Q64(3, 4).q32
+      . assert(_ == Q32(3, 4))
 
       test(m"narrowing saturates large integers"):
-        R64(2147483645L).r32
-      . assert(_ == R32(32766))
+        Q64(2147483645L).q32
+      . assert(_ == Q32(32766))
 
       test(m"NaR survives narrowing and widening"):
-        (R64.Nar.r32.nar, R32.Nar.r64.nar)
+        (Q64.Nar.q32.nar, Q32.Nar.q64.nar)
       . assert(_ == (true, true))

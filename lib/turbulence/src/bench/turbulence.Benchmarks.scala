@@ -945,6 +945,52 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
+      // The same hand-off with the consumer on a virtual thread too, so both
+      // endpoints suspend fiber-style on the carrier pool. The row above runs its
+      // consumer on the harness's own platform worker, making it the mixed pair
+      // `Conduit`'s header warns about — one side's kernel parks dominate.
+      bench(m"Soundness  Conduit VT both")(target = 1*Second, operationSize = size):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            val consumer = Thread.ofVirtual.start(() =>
+              stream.sweep(region => range => total += (range: Interval).size))
+            consumer.join()
+            producer.join()
+            total
+        }
+
+      // Both endpoints virtual, and a ring deep enough to hold the whole 64-chunk
+      // corpus so the producer never parks at all. `Buffering`'s own note records
+      // that hand-off throughput keeps improving well past the default depth of
+      // 16, and that a queue covering a whole burst more than doubled it — this
+      // row is what that advice is worth here, and it is the closest structural
+      // match to the Kyo row's `putBatch`/`takeExactly` pair.
+      bench(m"Soundness  Conduit VT depth 64")(target = 1*Second, operationSize = size):
+        '{
+            given deepBuffering: Buffering:
+              def capacity(substrate: Substrate): Int = substrate match
+                case Substrate.Bytes  => 4096
+                case Substrate.Chars  => 2048
+                case Substrate.Boxes  => 256
+
+              def depth: Int = 64
+
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            val consumer = Thread.ofVirtual.start(() =>
+              stream.sweep(region => range => total += (range: Interval).size))
+            consumer.join()
+            producer.join()
+            total
+        }
+
       bench(m"JDK  ArrayBlockingQueue")(target = 1*Second, operationSize = size):
         '{
             val queue = new java.util.concurrent.ArrayBlockingQueue[AnyRef](8)
@@ -1377,6 +1423,27 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               intake.finish())
             var total = 0L
             stream.sweep(region => range => total += (range: Interval).size)
+            producer.join()
+            total
+        }
+
+      // The same pipeline with both endpoints on virtual threads: every hand-off
+      // park is a fiber-style suspension on the carrier pool rather than a kernel
+      // park, so sixteen pipelines no longer oversubscribe the OS scheduler. The
+      // row above and the fiber runtimes below are within a few percent of each
+      // other at this concurrency; this one runs about 2.7x faster than any of
+      // them, which is the whole finding — the suite was missing a row for the
+      // configuration `Conduit` documents as the one to use under load.
+      stress(m"Soundness  Conduit VT both")(target = 2*Second, concurrency = 16):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            val consumer = Thread.ofVirtual.start(() =>
+              stream.sweep(region => range => total += (range: Interval).size))
+            consumer.join()
             producer.join()
             total
         }

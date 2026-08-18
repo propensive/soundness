@@ -48,7 +48,7 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-// Exact rational numbers in a single machine word: `R64` over `Long` and `R32` over `Int`.
+// Exact rational numbers in a single machine word: `Q64` over `Long` and `Q32` over `Int`.
 //
 // The magnitude is a position in the Stern–Brocot tree, stored as the value's canonical
 // continued fraction [a₀; a₁, …, aₖ] (with aₖ ≥ 2): a sentinel 1 bit, then the Elias-gamma
@@ -58,11 +58,11 @@ import vacuous.*
 // through arithmetic and compares as unordered, like `Double.NaN`.
 //
 // Gamma-coding the terms (rather than storing the tree path's steps unary) makes the cost
-// of a term logarithmic in its size: with the 62 payload bits of `R64`, integers reach
+// of a term logarithmic in its size: with the 62 payload bits of `Q64`, integers reach
 // 2³¹−2 and unit fractions 1/(2³¹−1), while the deepest all-ones chains bound every decoded
-// numerator and denominator below 2⁴⁴. `R32`'s 30 payload bits reach ±32766 and 1/32767,
+// numerator and denominator below 2⁴⁴. `Q32`'s 30 payload bits reach ±32766 and 1/32767,
 // with numerators and denominators below 2²¹. Every rational whose numerator and
-// denominator are at most 2²⁴ (R64) or 2¹¹ (R32) is exactly representable.
+// denominator are at most 2²⁴ (Q64) or 2¹¹ (Q32) is exactly representable.
 //
 // Every value is canonical: each rational has exactly one encoding, already in lowest
 // terms, so bit-equality is value-equality and no gcd normalization exists anywhere. When
@@ -75,19 +75,19 @@ import vacuous.*
 // The opaque types and their operations are confined to `rationalInternal` — the pattern of
 // `internal`'s numeric types — so the representation stays hidden even from the rest of
 // this package, keeping companion-scope given resolution intact everywhere outside.
-export rationalInternal.{R32, R64}
+export rationalInternal.{Q32, Q64}
 
 object rationalInternal:
   // The `caps.Pure` bounds make purity visible outside the opaque scope, so collections of
   // rationals never box their elements with a fresh capture set (the `ultimatum.Fraction`
   // pattern).
-  opaque type R64 <: Matchable & caps.Pure = Long & caps.Pure
-  opaque type R32 <: Matchable & caps.Pure = Int & caps.Pure
+  opaque type Q64 <: Matchable & caps.Pure = Long & caps.Pure
+  opaque type Q32 <: Matchable & caps.Pure = Int & caps.Pure
 
   // `caps.Pure` is an erased marker, so each type still erases to its representation; the
   // casts are runtime no-ops that let the capture checker treat a rational as pure.
-  private inline def r64(value: Long): R64 = value.asInstanceOf[R64]
-  private inline def r32(value: Int): R32 = value.asInstanceOf[R32]
+  private inline def q64(value: Long): Q64 = value.asInstanceOf[Q64]
+  private inline def q32(value: Int): Q32 = value.asInstanceOf[Q32]
 
   // Any continued-fraction term of at least 2³¹ overflows every payload budget, so a term
   // this size acts as a saturating sentinel: emitting it ends term generation, and the
@@ -239,7 +239,7 @@ object rationalInternal:
       val terms = new scala.Array[Long](TermLimit)
       encodeMagnitude(terms, euclidean(numerator, denominator, terms, 0), budget)
 
-  // Wide intermediates — cross-products of decoded R64 fractions reach 2⁸⁸, and the square
+  // Wide intermediates — cross-products of decoded Q64 fractions reach 2⁸⁸, and the square
   // comparisons in `sqrtMagnitude` 2¹³¹ — are fixed six-limb little-endian arrays in base
   // 2³¹, so every limb product fits comfortably in a `Long` on any platform.
   private val Limbs: Int = 6
@@ -559,7 +559,7 @@ object rationalInternal:
     val terms = new scala.Array[Long](TermLimit)
     continuants(terms, decodeTerms(magnitude, terms))
 
-  // Signed addition of two decoded fractions over wide intermediates, for R64.
+  // Signed addition of two decoded fractions over wide intermediates, for Q64.
   private def addWide
     ( leftNegative:  Boolean, leftNumerator: Long, leftDenominator: Long,
       rightNegative: Boolean, rightNumerator: Long, rightDenominator: Long,
@@ -590,7 +590,7 @@ object rationalInternal:
           ( rightNegative,
             encodeMagnitude(terms, euclideanWide(cross2, wideDenominator, terms), budget) )
 
-  // Multiplication or division of two decoded fractions over wide intermediates, for R64.
+  // Multiplication or division of two decoded fractions over wide intermediates, for Q64.
   private def multiplyWide(numerator: Long, factor: Long, denominator: Long, divisor: Long,
                            budget: Int): Long =
     val wideNumerator = new scala.Array[Long](Limbs)
@@ -699,72 +699,72 @@ object rationalInternal:
 
     builder.toString.tt
 
-  private def widen32(word: Int): R64 =
-    if word == Int.MinValue then r64(Long.MinValue)
-    else if word == 0 then r64(0L)
+  private def widen32(word: Int): Q64 =
+    if word == Int.MinValue then q64(Long.MinValue)
+    else if word == 0 then q64(0L)
     else
       val (numerator, denominator) = fractionOf((word & Int.MaxValue).toLong)
       val magnitude = encodeFraction(numerator, denominator, Budget64)
-      r64(if word < 0 then magnitude | Long.MinValue else magnitude)
+      q64(if word < 0 then magnitude | Long.MinValue else magnitude)
 
-  private def narrow64(word: Long): R32 =
-    if word == Long.MinValue then r32(Int.MinValue)
-    else if word == 0L then r32(0)
+  private def narrow64(word: Long): Q32 =
+    if word == Long.MinValue then q32(Int.MinValue)
+    else if word == 0L then q32(0)
     else
       val (numerator, denominator) = fractionOf(word & Long.MaxValue)
       val magnitude = encodeFraction(numerator, denominator, Budget32)
-      if magnitude == 0L then r32(0)
-      else r32(magnitude.toInt | (if word < 0L then Int.MinValue else 0))
+      if magnitude == 0L then q32(0)
+      else q32(magnitude.toInt | (if word < 0L then Int.MinValue else 0))
 
-  object R64:
-    final val Zero: R64 = r64(0L)
-    final val One: R64 = r64(encodeFraction(1L, 1L, Budget64))
-    final val Nar: R64 = r64(Long.MinValue)
-    final val Max: R64 = r64(encodeFraction(0x7ffffffeL, 1L, Budget64))
-    final val Min: R64 = r64(Max | Long.MinValue)
+  object Q64:
+    final val Zero: Q64 = q64(0L)
+    final val One: Q64 = q64(encodeFraction(1L, 1L, Budget64))
+    final val Nar: Q64 = q64(Long.MinValue)
+    final val Max: Q64 = q64(encodeFraction(0x7ffffffeL, 1L, Budget64))
+    final val Min: Q64 = q64(Max | Long.MinValue)
 
-    inline given underlying: Underlying[R64, Long] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[R64, R64] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[Q64, Long] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[Q64, Q64] = caps.unsafe.unsafeErasedValue
 
-    // `R64` dealiases to `Long` here, so arrays of it — as `mosquito`'s `Matrix` builds —
+    // `Q64` dealiases to `Long` here, so arrays of it — as `mosquito`'s `Matrix` builds —
     // are primitive `long[]`s.
-    given classTag: ClassTag[R64] = summon[ClassTag[Long]].asInstanceOf[ClassTag[R64]]
+    given classTag: ClassTag[Q64] = summon[ClassTag[Long]].asInstanceOf[ClassTag[Q64]]
 
-    private def build(negative: Boolean, numerator: Long, denominator: Long): R64 =
-      if denominator == 0L then r64(Long.MinValue)
-      else if numerator == 0L then r64(0L)
+    private def build(negative: Boolean, numerator: Long, denominator: Long): Q64 =
+      if denominator == 0L then q64(Long.MinValue)
+      else if numerator == 0L then q64(0L)
       else
         val magnitude = encodeFraction(numerator, denominator, Budget64)
-        if magnitude == 0L then r64(0L)
-        else if negative then r64(magnitude | Long.MinValue)
-        else r64(magnitude)
+        if magnitude == 0L then q64(0L)
+        else if negative then q64(magnitude | Long.MinValue)
+        else q64(magnitude)
 
     private def clamped(value: Long): Long =
       if value == Long.MinValue then Long.MaxValue else math.abs(value)
 
-    def apply(value: Int): R64 = apply(value.toLong, 1L)
-    def apply(value: Long): R64 = apply(value, 1L)
+    def apply(value: Int): Q64 = apply(value.toLong, 1L)
+    def apply(value: Long): Q64 = apply(value, 1L)
 
-    def apply(numerator: Long, denominator: Long): R64 =
+    def apply(numerator: Long, denominator: Long): Q64 =
       build(numerator < 0L ^ denominator < 0L, clamped(numerator), clamped(denominator))
 
-    def apply(value: Double): R64 =
+    def apply(value: Double): Q64 =
       if !JDouble.isFinite(value) then Nar
       else if value == 0.0 then Zero
       else
         val magnitude = doubleMagnitude(math.abs(value), Budget64)
-        if magnitude == 0L then r64(0L)
-        else if value < 0.0 then r64(magnitude | Long.MinValue)
-        else r64(magnitude)
+        if magnitude == 0L then q64(0L)
+        else if value < 0.0 then q64(magnitude | Long.MinValue)
+        else q64(magnitude)
 
-    def parse(text: Text): R64 raises Rational.Error =
+    def parse(text: Text): Q64 raises Rational.Error =
       if text.s == "NaR" then Nar else parsedRational(text) match
         case value: (Boolean, Long, Long) => build(value(0), value(1), value(2))
         case _                            => abort(Rational.Error(text))
 
     // The signed three-way comparison behind `Orderable`, with NaR below everything; the
     // relational operators themselves treat NaR as unordered.
-    def comparison(left: R64, right: R64): Int =
+    def comparison(left: Q64, right: Q64): Int =
       if left == right then 0
       else if left == Long.MinValue then -1
       else if right == Long.MinValue then 1
@@ -782,9 +782,9 @@ object rationalInternal:
         val order = limbsCompare(cross, cross2)
         if left < 0L then -order else order
 
-    given orderable: R64 is Orderable:
+    given orderable: Q64 is Orderable:
       inline def compare
-          (inline left: R64, inline right: R64, inline strict: Boolean, inline greater: Boolean)
+          (inline left: Q64, inline right: Q64, inline strict: Boolean, inline greater: Boolean)
       :   Boolean =
         if left == Long.MinValue || right == Long.MinValue then false else
           val result = comparison(left, right)
@@ -792,20 +792,20 @@ object rationalInternal:
           if greater then (if strict then result > 0 else result >= 0)
           else (if strict then result < 0 else result <= 0)
 
-    // `val ratio: R64 = 0.35` under `genericNumberLiterals`: decimal literals convert
+    // `val ratio: Q64 = 0.35` under `genericNumberLiterals`: decimal literals convert
     // exactly — 0.35 is 7/20 — whenever the fraction fits the payload.
-    given fromDigits: FromDigits.Decimal[R64] = digits =>
+    given fromDigits: FromDigits.Decimal[Q64] = digits =>
       parsedRational(digits.tt) match
         case value: (Boolean, Long, Long) => build(value(0), value(1), value(2))
         case _                            => throw FromDigits.MalformedNumber(digits)
 
-    given textualizable: R64 is Textualizable = value => value.text
+    given textualizable: Q64 is Textualizable = value => value.text
 
-    private def negation(value: R64): R64 =
-      if value == 0L || value == Long.MinValue then value else r64(value ^ Long.MinValue)
+    private def negation(value: Q64): Q64 =
+      if value == 0L || value == Long.MinValue then value else q64(value ^ Long.MinValue)
 
-    private def sum(left: R64, right: R64): R64 =
-      if left == Long.MinValue || right == Long.MinValue then r64(Long.MinValue)
+    private def sum(left: Q64, right: Q64): Q64 =
+      if left == Long.MinValue || right == Long.MinValue then q64(Long.MinValue)
       else if left == 0L then right
       else if right == 0L then left
       else
@@ -817,14 +817,14 @@ object rationalInternal:
             right < 0L, rightNumerator, rightDenominator,
             Budget64 )
 
-        if magnitude == 0L then r64(0L)
-        else if negative then r64(magnitude | Long.MinValue)
-        else r64(magnitude)
+        if magnitude == 0L then q64(0L)
+        else if negative then q64(magnitude | Long.MinValue)
+        else q64(magnitude)
 
-    private def product(left: R64, right: R64, inverted: Boolean): R64 =
-      if left == Long.MinValue || right == Long.MinValue then r64(Long.MinValue)
-      else if inverted && right == 0L then r64(Long.MinValue)
-      else if left == 0L || right == 0L then r64(0L)
+    private def product(left: Q64, right: Q64, inverted: Boolean): Q64 =
+      if left == Long.MinValue || right == Long.MinValue then q64(Long.MinValue)
+      else if inverted && right == 0L then q64(Long.MinValue)
+      else if left == 0L || right == 0L then q64(0L)
       else
         val (leftNumerator, leftDenominator) = fractionOf(left & Long.MaxValue)
         val (rightNumerator, rightDenominator) = fractionOf(right & Long.MaxValue)
@@ -836,32 +836,32 @@ object rationalInternal:
           else multiplyWide(leftNumerator, rightNumerator, leftDenominator, rightDenominator,
                             Budget64)
 
-        if magnitude == 0L then r64(0L)
-        else if left < 0L ^ right < 0L then r64(magnitude | Long.MinValue)
-        else r64(magnitude)
+        if magnitude == 0L then q64(0L)
+        else if left < 0L ^ right < 0L then q64(magnitude | Long.MinValue)
+        else q64(magnitude)
 
     // Statistical operations skolemize the element type they work over, and `Self` is
     // invariant in a typeclass, so — as `abacist`'s `Quanta` does — the arithmetic givens
-    // take any subtype of R64 as `Self`, with `refine` casting the computed word back.
-    private def refine[self](value: R64): self = value.asInstanceOf[self]
+    // take any subtype of Q64 as `Self`, with `refine` casting the computed word back.
+    private def refine[self](value: Q64): self = value.asInstanceOf[self]
 
     // The standard arithmetic operators come from symbolism, so `+`, `-`, `*`, `/`, prefix
-    // negation and `sqrt` resolve through the generic operators without any R64-specific
+    // negation and `sqrt` resolve through the generic operators without any Q64-specific
     // exports.
-    given addable: [self <: R64] => self is Addable:
+    given addable: [self <: Q64] => self is Addable:
       type Operand = self
       type Result = self
 
       def add(augend: self, addend: self): self = refine(sum(augend, addend))
 
-    given subtractable: [self <: R64] => self is Subtractable:
+    given subtractable: [self <: Q64] => self is Subtractable:
       type Operand = self
       type Result = self
 
       def subtract(minuend: self, subtrahend: self): self =
         refine(sum(minuend, negation(subtrahend)))
 
-    given multiplicable: [self <: R64] => self is Multiplicable:
+    given multiplicable: [self <: Q64] => self is Multiplicable:
       type Operand = self
       type Result = self
 
@@ -869,76 +869,109 @@ object rationalInternal:
         refine(product(multiplicand, multiplier, false))
 
     // Division is total: division by zero gives NaR, which propagates like `Double.NaN`.
-    given divisible: [self <: R64] => self is Divisible:
+    given divisible: [self <: Q64] => self is Divisible:
       type Operand = self
       type Result = self
 
       def divide(dividend: self, divisor: self): self = refine(product(dividend, divisor, true))
 
-    given negatable: [self <: R64] => self is Negatable to self =
+    given negatable: [self <: Q64] => self is Negatable to self =
       operand => refine(negation(operand))
 
     // The lower bound stops a `(? <: value) is Zeroic` search — as `total` makes —
     // collapsing `self` to `Nothing`, whose `zero` would throw on the cast.
-    given zeroic: [self >: R64 <: R64] => self is Zeroic:
+    given zeroic: [self >: Q64 <: Q64] => self is Zeroic:
       inline def zero: self = refine(Zero)
 
-    given unital: [self >: R64 <: R64] => self is Unital = () => refine(One)
+    given unital: [self >: Q64 <: Q64] => self is Unital = () => refine(One)
 
     // The best representable approximation of the square root: exact whenever the operand
     // is the square of a representable rational, and NaR for negative operands.
-    given rootable: R64 is Rootable[2]:
-      type Result = R64
+    given rootable: Q64 is Rootable[2]:
+      type Result = Q64
 
-      def root(value: R64): R64 =
-        if value < 0L then r64(Long.MinValue)
-        else if value == 0L then r64(0L)
+      def root(value: Q64): Q64 =
+        if value < 0L then q64(Long.MinValue)
+        else if value == 0L then q64(0L)
         else
           val (numerator, denominator) = fractionOf(value & Long.MaxValue)
-          r64(sqrtMagnitude(numerator, denominator, Budget64))
+          q64(sqrtMagnitude(numerator, denominator, Budget64))
 
     // Statistical operations divide and rescale by `Double`s — collection sizes, exact
     // halves — which convert to rationals exactly, so `mean`, `median` and `variance` stay
     // exact for exact inputs.
-    given divisibleDouble: [self <: R64] => self is Divisible:
+    given divisibleDouble: [self <: Q64] => self is Divisible:
       type Operand = Double
       type Result = self
 
       def divide(dividend: self, divisor: Double): self =
-        refine(product(dividend, R64(divisor), true))
+        refine(product(dividend, Q64(divisor), true))
 
-    given multiplicableDouble: [self <: R64] => self is Multiplicable:
+    given multiplicableDouble: [self <: Q64] => self is Multiplicable:
       type Operand = Double
       type Result = self
 
       def multiply(multiplicand: self, multiplier: Double): self =
-        refine(product(multiplicand, R64(multiplier), false))
+        refine(product(multiplicand, Q64(multiplier), false))
+
+    // Scaling a rational by a whole number is exact for every `Int` — every `Int` but the
+    // two extremes is representable, and those clamp to ±(2³¹−2) — and for every `Long` within
+    // that same range; larger multipliers clamp, like every other out-of-budget result.
+    given multiplicableInt: [self <: Q64] => self is Multiplicable:
+      type Operand = Int
+      type Result = self
+
+      def multiply(multiplicand: self, multiplier: Int): self =
+        refine(product(multiplicand, Q64(multiplier), false))
+
+    given multiplicableLong: [self <: Q64] => self is Multiplicable:
+      type Operand = Long
+      type Result = self
+
+      def multiply(multiplicand: self, multiplier: Long): self =
+        refine(product(multiplicand, Q64(multiplier), false))
+
+    // Dividing by a whole number is as exact as multiplying by one, and division by zero
+    // gives NaR, as it does for every other operand type.
+    given divisibleInt: [self <: Q64] => self is Divisible:
+      type Operand = Int
+      type Result = self
+
+      def divide(dividend: self, divisor: Int): self =
+        refine(product(dividend, Q64(divisor), true))
+
+    given divisibleLong: [self <: Q64] => self is Divisible:
+      type Operand = Long
+      type Result = self
+
+      def divide(dividend: self, divisor: Long): self =
+        refine(product(dividend, Q64(divisor), true))
 
     // Destructuring through symbolism's `/:` extractor: `case n /: d => …`.
-    given quotient: R64 is Quotient:
+    given quotient: Q64 is Quotient:
       type Topic = Long
       type Transport = Long
 
-      def decompose(division: R64): scala.Option[(Long, Long)] =
+      def decompose(division: Q64): scala.Option[(Long, Long)] =
         if division == Long.MinValue then scala.None
         else scala.Some((division.numerator, division.denominator))
 
     // Implicit conversions exist only where exact, matching `F64`'s exclusion of `Long`;
     // the two extremes `Int.MaxValue` and `Int.MinValue` round by one to ±(2³¹−2).
-    inline given intConversion: Conversion[Int, R64]:
-      def apply(value: Int): R64 = R64(value.toLong, 1L)
+    inline given intConversion: Conversion[Int, Q64]:
+      def apply(value: Int): Q64 = Q64(value.toLong, 1L)
 
-    inline given shortConversion: Conversion[Short, R64]:
-      def apply(value: Short): R64 = R64(value.toLong, 1L)
+    inline given shortConversion: Conversion[Short, Q64]:
+      def apply(value: Short): Q64 = Q64(value.toLong, 1L)
 
-    inline given byteConversion: Conversion[Byte, R64]:
-      def apply(value: Byte): R64 = R64(value.toLong, 1L)
+    inline given byteConversion: Conversion[Byte, Q64]:
+      def apply(value: Byte): Q64 = Q64(value.toLong, 1L)
 
-    // Widening from `R32` is always exact.
-    inline given r32Conversion: Conversion[R32, R64]:
-      def apply(value: R32): R64 = widen32(value)
+    // Widening from `Q32` is always exact.
+    inline given q32Conversion: Conversion[Q32, Q64]:
+      def apply(value: Q32): Q64 = widen32(value)
 
-    extension (left: R64)
+    extension (left: Q64)
       def numerator: Long =
         if left == Long.MinValue || left == 0L then 0L else
           val (numerator, _) = fractionOf(left & Long.MaxValue)
@@ -956,18 +989,18 @@ object rationalInternal:
         if left == Long.MinValue || left == 0L then 0 else if left < 0L then -1 else 1
 
       def nar: Boolean = left == Long.MinValue
-      def abs: R64 = if left == Long.MinValue then left else r64(left & Long.MaxValue)
+      def abs: Q64 = if left == Long.MinValue then left else q64(left & Long.MaxValue)
       def whole: Boolean = left.denominator == 1L
 
-      def reciprocal: R64 =
-        if left == Long.MinValue || left == 0L then r64(Long.MinValue) else
+      def reciprocal: Q64 =
+        if left == Long.MinValue || left == 0L then q64(Long.MinValue) else
           val (numerator, denominator) = fractionOf(left & Long.MaxValue)
           val magnitude = encodeFraction(denominator, numerator, Budget64)
-          if magnitude == 0L then r64(0L)
-          else if left < 0L then r64(magnitude | Long.MinValue)
-          else r64(magnitude)
+          if magnitude == 0L then q64(0L)
+          else if left < 0L then q64(magnitude | Long.MinValue)
+          else q64(magnitude)
 
-      def floor: R64 =
+      def floor: Q64 =
         if left == Long.MinValue || left == 0L then left else
           val (numerator, denominator) = fractionOf(left & Long.MaxValue)
 
@@ -975,7 +1008,7 @@ object rationalInternal:
           else build(true, numerator/denominator + (if numerator%denominator == 0L then 0L else 1L),
                      1L)
 
-      def ceiling: R64 =
+      def ceiling: Q64 =
         if left == Long.MinValue || left == 0L then left else
           val (numerator, denominator) = fractionOf(left & Long.MaxValue)
 
@@ -1006,50 +1039,50 @@ object rationalInternal:
           val (numerator, denominator) = fractionOf(left & Long.MaxValue)
           render(left < 0L, numerator, denominator)
 
-      // The best `R32` approximation; exact whenever the value fits `R32`'s budget.
-      def r32: R32 = narrow64(left)
+      // The best `Q32` approximation; exact whenever the value fits `Q32`'s budget.
+      def q32: Q32 = narrow64(left)
 
-  object R32:
-    final val Zero: R32 = r32(0)
-    final val One: R32 = r32(encodeFraction(1L, 1L, Budget32).toInt)
-    final val Nar: R32 = r32(Int.MinValue)
-    final val Max: R32 = r32(encodeFraction(0x7ffeL, 1L, Budget32).toInt)
-    final val Min: R32 = r32(Max | Int.MinValue)
+  object Q32:
+    final val Zero: Q32 = q32(0)
+    final val One: Q32 = q32(encodeFraction(1L, 1L, Budget32).toInt)
+    final val Nar: Q32 = q32(Int.MinValue)
+    final val Max: Q32 = q32(encodeFraction(0x7ffeL, 1L, Budget32).toInt)
+    final val Min: Q32 = q32(Max | Int.MinValue)
 
-    inline given underlying: Underlying[R32, Int] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[R32, R32] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[Q32, Int] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[Q32, Q32] = caps.unsafe.unsafeErasedValue
 
-    // `R32` dealiases to `Int` here, so arrays of it are primitive `int[]`s.
-    given classTag: ClassTag[R32] = summon[ClassTag[Int]].asInstanceOf[ClassTag[R32]]
+    // `Q32` dealiases to `Int` here, so arrays of it are primitive `int[]`s.
+    given classTag: ClassTag[Q32] = summon[ClassTag[Int]].asInstanceOf[ClassTag[Q32]]
 
-    private def build(negative: Boolean, numerator: Long, denominator: Long): R32 =
-      if denominator == 0L then r32(Int.MinValue)
-      else if numerator == 0L then r32(0)
+    private def build(negative: Boolean, numerator: Long, denominator: Long): Q32 =
+      if denominator == 0L then q32(Int.MinValue)
+      else if numerator == 0L then q32(0)
       else
         val magnitude = encodeFraction(numerator, denominator, Budget32)
-        if magnitude == 0L then r32(0)
-        else if negative then r32(magnitude.toInt | Int.MinValue)
-        else r32(magnitude.toInt)
+        if magnitude == 0L then q32(0)
+        else if negative then q32(magnitude.toInt | Int.MinValue)
+        else q32(magnitude.toInt)
 
     private def clamped(value: Long): Long =
       if value == Long.MinValue then Long.MaxValue else math.abs(value)
 
-    def apply(value: Int): R32 = apply(value.toLong, 1L)
-    def apply(value: Long): R32 = apply(value, 1L)
+    def apply(value: Int): Q32 = apply(value.toLong, 1L)
+    def apply(value: Long): Q32 = apply(value, 1L)
 
-    def apply(numerator: Long, denominator: Long): R32 =
+    def apply(numerator: Long, denominator: Long): Q32 =
       build(numerator < 0L ^ denominator < 0L, clamped(numerator), clamped(denominator))
 
-    def apply(value: Double): R32 =
+    def apply(value: Double): Q32 =
       if !JDouble.isFinite(value) then Nar
       else if value == 0.0 then Zero
       else
         val magnitude = doubleMagnitude(math.abs(value), Budget32)
-        if magnitude == 0L then r32(0)
-        else if value < 0.0 then r32(magnitude.toInt | Int.MinValue)
-        else r32(magnitude.toInt)
+        if magnitude == 0L then q32(0)
+        else if value < 0.0 then q32(magnitude.toInt | Int.MinValue)
+        else q32(magnitude.toInt)
 
-    def parse(text: Text): R32 raises Rational.Error =
+    def parse(text: Text): Q32 raises Rational.Error =
       if text.s == "NaR" then Nar else parsedRational(text) match
         case value: (Boolean, Long, Long) => build(value(0), value(1), value(2))
         case _                            => abort(Rational.Error(text))
@@ -1057,7 +1090,7 @@ object rationalInternal:
     // The signed three-way comparison behind `Orderable`, with NaR below everything; the
     // relational operators themselves treat NaR as unordered. Decoded numerators and
     // denominators stay below 2²¹, so the cross-products need only `Long`s.
-    def comparison(left: R32, right: R32): Int =
+    def comparison(left: Q32, right: Q32): Int =
       if left == right then 0
       else if left == Int.MinValue then -1
       else if right == Int.MinValue then 1
@@ -1071,9 +1104,9 @@ object rationalInternal:
         val order = JLong.compare(leftNumerator*rightDenominator, rightNumerator*leftDenominator)
         if left < 0 then -order else order
 
-    given orderable: R32 is Orderable:
+    given orderable: Q32 is Orderable:
       inline def compare
-          (inline left: R32, inline right: R32, inline strict: Boolean, inline greater: Boolean)
+          (inline left: Q32, inline right: Q32, inline strict: Boolean, inline greater: Boolean)
       :   Boolean =
         if left == Int.MinValue || right == Int.MinValue then false else
           val result = comparison(left, right)
@@ -1081,18 +1114,18 @@ object rationalInternal:
           if greater then (if strict then result > 0 else result >= 0)
           else (if strict then result < 0 else result <= 0)
 
-    given fromDigits: FromDigits.Decimal[R32] = digits =>
+    given fromDigits: FromDigits.Decimal[Q32] = digits =>
       parsedRational(digits.tt) match
         case value: (Boolean, Long, Long) => build(value(0), value(1), value(2))
         case _                            => throw FromDigits.MalformedNumber(digits)
 
-    given textualizable: R32 is Textualizable = value => value.text
+    given textualizable: Q32 is Textualizable = value => value.text
 
-    private def negation(value: R32): R32 =
-      if value == 0 || value == Int.MinValue then value else r32(value ^ Int.MinValue)
+    private def negation(value: Q32): Q32 =
+      if value == 0 || value == Int.MinValue then value else q32(value ^ Int.MinValue)
 
-    private def sum(left: R32, right: R32): R32 =
-      if left == Int.MinValue || right == Int.MinValue then r32(Int.MinValue)
+    private def sum(left: Q32, right: Q32): Q32 =
+      if left == Int.MinValue || right == Int.MinValue then q32(Int.MinValue)
       else if left == 0 then right
       else if right == 0 then left
       else
@@ -1104,14 +1137,14 @@ object rationalInternal:
         val negative = left < 0
 
         if left < 0 == right < 0 then build(negative, cross + cross2, denominator)
-        else if cross == cross2 then r32(0)
+        else if cross == cross2 then q32(0)
         else if cross > cross2 then build(negative, cross - cross2, denominator)
         else build(right < 0, cross2 - cross, denominator)
 
-    private def product(left: R32, right: R32, inverted: Boolean): R32 =
-      if left == Int.MinValue || right == Int.MinValue then r32(Int.MinValue)
-      else if inverted && right == 0 then r32(Int.MinValue)
-      else if left == 0 || right == 0 then r32(0)
+    private def product(left: Q32, right: Q32, inverted: Boolean): Q32 =
+      if left == Int.MinValue || right == Int.MinValue then q32(Int.MinValue)
+      else if inverted && right == 0 then q32(Int.MinValue)
+      else if left == 0 || right == 0 then q32(0)
       else
         val (leftNumerator, leftDenominator) = fractionOf((left & Int.MaxValue).toLong)
         val (rightNumerator, rightDenominator) = fractionOf((right & Int.MaxValue).toLong)
@@ -1124,26 +1157,26 @@ object rationalInternal:
 
     // Statistical operations skolemize the element type they work over, and `Self` is
     // invariant in a typeclass, so — as `abacist`'s `Quanta` does — the arithmetic givens
-    // take any subtype of R32 as `Self`, with `refine` casting the computed word back.
-    private def refine[self](value: R32): self = value.asInstanceOf[self]
+    // take any subtype of Q32 as `Self`, with `refine` casting the computed word back.
+    private def refine[self](value: Q32): self = value.asInstanceOf[self]
 
     // The standard arithmetic operators come from symbolism, so `+`, `-`, `*`, `/`, prefix
-    // negation and `sqrt` resolve through the generic operators without any R32-specific
+    // negation and `sqrt` resolve through the generic operators without any Q32-specific
     // exports.
-    given addable: [self <: R32] => self is Addable:
+    given addable: [self <: Q32] => self is Addable:
       type Operand = self
       type Result = self
 
       def add(augend: self, addend: self): self = refine(sum(augend, addend))
 
-    given subtractable: [self <: R32] => self is Subtractable:
+    given subtractable: [self <: Q32] => self is Subtractable:
       type Operand = self
       type Result = self
 
       def subtract(minuend: self, subtrahend: self): self =
         refine(sum(minuend, negation(subtrahend)))
 
-    given multiplicable: [self <: R32] => self is Multiplicable:
+    given multiplicable: [self <: Q32] => self is Multiplicable:
       type Operand = self
       type Result = self
 
@@ -1151,66 +1184,98 @@ object rationalInternal:
         refine(product(multiplicand, multiplier, false))
 
     // Division is total: division by zero gives NaR, which propagates like `Double.NaN`.
-    given divisible: [self <: R32] => self is Divisible:
+    given divisible: [self <: Q32] => self is Divisible:
       type Operand = self
       type Result = self
 
       def divide(dividend: self, divisor: self): self = refine(product(dividend, divisor, true))
 
-    given negatable: [self <: R32] => self is Negatable to self =
+    given negatable: [self <: Q32] => self is Negatable to self =
       operand => refine(negation(operand))
 
     // The lower bound stops a `(? <: value) is Zeroic` search — as `total` makes —
     // collapsing `self` to `Nothing`, whose `zero` would throw on the cast.
-    given zeroic: [self >: R32 <: R32] => self is Zeroic:
+    given zeroic: [self >: Q32 <: Q32] => self is Zeroic:
       inline def zero: self = refine(Zero)
 
-    given unital: [self >: R32 <: R32] => self is Unital = () => refine(One)
+    given unital: [self >: Q32 <: Q32] => self is Unital = () => refine(One)
 
     // The best representable approximation of the square root: exact whenever the operand
     // is the square of a representable rational, and NaR for negative operands.
-    given rootable: R32 is Rootable[2]:
-      type Result = R32
+    given rootable: Q32 is Rootable[2]:
+      type Result = Q32
 
-      def root(value: R32): R32 =
-        if value < 0 then r32(Int.MinValue)
-        else if value == 0 then r32(0)
+      def root(value: Q32): Q32 =
+        if value < 0 then q32(Int.MinValue)
+        else if value == 0 then q32(0)
         else
           val (numerator, denominator) = fractionOf((value & Int.MaxValue).toLong)
-          r32(sqrtMagnitude(numerator, denominator, Budget32).toInt)
+          q32(sqrtMagnitude(numerator, denominator, Budget32).toInt)
 
-    given divisibleDouble: [self <: R32] => self is Divisible:
+    given divisibleDouble: [self <: Q32] => self is Divisible:
       type Operand = Double
       type Result = self
 
       def divide(dividend: self, divisor: Double): self =
-        refine(product(dividend, R32(divisor), true))
+        refine(product(dividend, Q32(divisor), true))
 
-    given multiplicableDouble: [self <: R32] => self is Multiplicable:
+    given multiplicableDouble: [self <: Q32] => self is Multiplicable:
       type Operand = Double
       type Result = self
 
       def multiply(multiplicand: self, multiplier: Double): self =
-        refine(product(multiplicand, R32(multiplier), false))
+        refine(product(multiplicand, Q32(multiplier), false))
+
+    // Exact for multipliers within ±32766, `Q32`'s integer range; larger ones clamp, like
+    // every other out-of-budget result.
+    given multiplicableInt: [self <: Q32] => self is Multiplicable:
+      type Operand = Int
+      type Result = self
+
+      def multiply(multiplicand: self, multiplier: Int): self =
+        refine(product(multiplicand, Q32(multiplier), false))
+
+    given multiplicableLong: [self <: Q32] => self is Multiplicable:
+      type Operand = Long
+      type Result = self
+
+      def multiply(multiplicand: self, multiplier: Long): self =
+        refine(product(multiplicand, Q32(multiplier), false))
+
+    // Dividing by a whole number is as exact as multiplying by one, and division by zero
+    // gives NaR, as it does for every other operand type.
+    given divisibleInt: [self <: Q32] => self is Divisible:
+      type Operand = Int
+      type Result = self
+
+      def divide(dividend: self, divisor: Int): self =
+        refine(product(dividend, Q32(divisor), true))
+
+    given divisibleLong: [self <: Q32] => self is Divisible:
+      type Operand = Long
+      type Result = self
+
+      def divide(dividend: self, divisor: Long): self =
+        refine(product(dividend, Q32(divisor), true))
 
     // Destructuring through symbolism's `/:` extractor: `case n /: d => …`.
-    given quotient: R32 is Quotient:
+    given quotient: Q32 is Quotient:
       type Topic = Long
       type Transport = Long
 
-      def decompose(division: R32): scala.Option[(Long, Long)] =
+      def decompose(division: Q32): scala.Option[(Long, Long)] =
         if division == Int.MinValue then scala.None
         else scala.Some((division.numerator, division.denominator))
 
     // Implicit conversions exist only where exact; the two extremes `Short.MaxValue` and
     // `Short.MinValue` round by one to ±32766.
-    inline given shortConversion: Conversion[Short, R32]:
-      def apply(value: Short): R32 = R32(value.toLong, 1L)
+    inline given shortConversion: Conversion[Short, Q32]:
+      def apply(value: Short): Q32 = Q32(value.toLong, 1L)
 
-    inline given byteConversion: Conversion[Byte, R32]:
-      def apply(value: Byte): R32 = R32(value.toLong, 1L)
+    inline given byteConversion: Conversion[Byte, Q32]:
+      def apply(value: Byte): Q32 = Q32(value.toLong, 1L)
 
-    extension (left: R32)
+    extension (left: Q32)
       def numerator: Long =
         if left == Int.MinValue || left == 0 then 0L else
           val (numerator, _) = fractionOf((left & Int.MaxValue).toLong)
@@ -1226,18 +1291,18 @@ object rationalInternal:
 
       def signum: Int = if left == Int.MinValue || left == 0 then 0 else if left < 0 then -1 else 1
       def nar: Boolean = left == Int.MinValue
-      def abs: R32 = if left == Int.MinValue then left else r32(left & Int.MaxValue)
+      def abs: Q32 = if left == Int.MinValue then left else q32(left & Int.MaxValue)
       def whole: Boolean = left.denominator == 1L
 
-      def reciprocal: R32 =
-        if left == Int.MinValue || left == 0 then r32(Int.MinValue) else
+      def reciprocal: Q32 =
+        if left == Int.MinValue || left == 0 then q32(Int.MinValue) else
           val (numerator, denominator) = fractionOf((left & Int.MaxValue).toLong)
           val magnitude = encodeFraction(denominator, numerator, Budget32)
-          if magnitude == 0L then r32(0)
-          else if left < 0 then r32(magnitude.toInt | Int.MinValue)
-          else r32(magnitude.toInt)
+          if magnitude == 0L then q32(0)
+          else if left < 0 then q32(magnitude.toInt | Int.MinValue)
+          else q32(magnitude.toInt)
 
-      def floor: R32 =
+      def floor: Q32 =
         if left == Int.MinValue || left == 0 then left else
           val (numerator, denominator) = fractionOf((left & Int.MaxValue).toLong)
 
@@ -1245,7 +1310,7 @@ object rationalInternal:
           else build(true, numerator/denominator + (if numerator%denominator == 0L then 0L else 1L),
                      1L)
 
-      def ceiling: R32 =
+      def ceiling: Q32 =
         if left == Int.MinValue || left == 0 then left else
           val (numerator, denominator) = fractionOf((left & Int.MaxValue).toLong)
 
@@ -1276,5 +1341,5 @@ object rationalInternal:
           val (numerator, denominator) = fractionOf((left & Int.MaxValue).toLong)
           render(left < 0, numerator, denominator)
 
-      // Widening to `R64` is always exact.
-      def r64: R64 = widen32(left)
+      // Widening to `Q64` is always exact.
+      def q64: Q64 = widen32(left)

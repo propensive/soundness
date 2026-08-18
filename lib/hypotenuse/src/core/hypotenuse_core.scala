@@ -419,6 +419,12 @@ extension (int: Int)
   @targetName("floorDivInt")
   inline infix def /- (right: Int): Int = math.floorDiv(int, right)
 
+  // `\` is in the highest precedence tier (every operator whose first character is none of
+  // the special-cased ones), so it binds tighter than `*`, `/`, `+` and `-`: `1 \ 3 + 1 \ 6`
+  // is the sum of two fractions, and needs no parentheses.
+  @targetName("quotientInt")
+  inline infix def \ (denominator: Int): Q64 = Q64(int.toLong, denominator.toLong)
+
   @tailrec @targetName("gcdInt")
   def gcd(right: Int): Int = if right == 0 then int else right.gcd(int%right)
 
@@ -449,6 +455,9 @@ extension (long: Long)
 
   @targetName("floorDivLong")
   inline infix def /- (right: Long): Long = math.floorDiv(long, right)
+
+  @targetName("quotientLong")
+  inline infix def \ (denominator: Long): Q64 = Q64(long, denominator)
 
   @targetName("powerLong")
   inline infix def ** (exponent: Double): Double = math.pow(long.toDouble, exponent)
@@ -592,17 +601,17 @@ package arithmeticOptions:
   // rationals yields a `Double` in that scope — which is what lets `std` (whose variance
   // must divide to `Double`) resolve for rational collections.
   object rationalDivision:
-    given r64: R64 is Divisible:
-      type Operand = R64
+    given q64: Q64 is Divisible:
+      type Operand = Q64
       type Result = Double
 
-      def divide(dividend: R64, divisor: R64): Double = dividend.double/divisor.double
+      def divide(dividend: Q64, divisor: Q64): Double = dividend.double/divisor.double
 
-    given r32: R32 is Divisible:
-      type Operand = R32
+    given q32: Q32 is Divisible:
+      type Operand = Q32
       type Result = Double
 
-      def divide(dividend: R32, divisor: R32): Double = dividend.double/divisor.double
+      def divide(dividend: Q32, divisor: Q32): Double = dividend.double/divisor.double
 
   object division:
     inline given unchecked: DivisionByZero:

@@ -126,8 +126,8 @@ object Math:
 
   // Rationals render as `<mfrac>`, collapsing to a plain `<mn>` for whole values, with
   // the sign hoisted out as an `<mo>`.
-  given r64: R64 is Encodable in Math = value => rationalMathml(value.numerator, value.denominator)
-  given r32: R32 is Encodable in Math = value => rationalMathml(value.numerator, value.denominator)
+  given q64: Q64 is Encodable in Math = value => rationalMathml(value.numerator, value.denominator)
+  given q32: Q32 is Encodable in Math = value => rationalMathml(value.numerator, value.denominator)
 
   private def rationalMathml(numerator: Long, denominator: Long): Math =
     if denominator == 0L then Math(Mtext(t"NaR")) else
