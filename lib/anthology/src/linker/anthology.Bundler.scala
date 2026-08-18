@@ -112,6 +112,6 @@ object Bundler:
           case _ =>
             Nil.stdlib
 
-      entries.distinctBy(_.ref)
+      entries.stdlib.distinctBy(_.ref)
 
     jarfile

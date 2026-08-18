@@ -56,7 +56,7 @@ object TreeDiagram:
 
       input.stdlib.zipWithIndex.to(Chain).flatMap: (item, index) =>
         val tiles: List[TreeTile] =
-          List.of(((if index == last then Last else Branch) :: level).reverse)
+          ((if index == last then Last else Branch) :: level).reverse
 
         ((tiles, item) #::
           recur((if index == last then Space else Extender) :: level, getChildren(item)))

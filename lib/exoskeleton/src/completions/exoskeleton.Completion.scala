@@ -145,7 +145,7 @@ extends Cli:
       val allFlags = (flag.name :: flag.aliases)
 
       if longOnly then
-        List.of(allFlags.collect { case text: Text => text }).match
+        allFlags.collect { case text: Text => text }.match
           case main :: aliases =>
             List
               ( Suggestion

@@ -164,7 +164,7 @@ object Markdown:
 
         nodes match
           case Nil =>
-            if block then List.of(((TextNode("\n"): Html of Flow) :: done).reverse)
+            if block then ((TextNode("\n"): Html of Flow) :: done).reverse
             else done.reverse
 
           case Layout.Paragraph(_, contents*) :: tail if tight =>

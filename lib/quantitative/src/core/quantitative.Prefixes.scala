@@ -32,6 +32,8 @@
                                                                                                   */
 package quantitative
 
+import proscenium.compat.*
+
 import scala.math
 
 import prepositional.*

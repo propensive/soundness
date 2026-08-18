@@ -32,6 +32,8 @@
                                                                                                   */
 package urticose
 
+import proscenium.compat.*
+
 import scala.quoted.*
 
 import anticipation.*

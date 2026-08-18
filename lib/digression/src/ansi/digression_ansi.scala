@@ -221,7 +221,7 @@ package teletypeables:
     val tableLines = List.from(dataOnly.render.stdlib)
 
     val allLines = init :: (tableLines: List[Teletype])
-    val root = (allLines: Iterable[Teletype]).join(e"\n")
+    val root = allLines.stdlib.join(e"\n")
 
     stack.cause.lay(root): cause => e"$root\n${palette.message}(caused by:)\n$cause"
 
