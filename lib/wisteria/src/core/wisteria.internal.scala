@@ -534,15 +534,15 @@ object internal:
       . or(false)
 
     def fullGraph: Expr[typeclass[derivation]] =
-      // Keyed on the *dealiased `TypeRepr`* rather than `tpe.show`: a full pretty-print per
-      // visited type is expensive (and presentation-sensitive), while dotc types are hash-consed
-      // with structural `equals`/`hashCode`, so the type itself is a cheaper and more canonical
-      // key. In the rare case two structurally distinct handles for the same type miss the hash
-      // lookup, the only effect is a duplicated sibling lazy val (correctness preserved); distinct
-      // types can never collide. The named lookups (`elementInstance`, root) additionally fall
-      // back to an `=:=` scan so a hash miss there never changes resolution.
-      val reachable = scala.collection.mutable.LinkedHashSet[TypeRepr]()
-      val seen = scala.collection.mutable.HashSet[TypeRepr]()
+      // Keyed on `tpe.show`, not on the `TypeRepr` itself. Dotc types are NOT reliably
+      // hash-consed, so two handles for the same type can miss each other in a hash lookup — and
+      // here that is not benign: `visit` would emit a sibling lazy val for each, and two givens
+      // of the same type in the block's scope are an ambiguous implicit, not a harmless
+      // duplicate. (`locomotion`'s optic tests hit exactly this: `wisteria$1` and `wisteria$10`
+      // both matching `Encodable in Protobuf`.) The pretty-print is the price of a canonical key;
+      // the `=:=` fallback below covers lookups, but dedup has to be right at insertion.
+      val reachable = scala.collection.mutable.LinkedHashMap[String, TypeRepr]()
+      val seen = scala.collection.mutable.HashSet[String]()
 
       // A codec (`List[T]`, …) is matched first and its element types followed, so a structural
       // element wrapped in a codec still becomes a shared sibling. Only then do we ask whether a
@@ -551,9 +551,10 @@ object internal:
       // its own `derives` companion given and make the block self-reference, a lazy-val cycle).
       def visit(raw: TypeRepr, isRoot: Boolean): Unit =
         val tpe = raw.dealias
+        val key = tpe.show
 
-        if !seen.has(tpe) then
-          seen += tpe
+        if !seen.has(key) then
+          seen += key
           val args = List.of(tpe.typeArgs)
 
           // A codec is recognised by the fast `isCodec` (single contextual-function shape) or, for
@@ -568,7 +569,7 @@ object internal:
           if isCodec(tpe, args) || codecProbe(tpe, args) then args.each(visit(_, false))
           else if isSumType(tpe) then
             if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
-              reachable += tpe
+              reachable(key) = tpe
 
               tpe.typeSymbol.children.each: child =>
                 visit(variantWith(child, tpe), false)
@@ -577,7 +578,7 @@ object internal:
             val carrier = refinementMember(tpe, "VRoot").isDefined
 
             if isRoot || carrier || !resolvableNonStructural(typeclassConstructor, tpe) then
-              reachable += tpe
+              reachable(key) = tpe
               val product = productType(tpe)
 
               // Detection is per-type: any in-scope `Specific` for this exact type specialises its
@@ -628,21 +629,22 @@ object internal:
       val owner = Symbol.spliceOwner
 
       val bindings0 =
-        reachable.toList.zipWithIndex.map: (tpe, index) =>
+        reachable.toList.zipWithIndex.map: (entry, index) =>
+          val (key, tpe) = entry
           val flags = Flags.Given | Flags.Lazy
 
           val symbol =
             Symbol.newVal(owner, "wisteria$"+index, instanceOf(tpe), flags, Symbol.noSymbol)
 
-          (tpe, symbol)
+          (key, tpe, symbol)
 
-      val bindings: List[(TypeRepr, Symbol)] = List.of(bindings0)
+      val bindings: List[(String, TypeRepr, Symbol)] = List.of(bindings0)
 
-      val symbolByKey = bindings.map { (tpe, symbol) => tpe -> symbol }.toMap
+      val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.toMap
 
       // Each body is built in the val's *own* nested `Quotes` (`symbol.asQuotes`), so the `field`
       // resolutions inside `derivedOne` resolve in that val's scope — where the sibling givens are.
-      val definitions: List[ValDef] = bindings.map: (tpe, symbol) =>
+      val definitions: List[ValDef] = bindings.map: (_, tpe, symbol) =>
         ValDef(symbol, Some(derivedOneInstance(using symbol.asQuotes)(self, tpe.asType).asTerm))
 
       def resolveDirect(tpe: TypeRepr): Term =
@@ -656,8 +658,8 @@ object internal:
       def siblingSymbol(tpe: TypeRepr): Option[Symbol] =
         val dealiased = tpe.dealias
 
-        symbolByKey.get(dealiased).orElse:
-          bindings.stdlib.collectFirst { case (tpe0, symbol) if tpe0 =:= dealiased => symbol }
+        symbolByKey.get(dealiased.show).orElse:
+          bindings.stdlib.collectFirst { case (_, tpe0, symbol) if tpe0 =:= dealiased => symbol }
 
       def elementInstance(tpe: TypeRepr): Term = siblingSymbol(tpe) match
         case Some(symbol) => Ref(symbol)
