@@ -77,7 +77,7 @@ profanity 4
 prophesy 2
 proscenium 1
 punctuation 3
-quantitative 2
+quantitative 3
 reliquary 1
 revolution 2
 rudiments 1
