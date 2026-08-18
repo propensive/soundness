@@ -123,7 +123,7 @@ case class Truetype(data: Data) extends Sfnt:
         (t"loca", Array.freeze(newLoca)) ::
         (t"head", Array.freeze(newHead)) :: (carried: List[(Text, Data)])
 
-    Truetype(Sfnt.assemble(data.slice(0, 4), List.of(entries)))
+    Truetype(Sfnt.assemble(data.slice(0, 4), entries))
 
   def subset(text: Text): Truetype raises Font.Error = subset(Set.from(text.chars.readable))
 

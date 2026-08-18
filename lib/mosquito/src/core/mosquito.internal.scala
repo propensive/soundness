@@ -146,7 +146,7 @@ object internal:
           val bottom = t"⎝ ${items.last.pad(width, Rtl)} ⎠"
           val middle = items.tail.init.map: item => t"⎜ ${item.pad(width, Rtl)} ⎟"
 
-          (top :: middle ::: bottom :: Nil).join(t"\n")
+          (top :: List.of(middle) ::: bottom :: Nil).join(t"\n")
 
   extension [left](left: Vector[left, 3])
     def cross[right](right: Vector[right, 3])

@@ -45,7 +45,7 @@ class Prefixes(val prefixes: List[MetricPrefix], val minimum: Double) extends Pl
   def select(value: Double): MetricPrefix =
     if value == 0.0 then NoPrefix else
       val abs = math.abs(value)
-      val candidates = (NoPrefix :: prefixes).sortBy(-_.exponent)
+      val candidates = (NoPrefix :: prefixes).stdlib.sortBy(-_.exponent)
 
       val chosen = candidates.find: prefix =>
         abs/math.pow(prefix.base.toDouble, prefix.exponent.toDouble) >= minimum

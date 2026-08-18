@@ -42,6 +42,7 @@ import fulminate.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
+import proscenium.compat.sum
 import rudiments.*
 import spectacular.*
 import symbolism.*

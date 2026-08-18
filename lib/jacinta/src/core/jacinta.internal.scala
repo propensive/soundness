@@ -1299,7 +1299,7 @@ object internal:
         Apply(applied, slots.stdlib.map { slot => Ref(slot) })
 
       Block
-        ( '{ $reader.openObject() }.asTerm :: slotDefs ::: seenDefs ::: loop ::: absents,
+        ( ('{ $reader.openObject() }.asTerm :: slotDefs ::: seenDefs ::: loop ::: absents).stdlib,
           construct )
       . asExprOf[value]
 
