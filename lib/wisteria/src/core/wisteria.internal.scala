@@ -318,17 +318,49 @@ object internal:
 
       case _ => false
 
+  // Cache for `wrappersOf`. Enumerating and `isWrapper`-filtering the companion's members is
+  // repeated identically for every field resolution (`fieldInstance` runs once per field, in its
+  // own expansion) and every `deriveGraph` of the same typeclass, so the result is cached across
+  // expansions. Symbols are only valid within a compiler run, so entries are keyed *weakly* by the
+  // dotc `Run` (a resident compiler drops each run's entries with the run itself, and stale
+  // symbols can never leak into a later run), then by the typeclass constructor's type (dotc types
+  // hash and compare structurally). Keys and values are stored as `AnyRef` because the reflection
+  // types are path-dependent on each expansion's `Quotes`; all quotes within one run share the
+  // same underlying dotc structures, so the casts are sound.
+  private val wrapperCache =
+    new java.util.WeakHashMap[AnyRef, scala.collection.mutable.HashMap[AnyRef, AnyRef]]()
+
   // The typeclass's wrapper givens (its `derived` etc.), to be ignored during resolution/probing.
   private def wrappersOf[typeclass[_]: Type](using Quotes): List[quotes.reflect.Symbol] =
     import quotes.reflect.*
     val typeclassConstructor = TypeRepr.of[typeclass]
-    val owner = typeclassConstructor.appliedTo(TypeRepr.of[Any]).typeSymbol.maybeOwner
 
-    if owner.isNoSymbol then Nil
+    def compute(): List[Symbol] =
+      val owner = typeclassConstructor.appliedTo(TypeRepr.of[Any]).typeSymbol.maybeOwner
+
+      if owner.isNoSymbol then Nil
+      else
+        List.of:
+          (owner.methodMembers ++ owner.fieldMembers)
+            . filter(isWrapper(typeclassConstructor, _)).distinct
+
+    val run = quotes.asInstanceOf[runtime.impl.QuotesImpl].ctx.run
+
+    if run == null then compute()
     else
-      List.of:
-        (owner.methodMembers ++ owner.fieldMembers)
-          . filter(isWrapper(typeclassConstructor, _)).distinct
+      val perRun = wrapperCache.synchronized:
+        var cached = wrapperCache.get(run)
+
+        if cached == null then
+          cached = scala.collection.mutable.HashMap()
+          wrapperCache.put(run, cached)
+
+        cached
+
+      perRun.synchronized:
+        perRun
+        . getOrElseUpdate(typeclassConstructor.asInstanceOf[AnyRef], compute().asInstanceOf[AnyRef])
+        . asInstanceOf[List[Symbol]]
 
   // Resolves a field/variant instance via the real implicit search, ignoring the typeclass's
   // wrapper givens so it lands on a sibling synthetic given (a recursive/shared type), a codec, or
@@ -502,8 +534,15 @@ object internal:
       . or(false)
 
     def fullGraph: Expr[typeclass[derivation]] =
-      val reachable = scala.collection.mutable.LinkedHashMap[String, TypeRepr]()
-      val seen = scala.collection.mutable.HashSet[String]()
+      // Keyed on the *dealiased `TypeRepr`* rather than `tpe.show`: a full pretty-print per
+      // visited type is expensive (and presentation-sensitive), while dotc types are hash-consed
+      // with structural `equals`/`hashCode`, so the type itself is a cheaper and more canonical
+      // key. In the rare case two structurally distinct handles for the same type miss the hash
+      // lookup, the only effect is a duplicated sibling lazy val (correctness preserved); distinct
+      // types can never collide. The named lookups (`elementInstance`, root) additionally fall
+      // back to an `=:=` scan so a hash miss there never changes resolution.
+      val reachable = scala.collection.mutable.LinkedHashSet[TypeRepr]()
+      val seen = scala.collection.mutable.HashSet[TypeRepr]()
 
       // A codec (`List[T]`, …) is matched first and its element types followed, so a structural
       // element wrapped in a codec still becomes a shared sibling. Only then do we ask whether a
@@ -512,10 +551,9 @@ object internal:
       // its own `derives` companion given and make the block self-reference, a lazy-val cycle).
       def visit(raw: TypeRepr, isRoot: Boolean): Unit =
         val tpe = raw.dealias
-        val key = tpe.show
 
-        if !seen.has(key) then
-          seen += key
+        if !seen.has(tpe) then
+          seen += tpe
           val args = List.of(tpe.typeArgs)
 
           // A codec is recognised by the fast `isCodec` (single contextual-function shape) or, for
@@ -530,7 +568,7 @@ object internal:
           if isCodec(tpe, args) || codecProbe(tpe, args) then args.each(visit(_, false))
           else if isSumType(tpe) then
             if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
-              reachable(key) = tpe
+              reachable += tpe
 
               tpe.typeSymbol.children.each: child =>
                 visit(variantWith(child, tpe), false)
@@ -539,7 +577,7 @@ object internal:
             val carrier = refinementMember(tpe, "VRoot").isDefined
 
             if isRoot || carrier || !resolvableNonStructural(typeclassConstructor, tpe) then
-              reachable(key) = tpe
+              reachable += tpe
               val product = productType(tpe)
 
               // Detection is per-type: any in-scope `Specific` for this exact type specialises its
@@ -590,22 +628,21 @@ object internal:
       val owner = Symbol.spliceOwner
 
       val bindings0 =
-        reachable.toList.zipWithIndex.map: (entry, index) =>
-          val (key, tpe) = entry
+        reachable.toList.zipWithIndex.map: (tpe, index) =>
           val flags = Flags.Given | Flags.Lazy
 
           val symbol =
             Symbol.newVal(owner, "wisteria$"+index, instanceOf(tpe), flags, Symbol.noSymbol)
 
-          (key, tpe, symbol)
+          (tpe, symbol)
 
-      val bindings: List[(String, TypeRepr, Symbol)] = List.of(bindings0)
+      val bindings: List[(TypeRepr, Symbol)] = List.of(bindings0)
 
-      val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.toMap
+      val symbolByKey = bindings.map { (tpe, symbol) => tpe -> symbol }.toMap
 
       // Each body is built in the val's *own* nested `Quotes` (`symbol.asQuotes`), so the `field`
       // resolutions inside `derivedOne` resolve in that val's scope — where the sibling givens are.
-      val definitions: List[ValDef] = bindings.map: (_, tpe, symbol) =>
+      val definitions: List[ValDef] = bindings.map: (tpe, symbol) =>
         ValDef(symbol, Some(derivedOneInstance(using symbol.asQuotes)(self, tpe.asType).asTerm))
 
       def resolveDirect(tpe: TypeRepr): Term =
@@ -613,13 +650,22 @@ object internal:
           case success: ImplicitSearchSuccess => success.tree
           case failure: ImplicitSearchFailure => report.errorAndAbort(failure.explanation)
 
-      def elementInstance(tpe: TypeRepr): Term = symbolByKey.get(tpe.dealias.show) match
+      // The sibling for `tpe`, if one was emitted: a hash lookup on the dealiased type, falling
+      // back to an `=:=` scan of the (small) binding list, so a hash-consing miss can never
+      // silently change which instance a lookup resolves to.
+      def siblingSymbol(tpe: TypeRepr): Option[Symbol] =
+        val dealiased = tpe.dealias
+
+        symbolByKey.get(dealiased).orElse:
+          bindings.stdlib.collectFirst { case (tpe0, symbol) if tpe0 =:= dealiased => symbol }
+
+      def elementInstance(tpe: TypeRepr): Term = siblingSymbol(tpe) match
         case Some(symbol) => Ref(symbol)
         case None         => resolveDirect(tpe)
 
       val rootArgs = List.of(rootType.typeArgs)
 
-      val root: Term = symbolByKey.get(rootType.show) match
+      val root: Term = siblingSymbol(rootType) match
         case Some(symbol) => Ref(symbol)
 
         case None =>
