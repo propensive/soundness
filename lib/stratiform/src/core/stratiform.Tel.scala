@@ -1800,6 +1800,23 @@ object Tel extends Tel2:
     def encode(text: Text): Tel.Codec.Encoded
     def decode(bytes: Data): Tel.Codec.Decoded
 
+  // Declares that a Scala type's TEL scalar form carries the named §21.7
+  // encoding. The name is a *literal type*, so the staged BinTEL parser
+  // reads it at macro-expansion time, and the schema derivation reifies
+  // the same declaration into the derived `Tels.Scalar`'s `encoding` —
+  // one declaration, coherent across both layers:
+  //
+  //     given Money is Tel.Encoded["decimal-varint"] = Tel.Encoded()
+  //
+  // The declaring type also needs a `Decodable in Text` (and, to encode,
+  // an `Encodable in Text`): the codec maps the scalar's semantic *text*
+  // to bytes, exactly as at validation time.
+  object Encoded:
+    def apply[self, name <: Label](): self is Encoded[name] =
+      new Encoded[name] { type Self = self }
+
+  open class Encoded[name <: Label] extends prepositional.Typeclass
+
   object Element:
     case class Node
       ( keywordIndex: Optional[Int],

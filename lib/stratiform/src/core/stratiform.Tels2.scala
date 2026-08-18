@@ -142,6 +142,15 @@ object Tels2:
 // field, and `Map` to repeatable `entries` of `key`/`value`. Mixed into `object
 // Tels` so the givens sit in the `Transport` companion's implicit scope.
 trait Tels2:
+  // A type declaring a §21.7 encoding via the `Tel.Encoded` marker is a
+  // scalar whose derived schema carries that encoding, so the AST and
+  // staged BinTEL paths agree on its wire form by construction.
+  given encoded: [value, name <: Label]
+  =>  (marker: value is Tel.Encoded[name])
+  =>  (name0: ValueOf[name])
+  =>  value is TelSchematic over Tels.Type =
+    () => Tels.Scalar(Array.empty, Text(name0.value))
+
   given text: Text is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)
   given string: String is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)
   given int: Int is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)

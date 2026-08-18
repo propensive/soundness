@@ -285,3 +285,67 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
         val reconstructed = Tels.SemanticReconstructor.fromElement(element)
         reconstructed.scalars.readable.find(_.name == t"Amount").map(_.encoding).getOrElse(Unset)
       . assert(_ == t"decimal-varint")
+
+    suite(m"Staged parser (Bintel.Parsable) encoded scalars"):
+      given (Payment is Bintel.Parsable) = BintelInlinable.parsable[Payment]
+
+      def paymentBytes: Data =
+        val schema = Tels.tels[Payment](t"payment")
+        val element = Tel.Type.assign(t"tel 1.0\n\namount 300\n".read[Tel], schema)
+        Bintel.encode(element, schema, bindings)
+
+      test(m"the derived schema carries the declared encoding"):
+        Tels.tels[Payment](t"payment").document.members.readable.head.absolve match
+          case f: Tels.Field => f.fieldType.absolve match
+            case s: Tels.Scalar => s.encoding
+      . assert(_ == t"decimal-varint")
+
+      test(m"an encoded scalar is written as codec bytes under the derived schema"):
+        paymentBytes.readable.toSeq
+      . assert(_ == bytesOf(0x01, 0x00, 0x02, 0xAC, 0x02).readable.toSeq)
+
+      test(m"the generated parser decodes an encoded scalar through the codec"):
+        Bintel.parse[Payment](paymentBytes, bindings).amount.value
+      . assert(_ == 300L)
+
+      test(m"parsing without a binding raises B13"):
+        capture[Bintel.Error](Bintel.parse[Payment](paymentBytes)).reason
+      . assert(_ == Bintel.Error.Reason.CodecUnresolved)
+
+      test(m"B14: bytes the codec rejects fail the generated parser"):
+        val body = bytesOf(0x01, 0x00, 0x01, 0x80)
+        capture[Bintel.Error](Bintel.parse[Payment](body, bindings)).reason
+      . assert(_ == Bintel.Error.Reason.CodecDecodeFailed)
+
+      test(m"non-canonical bytes parse leniently without the B15 check"):
+        val body = bytesOf(0x01, 0x00, 0x03, 0xAC, 0x82, 0x00)
+        Bintel.parse[Payment](body, bindings).amount.value
+      . assert(_ == 300L)
+
+      test(m"B15: the canonicality check rejects overlong bytes"):
+        val body = bytesOf(0x01, 0x00, 0x03, 0xAC, 0x82, 0x00)
+        capture[Bintel.Error](Bintel.parse[Payment](body, bindings, checkCanonical = true))
+        . reason
+      . assert(_ == Bintel.Error.Reason.CodecNoncanonical)
+
+      test(m"an unencoded sibling field still parses as UTF-8 text"):
+        val schema = Tels.tels[Invoice](t"invoice")
+        val element = Tel.Type.assign(t"tel 1.0\n\namount 300\nmemo lunch\n".read[Tel], schema)
+        val body = Bintel.encode(element, schema, bindings)
+        given (Invoice is Bintel.Parsable) = BintelInlinable.parsable[Invoice]
+        val invoice = Bintel.parse[Invoice](body, bindings)
+        (invoice.amount.value, invoice.memo)
+      . assert(_ == (300L, t"lunch"))
+
+// Fixtures for the staged encoded-scalar tests: a scalar type whose BinTEL
+// form is the `decimal-varint` codec's bytes, declared once via the
+// `Tel.Encoded` marker — the schema derivation and the staged parser both
+// read the same declaration.
+class Money(val value: Long)
+
+object Money:
+  given decodable: Money is Decodable in Text = text => Money(text.s.toLong)
+  given encoded: Money is Tel.Encoded["decimal-varint"] = Tel.Encoded()
+
+case class Payment(amount: Money)
+case class Invoice(amount: Money, memo: Text)
