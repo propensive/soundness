@@ -63,6 +63,7 @@ import turbulence.*
 import typonym.*
 import vacuous.*
 import zephyrine.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Html extends Tag.Container
   ( label       = "html",
@@ -1884,7 +1885,7 @@ extends Node, Topical, Transportive, Dynamic:
             foreign )
 
       case node: Node =>
-        Element(label, attributes, Array.frozen(node +: children.readable), foreign)
+        Element(label, attributes, Array.frozen(children.readable.prepended(node)), foreign)
 
     . of[Topic]
     . over[Transport]

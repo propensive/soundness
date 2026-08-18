@@ -43,6 +43,7 @@ import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 // The default `Crypto` provider, backed by the JDK's standard crypto (JCE /
 // `java.security`). This is the single home of all `javax.crypto.*` and

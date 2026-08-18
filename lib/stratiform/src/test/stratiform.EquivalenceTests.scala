@@ -40,6 +40,7 @@ import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
 import Tel.given
+import denominative.asymptotics.linearSizeComplexity
 
 // The differential property issue #1694 proposes: for a document and a schema
 // derived from the corresponding Scala type, decoding through the codecs must

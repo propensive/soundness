@@ -44,7 +44,7 @@ export
       longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
       prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
-      before, upto, from, after, keep, skip, snip,
+      before, upto, from, after, keep, skip, snip, Appendable, Prependable, `:+`, `+:`,
       indexed, least, most, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, where,

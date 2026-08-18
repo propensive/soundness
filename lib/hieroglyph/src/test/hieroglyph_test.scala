@@ -41,6 +41,7 @@ import proscenium.compat.*
 import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class DecodeIssues(items: List[(Int, CharDecoder.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} decoding issues"):

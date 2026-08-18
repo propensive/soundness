@@ -232,13 +232,6 @@ extension [element](list: List[element])
   infix def ::: [element2 >: element](suffix: List[element2]): List[element2] =
     List.of(list.stdlib ::: suffix.stdlib)
 
-  inline infix def :+ [element2 >: element](element2Value: element2): List[element2] =
-    List.of(list.stdlib :+ element2Value)
-
-extension [element](head: element)
-  infix def +: [element2 >: element](list: List[element2]): List[element2] =
-    List.of(head +: list.stdlib)
-
 extension [element](list: List[element])
 
   inline def grouped(count: Int): Iterator[List[element]] =
@@ -382,12 +375,6 @@ extension [element](sequence: Sequence[element])
   infix def ::: [element2 >: element](suffix: Sequence[element2]): Sequence[element2] =
     Sequence.of(sequence.stdlib ++ suffix.stdlib)
 
-  inline infix def :+ [element2 >: element](element2Value: element2): Sequence[element2] =
-    Sequence.of(sequence.stdlib :+ element2Value)
-
-  inline infix def +: [element2 >: element](element2Value: element2): Sequence[element2] =
-    Sequence.of(element2Value +: sequence.stdlib)
-
 // MIGRATION SHIMS for the frozen array, `Array[element]^{}`, following the same drain
 // loop as the other blessed types -- anchored at `^{caps.any.rd}` receivers so frozen,
 // shared and exclusive references all subsume. The `@targetName`s date from the interim
@@ -518,14 +505,5 @@ extension [element](array: Array[element]^{caps.any.rd})
   @targetName("frozenIndexOf")
   inline def indexOf(element2: element): Int = array.readable.indexOf(element2)
 
-  @targetName("frozenAppend")
-  inline infix def :+ [element2 >: element: scala.reflect.ClassTag](element3: element2)
-  :   Array[element2]^{} =
-    Array.frozen(array.readable :+ element3)
-
-  @targetName("frozenPrepend")
-  inline infix def +: [element2 >: element: scala.reflect.ClassTag](element3: element2)
-  :   Array[element2]^{} =
-    Array.frozen(element3 +: array.readable)
 
 

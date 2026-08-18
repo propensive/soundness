@@ -47,6 +47,7 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 import wisteria.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Contrastable:
   inline given derived: [entity] => entity is Contrastable = summonFrom:

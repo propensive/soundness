@@ -40,6 +40,7 @@ import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class BadPerson(name: Int, age: Text) derives CanEqual
 

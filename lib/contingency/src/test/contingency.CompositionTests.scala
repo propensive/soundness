@@ -38,6 +38,7 @@ import proscenium.compat.*
 import contingency.strategies.throwUnsafely
 
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class CErrorA(value: Int)(using Diagnostics) extends Error(m"composition error a: $value")
 case class CErrorB(value: Int)(using Diagnostics) extends Error(m"composition error b: $value")

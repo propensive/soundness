@@ -38,6 +38,7 @@ import anticipation.*
 import rudiments.*
 import gossamer.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Strain:
   given inclusion: Inclusion[Report, Strain]:

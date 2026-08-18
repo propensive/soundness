@@ -39,6 +39,7 @@ import proscenium.compat.*
 import anticipation.*
 import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Entry:
   enum Kind:

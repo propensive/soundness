@@ -30,81 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package legerdemain
+package rudiments
 
-import soundness.*
+import denominative.*
+import prepositional.*
 
-import proscenium.compat.*
+// The prepending counterpart of `Appendable`: `element +: collection`. Prepending is O(1) for
+// `List` and `Chain`, so only the frozen array's full rebuild is complexity-gated.
+object Prependable:
+  given list: [element] => List[element] is Prependable by element =
+    (list, element) => List.of(element :: list.stdlib)
 
-import strategies.throwUnsafely
-import errorDiagnostics.stackTracesDiagnostics
-import denominative.asymptotics.linearSizeComplexity
+  given sequence: [element] => Sequence[element] is Prependable by element =
+    (sequence, element) => Sequence.of(element +: sequence.stdlib)
 
-case class QPerson(name: Text, email: Text) derives CanEqual
-case class QTeam(leader: QPerson, title: Text) derives CanEqual
+  given chain: [element] => Chain[element] is Prependable by element =
+    (chain, element) => Chain.of(element #:: chain.stdlib)
 
-object QProbe:
-  @scala.caps.unsafe.untrackedCaptures
-  var constructions: Int = 0
+  given frozenArray: [element: scala.reflect.ClassTag] => (complexity: LinearSizeComplexity)
+  =>  (Array[element]^{}) is Prependable by element =
+    (array, element) => Array.frozen(array.readable.prepended(element))
 
-// The body statement observes construction: decoding must never construct from garbage
-// fallback values, so a decode with any failed parameter must leave the counter untouched.
-case class QChecked(name: Text, email: Text) derives CanEqual:
-  QProbe.constructions += 1
+trait Prependable extends Typeclass.Pure, Operable:
+  def prepend(self: Self, element: Operand): Self
 
-object Tests extends Suite(m"Legerdemain tests"):
-
-  case class Issues(items: List[(Text, Query.Error)] = Nil)(using Diagnostics)
-  extends Error(m"${items.length} query issues"):
-    def +(focus: Text, error: Query.Error): Issues = Issues(items :+ (focus, error))
-
-  // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
-  // cannot be typed under capture checking, so the decode lambda must beta-reduce away into
-  // `protect`'s inline position. See rep/DECISIONS.md.
-  private inline def validateQuery[result](query: Query)
-    (inline decode: Query => result raises Query.Error tracks Pointer)
-  :   Issues =
-    Validate[Issues, [r] =>> r raises Query.Error, Pointer]
-      ( Issues(),
-        { case error: Query.Error => accrual + (prior.let(_.text).or(t"?"), error) } )
-    . protect(decode(query))
-
-  def run(): Unit =
-    suite(m"Query decoding"):
-      test(m"A complete query decodes"):
-        t"name=Ada&email=a%40b.c".as[Query].as[QPerson]
-      . assert(_ == QPerson(t"Ada", t"a@b.c"))
-
-      test(m"A missing parameter aborts under a fail-fast strategy"):
-        capture[Query.Error](t"name=Ada".as[Query].as[QPerson]).reason
-      . assert(_ == Query.Error.Reason.Missing)
-
-    suite(m"Validation accrual"):
-      test(m"Two missing parameters both accrue, with their pointers"):
-        validateQuery(t"".as[Query])(_.as[QPerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("name", "email"))
-
-      test(m"One missing parameter accrues one error; the present one does not"):
-        validateQuery(t"name=Ada".as[Query])(_.as[QPerson]).items.map(_(0).s)
-      . assert(_ == List("email"))
-
-      test(m"Nested parameters accrue with dotted pointers"):
-        validateQuery(t"title=Skunkworks".as[Query])(_.as[QTeam]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("leader.name", "leader.email"))
-
-      test(m"A fully-valid query accrues nothing"):
-        validateQuery(t"name=Ada&email=a%40b.c".as[Query])(_.as[QPerson]).items.length
-      . assert(_ == 0)
-
-    suite(m"Gated construction"):
-      test(m"Constructor does not run when any parameter failed"):
-        QProbe.constructions = 0
-        val issues = validateQuery(t"name=Zoe".as[Query])(_.as[QChecked])
-        (issues.items.length, QProbe.constructions)
-      . assert(_ == (1, 0))
-
-      test(m"Constructor runs exactly once when all parameters are present"):
-        QProbe.constructions = 0
-        validateQuery(t"name=Zoe&email=z%40y.x".as[Query])(_.as[QChecked])
-        QProbe.constructions
-      . assert(_ == 1)
+// A right-associative extension binds its receiver to the *left* operand (`element +:
+// collection`), so the receiver here is the element — the same shape the compat shim had.
+extension [operand](element: operand)
+  infix def +: [self](value: self)(using prependable: self is Prependable by operand): self =
+    prependable.prepend(value, element)

@@ -30,81 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package legerdemain
+package rudiments
 
-import soundness.*
+import denominative.*
+import prepositional.*
 
-import proscenium.compat.*
+// Single-element growth for the opaque collections: `:+` incorporates one element (at the end,
+// for ordered shapes), the counterpart of `Prependable`'s `+:`. Collection-with-collection
+// concatenation is symbolism's `Concatenable` (`+`). Instances whose append rebuilds the whole
+// collection are gated on the acknowledgement of that linear cost, like `Countable`.
+object Appendable:
+  // Appending to a `List` copies all of it: O(n), so the instance demands the marker.
+  given list: [element] => (complexity: LinearSizeComplexity)
+  =>  List[element] is Appendable by element =
+    (list, element) => List.of(list.stdlib :+ element)
 
-import strategies.throwUnsafely
-import errorDiagnostics.stackTracesDiagnostics
-import denominative.asymptotics.linearSizeComplexity
+  given sequence: [element] => Sequence[element] is Appendable by element =
+    (sequence, element) => Sequence.of(sequence.stdlib :+ element)
 
-case class QPerson(name: Text, email: Text) derives CanEqual
-case class QTeam(leader: QPerson, title: Text) derives CanEqual
+  // Lazily: nothing is forced by the append itself.
+  given chain: [element] => Chain[element] is Appendable by element =
+    (chain, element) => Chain.of(chain.stdlib.appended(element))
 
-object QProbe:
-  @scala.caps.unsafe.untrackedCaptures
-  var constructions: Int = 0
+  // A `Set` has no ends, so `:+` is plain membership addition (the stdlib's `set + element`).
+  given set: [element] => Set[element] is Appendable by element =
+    (set, element) => Set.of(set.stdlib + element)
 
-// The body statement observes construction: decoding must never construct from garbage
-// fallback values, so a decode with any failed parameter must leave the counter untouched.
-case class QChecked(name: Text, email: Text) derives CanEqual:
-  QProbe.constructions += 1
+  // The frozen array is rebuilt in full: O(n), so the instance demands the marker.
+  given frozenArray: [element: scala.reflect.ClassTag] => (complexity: LinearSizeComplexity)
+  =>  (Array[element]^{}) is Appendable by element =
+    (array, element) => Array.frozen(array.readable :+ element)
 
-object Tests extends Suite(m"Legerdemain tests"):
+trait Appendable extends Typeclass.Pure, Operable:
+  def append(self: Self, element: Operand): Self
 
-  case class Issues(items: List[(Text, Query.Error)] = Nil)(using Diagnostics)
-  extends Error(m"${items.length} query issues"):
-    def +(focus: Text, error: Query.Error): Issues = Issues(items :+ (focus, error))
-
-  // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
-  // cannot be typed under capture checking, so the decode lambda must beta-reduce away into
-  // `protect`'s inline position. See rep/DECISIONS.md.
-  private inline def validateQuery[result](query: Query)
-    (inline decode: Query => result raises Query.Error tracks Pointer)
-  :   Issues =
-    Validate[Issues, [r] =>> r raises Query.Error, Pointer]
-      ( Issues(),
-        { case error: Query.Error => accrual + (prior.let(_.text).or(t"?"), error) } )
-    . protect(decode(query))
-
-  def run(): Unit =
-    suite(m"Query decoding"):
-      test(m"A complete query decodes"):
-        t"name=Ada&email=a%40b.c".as[Query].as[QPerson]
-      . assert(_ == QPerson(t"Ada", t"a@b.c"))
-
-      test(m"A missing parameter aborts under a fail-fast strategy"):
-        capture[Query.Error](t"name=Ada".as[Query].as[QPerson]).reason
-      . assert(_ == Query.Error.Reason.Missing)
-
-    suite(m"Validation accrual"):
-      test(m"Two missing parameters both accrue, with their pointers"):
-        validateQuery(t"".as[Query])(_.as[QPerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("name", "email"))
-
-      test(m"One missing parameter accrues one error; the present one does not"):
-        validateQuery(t"name=Ada".as[Query])(_.as[QPerson]).items.map(_(0).s)
-      . assert(_ == List("email"))
-
-      test(m"Nested parameters accrue with dotted pointers"):
-        validateQuery(t"title=Skunkworks".as[Query])(_.as[QTeam]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("leader.name", "leader.email"))
-
-      test(m"A fully-valid query accrues nothing"):
-        validateQuery(t"name=Ada&email=a%40b.c".as[Query])(_.as[QPerson]).items.length
-      . assert(_ == 0)
-
-    suite(m"Gated construction"):
-      test(m"Constructor does not run when any parameter failed"):
-        QProbe.constructions = 0
-        val issues = validateQuery(t"name=Zoe".as[Query])(_.as[QChecked])
-        (issues.items.length, QProbe.constructions)
-      . assert(_ == (1, 0))
-
-      test(m"Constructor runs exactly once when all parameters are present"):
-        QProbe.constructions = 0
-        validateQuery(t"name=Zoe&email=z%40y.x".as[Query])(_.as[QChecked])
-        QProbe.constructions
-      . assert(_ == 1)
+extension [self, operand](value: self)(using appendable: self is Appendable by operand)
+  infix def :+ (element: operand): self = appendable.append(value, element)

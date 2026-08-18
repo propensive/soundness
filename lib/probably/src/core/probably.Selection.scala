@@ -40,6 +40,7 @@ import distillate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Selection:
   enum Term:
