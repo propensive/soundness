@@ -508,7 +508,7 @@ private def throughDuct[in, out, upTransport, downTransport]
       type Transport = downTransport
 
       private val capacity: Int =
-        buffering.capacity(duct.output.substrate).max(duct.quantum)
+        duct.sizing(buffering).max(duct.quantum)
 
       // Untracked, cast-erased: reached only through this endpoint.
       @caps.unsafe.untrackedCaptures

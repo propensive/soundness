@@ -195,6 +195,13 @@ extends Duct[Data, Data]:
   def regulation: Credit is Regulation = summon[Credit is Regulation]
   def translate(demand: Credit): Credit = demand
 
+  // Inflation expands its input several-fold and pays a fixed JNI cost per
+  // `inflate` call, so it wants transfer-sized output windows: with the
+  // staging default (4 KiB) the per-call overhead rivals the native work
+  // itself, which is how this stage measured slower than rivals that verify
+  // a CRC this duct skips.
+  override def sizing(buffering: Buffering): Int = buffering.transfer(output.substrate)
+
   // Consume one header byte, returning the successor state.
   private update def advance(byte: Int, position: Int): Header = header match
     case Header.Fixed(remaining) =>

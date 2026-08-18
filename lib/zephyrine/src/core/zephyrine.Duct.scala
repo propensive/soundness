@@ -154,6 +154,17 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // a duct whose smallest output atom is two elements.
   def quantum: Int = 1
 
+  // The output-window size a streaming driver should allocate for this duct.
+  // The staging capacity is right for most ducts: their kernels are cheap per
+  // call, so windows should stay cache-resident. A duct whose kernel pays a
+  // large fixed cost per invocation (a JNI crossing) and expands its input
+  // (decompression) wants transfer-sized windows instead: the fixed cost is
+  // amortised over sixteen times the output, which is what lets an inflater
+  // that does strictly less work per byte than its rivals also run faster
+  // than them. (`Duct.feed`, the whole-value driver, already sizes its buffer
+  // this way.)
+  def sizing(buffering: Buffering): Int = buffering.capacity(output.substrate)
+
   // Transform the readable `range` of `source` into the writable `space` of `target`. The
   // regions carry their windows as branded intervals, so an implementation cannot index
   // outside them except through the greppable `unsafely(raw)` escape hatch — which kernels
