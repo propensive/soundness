@@ -92,9 +92,6 @@ extension [key, value](map: Map[key, value])
   // NO `getOrElse` shim: its by-name default parameter in an inline extension crashes the capture
   // checker's Setup phase (boxDeeply assertion); call sites bridge via `stdlib` instead.
 
-  inline def keySet: Set[key] = Set.of(map.stdlib.keySet)
-  inline def keys: Iterable[key] = map.stdlib.keys
-  inline def values: Iterable[value] = map.stdlib.values
   inline def isEmpty: Boolean = map.stdlib.isEmpty
   inline def nonEmpty: Boolean = map.stdlib.nonEmpty
   inline def size: Int = map.stdlib.size
@@ -130,9 +127,6 @@ extension [key, value](map: Map[key, value])
 // `stdlib` or `at(...).or(...)`).
 extension [key, value](ledger: Ledger[key, value])
   inline def get(key: key): Option[value] = ledger.stdlib.get(key)
-  inline def keySet: Set[key] = Set.of(ledger.stdlib.keySet)
-  inline def keys: Iterable[key] = ledger.stdlib.keys
-  inline def values: Iterable[value] = ledger.stdlib.values
   inline def isEmpty: Boolean = ledger.stdlib.isEmpty
   inline def nonEmpty: Boolean = ledger.stdlib.nonEmpty
   inline def size: Int = ledger.stdlib.size

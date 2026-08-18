@@ -138,7 +138,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
     val arguments: List[Text] =
       List(t"-no-stdlib", t"-classpath", classpath(), t"-d", out.generic) :::
         commandLineArguments :::
-        names.keys.to(List)
+        names.keys.to[List]
 
     Log.info(CompileEvent.Running(t"kotlinc" :: arguments))
 

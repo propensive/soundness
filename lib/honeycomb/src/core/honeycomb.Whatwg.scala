@@ -675,7 +675,7 @@ class Whatwg() extends Dom:
   val Wbr = Tag.void["wbr", Whatwg]()
 
   val elements: Dictionary[Tag] =
-    Dictionary(this.membersOfType[Tag].bi.map(_.label -> _).toSeq*)
+    Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }.toSeq*)
 
   val entities: Dictionary[Text] =
     val html4 = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
@@ -691,7 +691,7 @@ class Whatwg() extends Dom:
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =
       Whatwg.membersOfType[honeycomb.Attribute]
-      . foldLeft(proscenium.Map[Text, Attribute]()): (map, next) =>
+      . fold(proscenium.Map[Text, Attribute]()): (map, next) =>
           map.updated(next.label, map.get(next.label).optional.let(_.merge(next)).or(next))
 
       . toList

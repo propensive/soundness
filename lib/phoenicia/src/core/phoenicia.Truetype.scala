@@ -114,7 +114,7 @@ case class Truetype(data: Data) extends Sfnt:
     newHead(50) = 0
     newHead(51) = 1
 
-    val carried = tables.values.to(List).bind: ref =>
+    val carried = tables.values.bind: ref =>
       if ref.id == Sfnt.Table.Ttf.Glyf || ref.id == Sfnt.Table.Ttf.Loca || ref.id == Sfnt.Table.Ttf.Head then Nil
       else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
 

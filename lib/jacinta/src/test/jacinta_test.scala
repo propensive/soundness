@@ -756,11 +756,11 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == 2)
 
       test(m"Decode a map preserves keys"):
-        t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].keySet
+        t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].keys
       . assert(_ == Set(t"a", t"b"))
 
       test(m"Decode a map preserves values"):
-        Set.from(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].values)
+        t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].values.to[Set]
       . assert(_ == Set(1, 2))
 
       test(m"primitive of a string is String"):
@@ -1425,7 +1425,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Derived schema for a case class lists fields as properties"):
         JsonSchema.derived[Bar].schema() match
-          case obj: JsonSchema.Object => obj.properties.keySet
+          case obj: JsonSchema.Object => obj.properties.keys
           case _                      => Set.empty[Text]
       . assert(_ == Set(t"a", t"b"))
 

@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.63.0.                                                                    ┃
+┃    Soundness, version 0.64.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,10 +30,47 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package murmuration
 
-// `murmuration` hosts the collection typeclasses (moved below `denominative`/`vacuous`); re-export
-// them so `import rudiments.*` keeps exposing the whole surface unchanged.
-export murmuration.{Traversable, Reshapable, Mappable, Reversible, Inclusive, Convertible, reverse,
-    has, map, remap, subsumes, bind, flatMap, filter, withFilter, foreach, exists, fold, flat, trace, excerpt, group,
-    sort, distinct, zip, batched, span, sweep, Keyed, keys, values}
+import prepositional.*
+
+// The keyed-container surface: `keys` and `values`, better-typed than the stdlib's `Iterable`
+// results — a `Map`'s keys are a `Set` (they are unique and unordered), a `Ledger`'s are a
+// `List` (insertion order is its identity), and both containers' values are a `List`.
+object Keyed:
+  // The refinements appear in the declared types (not just the instance bodies) so a summon
+  // with a `Keys`/`Values` refinement can solve them — the `Mappable` pattern.
+  given map: [key, value]
+  =>  (Map[key, value] is Keyed { type Keys = Set[key]; type Values = List[value] }) =
+    new Keyed:
+      type Self = Map[key, value]
+      type Keys = Set[key]
+      type Values = List[value]
+
+      def keys(map: Self): Keys = Set.of(map.stdlib.keySet)
+      def values(map: Self): Values = List.from(map.stdlib.values.iterator)
+
+  given ledger: [key, value]
+  =>  (Ledger[key, value] is Keyed { type Keys = List[key]; type Values = List[value] }) =
+    new Keyed:
+      type Self = Ledger[key, value]
+      type Keys = List[key]
+      type Values = List[value]
+
+      def keys(ledger: Self): Keys = List.from(ledger.stdlib.keys.iterator)
+      def values(ledger: Self): Values = List.from(ledger.stdlib.values.iterator)
+
+trait Keyed extends Typeclass.Pure:
+  type Keys
+  type Values
+
+  def keys(self: Self): Keys
+  def values(self: Self): Values
+
+// The result types are bound as extension type parameters rather than referenced
+// path-dependently, so they survive the cross-package export forwarder (#1411).
+extension [self, keys](self: self)(using keyed: self is Keyed { type Keys = keys })
+  def keys: keys = keyed.keys(self)
+
+extension [self, values](self: self)(using keyed: self is Keyed { type Values = values })
+  def values: values = keyed.values(self)

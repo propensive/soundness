@@ -42,7 +42,7 @@ import anticipation.*
 import prepositional.*
 
 extension [entity](entity: entity)
-  def membersOfType[value](using deref: entity is Dereferenceable to value): Iterable[value] =
+  def membersOfType[value](using deref: entity is Dereferenceable to value): List[value] =
     deref.values(entity)
 
 // Read the `ann`-typed annotations on each field of `self`, keyed by field name,
