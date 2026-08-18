@@ -80,7 +80,6 @@ extension [element](set: Set[element])
   inline def intersect(other: Set[element]): Set[element] = Set.of(set.stdlib.intersect(other.stdlib))
   inline def union(other: Set[element]): Set[element] = Set.of(set.stdlib.union(other.stdlib))
   inline def diff(other: Set[element]): Set[element] = Set.of(set.stdlib.diff(other.stdlib))
-  inline def subsetOf(other: Set[element]): Boolean = set.stdlib.subsetOf(other.stdlib)
   inline def filterNot(predicate: element => Boolean): Set[element] = Set.of(set.stdlib.filterNot(predicate))
 
   inline def partition(predicate: element => Boolean): (Set[element], Set[element]) =
@@ -249,9 +248,6 @@ extension [element](list: List[element])
   inline def grouped(count: Int): Iterator[List[element]] =
     list.stdlib.grouped(count).map(List.of(_))
 
-  inline def sliding(count: Int): Iterator[List[element]] =
-    list.stdlib.sliding(count).map(List.of(_))
-
   inline def maxBy[key](lambda: element => key)(using math.Ordering[key]): element =
     list.stdlib.maxBy(lambda)
 
@@ -270,9 +266,6 @@ extension [element](list: List[List[element]])
 
 extension [key, value](list: List[(key, value)])
   inline def toMap: Map[key, value] = Map.of(list.stdlib.toMap)
-  inline def unzip: (List[key], List[value]) =
-    val (keys, values) = list.stdlib.unzip(using pair => pair)
-    (List.of(keys), List.of(values))
 
 // MIGRATION SHIMS for the opaque `Chain`. Non-umbrella names only — `map`/`filter`/`flatMap`/
 // `fold`/`each` come from the typeclass surface (`Traversable`/`Reshapable`). Forcing operations
