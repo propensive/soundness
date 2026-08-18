@@ -1,0 +1,9 @@
+tel 1.0 https://tel-lang.org/schema/tels
+
+name e220-test
+
+record Item
+  field label Identifier optional key
+
+document
+  field item Item optional repeatable

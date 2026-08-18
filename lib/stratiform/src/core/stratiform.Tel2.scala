@@ -411,7 +411,7 @@ trait Tel2 extends Tel3:
                       // primitives' `raise … yet sentinel` accrue per-field rather than the
                       // first malformed field aborting the whole record.
                       focus({
-                        val base = prior.let(_.pointer).or(TelPath.Root)
+                        val base = prior.let(_.pointer).or(Telp.Root)
                         Tel.Focus(base.prepend(keyword))
                       }):
                         val before = foci.length

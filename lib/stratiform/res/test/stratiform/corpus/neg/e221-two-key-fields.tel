@@ -1,0 +1,10 @@
+tel 1.0 https://tel-lang.org/schema/tels
+
+name e221-test
+
+record Item
+  field label Identifier key
+  field serial Identifier key
+
+document
+  field item Item optional repeatable

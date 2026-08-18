@@ -1,0 +1,15 @@
+tel 1.0 https://tel-lang.org/schema/tels
+
+name schema-layer-adds-encoding
+
+scalar Token
+  validate string
+
+document
+  field token Token
+
+layer
+  name binary-tokens
+  scalar Token
+    validate hex
+    encoding hex-bytes

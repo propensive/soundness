@@ -1,0 +1,79 @@
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: Some(
+                "https://tel-lang.org/schema/keyed-schema",
+            ),
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "contact",
+                    atoms: [
+                        Inline {
+                            text: "amy",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "email",
+                                    atoms: [
+                                        Inline {
+                                            text: "amy@example.com",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
+                },
+                Compound {
+                    keyword: "contact",
+                    atoms: [
+                        Inline {
+                            text: "bea",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+                Compound {
+                    keyword: "contact",
+                    atoms: [
+                        Inline {
+                            text: "amy",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}
+errors:
+  E314 [0,0): Duplicate key value among keyed children of one parent: duplicate key value `amy` among keyed children (`contact` and `contact`)

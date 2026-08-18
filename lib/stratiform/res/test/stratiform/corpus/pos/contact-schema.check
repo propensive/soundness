@@ -7,7 +7,7 @@ Document {
                 0,
             ),
             schema: Some(
-                "https://tel-lang.org/schema/tel-schema",
+                "https://tel-lang.org/schema/tels",
             ),
             sigil: None,
         },
@@ -77,7 +77,7 @@ Document {
                     text: "accompanying `contact-document.tel`. This schema document is itself",
                 },
                 Comment {
-                    text: "validated against the tel-schema (the schema-for-schemas) at parse time.",
+                    text: "validated against the tels (the schema-for-schemas) at parse time.",
                 },
             ],
             tabulation: None,

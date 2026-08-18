@@ -1,0 +1,12 @@
+tel 1.0 https://tel-lang.org/schema/tels
+
+name schema-with-encoding
+
+scalar Fingerprint
+  validate hex
+  encoding hex-bytes
+  description
+      A hex-encoded binary fingerprint, carried as raw bytes in BinTEL.
+
+document
+  field fingerprint Fingerprint

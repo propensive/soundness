@@ -92,6 +92,22 @@ final class BintelParser private[stratiform] (input: Data):
     offset += length
     result
 
+  // One scalar payload's raw bytes, without UTF-8 decoding: the leaf a
+  // codec-aware staged parser would use for encoded scalars (§21.7).
+  // The staged layer derives its plans from Scala types, which declare
+  // no encodings, so nothing generates calls to this yet; full staged
+  // codec support is deferred until derived schemas can. Framing is
+  // codec-independent, so `directSkipScalar` already skips encoded
+  // scalars correctly.
+  def directScalarBytes()(using Tactic[Bintel.Error]): scala.Array[Byte] =
+    val length = directCount()
+
+    if offset + length > data.length then abort(Bintel.Error(Bintel.Error.Reason.ValueTruncated))
+
+    val result = java.util.Arrays.copyOfRange(data, offset, offset + length).nn
+    offset += length
+    result
+
   // Skips one scalar payload without materializing it.
   def directSkipScalar()(using Tactic[Bintel.Error]): Unit =
     val length = directCount()

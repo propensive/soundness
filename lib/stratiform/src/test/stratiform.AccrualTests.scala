@@ -69,13 +69,13 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     Validate[Issues, [r] =>> r raises Tel.Error, Tel.Focus]
       ( Issues(),
         { case error: Tel.Error =>
-            accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
+            accrual + (prior.let(_.pointer.encode).or(t"/"), error) } )
     . protect(decode(tel))
 
   private def validateAssign(tel: Tel, schema: Tels): Issues =
     validate[Tel.Focus](Issues()):
       case error: Tel.Error =>
-        accrual + (prior.let(_.pointer.encode).or(t"#"), error)
+        accrual + (prior.let(_.pointer.encode).or(t"/"), error)
     . protect(Tel.Type.assign(tel, schema))
 
   case class Located(items: List[(Text, Span)] = Nil)(using Diagnostics)
@@ -91,7 +91,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
     validate[Tel.Focus](Located()):
       case error: Tel.Error =>
-        accrual + (prior.let(_.pointer.encode).or(t"#"), prior.lay(Span.empty)(_.span))
+        accrual + (prior.let(_.pointer.encode).or(t"/"), prior.lay(Span.empty)(_.span))
     . protect(Tel.Type.assign(tel, schema))
 
   // The decode-path counterpart: `Tel#as` locates its per-field foci against
@@ -105,7 +105,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     Validate[Located, [r] =>> r raises Tel.Error, Tel.Focus]
       ( Located(),
         { case error: Tel.Error =>
-            accrual + (prior.let(_.pointer.encode).or(t"#"),
+            accrual + (prior.let(_.pointer.encode).or(t"/"),
                        prior.lay(Span.empty)(_.span)) } )
     . protect(decode(tel))
 
@@ -128,7 +128,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     Validate[Located, [r] =>> r raises Tel.Error, Tel.Focus]
       ( Located(),
         { case error: Tel.Error =>
-            accrual + (prior.let(_.pointer.encode).or(t"#"),
+            accrual + (prior.let(_.pointer.encode).or(t"/"),
                        prior.lay(Span.empty)(_.span)) } )
     . protect:
         given APerson is Tel.Parsable = Tel.Parsable.derived
@@ -140,7 +140,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     Validate[Located, [r] =>> r raises Tel.Error, Tel.Focus]
       ( Located(),
         { case error: Tel.Error =>
-            accrual + (prior.let(_.pointer.encode).or(t"#"),
+            accrual + (prior.let(_.pointer.encode).or(t"/"),
                        prior.lay(Span.empty)(_.span)) } )
     . protect:
         given APerson is Tel.Parsable = Tel.Parsable.derived
@@ -153,7 +153,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   private def validateRead(text: Text): Issues =
     validate[Tel.Focus](Issues()):
       case error: Tel.Error =>
-        accrual + (prior.let(_.pointer.encode).or(t"#"), error)
+        accrual + (prior.let(_.pointer.encode).or(t"/"), error)
     . protect(text.read[Tel])
 
   // A document schema with two required scalar fields and no defaults: a document
@@ -279,7 +279,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Pointers identify the missing fields"):
         val tel = t"name Alice\n".read[Tel]
         validateTel(tel)(_.as[APerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/age", "#/email"))
+      . assert(_ == Set("/age", "/email"))
 
       test(m"Each missing-field error has reason Absent"):
         val tel = t"name Alice\n".read[Tel]
@@ -296,7 +296,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Pointers identify the wrong-type fields"):
         val tel = t"width wide\nheight tall\n".read[Tel]
         validateTel(tel)(_.as[APair]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/width", "#/height"))
+      . assert(_ == Set("/width", "/height"))
 
       test(m"Wrong-type errors have reason NotScalar"):
         val tel = t"width wide\nheight tall\n".read[Tel]
@@ -312,9 +312,9 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         validateTel(tel)(_.as[AContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
           paths == Set
-           ( "#/person/name",
-             "#/person/age",
-             "#/person/email" )
+           ( "/person/name",
+             "/person/age",
+             "/person/email" )
 
     suite(m"Regression: does not abort on the first bad field"):
       test(m"Both wrong-type fields are reported, not just the first"):
@@ -409,7 +409,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     suite(m"Located schema-validation errors (LSP diagnostics)"):
       test(m"Unknown-keyword errors carry their keyword pointer"):
         assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/foo", "#/bar"))
+      . assert(_ == Set("/foo", "/bar"))
 
       test(m"Unknown-keyword errors are located at the offending compound"):
         assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(1)).to[Set]
@@ -429,7 +429,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Missing required members carry a pointer but no source span"):
         assignPositions(t"", twoRequiredSchema).items.map { case (p, span) => (p.s, span.exists) }
         . to[Set]
-      . assert(_ == Set(("#/name", false), ("#/email", false)))
+      . assert(_ == Set(("/name", false), ("/email", false)))
 
       // The excess atom is read by `assignAtoms`, deep inside `assignCompound`,
       // so this proves the per-compound focus covers a compound's whole subtree
@@ -437,7 +437,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"An excess atom is located at the enclosing compound"):
         assignPositions(t"item x y\nname n\n", atomAccrualSchema).items
         . map { case (pointer, span) => (pointer.s, span.startLine.lay(-1)(_.n1)) }.to[Set]
-      . assert(_ == Set(("#/item", 1)))
+      . assert(_ == Set(("/item", 1)))
 
       // E308 is a property of a member's whole run, not of one node, so it is
       // raised outside every `focus` block: the entry has no focus at all and
@@ -446,13 +446,13 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A run-level E308 accrues at the root without panicking"):
         assignPositions(t"name Alice\nname Bob\nemail e\n", twoRequiredSchema).items
         . map { case (p, span) => (p.s, span.exists) }.to[Set]
-      . assert(_ == Set(("#", false)))
+      . assert(_ == Set(("/", false)))
 
     suite(m"Located decode errors"):
       test(m"A malformed field's focus names the field"):
         decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
         . items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/age"))
+      . assert(_ == Set("/age"))
 
       test(m"A malformed field is located at its value, not its keyword"):
         decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
@@ -467,7 +467,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"The direct path accrues a located focus at all"):
         directPerson(t"name Alice\nage notanumber\nemail e\n")
         . items.map { case (pointer, span) => (pointer.s, span.exists) }.to[Set]
-      . assert(_ == Set(("#/age", true)))
+      . assert(_ == Set(("/age", true)))
 
       test(m"A malformed field is located at its value, as on the AST path"):
         directPerson(t"name Alice\nage notanumber\nemail e\n").items.map(_(1)).to[Set]
@@ -494,7 +494,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A nested field is located at its own value, not its parent's keyword"):
         directContact(t"person\n  name Alice\n  age nope\n  email e\ncompany Acme\n")
         . items.map { case (pointer, span) => (pointer.s, span) }.to[Set]
-      . assert(_ == Set(("#/person/age", Tel.Error.spanAt(3, 7, 4))))
+      . assert(_ == Set(("/person/age", Tel.Error.spanAt(3, 7, 4))))
 
       // With no `Foci` at all, the focus machinery is inert and the span has to
       // ride on the error itself — the common fail-fast read, and the reason

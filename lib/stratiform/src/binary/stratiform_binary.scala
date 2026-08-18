@@ -61,14 +61,25 @@ extension (tel: Tel)
   // Encode this document's semantic model to BinTEL body bytes (no
   // magic number, no schema signature). Type-assigns `tel` against
   // `schema` first; raises `Tel.Error` on type-assignment failures.
-  def bintel(schema: Tels): Data raises Tel.Error =
+  def bintel(schema: Tels)(using Tactic[Tel.Error], Tactic[Bintel.Error]): Data =
     Bintel.encode(Tel.Type.assign(tel, schema), schema)
+
+  // As above, writing scalars with a declared encoding (§21.7) as the
+  // bound codec's bytes.
+  def bintel(schema: Tels, codecs: Tel.Codec.Bindings)
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
+  :   Data =
+
+    Bintel.encode(Tel.Type.assign(tel, schema, Tel.Validator.Registry.builtins, codecs),
+      schema, codecs)
 
   // BLAKE3 digest of this document's BinTEL body (§3 value hash). The
   // hash is taken over the body bytes only — no magic number, no
   // schema signature — and is therefore a function of the semantic
   // model and the schema alone, independent of presentation form.
-  def valueHash(schema: Tels): Digest in Blake3 raises Tel.Error =
+  def valueHash(schema: Tels)(using Tactic[Tel.Error], Tactic[Bintel.Error])
+  :   Digest in Blake3 =
+
     tel.bintel(schema).digest[Blake3]
 
   // Encode this document as a complete §6 BinTEL byte sequence —
@@ -88,15 +99,34 @@ extension (element: Tel.Element)
   // Encode a pre-assigned semantic-model element to BinTEL body bytes.
   // The schema supplies the member layout needed for §7.2 canonical
   // child order (variant counts of `SelectRef` members).
-  def bintel(schema: Tels): Data = Bintel.encode(element, schema)
+  def bintel(schema: Tels): Data raises Bintel.Error = Bintel.encode(element, schema)
+
+  // As above, writing scalars with a declared encoding (§21.7) as the
+  // bound codec's bytes.
+  def bintel(schema: Tels, codecs: Tel.Codec.Bindings)
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
+  :   Data =
+
+    Bintel.encode(element, schema, codecs)
 
   // BLAKE3 digest of this element's BinTEL body (§3 value hash).
-  def valueHash(schema: Tels): Digest in Blake3 = element.bintel(schema).digest[Blake3]
+  def valueHash(schema: Tels): Digest in Blake3 raises Bintel.Error =
+    element.bintel(schema).digest[Blake3]
+
+  def valueHash(schema: Tels, codecs: Tel.Codec.Bindings)
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
+  :   Digest in Blake3 =
+
+    element.bintel(schema, codecs).digest[Blake3]
 
 extension [value: Tel.Encodable](value: value)
   // Encode any value to BinTEL body bytes, deriving the schema from its type:
   // `value.bintel` is `value.encode.bintel(Tels.tels[value](…))`. The schema name is
   // internal (a BinTEL body never embeds it), so a decoder that derives the schema from
   // the same type agrees on the layout regardless of the chosen name.
-  def bintel(using value is TelSchematic over Tels.Type): Data raises Tel.Error =
+  def bintel
+    ( using value is TelSchematic over Tels.Type )
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
+  :   Data =
+
     value.encode.bintel(Tels.tels[value](Text("root")))
