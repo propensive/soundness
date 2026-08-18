@@ -39,7 +39,6 @@ import scala.quoted.*
 import anticipation.*
 import denominative.*
 import fulminate.*
-import proscenium.compat.mkString
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -64,7 +63,7 @@ object Showable:
     _.map(_.show).stdlib.mkString("{", ", ", "}").tt
 
   given list: [element: Showable] => List[element] is Showable =
-    _.map(_.show).mkString("[", ", ", "]").tt
+    _.map(_.show).stdlib.mkString("[", ", ", "]").tt
 
   given sequence: [element: Showable] => Sequence[element] is Showable =
     _.map(_.show).stdlib.mkString("[ ", " ", " ]").tt

@@ -37,7 +37,6 @@ import contingency.*
 import gesticulate.*
 import prepositional.*
 import turbulence.*
-import proscenium.compat.*
 
 // A raster image format, and its codec. Each format supplies its own instance from its own
 // component -- `hallucination.png`, `hallucination.jpeg` and so on -- so a consumer compiles only

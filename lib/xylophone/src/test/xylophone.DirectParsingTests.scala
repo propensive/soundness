@@ -38,6 +38,7 @@ import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 // Fixtures for the direct-parsing suite: a flat product, a nested product,
 // `@attribute` fields (plain and `@name`-renamed), `@name`-renamed elements,

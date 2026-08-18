@@ -56,6 +56,7 @@ import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 
 import filesystemBackends.virtualMachineFilesystem
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Ziggurat tests"):
   def run(): Unit =

@@ -32,7 +32,6 @@
                                                                                                   */
 package gesticulate
 
-import proscenium.compat.*
 
 import anticipation.*
 import rudiments.*

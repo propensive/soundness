@@ -34,7 +34,6 @@ package hallucination
 
 import anticipation.*
 import contingency.*
-import proscenium.compat.*
 
 // JPEG through `javax.imageio`, whose native codec outperforms the pure one. The pure codec beside this
 // remains compiled on the JVM, and is differentially tested against this backend.

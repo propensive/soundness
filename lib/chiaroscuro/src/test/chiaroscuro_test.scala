@@ -34,7 +34,6 @@ package chiaroscuro
 
 import soundness.*
 
-import proscenium.compat.*
 import textMetrics.uniformMetric
 import chiaroscuro.teletypeables.juxtapositionTeletype
 

@@ -30,32 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escapade
+package rudiments
 
-import anticipation.*
+import denominative.*
 import prepositional.*
-import rudiments.*
-import symbolism.*
-import turbulence.*
-import vacuous.*
-import zephyrine.*
 
-// Teletype values are records, so their streams travel on the boxed medium
-// (windows of `Array[Teletype]^{}`); each record prints as it arrives.
-package writables:
-  given out: Stdio => Out.type is Writable by (Array[Teletype]^{}) = new Writable:
-    type Self = Out.type
-    type Operand = Array[Teletype]^{}
+// The prepending counterpart of `Appendable`: `element +: collection`. Prepending is O(1) for
+// `List` and `Chain`, so only the frozen array's full rebuild is complexity-gated.
+object Prependable:
+  given list: [element] => List[element] is Prependable by element =
+    (list, element) => List.of(element :: list.stdlib)
 
-    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
-      . records.each(Out.print(_))
+  given sequence: [element] => Sequence[element] is Prependable by element =
+    (sequence, element) => Sequence.of(element +: sequence.stdlib)
 
-  given err: Stdio => Err.type is Writable by (Array[Teletype]^{}) = new Writable:
-    type Self = Err.type
-    type Operand = Array[Teletype]^{}
+  given chain: [element] => Chain[element] is Prependable by element =
+    (chain, element) => Chain.of(element #:: chain.stdlib)
 
-    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
-      . records.each(Err.print(_))
+  given frozenArray: [element: scala.reflect.ClassTag] => (complexity: LinearSizeComplexity)
+  =>  (Array[element]^{}) is Prependable by element =
+    (array, element) => Array.frozen(array.readable.prepended(element))
 
+trait Prependable extends Typeclass.Pure, Operable:
+  def prepend(self: Self, element: Operand): Self
+
+// A right-associative extension binds its receiver to the *left* operand (`element +:
+// collection`), so the receiver here is the element — the same shape the compat shim had.
+extension [operand](element: operand)
+  infix def +: [self](value: self)(using prependable: self is Prependable by operand): self =
+    prependable.prepend(value, element)

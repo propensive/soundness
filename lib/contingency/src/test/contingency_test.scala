@@ -38,6 +38,7 @@ import proscenium.compat.*
 import contingency.strategies.throwUnsafely
 
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class VarargsError(arguments: Text*)(using Diagnostics) extends Error(m"varargs error")
 case class VarargsError2(argument: Text, arguments: Text*)(using Diagnostics) extends Error(m"varargs error 2")

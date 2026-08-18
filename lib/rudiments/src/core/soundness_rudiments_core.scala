@@ -44,10 +44,11 @@ export
       longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
       prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
+      before, upto, from, after, keep, skip, snip, Appendable, Prependable, `:+`, `+:`,
       indexed, least, most, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, where,
-      Populated, head, reduce, populatedEquality }
+      Populated, head, last, reduce, populatedEquality }
 
 // The `Deindex` extension group (`apply`, `at`, `defines`, `confine`, `prim`, `sec`, `ter`) is
 // re-declared here rather than exported: its typeclass evidence is a dependent leading `using`
@@ -84,6 +85,12 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   transparent inline def at[index](ordinal: index)(using sub: index <:< applicable.Operand)
   :   vacuous.Optional[applicable.Result] =
     rudiments.at(value)(ordinal)
+
+// Re-declared for the same reason as the `Deindex` group above: the typeclass evidence is a
+// dependent leading `using` clause, which synthesized export forwarders cannot carry.
+extension [self](value: self)(using definable: denominative.Definable { type Self = self })
+  def define(index: definable.Operand, result: definable.Result): self =
+    definable.define(value, index, result)
 
 extension [element](sequence: proscenium.List[element])
   // Mirrors the ungated `List` special case in `rudiments.Deindex` (same non-`inline`

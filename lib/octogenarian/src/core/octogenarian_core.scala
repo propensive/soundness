@@ -41,6 +41,7 @@ import gossamer.*
 import guillotine.*
 import nomenclature.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 
 package gitCommands:

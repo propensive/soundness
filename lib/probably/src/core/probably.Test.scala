@@ -43,6 +43,7 @@ import gossamer.*
 import hieroglyph.*
 import hypotenuse.*
 import nomenclature.*
+import rudiments.*
 import vacuous.*
 
 object Test:

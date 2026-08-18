@@ -30,32 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escapade
+package anticipation
 
-import anticipation.*
-import prepositional.*
-import rudiments.*
-import symbolism.*
-import turbulence.*
-import vacuous.*
-import zephyrine.*
-
-// Teletype values are records, so their streams travel on the boxed medium
-// (windows of `Array[Teletype]^{}`); each record prints as it arrives.
-package writables:
-  given out: Stdio => Out.type is Writable by (Array[Teletype]^{}) = new Writable:
-    type Self = Out.type
-    type Operand = Array[Teletype]^{}
-
-    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
-      . records.each(Out.print(_))
-
-  given err: Stdio => Err.type is Writable by (Array[Teletype]^{}) = new Writable:
-    type Self = Err.type
-    type Operand = Array[Teletype]^{}
-
-    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
-      . records.each(Err.print(_))
-
+// The reading direction of a positional operation: `Ltr` anchors at the start, `Rtl` at the
+// end. Owned by `anticipation` (rather than `gossamer`, where it originated) so that the
+// generic positional operations (`keep`, `skip`, `snip`) in `rudiments` can share one
+// vocabulary with the textual operations built on them.
+enum Bidi:
+  case Ltr, Rtl

@@ -34,7 +34,6 @@ package cataclysm
 
 import scala.language.dynamics
 
-import proscenium.compat.iterator
 
 import anticipation.*
 import contextual.*
@@ -64,7 +63,7 @@ object Css:
       case error: Css.Error => accrual + error
 
     . protect:
-        CssParser.parse(source.iterator)
+        CssParser.parse(source.stdlib.iterator)
 
   // Controls how a `Css` tree is serialized. `newlines` puts each rule and declaration on its own
   // indented line; `spaces` adds the cosmetic spaces (after `:` and before `{`). Bundled as

@@ -39,6 +39,7 @@ import proscenium.compat.*
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class VPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class VAddress(street: Text, city: Text, zip: Text) derives CanEqual

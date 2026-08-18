@@ -34,7 +34,9 @@ package cataclysm
 
 import soundness.*
 
-import proscenium.compat.*
+// Partial-op residue (the drain's debt register): `head`/`length` on possibly-empty lists.
+import proscenium.compat.{head, headOption, length, `:::`}
+
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics

@@ -177,6 +177,31 @@ extension [self](self: self)(using traversable: self is Traversable)
 
     reshapable.reshape(traversable.traverse(self).distinct)
 
+  // The longest leading run satisfying `predicate`, and the remainder; each side is traversed
+  // independently, since a single `Iterator` cannot be consumed twice.
+  def span[result](predicate: traversable.Operand => Boolean)
+    ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
+  :   (result, result) =
+
+    ( reshapable.reshape(traversable.traverse(self).takeWhile(predicate)),
+      reshapable.reshape(traversable.traverse(self).dropWhile(predicate)) )
+
+  // Sorting by the elements' own order, the no-key sibling of `sort(lambda)` below.
+  def sort[result]
+    ( using ordering:   Ordering[traversable.Operand],
+            reshapable: self is Reshapable.Stable by traversable.Operand to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).toList.sorted.iterator)
+
+  // Filter and map in one pass, keeping only the elements the partial function is defined at
+  // (the stdlib's `collect`). Not `Stable`: gathering from a `Set` or `Map` is meaningful.
+  def sweep[element2, result](lambda: PartialFunction[traversable.Operand, element2])
+    ( using reshapable: self is Reshapable by element2 to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).collect(lambda))
+
   // Split into consecutive batches of at most `size` elements, each rebuilt in the source's own
   // shape; `Stable` because the batch boundaries depend on order. The final batch may be shorter.
   def batched[result](size: Int)

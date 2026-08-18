@@ -32,7 +32,6 @@
                                                                                                   */
 package cataclysm
 
-import proscenium.compat.*
 
 import anticipation.*
 import contextual.*

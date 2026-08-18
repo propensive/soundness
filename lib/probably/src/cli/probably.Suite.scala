@@ -56,6 +56,7 @@ import vacuous.*
 import luminosity.darkBrightness
 import termcaps.environmentTermcap
 import themes.solarizedTheme
+import denominative.asymptotics.linearSizeComplexity
 
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
   val suiteIo = safely(stdios.virtualMachineStdio).or(panic(m"the JVM stdio is always available"))

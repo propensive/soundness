@@ -34,7 +34,6 @@ package jacinta
 
 import soundness.*
 
-import proscenium.compat.*
 
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely

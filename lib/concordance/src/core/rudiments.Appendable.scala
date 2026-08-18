@@ -30,32 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escapade
+package rudiments
 
-import anticipation.*
+import denominative.*
 import prepositional.*
-import rudiments.*
-import symbolism.*
-import turbulence.*
-import vacuous.*
-import zephyrine.*
 
-// Teletype values are records, so their streams travel on the boxed medium
-// (windows of `Array[Teletype]^{}`); each record prints as it arrives.
-package writables:
-  given out: Stdio => Out.type is Writable by (Array[Teletype]^{}) = new Writable:
-    type Self = Out.type
-    type Operand = Array[Teletype]^{}
+// Single-element growth for the opaque collections: `:+` incorporates one element (at the end,
+// for ordered shapes), the counterpart of `Prependable`'s `+:`. Collection-with-collection
+// concatenation is symbolism's `Concatenable` (`+`). Instances whose append rebuilds the whole
+// collection are gated on the acknowledgement of that linear cost, like `Countable`.
+object Appendable:
+  // Appending to a `List` copies all of it: O(n), so the instance demands the marker.
+  given list: [element] => (complexity: LinearSizeComplexity)
+  =>  List[element] is Appendable by element =
+    (list, element) => List.of(list.stdlib :+ element)
 
-    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
-      . records.each(Out.print(_))
+  given sequence: [element] => Sequence[element] is Appendable by element =
+    (sequence, element) => Sequence.of(sequence.stdlib :+ element)
 
-  given err: Stdio => Err.type is Writable by (Array[Teletype]^{}) = new Writable:
-    type Self = Err.type
-    type Operand = Array[Teletype]^{}
+  // Lazily: nothing is forced by the append itself.
+  given chain: [element] => Chain[element] is Appendable by element =
+    (chain, element) => Chain.of(chain.stdlib.appended(element))
 
-    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
-      . records.each(Err.print(_))
+  // A `Set` has no ends, so `:+` is plain membership addition (the stdlib's `set + element`).
+  given set: [element] => Set[element] is Appendable by element =
+    (set, element) => Set.of(set.stdlib + element)
 
+  // The frozen array is rebuilt in full: O(n), so the instance demands the marker.
+  given frozenArray: [element: scala.reflect.ClassTag] => (complexity: LinearSizeComplexity)
+  =>  (Array[element]^{}) is Appendable by element =
+    (array, element) => Array.frozen(array.readable :+ element)
+
+trait Appendable extends Typeclass.Pure, Operable:
+  def append(self: Self, element: Operand): Self
+
+extension [self, operand](value: self)(using appendable: self is Appendable by operand)
+  infix def :+ (element: operand): self = appendable.append(value, element)

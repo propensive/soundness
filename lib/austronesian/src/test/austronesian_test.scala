@@ -34,7 +34,6 @@ package austronesian
 
 import soundness.*
 
-import proscenium.compat.*
 
 case class Person(name: Text, age: Int)
 case class Group(persons: List[Person], size: Int)

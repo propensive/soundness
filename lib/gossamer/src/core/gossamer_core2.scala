@@ -35,4 +35,7 @@ package gossamer
 extension (inline context: StringContext)
   transparent inline def a(inline parts: Ascii*): Ascii = ${internal.ascii('context, 'parts)}
 
-export Bidi.Ltr, Bidi.Rtl
+// `Bidi` now lives in `anticipation` so `rudiments`' generic positional operations can use it;
+// re-exported here so `import gossamer.*` keeps exposing the whole surface unchanged.
+export anticipation.Bidi
+export anticipation.Bidi.{Ltr, Rtl}

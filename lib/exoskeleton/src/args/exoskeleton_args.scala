@@ -40,6 +40,7 @@ import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 package interpreters:
   given simpleInterpreter: Interpreter:

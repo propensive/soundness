@@ -38,6 +38,7 @@ import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class QPerson(name: Text, email: Text) derives CanEqual
 case class QTeam(leader: QPerson, title: Text) derives CanEqual

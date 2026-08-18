@@ -132,6 +132,7 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
     # `make wasm-e2e` then links the `.wasi` backends into a real Wasm component and runs
     # its scenarios under wasmtime — the only stage that exercises the WIT ABI at runtime.
     make runners-build \
+      && python3 etc/check-compat-ratchet.py \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.js.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.native.compile \

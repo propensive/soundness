@@ -32,7 +32,6 @@
                                                                                                   */
 package phoenicia
 
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

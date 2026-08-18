@@ -80,7 +80,6 @@ extension [element](set: Set[element])
   inline def intersect(other: Set[element]): Set[element] = Set.of(set.stdlib.intersect(other.stdlib))
   inline def union(other: Set[element]): Set[element] = Set.of(set.stdlib.union(other.stdlib))
   inline def diff(other: Set[element]): Set[element] = Set.of(set.stdlib.diff(other.stdlib))
-  inline def subsetOf(other: Set[element]): Boolean = set.stdlib.subsetOf(other.stdlib)
   inline def filterNot(predicate: element => Boolean): Set[element] = Set.of(set.stdlib.filterNot(predicate))
 
   inline def partition(predicate: element => Boolean): (Set[element], Set[element]) =
@@ -202,10 +201,6 @@ extension [element](list: List[element])
   inline def dropWhile(predicate: element => Boolean): List[element] =
     List.of(list.stdlib.dropWhile(predicate))
 
-  inline def span(predicate: element => Boolean): (List[element], List[element]) =
-    val (left, right) = list.stdlib.span(predicate)
-    (List.of(left), List.of(right))
-
   inline def splitAt(index: Int): (List[element], List[element]) =
     val (left, right) = list.stdlib.splitAt(index)
     (List.of(left), List.of(right))
@@ -237,20 +232,10 @@ extension [element](list: List[element])
   infix def ::: [element2 >: element](suffix: List[element2]): List[element2] =
     List.of(list.stdlib ::: suffix.stdlib)
 
-  inline infix def :+ [element2 >: element](element2Value: element2): List[element2] =
-    List.of(list.stdlib :+ element2Value)
-
-extension [element](head: element)
-  infix def +: [element2 >: element](list: List[element2]): List[element2] =
-    List.of(head +: list.stdlib)
-
 extension [element](list: List[element])
 
   inline def grouped(count: Int): Iterator[List[element]] =
     list.stdlib.grouped(count).map(List.of(_))
-
-  inline def sliding(count: Int): Iterator[List[element]] =
-    list.stdlib.sliding(count).map(List.of(_))
 
   inline def maxBy[key](lambda: element => key)(using math.Ordering[key]): element =
     list.stdlib.maxBy(lambda)
@@ -270,9 +255,6 @@ extension [element](list: List[List[element]])
 
 extension [key, value](list: List[(key, value)])
   inline def toMap: Map[key, value] = Map.of(list.stdlib.toMap)
-  inline def unzip: (List[key], List[value]) =
-    val (keys, values) = list.stdlib.unzip(using pair => pair)
-    (List.of(keys), List.of(values))
 
 // MIGRATION SHIMS for the opaque `Chain`. Non-umbrella names only — `map`/`filter`/`flatMap`/
 // `fold`/`each` come from the typeclass surface (`Traversable`/`Reshapable`). Forcing operations
@@ -358,10 +340,6 @@ extension [element](sequence: Sequence[element])
   inline def dropWhile(predicate: element => Boolean): Sequence[element] =
     Sequence.of(sequence.stdlib.dropWhile(predicate))
 
-  inline def span(predicate: element => Boolean): (Sequence[element], Sequence[element]) =
-    val (left, right) = sequence.stdlib.span(predicate)
-    (Sequence.of(left), Sequence.of(right))
-
   inline def splitAt(index: Int): (Sequence[element], Sequence[element]) =
     val (left, right) = sequence.stdlib.splitAt(index)
     (Sequence.of(left), Sequence.of(right))
@@ -396,12 +374,6 @@ extension [element](sequence: Sequence[element])
 
   infix def ::: [element2 >: element](suffix: Sequence[element2]): Sequence[element2] =
     Sequence.of(sequence.stdlib ++ suffix.stdlib)
-
-  inline infix def :+ [element2 >: element](element2Value: element2): Sequence[element2] =
-    Sequence.of(sequence.stdlib :+ element2Value)
-
-  inline infix def +: [element2 >: element](element2Value: element2): Sequence[element2] =
-    Sequence.of(element2Value +: sequence.stdlib)
 
 // MIGRATION SHIMS for the frozen array, `Array[element]^{}`, following the same drain
 // loop as the other blessed types -- anchored at `^{caps.any.rd}` receivers so frozen,
@@ -533,14 +505,5 @@ extension [element](array: Array[element]^{caps.any.rd})
   @targetName("frozenIndexOf")
   inline def indexOf(element2: element): Int = array.readable.indexOf(element2)
 
-  @targetName("frozenAppend")
-  inline infix def :+ [element2 >: element: scala.reflect.ClassTag](element3: element2)
-  :   Array[element2]^{} =
-    Array.frozen(array.readable :+ element3)
-
-  @targetName("frozenPrepend")
-  inline infix def +: [element2 >: element: scala.reflect.ClassTag](element3: element2)
-  :   Array[element2]^{} =
-    Array.frozen(element3 +: array.readable)
 
 

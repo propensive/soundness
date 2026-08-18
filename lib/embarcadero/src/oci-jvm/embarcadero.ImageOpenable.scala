@@ -32,7 +32,6 @@
                                                                                                   */
 package embarcadero
 
-import proscenium.compat.*
 
 import anticipation.*
 import aperture.*

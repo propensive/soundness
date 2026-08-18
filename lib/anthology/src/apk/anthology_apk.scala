@@ -48,6 +48,8 @@ import proscenium.compat.*
 import serpentine.*
 import turbulence.*
 import zeppelin.*
+import rudiments.`:+`
+import denominative.asymptotics.linearSizeComplexity
 
 object apkOptions:
   private def apk(edit: Apk.Configuration => Apk.Configuration): Setting =

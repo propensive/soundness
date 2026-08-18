@@ -38,6 +38,7 @@ import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class FPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class FAddress(street: Text, city: Text, zip: Text) derives CanEqual

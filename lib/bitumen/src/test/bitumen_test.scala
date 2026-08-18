@@ -42,6 +42,7 @@ import galilei.javaPath
 
 import charEncoders.asciiEncoder
 import strategies.throwUnsafely
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Bitumen Tests"):
   def run(): Unit =

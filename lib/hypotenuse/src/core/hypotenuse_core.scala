@@ -57,6 +57,50 @@ extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${hypotenuse.protointernal.bin('context)}
   transparent inline def hex(): Array[Byte]^{} = ${hypotenuse.protointernal.hex('context)}
 
+// The `Traversable` siblings of the `Iterable` extremum operations below, so the opaque
+// collections answer to the same names; in this package (not `rudiments`) so the two receiver
+// families stay overloaded rather than split-name-clashing at the `soundness` umbrella.
+extension [self](self: self)(using traversable: self is Traversable)
+  inline def minimize[key](lambda: traversable.Operand => key)
+    ( using commensurable: key is Commensurable against key )
+  :   Optional[traversable.Operand] =
+
+    val iterator = traversable.traverse(self)
+
+    if !iterator.hasNext then Unset else
+      var current = iterator.next()
+      var best = lambda(current)
+
+      while iterator.hasNext do
+        val element = iterator.next()
+        val next = lambda(element)
+
+        if next < best then
+          current = element
+          best = next
+
+      current
+
+  inline def maximize[key](lambda: traversable.Operand => key)
+    ( using commensurable: key is Commensurable against key )
+  :   Optional[traversable.Operand] =
+
+    val iterator = traversable.traverse(self)
+
+    if !iterator.hasNext then Unset else
+      var current = iterator.next()
+      var best = lambda(current)
+
+      while iterator.hasNext do
+        val element = iterator.next()
+        val next = lambda(element)
+
+        if next > best then
+          current = element
+          best = next
+
+      current
+
 extension [value](iterable: Iterable[value])
   inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =
     if iterable.nil then Unset else

@@ -32,7 +32,6 @@
                                                                                                   */
 package geodesy
 
-import proscenium.compat.*
 
 import scala.math
 

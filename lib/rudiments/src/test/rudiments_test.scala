@@ -131,6 +131,83 @@ object Tests extends Suite(m"Rudiments Tests"):
         m.remap { (key, value) => value -> key }
       . assert(_ == Map(1 -> t"a", 2 -> t"b"))
 
+    suite(m"Query tests"):
+      test(m"minimize finds the element with the least key"):
+        val xs: List[Text] = List(t"epsilon", t"mu", t"beta")
+        xs.minimize(_.length)
+      . assert(_ == t"mu")
+
+      test(m"maximize finds the element with the greatest key"):
+        val xs: List[Text] = List(t"epsilon", t"mu", t"beta")
+        xs.maximize(_.length)
+      . assert(_ == t"epsilon")
+
+      test(m"minimize of empty is Unset"):
+        val xs: List[Int] = List()
+        xs.minimize(identity(_))
+      . assert(_ == Unset)
+
+      test(m"last on an occupied chain"):
+        val xs: Chain[Int] = Chain(1, 2, 3)
+        xs.occupied.let(_.last)
+      . assert(_ == 3)
+
+    suite(m"Definable tests"):
+      test(m"define replaces a sequence element positionally"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        xs.define(Sec, 20)
+      . assert(_ == Sequence(1, 20, 3))
+
+      test(m"define outside the sequence returns it unchanged"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        xs.define(Quat, 40)
+      . assert(_ == Sequence(1, 2, 3))
+
+      test(m"define replaces a map value by key"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.define(t"b", 20)
+      . assert(_ == Map(t"a" -> 1, t"b" -> 20))
+
+      test(m"define adds an absent key"):
+        val m: Map[Text, Int] = Map(t"a" -> 1)
+        m.define(t"b", 2)
+      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+
+      test(m"define replaces a frozen array element"):
+        val xs: Array[Int]^{} = Array.tabulate(3)(_ + 1)
+        xs.define(Prim, 10).to[List]
+      . assert(_ == List(10, 2, 3))
+
+    suite(m"Ordered reshaping tests"):
+      test(m"Map sorts into a Ledger iterating in sorted order"):
+        val m: Map[Text, Int] = Map(t"b" -> 2, t"c" -> 3, t"a" -> 1)
+        m.sort { (key, value) => key }.to[List]
+      . assert(_ == List(t"a" -> 1, t"b" -> 2, t"c" -> 3))
+
+      test(m"Map sort result is a Ledger"):
+        val m: Map[Text, Int] = Map(t"b" -> 2, t"a" -> 1)
+        val sorted: Ledger[Text, Int] = m.sort { (key, value) => key }
+        sorted.to[List]
+      . assert(_ == List(t"a" -> 1, t"b" -> 2))
+
+      test(m"Ledger filter preserves insertion order and shape"):
+        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        val filtered: Ledger[Text, Int] = ledger.filter { (key, value) => value != 1 }
+        filtered.to[List]
+      . assert(_ == List(t"c" -> 3, t"b" -> 2))
+
+      test(m"Ledger sorts into a Ledger"):
+        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        val sorted: Ledger[Text, Int] = ledger.sort { (key, value) => value }
+        sorted.to[List]
+      . assert(_ == List(t"a" -> 1, t"b" -> 2, t"c" -> 3))
+
+      test(m"Map non-pair stable reshape still yields a List"):
+        val m: Map[Text, Int] = Map(t"b" -> 2, t"a" -> 1)
+        val traced: List[Int] = m.trace(0) { (total, pair) => total + pair(1) }
+        traced
+      . assert(_ == List(0, 2, 3))
+
     suite(m"Confined index tests"):
       val text = t"hello"
       val array = Array.of(10, 20, 30)

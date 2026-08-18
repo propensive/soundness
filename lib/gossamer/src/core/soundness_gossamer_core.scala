@@ -34,16 +34,15 @@ package soundness
 
 export
   gossamer
-  . { add, after, append, appendln, Ascii, ascii, AsciiBuilder, before, Bidi, blank,
+  . { add, append, appendln, Ascii, ascii, AsciiBuilder, Bidi, blank,
       broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, chomp,
       contains, count, cut, Cuttable, Decimalizer, ends, erase, extract, fill, fit,
-      from,
-      fuzzy, Grapheme, init, join, Joinable, kebab, keep, length, lines, lower,
+      fuzzy, Grapheme, init, join, Joinable, kebab, length, lines, lower,
       Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
-      Range, reversibleTextual, Rtl, search, offsetOf, SimpleTExtractor, skip, slices, snake, snip,
+      Range, reversibleTextual, traversableTextual, Rtl, search, offsetOf, SimpleTExtractor, slices, snake,
       spaced, starts, sub, subscripts, superscripts, sysData, t, tail, text,
       TextBuilder,
-      Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,
+      Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, urlDecode,
       urlEncode, utf16, utf8, pinpoint, words, Writing, WritingBuilder, a, justify, punch }
 
 package decimalConverters:

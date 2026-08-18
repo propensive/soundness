@@ -35,6 +35,7 @@ package harlequin
 import anticipation.*
 import denominative.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 import stenography.*
 import vacuous.*
