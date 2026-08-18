@@ -87,7 +87,7 @@ sedentary 3
 serpentine 1
 spectacular 1
 stenography 1
-stratiform 21
+stratiform 27
 superlunary 2
 surveillance 2
 telekinesis 11
