@@ -1381,6 +1381,27 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
+      // The same pipeline with both endpoints on virtual threads: every hand-off
+      // park is a fiber-style suspension on the carrier pool rather than a kernel
+      // park, so sixteen pipelines no longer oversubscribe the OS scheduler. The
+      // row above and the fiber runtimes below are within a few percent of each
+      // other at this concurrency; this one runs about 2.7x faster than any of
+      // them, which is the whole finding — the suite was missing a row for the
+      // configuration `Conduit` documents as the one to use under load.
+      stress(m"Soundness  Conduit VT both")(target = 2*Second, concurrency = 16):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.each(intake.put)
+              intake.finish())
+            var total = 0L
+            val consumer = Thread.ofVirtual.start(() =>
+              stream.sweep(region => range => total += (range: Interval).size))
+            consumer.join()
+            producer.join()
+            total
+        }
+
       stress(m"FS2  Channel.bounded")(target = 2*Second, concurrency = 16):
         '{
             import cats.effect.unsafe.implicits.global
