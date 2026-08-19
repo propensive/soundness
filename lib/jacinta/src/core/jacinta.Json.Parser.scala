@@ -33,7 +33,6 @@
 package jacinta
 
 import scala.{caps, math}
-import proscenium.compat.*
 
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions

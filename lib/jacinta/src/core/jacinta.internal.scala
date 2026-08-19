@@ -38,7 +38,10 @@ import scala.collection.immutable.IndexedSeq
 
 import scala.{annotation, caps}
 
-import proscenium.compat.*
+
+// Residue: `head` and the frozen-array subscript `apply` are partial, and `iterator` has no
+// blessed bridge; all three await the partial-operations tranche.
+import proscenium.compat.{head, iterator, apply}
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -171,7 +174,7 @@ object internal:
     import quotes.reflect.*
     val members = Map.of(refinements(self.asTerm.tpe.widen))
 
-    members(t"Topic").let: position => (position, members(t"Origin").or(position))
+    members.at(t"Topic").let: position => (position, members.at(t"Origin").or(position))
 
   def select(self: Expr[Json], field: Expr[String]): Macro[Json] =
 
@@ -289,7 +292,7 @@ object internal:
   private def arrayElements(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.take(n - 1) else arr
+    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.keep(n - 1) else arr
 
   private def hasMarker(s: String): Boolean =
     var i = 0
@@ -303,9 +306,9 @@ object internal:
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
 
-    val cleaned: List[String] = parts.zipWithIndex.map: (part, idx) =>
-      if idx > 0 && part.startsWith("*") then
-        spreads = spreads :+ (idx - 1)
+    val cleaned: List[String] = parts.indexed.map: (part, idx) =>
+      if idx.n0 > 0 && part.startsWith("*") then
+        spreads = spreads :+ (idx.n0 - 1)
         part.substring(1).nn
       else
         part
@@ -350,7 +353,7 @@ object internal:
       case Varargs(insertions) => insertions
 
     val (parts2, spreads) = preprocess(parts)
-    val source: String = parts2.mkString(MarkerString)
+    val source: String = parts2.stdlib.mkString(MarkerString)
     val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
 
     // Map a parser char-offset (within the joined input) back to a source-file
@@ -524,9 +527,9 @@ object internal:
       def serializeArray(elements: Array[Any]^{}): Expr[Json.Ast] =
         val n = elements.length
 
-        val indexed = elements.zipWithIndex
+        val indexed = elements.readable.zipWithIndex
 
-        val pieces = indexed.toList.map: (elem, idx) =>
+        val pieces = List.of(indexed.toList).map: (elem, idx) =>
             elem.asMatchable match
               case Unset =>
                 if spreads.has(holeIndex) then
@@ -658,7 +661,7 @@ object internal:
 
     abortive:
       val (parts2, spreads) = preprocess(parts)
-      val source: String = parts2.mkString(MarkerString)
+      val source: String = parts2.stdlib.mkString(MarkerString)
       val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
       val ast: Json.Ast = Json.Ast.parse(data, true)
 

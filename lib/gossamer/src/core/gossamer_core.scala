@@ -252,7 +252,11 @@ extension [textual: Textual as instance](text: textual)
   // Formerly `count(substring)`: as a generic-receiver extension it committed without falling
   // through (the zeppelin-`zip` hazard), blocking the collections' `count` in any file
   // importing gossamer, so the substring-occurrence counter takes its own name.
-  def occurrences(substring: Text): Int =
+  // Not `count`: extension ambiguity is decided from the receiver alone, before arguments are
+  // considered, so a generic-receiver `count` here blocks the collections' `count(predicate)` in
+  // every file importing gossamer — and no argument-side evidence (`CanEqual`, or even `<:<`,
+  // which cannot exist for a lambda) removes this candidate from the ambiguity.
+  def tally(substring: Text): Int =
     if substring.nil then 0 else
       def recur(start: Ordinal, total: Int): Int =
         textual.indexOf(text, substring, start).lay(total): found =>

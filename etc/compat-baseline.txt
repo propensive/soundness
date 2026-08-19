@@ -52,7 +52,7 @@ honeycomb 7
 hyperbole 4
 hypotenuse 4
 iridescence 3
-jacinta 10
+jacinta 2
 kaleidoscope 3
 legerdemain 2
 locomotion 3

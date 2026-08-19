@@ -37,7 +37,6 @@ import soundness.*
 // The `Json` lens and optic instances live in `jacinta.optics` now, outside `Json`'s implicit
 // scope, so they must be imported by name.
 import jacinta.optics.{jsonEachOptical, jsonFilterOptical, jsonLens, jsonOrdinalOptical}
-import proscenium.compat.*
 
 import scala.language.dynamics
 
@@ -1432,13 +1431,13 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Derived schema marks all fields required when none optional"):
         JsonSchema.derived[Bar].schema() match
-          case obj: JsonSchema.Object => obj.required.let(_.toSet).or(Set())
+          case obj: JsonSchema.Object => obj.required.let(_.to[Set]).or(Set())
           case _                      => Set()
       . assert(_ == Set(t"a", t"b"))
 
       test(m"Derived schema omits optional fields from required"):
         JsonSchema.derived[BarOpt].schema() match
-          case obj: JsonSchema.Object => obj.required.let(_.toSet).or(Set())
+          case obj: JsonSchema.Object => obj.required.let(_.to[Set]).or(Set())
           case _                      => Set()
       . assert(_ == Set(t"a"))
 
