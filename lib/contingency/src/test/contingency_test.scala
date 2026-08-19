@@ -48,7 +48,7 @@ case class ErrorB(value: Int)(using Diagnostics) extends Error(m"error b: $value
 case class ErrorC(value: Int)(using Diagnostics) extends Error(m"error c: $value")
 
 case class Accumulated(values: List[Int])(using Diagnostics)
-extends Error(m"accumulated ${values.length} errors")
+extends Error(m"accumulated ${values.size} errors")
 
 object Tests extends Suite(m"Contingency"):
 

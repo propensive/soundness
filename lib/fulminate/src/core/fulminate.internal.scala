@@ -103,7 +103,7 @@ object internal:
 
     val groups: List[String] = parts.mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.to(List)
 
-    if groups.size%2 == 0
+    if groups.stdlib.size%2 == 0
     then report.errorAndAbort("the m\"\" interpolator has an unmatched backtick")
 
     def toMessage(items: List[String | Expr[Message]]): Expr[Message] =

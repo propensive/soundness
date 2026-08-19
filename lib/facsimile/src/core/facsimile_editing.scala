@@ -229,7 +229,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     scala.caps.unsafe.unsafeAssumeSeparate:
      pdf.editDictionary(rootRef.number): tree =>
       val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
-      val count = tree(t"Count").let(_.long).or(kids.length.toLong)
+      val count = tree(t"Count").let(_.long).or(kids.size.toLong)
 
       tree.updated(t"Kids", Cos.Sequence(kids :+ pageRef))
         . updated(t"Count", Cos.Integral(count + 1))
@@ -256,7 +256,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
                 case _                  => true
 
               tree.updated(t"Kids", Cos.Sequence(remaining))
-                . updated(t"Count", Cos.Integral(remaining.length.toLong))
+                . updated(t"Count", Cos.Integral(remaining.size.toLong))
 
             pdf.remove(pageNumber)
 
@@ -288,7 +288,7 @@ private def buildOutline
 
   if items.isEmpty then (Unset, Unset, 0) else
     val refs = items.map { _ => pdf.allocate(Cos.Nil) }
-    var total = items.length
+    var total = items.size
 
     items.zip(refs).zipWithIndex.each: (pair, index) =>
       val (bookmark, ref) = pair
@@ -299,7 +299,7 @@ private def buildOutline
         Map(t"Title" -> Cos.Chars(Cos.encodeText(bookmark.title)), t"Parent" -> parent)
 
       if index > 0 then dict = dict.updated(t"Prev", refs.stdlib(index - 1))
-      if index < refs.length - 1 then dict = dict.updated(t"Next", refs.stdlib(index + 1))
+      if index < refs.size - 1 then dict = dict.updated(t"Next", refs.stdlib(index + 1))
 
       childFirst.let: first => dict = dict.updated(t"First", first)
 

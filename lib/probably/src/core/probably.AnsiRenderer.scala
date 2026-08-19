@@ -549,10 +549,10 @@ private[probably] object AnsiRenderer:
 
     val data = coverage.spec.readable.groupBy(_.path).toList.map: (path, branches) =>
       val hitCount: Int =
-        branches.map(_.id).count(coverage.hits.has)
+        Array.frozen(branches.map(_.id)).count { (id: Int) => coverage.hits.has(id) }
 
       val oldHitCount: Int =
-        branches.map(_.id).count(coverage.oldHits.has)
+        Array.frozen(branches.map(_.id)).count { (id: Int) => coverage.oldHits.has(id) }
 
       CoverageData(path, branches.size, hitCount, oldHitCount)
 

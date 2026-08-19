@@ -40,6 +40,8 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object StackTrace:
   case class Method(className: Text, method: Text):
@@ -306,7 +308,7 @@ object StackTrace:
                   current = char(index2)
 
                 val name2 =
-                  if arguments.length == 2 then "Σ("+arguments.last+" -> "+arguments.head+")"
+                  if arguments.size == 2 then "Σ("+arguments.last+" -> "+arguments.head+")"
                   else arguments.tail.mkString("Σ((", ", ", ")")+" -> "+arguments.head+")"
 
                 val mc = name.substring(index, index + 3).nn
@@ -360,7 +362,7 @@ object StackTrace:
           Text:
             val types2 = types.drop(index + 3).iterator.to(List).map(primitive)
 
-            if types2.length <= 2 then types2.mkString("(", " => ", ")")
+            if types2.size <= 2 then types2.mkString("(", " => ", ")")
             else types2.init.mkString("((", ", ", s") => ${types2.last})")
 
     else if rewritten.s.startsWith("scala.runtime.function.JProcedure")

@@ -43,6 +43,7 @@ import denominative.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Permutation:
   def bySize(n: Int): Chain[Permutation] = Chain.range[BigInt](0, Factorial(n)).map: i =>
@@ -99,7 +100,7 @@ object Permutation:
 
 case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand
-  lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.length)))
+  lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.size)))
 
   def bytes: Data = unsafely(factoradic.number.toByteArray.immutable)
   def apply(n: Int): Int =
@@ -109,8 +110,8 @@ case class Permutation(factoradic: Factoradic):
     expansion(Ordinal.zerary(n)).or(n)
 
   def apply[element](sequence: List[element]): List[element] raises Permutation.Error =
-    if sequence.length < lehmer.length then
-      raise(Permutation.Error(Permutation.Error.Reason.TooShort(sequence.length, lehmer.length)))
+    if sequence.size < lehmer.size then
+      raise(Permutation.Error(Permutation.Error.Reason.TooShort(sequence.size, lehmer.size)))
 
 
     def recur
@@ -134,12 +135,12 @@ case class Permutation(factoradic: Factoradic):
           result.reverse
 
 
-    val prefix = sequence.length - lehmer.length
+    val prefix = sequence.size - lehmer.size
     sequence.take(prefix) ::: recur(lehmer, Nil, sequence.drop(prefix), 0, Nil)
 
   def inverse: Permutation = if lehmer.nil then this else
-    val length = lehmer.length
-    val array: scala.Array[Int]^ = new scala.Array(lehmer.length)
+    val length = lehmer.size
+    val array: scala.Array[Int]^ = new scala.Array(lehmer.size)
     var index = 0
     var sequence: List[Int] = expansion
 

@@ -48,6 +48,8 @@ import contingency.*
 import fulminate.*
 import gigantism.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object internal:
   def glob(context: Expr[StringContext]): Macro[Any] =
@@ -59,11 +61,11 @@ object internal:
     val parts2 = parts.stdlib
     extractor
       ( List.of(parts2.head :: parts2.tail.map("([^/\\\\]*)"+_)),
-        List.fill(parts.length)((0, 0)) )
+        List.fill(parts.size)((0, 0)) )
 
   def regex(context: Expr[StringContext]): Macro[Any] =
     val parts = context.value.get.parts.to(List)
-    extractor(parts, Interpolation.literalOrigins(context, parts.length))
+    extractor(parts, Interpolation.literalOrigins(context, parts.size))
 
   private def extractor(parts: List[String], origins: List[(Int, Int)]): Macro[Any] =
     import quotes.reflect.*

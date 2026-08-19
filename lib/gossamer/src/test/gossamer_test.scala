@@ -45,6 +45,7 @@ import proscenium.compat.*
 
 import textMetrics.uniformMetric
 import caseSensitivity.caseSensitive
+import denominative.asymptotics.linearSizeComplexity
 
 case class Person(name: Text, age: Int)
 

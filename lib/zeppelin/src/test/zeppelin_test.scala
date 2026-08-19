@@ -52,6 +52,7 @@ import _root_.java.io as ji
 import _root_.java.util.zip as juz
 
 import filesystemBackends.virtualMachineFilesystem
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Zeppelin tests"):
   def run(): Unit =
@@ -126,7 +127,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       (data.readUnchecked(6) & 0xff) | ((data.readUnchecked(7) & 0xff) << 8)
 
     def contains(data: Data, signature: List[Int]): Boolean =
-      val window = signature.length
+      val window = signature.size
       (0 to data.length - window).exists: i =>
         (0 until window).forall(j => (data.readUnchecked(i + j) & 0xff) == signature.stdlib(j))
 
@@ -246,7 +247,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == List(t"alpha", t"gamma"))
 
       test(m"an empty archive yields no entries"):
-        readEntries(writeZip(t"empty2.zip")).length
+        readEntries(writeZip(t"empty2.zip")).size
       . assert(_ == 0)
 
       test(m"reads back binary (non-text) content unchanged"):
@@ -433,7 +434,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == true)
 
       test(m"the JDK reader counts all entries in a ZIP64 archive"):
-        jdkNames(path).length
+        jdkNames(path).size
       . assert(_ == 66000)
 
       test(m"the native reader counts all entries in a ZIP64 archive"):
@@ -459,7 +460,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"a stale ZIP64 locator stops the JDK opening a concatenated archive"):
         val stale = concatenate(t"zip64-stale.zip", stub, bytesOf(path))
-        try jdkNames(stale).length catch case exception: Exception => -1
+        try jdkNames(stale).size catch case exception: Exception => -1
       . assert(_ == -1)
 
       test(m"the native reader tolerates a stale ZIP64 locator"):
@@ -470,7 +471,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       test(m"rebasing a concatenated ZIP64 archive restores the JDK reader"):
         val rebased = concatenate(t"zip64-rebased.zip", stub, bytesOf(path))
         Zipfile.rebase(rebased, stub.length)
-        jdkNames(rebased).length
+        jdkNames(rebased).size
       . assert(_ == 66000)
 
       test(m"a rebased archive still reads natively, prefix and all"):

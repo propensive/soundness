@@ -44,6 +44,8 @@ import zephyrine.*
 
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Vocabulary:
   def apply[source: Streamable by Data over Credit, transport](adjectives: source, animals: source)
@@ -59,7 +61,7 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
 
   private val adjectiveArray: Array[Text]^{} = Array.from(adjectives.stdlib)
   private val animalArray:    Array[Text]^{} = Array.from(animals.stdlib)
-  private val animalCount:    Int          = animals.length
+  private val animalCount:    Int          = animals.size
   private val adjectiveIndex: Map[Text, Int] = Map.from(adjectives.stdlib.zipWithIndex)
   private val animalIndex:    Map[Text, Int] = Map.from(animals.stdlib.zipWithIndex)
 

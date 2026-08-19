@@ -40,6 +40,8 @@ import prepositional.*
 import proscenium.compat.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object References:
   def apply[transport <: Object](): References over transport = new References:
@@ -70,6 +72,6 @@ abstract class References():
   // restructuring the staging protocol.
   def array: Expr[scala.Array[Object]] =
     ref.or(panic(m"the reference array is bound by the rig before any value is spliced"))
-  def current: Int = allocations.length
-  def allocate(value: => Transport): Int = allocations.length.also { allocations ::= value }
+  def current: Int = allocations.size
+  def allocate(value: => Transport): Int = allocations.size.also { allocations ::= value }
   inline def apply(): scala.Array[Object] = scala.Array.from[Object](allocations.reverse.toSeq)

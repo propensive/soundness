@@ -40,6 +40,8 @@ import anticipation.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // The single structural pass over a report: builds the renderer-agnostic `Doc.Document`
 // consumed by both output modes. All decisions about WHAT appears in a report are made
@@ -442,7 +444,7 @@ private[probably] object Documenting:
       List.of((if shared.length > 1 then shared else all.distinct).sorted)
 
     val sparkline =
-      if steps.stdlib.length < 2 then Nil else
+      if steps.size < 2 then Nil else
         val peakRate =
           curves.stdlib.flatMap(_(1).stdlib.values).map(throughput(_).toLong)
           . maxOption.getOrElse(0L).max(1L)

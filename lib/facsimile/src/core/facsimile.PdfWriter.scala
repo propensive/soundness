@@ -44,6 +44,7 @@ import gossamer.*
 import hieroglyph.*
 import rudiments.*
 import vacuous.*
+import denominative.*
 import denominative.asymptotics.linearSizeComplexity
 
 // Serialises a write overlay as a PDF incremental update (ISO 32000-2 §7.5.6): the changed
@@ -163,7 +164,7 @@ private[facsimile] object PdfWriter:
       ascii(t"xref\n")
 
       subsections(numbers).each: (first, run) =>
-        ascii(t"$first ${run.length}\n")
+        ascii(t"$first ${run.size}\n")
 
         run.each: number =>
           if number == 0 then ascii(t"0000000000 65535 f \n")
@@ -223,11 +224,11 @@ private[facsimile] object PdfWriter:
       field(second, 4)
       field(third, 2)
 
-    val index = subsections(rows).flatMap((first, run) => List(first, run.length))
+    val index = subsections(rows).flatMap((first, run) => List(first, run.size))
 
     ascii(t"$number 0 obj\n<< /Type /XRef /Size ${number + 1} /W [1 4 2] /Index [")
     ascii(index.map(_.toString.tt).join(t" "))
-    ascii(t"] /Length ${rows.length*7}")
+    ascii(t"] /Length ${rows.size*7}")
 
     entries.each: (key, value) =>
       ascii(t" /$key ")

@@ -52,6 +52,8 @@ import rudiments.*
 import vacuous.*
 
 import Mathml.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // A parser for "ergo": a one-line shorthand for Presentation MathML that emits
 // `archimedes` nodes. The whole expression is delimited by a bracket pair; the
@@ -259,10 +261,10 @@ object Ergo:
       table.contents.collect:
         case Mtr(cells, _) => cells.map(cellText)
 
-    if rows.length == 1 then
+    if rows.size == 1 then
       val row = rows.head.join
       t"${RowVec.toString.tt}($row)"
-    else if rows.forall(_.length == 1) then
+    else if rows.forall(_.size == 1) then
       val column = rows.map(_.head).join
       t"${ColVec.toString.tt}($column)"
     else

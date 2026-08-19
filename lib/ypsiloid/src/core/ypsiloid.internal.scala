@@ -50,6 +50,8 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // `y"…"` interpolator and extractor macros.
 //
@@ -111,7 +113,7 @@ object internal:
       case _ => 0
 
     val parts = recur[parts](Nil)
-    if parts.length != 1 then halt(m"a YAML path literal cannot have substitutions")
+    if parts.size != 1 then halt(m"a YAML path literal cannot have substitutions")
     val raw: String = parts.head
     val start: Int = firstOrigin[origins]
 
@@ -716,7 +718,7 @@ object internal:
         var c = 0
         var k = 0
 
-        while k < parts2.length - 1 do
+        while k < parts2.size - 1 do
           c += 1
           k += 1
 
@@ -738,7 +740,7 @@ object internal:
               }
           }
 
-      types.length match
+      types.size match
         case 0 =>
           '{$result.asInstanceOf[Boolean]}
 
@@ -748,7 +750,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
-          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.stdlib.reverse)
+          AppliedType(defn.TupleClass(types.size).info.typeSymbol.typeRef, types.stdlib.reverse)
           . asType
           . absolve match
             case '[type result <: Tuple; result] =>

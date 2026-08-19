@@ -60,7 +60,7 @@ enum VShape derives CanEqual:
 case class VMix(shape: VShape, name: Text) derives CanEqual
 
 case class Issues(items: List[(Text, Json.Error)] = Nil)(using Diagnostics)
-extends Error(m"${items.length} validation issues"):
+extends Error(m"${items.size} validation issues"):
   def +(focus: Text, error: Json.Error): Issues = Issues(items :+ (focus, error))
 
 
@@ -82,23 +82,23 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
     suite(m"Single-error decoding (sanity)"):
       test(m"Validate a fully-valid object: no errors accrued"):
         val json = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.length
+        validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 0)
 
       test(m"Validate single missing field: one error"):
         val json = t"""{"name": "Bob", "age": 1}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.length
+        validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 1)
 
       test(m"Single wrong-type field: one error"):
         val json = t"""{"name": "Bob", "age": "young", "email": "b@x"}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.length
+        validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 1)
 
     suite(m"Multiple missing fields"):
       test(m"Two missing fields: two errors accrued"):
         val json = t"""{"name": "Alice"}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.length
+        validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the missing fields"):
@@ -114,13 +114,13 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
       test(m"Three missing fields: three errors accrued"):
         val json = t"""{}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.length
+        validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 3)
 
     suite(m"Multiple wrong-type fields"):
       test(m"Two wrong types: two errors accrued"):
         val json = t"""{"name": 42, "age": "thirty", "email": "x@y"}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.length
+        validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the wrong-type fields"):
@@ -138,7 +138,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
       test(m"Three wrong-type fields: three errors accrued"):
         val json = t"""{"name": 1, "age": "x", "email": false}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.length
+        validateJson(json)(_.as[VPerson]).items.size
       . assert(_ == 3)
 
     suite(m"Missing and wrong-type mixed"):
@@ -169,7 +169,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       test(m"Errors accumulate across both nested objects"):
         val json = t"""{"person": {"name": 1, "age": "x", "email": false},
                         "address": {"street": 2, "city": 3, "zip": 4}}""".read[Json]
-        validateJson(json)(_.as[VContact]).items.length
+        validateJson(json)(_.as[VContact]).items.size
       . assert(_ == 6)
 
     suite(m"Gated construction"):
@@ -177,7 +177,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         VProbe.constructions = 0
         val json = t"""{"name": "Zoe"}""".read[Json]
         val issues = validateJson(json)(_.as[VChecked])
-        (issues.items.length, VProbe.constructions)
+        (issues.items.size, VProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):
@@ -190,7 +190,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       test(m"A nested record with failures does not construct its parent"):
         VProbe.constructions = 0
         val json = t"""{"person": {"name": "D"}, "address": {"street": "X"}}""".read[Json]
-        validateJson(json)(_.as[VContact]).items.length
+        validateJson(json)(_.as[VContact]).items.size
       . assert(_ == 4)
 
     suite(m"Sum discriminators under accrual"):
@@ -198,12 +198,12 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
       test(m"A clean sum field decodes; no issues"):
         val json = t"""{"shape": {"kind": "VCircle", "radius": 3}, "name": "ok"}""".read[Json]
-        validateJson(json)(_.as[VMix]).items.length
+        validateJson(json)(_.as[VMix]).items.size
       . assert(_ == 0)
 
       test(m"A missing discriminator accrues one error without killing the scope"):
         val json = t"""{"shape": {"radius": 3}, "name": 42}""".read[Json]
-        validateJson(json)(_.as[VMix]).items.length
+        validateJson(json)(_.as[VMix]).items.size
       . assert(_ == 2)
 
       test(m"The missing-discriminator error and its sibling report their pointers"):
@@ -224,7 +224,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         . protect(decode(text))
 
       test(m"Two missing fields accrue on the direct-parse path"):
-        validateRead(t"""{"name": "Bob"}""")(_.read[VPerson in Json]).items.length
+        validateRead(t"""{"name": "Bob"}""")(_.read[VPerson in Json]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify both missing fields on the direct-parse path"):
@@ -235,7 +235,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       test(m"Direct-parse construction is skipped when a field is missing"):
         VProbe.constructions = 0
         val issues = validateRead(t"""{"name": "Zoe"}""")(_.read[VChecked in Json])
-        (issues.items.length, VProbe.constructions)
+        (issues.items.size, VProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Direct-parse construction runs once when clean"):
@@ -263,7 +263,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
           guard:
             constructed = true
 
-        (issues.items.length, consistencyRan, constructed)
+        (issues.items.size, consistencyRan, constructed)
       . assert(_ == (2, false, false))
 
       test(m"Clean reads run the consistency check and the guarded construction"):
@@ -289,7 +289,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
     suite(m"Position-aware focus (tracked Json)"):
       case class Tagged(items: List[(Text, Optional[Int], Optional[Int])] = Nil)
                        (using Diagnostics)
-      extends Error(m"${items.length} validation issues"):
+      extends Error(m"${items.size} validation issues"):
         def +(focus: Text, line: Optional[Int], column: Optional[Int]): Tagged =
           Tagged(items :+ (focus, line, column))
 

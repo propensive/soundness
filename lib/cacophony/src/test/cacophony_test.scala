@@ -38,6 +38,7 @@ import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Cacophony Tests"):
 
@@ -123,7 +124,7 @@ object Tests extends Suite(m"Cacophony Tests"):
     . assert(_ == 4L)
 
     test(m"Feed.list does not throw"):
-      Feed.list.length
+      Feed.list.size
     . assert(_ >= 0)
 
     Feed.list.headOption.foreach: feed =>

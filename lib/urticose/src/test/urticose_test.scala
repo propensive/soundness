@@ -38,6 +38,7 @@ import proscenium.compat.*
 import fulminate.errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import urticose.teletypeables.urlTeletype
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Urticose tests"):
   given palette: UrlPalette = new Palette:
@@ -774,8 +775,8 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"An interface's addresses partition into IPv4 and IPv6"):
         val interface = NetworkInterface.all().head
-        interface.ipv4.length + interface.ipv6.length
-      . assert(_ == NetworkInterface.all().head.addresses.length)
+        interface.ipv4.size + interface.ipv6.size
+      . assert(_ == NetworkInterface.all().head.addresses.size)
 
       test(m"The loopback interface can be found by its address"):
         val loopback = NetworkInterface.all().filter(_.loopback).head

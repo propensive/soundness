@@ -40,6 +40,7 @@ import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import abstractables.instantAbstractable
 import chronometries.unix
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =
@@ -1945,7 +1946,7 @@ object Tests extends Suite(m"Aviation Tests"):
       import calendars.gregorianCalendar
 
       test(m"An evenly-divisible period splits into equal segments"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).length
+        (Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).size
       . assert(_ == 4)
 
       test(m"Segment boundaries are consecutive"):
@@ -1953,11 +1954,11 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == List(0L, 900_000L, 1_800_000L, 2_700_000L))
 
       test(m"A remainder is kept as a short final segment when partial is true"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = true).length
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = true).size
       . assert(_ == 3)
 
       test(m"A remainder is dropped when partial is false"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = false).length
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = false).size
       . assert(_ == 2)
 
       test(m"The final partial segment ends at the period's finish"):
@@ -1965,13 +1966,13 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == 3_600_000L)
 
       test(m"A period can be split by a Duration"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(Quantity[Seconds[1]](1200.0)).length
+        (Instant(0L) ~ Instant(3_600_000L)).segments(Quantity[Seconds[1]](1200.0)).size
       . assert(_ == 3)
 
       test(m"A Timestamp period splits by a Timespan"):
         val period = Period(Timestamp(2024-Jan-1, Clockface(0, 0, 0)),
             Timestamp(2024-Jan-2, Clockface(0, 0, 0)))
-        period.segments(6*Hour).length
+        period.segments(6*Hour).size
       . assert(_ == 4)
 
     suite(m"Point ranges"):

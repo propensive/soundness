@@ -39,6 +39,8 @@ import contingency.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 private[facsimile] object Xref:
   enum Entry:
@@ -342,7 +344,7 @@ private[facsimile] object Xref:
           . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"W"))))
           . map(_.long.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"W", t"an integer")))).toInt)
 
-        if widths.length != 3 then abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
+        if widths.size != 3 then abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
         val size = dictionary(t"Size").let(_.long)
           . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Size"))))

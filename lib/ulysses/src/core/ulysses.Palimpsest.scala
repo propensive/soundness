@@ -38,6 +38,7 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Palimpsest:
   // §3 encoding. Build a body of length `cadence.bodyLength(n)`, XOR each
@@ -49,7 +50,7 @@ object Palimpsest:
     if !hashes.forall(_.length == cadence.hashSize)
     then panic(m"all hashes must have length ${cadence.hashSize}")
 
-    val n        = hashes.length
+    val n        = hashes.size
     val bodyLen  = cadence.bodyLength(n)
     val body     = Array[Byte](bodyLen)
     val hashSize = cadence.hashSize

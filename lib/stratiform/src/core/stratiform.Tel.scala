@@ -2257,7 +2257,7 @@ object Tel extends Tel2:
       keyMode:  Boolean )
   :   Optional[Tel.Error.Position] =
 
-    if i >= segments.length then
+    if i >= segments.size then
       if keyMode && i == 0 then Unset
       else
         val valueColumn = data.readUnchecked(offset + 4)
@@ -4072,7 +4072,7 @@ object Tel extends Tel2:
       then recoverAt(Reason.PragmaNotFirst, line, offsets.head + 1, parts.head.length)(())
 
       val version =
-        if parts.length >= 2 then parseVersion(parts.stdlib(1), line, offsets.stdlib(1) + 1) else (1, 0)
+        if parts.size >= 2 then parseVersion(parts.stdlib(1), line, offsets.stdlib(1) + 1) else (1, 0)
 
       // §8: phrases after the version are classified by form — layer
       // selection, schema reference, schema signature, sigil — then

@@ -52,6 +52,11 @@ extension [populable: Vacuiscible](value: populable)
   inline def nil: Boolean = populable.nil(value)
 
 extension [countable: Countable](value: countable)
+  // `Countable` carries the asymptotics gating, so `list.size` demands the
+  // `LinearSizeComplexity` acknowledgement and `chain.size` the `UnboundedSizeComplexity` one,
+  // exactly as `gamut` and `limit` already do.
+  inline def size: Int = countable.size(value)
+
   inline def gamut: Interval = Interval.initial(countable.size(value))
 
   // The whole extent as a branded interval: `gamut`, confined to this value. Sound for

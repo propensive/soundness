@@ -49,6 +49,7 @@ import strategies.throwUnsafely
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
 import threading.platformThreading
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Mandible tests"):
 

@@ -43,6 +43,7 @@ import denominative.*
 import gigantism.*
 import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object internal:
   inline def default[product, field](index: Int): Optional[field] =
@@ -507,7 +508,7 @@ object internal:
     def instanceOf(tpe: TypeRepr): TypeRepr = typeclassConstructor.appliedTo(tpe)
 
     def codecFunction(tpe: TypeRepr, args: List[TypeRepr]): TypeRepr =
-      defn.FunctionClass(args.length, isContextual = true).typeRef
+      defn.FunctionClass(args.size, isContextual = true).typeRef
         . appliedTo(args.stdlib.map(instanceOf) :+ instanceOf(tpe))
 
     def isCodec(tpe: TypeRepr, args: List[TypeRepr]): Boolean =

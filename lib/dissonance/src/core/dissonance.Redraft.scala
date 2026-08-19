@@ -43,6 +43,7 @@ import rudiments.*
 import vacuous.*
 
 import Redraft.Error.Reason
+import denominative.asymptotics.linearSizeComplexity
 
 object Redraft:
 
@@ -96,7 +97,7 @@ object Redraft:
       compare:    (Text, Text) -> Boolean )
   :   (List[Edit[Text] & Retained], List[Anomaly]) =
 
-    val n = original.length
+    val n = original.size
 
     def seek(from: Int, text: Text): Int =
       var j = from

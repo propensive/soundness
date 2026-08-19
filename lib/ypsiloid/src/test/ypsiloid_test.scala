@@ -38,6 +38,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class Person(name: Text, age: Int) derives CanEqual
 case class Inner(n: Int) derives CanEqual
@@ -625,11 +626,11 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         . assert(_ == Person(t"Alice", 42))
 
       test(m"Empty stream yields no documents"):
-        t"".read[List[Yaml]].length
+        t"".read[List[Yaml]].size
       . assert(_ == 0)
 
       test(m"Chain of mixed-type documents"):
-        t"---\nname: Alice\n---\n[1, 2, 3]".read[List[Yaml]].length
+        t"---\nname: Alice\n---\n[1, 2, 3]".read[List[Yaml]].size
       . assert(_ == 2)
 
       test(m"Single-document stream without leading separator"):

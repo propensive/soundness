@@ -35,6 +35,7 @@ package fulminate
 import soundness.*
 
 import proscenium.compat.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Fulminate Tests"):
   def run(): Unit =

@@ -69,6 +69,7 @@ import beneficence.*
 import serpentine.*
 import symbolism.*
 import urticose.*
+import denominative.asymptotics.linearSizeComplexity
 
 // `Yaml2` is only ever mixed into the `Yaml` object; pinning its self type to `Yaml.type` makes
 // `this` a stable singleton, so the `provide`-wrapped decoder SAMs defined here do not capture an
@@ -1125,7 +1126,7 @@ object Yaml extends Yaml2, Dynamic:
       keyMode:  Boolean )
   :   Optional[Yaml.Ast.Position] =
 
-    if i >= segments.length then
+    if i >= segments.size then
       if keyMode then Unset
       else Yaml.Ast.Position
         ( line   = data.readUnchecked(offset + 1),
@@ -1134,7 +1135,7 @@ object Yaml extends Yaml2, Dynamic:
     else
       // `YamlPath.path.descent` is stored leaf-first (Serpentine's `/`
       // prepends), so iterate it in reverse to walk root-to-leaf.
-      val seg = segments.stdlib(segments.length - 1 - i).s
+      val seg = segments.stdlib(segments.size - 1 - i).s
 
       if ast.isObject then
         val k = ast.objectIndexOf(seg)
@@ -1142,7 +1143,7 @@ object Yaml extends Yaml2, Dynamic:
         if k < 0 then Unset
         else
           val entryOff = data.readUnchecked(offset + 5 + k)
-          val isLast = i == segments.length - 1
+          val isLast = i == segments.size - 1
 
           if isLast && keyMode then
             Yaml.Ast.Position

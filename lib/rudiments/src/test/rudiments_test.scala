@@ -35,6 +35,7 @@ package rudiments
 import soundness.*
 
 import proscenium.compat.*
+import denominative.asymptotics.linearSizeComplexity
 
 case class Person(name: Text, age: Int)
 
@@ -151,6 +152,27 @@ object Tests extends Suite(m"Rudiments Tests"):
         val xs: Chain[Int] = Chain(1, 2, 3)
         xs.occupied.let(_.last)
       . assert(_ == 3)
+
+    suite(m"Size and count tests"):
+      test(m"Set size is ungated"):
+        val xs: Set[Int] = Set(1, 2, 3)
+        xs.size
+      . assert(_ == 3)
+
+      test(m"List size demands the linear acknowledgement"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.size
+      . assert(_ == 3)
+
+      test(m"count by predicate"):
+        val xs: List[Int] = List(1, 2, 3, 4)
+        xs.count(_%2 == 0)
+      . assert(_ == 2)
+
+      test(m"count of a specific element is spelt with equality"):
+        val xs: List[Int] = List(1, 2, 2, 3)
+        xs.count(_ == 2)
+      . assert(_ == 2)
 
     suite(m"Keyed tests"):
       test(m"Map keys are a Set"):
@@ -908,7 +930,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"Result type of to[List] is inferred fully applied"):
         val list: List[Char] = "xy".tt.to[List]
-        list.length
+        list.size
       . assert(_ == 2)
 
     suite(m"Vacuiscible tests"):

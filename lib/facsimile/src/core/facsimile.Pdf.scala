@@ -56,6 +56,7 @@ import quantitative.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Pdf:
   // A fresh, empty document: a catalog and an empty page tree, over which a creation scope's
@@ -897,7 +898,7 @@ object Pdf:
     :   Optional[Rect] =
 
       pdf.resolved(cos).elements.let: elements =>
-        if elements.length != 4 then Unset else
+        if elements.size != 4 then Unset else
           val values = elements.map(pdf.resolved(_).double.or(0.0)*scale)
 
           Rect
@@ -1083,7 +1084,7 @@ extends caps.ExclusiveCapability:
     entries(ordinal).lay(abort(Pdf.Error(Pdf.Error.Reason.MissingPage(ordinal.n1)))): entry =>
       Page(this, ordinal, entry(0), entry(1), entry(2))
 
-  def pageCount(using Tactic[Pdf.Error]): Int = pageEntries.length
+  def pageCount(using Tactic[Pdf.Error]): Int = pageEntries.size
 
   // Leaf object numbers mapped to positions in the flattened page sequence, for resolving
   // destinations that refer to pages by reference.

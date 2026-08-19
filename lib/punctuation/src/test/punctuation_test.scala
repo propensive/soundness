@@ -40,6 +40,7 @@ import strategies.throwUnsafely
 
 import doms.html.whatwg
 import classloaders.systemClassloader
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Punctuation tests"):
   def run(): Unit =
@@ -75,7 +76,7 @@ object Tests extends Suite(m"Punctuation tests"):
 
         summon[(Markdown of Layout) is Aggregable by Text]
         . accept(md.s.grouped(3).map(_.tt).stream)
-        . children.length
+        . children.size
       . assert(_ == 2)
 
     suite(m"Serializer round-trip"):
@@ -153,7 +154,7 @@ object Tests extends Suite(m"Punctuation tests"):
       test(m"wrapping actually breaks the paragraph onto several lines"):
         given Markdown.Formatting = Markdown.Formatting.bounded(20)
         val wrapped = document.show
-        wrapped.cut(t"\n").filter(_ != t"").length
+        wrapped.cut(t"\n").filter(_ != t"").size
       . assert(_ > 1)
 
       test(m"wrapping preserves the words and their order"):
@@ -163,7 +164,7 @@ object Tests extends Suite(m"Punctuation tests"):
       . assert(_ == squash(src))
 
       test(m"the default width never wraps"):
-        document.show.cut(t"\n").filter(_ != t"").length
+        document.show.cut(t"\n").filter(_ != t"").size
       . assert(_ == 1)
 
     suite(m"Terminal renderer"):

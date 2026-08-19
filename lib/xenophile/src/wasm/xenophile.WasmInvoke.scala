@@ -47,6 +47,8 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // The terminal materializer for the WIT ecosystem: turns a fully-applied `Foreign` invocation into
 // a real Wasm Component Model import call (`scala.scalajs.wit.witImportCall`, lowered by the
@@ -209,7 +211,7 @@ object WasmInvoke extends Materializer:
         // A `tuple<…>` (or a record, whose ABI it shares) with the matching Scala tuple type:
         // element-wise recursion, carried as the scala-wasm `TupleN` of the element carriers.
         case Foreign.Type.Applied(constructor, elements)
-        if constructor.s == "tuple" && isTuple(scala, elements.length) =>
+        if constructor.s == "tuple" && isTuple(scala, elements.size) =>
           val fields = scala.dealias.typeArgs
           // Macro-time only: mapping with a lambda would let the decoders' minted quote
           // capabilities leak into the closure's capture set, so the traversal is an
@@ -228,10 +230,10 @@ object WasmInvoke extends Materializer:
           val carriers = derived.map(_(0))
 
           val tupleClass =
-            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.length.toString)
+            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.size.toString)
 
           val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
-          val scalaTuple = defn.TupleClass(elements.length).companionModule
+          val scalaTuple = defn.TupleClass(elements.size).companionModule
 
           val decode: Expr[Any] => Expr[Any] = call =>
             val cast =

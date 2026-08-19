@@ -43,6 +43,8 @@ import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // One `BYDAY` entry: a weekday, optionally with an ordinal — `3MO` (3rd Monday), `-1FR` (last
 // Friday), or a bare `TU` (every Tuesday in the period). The ordinal is meaningful only under
@@ -391,14 +393,14 @@ object Rrule:
   :   Optional[Date] =
 
     val all = weekdaysOfMonth(year, month, weekday)
-    val index = if ordinal > 0 then ordinal - 1 else all.length + ordinal
-    if index >= 0 && index < all.length then all.stdlib(index) else Unset
+    val index = if ordinal > 0 then ordinal - 1 else all.size + ordinal
+    if index >= 0 && index < all.size then all.stdlib(index) else Unset
 
   // `BYSETPOS`: from each period's expanded set, keep the listed positions (1-based; negatives from
   // the end).
   private def setPos(candidates: List[Date], positions: List[Int]): List[Date] =
     if positions.isEmpty then candidates else
-      val count = candidates.length
+      val count = candidates.size
 
       val chosen = positions.bind: (position: Int) =>
         val index = if position > 0 then position - 1 else count + position

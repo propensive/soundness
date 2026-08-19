@@ -564,7 +564,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
     suite(m"Validation accrual"):
       case class CIssues(items: List[(Text, Cbor.Error)] = Nil)(using Diagnostics)
-      extends Error(m"${items.length} CBOR issues"):
+      extends Error(m"${items.size} CBOR issues"):
         def +(focus: Text, error: Cbor.Error): CIssues = CIssues(items :+ (focus, error))
 
       // Inline, with a directly-constructed `Validate`; see rep/DECISIONS.md.
@@ -584,14 +584,14 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Set("name", "age"))
 
       test(m"A fully-valid record accrues nothing"):
-        collectCbor(Person(t"Ada", 36).in[Cbor])(_.as[Person]).items.length
+        collectCbor(Person(t"Ada", 36).in[Cbor])(_.as[Person]).items.size
       . assert(_ == 0)
 
       test(m"Constructor does not run when any field failed"):
         val cbor = Point(1, 2).in[Cbor]
         BProbe.constructions = 0
         val issues = collectCbor(cbor)(_.as[BChecked])
-        (issues.items.length, BProbe.constructions)
+        (issues.items.size, BProbe.constructions)
       . assert(_ == (2, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):

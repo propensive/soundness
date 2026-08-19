@@ -347,7 +347,7 @@ object Tests extends Suite(m"Bitumen Tests"):
             || r.isInstanceOf[Tar.Error.Reason.BadName]
 
       case class TarIssues(reasons: List[Tar.Error.Reason] = Nil)(using Diagnostics)
-      extends Error(m"${reasons.length} tar issues"):
+      extends Error(m"${reasons.size} tar issues"):
         def +(reason: Tar.Error.Reason): TarIssues = TarIssues(reasons :+ reason)
 
       // Inline, with a directly-constructed `Validate`; see rep/DECISIONS.md.
@@ -363,7 +363,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: proscenium.List.of(good.stdlib.tail)
         collectTar { Tarfile.read(corrupted.stdlib.iterator.stream).toList; () }.reasons
       . assert: reasons =>
-          reasons.length == 1 && reasons.head.isInstanceOf[Tar.Error.Reason.BadChecksum]
+          reasons.size == 1 && reasons.head.isInstanceOf[Tar.Error.Reason.BadChecksum]
 
       test(m"an unknown type flag degrades to a file, never a directory"):
         val good: List[Data] = Tarfile(List(helloFile)).source[Data].toProgression.stdlib.toList.asInstanceOf[List[Data]]
@@ -398,7 +398,7 @@ object Tests extends Suite(m"Bitumen Tests"):
           entries = Tarfile.read(patched.stdlib.iterator.stream).toList
           ()
 
-        ( issues.reasons.length,
+        ( issues.reasons.size,
           issues.reasons.headOption.map(_.isInstanceOf[Tar.Error.Reason.UnknownTypeFlag]),
           entries.headOption.map(_.isInstanceOf[Tar.Entry.File]) )
       . assert(_ == (1, Some(true), Some(true)))

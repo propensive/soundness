@@ -42,6 +42,7 @@ import prepositional.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Diff:
   given aggregable: (tactic: Tactic[Diff.Error])
@@ -185,7 +186,7 @@ case class Diff[element](edits: Edit[element]*):
       case Tract.Changed(Nil, inss) => (inss: List[Change[element]])
 
       case Tract.Changed(dels, inss) =>
-        if inss.length == dels.length && inss.length <= subSize
+        if inss.size == dels.size && inss.size <= subSize
         then
           val subs = dels.zip(inss).map: (del, ins) =>
             Sub(del.left, ins.right, del.value, ins.value)
@@ -238,11 +239,11 @@ case class Diff[element](edits: Edit[element]*):
           val dels = todo.takeWhile(_.typed[Del[element]]).collect:
             case del: Del[element] => del
 
-          val inss = todo.drop(dels.length).takeWhile(_.typed[Ins[element]]).collect:
+          val inss = todo.drop(dels.size).takeWhile(_.typed[Ins[element]]).collect:
             case ins: Ins[element] => ins
 
           Chunk(position, rightPosition, dels, inss) #::
             recur
-              ( todo.drop(dels.size + inss.size), position + dels.length, position + inss.length )
+              ( todo.drop(dels.size + inss.size), position + dels.size, position + inss.size )
 
     recur(edits.to(List), 0, 0)

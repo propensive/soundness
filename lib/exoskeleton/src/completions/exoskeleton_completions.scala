@@ -106,7 +106,7 @@ def helpTree
 :   Help =
 
   def probe(prefix: List[Text]): Probe =
-    val focus = prefix.length
+    val focus = prefix.size
     val textArguments = prefix :+ t""
     val synthesized = Cli.arguments(textArguments.stdlib, focus, Unset, Prim)
 
@@ -226,7 +226,7 @@ package executives:
           val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
           val posInWord = cursor - wordStarts(wordIdx)
           val focus = (wordIdx - 1).max(0)
-          val restParts = if parts.length > 1 then parts.tail else List(t"")
+          val restParts = if parts.size > 1 then parts.tail else List(t"")
           val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
 
           Completion

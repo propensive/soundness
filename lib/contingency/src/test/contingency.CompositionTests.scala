@@ -44,10 +44,10 @@ case class CErrorA(value: Int)(using Diagnostics) extends Error(m"composition er
 case class CErrorB(value: Int)(using Diagnostics) extends Error(m"composition error b: $value")
 
 case class Tally(values: List[Int])(using Diagnostics)
-extends Error(m"tally of ${values.length} errors")
+extends Error(m"tally of ${values.size} errors")
 
 case class Located(items: List[(Text, Int)])(using Diagnostics)
-extends Error(m"${items.length} located errors")
+extends Error(m"${items.size} located errors")
 
 object CompositionTests extends Suite(m"Contingency composition"):
 

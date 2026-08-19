@@ -57,7 +57,7 @@ case class TChecked(name: Text, age: Int) derives CanEqual:
 object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
   case class Issues(items: List[(Text, Tel.Error)] = Nil)(using Diagnostics)
-  extends Error(m"${items.length} decoding issues"):
+  extends Error(m"${items.size} decoding issues"):
     def +(focus: Text, error: Tel.Error): Issues = Issues(items :+ (focus, error))
 
   // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
@@ -80,7 +80,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     . protect(Tel.Type.assign(tel, schema))
 
   case class Located(items: List[(Text, Span)] = Nil)(using Diagnostics)
-  extends Error(m"${items.length} located issues"):
+  extends Error(m"${items.size} located issues"):
     def +(pointer: Text, span: Span): Located = Located(items :+ (pointer, span))
 
   // Validate a *tracked* document against `schema`, capturing each error's
@@ -255,17 +255,17 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     suite(m"Single-error decoding (sanity)"):
       test(m"Fully-valid record: no errors accrued"):
         val tel = t"name Alice\nage 30\nemail a@b.c\n".read[Tel]
-        validateTel(tel)(_.as[APerson]).items.length
+        validateTel(tel)(_.as[APerson]).items.size
       . assert(_ == 0)
 
       test(m"Single missing field: one error"):
         val tel = t"name Alice\nage 30\n".read[Tel]
-        validateTel(tel)(_.as[APerson]).items.length
+        validateTel(tel)(_.as[APerson]).items.size
       . assert(_ == 1)
 
       test(m"Single wrong-type field: one error"):
         val tel = t"width five\nheight 10\n".read[Tel]
-        validateTel(tel)(_.as[APair]).items.length
+        validateTel(tel)(_.as[APair]).items.size
       . assert(_ == 1)
 
     suite(m"Gated construction"):
@@ -273,7 +273,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         TProbe.constructions = 0
         val tel = t"name Zoe\nage young\n".read[Tel]
         val issues = validateTel(tel)(_.as[TChecked])
-        (issues.items.length, TProbe.constructions)
+        (issues.items.size, TProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):
@@ -286,7 +286,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     suite(m"Multiple missing fields"):
       test(m"Two missing fields accrue two errors"):
         val tel = t"name Alice\n".read[Tel]
-        validateTel(tel)(_.as[APerson]).items.length
+        validateTel(tel)(_.as[APerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the missing fields"):
@@ -303,7 +303,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     suite(m"Multiple wrong-type fields"):
       test(m"Two wrong types accrue two errors"):
         val tel = t"width wide\nheight tall\n".read[Tel]
-        validateTel(tel)(_.as[APair]).items.length
+        validateTel(tel)(_.as[APair]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the wrong-type fields"):
@@ -332,13 +332,13 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     suite(m"Regression: does not abort on the first bad field"):
       test(m"Both wrong-type fields are reported, not just the first"):
         val tel = t"width wide\nheight tall\n".read[Tel]
-        validateTel(tel)(_.as[APair]).items.length
+        validateTel(tel)(_.as[APair]).items.size
       . assert(_ > 1)
 
     suite(m"Schema-validation accrual (E3xx)"):
       test(m"Two missing required members accrue two errors"):
         val doc = t"".read[Tel]
-        validateAssign(doc, twoRequiredSchema).items.length
+        validateAssign(doc, twoRequiredSchema).items.size
       . assert(_ == 2)
 
       test(m"Both missing-member errors have reason RequiredMemberAbsent"):
@@ -349,7 +349,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       test(m"Two unknown keywords accrue two errors"):
         val doc = t"foo a\nbar b\n".read[Tel]
-        validateAssign(doc, optionalFieldSchema).items.length
+        validateAssign(doc, optionalFieldSchema).items.size
       . assert(_ == 2)
 
       test(m"Both unknown-keyword errors have reason UnknownKeyword"):
@@ -379,7 +379,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
     suite(m"Parser-recovery accrual (E1xx)"):
       test(m"Two trailing-space lines accrue two errors"):
-        validateRead(t"good \nbad \n").items.length
+        validateRead(t"good \nbad \n").items.size
       . assert(_ == 2)
 
       test(m"Both are TrailingSpaces errors"):
@@ -388,11 +388,11 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       . assert(identity)
 
       test(m"A single recoverable defect still accrues one error"):
-        validateRead(t"good \nfine\n").items.length
+        validateRead(t"good \nfine\n").items.size
       . assert(_ == 1)
 
       test(m"A malformed pragma version and a trailing-space line accrue together"):
-        validateRead(t"tel bad\ngood \n").items.length
+        validateRead(t"tel bad\ngood \n").items.size
       . assert(_ == 2)
 
       test(m"The accrued reasons span the pragma and the body"):

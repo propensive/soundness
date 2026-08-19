@@ -59,7 +59,7 @@ object Communicable:
     Message(value.getClass.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt)
 
   given listMessage: List[Message] is Communicable =
-    messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
+    messages => Message(List.fill(messages.stdlib.size)("\n - ".tt) ::: List("".tt), messages)
 
 // A `Communicable` is a `Transcribable to Message`: converting a value to a `Message` is exactly
 // how a loggable event is transcribed onto the common carrier. This lets `Loggable.fanOut` resolve

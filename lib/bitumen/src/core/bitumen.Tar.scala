@@ -55,6 +55,7 @@ import hypotenuse.*
 import scala.caps
 import aperture.*
 import pneumatic.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Tar:
   // TarRef → Tar.Ref
@@ -340,14 +341,14 @@ object Tar:
             array.place(formatLong(seg.length, 12), pos.z)
             pos = pos + 12
 
-          if sparse.segments.length > 4 then array(482) = 1.toByte
+          if sparse.segments.size > 4 then array(482) = 1.toByte
           array.place(formatLong(sparse.realSize, 12), 483.z)
 
       val total = array.iterator.map(_.bits.u8.u32).reduce(_ + _)
       array.place(format(total, 8), 148.z)
 
     def serialize: Iterator[Data] = this match
-      case sparse: Sparse if sparse.segments.length > 4 =>
+      case sparse: Sparse if sparse.segments.size > 4 =>
         Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.drop(4)).stdlib ++ dataBlocks
 
       case _ =>
