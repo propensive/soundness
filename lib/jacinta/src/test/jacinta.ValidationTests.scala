@@ -34,7 +34,6 @@ package jacinta
 
 import soundness.*
 
-import proscenium.compat.*
 
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
@@ -324,8 +323,8 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         val json = Json.parseTracked(source)
         val results = validateWithPositions(json)(_.as[VPerson])
         // `name` value 42 is on line 2; column points at the `4` of `42`.
-        results.find(_(0) == t"#/name").map((_, line, col) => (line, col))
-      . assert(_ == Some((2, 11)))
+        results.seek(_(0) == t"#/name").let((_, line, col) => (line, col))
+      . assert(_ == (2, 11))
 
       test(m"Non-tracking Json has Unset positions"):
         val source = t"""{"name": "Alice"}"""

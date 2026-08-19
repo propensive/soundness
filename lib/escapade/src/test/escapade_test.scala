@@ -605,7 +605,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == false)
 
       test(m"count text occurrences"):
-        e"abcabcabc".occurrences(t"a")
+        e"abcabcabc".tally(t"a")
       . assert(_ == 3)
 
       test(m"count predicate"):

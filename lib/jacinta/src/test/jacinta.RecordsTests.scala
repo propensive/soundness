@@ -32,9 +32,11 @@
                                                                                                   */
 package jacinta
 
+// Residue: `head` is partial; it awaits the partial-operations tranche.
+import proscenium.compat.head
+
 import soundness.*
 
-import proscenium.compat.*
 
 import charEncoders.utf8Encoder
 import errorDiagnostics.stackTracesDiagnostics

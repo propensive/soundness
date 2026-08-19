@@ -36,7 +36,6 @@ import scala.math
 
 import soundness.*
 
-import proscenium.compat.*
 
 import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
@@ -244,16 +243,16 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       def shape(node: Any): Any = node.asMatchable match
         case nums: scala.Array[Double] @unchecked =>
           // Number-only array: recover Long for whole values, Double for the rest.
-          Array.unsafeFrozen(nums).toList.map: d =>
+          List.of(Array.unsafeFrozen(nums).readable.toList).map: d =>
             if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
             then d.toLong
             else d
         case arr: Array[?] @unchecked =>
-          val raw = arr.toList
+          val raw = arr.readable.toList
           if (raw.size & 1) == 0 then
             // Object: alternating key/value
-            val keys = (0 until raw.size/2).toList.map(i => raw.stdlib(i*2).asInstanceOf[String])
-            val values = (0 until raw.size/2).toList.map(i => shape(raw.stdlib(i*2 + 1)))
+            val keys = (0 until raw.size/2).toList.map(i => raw(i*2).asInstanceOf[String])
+            val values = (0 until raw.size/2).toList.map(i => shape(raw(i*2 + 1)))
             (keys, values)
           else
             // Array: strip sentinel pad if present
