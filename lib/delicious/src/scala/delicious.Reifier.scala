@@ -177,7 +177,9 @@ class Reifier(classpath: LocalClasspath):
             ( VirtualFile
                 ( "<delicious>",
                   ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[scala.Array[Byte]] ),
-              Some(dtd.core.TastyInfo(version, attributes)) )
+              // Scala 3.10 makes this parameter a lazy loader (`tastyInfoLoader:
+              // () => Option[TastyInfo]`); the `Some` wrapper remains load-bearing.
+              () => Some(dtd.core.TastyInfo(version, attributes)) )
           . nn
         val positions = unpickler.unpickle(DottyUnpickler.PositionsSectionUnpickler())
         val comments = unpickler.unpickle(DottyUnpickler.CommentsSectionUnpickler())
