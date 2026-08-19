@@ -40,6 +40,7 @@ import prepositional.*
 import profanity.*
 import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Form:
   // One derived leaf of the live pane tree: the pane itself, the rectangle the last solve
@@ -250,7 +251,7 @@ class Form
   private def refresh(changed: Set[Int]): Unit =
     val panes = rederive()
     val previous = layout
-    val stale = staleGeometry || panes.length != previous.entries.length
+    val stale = staleGeometry || panes.size != previous.entries.size
     staleGeometry = false
 
     if stale then
@@ -389,7 +390,7 @@ class Form
           // the panel gaining focus is repainted by `refresh` (focused last). The
           // wrap-around stays plain `Int` arithmetic until it is re-confined.
           val position = focusPosition(current)
-          val next = (position + 1)%current.focusables.length
+          val next = (position + 1)%current.focusables.size
 
           current.focusables.confine(position.z).let: vacated =>
             current.focusables.confine(next.z).let: gaining =>

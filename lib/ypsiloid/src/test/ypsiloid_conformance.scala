@@ -64,6 +64,8 @@ import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 
 import proscenium.compat.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Conformance:
   // Tags whose test cases exercise YAML features outside the Ypsiloid
@@ -180,7 +182,7 @@ object Conformance:
               // Json equality — jacinta's Json.equals has no `null` case
               // and reports `null == null` as false. Rendering produces
               // a stable canonical form for both sides.
-              if actualDocs.length == expectedDocs.length && actualStr == expectedStr
+              if actualDocs.size == expectedDocs.size && actualStr == expectedStr
               then Outcome.Passed
               else Outcome.Mismatch(actualStr, expectedStr)
         catch case e: Throwable =>

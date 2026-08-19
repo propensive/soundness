@@ -48,6 +48,8 @@ import hieroglyph.*
 import rudiments.*
 import tessellate.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Tabulation:
   given printable: [text]
@@ -115,7 +117,7 @@ abstract class Tabulation[text: ClassTag]():
             val lines = column.sizing.fit[text](cells(index), cellWidth, column.textAlign)
 
             TableCell
-              ( cellWidth, 1, lines, lines.length, column.textAlign, column.verticalAlign )
+              ( cellWidth, 1, lines, lines.size, column.textAlign, column.verticalAlign )
 
         val height = tableCells.readable.maxBy(_.minHeight).minHeight
 

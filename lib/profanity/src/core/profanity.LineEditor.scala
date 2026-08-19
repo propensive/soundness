@@ -43,6 +43,7 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 import proscenium.compat.*
+import denominative.asymptotics.linearSizeComplexity
 
 object LineEditor:
   // Whether the editor is a single line (Enter submits) or accepts multiple lines.
@@ -130,7 +131,7 @@ extends Question[Text]:
   private def moveVertically(rows: Int): LineEditor =
     val (lines, starts, current) = layout
     val column = position - starts.stdlib(current)
-    val target = (current + rows).max(0).min(lines.length - 1)
+    val target = (current + rows).max(0).min(lines.size - 1)
     copy(position0 = starts.stdlib(target) + column.min(lines.stdlib(target).length))
 
   def apply(keypress: Terminal.Event): LineEditor =

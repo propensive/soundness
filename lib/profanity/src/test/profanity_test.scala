@@ -51,6 +51,7 @@ import backstops.silentBackstop
 import probates.cancelProbate
 
 import Shell.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Profanity Tests"):
   def run(): Unit =
@@ -530,5 +531,5 @@ object Tests extends Suite(m"Profanity Tests"):
 
         test(m"signal ids are distinct"):
           val ids = Array.unsafeFrozen(Interrupt.values).toList.map(_.id)
-          ids.length == ids.distinct.length
+          ids.size == ids.distinct.size
         . assert(identity(_))

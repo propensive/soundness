@@ -55,7 +55,7 @@ case class QChecked(name: Text, email: Text) derives CanEqual:
 object Tests extends Suite(m"Legerdemain tests"):
 
   case class Issues(items: List[(Text, Query.Error)] = Nil)(using Diagnostics)
-  extends Error(m"${items.length} query issues"):
+  extends Error(m"${items.size} query issues"):
     def +(focus: Text, error: Query.Error): Issues = Issues(items :+ (focus, error))
 
   // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
@@ -93,14 +93,14 @@ object Tests extends Suite(m"Legerdemain tests"):
       . assert(_ == Set("leader.name", "leader.email"))
 
       test(m"A fully-valid query accrues nothing"):
-        validateQuery(t"name=Ada&email=a%40b.c".as[Query])(_.as[QPerson]).items.length
+        validateQuery(t"name=Ada&email=a%40b.c".as[Query])(_.as[QPerson]).items.size
       . assert(_ == 0)
 
     suite(m"Gated construction"):
       test(m"Constructor does not run when any parameter failed"):
         QProbe.constructions = 0
         val issues = validateQuery(t"name=Zoe".as[Query])(_.as[QChecked])
-        (issues.items.length, QProbe.constructions)
+        (issues.items.size, QProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all parameters are present"):

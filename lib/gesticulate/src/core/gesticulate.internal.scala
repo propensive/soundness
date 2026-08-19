@@ -49,6 +49,7 @@ import vacuous.*
 
 import caseSensitivity.caseInsensitive
 import proximities.levenshteinProximity
+import denominative.asymptotics.linearSizeComplexity
 
 object internal:
   // Validation runs at macro-expansion time, so it must not reflectively
@@ -130,7 +131,7 @@ object internal:
       case _               => strings
 
     val parts = recur[parts](Nil)
-    if parts.length != 1 then halt(m"a media type literal cannot have substitutions")
+    if parts.size != 1 then halt(m"a media type literal cannot have substitutions")
 
     val raw: String = parts.head
 

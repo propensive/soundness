@@ -39,6 +39,8 @@ import proscenium.compat.*
 import chiaroscuro.*
 import distillate.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // A test spread over the domain of one axis: its body runs once per axis value, and each
 // verdict is recorded at that value’s coordinate of a single named test. A partial body
@@ -103,7 +105,7 @@ object Spread:
     val values = axis.values
     var index = 0
 
-    while index < values.length do
+    while index < values.size do
       val value = values.stdlib(index)
 
       if probe.isDefinedAt(value) then
@@ -190,11 +192,11 @@ object Spread2:
     val rights = second.values
     var leftIndex = 0
 
-    while leftIndex < lefts.length do
+    while leftIndex < lefts.size do
       val left = lefts.stdlib(leftIndex)
       var rightIndex = 0
 
-      while rightIndex < rights.length do
+      while rightIndex < rights.size do
         val right = rights.stdlib(rightIndex)
 
         if probe.isDefinedAt((left, right)) then

@@ -47,11 +47,9 @@ import proscenium.{Array, Ledger, List, Map, Set, Chain, Sequence}
 // pulls only top-level `proscenium` members, so every use is greppable.
 extension [element](set: Set[element])
   inline def forall(predicate: element => Boolean): Boolean = set.stdlib.forall(predicate)
-  inline def count(predicate: element => Boolean): Int = set.stdlib.count(predicate)
   inline def find(predicate: element => Boolean): Option[element] = set.stdlib.find(predicate)
   inline def isEmpty: Boolean = set.stdlib.isEmpty
   inline def nonEmpty: Boolean = set.stdlib.nonEmpty
-  inline def size: Int = set.stdlib.size
   inline def head: element = set.stdlib.head
   inline def toList: List[element] = List.of(set.stdlib.toList)
   inline def toSeq: Seq[element] = set.stdlib.toSeq
@@ -94,7 +92,6 @@ extension [key, value](map: Map[key, value])
 
   inline def isEmpty: Boolean = map.stdlib.isEmpty
   inline def nonEmpty: Boolean = map.stdlib.nonEmpty
-  inline def size: Int = map.stdlib.size
   inline def iterator: Iterator[(key, value)] = map.stdlib.iterator
   inline def toList: List[(key, value)] = List.of(map.stdlib.toList)
   inline def toSeq: Seq[(key, value)] = map.stdlib.toSeq
@@ -103,7 +100,6 @@ extension [key, value](map: Map[key, value])
     map.stdlib.find(predicate)
 
   inline def forall(predicate: ((key, value)) => Boolean): Boolean = map.stdlib.forall(predicate)
-  inline def count(predicate: ((key, value)) => Boolean): Int = map.stdlib.count(predicate)
 
   inline def updated[value2 >: value](key: key, value: value2): Map[key, value2] =
     Map.of(map.stdlib.updated(key, value))
@@ -129,7 +125,6 @@ extension [key, value](ledger: Ledger[key, value])
   inline def get(key: key): Option[value] = ledger.stdlib.get(key)
   inline def isEmpty: Boolean = ledger.stdlib.isEmpty
   inline def nonEmpty: Boolean = ledger.stdlib.nonEmpty
-  inline def size: Int = ledger.stdlib.size
   inline def iterator: Iterator[(key, value)] = ledger.stdlib.iterator
   inline def toList: List[(key, value)] = List.of(ledger.stdlib.toList)
   inline def toSeq: Seq[(key, value)] = ledger.stdlib.toSeq
@@ -138,7 +133,6 @@ extension [key, value](ledger: Ledger[key, value])
     ledger.stdlib.find(predicate)
 
   inline def forall(predicate: ((key, value)) => Boolean): Boolean = ledger.stdlib.forall(predicate)
-  inline def count(predicate: ((key, value)) => Boolean): Int = ledger.stdlib.count(predicate)
 
   inline def updated[value2 >: value](key: key, value: value2): Ledger[key, value2] =
     Ledger.of(ledger.stdlib.updated(key, value))
@@ -165,7 +159,6 @@ extension [element](list: List[element])
     List.of(list.stdlib.filterNot(predicate))
 
   inline def forall(predicate: element => Boolean): Boolean = list.stdlib.forall(predicate)
-  inline def count(predicate: element => Boolean): Int = list.stdlib.count(predicate)
   inline def find(predicate: element => Boolean): Option[element] = list.stdlib.find(predicate)
 
   inline def collect[element2](lambda: PartialFunction[element, element2]): List[element2] =
@@ -205,8 +198,6 @@ extension [element](list: List[element])
 
   inline def isEmpty: Boolean = list.stdlib.isEmpty
   inline def nonEmpty: Boolean = list.stdlib.nonEmpty
-  inline def length: Int = list.stdlib.length
-  inline def size: Int = list.stdlib.size
   inline def mkString: String = list.stdlib.mkString
   inline def mkString(separator: String): String = list.stdlib.mkString(separator)
 
@@ -284,7 +275,6 @@ extension [element](lazyList: Chain[element])
   inline def init: Chain[element] = Chain.of(lazyList.stdlib.init)
   inline def find(predicate: element => Boolean): Option[element] = lazyList.stdlib.find(predicate)
   inline def forall(predicate: element => Boolean): Boolean = lazyList.stdlib.forall(predicate)
-  inline def count(predicate: element => Boolean): Int = lazyList.stdlib.count(predicate)
 
   inline def collectFirst[element2](lambda: PartialFunction[element, element2]): Option[element2] =
     lazyList.stdlib.collectFirst(lambda)
@@ -304,7 +294,6 @@ extension [element](sequence: Sequence[element])
     Sequence.of(sequence.stdlib.filterNot(predicate))
 
   inline def forall(predicate: element => Boolean): Boolean = sequence.stdlib.forall(predicate)
-  inline def count(predicate: element => Boolean): Int = sequence.stdlib.count(predicate)
   inline def find(predicate: element => Boolean): Option[element] = sequence.stdlib.find(predicate)
 
   inline def collect[element2](lambda: PartialFunction[element, element2]): Sequence[element2] =
@@ -347,8 +336,6 @@ extension [element](sequence: Sequence[element])
 
   inline def isEmpty: Boolean = sequence.stdlib.isEmpty
   inline def nonEmpty: Boolean = sequence.stdlib.nonEmpty
-  inline def length: Int = sequence.stdlib.length
-  inline def size: Int = sequence.stdlib.size
   inline def mkString: String = sequence.stdlib.mkString
   inline def mkString(separator: String): String = sequence.stdlib.mkString(separator)
 
@@ -384,7 +371,6 @@ extension [element](array: Array[element]^{caps.any.rd})
   @targetName("frozenApply")
   inline def apply(index: Int): element = array.readable(index)
   @targetName("frozenSize")
-  inline def size: Int = array.readable.size
   @targetName("frozenIsEmpty")
   inline def isEmpty: Boolean = array.readable.isEmpty
   @targetName("frozenNonEmpty")
@@ -402,7 +388,6 @@ extension [element](array: Array[element]^{caps.any.rd})
   @targetName("frozenIterator")
   inline def iterator: Iterator[element] = array.readable.iterator
   @targetName("frozenCount")
-  inline def count(predicate: element => Boolean): Int = array.readable.count(predicate)
 
   @targetName("frozenFind")
   inline def find(predicate: element => Boolean): Option[element] =

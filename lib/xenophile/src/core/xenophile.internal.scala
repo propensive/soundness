@@ -44,6 +44,8 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Xenophile:
 
@@ -507,8 +509,8 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: the arguments to $fieldName must be passed directly")
 
-    if args.length != parameters.length then
-      halt(m"xenophile: $fieldName expects ${parameters.length} arguments, not ${args.length}")
+    if args.size != parameters.size then
+      halt(m"xenophile: $fieldName expects ${parameters.size} arguments, not ${args.size}")
 
     val argTrees: List[Expr[Foreign.Expression]] = args.zip(parameters).map: (arg, paramType) =>
       argTree(arg, paramType, fieldName)

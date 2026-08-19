@@ -47,6 +47,8 @@ import rudiments.*
 import vacuous.*
 
 import gastronomy.providers.javaStdlibProvider
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // A complete, installable Android application package—dexed code, a binary manifest, aligned
 // and signed—bound to the Android runtime: the application node reached from `Classfile`
@@ -265,7 +267,7 @@ object Apk extends Format.Application:
           chunkDigests(unsigned, cdOffset, eocdOffset) :::
           chunkDigests(unsigned, eocdOffset, unsigned.length)
 
-      val count = digests.length
+      val count = digests.size
       val topLevel = sha256(concat(Array.of(0x5a.toByte), u32(count.toLong), concat(digests*)))
 
       // signed data: digests, certificates, additional attributes (none).

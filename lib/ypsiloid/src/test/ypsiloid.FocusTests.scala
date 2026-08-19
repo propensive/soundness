@@ -49,7 +49,7 @@ object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
   case class Captured
     ( items: List[(Text, Optional[Int], Optional[Int])] = Nil )
     ( using Diagnostics )
-  extends Error(m"${items.length} validation issues"):
+  extends Error(m"${items.size} validation issues"):
     def +(focus: Text, line: Optional[Int], column: Optional[Int]): Captured =
       Captured(items :+ (focus, line, column))
 

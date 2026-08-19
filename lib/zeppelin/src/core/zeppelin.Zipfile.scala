@@ -57,6 +57,7 @@ import spectacular.*
 import turbulence.*
 import zephyrine.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Zipfile:
   private val u32Max: Long = 0xffffffffL
@@ -424,9 +425,9 @@ object Zipfile:
         if needOffset then fields += localOffset
         val values = List.of(fields.result())
 
-        Data.build(4 + values.length*8): array =>
+        Data.build(4 + values.size*8): array =>
           Zip.putU16(array, 0, 1)
-          Zip.putU16(array, 2, values.length*8)
+          Zip.putU16(array, 2, values.size*8)
           var offset = 4
 
           values.foreach: value =>
@@ -527,7 +528,7 @@ case class Zipfile
     val cdStart = offset
     val central = records.map: (entry, name, _, off) => Zipfile.centralHeader(entry, name, off)
     val cdSize = central.stdlib.foldLeft(0L)(_ + _.length)
-    val tail = Zipfile.endRecords(records.length.toLong, cdStart, cdSize, comment)
+    val tail = Zipfile.endRecords(records.size.toLong, cdStart, cdSize, comment)
 
     val prefixIterator: Iterator[Data] =
       if prefixBytes.length == 0 then Iterator.empty else Iterator(prefixBytes)

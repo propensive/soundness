@@ -55,6 +55,7 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistentParents.enabled
 
 import filesystemBackends.virtualMachineFilesystem
+import denominative.asymptotics.linearSizeComplexity
 
 object ParserTests extends Suite(m"Jacinta JSON parser tests"):
   def run(): Unit =
@@ -249,10 +250,10 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
             else d
         case arr: Array[?] @unchecked =>
           val raw = arr.toList
-          if (raw.length & 1) == 0 then
+          if (raw.size & 1) == 0 then
             // Object: alternating key/value
-            val keys = (0 until raw.length/2).toList.map(i => raw.stdlib(i*2).asInstanceOf[String])
-            val values = (0 until raw.length/2).toList.map(i => shape(raw.stdlib(i*2 + 1)))
+            val keys = (0 until raw.size/2).toList.map(i => raw.stdlib(i*2).asInstanceOf[String])
+            val values = (0 until raw.size/2).toList.map(i => shape(raw.stdlib(i*2 + 1)))
             (keys, values)
           else
             // Array: strip sentinel pad if present

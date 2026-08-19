@@ -57,6 +57,7 @@ import xylophone.*
 
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
+import denominative.asymptotics.linearSizeComplexity
 
 object Apoplexy:
   // --- compile-time spec access -------------------------------------------
@@ -136,7 +137,7 @@ object Apoplexy:
   private def templateName(segment: Text): Text = segment.skip(1).keep(segment.length - 2)
 
   private def isPrefix(short: List[Text], long: List[Text]): Boolean =
-    short.length <= long.length && short.zip(long).forall(_ == _)
+    short.size <= long.size && short.zip(long).forall(_ == _)
 
   private def join(locus: Text, segment: Text): Text =
     if locus == t"/" then t"/$segment" else t"$locus/$segment"
@@ -476,9 +477,9 @@ object Apoplexy:
         if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
 
         def deeper(key: List[Text]): Boolean =
-          isPrefix(newSegs, key) && key.length > newSegs.length
+          isPrefix(newSegs, key) && key.size > newSegs.size
 
-        val following = keys.filter(deeper).map(_.stdlib(newSegs.length)).find(isTemplate)
+        val following = keys.filter(deeper).map(_.stdlib(newSegs.size)).find(isTemplate)
 
         following match
           case None => shortcut(self, doc, source, newLocus, Nil, positional)

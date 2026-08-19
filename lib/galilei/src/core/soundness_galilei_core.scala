@@ -41,7 +41,7 @@ export
       FilesystemAttribute, FilesystemBackend,
       Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local,
       MacOs, modified, MoveAtomically, moveInto, moveTo, OpenFlag,
-      OverwritePreexisting, p, Platform, Posix, readable, size, Sock, Stat,
+      OverwritePreexisting, p, Platform, Posix, readable, filesize, Sock, Stat,
       Scratch, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder,
       UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
 

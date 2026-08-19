@@ -46,6 +46,7 @@ import rudiments.*
 import vacuous.*
 
 import Mathml.*
+import denominative.asymptotics.linearSizeComplexity
 
 // A `Cell` is a rectangular block of monospaced character cells with a `baseline`
 // — the row index (from the top) of the mathematical axis that composition aligns
@@ -462,7 +463,7 @@ object Cell:
       node.text.lay(row(node.contents))(line)
 
 case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
-  def height: Int = lines.length
+  def height: Int = lines.size
   def render: Text = lines.stdlib.map(_.text).join(t"\n")
 
   // Pad each line on the left and right with spaces, widening the block.

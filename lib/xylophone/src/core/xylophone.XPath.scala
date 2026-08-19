@@ -464,7 +464,7 @@ object XPath extends Format:
       t"${axis.keyword}::${renderTest(test)}${renderPredicates(predicates)}"
 
   private def renderSteps(steps: List[Step]): Text =
-    val length = steps.length
+    val length = steps.size
     steps.zipWithIndex.map { (step, index) => renderStep(step, index == length - 1) }.join(t"/")
 
   private def renderRoute(origin: Origin, steps: List[Step]): Text = origin match

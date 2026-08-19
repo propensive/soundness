@@ -40,6 +40,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
 import xylophone.XmlSchema
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Savagery tests"):
   def run(): Unit =
@@ -325,7 +326,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse empty SVG"):
         val svg = t"""<svg width="100" height="100"/>""".read[Svg]
-        (svg.width, svg.height, svg.figures.length, svg.defs.length)
+        (svg.width, svg.height, svg.figures.size, svg.defs.size)
       .assert(_ == (100.0f, 100.0f, 0, 0))
 
       test(m"Parse SVG with rectangle"):
@@ -353,7 +354,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse SVG with simple path"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
-        svg.figures.length
+        svg.figures.size
       .assert(_ == 1)
 
       test(m"Parse SVG with path and check ops"):
@@ -455,7 +456,7 @@ object Tests extends Suite(m"Savagery tests"):
           t"""<svg width="10" height="10"><text x="0" y="0">Hello</text><rect x="0" y="0" width="5" height="5"/></svg>"""
         . read[Svg]
 
-        svg.figures.length
+        svg.figures.size
       .assert(_ == 1)
 
       test(m"Flatten group"):
@@ -463,7 +464,7 @@ object Tests extends Suite(m"Savagery tests"):
           t"""<svg width="10" height="10"><g><rect x="0" y="0" width="5" height="5"/><circle cx="0" cy="0" r="3"/></g></svg>"""
         . read[Svg]
 
-        svg.figures.length
+        svg.figures.size
       .assert(_ == 2)
 
       test(m"Ignore unknown attributes"):

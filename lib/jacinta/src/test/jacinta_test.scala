@@ -47,6 +47,7 @@ import formatting.compactJsonFormatting
 
 import discriminables.jsonByKindDiscriminable
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class Foo(x: Int, y: Text) derives CanEqual
 
@@ -748,7 +749,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(!_)
 
       test(m"Decode an array as a list"):
-        t"[1, 2, 3]".read[Json].as[List[Int]].length
+        t"[1, 2, 3]".read[Json].as[List[Int]].size
       . assert(_ == 3)
 
       test(m"Decode an object as a map"):
@@ -1443,7 +1444,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Derived schema for sum type uses oneOf"):
         JsonSchema.derived[Choice].schema() match
-          case obj: JsonSchema.Object => obj.oneOf.let(_.length).or(0)
+          case obj: JsonSchema.Object => obj.oneOf.let(_.size).or(0)
           case _                      => 0
       . assert(_ == 2)
 

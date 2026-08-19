@@ -48,6 +48,7 @@ import rudiments.*
 import vacuous.*
 
 import Regex.Error.Reason.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Regex:
   private val cache: TrieMap[String, jur.Pattern] = TrieMap()
@@ -136,7 +137,7 @@ object Regex:
       case head :: tail => captures(tail, last + head.s.length, done + last)
 
     val captured: Set[Int] =
-      if parts.length > 1 then captures(parts.tail, parts.head.s.length, Set()) else Set()
+      if parts.size > 1 then captures(parts.tail, parts.head.s.size, Set()) else Set()
 
     val text: Text = parts.mkString.tt
 

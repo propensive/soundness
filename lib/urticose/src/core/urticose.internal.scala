@@ -53,6 +53,8 @@ import spectacular.*
 import vacuous.*
 
 import IpAddress.Error.Reason, Reason.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object internal:
   // Resolve `Ipv4` to the nested opaque type directly rather than via the
@@ -330,7 +332,7 @@ object internal:
 
     given showable: Ipv6 is Showable = ip =>
       def unpack(long: Long, groups: List[Int] = Nil): List[Int] =
-        if groups.length == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
+        if groups.size == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
 
       def hex(values: List[Int]): Text =
         values.map(_.hex).join(t":")
@@ -365,18 +367,18 @@ object internal:
           val leftGroups = left.cut(t":").filter(_ != t"")
           val rightGroups = right.cut(t":").filter(_ != t"")
 
-          if leftGroups.length + rightGroups.length > 7
+          if leftGroups.size + rightGroups.size > 7
           then
-            raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))
+            raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.size + rightGroups.size)))
 
-          leftGroups ::: List.fill(8 - leftGroups.length - rightGroups.length)(t"0") :::
+          leftGroups ::: List.fill(8 - leftGroups.size - rightGroups.size)(t"0") :::
             rightGroups
 
         case List(whole) =>
           val groups = whole.cut(t":")
 
-          if groups.length != 8
-          then abort(IpAddress.Error(Ipv6WrongNumberOfGroups(groups.length)))
+          if groups.size != 8
+          then abort(IpAddress.Error(Ipv6WrongNumberOfGroups(groups.size)))
           else groups
 
         case _ =>

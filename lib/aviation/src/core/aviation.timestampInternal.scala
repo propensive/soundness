@@ -51,6 +51,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 // A `Timestamp` is a zoneless point on the millisecond-since-JDN-epoch grid, packed into one
 // `Long` as `jdn*MillisPerDay + msOfDay`. Its precision is a phantom `Form` type member (set with
@@ -233,7 +234,7 @@ object timestampInternal:
             val holidays = summon[Holidays].between(current, next)
             val weekends = Weekday.all.toList.filter(_.weekend)
             val weekendDays = weekends.map(Weekday.count(current, next, _)).sum
-            val weekdayHolidays = holidays.filter(!_.date.weekend).length
+            val weekdayHolidays = holidays.filter(!_.date.weekend).size
             val skipped = weekdayHolidays + weekendDays
             recur(next, skipped)
 
@@ -254,7 +255,7 @@ object timestampInternal:
             val holidays = summon[Holidays].between(previous, current)
             val weekends = Weekday.all.toList.filter(_.weekend)
             val weekendDays = weekends.map(Weekday.count(previous, current, _)).sum
-            val weekdayHolidays = holidays.filter(!_.date.weekend).length
+            val weekdayHolidays = holidays.filter(!_.date.weekend).size
             val skipped = weekdayHolidays + weekendDays
             recur(previous, skipped)
 

@@ -122,12 +122,14 @@ extension [plane: Filesystem](path: Path on plane)
         case TraversalOrder.PostOrder => child.descendants #::: Chain(child)
 
 
-  def size()(using plane is Explorable, FilesystemBackend on plane): Bytes raises Io.Error =
+  // Named `filesize` (not `size`): a same-named export beside the collections' `size` at the
+  // `soundness` umbrella makes extension resolution commit to the wrong candidate.
+  def filesize()(using plane is Explorable, FilesystemBackend on plane): Bytes raises Io.Error =
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
 
     descendants.stdlib.fuse(summon[FilesystemBackend on plane].stat(path, false).size.b):
-      state + next.size()
+      state + next.filesize()
 
   def delete()(using deleteRecursively: DeleteRecursively on plane)
     ( using backend: FilesystemBackend on plane )

@@ -41,6 +41,7 @@ import fulminate.*
 import symbolism.*
 import vacuous.*
 import rudiments.*
+import denominative.asymptotics.linearSizeComplexity
 
 
 def evolve[element: ClassTag]
@@ -161,7 +162,7 @@ def diff[element]
 
   @tailrec
   def backtrack(position: Int, deletes: Int, rows: List[Array[Int]^{}], edits: Edits): Edits =
-    val rightPosition = position + rows.length - deletes*2
+    val rightPosition = position + rows.size - deletes*2
     lazy val ins = rows.head.readable(deletes) - 1
     lazy val del = rows.head.readable(deletes - 1)
 
@@ -171,7 +172,7 @@ def diff[element]
         ( position - 1, deletes, rows,
           List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
 
-    else if deletes < rows.length && (deletes == 0 || ins >= del)
+    else if deletes < rows.size && (deletes == 0 || ins >= del)
     then
       if position == ins
       then

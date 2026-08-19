@@ -49,6 +49,7 @@ import _root_.java.util.zip as juz
 import _root_.javax.crypto as jc
 import _root_.javax.crypto.spec as jcs
 import pneumatic.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Facsimile tests"):
   val noParms: Map[Text, Cos] = Map()
@@ -389,7 +390,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val doc = document(t"<< /Type /Catalog /Next 2 0 R >>".in[Data], t"[1 0 R (x)]".in[Data])
 
         PdfFile(doc).open():
-          pdf.resolved(pdf(1, 0)(t"Next").or(Cos.Nil)).elements.let(_.length)
+          pdf.resolved(pdf(1, 0)(t"Next").or(Cos.Nil)).elements.let(_.size)
       . assert(_ == 2)
 
       test(m"a stream payload with no filter"):
@@ -688,7 +689,7 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.setBookmarks(marks)
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.length))
+          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.size))
       . assert(_ == List((t"Chapter 1", 1), (t"Chapter 2", 0)))
 
       test(m"a bookmark destination targets a page"):
@@ -1784,7 +1785,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Title (Child) /Parent 6 0 R >>".in[Data] )
 
         PdfFile(doc).open():
-          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.length))
+          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.size))
       . assert(_ == List((t"One", 0), (t"Two", 1)))
 
       test(m"a bookmark destination lands on its page"):
@@ -1804,7 +1805,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Title (Loop) /Parent 4 0 R /Next 5 0 R >>".in[Data] )
 
         PdfFile(doc).open():
-          pdf.bookmarks.length
+          pdf.bookmarks.size
       . assert(_ == 1)
 
     suite(m"Annotations, attachments and labels"):

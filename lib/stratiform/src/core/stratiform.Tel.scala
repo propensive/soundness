@@ -2163,7 +2163,7 @@ object Tel extends Tel2:
       keyMode:  Boolean )
   :   Optional[Tel.Error.Position] =
 
-    if i >= segments.length then
+    if i >= segments.size then
       if keyMode && i == 0 then Unset
       else
         val valueColumn = data.readUnchecked(offset + 4)
@@ -3954,17 +3954,17 @@ object Tel extends Tel2:
       then recoverAt(Reason.PragmaNotFirst, line, offsets.head + 1, parts.head.length)(())
 
       val version =
-        if parts.length >= 2 then parseVersion(parts.stdlib(1), line, offsets.stdlib(1) + 1) else (1, 0)
+        if parts.size >= 2 then parseVersion(parts.stdlib(1), line, offsets.stdlib(1) + 1) else (1, 0)
 
       // §19.5 IgnoreExtraPragmaAtoms: only parts 2 and 3 are read below, so excess
       // atoms are already ignored once the error is recorded. The span runs from the
       // first excess atom to the end of the line.
-      if parts.length > 4
+      if parts.size > 4
       then recoverAt(Reason.ExtraPragmaContent, line, offsets.stdlib(4) + 1, content.length - offsets.stdlib(4))
         ( () )
 
       val schemaText: Optional[Text] =
-        if parts.length >= 3 then
+        if parts.size >= 3 then
           val s = parts.stdlib(2)
           // §8.1: the schema identifier is either an HTTP/HTTPS URL (with a
           // `://`) or a bare BASE-256-encoded schema signature. The BASE-256
@@ -3985,7 +3985,7 @@ object Tel extends Tel2:
           Unset
 
       val pragmaSigil: Optional[Char] =
-        if parts.length >= 4 && parts.stdlib(3).length == 1 then
+        if parts.size >= 4 && parts.stdlib(3).size == 1 then
           val c = parts.stdlib(3).charAt(0)
           // §6 sigil validity: not a letter or digit, and not one of the
           // eight parenthetical symbols.

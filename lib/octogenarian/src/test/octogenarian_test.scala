@@ -61,6 +61,7 @@ import filesystemOptions.deleteRecursively.enabled
 import gitCommands.environmentDefaultGitCommand
 
 import filesystemBackends.virtualMachineFilesystem
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Octogenarian Tests"):
   def run(): Unit =
@@ -198,7 +199,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
     suite(m"Patch parser"):
 
       test(m"empty input yields no FileDiffs"):
-        patchFrom().length
+        patchFrom().size
       .assert(_ == 0)
 
       test(m"a single Modified file yields one FileDiff"):
@@ -211,7 +212,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
            t" one",
            t"-two",
            t"+two-changed",
-           t" three" ).length
+           t" three" ).size
       .assert(_ == 1)
 
       test(m"a Modified file has ChangeKind.Modified"):
@@ -284,7 +285,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
            t"+++ b/b",
            t"@@ -1 +1 @@",
            t"-2",
-           t"+2b" ).length
+           t"+2b" ).size
       .assert(_ == 2)
 
       test(m"multiple hunks in one file are kept separate"):
@@ -297,7 +298,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
            t"+a1",
            t"@@ -10 +10 @@",
            t"-b",
-           t"+b1" ).head.hunks.length
+           t"+b1" ).head.hunks.size
       .assert(_ == 2)
 
       test(m"hunk records line range from @@ header"):
@@ -364,7 +365,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
            t"-old",
            t"\\ No newline at end of file",
            t"+new",
-           t"\\ No newline at end of file" ).head.hunks.head.edits.length
+           t"\\ No newline at end of file" ).head.hunks.head.edits.size
       .assert(_ == 2)
 
       test(m"a binary diff yields a FileDiff with no hunks"):
@@ -455,7 +456,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"root")
         commitFile(worktree, t"b", t"b\n", t"second")
-        worktree.repo.log().map(_.parent.length)
+        worktree.repo.log().map(_.parent.size)
       .assert(_ == List(1, 0))
 
       test(m"revParse(HEAD) matches the committed hash"):
@@ -548,7 +549,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         writeFile(worktree.path / t"hello.txt", t"hello\n")
         worktree.add(worktree.path / t"hello.txt")
         worktree.commit(t"initial")
-        worktree.repo.log().length
+        worktree.repo.log().size
       .assert(_ == 1)
 
       test(m"unstage leaves the file on disk and removes it from the index"):
@@ -573,7 +574,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"old.txt", t"hello\n", t"first")
         worktree.mv(worktree.path / t"old.txt", worktree.path / t"new.txt")
         worktree.commit(t"rename")
-        worktree.repo.log().length
+        worktree.repo.log().size
       .assert(_ == 2)
 
     // ----- reset modes ----------------------------------------------------
@@ -585,7 +586,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"first")
         commitFile(worktree, t"b", t"b\n", t"second")
         worktree.reset(ResetMode.Soft, Refspec.head(1))
-        worktree.repo.log().length == 1 && (worktree.path / t"b").existent()
+        worktree.repo.log().size == 1 && (worktree.path / t"b").existent()
       .assert(_ == true)
 
       test(m"reset --soft leaves changes staged"):
@@ -721,7 +722,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         commitFile(worktree, t"b", t"b\n", t"second")
-        worktree.repo.reflog().length
+        worktree.repo.reflog().size
       .assert(_ == 2)
 
       test(m"a reset adds a `reset:` entry to the reflog"):
@@ -748,7 +749,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         writeFile(worktree.path / t"a", t"first\nsecond\n")
 
         val files = worktree.diff()
-        files.length == 1
+        files.size == 1
           && files.head.changeKind == ChangeKind.Modified
           && files.head.hunks.bind(_.edits).stdlib.exists:
               case Ins(_, t"second") => true
@@ -761,7 +762,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         writeFile(worktree.path / t"b", t"b\n")
         worktree.add(worktree.path / t"b")
         val staged = worktree.diff(staged = true)
-        staged.length == 1
+        staged.size == 1
           && staged.head.changeKind == ChangeKind.Added
           && staged.head.newPath == t"b"
       .assert(_ == true)
@@ -776,14 +777,14 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         val first = commitFile(worktree, t"a", t"v1\n", t"v1")
         commitFile(worktree, t"a", t"v2\n", t"v2")
-        worktree.diff(first).length
+        worktree.diff(first).size
       .assert(_ == 1)
 
       test(m"Git.Repo.diff(refA, refB) shows changes between two commits"):
         val worktree = freshWorktree()
         val first  = commitFile(worktree, t"a", t"v1\n", t"v1")
         val second = commitFile(worktree, t"a", t"v2\n", t"v2")
-        worktree.repo.diff(first, second).length
+        worktree.repo.diff(first, second).size
       .assert(_ == 1)
 
       test(m"diff records a Deleted file with old path and no new path"):
@@ -808,7 +809,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"b", t"b\n", t"feature")
         worktree.checkout(Git.Branch(t"main"))
         worktree.merge(Git.Branch(t"feature"), ff = FastForward.Only)
-        worktree.repo.log().length
+        worktree.repo.log().size
       .assert(_ == 2)
 
       test(m"merge with FastForward.Auto fast-forwards a clean lineage"):
@@ -818,7 +819,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"b", t"b\n", t"feature")
         worktree.checkout(Git.Branch(t"main"))
         worktree.merge(Git.Branch(t"feature"))
-        worktree.repo.log().map(_.parent.length)
+        worktree.repo.log().map(_.parent.size)
       .assert(_ == List(1, 0))
 
       test(m"merge with FastForward.Never creates a merge commit"):
@@ -828,7 +829,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"b", t"b\n", t"feature")
         worktree.checkout(Git.Branch(t"main"))
         worktree.merge(Git.Branch(t"feature"), ff = FastForward.Never, message = t"merge")
-        worktree.repo.log().head.parent.length
+        worktree.repo.log().head.parent.size
       .assert(_ == 2)
 
       test(m"merge with FastForward.Only refuses a non-fast-forward"):
@@ -858,9 +859,9 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val source = commitFile(worktree, t"b", t"b\n", t"feature")
         worktree.checkout(Git.Branch(t"main"))
 
-        val before = worktree.repo.log().length
+        val before = worktree.repo.log().size
         worktree.cherryPick(source)
-        val after = worktree.repo.log().length
+        val after = worktree.repo.log().size
         after - before
       .assert(_ == 1)
 
@@ -869,7 +870,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"base")
         val toRevert = commitFile(worktree, t"b", t"b\n", t"add b")
         worktree.revert(toRevert)
-        worktree.repo.log().length == 3 && !(worktree.path / t"b").existent()
+        worktree.repo.log().size == 3 && !(worktree.path / t"b").existent()
       .assert(_ == true)
 
       test(m"revert with noCommit leaves the inverse staged"):
@@ -878,7 +879,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val toRevert = commitFile(worktree, t"b", t"b\n", t"add b")
         worktree.revert(toRevert, noCommit = true)
         // History unchanged (still 2), but b is staged for deletion.
-        worktree.repo.log().length == 2
+        worktree.repo.log().size == 2
           && worktree.status().stdlib.exists: e =>
               e.path1 == t"b" && e.status1 == Git.Status.Deleted
       .assert(_ == true)
@@ -890,7 +891,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
       test(m"a fresh repo lists exactly one worktree"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
-        worktree.repo.worktrees().length
+        worktree.repo.worktrees().size
       .assert(_ == 1)
 
       test(m"addWorktree creates a second worktree sharing the object DB"):
@@ -899,9 +900,9 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val secondaryPath = freshDir()
         sh"rm -rf $secondaryPath".exec[Exit]()  // git worktree add wants a fresh path
         val secondary = primary.repo.addWorktree(secondaryPath, Git.Branch(t"main"), detach = true)
-        primary.repo.log().length == 1
-          && secondary.repo.log().length == 1
-          && primary.repo.worktrees().length == 2
+        primary.repo.log().size == 1
+          && secondary.repo.log().size == 1
+          && primary.repo.worktrees().size == 2
       .assert(_ == true)
 
       test(m"a secondary worktree shares the object DB with the primary"):
@@ -921,14 +922,14 @@ object Tests extends Suite(m"Octogenarian Tests"):
         sh"rm -rf $secondaryPath".exec[Exit]()
         val secondary = primary.repo.addWorktree(secondaryPath, Git.Branch(t"main"), detach = true)
         secondary.remove()
-        primary.repo.worktrees().length
+        primary.repo.worktrees().size
       .assert(_ == 1)
 
       test(m"pruneWorktrees succeeds on a clean repo"):
         val primary = freshWorktree()
         commitFile(primary, t"a", t"a\n", t"first")
         primary.repo.pruneWorktrees()
-        primary.repo.worktrees().length
+        primary.repo.worktrees().size
       .assert(_ == 1)
 
       test(m"lock and unlock a secondary worktree"):
@@ -941,7 +942,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         secondary.unlock()
         // After unlock, removeWorktree should succeed without --force.
         secondary.remove()
-        primary.repo.worktrees().length
+        primary.repo.worktrees().size
       .assert(_ == 1)
 
     // ----- remote management ----------------------------------------------
@@ -998,7 +999,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val targetPath = freshDir()
         sh"rm -rf $targetPath".exec[Exit]()
         val cloned = Git.clone(bareDir, targetPath).complete()
-        cloned.repo.log().length
+        cloned.repo.log().size
       .assert(_ == 1)
 
     // ----- Git.Refs (Serpentine ref paths) ---------------------------------

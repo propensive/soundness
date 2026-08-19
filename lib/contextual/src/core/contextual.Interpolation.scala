@@ -96,7 +96,7 @@ object Interpolation:
       case _                           => acc
 
     val collected = List.of(collectLiterals(context.asTerm, Nil).stdlib.reverse)
-    if collected.length == count then collected else List.fill(count)((0, 0))
+    if collected.stdlib.length == count then collected else List.fill(count)((0, 0))
 
   // Decode a type-level `Transport` tuple of string-literal types back into the parts. The
   // tuple is built innermost-first by `transportType`, so it holds the parts in reverse;
@@ -188,7 +188,7 @@ object Interpolation:
     import quotes.reflect.*
 
     val parts: List[String] = context.valueOrAbort.parts.to(List)
-    val partOrigins: List[(Int, Int)] = literalOrigins(context, parts.length)
+    val partOrigins: List[(Int, Int)] = literalOrigins(context, parts.stdlib.length)
 
     // The tuple terminator must be `scala.EmptyTuple.type` itself. Bare `EmptyTuple.type` would
     // name the `proscenium` prelude's *export forwarder*, which is a (nullary) method, not the

@@ -42,12 +42,13 @@ import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Optical:
   given ordinalList: [element] => Ordinal is Optical from List[element] onto element =
     ordinal =>
       Optic: (origin, lambda) =>
-        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin.stdlib(ordinal.n0)))
+        if origin.size > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin.stdlib(ordinal.n0)))
         else origin
 
   given ordinalSeries: [element] => Ordinal is Optical from Sequence[element] onto element =

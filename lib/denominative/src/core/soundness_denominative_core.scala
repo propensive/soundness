@@ -34,7 +34,7 @@ package soundness
 
 export
   denominative
-  . { aka, capped, Countable, Vacuiscible, Applicable, Definable, gamut, Interval, extent, iterate, lead, nil, Ordinal, pare, Prim,
+  . { aka, capped, Countable, Vacuiscible, Applicable, Definable, size, gamut, Interval, extent, iterate, lead, nil, Ordinal, pare, Prim,
       Quat, Quin, retrace, Sec, Sen, Sept, Span, spot, Ter, u, z, Zerary, limit, ult, ant, pen,
       LinearSizeComplexity, LinearAccessComplexity, UnboundedSizeComplexity }
 

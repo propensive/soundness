@@ -247,7 +247,10 @@ extension [textual: Textual as instance](text: textual)
     case Ltr => textual.indexOf(text, substring)
     case Rtl => if substring.nil then Unset else textual.lastIndexOf(text, substring)
 
-  def count(substring: Text): Int =
+  // Formerly `count(substring)`: as a generic-receiver extension it committed without falling
+  // through (the zeppelin-`zip` hazard), blocking the collections' `count` in any file
+  // importing gossamer, so the substring-occurrence counter takes its own name.
+  def occurrences(substring: Text): Int =
     if substring.nil then 0 else
       def recur(start: Ordinal, total: Int): Int =
         textual.indexOf(text, substring, start).lay(total): found =>
@@ -336,12 +339,8 @@ extension [textual: Textual { type Result = Char } as instance](text: textual)
         if !set.contains(char) then append(char)
         char
 
-  inline def count(predicate: Char => Boolean): Int =
-    def recur(index: Ordinal, sum: Int): Int = if index >= text.limit then sum else
-      val increment = if predicate(textual.access(text, index)) then 1 else 0
-      recur(index + 1, sum + increment)
-
-    recur(Prim, 0)
+  // The predicate form of `count` now comes from the generic collections operation, which
+  // serves every `Traversable` textual type; only the substring form above is textual.
 
   def blank: Boolean = text.pinpoint(!_.isWhitespace).absent
 

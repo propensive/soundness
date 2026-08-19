@@ -64,6 +64,7 @@ import zephyrine.*
 
 import Protobuf.Error.Reason
 import fulminate.*
+import denominative.asymptotics.linearSizeComplexity
 
 trait Protobuf2:
   this: Protobuf.type =>
@@ -619,8 +620,8 @@ object Protobuf extends Protobuf2:
             val labels = variantLabels
 
             var index = 0
-            while index < labels.length && !map.defines(index + 1) do index += 1
-            if index >= labels.length then abort(Protobuf.Error(Reason.MissingField(0)))
+            while index < labels.size && !map.defines(index + 1) do index += 1
+            if index >= labels.size then abort(Protobuf.Error(Reason.MissingField(0)))
 
             delegate(labels.stdlib(index)):
               [variant <: derivation] => context =>
