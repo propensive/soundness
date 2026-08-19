@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export sibylline.{Llm, llm}
+export sibylline.{Anthropic, Llm, llm}

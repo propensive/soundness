@@ -37,15 +37,21 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
+import hieroglyph.*, charDecoders.utf8Decoder, charEncoders.utf8Encoder,
+    textSanitizers.strictSanitizer
 import jacinta.*
+import obligatory.*
 import rudiments.*
+import spectacular.*
+import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.{chunks, memoize, via}
 
 object Llm:
   // The two turn-taking roles a conversation alternates between. The system prompt is not a
@@ -237,6 +243,56 @@ object Llm:
 
     safely(text.read[Json]).or:
       abort(Error(Error.Reason.Malformed, t"the streamed tool arguments were not valid JSON"))
+
+  // The shared HTTP engine: one retry policy for every dialect. Rate limits and overloads
+  // (429, 503, 529) are retried a few times, honouring `retry-after` when the provider sends
+  // one and backing off exponentially when it does not; any other failure is decoded through
+  // the dialect's own error mapping and raised.
+  private[sibylline] def fetch(fail: (Http.Status, Optional[Json]) => Error)
+    ( send: => Http.Response )
+    ( using Tactic[Error], Diagnostics )
+  :   Http.Response =
+
+    def attempt(remaining: Int, backoff: Long): Http.Response =
+      val response = send
+
+      if response.status.category == Http.Status.Category.Successful then response
+      else response.status.code match
+        case 429 | 503 | 529 if remaining > 0 =>
+          val delay: Long =
+            safely(response.headers.retryAfter.prim.let(_.as[Long])).or(backoff)
+
+          // A plain blocking sleep: this module is JVM-only, the whole call is synchronous on
+          // the caller's thread, and no `Monitor` is demanded of one-shot callers.
+          Thread.sleep(delay*1000)
+          attempt(remaining - 1, backoff*2)
+
+        case _ =>
+          abort(fail(response.status, body(response)))
+
+    attempt(3, 1)
+
+  // The response body as JSON, or `Unset` for a body that is not JSON at all — a crashed
+  // gateway, an interposed proxy. The body's own stream, not `receive`, which consults the
+  // status first and would abort with an `Http.Error` that has already discarded the envelope.
+  private def body(response: Http.Response)(using Diagnostics): Optional[Json] =
+    safely(response.body.stream.memoize.read[Text].as[Json])
+
+  private[sibylline] def receive(response: Http.Response)(using Tactic[Error], Diagnostics)
+  :   Json =
+
+    body(response).lest(Error(Error.Reason.Malformed, t"the reply was not valid JSON"))
+
+  // The response body as raw server-sent-event frames, one `Text` per event, decoded
+  // incrementally off the live connection.
+  private[sibylline] def frames(consume response: Http.Response)
+    ( using tactic: Tactic[Error], diagnostics: Diagnostics )
+  :   Iterator[Text]^ =
+
+    given decodeTactic: (Tactic[CharDecoder.Error]^) = tactic.contramap: _ =>
+      Error(Error.Reason.Malformed, t"the stream was not valid UTF-8")
+
+    response.body.stream.via(summon[CharDecoder]).chunks.frames[Sse]
 
   private[sibylline] object Accumulator:
     // The in-progress form of one content block: the block as it was opened, the text it has
