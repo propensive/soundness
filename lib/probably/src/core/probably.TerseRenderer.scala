@@ -71,7 +71,7 @@ private[probably] object TerseRenderer:
       val aspires = t"${totals.aspirePassed} aspire-passed, ${totals.aspireFailed} aspire-failed"
       Out.println(t"$summary$aspires, ${totals.total} total")
 
-    document.groups.stdlib.foreach(renderGroup(_, columns))
+    document.groups.stdlib.foreach(renderGroup(_, columns, document.verbosity.verbose))
     renderFailures(document, columns)
     renderFatal(document)
 
@@ -105,11 +105,12 @@ private[probably] object TerseRenderer:
       val sign = if negative then e"-" else e"+"
       e"$sign${datum(inner)}"
 
-  private def renderGroup(group: Group, columns: Int)(using Stdio): Unit =
+  private def renderGroup(group: Group, columns: Int, verbose: Boolean)(using Stdio): Unit =
     Out.println(t"")
     val suiteName = group.suite.let(_.name.text).or(t"")
     if suiteName.length > 0 then Out.println(suiteName)
     group.blocks.stdlib.foreach(renderBlock(_, columns))
+    if verbose then group.detail.stdlib.foreach(renderBlock(_, columns))
 
   private def renderBlock(block: Block, columns: Int)(using Stdio): Unit = block match
     case Block.Table(title, tableColumns, rows) =>

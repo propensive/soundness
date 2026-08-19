@@ -82,7 +82,7 @@ private[probably] object AnsiRenderer:
 
     coverage.foreach(renderCoverage(_, columns))
     renderTotals(document, columns, top = true)
-    document.groups.each(renderGroup(_, columns, githubActions))
+    document.groups.each(renderGroup(_, columns, githubActions, document.verbosity.verbose))
     if githubActions then annotations(document)
     renderFailures(document, githubActions)
     renderFatal(document, githubActions)
@@ -279,7 +279,7 @@ private[probably] object AnsiRenderer:
     case Entry.Kind.Stress  => t"Stress"
     case Entry.Kind.Profile => t"Profile"
 
-  private def renderGroup(group: Group, columns: Int, githubActions: Boolean)
+  private def renderGroup(group: Group, columns: Int, githubActions: Boolean, verbose: Boolean)
     ( using Stdio, TestPalette )
   :   Unit =
 
@@ -301,6 +301,7 @@ private[probably] object AnsiRenderer:
           group.suite.let(_.name.teletype).or(e"") )
 
     group.blocks.each(renderBlock(_, columns))
+    if verbose then group.detail.each(renderBlock(_, columns))
 
     if githubActions then GithubActions.endGroup()
 

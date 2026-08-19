@@ -48,9 +48,17 @@ private[probably] object Documenting:
   import Doc.*
   import Report.Status
 
+  // The verbosity of every report. Both renderers take it from the document, so introducing
+  // a verbose mode later means sourcing this from a flag or an environment variable here,
+  // and changing nothing else.
+  private def verbosity: Verbosity = Verbosity.Summary
+
   def document(report: Report): Document =
-    val results = summaries(report.lines)
-    val counts = results.stdlib.groupBy(_.status).view.mapValues(_.size).toMap - Status.Suite
+    // Every entry, for the totals, which count a measurement as a pass; and the subset that
+    // the results table renders, which excludes them (see `summaries`).
+    val counted = summaries(report.lines, measurements = true)
+    val results = summaries(report.lines, measurements = false)
+    val counts = counted.stdlib.groupBy(_.status).view.mapValues(_.size).toMap - Status.Suite
 
     val passed: Int =
       List(Status.Pass, Status.Bench, Status.Stress, Status.Profile)
@@ -75,31 +83,48 @@ private[probably] object Documenting:
         Totals(passed, failed, aspirePassed, aspireFailed),
         groups,
         failures,
-        report.failure )
+        report.failure,
+        verbosity )
 
   // One row per suite and per entry, in declaration order; a `Check` entry's runs are
   // aggregated across all its cells into a single status and duration statistics.
-  private def summaries(line: ReportLine): List[SummaryRow] = line match
-    case ReportLine.Suite(suite, tests) =>
-      val rest: List[SummaryRow] = List.of(tests.list.stdlib.sortBy(_(0).timestamp).flatMap { (_, line) => summaries(line).stdlib })
+  //
+  // A measurement entry has no count and no timing statistics — a benchmark's figures are
+  // its own, and a stress test's are a curve — so its results-table row can only ever be a
+  // name followed by four empty columns, while its real results are presented in full by
+  // its blocks. With `measurements` unset, such entries are therefore omitted, as are the
+  // suites which their omission leaves empty. The totals still count them, so the caller
+  // asks for them included when counting and excluded when rendering.
+  private def summaries(line: ReportLine, measurements: Boolean): List[SummaryRow] =
+    line match
+      case ReportLine.Suite(suite, tests) =>
+        val rest: List[SummaryRow] = List.of:
+          tests.list.stdlib.sortBy(_(0).timestamp).flatMap: (_, line) =>
+            summaries(line, measurements).stdlib
 
-      if suite.absent then rest
-      else SummaryRow(Status.Suite, suite.option.get.id, 0, 0L, 0L, 0L) :: rest
+        if suite.absent || rest.isEmpty && !measurements then rest
+        else SummaryRow(Status.Suite, suite.option.get.id, 0, 0L, 0L, 0L) :: rest
 
-    case ReportLine.Item(entry) => entry.kind match
-      case Entry.Kind.Bench   => List(SummaryRow(Status.Bench, entry.id, 0, 0L, 0L, 0L))
-      case Entry.Kind.Stress  => List(SummaryRow(Status.Stress, entry.id, 0, 0L, 0L, 0L))
-      case Entry.Kind.Profile => List(SummaryRow(Status.Profile, entry.id, 0, 0L, 0L, 0L))
+      case ReportLine.Item(entry) => entry.kind match
+        case Entry.Kind.Bench   => measured(Status.Bench, entry, measurements)
+        case Entry.Kind.Stress  => measured(Status.Stress, entry, measurements)
+        case Entry.Kind.Profile => measured(Status.Profile, entry, measurements)
 
-      case Entry.Kind.Check =>
-        val verdicts = entry.cells.stdlib.flatMap(_(1).runs.stdlib).flatMap(_.verdict.option)
+        case Entry.Kind.Check =>
+          val verdicts = entry.cells.stdlib.flatMap(_(1).runs.stdlib).flatMap(_.verdict.option)
 
-        if verdicts.isEmpty then Nil else
-          val durations = verdicts.map(_.duration)
-          val avg = durations.sum/durations.length
-          val status = verdictStatus(List.of(verdicts))
+          if verdicts.isEmpty then Nil else
+            val durations = verdicts.map(_.duration)
+            val avg = durations.sum/durations.length
+            val status = verdictStatus(List.of(verdicts))
 
-          List(SummaryRow(status, entry.id, verdicts.length, durations.min, durations.max, avg))
+            List
+              ( SummaryRow
+                  (status, entry.id, verdicts.length, durations.min, durations.max, avg) )
+
+  // A measurement entry's results-table row: present only when measurements are counted.
+  private def measured(status: Status, entry: Entry, measurements: Boolean): List[SummaryRow] =
+    if measurements then List(SummaryRow(status, entry.id, 0, 0L, 0L, 0L)) else Nil
 
   // The collective status of a set of verdicts: their common status, or `Mixed` when they
   // disagree.
@@ -132,19 +157,24 @@ private[probably] object Documenting:
 
     val here =
       if entries.isEmpty then Nil else
-        val blockList = blocks(kind, entries)
-        if blockList.isEmpty then Nil else List(Group(line.suite, kind, blockList))
+        val (headline, detail) = blocks(kind, entries)
+
+        if headline.isEmpty && detail.isEmpty then Nil
+        else List(Group(line.suite, kind, headline, detail))
 
     here ::: nested
 
-  private def blocks(kind: Entry.Kind, entries: List[Entry]): List[Block] = kind match
-    case Entry.Kind.Bench   => benchBlocks(entries)
-    case Entry.Kind.Stress  => stressBlocks(entries)
-    case Entry.Kind.Profile => entries.map(histogram)
+  // A kind's blocks, separated into those always rendered and those held back for verbose
+  // output. Only stress groups currently distinguish the two.
+  private def blocks(kind: Entry.Kind, entries: List[Entry]): (List[Block], List[Block]) =
+    kind match
+      case Entry.Kind.Bench   => (benchBlocks(entries), Nil)
+      case Entry.Kind.Stress  => stressBlocks(entries)
+      case Entry.Kind.Profile => (entries.map(histogram), Nil)
 
-    // Only axial unit tests need their own blocks (a table or grid of per-cell statuses);
-    // ordinary tests are fully described by the results table.
-    case Entry.Kind.Check   => entries.filter(_.axes.nonEmpty).map(axialCheck)
+      // Only axial unit tests need their own blocks (a table or grid of per-cell statuses);
+      // ordinary tests are fully described by the results table.
+      case Entry.Kind.Check   => (entries.filter(_.axes.nonEmpty).map(axialCheck), Nil)
 
   // The first (usually only) run of a cell: measurements record one run per cell, and a
   // duplicated declaration keeps its first measurement, as it always has.
@@ -374,7 +404,23 @@ private[probably] object Documenting:
 
         Block.Table(Unset, columns, rows)
 
-  private def stressBlocks(entries: List[Entry]): List[Block] =
+  // The point that stands for a whole scaling curve: the confirmed row of a capacity search
+  // when there is one — finding it is the search's entire purpose — and otherwise the step
+  // at which throughput peaked.
+  private def peak(curve: Map[Long, Run]): Optional[(Long, Run)] =
+    val points = curve.stdlib.toList
+
+    points.find(_(1).sustained).orElse:
+      points.maxByOption { point => metric(point(1), Metric.Throughput).or(0.0) }
+
+    . optional
+
+  private def throughput(run0: Run): Double = metric(run0, Metric.Throughput).or(0.0)
+
+  // A stress group renders as a headline — the sparkline of every curve, then one row per
+  // implementation at its best point, ranked — and a detail table of every step of every
+  // curve, held back for verbose output.
+  private def stressBlocks(entries: List[Entry]): (List[Block], List[Block]) =
     // Each stress entry's cells form its scaling curve: concurrency (the N axis) against
     // the strain measured there.
     val curves: List[(Entry, Map[Long, Run])] = entries.map: entry =>
@@ -396,22 +442,21 @@ private[probably] object Documenting:
       List.of((if shared.length > 1 then shared else all.distinct).sorted)
 
     val sparkline =
-      if steps.length < 2 then Nil else
-        val peak =
-          curves.stdlib.flatMap(_(1).stdlib.values).map(metric(_, Metric.Throughput).or(0.0).toLong)
+      if steps.stdlib.length < 2 then Nil else
+        val peakRate =
+          curves.stdlib.flatMap(_(1).stdlib.values).map(throughput(_).toLong)
           . maxOption.getOrElse(0L).max(1L)
 
         val sequence = curves.map: (entry, curve) =>
           val sustained: Optional[(Long, Long)] = curve.find(_(1).sustained) match
-            case Some((n, run0)) => (n, metric(run0, Metric.Throughput).or(0.0).toLong)
+            case Some((n, run0)) => (n, throughput(run0).toLong)
             case None            => Unset
 
           val limit: Long = sustained.lay(Long.MaxValue)(_(0))
 
           val cells: List[Optional[(Int, Boolean)]] = steps.map: step =>
             curve(step).let: run0 =>
-              val throughput = metric(run0, Metric.Throughput).or(0.0).toLong
-              val level = ((throughput*8L + peak - 1L)/peak).toInt.min(8).max(1)
+              val level = ((throughput(run0).toLong*8L + peakRate - 1L)/peakRate).toInt.min(8).max(1)
               (level, step > limit)
 
           Spark(entry.id.name.text, cells, sustained)
@@ -424,6 +469,64 @@ private[probably] object Documenting:
     val slo =
       entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.defines(Metric.Compliance)))
 
+    def optionalTime(run0: Run, key: Metric): Datum =
+      metric(run0, key).lay(Datum.Blank): value => Datum.Time(value.toLong)
+
+    val sloColumns = if slo then List(Column(t"SLO", numeric = true)) else Nil
+
+    def sloCells(run0: Run): List[Datum] =
+      if slo
+      then List(metric(run0, Metric.Compliance).lay(Datum.Blank)(Datum.Percent(_)))
+      else Nil
+
+    // The headline table: one row per implementation, at its best point, best first. A
+    // stress test has no implementation axis of its own — each `stress` declaration is a
+    // separate entry — so the implementations being compared are exactly the group's
+    // entries, and the winner is the entry whose best throughput is highest. Each is shown
+    // as a fraction of that throughput, which makes the winner's own ratio 1, rendered as ★.
+    val peaks: List[(Entry, Long, Run)] = List.of:
+      curves.stdlib.flatMap: (entry, curve) =>
+        peak(curve).option.map { (n, run0) => (entry, n, run0) }
+
+    val best: Double =
+      peaks.stdlib.map { point => throughput(point(2)) }.maxOption.getOrElse(0.0)
+
+    // A single implementation has nothing to be ranked against, and a group which measured
+    // no throughput at all cannot be ranked at all.
+    val ranked = peaks.stdlib.length > 1 && best > 0.0
+
+    val summary =
+      if peaks.isEmpty then Nil else
+        val summaryColumns =
+          List
+            ( Column(t"Hash"),
+              Column(t"Test"),
+              Column(t"N", numeric = true),
+              Column(t"Throughput", numeric = true) )
+          ::: (if ranked then List(Column(t"×best", numeric = true)) else Nil)
+          ::: List(Column(t"Alloc·op¯¹", numeric = true))
+          ::: (if latencies then List(Column(t"p99", numeric = true)) else Nil)
+          ::: sloColumns
+
+        val summaryRows = List.of:
+          peaks.stdlib.sortBy { point => -throughput(point(2)) }.map: point =>
+            val (entry, n, run0) = point
+
+            val lead =
+              List
+                ( Datum.Hash(entry.id.id),
+                  Datum.Title(entry.id.name, 0),
+                  Datum.Num(n),
+                  rate(run0) )
+
+            val ratio = if ranked then List(Datum.Ratio(throughput(run0)/best)) else Nil
+            val alloc = List(Datum.Memory(metric(run0, Metric.Allocation).or(0.0).toLong))
+            val latency = if latencies then List(optionalTime(run0, Metric.P99)) else Nil
+
+            (lead ::: ratio ::: alloc ::: latency ::: sloCells(run0)): List[Datum]
+
+        List(Block.Table(Unset, summaryColumns, summaryRows))
+
     val latencyColumns =
       if latencies then
         List
@@ -432,8 +535,6 @@ private[probably] object Documenting:
             Column(t"p999", numeric = true) )
       else
         Nil
-
-    val sloColumns = if slo then List(Column(t"SLO", numeric = true)) else Nil
 
     val leadColumns =
       List
@@ -453,9 +554,6 @@ private[probably] object Documenting:
 
     val columns = leadColumns ::: latencyColumns ::: sloColumns ::: tailColumns
 
-    def optionalTime(run: Run, key: Metric): Datum =
-      metric(run, key).lay(Datum.Blank): value => Datum.Time(value.toLong)
-
     val rows = List.of:
       curves.stdlib.flatMap: (entry, curve) =>
         curve.stdlib.toList.sortBy(_(0)).map: (n, run0) =>
@@ -467,11 +565,6 @@ private[probably] object Documenting:
                     optionalTime(run0, Metric.P999) )
               else
                 Nil
-
-            val sloCells =
-              if slo
-              then List(metric(run0, Metric.Compliance).lay(Datum.Blank)(Datum.Percent(_)))
-              else Nil
 
             val lead =
               List
@@ -489,9 +582,9 @@ private[probably] object Documenting:
                   Datum.Num(metric(run0, Metric.GcCount).or(0.0).toLong),
                   Datum.Time(metric(run0, Metric.GcTime).or(0.0).toLong) )
 
-            lead ::: latencyCells ::: sloCells ::: tail
+            lead ::: latencyCells ::: sloCells(run0) ::: tail
 
-    sparkline ::: List(Block.Table(Unset, columns, rows))
+    (sparkline ::: summary, List(Block.Table(Unset, columns, rows)))
 
   private def histogram(entry: Entry): Block =
     val hotspots: Option[Hotspots] =
