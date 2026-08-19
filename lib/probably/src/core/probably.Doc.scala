@@ -73,9 +73,22 @@ private[probably] object Doc:
     case Sparkline(steps: List[Long], sequence: List[Spark])
     case Histogram(title: Optional[Test.Id], total: Long, frames: List[Hotspots.Frame])
 
+  // How much of a report to render. `Summary` shows only each group's headline blocks;
+  // `Verbose` additionally shows its `detail` blocks, which carry the full per-coordinate
+  // breakdown that each headline block condenses.
+  enum Verbosity:
+    case Summary, Verbose
+
+    def verbose: Boolean = this == Verbosity.Verbose
+
   // A group of measurement blocks belonging to one suite, of one kind, rendered with a
-  // ribbon header (and a GitHub Actions group when applicable).
-  case class Group(suite: Optional[Testable], kind: Entry.Kind, blocks: List[Block])
+  // ribbon header (and a GitHub Actions group when applicable). `blocks` are always
+  // rendered; `detail` only under `Verbosity.Verbose`.
+  case class Group
+    ( suite:  Optional[Testable],
+      kind:   Entry.Kind,
+      blocks: List[Block],
+      detail: List[Block] = Nil )
 
   // One row of the global results table, aggregating a test's runs across all its cells.
   case class SummaryRow
@@ -85,8 +98,9 @@ private[probably] object Doc:
     def total: Int = passed + failed + aspirePassed + aspireFailed
 
   case class Document
-    ( results:  List[SummaryRow],
-      totals:   Totals,
-      groups:   List[Group],
-      failures: List[(Test.Id, List[Verdict.Detail])],
-      fatal:    Optional[(Throwable, Set[Test.Id])] )
+    ( results:   List[SummaryRow],
+      totals:    Totals,
+      groups:    List[Group],
+      failures:  List[(Test.Id, List[Verdict.Detail])],
+      fatal:     Optional[(Throwable, Set[Test.Id])],
+      verbosity: Verbosity = Verbosity.Summary )
