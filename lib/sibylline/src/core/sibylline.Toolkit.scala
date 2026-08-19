@@ -30,8 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package sibylline
 
-export
-  synesthesia
-  . { agent, Agent, Discourse, human, Human, Mcp, prompt, resource, title, tool, ui }
+import anticipation.*
+import contingency.*
+import gossamer.*
+import jacinta.*
+
+object Toolkit:
+  // What a session has unless a `Toolkit` is given: no tools, and an unknown-tool error for a
+  // call that should never arrive. A user-scoped `given Toolkit = Toolkit(…)` outranks this.
+  given empty: Toolkit = new Toolkit:
+    def specs: List[Llm.Tool] = List()
+
+    def invoke(name: Text, arguments: Json): Json raises Llm.Error =
+      abort(Llm.Error(Llm.Error.Reason.Invalid, t"no tool named $name is defined"))
+
+  // Derives a toolkit from the `@ability`-annotated methods of `target`: each method's
+  // parameters
+  // (which need `Schematic over JsonSchema` instances) become its JSON schema, its `@about`
+  // annotation its description, and its body the implementation the tool loop dispatches to.
+  // A method may take one contextual parameter block, summoned *here*, at the expansion site —
+  // so a toolkit built where a capability is in scope captures it, and capture checking
+  // confines the toolkit accordingly.
+  transparent inline def apply[tools](target: tools): Toolkit =
+    ${sibylline.internal.toolkit[tools]('target)}
+
+// The tools a conversation may offer its model: their wire specifications, and the dispatcher
+// the tool loop invokes when the model calls one. `invoke` raises `Llm.Error` for an unknown
+// tool or malformed arguments; the loop converts such failures into `is_error` tool results so
+// the model can correct itself.
+trait Toolkit:
+  def specs: List[Llm.Tool]
+  def invoke(name: Text, arguments: Json): Json raises Llm.Error

@@ -848,7 +848,8 @@ object soundness extends Toolchain:
     caduceus.resend,
     orthodoxy.core,
     jacinta.http,
-    stratiform.http, stratiform.optics, obligatory.core, obligatory.json, synesthesia.content,
+    stratiform.http, stratiform.optics, obligatory.core, obligatory.json, sibylline.core,
+    synesthesia.content,
     synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
@@ -2847,6 +2848,16 @@ object serpentine extends Library:
   object test extends Tests(core, galilei.core)
   object bench extends Benchmarks(core, galilei.core, quantitative.units)
 
+object sibylline extends Library:
+  object core
+      extends Component(obligatory.json, telekinesis.jvm, aperture.core, synesthesia.content):
+    override def scalaJs = false // transitively JVM-only (obligatory.json/telekinesis.jvm)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, ambience.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
 object spectacular extends Library:
   object core extends Component(stenography.core, wisteria.core):
     override def scalacOptions = Task:
@@ -3421,7 +3432,7 @@ val allLibraries: Seq[Library] = Seq(
   prescience,
   probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, reliquary, revolution, rudiments, savagery,
-  scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
+  scintillate, sedentary, serpentine, sibylline, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, tessellate, turbulence, typonym,
   ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, virility,
   vivisection,

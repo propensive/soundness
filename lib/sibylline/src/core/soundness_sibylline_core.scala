@@ -32,6 +32,4 @@
                                                                                                   */
 package soundness
 
-export
-  synesthesia
-  . { agent, Agent, Discourse, human, Human, Mcp, prompt, resource, title, tool, ui }
+export sibylline.{ability, Anthropic, elicit, Gemini, Llm, llm, OpenAI, Toolkit}

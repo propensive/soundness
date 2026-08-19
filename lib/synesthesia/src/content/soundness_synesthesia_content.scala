@@ -34,4 +34,4 @@ package soundness
 
 // Aliased: `Content` in the umbrella belongs to gesticulate's media-typed payload. The members
 // are also reachable through `Mcp` and `Acp`, which re-export them.
-export synesthesia.{Content as McpContent}
+export synesthesia.{about, Content as McpContent}

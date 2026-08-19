@@ -30,8 +30,42 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package sibylline
 
-export
-  synesthesia
-  . { agent, Agent, Discourse, human, Human, Mcp, prompt, resource, title, tool, ui }
+import soundness.*
+
+import strategies.throwUnsafely
+
+// The session and its in-flight streamed response are capabilities scoped to the block a
+// provider's `session` lends them to; capture checking prevents either being retained beyond
+// it, while pure values — replies, messages, usage — may leave freely.
+object CaptureTests extends Suite(m"Confinement tests"):
+  def run(): Unit =
+    test(m"the session cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(using session: Llm.Session^): Unit =
+          var stash: () => Llm.Reply = () => Scripted.reply(t"")
+          stash = () => session.ask(t"late")
+          ()
+    . assert(_.nonEmpty)
+
+    test(m"a streamed response cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(using session: Llm.Session^): Unit =
+          var stash: () => Unit = () => ()
+          val response = session.stream(t"go")
+          stash = () => response.reply().unit
+          ()
+    . assert(_.nonEmpty)
+
+    test(m"a pure reply may leave the session block"):
+      demilitarize:
+        def attempt(using session: Llm.Session^): Llm.Reply =
+          session.ask(t"fine")
+    . assert(_.isEmpty)
+
+    test(m"the history snapshot may leave the session block"):
+      demilitarize:
+        def attempt(using session: Llm.Session^): List[Llm.Message] =
+          session.history
+    . assert(_.isEmpty)

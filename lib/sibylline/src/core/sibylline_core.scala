@@ -30,8 +30,37 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package sibylline
 
-export
-  synesthesia
-  . { agent, Agent, Discourse, human, Human, Mcp, prompt, resource, title, tool, ui }
+import scala.caps
+
+import anticipation.*
+import contingency.*
+import gossamer.*
+import jacinta.*
+import prepositional.*
+import vacuous.*
+
+// The contextual accessor for the session a `provider.session:` block lends. A *named* using
+// parameter, not a `summon`, which would mint a fresh root instead of referring to the session
+// the enclosing block owns.
+def llm(using session: Llm.Session^): Llm.Session^{session} = session
+
+extension (session: Llm.Session^)
+  // A structured answer: the model is forced to call one synthetic tool, `answer`, whose
+  // argument schema is derived from `value`, and the arguments it supplies are decoded as the
+  // result.
+  def elicit[value]
+    ( prompt: Text )
+    ( using schematic: value is Schematic over JsonSchema )
+    ( using decodable: (value is distillate.Decodable in Json at Json.Focus)^ )
+  :   value =
+
+    val answer: Llm.Tool =
+      Llm.Tool(t"answer", t"The structured answer to the question.", schematic.schema())
+
+    val reply = session.forced(Llm.Message(Llm.Role.User, prompt), answer)
+    val arguments: Json = session.arguments(reply)
+
+    caps.unsafe.unsafeAssumeSeparate:
+      safely(arguments.as[value]).or(session.malformed())

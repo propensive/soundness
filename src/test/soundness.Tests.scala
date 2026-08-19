@@ -135,6 +135,7 @@ object Tests extends Suite(m"Soundness tests"):
     scintillate.Tests()
     sedentary.Tests()
     serpentine.Tests()
+    sibylline.Tests()
     spectacular.Tests()
     stenography.Tests()
     stratiform.Tests()

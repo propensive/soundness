@@ -104,6 +104,7 @@ savagery: svg vector-graphics 2d-graphics path shapes
 scintillate: http-server servlet web-framework http-routing
 sedentary: benchmarking performance-testing micro-benchmark
 serpentine: path filesystem-paths posix windows linux relative-path absolute-path
+sibylline: llm anthropic openai gemini chat-completions tool-use structured-output streaming
 spectacular: show pretty-printing display inspect
 stenography: typename qualified-names imports symbol-rendering scala-types
 stratiform: tel configuration-language records schema binary-tel
