@@ -38,7 +38,6 @@ import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
 import charEncoders.utf8Encoder
 
-import proscenium.compat.*
 
 object Tests extends Suite(m"Corpuscular tests"):
   // The published check values for each algorithm, plus the edge cases the donor

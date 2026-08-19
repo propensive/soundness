@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-import proscenium.compat.*
 
 import java.io as ji
 

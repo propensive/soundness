@@ -34,7 +34,6 @@ package enigmatic
 
 import scala.caps
 
-import proscenium.compat.*
 
 import anticipation.*
 import prepositional.*

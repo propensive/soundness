@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-import proscenium.compat.*
 
 import java.nio.file as jnf
 

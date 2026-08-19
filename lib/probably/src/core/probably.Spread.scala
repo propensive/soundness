@@ -34,7 +34,6 @@ package probably
 
 import scala.deriving.*
 
-import proscenium.compat.*
 
 import chiaroscuro.*
 import distillate.*
