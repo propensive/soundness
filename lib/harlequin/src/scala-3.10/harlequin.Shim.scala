@@ -30,52 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package harlequin
 
-import scala.language.experimental.pureFunctions
+import dotty.tools.dotc.interactive
 
-import ambience.*
-import anticipation.*
-import contingency.*
-import fulminate.*
-import gossamer.*
-import guillotine.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-
-object Device:
-  enum Kind:
-    case Block
-    case Char
-
-    def flag: Text = this match
-      case Block => t"b"
-      case Char  => t"c"
-
-  def create[plane <: Posix: Filesystem]
-    ( path: Path on plane, kind: Kind, major: Int, minor: Int )
-    ( using createNonexistentParents: CreateNonexistentParents on plane,
-            overwritePreexisting:     OverwritePreexisting on plane,
-            working:                  WorkingDirectory,
-            loggable:                 guillotine.Exec.Event is Loggable )
-  :   Path on plane raises Io.Error =
-
-    createNonexistentParents(path):
-      overwritePreexisting(path):
-        mitigate:
-          case guillotine.Exec.Error(_, _, _) =>
-            import errorDiagnostics.stackTracesDiagnostics
-            Io.Error(path, Io.Error.Operation.Create, Io.Error.Reason.Unsupported)
-
-        . protect:
-            // `exec[Exit]()` rather than `()`: the inline `apply()` binds an erased proxy for
-            // `Exec is Intelligible` with a compiler-generated skolem cast, which Scala 3.10 no
-            // longer accepts as pure (scala/scala3#24990, re-opened by scala/scala3#26813).
-            sh"mknod $path ${kind.flag} $major $minor".exec[Exit]() match
-              case Exit.Ok => ()
-
-              case _ =>
-                raise(Io.Error(path, Io.Error.Operation.Create, Io.Error.Reason.PermissionDenied))
-
-    path
+// The 3.10 spelling of the compiler-internal APIs harlequin wraps. The 3.9 directory defines the
+// same names against that stream's shapes; nothing else in harlequin knows which is in play.
+object Shim:
+  // 3.10 replaced the `Option[LogicalPackage]` parameter with a `CachedLogicalPackage`, and gave
+  // it no default; `none` is the empty case, matching 3.9's behaviour.
+  inline def interactiveDriver(settings: scala.collection.immutable.List[String]): interactive.InteractiveDriver =
+    interactive.InteractiveDriver(settings, interactive.CachedLogicalPackage.none)

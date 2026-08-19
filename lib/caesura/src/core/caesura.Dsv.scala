@@ -172,11 +172,11 @@ object Dsv extends Dsv2:
 
   given text: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Text is Decodable in Dsv =
-    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"Text", t""): cell => cell
+    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"Text", t"")(cell => cell)
 
   given string: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  String is Decodable in Dsv =
-    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"String", ""): cell => cell.s
+    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"String", "")(cell => cell.s)
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =

@@ -72,6 +72,12 @@ object settings:
   // coincide (earlier releases shipped jars built as e.g. `3.9.0-RC1-propensive`). Override the
   // coordinate with `SOUNDNESS_SCALA_VERSION`.
   val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC5-p14")
+
+  // The compiler *stream* — the major Scala version, without the patch level — which is what
+  // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
+  // in Soundness is written once and compiles on every stream; where an API genuinely differs
+  // (see the `Shim` component trait), this selects the sources that bridge it.
+  val scalaStream = if scalaVersion.startsWith("3.10") then "3.10" else "3.9"
   val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.0-RC5-p14")
   // Empty by default → download `scalaRelease`. Set to a local `release` directory to use its
   // `release/lib` jars directly (fork-developer mode).
@@ -244,8 +250,18 @@ object toolchain extends Module:
       (sl, "scala3-compiler_3", "scala3-compiler.jar", v, Seq(
         (sl, "scala3-interfaces", v),
         (sl, "tasty-core_3", v),
-        (sl, "scala3-library_3", v),
-        ("org.scala-lang.modules", "scala-asm", "9.9.0-scala-1"),
+        (sl, "scala3-library_3", v))
+        // The compiler's ASM flavour is per-stream, matching the fork's published POMs:
+        // up to 3.9 the backend uses the shaded scala-asm; from 3.10 upstream imports
+        // org.objectweb.asm directly, so the coordinate depends on the org.ow2.asm jars
+        // (asm-util and asm-commons pull in asm, asm-tree and asm-analysis). Without the
+        // right flavour the compiler itself fails at runtime, e.g. with
+        // `ClassNotFoundException: org.objectweb.asm.tree.ClassNode`.
+        ++ (if v.startsWith("3.10") then Seq(
+              ("org.ow2.asm", "asm-util", "9.10.1"),
+              ("org.ow2.asm", "asm-commons", "9.10.1"))
+            else Seq(("org.scala-lang.modules", "scala-asm", "9.9.0-scala-1")))
+        ++ Seq(
         ("org.scala-sbt", "compiler-interface", "1.12.0"),
         ("org.scala-sbt", "util-interface", "1.11.5"))),
       (sl, "scala3-repl_3", "scala3-repl.jar", v, Seq(
@@ -351,11 +367,19 @@ trait Toolchain extends ScalaModule:
     // The fork-built jars come from the repository view because Zinc locates the standard
     // library within this classpath BY FILENAME (`scala-library-<version>*.jar`), and the
     // distribution's own filenames are unversioned. The compiler's own third-party runtime
-    // dependencies (scala-asm for bytecode, the sbt compiler/util interfaces for the bridge) are
-    // not shipped in the release, so they are resolved from the ordinary repositories.
+    // dependencies (ASM for bytecode, the sbt compiler/util interfaces for the bridge) are
+    // not shipped in the release, so they are resolved from the ordinary repositories. The
+    // ASM flavour is per-stream: up to 3.9 the backend uses the shaded scala-asm; from 3.10
+    // upstream imports org.objectweb.asm directly (asm-util and asm-commons pull in asm,
+    // asm-tree and asm-analysis), and without it the compiler dies in GenBCode with
+    // `NoClassDefFoundError: org/objectweb/asm/tree/ClassNode`.
     val versioned = os.walk(toolchain.repo().path).filter(_.ext == "jar").map(PathRef(_))
-    val thirdParty = defaultResolver().classpath(Seq(
-      mvn"org.scala-lang.modules:scala-asm:9.9.0-scala-1",
+    val asm =
+      if settings.scalaVersion.startsWith("3.10") then Seq(
+        mvn"org.ow2.asm:asm-util:9.10.1",
+        mvn"org.ow2.asm:asm-commons:9.10.1")
+      else Seq(mvn"org.scala-lang.modules:scala-asm:9.9.0-scala-1")
+    val thirdParty = defaultResolver().classpath(asm ++ Seq(
       mvn"org.scala-sbt:compiler-interface:1.12.0",
       mvn"org.scala-sbt:util-interface:1.11.5"))
 
@@ -522,6 +546,30 @@ extends BaseScalaModule, SonatypeCentralPublishModule, PlatformCross:
       :+ s"-Xplugin:${consequentToolchain.plugin().path}"
       :+ "-P:consequent:umbrella=soundness"
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
+// A component whose sources are chosen by compiler stream. Soundness is written once and
+// compiles on every stream the fork carries, with one exception: the few modules that reach into
+// *compiler-internal* APIs, which upstream is free to reshape between major versions — 3.10 gave
+// `InteractiveDriver`'s second parameter a type with no default, and made a `TastyInfo` parameter
+// a lazy loader, so neither call form is valid on both streams. A `Shim` isolates that: the
+// library keeps one `src/scala-<stream>` directory per stream, each defining the same names, and
+// only the directory for the stream being compiled is ever built. Dependants name the shim like
+// any other component and never see the difference; the shim's own methods are `inline`, so
+// nothing survives into the caller's bytecode but the version-appropriate call.
+//
+// Deliberately ONE component with stream-selected sources rather than a pair of components: every
+// declared component must be packaged in exactly one bundle (see `groupCheck`), so a second,
+// never-built component would either fail that check or, if bundled, be compiled on the stream it
+// cannot compile on. This way the published artifact name is stable across streams too.
+// The sources of a *shim* component: `lib/<library>/src/scala-3.9` or `.../scala-3.10`, chosen by
+// the stream being compiled. A component overriding `sources` with this is the whole mechanism —
+// `object compiler extends Component(): override def sources = Task.Sources(shimSources(moduleDir))`
+// — and is deliberately ONE component with stream-selected sources rather than a pair of
+// components: every declared component must be packaged in exactly one bundle (see `groupCheck`),
+// so a second, never-built component would either fail that check or be compiled on the stream it
+// cannot compile on. The published artifact name stays stable across streams this way too.
+def shimSources(moduleDir: os.Path): os.Path =
+  moduleDir / os.up / s"scala-${settings.scalaStream}"
+
 // Like `Component`, but not published to Maven Central. For demos, examples, and
 // other modules that are built and tested but never released.
 trait Internal(dependencies: JavaModule*) extends BaseScalaModule:
@@ -787,6 +835,7 @@ object soundness extends Toolchain:
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
     anthology.lira,
     anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`,
+    delicious.compiler, harlequin.compiler,
     delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks,
     vivisection.core):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
@@ -1568,7 +1617,15 @@ object delicious extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object `scala` extends Component(core, stenography.core, anthology.core):
+  // Wraps `CompilationUnitInfo`'s TastyInfo parameter, which differs between streams; see `Shim`.
+  object compiler extends Component():
+    override def sources = Task.Sources(shimSources(moduleDir))
+    override def scalaJs = false // wraps the Scala compiler (dotty)
+    def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+
+  object `scala` extends Component(core, compiler, stenography.core, anthology.core):
     override def scalaJs = false // wraps the Scala compiler (dotty)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2122,7 +2179,15 @@ object hallucination extends Library:
       settings.sep(super.scalacOptions())
 
 object harlequin extends Library:
-  object core extends Component(anthology.scala, stenography.core, hellenism.jvm,
+  // Wraps `InteractiveDriver`, whose constructor differs between streams; see `Shim`.
+  object compiler extends Component():
+    override def sources = Task.Sources(shimSources(moduleDir))
+    override def scalaJs = false // wraps the Scala compiler (dotty)
+    def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+
+  object core extends Component(compiler, anthology.scala, stenography.core, hellenism.jvm,
       prophesy.core):
     override def scalaJs = false // syntax highlighting via `anthology.scala` (the compiler)
     override def scalacOptions = Task:

@@ -68,7 +68,7 @@ object Smap:
 
     // The source position an output line maps to, when the file table knows the entry's file.
     def origin(line: Int): Optional[(File, Int)] =
-      apply(line).let: (fileId, input) => files.at(fileId).let: file => (file, input)
+      apply(line).let: (fileId, input) => files.at(fileId).let(file => (file, input))
 
   // Where a line of inlined code was written: the file's recorded name, its full path, the
   // 1-based line number, and — when the SMAP's writer emitted a `<default>Class` stratum, as the
