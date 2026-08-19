@@ -182,8 +182,8 @@ object Ram:
       ( block: (RamHandle & Granting[Grant.Read & Grant.Write]) ?=> result )
     :   result =
 
-      val size: Long = flags.collectFirst { case RamFlag.Size(bytes) => bytes }
-        . getOrElse(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))
+      val size: Long = flags.glean { case RamFlag.Size(bytes) => bytes }
+        . lay(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))(identity(_))
 
       if size <= 0 || size > Int.MaxValue
       then abort(Io.Error(value, Operation.Create, Reason.Unsupported))

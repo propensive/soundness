@@ -179,6 +179,15 @@ extension [self](self: self)(using traversable: self is Traversable)
       case Some(element) => element
       case None          => Unset
 
+  // The first element the partial function is defined at, transformed by it: the total
+  // counterpart of `collectFirst`, and the single-result sibling of `sweep`. A distinct name
+  // rather than a `seek` overload, because a case-literal closure matches both the predicate
+  // and the partial-function shapes, making every call site ambiguous.
+  def glean[element2](lambda: PartialFunction[traversable.Operand, element2]): Optional[element2] =
+    traversable.traverse(self).collectFirst(lambda) match
+      case Some(element) => element
+      case None          => Unset
+
   def where(predicate: traversable.Operand => Boolean): Optional[Ordinal] =
     traversable.traverse(self).zipWithIndex.find { (element, _) => predicate(element) } match
       case Some((_, index)) => index.z
@@ -539,6 +548,10 @@ extension [value: Segmentable as segmentable](inline value: value)
 extension [self](value: self)(using definable: self is Definable)
   def define(index: definable.Operand, result: definable.Result): self =
     definable.define(value, index, result)
+
+// Available only on key-addressed containers; see `Omissible`.
+extension [self, operand](value: self)(using omissible: self is Omissible by operand)
+  def omit(index: operand): self = omissible.omit(value, index)
 
 // The generic positional operations, over any value that can be segmented and counted: one
 // definition serves the collections and, through the instances `Textual` extends, every textual

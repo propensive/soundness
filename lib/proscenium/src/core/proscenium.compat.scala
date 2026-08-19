@@ -100,10 +100,7 @@ extension [key, value](map: Map[key, value])
   inline def updated[value2 >: value](key: key, value: value2): Map[key, value2] =
     Map.of(map.stdlib.updated(key, value))
 
-  inline def removed(key: key): Map[key, value] = Map.of(map.stdlib.removed(key))
 
-  inline def concat[value2 >: value](other: Map[key, value2]): Map[key, value2] =
-    Map.of(map.stdlib.concat(other.stdlib))
 
   inline def filterNot(predicate: ((key, value)) => Boolean): Map[key, value] =
     Map.of(map.stdlib.filterNot(predicate))
@@ -133,10 +130,7 @@ extension [key, value](ledger: Ledger[key, value])
   inline def updated[value2 >: value](key: key, value: value2): Ledger[key, value2] =
     Ledger.of(ledger.stdlib.updated(key, value))
 
-  inline def removed(key: key): Ledger[key, value] = Ledger.of(ledger.stdlib.removed(key))
 
-  inline def concat[value2 >: value](other: Ledger[key, value2]): Ledger[key, value2] =
-    Ledger.of(ledger.stdlib.concat(other.stdlib))
 
   inline def filterNot(predicate: ((key, value)) => Boolean): Ledger[key, value] =
     Ledger.of(ledger.stdlib.filterNot(predicate))
@@ -160,8 +154,6 @@ extension [element](list: List[element])
   inline def collect[element2](lambda: PartialFunction[element, element2]): List[element2] =
     List.of(list.stdlib.collect(lambda))
 
-  inline def collectFirst[element2](lambda: PartialFunction[element, element2]): Option[element2] =
-    list.stdlib.collectFirst(lambda)
 
   inline def foldRight[state](initial: state)(lambda: (element, state) => state): state =
     list.stdlib.foldRight(initial)(lambda)
@@ -272,8 +264,6 @@ extension [element](lazyList: Chain[element])
   inline def find(predicate: element => Boolean): Option[element] = lazyList.stdlib.find(predicate)
   inline def forall(predicate: element => Boolean): Boolean = lazyList.stdlib.forall(predicate)
 
-  inline def collectFirst[element2](lambda: PartialFunction[element, element2]): Option[element2] =
-    lazyList.stdlib.collectFirst(lambda)
 
   inline def foldLeft[state](initial: state)(lambda: (state, element) => state): state =
     lazyList.stdlib.foldLeft(initial)(lambda)
@@ -284,7 +274,8 @@ extension [element](lazyList: Chain[element])
 // MIGRATION SHIMS for the opaque `Sequence` (the blessed `Vector`), giving it the same
 // transitional surface as `List`, with the same deliberate omissions (`getOrElse`-style
 // by-name defaults, `++`/`contains`, `to(...)`); `:::` is the concatenation shim, matching
-// the `List` block, and `:+`/`+:` cover the ends a `Vector` amortizes.
+// the `List` block. Single-element growth is no longer shimmed: `:+`/`+:` are the real
+// `Appendable`/`Prependable` operations.
 extension [element](sequence: Sequence[element])
   inline def filterNot(predicate: element => Boolean): Sequence[element] =
     Sequence.of(sequence.stdlib.filterNot(predicate))
@@ -295,8 +286,6 @@ extension [element](sequence: Sequence[element])
   inline def collect[element2](lambda: PartialFunction[element, element2]): Sequence[element2] =
     Sequence.of(sequence.stdlib.collect(lambda))
 
-  inline def collectFirst[element2](lambda: PartialFunction[element, element2]): Option[element2] =
-    sequence.stdlib.collectFirst(lambda)
 
   inline def foldLeft[state](initial: state)(lambda: (state, element) => state): state =
     sequence.stdlib.foldLeft(initial)(lambda)
@@ -366,7 +355,6 @@ extension [element](sequence: Sequence[element])
 extension [element](array: Array[element]^{caps.any.rd})
   @targetName("frozenApply")
   inline def apply(index: Int): element = array.readable(index)
-  @targetName("frozenSize")
   @targetName("frozenIsEmpty")
   inline def isEmpty: Boolean = array.readable.isEmpty
   @targetName("frozenNonEmpty")
@@ -383,8 +371,6 @@ extension [element](array: Array[element]^{caps.any.rd})
   inline def indices: Range = array.readable.indices
   @targetName("frozenIterator")
   inline def iterator: Iterator[element] = array.readable.iterator
-  @targetName("frozenCount")
-
   @targetName("frozenFind")
   inline def find(predicate: element => Boolean): Option[element] =
     array.readable.find(predicate)
