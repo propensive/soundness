@@ -348,17 +348,41 @@ object Tests extends Suite(m"Archimedes tests"):
             && result.contains(t"<mtr><mtd><mn>1</mn></mtd><mtd><mn>2</mn></mtd></mtr>")
 
     suite(m"Rendering to the terminal"):
-      test(m"a superscript stacks the exponent above the base"):
+      test(m"a simple superscript is set inline with Unicode glyphs"):
         Msup(Mi(t"x"), Mn(t"2")).draw
-      .assert(_ == t" 2\nx ")
+      .assert(_ == t"x²")
 
-      test(m"a subscript stacks the index below the base"):
+      test(m"a simple subscript is set inline with Unicode glyphs"):
         Msub(Mi(t"x"), Mn(t"i")).draw
-      .assert(_ == t"x \n i")
+      .assert(_ == t"xᵢ")
 
-      test(m"a subsup places both scripts around the base"):
+      test(m"an inline subsup sets the subscript before the superscript"):
         Msubsup(Mi(t"x"), Mn(t"i"), Mn(t"2")).draw
-      .assert(_ == t" 2\nx \n i")
+      .assert(_ == t"xᵢ²")
+
+      test(m"a multi-token superscript inlines if every glyph exists"):
+        Msup(Mi(t"e"), Mrow(Mo(t"−"), Mi(t"x"))).draw
+      .assert(_ == t"e⁻ˣ")
+
+      test(m"a superscript with no glyph stacks above the base"):
+        Msup(Mi(t"x"), Mi(t"ρ")).draw
+      .assert(_ == t" ρ\nx ")
+
+      test(m"a subscript with no glyph stacks below the base"):
+        Msub(Mi(t"x"), Mi(t"q")).draw
+      .assert(_ == t"x \n q")
+
+      test(m"a structured superscript stacks above the base"):
+        Msup(Mi(t"x"), Mfrac(Mn(t"1"), Mn(t"2"))).draw
+      .assert(_ == t"  1 \n ───\n  2 \nx   ")
+
+      test(m"a superscript on a tall base stacks above it"):
+        Msup(Mfenced(Mfrac(Mn(t"1"), Mn(t"2"))), Mn(t"2")).draw
+      .assert(_ == t"     2\n⎛ 1 ⎞ \n⎜───⎟ \n⎝ 2 ⎠ ")
+
+      test(m"a subsup inlines only when both scripts have glyphs"):
+        Msubsup(Mi(t"x"), Mn(t"i"), Mi(t"ρ")).draw
+      .assert(_ == t" ρ\nx \n i")
 
       test(m"a fraction stacks over a rule"):
         Mfrac(Mn(t"1"), Mn(t"2")).draw
@@ -405,8 +429,8 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert(_ == t"▁▁▁   \n╲   1 \n╱  ───\n▔▔▔ n ")
 
       test(m"a big sigma only takes even heights, rounding up"):
-        Mrow(Mo(t"∑"), Msup(Mi(t"x"), Mn(t"2"))).draw
-      .assert(_ == t"▁▁▁  \n╲   2\n╱  x \n▔▔▔  ")
+        Mrow(Mo(t"∑"), Msup(Mi(t"x"), Mi(t"ρ"))).draw
+      .assert(_ == t"▁▁▁  \n╲   ρ\n╱  x \n▔▔▔  ")
 
       test(m"a big pi adapts to any height"):
         Mrow(Mo(t"∏"), Mfrac(Mn(t"1"), Mi(t"n"))).draw
