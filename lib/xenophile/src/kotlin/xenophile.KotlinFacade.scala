@@ -918,7 +918,7 @@ object KotlinFacade:
     // defaults is called through its synthetic `$default` bridge instead.
     if candidates.isEmpty then
       val defaulted = KotlinDialect.members(className, field).stdlib.filter: member =>
-        val trailing = member.defaults.drop(args.length).forall(identity)
+        val trailing = member.defaults.drop(args.length).all(identity)
         !member.property && member.arity > args.length && trailing
 
       defaulted match
@@ -992,7 +992,7 @@ object KotlinFacade:
                 val front = args.take(fixed.length).zip(fixed).forall: (argument, parameter) =>
                   satisfies(argument, parameter)
 
-                val rest = args.drop(fixed.length).forall(satisfies(_, element))
+                val rest = args.drop(fixed.length).all(satisfies(_, element))
                 val fits = args.length >= fixed.length && front && rest
 
                 if fits then List((method, types)) else Nil

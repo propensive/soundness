@@ -247,7 +247,7 @@ object Renderer:
 
   // Concatenate per-block line lists with no separator (used for tight lists).
   private def concatItems(blocks: List[List[Teletype]]): List[Teletype] =
-    blocks.flatten
+    blocks.flat
 
   // Concatenate per-block line lists with a single blank line between blocks.
   private def interleaveBlanks(blocks: List[List[Teletype]]): List[Teletype] =

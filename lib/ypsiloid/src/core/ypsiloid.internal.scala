@@ -633,7 +633,7 @@ object internal:
                       keysSet = keysSet :+ $scrutinee.objectKey(k)
                       k += 1
 
-                    ${Expr(literalKeys)}.forall(keysSet.has(_))
+                    ${Expr(literalKeys)}.all(keysSet.has(_))
                   }
               }
           else
@@ -650,7 +650,7 @@ object internal:
                         keysSet = keysSet :+ $scrutinee.objectKey(k)
                         k += 1
 
-                      ${Expr(literalKeys)}.forall(keysSet.has(_))
+                      ${Expr(literalKeys)}.all(keysSet.has(_))
                     }
                   }
               }

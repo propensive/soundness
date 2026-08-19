@@ -324,7 +324,7 @@ object Syntax:
 
     method.absolve match
       case MethodType(names, types, result) =>
-        val unnamed = names.forall(_.startsWith("x$"))
+        val unnamed = names.all(_.startsWith("x$"))
 
         val parameters =
           if names.isEmpty then Sequence('(', Nil)

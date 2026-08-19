@@ -264,7 +264,7 @@ object Ergo:
     if rows.size == 1 then
       val row = rows.head.join
       t"${RowVec.toString.tt}($row)"
-    else if rows.forall(_.size == 1) then
+    else if rows.all(_.size == 1) then
       val column = rows.map(_.head).join
       t"${ColVec.toString.tt}($column)"
     else

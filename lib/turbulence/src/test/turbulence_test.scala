@@ -847,12 +847,12 @@ object Tests extends Suite(m"Turbulence tests"):
 
           // Queue capacity is `depth.max(sources.length)` transfer blocks: four, plus
           // one snapshotted block in flight per parked pump.
-          val bounded = counters.map(_.get()).forall(_ <= 80L)
+          val bounded = counters.map(_.get()).all(_ <= 80L)
           val gather = Gather2()
           merged.pump(gather)
 
           ( bounded,
-            counters.map(_.get()).forall(_ == 4096L),
+            counters.map(_.get()).all(_ == 4096L),
             scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.length )
       . assert(_ == ((true, true, 16384)))
 

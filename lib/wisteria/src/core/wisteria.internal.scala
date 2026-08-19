@@ -285,7 +285,7 @@ object internal:
   def isChoice[derivation: Type]: Macro[Boolean] =
     import quotes.reflect.*
     val children = TypeRepr.of[derivation].typeSymbol.children
-    val singleton = children.forall(variantType(_) <:< TypeRepr.of[scala.Singleton])
+    val singleton = children.all(variantType(_) <:< TypeRepr.of[scala.Singleton])
     Expr(children.nonEmpty && singleton)
 
   // The variant type intersected with the sum parent (`variant & derivation`): keeps a

@@ -137,7 +137,7 @@ object Apoplexy:
   private def templateName(segment: Text): Text = segment.skip(1).keep(segment.length - 2)
 
   private def isPrefix(short: List[Text], long: List[Text]): Boolean =
-    short.size <= long.size && short.zip(long).forall(_ == _)
+    short.size <= long.size && short.zip(long).all(_ == _)
 
   private def join(locus: Text, segment: Text): Text =
     if locus == t"/" then t"/$segment" else t"$locus/$segment"

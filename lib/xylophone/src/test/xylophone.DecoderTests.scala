@@ -294,5 +294,5 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
               accrual + prior.let(_.position).let(_.line.n1)
           . protect(xml.as[DPerson]).items
 
-        lines.forall(_ == Unset)
+        lines.all(_ == Unset)
       . assert(identity)

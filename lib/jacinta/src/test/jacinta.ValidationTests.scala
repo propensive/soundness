@@ -331,5 +331,5 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         val source = t"""{"name": "Alice"}"""
         val json = source.read[Json]
         val results = validateWithPositions(json)(_.as[VPerson])
-        results.forall((_, line, _) => line == Unset)
+        results.all((_, line, _) => line == Unset)
       . assert(identity)

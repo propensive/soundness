@@ -506,7 +506,7 @@ object Tests extends Suite(m"Mandible tests"):
       EcosystemProfile.audit(registry, declared, before, after).advisories.stdlib
     . assert: advisories =>
         advisories.length == 2
-          && advisories.forall(_.s.contains("changed value"))
+          && advisories.all(_.s.contains("changed value"))
 
     // --- jsig/1 and host contracts ------------------------------------------------------------
 
