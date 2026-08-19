@@ -32,8 +32,10 @@
                                                                                                   */
 package bitumen
 
+// Residue: `head` is partial; it awaits the partial-operations tranche.
+import proscenium.compat.head
+
 import soundness.*
-import proscenium.compat.*
 import filesystemBackends.virtualMachineFilesystem
 
 import java.nio.file as jnf
@@ -399,9 +401,9 @@ object Tests extends Suite(m"Bitumen Tests"):
           ()
 
         ( issues.reasons.size,
-          issues.reasons.headOption.map(_.isInstanceOf[Tar.Error.Reason.UnknownTypeFlag]),
+          issues.reasons.prim.let(_.isInstanceOf[Tar.Error.Reason.UnknownTypeFlag]),
           entries.headOption.map(_.isInstanceOf[Tar.Entry.File]) )
-      . assert(_ == (1, Some(true), Some(true)))
+      . assert(_ == (1, true, Some(true)))
 
     suite(m"PAX: long uname / gname round-trip"):
       val longName: Text = "u".repeat(40).nn.tt
@@ -561,7 +563,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         path
 
       def listing(path: Path on Linux): List[Text] =
-        Array.unsafeFrozen(sh"tar -tf $path".exec[Text]().s.split('\n').nn).toList
+        Array.unsafeFrozen(sh"tar -tf $path".exec[Text]().s.split('\n').nn).to[List]
           .map(_.nn.tt)
           .filter(!_.s.isEmpty)
 
