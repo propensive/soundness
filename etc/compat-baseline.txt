@@ -10,7 +10,7 @@ apoplexy 2
 archimedes 4
 aviation 9
 baroque 1
-bitumen 7
+bitumen 2
 breviloquence 2
 burdock 1
 cacophony 1

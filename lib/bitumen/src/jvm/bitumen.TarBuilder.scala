@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-import proscenium.compat.*
 
 import scala.caps
 
@@ -154,7 +153,7 @@ extends caps.ExclusiveCapability:
 
   private def pad(out: ji.RandomAccessFile, count: Long): Unit =
     val remainder = (count%512).toInt
-    if remainder != 0 then write(out, Tarfile.zeroBlock.slice(0, 512 - remainder))
+    if remainder != 0 then write(out, Tarfile.zeroBlock.excerpt(0, 512 - remainder))
 
   private def write(out: ji.RandomAccessFile, chunk: Data): Unit =
     try out.write(Array.unsafeJvm(chunk))

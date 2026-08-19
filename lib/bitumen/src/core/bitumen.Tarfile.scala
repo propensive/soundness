@@ -34,7 +34,6 @@ package bitumen
 
 import rudiments.*
 
-import proscenium.compat.*
 
 import scala.caps
 
@@ -184,12 +183,12 @@ object Tarfile:
                 val gid = TarHeader.decodeOctal(header.gid, t"gid").long.toInt
 
                 val unameText =
-                  paxOverlay.get("uname".tt).orElse(globalOverlay.get("uname".tt))
-                  . getOrElse(TarHeader.decodeNulText(header.uname))
+                  paxOverlay.at("uname".tt).or(globalOverlay.at("uname".tt))
+                  . or(TarHeader.decodeNulText(header.uname))
 
                 val gnameText =
-                  paxOverlay.get("gname".tt).orElse(globalOverlay.get("gname".tt))
-                  . getOrElse(TarHeader.decodeNulText(header.gname))
+                  paxOverlay.at("gname".tt).or(globalOverlay.at("gname".tt))
+                  . or(TarHeader.decodeNulText(header.gname))
 
                 val user = UnixUser(uid, if unameText.s.isEmpty then Unset else unameText)
                 val group = UnixGroup(gid, if gnameText.s.isEmpty then Unset else gnameText)
@@ -215,7 +214,7 @@ object Tarfile:
                     val isExtended: Boolean = head.readUnchecked(482) != 0.toByte
 
                     val realSize: Long =
-                      TarHeader.decodeOctal(head.slice(483, 495), t"realsize").long
+                      TarHeader.decodeOctal(head.excerpt(483, 495), t"realsize").long
 
                     val extSegments = readSparseExtensions(cursor, isExtended)
                     val data = takeData(cursor, size)
@@ -328,7 +327,7 @@ object Tarfile:
     val data = cursor.take(abort(Tar.Error(Tar.Error.Reason.TruncatedStream(padded,
         cursor.available))))(padded)
 
-    data.slice(0, size)
+    data.excerpt(0, size)
 
   private def decodeSparseField(data: Data): Long raises Tar.Error =
     var allZero = true
@@ -346,8 +345,8 @@ object Tarfile:
     var i = 0
 
     while i < 4 do
-      val offset = decodeSparseField(headerBlock.slice(pos, pos + 12))
-      val length = decodeSparseField(headerBlock.slice(pos + 12, pos + 24))
+      val offset = decodeSparseField(headerBlock.excerpt(pos, pos + 12))
+      val length = decodeSparseField(headerBlock.excerpt(pos + 12, pos + 24))
 
       if length > 0 then builder += SparseSegment(offset, length)
       pos = pos + 24
@@ -370,8 +369,8 @@ object Tarfile:
         var i = 0
 
         while i < 21 do
-          val offset = decodeSparseField(head.slice(pos, pos + 12))
-          val length = decodeSparseField(head.slice(pos + 12, pos + 24))
+          val offset = decodeSparseField(head.excerpt(pos, pos + 12))
+          val length = decodeSparseField(head.excerpt(pos + 12, pos + 24))
 
           if length > 0 then builder += SparseSegment(offset, length)
           pos = pos + 24
@@ -388,13 +387,12 @@ object Tarfile:
   :   Text =
 
     longName.or:
-      paxOverlay.get("path".tt).orElse(globalOverlay.get("path".tt)) match
-        case Some(text) => stripTrailingSlash(text)
-
-        case None =>
-          val name = TarHeader.decodeNulText(header.name)
-          val prefix = TarHeader.decodeNulText(header.prefix)
-          stripTrailingSlash(if prefix.s.isEmpty then name else t"$prefix/$name")
+      paxOverlay.at("path".tt).or(globalOverlay.at("path".tt)).lay:
+        val name = TarHeader.decodeNulText(header.name)
+        val prefix = TarHeader.decodeNulText(header.prefix)
+        stripTrailingSlash(if prefix.s.isEmpty then name else t"$prefix/$name")
+      . apply: text =>
+        stripTrailingSlash(text)
 
   private def resolveLink
     ( header:        TarHeader,
@@ -404,9 +402,8 @@ object Tarfile:
   :   Text =
 
     longLink.or:
-      paxOverlay.get("linkpath".tt).orElse(globalOverlay.get("linkpath".tt)) match
-        case Some(text) => text
-        case None       => TarHeader.decodeNulText(header.linkName)
+      paxOverlay.at("linkpath".tt).or(globalOverlay.at("linkpath".tt))
+      . or(TarHeader.decodeNulText(header.linkName))
 
   private def stripTrailingSlash(text: Text): Text =
     if text.s.endsWith("/") then text.s.dropRight(1).nn.tt else text
@@ -505,7 +502,7 @@ case class Tarfile
   // The raw 512-byte blocks of the archive, including the two trailing zero blocks.
   // Reach this externally through the `Streamable` given, i.e. `tarfile.source[Data]`.
   private[bitumen] def blocks: Iterator[Data] =
-    entries.iterator.flatMap(emitEntry) ++ Iterator(Tarfile.zeroBlock, Tarfile.zeroBlock)
+    entries.stdlib.iterator.flatMap(emitEntry) ++ Iterator(Tarfile.zeroBlock, Tarfile.zeroBlock)
 
   // Compressed views of the archive's TAR stream.
   def gzip: (Stream[Data] over Credit)^ = Stream(blocks).compress[Gzip]

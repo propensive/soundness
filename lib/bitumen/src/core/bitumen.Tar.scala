@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -104,7 +103,7 @@ object Tar:
     private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): List[Data] =
       if segments.nil then Nil
       else
-        val (batch, rest) = segments.splitAt(21)
+        val (batch, rest) = segments.snip(21)
 
         val block: Data = Data.build(512): array =>
           var pos = 0
@@ -115,7 +114,7 @@ object Tar:
             array.place(formatLongOctal(seg.length, 12), pos.z)
             pos = pos + 12
 
-          if rest.nonEmpty then array(504) = 1.toByte
+          if !rest.nil then array(504) = 1.toByte
 
         block :: sparseExtensionBlocks(rest)
 
@@ -246,7 +245,7 @@ object Tar:
       case file: File      => file.data.size.toInt.bits.u32
       case pax: Pax        => pax.records.length.bits.u32
       case long: GnuLong   => (long.content.in[Data].length + 1).bits.u32
-      case sparse: Sparse  => sparse.segments.map(_.length).sum.toInt.bits.u32
+      case sparse: Sparse  => sparse.segments.map(_.length).total.toInt.bits.u32
       case _               => 0
 
     def dataBlocks: Iterator[Data] = this match
@@ -254,7 +253,7 @@ object Tar:
       case pax: Pax        => Entry.blocks512(Iterator(pax.records))
 
       case long: GnuLong =>
-        Entry.blocks512(Iterator(long.content.in[Data] ++ Array.fill[Byte](1)(0)))
+        Entry.blocks512(Iterator(Array.frozen(long.content.in[Data].readable :+ 0.toByte)))
 
       case sparse: Sparse =>
         Entry.blocks512(sparse.data.chunks)
@@ -302,7 +301,7 @@ object Tar:
     // backpatches a placeholder header once an entry's body length is known.
     private[bitumen] def headerWith(size0: U32): Data = Data.build(512): array =>
       val nameData = entryName.in[Data]
-      array.place(if nameData.length > 100 then nameData.slice(0, 100) else nameData, Prim)
+      array.place(if nameData.length > 100 then nameData.excerpt(0, 100) else nameData, Prim)
       array.place(mode.bytes, 100.z)
       array.place(user.bytes, 108.z)
       array.place(group.bytes, 116.z)
@@ -313,7 +312,7 @@ object Tar:
 
       link.let: link =>
         val linkData = link.in[Data]
-        array.place(if linkData.length > 100 then linkData.slice(0, 100) else linkData, 157.z)
+        array.place(if linkData.length > 100 then linkData.excerpt(0, 100) else linkData, 157.z)
 
       deviceNumbers.let: (devMajor, devMinor) =>
         array.place(format(devMajor, 8), 329.z)
@@ -321,18 +320,18 @@ object Tar:
 
       user.name.let: name =>
         val nameData = name.in[Data]
-        array.place(if nameData.length > 32 then nameData.slice(0, 32) else nameData, 265.z)
+        array.place(if nameData.length > 32 then nameData.excerpt(0, 32) else nameData, 265.z)
 
       group.name.let: name =>
         val nameData = name.in[Data]
-        array.place(if nameData.length > 32 then nameData.slice(0, 32) else nameData, 297.z)
+        array.place(if nameData.length > 32 then nameData.excerpt(0, 32) else nameData, 297.z)
 
       array.place(t"ustar\u0000".in[Data], 257.z)
       array.place(t"00".in[Data], 263.z)
 
       this.only:
         case sparse: Sparse =>
-          val inline = sparse.segments.take(4)
+          val inline = sparse.segments.keep(4)
           var pos = 386
 
           inline.foreach: seg =>
@@ -349,7 +348,7 @@ object Tar:
 
     def serialize: Iterator[Data] = this match
       case sparse: Sparse if sparse.segments.size > 4 =>
-        Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.drop(4)).stdlib ++ dataBlocks
+        Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.skip(4)).stdlib ++ dataBlocks
 
       case _ =>
         Iterator(header) ++ dataBlocks
@@ -528,11 +527,11 @@ object Tar:
     :   Iterator[Tar.Entry]^{tarTactic, streamTactic} =
 
       Tarfile.read:
-        flags.headOption match
-          case Some(Tar.Flag.Gzip)    => stream.decompress[Gzip]
-          case Some(Tar.Flag.Zlib)    => stream.decompress[Zlib]
-          case Some(Tar.Flag.Deflate) => stream.decompress[Deflate]
-          case _                     => stream
+        flags.prim match
+          case Tar.Flag.Gzip    => stream.decompress[Gzip]
+          case Tar.Flag.Zlib    => stream.decompress[Zlib]
+          case Tar.Flag.Deflate => stream.decompress[Deflate]
+          case _                => stream
 
 case class SparseSegment(offset: Long, length: Long)
 

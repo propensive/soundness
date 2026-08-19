@@ -32,12 +32,16 @@
                                                                                                   */
 package bitumen
 
-import proscenium.compat.*
+
+// Residue: this header parser is all byte subscripts, and the frozen-array `apply` is
+// partial; it awaits the partial-operations tranche.
+import proscenium.compat.apply
 
 import anticipation.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
+import rudiments.*
 
 object TarHeader:
   val blockSize: Int = 512
@@ -49,22 +53,22 @@ object TarHeader:
     then raise(Tar.Error(Tar.Error.Reason.TruncatedStream(blockSize, block.length)))
 
     TarHeader
-      ( name     = block.slice(0, 100),
-        mode     = block.slice(100, 108),
-        uid      = block.slice(108, 116),
-        gid      = block.slice(116, 124),
-        size     = block.slice(124, 136),
-        mtime    = block.slice(136, 148),
-        checksum = block.slice(148, 156),
+      ( name     = block.excerpt(0, 100),
+        mode     = block.excerpt(100, 108),
+        uid      = block.excerpt(108, 116),
+        gid      = block.excerpt(116, 124),
+        size     = block.excerpt(124, 136),
+        mtime    = block.excerpt(136, 148),
+        checksum = block.excerpt(148, 156),
         typeFlag = block(156),
-        linkName = block.slice(157, 257),
-        magic    = block.slice(257, 263),
-        version  = block.slice(263, 265),
-        uname    = block.slice(265, 297),
-        gname    = block.slice(297, 329),
-        devMajor = block.slice(329, 337),
-        devMinor = block.slice(337, 345),
-        prefix   = block.slice(345, 500) )
+        linkName = block.excerpt(157, 257),
+        magic    = block.excerpt(257, 263),
+        version  = block.excerpt(263, 265),
+        uname    = block.excerpt(265, 297),
+        gname    = block.excerpt(297, 329),
+        devMajor = block.excerpt(329, 337),
+        devMinor = block.excerpt(337, 345),
+        prefix   = block.excerpt(345, 500) )
 
   def verifyChecksum(block: Data, recorded: U32): Unit raises Tar.Error =
     var sum: Long = 0L
@@ -108,7 +112,7 @@ object TarHeader:
   def decodeNulText(data: Data): Text =
     var i = 0
     while i < data.length && data(i) != 0 do i = i + 1
-    data.slice(0, i).utf8
+    data.excerpt(0, i).utf8
 
   def isZeroBlock(block: Data): Boolean =
     var i = 0
