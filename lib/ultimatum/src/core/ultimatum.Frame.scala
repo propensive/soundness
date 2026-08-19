@@ -41,7 +41,7 @@ import vacuous.*
 object Frame:
   // Combine two optional maxima as a minimum, treating `Unset` as +infinity.
   private def lesser(a: Optional[Int], b: Optional[Int]): Optional[Int] =
-    a.lay(b): av => b.lay(av): bv => av.min(bv)
+    a.lay(b): av => b.lay(av)(bv => av.min(bv))
 
   // Min/max along the split axis: the minimum is the larger of the split's own
   // minimum and the SUM of its children's minima (a container can be no smaller

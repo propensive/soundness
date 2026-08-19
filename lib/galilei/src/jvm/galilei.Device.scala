@@ -69,7 +69,10 @@ object Device:
             Io.Error(path, Io.Error.Operation.Create, Io.Error.Reason.Unsupported)
 
         . protect:
-            sh"mknod $path ${kind.flag} $major $minor"() match
+            // `exec[Exit]()` rather than `()`: the inline `apply()` binds an erased proxy for
+            // `Exec is Intelligible` with a compiler-generated skolem cast, which Scala 3.10 no
+            // longer accepts as pure (scala/scala3#24990, re-opened by scala/scala3#26813).
+            sh"mknod $path ${kind.flag} $major $minor".exec[Exit]() match
               case Exit.Ok => ()
 
               case _ =>
