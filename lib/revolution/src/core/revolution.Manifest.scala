@@ -75,7 +75,7 @@ object Manifest:
   given subtractable: [key <: Label, attribute <: Manifest.Attribute[key]]
   =>  Manifest is Subtractable by attribute to Manifest =
 
-    Subtractable: (manifest, attribute) => Manifest(manifest.entries.removed(attribute.key))
+    Subtractable: (manifest, attribute) => Manifest(manifest.entries.omit(attribute.key))
 
   // ManifestAttribute → Manifest.Attribute
   abstract class Attribute[label <: Label: ValueOf]():

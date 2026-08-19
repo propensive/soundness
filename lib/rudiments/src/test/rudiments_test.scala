@@ -174,6 +174,33 @@ object Tests extends Suite(m"Rudiments Tests"):
         xs.count(_ == 2)
       . assert(_ == 2)
 
+    suite(m"glean and omit tests"):
+      test(m"glean transforms the first match"):
+        val xs: List[Int] = List(1, 2, 3, 4)
+        xs.glean { case n if n%2 == 0 => n*10 }
+      . assert(_ == 20)
+
+      test(m"glean without a match is Unset"):
+        val xs: List[Int] = List(1, 3)
+        xs.glean { case n if n%2 == 0 => n*10 }
+      . assert(_ == Unset)
+
+      test(m"omit removes a map key"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.omit(t"b")
+      . assert(_ == Map(t"a" -> 1))
+
+      test(m"omit of an absent key changes nothing"):
+        val m: Map[Text, Int] = Map(t"a" -> 1)
+        m.omit(t"z")
+      . assert(_ == Map(t"a" -> 1))
+
+      test(m"maps concatenate right-biased"):
+        val left: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        val right: Map[Text, Int] = Map(t"b" -> 20, t"c" -> 3)
+        left + right
+      . assert(_ == Map(t"a" -> 1, t"b" -> 20, t"c" -> 3))
+
     suite(m"Set algebra tests"):
       test(m"intersect keeps common elements"):
         val xs: Set[Int] = Set(1, 2, 3)
