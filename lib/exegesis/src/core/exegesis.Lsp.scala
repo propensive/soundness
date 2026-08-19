@@ -1257,145 +1257,103 @@ object Lsp:
   // to `listen`, or a helper method that takes `(using Lsp.Registry^)`. Each records its handler
   // in the registry, from which the server's capabilities are derived; options a capability needs
   // beyond mere presence (trigger characters, legends, diagnostic options) are parameters of the
-  // registration, never guessed. Inline, so the registry capability flows from the use site
-  // rather than into a fresh root minted by a method boundary.
+  // registration, never guessed. Not inline: a method boundary elaborates the handler's
+  // context-function type once, at the definition, whereas an inline combinator re-types it per
+  // expansion — and on the 3.10 stream a second expansion in the same unit re-uses the root
+  // capabilities memoized by the first, failing the root-visibility check (#1829, the upstream
+  // #26547 family). The registry capability flows through the method boundary unharmed, and the
+  // handles lent to a handler remain confined either way (see `exegesis.CaptureTests`).
 
-  transparent inline def ready(handler: ReadyHandler)(using registry: Lsp.Registry^): Unit =
+  def ready(handler: ReadyHandler)(using registry: Lsp.Registry^): Unit =
     registry.ready0 = Lsp.Registry.Slot[ReadyHandler](handler)
 
-  transparent inline def terminating(handler: TerminatingHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def terminating(handler: TerminatingHandler)(using registry: Lsp.Registry^): Unit =
     registry.terminating0 = Lsp.Registry.Slot[TerminatingHandler](handler)
 
-  transparent inline def opened(handler: OpenedHandler)(using registry: Lsp.Registry^): Unit =
+  def opened(handler: OpenedHandler)(using registry: Lsp.Registry^): Unit =
     registry.opened0 = Lsp.Registry.Slot[OpenedHandler](handler)
 
-  transparent inline def changed(handler: ChangedHandler)(using registry: Lsp.Registry^): Unit =
+  def changed(handler: ChangedHandler)(using registry: Lsp.Registry^): Unit =
     registry.changed0 = Lsp.Registry.Slot[ChangedHandler](handler)
 
-  transparent inline def saved(handler: SavedHandler)(using registry: Lsp.Registry^): Unit =
+  def saved(handler: SavedHandler)(using registry: Lsp.Registry^): Unit =
     registry.saved0 = Lsp.Registry.Slot[SavedHandler](handler)
 
-  transparent inline def closed(handler: ClosedHandler)(using registry: Lsp.Registry^): Unit =
+  def closed(handler: ClosedHandler)(using registry: Lsp.Registry^): Unit =
     registry.closed0 = Lsp.Registry.Slot[ClosedHandler](handler)
 
-  transparent inline def saving(handler: SavingHandler)(using registry: Lsp.Registry^): Unit =
+  def saving(handler: SavingHandler)(using registry: Lsp.Registry^): Unit =
     registry.saving0 = Lsp.Registry.Slot[SavingHandler](handler)
 
-  transparent inline def savingEdits(handler: SavingEditsHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def savingEdits(handler: SavingEditsHandler)(using registry: Lsp.Registry^): Unit =
     registry.savingEdits0 = Lsp.Registry.Slot[SavingEditsHandler](handler)
 
-  transparent inline def hover(handler: HoverHandler)(using registry: Lsp.Registry^): Unit =
+  def hover(handler: HoverHandler)(using registry: Lsp.Registry^): Unit =
     registry.hover0 = Lsp.Registry.Slot[HoverHandler](handler)
 
-  transparent inline def complete(triggers: Text*)(handler: CompleteHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def complete(triggers: Text*)(handler: CompleteHandler)(using registry: Lsp.Registry^): Unit =
     registry.complete0 = Lsp.Registry.Slot[CompleteHandler](handler)
     registry.completeTriggers0 = triggers.to(List)
 
-  transparent inline def definition(handler: DefinitionHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def definition(handler: DefinitionHandler)(using registry: Lsp.Registry^): Unit =
     registry.definition0 = Lsp.Registry.Slot[DefinitionHandler](handler)
 
-  transparent inline def references(handler: ReferencesHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def references(handler: ReferencesHandler)(using registry: Lsp.Registry^): Unit =
     registry.references0 = Lsp.Registry.Slot[ReferencesHandler](handler)
 
-  transparent inline def documentSymbols(handler: DocumentSymbolsHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def documentSymbols(handler: DocumentSymbolsHandler)(using registry: Lsp.Registry^): Unit =
     registry.documentSymbols0 = Lsp.Registry.Slot[DocumentSymbolsHandler](handler)
 
-  transparent inline def format(handler: FormatHandler)(using registry: Lsp.Registry^): Unit =
+  def format(handler: FormatHandler)(using registry: Lsp.Registry^): Unit =
     registry.format0 = Lsp.Registry.Slot[FormatHandler](handler)
 
-  transparent inline def rename(handler: RenameHandler)(using registry: Lsp.Registry^): Unit =
+  def rename(handler: RenameHandler)(using registry: Lsp.Registry^): Unit =
     registry.rename0 = Lsp.Registry.Slot[RenameHandler](handler)
 
-  transparent inline def codeActions(handler: CodeActionsHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def codeActions(handler: CodeActionsHandler)(using registry: Lsp.Registry^): Unit =
     registry.codeActions0 = Lsp.Registry.Slot[CodeActionsHandler](handler)
 
-  transparent inline def signatureHelp(triggers: Text*)(handler: SignatureHelpHandler)
+  def signatureHelp(triggers: Text*)(handler: SignatureHelpHandler)
     ( using registry: Lsp.Registry^ )
   :   Unit =
 
     registry.signatureHelp0 = Lsp.Registry.Slot[SignatureHelpHandler](handler)
     registry.signatureHelpTriggers0 = triggers.to(List)
 
-  transparent inline def declaration(handler: DeclarationHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def declaration(handler: DeclarationHandler)(using registry: Lsp.Registry^): Unit =
     registry.declaration0 = Lsp.Registry.Slot[DeclarationHandler](handler)
 
-  transparent inline def typeDefinition(handler: TypeDefinitionHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def typeDefinition(handler: TypeDefinitionHandler)(using registry: Lsp.Registry^): Unit =
     registry.typeDefinition0 = Lsp.Registry.Slot[TypeDefinitionHandler](handler)
 
-  transparent inline def implementation(handler: ImplementationHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def implementation(handler: ImplementationHandler)(using registry: Lsp.Registry^): Unit =
     registry.implementation0 = Lsp.Registry.Slot[ImplementationHandler](handler)
 
-  transparent inline def documentHighlights(handler: DocumentHighlightsHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def documentHighlights(handler: DocumentHighlightsHandler)(using registry: Lsp.Registry^): Unit =
     registry.documentHighlights0 = Lsp.Registry.Slot[DocumentHighlightsHandler](handler)
 
-  transparent inline def foldingRanges(handler: FoldingRangesHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def foldingRanges(handler: FoldingRangesHandler)(using registry: Lsp.Registry^): Unit =
     registry.foldingRanges0 = Lsp.Registry.Slot[FoldingRangesHandler](handler)
 
-  transparent inline def selectionRanges(handler: SelectionRangesHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def selectionRanges(handler: SelectionRangesHandler)(using registry: Lsp.Registry^): Unit =
     registry.selectionRanges0 = Lsp.Registry.Slot[SelectionRangesHandler](handler)
 
-  transparent inline def documentLinks(handler: DocumentLinksHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def documentLinks(handler: DocumentLinksHandler)(using registry: Lsp.Registry^): Unit =
     registry.documentLinks0 = Lsp.Registry.Slot[DocumentLinksHandler](handler)
 
-  transparent inline def codeLenses(handler: CodeLensesHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def codeLenses(handler: CodeLensesHandler)(using registry: Lsp.Registry^): Unit =
     registry.codeLenses0 = Lsp.Registry.Slot[CodeLensesHandler](handler)
 
-  transparent inline def documentColors(handler: DocumentColorsHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def documentColors(handler: DocumentColorsHandler)(using registry: Lsp.Registry^): Unit =
     registry.documentColors0 = Lsp.Registry.Slot[DocumentColorsHandler](handler)
 
-  transparent inline def colorPresentations(handler: ColorPresentationsHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def colorPresentations(handler: ColorPresentationsHandler)(using registry: Lsp.Registry^): Unit =
     registry.colorPresentations0 = Lsp.Registry.Slot[ColorPresentationsHandler](handler)
 
-  transparent inline def formatRange(handler: FormatRangeHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def formatRange(handler: FormatRangeHandler)(using registry: Lsp.Registry^): Unit =
     registry.formatRange0 = Lsp.Registry.Slot[FormatRangeHandler](handler)
 
-  transparent inline def formatOnType(first: Text, more: Text*)(handler: FormatOnTypeHandler)
+  def formatOnType(first: Text, more: Text*)(handler: FormatOnTypeHandler)
     ( using registry: Lsp.Registry^ )
   :   Unit =
 
@@ -1403,14 +1361,11 @@ object Lsp:
     registry.formatOnTypeFirst0 = first
     registry.formatOnTypeMore0 = more.to(List)
 
-  transparent inline def prepareRename(handler: PrepareRenameHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def prepareRename(handler: PrepareRenameHandler)(using registry: Lsp.Registry^): Unit =
     registry.prepareRename0 = Lsp.Registry.Slot[PrepareRenameHandler](handler)
 
   // The three call-hierarchy handlers are registered together, so the capability is atomic.
-  transparent inline def callHierarchy(prepare: CallHierarchyHandler)
+  def callHierarchy(prepare: CallHierarchyHandler)
     ( incoming: IncomingCallsHandler, outgoing: OutgoingCallsHandler )
     ( using registry: Lsp.Registry^ )
   :   Unit =
@@ -1419,7 +1374,7 @@ object Lsp:
     registry.incomingCalls0 = Lsp.Registry.Slot[IncomingCallsHandler](incoming)
     registry.outgoingCalls0 = Lsp.Registry.Slot[OutgoingCallsHandler](outgoing)
 
-  transparent inline def typeHierarchy(prepare: TypeHierarchyHandler)
+  def typeHierarchy(prepare: TypeHierarchyHandler)
     ( supertypes: SupertypesHandler, subtypes: SubtypesHandler )
     ( using registry: Lsp.Registry^ )
   :   Unit =
@@ -1428,7 +1383,7 @@ object Lsp:
     registry.supertypes0 = Lsp.Registry.Slot[SupertypesHandler](supertypes)
     registry.subtypes0 = Lsp.Registry.Slot[SubtypesHandler](subtypes)
 
-  transparent inline def semanticTokens(legend: SemanticTokensLegend)
+  def semanticTokens(legend: SemanticTokensLegend)
     ( handler: SemanticTokensHandler )
     ( using registry: Lsp.Registry^ )
   :   Unit =
@@ -1436,149 +1391,106 @@ object Lsp:
     registry.semanticTokens0 = Lsp.Registry.Slot[SemanticTokensHandler](handler)
     registry.semanticTokensLegend0 = legend
 
-  transparent inline def semanticTokensDelta(handler: SemanticTokensDeltaHandler)
+  def semanticTokensDelta(handler: SemanticTokensDeltaHandler)
     ( using registry: Lsp.Registry^ )
   :   Unit =
 
     registry.semanticTokensDelta0 = Lsp.Registry.Slot[SemanticTokensDeltaHandler](handler)
 
-  transparent inline def semanticTokensRange(handler: SemanticTokensRangeHandler)
+  def semanticTokensRange(handler: SemanticTokensRangeHandler)
     ( using registry: Lsp.Registry^ )
   :   Unit =
 
     registry.semanticTokensRange0 = Lsp.Registry.Slot[SemanticTokensRangeHandler](handler)
 
-  transparent inline def inlayHints(handler: InlayHintsHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def inlayHints(handler: InlayHintsHandler)(using registry: Lsp.Registry^): Unit =
     registry.inlayHints0 = Lsp.Registry.Slot[InlayHintsHandler](handler)
 
-  transparent inline def inlineValues(handler: InlineValuesHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def inlineValues(handler: InlineValuesHandler)(using registry: Lsp.Registry^): Unit =
     registry.inlineValues0 = Lsp.Registry.Slot[InlineValuesHandler](handler)
 
-  transparent inline def linkedEditingRange(handler: LinkedEditingRangeHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def linkedEditingRange(handler: LinkedEditingRangeHandler)(using registry: Lsp.Registry^): Unit =
     registry.linkedEditingRange0 = Lsp.Registry.Slot[LinkedEditingRangeHandler](handler)
 
-  transparent inline def monikers(handler: MonikersHandler)(using registry: Lsp.Registry^): Unit =
+  def monikers(handler: MonikersHandler)(using registry: Lsp.Registry^): Unit =
     registry.monikers0 = Lsp.Registry.Slot[MonikersHandler](handler)
 
-  transparent inline def diagnostics(options: DiagnosticOptions)(handler: DiagnosticsHandler)
+  def diagnostics(options: DiagnosticOptions)(handler: DiagnosticsHandler)
     ( using registry: Lsp.Registry^ )
   :   Unit =
 
     registry.diagnostics0 = Lsp.Registry.Slot[DiagnosticsHandler](handler)
     registry.diagnosticOptions0 = options
 
-  transparent inline def workspaceSymbols(handler: WorkspaceSymbolsHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def workspaceSymbols(handler: WorkspaceSymbolsHandler)(using registry: Lsp.Registry^): Unit =
     registry.workspaceSymbols0 = Lsp.Registry.Slot[WorkspaceSymbolsHandler](handler)
 
   // Each command is registered under its own name; `workspace/executeCommand` requests are
   // multiplexed across them, and an unregistered command yields an `InvalidParams` error
   // response.
-  transparent inline def command(name: Text)(handler: CommandHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def command(name: Text)(handler: CommandHandler)(using registry: Lsp.Registry^): Unit =
     registry.commands0 =
       (name, Lsp.Registry.Slot[CommandHandler](handler): AnyRef) :: registry.commands0
     registry.commandNames0 = name :: registry.commandNames0
 
-  transparent inline def configuration(handler: ConfigurationHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def configuration(handler: ConfigurationHandler)(using registry: Lsp.Registry^): Unit =
     registry.configuration0 = Lsp.Registry.Slot[ConfigurationHandler](handler)
 
-  transparent inline def watchedFiles(handler: WatchedFilesHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def watchedFiles(handler: WatchedFilesHandler)(using registry: Lsp.Registry^): Unit =
     registry.watchedFiles0 = Lsp.Registry.Slot[WatchedFilesHandler](handler)
 
-  transparent inline def foldersChanged(handler: FoldersChangedHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def foldersChanged(handler: FoldersChangedHandler)(using registry: Lsp.Registry^): Unit =
     registry.foldersChanged0 = Lsp.Registry.Slot[FoldersChangedHandler](handler)
 
-  transparent inline def creatingFiles(handler: CreatingFilesHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def creatingFiles(handler: CreatingFilesHandler)(using registry: Lsp.Registry^): Unit =
     registry.creatingFiles0 = Lsp.Registry.Slot[CreatingFilesHandler](handler)
 
-  transparent inline def createdFiles(handler: CreatedFilesHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def createdFiles(handler: CreatedFilesHandler)(using registry: Lsp.Registry^): Unit =
     registry.createdFiles0 = Lsp.Registry.Slot[CreatedFilesHandler](handler)
 
-  transparent inline def renamingFiles(handler: RenamingFilesHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def renamingFiles(handler: RenamingFilesHandler)(using registry: Lsp.Registry^): Unit =
     registry.renamingFiles0 = Lsp.Registry.Slot[RenamingFilesHandler](handler)
 
-  transparent inline def renamedFiles(handler: RenamedFilesHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def renamedFiles(handler: RenamedFilesHandler)(using registry: Lsp.Registry^): Unit =
     registry.renamedFiles0 = Lsp.Registry.Slot[RenamedFilesHandler](handler)
 
-  transparent inline def deletingFiles(handler: DeletingFilesHandler)
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def deletingFiles(handler: DeletingFilesHandler)(using registry: Lsp.Registry^): Unit =
     registry.deletingFiles0 = Lsp.Registry.Slot[DeletingFilesHandler](handler)
 
-  transparent inline def deletedFiles(handler: DeletedFilesHandler)(using registry: Lsp.Registry^)
-  :   Unit =
-
+  def deletedFiles(handler: DeletedFilesHandler)(using registry: Lsp.Registry^): Unit =
     registry.deletedFiles0 = Lsp.Registry.Slot[DeletedFilesHandler](handler)
 
-  transparent inline def resolveCompletion(handler: ResolveHandler[CompletionItem])
+  def resolveCompletion(handler: ResolveHandler[CompletionItem])
     ( using registry: Lsp.Registry^ )
   :   Unit =
 
     registry.resolveCompletion0 = Lsp.Registry.Slot[ResolveHandler[CompletionItem]](handler)
 
-  transparent inline def resolveCodeAction(handler: ResolveHandler[CodeAction])
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def resolveCodeAction(handler: ResolveHandler[CodeAction])(using registry: Lsp.Registry^): Unit =
     registry.resolveCodeAction0 = Lsp.Registry.Slot[ResolveHandler[CodeAction]](handler)
 
-  transparent inline def resolveCodeLens(handler: ResolveHandler[CodeLens])
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def resolveCodeLens(handler: ResolveHandler[CodeLens])(using registry: Lsp.Registry^): Unit =
     registry.resolveCodeLens0 = Lsp.Registry.Slot[ResolveHandler[CodeLens]](handler)
 
-  transparent inline def resolveDocumentLink(handler: ResolveHandler[DocumentLink])
+  def resolveDocumentLink(handler: ResolveHandler[DocumentLink])
     ( using registry: Lsp.Registry^ )
   :   Unit =
 
     registry.resolveDocumentLink0 = Lsp.Registry.Slot[ResolveHandler[DocumentLink]](handler)
 
-  transparent inline def resolveInlayHint(handler: ResolveHandler[InlayHint])
-    ( using registry: Lsp.Registry^ )
-  :   Unit =
-
+  def resolveInlayHint(handler: ResolveHandler[InlayHint])(using registry: Lsp.Registry^): Unit =
     registry.resolveInlayHint0 = Lsp.Registry.Slot[ResolveHandler[InlayHint]](handler)
 
-  transparent inline def resolveWorkspaceSymbol(handler: ResolveHandler[WorkspaceSymbol])
+  def resolveWorkspaceSymbol(handler: ResolveHandler[WorkspaceSymbol])
     ( using registry: Lsp.Registry^ )
   :   Unit =
 
     registry.resolveWorkspaceSymbol0 = Lsp.Registry.Slot[ResolveHandler[WorkspaceSymbol]](handler)
 
-  // An escape hatch: adjusts the derived capabilities, applied last, at initialization.
-  transparent inline def capabilities(adjust: ServerCapabilities => ServerCapabilities)
+  // An escape hatch: adjusts the derived capabilities, applied last, at initialization. The
+  // adjuster is pure, like a handler's result: it computes new capabilities from old and may
+  // retain nothing.
+  def capabilities(adjust: ServerCapabilities -> ServerCapabilities)
     ( using registry: Lsp.Registry^ )
   :   Unit =
 
