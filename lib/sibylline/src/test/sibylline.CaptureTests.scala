@@ -30,144 +30,42 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package sibylline
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    telekinesis.Http2Tests()
-    //cosmopolite.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    sibylline.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    telekinesis.Tests()
-    tessellate.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    virility.Tests()
-    vivisection.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import soundness.*
 
-object FailingTests extends Suite(m"Failing tests"):
+import strategies.throwUnsafely
+
+// The session and its in-flight streamed response are capabilities scoped to the block a
+// provider's `session` lends them to; capture checking prevents either being retained beyond
+// it, while pure values — replies, messages, usage — may leave freely.
+object CaptureTests extends Suite(m"Confinement tests"):
   def run(): Unit =
-    // turbulence.Tests() - deadlock
-    ()
+    test(m"the session cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(using session: Llm.Session^): Unit =
+          var stash: () => Llm.Reply = () => Scripted.reply(t"")
+          stash = () => session.ask(t"late")
+          ()
+    . assert(_.nonEmpty)
+
+    test(m"a streamed response cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(using session: Llm.Session^): Unit =
+          var stash: () => Unit = () => ()
+          val response = session.stream(t"go")
+          stash = () => response.reply().unit
+          ()
+    . assert(_.nonEmpty)
+
+    test(m"a pure reply may leave the session block"):
+      demilitarize:
+        def attempt(using session: Llm.Session^): Llm.Reply =
+          session.ask(t"fine")
+    . assert(_.isEmpty)
+
+    test(m"the history snapshot may leave the session block"):
+      demilitarize:
+        def attempt(using session: Llm.Session^): List[Llm.Message] =
+          session.history
+    . assert(_.isEmpty)
