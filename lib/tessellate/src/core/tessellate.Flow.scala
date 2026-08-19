@@ -141,6 +141,16 @@ object Flow:
       if fromCluster == toCluster then textual(t"")
       else content.segment(charStart(fromCluster).z thru charStart(toCluster).u)
 
+    // A line as emitted: trailing spaces are dropped, as at a soft break. The walk skips
+    // space clusters without a width check (correctly — a break there would absorb them),
+    // so a segment ending in spaces can exceed `width`; emitted at a hard break or at the
+    // end of the content, it would overflow the line's cell budget, which `Alignment.pad`
+    // cannot recover (padding never truncates).
+    def line(fromCluster: Int, toCluster: Int): textual =
+      var end = toCluster
+      while end > fromCluster && plain.charAt(charStart(end - 1)) == ' ' do end -= 1
+      segment(fromCluster, end)
+
     def hardBreak(cluster: Int): Boolean =
       val char = plain.charAt(charStart(cluster))
       char == '\n' || char == '\r'
@@ -180,9 +190,9 @@ object Flow:
     // recent space cluster on the current line. Lines accumulate in reverse in `acc`.
     def recur(cluster: Int, lineStart: Int, lastSpace: Int, acc: List[textual]): List[textual] =
       if cluster >= clusters then
-        if lineStart == cluster then acc else segment(lineStart, cluster) :: acc
+        if lineStart == cluster then acc else line(lineStart, cluster) :: acc
       else if hardBreak(cluster) then
-        recur(cluster + 1, cluster + 1, cluster + 1, segment(lineStart, cluster) :: acc)
+        recur(cluster + 1, cluster + 1, cluster + 1, line(lineStart, cluster) :: acc)
       else if plain.charAt(charStart(cluster)) == ' ' then
         recur(cluster + 1, lineStart, cluster, acc)
       else
@@ -196,7 +206,7 @@ object Flow:
           if breakAt > lineStart then
             recur(breakAt, breakAt, breakAt, (segment(lineStart, breakAt) + hyphenText) :: acc)
           else if lastSpace > lineStart then
-            recur(lastSpace + 1, lastSpace + 1, lastSpace + 1, segment(lineStart, lastSpace) :: acc)
+            recur(lastSpace + 1, lastSpace + 1, lastSpace + 1, line(lineStart, lastSpace) :: acc)
           else
             recur(cluster + 1, lineStart, lastSpace, acc)
         else

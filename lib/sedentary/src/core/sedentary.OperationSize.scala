@@ -42,7 +42,13 @@ object OperationSize:
   // both the per-operation size text and (later, given a measured mean time)
   // the throughput rate text, so `Bench.apply` itself doesn't need to be
   // generic over the unit or carry a `Decimalizer` of its own.
-  given conversion: [size <: Measure] => Decimalizer
+  //
+  // `inline`, so the body re-elaborates at the summoning site: `express` is itself inline,
+  // and expanding it here — where `size` is abstract and the caller's `Prefixes` and
+  // `Designation` givens are invisible — collects no units and selects no prefix,
+  // rendering `4194304*Byte` as `4.2×10⁶ ` (unitless, trailing separator space) instead
+  // of `4.2 MB`.
+  inline given conversion: [size <: Measure] => Decimalizer
   =>  Conversion[Quantity[size], OperationSize] = quantity =>
 
     OperationSize
