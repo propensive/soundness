@@ -37,7 +37,6 @@ import contingency.*
 import denominative.*
 import panopticon.*
 import prepositional.*
-import proscenium.compat.*
 import vacuous.*
 
 // The panopticon lens and optic instances for `Tel`. These were members of `trait Tel2`, and so

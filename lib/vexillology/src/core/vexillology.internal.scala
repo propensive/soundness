@@ -32,7 +32,6 @@
                                                                                                   */
 package vexillology
 
-import proscenium.compat.*
 
 import java.lang as jl
 

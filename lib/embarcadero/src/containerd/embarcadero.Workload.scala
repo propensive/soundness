@@ -40,7 +40,6 @@ import gossamer.*
 import locomotion.*
 import obligatory.*
 import parasite.*
-import proscenium.compat.*
 import rudiments.*
 import scala.caps
 import vacuous.*

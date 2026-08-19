@@ -32,7 +32,6 @@
                                                                                                   */
 package vicarious
 
-import proscenium.compat.*
 
 import scala.language.dynamics
 

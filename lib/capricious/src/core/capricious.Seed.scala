@@ -32,7 +32,6 @@
                                                                                                   */
 package capricious
 
-import proscenium.compat.*
 
 import scala.language.experimental.genericNumberLiterals
 

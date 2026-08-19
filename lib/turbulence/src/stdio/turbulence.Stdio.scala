@@ -32,7 +32,6 @@
                                                                                                   */
 package turbulence
 
-import proscenium.compat.*
 
 import java.io as ji
 

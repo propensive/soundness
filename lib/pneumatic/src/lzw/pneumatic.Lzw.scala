@@ -33,7 +33,6 @@
 package pneumatic
 
 import anticipation.*
-import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import vacuous.*

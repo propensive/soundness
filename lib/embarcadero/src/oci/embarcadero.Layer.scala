@@ -38,7 +38,6 @@ import gesticulate.*
 import pneumatic.*
 import turbulence.*
 import zephyrine.*
-import proscenium.compat.*
 
 // A single image layer. A layer carries two distinct digests: the `diff_id` is the
 // SHA-256 of the *unstored* content (recorded in the image config's `rootfs.diff_ids`),

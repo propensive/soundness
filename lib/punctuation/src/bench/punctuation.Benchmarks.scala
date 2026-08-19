@@ -45,7 +45,6 @@ import prepositional.*
 import probably.*
 import spectacular.show
 import proscenium.*
-import proscenium.compat.*
 import quantitative.*
 import sedentary.*
 import symbolism.*
