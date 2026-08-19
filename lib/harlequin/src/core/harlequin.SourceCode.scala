@@ -490,10 +490,7 @@ object SourceCode:
 
     try
       val settings = ("-classpath" :: cp.s :: scalac.commandLineArguments.map(_.s)).map(_.nn)
-      // Scala 3.10 adds a `logicalRootPackage` constructor parameter (no default);
-      // `CachedLogicalPackage.none` restores the previous behaviour.
-      val driver =
-        interactive.InteractiveDriver(settings.stdlib, interactive.CachedLogicalPackage.none)
+      val driver = Shim.interactiveDriver(settings.stdlib)
       // The driver resolves the URI as a path, so it must use the `file` scheme, though no
       // file exists there: the source text is supplied directly.
       val uri = java.nio.file.Path.of("/harlequin-highlighting.scala").nn.toUri.nn

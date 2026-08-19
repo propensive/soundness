@@ -173,13 +173,11 @@ class Reifier(classpath: LocalClasspath):
         // decode is repeated inline because only a fluid Java result adapts to the pure
         // formal, as above.
         val info =
-          CompilationUnitInfo
+          Shim.compilationUnitInfo
             ( VirtualFile
                 ( "<delicious>",
                   ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[scala.Array[Byte]] ),
-              // Scala 3.10 makes this parameter a lazy loader (`tastyInfoLoader:
-              // () => Option[TastyInfo]`); the `Some` wrapper remains load-bearing.
-              () => Some(dtd.core.TastyInfo(version, attributes)) )
+              dtd.core.TastyInfo(version, attributes) )
           . nn
         val positions = unpickler.unpickle(DottyUnpickler.PositionsSectionUnpickler())
         val comments = unpickler.unpickle(DottyUnpickler.CommentsSectionUnpickler())
