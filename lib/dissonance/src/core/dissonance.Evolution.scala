@@ -39,7 +39,7 @@ import rudiments.*
 
 object Evolution:
   case class Atom[element](value: element, presence: Set[Ordinal]):
-    def add(n: Ordinal): Atom[element] = copy(presence = presence + n)
+    def add(n: Ordinal): Atom[element] = copy(presence = presence :+ n)
     def has(n: Ordinal): Boolean = presence.has(n)
 
 case class Evolution[element](sequence: List[Evolution.Atom[element]]):

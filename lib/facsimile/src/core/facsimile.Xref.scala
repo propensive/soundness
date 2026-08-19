@@ -90,7 +90,7 @@ private[facsimile] object Xref:
 
       sectionTrailer(t"Prev").let(_.long)
       . lay(Xref(mergedEntries, mergedTrailer, head, streamed(source, head))): previous =>
-          recur(previous, mergedEntries, mergedTrailer, visited + offset)
+          recur(previous, mergedEntries, mergedTrailer, visited :+ offset)
 
     recur(head, Map(), Map(), Set())
 

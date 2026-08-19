@@ -102,7 +102,7 @@ package teletypeables:
 
         case head :: tail =>
           if seen.has(head) then dedup(tail, seen, done)
-          else dedup(tail, seen + head, head :: done)
+          else dedup(tail, seen :+ head, head :: done)
 
     val packages: Map[Text, Color in Srgb] =
       Map.from:

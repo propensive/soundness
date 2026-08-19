@@ -304,7 +304,7 @@ object internal:
 
     val cleaned: List[String] = parts.zipWithIndex.map: (part, idx) =>
       if idx > 0 && part.startsWith("*") then
-        spreads = spreads + (idx - 1)
+        spreads = spreads :+ (idx - 1)
         part.substring(1).nn
       else
         part
@@ -900,7 +900,7 @@ object internal:
                     var k = 0
 
                     while k < n do
-                      keysSet += $scrutinee.objectKey(k)
+                      keysSet = keysSet :+ $scrutinee.objectKey(k)
                       k += 1
 
                     ${Expr(literalKeys)}.forall(keysSet.has(_))
@@ -917,7 +917,7 @@ object internal:
                       var k = 0
 
                       while k < n do
-                        keysSet += $scrutinee.objectKey(k)
+                        keysSet = keysSet :+ $scrutinee.objectKey(k)
                         k += 1
 
                       ${Expr(literalKeys)}.forall(keysSet.has(_))

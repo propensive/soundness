@@ -63,7 +63,6 @@ extension [element](set: Set[element])
   inline def minBy[key](lambda: element => key)(using math.Ordering[key]): element =
     set.stdlib.minBy(lambda)
 
-  inline infix def + (element: element): Set[element] = Set.of(set.stdlib + element)
   inline infix def - (element: element): Set[element] = Set.of(set.stdlib - element)
 
   inline infix def ++ (elements: IterableOnce[element]): Set[element] =
@@ -75,9 +74,6 @@ extension [element](set: Set[element])
     Set.of(set.stdlib -- elements)
 
   inline infix def -- (other: Set[element]): Set[element] = Set.of(set.stdlib -- other.stdlib)
-  inline def intersect(other: Set[element]): Set[element] = Set.of(set.stdlib.intersect(other.stdlib))
-  inline def union(other: Set[element]): Set[element] = Set.of(set.stdlib.union(other.stdlib))
-  inline def diff(other: Set[element]): Set[element] = Set.of(set.stdlib.diff(other.stdlib))
   inline def filterNot(predicate: element => Boolean): Set[element] = Set.of(set.stdlib.filterNot(predicate))
 
   inline def partition(predicate: element => Boolean): (Set[element], Set[element]) =

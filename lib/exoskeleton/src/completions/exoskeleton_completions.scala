@@ -139,7 +139,7 @@ def helpTree
     Probe
       ( completion.cursorSuggestions,
         completion.flags.keySet.to(List),
-        completion.globalFlags.foldLeft(Set[Flag]())(_ + _),
+        completion.globalFlags.foldLeft(Set[Flag]())(_ :+ _),
         completion.operandNames,
         List.of(completion.statuses.to(scala.List)),
         List.of(variables.to(scala.List)) )
@@ -169,7 +169,7 @@ def helpTree
             globals.has(flag),
             operands.get(flag).optional )
 
-      val known = flags.stdlib.foldLeft(inherited)(_ + _)
+      val known = flags.stdlib.foldLeft(inherited)(_ :+ _)
 
       val children =
         List.of(suggestions.stdlib.distinctBy(_.core)).bind: suggestion =>
@@ -183,7 +183,7 @@ def helpTree
                     suggestion.core,
                     suggestion.description,
                     suggestion.group,
-                    seen + prefix,
+                    seen :+ prefix,
                     known ) )
 
       Help
