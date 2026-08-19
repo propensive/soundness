@@ -61,7 +61,7 @@ object Molecule:
           (molecule.elements.stdlib - PeriodicTable.C - PeriodicTable.H)
           . to(List).sort(_(0).symbol)
 
-        carbon :: hydrogen ::: rest
+        carbon :: hydrogen + rest
 
     val suffix =
       val polarity =

@@ -52,6 +52,7 @@ import pneumatic.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
+import symbolism.*
 
 enum LongNameFormat:
   case Pax
@@ -219,7 +220,7 @@ object Tarfile:
                     val extSegments = readSparseExtensions(cursor, isExtended)
                     val data = takeData(cursor, size)
 
-                    val allSegments = (inlineSegments ::: extSegments).filter(_.length > 0)
+                    val allSegments = (inlineSegments + extSegments).filter(_.length > 0)
 
                     val extras: Map[Text, Text] =
                       Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
@@ -377,7 +378,7 @@ object Tarfile:
           i = i + 1
 
         val moreExtended = head.readUnchecked(504) != 0.toByte
-        List.of(builder.result()) ::: readSparseExtensions(cursor, moreExtended)
+        List.of(builder.result()) + readSparseExtensions(cursor, moreExtended)
 
   private def resolveName
     ( header:        TarHeader,

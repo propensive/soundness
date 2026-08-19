@@ -44,6 +44,7 @@ import kotlin.metadata.jvm.*
 import rudiments.*
 import vacuous.*
 import denominative.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 // The Kotlin grammar: self-resolving, per foreign type name, from the `@Metadata` annotation of
@@ -149,7 +150,7 @@ object KotlinDialect extends Dialect:
 
               val declared = functions(typeName, kmClass.getFunctions.nn.asScala.to(List), false)
               val fields = properties(typeName, kmClass.getProperties.nn.asScala.to(List))
-              val entries = declared ::: fields ::: constructors(typeName, kmClass)
+              val entries = declared + fields + constructors(typeName, kmClass)
 
               val setters = propertySetters(typeName, kmClass.getProperties.nn.asScala.to(List))
 
@@ -239,7 +240,7 @@ object KotlinDialect extends Dialect:
                 constructor.isVarArgs ),
             Prototype(parameters.map(javaType), Foreign.Type.Named(typeName)) )
 
-      collate(entries ::: fieldEntries ::: constructorEntries, Map(), Nil, Unset, Nil)
+      collate(entries + fieldEntries + constructorEntries, Map(), Nil, Unset, Nil)
 
     catch case _: Throwable => Unset
 

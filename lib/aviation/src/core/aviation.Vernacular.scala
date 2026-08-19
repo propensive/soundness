@@ -40,6 +40,7 @@ import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import symbolism.*
 
 // The time units a duration or frequency is built from, coarsest first.
 enum TimeUnit:
@@ -295,8 +296,8 @@ trait Vernacular:
 
     val clauses =
       List(cadence)
-      ::: onClause.lay(List[Text]())(List(_))
-      ::: monthClause.lay(List[Text]())(List(_))
-      ::: setPosClause.lay(List[Text]())(List(_))
+      + onClause.lay(List[Text]())(List(_))
+      + monthClause.lay(List[Text]())(List(_))
+      + setPosClause.lay(List[Text]())(List(_))
 
     t"${clauses.join(t" ")}${rule.count.lay(t"")(times)}"

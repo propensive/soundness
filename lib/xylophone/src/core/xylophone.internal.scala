@@ -61,6 +61,7 @@ import spectacular.*
 import stenography.*
 import vacuous.*
 import zephyrine.*
+import symbolism.*
 
 object internal:
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]

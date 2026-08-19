@@ -83,7 +83,7 @@ object internal:
 
       case '[type set; TypeSet[set]] =>
         def recur(repr: TypeRepr): List[Expr[set]] = repr.dealias match
-          case OrType(left, right) => recur(left) ::: recur(right)
+          case OrType(left, right) => List.of(recur(left).stdlib ::: recur(right).stdlib)
           case other               => List(constant(other).asExprOf[set])
 
         '{List[set](${Varargs(recur(TypeRepr.of[set]).stdlib)}*)}

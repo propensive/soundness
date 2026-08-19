@@ -46,6 +46,7 @@ import gossamer.*
 import proscenium.*
 import spectacular.*
 import vacuous.*
+import symbolism.*
 
 object internal:
   inline def explanation[target]: target = ${explain[target]}

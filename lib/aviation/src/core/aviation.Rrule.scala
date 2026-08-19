@@ -44,6 +44,7 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 import denominative.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 // One `BYDAY` entry: a weekday, optionally with an ordinal — `3MO` (3rd Monday), `-1FR` (last
@@ -103,19 +104,19 @@ object Rrule:
       optional.lay(List())(value => List(text(value)))
 
     val parts =
-      part(true, t"FREQ=${rule.frequency.toString.tt.upper}") :::
-        part(rule.interval != 1, t"INTERVAL=${rule.interval}") :::
-        partOf(rule.count) { count => t"COUNT=$count" } :::
-        partOf(rule.until) { until => t"UNTIL=${until.encode}" } :::
-        part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") :::
-        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") :::
-        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") :::
-        part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") :::
-        part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") :::
-        part(rule.byHour.nonEmpty, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") :::
-        part(rule.byMinute.nonEmpty, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") :::
-        part(rule.bySecond.nonEmpty, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") :::
-        part(rule.bySetPos.nonEmpty, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") :::
+      part(true, t"FREQ=${rule.frequency.toString.tt.upper}") +
+        part(rule.interval != 1, t"INTERVAL=${rule.interval}") +
+        partOf(rule.count) { count => t"COUNT=$count" } +
+        partOf(rule.until) { until => t"UNTIL=${until.encode}" } +
+        part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") +
+        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") +
+        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") +
+        part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") +
+        part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") +
+        part(rule.byHour.nonEmpty, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") +
+        part(rule.byMinute.nonEmpty, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") +
+        part(rule.bySecond.nonEmpty, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") +
+        part(rule.bySetPos.nonEmpty, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") +
         part(rule.weekStart != Weekday.Mon, t"WKST=${code(rule.weekStart)}")
 
     parts.join(t";")

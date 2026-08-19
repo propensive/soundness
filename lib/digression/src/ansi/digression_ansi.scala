@@ -45,6 +45,7 @@ import rudiments.*
 import spectacular.*
 import tessellate.*
 import vacuous.*
+import symbolism.*
 
 trait StackTracePalette extends iridescence.Palette:
   type Form = Srgb

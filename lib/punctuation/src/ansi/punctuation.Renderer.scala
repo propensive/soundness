@@ -254,7 +254,7 @@ object Renderer:
     blocks match
       case Nil          => Nil
       case head :: Nil  => head
-      case head :: tail => head ::: Teletype.empty :: interleaveBlanks(tail)
+      case head :: tail => head + (Teletype.empty :: interleaveBlanks(tail))
 
   // Prefix a single line's content with `prefix` (no newlines should appear
   // in `line`).

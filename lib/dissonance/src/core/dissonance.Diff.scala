@@ -42,6 +42,7 @@ import prepositional.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 object Diff:
@@ -142,7 +143,7 @@ object Diff:
           if inss.size > 0 && dels.size > 0 then List(Text("---")) else List[Text]()
         val insSeq = inss.map: ins => Text("> "+ins.value)
 
-        List(command) ::: delSeq ::: sep ::: insSeq
+        List(command) + delSeq + sep + insSeq
 
   // DiffError → Diff.Error
   case class Error(lineNo: Int, line: Text)(using Diagnostics)

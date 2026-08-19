@@ -40,6 +40,7 @@ import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 package interpreters:
@@ -106,7 +107,7 @@ package interpreters:
             then
               val key2 = key.copy(format = Argument.Format.EqualityPrefix)
               val value = key.copy(format = Argument.Format.EqualitySuffix)
-              List(key2 -> (List(value) ::: values))
+              List(key2 -> (List(value) + values))
             else if flag.starts(t"-") && !flag.starts(t"--") && flag.length > 2
             then
               if clustering then
@@ -118,7 +119,7 @@ package interpreters:
               else
                 List:
                   key.copy(format = Argument.Format.CharFlag(Prim)) ->
-                    (List(key.copy(format = Argument.Format.FlagSuffix)) ::: values)
+                    (List(key.copy(format = Argument.Format.FlagSuffix)) + values)
 
             else
               List(key -> values)
