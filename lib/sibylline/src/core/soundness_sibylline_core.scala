@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export sibylline.{Anthropic, Llm, llm}
+export sibylline.{Anthropic, Gemini, Llm, llm, OpenAI}

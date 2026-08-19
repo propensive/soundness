@@ -294,6 +294,42 @@ object Llm:
 
     response.body.stream.via(summon[CharDecoder]).chunks.frames[Sse]
 
+  // A frame no server can send — `data:` lines never contain a NUL — marking the end of the
+  // frame stream to the translation.
+  private[sibylline] val Terminal: Text = t"\u0000"
+
+  // The streaming translation's working state: which block indexes are open, and whether the
+  // message-level `Started` event has been emitted. Plain and single-owner, confined to one
+  // stream's iterator.
+  private[sibylline] class Progress():
+    val opened: scm.TreeSet[Int] = scm.TreeSet()
+
+    @scala.caps.unsafe.untrackedCaptures
+    var begun: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
+    var usage: Optional[Usage] = Unset
+
+    @scala.caps.unsafe.untrackedCaptures
+    var stop: Optional[Stop] = Unset
+
+    // Complete blocks (a whole function call in one frame) take the next free index above
+    // the text block at zero.
+    @scala.caps.unsafe.untrackedCaptures
+    var count: Int = 0
+
+    def next(): Int =
+      count += 1
+      count
+
+    def open(index: Int): Boolean = opened.add(index)
+
+    // The events that close out a stream once its frames are exhausted: every block still
+    // open is closed, deferred message-level state lands, and the message finishes.
+    def finish(): List[Event] =
+      val closes = opened.toList.map(Event.Closed(_))
+      List.of(closes :+ Event.Update(stop, usage) :+ Event.Finished)
+
   private[sibylline] object Accumulator:
     // The in-progress form of one content block: the block as it was opened, the text it has
     // accumulated, and any auxiliary text (a thinking signature, or partial JSON arguments).

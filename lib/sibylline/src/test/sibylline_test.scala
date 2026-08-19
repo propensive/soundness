@@ -244,4 +244,7 @@ object Tests extends Suite(m"Sibylline tests"):
       . assert(_ == Llm.Error.Reason.Interrupted)
 
     AnthropicTests()
+    OpenAITests()
+    ResponsesTests()
+    GeminiTests()
     CaptureTests()
