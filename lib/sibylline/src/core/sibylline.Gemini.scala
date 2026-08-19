@@ -341,6 +341,7 @@ class Gemini private
   def stopping(sequences: Text*): Gemini =
     copy(settings = settings.copy(stopSequences = List(sequences*)))
 
+  def iterating(limit: Int): Gemini = copy(settings = settings.copy(iterations = limit))
   def primed(messages: List[Llm.Message]): Gemini = copy(priming = messages)
   def tooled(tools: List[Llm.Tool]): Gemini = copy(tools = tools)
   def on(base: HttpUrl): Gemini = copy(base = base)

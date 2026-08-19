@@ -381,6 +381,7 @@ class Anthropic private
   def stopping(sequences: Text*): Anthropic =
     copy(settings = settings.copy(stopSequences = List(sequences*)))
 
+  def iterating(limit: Int): Anthropic = copy(settings = settings.copy(iterations = limit))
   def primed(messages: List[Llm.Message]): Anthropic = copy(priming = messages)
   def tooled(tools: List[Llm.Tool]): Anthropic = copy(tools = tools)
   def on(base: HttpUrl): Anthropic = copy(base = base)

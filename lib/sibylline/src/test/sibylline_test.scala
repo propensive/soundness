@@ -247,4 +247,5 @@ object Tests extends Suite(m"Sibylline tests"):
     OpenAITests()
     ResponsesTests()
     GeminiTests()
+    ToolkitTests()
     CaptureTests()

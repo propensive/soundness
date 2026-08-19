@@ -386,6 +386,7 @@ class OpenAI private
   def stopping(sequences: Text*): OpenAI =
     copy(settings = settings.copy(stopSequences = List(sequences*)))
 
+  def iterating(limit: Int): OpenAI = copy(settings = settings.copy(iterations = limit))
   def primed(messages: List[Llm.Message]): OpenAI = copy(priming = messages)
   def tooled(tools: List[Llm.Tool]): OpenAI = copy(tools = tools)
 
@@ -583,7 +584,14 @@ private[sibylline] object ResponsesDialect:
         top_p             = turn.settings.topP.in[Json],
         stream            = (if streaming then streaming else Unset).in[Json],
         tools             = (if tools.stdlib.isEmpty then Unset else tools).in[Json],
-        tool_choice       = turn.settings.toolChoice.let(OpenAI.choice(_)).in[Json] )
+        tool_choice       = turn.settings.toolChoice.let(choice(_)).in[Json] )
+
+  // Unlike Chat Completions, a named Responses tool choice is flat, not nested.
+  private def choice(choice: Llm.ToolChoice): Json = choice match
+    case Llm.ToolChoice.Named(tool) =>
+      Json.make(`type` = t"function".in[Json], name = tool.in[Json])
+
+    case other => OpenAI.choice(other)
 
   // One output item as neutral content blocks.
   private def blocks(item: Json)(using Diagnostics)

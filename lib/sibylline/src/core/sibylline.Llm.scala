@@ -32,6 +32,7 @@
                                                                                                   */
 package sibylline
 
+import scala.annotation.StaticAnnotation
 import scala.caps
 import scala.collection.mutable as scm
 
@@ -54,6 +55,14 @@ import vacuous.*
 import zephyrine.{chunks, memoize, via}
 
 object Llm:
+  // Marks a method as a tool the model may call, for `Toolkit(…)` derivation. Nested so that
+  // `@Llm.ability` needs no import; not named `tool`, which would collide with the `Tool` case
+  // class on case-insensitive filesystems (and with synesthesia's exported `tool`).
+  case class ability() extends StaticAnnotation
+
+  // Describes a tool to the model; nested for the same reason as `Llm.ability`.
+  case class about(text: Text) extends StaticAnnotation
+
   // The two turn-taking roles a conversation alternates between. The system prompt is not a
   // role: two of the four wire APIs carry it outside the message list, so it is a field of the
   // `Exchange` rather than a message.
@@ -154,7 +163,8 @@ object Llm:
       temperature:   Optional[Double]     = Unset,
       topP:          Optional[Double]     = Unset,
       stopSequences: List[Text]           = List(),
-      toolChoice:    Optional[ToolChoice] = Unset )
+      toolChoice:    Optional[ToolChoice] = Unset,
+      iterations:    Optional[Int]        = Unset )
 
   // A tool the model may call: its name, what it does, and the JSON schema of its arguments.
   // The `Toolkit` macro produces these from typed Scala methods; the core only carries them.
@@ -484,22 +494,81 @@ object Llm:
     def history: List[Message] = history0
     def usage: Usage = usage0
 
-    private def exchange(message: Message): Exchange =
-      Exchange(system, List.of(history0.stdlib :+ message), tools, settings)
+    private def exchange(message: Message, extra: List[Tool] = List()): Exchange =
+      Exchange
+        ( system, List.of(history0.stdlib :+ message),
+          List.of(tools.stdlib ++ extra.stdlib), settings )
 
     // Seed or amend the history without a round trip: replaying a transcript, or a tool loop
     // recording synthesized turns.
     update def record(message: Message): Unit =
       history0 = List.of(history0.stdlib :+ message)
 
-    update def ask(text: Text): Reply = ask(Message(Role.User, text))
+    update def ask(text: Text)(using toolkit: Toolkit^): Reply = ask(Message(Role.User, text))
 
-    // One full, non-streamed round trip: the user turn and the assistant's reply are committed
-    // to history together, after the call has succeeded.
-    update def ask(message: Message): Reply =
-      val reply = dialect.exchange(exchange(message))
+    // One full, non-streamed turn: the user turn and the assistant's reply are committed to
+    // history together, after each call has succeeded. When the ambient `Toolkit` has tools
+    // and the model calls one, the loop runs it, reports the result — or, for a failed or
+    // unknown call, an `is_error` result the model can correct itself from — and re-sends,
+    // until the model stops for any other reason or the iteration bound trips.
+    update def ask(message: Message)(using toolkit: Toolkit^): Reply =
+      val limit: Int = settings.iterations.or(16)
+
+      var current: Message = message
+      var remaining: Int = limit
+      var answer: Optional[Reply] = Unset
+
+      while answer.absent do
+        val reply = dialect.exchange(exchange(current, toolkit.specs))
+        commit(current, reply)
+
+        // With no tools on offer, a `ToolCall` reply is the caller's to handle: the loop only
+        // owns calls it advertised.
+        if reply.stop != Stop.ToolCall || toolkit.specs.stdlib.isEmpty then answer = reply
+        else if remaining == 0 then
+          abort(Error(Error.Reason.ToolLoopExceeded, t"the limit is $limit calls"))
+        else
+          remaining -= 1
+          current = Message(Role.User, reply.toolCalls.map(outcome(toolkit, _)))
+
+      answer.or(abort(Error(Error.Reason.Malformed, t"the conversation yielded no reply")))
+
+    // One tool call's result, as the content block that answers it. A failure — unknown tool,
+    // malformed arguments, or an error the tool itself raised — becomes an `is_error` result
+    // rather than ending the conversation. A textual result is unwrapped so the model reads
+    // prose, not a JSON-quoted string.
+    private def outcome(toolkit: Toolkit^, call: Content.ToolUse): Content =
+      recover:
+        case error: Error =>
+          Content.ToolResult(call.id, List(Content.Textual(error.message.text)), failure = true)
+
+      . protect:
+          val result: Json = toolkit.invoke(call.tool, call.arguments)
+
+          val rendered: Text =
+            caps.unsafe.unsafeAssumeSeparate(safely(result.as[Text])).or(result.encode)
+
+          Content.ToolResult(call.id, List(Content.Textual(rendered)))
+
+    // One turn in which the model is forced to call the single given tool: the mechanism
+    // behind `elicit`, which decodes the arguments the model supplies. All four wires support
+    // a forced tool choice, so this works identically across dialects.
+    private[sibylline] update def forced(message: Message, answer: Tool): Reply =
+      val turn =
+        Exchange
+          ( system, List.of(history0.stdlib :+ message), List(answer),
+            settings.copy(toolChoice = ToolChoice.Named(answer.name)) )
+
+      val reply = dialect.exchange(turn)
       commit(message, reply)
       reply
+
+    private[sibylline] update def arguments(reply: Reply): Json =
+      reply.toolCalls.prim.let(_.arguments).or:
+        abort(Error(Error.Reason.Malformed, t"the model did not call the answer tool"))
+
+    private[sibylline] update def malformed(): Nothing =
+      abort(Error(Error.Reason.Malformed, t"the answer did not match its schema"))
 
     update def stream(text: Text): Response^{this, caps.any} = stream(Message(Role.User, text))
 
