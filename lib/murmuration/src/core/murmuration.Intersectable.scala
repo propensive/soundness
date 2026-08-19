@@ -30,114 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anamnesis
+package murmuration
 
-import proscenium.compat.*
-
-import beneficence.*
-import contingency.*
-import fulminate.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
 
-object Database:
-  sealed trait Relation[left, right]
+// Set algebra over abstract receivers: `intersect` keeps the elements present in both, and
+// `except` removes the other's elements (the stdlib's `diff`). Union is not here: it is plain
+// concatenation for an unordered unique shape, so `left + right` (symbolism's `Concatenable`)
+// already provides it.
+object Intersectable:
+  given set: [element] => (Set[element] is Intersectable { type Operand = Set[element] }) =
+    new Intersectable:
+      type Self = Set[element]
+      type Operand = Set[element]
 
-  transparent inline def apply[relations <: Tuple](): Database of relations =
-    val size = valueOf[Tuple.Size[relations]]
-    new Database(size).asInstanceOf[Database of relations]
+      def intersect(left: Self, right: Operand): Self = Set.of(left.stdlib.intersect(right.stdlib))
+      def except(left: Self, right: Operand): Self = Set.of(left.stdlib.diff(right.stdlib))
 
-  // DataError → Database.Error
-  object Error:
-    enum Reason(val number: Int) extends Clarification:
-      case UnknownReference extends Reason(1)
+trait Intersectable extends Typeclass.Pure, Operable:
+  def intersect(left: Self, right: Operand): Self
+  def except(left: Self, right: Operand): Self
 
-    given communicable: Reason is Communicable =
-      case Reason.UnknownReference => m"the value has not been stored in the database"
-
-  case class Error(reason: Error.Reason)(using Diagnostics)
-  extends fulminate.Error(229, reason.number)(m"the database operation failed because $reason")
-
-class Database(size: Int) extends Findable:
-  import Database.Relation
-
-  @scala.caps.unsafe.untrackedCaptures
-  private var nextId: Int = 1
-
-  def allocate[ref](): Ref of ref in this.type =
-    nextId.asInstanceOf[Ref of ref in this.type].also:
-      nextId += 1
-
-  type Topic <: Tuple
-  type AllRelations = Tuple.Union[Topic]
-  type Has[relation <: Relation[?, ?]] = relation <:< AllRelations
-
-  private val mutex: Mutex = Mutex()
-  @scala.caps.unsafe.untrackedCaptures
-  private var references: Map[Any, Ref] = Map()
-  @scala.caps.unsafe.untrackedCaptures
-  private var dereferences: Map[Ref, Any] = Map()
-
-  @scala.caps.unsafe.untrackedCaptures
-  private val relations: scala.Array[Map[Ref, Set[Ref]]] = scala.Array.fill(size)(Map())
-  @scala.caps.unsafe.untrackedCaptures
-  private val corelations: scala.Array[Map[Ref, Ref]] = scala.Array.fill(size)(Map())
-
-  def dereference[ref](ref: Ref of ref): ref = dereferences(ref).asInstanceOf[ref]
-
-  protected inline def relate[left, right]: Map[Ref, Set[Ref]] =
-    relations(!![Topic].indexOf[left -< right])
-
-  protected inline def corelate[left, right]: Map[Ref, Ref] =
-    corelations(!![Topic].indexOf[left -< right])
-
-  inline def store[left](left: left): Ref of left in this.type =
-    references(left).or:
-      allocate[left]().tap: ref =>
-        mutex:
-          references = references.updated(left, ref)
-          dereferences = dereferences.updated(ref, left)
-
-    . asInstanceOf[Ref of left in this.type]
-
-  inline def ref[left](left: left): Ref of left in this.type raises Database.Error =
-    references(left).lest(Database.Error(Database.Error.Reason.UnknownReference))
-    . asInstanceOf[Ref of left in this.type]
-
-
-  inline def assign[left, right]
-    ( left: Ref of left in this.type, right: Ref of right in this.type )
-    ( using (left -< right) <:< Tuple.Union[Topic] )
-  :   Unit raises Database.Error =
-
-    val relationIndex = !![Topic].indexOf[left -< right]
-    val relation = relate[left, right]
-    val corelation = corelate[left, right]
-    val relation2 = relation.updated(left, relation(left).or(Set()) :+ right)
-    val corelation2 = corelation.updated(right, left)
-    relations(relationIndex) = relation2
-    corelations(relationIndex) = corelation2
-
-
-  inline def lookup[left, right](left: Ref of left in this.type)
-  :   Set[Ref of right in this.type] raises Database.Error =
-
-    relate[left, right](left).or(Set()).asInstanceOf[Set[Ref of right in this.type]]
-
-
-  inline def unassign[left, right]
-    ( left: Ref of left in this.type, right: Ref of right in this.type )
-    ( using (left -< right) <:< Tuple.Union[Topic] )
-  :   Unit raises Database.Error =
-
-    val relationIndex = !![Topic].indexOf[left -< right]
-    val relation = relate[left, right]
-    val corelation = corelate[left, right]
-
-    val relation2: Map[Ref, Set[Ref]] =
-      relation.updated(left, relation(left).let(_ - right).or(Set()))
-
-    val corelation2 = corelation.removed(right)
-    relations(relationIndex) = relation2
-    corelations(relationIndex) = corelation2
+extension [self, operand](left: self)(using intersectable: self is Intersectable by operand)
+  def intersect(right: operand): self = intersectable.intersect(left, right)
+  def except(right: operand): self = intersectable.except(left, right)

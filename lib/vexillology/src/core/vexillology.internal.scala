@@ -37,6 +37,7 @@ import proscenium.compat.*
 import java.lang as jl
 
 import distillate.*
+import rudiments.`:+`
 
 object internal:
   opaque type Flags[enumeration] = Long
@@ -59,7 +60,7 @@ object internal:
 
       while (value != 0) do
         val position = jl.Long.numberOfTrailingZeros(value)
-        set += enumerable.values.readable(position)
+        set = set :+ enumerable.values.readable(position)
         value &= value - 1
 
       set

@@ -174,6 +174,23 @@ object Tests extends Suite(m"Rudiments Tests"):
         xs.count(_ == 2)
       . assert(_ == 2)
 
+    suite(m"Set algebra tests"):
+      test(m"intersect keeps common elements"):
+        val xs: Set[Int] = Set(1, 2, 3)
+        xs.intersect(Set(2, 3, 4))
+      . assert(_ == Set(2, 3))
+
+      test(m"except removes the other set's elements"):
+        val xs: Set[Int] = Set(1, 2, 3)
+        xs.except(Set(2))
+      . assert(_ == Set(1, 3))
+
+      test(m"union is concatenation"):
+        val xs: Set[Int] = Set(1, 2)
+        val ys: Set[Int] = Set(2, 3)
+        xs + ys
+      . assert(_ == Set(1, 2, 3))
+
     suite(m"Keyed tests"):
       test(m"Map keys are a Set"):
         val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)

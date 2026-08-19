@@ -209,7 +209,7 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
               Smap.Origin(file.name, file.path, input, cls) :: origins
 
           debug.let(_(line)) match
-            case (_, next: Int) if !seen.has(next) => recur(next, seen + next, origins2)
+            case (_, next: Int) if !seen.has(next) => recur(next, seen :+ next, origins2)
 
             case _ =>
               Smap.Expansion(List.of(origins2.reverse), Unset)

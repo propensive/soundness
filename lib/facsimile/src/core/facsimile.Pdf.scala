@@ -1056,7 +1056,7 @@ extends caps.ExclusiveCapability:
           if visited.has(reference)
           then abort(Pdf.Error(Pdf.Error.Reason.CircularPageTree))
 
-          visited += reference
+          visited = visited :+ reference
           recur(resolved(node), reference, inherited)
 
         case Cos.Dictionary(entries) => entries(t"Type").let(_.name) match
@@ -1131,7 +1131,7 @@ extends caps.ExclusiveCapability:
     def item(value: Cos)(using Tactic[Pdf.Error]): List[Bookmark] = value match
       case Cos.Ref(number, _) =>
         if visited.has(number) then List() else
-          visited += number
+          visited = visited :+ number
           item(resolved(value))
 
       case Cos.Dictionary(entries) =>

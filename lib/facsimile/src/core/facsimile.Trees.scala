@@ -59,7 +59,7 @@ private[facsimile] object Trees:
     node match
       case Cos.Ref(number, _) =>
         if visited.has(number) then List()
-        else pairs(pdf.resolved(node), key, visited + number)
+        else pairs(pdf.resolved(node), key, visited :+ number)
 
       case Cos.Dictionary(entries) =>
         entries(t"Kids").let(pdf.resolved(_).elements).lay(leaf(entries, key)): kids =>
