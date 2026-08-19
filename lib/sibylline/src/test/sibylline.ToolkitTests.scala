@@ -41,11 +41,11 @@ import strategies.throwUnsafely
 case class Verdict(ticker: Text, rating: Text)
 
 object Broker:
-  @Llm.ability
-  @Llm.about(t"Look up the current price of a stock ticker")
+  @ability
+  @about(t"Look up the current price of a stock ticker")
   def price(ticker: Text): Double = if ticker == t"AAPL" then 211.5 else 100.0
 
-  @Llm.ability
+  @ability
   def shout(message: Text)(using suffix: Text): Text = t"$message$suffix"
 
 object ToolkitTests extends Suite(m"Toolkit and tool-loop tests"):

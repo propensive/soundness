@@ -32,7 +32,6 @@
                                                                                                   */
 package sibylline
 
-import scala.annotation.StaticAnnotation
 import scala.caps
 import scala.collection.mutable as scm
 
@@ -55,14 +54,6 @@ import vacuous.*
 import zephyrine.{chunks, memoize, via}
 
 object Llm:
-  // Marks a method as a tool the model may call, for `Toolkit(…)` derivation. Nested so that
-  // `@Llm.ability` needs no import; not named `tool`, which would collide with the `Tool` case
-  // class on case-insensitive filesystems (and with synesthesia's exported `tool`).
-  case class ability() extends StaticAnnotation
-
-  // Describes a tool to the model; nested for the same reason as `Llm.ability`.
-  case class about(text: Text) extends StaticAnnotation
-
   // The two turn-taking roles a conversation alternates between. The system prompt is not a
   // role: two of the four wire APIs carry it outside the message list, so it is a field of the
   // `Exchange` rather than a message.

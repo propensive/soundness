@@ -30,6 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package sibylline
 
-export sibylline.{ability, Anthropic, elicit, Gemini, Llm, llm, OpenAI, Toolkit}
+import scala.annotation.StaticAnnotation
+
+// Marks a method as a tool the model may call, for `Toolkit(…)` derivation. Not named `tool`,
+// which would collide with synesthesia's exported annotation of that name; the `about`
+// annotation, by contrast, IS shared with synesthesia (from its `content` component), so one
+// description serves a method exposed both as an MCP tool and as a model ability.
+case class ability() extends StaticAnnotation

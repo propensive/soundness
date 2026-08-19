@@ -47,14 +47,14 @@ object internal:
   def toolkit[tools: Type](target: Expr[tools])(using Quotes): Expr[Toolkit] =
     import quotes.reflect.*
 
-    val toolType = TypeRepr.of[Llm.ability].typeSymbol
-    val aboutType = TypeRepr.of[Llm.about].typeSymbol
+    val toolType = TypeRepr.of[ability].typeSymbol
+    val aboutType = TypeRepr.of[synesthesia.about].typeSymbol
 
     val methods = TypeRepr.of[tools].typeSymbol.declaredMethods.filter: method =>
       val all = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
       all.exists(_.tpe.typeSymbol == toolType)
 
-    if methods.isEmpty then halt(m"no @Llm.ability-annotated methods were found on the target")
+    if methods.isEmpty then halt(m"no @ability-annotated methods were found on the target")
 
     // The wire specifications: one `Llm.Tool` per method, its parameters' schemas summoned as
     // `Schematic over JsonSchema` instances.
@@ -63,7 +63,7 @@ object internal:
 
       val description: Expr[Text] =
         all.find(_.tpe.typeSymbol == aboutType).map: annotation =>
-          '{${annotation.asExprOf[Llm.about]}.text}
+          '{${annotation.asExprOf[synesthesia.about]}.text}
 
         . getOrElse('{t""})
 

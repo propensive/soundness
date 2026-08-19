@@ -2849,7 +2849,8 @@ object serpentine extends Library:
   object bench extends Benchmarks(core, galilei.core, quantitative.units)
 
 object sibylline extends Library:
-  object core extends Component(obligatory.json, telekinesis.jvm, aperture.core):
+  object core
+      extends Component(obligatory.json, telekinesis.jvm, aperture.core, synesthesia.content):
     override def scalaJs = false // transitively JVM-only (obligatory.json/telekinesis.jvm)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))

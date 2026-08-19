@@ -46,9 +46,9 @@ object Toolkit:
     def invoke(name: Text, arguments: Json): Json raises Llm.Error =
       abort(Llm.Error(Llm.Error.Reason.Invalid, t"no tool named $name is defined"))
 
-  // Derives a toolkit from the `@Llm.ability`-annotated methods of `target`: each method's
+  // Derives a toolkit from the `@ability`-annotated methods of `target`: each method's
   // parameters
-  // (which need `Schematic over JsonSchema` instances) become its JSON schema, its `@Llm.about`
+  // (which need `Schematic over JsonSchema` instances) become its JSON schema, its `@about`
   // annotation its description, and its body the implementation the tool loop dispatches to.
   // A method may take one contextual parameter block, summoned *here*, at the expansion site —
   // so a toolkit built where a capability is in scope captures it, and capture checking
