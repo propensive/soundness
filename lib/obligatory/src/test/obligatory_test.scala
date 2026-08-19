@@ -73,6 +73,30 @@ object Tests extends Suite(m"Obligatory Tests"):
         Chain(t"""one\r\ntwo\r\nthree\r\n""").iterator.frames[CrLf].to(List)
       . assert(_ == List("one", "two", "three"))
 
+      test(m"Unframe bytes by linefeed lines"):
+        Chain(t"one\ntwo\nth".in[Data], t"ree".in[Data])
+        . iterator
+        . frames[Linefeed]
+        . map(_.utf8)
+        . to(List)
+      . assert(_ == List("one", "two", "three"))
+
+      test(m"Unframe bytes by linefeed lines, without terminal fragment"):
+        Chain(t"one\ntwo\nthree\n".in[Data]).iterator.frames[Linefeed].map(_.utf8).to(List)
+      . assert(_ == List("one", "two", "three"))
+
+      test(m"Unframe bytes by linefeed lines, retaining empty lines"):
+        Chain(t"one\n\ntwo\n".in[Data]).iterator.frames[Linefeed].map(_.utf8).to(List)
+      . assert(_ == List("one", "", "two"))
+
+      test(m"Unframe bytes by linefeed splits multi-byte UTF-8 content correctly"):
+        Chain(t"""{"text":"café"}\n{"text":"naïve"}\n""".in[Data])
+        . iterator
+        . frames[Linefeed]
+        . map(_.utf8)
+        . to(List)
+      . assert(_ == List(t"""{"text":"café"}""", t"""{"text":"naïve"}"""))
+
       test(m"Length-prefixed chunks"):
         Chain(Data(0, 0, 0, 3, 50, 100, -100, 0, 0, 0, 1, -128, 0, 0, 0, 5, 5, 4, 3, 2, 1))
         . iterator

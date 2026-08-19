@@ -30,67 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package espionage
 
-import anticipation.*
-import hieroglyph.*
-import prepositional.*
-import rudiments.*
-import vacuous.*
-import zephyrine.*
+import soundness.*
 
-object Linefeed:
-  // See `CarriageReturn.framable`: explicit `new` (the Scala.js pipeline mis-infers the SAM
-  // lambda's `this`) plus a relabel of the local cursor's reachability of `input`.
-  given framable: (Text is Framable by Linefeed) = new Framable:
-    type Self = Text
-    type Operand = Linefeed
+import backstops.stackTraceBackstop
+import executives.completions
+import interpreters.posixInterpreter
+import probates.awaitProbate
+import errorDiagnostics.stackTracesDiagnostics
+import strategies.throwUnsafely
+import threading.virtualThreading
+import workingDirectories.defaultWorkingDirectory
 
-    def frames(input: Iterator[Text]^): Iterator[Text]^{input, this} =
-      val cursor = Cursor(input)
+// A minimal ACP client: spawns `claude-code-acp` (which must be on the path), opens a session in
+// the current working directory, sends the command-line arguments as one prompt, and prints the
+// agent's streamed answer, granting every permission it asks for. Run with
+// `mill espionage.demo.run -- Say hello`.
+object DemoAcpClient:
+  import Acp.*
 
-      val framed =
-        Framable.frames[Text]:
-          cursor.hold:
-            val start = cursor.mark
+  def main(args: Array[Text]): Unit = cli:
+    execute:
+      supervise:
+        Acp.connect(Acp.Agent(sh"claude-code-acp")):
+          updated:
+            update match
+              case AgentMessageChunk(TextContent(text, _)) => Out.print(text)
+              case other                                   => ()
 
-            if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand])
-            then cursor.grab(start, cursor.mark).also(cursor.next())
-            else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
+          permission:
+            options.filter(_.kind == PermissionOptionKind.AllowOnce).prim
+            . lay(Cancelled): option => Selected(option.optionId)
 
-      framed.asInstanceOf[Iterator[Text]^{input, this}]
+        . apply:
+            val session = connection.newSession(summon[WorkingDirectory].directory())
+            val text = arguments.map(_()).join(t" ")
+            val stop = connection.prompt(session.sessionId, text)
+            Out.println(t"")
+            Out.println(t"The turn ended: $stop")
 
-  // Byte-level counterpart of `framable`, for protocols framed as newline-delimited JSON over a
-  // binary stream (such as the Agent Client Protocol). Splitting happens on the raw `Lf` byte
-  // before any text decoding, so multi-byte UTF-8 content passes through unharmed; a final
-  // unterminated fragment is yielded as-is. The explicit `new` and the relabelling cast follow
-  // `CarriageReturn.framable`.
-  //
-  // The terminator is consumed with `advance()`, never `next()`: this framer reads *live*
-  // streams (a subprocess's output), and `next()` refills eagerly, so a frame ending flush with
-  // its chunk would block awaiting bytes beyond the terminator instead of being delivered. The
-  // deferred refill is paid at the head of the following frame — the one place a block is
-  // correct. (See the boundary-safety note on `Cursor.advance`.)
-  given framableData: (Data is Framable by Linefeed) = new Framable:
-    type Self = Data
-    type Operand = Linefeed
-
-    def frames(input: Iterator[Data]^): Iterator[Data]^{input, this} =
-      val cursor = Cursor(input)
-
-      val framed =
-        Framable.frames[Data]:
-          cursor.hold:
-            val start = cursor.mark
-
-            // As in `ContentLength`: the inline `grab` expansion re-infers a fresh `any.rd` on
-            // the frozen chunk; the cast reasserts the frozen form, which `grab` already
-            // guarantees.
-            if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand])
-            then cursor.grab(start, cursor.mark).asInstanceOf[Data].also(cursor.advance())
-            else if cursor.mark == start then Unset
-            else cursor.grab(start, cursor.mark).asInstanceOf[Data]
-
-      framed.asInstanceOf[Iterator[Data]^{input, this}]
-
-sealed trait Linefeed
+      Exit.Ok
