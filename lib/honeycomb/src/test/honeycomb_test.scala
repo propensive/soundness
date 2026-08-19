@@ -1062,7 +1062,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
               sample.read[Html of Flow]
               true
             catch case _: Throwable => false
-        . assert(_.forall(identity))
+        . assert(_.all(identity))
 
         test(m"permissive given wins when Tactic[Parse.Error] is also in scope"):
           // `throwUnsafely` (file-level import) provides Tactic[Parse.Error] via

@@ -370,7 +370,7 @@ object Conformance:
       if (n & 1) == 0 then
         val pairs = (0 until n/2).map: i =>
           (arr(i*2).asInstanceOf[String], arr(i*2 + 1))
-        pairs.sortBy(_._1)
+        pairs.sort(_._1)
             .map((k, v) => "\"" + k + "\":" + renderAny(v))
             .mkString("{", ",", "}")
       else

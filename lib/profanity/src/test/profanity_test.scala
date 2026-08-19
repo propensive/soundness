@@ -526,7 +526,7 @@ object Tests extends Suite(m"Profanity Tests"):
         test(m"SIGSYS is 31") (Interrupt.Sys.id)   .assert(_ == 31)
 
         test(m"every signal id is positive"):
-          Array.unsafeFrozen(Interrupt.values).toList.map(_.id).forall(_ > 0)
+          Array.unsafeFrozen(Interrupt.values).toList.map(_.id).all(_ > 0)
         . assert(identity(_))
 
         test(m"signal ids are distinct"):

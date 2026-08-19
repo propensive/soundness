@@ -96,7 +96,7 @@ address:
 
       test(m"Untracked roots leave the focus position Unset"):
         val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).forall((_, line, _) => line == Unset)
+        captureFoci(yaml)(_.as[FPerson]).all((_, line, _) => line == Unset)
       . assert(identity)
 
     suite(m"Position-aware focus (tracked Yaml)"):
