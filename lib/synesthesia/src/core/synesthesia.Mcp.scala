@@ -63,24 +63,18 @@ object Mcp:
 
   type Cursor = Text
 
+  // The content-block vocabulary (`ContentBlock` and its members, resource contents, `Icon`,
+  // `Annotations`, `Role`) lives in the `content` component's `object Content`, shared with the
+  // Agent Client Protocol; the export preserves the `Mcp.TextContent` spelling for MCP code.
+  export Content.*
+
   // Anchor givens for the MCP records derived in many places: those shared across protocol types
-  // (Icon, Annotations) and the variants the hand-written sum codecs dispatch to via `.json`/`.as`
-  // (TextContent, …). Deriving each once here lets every consumer reference it instead of
-  // re-inline-expanding the whole derivation — cutting a clean `synesthesia.core` compile by ~25%.
-  // Only genuinely multiply-shared records are anchored: anchoring rarely-shared types regresses,
-  // since each anchor still costs one derivation and enlarges the implicit-search space everywhere.
-  object Icon:
-    given (Tactic[Json.Error]) => Icon is Json.Decodable =
-      Json.DecodableDerivation.derived
-
-    given Icon is Json.Encodable = Json.EncodableDerivation.derived
-
-  object Annotations:
-    given (Tactic[Json.Error]) => Annotations is Json.Decodable =
-      Json.DecodableDerivation.derived
-
-    given Annotations is Json.Encodable = Json.EncodableDerivation.derived
-
+  // and the variants the hand-written sum codecs dispatch to via `.json`/`.as`. Deriving each
+  // once here lets every consumer reference it instead of re-inline-expanding the whole
+  // derivation — together with the content-block anchors (which moved to `object Content` with
+  // their types) they cut a clean `synesthesia.core` compile by ~25%. Only genuinely
+  // multiply-shared records are anchored: anchoring rarely-shared types regresses, since each
+  // anchor still costs one derivation and enlarges the implicit-search space everywhere.
   object Implementation:
     given (Tactic[Json.Error]) => Implementation is Json.Decodable =
       Json.DecodableDerivation.derived
@@ -92,49 +86,6 @@ object Mcp:
       Json.DecodableDerivation.derived
 
     given BaseMetadata is Json.Encodable = Json.EncodableDerivation.derived
-
-  object TextContent:
-    given (Tactic[Json.Error]) => TextContent is Json.Decodable =
-      Json.DecodableDerivation.derived
-
-    given TextContent is Json.Encodable = Json.EncodableDerivation.derived
-
-  object ImageContent:
-    given (Tactic[Json.Error]) => ImageContent is Json.Decodable =
-      Json.DecodableDerivation.derived
-
-    given ImageContent is Json.Encodable = Json.EncodableDerivation.derived
-
-  object AudioContent:
-    given (Tactic[Json.Error]) => AudioContent is Json.Decodable =
-      Json.DecodableDerivation.derived
-
-    given AudioContent is Json.Encodable = Json.EncodableDerivation.derived
-
-  object ResourceLink:
-    given (Tactic[Json.Error]) => ResourceLink is Json.Decodable =
-      Json.DecodableDerivation.derived
-
-    given ResourceLink is Json.Encodable = Json.EncodableDerivation.derived
-
-  object EmbeddedResource:
-    given (Tactic[Json.Error]) => EmbeddedResource is Json.Decodable =
-      Json.DecodableDerivation.derived
-
-    given EmbeddedResource is Json.Encodable = Json.EncodableDerivation.derived
-
-  object TextResourceContents:
-    given (Tactic[Json.Error]) => TextResourceContents is Json.Decodable =
-      Json.DecodableDerivation.derived
-
-    given TextResourceContents is Json.Encodable = Json.EncodableDerivation.derived
-
-  object BlobResourceContents:
-    given (Tactic[Json.Error]) => BlobResourceContents is Json.Decodable =
-      Json.DecodableDerivation.derived
-
-    given BlobResourceContents is Json.Encodable = Json.EncodableDerivation.derived
-
 
   def send[interface <: Mcp.Server](id: Text, server: interface, mcpInterface: Interface)
     ( dispatch: Json => Optional[Json] )
@@ -238,12 +189,6 @@ object Mcp:
   case class TaskMetadata(ttl: Optional[Int] = Unset)
   case class RelatedTaskMetadata(taskId: Text)
 
-  case class Icon
-    ( src:      Text,
-      mimeType: Optional[Text]       = Unset,
-      sizes:    Optional[List[Text]] = Unset,
-      theme:    Optional[Text]       = Unset )
-
   case class BaseMetadata(name: Text, title: Optional[Text] = Unset)
 
   case class Implementation
@@ -311,17 +256,6 @@ object Mcp:
       elicitation:  Optional[Elicitation]     = Unset,
       tasks:        Optional[Tasks]           = Unset )
 
-  object Contents:
-    given encodable: Contents is Json.Encodable = Json.Encodable(() => Morphology.Any):
-      _.contents match
-        case text: TextResourceContents => text.in[Json]
-        case blob: BlobResourceContents => blob.in[Json]
-
-    given decodable: Tactic[Json.Error] => Contents is Json.Decodable =
-      Json.Decodable(Morphology.Any): json =>
-        Contents(safely(json.as[TextResourceContents]).or(json.as[BlobResourceContents]))
-
-  case class Contents(contents: TextResourceContents | BlobResourceContents)
   case class Context(arguments: Optional[Map[Text, Text]] = Unset)
   case class ListResources(nextCursor: Optional[Cursor] = Unset, resources: List[Resource] = Nil)
 
@@ -351,41 +285,12 @@ object Mcp:
       annotations: Annotations          = Annotations(),
       _meta:       Optional[Json]       = Unset )
 
-  case class ResourceContents
-    ( uri: Text, mimeType: Optional[Text] = Unset, _meta: Optional[Json] = Unset )
-
-  case class TextResourceContents
-    ( uri: Text, mimeType: Optional[Text] = Unset, text: Text, _meta: Optional[Json] = Unset )
-
-  case class BlobResourceContents
-    ( uri: Text, mimeType: Optional[Text] = Unset, blob: Text, _meta: Optional[Json] = Unset )
-
   case class ListPrompts(nextCursor: Optional[Cursor] = Unset, prompts: List[Prompt] = Nil)
-
-  case class Annotations
-    ( audience:     Optional[List[Role]] = Unset,
-      priority:     Optional[Double]     = Unset,
-      lastModified: Optional[Text]       = Unset )
 
   case class Complete(completion: Completion)
 
   case class Completion
     ( values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset )
-
-  object Role:
-    given encodable: Role is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case Role.User      => t"user".in[Json]
-      case Role.Assistant => t"assistant".in[Json]
-
-    given decodable: Tactic[Json.Error] => Role is Json.Decodable =
-      Json.Decodable(Morphology.Str): json =>
-        json.as[Text] match
-          case t"user"      => Role.User
-          case t"assistant" => Role.Assistant
-          case _            => abort(Json.Error(Json.Error.Reason.OutOfRange))
-
-  enum Role:
-    case User, Assistant
 
   object TaskSupport:
     given encodable: TaskSupport is Json.Encodable = Json.Encodable(() => Morphology.Str):
@@ -537,7 +442,16 @@ object Mcp:
   case class SamplingMessage
     ( role: Role, content: List[SamplingMessageContentBlock], _meta: Optional[Json] = Unset )
 
-  object SamplingMessageContentBlock:
+  // Previously a sealed marker trait, but three of its members now live in `object Content`
+  // (shared with ACP), and a class cannot extend a trait defined in a component it precedes; a
+  // union type expresses the same closed set. Its codecs cannot live in a companion (an alias
+  // has none, and implicit scope dealiases past it), so they anchor in `object ToolUseContent`:
+  // the implicit scope of a union includes the companions of its members, and `ToolUseContent`
+  // is the first member owned by this component.
+  type SamplingMessageContentBlock =
+    TextContent | ImageContent | AudioContent | ToolUseContent | ToolResultContent
+
+  object ToolUseContent:
     import dynamicJsonAccess.enabled
 
     private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock](t"type")
@@ -559,8 +473,6 @@ object Mcp:
           case "tool_result" => json.as[ToolResultContent]
           case _             => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
-  sealed trait SamplingMessageContentBlock
-
   case class ModelPreferences
     ( hints:                Optional[List[ModelHint]] = Unset,
       costPriority:         Optional[Double]          = Unset,
@@ -569,66 +481,13 @@ object Mcp:
 
   case class ModelHint(name: Optional[Text] = Unset)
 
-  object ContentBlock:
-    import dynamicJsonAccess.enabled
-
-    private val typeTag = Json.discriminatedUnion[ContentBlock](t"type")
-
-    given encodable: ContentBlock is Json.Encodable = Json.Encodable(() => Morphology.Any):
-      case content: TextContent      => typeTag.rewrite(t"text",          content.in[Json])
-      case content: ImageContent     => typeTag.rewrite(t"image",         content.in[Json])
-      case content: AudioContent     => typeTag.rewrite(t"audio",         content.in[Json])
-      case content: ResourceLink     => typeTag.rewrite(t"resource_link", content.in[Json])
-      case content: EmbeddedResource => typeTag.rewrite(t"resource", content.in[Json])
-
-    given decodable: Tactic[Json.Error] => ContentBlock is Json.Decodable =
-      Json.Decodable(Morphology.Any): json =>
-        json.`type`.as[Text] match
-          case "text"          => json.as[TextContent]
-          case "image"         => json.as[ImageContent]
-          case "audio"         => json.as[AudioContent]
-          case "resource_link" => json.as[ResourceLink]
-          case "resource"      => json.as[EmbeddedResource]
-          case _               => abort(Json.Error(Json.Error.Reason.OutOfRange))
-
-  sealed trait ContentBlock
-
-  case class TextContent(text: Text, annotations: Optional[Annotations] = Unset)
-  extends ContentBlock, SamplingMessageContentBlock
-
-  case class ImageContent(data: Text, mimeType: Text, annotations: Optional[Annotations] = Unset)
-  extends ContentBlock, SamplingMessageContentBlock
-
-  case class AudioContent(data: Text, mimeType: Text, annotations: Optional[Annotations] = Unset)
-  extends ContentBlock, SamplingMessageContentBlock
-
-  case class ResourceLink
-    ( name:        Text,
-      uri:         Text,
-      title:       Optional[Text]       = Unset,
-      description: Optional[Text]       = Unset,
-      icons:       Optional[List[Icon]] = Unset,
-      mimeType:    Optional[Text]       = Unset,
-      annotations: Annotations          = Annotations(),
-      size:        Optional[Long]       = Unset,
-      _meta:       Optional[Json]       = Unset )
-  extends ContentBlock
-
-  case class EmbeddedResource
-    ( resource:    Contents,
-      annotations: Optional[Annotations] = Unset,
-      _meta:       Optional[Json]        = Unset )
-  extends ContentBlock
-
   case class ToolUseContent(id: Text, name: Text, input: Json)
-  extends SamplingMessageContentBlock
 
   case class ToolResultContent
     ( toolUseId:         Text,
       content:           List[ContentBlock] = Nil,
       structuredContent: Optional[Json]     = Unset,
       isError:           Optional[Boolean]  = Unset )
-  extends SamplingMessageContentBlock
 
   case class CreateMessage
     ( role:       Role,

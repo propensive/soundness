@@ -848,7 +848,8 @@ object soundness extends Toolchain:
     caduceus.resend,
     orthodoxy.core,
     jacinta.http,
-    stratiform.http, stratiform.optics, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
+    stratiform.http, stratiform.optics, obligatory.core, obligatory.json, synesthesia.content,
+    synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
     xenophile.wit, xenophile.cffi, xenophile.scalanative, xenophile.kotlin, telekinesis.core,
@@ -2945,7 +2946,12 @@ object symbolism extends Library:
       settings.sep(super.scalacOptions())
 
 object synesthesia extends Library:
-  object core extends Component(obligatory.json, scintillate.server, revolution.core):
+  // The MCP/ACP-shared content-block vocabulary, deliberately free of `core`'s HTTP-server
+  // closure so that a client which spawns agent subprocesses can depend on it.
+  object content extends Component(jacinta.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  object core extends Component(content, obligatory.json, scintillate.server, revolution.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"), "48")
