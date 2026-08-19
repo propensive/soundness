@@ -190,7 +190,7 @@ object Syntax:
 
       val uppered = captureBound(upper).lay(Nil)(bound(" <: ", _))
 
-      Compound(Capturing(sub, Unset) :: (lowered ::: uppered))
+      Compound(Capturing(sub, Unset) :: (lowered + uppered))
 
 
   def typeBounds(using Quotes, Bindings)

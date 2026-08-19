@@ -73,7 +73,7 @@ object Pathname:
               val directory = safely(path.entry() == galilei.Directory).or(false)
               suggest(if directory then path.name+t"/" else path.name)
 
-        listing ::: prior
+        listing + prior
 
       else if argument() == t".." then argument.suggest:
         val listing = List.of:
@@ -82,7 +82,7 @@ object Pathname:
               val directory = safely(path.entry() == galilei.Directory).or(false)
               suggest(if directory then path.name+t"/" else path.name)
 
-        listing ::: prior
+        listing + prior
 
       else if argument().nil then argument.suggest:
         val children0 = workingDirectory.children.stdlib.toList
@@ -95,7 +95,7 @@ object Pathname:
           val directory = safely(path.entry() == galilei.Directory).or(false)
           suggest(if directory then path.name+t"/" else path.name)
 
-        listing ::: prior
+        listing + prior
 
       else
         val absolute = argument().starts(t"/")
@@ -122,7 +122,7 @@ object Pathname:
             suggest:
               if absolute then path.encode+slash else workingDirectory.toward(path).encode+slash
 
-          listing ::: prior
+          listing + prior
 
     scala.caps.unsafe.unsafeAssumeSeparate:
       safely(workingDirectory.resolve(argument())).option

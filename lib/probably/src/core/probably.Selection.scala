@@ -40,6 +40,7 @@ import distillate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 object Selection:
@@ -81,7 +82,7 @@ object Selection:
           case t"profile" => List(Entry.Kind.Profile)
           case _          => Nil
 
-        selection.copy(kinds = selection.kinds ::: kinds)
+        selection.copy(kinds = selection.kinds + kinds)
       else constraint(argument).lay(selection.copy(terms = selection.terms :+ term(argument))):
         constraint => selection.copy(constraints = selection.constraints :+ constraint)
 

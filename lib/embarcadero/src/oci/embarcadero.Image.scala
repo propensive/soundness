@@ -55,6 +55,7 @@ import turbulence.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
+import symbolism.*
 
 object Image:
   // Anchored here so `data.open[Image]()` resolves with no import. Opening a filesystem
@@ -337,8 +338,8 @@ case class Image
     val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
 
     List((configDescriptor.digest, configBytes))
-    ::: layerBlobs
-    ::: List((manifestDescriptor.digest, manifestBytes))
+    + layerBlobs
+    + List((manifestDescriptor.digest, manifestBytes))
 
   // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
   // an `oci-layout` marker, the `index.json`, and every blob under
@@ -361,4 +362,4 @@ case class Image
       val hex = digest.s.stripPrefix("sha256:").tt
       entry(t"blobs/sha256/$hex", content)
 
-    Tarfile(List(layoutEntry, indexEntry) ::: blobEntries)
+    Tarfile(List(layoutEntry, indexEntry) + blobEntries)

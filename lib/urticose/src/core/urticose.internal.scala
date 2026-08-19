@@ -54,6 +54,7 @@ import vacuous.*
 
 import IpAddress.Error.Reason, Reason.*
 import denominative.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 object internal:
@@ -337,7 +338,7 @@ object internal:
       def hex(values: List[Int]): Text =
         values.map(_.hex).join(t":")
 
-      val groups = unpack(ip.highBits) ::: unpack(ip.lowBits)
+      val groups = unpack(ip.highBits) + unpack(ip.lowBits)
       val (middleIndex, middleLength) = groups.toSeq.longestTrain(_ == 0)
 
       if middleLength < 2 then hex(groups)
@@ -371,7 +372,7 @@ object internal:
           then
             raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.size + rightGroups.size)))
 
-          leftGroups ::: List.fill(8 - leftGroups.size - rightGroups.size)(t"0") :::
+          leftGroups + List.fill(8 - leftGroups.size - rightGroups.size)(t"0") +
             rightGroups
 
         case List(whole) =>

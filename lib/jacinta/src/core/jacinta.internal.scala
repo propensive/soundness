@@ -57,6 +57,7 @@ import rudiments.*
 import vacuous.*
 import wisteria.{Discriminable, Variant}
 import zephyrine.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 object internal:
@@ -1300,7 +1301,10 @@ object internal:
         Apply(applied, slots.stdlib.map { slot => Ref(slot) })
 
       Block
-        ( ('{ $reader.openObject() }.asTerm :: slotDefs ::: seenDefs ::: loop ::: absents)
+        // The element types differ (`ValDef` and `Statement`), and `Concatenable` is invariant
+        // where `:::` widened, so the concatenation happens on the stdlib side.
+        ( ('{ $reader.openObject() }.asTerm
+            :: List.of(slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib))
           . stdlib,
           construct )
       . asExprOf[value]

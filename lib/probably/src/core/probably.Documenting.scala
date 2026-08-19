@@ -41,6 +41,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 import denominative.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 // The single structural pass over a report: builds the renderer-agnostic `Doc.Document`
@@ -164,7 +165,7 @@ private[probably] object Documenting:
         if headline.isEmpty && detail.isEmpty then Nil
         else List(Group(line.suite, kind, headline, detail))
 
-    here ::: nested
+    here + nested
 
   // A kind's blocks, separated into those always rendered and those held back for verbose
   // output. Only stress groups currently distinguish the two.
@@ -222,7 +223,7 @@ private[probably] object Documenting:
         Column(t"μ", numeric = true),
         Column(t"σ", numeric = true),
         Column(t"Confidence", numeric = true),
-        Column(t"Throughput", numeric = true) ) ::: sizes
+        Column(t"Throughput", numeric = true) ) + sizes
 
   private def rate(run: Run): Datum =
     val value = metric(run, Metric.Throughput).or(0.0).toLong
@@ -236,7 +237,7 @@ private[probably] object Documenting:
         Datum.Time(metric(run, Metric.Mean).or(0.0).toLong),
         Datum.Time(metric(run, Metric.Deviation).or(0.0).toLong),
         confidence(run),
-        rate(run) ) ::: sizes
+        rate(run) ) + sizes
 
   private def benchBlocks(entries: List[Entry]): List[Block] =
     val (plain, axial) = entries.partition(_.axes.isEmpty)
@@ -254,16 +255,16 @@ private[probably] object Documenting:
             entry.cells.stdlib.take(1).flatMap: (_, cell) =>
               run(cell).option.map: run0 =>
                 val lead = List(Datum.Hash(entry.id.id), Datum.Title(entry.id.name, 0))
-                (metric(run0, Metric.Throughput).or(0.0), lead ::: benchMetricCells(run0, sized))
+                (metric(run0, Metric.Throughput).or(0.0), lead + benchMetricCells(run0, sized))
 
           . sortBy(-_(0)).map(x => (x(1)): List[Datum])
 
         List(Block.Table
           ( Unset,
-            List(Column(t"Hash"), Column(t"Test")) ::: benchMetricColumns(sized),
+            List(Column(t"Hash"), Column(t"Test")) + benchMetricColumns(sized),
             rows ))
 
-    table ::: axial.flatMap(axialBench(_, sized))
+    table + axial.flatMap(axialBench(_, sized))
 
   // The baseline-relative datum of one run against the anchor's run, following the
   // anchor's `Baseline` settings: the compared statistic (min/mean/max of the timing
@@ -315,11 +316,11 @@ private[probably] object Documenting:
               val comparison = anchored.lay(Nil): (anchor, anchorRun) =>
                 List(relative(anchor, anchorRun, run0))
 
-              (Datum.Str(value.text) :: benchMetricCells(run0, sized) ::: comparison): List[Datum]
+              (Datum.Str(value.text) :: benchMetricCells(run0, sized) + comparison): List[Datum]
 
       List(Block.Table
         ( entry.id,
-          Column(axis.label) :: benchMetricColumns(sized) ::: comparisonColumns,
+          Column(axis.label) :: benchMetricColumns(sized) + comparisonColumns,
           rows ))
 
     case first :: second :: Nil =>
@@ -505,10 +506,10 @@ private[probably] object Documenting:
               Column(t"Test"),
               Column(t"N", numeric = true),
               Column(t"Throughput", numeric = true) )
-          ::: (if ranked then List(Column(t"×best", numeric = true)) else Nil)
-          ::: List(Column(t"Alloc·op¯¹", numeric = true))
-          ::: (if latencies then List(Column(t"p99", numeric = true)) else Nil)
-          ::: sloColumns
+          + (if ranked then List(Column(t"×best", numeric = true)) else Nil)
+          + List(Column(t"Alloc·op¯¹", numeric = true))
+          + (if latencies then List(Column(t"p99", numeric = true)) else Nil)
+          + sloColumns
 
         val summaryRows = List.of:
           peaks.stdlib.sortBy { point => -throughput(point(2)) }.map: point =>
@@ -525,7 +526,7 @@ private[probably] object Documenting:
             val alloc = List(Datum.Memory(metric(run0, Metric.Allocation).or(0.0).toLong))
             val latency = if latencies then List(optionalTime(run0, Metric.P99)) else Nil
 
-            (lead ::: ratio ::: alloc ::: latency ::: sloCells(run0)): List[Datum]
+            (lead + ratio + alloc + latency + sloCells(run0)): List[Datum]
 
         List(Block.Table(Unset, summaryColumns, summaryRows))
 
@@ -554,7 +555,7 @@ private[probably] object Documenting:
           Column(t"GC n", numeric = true),
           Column(t"GC t", numeric = true) )
 
-    val columns = leadColumns ::: latencyColumns ::: sloColumns ::: tailColumns
+    val columns = leadColumns + latencyColumns + sloColumns + tailColumns
 
     val rows = List.of:
       curves.stdlib.flatMap: (entry, curve) =>
@@ -584,9 +585,9 @@ private[probably] object Documenting:
                   Datum.Num(metric(run0, Metric.GcCount).or(0.0).toLong),
                   Datum.Time(metric(run0, Metric.GcTime).or(0.0).toLong) )
 
-            lead ::: latencyCells ::: sloCells(run0) ::: tail
+            lead + latencyCells + sloCells(run0) + tail
 
-    (sparkline ::: summary, List(Block.Table(Unset, columns, rows)))
+    (sparkline + summary, List(Block.Table(Unset, columns, rows)))
 
   private def histogram(entry: Entry): Block =
     val hotspots: Option[Hotspots] =

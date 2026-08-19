@@ -137,7 +137,7 @@ object internal:
           val (groups, nextIndex) = sequence(group, index, subListRef)
           val addition = if i % 2 == 0 then groups else List(toMessage(groups))
 
-          (accumulator ::: addition, nextIndex)
+          (List.of(accumulator.stdlib ::: addition.stdlib), nextIndex)
 
       toMessage(items)
 

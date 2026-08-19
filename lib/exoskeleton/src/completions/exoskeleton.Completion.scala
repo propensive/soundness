@@ -204,7 +204,7 @@ extends Cli:
               if !incomplete then List()
               else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
-            List(mainLine) ::: duplicateLine
+            List(mainLine) + duplicateLine
 
         List.of(title.stdlib ++ itemLines.stdlib).map(_.arguments.join(t"\u0000"))
 

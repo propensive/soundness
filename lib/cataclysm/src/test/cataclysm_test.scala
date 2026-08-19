@@ -35,7 +35,7 @@ package cataclysm
 import soundness.*
 
 // Partial-op residue (the drain's debt register): `head`/`length` on possibly-empty lists.
-import proscenium.compat.{head, headOption, `:::`}
+import proscenium.compat.{head, headOption}
 
 
 import strategies.throwUnsafely
@@ -413,10 +413,15 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == 663)
 
     suite(m"Value tokenizer"):
-      val rgbMid: List[ValueToken] = List(num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma, ws, num(3))
-      val rgbTokens: List[ValueToken] = ValueToken.Function(t"rgb") :: rgbMid ::: List(ValueToken.Close)
-      val calcMid: List[ValueToken] = List(dim(1, t"px"), ws, ValueToken.Delim('+'), ws, dim(2, t"px"))
-      val calcTokens: List[ValueToken] = ValueToken.Function(t"calc") :: calcMid ::: List(ValueToken.Close)
+      // Written out rather than concatenated: this file has two `List` aliases in scope
+      // (`soundness.*` and `proscenium.compat.*`), and a concatenation mixes them.
+      val rgbTokens: List[ValueToken] =
+        List( ValueToken.Function(t"rgb"), num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma,
+              ws, num(3), ValueToken.Close )
+
+      val calcTokens: List[ValueToken] =
+        List( ValueToken.Function(t"calc"), dim(1, t"px"), ws, ValueToken.Delim('+'), ws,
+              dim(2, t"px"), ValueToken.Close )
 
       test(m"an identifier"):
         vt(t"auto")

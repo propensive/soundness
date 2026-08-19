@@ -49,6 +49,7 @@ import prepositional.*
 import denominative.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 
 // Compile-time machinery for the `tel"…"` interpolator and extractor.
 // Mirrors jacinta.internal in shape: the static parts of a StringContext

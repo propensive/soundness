@@ -48,6 +48,7 @@ import rudiments.*
 import turbulence.*
 import typonym.*
 import vacuous.*
+import symbolism.*
 
 import charDecoders.utf8Decoder
 import classloaders.threadContextClassloader
@@ -686,7 +687,7 @@ class Whatwg() extends Dom:
     . map(_.cut(t"\t")).collect:
         case List(key, value) => (key, value)
 
-    Dictionary((html4 ::: extra).stdlib*)
+    Dictionary((html4 + extra).stdlib*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =

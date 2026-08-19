@@ -44,6 +44,7 @@ import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 
 // The macro engine behind `Facade`: resolves member accesses against `KotlinDialect`'s
 // metadata, and materializes each access immediately as a direct JVM call on the unwrapped

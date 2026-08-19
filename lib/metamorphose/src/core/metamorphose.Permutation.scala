@@ -43,6 +43,7 @@ import denominative.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 object Permutation:
@@ -136,7 +137,7 @@ case class Permutation(factoradic: Factoradic):
 
 
     val prefix = sequence.size - lehmer.size
-    sequence.take(prefix) ::: recur(lehmer, Nil, sequence.drop(prefix), 0, Nil)
+    sequence.take(prefix) + recur(lehmer, Nil, sequence.drop(prefix), 0, Nil)
 
   def inverse: Permutation = if lehmer.nil then this else
     val length = lehmer.size

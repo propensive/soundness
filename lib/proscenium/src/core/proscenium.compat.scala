@@ -202,8 +202,6 @@ extension [element](list: List[element])
   inline def updated(index: Int, element2: element): List[element] =
     List.of(list.stdlib.updated(index, element2))
 
-  infix def ::: [element2 >: element](suffix: List[element2]): List[element2] =
-    List.of(list.stdlib ::: suffix.stdlib)
 
 extension [element](list: List[element])
 
@@ -341,8 +339,6 @@ extension [element](sequence: Sequence[element])
   inline def slice(from: Int, until: Int): Sequence[element] =
     Sequence.of(sequence.stdlib.slice(from, until))
 
-  infix def ::: [element2 >: element](suffix: Sequence[element2]): Sequence[element2] =
-    Sequence.of(sequence.stdlib ++ suffix.stdlib)
 
 // MIGRATION SHIMS for the frozen array, `Array[element]^{}`, following the same drain
 // loop as the other blessed types -- anchored at `^{caps.any.rd}` receivers so frozen,

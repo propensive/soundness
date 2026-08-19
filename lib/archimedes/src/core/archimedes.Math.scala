@@ -53,6 +53,7 @@ import turbulence.*
 import vacuous.*
 import contextual.*
 import xylophone.*
+import symbolism.*
 import zephyrine.Parse
 
 import Mathml.*
@@ -209,7 +210,7 @@ extends Documentary:
     val displayPairs: List[(Text, Text)] = display.lay(Nil): value =>
       List(t"display" -> value.encode)
 
-    (t"xmlns" -> mathmlNamespace) :: displayPairs ::: attributes
+    (t"xmlns" -> mathmlNamespace) :: displayPairs + attributes
 
   def xml: Xml =
     val children: Array[Node]^{} = contents.stdlib.map(_.xml).nodes

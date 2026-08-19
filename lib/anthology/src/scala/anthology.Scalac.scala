@@ -61,6 +61,7 @@ import rudiments.*
 import scala.caps
 import serpentine.*
 import spectacular.*
+import symbolism.*
 
 object Scalac:
   type Versions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7 | 3.8 | 3.9
@@ -213,9 +214,9 @@ object Scalac:
 
     def session[result](target: Self)(lambda: (session: Result) ?=> result): result =
       val arguments: List[Text] =
-        emission.flags :::
-          List(t"-classpath", target.classpath()) :::
-          target.scalac.commandLineArguments :::
+        emission.flags +
+          List(t"-classpath", target.classpath()) +
+          target.scalac.commandLineArguments +
           List(t"")
 
       // Nothing OS-level needs tearing down when the scope ends: the warm context is only
@@ -245,9 +246,9 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
     val reporter = processReporter(scalacProcess)
 
     val arguments: List[Text] =
-      summon[Universe.Emission[universe]].flags :::
-        List(t"-d", out.generic, t"-classpath", classpath()) :::
-        commandLineArguments :::
+      summon[Universe.Emission[universe]].flags +
+        List(t"-d", out.generic, t"-classpath", classpath()) +
+        commandLineArguments +
         List(t"")
 
     val driver = ScalacDriver()
