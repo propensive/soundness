@@ -117,6 +117,73 @@ object Cell:
     val bottom = denominator.hcenter(width)
     Cell((top.lines :+ repeat(Bar, width)) ::: bottom.lines, width, top.height)
 
+  // Unicode already provides ready-made superscript and subscript glyphs for the
+  // digits, the sign and bracket operators, and much (but not all) of the Latin
+  // alphabet. A script written entirely in characters these tables cover needs no
+  // extra rows: it can be set on the same line as its base, so `x^2` draws as `x²`
+  // instead of stacking `2` diagonally above the `x`. Anything the tables cannot
+  // spell — a fraction, a nested script, a Greek letter, a `q` — falls back to the
+  // diagonal layout below. The lowercase superscript alphabet has no `q`, and the
+  // subscript alphabet is sparser still, so both tables are enumerated explicitly
+  // rather than derived by arithmetic on codepoints.
+
+  private val superscripts: Map[Char, Char] =
+    Map('0' -> '⁰', '1' -> '¹', '2' -> '²', '3' -> '³', '4' -> '⁴',
+        '5' -> '⁵', '6' -> '⁶', '7' -> '⁷', '8' -> '⁸', '9' -> '⁹',
+        '+' -> '⁺', '-' -> '⁻', '−' -> '⁻', '=' -> '⁼',
+        '(' -> '⁽', ')' -> '⁾',
+        'a' -> 'ᵃ', 'b' -> 'ᵇ', 'c' -> 'ᶜ', 'd' -> 'ᵈ', 'e' -> 'ᵉ',
+        'f' -> 'ᶠ', 'g' -> 'ᵍ', 'h' -> 'ʰ', 'i' -> 'ⁱ', 'j' -> 'ʲ',
+        'k' -> 'ᵏ', 'l' -> 'ˡ', 'm' -> 'ᵐ', 'n' -> 'ⁿ', 'o' -> 'ᵒ',
+        'p' -> 'ᵖ', 'r' -> 'ʳ', 's' -> 'ˢ', 't' -> 'ᵗ', 'u' -> 'ᵘ',
+        'v' -> 'ᵛ', 'w' -> 'ʷ', 'x' -> 'ˣ', 'y' -> 'ʸ', 'z' -> 'ᶻ')
+
+  private val subscripts: Map[Char, Char] =
+    Map('0' -> '₀', '1' -> '₁', '2' -> '₂', '3' -> '₃', '4' -> '₄',
+        '5' -> '₅', '6' -> '₆', '7' -> '₇', '8' -> '₈', '9' -> '₉',
+        '+' -> '₊', '-' -> '₋', '−' -> '₋', '=' -> '₌',
+        '(' -> '₍', ')' -> '₎',
+        'a' -> 'ₐ', 'e' -> 'ₑ', 'h' -> 'ₕ', 'i' -> 'ᵢ', 'j' -> 'ⱼ',
+        'k' -> 'ₖ', 'l' -> 'ₗ', 'm' -> 'ₘ', 'n' -> 'ₙ', 'o' -> 'ₒ',
+        'p' -> 'ₚ', 'r' -> 'ᵣ', 's' -> 'ₛ', 't' -> 'ₜ', 'u' -> 'ᵤ',
+        'v' -> 'ᵥ', 'x' -> 'ₓ')
+
+  // The character data a script node stands for, provided it is nothing but
+  // character data: a token element's own text, or the concatenation of a purely
+  // presentational wrapper's children. Note that operators contribute their raw
+  // text, without the spacing `operator` would add — `−x` is set as `⁻ˣ`, not
+  // as ` − x`. Any node with real structure (a fraction, a radical, a table)
+  // yields `Unset`, which is what rules out same-line rendering.
+  private def scriptText(node: Mathml): Optional[Text] = node match
+    case Mrow(contents, _)    => scriptTexts(contents)
+    case Mstyle(contents, _)  => scriptTexts(contents)
+    case Mpadded(contents, _) => scriptTexts(contents)
+    case node                 => node.text
+
+  private def scriptTexts(nodes: List[Mathml]): Optional[Text] =
+    // `Optional` is a union, so a `let` inside a `let` flattens: one absent child
+    // makes the whole concatenation absent.
+    nodes.stdlib.foldLeft(t"": Optional[Text]): (text, node) =>
+      text.let: prefix =>
+        scriptText(node).let(part => t"$prefix$part")
+
+  // The script rewritten in `glyphs`, or `Unset` if any character has no glyph.
+  private def transcribe(text: Text, glyphs: Map[Char, Char]): Optional[Text] =
+    val length = text.s.length
+
+    def recur(index: Int, done: Text): Optional[Text] =
+      if index == length then done else
+        val char = text.s.charAt(index)
+        if glyphs.contains(char) then recur(index + 1, t"$done${glyphs(char)}") else Unset
+
+    if length == 0 then Unset else recur(0, t"")
+
+  // A one-line rendering of `base` with `script` set beside it, when the base
+  // occupies a single line and the script has glyphs for every character.
+  private def sameLine(base: Cell, script: Mathml, glyphs: Map[Char, Char]): Optional[Cell] =
+    if base.height > 1 then Unset else
+      scriptText(script).let(transcribe(_, glyphs)).let(text => line(t"${slice(base, 0)}$text"))
+
   def superscript(base: Cell, script: Cell): Cell =
     val height = base.height + script.height
 
@@ -159,6 +226,24 @@ object Cell:
         Writing(t"$left$scripts")
 
     Cell(lines, base.width + right, superscript.height + base.baseline)
+
+  // Each of the three script schemata prefers the same-line Unicode form, and falls
+  // back to stacking when the script is not spellable in script glyphs.
+
+  private def superscripted(base: Mathml, script: Mathml): Cell =
+    val cell = of(base)
+    sameLine(cell, script, superscripts).or(superscript(cell, of(script)))
+
+  private def subscripted(base: Mathml, script: Mathml): Cell =
+    val cell = of(base)
+    sameLine(cell, script, subscripts).or(subscript(cell, of(script)))
+
+  // Both scripts must go on the line, or neither: an inline subscript beneath a
+  // stacked superscript would set the two in different columns.
+  private def subsupscripted(base: Mathml, sub: Mathml, sup: Mathml): Cell =
+    val cell = of(base)
+    val inlined = sameLine(cell, sub, subscripts).let(sameLine(_, sup, superscripts))
+    inlined.or(subsup(cell, of(sub), of(sup)))
 
   def overscript(base: Cell, over: Cell): Cell =
     val width = max(base.width, over.width)
@@ -359,9 +444,9 @@ object Cell:
     case Mfrac(numer, denom, _)    => fraction(of(numer), of(denom))
     case Msqrt(contents, _)        => radical(row(contents))
     case Mroot(base, index, _)     => root(of(base), of(index))
-    case Msup(base, script, _)     => superscript(of(base), of(script))
-    case Msub(base, script, _)     => subscript(of(base), of(script))
-    case Msubsup(base, sb, sp, _)  => subsup(of(base), of(sb), of(sp))
+    case Msup(base, script, _)     => superscripted(base, script)
+    case Msub(base, script, _)     => subscripted(base, script)
+    case Msubsup(base, sb, sp, _)  => subsupscripted(base, sb, sp)
     case Mover(base, over, _)      => overscript(of(base), of(over))
     case Munder(base, under, _)    => underscript(of(base), of(under))
     case Munderover(base, u, o, _) => underover(of(base), of(u), of(o))
