@@ -32,7 +32,6 @@
                                                                                                   */
 package ypsiloid
 
-import proscenium.compat.*
 
 import soundness.*
 
@@ -273,7 +272,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
     suite(m"Flow mappings"):
       test(m"Parse an empty flow mapping"):
         t"{}".read[Yaml].as[Map[Text, Int]]
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
       test(m"Parse a single-pair flow mapping"):
         t"{a: 1}".read[Yaml].as[Map[Text, Int]]

@@ -47,9 +47,12 @@ package ypsiloid
 
 import java.io.IOException
 import java.nio.file.{Files, Path, Paths}
+// Residue: this conformance harness reads YAML fixtures through frozen-array subscripts,
+// and `apply` is partial; it awaits the partial-operations tranche.
+import proscenium.compat.apply
+
 import scala.jdk.CollectionConverters.*
 import scala.collection.immutable.{Map, Set}
-import proscenium.compat.*
 import scala.Predef
 
 import anticipation.Text
@@ -63,7 +66,6 @@ import turbulence.read
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 
-import proscenium.compat.*
 import denominative.*
 import denominative.asymptotics.linearSizeComplexity
 
@@ -176,7 +178,7 @@ object Conformance:
             case Some(expectedText) =>
               val expectedDocs = parseJsonStream(expectedText)
               val actualDocs = docs.map(yamlAstToJson)
-              val actualStr = actualDocs.map(jsonString).mkString(", ")
+              val actualStr = actualDocs.map(jsonString).stdlib.mkString(", ")
               val expectedStr = expectedDocs.map(jsonString).mkString(", ")
               // Compare via canonical jsonString rendering rather than
               // Json equality — jacinta's Json.equals has no `null` case
@@ -326,15 +328,15 @@ object Conformance:
 
     case Yaml.Ast.Sequence(items) =>
       val converted: Array[Any] =
-        Array.from(items.toSeq.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
+        Array.from(items.readable.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
       Json.ast(Json.Ast.arr(converted))
 
     case Yaml.Ast.Mapping(entries) =>
-      val pairs = entries.collect:
+      val pairs = entries.sweep:
         case (Yaml.Ast.Str(s), v) => (s.s, Json.unseal(yamlAstToJson(v)))
 
-      val keys: Array[String] = Array.from(pairs.toSeq.map(_._1))
-      val values: Array[Any] = Array.from(pairs.toSeq.map(_._2.asInstanceOf[Any]))
+      val keys: Array[String] = Array.from(pairs.readable.map(_._1))
+      val values: Array[Any] = Array.from(pairs.readable.map(_._2.asInstanceOf[Any]))
       Json.ast(Json.Ast.obj(keys, values))
 
   private def jsonString(json: Json): String =

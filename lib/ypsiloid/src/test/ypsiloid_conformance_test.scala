@@ -34,7 +34,6 @@ package ypsiloid
 
 import soundness.*
 
-import proscenium.compat.*
 
 object ConformanceTests:
   // Adds the YAML 1.2 test-suite cases as `test(...)` entries inside the

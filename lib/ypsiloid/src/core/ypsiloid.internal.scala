@@ -35,7 +35,10 @@ package ypsiloid
 import scala.collection.immutable.Seq
 import scala.collection.immutable.IndexedSeq
 
-import proscenium.compat.*
+
+// Residue: `head` and the frozen-array subscript `apply` are partial; both await the
+// partial-operations tranche.
+import proscenium.compat.{head, apply}
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -78,14 +81,14 @@ object internal:
   private def stripPad(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1) else arr
+    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.keep(n - 1) else arr
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
 
-    val cleaned: List[String] = parts.zipWithIndex.map: (part, idx) =>
-      if idx > 0 && part.startsWith("*") then
-        spreads = spreads :+ (idx - 1)
+    val cleaned: List[String] = parts.indexed.map: (part, idx) =>
+      if idx.n0 > 0 && part.startsWith("*") then
+        spreads = spreads :+ (idx.n0 - 1)
         part.substring(1).nn
       else
         part
@@ -170,7 +173,7 @@ object internal:
       case Varargs(insertions) => insertions
 
     val (parts2, spreads) = preprocess(parts)
-    val source: String = parts2.mkString(MarkerString)
+    val source: String = parts2.stdlib.mkString(MarkerString)
 
     val sourceFile = Position.ofMacroExpansion.sourceFile
     val macroPos = Position.ofMacroExpansion
@@ -287,7 +290,7 @@ object internal:
           case '{$value: tpe} => Type.of[tpe] match
             case '[Map[Text, Yaml]] =>
               ' {
-                  $value.asInstanceOf[Map[Text, Yaml]].iterator.map: (key, yaml) =>
+                  $value.asInstanceOf[Map[Text, Yaml]].stdlib.iterator.map: (key, yaml) =>
                     (key.s, Yaml.unseal(yaml))
 
                   . toList
@@ -429,7 +432,7 @@ object internal:
 
     abortive:
       val (parts2, spreads) = preprocess(parts)
-      val source: String = parts2.mkString(MarkerString)
+      val source: String = parts2.stdlib.mkString(MarkerString)
 
       val ast: Yaml.Ast =
         given diagnostics: Diagnostics = Diagnostics.omit
