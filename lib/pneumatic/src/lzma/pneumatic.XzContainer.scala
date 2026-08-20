@@ -34,7 +34,6 @@ package pneumatic
 
 import scala.collection.mutable as scm
 
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 

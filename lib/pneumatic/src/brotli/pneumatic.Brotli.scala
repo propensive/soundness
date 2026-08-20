@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
