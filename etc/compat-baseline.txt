@@ -72,7 +72,6 @@ pneumatic 6
 polaris 2
 polysyllabic 3
 polyvinyl 1
-probably 11
 profanity 4
 prophesy 2
 proscenium 1

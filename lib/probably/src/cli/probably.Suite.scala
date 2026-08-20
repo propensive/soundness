@@ -32,13 +32,13 @@
                                                                                                   */
 package probably
 
-import proscenium.compat.*
 
 import java.lang as jl
 
 import ambience.*, environments.javaEnvironment
 import anticipation.*
 import contingency.*
+import denominative.*
 import digression.*
 // The stack-trace renderers live in `digression.ansi`, not in `StackTrace`'s companion, so they
 // are not in implicit scope; without this import `.teletype` on a stack trace falls back to
@@ -120,7 +120,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
 
   final def main(arguments: Array[Text]^{}): Unit =
     val selection = Selection.parse(arguments.to[List])
-    if !arguments.isEmpty then runner0 = makeRunner(selection)
+    if !arguments.nil then runner0 = makeRunner(selection)
 
     if selection.listOnly then
       given stdio: Stdio = suiteIo

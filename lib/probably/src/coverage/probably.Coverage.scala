@@ -38,9 +38,9 @@ import scala.collection.mutable.BitSet
 import scala.io.*
 
 import anticipation.*
+import denominative.asymptotics.linearSizeComplexity
 import distillate.*
 import gossamer.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -82,14 +82,14 @@ object Coverage:
             As.Boolean(branch) #:: _ #:: As.Boolean(ignored) #:: tail ) =>
 
           val juncture = Juncture(id, path, className, methodName, start, end, lineNo + 1,
-              symbolName, treeName, branch, ignored, List.from(tail.takeWhile(!_.starts(t"\f")).stdlib))
+              symbolName, treeName, branch, ignored, List.from(tail.stdlib.takeWhile(!_.starts(t"\f"))))
 
-          recur(tail.dropWhile(!_.starts(t"\f")).tail, juncture :: junctures)
+          recur(Chain.of(tail.stdlib.dropWhile(!_.starts(t"\f")).tail), juncture :: junctures)
 
         case _ =>
           junctures.reverse
 
-    Array.from(recur(lines.dropWhile(_.starts(t"#"))).stdlib)
+    Array.from(recur(Chain.of(lines.stdlib.dropWhile(_.starts(t"#")))).stdlib)
 
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()
@@ -104,7 +104,5 @@ case class Coverage(path: Text, spec: Array[Juncture]^{}, oldHits: Set[Int], hit
   lazy val structure: Map[Text, List[Surface]] =
     val index: Int = spec.readable.lastIndexWhere(_.id == 0)
 
-    Map.from:
-      spec.toSeq
-      . toList.drop(index).groupBy(_.path).map: (path, junctures) =>
-        path -> Surface.collapse(List.of(junctures.sortBy(-_.end).sortBy(_.start)), Nil)
+    spec.to[List].skip(index).group(_.path).map: junctures =>
+      Surface.collapse(junctures.sort(-_.end).sort(_.start), Nil)
