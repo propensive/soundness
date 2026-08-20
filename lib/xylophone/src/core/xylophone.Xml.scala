@@ -38,7 +38,6 @@ import scala.collection.immutable.Seq
 
 import scala.caps
 
-import proscenium.compat.*
 
 import scala.language.dynamics
 
@@ -68,6 +67,7 @@ import typonym.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
+import symbolism.*
 
 import Xml.Error.Reason
 
@@ -992,7 +992,7 @@ object Xml extends Tag.Container
 
     // The wire names of a product's fields, `@name` renames applied.
     def wireNames(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
-      names.map { name => renames(name.tt).or(name.tt).s }
+      names.remap { name => renames(name.tt).or(name.tt).s }
 
     // A required primitive field whose name never arrived: the primitives'
     // `absent()` semantics — raise and continue with the sentinel.
@@ -1062,7 +1062,7 @@ object Xml extends Tag.Container
         type Self = derivation
 
         private lazy val fields: Array[(String, Xml.Parsing, Any, Boolean)]^{} = fields0()
-        private lazy val keys: Array[String]^{} = fields.map(_(0))
+        private lazy val keys: Array[String]^{} = fields.remap(_(0))
 
         // Element dispatch. An `@attribute` field never matches a child
         // element: the AST derivation checks the annotation before looking
@@ -1128,7 +1128,7 @@ object Xml extends Tag.Container
                   // Every occurrence of a repeatable field accumulates, in
                   // document order — the AST derivation's gather-all
                   // semantics.
-                  val buffer = values(found) match
+                  val buffer = values.readable(found) match
                     case buffer: scm.ListBuffer[?] => buffer.asInstanceOf[scm.ListBuffer[Any]]
 
                     case _ =>
@@ -1145,7 +1145,7 @@ object Xml extends Tag.Container
                   // Unknown children are skipped, and a duplicate child keeps
                   // the first occurrence — the AST derivation's `HashMap`
                   // inserts only when the label is not yet present.
-                  if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot)
+                  if !(values.readable(found).asInstanceOf[AnyRef] eq AbsentSlot)
                   then reader.skipElement()
                   else values(found) =
                     if focused
@@ -1162,7 +1162,7 @@ object Xml extends Tag.Container
                 // A repeatable field never consults the declared default:
                 // zero occurrences build the empty collection, exactly as
                 // the AST derivation decodes an empty synthetic fragment.
-                val elements: List[Any] = values(index) match
+                val elements: List[Any] = values.readable(index) match
                   case buffer: scm.ListBuffer[?] => List.of(buffer.toList)
                   case _                         => Nil
 
@@ -1172,7 +1172,7 @@ object Xml extends Tag.Container
                   else gathering.gathered(elements)
 
               case _ =>
-                if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
+                if values.readable(index).asInstanceOf[AnyRef] eq AbsentSlot then
                   val declared = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
                   values(index) =
@@ -1485,7 +1485,7 @@ object Xml extends Tag.Container
     def targets(tag: Text): Boolean = global || elements.has(tag)
 
     def merge(that: XmlAttribute): XmlAttribute =
-      XmlAttribute(label, elements ++ that.elements, global || that.global)
+      XmlAttribute(label, elements + that.elements, global || that.global)
 
   def header: Header = Header("1.0", Unset, Unset)
 
@@ -1535,11 +1535,11 @@ object Xml extends Tag.Container
   =>  (tactic: Tactic[Parse.Error])
   =>  (((Xml of content) is Aggregable by Text)^{tactic}) =
 
-    input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).of[content]
+    input => XmlParser.fromIterator(input.stdlib.iterator).parseXml(headers0 = false).of[content]
 
   given aggregable2: (schema: XmlSchema) => (tactic: Tactic[Parse.Error])
   =>  ((Xml is Aggregable by Text)^{tactic}) =
-    input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false)
+    input => XmlParser.fromIterator(input.stdlib.iterator).parseXml(headers0 = false)
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes an
   // `Xml` value usable as an HTTP request/response body (telekinesis derives
@@ -1574,7 +1574,7 @@ object Xml extends Tag.Container
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( ((value in Xml) is Aggregable by Text)^{parsable, tactic, xmlTactic} ) =
 
-    input => parseDirect(input.iterator, parsable).asInstanceOf[value in Xml]
+    input => parseDirect(input.stdlib.iterator, parsable).asInstanceOf[value in Xml]
 
   // Whole-`Text` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream —
@@ -1661,7 +1661,7 @@ object Xml extends Tag.Container
     // DOM loader's parser is iterator-fed).
     val chunks =
       zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
-      . iterator
+      . stdlib.iterator
 
     val parser = tracking match
       case PositionTracking.On  => XmlParser.fromIteratorTracked(chunks)
@@ -4357,7 +4357,7 @@ case class Element
     children:   Array[Node]^{} )
 extends Node, Topical, Transportive:
   override def toString(): String =
-    s"<$label>${children.mkString}</$label>"
+    s"<$label>${children.readable.mkString}</$label>"
 
   override def equals(that: Any): Boolean = that match
     case Fragment(node: Element) => this == node

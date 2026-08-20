@@ -32,7 +32,6 @@
                                                                                                   */
 package xylophone
 
-import proscenium.compat.*
 
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
@@ -41,6 +40,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import vacuous.*
+import rudiments.*
 
 private[xylophone] object XPathEngine:
   import XPath.{Axis, Error, Expression, Locus, NodeTest, Origin, Step, Value}
@@ -115,9 +115,7 @@ private[xylophone] object XPathEngine:
       case Expression.Variable(prefix, name) =>
         val key = XPath.qualify(prefix, name)
 
-        context.variables.get(key) match
-          case Some(value) => value
-          case None        => abort(Error(Reason.UnboundVariable(key)))
+        context.variables.at(key).lay(abort(Error(Reason.UnboundVariable(key))))(identity(_))
 
       case Expression.Call(prefix, name, arguments) =>
         prefix match

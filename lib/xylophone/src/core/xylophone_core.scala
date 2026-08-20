@@ -32,9 +32,12 @@
                                                                                                   */
 package xylophone
 
-import proscenium.compat.*
 
 import scala.language.dynamics
+
+// Residue: this tree walk indexes frozen arrays throughout, and the subscript `apply` is
+// partial; it awaits the partial-operations tranche.
+import proscenium.compat.apply
 
 import scala.annotation.*
 import scala.collection.mutable as scm
@@ -44,6 +47,7 @@ import contextual.*
 import denominative.*
 import panopticon.*
 import prepositional.*
+import rudiments.*
 import vacuous.Unset
 
 export xylophone.internal.Attributes
@@ -100,7 +104,7 @@ private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml =>
     case Element(label, attributes, children) =>
       var index = 0
 
-      val out = children.map:
+      val out = children.remap:
         case element: Element =>
           val here = index
           index += 1
