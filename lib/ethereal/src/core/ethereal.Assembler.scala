@@ -39,6 +39,7 @@ import ambience.*
 import anticipation.*
 import aperture.*
 import contingency.*
+import distillate.*
 import eucalyptus.*
 import fulminate.*
 import galilei.*
@@ -48,6 +49,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
+import vacuous.*
 import zeppelin.*
 
 import errorDiagnostics.emptyDiagnostics
@@ -148,17 +150,27 @@ object Assembler:
     val isWindows: Boolean = platformLabel.starts(t"windows")
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
-    output.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
+    // Assemble into a hidden sibling and rename it over the output at the end. The
+    // output may be a live launcher (a `-Dbuild.executable` rebuild names the installed
+    // path directly), and mutating it in place both corrupts the zip a resident daemon
+    // is running from and — on macOS, whose code-signing cache is per-vnode — poisons
+    // the inode so that later execs are SIGKILLed. The rename yields a fresh inode and
+    // an always-complete file at the output path.
+    val temporary: Path on Linux = unsafely:
+      val directory: Path on Linux = output.parent.assume
+      t"${directory.encode}/.${output.name}.tmp".as[Path on Linux]
+
+    temporary.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
       ( file.write(Chain(patched)) )
 
     if platformLabel.starts(t"macos") then
-      if !isWindows then output.executable() = true
-      safely(mute[Exec.Event](sh"codesign --sign - --force $output".exec[Exit]()))
+      if !isWindows then temporary.executable() = true
+      safely(mute[Exec.Event](sh"codesign --sign - --force $temporary".exec[Exit]()))
 
     // Measured from the file rather than taken as `patched.length`: on macOS `codesign` has just
     // rewritten the stub, adding a signature blob, so the prefix the JAR is about to sit behind is
     // longer than the bytes `patch` returned.
-    val prefixSize: Bytes = output.size()
+    val prefixSize: Bytes = temporary.size()
 
     // Two sequential opens rather than one nested inside the other's lambda (the inner
     // open's evidence would mint fresh roots inside the outer handle's loan that cannot
@@ -166,7 +178,7 @@ object Assembler:
     // dependent `Result` chain has the same root problem). The read is strict (`to(List)`)
     // so nothing reads the closed handle.
     val chunks = jarFile.open[File]()(List.from(file.reader().stdlib))
-    output.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(Chain.from(chunks.stdlib)))
+    temporary.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(Chain.from(chunks.stdlib)))
 
     // Appending the JAR to the stub shifts every byte of it by the stub's length. ZIP offsets are
     // relative, so a reader recovers that shift by itself — except for the ZIP64 locator's pointer,
@@ -177,9 +189,14 @@ object Assembler:
         Assembler.Error(m"The appended JAR's ZIP64 metadata could not be rebased")
 
     . protect:
-        Zipfile.rebase(output, prefixSize.long)
+        Zipfile.rebase(temporary, prefixSize.long)
 
-    if !isWindows then output.executable() = true
+    if !isWindows then temporary.executable() = true
+
+    import filesystemOptions.moveAtomically.enabled
+    import filesystemOptions.deleteRecursively.disabled
+    temporary.moveTo(output)
+    ()
 
   // AssemblyError → Assembler.Error
   case class Error(detail: Message)(using Diagnostics) extends fulminate.Error(detail)
