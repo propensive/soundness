@@ -32,8 +32,6 @@
                                                                                                   */
 package pneumatic
 
-import proscenium.compat.*
-
 // The LZMA binary range coder, the entropy stage beneath LZMA/LZMA2. It codes single bits against
 // adaptive 11-bit probabilities (`Array[Short]` in [0, 2048]), plus "direct" equiprobable bits and
 // MSB-/LSB-first probability trees. This is a clean-room implementation of the well-documented LZMA
@@ -79,7 +77,7 @@ private[pneumatic] object RangeCoder:
     Array.unsafeFrozen(table)
 
   def bitPrice(prob: Int, bit: Int): Int =
-    prices((prob ^ ((-bit) & (BitModelTotal - 1))) >>> MoveReducingBits).toInt
+    prices.readable((prob ^ ((-bit) & (BitModelTotal - 1))) >>> MoveReducingBits).toInt
 
   def directBitsPrice(count: Int): Int = count << BitPriceShiftBits
 

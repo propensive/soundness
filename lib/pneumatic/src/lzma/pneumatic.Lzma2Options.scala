@@ -32,8 +32,6 @@
                                                                                                   */
 package pneumatic
 
-import proscenium.compat.*
-
 // LZMA2 encoding options from a preset level 0..9. `dictSize`, `lc`/`lp`/`pb` are recorded in the
 // stream (dictionary-size property byte and the LZMA properties byte), so a decoder recovers
 // them; `mode`, `niceLen`, `matchFinder` and `depthLimit` steer only the encoder's search and
@@ -67,13 +65,13 @@ private[pneumatic] object Lzma2Options:
 
   def preset(level0: Int): Lzma2Options =
     val level = if level0 < 0 then 0 else if level0 > 9 then 9 else level0
-    val dictSize = presetDictSizes(level)
+    val dictSize = presetDictSizes.readable(level)
 
     if level <= 3 then
       val niceLen = if level <= 1 then 128 else 273
 
       Lzma2Options(dictSize, LcDefault, LpDefault, PbDefault, ModeFast, niceLen, MatchFinderHc4,
-          fastDepths(level))
+          fastDepths.readable(level))
     else
       val niceLen = if level == 4 then 16 else if level == 5 then 32 else 64
 
