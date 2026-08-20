@@ -34,7 +34,6 @@ package aviation
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -1991,7 +1990,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3, 2024-Jan-4))
 
       test(m"by is lazy, so a vast range can be sampled cheaply"):
-        Period(2024-Jan-1, 2030-Jan-1).by(1*Day).take(3).stdlib.to(List)
+        Period(2024-Jan-1, 2030-Jan-1).by(1*Day).stdlib.take(3).to(List)
       . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3))
 
     suite(m"Monotonic clock"):
@@ -2137,7 +2136,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == true)
 
       test(m"A parsed rrule generates the right occurrences"):
-        Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.take(2).stdlib.to(List)
+        Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.stdlib.take(2).to(List)
       . assert(_ == List(2024-Jan-26, 2024-Feb-23))
 
       test(m"An invalid rrule string raises Rrule.Error"):
@@ -2854,21 +2853,21 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"parses a single Rule line"):
         val lines = Chain(t"Rule\tUS\t2007\tmax\t-\tMar\tSun>=8\t2:00\t1:00\tD")
-        Tzdb.parse(t"inline", lines).headOption
+        Tzdb.parse(t"inline", lines).prim
       . matches:
-          case Some(_: Tzdb.Entry.Rule) =>
+          case _: Tzdb.Entry.Rule =>
 
       test(m"parses a single Link line"):
         val lines = Chain(t"Link\tEurope/London\tEurope/Belfast")
-        Tzdb.parse(t"inline", lines).headOption
+        Tzdb.parse(t"inline", lines).prim
       . matches:
-          case Some(_: Tzdb.Entry.Link) =>
+          case _: Tzdb.Entry.Link =>
 
       test(m"parses a leap line with normal-time"):
         val lines = Chain(t"Leap\t1972\tJun\t30\t23:59:59\t+\tS")
-        Tzdb.parse(t"inline", lines).headOption
+        Tzdb.parse(t"inline", lines).prim
       . matches:
-          case Some(_: Tzdb.Entry.Leap) =>
+          case _: Tzdb.Entry.Leap =>
 
       test(m"leap line with 60-second time raises Tzdb.Error"):
         val lines = Chain(t"Leap\t1972\tJun\t30\t23:59:60\t+\tS")

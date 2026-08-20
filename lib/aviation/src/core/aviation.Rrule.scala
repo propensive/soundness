@@ -39,7 +39,6 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -81,9 +80,10 @@ object Rrule:
     ( using order: Ordering[point] )
   :   Chain[point] =
 
-    val capped = until.lay(stream): limit => stream.takeWhile(!order.gt(_, limit))
+    val capped = until.lay(stream): limit =>
+      Chain.of(stream.stdlib.takeWhile(!order.gt(_, limit)))
 
-    count.lay(capped)(capped.take)
+    count.lay(capped) { n => Chain.of(capped.stdlib.take(n)) }
 
   // ── RFC 5545 text form ───────────────────────────────────────────────────────────────────────
   // The rule is serialised on its own (the `DTSTART`/`start` is separate in iCalendar), e.g.
@@ -108,15 +108,15 @@ object Rrule:
         part(rule.interval != 1, t"INTERVAL=${rule.interval}") +
         partOf(rule.count) { count => t"COUNT=$count" } +
         partOf(rule.until) { until => t"UNTIL=${until.encode}" } +
-        part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") +
-        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") +
-        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") +
-        part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") +
-        part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") +
-        part(rule.byHour.nonEmpty, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") +
-        part(rule.byMinute.nonEmpty, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") +
-        part(rule.bySecond.nonEmpty, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") +
-        part(rule.bySetPos.nonEmpty, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") +
+        part(!rule.byMonth.nil, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") +
+        part(!rule.byWeekNo.nil, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") +
+        part(!rule.byYearDay.nil, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") +
+        part(!rule.byMonthDay.nil, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") +
+        part(!rule.byDay.nil, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") +
+        part(!rule.byHour.nil, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") +
+        part(!rule.byMinute.nil, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") +
+        part(!rule.bySecond.nil, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") +
+        part(!rule.bySetPos.nil, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") +
         part(rule.weekStart != Weekday.Mon, t"WKST=${code(rule.weekStart)}")
 
     parts.join(t";")
@@ -169,9 +169,8 @@ object Rrule:
     text.cut(t",").map(intOf(_, context))
 
   private def weekdayOf(text: Text, context: Text)(using Tactic[Rrule.Error]): Weekday =
-    weekdayCodes.indexOf(text.upper) match
-      case -1    => abort(Rrule.Error(context))
-      case index => Weekday.fromOrdinal(index)
+    weekdayCodes.where(_ == text.upper).lay(abort(Rrule.Error(context))): index =>
+      Weekday.fromOrdinal(index.n0)
 
   private def dayOf(text: Text, context: Text)(using Tactic[Rrule.Error]): WeekdayOrdinal =
     val string = text.s
@@ -219,14 +218,15 @@ object Rrule:
         Chain.iterate(start)(addSeconds(_, step)).filter(subDayMatch(_, rule))
 
       case _ =>
-        dates(start.date, rule).bind(expandTimes(_, start, rule).stdlib).dropWhile(_ < start)
+        Chain.of(dates(start.date, rule).bind(expandTimes(_, start, rule).stdlib)
+        . stdlib.dropWhile(_ < start))
 
   // Expand a date into the times-of-day the rule selects (the `byHour`/`byMinute`/`bySecond` cross
   // product, each defaulting to the start's component).
   private def expandTimes(date: Date, start: Timestamp, rule: Rrule[?]): List[Timestamp] =
-    val hours = if rule.byHour.nonEmpty then rule.byHour.sorted else List(start.hour)
-    val minutes = if rule.byMinute.nonEmpty then rule.byMinute.sorted else List(start.minute)
-    val seconds = if rule.bySecond.nonEmpty then rule.bySecond.sorted else List(start.second)
+    val hours = if !rule.byHour.nil then rule.byHour.sort else List(start.hour)
+    val minutes = if !rule.byMinute.nil then rule.byMinute.sort else List(start.minute)
+    val seconds = if !rule.bySecond.nil then rule.bySecond.sort else List(start.second)
 
     for
       hour   <- hours
@@ -245,9 +245,9 @@ object Rrule:
 
   private def subDayMatch(timestamp: Timestamp, rule: Rrule[?])(using RomanCalendar): Boolean =
     dailyMatch(timestamp.date, rule) &&
-      (rule.byHour.isEmpty || rule.byHour.has(timestamp.hour)) &&
-      (rule.byMinute.isEmpty || rule.byMinute.has(timestamp.minute)) &&
-      (rule.bySecond.isEmpty || rule.bySecond.has(timestamp.second))
+      (rule.byHour.nil || rule.byHour.has(timestamp.hour)) &&
+      (rule.byMinute.nil || rule.byMinute.has(timestamp.minute)) &&
+      (rule.bySecond.nil || rule.bySecond.has(timestamp.second))
 
   // The date that is the `n`th day of `year` (negative counts back from the end).
   private def yearDay(year: Int, n: Int)(using calendar: RomanCalendar): Optional[Date] =
@@ -264,7 +264,7 @@ object Rrule:
   // that week, filtered by `byMonth`.
   private def weekNoDates(year: Int, start: Date, rule: Rrule[?])(using RomanCalendar): List[Date] =
     val count = WeekDate.weekOfYear(unsafely(Date(Year(year), Month.Dec, Day(28))))
-    val weekdays = if rule.byDay.nonEmpty then rule.byDay.map(_.weekday) else List(start.weekday)
+    val weekdays = if !rule.byDay.nil then rule.byDay.map(_.weekday) else List(start.weekday)
 
     val weeks =
       rule.byWeekNo.map(week => if week > 0 then week else count + week + 1)
@@ -286,8 +286,8 @@ object Rrule:
       case Frequency.Yearly =>
         Chain.iterate(yearOf(start))(_ + rule.interval).bind: year =>
           val candidates =
-            if rule.byYearDay.nonEmpty then yearDayDates(year, rule)
-            else if rule.byWeekNo.nonEmpty then weekNoDates(year, start, rule)
+            if !rule.byYearDay.nil then yearDayDates(year, rule)
+            else if !rule.byWeekNo.nil then weekNoDates(year, start, rule)
             else yearMonths(year, start, rule).bind(expandMonth(year, _, start, rule))
 
           setPos(candidates.distinct.sort(_.jdn), rule.bySetPos).stdlib
@@ -306,13 +306,13 @@ object Rrule:
       case _ =>
         Chain.empty // sub-day frequencies not yet expanded
 
-    raw.dropWhile(_.jdn < start.jdn)
+    Chain.of(raw.stdlib.dropWhile(_.jdn < start.jdn))
 
   // The months to expand within a `Yearly` period: the listed `byMonth`s, or every month if a
   // day-level rule is present, or else the start's own month.
   private def yearMonths(year: Int, start: Date, rule: Rrule[?])(using RomanCalendar): List[Int] =
-    if rule.byMonth.nonEmpty then rule.byMonth.map(_.numerical).sorted
-    else if rule.byDay.nonEmpty || rule.byMonthDay.nonEmpty then (1 to 12).to(List)
+    if !rule.byMonth.nil then rule.byMonth.map(_.numerical).sort
+    else if !rule.byDay.nil || !rule.byMonthDay.nil then (1 to 12).to(List)
     else List(monthOf(start))
 
   // The ascending (year, month) periods for `Monthly`, stepping `interval` months from the start.
@@ -332,12 +332,12 @@ object Rrule:
   :   List[Date] =
 
     val byDayDates: Optional[List[Date]] =
-      if rule.byDay.isEmpty then Unset else rule.byDay.bind: (entry: WeekdayOrdinal) =>
+      if rule.byDay.nil then Unset else rule.byDay.bind: (entry: WeekdayOrdinal) =>
         entry.ordinal.lay(weekdaysOfMonth(year, month, entry.weekday)): ordinal =>
           list(nthWeekday(year, month, entry.weekday, ordinal))
 
     val byMonthDayDates: Optional[List[Date]] =
-      if rule.byMonthDay.isEmpty then Unset else rule.byMonthDay.bind: (day: Int) =>
+      if rule.byMonthDay.nil then Unset else rule.byMonthDay.bind: (day: Int) =>
         list(monthDay(year, month, day))
 
     val candidates =
@@ -351,18 +351,18 @@ object Rrule:
   private def expandWeek(weekStart: Date, start: Date, rule: Rrule[?])(using RomanCalendar)
   :   List[Date] =
 
-    val weekdays = if rule.byDay.nonEmpty then rule.byDay.map(_.weekday) else List(start.weekday)
+    val weekdays = if !rule.byDay.nil then rule.byDay.map(_.weekday) else List(start.weekday)
 
     (0 to 6).to(List).map(weekStart.addDays(_)).filter: date =>
       weekdays.has(date.weekday) && monthAllowed(date, rule)
 
   private def dailyMatch(date: Date, rule: Rrule[?])(using RomanCalendar): Boolean =
     monthAllowed(date, rule) &&
-      (rule.byMonthDay.isEmpty || rule.byMonthDay.exists(monthDayMatches(date, _))) &&
-      (rule.byDay.isEmpty || rule.byDay.map(_.weekday).has(date.weekday))
+      (rule.byMonthDay.nil || rule.byMonthDay.exists(monthDayMatches(date, _))) &&
+      (rule.byDay.nil || rule.byDay.map(_.weekday).has(date.weekday))
 
   private def monthAllowed(date: Date, rule: Rrule[?])(using RomanCalendar): Boolean =
-    rule.byMonth.isEmpty || rule.byMonth.map(_.numerical).has(monthOf(date))
+    rule.byMonth.nil || rule.byMonth.map(_.numerical).has(monthOf(date))
 
   // ── calendar helpers ─────────────────────────────────────────────────────────────────────────
 
@@ -387,7 +387,7 @@ object Rrule:
     list(date(year, month, 1)).bind: first =>
       val offset = (weekday.ordinal - first.weekday.ordinal + 7)%7
       Chain.iterate(first.addDays(offset))(_.addDays(7))
-        .takeWhile(monthOf(_) == month).stdlib.to(List)
+        .stdlib.takeWhile(monthOf(_) == month).to(List)
 
   // The `ordinal`-th `weekday` of the month (positive from the start, negative from the end).
   private def nthWeekday(year: Int, month: Int, weekday: Weekday, ordinal: Int)(using RomanCalendar)
@@ -400,7 +400,7 @@ object Rrule:
   // `BYSETPOS`: from each period's expanded set, keep the listed positions (1-based; negatives from
   // the end).
   private def setPos(candidates: List[Date], positions: List[Int]): List[Date] =
-    if positions.isEmpty then candidates else
+    if positions.nil then candidates else
       val count = candidates.size
 
       val chosen = positions.bind: (position: Int) =>

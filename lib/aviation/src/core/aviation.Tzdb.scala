@@ -32,10 +32,13 @@
                                                                                                   */
 package aviation
 
+// Residue: `head` and `tail` on a lazy `Chain` are partial; they await the
+// partial-operations tranche.
+import proscenium.compat.{head, tail}
+
 import scala.io.*
 
 import anticipation.*
-import proscenium.compat.*
 import rudiments.*
 import contingency.*
 import denominative.*

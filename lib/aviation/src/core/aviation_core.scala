@@ -33,7 +33,6 @@
 package aviation
 
 import anticipation.*
-import proscenium.compat.*
 import rudiments.*
 import contextual.*
 import contingency.*
@@ -584,18 +583,21 @@ extension [sequence](sequence: sequence)(using recurrent: sequence is Recurrent)
   def until(limit: recurrent.Topic)(using order: Ordering[recurrent.Topic])
   :   Chain[recurrent.Topic] =
 
-    recurrent.occurrences(sequence).takeWhile(order.lt(_, limit))
+    Chain.of(recurrent.occurrences(sequence).stdlib.takeWhile(order.lt(_, limit)))
 
   def within(window: Period[recurrent.Topic])(using order: Ordering[recurrent.Topic])
   :   Chain[recurrent.Topic] =
 
-    recurrent.occurrences(sequence).dropWhile(order.lt(_, window.start))
-      .takeWhile(order.lt(_, window.finish))
+    Chain.of:
+      recurrent.occurrences(sequence).stdlib
+      . dropWhile(order.lt(_, window.start))
+      . takeWhile(order.lt(_, window.finish))
 
   def following(after: recurrent.Topic)(using order: Ordering[recurrent.Topic])
   :   Optional[recurrent.Topic] =
 
-    recurrent.occurrences(sequence).dropWhile(order.lteq(_, after)).headOption.getOrElse(Unset)
+    recurrent.occurrences(sequence).stdlib.dropWhile(order.lteq(_, after)).headOption
+    . getOrElse(Unset)
 
 export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
 

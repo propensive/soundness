@@ -32,8 +32,12 @@
                                                                                                   */
 package aviation
 
-import proscenium.compat.*
 import rudiments.*
+import denominative.*
+
+// Residue: `head` and `tail` on a lazy `Chain` are partial; they await the
+// partial-operations tranche.
+import proscenium.compat.{head, tail}
 
 // An iCalendar recurrence set: the union of one or more recurrences' occurrence streams (`include`,
 // e.g. each `rrule.occurrences`) plus explicit extra dates (`rdates`, RFC 5545 `RDATE`), minus
@@ -47,13 +51,13 @@ object RecurrenceSet:
     set =>
       val excluded = set.exdates.stdlib.toSet
       val streams = List.of(set.include.stdlib :+ Chain.from(set.rdates.stdlib.sorted))
-      dedup(merge(streams)).filterNot(excluded.contains)
+      dedup(merge(streams)).filter(!excluded.contains(_))
 
   // Lazily merge ascending streams into one ascending stream (repeatedly emit the least head).
   private def merge[point](streams: List[Chain[point]])(using order: Ordering[point])
   :   Chain[point] =
 
-    streams.stdlib.filter(_.nonEmpty) match
+    streams.stdlib.filter(!_.nil) match
       case Nil => Chain.empty
 
       case nonEmpty =>
@@ -65,7 +69,7 @@ object RecurrenceSet:
   // Drop duplicates from an ascending stream (equal values are adjacent).
   private def dedup[point](stream: Chain[point])(using order: Ordering[point]): Chain[point] =
     stream match
-      case head #:: tail => head #:: dedup(tail.dropWhile(order.equiv(_, head)))
+      case head #:: tail => head #:: dedup(Chain.of(tail.stdlib.dropWhile(order.equiv(_, head))))
       case _             => Chain.empty
 
 case class RecurrenceSet[point]
