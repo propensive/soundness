@@ -36,7 +36,6 @@ import java.io as ji
 
 // Residue: these fixtures poke bytes by subscript, and `apply` is partial; it awaits the
 // partial-operations tranche.
-import proscenium.compat.apply
 
 import soundness.*
 
@@ -407,7 +406,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         // byte asserts nothing.
         val buffer = Array[Byte](source.length)
         buffer.copyFrom(source, 0, 0, source.length)
-        buffer(36) = (buffer(36) ^ 0x55).toByte
+        buffer(36) = (source.readable(36) ^ 0x55).toByte
         val corrupted: Data = Array.freeze(buffer)
         try corrupted.decompress[Xz].to[List] != original.to[List]
         catch case _: Exception => true

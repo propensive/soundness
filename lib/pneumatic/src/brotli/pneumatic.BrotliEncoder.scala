@@ -34,8 +34,6 @@ package pneumatic
 
 import scala.caps
 
-import proscenium.compat.*
-
 // A little-endian (LSB-first) bit-stream writer, the mirror of the decoder's `BitReader`. Bits
 // accumulate into a 64-bit register and are flushed a byte at a time; `align` pads the current byte
 // with zero bits, after which `writeBytes` may append raw byte-aligned data.
@@ -357,7 +355,7 @@ private[pneumatic] object BrotliEncoder:
       i = 0
 
       while i < 18 && space > 0 do
-        val sym = codeLengthCodeOrder(i)
+        val sym = codeLengthCodeOrder.readable(i)
         val v = clcDepth(sym) & 0xff
         writeCodeLengthCodeLength(writer, v)
         if v != 0 then space -= 32 >> v
@@ -374,7 +372,7 @@ private[pneumatic] object BrotliEncoder:
   // Scanning upward exits immediately for the common short lengths.
   private def lengthCode(offsets: Array[Int]^{}, nbits: Array[Int]^{}, length: Int): Int =
     var i = 0
-    while i + 1 < offsets.length && offsets(i + 1) <= length do i += 1
+    while i + 1 < offsets.length && offsets.readable(i + 1) <= length do i += 1
     i
 
   // Distance symbol and extra bits for a backward distance, with NPOSTFIX = 0, NDIRECT = 0. The
@@ -558,11 +556,11 @@ private[pneumatic] object BrotliEncoder:
       val copyCode = if copy > 0 then lengthCode(copyLengthOffset, copyLengthNBits, copy) else 0
       val cmd = commandCode(insertCode, copyCode)
       writer.writeBits(cmdCodes(cmd), cmdDepth(cmd) & 0xff)
-      writer.writeBits(insert - insertLengthOffset(insertCode), insertLengthNBits(insertCode))
+      writer.writeBits(insert - insertLengthOffset.readable(insertCode), insertLengthNBits.readable(insertCode))
 
       if copy > 0
-      then writer.writeBits(copy - copyLengthOffset(copyCode), copyLengthNBits(copyCode))
-      else writer.writeBits(0, copyLengthNBits(copyCode))
+      then writer.writeBits(copy - copyLengthOffset.readable(copyCode), copyLengthNBits.readable(copyCode))
+      else writer.writeBits(0, copyLengthNBits.readable(copyCode))
 
       var t = 0
 
@@ -597,7 +595,7 @@ private[pneumatic] object BrotliEncoder:
   private def commandCode(insertCode: Int, copyCode: Int): Int =
     val insGroup = insertCode / 8
     val copGroup = copyCode / 8
-    val base = rangeIndex(insGroup*3 + copGroup)
+    val base = rangeIndex.readable(insGroup*3 + copGroup)
     ((base + 2) << 6) | ((insertCode & 7) << 3) | (copyCode & 7)
 
   private def writeWindowBits(writer: BrotliBitWriter^, windowBits: Int): Unit =
