@@ -3682,7 +3682,29 @@ object Tel extends Tel2:
         while head.blank && !head.eof do fillHead()
 
       val children = parseChildren(parentIndent = -1)
+
+      // Defence in depth: parseChildren(-1) must consume everything up to EOF
+      // or a document separator. If a future change lets every level decline
+      // the current line (as blank-then-deeper once did — issue #1834), report
+      // the unclaimed line rather than silently truncating the document: one
+      // raise, then skip to the end so accrual mode still terminates.
+      if !head.eof && !head.separator then
+        recoverAt(Reason.OverIndentation, head.startLine, 1, head.leadingSpaces.max(1)):
+          while !head.eof && !head.separator do skipRestOfLine()
+
       Tel.Document(directive, pragma, lineEndings, children)
+
+    // Skip the remainder of the head's line (scanning past any refills) and
+    // park the head on the next line. Only used by parseOneDocument's
+    // unclaimed-input recovery, so it stays off every hot path.
+    private update def skipRestOfLine(): (Tactic[Tel.Error]^) ?->{this} Unit =
+      while
+        scanUntil2(LF, CR, Parser.LfRepl, Parser.CrRepl)
+        pos == bufEnd && more
+      do ()
+
+      consumeLineEnding()
+      fillHead()
 
     // ── Document streams (§6.1) ────────────────────────────────────────────────
 
@@ -4267,22 +4289,42 @@ object Tel extends Tel2:
     private update def parseChildren(parentIndent: Int): (Tactic[Tel.Error]^) ?->{this} Array[Tel.Block]^{} =
       val expected = parentIndent + 1
 
-      if head.eof || head.separator || head.indentLevels < expected
-      then EmptyBlocks
-      else
-        val start = blockScratchIx
+      val start = blockScratchIx
 
-        // A line more indented than `expected` is misplaced. Under fail-fast the
-        // first such line raises (unchanged); under a `validate` boundary we record
-        // it and recover (SkipOverIndented / ShallowerIndent) by clamping it to
-        // `expected` so `parseBlock` consumes it as a sibling — guaranteeing the
-        // cursor advances every iteration, so the parser keeps going to EOF and
-        // accrues every defect (e.g. for LSP diagnostics) without ever stalling.
-        while !head.eof && !head.separator && head.indentLevels >= expected do
+      // A line more indented than `expected` is misplaced. Under fail-fast the
+      // first such line raises (unchanged); under a `validate` boundary we record
+      // it and recover (SkipOverIndented / ShallowerIndent) by clamping it to
+      // `expected` so `parseBlock` consumes it as a sibling — guaranteeing the
+      // cursor advances every iteration, so the parser keeps going to EOF and
+      // accrues every defect (e.g. for LSP diagnostics) without ever stalling.
+      var continue = true
+
+      while continue do
+        // §9: blank lines have no structural effect, so a blank run whose next
+        // content line still sits at this level or deeper belongs here, as a
+        // blank-only block. (A deeper line is over-indentation, recovered below
+        // at this level — the level that owns it.) Without the claim, the blank
+        // head's sentinel indent would decline every loop and silently end the
+        // document with the remainder unparsed and unvalidated (issue #1834).
+        if head.blank && !head.eof then
+          val blanks = claimLeadingBlanksFor(expected)
+          if blanks > 0 then
+            pushBlock(Tel.Block(takeComments(0), Unset, takeCompounds(0), blanks))
+
+        if head.eof || head.separator || head.indentLevels < expected then continue = false
+        else
           if head.indentLevels > expected then
             val line   = head.startLine
             val indent = head.leadingSpaces
-            val lastIx = blockScratchIx - 1
+
+            // Blank-only blocks carry no structure to blame, so the reason is
+            // chosen from the nearest preceding block that has any.
+            var lastIx = blockScratchIx - 1
+
+            while lastIx >= start && {
+              val last = scratchBlocks(lastIx)
+              last.comments.nil && last.tabulation.absent && last.compounds.nil
+            } do lastIx -= 1
 
             val reason =
               if lastIx < start then Reason.OverIndentation
@@ -4298,7 +4340,7 @@ object Tel extends Tel2:
 
           parseBlock(expected)  // pushes one block onto scratchBlocks; consumes ≥1 line
 
-        takeBlocks(blockScratchIx - start)
+      takeBlocks(blockScratchIx - start)
 
     // ── parseBlock ───────────────────────────────────────────────────────────
 
@@ -4524,6 +4566,51 @@ object Tel extends Tel2:
               i += 1
 
             0
+
+    // Claim a run of blank lines that precedes further content belonging to the
+    // child level `expected` (§9: blank lines have no structural effect). The
+    // caller guarantees the head is parked on a blank, non-EOF line. Unlike
+    // consumeTrailingBlanksFor, a *deeper* following line also commits the
+    // claim: parseChildren then recovers the over-indentation at this level,
+    // which is the level that owns it. EOF and separators decline, leaving the
+    // run to consumeTrailingBlanksFor's EOF/documentEndsWithLf accounting.
+    private update def claimLeadingBlanksFor(expected: Int): (Tactic[Tel.Error]^) ?->{this} Int =
+      inHold:
+        val mk = beginMark()
+
+        val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
+                                  head.eof, head.startLine)
+
+        val savedBoundary = prevLineWasBoundary
+        val savedLineNo = lineNo
+        var count = 0
+
+        while !head.eof && head.blank do
+          count += 1
+          fillHead()
+
+        val keep = !head.eof && !head.separator && head.indentLevels >= expected
+
+        if keep then count
+        else
+          // Rewind to the first blank.
+          syncTo()
+          cursor.cue(mk)
+          syncFrom()
+          head.leadingSpaces = firstBlankSnapshot._1
+          head.indentLevels  = firstBlankSnapshot._2
+          head.blank         = firstBlankSnapshot._3
+          head.eof           = firstBlankSnapshot._4
+          head.startLine     = firstBlankSnapshot._5
+          prevLineWasBoundary = savedBoundary
+          lineNo = savedLineNo
+          var i = 0
+
+          while i < firstBlankSnapshot._1 && more && peek == SP do
+            advance()
+            i += 1
+
+          0
 
     // ── Predicates over the parked head ──────────────────────────────────────
 
@@ -5511,13 +5598,12 @@ object Tel extends Tel2:
     // Step to the next compound entry at exactly `indent`, transparently
     // consuming blank lines, comment lines and tabulation headers on the way
     // (with the same side effects and checks as `parseBlock`). Returns null
-    // when the entry region ends: EOF, a document separator, a shallower
-    // line, or — matching the AST path, which leaves such a tail unconsumed —
-    // blank lines followed by a deeper line. A deeper line reached without an
-    // intervening blank fails fast with the `Reason` the AST path would
-    // record. On a compound line, consumes the keyword (leaving the parser
-    // mid-line, right after it) and records the entry state for the
-    // per-entry consumers.
+    // when the entry region ends: EOF, a document separator, or a shallower
+    // line. A deeper line — with or without intervening blank lines, which
+    // are structurally transparent (§9) — fails fast with the `Reason` the
+    // AST path would record. On a compound line, consumes the keyword
+    // (leaving the parser mid-line, right after it) and records the entry
+    // state for the per-entry consumers.
     private[stratiform] update def directKeyword(indent: Int)(using Tactic[Tel.Error]): Text | Null =
       if directKeywordAdvance(indent, textual = true) then directEntryKeyword else null
 
@@ -5535,14 +5621,12 @@ object Tel extends Tel2:
         if head.eof || head.separator then done = true
         else if head.blank then
           // A blank line ends the current block: any active tabulation stops
-          // applying to what follows.
+          // applying to what follows. Structurally the blanks are transparent
+          // (§9): the next iteration classifies whatever follows them exactly
+          // as if they weren't there — matching the AST path's parseChildren,
+          // which claims such a run as a blank-only block.
           directTabulation = Unset
           while !head.eof && head.blank do fillHead()
-
-          // Blanks followed by a deeper line: the AST path leaves the blanks
-          // unclaimed and every `parseChildren` level exits, silently ending
-          // the document — mirrored by ending the entry region at every level.
-          if !head.eof && !head.separator && head.indentLevels > indent then done = true
         else if head.indentLevels < indent then
           done = true
         else if head.indentLevels > indent then
