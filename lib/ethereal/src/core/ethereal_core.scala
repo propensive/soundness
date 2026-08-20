@@ -283,9 +283,12 @@ def cli[bus <: Matchable](using executive: Executive)
       safely(buildFile.wipe())
       safely(pidFile.wipe())
 
+  // If the daemon's own jar has been clobbered, cleanup may fail to load classes
+  // mid-flight; exit must happen regardless, or the broken daemon lingers and
+  // serves silent no-ops to every new client.
   lazy val termination: Unit =
-    wipeState()
-    jl.System.exit(0)
+    try wipeState() catch case _: jl.Throwable => ()
+    finally jl.System.exit(0)
 
   def shutdown(pid: Optional[Pid])(using Stdio): Unit logs DaemonLogEvent =
     Log.warn(DaemonLogEvent.Shutdown)
@@ -573,16 +576,46 @@ def cli[bus <: Matchable](using executive: Executive)
           val buildId = safely(System.properties.build.id[Int]()).or:
             safely((Classpath/"build.id").read[Text].trim.as[Int]).or(0)
 
-          buildFile.open[File](Write, OpenFlag.Create)(file.write(t"$buildId"))
+          val scriptPath: Optional[Path on Local] =
+            safely(System.properties.ethereal.script[Text]().as[Path on Local])
+
+          // Record the launcher this daemon was started from as
+          // `<buildId> <size> <mtimeMillis> <sha256hex>`, so that the launcher's
+          // staleness check can compare a later invocation's file against it; the
+          // first field is read only by launchers that predate the content check.
+          // Without a launcher (plain `java -jar`) there is nothing to compare, so
+          // only the build id is written. The hash is a one-time cost at startup,
+          // dwarfed by JVM boot; invocations pay for it only after a metadata-only
+          // change such as `touch`.
+          val buildLine: Text = scriptPath.let: script =>
+            safely:
+              import gastronomy.*, providers.javaStdlibProvider
+              import monotonous.*, alphabets.hexLowerCase
+              import anticipation.instantiables.instantInstantiable
+              val hash: Text = script.open[File](Read)(file.checksum[Sha2[256]].serialize[Hex])
+              t"$buildId ${script.size().long} ${script.modified[Long]()} $hash"
+          . or(t"$buildId")
+
+          buildFile.open[File](Write, OpenFlag.Create)(file.write(buildLine))
           val pidValue = Process().pid.value.show
           pidFile.open[File](Write, OpenFlag.Create)(file.write(pidValue))
 
           task(n"pid-watcher"):
             safely:
-              List[Path on Local](socketFile, buildFile, pidFile).stdlib
+              // Watching the launcher itself is defence-in-depth: a rebuild that
+              // rewrites it in place corrupts the zip this JVM is running from, so
+              // the daemon must die promptly rather than serve broken no-ops.
+              // Evaluating `ownsState` here forces the classes the handler needs
+              // while the jar is still readable.
+              ownsState
+              val watched: List[Path on Local] =
+                scriptPath.let(List(socketFile, buildFile, pidFile, _))
+                . or(List(socketFile, buildFile, pidFile))
+
+              watched.stdlib
               . open[Watch](): watcher ?=>
                 watcher.stream.each:
-                  case Delete(_, _) | Modify(_, _) =>
+                  case Delete(_, _) | Modify(_, _) | NewFile(_, _) =>
                     Log.warn(DaemonLogEvent.Termination)
                     termination
 
