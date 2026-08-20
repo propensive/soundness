@@ -118,8 +118,9 @@ pub fn launch(
         crate::xeq::done(name, &format!("Started in {secs:.1}s"));
     }
 
-    // The daemon writes the build-id file shortly after binding the socket.
-    // We don't need it to connect, but staleness checks on later invocations do.
+    // The daemon writes the build file (recording the launcher's size, mtime and hash)
+    // shortly after binding the socket. We don't need it to connect, but the staleness
+    // check in `check_state` on later invocations does.
     let _ = crate::state::await_file(build_file, BUILD_FILE_GRACE_ATTEMPTS);
     crate::debug!("launch: build_file ready={}", crate::state::file_has_content(build_file));
 

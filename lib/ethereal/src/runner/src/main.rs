@@ -80,7 +80,7 @@ fn main() {
     debug!("main: interactive={}", interactive);
 
     state::backout(&fail_file, &pid_file, &name);
-    state::check_state(&pid_file, &build_file, &socket_file, build_config.build_id);
+    state::check_state(&pid_file, &build_file, &socket_file, &script);
     debug!("main: post check_state, pid_file_has_content={}", state::file_has_content(&pid_file));
 
     if !state::file_has_content(&pid_file) {
