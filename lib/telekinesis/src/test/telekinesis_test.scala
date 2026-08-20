@@ -34,9 +34,11 @@ package telekinesis
 
 import scala.math
 
+// Residue: `head` is partial; it awaits the partial-operations tranche.
+import proscenium.compat.head
+
 import soundness.*
 
-import proscenium.compat.*
 
 import errorDiagnostics.stackTracesDiagnostics
 import logging.silentLogging
@@ -122,7 +124,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         def go(offset: Int): Chain[Data] =
           if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
-            data.slice(offset, end) #:: go(end)
+            data.excerpt(offset, end) #:: go(end)
         go(0)
 
       def bodyText(response: Http.Response): Text =
@@ -330,7 +332,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         def go(offset: Int): Chain[Data] =
           if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
-            data.slice(offset, end) #:: go(end)
+            data.excerpt(offset, end) #:: go(end)
         go(0)
 
       def bodyText(request: Http.Request^): Text = request.body().memoize.utf8
@@ -422,14 +424,14 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       for blockSize <- blockSizes do
         test(m"fixedBody reads exactly N bytes at block size $blockSize"):
-          val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
+          val cursor = Cursor[Data](chunks(t"hello world", blockSize).stdlib.iterator)
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.fixedBody(cursor, 5).memoize.utf8
 
         . assert(_ == t"hello")
 
         test(m"fixedBody leaves the cursor after the body at block size $blockSize"):
-          val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
+          val cursor = Cursor[Data](chunks(t"hello world", blockSize).stdlib.iterator)
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.fixedBody(cursor, 5).memoize
           scala.caps.unsafe.unsafeAssumeSeparate:
@@ -439,7 +441,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
         test(m"chunkedBody decodes chunks at block size $blockSize"):
           val fixture = t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
-          val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
+          val cursor = Cursor[Data](chunks(fixture, blockSize).stdlib.iterator)
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.chunkedBody(cursor).memoize.utf8
 
@@ -447,7 +449,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
         test(m"chunkedBody leaves the cursor after the body at block size $blockSize"):
           val fixture = t"3\r\nabc\r\n0\r\n\r\nNEXT"
-          val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
+          val cursor = Cursor[Data](chunks(fixture, blockSize).stdlib.iterator)
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.chunkedBody(cursor).memoize
           scala.caps.unsafe.unsafeAssumeSeparate:
@@ -461,7 +463,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         def go(offset: Int): Chain[Data] =
           if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
-            data.slice(offset, end) #:: go(end)
+            data.excerpt(offset, end) #:: go(end)
         go(0)
 
       def bodyText(response: Http.Response): Text = response.body.stream.memoize.utf8
@@ -955,7 +957,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       test(m"protocol restriction is applied to parameters"):
         val acceptance = TlsAcceptance(versions = List(Trust.Version.Tls13))
         val (_, parameters) = acceptance.materialize()
-        Array.unsafeFrozen(parameters.getProtocols.nn).toList.map(_.nn.tt)
+        Array.unsafeFrozen(parameters.getProtocols.nn).to[List].map(_.nn.tt)
       . assert(_ == List(t"TLSv1.3"))
 
       test(m"an acceptance bridges to a Tls carrying its policy"):

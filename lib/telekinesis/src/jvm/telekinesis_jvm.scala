@@ -37,7 +37,6 @@ import java.net as jn
 import java.net.http as jnh
 import java.util.concurrent as juc
 import javax.net.ssl as jns
-import proscenium.compat.*
 
 import anticipation.*
 import coaxial.*
@@ -218,7 +217,7 @@ private val maxIdlePerOrigin: Int = 8
 private def repackage(response: Http.Response, data: Data): Http.Response =
   val body: Http.Body = response.body match
     case Http.Body.Empty => Http.Body.Empty
-    case _               => if data.isEmpty then Http.Body.Empty else Http.Body.Fixed(data)
+    case _               => if data.length == 0 then Http.Body.Empty else Http.Body.Fixed(data)
 
   response.status(response.textHeaders, body)
 
