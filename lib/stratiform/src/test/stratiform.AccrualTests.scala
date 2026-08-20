@@ -157,6 +157,19 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         accrual + (prior.let(_.pointer.encode).or(t"/"), error)
     . protect(text.read[Tel])
 
+  // Negative-corpus fixtures whose accrued diagnostics legitimately differ
+  // from the reference parser's report, each with the reason recorded here.
+  // Keep this list small: every entry weakens the no-silent-truncation
+  // guarantee below for that fixture.
+  private val strictExemptions: List[Text] = List
+    ( t"e106-less-than-margin",       // reference double-reports one defect at one span
+      t"e107-odd-indentation",        // reference double-reports one defect at one span
+      t"e112-child-of-comment",       // we report the specific E112; reference generalizes to E111
+      t"e113-source-after-literal",   // we report the specific E113; reference generalizes to E111
+      t"e114-duplicate-literal",      // we report E114+E115; reference generalizes to one E111
+      t"e119-non-space-after-marker", // we report per heading; reference reports per marker
+      t"e122-pragma-with-remark" )    // reference cascades an extra E105 from its recovery
+
   // A document schema with two required scalar fields and no defaults: a document
   // omitting both yields two `RequiredMemberAbsent` violations.
   private val twoRequiredSchema: Tels = Tels(
@@ -406,6 +419,55 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
            ( Tel.Error.Reason.BadVersion,
              Tel.Error.Reason.OverIndentation,
              Tel.Error.Reason.TrailingSpaces )
+
+      // Issue #1834: a blank line followed by a deeper line used to unwind the
+      // whole parse, silently dropping the rest of the document — the AST and
+      // every subsequent diagnostic.
+      test(m"A blank line before a deeper child is not itself an error (§9)"):
+        validateRead(t"parent\n\n  child\n").items.length
+      . assert(_ == 0)
+
+      test(m"A blank line before a deeper comment block is valid (§11.1)"):
+        validateRead(t"parent\n\n  # note\n  child\n").items.length
+      . assert(_ == 0)
+
+      test(m"A defect after a blank-then-deeper line still accrues (#1834)"):
+        validateRead(t"tel 1.0\n\nparent\n\n  child\n   bogus\n").items.stdlib.map(_(1).reason).to(List)
+      . assert(_ == List(Tel.Error.Reason.OddIndentation))
+
+      test(m"The post-blank odd-indent defect is located on its own line"):
+        validateRead(t"tel 1.0\n\nparent\n\n  child\n   bogus\n").items.stdlib.map(_(1).span.startLine).to(List)
+      . assert(_ == List(5.z))
+
+      test(m"Blank-then-over-indented recovers and later defects accrue"):
+        validateRead(t"parent\n\n    deep\ntail \n").items.map(_(1).reason).to[Set]
+      . assert(_ == Set(Tel.Error.Reason.OverIndentation, Tel.Error.Reason.TrailingSpaces))
+
+      test(m"Blank-then-deeper after a tabulation header blames the tabulation"):
+        validateRead(t"# a  # b\n\n    deep\n").items.map(_(1).reason).to[Set]
+      . assert(_.has(Tel.Error.Reason.RowWrongIndent))
+
+    suite(m"Corpus diagnostics are complete (no silent truncation)"):
+      // The corpus membership checks in stratiform_test pass if any ONE
+      // expected code is raised, so a parser that reports the first defect and
+      // silently stops (as blank-then-deeper once made it — issue #1834) still
+      // passes them. These compare the accrued multiset of codes against the
+      // reference parser's full report from the `.check` file, and require the
+      // whole positive corpus to accrue nothing.
+      CorpusLoader.negative.each: testcase =>
+        val expected = CheckFormat.parse(testcase.check).errors.map(_.code)
+
+        if expected.stdlib.nonEmpty && expected.stdlib.forall(_ < 200)
+        && !strictExemptions.stdlib.contains(testcase.stem)
+        then
+          test(m"accrues exactly the reference diagnostics on ${testcase.stem}"):
+            validateRead(testcase.source.utf8).items.stdlib.map(_(1).reason.number).sorted
+          . assert(_ == expected.stdlib.sorted)
+
+      CorpusLoader.positive.each: testcase =>
+        test(m"accrues no diagnostics on ${testcase.stem}"):
+          validateRead(testcase.source.utf8).items.length
+        . assert(_ == 0)
 
     suite(m"Located schema-validation errors (LSP diagnostics)"):
       test(m"Unknown-keyword errors carry their keyword pointer"):

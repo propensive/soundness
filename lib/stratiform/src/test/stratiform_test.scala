@@ -133,6 +133,38 @@ object Tests extends Suite(m"Stratiform Tests"):
           TelCheckTree.of(reparsed)
         . assert(_ == TelCheckTree.of(testcase.source.read[Tel]))
 
+    suite(m"Blank-then-deeper layout (§9, issue #1834)"):
+      // Blank lines have no structural effect: a blank run before a deeper
+      // line neither errors nor (formerly) silently ends the document. The
+      // blanks are preserved as a blank-only block, so these documents must
+      // round-trip byte-for-byte.
+      test(m"a blank line before a first child round-trips byte-for-byte"):
+        t"parent\n\n  child\n".read[Tel].show
+      . assert(_ == t"parent\n\n  child\n")
+
+      test(m"a blank line before a deeper comment round-trips byte-for-byte"):
+        t"parent\n\n  # note\n  child\n".read[Tel].show
+      . assert(_ == t"parent\n\n  # note\n  child\n")
+
+      test(m"a blank line before a grandchild round-trips byte-for-byte"):
+        t"parent\n  a\n\n    b\n".read[Tel].show
+      . assert(_ == t"parent\n  a\n\n    b\n")
+
+      test(m"two blank lines before a first child round-trip byte-for-byte"):
+        t"parent\n\n\n  child\n".read[Tel].show
+      . assert(_ == t"parent\n\n\n  child\n")
+
+      test(m"a blank line before an over-indented line fails fast with E111"):
+        capture[Tel.Error](t"parent\n\n    too-deep\n".read[Tel]).reason.number
+      . assert(_ == 111)
+
+      test(m"the streaming parser agrees on a blank-then-deeper document"):
+        val source = t"parent\n\n  child value\n"
+        val bytes: Data = summon[CharEncoder].encoded(source)
+        TelCheckTree.of(Tel.make(Tel.Parser.parse(Cursor[Data](bytes))))
+        == TelCheckTree.of(source.read[Tel])
+      . assert(identity)
+
     suite(m"Streaming parser — positive corpus"):
       CorpusLoader.positive.each: testcase =>
         test(m"streaming parses ${testcase.stem}"):
@@ -192,6 +224,20 @@ object Tests extends Suite(m"Stratiform Tests"):
               Tel.Parser.parse(chunkedCursor(testcase.source, n))))
             tree == baseline
         . assert(identity)
+
+      // Diagnostics must be chunking-invariant too: the fail-fast first error
+      // is the same whatever the chunk boundaries.
+      CorpusLoader.negative.each: testcase =>
+        val codes = CorpusLoader.expectedCodes(testcase)
+        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
+          test(m"all chunk sizes raise the same error on ${testcase.stem}"):
+            val baseline =
+              capture[Tel.Error](Tel.Parser.parse(Cursor[Data](testcase.source))).reason.number
+            val sizes = List(1, 7, 64, 1024, testcase.source.readable.length.max(1))
+            sizes.stdlib.forall: n =>
+              capture[Tel.Error](Tel.Parser.parse(chunkedCursor(testcase.source, n)))
+              . reason.number == baseline
+          . assert(identity)
 
     suite(m"Document streams (§6.1)"):
       // Each `.check` fixture holds a `=== document N ===` sequence; the parsed
@@ -410,6 +456,11 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"Nested records parse directly"):
         val doc = t"title Acme\nboss\n  name Bob\n  age 40\n"
+        (doc.read[Tests.Company in Tel], parity[Tests.Company](doc))
+      . assert(_ == (Tests.Company(t"Acme", Tests.Person(t"Bob", 40)), true))
+
+      test(m"A blank line before a nested record's children parses directly (#1834)"):
+        val doc = t"title Acme\nboss\n\n  name Bob\n  age 40\n"
         (doc.read[Tests.Company in Tel], parity[Tests.Company](doc))
       . assert(_ == (Tests.Company(t"Acme", Tests.Person(t"Bob", 40)), true))
 
