@@ -34,7 +34,6 @@ package enigmatic
 
 import java.security as js, js.spec as jss, js.interfaces as jsi
 import javax.crypto as jc, javax.crypto.spec.*
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

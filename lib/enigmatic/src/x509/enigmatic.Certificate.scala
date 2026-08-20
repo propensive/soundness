@@ -34,9 +34,8 @@ package enigmatic
 
 import scala.caps
 
-import proscenium.compat.*
-
 import anticipation.*
+import denominative.*
 import aviation.*
 import contingency.*
 import distillate.*
@@ -127,7 +126,7 @@ object Certificate:
     // `dNSName` is `[2] IMPLICIT IA5String`, which is exactly what an implicit tag is for: the
     // choice is identified by its tag, and the string type never appears on the wire.
     val alternativeNames: Optional[Asn1] =
-      if alternatives.isEmpty then Unset else
+      if alternatives.nil then Unset else
         val names = alternatives.map: name =>
           Asn1.Tagged(2, false, Asn1.Ia5String(name))
 
@@ -174,7 +173,7 @@ object Certificate:
   // RFC 5280 describes a SHA-1 digest instead, but the two are interchangeable — a key identifier
   // only has to be unique, not unforgeable — and this avoids making every caller permit SHA-1.
   private def keyIdentifier(publicKey: Data)(using Hash in Sha2[256]): Data =
-    publicKey.digest[Sha2[256]].data.take(20)
+    publicKey.digest[Sha2[256]].data.keep(20)
 
   private def instant(instant: Instant over Unix): Asn1 =
     val seconds = Math.floorDiv(instant.long, 1000L)

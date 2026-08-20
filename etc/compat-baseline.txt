@@ -29,13 +29,12 @@ digression 4
 dissonance 4
 distillate 2
 embarcadero 2
-enigmatic 8
 escapade 6
 escritoire 4
 ethereal 2
 eucalyptus 1
 exoskeleton 6
-facsimile 23
+facsimile 1
 frontier 1
 fulminate 5
 galilei 3

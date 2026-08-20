@@ -44,7 +44,6 @@ import gossamer.*
 import kaleidoscope.*
 import monotonous.*, alphabets.base64Standard
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -75,7 +74,7 @@ object Pem:
         type Operand = Text
 
         def aggregate(stream: Chain[Text]): value in Pem =
-          decode(parse(Cursor(stream.iterator)))
+          decode(parse(Cursor(stream.stdlib.iterator)))
 
         override def accept(stream: (Stream[Text] over Credit)^): value in Pem =
           // See `aggregable` below.
@@ -176,7 +175,7 @@ object Pem:
         type Self = Pem
         type Operand = Text
 
-        def aggregate(stream: Chain[Text]): Pem = parse(Cursor(stream.iterator))
+        def aggregate(stream: Chain[Text]): Pem = parse(Cursor(stream.stdlib.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): Pem =
           // The non-consume `accept` crosses to the consuming factory as a
@@ -191,7 +190,7 @@ object Pem:
         type Self = Chain[Pem]
         type Operand = Text
 
-        def aggregate(stream: Chain[Text]): Chain[Pem] = parseAll(Cursor(stream.iterator))
+        def aggregate(stream: Chain[Text]): Chain[Pem] = parseAll(Cursor(stream.stdlib.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): Chain[Pem] =
           // See `aggregable` above.
@@ -202,9 +201,9 @@ object Pem:
   given streamable: Pem is Streamable by Text over Credit = pem =>
     def groups(index: Int): Chain[Text] =
       if index >= pem.data.length then Chain(t"-----END ${pem.label}-----\n")
-      else t"${pem.data.slice(index, index + 48).serialize[Base64]}\n" #:: groups(index + 48)
+      else t"${pem.data.excerpt(index, index + 48).serialize[Base64]}\n" #:: groups(index + 48)
 
-    Stream((t"-----BEGIN ${pem.label}-----\n" #:: Chain.defer(groups(0))).iterator)
+    Stream((t"-----BEGIN ${pem.label}-----\n" #:: Chain.defer(groups(0))).stdlib.iterator)
 
   // PemError → Pem.Error
   object Error:
@@ -232,7 +231,7 @@ object Pem:
       case Proprietary(label) => label
       case other              => other.toString.tt.uncamel.map(_.upper).join(t" ")
 
-    def unapply(text: Text): Some[Pem.Label] = Some(index.get(text).getOrElse(Proprietary(text)))
+    def unapply(text: Text): Some[Pem.Label] = Some(index.stdlib.get(text).getOrElse(Proprietary(text)))
 
   enum Label:
     case Certificate, CertificateRequest, NewCertificateRequest, PrivateKey, RsaPrivateKey,
@@ -248,5 +247,5 @@ case class Pem(label: Pem.Label, data: Data):
         data.batched(48).map(_.serialize[Base64]),
         List(t"-----END $label-----") )
 
-    . flatten
+    . flat
     . join(t"\n")

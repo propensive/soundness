@@ -34,8 +34,6 @@ package facsimile
 
 import scala.caps
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import gossamer.*
