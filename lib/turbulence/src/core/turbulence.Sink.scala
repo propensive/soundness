@@ -40,7 +40,6 @@ import java.nio as jn
 import anticipation.*
 import contingency.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
@@ -203,7 +202,7 @@ object Sink:
 
       update def finish(): Unit =
         drain()
-        write(target, Chain.from(chunks.reverse.toSeq))
+        write(target, Chain.from(chunks.reverse.stdlib))
 
       private update def drain(): Unit =
         if mark0 > 0 then

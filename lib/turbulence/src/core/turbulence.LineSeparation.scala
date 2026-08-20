@@ -31,8 +31,6 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package turbulence
-
-import proscenium.compat.*
 import rudiments.reverse
 
 import java.io as ji
@@ -301,9 +299,9 @@ object LineSeparation:
             val slots: scala.Array[AnyRef]^ =
               unsafely(target.raw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
 
-            while count < targetSpace && tail.nonEmpty do
-              slots(targetOffset + count) = tail.head.asInstanceOf[AnyRef]
-              tail = tail.tail
+            while count < targetSpace && !tail.nil do
+              slots(targetOffset + count) = tail.stdlib.head.asInstanceOf[AnyRef]
+              tail = List.of(tail.stdlib.tail)
               count += 1
 
             count
@@ -533,9 +531,9 @@ object LineSeparation:
         val slots: scala.Array[AnyRef]^ =
           unsafely(target.raw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
 
-        while count < targetSpace && tail.nonEmpty do
-          slots(targetOffset + count) = tail.head.asInstanceOf[AnyRef]
-          tail = tail.tail
+        while count < targetSpace && !tail.nil do
+          slots(targetOffset + count) = tail.stdlib.head.asInstanceOf[AnyRef]
+          tail = List.of(tail.stdlib.tail)
           count += 1
 
         count

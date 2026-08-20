@@ -48,7 +48,6 @@ hallucination 25
 harlequin 5
 hellenism 1
 hieroglyph 5
-honeycomb 7
 hyperbole 4
 hypotenuse 4
 iridescence 3
@@ -91,7 +90,6 @@ superlunary 2
 surveillance 2
 telekinesis 1
 tessellate 1
-turbulence 8
 typonym 1
 ultimatum 4
 ulysses 4
