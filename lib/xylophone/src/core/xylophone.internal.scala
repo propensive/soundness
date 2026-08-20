@@ -37,7 +37,6 @@ import scala.collection.immutable.IndexedSeq
 
 import scala.{annotation, caps}
 
-import proscenium.compat.*
 
 import scala.language.dynamics
 
@@ -45,6 +44,10 @@ import java.lang as jl
 
 import scala.collection.immutable.VectorMap
 import scala.collection.immutable.{List, Nil, ::}
+// Residue: the staged accessors index frozen arrays, and the subscript `apply` is partial;
+// it awaits the partial-operations tranche.
+import proscenium.compat.apply
+
 import scala.quoted.*
 
 import anticipation.*
@@ -1822,7 +1825,7 @@ object internal:
         lazy val instances: Array[Xml.Field | Null]^{} = Array.of(${Varargs(instanceExprs)}*)
 
         lazy val repeatables: Array[Boolean]^{} =
-          instances.map { instance => instance != null && Xml.Parsable.repeats(instance) }
+          instances.remap { instance => instance != null && Xml.Parsable.repeats(instance) }
 
         lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
         val fallback: Optional[() => value] = $defaultExpr

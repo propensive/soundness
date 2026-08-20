@@ -34,7 +34,6 @@ package xylophone
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -279,8 +278,8 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         val source = t"<root>\n  <name>Alice</name>\n  <age>30</age>\n</root>"
         val tracked = source.load[Xml]
         val results = validateWithPositions(tracked)(_.asTracked[DPerson])
-        results.find(_(0) == t"/email[1]").map(_(1))
-      . assert(_ == Some(Unset))
+        results.seek(_(0) == t"/email[1]").let(_(1))
+      . assert(_ == Unset)
 
       test(m"Non-tracked Xml has Unset positions"):
         val xml = x"<root><name>Alice</name></root>"

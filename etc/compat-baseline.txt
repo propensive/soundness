@@ -100,7 +100,7 @@ urticose 2
 vicarious 2
 wisteria 2
 xenophile 10
-xylophone 11
+xylophone 2
 yossarian 1
 ypsiloid 10
 zephyrine 5
