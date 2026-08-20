@@ -275,7 +275,7 @@ package socketBackends:
       case ClientExchange.Tcp(socket) =>
         val out = socket.getOutputStream.nn
 
-        caps.unsafe.unsafeAssumePure(input).sweep: region =>
+        caps.unsafe.unsafeAssumePure(input).drain: region =>
           range =>
             val interval: Interval = range
             out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
@@ -490,7 +490,7 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
                   count
 
     def send(consume data: (Stream[Data] over Credit)^): Unit =
-      data.sweep: region =>
+      data.drain: region =>
         range =>
           val interval: Interval = range
           out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
@@ -594,7 +594,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
       // stream `write` throws at runtime; `Duplex.send` offers no typed error channel.
       import unsafeExceptions.canThrowAny
 
-      data.sweep: region =>
+      data.drain: region =>
         range =>
           val interval: Interval = range
           val start = interval.start.n0

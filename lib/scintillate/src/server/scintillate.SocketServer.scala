@@ -166,7 +166,7 @@ extends RequestServable:
     var count: Int = 0
     var failed: Boolean = false
 
-    stream.sweep: region =>
+    stream.drain: region =>
       range =>
         if !failed then
           val interval: Interval = range

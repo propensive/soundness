@@ -443,7 +443,7 @@ object Tests extends Suite(m"Turbulence tests"):
         relay.stop()
         var windows: Int = 0
 
-        relay.stream.sweep: _ =>
+        relay.stream.drain: _ =>
           _ => windows += 1
 
         windows

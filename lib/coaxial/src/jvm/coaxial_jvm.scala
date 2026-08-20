@@ -290,7 +290,7 @@ package socketBackends:
       case ClientExchange.Tcp(socket) =>
         val out = socket.getOutputStream.nn
 
-        input.sweep: region =>
+        input.drain: region =>
           range =>
             val interval: Interval = range
             out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
@@ -298,7 +298,7 @@ package socketBackends:
             out.flush()
 
       case ClientExchange.Domain(channel) =>
-        input.sweep: region =>
+        input.drain: region =>
           range =>
             val interval: Interval = range
             channel.write(ByteBuffer.wrap(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]),
@@ -526,7 +526,7 @@ private[coaxial] def streamsDuplex
                   count
 
     def send(consume data: (Stream[Data] over Credit)^): Unit =
-      data.sweep: region =>
+      data.drain: region =>
         range =>
           val interval: Interval = range
           out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
@@ -539,7 +539,7 @@ private[coaxial] def streamsDuplex
 // reusable buffer and blocks in `read`; EOF (`-1`) terminates the stream.
 private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
   def send(consume data: (Stream[Data] over Credit)^): Unit =
-    data.sweep: region =>
+    data.drain: region =>
       range =>
         val interval: Interval = range
 

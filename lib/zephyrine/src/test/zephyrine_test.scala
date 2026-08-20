@@ -971,7 +971,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           var collected: List[Byte] = Nil
 
           Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](), Array.of[Byte](4, 5)))
-          . sweep: region =>
+          . drain: region =>
               range => region.visit(range) { index => collected = region(index) :: collected }
 
           collected.reverse
@@ -1284,7 +1284,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val recorder = Recorder(small.stream)
 
           scala.caps.unsafe.unsafeAssumeSeparate:
-            recorder.sweep: region =>
+            recorder.drain: region =>
               range => ()
 
           recorder.demands.stdlib.last

@@ -416,7 +416,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
 
             turbulence.Benchmarks.textData.stream.via(summon[CharDecoder])
-            . sweep(region => range => total += (range: Interval).size)
+            . drain(region => range => total += (range: Interval).size)
 
             total
         }
@@ -448,7 +448,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         ( target = 1*Second, operationSize = textSize ):
         '{
             var total = 0L
-            turbulence.Benchmarks.textData.stream.delineate.sweep(region => range => total += (range: Interval).size)
+            turbulence.Benchmarks.textData.stream.delineate.drain(region => range => total += (range: Interval).size)
             total
         }
 
@@ -469,11 +469,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // Example 3: byte checksum fold. The Soundness fold runs over the raw window
     // with no per-element boxing; FS2/ZIO/Kyo box each byte as it flows.
     suite(m"Byte checksum fold (4 MB)"):
-      bench(m"Soundness  sweep")
+      bench(m"Soundness  drain")
         ( target = 1*Second, operationSize = size ):
         '{
             var total = 0L
-            turbulence.Benchmarks.input.stream.sweep: region =>
+            turbulence.Benchmarks.input.stream.drain: region =>
               range => region.visit(range) { index => total += (region(index) & 0xff) }
             total
         }
@@ -940,7 +940,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -957,7 +957,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               intake.finish())
             var total = 0L
             val consumer = Thread.ofVirtual.start(() =>
-              stream.sweep(region => range => total += (range: Interval).size))
+              stream.drain(region => range => total += (range: Interval).size))
             consumer.join()
             producer.join()
             total
@@ -985,7 +985,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               intake.finish())
             var total = 0L
             val consumer = Thread.ofVirtual.start(() =>
-              stream.sweep(region => range => total += (range: Interval).size))
+              stream.drain(region => range => total += (range: Interval).size))
             consumer.join()
             producer.join()
             total
@@ -1063,7 +1063,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             supervise:
               val merged = Confluence(turbulence.Benchmarks.quarters.map(q => q.stream)*)
               var total = 0L
-              merged.sweep(region => range => total += (range: Interval).size)
+              merged.drain(region => range => total += (range: Interval).size)
               total
         }
 
@@ -1118,7 +1118,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               val tasks = subscribers.map: subscriber =>
                 async:
                   var total = 0L
-                  subscriber.sweep(region => range => total += (range: Interval).size)
+                  subscriber.drain(region => range => total += (range: Interval).size)
                   total
               tasks.map(_.await()).sum
         }
@@ -1173,7 +1173,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -1186,7 +1186,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -1199,7 +1199,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -1212,7 +1212,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -1225,7 +1225,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -1256,7 +1256,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               finally intake.finish())
 
             var total = 0L
-            stream.sweep: region =>
+            stream.drain: region =>
               range =>
                 val count = (range: Interval).size
                 total += count + (turbulence.Benchmarks.burn(count) & 1L)
@@ -1373,7 +1373,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                 async:
                   val slow = ticket.getAndIncrement() == 0
                   var total = 0L
-                  subscriber.sweep: region =>
+                  subscriber.drain: region =>
                     range =>
                       val count = (range: Interval).size
                       total += count
@@ -1422,7 +1422,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -1442,7 +1442,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               intake.finish())
             var total = 0L
             val consumer = Thread.ofVirtual.start(() =>
-              stream.sweep(region => range => total += (range: Interval).size))
+              stream.drain(region => range => total += (range: Interval).size))
             consumer.join()
             producer.join()
             total
@@ -1508,7 +1508,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -1527,7 +1527,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               intake.finish())
             var total = 0L
             val consumer = Thread.ofVirtual.start(() =>
-              stream.sweep(region => range => total += (range: Interval).size))
+              stream.drain(region => range => total += (range: Interval).size))
             consumer.join()
             producer.join()
             total
@@ -1606,7 +1606,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               finally intake.finish())
 
             var total = 0L
-            stream.sweep: region =>
+            stream.drain: region =>
               range =>
                 val count = (range: Interval).size
                 total += count + (turbulence.Benchmarks.burn(count) & 1L)
@@ -1741,7 +1741,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               finally intake.finish())
 
             var total = 0L
-            stream.sweep: region =>
+            stream.drain: region =>
               range =>
                 val count = (range: Interval).size
                 total += count + (turbulence.Benchmarks.burn(count) & 1L)
@@ -1828,7 +1828,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
 
             turbulence.Benchmarks.gzippedInput.stream.decompress[Gzip]
-            . sweep(region => range => total += (range: Interval).size)
+            . drain(region => range => total += (range: Interval).size)
 
             total
         }
@@ -1864,7 +1864,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
 
             turbulence.Benchmarks.textData.stream.via(summon[CharDecoder])
-            . sweep(region => range => total += (range: Interval).size)
+            . drain(region => range => total += (range: Interval).size)
 
             total
         }
@@ -1903,7 +1903,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                 turbulence.Benchmarks.inputChunks.each(intake.put)
                 intake.finish())
               var total = 0L
-              stream.sweep(region => range => total += (range: Interval).size)
+              stream.drain(region => range => total += (range: Interval).size)
               producer.join()
               total
           }
@@ -1970,7 +1970,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -2001,7 +2001,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
 
             turbulence.Benchmarks.smallGzipped.stream.decompress[Gzip]
-            . sweep(region => range => total += (range: Interval).size)
+            . drain(region => range => total += (range: Interval).size)
 
             total
         }
@@ -2034,7 +2034,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               var total = 0L
 
               turbulence.Benchmarks.smallGzipped.stream.decompress[Gzip]
-              . sweep(region => range => total += (range: Interval).size)
+              . drain(region => range => total += (range: Interval).size)
 
               total
           }
@@ -2069,7 +2069,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
 
             turbulence.Benchmarks.smallGzipped.stream.decompress[Gzip]
-            . sweep(region => range => total += (range: Interval).size)
+            . drain(region => range => total += (range: Interval).size)
 
             total
         }
@@ -2081,7 +2081,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       saturated(m"Soundness  Stream.delineate")(target = 1*Second, sweep = 128):
         '{
             var total = 0L
-            turbulence.Benchmarks.smallText.stream.delineate.sweep(region => range => total += (range: Interval).size)
+            turbulence.Benchmarks.smallText.stream.delineate.drain(region => range => total += (range: Interval).size)
             total
         }
 
@@ -2106,7 +2106,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
         '{
             var total = 0L
-            turbulence.Benchmarks.smallText.stream.delineate.sweep(region => range => total += (range: Interval).size)
+            turbulence.Benchmarks.smallText.stream.delineate.drain(region => range => total += (range: Interval).size)
             total
         }
 
@@ -2140,7 +2140,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             . via(summon[CharDecoder]).via(summon[CharEncoder])
             . via(summon[CharDecoder]).via(summon[CharEncoder])
             . via(summon[CharDecoder])
-            . sweep(region => range => total += (range: Interval).size)
+            . drain(region => range => total += (range: Interval).size)
 
             total
         }
@@ -2177,7 +2177,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             . via(summon[CharDecoder]).via(summon[CharEncoder])
             . via(summon[CharDecoder]).via(summon[CharEncoder])
             . via(summon[CharDecoder])
-            . sweep(region => range => total += (range: Interval).size)
+            . drain(region => range => total += (range: Interval).size)
 
             total
         }
@@ -2225,7 +2225,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             supervise:
               val merged = Confluence(turbulence.Benchmarks.smallQuarters.map(q => q.stream)*)
               var total = 0L
-              merged.sweep(region => range => total += (range: Interval).size)
+              merged.drain(region => range => total += (range: Interval).size)
               total
         }
 
@@ -2277,7 +2277,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             supervise:
               val merged = Confluence(turbulence.Benchmarks.smallQuarters.map(q => q.stream)*)
               var total = 0L
-              merged.sweep(region => range => total += (range: Interval).size)
+              merged.drain(region => range => total += (range: Interval).size)
               total
         }
 
@@ -2353,7 +2353,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
 
             turbulence.Benchmarks.textData.stream.delineate
-            . sweep(region => range => total += (range: Interval).size)
+            . drain(region => range => total += (range: Interval).size)
 
             total
         }
@@ -2365,7 +2365,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
-            stream.sweep(region => range => total += (range: Interval).size)
+            stream.drain(region => range => total += (range: Interval).size)
             producer.join()
             total
         }
@@ -2375,7 +2375,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
 
             turbulence.Benchmarks.gzippedInput.stream.decompress[Gzip]
-            . sweep(region => range => total += (range: Interval).size)
+            . drain(region => range => total += (range: Interval).size)
 
             total
         }

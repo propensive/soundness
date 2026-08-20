@@ -59,7 +59,7 @@ object Writable:
 
     // The non-consume `write` signature crosses to the consuming drain as a
     // neutral reference (the `accept` convention).
-    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].sweep: region =>
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].drain: region =>
       range =>
         if !failed then
           val interval: Interval = range
@@ -136,7 +136,7 @@ object Writable:
       var total: Long = 0L
       var failed: Boolean = false
 
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].sweep: region =>
+      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].drain: region =>
         range =>
           if !failed then
             val interval: Interval = range

@@ -128,7 +128,7 @@ object Http2Serve:
                 case Http.Body.Flowing(source) =>
                   connection0.sendHeaders(streamId, List.of(headEntries), endStream = false)
 
-                  source().sweep: region =>
+                  source().drain: region =>
                     range =>
                       connection0.sendData(streamId, region.materialize(range), endStream = false)
 
@@ -214,7 +214,7 @@ extends Duplex:
   def source(using Buffering): (Stream[Data] over Credit)^ = Streamable.inputStream.stream(in)
 
   def send(consume data: (Stream[Data] over Credit)^): Unit =
-    data.sweep: region =>
+    data.drain: region =>
       range =>
         val interval: Interval = range
         out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
