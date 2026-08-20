@@ -35,7 +35,6 @@ package telekinesis
 import scala.caps
 
 import beneficence.*
-import proscenium.compat.*
 
 import scala.language.dynamics
 
@@ -183,7 +182,7 @@ object Http:
     private lazy val all: Map[Int, Status] =
       Map.from(Array.unsafeFrozen(values).readable.bi.map(_.code -> _))
 
-    def unapply(code: Int): Option[Status] = all.get(code)
+    def unapply(code: Int): Option[Status] = all.stdlib.get(code)
 
     given communicable: Status is Communicable = status => m"${status.code} (${status.description})"
 
@@ -500,7 +499,7 @@ object Http:
       Head(method, version, host, target, headers)
 
     def parse(stream: Chain[Data])(using Tactic[Http.Request.Error]): Request^ =
-      val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
+      val cursor = Cursor[Data](stream.filter(!_.nil).stdlib.iterator)
       val head = parseHead(cursor)
 
       Request
@@ -509,7 +508,7 @@ object Http:
           head.host,
           head.target,
           head.headers,
-          () => cursor.remainder.iterator.stream )
+          () => cursor.remainder.stdlib.iterator.stream )
 
     // The endpoint form: the request parses straight off the connection's pull
     // endpoint. The body spring lends the cursor's remainder as a SINGLE-OWNER
@@ -914,7 +913,7 @@ object Http:
     def parse(stream: Chain[Data], bodiless: Boolean = false)
     :   Response raises Http.Response.Error =
 
-      parseCursor(Cursor[Data](stream.filter(_.nonEmpty).iterator), bodiless)
+      parseCursor(Cursor[Data](stream.filter(!_.nil).stdlib.iterator), bodiless)
 
     // The endpoint form: the response is parsed straight off the connection's pull
     // endpoint, with no lazy-list view. The tactic is a plain using-parameter: a

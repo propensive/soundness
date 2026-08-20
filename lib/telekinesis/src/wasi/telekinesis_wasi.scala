@@ -34,7 +34,6 @@ package telekinesis
 
 import scala.annotation.nowarn
 import java.nio.charset.StandardCharsets
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -125,7 +124,7 @@ package httpBackends:
       val payload: Data = if method.payload then body().memoize else Array.empty[Byte]
 
       val bodyHandles =
-        if payload.isEmpty then Unset else
+        if payload.length == 0 then Unset else
           val bodyHandle = request.body.call[Wasm.Handle of "outgoing-body"]()
           val outgoingBody: Foreign of "outgoing-body" from Wit = bodyHandle
           val writeHandle = outgoingBody.write.call[Wasm.Handle of "output-stream"]()
@@ -198,7 +197,7 @@ package httpBackends:
       bodyHandle.dispose()
       responseHandle.dispose()
 
-      val content: Data = chunks.stdlib.reverse.foldLeft(Array.empty[Byte])(_ ++ _)
+      val content: Data = Array.frozen(chunks.stdlib.reverse.foldLeft(scala.IArray.empty[Byte])(_ ++ _.readable))
       status(textHeaders, Http.Body.Fixed(content))
 
 // Serves HTTP from a Wasm Component: the bridge from `wasi:http/incoming-handler`'s exported
@@ -247,7 +246,7 @@ object WasiHttpServer:
     bodyHandle.dispose()
     requestHandle.dispose()
 
-    val content: Data = chunks.stdlib.reverse.foldLeft(Array.empty[Byte])(_ ++ _)
+    val content: Data = Array.frozen(chunks.stdlib.reverse.foldLeft(scala.IArray.empty[Byte])(_ ++ _.readable))
 
     // The request's host is the server's own; a component behind `wasi:http` is not addressed by
     // hostname, so `Localhost` stands in (and avoids parsing the authority, which would reach the
@@ -299,7 +298,7 @@ object WasiHttpServer:
 
     val outBody: Foreign of "outgoing-body" from Wit = outBodyHandle
 
-    if !payload.isEmpty then
+    if payload.length > 0 then
       val writeHandle = outBody.write.call[Wasm.Handle of "output-stream"]()
       val outputStream: Foreign of "output-stream" from Wit = writeHandle
       outputStream.`blocking-write-and-flush`(payload).call[Unit]()

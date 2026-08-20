@@ -90,7 +90,7 @@ stenography 1
 stratiform 25
 superlunary 2
 surveillance 2
-telekinesis 10
+telekinesis 1
 tessellate 1
 turbulence 8
 typonym 1

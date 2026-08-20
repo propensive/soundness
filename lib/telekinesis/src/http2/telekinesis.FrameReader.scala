@@ -33,7 +33,6 @@
 package telekinesis
 
 import scala.caps
-import proscenium.compat.*
 
 import anticipation.{Data as Bytes, *}
 import contingency.*
@@ -41,6 +40,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 import prepositional.*
+import symbolism.*
 import denominative.capped
 import zephyrine.{Slate, Stream, Credit, Buffering, Substrate}
 
@@ -128,5 +128,5 @@ extends caps.ExclusiveCapability, caps.Stateful:
       val header = slice(9)
       val length = Frame.uint24(header, 0)
       if !ensure(length) then abort(Http2.Error(Reason.Truncated))
-      val whole: Bytes = header ++ slice(length)
+      val whole: Bytes = Array.frozen(header.readable ++ slice(length).readable)
       Frame.decode(whole, 0)(0)
