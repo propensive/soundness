@@ -103,5 +103,5 @@ object Fqcn:
 
 class Fqcn(val parts: Array[Text]^{}):
   def text: Text = Fqcn.join(parts, parts.length)
-  def className: Text = parts.last
+  def className: Text = parts.readable.last
   def packageName: Text = Fqcn.join(parts, parts.length - 1)

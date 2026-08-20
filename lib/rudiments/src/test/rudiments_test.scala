@@ -148,7 +148,8 @@ object Tests extends Suite(m"Rudiments Tests"):
         xs.minimize(identity(_))
       . assert(_ == Unset)
 
-      test(m"last on an occupied chain"):
+      test(m"last on an occupied chain demands the unbounded acknowledgement"):
+        import denominative.asymptotics.unboundedSizeComplexity
         val xs: Chain[Int] = Chain(1, 2, 3)
         xs.occupied.let(_.last)
       . assert(_ == 3)
@@ -173,6 +174,38 @@ object Tests extends Suite(m"Rudiments Tests"):
         val xs: List[Int] = List(1, 2, 2, 3)
         xs.count(_ == 2)
       . assert(_ == 2)
+
+    suite(m"last and lead tests"):
+      test(m"last of a sequence"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        xs.occupied.let(_.last)
+      . assert(_ == 3)
+
+      test(m"lead is everything but the last"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        xs.occupied.lay(Sequence[Int]())(_.lead)
+      . assert(_ == Sequence(1, 2))
+
+      test(m"last of a list demands the linear acknowledgement"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.occupied.let(_.last)
+      . assert(_ == 3)
+
+      test(m"lead of a list"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.occupied.lay(List[Int]())(_.lead)
+      . assert(_ == List(1, 2))
+
+      test(m"lead then last reconstitutes the whole"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.occupied.lay(List[Int]()) { xs => xs.lead :+ xs.last }
+      . assert(_ == List(1, 2, 3))
+
+      test(m"the ordinal-prefix operation is now `prefix`"):
+        val xs: Sequence[Int] = Sequence(10, 20, 30)
+        val interval: Interval = xs.prefix(_ => true)
+        interval.limit.n0
+      . assert(_ == 3)
 
     suite(m"glean and omit tests"):
       test(m"glean transforms the first match"):
@@ -319,7 +352,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"`iterate` over a branded sub-interval visits only that range"):
         var total = 0
-        array.iterate(array.lead(_ => true).capped(2)) { i => total += array.at(i) }
+        array.iterate(array.prefix(_ => true).capped(2)) { i => total += array.at(i) }
         total
       . assert(_ == 30)
 
@@ -332,12 +365,12 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Unset)
 
       test(m"`lead` spans the matching prefix and stops at the first mismatch"):
-        val interval: Interval = text.lead { i => text(i) != 'l' }
+        val interval: Interval = text.prefix { i => text(i) != 'l' }
         interval.size
       . assert(_ == 2)
 
       test(m"`lead` spans the whole extent when everything matches"):
-        val interval: Interval = text.lead { _ => true }
+        val interval: Interval = text.prefix { _ => true }
         interval.size
       . assert(_ == 5)
 

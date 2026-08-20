@@ -103,9 +103,11 @@ extension [countable: Countable](value: countable)
 
   // The longest prefix whose every index satisfies the predicate, as a branded interval —
   // possibly empty, possibly the whole extent. Its `limit` is the stopping index, so
-  // `value.lead(...)` replaces `while i < size && p(i) do i += 1` loops whose callers then
+  // `value.prefix(...)` replaces `while i < size && p(i) do i += 1` loops whose callers then
   // slice or resume from `i`.
-  inline def lead(inline predicate: (Ordinal in value.type) => Boolean)
+  // Named `prefix`, not `lead`: `lead` is the complement of `last` (everything but the final
+  // element), and two extensions of one name on the same receiver are ambiguous.
+  inline def prefix(inline predicate: (Ordinal in value.type) => Boolean)
   :   Interval in value.type =
 
     var index: Int = 0

@@ -308,7 +308,7 @@ object StackTrace:
                   current = char(index2)
 
                 val name2 =
-                  if arguments.size == 2 then "Σ("+arguments.last+" -> "+arguments.head+")"
+                  if arguments.size == 2 then "Σ("+arguments.stdlib.last+" -> "+arguments.head+")"
                   else arguments.tail.mkString("Σ((", ", ", ")")+" -> "+arguments.head+")"
 
                 val mc = name.substring(index, index + 3).nn
@@ -363,7 +363,7 @@ object StackTrace:
             val types2 = types.drop(index + 3).iterator.to(List).map(primitive)
 
             if types2.size <= 2 then types2.mkString("(", " => ", ")")
-            else types2.init.mkString("((", ", ", s") => ${types2.last})")
+            else types2.init.mkString("((", ", ", s") => ${types2.stdlib.last})")
 
     else if rewritten.s.startsWith("scala.runtime.function.JProcedure")
     then
@@ -404,7 +404,7 @@ object StackTrace:
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
     val fullClass: List[Text] =
       List.from(fullClassName.s.split("\\.").nn.iterator.map { part => Text(part.nn) })
-    val className: Text = fullClass.last
+    val className: Text = fullClass.stdlib.last
 
     val component: Text =
       val length = fullClassName.s.length - className.s.length - 1

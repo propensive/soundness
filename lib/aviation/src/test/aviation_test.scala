@@ -1962,7 +1962,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == 2)
 
       test(m"The final partial segment ends at the period's finish"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute).last.finish.long
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute).stdlib.last.finish.long
       . assert(_ == 3_600_000L)
 
       test(m"A period can be split by a Duration"):
