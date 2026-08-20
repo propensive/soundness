@@ -32,7 +32,6 @@
                                                                                                   */
 package xenophile
 
-import proscenium.compat.*
 
 import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.*
@@ -396,7 +395,7 @@ object KotlinDialect extends Dialect:
         val arguments = tpe.getArguments.nn.asScala.to(List).flatMap: projection =>
           Optional(projection.getType).let { tpe => List(foreignType(tpe)) }.or(Nil)
 
-        if arguments.isEmpty then Foreign.Type.Named(name)
+        if arguments.nil then Foreign.Type.Named(name)
         else Foreign.Type.Applied(name, arguments)
 
       case classifier: KmClassifier.TypeAlias =>

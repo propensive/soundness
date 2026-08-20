@@ -32,7 +32,6 @@
                                                                                                   */
 package xenophile
 
-import proscenium.compat.*
 
 import java.lang.foreign.*
 

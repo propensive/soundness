@@ -37,7 +37,6 @@ package xenophile
 import scala.collection.immutable.List as SList
 import scala.collection.immutable.Map
 
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
