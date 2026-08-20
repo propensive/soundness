@@ -44,7 +44,6 @@ gesticulate 4
 gnossienne 1
 gossamer 5
 guillotine 1
-hallucination 25
 harlequin 5
 hellenism 1
 hieroglyph 5

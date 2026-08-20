@@ -33,7 +33,6 @@
 package hallucination
 
 import scala.math
-import proscenium.compat.*
 
 // The four VP8L reverse transforms, ported from image-rs/image-webp
 // (`src/lossless/decoder/reverse_transform.rs`, MIT/Apache-2.0). The reference uses chunked,
@@ -84,7 +83,7 @@ private[hallucination] object WebpTransform:
 
       while blockX < blockWidth do
         val blockIndex = (y >> sizeBits)*blockWidth + blockX
-        val mode = u(predictorData(blockIndex*4 + 1))
+        val mode = u(predictorData.readable(blockIndex*4 + 1))
         val start = (y*width + ((blockX << sizeBits).max(1)))*4
         val end = (y*width + (((blockX + 1) << sizeBits).min(width)))*4
         dispatch(mode, data, start, end, stride)
@@ -248,9 +247,9 @@ private[hallucination] object WebpTransform:
 
       while x < width do
         val block = rowTransform + (x >> sizeBits)*4
-        val redToBlue = transformData(block).toByte
-        val greenToBlue = transformData(block + 1).toByte
-        val greenToRed = transformData(block + 2).toByte
+        val redToBlue = transformData.readable(block).toByte
+        val greenToBlue = transformData.readable(block + 1).toByte
+        val greenToRed = transformData.readable(block + 2).toByte
         val pixel = (y*width + x)*4
         val green = data(pixel + 1).toByte
         val red = (u(data(pixel)) + colorDelta(greenToRed, green)) & 0xff

@@ -36,8 +36,6 @@ import java.io as ji
 
 import scala.caps
 
-import proscenium.compat.*
-
 import anticipation.*
 import rudiments.*
 

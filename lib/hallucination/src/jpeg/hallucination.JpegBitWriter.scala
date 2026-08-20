@@ -36,8 +36,6 @@ import java.io as ji
 
 import scala.caps
 
-import proscenium.compat.*
-
 // An MSB-first bit writer for JPEG entropy-coded data, accumulating into a 64-bit register and
 // flushing whole bytes, with the mandatory `0xFF -> 0xFF 0x00` byte stuffing. Simpler than
 // jpeg-encoder's word-at-a-time writer but produces equivalent output.
@@ -59,12 +57,12 @@ extends caps.Mutable:
 
   // Emits a Huffman-coded symbol.
   update def encode(symbol: Int, table: JpegEncodeTable): Unit =
-    writeBits(table.codeOf(symbol), table.sizeOf(symbol))
+    writeBits(table.codeOf.readable(symbol), table.sizeOf.readable(symbol))
 
   // Emits a Huffman-coded symbol followed by `size` raw magnitude bits.
   update def encodeValue(size: Int, symbol: Int, value: Int, table: JpegEncodeTable): Unit =
-    val combined = (table.codeOf(symbol) << size) | (value & ((1 << size) - 1))
-    writeBits(combined, size + table.sizeOf(symbol))
+    val combined = (table.codeOf.readable(symbol) << size) | (value & ((1 << size) - 1))
+    writeBits(combined, size + table.sizeOf.readable(symbol))
 
   // Pads the final partial byte with 1-bits, as the JPEG bitstream requires.
   update def flushBits(): Unit =
