@@ -33,7 +33,6 @@
 package hallucination
 
 import scala.collection.mutable as scm
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -68,7 +67,7 @@ private[hallucination] object GifLzw:
 
     while outdex < length do
       while bits < codeSize && index < data.length do
-        accumulator |= (data(index)&0xff) << bits
+        accumulator |= (data.readable(index)&0xff) << bits
         bits += 8
         index += 1
 

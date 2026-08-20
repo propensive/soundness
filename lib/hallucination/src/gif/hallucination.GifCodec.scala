@@ -35,7 +35,6 @@ package hallucination
 import rudiments.Scribe.apply
 
 import scala.collection.mutable as scm
-import proscenium.compat.*
 
 import anticipation.*
 import denominative.*

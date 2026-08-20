@@ -33,7 +33,6 @@
 package hallucination
 
 import scala.math
-import proscenium.compat.*
 
 import java.io as ji
 
@@ -93,12 +92,12 @@ private[hallucination] object Vp8Encoder:
     private var vbuf: scala.Array[Int]^ = new scala.Array[Int](chromaWidth*mbHeight*8)
 
     private val quantIndex = 127 - quality.max(0).min(100)*127/100
-    private val ydc = dcQuant(quantIndex)
-    private val yac = acQuant(quantIndex)
-    private val y2dc = dcQuant(quantIndex)*2
-    private val y2ac = (acQuant(quantIndex)*155/100).max(8)
-    private val uvdc = dcQuant(quantIndex)
-    private val uvac = acQuant(quantIndex)
+    private val ydc = dcQuant.readable(quantIndex)
+    private val yac = acQuant.readable(quantIndex)
+    private val y2dc = dcQuant.readable(quantIndex)*2
+    private val y2ac = (acQuant.readable(quantIndex)*155/100).max(8)
+    private val uvdc = dcQuant.readable(quantIndex)
+    private val uvac = acQuant.readable(quantIndex)
 
     private val tokenProbs = coeffProbs
 
@@ -189,7 +188,7 @@ private[hallucination] object Vp8Encoder:
       i = 0
 
       while i < 1056 do
-        header.writeBool(false, coeffUpdateProbs(i))
+        header.writeBool(false, coeffUpdateProbs.readable(i))
         i += 1
 
       header.writeLiteral(1, 0) // no macroblock skip-coefficient probability
@@ -265,7 +264,7 @@ private[hallucination] object Vp8Encoder:
       var i = firstCoeff
 
       while i < 16 do
-        val zi = zigzag(i)
+        val zi = zigzag.readable(i)
         zigzagBlock(i) = block(offset + zi)/(if zi > 0 then acq else dcq)
         i += 1
 
@@ -280,7 +279,7 @@ private[hallucination] object Vp8Encoder:
 
       while i < endOfBlock do
         val coeff = zigzagBlock(i)
-        val band = coeffBands(i)
+        val band = coeffBands.readable(i)
         val probOffset = coeffIndex(plane, band, complexity, 0)
         val startIndex = if skipEob then 2 else 0
         val absValue = math.abs(coeff)
@@ -301,12 +300,12 @@ private[hallucination] object Vp8Encoder:
               else if absValue <= 66 then DctCat5 else DctCat6
 
             partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], probOffset, category, startIndex)
-            val extra = absValue - dctCatBase(category - DctCat1)
+            val extra = absValue - dctCatBase.readable(category - DctCat1)
             var mask = if category == DctCat6 then 1 << 10 else 1 << (category - DctCat1)
             var c = (category - DctCat1)*12
 
-            while probDctCat(c) != 0 do
-              partition.writeBool((extra & mask) > 0, probDctCat(c))
+            while probDctCat.readable(c) != 0 do
+              partition.writeBool((extra & mask) > 0, probDctCat.readable(c))
               mask >>= 1
               c += 1
 
@@ -318,7 +317,7 @@ private[hallucination] object Vp8Encoder:
         i += 1
 
       if endOfBlock < 16 then
-        val band = coeffBands(firstCoeff.max(endOfBlock))
+        val band = coeffBands.readable(firstCoeff.max(endOfBlock))
 
         partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], coeffIndex(plane, band, complexity, 0),
             DctEob)

@@ -34,7 +34,6 @@ package hallucination
 
 import java.io as ji
 import java.nio.charset.StandardCharsets
-import proscenium.compat.*
 
 import scala.collection.mutable as scm
 import scala.math
@@ -59,7 +58,7 @@ private[hallucination] object PngCodec:
   def decode(data: Data): Raster raises Raster.Error =
     try
       val signed =
-        data.length >= 8 && signature.indices.forall: index => u8(data, index) == signature.readUnchecked(index)
+        data.length >= 8 && signature.readable.indices.forall: index => u8(data, index) == signature.readUnchecked(index)
 
       if !signed then abort(Raster.Error(Png(), Reason.BadSignature))
 
@@ -77,12 +76,12 @@ private[hallucination] object PngCodec:
       while !finished do
         val length = u32be(data, position)
         // `slice` yields a fresh array and `String`'s constructor copies it.
-        val chunkType = new String(Array.unsafeJvm(data.slice(position + 4, position + 8)))
-        val body = data.slice(position + 8, position + 8 + length)
+        val chunkType = new String(Array.unsafeJvm(data.excerpt(position + 4, position + 8)))
+        val body = data.excerpt(position + 8, position + 8 + length)
 
         val storedCrc = u32be(data, position + 8 + length)
 
-        if corpuscular.Crc32.checksum(data.slice(position + 4, position + 8), body) != storedCrc
+        if corpuscular.Crc32.checksum(data.excerpt(position + 4, position + 8), body) != storedCrc
         then abort(Raster.Error(Png(), Reason.BadCrc))
 
         chunkType match
@@ -145,7 +144,7 @@ private[hallucination] object PngCodec:
         case 4 => 2
         case _ => 4
 
-      val alpha = colorType == 4 || colorType == 6 || !transparency.isEmpty
+      val alpha = colorType == 4 || colorType == 6 || !transparency.readable.isEmpty
       val maximum = (1 << depth) - 1
 
       // The `tRNS` samples for greyscale and truecolour are full-depth values.

@@ -32,8 +32,6 @@
                                                                                                   */
 package hallucination
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import gesticulate.*
@@ -48,6 +46,6 @@ object Gif:
 
     def decode(data: Data): Raster raises Raster.Error = GifBackend.decode(this, data)
     def encode(raster: Raster): Data = GifBackend.encode(this, raster)
-    def sniff(data: Data): Boolean = (data.length > 2 && data(0) == 0x47 && data(1) == 0x49 && data(2) == 0x46)
+    def sniff(data: Data): Boolean = (data.length > 2 && data.readable(0) == 0x47 && data.readable(1) == 0x49 && data.readable(2) == 0x46)
 
 sealed trait Gif

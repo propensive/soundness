@@ -33,7 +33,6 @@
 package hallucination
 
 import contingency.*
-import proscenium.compat.*
 
 import scala.caps
 
@@ -181,11 +180,11 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
     if numBits < 16 then readBits(reader)
 
     val lookup = peekBits(JpegHuffman.LutBits)
-    val size = table.lutSize(lookup)
+    val size = table.lutSize.readable(lookup)
 
     if size > 0 then
       consumeBits(size)
-      table.lutValue(lookup)
+      table.lutValue.readable(lookup)
     else
       val code0 = peekBits(16)
       var index = JpegHuffman.LutBits
@@ -194,9 +193,9 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
       while result == -1 && index < 16 do
         val code = code0 >> (15 - index)
 
-        if code <= table.maxcode(index) then
+        if code <= table.maxcode.readable(index) then
           consumeBits(index + 1)
-          result = table.values(code + table.delta(index))
+          result = table.values.readable(code + table.delta.readable(index))
 
         index += 1
 
@@ -210,10 +209,10 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
     if !table.hasAcLut then false else
       if numBits < JpegHuffman.LutBits then readBits(reader)
       val lookup = peekBits(JpegHuffman.LutBits)
-      val runSize = table.acRunSize(lookup)
+      val runSize = table.acRunSize.readable(lookup)
 
       if runSize == 0 then false else
-        fastAcValue = table.acValue(lookup)
+        fastAcValue = table.acValue.readable(lookup)
         fastAcRun = runSize >> 4
         consumeBits(runSize & 0x0f)
         true
