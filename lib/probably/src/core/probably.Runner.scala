@@ -34,7 +34,6 @@ package probably
 
 import java.lang as jl
 
-import proscenium.compat.*
 
 import ambience.{System as _, *}, environments.javaEnvironment
 import anticipation.*

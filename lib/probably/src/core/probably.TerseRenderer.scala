@@ -32,7 +32,6 @@
                                                                                                   */
 package probably
 
-import proscenium.compat.*
 
 import ambience.*
 import anticipation.*
@@ -116,9 +115,9 @@ private[probably] object TerseRenderer:
     case Block.Table(title, tableColumns, rows) =>
       title.let: id => Out.println(t"${id.id}  ${id.name.text}")
 
-      val tableColumns2 = tableColumns.zipWithIndex.map: (column, index) =>
+      val tableColumns2 = tableColumns.indexed.map: (column, index) =>
         val align = if column.numeric then TextAlignment.Right else TextAlignment.Left
-        escritoire.Column[List[Datum], Teletype, Teletype](column.title.teletype, align)(row => datum(row.stdlib(index)))
+        escritoire.Column[List[Datum], Teletype, Teletype](column.title.teletype, align)(row => datum(row.stdlib(index.n0)))
 
       Scaffold[List[Datum]](tableColumns2*)
       . tabulate(rows).grid(columns).render.each(Out.println(_))
@@ -170,7 +169,7 @@ private[probably] object TerseRenderer:
 
     val failures = document.results.filter: row => failureStatuses.has(row.status)
 
-    if failures.nonEmpty then
+    if !failures.nil then
       Out.println(t"")
 
       Scaffold[SummaryRow]

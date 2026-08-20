@@ -34,7 +34,6 @@ package probably
 
 import scala.collection.mutable as scm
 
-import proscenium.compat.*
 
 import anticipation.*
 import rudiments.*
@@ -99,13 +98,13 @@ final class Entry(val id: Test.Id, val kind: Entry.Kind):
     coordinates.each: (axis, value) =>
       if !axes0.has(axis) then axes0 = axes0 :+ axis
       val seen = ticks0(axis).or(Nil)
-      if !seen.has(value) then ticks0 = ticks0.updated(axis, seen :+ value)
+      if !seen.has(value) then ticks0 = ticks0.define(axis, seen :+ value)
 
     val address = coordinates.map(_(1))
 
     cells0(address).or:
       val tally = Tally()
-      cells0 = cells0.updated(address, tally)
+      cells0 = cells0.define(address, tally)
       tally
 
   // The coordinate values of one axis in presentation order: first-appearance order for

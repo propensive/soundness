@@ -32,7 +32,6 @@
                                                                                                   */
 package probably
 
-import proscenium.compat.*
 
 import ambience.*
 import anticipation.*
@@ -313,9 +312,9 @@ private[probably] object AnsiRenderer:
         title.let: id =>
           Out.println(e"$Bold(${Fg(palette.informative)}(${id.id})) $Bold(${id.name})")
 
-        val tableColumns2 = tableColumns.zipWithIndex.map: (column, index) =>
+        val tableColumns2 = tableColumns.indexed.map: (column, index) =>
           val align = if column.numeric then TextAlignment.Right else TextAlignment.Left
-            escritoire.Column[List[Datum], Teletype, Teletype](e"$Bold(${column.title})", align)(row => datum(row.stdlib(index)))
+            escritoire.Column[List[Datum], Teletype, Teletype](e"$Bold(${column.title})", align)(row => datum(row.stdlib(index.n0)))
 
         Scaffold[List[Datum]](tableColumns2*)
         . tabulate(rows).grid(columns).render.each(Out.println(_))
@@ -328,8 +327,8 @@ private[probably] object AnsiRenderer:
           val headings = steps.stdlib.map(_.show.pad(stepWidth, Rtl)).join
           e"  ${Fg(palette.subdued)}(${t"N".pad(labelWidth)}$headings)"
 
-        sequence.zipWithIndex.each: (spark, index) =>
-          val color = accent(index)
+        sequence.indexed.each: (spark, index) =>
+          val color = accent(index.n0)
 
           val cells: Teletype =
             spark.cells.stdlib.map: cell =>
@@ -362,8 +361,8 @@ private[probably] object AnsiRenderer:
           frames.map: frame =>
             StackTrace.Method(frame.className, frame.method).prefix
 
-          . distinct.zipWithIndex.map: (prefix, index) =>
-              prefix -> accent(index)
+          . distinct.indexed.map: (prefix, index) =>
+              prefix -> accent(index.n0)
 
           . to[Map]
 
@@ -421,7 +420,7 @@ private[probably] object AnsiRenderer:
       row.status match
         case Status.Fail | Status.Throws | Status.CheckThrows | Status.Mixed =>
           val firstDetail: Optional[Verdict.Detail] =
-            details(row.id).let(_.headOption.getOrElse(Unset))
+            details(row.id).let(_.prim)
 
           GithubActions.error
             ( message = describeFailure(firstDetail),
@@ -568,7 +567,7 @@ private[probably] object AnsiRenderer:
       val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
       List.of(diagram.nodes.stdlib.zip(diagram.render(describe).stdlib).toList)
 
-    val allHits = coverage.hits ++ coverage.oldHits
+    val allHits = coverage.hits + coverage.oldHits
 
     val junctures2 =
       List.of:

@@ -32,10 +32,10 @@
                                                                                                   */
 package probably
 
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import rudiments.*
@@ -123,17 +123,17 @@ case class Selection
     constraints: List[Selection.Constraint],
     listOnly:    Boolean ):
 
-  def trivial: Boolean = terms.isEmpty && kinds.isEmpty && constraints.isEmpty
+  def trivial: Boolean = terms.nil && kinds.nil && constraints.nil
 
   def admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =
     admitted(kind) && admitted(id) && admitted(coordinates)
 
-  private def admitted(kind: Entry.Kind): Boolean = kinds.isEmpty || kinds.has(kind)
+  private def admitted(kind: Entry.Kind): Boolean = kinds.nil || kinds.has(kind)
 
   private def ancestry(id: Test.Id): List[Test.Id] =
     id :: id.suite.let { suite => ancestry(suite.id) }.or(Nil)
 
-  private def admitted(id: Test.Id): Boolean = terms.isEmpty || locally:
+  private def admitted(id: Test.Id): Boolean = terms.nil || locally:
     val chain = ancestry(id)
     val names = chain.reverse.map(_.name.text)
     val path = names.join(t"/")
@@ -155,7 +155,7 @@ case class Selection
 
   private def admitted(coordinates: List[(Axis.Spec, Value)]): Boolean =
     constraints.all: constraint =>
-      coordinates.find(_(0).label == constraint.axis).fold(true): pair =>
+      coordinates.seek(_(0).label == constraint.axis).lay(true): pair =>
         val value = pair(1)
 
         constraint match
