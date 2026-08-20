@@ -1483,7 +1483,7 @@ case class Bytecode
     val instructions2 = instructions.map: (instruction: Bytecode.Instruction) =>
       instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
 
-    copy(sourceFile = codepoint.source.cut(t"/").last, instructions = instructions2)
+    copy(sourceFile = codepoint.source.cut(t"/").stdlib.last, instructions = instructions2)
 
   def linearize
     ( resolver:        (Text, Text, Text) => Optional[Bytecode],

@@ -161,7 +161,6 @@ extension [element](list: List[element])
   inline def zipWithIndex: List[(element, Int)] = List.of(list.stdlib.zipWithIndex)
   inline def head: element = list.stdlib.head
   inline def headOption: Option[element] = list.stdlib.headOption
-  inline def last: element = list.stdlib.last
   inline def lastOption: Option[element] = list.stdlib.lastOption
   inline def tail: List[element] = List.of(list.stdlib.tail)
   inline def init: List[element] = List.of(list.stdlib.init)
@@ -294,7 +293,6 @@ extension [element](sequence: Sequence[element])
   inline def zipWithIndex: Sequence[(element, Int)] = Sequence.of(sequence.stdlib.zipWithIndex)
   inline def head: element = sequence.stdlib.head
   inline def headOption: Option[element] = sequence.stdlib.headOption
-  inline def last: element = sequence.stdlib.last
   inline def lastOption: Option[element] = sequence.stdlib.lastOption
   inline def tail: Sequence[element] = Sequence.of(sequence.stdlib.tail)
   inline def init: Sequence[element] = Sequence.of(sequence.stdlib.init)
@@ -359,8 +357,6 @@ extension [element](array: Array[element]^{caps.any.rd})
   inline def head: element = array.readable.head
   @targetName("frozenHeadOption")
   inline def headOption: Option[element] = array.readable.headOption
-  @targetName("frozenLast")
-  inline def last: element = array.readable.last
   @targetName("frozenLastOption")
   inline def lastOption: Option[element] = array.readable.lastOption
   @targetName("frozenIndices")

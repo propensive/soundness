@@ -205,7 +205,7 @@ object Renderer:
 
       text.cut(t"\n") match
         case Nil            => Nil
-        case lines @ _ :: _ => if lines.last.plain.length == 0 then lines.dropRight(1) else lines
+        case lines @ _ :: _ => if lines.stdlib.last.plain.length == 0 then lines.dropRight(1) else lines
 
   private def bullet(palette: MarkdownPalette): Teletype =
     e"${Fg(palette.subdued)}(•)"

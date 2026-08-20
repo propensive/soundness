@@ -267,17 +267,20 @@ extension [self](value: self)(using traversable: self is Traversable)
 extension [self <: Populated](value: self)(using traversable: self is Traversable)
   def head: traversable.Operand = traversable.traverse(value).next()
 
-  // Forces the whole traversal; on a `Populated` receiver that is the caller's stated intent.
-  def last: traversable.Operand =
-    val iterator = traversable.traverse(value)
-    var element = iterator.next()
-    while iterator.hasNext do element = iterator.next()
-    element
-
   def reduce(lambda: (traversable.Operand, traversable.Operand) => traversable.Operand)
   :   traversable.Operand =
 
     traversable.traverse(value).reduce(lambda)
+
+// The back end of a `Populated` container: `last` is its final element and `lead` everything
+// before it, mirroring `head` and `tail`. Separate typeclasses from `Traversable` so each
+// container supplies its own implementation at its own cost — O(1) for an indexed shape, gated
+// for a linked or lazy one — rather than every receiver paying for a full traversal.
+extension [self <: Populated](value: self)(using terminable: self is Terminable)
+  def last: terminable.Operand = terminable.last(value)
+
+extension [self <: Populated, result](value: self)(using truncable: self is Truncable to result)
+  def lead: result = truncable.lead(value)
 
 // Conversion to a requested shape, which may be a proper type or an unapplied constructor:
 // `chars.to[List]`, `text.to[Set]`, `pairs.to[Map]`. `transparent inline` so the

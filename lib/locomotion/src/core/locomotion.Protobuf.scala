@@ -669,7 +669,7 @@ enum Protobuf:
 
   // The most recent single wire value (protobuf's last-one-wins rule for scalars).
   def single: Protobuf = this match
-    case Repeated(values) => if values.isEmpty then Protobuf.Absent else values.last
+    case Repeated(values) => if values.isEmpty then Protobuf.Absent else values.stdlib.last
     case other            => other
 
   // Every wire value recorded for this field — used to decode `repeated` fields.

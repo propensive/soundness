@@ -52,4 +52,4 @@ class Prefixes(val prefixes: List[MetricPrefix], val minimum: Double) extends Pl
       val chosen = candidates.find: prefix =>
         abs/math.pow(prefix.base.toDouble, prefix.exponent.toDouble) >= minimum
 
-      chosen.getOrElse(candidates.last)
+      chosen.getOrElse(candidates.stdlib.last)

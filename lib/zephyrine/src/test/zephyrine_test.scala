@@ -731,7 +731,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val gather = Gather()
           gather.credit = 10
           scala.caps.unsafe.unsafeAssumeSeparate(recorder.viaDuct(Doubler()).pump(gather))
-          recorder.demands.last
+          recorder.demands.stdlib.last
         . assert(_ == 5L)
 
         test(m"accepting reports translated demand"):
@@ -1277,7 +1277,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           scala.caps.unsafe.unsafeAssumeSeparate:
             recorder.viaDuct(Doubler()).viaDuct(Doubler()).pump(gather)
 
-          recorder.demands.last
+          recorder.demands.stdlib.last
         . assert(_ == 5L)
 
         test(m"a terminal sweep demands the transfer credit from its source"):
@@ -1287,7 +1287,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             recorder.sweep: region =>
               range => ()
 
-          recorder.demands.last
+          recorder.demands.stdlib.last
         . assert(_ == summon[Buffering].transfer(Substrate.Bytes).toLong)
 
       suite(m"Handoff backpressure tests"):
