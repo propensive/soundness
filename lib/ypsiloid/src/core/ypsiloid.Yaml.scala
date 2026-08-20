@@ -34,7 +34,6 @@ package ypsiloid
 
 import scala.collection.immutable.Vector
 import java.nio.charset.StandardCharsets
-import proscenium.compat.*
 
 import scala.caps
 
@@ -1018,15 +1017,15 @@ object Yaml extends Yaml2, Dynamic:
       inline def arrayLength: Int = Yaml.Ast.sequenceLength(yaml.asInstanceOf[Array[Any]^{}])
 
       inline def arrayElement(index: Int): Yaml.Ast =
-        yaml.asInstanceOf[Array[Yaml.Ast]^{}](index)
+        yaml.asInstanceOf[Array[Yaml.Ast]^{}].readable(index)
 
       inline def objectSize: Int = yaml.asInstanceOf[Array[Any]^{}].length/2
 
       inline def objectKey(index: Int): String =
-        yaml.asInstanceOf[Array[Any]^{}](index*2).asInstanceOf[String]
+        yaml.asInstanceOf[Array[Any]^{}].readable(index*2).asInstanceOf[String]
 
       inline def objectValue(index: Int): Yaml.Ast =
-        yaml.asInstanceOf[Array[Any]^{}](index*2 + 1).asInstanceOf[Yaml.Ast]
+        yaml.asInstanceOf[Array[Any]^{}].readable(index*2 + 1).asInstanceOf[Yaml.Ast]
 
       // Linear scan for a key — returns the pair-indexed position (i.e.
       // `objectKey(result)` retrieves the key, `objectValue(result)` the
@@ -1443,7 +1442,7 @@ object Yaml extends Yaml2, Dynamic:
                   abort(Yaml.Error(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
                                                  Yaml.Primitive.Str)))
 
-            result = result.updated(keyText, value.decoded(new Yaml(rawValue)))
+            result = result.define(keyText, value.decoded(new Yaml(rawValue)))
             i += 1
 
           result
