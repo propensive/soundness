@@ -47,7 +47,6 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gigantism.*
-import proscenium.compat.*
 
 import gossamer.*
 import prepositional.*
@@ -74,12 +73,12 @@ object Honeycomb:
 
     abortive:
       var holes: Map[Ordinal, Html.Hole] = Map()
-      def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.updated(ordinal, hole)
+      def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.define(ordinal, hole)
 
       val html: Html =
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
-      val holes2 = holes.toList.sort(_(0)).map(_(1))
+      val holes2 = proscenium.List.of(holes.stdlib.toList).sort(_(0)).map(_(1))
       val iterator = holes2.stdlib.iterator
       var index: Int = -1
 
@@ -118,7 +117,7 @@ object Honeycomb:
 
           case "\u0000" :: tail =>
             index += 1
-            types ::= TypeRepr.of[Map[Text, Optional[Text]]]
+            types = TypeRepr.of[Map[Text, Optional[Text]]] :: types
             iterator.next()
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
 
@@ -134,7 +133,7 @@ object Honeycomb:
 
                 case "\u0000" =>
                   index += 1
-                  types ::= TypeRepr.of[Text]
+                  types = TypeRepr.of[Text] :: types
                   iterator.next()
                   '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
 
@@ -152,7 +151,7 @@ object Honeycomb:
           if index == pattern.children.length then expr else
             val expr2 =
               descend
-                (array, pattern.children.readUnchecked(index), '{$scrutinee.children(${Expr(index)})}, '{true})
+                (array, pattern.children.readUnchecked(index), '{$scrutinee.children.readUnchecked(${Expr(index)})}, '{true})
 
             elements(index + 1)('{$expr && $expr2})
 
@@ -172,7 +171,7 @@ object Honeycomb:
           case Comment("\u0000") =>
             index += 1
             iterator.next()
-            types ::= TypeRepr.of[Text]
+            types = TypeRepr.of[Text] :: types
 
             ' {
                 $expr &&
@@ -185,9 +184,11 @@ object Honeycomb:
 
             iterator.next() match
               case Html.Hole.Node(label) =>
-                types ::= whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
+                val nodeType = whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
                   intersect(tag.admissible.stdlib.map(_.s).to(List)).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Node of children]
+
+                types = nodeType :: types
 
               case _ =>
                 panic(m"unexpected hole type")
@@ -216,9 +217,11 @@ object Honeycomb:
 
             iterator.next() match
               case Html.Hole.Element(label) =>
-                types ::= whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
+                val elementType = whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
                   intersect(tag.admissible.stdlib.map(_.s).to(List)).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Element of children]
+
+                types = elementType :: types
 
               case _ =>
                 halt(m"unexpected hole type")
@@ -277,13 +280,13 @@ object Honeycomb:
 
     abortive:
       var holes: Map[Ordinal, Html.Hole] = Map()
-      def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
+      def capture(ordinal: Ordinal, hole: Hole) = holes = holes.define(ordinal, hole)
 
       val html: Html =
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
       val iterator: Iterator[Expr[Any]] =
-        holes.toList.sort(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
+        proscenium.List.of(holes.stdlib.toList).sort(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
           expr.absolve match
             case '{$expr: value} => hole match
               case Hole.Attribute(tag, attribute) =>
@@ -366,7 +369,7 @@ object Honeycomb:
                       body
                     """
 
-        . iterator
+        . stdlib.iterator
 
       def serialize(html: Html): Seq[Expr[Node]] = html match
         case Fragment(children*) => children.flatMap(serialize(_))

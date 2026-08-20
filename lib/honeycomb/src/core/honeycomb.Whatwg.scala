@@ -34,9 +34,6 @@ package honeycomb
 
 import scala.language.dynamics
 
-
-import proscenium.compat.*
-
 import adversaria.*
 import anticipation.*
 import fulminate.*
@@ -676,15 +673,15 @@ class Whatwg() extends Dom:
   val Wbr = Tag.void["wbr", Whatwg]()
 
   val elements: Dictionary[Tag] =
-    Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }.toSeq*)
+    Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }.stdlib*)
 
   val entities: Dictionary[Text] =
     val html4 = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
-    . map(_.cut(t"\t")).collect:
+    . map(_.cut(t"\t")).sweep:
         case List(key, value) => (key, value)
 
     val extra = cp"/honeycomb/entities-extra.tsv".read[Text].cut(t"\n")
-    . map(_.cut(t"\t")).collect:
+    . map(_.cut(t"\t")).sweep:
         case List(key, value) => (key, value)
 
     Dictionary((html4 + extra).stdlib*)
@@ -693,8 +690,8 @@ class Whatwg() extends Dom:
     val list: List[(Text, Attribute)] =
       Whatwg.membersOfType[honeycomb.Attribute]
       . fold(proscenium.Map[Text, Attribute]()): (map, next) =>
-          map.updated(next.label, map.get(next.label).optional.let(_.merge(next)).or(next))
+          map.define(next.label, map.stdlib.get(next.label).optional.let(_.merge(next)).or(next))
 
-      . toList
+      . to[List]
 
     Dictionary(list*)

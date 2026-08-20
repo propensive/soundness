@@ -35,8 +35,6 @@ package turbulence
 import scala.caps
 
 import java.util.concurrent as juc
-
-import proscenium.compat.*
 import vacuous.*
 import prepositional.*
 import zephyrine.*
@@ -79,7 +77,7 @@ class Relay[record]():
       case Relay.Termination => Chain()
       case value             => value.asInstanceOf[record] #:: pull()
 
-    Chain().lazyAppendedAll(pull())
+    Chain.of(Chain().stdlib.lazyAppendedAll(pull().stdlib))
 
   // The pull endpoint over this relay's records: single-owner, drained by one
   // thread; create it once. Records arriving after `stop` are not delivered.

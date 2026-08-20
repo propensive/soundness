@@ -34,8 +34,6 @@ package honeycomb
 
 import scala.caps
 
-import proscenium.compat.*
-
 import scala.language.dynamics
 
 import anticipation.*
@@ -52,7 +50,7 @@ object Tag:
     Optic: (origin, lambda) =>
       origin match
         case Element(label, attributes, children, boundary) =>
-          val children2 = children.map:
+          val children2 = children.remap:
             case element@Element(tag.label, _, _, _) => lambda(element)
             case other                               => other
 
@@ -157,7 +155,7 @@ object Tag:
             then presets(t"class").lay(name): preset => t"$preset $name"
             else name
 
-          presets.updated(attribution.attribute, value)
+          presets.define(attribution.attribute, value)
 
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
 
@@ -203,7 +201,7 @@ object Tag:
             then presets(t"class").lay(name): preset => t"$preset $name"
             else name
 
-          presets.updated(attribution.attribute, value)
+          presets.define(attribution.attribute, value)
 
       val nodes: Array[Node]^{} = children.compact.to(List).nodes
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]

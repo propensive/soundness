@@ -36,7 +36,6 @@ import anticipation.*
 import denominative.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -79,10 +78,10 @@ object Aggregable:
         var index = Prim
 
         while !source.nil do
-          val bytes = source.head
+          val bytes = source.stdlib.head
           array.place(bytes, index)
           index += bytes.length
-          source = source.tail
+          source = Chain.of(source.stdlib.tail)
 
   given bytesText: (decoder: CharDecoder) => ((Text is Aggregable by Data)) =
     bytesData.map(decoder.decoded)
@@ -103,8 +102,8 @@ object Aggregable:
       val builder = new StringBuilder()
 
       while !source.nil do
-        builder.append(source.head.s)
-        source = source.tail
+        builder.append(source.stdlib.head.s)
+        source = Chain.of(source.stdlib.tail)
 
       builder.toString.tt
 
