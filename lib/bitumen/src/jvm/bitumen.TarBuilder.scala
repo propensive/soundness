@@ -266,7 +266,7 @@ object TarBuilder:
         val out = ji.FileOutputStream(temporary.toFile)
 
         try
-          stream.sweep: region =>
+          stream.drain: region =>
             range =>
               val interval: Interval = range
               out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,

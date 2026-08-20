@@ -75,7 +75,7 @@ private[telekinesis] object Sessions:
       import Connect.Error.Reason.*
 
       pending.let: stream =>
-        try stream.asInstanceOf[(Stream[Data] over Credit)^].sweep { _ => _ => () } catch
+        try stream.asInstanceOf[(Stream[Data] over Credit)^].drain { _ => _ => () } catch
           case error: ji.IOException => abort(Connect.Error(Unknown))
 
       pending = Unset

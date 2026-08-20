@@ -41,6 +41,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import providers.javaStdlibProvider
 import crypto.permitDisallowedCrypto   // the suite deliberately exercises weak crypto
 import cloaks.cloakHeap
+import asymptotics.linearSizeComplexity
 
 import alphabets.hexUpperCase
 
@@ -723,8 +724,8 @@ object Tests extends Suite(m"Enigmatic tests"):
           case _                                                  => Asn1.Null
 
         inner match
-          case Asn1.Sequence(elements) => List.of:
-            elements.stdlib.collect { case tagged: Asn1.Tagged => tagged.tag }
+          case Asn1.Sequence(elements) => elements.sweep:
+            case tagged: Asn1.Tagged => tagged.tag
 
           case _ => Nil
       . assert(_ == List(1))
@@ -778,8 +779,8 @@ object Tests extends Suite(m"Enigmatic tests"):
         val key = PrivateKey.generate[MlDsa[65]]()
 
         key.pem(Divulgence).as[Der].as[Asn1] match
-          case Asn1.Sequence(elements) => List.of:
-            elements.stdlib.collect { case tagged: Asn1.Tagged => tagged.tag }
+          case Asn1.Sequence(elements) => elements.sweep:
+            case tagged: Asn1.Tagged => tagged.tag
 
           case _ => Nil
       . assert(_ == List(1))
@@ -890,7 +891,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"The certificate is version 3 with the given serial number"):
         certificate().asn1 match
-          case Asn1.Sequence(List(Asn1.Sequence(tbs), _, _)) => List.of(tbs.stdlib.take(2))
+          case Asn1.Sequence(List(Asn1.Sequence(tbs), _, _)) => tbs.keep(2)
           case _                                             => Nil
       . assert(_ == List(Asn1.Tagged(0, true, Asn1.Integer(BigInt(2))), Asn1.Integer(BigInt(1))))
 
@@ -942,9 +943,8 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"A distinguished name encodes its attributes in conventional order"):
         val identifiers = Distinguished.sequence(subject) match
-          case Asn1.Sequence(elements) => List.of:
-            elements.stdlib.collect:
-              case Asn1.Set(List(Asn1.Sequence(List(Asn1.ObjectId(arcs), _)))) => arcs
+          case Asn1.Sequence(elements) => elements.sweep:
+            case Asn1.Set(List(Asn1.Sequence(List(Asn1.ObjectId(arcs), _)))) => arcs
 
           case _ => Nil
 

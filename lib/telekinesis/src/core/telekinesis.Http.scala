@@ -1298,7 +1298,7 @@ object Http:
 
                 case Some(header) =>
                   // Drain the discarded intermediate body to free its connection.
-                  safely(response.body.stream.sweep { _ => _ => () })
+                  safely(response.body.stream.drain { _ => _ => () })
 
                   val nextUri = uri.resolve(jn.URI.create(header.value.s).nn).nn
                   Log.fine(Http.Event.Redirect(uri.toString.tt, nextUri.toString.tt))
