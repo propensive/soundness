@@ -32,13 +32,13 @@
                                                                                                   */
 package aviation
 
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
 import fulminate.*
 import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 // A `Regime` is the calendar in force as it changed through history: an ordered sequence of
 // segments, each handing over to the next at a Julian day number. Because the Julian day number is
@@ -63,8 +63,8 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
 
   // The calendar governing a Julian day number: the latest segment to have taken effect by then.
   private def at(date: Date): RomanCalendar =
-    bounded.filter(_(0).from.jdn <= date.jdn).lastOption.map(_(0).calendar).getOrElse:
-      segments.stdlib.head.calendar
+    bounded.filter(_(0).from.jdn <= date.jdn).occupied
+    . lay(segments.stdlib.head.calendar)(_.last(0).calendar)
 
   // The regime's Julian day number for a field date, or `Unset` if it falls in a gap between two
   // calendars (e.g. 1582-10-10 under the Papal cutover) or is otherwise an invalid date.
