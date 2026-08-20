@@ -36,7 +36,6 @@ import anticipation.*
 import hieroglyph.*
 import rudiments.*
 import vacuous.*
-import proscenium.compat.*
 
 object Cos:
   // The code points at which PDFDocEncoding (ISO 32000-2 Annex D.7) differs from Latin-1:
@@ -75,10 +74,10 @@ object Cos:
   // PDFDocEncoding.
   private[facsimile] def decodeText(bytes: Data): Text =
     if bytes.length >= 2 && (bytes.readable(0) & 0xff) == 0xfe && (bytes.readable(1) & 0xff) == 0xff
-    then charDecoders.utf16BeDecoder.decoded(bytes.drop(2))
+    then charDecoders.utf16BeDecoder.decoded(bytes.skip(2))
     else if bytes.length >= 3
             && (bytes.readable(0) & 0xff) == 0xef && (bytes.readable(1) & 0xff) == 0xbb && (bytes.readable(2) & 0xff) == 0xbf
-    then charDecoders.utf8Decoder.decoded(bytes.drop(3))
+    then charDecoders.utf8Decoder.decoded(bytes.skip(3))
     else
       val chars = Array[Char](bytes.length)
       var i = 0

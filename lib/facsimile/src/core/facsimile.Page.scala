@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -114,11 +112,11 @@ class Page private[facsimile]
       . dictionary.or(Map[Text, Cos]())
 
     pdf.resolved(resources(t"Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
-    . toList.bind: (name, value) =>
+    . to[List].bind: (name, value) =>
         Pdf.Font.read(pdf.resolved(value))(using pdf).lay(List[(Text, Pdf.Font)]()): font =>
           List(name -> font)
 
-    . toMap
+    . to[Map]
 
   // The page's content: its `/Contents` streams decoded and concatenated, which the
   // specification requires to be treated as a single stream, with whitespace between.
@@ -139,7 +137,7 @@ class Page private[facsimile]
     streams.map(pdf.payload(_)) match
       case List()       => Array.empty[Byte]
       case List(single) => single
-      case many         => many.reduce(_ ++ Array.of(0x0a.toByte) ++ _)
+      case many         => Array.unsafeFrozen(many.stdlib.map(_.readable).reduce(_ ++ scala.IArray(0x0a.toByte) ++ _).toArray)
 
   def operators(using Tactic[Pdf.Error]): List[Pdf.Operator] =
     ContentTokens.read(content).map(Pdf.Operator.read(_))

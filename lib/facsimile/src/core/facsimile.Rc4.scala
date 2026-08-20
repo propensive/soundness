@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import rudiments.*
 import vacuous.*
@@ -56,9 +54,9 @@ private[facsimile] object Rc4:
     i = 0
 
     while i < 256 do
-      j = (j + state(i) + (key.readUnchecked(i%key.length) & 0xff)) & 0xff
-      val swap = state(i)
-      state(i) = state(j)
+      j = (j + state.readable(i) + (key.readable(i%key.length) & 0xff)) & 0xff
+      val swap = state.readable(i)
+      state(i) = state.readable(j)
       state(j) = swap
       i += 1
 
@@ -70,11 +68,12 @@ private[facsimile] object Rc4:
 
     while k < data.length do
       a = (a + 1) & 0xff
-      b = (b + state(a)) & 0xff
-      val swap = state(a)
-      state(a) = state(b)
+      b = (b + state.readable(a)) & 0xff
+      val swap = state.readable(a)
+      state(a) = state.readable(b)
       state(b) = swap
-      out(k) = (data.readUnchecked(k) ^ state((state(a) + state(b)) & 0xff)).toByte
+      out(k) =
+        (data.readable(k) ^ state.readable((state.readable(a) + state.readable(b)) & 0xff)).toByte
       k += 1
 
     Array.freeze(out)

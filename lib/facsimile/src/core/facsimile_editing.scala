@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -75,7 +73,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     scala.caps.unsafe.unsafeAssumeSeparate:
      editPage(pdf, page): entries =>
-      entries.updated(t"Contents", stream)
+      entries.define(t"Contents", stream)
 
   // Sets a page's rotation.
   def setRotation(page: Page^, rotation: Page.Rotation)(using Tactic[Pdf.Error]): Unit =
@@ -85,7 +83,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
       case Page.Rotation.Half          => 180L
       case Page.Rotation.ThreeQuarters => 270L
 
-    editPage(pdf, page)(_.updated(t"Rotate", Cos.Integral(degrees)))
+    editPage(pdf, page)(_.define(t"Rotate", Cos.Integral(degrees)))
 
   // Sets a page box (`/MediaBox`, `/CropBox`, …) to a rectangle in points.
   def setBox(page: Page^, box: Text, rect: Pdf.Rect)(using Tactic[Pdf.Error]): Unit =
@@ -93,11 +91,11 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
       Cos.Sequence:
         List(rect.left, rect.bottom, rect.right, rect.top).map(_.value).map(number(_))
 
-    editPage(pdf, page)(_.updated(box, array))
+    editPage(pdf, page)(_.define(box, array))
 
   // Sets an arbitrary entry in a page's dictionary.
   def setPageEntry(page: Page^, key: Text, value: Cos)(using Tactic[Pdf.Error]): Unit =
-    editPage(pdf, page)(_.updated(key, value))
+    editPage(pdf, page)(_.define(key, value))
 
   // Replaces the document information dictionary. The existing `/Info` object is edited if
   // there is one, else a fresh object is created and linked from the trailer.
@@ -137,14 +135,14 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
       val existing = pdf.resolved(resources(category).or(Cos.Nil)).dictionary
         . or(Map[Text, Cos]())
 
-      val category0 = Cos.Dictionary(existing.updated(name, resource))
-      entries.updated(t"Resources", Cos.Dictionary(resources.updated(category, category0)))
+      val category0 = Cos.Dictionary(existing.define(name, resource))
+      entries.define(t"Resources", Cos.Dictionary(resources.define(category, category0)))
 
   // Sets a page's annotations from raw annotation dictionaries: each becomes an indirect
   // object, and the page's `/Annots` is set to the array of references.
   def setAnnotations(page: Page^, annotations: List[Cos])(using Tactic[Pdf.Error]): Unit =
     val refs = annotations.map(pdf.allocate(_))
-    editPage(pdf, page)(_.updated(t"Annots", Cos.Sequence(refs)))
+    editPage(pdf, page)(_.define(t"Annots", Cos.Sequence(refs)))
 
   // Adds a link annotation over a rectangle, targeting either a URI or an in-document
   // destination, appending it to the page's existing annotations.
@@ -165,9 +163,9 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
       val action =
         Map[Text, Cos](t"S" -> Cos.Name(t"URI"), t"URI" -> Cos.Chars(Cos.encodeText(target)))
 
-      dict = dict.updated(t"A", Cos.Dictionary(action))
+      dict = dict.define(t"A", Cos.Dictionary(action))
 
-    destination.let: dest => dict = dict.updated(t"Dest", destinationArray(pdf, dest))
+    destination.let: dest => dict = dict.define(t"Dest", destinationArray(pdf, dest))
 
     val ref = pdf.allocate(Cos.Dictionary(dict))
 
@@ -175,7 +173,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     scala.caps.unsafe.unsafeAssumeSeparate:
      editPage(pdf, page): entries =>
       val existing = entries(t"Annots").let(pdf.resolved(_).elements).or(Nil)
-      entries.updated(t"Annots", Cos.Sequence(existing :+ ref))
+      entries.define(t"Annots", Cos.Sequence(existing :+ ref))
 
   // Replaces the document outline (bookmarks). The tree is rebuilt as fresh objects with the
   // full `/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count` linkage, and the catalog's
@@ -187,13 +185,13 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     var root: Map[Text, Cos] =
       Map(t"Type" -> Cos.Name(t"Outlines"), t"Count" -> Cos.Integral(total.toLong))
 
-    first.let: ref => root = root.updated(t"First", ref)
+    first.let: ref => root = root.define(t"First", ref)
 
-    last.let: ref => root = root.updated(t"Last", ref)
+    last.let: ref => root = root.define(t"Last", ref)
 
     pdf.put(rootRef.number, Cos.Dictionary(root))
 
-    pdf.editCatalog(_.updated(t"Outlines", rootRef))
+    pdf.editCatalog(_.define(t"Outlines", rootRef))
 
   // Appends a new page of the given size to the end of the page tree, with optional content,
   // returning a reference to it. The page tree's single-level `/Kids` grows and `/Count`
@@ -217,11 +215,11 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 
     var entries = Map(t"Type" -> Cos.Name(t"Page"), t"Parent" -> rootRef, t"MediaBox" -> box)
 
-    resources.let: value => entries = entries.updated(t"Resources", value)
+    resources.let: value => entries = entries.define(t"Resources", value)
 
-    if operators.nonEmpty then
+    if !operators.nil then
       val stream = pdf.allocate(pdf.newBody(Map(), ContentWriter.write(operators)))
-      entries = entries.updated(t"Contents", stream)
+      entries = entries.define(t"Contents", stream)
 
     val pageRef = pdf.allocate(Cos.Dictionary(entries))
 
@@ -231,8 +229,8 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
       val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
       val count = tree(t"Count").let(_.long).or(kids.size.toLong)
 
-      tree.updated(t"Kids", Cos.Sequence(kids :+ pageRef))
-        . updated(t"Count", Cos.Integral(count + 1))
+      tree.define(t"Kids", Cos.Sequence(kids :+ pageRef))
+        . define(t"Count", Cos.Integral(count + 1))
 
     pageRef
 
@@ -255,8 +253,8 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
                 case Cos.Ref(number, _) => number != pageNumber
                 case _                  => true
 
-              tree.updated(t"Kids", Cos.Sequence(remaining))
-                . updated(t"Count", Cos.Integral(remaining.size.toLong))
+              tree.define(t"Kids", Cos.Sequence(remaining))
+                . define(t"Count", Cos.Integral(remaining.size.toLong))
 
             pdf.remove(pageNumber)
 
@@ -286,11 +284,12 @@ private def buildOutline
 ( using Tactic[Pdf.Error] )
 :   (Optional[Cos.Ref], Optional[Cos.Ref], Int) =
 
-  if items.isEmpty then (Unset, Unset, 0) else
+  if items.nil then (Unset, Unset, 0) else
     val refs = items.map { _ => pdf.allocate(Cos.Nil) }
     var total = items.size
 
-    items.zip(refs).zipWithIndex.each: (pair, index) =>
+    items.zip(refs).indexed.each: (pair, ordinal) =>
+      val index = ordinal.n0
       val (bookmark, ref) = pair
       val (childFirst, childLast, childCount) = buildOutline(pdf, bookmark.children, ref)
       total += childCount
@@ -298,20 +297,20 @@ private def buildOutline
       var dict: Map[Text, Cos] =
         Map(t"Title" -> Cos.Chars(Cos.encodeText(bookmark.title)), t"Parent" -> parent)
 
-      if index > 0 then dict = dict.updated(t"Prev", refs.stdlib(index - 1))
-      if index < refs.size - 1 then dict = dict.updated(t"Next", refs.stdlib(index + 1))
+      if index > 0 then dict = dict.define(t"Prev", refs.stdlib(index - 1))
+      if index < refs.size - 1 then dict = dict.define(t"Next", refs.stdlib(index + 1))
 
-      childFirst.let: first => dict = dict.updated(t"First", first)
+      childFirst.let: first => dict = dict.define(t"First", first)
 
-      childLast.let: last => dict = dict.updated(t"Last", last)
+      childLast.let: last => dict = dict.define(t"Last", last)
 
-      if childCount > 0 then dict = dict.updated(t"Count", Cos.Integral(childCount.toLong))
+      if childCount > 0 then dict = dict.define(t"Count", Cos.Integral(childCount.toLong))
 
-      bookmark.destination.let: dest => dict = dict.updated(t"Dest", destinationArray(pdf, dest))
+      bookmark.destination.let: dest => dict = dict.define(t"Dest", destinationArray(pdf, dest))
 
       pdf.put(ref.number, Cos.Dictionary(dict))
 
-    (refs.headOption.getOrElse(Unset), refs.lastOption.getOrElse(Unset), total)
+    (refs.prim, refs.occupied.let(_.last), total)
 
 // A destination as its explicit `[page /Mode …]` array.
 private def destinationArray(pdf: (Pdf & Granting[Grant.Write])^, dest: Destination)

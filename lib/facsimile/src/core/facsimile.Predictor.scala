@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -67,7 +65,7 @@ private[facsimile] object Predictor:
         val end = ((row + 1)*rowLength).min(data.length)
 
         while i < end do
-          out(i) = (out(i) + out(i - colors)).toByte
+          out(i) = (out.readable(i) + out.readable(i - colors)).toByte
           i += 1
 
         row += 1

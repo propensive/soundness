@@ -33,7 +33,6 @@
 package enigmatic
 
 import scala.math
-import proscenium.compat.*
 
 import anticipation.*
 import breviloquence.*
@@ -90,7 +89,7 @@ object CanonicalCbor:
     var index = 0
 
     while index < n do
-      val diff = (a(index) & 0xFF) - (b(index) & 0xFF)
+      val diff = (a.readable(index) & 0xFF) - (b.readable(index) & 0xFF)
       if diff != 0 then return diff
       index += 1
 

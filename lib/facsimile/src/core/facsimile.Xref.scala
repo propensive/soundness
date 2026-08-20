@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -128,7 +126,7 @@ private[facsimile] object Xref:
         then
           objectHeader(chunk, i).let: (number, generation, start) =>
             val offset = base + start
-            entries = entries.updated(number, Entry.Direct(offset, generation))
+            entries = entries.define(number, Entry.Direct(offset, generation))
 
         i += 1
 
@@ -147,7 +145,7 @@ private[facsimile] object Xref:
               if dictionary(t"Type").let(_.name) == t"ObjStm" =>
                 objStmMembers(source, body).each: number =>
                   if !direct.defines(number)
-                  then entries = entries.updated(number, Entry.Compressed(container, 0))
+                  then entries = entries.define(number, Entry.Compressed(container, 0))
 
               case _ =>
                 ()
@@ -305,7 +303,7 @@ private[facsimile] object Xref:
             case _ =>
               abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-          entries = entries.updated(first.toInt + index, entry)
+          entries = entries.define(first.toInt + index, entry)
 
         subsections()
 
@@ -352,11 +350,11 @@ private[facsimile] object Xref:
         val ranges: List[(Long, Long)] =
           dictionary(t"Index").let(_.elements).lay(List((0L, size))): elements =>
             elements.map(_.long.or(abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))))
-            . grouped(2).to(List).map:
+            . batched(2).to[List].map:
                 case List(first, count) => (first, count)
                 case _                  => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-        val rowLength = widths.sum
+        val rowLength = widths.total
         var entries = Map[Int, Entry]()
         var position = 0
 
@@ -377,7 +375,7 @@ private[facsimile] object Xref:
               case 2L => Entry.Compressed(second.toInt, third.toInt)
               case _  => Entry.Free // unknown types are reserved and must be treated as free
 
-            entries = entries.updated((first + index).toInt, entry)
+            entries = entries.define((first + index).toInt, entry)
 
         (entries, dictionary)
 

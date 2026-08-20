@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 // By name: `contingency.*` would otherwise shadow this package's own `Guard` (the PDF
 // standard-security handler) with contingency's skip-scope capability of the same name.
 import facsimile.Guard
@@ -212,7 +210,7 @@ private[facsimile] object PdfWriter:
   :   Unit =
 
     val number = pdf.nextNumber
-    val rows = (numbers :+ number).distinct.sorted
+    val rows = (numbers :+ number).distinct.sort
 
     // `/W [1 4 2]`: one byte of entry type, four of offset — enough for any file this side of
     // 4 GB — and two of generation.
@@ -271,7 +269,7 @@ private[facsimile] object PdfWriter:
         val payload = encryption.lay(stored): (guard, number, generation) =>
           guard.encryptStream(stored, number, generation)
 
-        val entries = body.entries.updated(t"Length", Cos.Integral(payload.length.toLong))
+        val entries = body.entries.define(t"Length", Cos.Integral(payload.length.toLong))
         raw(CosWriter.dictionaryBytes(entries))
         ascii(t"\nstream\n")
         raw(payload)

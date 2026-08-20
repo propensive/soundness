@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import gossamer.*
 import rudiments.*
@@ -201,7 +199,7 @@ private[facsimile] object PdfEncoding:
     var i = 0
 
     while i < text.s.length do
-      bytes(i) = winAnsiCodes.get(text.s.charAt(i)).getOrElse('?'.toInt).toByte
+      bytes(i) = winAnsiCodes.stdlib.get(text.s.charAt(i)).getOrElse('?'.toInt).toByte
       i += 1
 
     Array.freeze(bytes)

@@ -31,8 +31,6 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package facsimile
-
-import proscenium.compat.*
 import rudiments.*
 
 import anticipation.*
@@ -91,7 +89,7 @@ private[facsimile] class Scan(source: ByteSource, start: Long):
   def read(length: Int): Data =
     if length <= 0 then Array.empty[Byte]
     else if cursor + length <= chunk.length then
-      val data = chunk.slice(cursor, cursor + length)
+      val data = chunk.excerpt(cursor, cursor + length)
       cursor += length
       data
     else

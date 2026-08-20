@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -167,7 +165,7 @@ private[facsimile] object Filter:
     case _            => data
 
   private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
-    try Lzw.decompress(Chain(data), earlyChange(parms)).foldLeft(Array.empty[Byte])(_ ++ _)
+    try Array.unsafeFrozen(Lzw.decompress(Chain(data), earlyChange(parms)).stdlib.flatMap(_.readable).toArray)
     catch case _: IllegalStateException =>
       abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"LZWDecode")))
 

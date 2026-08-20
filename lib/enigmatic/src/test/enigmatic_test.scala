@@ -33,7 +33,6 @@
 package enigmatic
 
 import soundness.*
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
@@ -480,7 +479,7 @@ object Tests extends Suite(m"Enigmatic tests"):
         tampered.copyFrom(wire, 0, 0, wire.length)
         // Flip a bit in the MAC tag near the end of the envelope.
         val index = wire.length - 5
-        tampered(index) = (tampered(index) ^ 0xFF.toByte).toByte
+        tampered(index) = (tampered.readable(index) ^ 0xFF.toByte).toByte
         Array.freeze(tampered).authenticate[Cose](key)
       . assert(!_)
 
@@ -724,8 +723,8 @@ object Tests extends Suite(m"Enigmatic tests"):
           case _                                                  => Asn1.Null
 
         inner match
-          case Asn1.Sequence(elements) => elements.collect:
-            case tagged: Asn1.Tagged => tagged.tag
+          case Asn1.Sequence(elements) => List.of:
+            elements.stdlib.collect { case tagged: Asn1.Tagged => tagged.tag }
 
           case _ => Nil
       . assert(_ == List(1))
@@ -779,8 +778,8 @@ object Tests extends Suite(m"Enigmatic tests"):
         val key = PrivateKey.generate[MlDsa[65]]()
 
         key.pem(Divulgence).as[Der].as[Asn1] match
-          case Asn1.Sequence(elements) => elements.collect:
-            case tagged: Asn1.Tagged => tagged.tag
+          case Asn1.Sequence(elements) => List.of:
+            elements.stdlib.collect { case tagged: Asn1.Tagged => tagged.tag }
 
           case _ => Nil
       . assert(_ == List(1))
@@ -891,7 +890,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"The certificate is version 3 with the given serial number"):
         certificate().asn1 match
-          case Asn1.Sequence(List(Asn1.Sequence(tbs), _, _)) => tbs.take(2)
+          case Asn1.Sequence(List(Asn1.Sequence(tbs), _, _)) => List.of(tbs.stdlib.take(2))
           case _                                             => Nil
       . assert(_ == List(Asn1.Tagged(0, true, Asn1.Integer(BigInt(2))), Asn1.Integer(BigInt(1))))
 
@@ -943,8 +942,9 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"A distinguished name encodes its attributes in conventional order"):
         val identifiers = Distinguished.sequence(subject) match
-          case Asn1.Sequence(elements) => elements.collect:
-            case Asn1.Set(List(Asn1.Sequence(List(Asn1.ObjectId(arcs), _)))) => arcs
+          case Asn1.Sequence(elements) => List.of:
+            elements.stdlib.collect:
+              case Asn1.Set(List(Asn1.Sequence(List(Asn1.ObjectId(arcs), _)))) => arcs
 
           case _ => Nil
 
