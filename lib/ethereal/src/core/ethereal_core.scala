@@ -579,6 +579,13 @@ def cli[bus <: Matchable](using executive: Executive)
           val scriptPath: Optional[Path on Local] =
             safely(System.properties.ethereal.script[Text]().as[Path on Local])
 
+          def hashScript(script: Path on Local): Optional[Text] = safely:
+            import gastronomy.*, providers.javaStdlibProvider
+            import monotonous.*, alphabets.hexLowerCase
+            script.open[File](Read)(file.checksum[Sha2[256]].serialize[Hex])
+
+          val scriptHash: Optional[Text] = scriptPath.let(hashScript(_))
+
           // Record the launcher this daemon was started from as
           // `<buildId> <size> <mtimeMillis> <sha256hex>`, so that the launcher's
           // staleness check can compare a later invocation's file against it; the
@@ -588,12 +595,10 @@ def cli[bus <: Matchable](using executive: Executive)
           // dwarfed by JVM boot; invocations pay for it only after a metadata-only
           // change such as `touch`.
           val buildLine: Text = scriptPath.let: script =>
-            safely:
-              import gastronomy.*, providers.javaStdlibProvider
-              import monotonous.*, alphabets.hexLowerCase
-              import anticipation.instantiables.instantInstantiable
-              val hash: Text = script.open[File](Read)(file.checksum[Sha2[256]].serialize[Hex])
-              t"$buildId ${script.size().long} ${script.modified[Long]()} $hash"
+            scriptHash.let: hash =>
+              safely:
+                import anticipation.instantiables.instantInstantiable
+                t"$buildId ${script.size().long} ${script.modified[Long]()} $hash"
           . or(t"$buildId")
 
           buildFile.open[File](Write, OpenFlag.Create)(file.write(buildLine))
@@ -615,9 +620,27 @@ def cli[bus <: Matchable](using executive: Executive)
               watched.stdlib
               . open[Watch](): watcher ?=>
                 watcher.stream.each:
-                  case Delete(_, _) | Modify(_, _) | NewFile(_, _) =>
-                    Log.warn(DaemonLogEvent.Termination)
-                    termination
+                  case event@(Delete(_, _) | Modify(_, _) | NewFile(_, _)) =>
+                    val eventFile: Text = event match
+                      case Delete(_, file)  => file
+                      case Modify(_, file)  => file
+                      case NewFile(_, file) => file
+                      case other            => t""
+
+                    // A metadata-only change to the launcher (`touch`) leaves its
+                    // content intact; re-hash it before treating the event as fatal
+                    // so that only a real rewrite terminates the daemon. State-file
+                    // events are always fatal. The launcher and the state files are
+                    // in different directories, but filenames suffice to tell them
+                    // apart: the state files' names are fixed (`build`/`pid`/
+                    // `socket`), and the launcher bears the application's name.
+                    val benign = scriptPath.lay(false): script =>
+                      eventFile == script.name
+                        && scriptHash.lay(false)(hashScript(script) == _)
+
+                    if !benign then
+                      Log.warn(DaemonLogEvent.Termination)
+                      termination
 
                   case other =>
                     ()
