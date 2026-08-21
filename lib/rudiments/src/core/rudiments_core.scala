@@ -286,8 +286,8 @@ extension [self](value: self)
 
   transparent inline def last: Optional[terminable.Operand] =
     compiletime.summonFrom:
-      case _: (value.type <:< Populated) => terminable.last(value)
-      case _                       => value.occupied.let(terminable.last(_))
+      case _: (`self` <:< Populated) => terminable.last(value)
+      case _ => if traversable.traverse(value).hasNext then terminable.last(value) else Unset
 
 extension [self <: Populated, result](value: self)(using truncable: self is Truncable to result)
   def lead: result = truncable.lead(value)

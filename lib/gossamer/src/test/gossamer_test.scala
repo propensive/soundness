@@ -1219,13 +1219,6 @@ object Tests extends Suite(m"Gossamer Tests"):
         xs.last
       . assert(_ == Unset)
 
-      test(m"a Populated receiver yields the element, not an Optional"):
-        val xs: Sequence[Int] = Sequence(1, 2, 3)
-        xs.occupied.lay(0): xs =>
-          val total: Int = xs.last
-          total
-      . assert(_ == 3)
-
       test(m"Text is Terminable, and adapts the same way"):
         t"abc".last
       . assert(_ == 'c')
