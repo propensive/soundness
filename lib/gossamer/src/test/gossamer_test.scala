@@ -1205,6 +1205,26 @@ object Tests extends Suite(m"Gossamer Tests"):
         ()
       . assert(_ == ())
 
+    // `last` is `transparent inline`, so its adaptivity has to survive the umbrella's export
+    // forwarder as well as the direct `rudiments` call: hence this suite here, under
+    // `import soundness.*`.
+    suite(m"Adaptive `last` through the umbrella"):
+      test(m"an unproven receiver yields Unset when empty"):
+        val xs: Sequence[Int] = Sequence()
+        xs.last
+      . assert(_ == Unset)
+
+      test(m"a Populated receiver yields the element, not an Optional"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        xs.occupied.lay(0): xs =>
+          val total: Int = xs.last
+          total
+      . assert(_ == 3)
+
+      test(m"Text is Terminable, and adapts the same way"):
+        t"abc".last
+      . assert(_ == 'c')
+
     suite(m"Fuzzy match"):
       import proximities.normalizedLevenshteinProximity
 

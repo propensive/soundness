@@ -272,12 +272,22 @@ extension [self <: Populated](value: self)(using traversable: self is Traversabl
 
     traversable.traverse(value).reduce(lambda)
 
-// The back end of a `Populated` container: `last` is its final element and `lead` everything
-// before it, mirroring `head` and `tail`. Separate typeclasses from `Traversable` so each
-// container supplies its own implementation at its own cost — O(1) for an indexed shape, gated
-// for a linked or lazy one — rather than every receiver paying for a full traversal.
-extension [self <: Populated](value: self)(using terminable: self is Terminable)
-  def last: terminable.Operand = terminable.last(value)
+// The back end of a container: `last` is its final element and `lead` everything before it,
+// mirroring `head` and `tail`. Separate typeclasses from `Traversable` so each container
+// supplies its own implementation at its own cost — O(1) for an indexed shape, gated for a
+// linked or lazy one — rather than every receiver paying for a full traversal.
+//
+// `last` *adapts* to what the receiver's type proves: given a `Populated` receiver it is total
+// and yields the element, and otherwise it yields `Optional[element]`, checking emptiness once.
+// `transparent inline` narrows the declared `Optional[Operand]` to `Operand` in the proven
+// branch — the same technique as `total` above, whose result narrows when a `Zeroic` is found.
+extension [self](value: self)
+  (using terminable: self is Terminable, traversable: self is Traversable)
+
+  transparent inline def last: Optional[terminable.Operand] =
+    compiletime.summonFrom:
+      case _: (value.type <:< Populated) => terminable.last(value)
+      case _                       => value.occupied.let(terminable.last(_))
 
 extension [self <: Populated, result](value: self)(using truncable: self is Truncable to result)
   def lead: result = truncable.lead(value)

@@ -32,14 +32,16 @@
                                                                                                   */
 package iridescence
 
-import proscenium.compat.*
-
+import hypotenuse.*
 import prepositional.*
+import vacuous.*
 
 object Cmy:
   given cmyk: Cmy is Perceptual in Cmyk =
     color =>
-      val key = List(1, color.cyan, color.magenta, color.yellow).min
+      // The list is literally non-empty, so `minimum` cannot be `Unset`; `1.0` is the
+      // identity for the branch below in any case.
+      val key = List(1.0, color.cyan, color.magenta, color.yellow).minimum.or(1.0)
 
       if key == 1 then Cmyk(0, 0, 0, 1) else
         Cmyk

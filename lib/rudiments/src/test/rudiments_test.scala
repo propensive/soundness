@@ -201,6 +201,30 @@ object Tests extends Suite(m"Rudiments Tests"):
         xs.occupied.lay(List[Int]()) { xs => xs.lead :+ xs.last }
       . assert(_ == List(1, 2, 3))
 
+      test(m"last adapts: an unproven receiver yields an Optional"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        val result: Optional[Int] = xs.last
+        result
+      . assert(_ == 3)
+
+      test(m"last of an empty unproven receiver is Unset"):
+        val xs: Sequence[Int] = Sequence()
+        xs.last
+      . assert(_ == Unset)
+
+      test(m"last adapts: a Populated receiver yields the element itself"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        // Typed as `Int`, not `Optional[Int]`: the ascription is the assertion.
+        xs.occupied.lay(0): xs =>
+          val total: Int = xs.last
+          total
+      . assert(_ == 3)
+
+      test(m"last of an unproven list still demands the linear acknowledgement"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.last
+      . assert(_ == 3)
+
       test(m"the ordinal-prefix operation is now `prefix`"):
         val xs: Sequence[Int] = Sequence(10, 20, 30)
         val interval: Interval = xs.prefix(_ => true)

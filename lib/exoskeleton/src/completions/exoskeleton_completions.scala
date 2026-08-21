@@ -253,7 +253,7 @@ package executives:
               case _             => Shell.Bash
 
             val focus1 =
-              if shell == Shell.Bash && rest.occupied.let(_.last) == t"=" then focus0 + 1 else focus0
+              if shell == Shell.Bash && rest.last == t"=" then focus0 + 1 else focus0
 
             def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
               case Nil                                 => done.reverse
