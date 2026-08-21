@@ -52,7 +52,7 @@ import vacuous.*
 // an authority, and an unsigned manifest is an unpublished development
 // release that no selector can match — and the payload is materialized
 // through `Verification.install` before the schema body is extracted.
-object SchemaResolver:
+object SchemaDelegate:
   // The tels/1 fixed payload path.
   val schemaPath: Text = t"schema.tel"
 
@@ -64,11 +64,11 @@ object SchemaResolver:
     def apply(module: Text): List[Lira]
     def modules: List[Text]
 
-case class SchemaResolver
-  ( local:   SchemaResolver.Releases,
+case class SchemaDelegate
+  ( local:   SchemaDelegate.Releases,
     keyring: ManifestSigning.Keyring,
     schemes: Text => Optional[Signing],
-    network: Optional[SchemaResolver.Releases] = Unset )
+    network: Optional[SchemaDelegate.Releases] = Unset )
 extends Tels.Resolution.Delegate:
 
   import Tels.Resolution.{Body, Error as ResolutionError}
@@ -173,7 +173,7 @@ extends Tels.Resolution.Delegate:
       . protect:
           ManifestSigning.verify(lira.manifest, keyring, schemes)
           val report = Verification.install(lira)
-          val path = TreePath(SchemaResolver.schemaPath)
+          val path = TreePath(SchemaDelegate.schemaPath)
 
           val entry = report.materialized.stdlib
             . flatMap { pair => pair(1).get(path).option }
@@ -182,7 +182,7 @@ extends Tels.Resolution.Delegate:
           entry match
             case Some(entry) => report.blobstore.resolve(entry.blob)
             case None => abort(ResolutionError(Reason.NotSchema(
-              t"the release ${lira.manifest.module} has no ${SchemaResolver.schemaPath} payload")))
+              t"the release ${lira.manifest.module} has no ${SchemaDelegate.schemaPath} payload")))
 
     mitigate:
       case error: Tel.Error =>

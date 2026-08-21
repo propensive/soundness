@@ -1211,14 +1211,14 @@ object Tests extends Suite(m"Reliquary Tests"):
 
           Lira.read(Lira.assemble(resigned, blobs))
 
-      class MemoryReleases(releases: scala.List[Lira]) extends reliquary.SchemaResolver.Releases:
+      class MemoryReleases(releases: scala.List[Lira]) extends reliquary.SchemaDelegate.Releases:
         def apply(module: Text): List[Lira] =
           List.from(releases.filter(_.manifest.module == module))
 
         def modules: List[Text] = List.from(releases.map(_.manifest.module).distinct)
 
-      def resolver(releases: Lira*): reliquary.SchemaResolver =
-        reliquary.SchemaResolver(MemoryReleases(releases.toList), keyring, schemes)
+      def resolver(releases: Lira*): reliquary.SchemaDelegate =
+        reliquary.SchemaDelegate(MemoryReleases(releases.toList), keyring, schemes)
 
       def versioned(major: Int, minor: Int, patch: Int): Tel.Pragma.Reference =
         Tel.Pragma.Reference
@@ -1260,7 +1260,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         val release = schemaLira(revolution.Semver(0, 1, 0), List(), sign = true)
 
         val wrongKeyring =
-          reliquary.SchemaResolver(MemoryReleases(scala.List(release)),
+          reliquary.SchemaDelegate(MemoryReleases(scala.List(release)),
             ManifestSigning.Keyring(List(otherPublic)), schemes)
 
         capture[Tels.Resolution.Error](wrongKeyring.bySelector(versioned(0, 1, 0)))
