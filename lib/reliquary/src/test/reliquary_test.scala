@@ -1147,6 +1147,169 @@ object Tests extends Suite(m"Reliquary Tests"):
         back.manifest.signature.stdlib.size
       . assert(_ == 1)
 
+    suite(m"TEL schema resolution (LIRA-backed)"):
+      import enigmatic.{MlDsa, Signing}
+      import gastronomy.providers.javaStdlibProvider
+
+      val mlDsa65: MlDsa[65] = summon[MlDsa[65]]
+      val privateKey = mlDsa65.genKey()
+      val publicKey = mlDsa65.privateToPublic(privateKey)
+      val otherPrivate = mlDsa65.genKey()
+      val otherPublic = mlDsa65.privateToPublic(otherPrivate)
+
+      def schemes(algorithm: Text): Optional[Signing] =
+        if algorithm == t"ml-dsa-65" then mlDsa65 else Unset
+
+      val keyring = ManifestSigning.Keyring(List(publicKey))
+
+      // A layered schema published as a `tels/1` module: the payload is
+      // the single tree item at the fixed path `schema.tel`.
+      val schemaSource: Text = Text("""|tel 1.0
+        |
+        |name layered
+        |
+        |document
+        |  field name String
+        |
+        |layer
+        |  name alpha
+        |  overlay
+        |    field email String
+        |""".stripMargin)
+
+      val schemaBytes = encode(schemaSource)
+
+      def schemaLira(version: Optional[revolution.Semver], tags: List[Text], sign: Boolean)
+      :   Lira =
+
+        val context = Discipline.Context(t"jvm")
+        val registry = Discipline.Registry(List())
+        val tree = Lira.Tree.of(List(TreeEntry(TreePath(t"schema.tel"), blob(schemaBytes))))
+        val atomizations = registry.atomize(List((TreePath(t"schema.tel"), schemaBytes)), context)
+        val atomsData = AtomsBlob.encode(atomizations.stdlib.head)
+        val snapshot = Snapshot(atomizations)
+
+        val manifest = Lira.Manifest(
+          module    = t"example.com/layered",
+          version   = version,
+          tag       = tags,
+          lineage   = List(snapshot),
+          toolchain = List(Lira.Manifest.Tool(t"tel", t"1.0")),
+          api       = List(Lira.Manifest.Api(t"opaque/1", blob(atomsData))),
+          section = List(Section(t"jvm", tree = blob(tree.encode))),
+          payload = Lira.Manifest.Payload(t"brotli", 0L, blob(encode(t""))))
+
+        // `assemble` completes the payload record, so sign the read-back
+        // manifest (whose payload is final), then re-assemble.
+        val blobs = List(schemaBytes, tree.encode, atomsData)
+        val unsigned = Lira.read(Lira.assemble(manifest, blobs))
+
+        if !sign then unsigned else
+          val resigned = ManifestSigning.sign
+            (unsigned.manifest, t"jon.pretty@propensive.com", t"ml-dsa-65", mlDsa65, privateKey,
+             publicKey)
+
+          Lira.read(Lira.assemble(resigned, blobs))
+
+      class MemoryReleases(releases: scala.List[Lira]) extends reliquary.SchemaResolver.Releases:
+        def apply(module: Text): List[Lira] =
+          List.from(releases.filter(_.manifest.module == module))
+
+        def modules: List[Text] = List.from(releases.map(_.manifest.module).distinct)
+
+      def resolver(releases: Lira*): reliquary.SchemaResolver =
+        reliquary.SchemaResolver(MemoryReleases(releases.toList), keyring, schemes)
+
+      def versioned(major: Int, minor: Int, patch: Int): Tel.Pragma.Reference =
+        Tel.Pragma.Reference
+         ( t"example.com", t"layered", Tel.Pragma.Reference.Selector.Version(major, minor, patch) )
+
+      def tagged(name: Text): Tel.Pragma.Reference =
+        Tel.Pragma.Reference
+         ( t"example.com", t"layered", Tel.Pragma.Reference.Selector.Tag(name) )
+
+      test(m"a version-form reference resolves the schema body"):
+        val release = schemaLira(revolution.Semver(0, 1, 0), List(), sign = true)
+
+        resolver(release).bySelector(versioned(0, 1, 0))
+        . let(_.data.serialize[Hex]).or(t"")
+      . assert(_ == schemaBytes.serialize[Hex])
+
+      test(m"a tag-form reference resolves the schema body"):
+        val release = schemaLira(revolution.Semver(0, 1, 0), List(t"stable"), sign = true)
+
+        resolver(release).bySelector(tagged(t"stable"))
+        . let(_.data.serialize[Hex]).or(t"")
+      . assert(_ == schemaBytes.serialize[Hex])
+
+      test(m"an absent version answers nothing"):
+        val release = schemaLira(revolution.Semver(0, 1, 0), List(), sign = true)
+        resolver(release).bySelector(versioned(9, 9, 9)).absent
+      . assert(_ == true)
+
+      test(m"an unsigned release fails verification"):
+        val release = schemaLira(revolution.Semver(0, 1, 0), List(), sign = false)
+
+        capture[Tels.Resolution.Error](resolver(release).bySelector(versioned(0, 1, 0)))
+        . reason match
+          case Tels.Resolution.Error.Reason.Unverified(_) => true
+          case _                                          => false
+      . assert(_ == true)
+
+      test(m"a wrong keyring fails verification"):
+        val release = schemaLira(revolution.Semver(0, 1, 0), List(), sign = true)
+
+        val wrongKeyring =
+          reliquary.SchemaResolver(MemoryReleases(scala.List(release)),
+            ManifestSigning.Keyring(List(otherPublic)), schemes)
+
+        capture[Tels.Resolution.Error](wrongKeyring.bySelector(versioned(0, 1, 0)))
+        . reason match
+          case Tels.Resolution.Error.Reason.Unverified(_) => true
+          case _                                          => false
+      . assert(_ == true)
+
+      test(m"a signature the referenced lineage does not serve disagrees"):
+        val release = schemaLira(revolution.Semver(0, 1, 0), List(), sign = true)
+
+        val alien = SchemaSignature.fromDocument
+         ( encode(t"tel 1.0\n\nname other\n\ndocument\n  field a String\n").read[Tel],
+           Tels.Axiom.tels )
+
+        capture[Tels.Resolution.Error]:
+          resolver(release).bySignature
+           ( alien, Tel.Pragma.Reference(t"example.com", t"layered", Unset) )
+        . reason
+      . assert(_ == Tels.Resolution.Error.Reason.ReferenceDisagrees)
+
+      test(m"a signature-form lookup finds the release serving it"):
+        val release = schemaLira(revolution.Semver(0, 1, 0), List(), sign = true)
+        val components = SchemaSignature.componentHashes(schemaBytes.read[Tel], Tels.Axiom.tels)
+        val composed = SchemaSignature.encode(List.of(components(0) :: components(1).stdlib))
+
+        resolver(release).bySignature(composed, Unset)
+        . let(_.data.serialize[Hex]).or(t"")
+      . assert(_ == schemaBytes.serialize[Hex])
+
+      test(m"end-to-end: a selector reference resolves, composes and caches"):
+        val release = schemaLira(revolution.Semver(0, 1, 0), List(), sign = true)
+        val store = Tels.Resolution.Store.Memory()
+
+        val first = stratiform.SchemaResolver.resolve
+         ( Tel.Pragma((1, 0), versioned(0, 1, 0), List(t"alpha"), Unset, Unset),
+           stores = List(store), delegate = resolver(release) )
+
+        val second = stratiform.SchemaResolver.resolve
+         ( Tel.Pragma((1, 0), Unset, List(t"alpha"),
+             Base256.encode(first.signature), Unset),
+           stores = List(store), library = List() )
+
+        val fields = first.schema.document.members.readable.toList
+        . collect { case f: Tels.Field => f.keyword.s }.sorted.mkString(",")
+
+        (first.step, fields, second.step)
+      . assert(_ == (Tels.Resolution.Step.Lira, "email,name", Tels.Resolution.Step.Cache))
+
     suite(m"Buildpath and publication"):
       import revolution.Semver
 
