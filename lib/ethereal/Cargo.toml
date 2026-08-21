@@ -26,7 +26,6 @@ strip = true
 
 [dependencies]
 ml-dsa = { version = "0.1", default-features = false }
-sha2 = "0.10"
 rand = { version = "0.9", optional = true }
 
 [target.'cfg(unix)'.dependencies]

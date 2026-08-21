@@ -494,16 +494,15 @@ object Tests extends Suite(m"Ethereal Tests"):
             . assert(_ == t"restarted")
 
           suite(m"State file integrity"):
-            test(m"build file records build id, size, mtime and content hash"):
+            test(m"build file records build id, size and mtime"):
               sh"$tool echo probe".exec[Unit]()
               val content = sh"cat $stateDir/build".exec[Text]().trim
               val fields = content.cut(t" ").stdlib
 
-              fields.length == 4
+              fields.length == 3
                 && safely(fields(0).as[Long]).let(_ => true).or(false)
                 && safely(fields(1).as[Long]).let(_ => true).or(false)
                 && safely(fields(2).as[Long]).let(_ => true).or(false)
-                && fields(3).length == 64
 
             . assert(_ == true)
 
