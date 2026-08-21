@@ -31,8 +31,6 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package stratiform
-
-import proscenium.compat.*
 import rudiments.mutable
 
 import adversaria.*
@@ -243,7 +241,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
               Tels.Field
                 ( schematic.polarity, schematic.repeatable, keyword, schematic.schema(), Unset )
 
-        array.toSeq
+        array.readable.toSeq
 
       Tels.Struct(Array.from(members), Array.empty)
 
@@ -270,7 +268,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
           [variant <: derivation] => schematic =>
             Tels.Variant(Tel.camelToKebab(label.s), schematic.schema())
 
-      array.toSeq
+      array.readable.toSeq
 
     val select = Tels.SelectDefinition(name, Array.from(selectVariants), Array.empty)
     selectSchematic(select).asInstanceOf[derivation is TelSchematic over Tels.Type]

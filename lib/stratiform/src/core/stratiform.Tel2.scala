@@ -36,8 +36,6 @@ import scala.collection.immutable.Vector
 
 import scala.caps
 
-import proscenium.compat.*
-
 import scala.collection.Factory
 import scala.compiletime.*
 
@@ -88,7 +86,7 @@ private[stratiform] def primitiveFault[value]
   ( using Tactic[Tel.Error] )
 :   value =
 
-  if tel.atomTexts.isEmpty then raise(Tel.Error(Tel.Error.Reason.Absent)) yet sentinel
+  if tel.atomTexts.nil then raise(Tel.Error(Tel.Error.Reason.Absent)) yet sentinel
   else parse(tel.primaryAtom).or:
     raise(Tel.Error(Tel.Error.Reason.NotScalar(tel.primaryAtom, expected))) yet sentinel
 
@@ -360,10 +358,13 @@ trait Tel2 extends Tel3:
       // coherent. Built by-name so recursive types compile.
       Tel.Decodable({ () =>
         val fields: List[(Text, Morphology)] =
-          contexts[derivation](): [field] => context => (label, context.shape())
-          . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
+          // Not `to[List]`: inline re-elaboration freshens the array, so the conversion
+          // goes through the underlying `IArray`.
+          List.of:
+            contexts[derivation](): [field] => context => (label, context.shape())
+            . readable.toList
 
-        Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+        Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
         telVal =>
           provide[Foci[Tel.Focus]]:
@@ -399,7 +400,7 @@ trait Tel2 extends Tel3:
 
                     val positional: scala.collection.immutable.List[Tel.Atom] =
                       if assigned.length == 0 then scala.collection.immutable.Nil
-                      else assigned(index).stdlib
+                      else assigned.readable(index).stdlib
 
                     if !active then
                       Venture:
@@ -459,7 +460,7 @@ trait Tel2 extends Tel3:
                   then raise(Tel.Error(Tel.Error.Reason.Absent)) yet null.asInstanceOf[derivation]
                   else abort(Tel.Error(Tel.Error.Reason.Absent))
                 else
-                  val variant: Tel = Tel.make(compounds.head)
+                  val variant: Tel = Tel.make(compounds.readable.head)
                   val variantKeyword: Text = labels(variant.keyword).or(variant.keyword)
 
                   delegate(variantKeyword): [variant <: derivation] =>
@@ -478,10 +479,13 @@ trait Tel2 extends Tel3:
 
         def shape(): Morphology =
           val fields: List[(Text, Morphology)] =
-            contexts[derivation](): [field] => context => (label, context.shape())
-            . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
+            // See `shape` above: not `to[List]`, because inline re-elaboration freshens
+            // the array.
+            List.of:
+              contexts[derivation](): [field] => context => (label, context.shape())
+              . readable.toList
 
-          Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+          Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
 
         // The encoded value is taken FROZEN (`^{}`) rather than as a bare `derivation`. The type
         // parameter may capture, so writing it plainly here re-elaborates it with a fresh capture
@@ -640,12 +644,12 @@ trait Tel2 extends Tel3:
   // absent-field fallback — still raises `Absent`.
   given textDecodable: (tactic: Tactic[Tel.Error]) => ((Text is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
-      if tel.atomTexts.isEmpty && bareCompound(tel) then t""
+      if tel.atomTexts.nil && bareCompound(tel) then t""
       else primitiveFault(tel, t"Text", t""): atom => atom
 
   given stringDecodable: (tactic: Tactic[Tel.Error]) => ((String is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
-      if tel.atomTexts.isEmpty && bareCompound(tel) then ""
+      if tel.atomTexts.nil && bareCompound(tel) then ""
       else primitiveFault(tel, t"String", ""): atom => atom.s
 
   given intDecodable: (tactic: Tactic[Tel.Error]) => ((Int is Tel.Decodable)^{tactic}) =
@@ -910,7 +914,7 @@ trait Tel2 extends Tel3:
         // absent form (`false`) instead of misreading emptiness.
         val k = entry.field(t"key").lay(keyCodec.absent())(keyCodec.decoded(_))
         val v = entry.field(t"value").lay(valueCodec.absent())(valueCodec.decoded(_))
-        accumulator = accumulator.updated(k, v)
+        accumulator = accumulator.define(k, v)
 
       accumulator
 

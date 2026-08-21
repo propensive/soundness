@@ -34,7 +34,7 @@ package stratiform
 
 import scala.language.unsafeNulls
 import murmuration.*
-import proscenium.compat.*
+import rudiments.seek
 
 import anticipation.*
 import contingency.*
@@ -117,13 +117,12 @@ object SchemaSignature:
     val layerChildren = root.children.filter: child => keywordIndexOf(child) == layerIdx
 
     val layerStruct: Optional[Tels.Struct] =
-      axiom.records.find(_.name == Text("Layer")) match
-        case Some(rec) => Tels.Struct(rec.members, rec.validators)
-        case None      => Unset
+      axiom.records.seek(_.name == Text("Layer")).let: rec =>
+        Tels.Struct(rec.members, rec.validators)
 
     val layerHashes: List[Data] =
       layerStruct.let: ls =>
-        val hashes = layerChildren.toList.map: layer =>
+        val hashes = List.of(layerChildren.readable.toList).map: layer =>
           val layerChildren = layer.asInstanceOf[Tel.Element.Node].children
           val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
           Blake3.hashOf(layerRoot.bintel(axiom), cadence.hashSize)
@@ -147,22 +146,19 @@ object SchemaSignature:
     var found = -1
 
     while i < struct.members.length && found < 0 do
-      struct.members(i) match
+      struct.members.readable(i) match
         case f: Tels.Field =>
           if f.keyword == Text("layer") then found = idx else idx += 1
 
         case s: Tels.SelectRef =>
-          schema.selects.find(_.name == s.reference) match
-            case Some(sd) =>
-              var v = 0
+          schema.selects.seek(_.name == s.reference).let: sd =>
+            var v = 0
 
-              while v < sd.variants.length && found < 0 do
-                if sd.variants(v).keyword == Text("layer") then found = idx + v
-                v += 1
+            while v < sd.variants.length && found < 0 do
+              if sd.variants.readable(v).keyword == Text("layer") then found = idx + v
+              v += 1
 
-              if found < 0 then idx += sd.variants.length
-
-            case None => ()
+            if found < 0 then idx += sd.variants.length
 
         case _: Tels.Exclude => ()
 
@@ -199,7 +195,7 @@ object SchemaSignature:
     var i   = 0
 
     while i < total do
-      xor = xor ^ (signature(i) & 0xff)
+      xor = xor ^ (signature.readable(i) & 0xff)
       i += 1
 
     val cadence: Cadence = Cadence.unpack(xor.toByte).or:

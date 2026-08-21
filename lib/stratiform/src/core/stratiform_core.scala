@@ -35,7 +35,6 @@ package stratiform
 import anticipation.*
 import contextual.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -73,7 +72,7 @@ private[stratiform] def collectionDocument[value]
         case compound: Tel.Compound => List(compound).stdlib
 
         case document: Tel.Document =>
-          document.children.flatMap(_.compounds).toSeq
+          document.children.bind(_.compounds).readable.toSeq
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))
@@ -90,7 +89,7 @@ private[stratiform] def constructedDocument[value]
         case compound: Tel.Compound => List(compound).stdlib
 
         case document: Tel.Document =>
-          document.children.flatMap(_.compounds).toSeq
+          document.children.bind(_.compounds).readable.toSeq
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))

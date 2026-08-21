@@ -33,7 +33,6 @@
 package stratiform
 
 import murmuration.*
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -225,7 +224,7 @@ object Mutation:
       case _ => abort(Mutation.Error(Reason.PointerNotFound))
 
     else
-      val step = steps(idx)
+      val step = steps.readable(idx)
       val (blockIdx, localIdx) = findTarget(subtree.children, step)
 
       val isTargetOp = op match
@@ -237,12 +236,14 @@ object Mutation:
         case _                        => true
 
       if isTargetOp && idx == steps.length - 1 then
-        val replacement = applyToTarget(subtree.children(blockIdx), localIdx, op, sigil)
+        val replacement = applyToTarget(subtree.children.readable(blockIdx), localIdx, op, sigil)
         val children = subtree.children
 
         val spliced =
           if replacement.length > 0
-          then children.take(blockIdx) ++ replacement ++ children.drop(blockIdx + 1)
+          then Array.frozen
+                ( children.readable.take(blockIdx) ++ replacement.readable
+                  ++ children.readable.drop(blockIdx + 1) )
           else
             // The op emptied the block (§22.2 `delete`): the block and its
             // comments go, but its trailing blank lines — which include a
@@ -253,8 +254,8 @@ object Mutation:
 
         rewrap(subtree, spliced)
       else
-        val targetBlock = subtree.children(blockIdx)
-        val targetCompound = targetBlock.compounds(localIdx)
+        val targetBlock = subtree.children.readable(blockIdx)
+        val targetCompound = targetBlock.compounds.readable(localIdx)
         val updatedSubtree = transform(targetCompound, steps, idx + 1, op, sigil)
 
         val updatedCompound = updatedSubtree match
@@ -262,9 +263,10 @@ object Mutation:
           case _: Tel.Document => targetCompound // unreachable: child of a compound is a compound
 
         val updatedBlock =
-          targetBlock.copy(compounds = targetBlock.compounds.updated(localIdx, updatedCompound))
+          targetBlock.copy
+           (compounds = Array.frozen(targetBlock.compounds.readable.updated(localIdx, updatedCompound)))
 
-        rewrap(subtree, subtree.children.updated(blockIdx, updatedBlock))
+        rewrap(subtree, Array.frozen(subtree.children.readable.updated(blockIdx, updatedBlock)))
 
   private def rewrap(subtree: Tel.Subtree, children: Array[Tel.Block]^{}): Tel.Subtree =
     subtree match
@@ -285,11 +287,11 @@ object Mutation:
     var foundLocal = -1
 
     while b < blocks.length && foundBlock < 0 do
-      val cs = blocks(b).compounds
+      val cs = blocks.readable(b).compounds
       var c = 0
 
       while c < cs.length && foundBlock < 0 do
-        if cs(c).keyword == step.keyword then
+        if cs.readable(c).keyword == step.keyword then
           if seen == want then
             foundBlock = b
             foundLocal = c
@@ -311,11 +313,13 @@ object Mutation:
   private def applyToTarget(block: Tel.Block, localIdx: Int, op: Op, sigil: Char)
   :   Array[Tel.Block]^{} raises Mutation.Error =
 
-    val target = block.compounds(localIdx)
+    val target = block.compounds.readable(localIdx)
 
     def splice(replacement: Array[Tel.Compound]^{}): Array[Tel.Block]^{} =
       val compounds =
-        block.compounds.take(localIdx) ++ replacement ++ block.compounds.drop(localIdx + 1)
+        Array.frozen
+         ( block.compounds.readable.take(localIdx) ++ replacement.readable
+           ++ block.compounds.readable.drop(localIdx + 1) )
 
       if compounds.length == 0 then Array.empty
       else Array.of(block.copy(compounds = compounds))
@@ -401,14 +405,15 @@ object Mutation:
         var i = 0
 
         while atomIdx < 0 && i < target.atoms.length do
-          target.atoms(i) match
+          target.atoms.readable(i) match
             case Tel.Atom.Inline(text, _) => if text == keyword then atomIdx = i
             case _                        => ()
 
           i += 1
 
         if atomIdx >= 0 then
-          val atoms = target.atoms.take(atomIdx) ++ target.atoms.drop(atomIdx + 1)
+          val atoms =
+            Array.frozen(target.atoms.readable.take(atomIdx) ++ target.atoms.readable.drop(atomIdx + 1))
           splice(Array.of(target.copy(atoms = atoms)))
         else
           var foundBlock = -1
@@ -416,11 +421,11 @@ object Mutation:
           var b = 0
 
           while foundBlock < 0 && b < target.children.length do
-            val cs = target.children(b).compounds
+            val cs = target.children.readable(b).compounds
             var c = 0
 
             while foundBlock < 0 && c < cs.length do
-              val candidate = cs(c)
+              val candidate = cs.readable(c)
 
               if candidate.keyword == keyword && candidate.atoms.length == 0
                 && candidate.children.length == 0
@@ -434,14 +439,17 @@ object Mutation:
 
           if foundBlock < 0 then Array.of(block)
           else
-            val childBlock = target.children(foundBlock)
+            val childBlock = target.children.readable(foundBlock)
 
             val remaining =
-              childBlock.compounds.take(foundLocal) ++ childBlock.compounds.drop(foundLocal + 1)
+              Array.frozen
+               ( childBlock.compounds.readable.take(foundLocal)
+                 ++ childBlock.compounds.readable.drop(foundLocal + 1) )
 
             val children =
               if remaining.length == 0 then removeBlock(target.children, foundBlock, true)
-              else target.children.updated(foundBlock, childBlock.copy(compounds = remaining))
+              else Array.frozen
+                    (target.children.readable.updated(foundBlock, childBlock.copy(compounds = remaining)))
 
             splice(Array.of(target.copy(children = children)))
 
@@ -464,8 +472,8 @@ object Mutation:
     if atomIndex < 0 || atomIndex >= compound.atoms.length
     then abort(Mutation.Error(Reason.AtomIndexOutOfRange))
 
-    val updated = escalateAtom(compound.atoms(atomIndex), text, sigil)
-    compound.copy(atoms = compound.atoms.updated(atomIndex, updated))
+    val updated = escalateAtom(compound.atoms.readable(atomIndex), text, sigil)
+    compound.copy(atoms = Array.frozen(compound.atoms.readable.updated(atomIndex, updated)))
 
   // The §22.3 form-escalation step: keep the current form if the new value
   // is still safe for it, else advance (never retreat) to the first later
@@ -505,11 +513,11 @@ object Mutation:
     var b = 0
 
     while b < blocks.length do
-      val cs = blocks(b).compounds
+      val cs = blocks.readable(b).compounds
       var c = 0
 
       while c < cs.length do
-        if cs(c).keyword == compound.keyword then
+        if cs.readable(c).keyword == compound.keyword then
           lastB = b
           lastC = c
 
@@ -527,21 +535,28 @@ object Mutation:
       then Array.of(Tel.Block(Array.empty, Unset, Array.of(compound), 1))
       else
         val lastIdx = blocks.length - 1
-        val last = blocks(lastIdx)
+        val last = blocks.readable(lastIdx)
         val fresh = Tel.Block(Array.empty, Unset, Array.of(compound), last.trailingBlankLines)
         val separation = if last.tabulation.present then 1 else 0
-        blocks.updated(lastIdx, last.copy(trailingBlankLines = separation)) :+ fresh
+        Array.frozen
+         ( blocks.readable.updated(lastIdx, last.copy(trailingBlankLines = separation))
+           :+ fresh )
     else
-      val block = blocks(lastB)
+      val block = blocks.readable(lastB)
 
       if block.tabulation.present then
         val separated = block.copy(trailingBlankLines = 1)
         val fresh = Tel.Block(Array.empty, Unset, Array.of(compound), block.trailingBlankLines)
-        blocks.take(lastB) ++ Array.of(separated, fresh) ++ blocks.drop(lastB + 1)
+        Array.frozen
+         ( blocks.readable.take(lastB) ++ scala.IArray(separated, fresh)
+           ++ blocks.readable.drop(lastB + 1) )
       else
         val cs = block.compounds
-        val compounds = cs.take(lastC + 1) ++ Array.of(compound) ++ cs.drop(lastC + 1)
-        blocks.updated(lastB, block.copy(compounds = compounds))
+        val compounds =
+          Array.frozen
+           ( cs.readable.take(lastC + 1) ++ scala.IArray(compound)
+             ++ cs.readable.drop(lastC + 1) )
+        Array.frozen(blocks.readable.updated(lastB, block.copy(compounds = compounds)))
 
   // Remove the emptied block at `blockIdx`, discarding its comments
   // (§22.2 `delete`) but not its trailing blank lines: they merge into
@@ -551,20 +566,22 @@ object Mutation:
   private def removeBlock(blocks: Array[Tel.Block]^{}, blockIdx: Int, nested: Boolean)
   :   Array[Tel.Block]^{} =
 
-    val removed = blocks(blockIdx)
+    val removed = blocks.readable(blockIdx)
 
     if blockIdx > 0 then
-      val previous = blocks(blockIdx - 1)
+      val previous = blocks.readable(blockIdx - 1)
 
       val trailing =
         if removed.trailingBlankLines > previous.trailingBlankLines
         then removed.trailingBlankLines else previous.trailingBlankLines
 
       val absorbed = previous.copy(trailingBlankLines = trailing)
-      blocks.take(blockIdx - 1) ++ Array.of(absorbed) ++ blocks.drop(blockIdx + 1)
+      Array.frozen
+       ( blocks.readable.take(blockIdx - 1) ++ scala.IArray(absorbed)
+         ++ blocks.readable.drop(blockIdx + 1) )
     else if blocks.length == 1 && nested && removed.trailingBlankLines > 0
     then Array.of(Tel.Block(Array.empty, Unset, Array.empty, removed.trailingBlankLines))
-    else blocks.drop(1)
+    else Array.frozen(blocks.readable.drop(1))
 
   // §22.2 `insert-into-block` — append a compound to an existing block's
   // `compounds` list. For a tabulated block, every column value (the
@@ -579,7 +596,7 @@ object Mutation:
     if blockIndex < 0 || blockIndex >= blocks.length
     then abort(Mutation.Error(Reason.PointerNotFound))
 
-    val block = blocks(blockIndex)
+    val block = blocks.readable(blockIndex)
 
     val padded = block.tabulation.let: tab =>
       val offsets = tab.markerOffsets
@@ -587,7 +604,7 @@ object Mutation:
       var col = 0
 
       while col < offsets.length - 1 do
-        if vs(col) > offsets(col + 1) - offsets(col) - 2
+        if vs(col) > offsets.readable(col + 1) - offsets.readable(col) - 2
         then abort(Mutation.Error(Reason.TabulationOverflow))
 
         col += 1
@@ -596,7 +613,9 @@ object Mutation:
 
     . or(compound)
 
-    blocks.updated(blockIndex, block.copy(compounds = block.compounds :+ padded))
+    Array.frozen
+     ( blocks.readable.updated
+        (blockIndex, block.copy(compounds = Array.frozen(block.compounds.readable :+ padded))) )
 
   // Width of `text` in code points: the spec measures column geometry in
   // code points. (The parser records marker offsets in bytes and the
@@ -617,7 +636,7 @@ object Mutation:
     var stop = false
 
     while i < compound.atoms.length && !stop do
-      compound.atoms(i) match
+      compound.atoms.readable(i) match
         case Tel.Atom.Inline(text, spaces) =>
           if spaces >= 2 && col + 1 < columns then
             if width > vs(col) then vs(col) = width
@@ -643,7 +662,7 @@ object Mutation:
     var stop = false
 
     while i < compound.atoms.length && !stop do
-      compound.atoms(i) match
+      compound.atoms.readable(i) match
         case Tel.Atom.Inline(text, _) =>
           if col + 1 < columns then
             col += 1
@@ -666,12 +685,12 @@ object Mutation:
     var cursor = 2*indent + codePoints(compound.keyword)
     var col = 0
 
-    val atoms = compound.atoms.map:
+    val atoms = compound.atoms.remap:
       case Tel.Atom.Inline(text, spaces) =>
         if spaces >= 2 && col + 1 < offsets.length then
           col += 1
-          val gap = offsets(col) - cursor
-          cursor = offsets(col) + codePoints(text)
+          val gap = offsets.readable(col) - cursor
+          cursor = offsets.readable(col) + codePoints(text)
           Tel.Atom.Inline(text, gap)
         else
           cursor += spaces + codePoints(text)
@@ -690,12 +709,12 @@ object Mutation:
     var cursor = 2*indent + codePoints(compound.keyword)
     var col = 0
 
-    val atoms = compound.atoms.map:
+    val atoms = compound.atoms.remap:
       case Tel.Atom.Inline(text, _) =>
         if col + 1 < offsets.length then
           col += 1
-          val gap = offsets(col) - cursor
-          cursor = offsets(col) + codePoints(text)
+          val gap = offsets.readable(col) - cursor
+          cursor = offsets.readable(col) + codePoints(text)
           Tel.Atom.Inline(text, gap)
         else
           cursor += 2 + codePoints(text)
@@ -718,11 +737,11 @@ object Mutation:
     var b = 0
 
     while b < blocks.length do
-      val cs = blocks(b).compounds
+      val cs = blocks.readable(b).compounds
       var c = 0
 
       while c < cs.length do
-        if cs(c).keyword == keyword then positions += ((b, c))
+        if cs.readable(c).keyword == keyword then positions += ((b, c))
         c += 1
 
       b += 1
@@ -736,14 +755,14 @@ object Mutation:
       // new order into the same (blockIndex, compoundIndex) slots.
       val movedCompound =
         val (bIdx, cIdx) = positions(oldIndex)
-        blocks(bIdx).compounds(cIdx)
+        blocks.readable(bIdx).compounds.readable(cIdx)
 
       val newGroup = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
       var i = 0
 
       while i < positions.length do
         val (bIdx, cIdx) = positions(i)
-        if i != oldIndex then newGroup += blocks(bIdx).compounds(cIdx)
+        if i != oldIndex then newGroup += blocks.readable(bIdx).compounds.readable(cIdx)
         i += 1
 
       newGroup.insert(newIndex, movedCompound)
@@ -755,7 +774,8 @@ object Mutation:
       while j < positions.length do
         val (bIdx, cIdx) = positions(j)
         val block = out(bIdx)
-        out(bIdx) = block.copy(compounds = block.compounds.updated(cIdx, newGroup(j)))
+        out(bIdx) =
+          block.copy(compounds = Array.frozen(block.compounds.readable.updated(cIdx, newGroup(j))))
         j += 1
 
       Array.from(out)
@@ -783,12 +803,12 @@ object Mutation:
       var b = 0
 
       while b < blocks.length do
-        val cs = blocks(b).compounds
+        val cs = blocks.readable(b).compounds
         var c = 0
         var touches = false
 
         while c < cs.length do
-          if cs(c).keyword == kw then
+          if cs.readable(c).keyword == kw then
             if finished then interleaved = true
             present = true
             touches = true
@@ -811,7 +831,7 @@ object Mutation:
     if movingBlocks == otherBlocks && movingBlocks.length == 1 then
       // Both groups share one block: reorder its compounds.
       val blockIdx = movingBlocks.head
-      val block = blocks(blockIdx)
+      val block = blocks.readable(blockIdx)
       val cs = block.compounds
 
       def run(kw: Text): (Int, Int) =
@@ -820,7 +840,7 @@ object Mutation:
         var c = 0
 
         while c < cs.length do
-          if cs(c).keyword == kw then
+          if cs.readable(c).keyword == kw then
             if first < 0 then first = c
             last = c
 
@@ -830,15 +850,17 @@ object Mutation:
 
       val (ms, me) = run(keyword)
       val (os, oe) = run(otherKeyword)
-      val moving = cs.drop(ms).take(me - ms + 1)
-      val removed = cs.take(ms) ++ cs.drop(me + 1)
+      val moving = cs.readable.slice(ms, me + 1)
+      val removed = cs.readable.take(ms) ++ cs.readable.drop(me + 1)
 
       val insertAt = placement match
         case Placement.Before => if ms < os then os - moving.length else os
         case Placement.After  => if ms < os then oe + 1 - moving.length else oe + 1
 
-      val compounds = removed.take(insertAt) ++ moving ++ removed.drop(insertAt)
-      blocks.updated(blockIdx, block.copy(compounds = compounds))
+      val compounds =
+        Array.frozen(removed.take(insertAt) ++ moving ++ removed.drop(insertAt))
+
+      Array.frozen(blocks.readable.updated(blockIdx, block.copy(compounds = compounds)))
 
     else if movingBlocks.exists(otherBlocks.contains) || !movingHomogeneous
     then abort(Mutation.Error(Reason.PointerNotFound))
@@ -856,7 +878,7 @@ object Mutation:
       var b = 0
 
       while b < blocks.length do
-        if movingBlocks.contains(b) then moving += blocks(b) else pruned += ((b, blocks(b)))
+        if movingBlocks.contains(b) then moving += blocks.readable(b) else pruned += ((b, blocks.readable(b)))
         b += 1
 
       val anchor = placement match
@@ -875,7 +897,7 @@ object Mutation:
           var i = 0
 
           while same && i < blocks.length do
-            if out(i) ne blocks(i) then same = false
+            if out(i) ne blocks.readable(i) then same = false
             i += 1
 
           same
@@ -892,7 +914,7 @@ object Mutation:
         if movedLast < out.length - 1 then out(movedLast) = separated(out(movedLast))
 
         if movingBlocks.head > 0 then
-          val vacated = blocks(movingBlocks.head - 1)
+          val vacated = blocks.readable(movingBlocks.head - 1)
           var v = 0
 
           while v < out.length - 1 do
@@ -902,8 +924,8 @@ object Mutation:
         // The final block keeps the document's original end separation: a
         // block moved to the end would otherwise turn its former
         // inter-group blank lines into stray trailing blanks.
-        if out(out.length - 1) ne blocks(blocks.length - 1) then
-          val end = blocks(blocks.length - 1).trailingBlankLines
+        if out(out.length - 1) ne blocks.readable(blocks.length - 1) then
+          val end = blocks.readable(blocks.length - 1).trailingBlankLines
           out(out.length - 1) = out(out.length - 1).copy(trailingBlankLines = end)
 
         Array.from(out)
@@ -932,14 +954,14 @@ object Mutation:
     if blockIndex < 0 || blockIndex >= blocks.length
     then abort(Mutation.Error(Reason.PointerNotFound))
 
-    val block = blocks(blockIndex)
+    val block = blocks.readable(blockIndex)
     val tab = block.tabulation.or(abort(Mutation.Error(Reason.PointerNotFound)))
     val n = tab.markerOffsets.length
     val widths = new scala.Array[Int](n)
     var col = 0
 
     while col < n do
-      widths(col) = codePoints(tab.headings(col)) + 2
+      widths(col) = codePoints(tab.headings.readable(col)) + 2
       col += 1
 
     def fold(vs: scala.Array[Int]): Unit =
@@ -961,11 +983,12 @@ object Mutation:
       i += 1
 
     val offsets = newOffsets.asInstanceOf[Array[Int]^{}]
-    val compounds = block.compounds.map(repadExisting(_, offsets, indent))
+    val compounds = block.compounds.remap(repadExisting(_, offsets, indent))
 
-    blocks.updated
-      ( blockIndex,
-        block.copy(tabulation = Tel.Tabulation(offsets, tab.headings), compounds = compounds) )
+    Array.frozen:
+      blocks.readable.updated
+       ( blockIndex,
+         block.copy(tabulation = Tel.Tabulation(offsets, tab.headings), compounds = compounds) )
 
   // §22.3 `construct` — produce a fresh compound from a keyword and a
   // sequence of scalar atom texts, choosing each atom's form by the §22.2

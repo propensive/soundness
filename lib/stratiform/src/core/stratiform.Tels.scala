@@ -34,7 +34,6 @@ package stratiform
 
 
 import anticipation.*
-import proscenium.compat.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -826,15 +825,15 @@ object Tels extends Tels2:
           layers   = Array.from(layers),
           sigil    = sigil,
           records  = Array.from(records),
-          scalars  = builtinScalars ++ Array.from(scalars),
+          scalars  = Array.frozen(builtinScalars.readable ++ Array.from(scalars).readable),
           selects  = Array.from(selects) )
 
     private def firstAtomText(c: Tel.Compound): Optional[Text] =
-      val texts = c.atoms.collect { case Tel.Atom.Inline(t, _) => t }
+      val texts = c.atoms.sweep { case Tel.Atom.Inline(t, _) => t }
       if texts.nil then Unset else texts.readUnchecked(0): Optional[Text]
 
     private def atomTexts(c: Tel.Compound): Array[Text]^{} =
-      c.atoms.collect { case Tel.Atom.Inline(t, _) => t }
+      c.atoms.sweep { case Tel.Atom.Inline(t, _) => t }
 
     private def childCompounds(c: Tel.Compound): Array[Tel.Compound]^{} =
       c.children.bind(_.compounds)
@@ -847,9 +846,7 @@ object Tels extends Tels2:
     // child compound.
     private def nameOf(c: Tel.Compound): Optional[Text] =
       firstAtomText(c).or:
-        childCompounds(c).find(_.keyword == t"name") match
-          case Some(cc) => scalarAtomText(cc)
-          case None     => Unset
+        childCompounds(c).seek(_.keyword == t"name").let(scalarAtomText(_))
 
     // The text of a scalar-valued child compound, taking its first atom
     // (inline, source, or literal) — used for both `default` and the §20
@@ -863,9 +860,7 @@ object Tels extends Tels2:
     // The optional §20 `description` of a Definition/Field/Variant: the
     // text of its `description` child compound, or `Unset` if absent.
     private def descriptionOf(children: Array[Tel.Compound]^{}): Optional[Text] =
-      children.find(_.keyword == t"description") match
-        case Some(c) => scalarAtomText(c)
-        case None    => Unset
+      children.seek(_.keyword == t"description").let(scalarAtomText(_))
 
     private def parseRecord(c: Tel.Compound): RecordDefinition raises Tel.Error =
       val recName = nameOf(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
@@ -1049,12 +1044,12 @@ object Tels extends Tels2:
         case t: Text => if t.s.isEmpty then Unset else Optional(t.s.charAt(0))
         case _       => Unset
 
-      val records  = nodesAt(ch, 2).map(recordFromElement)
-      val scalars  = nodesAt(ch, 3).map(scalarFromElement)
-      val selects  = nodesAt(ch, 4).map(selectFromElement)
+      val records  = nodesAt(ch, 2).remap(recordFromElement)
+      val scalars  = nodesAt(ch, 3).remap(scalarFromElement)
+      val selects  = nodesAt(ch, 4).remap(selectFromElement)
       val document = nodeAt(ch, 5).let(bodyFromElement)
         .or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
-      val layers   = nodesAt(ch, 6).map(layerFromElement)
+      val layers   = nodesAt(ch, 6).remap(layerFromElement)
 
       val builtinScalars =
         Array.of
@@ -1063,7 +1058,7 @@ object Tels extends Tels2:
             ScalarDefinition(t"Sigil",      Array.of(t"sigil")),
             ScalarDefinition(t"String",     Array.of(t"string")) )
 
-      Tels(name, document, layers, sigil, records, builtinScalars ++ scalars, selects)
+      Tels(name, document, layers, sigil, records, Array.frozen(builtinScalars.readable ++ scalars.readable), selects)
 
     private def typeFromText(name: Text): Type =
       if name == t"Flag" then Flag else Reference(name)
@@ -1107,7 +1102,7 @@ object Tels extends Tels2:
       else Polarity.Implicit
 
     private def textsAt(children: Array[Tel.Element]^{}, idx: Int): Array[Text]^{} =
-      children.collect { case Tel.Element.Value(j, _, t) if j == idx => t }
+      children.sweep { case Tel.Element.Value(j, _, t) if j == idx => t }
 
     // Field meta: keyword=0, type=1, optional=2, required=3, repeatable=4,
     // irrepeatable=5, key=6, default=7, description=8.
@@ -1213,9 +1208,9 @@ object Tels extends Tels2:
       Layer
         ( name    = textAt(ch, 0).or(t""),
           overlay = nodeAt(ch, 4).let(bodyFromElement).or(Struct(Array.empty, Array.empty)),
-          records = nodesAt(ch, 1).map(recordFromElement),
-          scalars = nodesAt(ch, 2).map(scalarFromElement),
-          selects = nodesAt(ch, 3).map(selectFromElement) )
+          records = nodesAt(ch, 1).remap(recordFromElement),
+          scalars = nodesAt(ch, 2).remap(scalarFromElement),
+          selects = nodesAt(ch, 3).remap(selectFromElement) )
 
 case class Tels
   ( name:     Text,

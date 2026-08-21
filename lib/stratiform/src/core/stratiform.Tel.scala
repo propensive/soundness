@@ -38,7 +38,6 @@ import scala.collection.immutable.Vector
 import scala.caps
 
 import java.nio.charset.StandardCharsets
-import proscenium.compat.*
 
 import scala.collection.Factory
 import scala.language.dynamics
@@ -605,7 +604,7 @@ object Tel extends Tel2:
     // The wire keywords of a product's fields: `@name` renames applied
     // verbatim, camel→kebab otherwise — the same mapping as the derivations.
     def wireKeywords(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
-      names.map { name => renames(name.tt).or(camelToKebab(name)).s }
+      names.remap { name => renames(name.tt).or(camelToKebab(name)).s }
 
     // A required primitive field whose keyword never arrived: the primitives'
     // `absent()` semantics — raise and continue with the sentinel. It carries no
@@ -814,7 +813,7 @@ object Tel extends Tel2:
         type Self = derivation
 
         private lazy val fields: Array[(String, Tel.Parsing, Any)]^{} = fields0()
-        private lazy val keys: Array[String]^{} = fields.map(_(0))
+        private lazy val keys: Array[String]^{} = fields.remap(_(0))
 
         // Per-field positional profiles for the §19.2 atom pre-pass,
         // computed from the same table as the keyword dispatch. A Flag
@@ -822,7 +821,7 @@ object Tel extends Tel2:
         // rule may pass over it — which the canonical encoder relies on
         // when it elides a false flag from a run.
         private lazy val profiles: Array[Positional.Profile]^{} =
-          fields.map: (key, parsing, fallback) =>
+          fields.remap: (key, parsing, fallback) =>
             val actual = unwrap(parsing)
 
             Positional.Profile
@@ -834,10 +833,10 @@ object Tel extends Tel2:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            fields.map { (key, parser, _) => (Text(key), parser.shape()) }.to[List]
+            fields.remap { (key, parser, _) => (Text(key), parser.shape()) }.to[List]
 
           Morphology.Obj
-            ( entries, entries.collect { case (key, shape) if !shape.optional => key } )
+            ( entries, entries.sweep { case (key, shape) if !shape.optional => key } )
 
         private def indexOf(keyword: Text): Int =
           val named = keys
@@ -1169,17 +1168,15 @@ object Tel extends Tel2:
     private def resolveType(t: Tels.Type, schema: Tels): Tels.Type raises Tel.Error =
       t match
         case Tels.Reference(name) =>
-          schema.records.find(_.name == name) match
-            case Some(record) => Tels.Struct(record.members, record.validators)
-
-            case None =>
-              schema.scalars.find(_.name == name) match
-                case Some(scalarDef) => Tels.Scalar(scalarDef.validators, scalarDef.encoding)
-
-                case None =>
-                  schema.selects.find(_.name == name) match
-                    case Some(_) => abort(Tel.Error(Reason.ReferenceKindMismatch))
-                    case None    => abort(Tel.Error(Reason.UnresolvedReference))
+          schema.records.seek(_.name == name).lay:
+            schema.scalars.seek(_.name == name).lay:
+              if schema.selects.seek(_.name == name).present
+              then abort(Tel.Error(Reason.ReferenceKindMismatch))
+              else abort(Tel.Error(Reason.UnresolvedReference))
+            . apply: scalarDef =>
+              Tels.Scalar(scalarDef.validators, scalarDef.encoding)
+          . apply: record =>
+            Tels.Struct(record.members, record.validators)
 
         case other => other
 
@@ -1214,7 +1211,7 @@ object Tel extends Tel2:
             flatIdx += 1
 
           case s: Tels.SelectRef =>
-            val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+            val selectDef = schema.selects.seek(_.name == s.reference).or:
               abort(Tel.Error(Reason.UnresolvedReference))
 
             var v = 0
@@ -1244,10 +1241,10 @@ object Tel extends Tel2:
             case _         => false
 
         case s: Tels.SelectRef =>
-          val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+          val selectDef = schema.selects.seek(_.name == s.reference).or:
             abort(Tel.Error(Reason.UnresolvedReference))
 
-          selectDef.variants.forall: v =>
+          selectDef.variants.all: v =>
             resolveType(v.variantType, schema) match
               case Tels.Flag => true
               case _    => false
@@ -1257,7 +1254,7 @@ object Tel extends Tel2:
     private def selectDefinitionOf(select: Tels.SelectRef, schema: Tels)
     :   Tels.SelectDefinition raises Tel.Error =
 
-      schema.selects.find(_.name == select.reference).getOrElse:
+      schema.selects.seek(_.name == select.reference).or:
         abort(Tel.Error(Reason.UnresolvedReference))
 
     // Effective polarity per §20: `required` unless declared `Loose`.
@@ -1310,9 +1307,7 @@ object Tel extends Tel2:
         case _: Tels.Exclude    => 0
 
         case s: Tels.SelectRef =>
-          schema.selects.find(_.name == s.reference) match
-            case Some(selectDef) => selectDef.variants.length
-            case None            => 0
+          schema.selects.seek(_.name == s.reference).lay(0)(_.variants.length)
 
       while i < atoms.length do
         val atomText = atoms.readUnchecked(i) match
@@ -1427,7 +1422,7 @@ object Tel extends Tel2:
         }):
           // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
           // emit no element, so remaining siblings are still validated.
-          km.get(compound.keyword) match
+          km.stdlib.get(compound.keyword) match
             case Some(entry) =>
               // §20.2 step 4c: all children of one member must form a single
               // contiguous run; variants of one SelectRef share an ordinal and
@@ -1466,9 +1461,7 @@ object Tel extends Tel2:
         case _: Tels.Exclude    => 0
 
         case s: Tels.SelectRef =>
-          schema.selects.find(_.name == s.reference) match
-            case Some(sd) => sd.variants.length
-            case None     => 0
+          schema.selects.seek(_.name == s.reference).lay(0)(_.variants.length)
 
       def indexOf(element: Tel.Element): Int = element match
         case Tel.Element.Node(idx, _, _)  => idx.or(-1)
@@ -1626,20 +1619,18 @@ object Tel extends Tel2:
           // atom and ignores the children.
           if compound.atoms.length > 1 then recoverNode(Reason.TooManyAtoms)(())
 
-          if compound.children.exists(_.compounds.nonEmpty)
+          if compound.children.exists(!_.compounds.nil)
           then recoverNode(Reason.NonStructCompound)(())
 
-          val text = compound.atoms.headOption.map:
+          val text = compound.atoms.prim.lay(t""):
             case Tel.Atom.Inline(t, _)  => t
             case Tel.Atom.Source(t)     => t
             case Tel.Atom.Literal(_, t) => t
 
-          .getOrElse(t"")
-
           Tel.Element.Value(entry.flatIndex, s, text)
 
         case Tels.Flag =>
-          if compound.atoms.nonEmpty || compound.children.nonEmpty then
+          if !compound.atoms.nil || !compound.children.nil then
             recoverNode(Reason.FlagWithContent)(())
 
           Tel.Element.Node(entry.flatIndex, Tels.Flag, Array.empty)
@@ -2179,12 +2170,13 @@ object Tel extends Tel2:
                 length = Optional(data.readUnchecked(offset + 5)) )
     else
       val children = node.children.bind(_.compounds)
-      val k = children.indexWhere { child => segments(denominative.Ordinal.zerary(i)).lay(false)(_ == child.keyword) }
+      val k =
+        children.where: child =>
+          segments(denominative.Ordinal.zerary(i)).lay(false)(_ == child.keyword)
 
-      if k < 0 then Unset
-      else
-        val child = offset + data.readUnchecked(offset + descriptorHeader + k)
-        walkIndex(children.readUnchecked(k), data, child, segments, i + 1, keyMode)
+      k.lay(Unset): ordinal =>
+        val child = offset + data.readUnchecked(offset + descriptorHeader + ordinal.n0)
+        walkIndex(children.readUnchecked(ordinal.n0), data, child, segments, i + 1, keyMode)
 
   // Concatenate the chunks of a `Chain[Data]` source into a single byte array.
   private[stratiform] def concatenate(source: Chain[Data]): Data =
@@ -2193,15 +2185,15 @@ object Tel extends Tel2:
     // A single in-memory block — the common case — is returned as-is
     // rather than copied into a fresh array (jacinta's single-chunk fast
     // path; the copy dominated the entry cost of fast direct reads).
-    if !source.nil && source.tail.nil then source.head else
-      var acc    = Array.empty[Byte]
-      var stream = source
+    if !source.nil && source.stdlib.tail.isEmpty then source.stdlib.head else
+      var acc    = scala.IArray.empty[Byte]
+      var stream = source.stdlib
 
-      while !stream.nil do
-        acc = acc ++ stream.head
+      while !stream.isEmpty do
+        acc = acc ++ stream.head.readable
         stream = stream.tail
 
-      acc
+      Array.frozen(acc)
 
   // `bytes.read[Tel]` for any Chain[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
@@ -2632,10 +2624,10 @@ object Tel extends Tel2:
 
     while b < out.length && !found do
       val cs = out(b).compounds
-      val idx = cs.indexWhere(_.keyword == keyword)
+      cs.where(_.keyword == keyword).let: ordinal =>
+        out(b) =
+          out(b).copy(compounds = Array.frozen(cs.readable.updated(ordinal.n0, compound)))
 
-      if idx >= 0 then
-        out(b) = out(b).copy(compounds = cs.updated(idx, compound))
         found = true
 
       b += 1
@@ -2666,7 +2658,9 @@ object Tel extends Tel2:
 
         if index >= base && index < base + compounds.length
         then
-          block.copy(compounds = compounds.updated(index - base, transform(compounds.readUnchecked(index - base))))
+          block.copy
+           ( compounds = Array.frozen
+              (compounds.readable.updated(index - base, transform(compounds.readUnchecked(index - base)))) )
         else
           block
 
@@ -2675,7 +2669,7 @@ object Tel extends Tel2:
   private[stratiform] def mapChildCompounds(blocks: Array[Block]^{}, transform: Compound => Compound)
   :   Array[Block]^{} =
 
-    blocks.map: block => block.copy(compounds = block.compounds.map(transform))
+    blocks.remap: block => block.copy(compounds = block.compounds.remap(transform))
 
   private[stratiform] object Parser:
     import scala.language.unsafeNulls
@@ -3950,8 +3944,8 @@ object Tel extends Tel2:
       val (parts, offsets) = splitPragmaPhrases(content)
 
       // §19.5 RestartFromPragma: a non-`tel` head is recorded but parsing continues.
-      if parts.head != "tel"
-      then recoverAt(Reason.PragmaNotFirst, line, offsets.head + 1, parts.head.length)(())
+      if parts.stdlib.head != "tel"
+      then recoverAt(Reason.PragmaNotFirst, line, offsets.stdlib.head + 1, parts.stdlib.head.length)(())
 
       val version =
         if parts.size >= 2 then parseVersion(parts.stdlib(1), line, offsets.stdlib(1) + 1) else (1, 0)
@@ -4102,9 +4096,8 @@ object Tel extends Tel2:
         case struct: Tels.Struct => struct
 
         case Tels.Reference(name) =>
-          s.records.find(_.name == name) match
-            case Some(rec) => Tels.Struct(rec.members, rec.validators)
-            case None      => Unset
+          s.records.seek(_.name == name).let: rec =>
+            Tels.Struct(rec.members, rec.validators)
 
         case _ => Unset
 
@@ -4123,8 +4116,8 @@ object Tel extends Tel2:
             if f.keyword == keyword then found = f.fieldType
 
           case sr: Tels.SelectRef =>
-            s.selects.find(_.name == sr.reference).foreach: selectDef =>
-              selectDef.variants.find(_.keyword == keyword).foreach: variant =>
+            s.selects.seek(_.name == sr.reference).let: selectDef =>
+              selectDef.variants.seek(_.keyword == keyword).let: variant =>
                 found = variant.variantType
 
           case _: Tels.Exclude => ()
@@ -4144,7 +4137,7 @@ object Tel extends Tel2:
             if f.keyword == keyword then hit = true
 
           case sr: Tels.SelectRef =>
-            s.selects.find(_.name == sr.reference).foreach: selectDef =>
+            s.selects.seek(_.name == sr.reference).let: selectDef =>
               if selectDef.variants.exists(_.keyword == keyword) then hit = true
 
           case _: Tels.Exclude => ()
@@ -6688,8 +6681,8 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // Total field access used by the schema-typed navigation macros and by
   // internal optics: an empty `Tel` for a missing field, never raising.
   private[stratiform] def selectField(field: String): Tel =
-    val match0 = childCompounds.find(_.keyword == Tel.camelToKebab(field))
-    if match0.isEmpty then Tel.empty else Tel(match0.get)
+    val match0 = childCompounds.seek(_.keyword == Tel.camelToKebab(field))
+    match0.lay(Tel.empty)(Tel(_))
 
   // Total child-by-index access under a field: an empty `Tel` when the index is
   // out of range. Used by the positional optics / plain dynamic access, where a
@@ -6757,14 +6750,14 @@ extends scala.Dynamic, Documentary, Topical, Original:
 
   // First child compound whose keyword matches `target`, if any.
   def field(target: Text): Optional[Tel] =
-    val matched = childCompounds.find(_.keyword == target)
-    if matched.isEmpty then Unset else Tel(matched.get)
+    val matched = childCompounds.seek(_.keyword == target)
+    matched.let(Tel(_))
 
   // All child compounds whose keyword matches `target`. Useful for
   // schema-repeatable fields that produce multiple compounds with the
   // same keyword in the presentation tree.
   def fields(target: Text): Array[Tel]^{} =
-    childCompounds.filter(_.keyword == target).map(Tel(_))
+    childCompounds.filter(_.keyword == target).remap(Tel(_))
 
   // Document accessor for downstream operations (printing, mutation). Only
   // meaningful when this Tel wraps a Document.

@@ -32,8 +32,6 @@
                                                                                                   */
 package stratiform
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import rudiments.`:+`
@@ -81,7 +79,7 @@ private[stratiform] object Positional:
     var index = 0
 
     while index < atoms.length do
-      val value = text(atoms(index))
+      val value = text(atoms.readable(index))
 
       // Step 3a: advance past non-required members that cannot take this
       // atom — Struct-natured ones, and Flag-natured ones whose keyword the
@@ -90,7 +88,7 @@ private[stratiform] object Positional:
       var scanning = true
 
       while scanning && position < profiles.length do
-        val profile = profiles(position)
+        val profile = profiles.readable(position)
 
         val skippable =
           !profile.required
@@ -105,7 +103,7 @@ private[stratiform] object Positional:
         raise(Tel.Error(Tel.Error.Reason.TooManyAtoms))
         index = atoms.length
       else
-        val profile = profiles(position)
+        val profile = profiles.readable(position)
 
         profile.nature match
           case Tel.Nature.Struct =>
@@ -115,7 +113,7 @@ private[stratiform] object Positional:
 
           case Tel.Nature.Flag =>
             if value == profile.keyword then
-              assigned(position) = assigned(position) :+ atoms(index)
+              assigned(position) = assigned(position) :+ atoms.readable(index)
               if !profile.repeatable then position += 1
             else
               // Step 3d: a required Flag member's atom must match its
@@ -123,7 +121,7 @@ private[stratiform] object Positional:
               raise(Tel.Error(Tel.Error.Reason.AtomFlagKeywordMismatch))
 
           case Tel.Nature.Scalar =>
-            assigned(position) = assigned(position) :+ atoms(index)
+            assigned(position) = assigned(position) :+ atoms.readable(index)
             // Step 3e: a repeatable member holds its position and consumes
             // every remaining atom.
             if !profile.repeatable then position += 1

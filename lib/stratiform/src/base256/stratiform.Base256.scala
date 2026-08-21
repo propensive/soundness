@@ -32,8 +32,6 @@
                                                                                                   */
 package stratiform
 
-import proscenium.compat.*
-
 import scala.sys
 
 import scala.language.unsafeNulls
@@ -77,7 +75,7 @@ object Base256:
     var i = 0
 
     while i < 256 do
-      table(alphabet(i).toInt) = true
+      table(alphabet.readable(i).toInt) = true
       i += 1
 
     table.asInstanceOf[Array[Boolean]^{}]
@@ -92,7 +90,7 @@ object Base256:
     var i = 0
 
     while i < 256 do
-      val c = alphabet(i)
+      val c = alphabet.readable(i)
 
       if c.toInt % 256 != i then
         val hex = String.format("%04X", Integer.valueOf(c.toInt))
@@ -104,7 +102,7 @@ object Base256:
     var j = 0
 
     while j < 256 do
-      val ord = alphabet(j).toInt
+      val ord = alphabet.readable(j).toInt
       if seen(ord) then sys.error(s"BASE-256 alphabet has duplicate char at index $j")
       seen(ord) = true
       j += 1
@@ -117,7 +115,7 @@ object Base256:
     var i = 0
 
     while i < data.length do
-      sb.append(alphabet(data(i) & 0xff))
+      sb.append(alphabet.readable(data.readable(i) & 0xff))
       i += 1
 
     Text(sb.toString)
@@ -147,7 +145,7 @@ object Base256:
 
     while i < s.length do
       val c = s.charAt(i)
-      if !membership(c.toInt) then abort(Base256.Error(Base256.Error.Reason.NotInAlphabet(i, c)))
+      if !membership.readable(c.toInt) then abort(Base256.Error(Base256.Error.Reason.NotInAlphabet(i, c)))
       out(i) = (c.toInt % 256).toByte
       i += 1
 
