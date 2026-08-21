@@ -45,7 +45,7 @@ hellenism 1
 hieroglyph 5
 hyperbole 4
 hypotenuse 4
-iridescence 3
+iridescence 2
 jacinta 2
 kaleidoscope 3
 legerdemain 2

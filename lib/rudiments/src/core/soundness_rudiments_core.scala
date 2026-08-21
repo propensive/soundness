@@ -48,7 +48,7 @@ export
       indexed, least, most, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, glean, where,
-      Populated, head, last, lead, reduce, populatedEquality }
+      Populated, occupied, head, last, lead, reduce, populatedEquality }
 
 // The `Deindex` extension group (`apply`, `at`, `defines`, `confine`, `prim`, `sec`, `ter`) is
 // re-declared here rather than exported: its typeclass evidence is a dependent leading `using`

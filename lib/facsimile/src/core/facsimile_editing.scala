@@ -310,7 +310,7 @@ private def buildOutline
 
       pdf.put(ref.number, Cos.Dictionary(dict))
 
-    (refs.prim, refs.occupied.let(_.last), total)
+    (refs.prim, refs.last, total)
 
 // A destination as its explicit `[page /Mode …]` array.
 private def destinationArray(pdf: (Pdf & Granting[Grant.Write])^, dest: Destination)

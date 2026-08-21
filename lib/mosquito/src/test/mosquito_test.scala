@@ -625,7 +625,7 @@ object Tests extends Suite(m"Mosquito tests"):
 
       test(m"Eigenvalues of identity are all 1"):
         Matrix.identity[Double, 3].eigenvalues.let(_.list).lay(Double.MaxValue): list =>
-          list.map(v => math.abs(v - 1.0)).max
+          list.map(v => math.abs(v - 1.0)).maximum.or(0.0)
       . assert(_ < 0.000001)
 
       test(m"Eigensystem of non-symmetric matrix is Unset"):

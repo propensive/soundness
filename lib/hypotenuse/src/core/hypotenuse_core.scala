@@ -62,6 +62,34 @@ extension (inline context: StringContext)
 // collections answer to the same names; in this package (not `rudiments`) so the two receiver
 // families stay overloaded rather than split-name-clashing at the `soundness` umbrella.
 extension [self](self: self)(using traversable: self is Traversable)
+  inline def minimum
+    ( using commensurable: traversable.Operand is Commensurable against traversable.Operand )
+  :   Optional[traversable.Operand] =
+
+    val iterator = traversable.traverse(self)
+
+    if !iterator.hasNext then Unset else
+      var current = iterator.next()
+      while iterator.hasNext do
+        val element = iterator.next()
+        if element < current then current = element
+
+      current
+
+  inline def maximum
+    ( using commensurable: traversable.Operand is Commensurable against traversable.Operand )
+  :   Optional[traversable.Operand] =
+
+    val iterator = traversable.traverse(self)
+
+    if !iterator.hasNext then Unset else
+      var current = iterator.next()
+      while iterator.hasNext do
+        val element = iterator.next()
+        if element > current then current = element
+
+      current
+
   inline def minimize[key](lambda: traversable.Operand => key)
     ( using commensurable: key is Commensurable against key )
   :   Optional[traversable.Operand] =
