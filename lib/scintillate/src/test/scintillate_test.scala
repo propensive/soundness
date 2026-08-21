@@ -36,8 +36,6 @@ import scala.caps
 
 import soundness.*
 
-import proscenium.compat.*
-
 import logging.silentLogging
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
@@ -57,7 +55,7 @@ object TextPage:
     extension (value: TextPage) def mediaType: MediaType = media"text/plain"(charset = "UTF-8")
 
   given streamable: (TextPage is Streamable by Text over Credit) =
-    value => Stream(value.lines.iterator)
+    value => Stream(value.lines.stdlib.iterator)
 
 object Tests extends Suite(m"Scintillate tests"):
   def run(): Unit =
@@ -263,7 +261,7 @@ object Tests extends Suite(m"Scintillate tests"):
           val server = SocketServer(port).handle(Http.Response(Http.NotFound)(t"nope"))
           val response = rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
           server.cancel()
-          response.cut(t"\r\n").head
+          response.cut(t"\r\n").stdlib.head
 
         . assert(_ == t"HTTP/1.1 404 Not Found")
 

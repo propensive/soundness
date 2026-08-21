@@ -33,7 +33,6 @@
 package scintillate
 
 import scala.caps
-import proscenium.compat.*
 
 import java.io as ji
 

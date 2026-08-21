@@ -34,8 +34,6 @@ package gesticulate
 
 import scala.language.dynamics
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -131,7 +129,7 @@ object Media:
       def notAllowed(char: Char): Boolean =
         char.isWhitespace || char.isControl || specials.has(char)
 
-      val chars = string.chars.toSeq
+      val chars = string.chars.readable.toSeq
 
       chars.find(notAllowed(_)).map: char =>
         raise(MediaType.Error(string, MediaType.Error.Reason.InvalidChar(char)))

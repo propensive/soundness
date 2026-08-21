@@ -33,6 +33,7 @@
 package profanity
 
 import anticipation.*
+import denominative.*
 import clavichord.Keypress
 import contingency.*
 import distillate.*
@@ -43,7 +44,6 @@ import quantitative.*
 import spectacular.*
 import turbulence.*
 import symbolism.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -139,7 +139,7 @@ object Keyboard:
   object Lookahead:
     // For pre-materialized input (tests, replays): a non-empty tail follows.
     // Not for live input — emptiness would block on an unforced tail.
-    given immediate: Lookahead = !_.isEmpty
+    given immediate: Lookahead = !_.nil
 
     def tty(stdio: Stdio, deadline: Int = 10): Lookahead = rest =>
       def wait(remaining: Int): Boolean =
@@ -175,13 +175,13 @@ object Keyboard:
 
               case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
                 val size = tail.stdlib.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~').stdlib)
-                val content = tail.take(size).map(_.show).join
-                Terminal.Info.Paste(content) #:: process(tail.drop(size + 6))
+                val content = Chain.of(tail.stdlib.take(size)).map(_.show).join
+                Terminal.Info.Paste(content) #:: process(Chain.of(tail.stdlib.drop(size + 6)))
 
               case other =>
-                val sequence = other.takeWhile(!_.isLetter)
+                val sequence = Chain.of(other.stdlib.takeWhile(!_.isLetter))
 
-                other.drop(sequence.stdlib.length) match
+                Chain.of(other.stdlib.drop(sequence.stdlib.length)) match
                   // CSI-u (kitty keyboard protocol): a key codepoint with optional
                   // sub-keys and modifiers, terminated by `u`.
                   case 'u' #:: tail =>
@@ -230,8 +230,8 @@ object Keyboard:
                     Chain()
 
             case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
-              val content = rest.takeWhile(_ != '\u001b').stdlib.mkString.tt
-              val continuation = rest.drop(content.length + 2)
+              val content = rest.stdlib.takeWhile(_ != '\u001b').mkString.tt
+              val continuation = Chain.of(rest.stdlib.drop(content.length + 2))
 
               content.cut(t"/") match
                 case List(red, green, blue) =>

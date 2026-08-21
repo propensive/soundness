@@ -40,7 +40,6 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -72,7 +71,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
       rows match
         case row #:: tail =>
           val lines = (0 until row.height).map: lineNumber =>
-            widths.indices.map: index =>
+            widths.readable.indices.map: index =>
               val cell = row(index)
 
               val offset = cell.verticalAlign match
@@ -100,7 +99,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
     // Every rule adjoins at least one row of columns, whose shared `widths` it takes
     // unconditionally; `above`/`below` say which side(s) those columns are on.
     def rule(widths: Array[Int]^{}, above: Boolean, below: Boolean): text =
-      val width = widths.sum + style.cost(widths.length)
+      val width = widths.total + style.cost(widths.length)
 
       def joints: sci.BitSet = widths.readable.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)
 
@@ -150,4 +149,4 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
       sections.stdlib.to(Chain).bind: section =>
         (midRule #:: recur(section.widths, section.rows)): Chain[text]
 
-    topLine #::: body.tail #::: bottomLine
+    Chain.of(topLine.stdlib #::: body.stdlib.tail #::: bottomLine.stdlib)
