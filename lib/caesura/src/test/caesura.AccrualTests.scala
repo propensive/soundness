@@ -34,8 +34,6 @@ package caesura
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import dsvFormats.csvWithHeaderFormat
@@ -67,7 +65,7 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
             accrual + (prior.let(_.column).or(t"#"), error) } )
     . protect(decode(dsv))
 
-  private def row(text: Text): Dsv = text.read[Sheet].rows.head
+  private def row(text: Text): Dsv = text.read[Sheet].rows.readable.head
 
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):

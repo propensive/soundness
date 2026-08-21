@@ -40,9 +40,10 @@ import honeycomb.*
 import nomenclature.*
 import prepositional.*
 import punctuation.*
+import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
-import proscenium.compat.*
 
 import doms.html.whatwg, whatwg.*
 
@@ -56,14 +57,15 @@ trait CommonFormattable extends Formattable:
     def cssClass(name: Text): Name[CssClass] = unsafely(Name[CssClass](name))
 
     val roleClass: Optional[Name[CssClass]] = role.let: role => cssClass(role.show.lower)
+    val accentClass = cssClass(accent.show.lower)
 
-    ClassList(Set(cssClass(accent.show.lower)) ++ roleClass.option)
+    ClassList(roleClass.lay(Set(accentClass))(Set(accentClass, _)))
 
   def element(accent: Accent, role: Optional[Role], text: Text): Element of "code" =
     whatwg.Code(`class` = classes(accent, role))(text)
 
   protected def postprocess(source: SourceCode): Html of Flow =
-    val code = source.lines.map: line =>
+    val code = source.lines.remap: line =>
       Span.line(line.stdlib.map { case Token(text, accent, _, _, role) => element(accent, role, text) }*)
 
     Fragment(Div.amok(Pre(code*)))

@@ -40,8 +40,6 @@ import scala.math
 
 import soundness.*
 
-import proscenium.compat.*
-
 
 import textMetrics.uniformMetric
 import caseSensitivity.caseSensitive
@@ -1116,7 +1114,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == 0)
 
       test(m"empty Text has single sentinel boundary"):
-        Writing(t"").boundaries.toList
+        Writing(t"").boundaries.to[List]
       . assert(_ == List(0))
 
       test(m"ASCII text grapheme count equals char count"):
@@ -1124,11 +1122,11 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == 3)
 
       test(m"ASCII text boundaries are sentinels at every char"):
-        Writing(t"abc").boundaries.toList
+        Writing(t"abc").boundaries.to[List]
       . assert(_ == List(0, 1, 2, 3))
 
       test(m"CR LF stays one grapheme"):
-        Writing(t"a\r\nb").boundaries.toList
+        Writing(t"a\r\nb").boundaries.to[List]
       . assert(_ == List(0, 1, 3, 4))
 
       test(m"CR LF grapheme count"):

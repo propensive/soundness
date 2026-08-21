@@ -34,8 +34,6 @@ package harlequin
 
 import scala.annotation
 
-import proscenium.compat.*
-
 import scala.collection.mutable as scm
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*
@@ -51,6 +49,7 @@ import denominative.*
 import gossamer.*
 import hellenism.*
 import rudiments.*
+import denominative.asymptotics.linearSizeComplexity
 import stenography.*
 import vacuous.*
 import symbolism.*
@@ -135,7 +134,7 @@ object SourceCode:
           val merged = items + resolvedItems
 
           if binding then Completions(replace, items)
-          else if merged.isEmpty then resolvedCompletions
+          else if merged.nil then resolvedCompletions
           else Completions(replace, merged)
 
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
@@ -188,12 +187,12 @@ object SourceCode:
             . cut(t"\n").stdlib
             . to(Chain)
             . flatMap(untab(_).filter(_.length > 0))
-            . init
+            . pipe { chain => Chain.of(chain.stdlib.init) }
 
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
-        val meta: Optional[Token.Meta] = metaMap.get((start, end)) match
+        val meta: Optional[Token.Meta] = metaMap.stdlib.get((start, end)) match
           case Some(syntax) => Token.Meta(syntax)
           case None         => Unset
 
@@ -206,7 +205,7 @@ object SourceCode:
             text.segment(start.z thru end.u).cut(t"\n").stdlib.to(Chain).flatMap: line =>
               Chain(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
-            . init
+            . pipe { chain => Chain.of(chain.stdlib.init) }
 
         unparsed #::: content #::: stream(end)
 
@@ -218,9 +217,8 @@ object SourceCode:
         case Nil => acc
 
         case xs =>
-          xs.indexOf(Token.Newline) match
-            case -1    => xs :: acc
-            case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
+          xs.where(_ == Token.Newline).lay(xs :: acc): ordinal =>
+            lines(xs.skip(ordinal.n0 + 1), xs.keep(ordinal.n0) :: acc)
 
     def quoted(text: Text): Boolean =
       text.length > 0 &&
@@ -249,9 +247,9 @@ object SourceCode:
 
     // Give each token a `Line`-mode `Span` with its 0-based line and column,
     // accumulating token widths along each assembled line.
-    val positioned = lines(tokens).reverse.zipWithIndex.map: (tokens, index) =>
+    val positioned = lines(tokens).reverse.indexed.map: (tokens, index) =>
       tokens.stdlib.zip(tokens.stdlib.scanLeft(0)(_ + _.length)).map: (token, column) =>
-        token.copy(span = Span.line(index.z, column.z, token.length))
+        token.copy(span = Span.line(index, column.z, token.length))
 
     SourceCode
       ( language, 1, Array.of(positioned.map(List.of(_))*), diagnostics = diagnostics,
@@ -629,7 +627,7 @@ object SourceCode:
                   val items =
                     completable.completions(repr, prefix).filter(_.name.s.startsWith(prefix.s))
 
-                  if items.isEmpty then Unset
+                  if items.nil then Unset
                   else Completions(Span.offset(start.z, prefix.length), items)
 
                 case _ =>
@@ -708,4 +706,4 @@ case class SourceCode
     else fragment(startLine, (endLine + 1).min(lastLine), range)
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[Span] = Unset): SourceCode =
-    SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
+    SourceCode(language, startLine, lines.excerpt(startLine - offset, endLine - offset + 1), focus)

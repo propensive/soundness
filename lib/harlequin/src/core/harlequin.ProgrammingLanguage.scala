@@ -32,8 +32,6 @@
                                                                                                   */
 package harlequin
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import gossamer.*

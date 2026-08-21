@@ -32,8 +32,6 @@
                                                                                                   */
 package gossamer
 
-import proscenium.compat.*
-
 import scala.reflect
 
 import scala.compiletime
@@ -126,11 +124,11 @@ extension (bytes: Data)
 
   // Printable Unicode Encoding
   def pue: Text =
-    bytes.map: b =>
+    bytes.remap: b =>
       val i = b&0xff
       (if i%0x80 <= 0x20 || i == 0x7f then i + 0x100 else i).toChar
 
-    . mkString.tt
+    . readable.mkString.tt
 
 extension [textual](text: textual)
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
@@ -467,26 +465,26 @@ package proximities:
       var j = 1
 
       while j <= n do
-        old(j) = old(j - 1) + 1
+        old(j) = old.readable(j - 1) + 1
         j += 1
 
       var i = 1
 
       while i <= m do
-        dist(0) = old(0) + 1
+        dist(0) = old.readable(0) + 1
         j = 1
 
         while j <= n do
           val c =
             if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
 
-          dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
+          dist(j) = (old.readable(j - 1) + c).min(old.readable(j) + 1).min(dist.readable(j - 1) + 1)
           j += 1
 
         old.copyFrom(dist, 0, 0, n + 1)
         i += 1
 
-      if m == 0 then n else dist(n)
+      if m == 0 then n else dist.readable(n)
 
   given normalizedLevenshteinProximity: CaseSensitivity => Proximity by Double =
     (left, right) =>

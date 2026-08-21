@@ -32,8 +32,6 @@
                                                                                                   */
 package fulminate
 
-import proscenium.compat.*
-
 import scala.language.experimental.into
 
 import scala.compiletime.*
@@ -101,14 +99,14 @@ object internal:
 
       loop(0, "")
 
-    val groups: List[String] = parts.mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.to(List)
+    val groups: List[String] = parts.stdlib.mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.to(List)
 
     if groups.stdlib.size%2 == 0
     then report.errorAndAbort("the m\"\" interpolator has an unmatched backtick")
 
     def toMessage(items: List[String | Expr[Message]]): Expr[Message] =
-      val texts: List[String] = items.collect { case text: String => text }
-      val msgs:  List[Expr[Message]] = items.collect { case expr: Expr[Message] @unchecked => expr }
+      val texts: List[String] = List.of(items.stdlib.collect { case text: String => text })
+      val msgs:  List[Expr[Message]] = List.of(items.stdlib.collect { case expr: Expr[Message] @unchecked => expr })
       val textsExpr: Expr[List[Text]] =
         '{List.of(${Expr.ofList(texts.stdlib.map { text => '{${Expr(text)}.tt} })})}
 

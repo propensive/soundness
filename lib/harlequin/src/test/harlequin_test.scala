@@ -36,8 +36,6 @@ import scala.language.dynamics
 
 import soundness.*
 
-import proscenium.compat.*
-
 import ambience.systems.javaSystem
 import denominative.asymptotics.linearSizeComplexity
 
@@ -63,9 +61,8 @@ object Tests extends Suite(m"Harlequin Tests"):
     val snippet = t"val xs = List(1, 2, 3)"
 
     def typeOf(tokens: List[Token], text: Text): Optional[Text] =
-      tokens.find(_.text == text) match
-        case Some(Token(_, _, meta, _, _)) => meta.let(_.tpe.qualified)
-        case _                          => Unset
+      tokens.seek(_.text == text).let: token =>
+        token.meta.let(_.tpe.qualified)
 
     test(m"tokenized highlighting attaches no type metadata"):
       Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).flatMap(_.meta.option)
