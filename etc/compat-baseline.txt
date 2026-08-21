@@ -23,18 +23,16 @@ corpuscular 1
 delicious 1
 distillate 2
 embarcadero 2
-escritoire 4
+escritoire 2
 ethereal 2
 eucalyptus 1
 facsimile 1
 frontier 1
 galilei 3
 gastronomy 3
-gesticulate 4
 gnossienne 1
 guillotine 1
 hellenism 1
-hyperbole 4
 iridescence 2
 jacinta 2
 kaleidoscope 3
@@ -55,7 +53,6 @@ phoenicia 3
 polaris 2
 polysyllabic 3
 polyvinyl 1
-profanity 4
 prophesy 2
 proscenium 1
 punctuation 2
@@ -64,7 +61,6 @@ reliquary 1
 revolution 2
 rudiments 1
 savagery 2
-scintillate 4
 sedentary 3
 serpentine 1
 spectacular 1

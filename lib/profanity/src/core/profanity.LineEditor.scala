@@ -42,7 +42,6 @@ import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import rudiments.*
 import spectacular.*
 import vacuous.*
-import proscenium.compat.*
 import denominative.asymptotics.linearSizeComplexity
 
 object LineEditor:

@@ -34,8 +34,6 @@ package gesticulate
 
 import scala.collection.immutable.Seq
 
-import proscenium.compat.*
-
 import scala.quoted.*
 
 import anticipation.*
@@ -44,6 +42,7 @@ import denominative.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
+import hypotenuse.minimize
 import rudiments.*
 import vacuous.*
 
@@ -65,7 +64,7 @@ object internal:
         scala.io.Source.fromInputStream(stream)
         . getLines()
         . map(Text(_))
-        . map(_.cut(t"\t").head.lower)
+        . map(_.cut(t"\t").stdlib.head.lower)
 
   private val validGroups: Set[Text] =
     Set
@@ -99,8 +98,8 @@ object internal:
     // is itself a separator, not a body character.
     val segments: List[Text] = subtype.cut(t"+")
 
-    val badChar: Option[Char] = segments.iterator.flatMap: seg =>
-      seg.chars.find: c => c.isWhitespace || c.isControl || specials.has(c)
+    val badChar: Option[Char] = segments.stdlib.iterator.flatMap: seg =>
+      seg.chars.seek { c => c.isWhitespace || c.isControl || specials.has(c) }.option
 
     . nextOption()
 
@@ -109,7 +108,7 @@ object internal:
         m"$char is not a valid character in a media-type subtype"
 
       case None =>
-        val main: Text = segments.head
+        val main: Text = segments.stdlib.head
         val isStandard =
           !main.starts(t"vnd.") && !main.starts(t"prs.") &&
             !main.starts(t"x.") && !main.starts(t"x-")
@@ -120,8 +119,10 @@ object internal:
 
           if systemMediaTypes.nil || systemMediaTypes.has(canonical) then Unset
           else
-            val suggestion = systemMediaTypes.minBy(_.proximity(canonical))
-            m"$canonical is not a registered media type; did you mean $suggestion?"
+            // `minimize` is `Unset` only on an empty set, which the guard above excludes,
+            // so this `let` always fires — and its `Optional` result is the branch's type.
+            systemMediaTypes.minimize(_.proximity(canonical)).let: suggestion =>
+              m"$canonical is not a registered media type; did you mean $suggestion?"
 
   def mediaInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[MediaType] =
     import quotes.reflect.*
@@ -133,7 +134,7 @@ object internal:
     val parts = recur[parts](Nil)
     if parts.size != 1 then halt(m"a media type literal cannot have substitutions")
 
-    val raw: String = parts.head
+    val raw: String = parts.stdlib.head
 
     internal.validateLiteral(raw.tt).let(halt(_))
 

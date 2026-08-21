@@ -33,7 +33,6 @@
 package scintillate
 
 import java.io as ji
-import proscenium.compat.*
 
 import anticipation.*
 import coaxial.*
@@ -120,9 +119,9 @@ object Http2Serve:
                   sendTrailers()
 
                 case Http.Body.Fixed(data) =>
-                  val headEnd = data.isEmpty && !trailing
+                  val headEnd = data.nil && !trailing
                   connection0.sendHeaders(streamId, List.of(headEntries), endStream = headEnd)
-                  if !data.isEmpty then connection0.sendData(streamId, data, endStream = !trailing)
+                  if !data.nil then connection0.sendData(streamId, data, endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Flowing(source) =>
