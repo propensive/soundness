@@ -2877,16 +2877,16 @@ object stenography extends Library:
       settings.sep(super.scalacOptions())
 
 object stratiform extends Library:
+  object base256 extends Component(contingency.core, fulminate.core, anticipation.codec):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core extends Component(zephyrine.core, turbulence.core, gossamer.core, contingency.core,
       anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core,
-      gigantism.core, fulminate.core, adversaria.core, aperture.core):
+      gigantism.core, fulminate.core, adversaria.core, aperture.core, base256):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The panopticon lens/optic instances for `Tel`, and stratiform's only use of panopticon.
   object optics extends Component(core, panopticon.core):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object base256 extends Component(contingency.core, fulminate.core, anticipation.codec):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object binary extends Component(core, base256, gastronomy.core, ulysses.core):
