@@ -33,8 +33,6 @@
 package contingency
 
 import soundness.*
-
-import proscenium.compat.*
 import contingency.strategies.throwUnsafely
 
 import errorDiagnostics.stackTracesDiagnostics
@@ -151,7 +149,7 @@ object CompositionTests extends Suite(m"Contingency composition"):
     suite(m"guard"):
       test(m"guard runs when the tactic is clean and yields the block's value"):
         recover:
-          case Tally(values) => values.sum
+          case Tally(values) => values.total
         . protect:
             track[Pointer](Tally(Nil)):
               case CErrorA(n) => Tally(accrual.values :+ n)

@@ -33,8 +33,8 @@
 package ulysses
 
 import fulminate.*
+import rudiments.*
 import vacuous.*
-import proscenium.compat.*
 
 object Cadence:
   // §2.1 hash-size table — `s` indexes byte lengths.
@@ -50,7 +50,7 @@ object Cadence:
     val regular = (b & 0x03) + 1
     val initial = regular + ((b >>> 2) & 0x03)
     val s = (b >>> 4) & 0x0f
-    if s >= hashSizes.length then Unset else Cadence(initial, regular, hashSizes(s))
+    if s >= hashSizes.length then Unset else Cadence(initial, regular, hashSizes.readable(s))
 
 case class Cadence(initial: Int, regular: Int, hashSize: Int):
   if regular < 1 || regular > 4 then panic(m"regular cadence must be in 1..4 (got $regular)")
@@ -59,9 +59,9 @@ case class Cadence(initial: Int, regular: Int, hashSize: Int):
   then panic(m"initial cadence must be in $regular..${regular + 3} (got $initial)")
 
   val hashSizeIndex: Int =
-    val i = Cadence.hashSizes.indexOf(hashSize)
-    if i < 0 then panic(m"hash size $hashSize is not one of ${Cadence.hashSizes.toList.toString}")
-    i
+    Cadence.hashSizes.where(_ == hashSize).lay:
+      panic(m"hash size $hashSize is not one of ${Cadence.hashSizes.readable.toList.toString}")
+    . apply(_.n0)
 
   // Packed cadence byte per §2.1: bits 4-7 = s, bits 2-3 = k_i - k_r, bits 0-1 = k_r - 1.
   val byte: Byte =
