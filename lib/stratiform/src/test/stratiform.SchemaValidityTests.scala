@@ -40,9 +40,10 @@ import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
 
 // The schema-validity checks of §20.1 beyond keys and encodings: E207
-// (sigil validity), E202/E216 base-side select constraints, and the
-// layer `exclude` operation (§20.3) with E211 (no such variant) and
-// E212 (emptying a SelectDefinition referenced by a required SelectRef).
+// (sigil validity), E202/E216 base-side select constraints, E206 layer
+// field-type merges, E209/E217 reference resolution, and the layer
+// `exclude` operation (§20.3) with E211 (no such variant) and E212
+// (emptying a SelectDefinition referenced by a required SelectRef).
 object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
 
   private def schemaOf(text: Text): Tels = Tels.Reconstructor.fromTel(text.read[Tel])
@@ -118,6 +119,94 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
                        |  select Pet optional
                        |""".stripMargin))
       . assert(_ == 216)
+
+    suite(m"Layer field-type merges (§20.3, E206)"):
+      test(m"E206: a layer restates a field with a different type"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |document
+                       |  field foo String
+                       |layer extension
+                       |  overlay
+                       |    field foo Identifier
+                       |""".stripMargin))
+      . assert(_ == 206)
+
+      test(m"restating a field with the same type is permitted"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |document
+                       |  field foo String optional
+                       |layer extension
+                       |  overlay
+                       |    field foo String
+                       |""".stripMargin))
+      . assert(_ == 0)
+
+      test(m"restating a field referencing the same record is permitted"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |record Cat
+                       |  field name Identifier
+                       |document
+                       |  field pet Cat optional
+                       |layer extension
+                       |  overlay
+                       |    field pet Cat
+                       |""".stripMargin))
+      . assert(_ == 0)
+
+      test(m"E206: a record-body field restated with a different type"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |record Cat
+                       |  field name Identifier
+                       |document
+                       |  field pet Cat optional
+                       |layer extension
+                       |  record Cat
+                       |    field name String
+                       |""".stripMargin))
+      . assert(_ == 206)
+
+    suite(m"Reference resolution (E209/E217)"):
+      test(m"E209: a field references an undefined TypeName"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |document
+                       |  field foo Missing
+                       |""".stripMargin))
+      . assert(_ == 209)
+
+      test(m"E217: a field references a SelectDefinition"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |record Cat
+                       |  field name Identifier
+                       |select Pet
+                       |  variant cat Cat
+                       |document
+                       |  field foo Pet optional
+                       |""".stripMargin))
+      . assert(_ == 217)
+
+      test(m"E209: a SelectRef references an undefined name"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |document
+                       |  select Missing optional
+                       |""".stripMargin))
+      . assert(_ == 209)
+
+      test(m"E217: a SelectRef references a record"):
+        schemaCode(Text("""|tel 1.0
+                       |name t
+                       |record Cat
+                       |  field name Identifier
+                       |document
+                       |  select Cat optional
+                       |""".stripMargin))
+      . assert(_ == 217)
 
     suite(m"Layer excludes (§20.3, E211/E212)"):
       test(m"an excluded variant is removed from the composed select"):
