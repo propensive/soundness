@@ -32,7 +32,11 @@
                                                                                                   */
 package soundness
 
-export perihelion.{Masking, Message, Websocket, WsSessional, overIngressive,
+// `Message` is deliberately not exported: fulminate already exports its `Message` (the core
+// message type) into `soundness`, so a second toplevel `Message` makes any classpath carrying
+// both bundles a duplicate-toplevel-definition error. Import the websocket frame type by name:
+// `import perihelion.Message`.
+export perihelion.{Masking, Websocket, WsSessional, overIngressive,
     overTransmissible, webSocket}
 
 // `wsClient` and `wsSessional` are deliberately not exported: their types carry
