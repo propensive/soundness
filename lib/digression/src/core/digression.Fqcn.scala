@@ -32,8 +32,6 @@
                                                                                                   */
 package digression
 
-import proscenium.compat.*
-
 import scala.caps
 
 import anticipation.*
@@ -71,7 +69,7 @@ object Fqcn:
       if part.head >= '0' && part.head <= '9'
       then raise(Fqcn.Error(name, Fqcn.Error.Reason.InvalidStart(part.head)))
 
-    new Fqcn(parts.map(_.tt))
+    new Fqcn(parts.remap(_.tt))
 
   given encodable: Fqcn is Encodable in Text = _.text
 

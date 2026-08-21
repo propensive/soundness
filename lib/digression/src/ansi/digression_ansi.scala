@@ -32,8 +32,6 @@
                                                                                                   */
 package digression
 
-import proscenium.compat.*
-
 import anticipation.*
 import escapade.*
 import escritoire.*
@@ -218,7 +216,7 @@ package teletypeables:
     import columnAttenuation.ignoreAttenuation
 
     val grid = scaffold.tabulate(rows).grid(200)
-    val dataOnly = grid.copy(sections = grid.sections.tail)
+    val dataOnly = grid.copy(sections = List.of(grid.sections.stdlib.tail))
     val tableLines = List.from(dataOnly.render.stdlib)
 
     val allLines = init :: (tableLines: List[Teletype])

@@ -32,8 +32,6 @@
                                                                                                   */
 package hypotenuse
 
-import proscenium.compat.*
-
 import scala.caps
 
 import scala.util.FromDigits
@@ -189,26 +187,26 @@ object decimalInternal:
       val magnitude = Array[Int](count0)
       System.arraycopy(magnitude0, 0, magnitude.raw, 0, count0)
       var count = count0
-      while count > 0 && magnitude(count - 1) == 0 do count -= 1
+      while count > 0 && magnitude.readable(count - 1) == 0 do count -= 1
 
       if count == 0 then Zero else
         var scale = scale0
 
         // A base-10⁹ number is divisible by ten exactly when its lowest limb is; whole zero
         // limbs strip nine digits at a time.
-        while count > 1 && magnitude(0) == 0 do
+        while count > 1 && magnitude.readable(0) == 0 do
           var i = 0
 
           while i < count - 1 do
-            magnitude(i) = magnitude(i + 1)
+            magnitude(i) = magnitude.readable(i + 1)
             i += 1
 
           count -= 1
           scale -= BaseDigits
 
-        while magnitude(0)%10 == 0 && magnitude(0) != 0 || count > 1 && magnitude(0) == 0 do
+        while magnitude.readable(0)%10 == 0 && magnitude.readable(0) != 0 || count > 1 && magnitude.readable(0) == 0 do
           divideSmall(magnitude.raw, count, 10)
-          if count > 1 && magnitude(count - 1) == 0 then count -= 1
+          if count > 1 && magnitude.readable(count - 1) == 0 then count -= 1
           scale -= 1
 
         val result = Array[Int](count + 2)

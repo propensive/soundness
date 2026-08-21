@@ -34,8 +34,6 @@ package archimedes
 
 import scala.math
 
-import proscenium.compat.*
-
 import anticipation.*
 import baroque.*
 import contingency.*

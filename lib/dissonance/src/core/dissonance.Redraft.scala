@@ -32,9 +32,6 @@
                                                                                                   */
 package dissonance
 
-
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -139,7 +136,9 @@ object Redraft:
       edits = Ins(right, text).retained :: edits
       right += 1
 
-    directives.zipWithIndex.each: (directive, line) =>
+    directives.indexed.each: (directive, ordinal) =>
+      val line = ordinal.n0
+
       directive match
         case Directive.Keep(text) =>
           val index = seek(cursor, text)
@@ -219,7 +218,9 @@ object Redraft:
 
       if ambiguous.nil then directives
       else deambiguate:
-        directives.zipWithIndex.map: (directive, index) =>
+        directives.indexed.map: (directive, ordinal) =>
+          val index = ordinal.n0
+
           if !ambiguous.has(index) then directive else directive match
             case Directive.Mark(load, true)  => Directive.Add(load)
             case Directive.Mark(load, false) => Directive.Cut(load)
@@ -232,7 +233,7 @@ object Redraft:
       case Context.Fixed(k) => Redraft(trim(resolved, k)*)
 
       case Context.Minimal =>
-        Redraft(minimize(resolved, original, List.from(diff.patch(original.toList).stdlib))*)
+        Redraft(minimize(resolved, original, List.from(diff.patch(original.to[List]).stdlib))*)
 
   private def trim(directives: List[Directive], k: Int): List[Directive] =
     val keep = directives.stdlib.map { case Directive.Keep(_) => false; case _ => true }.to(scala.Array)
@@ -242,8 +243,10 @@ object Redraft:
       (1 to k).exists: d =>
         (index - d >= 0 && keep(index - d)) || (index + d < n && keep(index + d))
 
-    directives.zipWithIndex.collect:
-      case (directive, index) if !directive.isInstanceOf[Directive.Keep] || near(index) => directive
+    directives.indexed
+    . filter: (directive, ordinal) =>
+        !directive.isInstanceOf[Directive.Keep] || near(ordinal.n0)
+    . map(_(0))
 
   private def minimize
     ( directives: List[Directive], original: Sequence[Text], target: List[Text] )
@@ -257,7 +260,7 @@ object Redraft:
 
     def valid(candidate: List[Directive]): Boolean =
       val (edits, anomalies) = analyze(candidate, original, _ == _)
-      anomalies.nil && List.from(Diff(edits*).patch(original.toList).stdlib) == target
+      anomalies.nil && List.from(Diff(edits*).patch(original.to[List]).stdlib) == target
 
     val changes = array.indices.filter(!array(_).isInstanceOf[Directive.Keep])
 
@@ -312,4 +315,4 @@ case class Redraft(directives: Redraft.Directive*):
   def patch(original: Sequence[Text], compare: (Text, Text) -> Boolean = _ == _)
   :   Chain[Text] raises Redraft.Error =
 
-    resolve(original, compare).patch(original.toList)
+    resolve(original, compare).patch(original.to[List])

@@ -32,8 +32,6 @@
                                                                                                   */
 package dissonance
 
-import proscenium.compat.*
-
 import denominative.*
 import rudiments.*
 

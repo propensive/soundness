@@ -40,7 +40,6 @@ import fulminate.*
 import gossamer.*
 import honeycomb.Html
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import xylophone.*
@@ -510,7 +509,7 @@ object Mathml:
       val pairs: List[(Text, Text)] =
         element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(List)
 
-      val nodes: Array[Node]^{} = element.children.map(toXmlNode)
+      val nodes: Array[Node]^{} = element.children.remap(toXmlNode)
       Element(element.label, Attributes(pairs*), nodes)
 
     private def toXmlNode(node: honeycomb.Node): Node = node match

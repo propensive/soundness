@@ -32,8 +32,6 @@
                                                                                                   */
 package hypotenuse
 
-import proscenium.compat.*
-
 import scala.{caps, math}
 
 import scala.language.experimental.genericNumberLiterals

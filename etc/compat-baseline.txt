@@ -6,7 +6,6 @@ anamnesis 1
 anticipation 2
 aperture 2
 apoplexy 2
-archimedes 4
 aviation 2
 baroque 1
 bitumen 2
@@ -22,8 +21,6 @@ coaxial 3
 contextual 1
 corpuscular 1
 delicious 1
-digression 4
-dissonance 4
 distillate 2
 embarcadero 2
 escritoire 4
@@ -38,7 +35,6 @@ gnossienne 1
 guillotine 1
 hellenism 1
 hyperbole 4
-hypotenuse 4
 iridescence 2
 jacinta 2
 kaleidoscope 3
@@ -78,7 +74,6 @@ surveillance 2
 telekinesis 1
 tessellate 1
 typonym 1
-ultimatum 4
 urticose 2
 vicarious 2
 wisteria 2

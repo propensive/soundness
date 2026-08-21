@@ -33,12 +33,12 @@
 package ultimatum
 
 import clavichord.Keypress
-import proscenium.compat.*
 
 import denominative.*
 import prepositional.*
 import profanity.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import denominative.asymptotics.linearSizeComplexity
 
@@ -157,10 +157,9 @@ class Form
   // The position, within `layout.focusables`, of the focused widget (matched by
   // identity, so focus survives insertions), defaulting to the first.
   private def focusPosition(layout: Form.Layout): Int = focused.lay(0): widget =>
-    val position = layout.focusables.indexWhere: ordinal =>
+    layout.focusables.where: ordinal =>
       layout.entries(ordinal).focus.lay(false)(_ eq widget)
-
-    if position < 0 then 0 else position
+    . lay(0)(_.n0)
 
   // Project the panes to a frame, overriding each widget's minimum with the live
   // size its content needs at the width it last occupied (the root width on the
@@ -238,7 +237,7 @@ class Form
         extent.flush()
 
       case Pane.Widget(_, fixture) =>
-        fixture.render(extent, layout.focusables.indexOf(index) == focusPosition(layout))
+        fixture.render(extent, layout.focusables.where(_ == index).lay(-1)(_.n0) == focusPosition(layout))
 
       case _ =>
         ()
@@ -271,7 +270,7 @@ class Form
 
         // An animated fixture is dirty by definition: its appearance depends on the clock, not on
         // its rectangle or its state, so nothing else in `dirtyCells` would notice it changing.
-        val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed ++ animated)
+        val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed + animated)
         dirty.each { index => updated.entries.confine(index.z).let(paint(updated)(_)) }
 
     updated.focusables.confine(focusPosition(updated).z).let: position =>
@@ -314,7 +313,7 @@ class Form
   // Repaint immediately, folding in any coalesced or pending-resize work. Used for
   // typing, focus changes and application redraws, which must stay responsive.
   private def requestRefresh(changed: Set[Int]): Unit =
-    deferred = deferred.lay(changed)(_ ++ changed)
+    deferred = deferred.lay(changed)(_ + changed)
     flushDeferred()
 
   // Milliseconds until a coalesced resize may repaint: `debounce` ms after the last
@@ -385,7 +384,7 @@ class Form
       case Keypress.Tab =>
         val current = layout
 
-        if current.focusables.nonEmpty then
+        if !current.focusables.nil then
           // Repaint the panel losing focus too, so its focus indicator updates;
           // the panel gaining focus is repainted by `refresh` (focused last). The
           // wrap-around stays plain `Int` arithmetic until it is re-confined.
@@ -450,7 +449,7 @@ class Form
       case event =>
         val current = layout
 
-        if current.focusables.nonEmpty then
+        if !current.focusables.nil then
           current.focusables.confine(focusPosition(current).z).let: position =>
             val ordinal = current.focusables(position)
 
@@ -462,7 +461,7 @@ class Form
               // repaint coalesces into the debounced resize flush: presenting now would
               // draw against stale geometry and move the parked cursor out from under
               // the anchor recovery. (A wake is always scheduled while `resizePending`.)
-              if resizePending then deferred = deferred.lay(changed)(_ ++ changed)
+              if resizePending then deferred = deferred.lay(changed)(_ + changed)
               else requestRefresh(changed)
 
     root match
