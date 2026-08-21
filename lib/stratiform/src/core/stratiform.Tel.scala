@@ -1752,6 +1752,8 @@ object Tel extends Tel2:
             fail(t"the sigil must not be a letter or digit", (0, 1))
           else if "()[]{}<>".indexOf(c.toInt) >= 0 then
             fail(t"the sigil must not be a parenthetical symbol", (0, 1))
+          else if c == '+' then
+            fail(t"the sigil must not be the layer-selection marker '+'", (0, 1))
           else
             Response.Valid
 

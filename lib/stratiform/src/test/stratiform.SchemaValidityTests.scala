@@ -96,6 +96,10 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
         codeOf(schemaOf(t"tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = '%'))
       . assert(_ == 0)
 
+      test(m"the layer-selection marker '+' as sigil raises E207"):
+        codeOf(schemaOf(t"tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = '+'))
+      . assert(_ == 207)
+
     suite(m"Base-side select constraints"):
       test(m"E202: a base SelectDefinition with no variants"):
         schemaCode(Text("""|tel 1.0

@@ -650,12 +650,14 @@ object Tels extends Tels2:
       composed
 
     // §6 sigil validity: a single character that is not whitespace, not
-    // a letter or digit, and not a parenthetical symbol. Mirrors the
+    // a letter or digit, not a parenthetical symbol, and not `+` (which
+    // exclusively introduces pragma layer selections). Mirrors the
     // built-in `sigil` validator.
     private def sigilValid(sigil: Char): Boolean =
       !(sigil == ' ' || sigil == '\n' || sigil == '\r' || sigil == '\t')
         && !sigil.isLetterOrDigit
         && "()[]{}<>".indexOf(sigil.toInt) < 0
+        && sigil != '+'
 
     // The Scalar a type resolves to through the composed namespace and
     // the built-ins (§20.5), or Unset for any non-Scalar resolution.
