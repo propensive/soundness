@@ -32,8 +32,6 @@
                                                                                                   */
 package contingency
 
-import proscenium.compat.*
-
 import scala.language.experimental.pureFunctions
 
 import scala.annotation.*
@@ -61,4 +59,4 @@ extends Error(218, 0)(Errors.format(errors.to(List))):
   infix def + (focus: Text, error: Error): Errors = Errors((focus, error) +: errors*)
 
   def apply(focus: Text): Optional[Error] =
-    errorMap.get(focus).optional
+    errorMap.stdlib.get(focus).optional

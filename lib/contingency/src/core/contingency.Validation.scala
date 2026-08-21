@@ -32,8 +32,6 @@
                                                                                                   */
 package contingency
 
-import proscenium.compat.*
-
 import scala.language.experimental.pureFunctions
 
 import scala.annotation.*
@@ -65,12 +63,12 @@ object Validation:
 
 case class Validation(messages: List[(Pointer, Message)] = Nil)
 extends Error(59, 0)(Validation.text(messages)):
-  private lazy val map: Map[Pointer, Message] = messages.toMap
+  private lazy val map: Map[Pointer, Message] = messages.to[Map]
 
   @targetName("add")
   infix def + (pointer: Pointer, message: Message): Validation =
     Validation((pointer, message) :: messages)
 
   def apply(pointer: Pointer): Optional[Message] =
-    map.get(pointer).optional
+    map.stdlib.get(pointer).optional
   def text: Message = Validation.text(messages)

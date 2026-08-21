@@ -20,7 +20,6 @@ charisma 2
 chiaroscuro 3
 coaxial 3
 contextual 1
-contingency 4
 corpuscular 1
 delicious 1
 digression 4
@@ -80,7 +79,6 @@ telekinesis 1
 tessellate 1
 typonym 1
 ultimatum 4
-ulysses 4
 urticose 2
 vicarious 2
 wisteria 2

@@ -34,7 +34,6 @@ package ulysses
 
 import anticipation.*
 import beneficence.*
-import proscenium.compat.*
 
 object Bibliography:
   def apply(data: Iterable[Data]): Bibliography =
@@ -48,13 +47,13 @@ case class Bibliography(hashes: Array[Data]^{}) extends Findable:
   // small libraries we currently use; a prefix-indexed structure is the
   // obvious next step if profiling shows it.
   def lookup(prefix: Data): Iterator[Data] =
-    hashes.iterator.filter: hash =>
+    hashes.readable.iterator.filter: hash =>
       if hash.length < prefix.length then false else
         var ok = true
         var i  = 0
 
         while ok && i < prefix.length do
-          if hash(i) != prefix(i) then ok = false
+          if hash.readable(i) != prefix.readable(i) then ok = false
           i += 1
 
         ok
