@@ -283,9 +283,55 @@ def cli[bus <: Matchable](using executive: Executive)
       safely(buildFile.wipe())
       safely(pidFile.wipe())
 
+  // If the daemon's own jar has been clobbered, cleanup may fail to load classes
+  // mid-flight; exit must happen regardless, or the broken daemon lingers and
+  // serves silent no-ops to every new client.
   lazy val termination: Unit =
-    wipeState()
-    jl.System.exit(0)
+    try wipeState() catch case _: jl.Throwable => ()
+    finally jl.System.exit(0)
+
+  val scriptPath: Optional[Path on Local] =
+    safely(System.properties.ethereal.script[Text]().as[Path on Local])
+
+  case class ScriptIdentity(size: Long, mtime: Long, hash: Text)
+
+  def hashScript(script: Path on Local): Optional[Text] = safely:
+    import gastronomy.*, providers.javaStdlibProvider
+    import monotonous.*, alphabets.hexLowerCase
+    script.open[File](Read)(file.checksum[Sha2[256]].serialize[Hex])
+
+  // The identity of the launcher this daemon was started from, hashed once at
+  // startup — which also preloads the hashing classes, so verification can still
+  // run once the jar has been clobbered underneath the JVM. In-memory only: the
+  // launcher compares mtimes against the build FILE, but the authoritative record
+  // is here, because rewriting the build file would trip the pid-watcher.
+  val scriptIdentity: juca.AtomicReference[ScriptIdentity | Null] =
+    juca.AtomicReference(null)
+
+  // True if the launcher's content is unchanged. mtime is the cheap gate: after a
+  // metadata-only `touch`, the content is hashed once and the remembered mtime is
+  // updated, so every later verification is a single `stat` again. Synchronized so
+  // that concurrent clients cause at most one hash. Doubt — an unreadable or
+  // deleted launcher — resolves to stale.
+  def verifyScript(): Boolean = scriptIdentity.synchronized:
+    scriptPath.lay(true): script =>
+      val recorded = scriptIdentity.get()
+
+      if recorded == null then true else
+        safely:
+          import anticipation.instantiables.instantInstantiable
+          val size = script.size().long
+          val mtime = script.modified[Long]()
+
+          if size != recorded.size then false
+          else if mtime == recorded.mtime then true
+          else hashScript(script).lay(false): hash =>
+            if hash == recorded.hash then
+              scriptIdentity.set(recorded.copy(mtime = mtime))
+              true
+            else false
+
+        . or(false)
 
   def shutdown(pid: Optional[Pid])(using Stdio): Unit logs DaemonLogEvent =
     Log.warn(DaemonLogEvent.Shutdown)
@@ -343,6 +389,9 @@ def cli[bus <: Matchable](using executive: Executive)
       case t"x" =>
         DaemonEvent.Exit(line().as[Pid])
 
+      case t"v" =>
+        DaemonEvent.Verify
+
       case t"i" =>
         val stdin: Stdin = if line() == t"p" then Stdin.Pipe else Stdin.Terminal
         val pid: Pid = Pid(line().as[Int])
@@ -379,6 +428,23 @@ def cli[bus <: Matchable](using executive: Executive)
         safely(rawOut.write(scala.Array[Byte](ackByte, '\n'.toByte)))
         safely(rawOut.flush())
         connection.close()
+
+      // The launcher asks whether this daemon's launcher file still has the content
+      // it was started from — sent when the file's mtime disagrees with the build
+      // file. The verdict is a single byte: `f` (fresh: a metadata-only change,
+      // remembered so the hash is not repeated) or `s` (stale: reply, then take the
+      // termination path; the launcher awaits this daemon's death and starts a
+      // fresh one).
+      case DaemonEvent.Verify =>
+        val fresh = verifyScript()
+        val verdict: Byte = if fresh then 'f' else 's'
+        safely(rawOut.write(scala.Array[Byte](verdict, '\n'.toByte)))
+        safely(rawOut.flush())
+        connection.close()
+
+        if !fresh then
+          Log.warn(DaemonLogEvent.Termination)
+          termination
 
       case DaemonEvent.Exit(pid) =>
         Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
@@ -573,18 +639,65 @@ def cli[bus <: Matchable](using executive: Executive)
           val buildId = safely(System.properties.build.id[Int]()).or:
             safely((Classpath/"build.id").read[Text].trim.as[Int]).or(0)
 
-          buildFile.open[File](Write, OpenFlag.Create)(file.write(t"$buildId"))
+          scriptPath.let: script =>
+            safely:
+              import anticipation.instantiables.instantInstantiable
+              hashScript(script).let: hash =>
+                scriptIdentity.set(ScriptIdentity(script.size().long, script.modified[Long](), hash))
+
+          // Record the launcher this daemon was started from as
+          // `<buildId> <size> <mtimeMillis>`, so that the launcher's staleness
+          // check can compare a later invocation's file against it; the first
+          // field is read only by launchers that predate the content check. A size
+          // mismatch displaces outright; an mtime mismatch makes the launcher ask
+          // this daemon to verify itself (the `v` message), so content is hashed
+          // at most once per change, by the party with the memory to avoid
+          // repeating it. Without a launcher (plain `java -jar`) there is nothing
+          // to compare, so only the build id is written.
+          val buildLine: Text =
+            val recorded = scriptIdentity.get()
+            if recorded == null then t"$buildId"
+            else t"$buildId ${recorded.size} ${recorded.mtime}"
+
+          buildFile.open[File](Write, OpenFlag.Create)(file.write(buildLine))
           val pidValue = Process().pid.value.show
           pidFile.open[File](Write, OpenFlag.Create)(file.write(pidValue))
 
           task(n"pid-watcher"):
             safely:
-              List[Path on Local](socketFile, buildFile, pidFile).stdlib
+              // Watching the launcher itself is defence-in-depth: a rebuild that
+              // rewrites it in place corrupts the zip this JVM is running from, so
+              // the daemon must die promptly rather than serve broken no-ops.
+              // Evaluating `ownsState` here forces the classes the handler needs
+              // while the jar is still readable.
+              ownsState
+              val watched: List[Path on Local] =
+                scriptPath.let(List(socketFile, buildFile, pidFile, _))
+                . or(List(socketFile, buildFile, pidFile))
+
+              watched.stdlib
               . open[Watch](): watcher ?=>
                 watcher.stream.each:
-                  case Delete(_, _) | Modify(_, _) =>
-                    Log.warn(DaemonLogEvent.Termination)
-                    termination
+                  case event@(Delete(_, _) | Modify(_, _) | NewFile(_, _)) =>
+                    val eventFile: Text = event match
+                      case Delete(_, file)  => file
+                      case Modify(_, file)  => file
+                      case NewFile(_, file) => file
+                      case other            => t""
+
+                    // A metadata-only change to the launcher (`touch`) leaves its
+                    // content intact; verify it before treating the event as fatal
+                    // so that only a real rewrite terminates the daemon. State-file
+                    // events are always fatal. The launcher and the state files are
+                    // in different directories, but filenames suffice to tell them
+                    // apart: the state files' names are fixed (`build`/`pid`/
+                    // `socket`), and the launcher bears the application's name.
+                    val benign = scriptPath.lay(false): script =>
+                      eventFile == script.name && verifyScript()
+
+                    if !benign then
+                      Log.warn(DaemonLogEvent.Termination)
+                      termination
 
                   case other =>
                     ()

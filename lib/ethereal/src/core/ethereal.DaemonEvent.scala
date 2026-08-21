@@ -53,3 +53,4 @@ enum DaemonEvent:
   case Exit(pid: Pid)
   case Stderr(pid: Pid)
   case Control(pid: Pid)
+  case Verify

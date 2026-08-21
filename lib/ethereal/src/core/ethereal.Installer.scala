@@ -142,26 +142,42 @@ object Installer:
             abort(Install.Error(Install.Error.Reason.Environment))
 
           val file: Path on Linux = installDirectory/command
-          val installFile: Optional[Path on Linux] = file.create[File](CreateFlag.Replace)
 
-          installFile.let: file =>
-            val filename: Text = file.inspect
-            Log.info(DaemonLogEvent.WriteExecutable(filename))
+          // Write to a hidden sibling and rename it over the target. The rename gives
+          // the target a fresh inode, which matters on macOS: its code-signing cache
+          // is per-vnode, and overwriting a previously-executed binary's content in
+          // place poisons the inode so that every subsequent exec is SIGKILLed. It
+          // also means a half-written launcher is never visible at the target path.
+          val tempFile: Path on Linux = installDirectory/t".$command.tmp-${Process().pid.value}"
+          val installFile: Optional[Path on Linux] = tempFile.create[File](CreateFlag.Replace)
 
-            service.executable.open[File](Read & Write, OpenFlag.Create): file ?=>
-              val stream = file.stream
+          installFile.let: _ =>
+            Log.info(DaemonLogEvent.WriteExecutable(file.inspect))
+
+            // Two sequential opens rather than one nested inside the other's loan (the
+            // inner open's evidence would mint fresh roots that cannot unify with the
+            // outer handle's; see `Assembler.assemble`). The read is strict, so nothing
+            // reads the closed handle.
+            val chunks = service.executable.open[File]():
+              source ?=> List.from(source.reader().stdlib)
+
+            tempFile.open[File](Write, OpenFlag.Create): target ?=>
+              val stream = Chain.from(chunks.stdlib)
 
               if prefixSize > 0.b
-              then file.write(stream.take(prefixSize) #::: stream.drop(fileSize - jarSize))
-              else file.write(stream)
+              then target.write(stream.take(prefixSize) #::: stream.drop(fileSize - jarSize))
+              else target.write(stream)
 
             // Excising the embedded payload from between the stub and the JAR moves the JAR
             // earlier by exactly the payload's size, which invalidates the JAR's ZIP64 locator —
             // the one physical offset the format records. See `Zipfile.rebase` and #1680.
             if prefixSize > 0.b && payloadSize > 0.b
-            then Zipfile.rebase(service.executable, -payloadSize.long)
+            then Zipfile.rebase(tempFile, -payloadSize.long)
 
-            file.executable() = true
+            tempFile.executable() = true
+
+            import filesystemOptions.moveAtomically.enabled
+            tempFile.moveTo(file)
             Result.Installed(command, file.encode)
 
           . or(Result.PathNotWritable)

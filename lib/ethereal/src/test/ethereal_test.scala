@@ -61,6 +61,7 @@ object Tests extends Suite(m"Ethereal Tests"):
       val name:        Text = t"e${Uuid().text.cut(t"-").stdlib.head}"
       val upgradeName: Text = t"u${Uuid().text.cut(t"-").stdlib.head}"
       val selfuName:   Text = t"s${Uuid().text.cut(t"-").stdlib.head}"
+      val dispName:    Text = t"d${Uuid().text.cut(t"-").stdlib.head}"
 
       safely(sh"pkill $name".exec[Exit]())
       snooze(0.1*Second)
@@ -183,6 +184,16 @@ object Tests extends Suite(m"Ethereal Tests"):
                         SignalResponse.Accept
 
                     snooze(5*Second) yet Exit.Ok
+
+                case Argument("install") :: dir :: Nil =>
+                  execute:
+                    import logging.silentLogging
+                    import errorDiagnostics.stackTracesDiagnostics
+                    import strategies.throwUnsafely
+
+                    Installer.install(force = true, target = dir().as[Path on Linux])
+                    Out.print(t"installed")
+                    Exit.Ok
 
                 case _ =>
                   execute(Exit.Fail(1))
@@ -370,6 +381,35 @@ object Tests extends Suite(m"Ethereal Tests"):
 
             . assert(_ == true)
 
+            test(m"metadata-only touch of the launcher does not restart the daemon"):
+              val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim
+              sh"touch $tool".exec[Unit]()
+              // Long enough for the pid-watcher to see the event and (correctly)
+              // ignore it, and for a subsequent launcher staleness check to run.
+              snooze(1*Second)
+              val newPid = sh"$tool '{admin}' pid".exec[Text]().trim
+              newPid == oldPid
+
+            . assert(_ == true)
+
+            test(m"daemon terminates when its launcher is rewritten in place"):
+              val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
+              val backup = temporaryDirectory[Path on Linux]/t"backup-$name"
+              sh"cp $tool $backup".exec[Unit]()
+              // Appending the launcher to itself changes its content in place, as a
+              // rebuild targeting the installed path would.
+              sh"sh -c 'cat $backup >> $tool'".exec[Unit]()
+              val deadline = jl.System.currentTimeMillis + 10000
+              while safely(Process(oldPid).alive).or(false) && jl.System.currentTimeMillis < deadline
+              do snooze(0.05*Second)
+              val died = !safely(Process(oldPid).alive).or(false)
+              sh"mv $backup $tool".exec[Unit]()
+              sh"rm -f $stateDir/fail".exec[Unit]()
+              val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
+              died && newPid != oldPid
+
+            . assert(_ == true)
+
           suite(m"Daemon lifecycle"):
             test(m"pid file is present while daemon is running"):
               sh"$tool".exec[Unit]()
@@ -454,10 +494,15 @@ object Tests extends Suite(m"Ethereal Tests"):
             . assert(_ == t"restarted")
 
           suite(m"State file integrity"):
-            test(m"build file contains a single integer build id"):
+            test(m"build file records build id, size and mtime"):
               sh"$tool echo probe".exec[Unit]()
               val content = sh"cat $stateDir/build".exec[Text]().trim
-              safely(content.as[Long]).let(_ => true).or(false)
+              val fields = content.cut(t" ").stdlib
+
+              fields.length == 3
+                && safely(fields(0).as[Long]).let(_ => true).or(false)
+                && safely(fields(1).as[Long]).let(_ => true).or(false)
+                && safely(fields(2).as[Long]).let(_ => true).or(false)
 
             . assert(_ == true)
 
@@ -473,6 +518,26 @@ object Tests extends Suite(m"Ethereal Tests"):
               safely(Process(pid).alive).or(false)
 
             . assert(_ == true)
+
+          suite(m"Installation"):
+            val installDir: Path on Linux = temporaryDirectory[Path on Linux]/t"install-$name"
+            sh"mkdir -p $installDir".exec[Unit]()
+
+            test(m"installed launcher is byte-identical to the source"):
+              sh"$tool install $installDir".exec[Text]()
+              sh"cmp -s $tool $installDir/$name".exec[Exit]()
+
+            . assert(_ == Exit.Ok)
+
+            test(m"reinstallation replaces the target's inode"):
+              val inode1 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").stdlib.head
+              sh"$tool install $installDir".exec[Text]()
+              val inode2 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").stdlib.head
+              inode1 != inode2
+
+            . assert(_ == true)
+
+            sh"rm -rf $installDir".exec[Unit]()
 
           suite(m"Pipe mode"):
             test(m"pipe input is forwarded to the application"):
@@ -663,6 +728,64 @@ object Tests extends Suite(m"Ethereal Tests"):
       snooze(0.2*Second)
       safely(sh"pkill $upgradeName".exec[Exit]())
       sh"rm -rf $upgradeStateDir".exec[Unit]()
+
+      // Two builds of the same tool with the SAME build id but different content: only
+      // the content comparison (size, then mtime, then hash) can tell them apart. This
+      // is the exact configuration of #1836, where every downstream application
+      // resolved the classpath placeholder and was "build 1" forever, so a rebuilt
+      // launcher never displaced its stale daemon.
+      val dispStateDir: Path on Local =
+        Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / dispName
+
+      sh"rm -f $dispStateDir/pid $dispStateDir/build $dispStateDir/socket $dispStateDir/fail".exec[Unit]()
+      safely(sh"pkill $dispName".exec[Exit]())
+      snooze(0.2*Second)
+
+      val dispV1 = Enclave(dispName, buildId = 1).dispatch:
+        ' {
+            import executives.completions
+            import interpreters.posixInterpreter
+
+            cli:
+              arguments match
+                case Argument("version") :: Nil =>
+                  execute(Out.print(t"s1") yet Exit.Ok)
+
+                case _ =>
+                  execute(Exit.Fail(1))
+
+            t"finished"
+          }
+
+      val dispV2 = Enclave(dispName, buildId = 1).dispatch:
+        ' {
+            import executives.completions
+            import interpreters.posixInterpreter
+
+            cli:
+              arguments match
+                case Argument("version") :: Nil =>
+                  execute(Out.print(t"s2") yet Exit.Ok)
+
+                case _ =>
+                  execute(Exit.Fail(1))
+
+            t"finished"
+          }
+
+      suite(m"Content-based staleness"):
+        test(m"first build's daemon starts and serves it"):
+          serves(dispV1.path, t"s1")
+        .assert(_ == t"s1")
+
+        test(m"a same-build-id rebuild displaces the resident daemon"):
+          serves(dispV2.path, t"s2")
+        .assert(_ == t"s2")
+
+      safely(sh"${dispV2.path} '{admin}' kill".exec[Exit]())
+      snooze(0.2*Second)
+      safely(sh"pkill $dispName".exec[Exit]())
+      sh"rm -rf $dispStateDir".exec[Unit]()
 
       val selfuStateDir: Path on Local =
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / selfuName

@@ -42,6 +42,33 @@ pub fn send_stderr_request(connection: &mut UnixStream, pid: u32) {
     let _ = connection.flush();
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Verdict {
+    Fresh,
+    Stale,
+}
+
+// Ask the resident daemon whether the launcher it was started from still has the
+// content it remembers — sent when the file's mtime disagrees with the build file's
+// record, i.e. after a `touch` or a same-size rebuild. The daemon hashes at most once
+// per change and remembers the answer, which a stateless launcher cannot. The verdict
+// is one byte: `s` for stale (the daemon then shuts down; await its death and launch
+// afresh); anything else — including a daemon too old to know the message, which just
+// closes the connection — means proceed as normal.
+pub fn verify(socket_path: &Path) -> Verdict {
+    let mut connection = match UnixStream::connect(socket_path) {
+        Ok(connection) => connection,
+        Err(_) => return Verdict::Fresh,
+    };
+    let _ = connection.write_all(b"v\n");
+    let _ = connection.flush();
+    let mut byte = [0u8; 1];
+    match connection.read_exact(&mut byte) {
+        Ok(()) if byte[0] == b's' => Verdict::Stale,
+        _ => Verdict::Fresh,
+    }
+}
+
 // The control channel: a side-connection the daemon writes single-byte terminal-mode
 // commands to (`c` = cooked/canonical, `r` = raw). The launcher is the only process that
 // can change the client's tty mode, and it has already raw-moded the terminal by the time
