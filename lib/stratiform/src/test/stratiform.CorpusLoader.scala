@@ -34,8 +34,6 @@ package stratiform
 
 import scala.sys
 
-import proscenium.compat.*
-
 import scala.language.unsafeNulls
 
 import anticipation.*
@@ -60,7 +58,7 @@ object CorpusLoader:
   def streaming: List[Case] = load(t"stream")
 
   private def load(category: Text): List[Case] =
-    readIndex(category).filterNot(_.s.startsWith("_")).map(caseByStem(category, _))
+    readIndex(category).filter(!_.s.startsWith("_")).map(caseByStem(category, _))
 
   // Load a single corpus case by category and stem (e.g. an off-index fixture).
   def caseByStem(category: Text, stem: Text): Case =

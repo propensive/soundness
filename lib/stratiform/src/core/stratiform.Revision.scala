@@ -33,9 +33,9 @@
 package stratiform
 
 import anticipation.*
+import rudiments.*
 import contingency.*
 import vacuous.*
-import proscenium.compat.*
 
 // Composable edit DSL built atop the primitive Mutation.Op interpreter
 // (§22.5). A `Revision` is an ordered op-log; revisions compose with `++`
@@ -141,6 +141,7 @@ object Revision:
 
 
 case class Revision private[stratiform] (ops: Array[Mutation.Op]^{}):
-  def ++ (next: Revision): Revision = new Revision(ops ++ next.ops)
+  def ++ (next: Revision): Revision =
+    new Revision(Array.frozen(ops.readable ++ next.ops.readable))
 
-  def apply(tel: Tel): Tel raises Mutation.Error = Mutation(tel, ops.toList)
+  def apply(tel: Tel): Tel raises Mutation.Error = Mutation(tel, ops.to[List])

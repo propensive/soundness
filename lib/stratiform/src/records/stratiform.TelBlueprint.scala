@@ -33,12 +33,12 @@
 package stratiform
 
 import anticipation.*
+import rudiments.*
 import contingency.*
 import gossamer.*
 import polyvinyl.*
 import prepositional.*
 import vacuous.*
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 
@@ -145,7 +145,7 @@ object TelBlueprint:
     var i = 0
 
     while i < struct.members.length do
-      struct.members(i) match
+      struct.members.readable(i) match
         case f: Tels.Field => builder(f.keyword) = memberOf(f, schema)
         case _             => ()
 
@@ -163,24 +163,17 @@ object TelBlueprint:
 
     field.fieldType match
       case s: Tels.Scalar =>
-        val validator = s.validators.headOption.getOrElse(t"string")
-        Member.Value(Text(validator.s + suffix))
+        Member.Value(Text(s.validators.prim.or(t"string").s + suffix))
 
       case Tels.Flag =>
         Member.Value(t"flag")
 
       case Tels.Reference(name) =>
-        schema.scalars.find(_.name == name) match
-          case Some(sc) =>
-            val validator = sc.validators.headOption.getOrElse(t"string")
-            Member.Value(Text(validator.s + suffix))
-
-          case None =>
-            schema.records.find(_.name == name) match
-              case Some(rec) =>
-                Member.Record(t"object", fieldsOf(Tels.Struct(rec.members, rec.validators), schema))
-
-              case None => Member.Value(t"tel")
+        schema.scalars.seek(_.name == name).lay:
+          schema.records.seek(_.name == name).lay(Member.Value(t"tel")): rec =>
+            Member.Record(t"object", fieldsOf(Tels.Struct(rec.members, rec.validators), schema))
+        . apply: sc =>
+          Member.Value(Text(sc.validators.prim.or(t"string").s + suffix))
 
       case _: Tels.Struct =>
         Member.Value(t"tel")

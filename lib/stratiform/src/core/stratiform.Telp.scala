@@ -37,7 +37,6 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import proscenium.compat.*
 import vacuous.*
 import rudiments.`:+`
 import denominative.asymptotics.linearSizeComplexity

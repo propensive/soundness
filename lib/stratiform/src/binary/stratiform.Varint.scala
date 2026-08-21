@@ -33,7 +33,6 @@
 package stratiform
 
 import scala.language.unsafeNulls
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -81,7 +80,7 @@ object Varint:
 
     while true do
       if i >= data.length then abort(Varint.Error(Varint.Error.Reason.Truncated))
-      val b = data(i) & 0xff
+      val b = data.readable(i) & 0xff
 
       if shift >= 64 || (shift == 63 && (b & 0x7f) > 1)
       then abort(Varint.Error(Varint.Error.Reason.Overflow))
