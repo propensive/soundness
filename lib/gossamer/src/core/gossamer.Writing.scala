@@ -32,8 +32,6 @@
                                                                                                   */
 package gossamer
 
-import proscenium.compat.*
-
 import scala.collection.immutable.IndexedSeq
 
 import java.lang as jl
@@ -109,8 +107,7 @@ object Writing:
       val foundChar = writing.text.s.indexOf(sub.s, charStart)
 
       if foundChar < 0 then Unset else
-        val idx = writing.boundaries.indexWhere(_ == foundChar)
-        if idx < 0 then Unset else idx.z
+        writing.boundaries.where(_ == foundChar)
 
     def builder(size: Optional[Int]): Builder[Writing] = WritingBuilder(size)
 

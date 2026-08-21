@@ -32,13 +32,12 @@
                                                                                                   */
 package harlequin
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import gossamer.*
 import prophesy.*
 import rudiments.*
+import denominative.asymptotics.linearSizeComplexity
 import vacuous.*
 
 // Maps Harlequin's token stream onto Prophesy's `Lexeme` alphabet, and extracts the reversed
@@ -158,4 +157,4 @@ object Lexis:
       }
 
     val context: List[Lexeme] = if breakAtCaret then (Lexeme.Break: Lexeme) :: reversed else reversed
-    (prefix, context.take(limit))
+    (prefix, context.keep(limit))

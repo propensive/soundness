@@ -36,8 +36,6 @@ import java.lang as jl
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import errorDiagnostics.stackTracesDiagnostics
@@ -245,7 +243,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
           if trimmed.nonEmpty then
             val tokens: List[String] =
-              Array.unsafeFrozen(trimmed.split("\\s+").nn).toList.map(_.nn)
+              Array.unsafeFrozen(trimmed.split("\\s+").nn).to[List].map(_.nn)
             val sb = jl.StringBuilder()
             val expected = scala.collection.mutable.ArrayBuffer[Int]()
 

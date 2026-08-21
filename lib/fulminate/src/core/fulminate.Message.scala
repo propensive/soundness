@@ -32,8 +32,6 @@
                                                                                                   */
 package fulminate
 
-import proscenium.compat.*
-
 import scala.annotation.targetName
 import scala.compiletime.*
 
@@ -70,24 +68,26 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
   @targetName("append")
   infix def + (right: Message): Message =
     Message
-      ( texts.init + ((texts.stdlib.last+right.texts.head) :: right.texts.tail),
+      ( List.of
+         ( texts.stdlib.init
+           ++ ((texts.stdlib.last + right.texts.stdlib.head) :: right.texts.stdlib.tail) ),
         messages + right.messages )
 
   def segments: List[Text | Message] =
     def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match
-      case head :: tail => List.of(messages.head :: head :: recur(tail, messages.tail).stdlib)
+      case head :: tail => List.of(messages.stdlib.head :: head :: recur(tail, List.of(messages.stdlib.tail)).stdlib)
       case Nil          => Nil
 
-    List.of(texts.head :: recur(texts.tail, messages).stdlib)
+    List.of(texts.stdlib.head :: recur(List.of(texts.stdlib.tail), messages).stdlib)
 
   def fold[render](initial: render)(append: (render, Text, Int) => render): render =
     def recur(done: render, textTodo: List[Text], messagesTodo: List[Message], level: Int): render =
       messagesTodo match
-        case Nil => append(done, textTodo.head, level)
+        case Nil => append(done, textTodo.stdlib.head, level)
 
         case sub :: messages =>
-          val prefix = recur(append(done, textTodo.head, level), sub.texts, sub.messages, level + 1)
-          recur(prefix, textTodo.tail, messages, level)
+          val prefix = recur(append(done, textTodo.stdlib.head, level), sub.texts, sub.messages, level + 1)
+          recur(prefix, List.of(textTodo.stdlib.tail), messages, level)
 
     recur(initial, texts, messages, 0)
 

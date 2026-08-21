@@ -35,8 +35,6 @@ package caesura
 
 import scala.caps
 
-import proscenium.compat.*
-
 import scala.language.dynamics
 
 import scala.compiletime.*
@@ -63,7 +61,7 @@ trait Dsv2:
   // mirroring how distillate keeps its generic instance in `Decodable2`.
   given decoder: [decodable] => (decodable: (decodable is Decodable in Text)^)
   =>  ((decodable is Decodable in Dsv)^{decodable}) =
-    value => decodable.decoded(value.data.head)
+    value => decodable.decoded(value.data.readable.head)
 
   // `source.read[Foo in Dsv]` shorthand: decodes a single DSV record (the first
   // row) into `Foo` through the row AST. Held below `aggregableParsed` in
@@ -75,7 +73,7 @@ trait Dsv2:
   =>  (tactic: Tactic[Dsv.Error])
   =>  (((value in Dsv) is Aggregable by Text)^{tactic}) =
     text =>
-      summon[Sheet is Aggregable by Text].aggregate(text).rows.head.as[value]
+      summon[Sheet is Aggregable by Text].aggregate(text).rows.readable.head.as[value]
       . asInstanceOf[value in Dsv]
 
 object Dsv extends Dsv2:
@@ -190,7 +188,7 @@ object Dsv extends Dsv2:
 
   given showable: (format: Dsv.Format) => Dsv is Showable = dsv =>
     val cells =
-      dsv.data.map: cell =>
+      dsv.data.remap: cell =>
         val safe = !cell.contains(format.Quote) && !cell.contains(format.Delimiter) &&
           !cell.contains('\n') && !cell.contains('\r')
 
@@ -218,7 +216,7 @@ object Dsv extends Dsv2:
         type Self = value in Dsv
         type Operand = Text
 
-        def aggregate(text: Chain[Text]): value in Dsv = accept(Stream(text.iterator))
+        def aggregate(text: Chain[Text]): value in Dsv = accept(Stream(text.stdlib.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
           val reader =
@@ -235,7 +233,7 @@ object Dsv extends Dsv2:
         type Self = List[value] in Dsv
         type Operand = Text
 
-        def aggregate(text: Chain[Text]): List[value] in Dsv = accept(Stream(text.iterator))
+        def aggregate(text: Chain[Text]): List[value] in Dsv = accept(Stream(text.stdlib.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): List[value] in Dsv =
           val reader =
@@ -410,9 +408,9 @@ object Dsv extends Dsv2:
             // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
             // position.
             def fieldRow(label: Text, count: Int): Dsv =
-              row.columns.lay(Dsv(row.data.drop(count))): columns =>
+              row.columns.lay(Dsv(row.data.skip(count))): columns =>
                 columns(label).lay(Dsv(Array.of[Text]())): i =>
-                  Dsv(row.data.drop(i))
+                  Dsv(row.data.skip(i))
 
             // A SINGLE field traversal serving both modes, branching on `foci.active` per
             // field. One traversal is load-bearing: every wisteria traversal re-summons each
@@ -524,11 +522,11 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
   def apply[value](using value: (value is Decodable in Text)^)(field: Text): Optional[value] =
     columns.let(_(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
-  override def hashCode: Int = data.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
+  override def hashCode: Int = data.readable.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.indices.all: index => data.readUnchecked(index) == row.data.readUnchecked(index)
+      data.length == row.data.length && data.readable.indices.all: index => data.readUnchecked(index) == row.data.readUnchecked(index)
 
     case _ =>
       false

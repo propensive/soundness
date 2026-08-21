@@ -32,8 +32,6 @@
                                                                                                   */
 package gossamer
 
-import proscenium.compat.*
-
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -41,6 +39,7 @@ import denominative.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Lexicon:
@@ -84,7 +83,7 @@ object Lexicon:
 
         . flatMap(_.stdlib)
 
-      descendants ++ (if distance <= radius then Set(value) else Set[element]())
+      descendants + (if distance <= radius then Set(value) else Set[element]())
 
 trait Lexicon[element]:
   def update(key: Text, value: element): Unit

@@ -40,7 +40,6 @@ import anticipation.*
 import beneficence.*
 import denominative.*
 import fulminate.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -81,7 +80,7 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
       val count = in.remaining
 
       if !todo.nil then
-        in.put(Array.unsafeJvm(todo.head), offset, in.remaining.min(todo.head.length - offset))
+        in.put(Array.unsafeJvm(todo.stdlib.head), offset, in.remaining.min(todo.stdlib.head.length - offset))
       in.flip()
 
       def decode(): jnc.CoderResult =
@@ -99,8 +98,8 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
 
       def continue =
         if todo.nil && !status.isOverflow then Chain()
-        else if !todo.nil && count >= todo.head.length - offset
-        then recur(todo.tail, 0, total + todo.head.length - offset)
+        else if !todo.nil && count >= todo.stdlib.head.length - offset
+        then recur(Chain.of(todo.stdlib.tail), 0, total + todo.stdlib.head.length - offset)
         else recur(todo, offset + count, total + count)
 
       if text.nil then continue else text #:: continue
