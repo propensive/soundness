@@ -32,8 +32,6 @@
                                                                                                   */
 package hypotenuse
 
-import proscenium.compat.*
-
 import scala.caps
 import scala.math
 import scala.reflect.ClassTag

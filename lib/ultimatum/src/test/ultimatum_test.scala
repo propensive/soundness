@@ -35,8 +35,6 @@ package ultimatum
 import java.io as ji
 
 import soundness.*
-
-import proscenium.compat.*
 import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Ultimatum Tests"):

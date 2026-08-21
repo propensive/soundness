@@ -34,8 +34,6 @@ package hypotenuse
 
 import scala.math
 
-import proscenium.compat.*
-
 import scala.language.experimental.genericNumberLiterals
 import scala.language.experimental.into
 
@@ -189,11 +187,11 @@ extension [value](iterable: Iterable[value])
   :   Optional[addable.Result] =
 
     def recur(n: Int, items: List[value]): value =
-      val pivot = items.head
+      val pivot = items.stdlib.head
       var left: List[value] = Nil
       var right: List[value] = Nil
 
-      items.tail.each: item => if item < pivot then left ::= item else right ::= item
+      items.stdlib.tail.each: item => if item < pivot then left ::= item else right ::= item
 
       if left.size == n then pivot
       else if left.size < n then recur(n - left.size - 1, right)

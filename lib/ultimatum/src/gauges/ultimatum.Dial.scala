@@ -37,7 +37,6 @@ import denominative.*
 import escapade.*
 import gossamer.*
 import hieroglyph.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

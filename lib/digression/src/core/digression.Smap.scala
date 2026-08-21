@@ -35,7 +35,6 @@ package digression
 import scala.collection.immutable as sci
 
 import anticipation.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -131,7 +130,7 @@ object Smap:
       var index = 3
 
       def close(): Unit =
-        if stratum != "" then strata = strata.updated(stratum.tt, Stratum(files, entries.reverse))
+        if stratum != "" then strata = strata.define(stratum.tt, Stratum(files, entries.reverse))
         files = Map()
         entries = Nil
 
@@ -161,7 +160,7 @@ object Smap:
               else
                 name
 
-            files = files.updated(id, File(name, path))
+            files = files.define(id, File(name, path))
         else if section == 'L' then
           entry(line.trim.nn, entries.prim.lay(0)(_.fileId)).let: entry =>
             entries = entry :: entries
@@ -185,7 +184,7 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
   // identity mappings are recognized.
   private lazy val generatedId: Optional[Int] =
     stratum.let: stratum =>
-      stratum.files.find { (_, file) => file.name == generated }.map(_(0)).optional
+      stratum.files.seek { (_, file) => file.name == generated }.let(_(0))
 
   // A line which maps to itself in the generated file—or which the SMAP says nothing about—is a
   // real line, not a synthetic one.

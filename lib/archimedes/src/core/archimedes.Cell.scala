@@ -35,8 +35,6 @@ package archimedes
 // Deliberate stdlib opt-out: internal typesetting tables are set-algebraic.
 import scala.collection.immutable.{Map, Set}
 
-import proscenium.compat.*
-
 import anticipation.*
 import gossamer.*
 import hieroglyph.Measurable
@@ -275,8 +273,8 @@ object Cell:
 
     // Traversing `inner`'s own lines directly, the row content needs no index at all; the
     // index survives only to mark the last row with the radical's foot.
-    val body = inner.lines.zipWithIndex.map: (line, row) =>
-      val foot = if row == inner.height - 1 then Tick else ' '
+    val body = inner.lines.indexed.map: (line, ordinal) =>
+      val foot = if ordinal.n0 == inner.height - 1 then Tick else ' '
       Writing(t"$foot$Stem${line.text}")
 
     Cell(Sequence(overline) + body, inner.width + 2, inner.baseline + 1)
@@ -288,8 +286,8 @@ object Cell:
 
     // The radicand's rows come from traversing its own lines, so they need no proof; the
     // (shorter) index cell is a checked lookup with a blank fallback — exactly `slice`.
-    val lines = radicand.lines.zipWithIndex.map: (line, row) =>
-      Writing(t"${slice(index, row)}${line.text}")
+    val lines = radicand.lines.indexed.map: (line, ordinal) =>
+      Writing(t"${slice(index, ordinal.n0)}${line.text}")
 
     Cell(lines, index.width + radicand.width, radicand.baseline)
 

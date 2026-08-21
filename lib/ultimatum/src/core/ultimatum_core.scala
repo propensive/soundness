@@ -32,8 +32,6 @@
                                                                                                   */
 package ultimatum
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import parasite.*
@@ -230,7 +228,7 @@ def dirtyCells
 
     if dirty then moved += (index: Ordinal).n0
 
-  Set.of(moved.result()) ++ changed
+  Set.of(moved.result()) + changed
 
 // Solve `pane` against `root` once and paint each leaf's content into its
 // rectangle (no event loop). An `InlineRoot` is sized to the height its content
