@@ -31,8 +31,6 @@
                                                                                                   */
 package stratiform
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -208,7 +206,7 @@ object SchemaResolver:
       var equal = true
 
       while equal && i < a.length do
-        if a(i) != b(i) then equal = false
+        if a.readable(i) != b.readable(i) then equal = false
         i += 1
 
       equal
