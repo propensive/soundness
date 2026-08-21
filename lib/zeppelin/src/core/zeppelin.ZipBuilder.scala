@@ -34,8 +34,6 @@ package zeppelin
 
 import scala.caps
 
-import proscenium.compat.*
-
 import java.io as ji
 import java.nio.file as jnf
 

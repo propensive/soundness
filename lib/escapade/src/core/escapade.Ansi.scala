@@ -36,7 +36,6 @@ import scala.compiletime
 
 import beneficence.*
 import prepositional.*
-import proscenium.compat.*
 
 import scala.language.experimental.pureFunctions
 
@@ -161,7 +160,7 @@ object Ansi extends Ansi2:
 
       if triggerLink then linkArmed = false
 
-      if text.hyperlinks.nonEmpty then
+      if !text.hyperlinks.nil then
         text.hyperlinks.stdlib.each: (k, v) => hyperlinks(n + k) = v
 
       if text.insertions.nonEmpty then text.insertions.each: (k, v) => insertions(n + k) = v
@@ -186,18 +185,18 @@ object Ansi extends Ansi2:
       addInsertion(plain.length, t"\e"+on)
 
     def popFrame(): Unit =
-      stack.head match
+      stack.stdlib.head match
         case _: Frame.Style =>
-          stack = stack.tail
-          currentStyle = styleStack.head
-          styleStack = styleStack.tail
+          stack = List.of(stack.stdlib.tail)
+          currentStyle = styleStack.stdlib.head
+          styleStack = List.of(styleStack.stdlib.tail)
 
         case _: Frame.Link =>
-          stack = stack.tail
+          stack = List.of(stack.stdlib.tail)
           linkArmed = true
 
         case escape: Frame.Escape =>
-          stack = stack.tail
+          stack = List.of(stack.stdlib.tail)
           addInsertion(plain.length, t"\e"+escape.off)
 
     def applyOnce(transform: Transform): Unit =
@@ -310,7 +309,7 @@ object Ansi extends Ansi2:
     def skip(state: State): State = insert(state, Input.TextInput(Teletype.empty))
 
     def complete(state: State): Teletype =
-      if state.stack.nonEmpty
+      if !state.stack.nil
       then throw Error(m"the closing brace does not match an opening brace")
 
       val tail = if state.linkArmed then StyleWord.HyperlinkChange else 0L

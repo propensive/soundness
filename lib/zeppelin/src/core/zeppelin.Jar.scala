@@ -32,14 +32,13 @@
                                                                                                   */
 package zeppelin
 
-import proscenium.compat.*
-
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
 import anticipation.*
 import aperture.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -60,14 +59,15 @@ object Jar:
     // rejoin the preceding attribute, and parsing stops at the first blank line, which ends
     // the main section. An archive without a manifest has no attributes.
     def manifest: Map[Text, Text] =
-      zipfile.entries.find(_.ref.encode == ManifestName).map: entry =>
+      zipfile.entries.seek(_.ref.encode == ManifestName).let: entry =>
         val bytes: Data = entry.contents.memoize
         val text: Text = bytes.utf8
         val unfolded = text.s.split("\r\n|\r|\n", -1).nn.map(_.nn)
         val main = unfolded.takeWhile(_.nonEmpty)
 
         val rejoined = main.foldLeft(List.empty[String]): (acc, line) =>
-          if line.startsWith(" ") && acc.nonEmpty then (acc.head + line.drop(1)) :: acc.tail
+          if line.startsWith(" ") && !acc.nil
+          then (acc.stdlib.head + line.drop(1)) :: List.of(acc.stdlib.tail)
           else line :: acc
 
         rejoined.reverse.bind: line =>
@@ -76,7 +76,7 @@ object Jar:
             case index => List((line.take(index).tt, line.drop(index + 2).tt))
         . pipe(l => Map.from(l.stdlib))
 
-      . getOrElse(Map())
+      . or(Map())
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Like `Zip`, archives open read-only for now.

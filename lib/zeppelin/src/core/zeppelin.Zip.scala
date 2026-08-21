@@ -34,7 +34,6 @@ package zeppelin
 
 import java.io as ji
 import java.util.zip as juz
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -230,14 +229,14 @@ object Zip:
 
   // Little-endian readers from immutable data.
   private[zeppelin] def u16(data: Data, offset: Int): Int =
-    (data(offset) & 0xff) | ((data(offset + 1) & 0xff) << 8)
+    (data.readable(offset) & 0xff) | ((data.readable(offset + 1) & 0xff) << 8)
 
   private[zeppelin] def u32(data: Data, offset: Int): Long =
     var value = 0L
     var i = 0
 
     while i < 4 do
-      value |= (data(offset + i) & 0xffL) << (i*8)
+      value |= (data.readable(offset + i) & 0xffL) << (i*8)
       i += 1
 
     value
@@ -247,7 +246,7 @@ object Zip:
     var i = 0
 
     while i < 8 do
-      value |= (data(offset + i) & 0xffL) << (i*8)
+      value |= (data.readable(offset + i) & 0xffL) << (i*8)
       i += 1
 
     value

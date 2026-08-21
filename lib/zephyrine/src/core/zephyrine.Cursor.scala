@@ -42,7 +42,6 @@ import contingency.*
 import denominative.*
 import fulminate.{Diagnostics, Hazard}
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -618,7 +617,7 @@ extends caps.Mutable:
     // WebSocket upgrade, whose body is the post-handshake frame stream the peer
     // only sends after our `101`). `#::` keeps the non-empty branch lazy; the
     // empty branch must defer the call explicitly.
-    if tailLen > 0 then tail #:: loaderStream else Chain.empty.lazyAppendedAll(loaderStream)
+    if tailLen > 0 then tail #:: loaderStream else Chain.defer(loaderStream)
 
   private update def loaderStream: Chain[data] =
     if ended then Chain.empty else load() match

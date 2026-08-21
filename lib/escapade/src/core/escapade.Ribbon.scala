@@ -35,7 +35,6 @@ package escapade
 import anticipation.*
 import denominative.*
 import gossamer.*
-import proscenium.compat.*
 
 object Ribbon:
   def apply[color: Chromatic](colors: color*): Ribbon = Ribbon(colors.map(Bg(_))*)
@@ -43,7 +42,7 @@ object Ribbon:
 case class Ribbon(colors: Bg*):
   def fill(parts: Teletype*): Teletype =
     if colors.isEmpty then parts.join(e" ") else
-      val array = Array.from(colors.zip(parts))
+      val array = Array.from(colors.zip(parts)).readable
 
       array.indices.map: index =>
         val (background, text) = array(index)

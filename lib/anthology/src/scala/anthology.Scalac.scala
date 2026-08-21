@@ -36,7 +36,6 @@ import aperture.*
 import distillate.*
 import dotty.tools.io as dtio
 import java.nio.file as jnf
-import proscenium.compat.*
 
 import scala.language.adhocExtensions
 

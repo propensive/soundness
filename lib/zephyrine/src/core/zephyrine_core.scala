@@ -33,7 +33,6 @@
 package zephyrine
 
 import scala.caps
-import proscenium.compat.*
 
 import anticipation.*
 import denominative.*
@@ -292,7 +291,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
         stream.close()
         Chain.empty
 
-    Chain.empty.lazyAppendedAll(recur())
+    Chain.defer(recur())
 
 extension [record](consume stream: (Stream[Array[record]^{}] over Credit)^)
   // Element-wise access to a stream of records: a single-consumer iterator over

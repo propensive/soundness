@@ -34,8 +34,6 @@ package exoskeleton
 
 import scala.collection.mutable as scm
 
-import proscenium.compat.*
-
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import aperture.*
@@ -296,7 +294,7 @@ object Completions:
       this match
         case CommandNotOnPath(_)              => Nil
         case Shells(zsh, bash, fish, pwsh) =>
-          List(zsh, bash, fish, pwsh).map(_.pathname).collect { case text: Text => text }
+          List(zsh, bash, fish, pwsh).map(_.pathname).sweep { case text: Text => text }
 
 object CliEvent:
   given execEvent: CliEvent transcribes guillotine.Exec.Event = CliEvent.Exec(_)

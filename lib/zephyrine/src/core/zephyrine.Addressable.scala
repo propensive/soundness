@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import proscenium.compat.*
-
 import scala.caps
 
 import java.io as ji
@@ -64,7 +62,7 @@ object Addressable:
 
     inline def length(bytes: Data): Int = bytes.length
     inline def address(bytes: Data, index: Ordinal): Byte = bytes.readUnchecked(index.n0)
-    inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data = bytes.slice(start.n0, end.n0)
+    inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data = bytes.excerpt(start.n0, end.n0)
 
 
     inline def clone(source: Data, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
@@ -139,7 +137,7 @@ object Addressable:
     def address(block: Array[element]^{}, index: Ordinal): element = block.readUnchecked(index.n0)
 
     def grab(block: Array[element]^{}, start: Ordinal, end: Ordinal): Array[element]^{} =
-      block.slice(start.n0, end.n0)
+      block.excerpt(start.n0, end.n0)
 
     def clone(source: Array[element]^{}, start: Ordinal, end: Ordinal)
       ( target: scm.ArrayBuffer[element] )
@@ -230,7 +228,7 @@ object Addressable:
     def address(block: Array[Text]^{}, index: Ordinal): Text = block.readUnchecked(index.n0)
 
     def grab(block: Array[Text]^{}, start: Ordinal, end: Ordinal): Array[Text]^{} =
-      block.slice(start.n0, end.n0)
+      block.excerpt(start.n0, end.n0)
 
     def clone(source: Array[Text]^{}, start: Ordinal, end: Ordinal)
       ( target: scm.ArrayBuffer[Text] )
@@ -315,7 +313,9 @@ object Addressable:
     def address(block: Array[Data]^{}, index: Ordinal): Data = block.readUnchecked(index.n0)
 
     def grab(block: Array[Data]^{}, start: Ordinal, end: Ordinal): Array[Data]^{} =
-      block.slice(start.n0, end.n0)
+      // Not `excerpt`: `Data`'s own capture annotation makes `Reshapable` widen the element
+      // type to `Array[Byte]^{any.rd}`, which the frozen result type rejects.
+      Array.frozen(block.readable.slice(start.n0, end.n0))
 
     def clone(source: Array[Data]^{}, start: Ordinal, end: Ordinal)
       ( target: scm.ArrayBuffer[Data] )

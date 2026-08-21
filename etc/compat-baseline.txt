@@ -3,7 +3,6 @@
 abacist 1
 adversaria 3
 anamnesis 1
-anthology 7
 anticipation 2
 aperture 2
 apoplexy 2
@@ -29,11 +28,9 @@ digression 4
 dissonance 4
 distillate 2
 embarcadero 2
-escapade 6
 escritoire 4
 ethereal 2
 eucalyptus 1
-exoskeleton 6
 facsimile 1
 frontier 1
 fulminate 5
@@ -95,6 +92,4 @@ wisteria 2
 xylophone 2
 yossarian 1
 ypsiloid 2
-zephyrine 5
-zeppelin 5
 ziggurat 2

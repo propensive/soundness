@@ -34,7 +34,6 @@ package escapade
 
 
 import scala.collection.immutable.Seq
-import proscenium.compat.*
 
 import scala.language.experimental.pureFunctions
 
@@ -411,7 +410,7 @@ case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
   import escapade.internal.AnsiStyle
 
   @targetName("concat")
-  def + (that: Teletype2): Teletype2 = Teletype2(plain+that.plain, ansi ++ that.ansi)
+  def + (that: Teletype2): Teletype2 = Teletype2(plain+that.plain, Array.frozen(ansi.readable ++ that.ansi.readable))
 
   def render(using escapes: Ansi.Escapes): Text =
     Text.build:

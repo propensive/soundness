@@ -31,8 +31,6 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package escapade
-
-import proscenium.compat.*
 import rudiments.*
 
 import anticipation.*

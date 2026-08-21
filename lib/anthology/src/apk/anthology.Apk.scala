@@ -38,8 +38,6 @@ import java.io as ji
 import java.security as js
 import java.security.cert as jsc
 
-import proscenium.compat.*
-
 import anticipation.*
 import gastronomy.*
 import gossamer.*
@@ -194,7 +192,7 @@ object Apk extends Format.Application:
           ((value >> 24) & 0xff).toByte)
 
     private def u64(value: Long): Data =
-      Array.range(0, 8).map: i =>
+      Array.range(0, 8).remap: i =>
         ((value >> (i*8)) & 0xff).toByte
 
     private def concat(parts: Data*): Data =
@@ -212,7 +210,7 @@ object Apk extends Format.Application:
 
     // Reads the little-endian u32 at `offset`.
     private def readU32(data: Data, offset: Int): Long =
-      def byte(index: Int): Long = data(offset + index).toLong & 0xff
+      def byte(index: Int): Long = data.readable(offset + index).toLong & 0xff
       byte(0) | (byte(1) << 8) | (byte(2) << 16) | (byte(3) << 24)
 
     // The end-of-central-directory record is the archive's final 22 bytes: the writer emits no
@@ -312,7 +310,7 @@ object Apk extends Format.Application:
       // built exclusively here rather than laundered out of a frozen `slice`.
       val eocd = Array[Byte](unsigned.length - eocdOffset)
       eocd.copyFrom(unsigned, eocdOffset, 0, eocd.length)
-      for i <- 0 until 4 do eocd(16 + i) = patch(i)
+      for i <- 0 until 4 do eocd(16 + i) = patch.readable(i)
 
       concat(section1, signingBlock, centralDirectory, Array.freeze(eocd))
 
