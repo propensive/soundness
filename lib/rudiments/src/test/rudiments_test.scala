@@ -151,7 +151,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"last on an occupied chain demands the unbounded acknowledgement"):
         import denominative.asymptotics.unboundedSizeComplexity
         val xs: Chain[Int] = Chain(1, 2, 3)
-        xs.occupied.let(_.last)
+        xs.last
       . assert(_ == 3)
 
     suite(m"Size and count tests"):
@@ -178,7 +178,7 @@ object Tests extends Suite(m"Rudiments Tests"):
     suite(m"last and lead tests"):
       test(m"last of a sequence"):
         val xs: Sequence[Int] = Sequence(1, 2, 3)
-        xs.occupied.let(_.last)
+        xs.last
       . assert(_ == 3)
 
       test(m"lead is everything but the last"):
@@ -188,7 +188,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"last of a list demands the linear acknowledgement"):
         val xs: List[Int] = List(1, 2, 3)
-        xs.occupied.let(_.last)
+        xs.last
       . assert(_ == 3)
 
       test(m"lead of a list"):

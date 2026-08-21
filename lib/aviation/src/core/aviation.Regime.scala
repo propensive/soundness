@@ -63,8 +63,8 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
 
   // The calendar governing a Julian day number: the latest segment to have taken effect by then.
   private def at(date: Date): RomanCalendar =
-    bounded.filter(_(0).from.jdn <= date.jdn).occupied
-    . lay(segments.stdlib.head.calendar)(_.last(0).calendar)
+    bounded.filter(_(0).from.jdn <= date.jdn).last
+    . lay(segments.stdlib.head.calendar)(_(0).calendar)
 
   // The regime's Julian day number for a field date, or `Unset` if it falls in a gap between two
   // calendars (e.g. 1582-10-10 under the Papal cutover) or is otherwise an invalid date.
