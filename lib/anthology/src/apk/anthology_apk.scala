@@ -44,7 +44,6 @@ import galilei.*
 import gossamer.*
 import parasite.*
 import prepositional.*
-import proscenium.compat.*
 import serpentine.*
 import turbulence.*
 import zeppelin.*

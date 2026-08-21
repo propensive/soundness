@@ -32,8 +32,6 @@
                                                                                                   */
 package escapade
 
-import proscenium.compat.*
-
 import scala.language.experimental.pureFunctions
 
 import scala.util.*
@@ -565,7 +563,7 @@ case class Teletype
         if s != prev then StyleWord.emitDiff(buffer, prev, s, depth)
 
         if (s & StyleWord.HyperlinkChange) != 0 then
-          hyperlinks.get(from) match
+          hyperlinks.stdlib.get(from) match
             case Some(url) => buffer.add(t"\e]8;;$url\e\\")
             case None      => buffer.add(t"\e]8;;\e\\")
 
@@ -598,7 +596,7 @@ case class Teletype
       if tail != prev then StyleWord.emitDiff(buffer, prev, tail, depth)
 
       if (tail & StyleWord.HyperlinkChange) != 0 then
-        hyperlinks.get(n) match
+        hyperlinks.stdlib.get(n) match
           case Some(url) => buffer.add(t"\e]8;;$url\e\\")
           case None      => buffer.add(t"\e]8;;\e\\")
 

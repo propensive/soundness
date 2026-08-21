@@ -34,8 +34,6 @@ package escapade
 
 import scala.collection.immutable.Seq
 
-import proscenium.compat.*
-
 import soundness.*
 
 import strategies.throwUnsafely
@@ -506,7 +504,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == 'h')
 
       test(m"chars"):
-        e"abc".chars.toSeq
+        e"abc".chars.readable.toSeq
       . assert(_ == Seq('a', 'b', 'c'))
 
     suite(m"Textual: slicing"):

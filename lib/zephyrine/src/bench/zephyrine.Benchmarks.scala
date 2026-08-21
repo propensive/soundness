@@ -42,7 +42,6 @@ import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import probably.*
 import proscenium.*
-import proscenium.compat.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
@@ -124,7 +123,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     n
 
   def cursorNextFragmented(blocks: List[Text]): Int =
-    val c = Cursor(blocks.iterator)
+    val c = Cursor(blocks.stdlib.iterator)
     var n = 0
     while c.next() do n += 1
     n
@@ -138,7 +137,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
   // Cursor over a pull endpoint — exercises the stream-backed factory's refill
   // path (window transferred into the cursor's buffer once per fill).
   def cursorNextStreamed(blocks: List[Data]): Int =
-    val c = Cursor[Data](blocks.iterator.stream)
+    val c = Cursor[Data](blocks.stdlib.iterator.stream)
     var n = 0
     while c.next() do n += 1
     n
@@ -164,7 +163,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     acc
 
   def cursorHoldMarkGrabCrossBlock(blocks: List[Text], span: Int): Int =
-    val c = Cursor(blocks.iterator)
+    val c = Cursor(blocks.stdlib.iterator)
     c.hold:
       val mk = c.mark
       var k = 0

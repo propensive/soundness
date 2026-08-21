@@ -32,8 +32,6 @@
                                                                                                   */
 package anthology
 
-import proscenium.compat.*
-
 import java.net as jn
 import java.util as ju
 import javax.tools as jt

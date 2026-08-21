@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 
 import soundness.*
 
-import proscenium.compat.*
-
 import randomization.unseededRandomization
 
 import supervisors.globalSupervisor
@@ -214,8 +212,8 @@ object Tests extends Suite(m"Zephyrine tests"):
 
 
       suite(m"Cursor tests"):
-        def hello = Cursor(t"Hello world!".chars.to[List].map(_.show).iterator)
-        def numbers = Cursor(t"0123456789abc".chars.to[List].map(_.show).iterator)
+        def hello = Cursor(t"Hello world!".chars.to[List].map(_.show).stdlib.iterator)
+        def numbers = Cursor(t"0123456789abc".chars.to[List].map(_.show).stdlib.iterator)
 
         test(m"Iterate over elements"):
           val cursor = hello
@@ -425,8 +423,8 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == "onetwot")
 
       suite(m"Cursor[Data] tests"):
-        def stream = Chain(bytes).shred(10.0, 10.0).filter(_.nonEmpty)
-        def byteCursor = Cursor[Data](stream.iterator)
+        def stream = Chain(bytes).shred(10.0, 10.0).filter(!_.nil)
+        def byteCursor = Cursor[Data](stream.stdlib.iterator)
 
         test(m"Cursor[Data] starts at first byte"):
           val cursor = byteCursor
@@ -888,7 +886,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val gather = Gather()
           exotic.stream.via(summon[CharEncoder]).pump(gather)
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
-        . assert(_ == Array.unsafeFrozen(exotic.s.getBytes("UTF-8").nn).toList)
+        . assert(_ == Array.unsafeFrozen(exotic.s.getBytes("UTF-8").nn).to[List])
 
         // Malformed input — a stray continuation, an overlong lead, a
         // truncated sequence mid-stream and a bad continuation — must decode
@@ -1037,7 +1035,7 @@ object Tests extends Suite(m"Zephyrine tests"):
               var sum = total
               region.visit(range) { index => sum += (region(index) & 0xff) }
               sum
-        . assert(_ == bytes.to[List].map(_ & 0xff).sum.toLong)
+        . assert(_ == bytes.to[List].map(_ & 0xff).total.toLong)
 
         test(m"toProgression yields the stream's chunks in order"):
           Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5))).toProgression.stdlib.to(List)
@@ -1059,7 +1057,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           var pulled: Int = 0
           val chunks = Iterator(Array.of[Byte](1.toByte), Array.of[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
           val list = chunks.stream.toProgression
-          list.head
+          list.stdlib.head
           scala.caps.unsafe.unsafeAssumeSeparate(pulled)
         . assert(_ == 1)
 

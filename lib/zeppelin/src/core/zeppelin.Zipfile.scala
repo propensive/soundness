@@ -32,8 +32,6 @@
                                                                                                   */
 package zeppelin
 
-import proscenium.compat.*
-
 import scala.math
 
 import java.io as ji
@@ -138,7 +136,7 @@ object Zipfile:
   // can interoperate.
   private[zeppelin] class DataSource(data: Data) extends Expanse:
     def size: Long = data.length.toLong
-    def read(offset: Long, length: Int): Data = data.slice(offset.toInt, offset.toInt + length)
+    def read(offset: Long, length: Int): Data = data.excerpt(offset.toInt, offset.toInt + length)
 
   // Re-opens the file for each read, so entries stay detached and reusable with no held handle.
   private class FileSource(filename: Text) extends Expanse:
@@ -210,7 +208,7 @@ object Zipfile:
     val commentLength = Zip.u16(window, i + 20)
 
     val comment: Optional[Text] =
-      if commentLength == 0 then Unset else decodeText(window.slice(i + 22, i + 22 + commentLength))
+      if commentLength == 0 then Unset else decodeText(window.excerpt(i + 22, i + 22 + commentLength))
 
     // Follow the ZIP64 locator if any EOCD field is saturated.
     if entryCount == u16Max.toLong || cdSize == u32Max || cdOffset == u32Max then
@@ -271,14 +269,14 @@ object Zipfile:
       var localOffset = Zip.u32(central, p + 42)
 
       val nameStart = p + 46
-      val nameBytes = central.slice(nameStart, nameStart + nameLength)
+      val nameBytes = central.excerpt(nameStart, nameStart + nameLength)
       val extraStart = nameStart + nameLength
-      val extra = central.slice(extraStart, extraStart + extraLength)
+      val extra = central.excerpt(extraStart, extraStart + extraLength)
       val commentStart = extraStart + extraLength
 
       val entryComment: Optional[Text] =
         if entryCommentLength == 0 then Unset
-        else decodeText(central.slice(commentStart, commentStart + entryCommentLength))
+        else decodeText(central.excerpt(commentStart, commentStart + entryCommentLength))
 
       // ZIP64 extended information overrides the saturated fixed fields, in a fixed order.
       var q = 0
@@ -508,7 +506,7 @@ object Zipfile:
 case class Zipfile
   ( entries: List[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset ):
   def entry(ref: Path on Zip): Zip.Entry raises Zip.Error =
-    entries.find(_.ref == ref).getOrElse(abort(Zip.Error(Zip.Error.Reason.NotFound(ref))))
+    entries.seek(_.ref == ref).or(abort(Zip.Error(Zip.Error.Reason.NotFound(ref))))
 
   def serialize: Stream[Data] over Credit =
     // Emit the prefix first; all subsequent offsets are absolute (they include the prefix), so
@@ -536,7 +534,7 @@ case class Zipfile
     // Each entry's payload stream is opened only when the serialization reaches
     // it, and drained in bounded chunks.
     val local: Iterator[Data] =
-      records.iterator.flatMap: (entry, _, header, _) =>
+      records.stdlib.iterator.flatMap: (entry, _, header, _) =>
         Iterator(header) ++ entry.storedBytes().chunks
 
-    (prefixIterator ++ local ++ central.iterator ++ tail.iterator).stream
+    (prefixIterator ++ local ++ central.stdlib.iterator ++ tail.stdlib.iterator).stream

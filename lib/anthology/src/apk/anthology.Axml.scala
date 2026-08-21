@@ -32,8 +32,6 @@
                                                                                                   */
 package anthology
 
-import proscenium.compat.*
-
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -258,7 +256,7 @@ object Axml:
     out.patchU32(sizeAt, (out.position - sizeAt + 4).toLong)
 
   private def writeResourceMap(out: Accumulator, ids: List[Int]): Unit =
-    if ids.nonEmpty then
+    if !ids.nil then
       out.u16(0x0180)
       out.u16(0x0008)
       out.u32((8 + 4*ids.size).toLong)

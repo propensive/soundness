@@ -32,8 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import proscenium.compat.*
-
 import scala.collection.mutable as scm
 
 import ambience.*
@@ -106,7 +104,7 @@ extends Cli:
     val operands = interpreter.find(parameters, flag)
 
     interpreter.focus(parameters).let: argument =>
-      if operands.headOption.contains(argument) then
+      if operands.prim == argument then
         val allSuggestions = discoverable.discover(tab).to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
@@ -145,7 +143,7 @@ extends Cli:
       val allFlags = (flag.name :: flag.aliases)
 
       if longOnly then
-        allFlags.collect { case text: Text => text }.match
+        allFlags.sweep { case text: Text => text }.match
           case main :: aliases =>
             List
               ( Suggestion
@@ -161,7 +159,7 @@ extends Cli:
           flag.aliases.map(Flag.serialize(_))))
 
   def focusText: Text =
-    arguments.find(_.position == currentArgument).fold(t"")(_.value)
+    arguments.seek(_.position == currentArgument).lay(t"")(_.value)
 
   def serialize: List[Text] =
     val items0 =
@@ -174,8 +172,8 @@ extends Cli:
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
         val termcap: Termcap = termcapDefinitions.xtermTrueColorTermcap
 
-        lazy val width = items.map(_.core.length).max
-        lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
+        lazy val width = items.map(_.core.length).maximize(identity).or(0)
+        lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).maximize(identity).or(0) + 1
 
         val itemLines: List[Command] = items.bind:
           case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _, _) =>
@@ -184,7 +182,7 @@ extends Cli:
             val aliasText = if shortFlag then core0 else aliases.join(t" ").fit(aliasesWidth)
             val prefix2 = if prefix.nil then sh"" else sh"-p $prefix"
             val suffix2 = if suffix.nil then sh"" else sh"-s $suffix"
-            val core = if shortFlag then aliases.headOption.getOrElse(core0) else core0
+            val core = if shortFlag then aliases.prim.or(core0) else core0
 
             val mainLine = description.absolve match
               case Unset =>
@@ -204,7 +202,7 @@ extends Cli:
               if !incomplete then List()
               else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
-            List(mainLine) + duplicateLine
+            (List(mainLine): List[Command]) + duplicateLine
 
         List.of(title.stdlib ++ itemLines.stdlib).map(_.arguments.join(t"\u0000"))
 

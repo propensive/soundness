@@ -32,8 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import fulminate.*
@@ -96,11 +94,11 @@ package interpreters:
 
       def push(): Commandline = current.lay(Commandline(List.of(arguments.stdlib.reverse))): current =>
         commandline.copy
-          ( parameters = commandline.parameters.updated(current, List.of(arguments.stdlib.reverse)) )
+          ( parameters = commandline.parameters.define(current, List.of(arguments.stdlib.reverse)) )
 
       def postprocess(commandline: Commandline): Commandline =
         val parameters2: Map[Argument, List[Argument]] =
-          commandline.parameters.toList.bind: (key, values) =>
+          commandline.parameters.to[List].bind: (key, values) =>
             val flag = key.value
 
             if flag.starts(t"--") && flag.contains(t"=")
@@ -124,7 +122,7 @@ package interpreters:
             else
               List(key -> values)
 
-          . toMap
+          . to[Map]
 
         val focus2 = current.let: current =>
           val focusCursor: Ordinal = current.cursor.or(current.value.length).z

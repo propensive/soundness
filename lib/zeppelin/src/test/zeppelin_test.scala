@@ -34,8 +34,6 @@ package zeppelin
 
 import soundness.*
 
-import proscenium.compat.*
-
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import filesystemOptions.createNonexistentParents.enabled
@@ -181,7 +179,7 @@ object Tests extends Suite(m"Zeppelin tests"):
     suite(m"Writing ZIP archives"):
       test(m"single-entry archive begins with the ZIP local-header magic"):
         bytesOf(writeZip(t"one.zip", entry(t"hello.txt", t"Hello world")))
-          .slice(0, 4).to[List].map(_.toInt & 0xff)
+          .excerpt(0, 4).to[List].map(_.toInt & 0xff)
       . assert(_ == List(0x50, 0x4b, 0x03, 0x04))
 
       test(m"single entry is visible to the JDK ZIP reader"):
@@ -254,17 +252,17 @@ object Tests extends Suite(m"Zeppelin tests"):
         val payload: Data = Array.tabulate(512)(i => (i%256).toByte)
         val path = workDir/t"bin.zip"
         Zipfile.write(path)(List(Zip.Entry(zipRef(t"blob"), payload)))
-        readEntries(path).head.read[Data].to[List]
+        readEntries(path).stdlib.head.read[Data].to[List]
       . assert(_ == Array.tabulate(512)(i => (i%256).toByte).to[List])
 
       test(m"reads back an entry with empty content"):
-        readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).head.read[Text]
+        readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).stdlib.head.read[Text]
       . assert(_ == t"")
 
       test(m"reads a large, highly-compressible payload"):
         val path = workDir/t"big.zip"
         Zipfile.write(path)(List(Zip.Entry(zipRef(t"big.txt"), (t"soundness "*4096).in[Data])))
-        readEntries(path).head.read[Text]
+        readEntries(path).stdlib.head.read[Text]
       . assert(_ == t"soundness "*4096)
 
       test(m"looking up an absent entry raises NotFound"):
@@ -392,7 +390,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == List(t"one.txt", t"two.txt"))
 
       test(m"reads content from an externally (JDK) written archive"):
-        readEntries(writeRawZip(t"foreign2.zip", t"solo.txt")).head.read[Text]
+        readEntries(writeRawZip(t"foreign2.zip", t"solo.txt")).stdlib.head.read[Text]
       . assert(_ == t"data")
 
       test(m"an entry name with a forbidden character raises InvalidName"):
@@ -407,16 +405,16 @@ object Tests extends Suite(m"Zeppelin tests"):
 
     suite(m"Entry reuse between archives"):
       val source = writeZip(t"src.zip", entry(t"x.txt", (t"reuse me "*32)))
-      val reused: Zip.Entry = Zipfile.read(source).entries.head
+      val reused: Zip.Entry = Zipfile.read(source).entries.stdlib.head
       val target = workDir/t"dst.zip"
       Zipfile.write(target)(List(reused))
 
       test(m"a reused entry preserves its content"):
-        Zipfile.read(target).entries.head.read[Text]
+        Zipfile.read(target).entries.stdlib.head.read[Text]
       . assert(_ == t"reuse me "*32)
 
       test(m"a reused entry is not recompressed (identical compressed size)"):
-        Zipfile.read(target).entries.head.compressedSize
+        Zipfile.read(target).entries.stdlib.head.compressedSize
       . assert(_ == reused.compressedSize)
 
     suite(m"ZIP64"):
@@ -505,7 +503,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       test(m"the prefix precedes the first local header"):
         val path = workDir/t"prefixed3.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha")))
-        bytesOf(path).slice(0, 64).to[List]
+        bytesOf(path).excerpt(0, 64).to[List]
       . assert(_ == prefix.to[List])
 
       test(m"the JDK reader reads a prefixed archive"):

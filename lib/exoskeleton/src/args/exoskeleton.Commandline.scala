@@ -32,8 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import proscenium.compat.*
-
 import scala.language.experimental.pureFunctions
 
 import contingency.*
@@ -47,7 +45,7 @@ case class Commandline
     focus:          Optional[Argument]            = Unset ):
 
   def at(flag: Flag): List[Argument] =
-    parameters.find { (key, value) => flag.matches(key) }.map(_(1)).getOrElse(Nil)
+    parameters.seek { (key, value) => flag.matches(key) }.let(_(1)).or(Nil)
 
   def read[operand: Interpretable](flag: Flag)
     ( using cli: Cli, discoverable: (? <: operand) is Discoverable )

@@ -32,8 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import proscenium.compat.*
-
 import ambience.*
 import anticipation.*
 import contingency.*

@@ -32,8 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import proscenium.compat.*
-
 import scala.collection.mutable as scm
 
 import ambience.*
@@ -226,7 +224,7 @@ package executives:
           val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
           val posInWord = cursor - wordStarts(wordIdx)
           val focus = (wordIdx - 1).max(0)
-          val restParts = if parts.size > 1 then parts.tail else List(t"")
+          val restParts = if parts.size > 1 then List.of(parts.stdlib.tail) else List(t"")
           val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
 
           Completion
@@ -255,7 +253,7 @@ package executives:
               case _             => Shell.Bash
 
             val focus1 =
-              if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
+              if shell == Shell.Bash && rest.occupied.let(_.last) == t"=" then focus0 + 1 else focus0
 
             def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
               case Nil                                 => done.reverse
