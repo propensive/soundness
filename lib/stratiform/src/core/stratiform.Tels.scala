@@ -417,6 +417,18 @@ object Tels extends Tels2:
               case Some(idx) =>
                 members(idx) match
                   case existing: Field =>
+                    // §20.3: a restated field's type must be structurally
+                    // equal to the base's (a polarity-only refinement) or
+                    // both must be Structs, which merge recursively;
+                    // anything else is E206.
+                    val mergedType = (existing.fieldType, f.fieldType) match
+                      case (baseType: Struct, layerType: Struct) =>
+                        mergeStruct(baseType, layerType)
+
+                      case (baseType, layerType) =>
+                        if Reconstructor.typeEq(baseType, layerType) then baseType
+                        else abort(Tel.Error(Reason.LayerFieldTypeMismatch))
+
                     members(idx) =
                       Field
                         ( required   = mergePolarity(existing.required, f.required,
@@ -424,7 +436,7 @@ object Tels extends Tels2:
                          repeatable = mergePolarity(existing.repeatable, f.repeatable,
                                         PolarityAxis.Repeatable),
                          keyword     = f.keyword,
-                         fieldType   = existing.fieldType,
+                         fieldType   = mergedType,
                          default     = existing.default,
                          // §20.3: a layer's non-null description overrides
                          // the base's; otherwise the base's is inherited.
@@ -655,12 +667,15 @@ object Tels extends Tels2:
           case scala.Some(definition) => Scalar(definition.validators, definition.encoding)
 
           case scala.None =>
-            if name == Builtin.String || name == Builtin.Identifier
-              || name == Builtin.TypeName || name == Builtin.Sigil
-            then Scalar(Array.empty)
-            else Unset
+            if builtinScalar(name) then Scalar(Array.empty) else Unset
 
       case _ => Unset
+
+    // The built-in scalar TypeNames of §20.5. (`Flag` is not among them:
+    // it parses to the Flag type directly, never to a Reference.)
+    private def builtinScalar(name: Text): Boolean =
+      name == Builtin.String || name == Builtin.Identifier
+        || name == Builtin.TypeName || name == Builtin.Sigil
 
     private def checkStruct(struct: Struct, schema: Tels): Unit raises Tel.Error =
       val keywords = scala.collection.mutable.HashSet.empty[Text]
@@ -679,7 +694,21 @@ object Tels extends Tels2:
           // Merge-produced nested Structs are checked regardless of `key`.
           field.fieldType match
             case nested: Struct => checkStruct(nested, schema)
-            case _              => ()
+
+            // E209/E217: a Field's Reference must resolve, through the
+            // composed namespace or the §20.5 built-ins, to a record or
+            // scalar; a SelectDefinition can only be the target of a
+            // SelectRef.
+            case Reference(name) =>
+              if !schema.records.readable.exists(_.name == name)
+                && !schema.scalars.readable.exists(_.name == name)
+                && !builtinScalar(name)
+              then
+                if schema.selects.readable.exists(_.name == name)
+                then abort(Tel.Error(Reason.ReferenceKindMismatch))
+                else abort(Tel.Error(Reason.UnresolvedReference))
+
+            case _ => ()
 
           val required   = field.required != Polarity.Loose
           val repeatable = field.repeatable == Polarity.Loose
@@ -710,7 +739,15 @@ object Tels extends Tels2:
               if definition.variants.nil && select.required != Polarity.Loose
               then abort(Tel.Error(Reason.ExcludeEmptiesRequired))
 
-            case scala.None => ()
+            // E209/E217: a SelectRef must resolve to a SelectDefinition;
+            // a record, scalar or built-in name is a kind mismatch, and
+            // anything else is unresolved.
+            case scala.None =>
+              if schema.records.readable.exists(_.name == select.reference)
+                || schema.scalars.readable.exists(_.name == select.reference)
+                || builtinScalar(select.reference)
+              then abort(Tel.Error(Reason.ReferenceKindMismatch))
+              else abort(Tel.Error(Reason.UnresolvedReference))
 
         case _ => ()
 
@@ -749,7 +786,7 @@ object Tels extends Tels2:
       case (a: Exclude, b: Exclude) => a.keyword == b.keyword
       case _                        => false
 
-    private def typeEq(a: Type, b: Type): Boolean = (a, b) match
+    private[Tels] def typeEq(a: Type, b: Type): Boolean = (a, b) match
       case (a: Struct, b: Struct)         => structEq(a, b)
 
       case (a: Scalar, b: Scalar) =>
