@@ -1,4 +1,4 @@
-tel 1.0 https://tel-lang.org/schema/tels
+tel 1.0 specification.tel/tels
 
 name custom-sigil-schema
 sigil @

@@ -167,8 +167,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       t"e112-child-of-comment",       // we report the specific E112; reference generalizes to E111
       t"e113-source-after-literal",   // we report the specific E113; reference generalizes to E111
       t"e114-duplicate-literal",      // we report E114+E115; reference generalizes to one E111
-      t"e119-non-space-after-marker", // we report per heading; reference reports per marker
-      t"e122-pragma-with-remark" )    // reference cascades an extra E105 from its recovery
+      t"e119-non-space-after-marker" ) // we report per heading; reference reports per marker
 
   // A document schema with two required scalar fields and no defaults: a document
   // omitting both yields two `RequiredMemberAbsent` violations.
@@ -402,7 +401,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       test(m"A bad schema identifier recovers and the body still accrues"):
         validateRead(t"tel 1.0 bad!id\ngood \n").items.map(_(1).reason).to[Set]
-      . assert(_ == Set(Tel.Error.Reason.BadSchemaIdentifier, Tel.Error.Reason.TrailingSpaces))
+      . assert(_ == Set(Tel.Error.Reason.BadPragmaPhrase, Tel.Error.Reason.TrailingSpaces))
 
       test(m"Two odd-indented lines accrue two OddIndentation errors"):
         validateRead(t"a\n b\n c\n").items.stdlib.map(_(1).reason).to(List)
@@ -446,6 +445,11 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Blank-then-deeper after a tabulation header blames the tabulation"):
         validateRead(t"# a  # b\n\n    deep\n").items.map(_(1).reason).to[Set]
       . assert(_.has(Tel.Error.Reason.RowWrongIndent))
+
+      test(m"A misplaced phrase and a formless phrase accrue separately"):
+        validateRead(t"tel 1.0 example.com/a example.com/b nonsense\nhello\n")
+        . items.map(_(1).reason).to[Set]
+      . assert(_ == Set(Tel.Error.Reason.MisplacedPragmaPhrase, Tel.Error.Reason.BadPragmaPhrase))
 
     suite(m"Corpus diagnostics are complete (no silent truncation)"):
       // The corpus membership checks in stratiform_test pass if any ONE

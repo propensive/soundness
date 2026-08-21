@@ -1,0 +1,7 @@
+tel 1.0 specification.tel/tels:1.0.0
+
+name minimal-example
+
+document
+  field name String
+  field age String

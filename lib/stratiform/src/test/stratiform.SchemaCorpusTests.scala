@@ -78,13 +78,13 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
 
   // Every error code observable from a corpus document: E3xx from
   // assigning it under its governing schema, and — when the document is
-  // itself a schema document (the tels URL) — E2xx from constructing and
-  // checking the schema it defines. Schema-validity errors abort, so the
-  // first is captured; assignment errors accrue.
+  // itself a schema document (the tels reference) — E2xx from
+  // constructing and checking the schema it defines. Schema-validity
+  // errors abort, so the first is captured; assignment errors accrue.
   private def collectCodes(testcase: CorpusLoader.Case, category: Text): List[Int] =
     val tel = testcase.source.read[Tel]
     val document = testcase.source.utf8.load[Tel]
-    val tail = document.metadata.pragma.let(_.schema).let(CorpusLoader.urlTail(_))
+    val tail = document.metadata.pragma.let(CorpusLoader.referenceStem(_))
 
     tail.let: tail =>
       if tail == t"tels" then

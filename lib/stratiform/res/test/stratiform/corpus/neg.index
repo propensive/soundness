@@ -33,8 +33,14 @@ e119-non-space-after-marker
 e120-bare-cr
 e120-mixed-line-endings
 e121-invalid-schema-identifier
+e121-plus-alone
+e121-reference-bad-grammar
+e121-reference-leading-zero-version
+e122-layer-after-signature
+e122-layers-unaccompanied
 e122-pragma-extra-atoms
 e122-pragma-with-remark
+e122-sigil-not-final
 e201-duplicate-keyword-in-struct
 e203-default-on-optional
 e204-duplicate-layer-name
@@ -54,5 +60,6 @@ e308-schema-duplicate-name
 e309-schema-non-contiguous
 e310-schema-bad-sigil-char
 e310-schema-invalid-name
+e310-schema-plus-sigil
 e311-schema-flag-with-content
 e314-duplicate-key-value

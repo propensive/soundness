@@ -97,30 +97,19 @@ object CorpusLoader:
     List.of(fromName.stdlib ::: fromCheck.stdlib).distinct
 
   // The tail segment of a corpus pragma's schema URL, mirroring the Rust
-  // harness's `extract_url_tail`: the fixture convention maps
-  // `https://tel-lang.org/schema/<name>` onto a sibling `<name>.tel` (or
-  // auxiliary `_<name>.tel`) schema document in the same category
-  // directory. Only URL-shaped identifiers participate (a bare BASE-256
-  // signature has no tail); the tail must be kebab-case.
-  def urlTail(url: Text): Optional[Text] =
-    val s = url.s
-    if !s.contains("://") then Unset else
-      val bare =
-        val hash = s.indexOf('#')
-        val cut1 = if hash >= 0 then s.substring(0, hash) else s
-        val query = cut1.indexOf('?')
-        if query >= 0 then cut1.substring(0, query) else cut1
+  // The fixture convention for schema references: the built-in `tels`
+  // meta-schema's coordinate (pinned or bare) selects the built-in
+  // axiom; any other reference maps its final module-name segment onto
+  // a sibling `<segment>.tel` (or auxiliary `_<segment>.tel`) schema
+  // document in the same category directory. A signature-only pragma
+  // has no stem.
+  def referenceStem(pragma: Tel.Pragma): Optional[Text] =
+    pragma.reference.let: reference =>
+      if reference.isTels then t"tels"
+      else Text(reference.name.s.split("[/.]").nn.last.nn)
 
-      val tail = bare.substring(bare.lastIndexOf('/') + 1)
-
-      def kebab(t: String): Boolean =
-        t.nonEmpty && t.charAt(0).isLower && t.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
-        && !t.startsWith("-") && !t.endsWith("-") && !t.contains("--")
-
-      if kebab(tail) then tail.tt else Unset
-
-  // An auxiliary schema document for a corpus case, by URL-tail name:
-  // `<name>.tel` in the category directory, falling back to the
+  // An auxiliary schema document for a corpus case, by reference-stem
+  // name: `<name>.tel` in the category directory, falling back to the
   // underscore-prefixed form (`_`-stems are excluded from case
   // enumeration but exist exactly to serve as schemas for sibling
   // fixtures, e.g. `_keyed-schema.tel`).

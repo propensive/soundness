@@ -6,7 +6,9 @@ Document {
                 1,
                 0,
             ),
-            schema: Some(
+            reference: None,
+            layers: [],
+            signature: Some(
                 "ḀḁЂЃĄąĆćȈȉЊḋЌḍĎďȐȑĒГДȕЖЗĘęȚțĜĝḞḟḠ",
             ),
             sigil: None,
