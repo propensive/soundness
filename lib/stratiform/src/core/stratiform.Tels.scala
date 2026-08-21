@@ -352,9 +352,153 @@ object Tels extends Tels2:
         Tel.Type.assign(tel, schema)
         tel.as[value]
 
+  // The schema-resolution protocol of §8.2: the step taxonomy, the
+  // content-addressed store abstraction serving steps 2–3, the step-4
+  // delegate SPI (implemented by LIRA in reliquary), and the resolution
+  // error, which sits outside the E1xx–E3xx taxonomy and identifies the
+  // failing step. The engine itself lives in stratiform.binary
+  // (`SchemaResolver`), since it needs signature computation.
+  object Resolution:
+    enum Step:
+      case Embedded, Builtin, Cache, Library, Lira
+
+    // Any content-addressed store may serve resolution steps 2–3: a
+    // hash lookup is order-independent, because any store's answer for
+    // a given signature is the right answer. Bare development
+    // references resolve only through `reference`, against local state.
+    trait Store:
+      def apply(signature: Data): Optional[Data]
+      def reference(domain: Text, name: Text): Optional[Data]
+      def cache(signature: Data, body: Data): Unit
+
+    object Store:
+      // An in-memory content-addressed store: the process-lifetime
+      // schema cache, and the test double. Signatures are keyed by
+      // their BASE-256 rendering, since `Data` has no structural
+      // equality.
+      class Memory() extends Store:
+        private val bySignature = scala.collection.concurrent.TrieMap.empty[Text, Data]
+        private val byReference = scala.collection.concurrent.TrieMap.empty[Text, Data]
+
+        def apply(signature: Data): Optional[Data] =
+          bySignature.get(Base256.encode(signature)).getOrElse(Unset)
+
+        def reference(domain: Text, name: Text): Optional[Data] =
+          byReference.get(t"$domain/$name").getOrElse(Unset)
+
+        def cache(signature: Data, body: Data): Unit =
+          bySignature(Base256.encode(signature)) = body
+
+        // Seed a bare development reference with a local working copy,
+        // as `tel schema add` does for the developer's cache.
+        def install(domain: Text, name: Text, body: Data): Unit =
+          byReference(t"$domain/$name") = body
+
+    // A resolved schema body. Wrapping the bytes keeps effectful
+    // delegate results pure under capture checking (a bare
+    // `Array[Byte]` result would carry a fresh read capability).
+    case class Body(data: Data)
+
+    // The step-4 SPI, replacing the deleted URL fetch: LIRA resolution
+    // by identifier form. An implementation without network access
+    // resolves from local state only and answers `Unset` otherwise.
+    trait Delegate:
+      // Signature form: resolve the signature's components by exact
+      // identity and return the schema body serving it. If `reference`
+      // is present, the resolved lineage must serve the signature — the
+      // signature is authoritative, and the reference must agree.
+      def bySignature(signature: Data, reference: Optional[Tel.Pragma.Reference])
+      :   Optional[Body] raises Error
+
+      // Selector form (`:version` or `:tag`): resolve a published,
+      // signed release; the resolver must verify the release's
+      // manifest signature rather than trusting a store index.
+      def bySelector(reference: Tel.Pragma.Reference): Optional[Body] raises Error
+
+    object Error:
+      enum Reason:
+        case UnknownLayer(layer: Text)
+        case ComponentCount(expected: Int, found: Int)
+        case BaseMismatch
+        case LayerMismatch(layer: Text)
+        case ReferenceDisagrees
+        case Unresolved(step: Step, identifier: Text)
+        case NotSchema(detail: Text)
+        case Unverified(detail: Text)
+
+      given communicable: Reason is Communicable =
+        case Reason.UnknownLayer(layer) =>
+          m"the selected layer '$layer' is not declared by the schema"
+
+        case Reason.ComponentCount(expected, found) =>
+          m"the signature has ${found.toString} components where ${expected.toString} were expected"
+
+        case Reason.BaseMismatch =>
+          m"the signature's base component does not match the schema's base hash"
+
+        case Reason.LayerMismatch(layer) =>
+          m"the signature's component for layer '$layer' does not match its hash"
+
+        case Reason.ReferenceDisagrees =>
+          m"the reference's lineage does not serve the authoritative signature"
+
+        case Reason.Unresolved(step, identifier) =>
+          m"'$identifier' was not resolved (failing at the ${step.toString.toLowerCase.nn.tt} step)"
+
+        case Reason.NotSchema(detail) =>
+          m"the resolved body is not a valid schema document: $detail"
+
+        case Reason.Unverified(detail) =>
+          m"signature verification failed: $detail"
+
+    case class Error(reason: Resolution.Error.Reason)(using Diagnostics)
+    extends fulminate.Error(611, reason.ordinal + 1)
+      (m"the schema does not resolve because $reason")
+
   // Layer composition per §20.3. Takes a base schema and applies its
   // ordered layer list, producing a flat composed Tels.
   object Layers:
+
+    // §8.1: compose the base plus exactly the named layer selection.
+    // Unknown names and order violations are raised by `select`.
+    def compose(schema: Tels, selection: List[Text])
+    :   Tels raises Tel.Error raises Resolution.Error =
+
+      val chosen = select(schema, selection)
+      var composed = schema.copy(layers = Array.empty)
+
+      chosen.each: layer =>
+        composed = applyLayer(composed, layer)
+
+      composed
+
+    // The selected `Layer` values, validated: each name must be
+    // declared by the schema (else `Resolution.Error`), and the
+    // selection must be a subsequence of the declaration order — an
+    // out-of-order or duplicate selection is E124, so each selected
+    // layer set has exactly one canonical pragma spelling.
+    def select(schema: Tels, selection: List[Text])
+    :   List[Tels.Layer] raises Tel.Error raises Resolution.Error =
+
+      val declared = schema.layers.readable
+      val chosen = scala.collection.mutable.ListBuffer.empty[Tels.Layer]
+      var cursor = 0
+
+      selection.each: name =>
+        if !declared.exists(_.name == name)
+        then abort(Resolution.Error(Resolution.Error.Reason.UnknownLayer(name)))
+        else
+          var found = false
+
+          while !found && cursor < declared.length do
+            if declared(cursor).name == name then
+              chosen += declared(cursor)
+              found = true
+            cursor += 1
+
+          if !found then abort(Tel.Error(Reason.LayerOrderMismatch))
+
+      List.of(chosen.toList)
 
     // Top-level entry: applies every layer in `schema.layers` to the
     // schema's base, returning a composed Schema with empty `layers`.
@@ -616,6 +760,19 @@ object Tels extends Tels2:
     // check the composed schema; returns the composed schema for
     // further use.
     def validate(schema: Tels): Tels raises Tel.Error =
+      checkBase(schema)
+      checkComposed(Layers.compose(schema))
+
+    // §8.1: validate under a pragma layer selection, composing only the
+    // selected layers; the post-composition checks run against the
+    // composition in use.
+    def validate(schema: Tels, selection: List[Text])
+    :   Tels raises Tel.Error raises Resolution.Error =
+
+      checkBase(schema)
+      checkComposed(Layers.compose(schema, selection))
+
+    private def checkBase(schema: Tels): Unit raises Tel.Error =
       // E207: the schema sigil must be sigil-valid per §6. (An invalid
       // *pragma* sigil is E105 at parse time; this covers the schema
       // model itself, however it was constructed.)
@@ -632,7 +789,7 @@ object Tels extends Tels2:
         if select.variants.nil then abort(Tel.Error(Reason.EmptySelectVariants))
         if !select.excludes.nil then abort(Tel.Error(Reason.ExcludeOutsideSelect))
 
-      val composed = Layers.compose(schema)
+    private def checkComposed(composed: Tels): Tels raises Tel.Error =
       checkStruct(composed.document, composed)
 
       composed.records.each: record =>

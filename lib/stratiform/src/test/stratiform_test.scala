@@ -2979,6 +2979,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     RecordsTests()
     VerifyTests()
+    ResolutionTests()
     AccrualTests()
     SchemaCorpusTests()
     SchemaValidityTests()
