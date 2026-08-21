@@ -246,7 +246,35 @@ object internal:
         case p: Tel.Pragma =>
           val versionExpr = '{(${Expr(p.version._1)}, ${Expr(p.version._2)})}
 
-          val schemaExpr: Expr[Optional[Text]] = p.schema match
+          val referenceExpr: Expr[Optional[Tel.Pragma.Reference]] = p.reference match
+            case r: Tel.Pragma.Reference =>
+              val selectorExpr: Expr[Optional[Tel.Pragma.Reference.Selector]] =
+                r.selector match
+                  case Tel.Pragma.Reference.Selector.Version(major, minor, patch) =>
+                    val version: Expr[Tel.Pragma.Reference.Selector] =
+                      '{Tel.Pragma.Reference.Selector.Version(${Expr(major)}, ${Expr(minor)}, ${Expr(patch)})}
+                    '{$version: Optional[Tel.Pragma.Reference.Selector]}
+
+                  case Tel.Pragma.Reference.Selector.Tag(name) =>
+                    val tag: Expr[Tel.Pragma.Reference.Selector] =
+                      '{Tel.Pragma.Reference.Selector.Tag(${Expr(name.s)}.tt)}
+                    '{$tag: Optional[Tel.Pragma.Reference.Selector]}
+
+                  case _ =>
+                    '{Unset}
+
+              val ref: Expr[Tel.Pragma.Reference] =
+                '{Tel.Pragma.Reference(${Expr(r.domain.s)}.tt, ${Expr(r.name.s)}.tt, $selectorExpr)}
+
+              '{$ref: Optional[Tel.Pragma.Reference]}
+
+            case _ =>
+              '{Unset}
+
+          val layersExpr: Expr[proscenium.List[Text]] =
+            '{proscenium.List.of(${Expr.ofList(p.layers.stdlib.map { layer => '{${Expr(layer.s)}.tt} })})}
+
+          val signatureExpr: Expr[Optional[Text]] = p.signature match
             case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}
             case _          => '{Unset}
 
@@ -254,7 +282,10 @@ object internal:
             case c: Char => '{${Expr(c)}: Optional[Char]}
             case _       => '{Unset}
 
-          '{Tel.Pragma($versionExpr, $schemaExpr, $sigilExpr): Optional[Tel.Pragma]}
+          val pragma: Expr[Tel.Pragma] =
+            '{Tel.Pragma($versionExpr, $referenceExpr, $layersExpr, $signatureExpr, $sigilExpr)}
+
+          '{$pragma: Optional[Tel.Pragma]}
 
         case _ =>
           '{Unset}
