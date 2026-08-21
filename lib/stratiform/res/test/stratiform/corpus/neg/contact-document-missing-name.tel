@@ -1,4 +1,4 @@
-tel 1.0 https://example.org/contact-schema
+tel 1.0 example.org/contact-schema
 
 # Negative test: document is validated against contact-schema.tel (which
 # the test pipeline locates via the URL tail). The contact schema requires

@@ -1752,6 +1752,8 @@ object Tel extends Tel2:
             fail(t"the sigil must not be a letter or digit", (0, 1))
           else if "()[]{}<>".indexOf(c.toInt) >= 0 then
             fail(t"the sigil must not be a parenthetical symbol", (0, 1))
+          else if c == '+' then
+            fail(t"the sigil must not be the layer-selection marker '+'", (0, 1))
           else
             Response.Valid
 
@@ -1860,8 +1862,100 @@ object Tel extends Tel2:
   enum LineEndings:
     case Lf, Crlf
 
+  // The pragma's positional parameters (§8): a schema reference, layer
+  // selections in the schema's declaration order, a BASE-256 schema
+  // signature, and a sigil — each optional, classified by form.
   case class Pragma
-    ( version: (Int, Int), schema: Optional[Text], sigil: Optional[Char] )
+    ( version:   (Int, Int),
+      reference: Optional[Pragma.Reference],
+      layers:    List[Text],
+      signature: Optional[Text],
+      sigil:     Optional[Char] )
+
+  object Pragma:
+    // A LIRA schema reference (§8.1): `domain/name[:selector]`, where a
+    // selector names a published release by version or tag and a bare
+    // reference is a local-only development handle.
+    case class Reference(domain: Text, name: Text, selector: Optional[Reference.Selector]):
+      def text: Text = t"$domain/$name${selector.lay(t"")(s => t":${s.text}")}"
+
+      // Whether this is the built-in `tels` meta-schema's coordinate,
+      // with or without its version pin.
+      def isTels: Boolean =
+        domain == Reference.tels.domain && name == Reference.tels.name
+
+    object Reference:
+      enum Selector:
+        case Version(major: Int, minor: Int, patch: Int)
+        case Tag(name: Text)
+
+        def text: Text = this match
+          case Version(major, minor, patch) => t"$major.$minor.$patch"
+          case Tag(name)                    => name
+
+      // The canonical, version-pinned coordinate of the built-in `tels`
+      // meta-schema, recognised at resolution step 1 without network
+      // access.
+      val tels: Reference =
+        Reference(t"specification.tel", t"tels", Selector.Version(1, 0, 0))
+
+      // Total form check: `Unset` for any grammar violation, so the
+      // pragma parser (and later re-classification) chooses the error
+      // code and recovery. Grammar per §8.1: `domain "/" module-name
+      // [":" selector]`; the domain is a DNS name; the module name is
+      // kebab-case segments joined by `/` or `.`; a selector beginning
+      // with a digit is exactly `x.y.z` with no superfluous leading
+      // zeros, and one beginning with a letter is a tag name.
+      def parse(text: Text): Optional[Reference] =
+        val s = text.s
+
+        def domainValid(domain: String): Boolean =
+          def label(l: String): Boolean =
+            l.nonEmpty && l.forall { ch => ch.isLetterOrDigit && ch <= 'z' || ch == '-' }
+              && !l.startsWith("-") && !l.endsWith("-")
+
+          domain.nonEmpty && domain.split("\\.", -1).nn.forall { l => label(l.nn) }
+
+        def nameValid(name: String): Boolean =
+          def kebab(segment: String): Boolean =
+            segment.nonEmpty && segment.charAt(0).isLower
+              && segment.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
+              && !segment.endsWith("-") && !segment.contains("--")
+
+          name.nonEmpty && name.split("[/.]", -1).nn.forall { segment => kebab(segment.nn) }
+
+        def natural(part: String): Boolean =
+          part.nonEmpty && part.forall(_.isDigit) && (part == "0" || !part.startsWith("0"))
+
+        def selectorOf(selector: String): Optional[Selector] =
+          if selector.isEmpty then Unset
+          else if selector.charAt(0).isDigit then
+            selector.split("\\.", -1).nn.map(_.nn) match
+              case scala.Array(major, minor, patch)
+                   if natural(major) && natural(minor) && natural(patch) =>
+                Selector.Version(major.toInt, minor.toInt, patch.toInt)
+
+              case _ =>
+                Unset
+          else if selector.charAt(0).isLetter
+                  && selector.forall { ch => ch.isLetterOrDigit || ch == '-' || ch == '.' }
+          then Selector.Tag(Text(selector))
+          else Unset
+
+        val colon = s.indexOf(':')
+
+        if colon >= 0 && s.indexOf(':', colon + 1) >= 0 then Unset else
+          val base = if colon >= 0 then s.substring(0, colon).nn else s
+          val slash = base.indexOf('/')
+
+          if slash <= 0 then Unset else
+            val domain = base.substring(0, slash).nn
+            val name = base.substring(slash + 1).nn
+
+            if !domainValid(domain) || !nameValid(name) then Unset
+            else if colon < 0 then Reference(Text(domain), Text(name), Unset)
+            else selectorOf(s.substring(colon + 1).nn).let: selector =>
+              Reference(Text(domain), Text(name), selector)
 
   // Document-level prologue carried alongside a `Tel` value when it is
   // loaded via `text.load[Tel]`. The `Document[Tel]` pair lets callers
@@ -2576,7 +2670,9 @@ object Tel extends Tel2:
         val parts = scala.collection.mutable.ArrayBuffer.empty[String]
         parts += "tel"
         parts += s"${pragma.version._1}.${pragma.version._2}"
-        pragma.schema.let: s => parts += s.s
+        pragma.reference.let: r => parts += r.text.s
+        pragma.layers.each: layer => parts += s"+$layer"
+        pragma.signature.let: s => parts += s.s
         pragma.sigil.let: c => parts += c.toString
         out(parts.mkString(" "))
         out("")
@@ -3978,49 +4074,105 @@ object Tel extends Tel2:
       val version =
         if parts.length >= 2 then parseVersion(parts.stdlib(1), line, offsets.stdlib(1) + 1) else (1, 0)
 
-      // §19.5 IgnoreExtraPragmaAtoms: only parts 2 and 3 are read below, so excess
-      // atoms are already ignored once the error is recorded. The span runs from the
-      // first excess atom to the end of the line.
-      if parts.length > 4
-      then recoverAt(Reason.ExtraPragmaContent, line, offsets.stdlib(4) + 1, content.length - offsets.stdlib(4))
-        ( () )
+      // §8: phrases after the version are classified by form — layer
+      // selection, schema reference, schema signature, sigil — then
+      // checked against the positional order (reference, layers,
+      // signature, sigil). The BASE-256 alphabet contains no `+`, `/`,
+      // `:` or `.`, so classification is unambiguous. A phrase matching
+      // no form is E121; an order or multiplicity violation is E122;
+      // either drops only the offending phrase and parsing continues.
+      var reference: Optional[Tel.Pragma.Reference] = Unset
+      val layerBuffer = scala.collection.mutable.ListBuffer.empty[Text]
+      var signatureText: Optional[Text] = Unset
+      var pragmaSigil: Optional[Char] = Unset
+      var firstLayerColumn = 0
+      var firstLayerLength = 0
 
-      val schemaText: Optional[Text] =
-        if parts.length >= 3 then
-          val s = parts.stdlib(2)
-          // §8.1: the schema identifier is either an HTTP/HTTPS URL (with a
-          // `://`) or a bare BASE-256-encoded schema signature. The BASE-256
-          // alphabet (§4) is exactly the Unicode letters and ASCII digits, so
-          // a bare signature is a non-empty run of letters/digits with no
-          // whitespace or punctuation. Palimpsest length/decodability are
-          // checked later, at signature resolution — not at pragma parse time.
-          val isUrl = s.indexOf("://") >= 0
+      // 0 start · 1 reference seen · 2 in layer selections · 3 signature
+      // seen · 4 sigil seen.
+      var stage = 0
 
-          val isBase256 =
-            s.nonEmpty && s.forall: c => Character.isLetter(c) || (c >= '0' && c <= '9')
+      def kebab(t: String): Boolean =
+        t.nonEmpty && t.charAt(0).isLower
+          && t.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
+          && !t.endsWith("-") && !t.contains("--")
 
-          // §19.5 IgnoreSchemaId: a malformed schema identifier is dropped (Unset).
-          if !isUrl && !isBase256
-          then recoverAt(Reason.BadSchemaIdentifier, line, offsets.stdlib(2) + 1, s.length)(Unset)
-          else Text(s): Optional[Text]
-        else
-          Unset
+      var index = 2
 
-      val pragmaSigil: Optional[Char] =
-        if parts.length >= 4 && parts.stdlib(3).length == 1 then
-          val c = parts.stdlib(3).charAt(0)
+      while index < parts.length do
+        val s = parts.stdlib(index)
+        val column = offsets.stdlib(index) + 1
+        val isFinal = index == parts.length - 1
+
+        if s.startsWith("+") then
+          // Layer selection: `+` followed by a declared layer's
+          // kebab-case name. A bare `+` matches no form (E121).
+          if !kebab(s.substring(1).nn)
+          then recoverAt(Reason.BadPragmaPhrase, line, column, s.length)(())
+          else if stage > 2
+          then recoverAt(Reason.MisplacedPragmaPhrase, line, column, s.length)(())
+          else
+            if layerBuffer.isEmpty then
+              firstLayerColumn = column
+              firstLayerLength = s.length
+
+            layerBuffer += Text(s.substring(1).nn)
+            stage = 2
+
+        else if s.indexOf('/') >= 0 then
+          // Schema reference: any `/`-carrying phrase is of the
+          // reference family; one that fails the reference grammar —
+          // including the deleted URL form — matches no form (E121).
+          Tel.Pragma.Reference.parse(Text(s)) match
+            case parsed: Tel.Pragma.Reference =>
+              if stage >= 1
+              then recoverAt(Reason.MisplacedPragmaPhrase, line, column, s.length)(())
+              else
+                reference = parsed
+                stage = 1
+
+            case _ =>
+              recoverAt(Reason.BadPragmaPhrase, line, column, s.length)(())
+
+        else if (s.length == 33 || s.length >= 37 && (s.length - 37) % 2 == 0)
+                && s.forall(Base256.valid(_)) then
+          // Schema signature: a valid BASE-256 palimpsest of one
+          // component (33 characters) or `37 + 2·(n − 2)` for n ≥ 2.
+          // Decodability is checked at resolution, not at parse time.
+          if stage >= 3
+          then recoverAt(Reason.MisplacedPragmaPhrase, line, column, s.length)(())
+          else
+            signatureText = Text(s)
+            stage = 3
+
+        else if s.length == 1 then
+          val c = s.charAt(0)
           // §6 sigil validity: not a letter or digit, and not one of the
-          // eight parenthetical symbols.
+          // eight parenthetical symbols. (`+` never reaches here: it is
+          // classified as a layer selection above.)
           // §19.5 UseDefaultSigil: an invalid sigil is dropped, keeping the default.
-          if c.isLetterOrDigit || "()[]{}<>".indexOf(c.toInt) >= 0
-          then recoverAt(Reason.BadSigil, line, offsets.stdlib(3) + 1, 1)(Unset)
+          if c.isLetterOrDigit || "()[]{}<>".indexOf(c.toInt) >= 0 then
+            if isFinal
+            then recoverAt(Reason.BadSigil, line, column, 1)(())
+            else recoverAt(Reason.BadPragmaPhrase, line, column, 1)(())
+          else if !isFinal
+          then recoverAt(Reason.MisplacedPragmaPhrase, line, column, 1)(())
           else
             sigil = c.toByte
-            c: Optional[Char]
-        else
-          Unset
+            pragmaSigil = c
+            stage = 4
 
-      Tel.Pragma(version, schemaText, pragmaSigil)
+        else recoverAt(Reason.BadPragmaPhrase, line, column, s.length)(())
+
+        index += 1
+
+      // §8.1: layer selections without a reference are permitted only
+      // alongside a signature, as decomposition hints for library lookup.
+      if layerBuffer.nonEmpty && reference.absent && signatureText.absent then
+        recoverAt(Reason.MisplacedPragmaPhrase, line, firstLayerColumn, firstLayerLength):
+          layerBuffer.clear()
+
+      Tel.Pragma(version, reference, List.of(layerBuffer.toList), signatureText, pragmaSigil)
 
     // `column` is the 1-indexed column of the version phrase within the pragma
     // line, so a malformed version is spanned at the phrase itself.
@@ -6285,8 +6437,9 @@ object Tel extends Tel2:
       case PayloadToEof
       case SuppressColumnAlignment
       case CollapseLineEndings
-      case IgnoreSchemaId
-      case IgnoreExtraPragmaAtoms
+      case IgnorePhrase
+      case IgnoreMisplacedPhrase
+      case ReorderLayerSelections
       case IgnoreErroneousNode
 
     object Reason:
@@ -6336,11 +6489,14 @@ object Tel extends Tel2:
         case BadLineEnding =>
           m"line endings are inconsistent or a CR is not followed by an LF"
 
-        case BadSchemaIdentifier =>
-          m"the schema identifier is neither a valid URL nor a BASE-256 schema signature"
+        case BadPragmaPhrase =>
+          m"the pragma phrase matches no pragma form"
 
-        case ExtraPragmaContent =>
-          m"the pragma line has extra atoms or a remark"
+        case MisplacedPragmaPhrase =>
+          m"the pragma phrase violates the pragma's phrase order or multiplicity"
+
+        case LayerOrderMismatch =>
+          m"the layer selections are not in the schema's declaration order"
 
         case DuplicateKeywordInStruct => m"the same keyword appears more than once in a struct"
         case EmptySelectVariants      => m"the SelectDefinition has an empty variants list"
@@ -6430,8 +6586,9 @@ object Tel extends Tel2:
         case ColumnValueTooWide       => Recovery.SuppressColumnAlignment
         case BadTabulationHeading     => Recovery.SuppressColumnAlignment
         case BadLineEnding            => Recovery.CollapseLineEndings
-        case BadSchemaIdentifier      => Recovery.IgnoreSchemaId
-        case ExtraPragmaContent       => Recovery.IgnoreExtraPragmaAtoms
+        case BadPragmaPhrase          => Recovery.IgnorePhrase
+        case MisplacedPragmaPhrase    => Recovery.IgnoreMisplacedPhrase
+        case LayerOrderMismatch       => Recovery.ReorderLayerSelections
 
         // E2xx and E3xx recoveries: discard the offending node and
         // continue validation; the document is reported as invalid but
@@ -6479,10 +6636,14 @@ object Tel extends Tel2:
       case ColumnValueTooWide      extends Reason(118)
       case BadTabulationHeading    extends Reason(119)
       case BadLineEnding           extends Reason(120)
-      case BadSchemaIdentifier     extends Reason(121)
-      case ExtraPragmaContent      extends Reason(122)
+      case BadPragmaPhrase         extends Reason(121)
+      case MisplacedPragmaPhrase   extends Reason(122)
       // Spec E123 (ill-formed UTF-8) is unimplemented: input arrives as
       // already-decoded text, so the condition cannot arise here.
+      // E124: pragma layer selections not in the schema's declaration
+      // order (§8.1). Raised at schema resolution, when the declaration
+      // order is known — not at pragma parse time.
+      case LayerOrderMismatch      extends Reason(124)
 
       // E2xx — schema validity errors per §20.1.
       case DuplicateKeywordInStruct extends Reason(201)

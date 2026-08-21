@@ -6,9 +6,11 @@ Document {
                 1,
                 0,
             ),
-            schema: Some(
-                "https://example.com/schema",
+            reference: Some(
+                "example.com/schema",
             ),
+            layers: [],
+            signature: None,
             sigil: Some(
                 '@',
             ),

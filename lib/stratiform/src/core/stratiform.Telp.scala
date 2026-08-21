@@ -63,8 +63,8 @@ object Telp:
 
   // §3: the sigil-valid set minus `-` and `'` — the two sigil-valid
   // characters that may appear inside a kebab-case identifier — leaving
-  // twenty-two characters. `/` and `.` are the conventional choices.
-  val delimiters: Text = Text("""!"#$%&*+,./:;=?@\^_`|~""")
+  // twenty-one characters. `/` and `.` are the conventional choices.
+  val delimiters: Text = Text("""!"#$%&*,./:;=?@\^_`|~""")
 
   object Error:
     // The failure kinds of telp.md §7. These are outcomes of the
@@ -126,7 +126,7 @@ object Telp:
 
   // Renders under the first delimiter — `/`, then `.`, then the rest of
   // §3's set in order — that occurs in no component. A path whose
-  // components exhaust all twenty-two delimiters is unaddressable (§8);
+  // components exhaust all twenty-one delimiters is unaddressable (§8);
   // rendering falls back to `/` rather than failing.
   given encodable: Telp is Encodable in Text = path =>
     def free(delimiter: Char): Boolean = !path.components.stdlib.exists(_.s.indexOf(delimiter.toInt) >= 0)

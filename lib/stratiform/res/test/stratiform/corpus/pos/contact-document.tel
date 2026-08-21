@@ -1,4 +1,4 @@
-tel 1.0 https://example.org/contact-schema
+tel 1.0 example.org/contact-schema
 
 # A document conforming to test/pos/contact-schema.tel.
 # The test pipeline locates the schema by extracting the URL tail from

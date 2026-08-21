@@ -186,12 +186,11 @@ object SchemaSignature:
 
     Palimpsest(Sequence.from(hashes.stdlib)).data
 
-  // Decode a palimpsest schema signature against a library of candidate
-  // component hashes. The cadence is recovered from the trailing byte
-  // (§4.2 of the palimpsest spec); a byte length inconsistent with any
-  // valid cadence raises `BadSignatureLength`. Failure to reconstruct
-  // the ordered hash sequence raises `BadSignature`.
-  def decode(signature: Data, library: List[Data]): List[Data] raises Bintel.Error =
+  // The number of component hashes a palimpsest signature encodes,
+  // recovered from its trailing cadence byte (§4.2 of the palimpsest
+  // spec). A byte length inconsistent with any valid cadence raises
+  // `BadSignatureLength`.
+  def componentCount(signature: Data): Int raises Bintel.Error =
     val total = signature.length
     if total < 2 then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
@@ -205,9 +204,96 @@ object SchemaSignature:
     val cadence: Cadence = Cadence.unpack(xor.toByte).or:
       abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
-    val n: Int = cadence.hashCount(total - 1).or:
+    cadence.hashCount(total - 1).or:
       abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
+
+  // Decode a palimpsest schema signature against a library of candidate
+  // component hashes. Failure to reconstruct the ordered hash sequence
+  // raises `BadSignature`.
+  def decode(signature: Data, library: List[Data]): List[Data] raises Bintel.Error =
+    val n = componentCount(signature)
 
     given Bibliography = Bibliography(library.stdlib)
 
     Palimpsest(signature, n).resolve.or(abort(Bintel.Error(Bintel.Error.Reason.BadSignature)))
+
+  // §8.1 of the TEL spec: layer selections as decomposition hints for
+  // library lookup — first attempt the decode over the candidate's base
+  // plus only the layers matching the selected names, then fall back to
+  // its full component library, since hints are advisory.
+  def decodeHinted(signature: Data, base: Data, layers: List[(Text, Data)], selection: List[Text])
+  :   Optional[List[Data]] =
+
+    val hinted = layers.stdlib.filter { (name, _) => selection.stdlib.contains(name) }.map(_(1))
+    val full = layers.stdlib.map(_(1))
+
+    safely(decode(signature, base :: List.of(hinted)))
+    . or(safely(decode(signature, base :: List.of(full))))
+
+  private def same(a: Data, b: Data): Boolean =
+    a.length == b.length && {
+      var i  = 0
+      var ok = true
+
+      while ok && i < a.length do
+        if a(i) != b(i) then ok = false
+        i += 1
+
+      ok
+    }
+
+  // §8.1 of the TEL spec: when a pragma signature follows layer
+  // selections it is authoritative and MUST decompose into exactly
+  // `1 + n` components — the schema's base hash followed by the `n`
+  // selected layers' hashes, in order — with distinct failures for a
+  // wrong component count, a wrong base, and a wrong or misordered
+  // layer component. `schema` supplies the declared layer names, in
+  // source order, matching `componentHashes`' layer hashes.
+  def verifySelection(doc: Tel, schema: Tels, axiom: Tels, selection: List[Text], signature: Data)
+    ( using Tactic[Bintel.Error], Tactic[Tel.Error], Tactic[Tels.Resolution.Error] )
+  :   Unit =
+
+    import Tels.Resolution.Error.Reason
+
+    val (base, layerHashes) = componentHashes(doc, axiom)
+    val names = schema.layers.readable.toList.map(_.name)
+    val byName = names.zip(layerHashes.stdlib).toMap
+
+    val chosen = selection.stdlib.map: name =>
+      byName.getOrElse(name, abort(Tels.Resolution.Error(Reason.UnknownLayer(name))))
+
+    val expectedCount = 1 + chosen.length
+    val foundCount = componentCount(signature)
+
+    if foundCount != expectedCount
+    then abort(Tels.Resolution.Error(Reason.ComponentCount(expectedCount, foundCount)))
+
+    val expected = encode(base :: List.of(chosen))
+
+    if !same(expected, signature) then
+      // Decompose the claimed signature over the schema's full
+      // component library to name the diverging component.
+      val reason = safely(decode(signature, base :: layerHashes)) match
+        case decoded: List[Data] =>
+          val components = decoded.stdlib
+
+          if components.isEmpty || !same(components.head, base) then Reason.BaseMismatch
+          else
+            val tail = components.tail.toIndexedSeq
+            val wanted = chosen.toIndexedSeq
+            val names = selection.stdlib.toIndexedSeq
+            var idx = 0
+            var layerReason: Optional[Tels.Resolution.Error.Reason] = Unset
+
+            while layerReason.absent && idx < tail.length && idx < wanted.length do
+              if !same(tail(idx), wanted(idx)) then layerReason = Reason.LayerMismatch(names(idx))
+              idx += 1
+
+            layerReason.or(Reason.Unverified(
+              Text("the signature does not match the base and selected layers")))
+
+        case _ =>
+          Reason.Unverified(
+            Text("the signature does not decompose over the schema's component hashes"))
+
+      abort(Tels.Resolution.Error(reason))

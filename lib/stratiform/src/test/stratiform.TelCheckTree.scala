@@ -57,14 +57,20 @@ object TelCheckTree:
            t"line_endings"          -> ofLineEndings(document.lineEndings),
            t"children"              -> ofArray(document.children)(ofBlock) ) )
 
+  // The reference is projected as its canonical flat rendering
+  // (`domain/name[:selector]`). This shape is locally defined until the
+  // Rust reference implementation adopts the LIRA-based pragma grammar
+  // (see the corpus DIVERGENCES note).
   private def ofPragma(p: Tel.Pragma): CheckTree =
     val (major, minor) = p.version
     CheckTree.Struct
       ( t"Pragma",
         List
-         ( t"version" -> CheckTree.Tuple(List(CheckTree.Num(major), CheckTree.Num(minor))),
-           t"schema"  -> ofOptional(p.schema)(s => CheckTree.Str(s)),
-           t"sigil"   -> ofOptional(p.sigil)(c => CheckTree.Str(Text(c.toString))) ) )
+         ( t"version"   -> CheckTree.Tuple(List(CheckTree.Num(major), CheckTree.Num(minor))),
+           t"reference" -> ofOptional(p.reference)(r => CheckTree.Str(r.text)),
+           t"layers"    -> CheckTree.Sequence(List.of(p.layers.stdlib.map(l => CheckTree.Str(l)))),
+           t"signature" -> ofOptional(p.signature)(s => CheckTree.Str(s)),
+           t"sigil"     -> ofOptional(p.sigil)(c => CheckTree.Str(Text(c.toString))) ) )
 
   private def ofLineEndings(lineEndings: Tel.LineEndings): CheckTree = lineEndings match
     case Tel.LineEndings.Lf   => CheckTree.Variant(t"LF", Unset)

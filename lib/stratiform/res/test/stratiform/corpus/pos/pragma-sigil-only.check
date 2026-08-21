@@ -6,10 +6,12 @@ Document {
                 1,
                 0,
             ),
-            schema: Some(
-                "https://example.com/schema#deadbeefcafebabe0123456789abcdef0123456789abcdeffeedfacecafebabe",
+            reference: None,
+            layers: [],
+            signature: None,
+            sigil: Some(
+                '%',
             ),
-            sigil: None,
         },
     ),
     line_endings: LF,

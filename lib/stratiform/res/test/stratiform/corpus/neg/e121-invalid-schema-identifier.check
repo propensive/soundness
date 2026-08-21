@@ -6,9 +6,9 @@ Document {
                 1,
                 0,
             ),
-            schema: Some(
-                "not-a-url-or-hash",
-            ),
+            reference: None,
+            layers: [],
+            signature: None,
             sigil: None,
         },
     ),
@@ -30,4 +30,4 @@ Document {
     ],
 }
 errors:
-  E121 [0,25): Invalid schema identifier
+  E121 [0,25): Pragma phrase matches no form

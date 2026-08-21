@@ -1904,6 +1904,63 @@ object Tests extends Suite(m"Stratiform Tests"):
         doc.root.childCompounds.readable.headOption.map(_.keyword).getOrElse(t"")
       . assert(_ == t"name")
 
+    suite(m"LIRA-based pragma grammar (§8)"):
+      def pragmaOf(source: Text): Optional[Tel.Pragma] = source.load[Tel].metadata.pragma
+
+      test(m"a sigil-only pragma parses"):
+        pragmaOf(t"tel 1.0 %\nname Alice\n").let(_.sigil).or(' ')
+      . assert(_ == '%')
+
+      test(m"a versioned reference parses structurally"):
+        pragmaOf(t"tel 1.0 propensive.dev/build:2.1.0\nname Alice\n").let(_.reference)
+      . assert(_ == Tel.Pragma.Reference(t"propensive.dev", t"build",
+          Tel.Pragma.Reference.Selector.Version(2, 1, 0)))
+
+      test(m"a tagged reference parses structurally"):
+        pragmaOf(t"tel 1.0 specification.tel/jdk:jdk-19\nname Alice\n")
+        . let(_.reference).let(_.selector)
+      . assert(_ == Tel.Pragma.Reference.Selector.Tag(t"jdk-19"))
+
+      test(m"a bare reference has no selector"):
+        pragmaOf(t"tel 1.0 propensive.dev/build\nname Alice\n")
+        . let(_.reference).let(_.selector.absent)
+      . assert(_ == true)
+
+      test(m"layer selections are captured in order"):
+        pragmaOf(t"tel 1.0 propensive.dev/build +publishing +maven\nname Alice\n").let(_.layers)
+      . assert(_ == List(t"publishing", t"maven"))
+
+      test(m"the pinned tels coordinate is recognised"):
+        pragmaOf(t"tel 1.0 specification.tel/tels:1.0.0\nname Alice\n")
+        . let(_.reference).let(_.isTels)
+      . assert(_ == true)
+
+      test(m"the deleted URL identifier form is E121"):
+        capture[Tel.Error](t"tel 1.0 https://example.com/schema\nname Alice\n".read[Tel]).reason
+      . assert(_ == Tel.Error.Reason.BadPragmaPhrase)
+
+      test(m"a second reference is E122"):
+        capture[Tel.Error](t"tel 1.0 example.com/a example.com/b\nname Alice\n".read[Tel])
+        . reason
+      . assert(_ == Tel.Error.Reason.MisplacedPragmaPhrase)
+
+      test(m"a two-part version selector fails the reference grammar"):
+        Tel.Pragma.Reference.parse(t"example.com/b:1.0").absent
+      . assert(_ == true)
+
+      test(m"a leading-zero version selector fails the reference grammar"):
+        Tel.Pragma.Reference.parse(t"example.com/b:01.0.0").absent
+      . assert(_ == true)
+
+      test(m"a non-kebab module name fails the reference grammar"):
+        Tel.Pragma.Reference.parse(t"example.com/Bad_Name").absent
+      . assert(_ == true)
+
+      test(m"the serializer emits reference, layers and sigil"):
+        t"tel 1.0 propensive.dev/build +publishing +maven %\nname Alice\n"
+        . read[Tel].show.cut(t"\n").stdlib.headOption.getOrElse(t"")
+      . assert(_ == t"tel 1.0 propensive.dev/build +publishing +maven %")
+
     suite(m"Integration: parse → mutate → print → reparse"):
       def doc(source: String): Tel = source.tt.read[Tel]
 
@@ -2922,6 +2979,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     RecordsTests()
     VerifyTests()
+    ResolutionTests()
     AccrualTests()
     SchemaCorpusTests()
     SchemaValidityTests()

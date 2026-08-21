@@ -6,9 +6,11 @@ Document {
                 1,
                 0,
             ),
-            schema: Some(
-                "https://tel-lang.org/schema/tels",
+            reference: Some(
+                "specification.tel/tels",
             ),
+            layers: [],
+            signature: None,
             sigil: None,
         },
     ),

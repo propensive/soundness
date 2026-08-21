@@ -7,9 +7,11 @@ Document {
                 1,
                 0,
             ),
-            schema: Some(
-                "https://example.org/notes",
+            reference: Some(
+                "example.org/notes",
             ),
+            layers: [],
+            signature: None,
             sigil: Some(
                 '%',
             ),
@@ -72,7 +74,9 @@ Document {
                 1,
                 0,
             ),
-            schema: None,
+            reference: None,
+            layers: [],
+            signature: None,
             sigil: None,
         },
     ),
