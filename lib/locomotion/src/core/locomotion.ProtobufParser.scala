@@ -32,11 +32,10 @@
                                                                                                   */
 package locomotion
 
-import proscenium.compat.*
-
 import scala.collection.mutable as scm
 
 import anticipation.*
+import rudiments.*
 import contingency.*
 
 import Protobuf.Error.Reason
@@ -97,7 +96,7 @@ class ProtobufParser(data: Data):
 
   def slice(length: Int): Data raises Protobuf.Error =
     if length < 0 || pos + length > data.length then abort(Protobuf.Error(Reason.Truncated(pos)))
-    val result = data.slice(pos, pos + length)
+    val result = data.excerpt(pos, pos + length)
     pos += length
     result
 
@@ -117,7 +116,7 @@ class ProtobufParser(data: Data):
         case WireType.Varint =>
           val start = pos
           varint()
-          Protobuf.Wire(WireType.Varint, data.slice(start, pos))
+          Protobuf.Wire(WireType.Varint, data.excerpt(start, pos))
 
         case WireType.I64 => Protobuf.Wire(WireType.I64, slice(8))
         case WireType.I32 => Protobuf.Wire(WireType.I32, slice(4))
@@ -196,7 +195,7 @@ class ProtobufParser(data: Data):
   // `fields()` slices for the field's payload — returning the enclosing
   // limit for `directLeaveField`. For a length-delimited field the length
   // prefix is consumed; for a varint field the window covers the varint's
-  // own bytes, mirroring the `data.slice(start, pos)` payload.
+  // own bytes, mirroring the `data.excerpt(start, pos)` payload.
   def directEnterField(code: Int)(using Tactic[Protobuf.Error]): Int =
     val saved = boundary
 
@@ -276,7 +275,7 @@ class ProtobufParser(data: Data):
 
   def directData(code: Int)(using Tactic[Protobuf.Error]): Data =
     val saved = directEnterField(code)
-    val result = data.slice(pos, boundary)
+    val result = data.excerpt(pos, boundary)
     directLeaveField(saved)
     result
 
@@ -288,7 +287,7 @@ class ProtobufParser(data: Data):
       WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, pos)))
 
     val saved = directEnterField(code)
-    val result = Protobuf.Wire(wireType, data.slice(pos, boundary))
+    val result = Protobuf.Wire(wireType, data.excerpt(pos, boundary))
     directLeaveField(saved)
     result
 
@@ -305,14 +304,14 @@ class ProtobufParser(data: Data):
     result
 
   def directDataWindow(): Data =
-    val result = data.slice(pos, boundary)
+    val result = data.excerpt(pos, boundary)
     pos = boundary
     result
 
   // The remaining window as a length-delimited message — the whole-value
   // seam for `Parsable.fromDecodable`.
   def directMessage(): Protobuf =
-    val result = Protobuf.Wire(WireType.Len, data.slice(pos, boundary))
+    val result = Protobuf.Wire(WireType.Len, data.excerpt(pos, boundary))
     pos = boundary
     result
 
@@ -342,7 +341,7 @@ class ProtobufParser(data: Data):
         case WireType.Varint =>
           val start = pos
           varint()
-          Protobuf.Wire(WireType.Varint, data.slice(start, pos))
+          Protobuf.Wire(WireType.Varint, data.excerpt(start, pos))
 
         case WireType.I64 => Protobuf.Wire(WireType.I64, slice(8))
         case WireType.I32 => Protobuf.Wire(WireType.I32, slice(4))

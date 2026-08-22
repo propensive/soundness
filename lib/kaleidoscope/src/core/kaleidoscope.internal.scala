@@ -34,8 +34,6 @@ package kaleidoscope
 
 import scala.collection.immutable.Seq
 
-import proscenium.compat.*
-
 import scala.language.experimental.pureFunctions
 
 import java.util.regex.*
@@ -102,11 +100,11 @@ object internal:
       if types.length == 1 then types.head
       else AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types)
 
-    try Pattern.compile(parts.mkString) catch case exception: PatternSyntaxException =>
+    try Pattern.compile(parts.stdlib.mkString) catch case exception: PatternSyntaxException =>
       import errorDiagnostics.emptyDiagnostics
       fail(Regex.Error(exception.getIndex, Regex.Error.Reason.InvalidPattern))
 
-    if types.length == 0 then '{NoExtraction(${Expr(parts.head)})}
+    if types.length == 0 then '{NoExtraction(${Expr(parts.stdlib.head)})}
     else tupleType.asType.absolve match
       case '[resultType] => '{RExtractor[Option[resultType]](${Expr(parts.stdlib)})}
 
@@ -135,7 +133,7 @@ object internal:
       val result2 = result.asInstanceOf[Option[Array[List[Text | Char] | Optional[Text | Char]]^{}]]
 
       if parts.length == 2
-      then result2.map { (groups: Array[List[Text | Char] | Optional[Text | Char]]^{}) => groups.head }.asInstanceOf[result]
+      then result2.map { (groups: Array[List[Text | Char] | Optional[Text | Char]]^{}) => groups.readable.head }.asInstanceOf[result]
       else
         result2.map { (x: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
           Tuple.fromIArray(x.readable) }

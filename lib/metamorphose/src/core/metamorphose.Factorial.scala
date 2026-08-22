@@ -32,8 +32,6 @@
                                                                                                   */
 package metamorphose
 
-import proscenium.compat.*
-
 import scala.annotation.*
 
 object Factorial:
@@ -52,6 +50,6 @@ object Factorial:
   def sequence(n: Int): List[BigInt] =
     @tailrec
     def recur(i: Int, result: List[BigInt]): List[BigInt] =
-      if i == n then result else recur(i + 1, result.head*i :: result)
+      if i == n then result else recur(i + 1, result.stdlib.head*i :: result)
 
     recur(1, List(1))

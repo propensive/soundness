@@ -34,8 +34,6 @@ package galilei
 
 import scala.caps
 
-import proscenium.compat.*
-
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -188,7 +186,7 @@ object Ram:
       if size <= 0 || size > Int.MaxValue
       then abort(Io.Error(value, Operation.Create, Reason.Unsupported))
 
-      val createFlags = flags.collect { case flag: CreateFlag => flag }
+      val createFlags = flags.sweep { case flag: CreateFlag => flag }
       Creation.ensure(value, createFlags)
       Creation.replace(value, createFlags)
 

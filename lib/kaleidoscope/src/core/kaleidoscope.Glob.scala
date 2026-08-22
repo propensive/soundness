@@ -32,8 +32,6 @@
                                                                                                   */
 package kaleidoscope
 
-import proscenium.compat.*
-
 import anticipation.*
 import rudiments.*
 

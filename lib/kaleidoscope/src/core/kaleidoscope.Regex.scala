@@ -32,8 +32,6 @@
                                                                                                   */
 package kaleidoscope
 
-import proscenium.compat.*
-
 import scala.language.experimental.pureFunctions
 
 import java.util.regex as jur
@@ -137,9 +135,9 @@ object Regex:
       case head :: tail => captures(tail, last + head.s.length, done :+ last)
 
     val captured: Set[Int] =
-      if parts.size > 1 then captures(parts.tail, parts.head.s.size, Set()) else Set()
+      if parts.size > 1 then captures(List.of(parts.stdlib.tail), parts.stdlib.head.s.size, Set()) else Set()
 
-    val text: Text = parts.mkString.tt
+    val text: Text = parts.stdlib.mkString.tt
 
     var index: Int = 0
 

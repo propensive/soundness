@@ -32,8 +32,6 @@
                                                                                                   */
 package galilei
 
-import proscenium.compat.*
-
 import aperture.*
 import contingency.*
 import prepositional.*

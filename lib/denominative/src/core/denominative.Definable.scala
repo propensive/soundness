@@ -74,6 +74,18 @@ object Definable:
         Array.unsafeFrozen(copy)
       else array
 
+  // Positional update on a linked list rebuilds its prefix, so — as with `Applicable.list` —
+  // the instance is gated behind the linear-access acknowledgement rather than withheld.
+  given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Definable:
+    type Self = List[element]
+    type Operand = Ordinal
+    type Result = element
+
+    def define(list: Self, index: Ordinal, value: element): Self =
+      if index.n0 >= 0 && index.n0 < list.stdlib.length
+      then List.of(list.stdlib.updated(index.n0, value))
+      else list
+
   given indexedSeq: [element] => IndexedSeq[element] is Definable:
     type Self = IndexedSeq[element]
     type Operand = Ordinal

@@ -43,7 +43,6 @@ import fulminate.*
 import gossamer.*
 import hellenism.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -154,7 +153,7 @@ class Classfile(data: scala.IArray[Byte]):
 
               case other: jlci.LabelTarget =>
                 val resetStack: Optional[List[Bytecode.Frame]] =
-                  stackMaps.get(other.label.nn).fold(stack)(identity)
+                  stackMaps.stdlib.get(other.label.nn).fold(stack)(identity)
 
                 recur(todo, line, done, resetStack, count)
 

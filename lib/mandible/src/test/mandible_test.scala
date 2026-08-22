@@ -39,8 +39,6 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import soundness.*
 import galilei.Linux.pathOnLinux
 
-import proscenium.compat.*
-
 import alphabets.hexLowerCase
 import classloaders.threadContextClassloader
 import logging.silentLogging

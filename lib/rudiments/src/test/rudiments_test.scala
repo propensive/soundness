@@ -317,6 +317,18 @@ object Tests extends Suite(m"Rudiments Tests"):
         m.define(t"b", 2)
       . assert(_ == Map(t"a" -> 1, t"b" -> 2))
 
+      test(m"define on a list demands the linear-access acknowledgement"):
+        import denominative.asymptotics.linearAccessComplexity
+        val xs: List[Int] = List(1, 2, 3)
+        xs.define(Sec, 20)
+      . assert(_ == List(1, 20, 3))
+
+      test(m"define outside a list returns it unchanged"):
+        import denominative.asymptotics.linearAccessComplexity
+        val xs: List[Int] = List(1, 2, 3)
+        xs.define(Quat, 40)
+      . assert(_ == List(1, 2, 3))
+
       test(m"define replaces a frozen array element"):
         val xs: Array[Int]^{} = Array.tabulate(3)(_ + 1)
         xs.define(Prim, 10).to[List]
