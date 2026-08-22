@@ -36,8 +36,6 @@ import scala.collection.immutable as sci
 import scala.quoted.*
 import scala.reflect.ClassTag
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import gigantism.*
@@ -73,7 +71,7 @@ object internal:
     import quotes.reflect.*
 
     val paths = specificOverridesRepr(TypeRepr.of[typeclass], TypeRepr.of[derivation]) match
-      case Some((_, keys)) => keys.toList
+      case Some((_, keys)) => keys.to[List]
       case None            => Nil
 
     '{List.of(${Expr.ofList(paths.stdlib.map { k => '{${Expr(k)}.tt} })})}
@@ -466,7 +464,7 @@ object internal:
     val reentrant = TypeRepr.of[Reentrant].appliedTo(instance)
 
     val elementGivens =
-      extraGivens.zipWithIndex.map: (tpe, index) => syntheticGiven("$wisteriaGiven$"+index, tpe)
+      extraGivens.indexed.map: (tpe, ordinal) => syntheticGiven("$wisteriaGiven$"+ordinal.n0, tpe)
 
     val markers =
       syntheticGiven("$wisteriaReentrant", reentrant) ::
@@ -512,7 +510,7 @@ object internal:
         . appliedTo(args.stdlib.map(instanceOf) :+ instanceOf(tpe))
 
     def isCodec(tpe: TypeRepr, args: List[TypeRepr]): Boolean =
-      args.nonEmpty &&
+      !args.nil &&
         (Implicits.searchIgnoring(codecFunction(tpe, args))(wrappers*) match
               case _: ImplicitSearchSuccess => true
               case _                        => false)
@@ -528,7 +526,7 @@ object internal:
     // the derivation's own wrappers. Used only in `visit` (never the root `.apply` branch, which
     // needs the contextual-function shape).
     def codecProbe(tpe: TypeRepr, args: List[TypeRepr]): Boolean =
-      args.nonEmpty && inferWith(instanceOf(tpe), args.map(instanceOf)).let: tree =>
+      !args.nil && inferWith(instanceOf(tpe), args.map(instanceOf)).let: tree =>
 
         !isSentinel(tree) && !wrappers.has(rootSymbol(tree))
 
@@ -641,7 +639,7 @@ object internal:
 
       val bindings: List[(String, TypeRepr, Symbol)] = List.of(bindings0)
 
-      val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.toMap
+      val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.to[Map]
 
       // Each body is built in the val's *own* nested `Quotes` (`symbol.asQuotes`), so the `field`
       // resolutions inside `derivedOne` resolve in that val's scope — where the sibling givens are.
@@ -659,7 +657,7 @@ object internal:
       def siblingSymbol(tpe: TypeRepr): Option[Symbol] =
         val dealiased = tpe.dealias
 
-        symbolByKey.get(dealiased.show).orElse:
+        symbolByKey.stdlib.get(dealiased.show).orElse:
           bindings.stdlib.collectFirst { case (_, tpe0, symbol) if tpe0 =:= dealiased => symbol }
 
       def elementInstance(tpe: TypeRepr): Term = siblingSymbol(tpe) match

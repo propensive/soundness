@@ -37,7 +37,6 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import denominative.*
@@ -74,4 +73,4 @@ abstract class References():
     ref.or(panic(m"the reference array is bound by the rig before any value is spliced"))
   def current: Int = allocations.size
   def allocate(value: => Transport): Int = allocations.size.also { allocations ::= value }
-  inline def apply(): scala.Array[Object] = scala.Array.from[Object](allocations.reverse.toSeq)
+  inline def apply(): scala.Array[Object] = scala.Array.from[Object](allocations.reverse.stdlib)

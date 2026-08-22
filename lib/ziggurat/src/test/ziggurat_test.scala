@@ -34,8 +34,6 @@ package ziggurat
 
 import soundness.*
 
-import proscenium.compat.*
-
 import systems.javaSystem
 import environments.javaEnvironment
 import temporaryDirectories.systemTemporaryDirectory
@@ -110,7 +108,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
       test(m"index line contains every label"):
         val text = bundleBytes.utf8
-        labels.forall: label =>
+        labels.all: label =>
           text.contains(t"$label=")
       .assert(_ == true)
 
@@ -151,7 +149,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
       test(m"assets line contains every label"):
         val text = script.utf8
-        labels.forall { label => text.contains(t"$label=") }
+        labels.all { label => text.contains(t"$label=") }
       .assert(_ == true)
 
       test(m"embeds the JAR once as the data payload"):

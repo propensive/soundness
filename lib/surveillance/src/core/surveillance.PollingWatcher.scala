@@ -44,7 +44,6 @@ import denominative.*
 import nomenclature.n
 import parasite.*, threading.platformThreading, Async.nominative
 import prepositional.*
-import proscenium.compat.*
 
 import rudiments.*
 import spectacular.*
@@ -65,7 +64,7 @@ extends Watcher:
 
   private def scan(directory: jnf.Path, filter: Text -> Boolean): Map[Text, Entry] =
     Optional(directory.toFile.nn.listFiles()).let: files =>
-      Array.unsafeFrozen(files).toList.bind: file =>
+      Array.unsafeFrozen(files).to[List].bind: file =>
         val entry = file.nn
         val name = entry.getName.nn.tt
 
@@ -73,7 +72,7 @@ extends Watcher:
         then List(name -> Entry(entry.isDirectory, entry.lastModified, entry.length))
         else List()
 
-      . toMap
+      . to[Map]
 
     . or(Map())
 

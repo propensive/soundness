@@ -35,8 +35,6 @@ package mosquito
 import scala.math
 
 import soundness.*
-
-import proscenium.compat.*
 import textMetrics.uniformMetric
 
 given Decimalizer(4)
@@ -125,7 +123,7 @@ object Tests extends Suite(m"Mosquito tests"):
       . assert(_ == List(1, 2, 3))
 
       test(m"iarray conversion"):
-        Vector("a", "b", "c").iarray.toList
+        Vector("a", "b", "c").iarray.to[List]
       . assert(_ == List("a", "b", "c"))
 
       test(m"size of a 4-vector"):
@@ -332,7 +330,7 @@ object Tests extends Suite(m"Mosquito tests"):
         m.inverse.lay(Double.MaxValue): inverse =>
           val product = m*inverse
           val target = Matrix[2, 2]((1.0, 0.0), (0.0, 1.0))
-          product.elements.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
+          product.elements.readable.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
       . assert(_ < 0.000001)
 
       test(m"M times M-inverse is identity (3x3)"):
@@ -340,7 +338,7 @@ object Tests extends Suite(m"Mosquito tests"):
         m.inverse.lay(Double.MaxValue): inverse =>
           val product = m*inverse
           val target = Matrix[3, 3]((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
-          product.elements.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
+          product.elements.readable.indices.map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i))).max
       . assert(_ < 0.000001)
 
       test(m"Inverse of singular 3x3 matrix is Unset"):

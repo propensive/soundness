@@ -32,8 +32,6 @@
                                                                                                   */
 package vicarious
 
-import proscenium.compat.*
-
 import soundness.*
 
 import scala.language.dynamics

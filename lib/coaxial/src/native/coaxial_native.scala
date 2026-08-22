@@ -33,7 +33,6 @@
 package coaxial
 
 import scala.caps
-import proscenium.compat.*
 
 import java.io as ji
 import java.net as jn

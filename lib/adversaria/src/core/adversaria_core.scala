@@ -32,13 +32,12 @@
                                                                                                   */
 package adversaria
 
-import proscenium.compat.*
-
 import rudiments.*
 
 import scala.compiletime.summonInline
 
 import anticipation.*
+import denominative.*
 import prepositional.*
 
 extension [entity](entity: entity)
@@ -54,7 +53,7 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 :   Map[Text, Set[annotation]] =
 
   summonInline[self is Annotated by annotation] match
-    case annotated: Annotated.Fields => Map.of(annotated.fields.stdlib.filter(_(1).nonEmpty))
+    case annotated: Annotated.Fields => Map.of(annotated.fields.stdlib.filter(!_(1).nil))
     case _                           => Map()
 
 // The serialization renames for `format`: a map from each `@name`-annotated
@@ -64,10 +63,10 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 // derivation to honour `@name[Xml](t"…")` / `@name(t"…")` in encode and decode.
 inline def relabelling[self, format]: Map[Text, Text] =
   val general:  Map[Text, Text] =
-    fieldAnnotations[self, name[Any]].remap { (field, set) => field -> set.head.name }
+    fieldAnnotations[self, name[Any]].remap { (field, set) => field -> set.stdlib.head.name }
 
   val specific: Map[Text, Text] =
-    fieldAnnotations[self, name[format]].remap { (field, set) => field -> set.head.name }
+    fieldAnnotations[self, name[format]].remap { (field, set) => field -> set.stdlib.head.name }
 
   Map.of(general.stdlib ++ specific.stdlib)
 
@@ -78,7 +77,7 @@ inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
 :   Map[Text, Set[annotation]] =
 
   summonInline[Annotated by annotation under self] match
-    case annotated: Annotated.Subtypes => Map.of(annotated.subtypes.stdlib.filter(_(1).nonEmpty))
+    case annotated: Annotated.Subtypes => Map.of(annotated.subtypes.stdlib.filter(!_(1).nil))
     case _                             => Map()
 
 // The serialization renames for the variants of a sum type `self`: exactly like
@@ -86,9 +85,9 @@ inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
 // renamed variant's name to its serialized discriminator.
 inline def variantRelabelling[self, format]: Map[Text, Text] =
   val general:  Map[Text, Text] =
-    subtypeAnnotations[self, name[Any]].remap { (variant, set) => variant -> set.head.name }
+    subtypeAnnotations[self, name[Any]].remap { (variant, set) => variant -> set.stdlib.head.name }
 
   val specific: Map[Text, Text] =
-    subtypeAnnotations[self, name[format]].remap { (variant, set) => variant -> set.head.name }
+    subtypeAnnotations[self, name[format]].remap { (variant, set) => variant -> set.stdlib.head.name }
 
   Map.of(general.stdlib ++ specific.stdlib)

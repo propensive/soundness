@@ -47,7 +47,6 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -339,10 +338,10 @@ object internal:
         values.map(_.hex).join(t":")
 
       val groups = unpack(ip.highBits) + unpack(ip.lowBits)
-      val (middleIndex, middleLength) = groups.toSeq.longestTrain(_ == 0)
+      val (middleIndex, middleLength) = groups.stdlib.longestTrain(_ == 0)
 
       if middleLength < 2 then hex(groups)
-      else t"${hex(groups.take(middleIndex))}::${hex(groups.drop(middleIndex + middleLength))}"
+      else t"${hex(groups.keep(middleIndex))}::${hex(groups.skip(middleIndex + middleLength))}"
 
     def apply(g0: Int, g1: Int, g2: Int, g3: Int, g4: Int, g5: Int, g6: Int, g7: Int): Ipv6 =
       Ipv6(pack(List(g0, g1, g2, g3)), pack(List(g4, g5, g6, g7)))
@@ -386,8 +385,8 @@ object internal:
           abort(IpAddress.Error(Ipv6MultipleDoubleColons))
 
       Ipv6
-        ( pack(groups.take(4).map(parseGroup)),
-          pack(groups.drop(4).map(parseGroup)) )
+        ( pack(groups.keep(4).map(parseGroup)),
+          pack(groups.skip(4).map(parseGroup)) )
 
   case class Ipv6(highBits: Long, lowBits: Long)
 

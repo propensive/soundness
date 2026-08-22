@@ -32,8 +32,6 @@
                                                                                                   */
 package mosquito
 
-import proscenium.compat.*
-
 import scala.math
 
 import scala.compiletime.*
@@ -53,8 +51,8 @@ import mosquito.internal.Vector
 object Matrix:
   given showable: [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =
     matrix =>
-      val textElements = matrix.elements.map(_.show)
-      val sizes = textElements.map(_.length)
+      val textElements = matrix.elements.remap(_.show)
+      val sizes = textElements.remap(_.length)
 
       val columnWidths: Array[Int]^{} = Array.from:
         (0 until matrix.columns).map: column =>
@@ -750,7 +748,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     // The cast fixes the wildcard element type only: `sameElements` compares via `equals`,
     // which is safe across element types.
     case matrix: Matrix[?, ?, ?] =>
-      elements.sameElements(matrix.elements.asInstanceOf[Array[element]^{}])
+      elements.readable.sameElements(matrix.elements.asInstanceOf[Array[element]^{}].readable)
     case _                       => false
 
   override def hashCode: Int =
@@ -789,7 +787,7 @@ class Matrix[element, rows <: Int, columns <: Int]
 
 
     val elements2 = Array.build[multiplication.Result](elements.length): array =>
-      elements.indices.each: index =>
+      elements.readable.indices.each: index =>
         array(index) = elements.readUnchecked(index)*right
 
     new Matrix(rows, columns, elements2)
@@ -800,7 +798,7 @@ class Matrix[element, rows <: Int, columns <: Int]
   :   Matrix[div.Result, rows, columns] =
 
     val elements2 = Array.build[div.Result](elements.length): array =>
-      elements.indices.each: index =>
+      elements.readable.indices.each: index =>
         array(index) = elements.readUnchecked(index)/right
 
     new Matrix(rows, columns, elements2)
