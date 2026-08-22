@@ -454,6 +454,11 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"one-two-three")
 
+      test(m"Camel-case to dotted words"):
+        t"oneTwoThree".uncamel.dotted
+
+      . assert(_ == t"one.two.three")
+
       test(m"Fit short text into fixed width"):
         t"123".fit(5)
 

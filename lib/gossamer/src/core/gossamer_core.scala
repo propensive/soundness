@@ -144,6 +144,7 @@ extension [textual: Textual { type Result = Char } as instance](words: Iterable[
   def camel: textual = pascal.uncapitalize
   def snake: textual = words.join(instance.apply("_".tt))
   def kebab: textual = words.join(instance.apply("-".tt))
+  def dotted: textual = words.join(instance.apply(".".tt))
   def spaced: textual = words.join(instance.apply(" ".tt))
 
 extension [textual: Textual { type Result = Char }](words: List[textual])
@@ -151,6 +152,7 @@ extension [textual: Textual { type Result = Char }](words: List[textual])
   def camel: textual = words.stdlib.camel
   def snake: textual = words.stdlib.snake
   def kebab: textual = words.stdlib.kebab
+  def dotted: textual = words.stdlib.dotted
   def spaced: textual = words.stdlib.spaced
 
 // The ordinal-bounded `before`/`upto`/`from`/`after` now live in `rudiments`, alongside the
