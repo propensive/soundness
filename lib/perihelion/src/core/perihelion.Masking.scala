@@ -33,7 +33,6 @@
 package perihelion
 
 import java.security.SecureRandom
-import proscenium.compat.*
 
 import anticipation.*
 import rudiments.*
@@ -76,9 +75,9 @@ object Masking:
       val header: Data = Data.fill(headerLength): index =>
         if index == 1 then (frame.readUnchecked(1).toInt | 0x80).toByte else frame.readUnchecked(index)
 
-      val prefix: Data = header ++ key
-      val unmasked = Websocket.Frame.unmask(frame.drop(headerLength), key)
-      prefix ++ unmasked
+      val prefix: Data = Array.frozen(header.readable ++ key.readable)
+      val unmasked = Websocket.Frame.unmask(frame.skip(headerLength), key)
+      Array.frozen(prefix.readable ++ unmasked.readable)
 
 trait Masking:
   // Mask a complete, self-generated (and therefore well-formed and unmasked) frame, or

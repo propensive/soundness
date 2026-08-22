@@ -33,7 +33,6 @@
 package perihelion
 
 import scala.caps
-import proscenium.compat.*
 
 import anticipation.*
 import coaxial.*
@@ -199,7 +198,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error
           case Websocket.Frame.Continuation(fin, data) =>
             partial.lay(abort(Websocket.Error(Websocket.Error.Reason.BadFragmentation))):
               (text, accumulated) =>
-                extend(text, accumulated ++ data, fin)
+                extend(text, Array.frozen(accumulated.readable ++ data.readable), fin)
 
       recur(Unset)
 
@@ -320,7 +319,7 @@ object Websocket:
     val maxControlPayload: Int = 125
 
     def closeData(code: Int, reason: Data): Data =
-      Data((code >> 8).toByte, code.toByte) ++ reason
+      Array.frozen(Data((code >> 8).toByte, code.toByte).readable ++ reason.readable)
 
     // Close codes a client may legitimately send (RFC 6455 §7.4.1 plus the
     // registered application range). Everything else — including 1004/1005/1006,
@@ -394,12 +393,12 @@ object Websocket:
             // present" sentinel and must never travel on the wire.
             if payload.length == 1 then abort(Websocket.Error(Websocket.Error.Reason.BadClose))
             val code =
-              if payload.length >= 2 then B16(payload.take(2)).u16.int else 1005
+              if payload.length >= 2 then B16(payload.keep(2)).u16.int else 1005
 
             if payload.length >= 2 && !validCloseCode(code)
             then abort(Websocket.Error(Websocket.Error.Reason.BadClose))
 
-            val reason = if payload.length > 2 then payload.drop(2) else Data()
+            val reason = if payload.length > 2 then payload.skip(2) else Data()
             Close(code, reason)
 
           case other => abort(Websocket.Error(Websocket.Error.Reason.BadOpcode(other)))
@@ -446,7 +445,7 @@ object Websocket:
               (length >> 16).toByte, (length >> 8).toByte, length.toByte )
 
       // Sealed: see `closeData`.
-      header ++ payload
+      Array.frozen(header.readable ++ payload.readable)
 
 // The `Servable` carrier for a WebSocket handler. On serve it produces the `101`
 // handshake response whose body is the outgoing frame stream; the handler runs

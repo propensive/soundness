@@ -33,7 +33,6 @@
 package perihelion
 
 import scala.{caps, compiletime}
-import proscenium.compat.*
 
 import java.security.SecureRandom
 
@@ -145,12 +144,12 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
     case count: Int =>
       if count > 0 then
         val window = input.lend { region => range => region.materialize(range.capped(count)) }
-        val acc2: Data = acc ++ window
+        val acc2: Data = Array.frozen(acc.readable ++ window.readable)
         val marker = crlfCrlf(acc2)
 
         if marker >= 0 then
           input.skip(marker + 4 - acc.length)
-          acc2.take(marker + 4)
+          acc2.keep(marker + 4)
         else
           input.skip(count)
           recur(acc2)

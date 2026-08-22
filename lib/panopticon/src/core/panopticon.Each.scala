@@ -32,8 +32,6 @@
                                                                                                   */
 package panopticon
 
-import proscenium.compat.*
-
 import prepositional.*
 
 object Each:

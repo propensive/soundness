@@ -34,8 +34,6 @@ package quantitative
 
 import soundness.*
 
-import proscenium.compat.*
-
 import scala.language.strictEquality
 import scala.language.experimental.into
 
@@ -488,7 +486,7 @@ object Tests extends Suite(m"Quantitative Tests"):
 
       def methodBytecode(method: Text)(using Classloader): Optional[Bytecode] =
         Classfile[Probes.type]
-        . let(_.methods.find(_.name == method).getOrElse(Unset))
+        . let(_.methods.seek(_.name == method))
         . let(_.bytecode)
 
       // True when the bytecode contains a virtual / interface dispatch to a

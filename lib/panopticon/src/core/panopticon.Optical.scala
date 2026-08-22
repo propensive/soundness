@@ -34,8 +34,6 @@ package panopticon
 
 import scala.caps
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import fulminate.*
@@ -48,7 +46,10 @@ object Optical:
   given ordinalList: [element] => Ordinal is Optical from List[element] onto element =
     ordinal =>
       Optic: (origin, lambda) =>
-        if origin.size > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin.stdlib(ordinal.n0)))
+        // `Definable` has no `List` instance — positional update on a linked list is O(n),
+        // so the API declines to offer it. This lens needs it anyway, hence the bridge.
+        if origin.size > ordinal.n0
+        then List.of(origin.stdlib.updated(ordinal.n0, lambda(origin.stdlib(ordinal.n0))))
         else origin
 
   given ordinalSeries: [element] => Ordinal is Optical from Sequence[element] onto element =

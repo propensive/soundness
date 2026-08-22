@@ -37,8 +37,6 @@ import java.lang as jl
 import scala.math
 import scala.reflect
 
-import proscenium.compat.*
-
 import galilei.*
 import scala.quoted.*
 
@@ -376,18 +374,16 @@ object Bench:
         leftIndex += 1
 
       anchor.let: anchorValue =>
-        lefts.find(_ == anchorValue) match
-          case Some(value) =>
+        lefts.seek(_ == anchorValue).lay:
+          rights.seek(_ == anchorValue).let: value =>
             anchors.include
-              ( runner.report, testId, Nil, Anchor(first.spec, first.point(value), comparison) )
-
-          case None =>
-            rights.find(_ == anchorValue).foreach: value =>
-              anchors.include
-                ( runner.report,
-                  testId,
-                  Nil,
-                  Anchor(second.spec, second.point(value), comparison) )
+              ( runner.report,
+                testId,
+                Nil,
+                Anchor(second.spec, second.point(value), comparison) )
+        . apply: value =>
+          anchors.include
+            ( runner.report, testId, Nil, Anchor(first.spec, first.point(value), comparison) )
 
     inline def over[left <: reflect.Enum: Enumerable, right, report]
       ( first: { def values: scala.Array[left] }, second: Axis[right] )

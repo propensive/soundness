@@ -32,8 +32,6 @@
                                                                                                   */
 package polysyllabic
 
-import proscenium.compat.*
-
 import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*
@@ -150,8 +148,8 @@ extension (text: Text)
           var k = 0
 
           while k < breaks.length do
-            parts += word.s.substring(prev, breaks(k)).nn.tt
-            prev = breaks(k)
+            parts += word.s.substring(prev, breaks.readable(k)).nn.tt
+            prev = breaks.readable(k)
             k += 1
 
           parts += word.s.substring(prev).nn.tt

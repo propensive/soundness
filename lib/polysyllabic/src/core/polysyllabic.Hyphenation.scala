@@ -32,8 +32,6 @@
                                                                                                   */
 package polysyllabic
 
-import proscenium.compat.*
-
 import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
@@ -148,7 +146,7 @@ object Hyphenation:
         val lastBreak = length - (if rightMin > 1 then rightMin else 1)
 
         while p <= lastBreak do
-          if (scores(p + 1) & 1) == 1 then
+          if (scores.readable(p + 1) & 1) == 1 then
             breaks(count) = p
             count += 1
 

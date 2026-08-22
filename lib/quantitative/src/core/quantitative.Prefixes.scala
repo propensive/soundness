@@ -32,11 +32,11 @@
                                                                                                   */
 package quantitative
 
-import proscenium.compat.*
-
 import scala.math
 
 import prepositional.*
+import rudiments.{sort, seek}
+import vacuous.or
 
 object Prefixes:
   def apply[units](prefixes: List[MetricPrefix], minimum: Double = 1.0): Prefixes on units =
@@ -47,9 +47,9 @@ class Prefixes(val prefixes: List[MetricPrefix], val minimum: Double) extends Pl
   def select(value: Double): MetricPrefix =
     if value == 0.0 then NoPrefix else
       val abs = math.abs(value)
-      val candidates = (NoPrefix :: prefixes).sortBy(-_.exponent)
+      val candidates = (NoPrefix :: prefixes).sort(-_.exponent)
 
-      val chosen = candidates.find: prefix =>
+      candidates.seek: prefix =>
         abs/math.pow(prefix.base.toDouble, prefix.exponent.toDouble) >= minimum
 
-      chosen.getOrElse(candidates.stdlib.last)
+      . or(candidates.stdlib.last)
