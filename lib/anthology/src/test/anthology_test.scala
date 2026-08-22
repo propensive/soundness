@@ -193,7 +193,7 @@ object Tests extends Suite(m"Anthology Tests"):
       . assert(_ == List(t"second", t"first"))
 
       test(m"A setting applying to no path format is rejected"):
-        val inapplicable = Setting[Unit](_ => false)(settings => settings)
+        val inapplicable = Toolchain.Setting[Unit](_ => false)(settings => settings)
         val production = Deliverable.Product(scratch)
         capture[Link.Error](chain.produce(production, a, c, scratch, List(inapplicable))).reason
       . assert(_ == Link.Error.Reason.InapplicableSetting)

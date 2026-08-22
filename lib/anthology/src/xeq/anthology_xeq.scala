@@ -49,47 +49,47 @@ import ziggurat.*
 import errorDiagnostics.emptyDiagnostics
 
 object xeqOptions:
-  private def xeq(edit: XeqConfiguration => XeqConfiguration): Setting =
-    Setting[XeqConfiguration](_.isInstanceOf[Xeq])(edit)
+  private def xeq(edit: XeqConfiguration => XeqConfiguration): Toolchain.Setting =
+    Toolchain.Setting[XeqConfiguration](_.isInstanceOf[Xeq])(edit)
 
   // The distributable's basename within the output directory.
-  def name(name: Text): Setting = xeq(_.copy(name = name))
+  def name(name: Text): Toolchain.Setting = xeq(_.copy(name = name))
 
   // Adds a target platform label (e.g. `linux-x64`); with none, every platform the runner
   // source names is targeted.
-  def target(label: Text): Setting = xeq: config => config.copy(targets = label :: config.targets)
+  def target(label: Text): Toolchain.Setting = xeq: config => config.copy(targets = label :: config.targets)
 
   object runners:
     // The published `runners-<version>` release, verified against its committed manifest.
-    def standard: Setting = xeq(_.copy(runners = Packaging.RunnerSource.Remote(Runners.baseUrl, Runners.hashes)))
+    def standard: Toolchain.Setting = xeq(_.copy(runners = Packaging.RunnerSource.Remote(Runners.baseUrl, Runners.hashes)))
 
     // A local directory of prebuilt stubs (e.g. the output of `make runners-build`).
-    def local(directory: Path on Linux): Setting =
+    def local(directory: Path on Linux): Toolchain.Setting =
       xeq(_.copy(runners = Packaging.RunnerSource.Local(directory)))
 
-    def remote(baseUrl: Text, hashes: Map[Text, Text]): Setting =
+    def remote(baseUrl: Text, hashes: Map[Text, Text]): Toolchain.Setting =
       xeq(_.copy(runners = Packaging.RunnerSource.Remote(baseUrl, hashes)))
 
-  def java(minimum: Int, preferred: Int): Setting =
+  def java(minimum: Int, preferred: Int): Toolchain.Setting =
     xeq: config =>
       config.copy(java = config.java.copy(minimum = minimum, preferred = preferred))
 
   object bundle:
-    def jre: Setting = xeq: config =>
+    def jre: Toolchain.Setting = xeq: config =>
       config.copy(java = config.java.copy(bundle = Packaging.Bundle.Jre))
 
-    def jdk: Setting = xeq: config =>
+    def jdk: Toolchain.Setting = xeq: config =>
       config.copy(java = config.java.copy(bundle = Packaging.Bundle.Jdk))
 
   def signing
     ( publicKey:      Optional[Path on Linux] = Unset,
       seed:           Optional[Path on Linux] = Unset,
       allowDowngrade: Boolean                 = false )
-  :   Setting =
+  :   Toolchain.Setting =
 
     xeq(_.copy(signing = Packaging.Signing(publicKey, seed, allowDowngrade)))
 
-  def buildId(id: Long): Setting = xeq(_.copy(buildId = id))
+  def buildId(id: Long): Toolchain.Setting = xeq(_.copy(buildId = id))
 
 // The xeq packaging edges of a toolchain: `Jar` to each delivery mode's bundle, all a thin
 // facade over `ziggurat.Packager` — which patches ethereal's reusable runner stubs, appends

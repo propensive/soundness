@@ -86,6 +86,22 @@ object Toolchain:
   case class Error(tool: Text)(using Diagnostics)
   extends fulminate.Error(586, 0)(m"the native tool $tool is not available on the PATH")
 
+  object Setting:
+    def apply[settings](applies: Format -> Boolean)(edit0: settings -> settings): Setting =
+      new Setting:
+        def appliesTo(format: Format): Boolean = applies(format)
+        def edit(format: Format, settings0: Any): Any = edit0(settings0.asInstanceOf[settings])
+
+  // A tool setting, addressed to the formats whose production it configures: a `Toolchain`
+  // applies it, in order, to the initial settings of every path edge whose target satisfies
+  // `appliesTo`. Contract: `appliesTo(format)` implies `edit(format, _)` accepts and returns the
+  // settings type of every edge targeting `format`. A setting spanning formats with different
+  // settings types (an Android API level configures both dexing and packaging) dispatches on its
+  // `format` argument.
+  trait Setting:
+    def appliesTo(format: Format): Boolean
+    def edit(format: Format, settings: Any): Any
+
 // An in-memory toolchain: a directed acyclic graph whose nodes are formats and whose edges are
 // tools. Producing one format from another is path search: the unique shortest edge sequence
 // between the two nodes determines the tools to run, in order. The node set is open—registering
@@ -146,7 +162,7 @@ case class Toolchain private (edges: List[Edge]):
       source:      Format,
       target:      Format,
       out:         Path on Linux,
-      settings:    List[Setting] = Nil,
+      settings:    List[Toolchain.Setting] = Nil,
       entryPoints: List[EntryPoint] = Nil )
     ( using Monitor, System, WorkingDirectory )
     ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )

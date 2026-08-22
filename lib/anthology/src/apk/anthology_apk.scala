@@ -52,31 +52,31 @@ import rudiments.`:+`
 import denominative.asymptotics.linearSizeComplexity
 
 object apkOptions:
-  private def apk(edit: Apk.Configuration => Apk.Configuration): Setting =
-    Setting[Apk.Configuration](_ == Apk)(edit)
+  private def apk(edit: Apk.Configuration => Apk.Configuration): Toolchain.Setting =
+    Toolchain.Setting[Apk.Configuration](_ == Apk)(edit)
 
   // The lowest Android API level the application must run on. The level configures both the
   // manifest (`Apk`) and the dexing that precedes it on the path (`Dex`), so this one setting
   // addresses both nodes, dispatching to each node's own configuration type.
-  def minApi(level: Int): Setting = new Setting:
+  def minApi(level: Int): Toolchain.Setting = new Toolchain.Setting:
     def appliesTo(format: Format): Boolean = format == Apk || format == Dex
 
     def edit(format: Format, settings: Any): Any = format match
       case Dex => settings.asInstanceOf[DexConfiguration].copy(minApi = level)
       case _   => settings.asInstanceOf[Apk.Configuration].copy(minApi = level)
 
-  def targetApi(level: Int): Setting = apk(_.copy(targetApi = level))
-  def packageName(name: Text): Setting = apk(_.copy(packageName = name))
-  def label(text: Text): Setting = apk(_.copy(label = text))
+  def targetApi(level: Int): Toolchain.Setting = apk(_.copy(targetApi = level))
+  def packageName(name: Text): Toolchain.Setting = apk(_.copy(packageName = name))
+  def label(text: Text): Toolchain.Setting = apk(_.copy(label = text))
 
-  def version(code: Int, name: Text): Setting =
+  def version(code: Int, name: Text): Toolchain.Setting =
     apk(_.copy(versionCode = code, versionName = name))
 
   // Adds a requested runtime permission (e.g. `android.permission.VIBRATE`).
-  def permission(name: Text): Setting =
+  def permission(name: Text): Toolchain.Setting =
     apk: config => config.copy(permissions = config.permissions :+ name)
 
-  def keystore(path: Text, storePass: Text, alias: Text, keyPass: Text): Setting =
+  def keystore(path: Text, storePass: Text, alias: Text, keyPass: Text): Toolchain.Setting =
     apk(_.copy(keystore = path, storePass = storePass, alias = alias, keyPass = keyPass))
 
 // The packaging edge of a toolchain: `Dex` to `Apk`. It encodes a binary manifest (`Axml`),

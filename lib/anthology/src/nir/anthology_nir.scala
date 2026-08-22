@@ -58,24 +58,24 @@ import serpentine.*
 import vacuous.*
 
 object nativeOptions:
-  private def native(edit: NativeConfig => NativeConfig): Setting =
-    Setting[NativeConfig](_.isInstanceOf[Binary])(edit)
+  private def native(edit: NativeConfig => NativeConfig): Toolchain.Setting =
+    Toolchain.Setting[NativeConfig](_.isInstanceOf[Binary])(edit)
 
   object gc:
-    val immix: Setting = native(_.withGC(GC.immix))
-    val commix: Setting = native(_.withGC(GC.commix))
-    val boehm: Setting = native(_.withGC(GC.boehm))
-    val none: Setting = native(_.withGC(GC.none))
+    val immix: Toolchain.Setting = native(_.withGC(GC.immix))
+    val commix: Toolchain.Setting = native(_.withGC(GC.commix))
+    val boehm: Toolchain.Setting = native(_.withGC(GC.boehm))
+    val none: Toolchain.Setting = native(_.withGC(GC.none))
 
   object mode:
-    val debug: Setting = native(_.withMode(Mode.debug))
-    val releaseFast: Setting = native(_.withMode(Mode.releaseFast))
-    val releaseFull: Setting = native(_.withMode(Mode.releaseFull))
+    val debug: Toolchain.Setting = native(_.withMode(Mode.debug))
+    val releaseFast: Toolchain.Setting = native(_.withMode(Mode.releaseFast))
+    val releaseFull: Toolchain.Setting = native(_.withMode(Mode.releaseFull))
 
   object lto:
-    val none: Setting = native(_.withLTO(LTO.none))
-    val thin: Setting = native(_.withLTO(LTO.thin))
-    val full: Setting = native(_.withLTO(LTO.full))
+    val none: Toolchain.Setting = native(_.withLTO(LTO.none))
+    val thin: Toolchain.Setting = native(_.withLTO(LTO.thin))
+    val full: Toolchain.Setting = native(_.withLTO(LTO.full))
 
 // The native edges of a toolchain: `Nir` to a `Binary` per target triple, each driving the
 // Scala Native build through the C toolchain (`clang` and `clang++`) probed once for all of

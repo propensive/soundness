@@ -129,6 +129,37 @@ an on-or-off option — is a `Switch`:
 val verbose = Switch(t"verbose", aliases = List('v'), description = t"print detail")
 ```
 
+### Settings
+
+Many options should be settable not only on the command line but by an environment
+variable, a system property, or a configuration file, with a fixed order of precedence. A
+`Setting` declares such an option once, by a canonical camelCase name, and each source
+derives its own name for it by convention. Declaring an application's identity as a
+`Configurator.Prefix` activates the standard cascade:
+
+```scala
+given Configurator.Prefix = Configurator.Prefix(t"myapp")
+
+val LogLevel = Setting[Text](t"logLevel", description = t"logging verbosity")
+```
+
+Reading `LogLevel()` inside the CLI block consults, in order: the `--log-level`
+command-line flag, the `myapp.log.level` system property, and the `MYAPP_LOG_LEVEL`
+environment variable, returning `Optional` so a default is given the usual way,
+`LogLevel().or(t"info")`. Reading a setting registers its flag for tab completion, exactly
+as reading the flag directly would.
+
+Each source is a `Configurator` — a single abstract method from a setting's canonical
+name to an optional textual value — and the cascade is just composition with `++`, where
+the left side takes priority. Soundness does not prescribe a configuration-file format,
+but any source can join the cascade as a one-line lambda; defining a `Configurator` given
+replaces the standard cascade (the command-line flag always takes priority):
+
+```scala
+given Configurator = Configurator.properties ++ Configurator.environment
+  ++ { name => safely(config(name)) }
+```
+
 ### Exit status and errors
 
 The body returns an `Exit`: `Exit.Ok`, or `Exit.Fail(code)` for a failure. An error that

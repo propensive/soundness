@@ -58,6 +58,7 @@ object BadConfig extends Status(2, t"the configuration file was invalid")
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
     CaptureTests()
+    SettingTests()
 
     supervise:
       val foo: Text = "hello"

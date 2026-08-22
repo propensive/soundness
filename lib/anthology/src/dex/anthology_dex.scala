@@ -63,21 +63,21 @@ private[anthology] case class DexConfiguration
     platform: Optional[Path on Linux] )
 
 object dexOptions:
-  private def dex(edit: DexConfiguration => DexConfiguration): Setting =
-    Setting[DexConfiguration](_ == Dex)(edit)
+  private def dex(edit: DexConfiguration => DexConfiguration): Toolchain.Setting =
+    Toolchain.Setting[DexConfiguration](_ == Dex)(edit)
 
   // The lowest Android API level the artifact must run on. Levels below 24 lack native default
   // interface methods (which Scala 3 emits for trait members), so they additionally demand the
   // `platform` stubs to desugar against.
-  def minApi(level: Int): Setting = dex(_.copy(minApi = level))
+  def minApi(level: Int): Toolchain.Setting = dex(_.copy(minApi = level))
 
   // An Android SDK's platform stubs (`platforms/android-<n>/android.jar`), needed only below
   // API level 24 or when the program references platform types.
-  def platform(jar: Path on Linux): Setting = dex(_.copy(platform = jar))
+  def platform(jar: Path on Linux): Toolchain.Setting = dex(_.copy(platform = jar))
 
   object mode:
-    val debug: Setting = dex(_.copy(mode = CompilationMode.DEBUG))
-    val release: Setting = dex(_.copy(mode = CompilationMode.RELEASE))
+    val debug: Toolchain.Setting = dex(_.copy(mode = CompilationMode.DEBUG))
+    val release: Toolchain.Setting = dex(_.copy(mode = CompilationMode.RELEASE))
 
 // The dexing edge of a toolchain: `Classfile` to `Dex`, driving R8's D8 dexer (a JVM library)
 // through its API to translate a compilation's classfiles, and its whole classpath with them,

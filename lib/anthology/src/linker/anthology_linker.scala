@@ -50,8 +50,8 @@ import vacuous.*
 
 object jarOptions:
   // The filename of the JAR within the output directory, for both `Jar` and `Library` nodes.
-  def name(name: Text): Setting =
-    Setting[Text](format => format == Jar || format.isInstanceOf[Library])(_ => name)
+  def name(name: Text): Toolchain.Setting =
+    Toolchain.Setting[Text](format => format == Jar || format.isInstanceOf[Library])(_ => name)
 
 // The JAR-packaging edges of a toolchain: `Classfile` to `Jar` (an executable JAR of the whole
 // classpath) and each universe to its `Library` (a JAR of the compilation's own output). Both

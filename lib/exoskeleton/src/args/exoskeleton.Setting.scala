@@ -30,20 +30,59 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package exoskeleton
+
+import scala.language.experimental.pureFunctions
+
+import ambience.*
+import anticipation.*
+import distillate.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
 
 object Setting:
-  def apply[settings](applies: Format -> Boolean)(edit0: settings -> settings): Setting =
-    new Setting:
-      def appliesTo(format: Format): Boolean = applies(format)
-      def edit(format: Format, settings0: Any): Any = edit0(settings0.asInstanceOf[settings])
+  @targetName("make")
+  def apply[topic]
+    ( name:        Text,
+      description: Optional[Text]    = Unset,
+      aliases:     List[Text | Char] = Nil,
+      variable:    Optional[Text]    = Unset,
+      secret:      Boolean           = false )
+    ( using erased defaulting: topic is Defaulting to Text )
+  :   Setting of topic =
 
-// A tool setting, addressed to the formats whose production it configures: a `Toolchain`
-// applies it, in order, to the initial settings of every path edge whose target satisfies
-// `appliesTo`. Contract: `appliesTo(format)` implies `edit(format, _)` accepts and returns the
-// settings type of every edge targeting `format`. A setting spanning formats with different
-// settings types (an Android API level configures both dexing and packaging) dispatches on its
-// `format` argument.
-trait Setting:
-  def appliesTo(format: Format): Boolean
-  def edit(format: Format, settings: Any): Any
+    new Setting(name, Flag(name.uncamel.kebab, false, aliases, description, secret), variable):
+      type Topic = topic
+
+// A configurable application setting, declared once by its canonical camelCase `name` and read
+// from a cascade of configuration sources: its command-line flag (derived as `--kebab-case`)
+// always takes priority, then each source of the contextual `Configurator` in composition
+// order. `variable` names an environment variable that is consulted (verbatim) between the
+// flag and the configurator cascade. Reading a setting registers its flag for shell
+// completions, exactly as reading the flag directly would; like a flag, a setting must be
+// read outside `execute` to be discoverable in completion mode.
+//
+// A setting is inherently single-valued, so its command-line operand is read as `Text` and
+// decoded by the same `Decodable` as every other source, which may capture a `Tactic` (the
+// `Interpretable` bridge cannot, which is why the flag is not read at type `Topic`).
+case class Setting(name: Text, flag: Flag, variable: Optional[Text]) extends Topical:
+  def apply()
+    ( using cli:          Cli,
+      interpreter:  Interpreter,
+      configurator: Configurator^,
+      decodable:    (Topic is Decodable in Text)^,
+      suggestions:  (? <: Topic) is Discoverable = Discoverable.noSuggestions )
+  :   Optional[Topic] =
+
+    given textOperands: (Text is Discoverable) = Discoverable.noSuggestions[Text]
+    val parameter = cli.parameter[Text](flag)
+
+    // Registered after the flag read, whose own registration carries no suggestions, so that
+    // this setting's `Discoverable` is the one a completion retains.
+    cli.register(flag, suggestions, t"value")
+
+    parameter.let(decodable.decoded(_))
+      .or(variable.let(cli.environment.variable(_)).let(decodable.decoded(_)))
+      .or(configurator.read(name).let(decodable.decoded(_)))
