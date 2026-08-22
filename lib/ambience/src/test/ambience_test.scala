@@ -194,6 +194,43 @@ object Tests extends Suite(m"Ambience Tests"):
         systems.javaSystem(t"java.version") == Unset
       . assert(_ == false)
 
+    suite(m"Configurator tests"):
+      given prefix: Configurator.Prefix = Configurator.Prefix(t"myapp")
+
+      test(m"The environment configurator maps a name to SCREAMING_SNAKE_CASE"):
+        given environment: Environment = fixedEnvironment(t"MYAPP_LOG_LEVEL" -> t"info")
+        Configurator.environment.read(t"logLevel")
+      . assert(_ == t"info")
+
+      test(m"The properties configurator maps a name to dotted lower case"):
+        given system: System = fixedSystem(t"myapp.log.level" -> t"warn")
+        Configurator.properties.read(t"logLevel")
+      . assert(_ == t"warn")
+
+      test(m"An absent setting reads as Unset"):
+        given environment: Environment = fixedEnvironment()
+        Configurator.environment.read(t"logLevel")
+      . assert(_ == Unset)
+
+      test(m"Composition prefers the left configurator"):
+        given environment: Environment = fixedEnvironment(t"MYAPP_PORT" -> t"80")
+        given system: System = fixedSystem(t"myapp.port" -> t"8080")
+        (Configurator.properties ++ Configurator.environment).read(t"port")
+      . assert(_ == t"8080")
+
+      test(m"Composition falls through to the right configurator"):
+        given environment: Environment = fixedEnvironment(t"MYAPP_PORT" -> t"80")
+        given system: System = fixedSystem()
+        (Configurator.properties ++ Configurator.environment).read(t"port")
+      . assert(_ == t"80")
+
+      test(m"A composed cascade falls through to a custom source"):
+        given environment: Environment = fixedEnvironment()
+        given system: System = fixedSystem()
+        val file: Configurator = name => if name == t"port" then t"7070" else Unset
+        (Configurator.properties ++ Configurator.environment ++ file).read(t"port")
+      . assert(_ == t"7070")
+
     suite(m"Directory tests"):
       test(m"The home directory comes from the `user.home` property"):
         given system: System = fixedSystem(t"user.home" -> t"/home/jack")
