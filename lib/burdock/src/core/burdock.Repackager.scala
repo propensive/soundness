@@ -32,8 +32,6 @@
                                                                                                   */
 package burdock
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import digression.*

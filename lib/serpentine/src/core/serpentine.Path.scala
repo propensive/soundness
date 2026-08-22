@@ -44,8 +44,8 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
+import denominative.asymptotics.linearSizeComplexity
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -286,9 +286,10 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     def recur(left: List[Text], right: List[Text], size: Int, count: Int)
     :   Path on Plane =
 
-      if left.isEmpty then Path(root, left0.drop(size - count))
-      else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
-      else recur(left.tail, right.tail, size + 1, 0)
+      if left.nil then Path(root, left0.skip(size - count))
+      else if left.stdlib.head == right.stdlib.head
+      then recur(List.of(left.stdlib.tail), List.of(right.stdlib.tail), size + 1, count + 1)
+      else recur(List.of(left.stdlib.tail), List.of(right.stdlib.tail), size + 1, 0)
 
 
     recur(left0, right0, 0, 0)

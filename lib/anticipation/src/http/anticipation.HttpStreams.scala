@@ -32,8 +32,6 @@
                                                                                                   */
 package anticipation
 
-import proscenium.compat.*
-
 object HttpStreams:
   // A minimal demand-aware pull protocol for HTTP message bodies: each call
   // to `next` produces at most `limit` bytes as one chunk, or `null` at the
@@ -51,7 +49,7 @@ object HttpStreams:
       def next(limit: Int): Array[Byte]^{} | Null =
         if position >= data.length then null else
           val end = data.length.min(position + limit)
-          val chunk = data.slice(position, end)
+          val chunk = Array.frozen(data.readable.slice(position, end))
           position = end
           chunk
 

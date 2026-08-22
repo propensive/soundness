@@ -42,7 +42,6 @@ import kaleidoscope.*
 import prepositional.*
 import spectacular.*
 import symbolism.*
-import proscenium.compat.*
 
 import rudiments.*
 import vacuous.*

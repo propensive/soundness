@@ -34,7 +34,6 @@ package legerdemain
 
 import anamnesis.*
 import anticipation.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import distillate.*
@@ -64,7 +63,7 @@ object Elicitable extends Elicitable2:
     def widget(id: Text, label: Text, value: Text): Combobox =
       Combobox
         ( id,
-          List.from(enumerable.values.toSeq.map(enumerable.name(_))),
+          List.from(enumerable.values.readable.toSeq.map(enumerable.name(_))),
           value )
 
   given reference: [entity <: Entity: {Listable, Showable, Referenceable}]

@@ -32,8 +32,6 @@
                                                                                                   */
 package ethereal
 
-import proscenium.compat.*
-
 import scala.language.experimental.pureFunctions
 
 import scala.caps

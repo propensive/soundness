@@ -40,7 +40,6 @@ import gastronomy.*
 import gossamer.*
 import hieroglyph.*
 import pneumatic.*
-import proscenium.compat.*
 import revolution.*
 import stratiform.*
 import turbulence.*
@@ -1024,7 +1023,7 @@ object Lira:
           field("algorithm", identifier),
           field("key", hash),
           field("value", string))),
-      scalars  = builtins ++ Array.of(
+      scalars  = Array.frozen(builtins.readable ++ Array.of(
         hashScalar,
         scalar("ModuleName", "module-name"),
         scalar("Namespace", "namespace"),
@@ -1034,7 +1033,7 @@ object Lira:
         scalar("DisciplineId", "discipline-id"),
         scalar("ProfileId", "profile-id"),
         scalar("TreePath", "tree-path"),
-        scalar("Guarantee", "guarantee")),
+        scalar("Guarantee", "guarantee")).readable),
       selects  = Array.of(
         select("Realm",
           variant("jvm"),
@@ -1059,7 +1058,7 @@ object Lira:
         record("Entry",
           field("path", Reference(t"TreePath")),
           field("blob", hash))),
-      scalars  = builtins ++ Array.of(hashScalar, scalar("TreePath", "tree-path")),
+      scalars  = Array.frozen(builtins.readable ++ Array.of(hashScalar, scalar("TreePath", "tree-path")).readable),
       selects  = Array.empty[SelectDefinition])
 
     val atoms: Tels = Tels(
@@ -1076,10 +1075,10 @@ object Lira:
           field("class", Reference(t"AtomClass")),
           field("hash", hash),
           field("key", string))),
-      scalars  = builtins ++ Array.of(
+      scalars  = Array.frozen(builtins.readable ++ Array.of(
         hashScalar,
         scalar("DisciplineId", "discipline-id"),
-        scalar("AtomClass", "atom-class")),
+        scalar("AtomClass", "atom-class")).readable),
       selects  = Array.empty[SelectDefinition])
 
     val uses: Tels = Tels(
@@ -1092,7 +1091,7 @@ object Lira:
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
       records  = Array.empty[RecordDefinition],
-      scalars  = builtins ++ Array.of(hashScalar, scalar("ModuleName", "module-name")),
+      scalars  = Array.frozen(builtins.readable ++ Array.of(hashScalar, scalar("ModuleName", "module-name")).readable),
       selects  = Array.empty[SelectDefinition])
 
     val delta: Tels = Tels(
@@ -1108,7 +1107,7 @@ object Lira:
         record("Replacement",
           field("old", hash),
           field("new", hash))),
-      scalars  = builtins ++ Array.of(hashScalar),
+      scalars  = Array.frozen(builtins.readable ++ Array.of(hashScalar).readable),
       selects  = Array.empty[SelectDefinition])
 
     // The capability listing of a host contract with no formal carrier (hosts.md §5): the single

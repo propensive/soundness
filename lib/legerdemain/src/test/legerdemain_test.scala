@@ -34,8 +34,6 @@ package legerdemain
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.asymptotics.linearSizeComplexity

@@ -32,8 +32,6 @@
                                                                                                   */
 package contextual
 
-import proscenium.compat.*
-
 import scala.language.dynamics
 
 import scala.quoted.*
@@ -72,7 +70,7 @@ object Interpolation:
 
     arr(value.length) = srcIdx
     val mapping: Array[Int]^{} = Array.unsafeFrozen(arr)
-    i => if i < 0 then 0 else if i < mapping.length then mapping(i) else mapping(mapping.length - 1)
+    i => if i < 0 then 0 else if i < mapping.length then mapping.readable(i) else mapping.readable(mapping.length - 1)
 
   // Walk a `StringContext.apply(...)` Term to recover each literal part's source-file
   // (start, end) range. We're permissive about the surrounding tree shape (Inlined / Typed /

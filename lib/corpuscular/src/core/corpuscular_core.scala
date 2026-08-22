@@ -35,7 +35,6 @@ package corpuscular
 import scala.caps
 
 import anticipation.*
-import proscenium.compat.*
 
 // The standard CRC-32 (polynomial 0xedb88320, reflected), shared by gzip, PNG, ZIP and XZ.
 // Three copies of this table and loop existed — in pneumatic, hallucination and zeppelin — and
@@ -65,7 +64,7 @@ object Crc32:
       var index = 0
 
       while index < segment.length do
-        crc = table((crc ^ segment(index)) & 0xff) ^ (crc >>> 8)
+        crc = table.readable((crc ^ segment.readable(index)) & 0xff) ^ (crc >>> 8)
         index += 1
 
     crc ^ 0xffffffff
@@ -81,7 +80,7 @@ final class Crc32 extends caps.Mutable:
 
     while length > 0 do
       length -= 1
-      c = Crc32.table((c ^ buffer(index)) & 0xff) ^ (c >>> 8)
+      c = Crc32.table.readable((c ^ buffer(index)) & 0xff) ^ (c >>> 8)
       index += 1
 
     v = ~c
@@ -118,7 +117,7 @@ final class Crc64 extends caps.Mutable:
 
     while length > 0 do
       length -= 1
-      c = Crc64.table(((c ^ buffer(index)) & 0xff).toInt) ^ (c >>> 8)
+      c = Crc64.table.readable(((c ^ buffer(index)) & 0xff).toInt) ^ (c >>> 8)
       index += 1
 
     v = c

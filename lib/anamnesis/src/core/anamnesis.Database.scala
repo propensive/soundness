@@ -32,8 +32,6 @@
                                                                                                   */
 package anamnesis
 
-import proscenium.compat.*
-
 import beneficence.*
 import contingency.*
 import fulminate.*
@@ -96,8 +94,8 @@ class Database(size: Int) extends Findable:
     references(left).or:
       allocate[left]().tap: ref =>
         mutex:
-          references = references.updated(left, ref)
-          dereferences = dereferences.updated(ref, left)
+          references = references.define(left, ref)
+          dereferences = dereferences.define(ref, left)
 
     . asInstanceOf[Ref of left in this.type]
 
@@ -114,8 +112,8 @@ class Database(size: Int) extends Findable:
     val relationIndex = !![Topic].indexOf[left -< right]
     val relation = relate[left, right]
     val corelation = corelate[left, right]
-    val relation2 = relation.updated(left, relation(left).or(Set()) :+ right)
-    val corelation2 = corelation.updated(right, left)
+    val relation2 = relation.define(left, relation(left).or(Set()) :+ right)
+    val corelation2 = corelation.define(right, left)
     relations(relationIndex) = relation2
     corelations(relationIndex) = corelation2
 
@@ -136,7 +134,7 @@ class Database(size: Int) extends Findable:
     val corelation = corelate[left, right]
 
     val relation2: Map[Ref, Set[Ref]] =
-      relation.updated(left, relation(left).let(_ - right).or(Set()))
+      relation.define(left, relation(left).let(_.stdlib - right).let(Set.of(_)).or(Set()))
 
     val corelation2 = corelation.omit(right)
     relations(relationIndex) = relation2

@@ -33,8 +33,6 @@
 package rudiments
 
 import soundness.*
-
-import proscenium.compat.*
 import denominative.asymptotics.linearSizeComplexity
 
 case class Person(name: Text, age: Int)

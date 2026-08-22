@@ -32,8 +32,6 @@
                                                                                                   */
 package nomenclature
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -70,15 +68,15 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   def name(ordinal: Int)(using Tactic[Moniker.Error]): Text =
     if ordinal < 0 || ordinal >= size
     then abort(Moniker.Error(Moniker.Error.Reason.OutOfRange(ordinal)))
-    else t"${adjectiveArray(ordinal/animalCount)}-${animalArray(ordinal%animalCount)}"
+    else t"${adjectiveArray.readable(ordinal/animalCount)}-${animalArray.readable(ordinal%animalCount)}"
 
   def number(moniker: Text)(using Tactic[Moniker.Error]): Int =
     moniker.cut(t"-") match
       case List(adjective, animal) =>
-        val first = adjectiveIndex.get(adjective).getOrElse:
+        val first = adjectiveIndex.stdlib.get(adjective).getOrElse:
           abort(Moniker.Error(Moniker.Error.Reason.UnknownWord(adjective)))
 
-        val second = animalIndex.get(animal).getOrElse:
+        val second = animalIndex.stdlib.get(animal).getOrElse:
           abort(Moniker.Error(Moniker.Error.Reason.UnknownWord(animal)))
 
         first*animalCount + second

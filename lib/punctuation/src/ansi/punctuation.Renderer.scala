@@ -32,8 +32,6 @@
                                                                                                   */
 package punctuation
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import escapade.*
@@ -43,6 +41,7 @@ import hieroglyph.textMetrics.wideCharacterWidthMetric
 import polysyllabic.*
 import prepositional.*
 import rudiments.*
+import denominative.asymptotics.linearSizeComplexity
 import symbolism.*
 import tessellate.*
 import vacuous.*
@@ -172,7 +171,7 @@ object Renderer:
     case Layout.BlockQuote(_, children*) =>
       val bar = e"${Fg(palette.quoteBar)}(▎)"
       val innerWidth = (width - 2).max(1)
-      val innerBlocks = children.map(layoutLines(_, innerWidth)).filter(_.nonEmpty)
+      val innerBlocks = children.map(layoutLines(_, innerWidth)).filter(!_.nil)
       val joined = interleaveBlanks(innerBlocks.to(List))
 
       joined.map: line => if line.plain.length == 0 then bar else bar + Space + line
@@ -195,7 +194,7 @@ object Renderer:
 
       val raw = body.cut(t"\n")
       // Drop a trailing empty line that comes from a final '\n' in `code`.
-      val lines = if raw.lastOption.exists(_.plain.length == 0) then raw.dropRight(1) else raw
+      val lines = if raw.last.lay(false)(_.plain.length == 0) then raw.skip(1, Bidi.Rtl) else raw
 
       lines.map: line =>
         e"  ${line: Teletype}"
@@ -205,7 +204,7 @@ object Renderer:
 
       text.cut(t"\n") match
         case Nil            => Nil
-        case lines @ _ :: _ => if lines.stdlib.last.plain.length == 0 then lines.dropRight(1) else lines
+        case lines @ _ :: _ => if lines.stdlib.last.plain.length == 0 then lines.skip(1, Bidi.Rtl) else lines
 
   private def bullet(palette: MarkdownPalette): Teletype =
     e"${Fg(palette.subdued)}(•)"
@@ -226,11 +225,11 @@ object Renderer:
 
     if items.nil then Nil
     else
-      val rendered = items.zipWithIndex.map: (item, idx) =>
-        val mk = marker(idx)
+      val rendered = items.indexed.map: (item, ordinal) =>
+        val mk = marker(ordinal.n0)
         val markerSize = mk.plain.length + 1   // marker + one space
         val hang = t" "*markerSize
-        val inner = item.map(layoutLines(_, (width - markerSize).max(1))).filter(_.nonEmpty)
+        val inner = item.map(layoutLines(_, (width - markerSize).max(1))).filter(!_.nil)
         val joined = if tight then concatItems(inner) else interleaveBlanks(inner)
 
         joined match

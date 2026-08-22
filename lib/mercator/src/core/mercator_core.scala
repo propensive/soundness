@@ -32,8 +32,6 @@
                                                                                                   */
 package mercator
 
-import proscenium.compat.*
-
 import scala.collection.BuildFrom
 
 import anticipation.*

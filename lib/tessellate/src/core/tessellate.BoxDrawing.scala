@@ -33,8 +33,8 @@
 package tessellate
 
 import anticipation.*
+import rudiments.*
 import gossamer.*
-import proscenium.compat.*
 
 object BoxDrawing:
   val asciiChars: Array[Char]^{} =
@@ -55,7 +55,7 @@ object BoxDrawing:
     . join
     . chars
 
-  val roundedChars: Array[Char]^{} = defaultChars.map:
+  val roundedChars: Array[Char]^{} = defaultChars.remap:
     case '┌'  => '╭'
     case '┘'  => '╯'
     case '┐'  => '╮'

@@ -32,28 +32,27 @@
                                                                                                   */
 package iridescence
 
-import proscenium.compat.*
-
 import denominative.*
+import rudiments.*
 import prepositional.*
 
 object Spectrum:
   def apply[color <: Color: Perceptual in Srgb](colors0: List[Color in color])
   :   Spectrum in color =
 
-    var colors = colors0.toSet
+    var colors = colors0.to[Set]
 
     def assign(target: Srgb): Color in color =
-      if colors.isEmpty then colors = colors0.toSet
+      if colors.nil then colors = colors0.to[Set]
 
-      val chosen = colors.minBy: candidate =>
+      val chosen = colors.stdlib.minBy: candidate =>
         val srgb = candidate.to[Srgb]
         val dr = srgb.red - target.red
         val dg = srgb.green - target.green
         val db = srgb.blue - target.blue
         dr*dr + dg*dg + db*db
 
-      colors -= chosen
+      colors = Set.of(colors.stdlib - chosen)
       chosen
 
     new Spectrum:

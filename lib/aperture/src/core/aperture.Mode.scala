@@ -32,8 +32,6 @@
                                                                                                   */
 package aperture
 
-import proscenium.compat.*
-
 // A term-level selection of the grants an `open` call should confer, carrying them as the
 // `Grants` type member so the mode chosen at the call site determines the handle's type inside
 // the `open` block. `&` composes dependently — `Read & Write` has
@@ -54,4 +52,4 @@ class Mode:
 
     new Mode:
       type Grants = Mode.this.Grants & that.Grants
-      override def atoms: Set[Mode] = these ++ that.atoms
+      override def atoms: Set[Mode] = Set.of(these.stdlib ++ that.atoms.stdlib)

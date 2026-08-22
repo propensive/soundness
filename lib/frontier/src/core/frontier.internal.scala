@@ -32,8 +32,6 @@
                                                                                                   */
 package frontier
 
-import proscenium.compat.*
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 

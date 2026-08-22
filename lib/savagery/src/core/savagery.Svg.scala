@@ -38,7 +38,6 @@ import denominative.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -512,5 +511,5 @@ extends Documentary:
           Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
         List(Element(t"g", Attributes.from(Map.of(groupAttrs.stdlib)), figures.stdlib.map(_.xml).nodes))
 
-    val children: Array[Node]^{} = (defsElement + figureNodes).toSeq.nodes
+    val children: Array[Node]^{} = (defsElement + figureNodes).stdlib.nodes
     Element(t"svg", Attributes.from(Map.of(attrs.stdlib)), children)

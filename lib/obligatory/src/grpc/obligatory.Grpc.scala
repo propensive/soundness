@@ -44,7 +44,6 @@ import locomotion.*
 import parasite.*
 import pneumatic.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*
@@ -280,7 +279,7 @@ object Grpc:
             (length >>> 8).toByte,
             length.toByte )
 
-      header ++ payload
+      Array.frozen(header.readable ++ payload.readable)
 
     given framable: (tactic: Tactic[Error])
     =>  ((Data is Framable by Framing)^{tactic}) = input =>

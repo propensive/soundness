@@ -32,8 +32,6 @@
                                                                                                   */
 package typonym
 
-import proscenium.compat.*
-
 import scala.quoted.*
 
 import gigantism.*

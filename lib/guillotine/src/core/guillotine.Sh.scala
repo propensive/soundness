@@ -42,8 +42,6 @@ import scala.collection.immutable as sci
 import scala.collection.immutable.::
 import scala.collection.{`:+`, `+:`}
 
-import proscenium.compat.*
-
 import rudiments.*
 import vacuous.*
 import spectacular.*
@@ -116,7 +114,7 @@ object Sh:
       case _ =>
         state.copy(offset = state.offset + 1)
 
-    private def chars(text: Text): scala.Seq[Char] = text.chars.toSeq
+    private def chars(text: Text): scala.Seq[Char] = text.chars.readable.toSeq
 
     def parse(current: State, text: Text): State = chars(text).fuse(current):
       val step = (state, next).absolve match

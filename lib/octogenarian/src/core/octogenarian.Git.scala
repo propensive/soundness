@@ -48,6 +48,7 @@ import kaleidoscope.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
+import denominative.asymptotics.linearSizeComplexity
 import serpentine.*
 import symbolism.*
 import turbulence.*
@@ -57,7 +58,6 @@ import zephyrine.*
 
 import beneficence.*
 import enigmatic.*
-import proscenium.compat.*
 import filesystemBackends.virtualMachineFilesystem
 import spectacular.*
 
@@ -833,12 +833,12 @@ object Git:
 
         case _ =>
           val (block, rest) = remaining.span(_ != t"")
-          block :: blocks(rest.dropWhile(_ == t""))
+          block :: blocks(rest.skip(_ == t""))
 
-      val worktrees = blocks(lines).flatMap: block =>
+      val worktrees = blocks(lines).bind: block =>
         val isBare = block.has(t"bare")
 
-        block.collect:
+        block.sweep:
           case r"worktree $path(.*)" if !isBare =>
             val pathOnLinux = unsafely(path.as[Path on Linux])
             Worktree(this, pathOnLinux)

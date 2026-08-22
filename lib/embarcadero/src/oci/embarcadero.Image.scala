@@ -36,7 +36,6 @@ import aperture.*
 import fulminate.*
 import jacinta.*
 import pneumatic.*
-import proscenium.compat.*
 
 import anticipation.*
 import bitumen.*

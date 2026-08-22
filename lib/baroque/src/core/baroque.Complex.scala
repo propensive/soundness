@@ -36,8 +36,6 @@ import scala.{compiletime, math}
 
 import scala.annotation.*
 
-import proscenium.compat.*
-
 import geodesy.*
 import gossamer.*
 import hypotenuse.*

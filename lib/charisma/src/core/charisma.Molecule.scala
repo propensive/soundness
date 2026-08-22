@@ -32,8 +32,6 @@
                                                                                                   */
 package charisma
 
-import proscenium.compat.*
-
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
@@ -49,7 +47,7 @@ object Molecule:
   given showable: Molecule is Showable = molecule =>
     val orderedElements =
       if !molecule.elements.defines(PeriodicTable.C)
-      then molecule.elements.toList.sort(_(0).symbol)
+      then List.of(molecule.elements.stdlib.toList).sort(_(0).symbol)
       else
         val carbon = PeriodicTable.C -> molecule.elements.stdlib(PeriodicTable.C)
 
