@@ -36,4 +36,4 @@ export
   anthology
   . { Compilation, CompileEvent, CompileEvents, CompileProcess, CompileProgress, Compiler,
       CompileResult, Component, Deliverable, Edge, EntryPoint, Importance,
-      Link, LinkEvent, NirPlugin, Notice, Setting, Tool, Toolchain, Universe, WasmObject }
+      Link, LinkEvent, NirPlugin, Notice, Tool, Toolchain, Universe, WasmObject }

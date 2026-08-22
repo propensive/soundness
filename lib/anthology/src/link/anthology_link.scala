@@ -58,27 +58,27 @@ object linkerOptions:
   private def applicable(format: Format): Boolean =
     format.isInstanceOf[Js] || format == Wasm || format.isInstanceOf[Wasi]
 
-  private def sjs(edit: StandardConfig => StandardConfig): Setting =
-    Setting[StandardConfig](applicable)(edit)
+  private def sjs(edit: StandardConfig => StandardConfig): Toolchain.Setting =
+    Toolchain.Setting[StandardConfig](applicable)(edit)
 
-  val checkIr: Setting = sjs(_.withCheckIR(true))
-  val sourceMaps: Setting = sjs(_.withSourceMap(true))
+  val checkIr: Toolchain.Setting = sjs(_.withCheckIR(true))
+  val sourceMaps: Toolchain.Setting = sjs(_.withSourceMap(true))
 
   object esVersion:
-    private def of(version: ESVersion): Setting = sjs(_.withESFeatures(_.withESVersion(version)))
+    private def of(version: ESVersion): Toolchain.Setting = sjs(_.withESFeatures(_.withESVersion(version)))
 
-    val es2015: Setting = of(ESVersion.ES2015)
-    val es2016: Setting = of(ESVersion.ES2016)
-    val es2017: Setting = of(ESVersion.ES2017)
-    val es2018: Setting = of(ESVersion.ES2018)
-    val es2019: Setting = of(ESVersion.ES2019)
-    val es2020: Setting = of(ESVersion.ES2020)
-    val es2021: Setting = of(ESVersion.ES2021)
-    val es2022: Setting = of(ESVersion.ES2022)
+    val es2015: Toolchain.Setting = of(ESVersion.ES2015)
+    val es2016: Toolchain.Setting = of(ESVersion.ES2016)
+    val es2017: Toolchain.Setting = of(ESVersion.ES2017)
+    val es2018: Toolchain.Setting = of(ESVersion.ES2018)
+    val es2019: Toolchain.Setting = of(ESVersion.ES2019)
+    val es2020: Toolchain.Setting = of(ESVersion.ES2020)
+    val es2021: Toolchain.Setting = of(ESVersion.ES2021)
+    val es2022: Toolchain.Setting = of(ESVersion.ES2022)
 
   object optimize:
-    val none: Setting = sjs(_.withOptimizer(false))
-    val fast: Setting = sjs(_.withOptimizer(true))
+    val none: Toolchain.Setting = sjs(_.withOptimizer(false))
+    val fast: Toolchain.Setting = sjs(_.withOptimizer(true))
 
 // The sjsir edges of a toolchain: `Sjsir` to each JavaScript module system, to browser Wasm,
 // and—when the WASI toolchain is probed and a WIT world given—to a WASI 0.2 component. All

@@ -54,14 +54,14 @@ import xenophile.*
 import zephyrine.*
 
 object ociOptions:
-  private def oci(edit: OciConfiguration => OciConfiguration): Setting =
-    Setting[OciConfiguration](_ == OciImage)(edit)
+  private def oci(edit: OciConfiguration => OciConfiguration): Toolchain.Setting =
+    Toolchain.Setting[OciConfiguration](_ == OciImage)(edit)
 
-  def architecture(name: Text): Setting = oci(_.copy(architecture = name))
-  def os(name: Text): Setting = oci(_.copy(os = name))
-  def author(name: Text): Setting = oci(_.copy(author = name))
+  def architecture(name: Text): Toolchain.Setting = oci(_.copy(architecture = name))
+  def os(name: Text): Toolchain.Setting = oci(_.copy(os = name))
+  def author(name: Text): Toolchain.Setting = oci(_.copy(author = name))
 
-  def annotation(key: Text, value: Text): Setting =
+  def annotation(key: Text, value: Text): Toolchain.Setting =
     oci: config => config.copy(annotations = config.annotations.updated(key, value))
 
 // The wrapping edge of a toolchain: the `wasip2` component to its OCI artifact, written as an
