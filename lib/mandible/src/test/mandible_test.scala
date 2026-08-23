@@ -39,8 +39,6 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import soundness.*
 import galilei.Linux.pathOnLinux
 
-import proscenium.compat.*
-
 import alphabets.hexLowerCase
 import classloaders.threadContextClassloader
 import logging.silentLogging
@@ -49,6 +47,7 @@ import strategies.throwUnsafely
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
 import threading.platformThreading
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Mandible tests"):
 
@@ -505,7 +504,7 @@ object Tests extends Suite(m"Mandible tests"):
       EcosystemProfile.audit(registry, declared, before, after).advisories.stdlib
     . assert: advisories =>
         advisories.length == 2
-          && advisories.forall(_.s.contains("changed value"))
+          && advisories.all(_.s.contains("changed value"))
 
     // --- jsig/1 and host contracts ------------------------------------------------------------
 

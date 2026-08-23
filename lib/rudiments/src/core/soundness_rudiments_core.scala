@@ -47,8 +47,8 @@ export
       before, upto, from, after, keep, skip, snip, Appendable, Prependable, `:+`, `+:`,
       indexed, least, most, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
-      mean2, unique, seek, where,
-      Populated, head, last, reduce, populatedEquality }
+      mean2, unique, seek, glean, where,
+      Populated, head, last, lead, reduce, populatedEquality }
 
 // The `Deindex` extension group (`apply`, `at`, `defines`, `confine`, `prim`, `sec`, `ter`) is
 // re-declared here rather than exported: its typeclass evidence is a dependent leading `using`
@@ -91,6 +91,9 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
 extension [self](value: self)(using definable: denominative.Definable { type Self = self })
   def define(index: definable.Operand, result: definable.Result): self =
     definable.define(value, index, result)
+
+extension [self](value: self)(using omissible: denominative.Omissible { type Self = self })
+  def omit(index: omissible.Operand): self = omissible.omit(value, index)
 
 extension [element](sequence: proscenium.List[element])
   // Mirrors the ungated `List` special case in `rudiments.Deindex` (same non-`inline`

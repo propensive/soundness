@@ -32,8 +32,6 @@
                                                                                                   */
 package gesticulate
 
-import proscenium.compat.*
-
 import scala.reflect.*
 
 import anticipation.*
@@ -43,6 +41,7 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import denominative.asymptotics.linearSizeComplexity
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -75,7 +74,7 @@ object Multipart:
       if cursor.peek == '\r' then
         cursor.next()
         cursor.expect('\n')(expected('\n'))
-        list.toMap
+        list.to[Map]
 
       else
         val key: Text = cursor.hold:
@@ -137,11 +136,11 @@ object Multipart:
 
     def parsePart(headers: Map[Text, Text], stream: Chain[Data])
     :   Part =
-      headers.get(t"Content-Disposition").optional.let: disposition =>
+      headers.stdlib.get(t"Content-Disposition").optional.let: disposition =>
         val parts = disposition.cut(t";").map(_.trim)
 
         val params: Map[Text, Text] =
-          parts.drop(1).map: param =>
+          parts.skip(1).map: param =>
             param.cut(t"=", 2) match
               case List(key, value) =>
                 // `pen` is present only when `value` has at least two characters, so a lone
@@ -154,7 +153,7 @@ object Multipart:
               case _ =>
                 abort(Multipart.Error(Multipart.Error.Reason.BadDisposition))
 
-          . toMap
+          . to[Map]
 
         val dispositionValue = parts.prim match
           case t"inline"     => Multipart.Disposition.Inline
@@ -164,8 +163,8 @@ object Multipart:
           case _ =>
             abort(Multipart.Error(Multipart.Error.Reason.BadDisposition))
 
-        val filename = params.get(t"filename").optional
-        val name = params.get(t"name").optional
+        val filename = params.stdlib.get(t"filename").optional
+        val name = params.stdlib.get(t"name").optional
 
         Part(dispositionValue, headers, name, filename, stream)
 

@@ -34,12 +34,11 @@ package savagery
 
 import soundness.*
 
-import proscenium.compat.*
-
 import errorDiagnostics.stackTracesDiagnostics
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
 import xylophone.XmlSchema
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Savagery tests"):
   def run(): Unit =
@@ -325,7 +324,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse empty SVG"):
         val svg = t"""<svg width="100" height="100"/>""".read[Svg]
-        (svg.width, svg.height, svg.figures.length, svg.defs.length)
+        (svg.width, svg.height, svg.figures.size, svg.defs.size)
       .assert(_ == (100.0f, 100.0f, 0, 0))
 
       test(m"Parse SVG with rectangle"):
@@ -353,12 +352,12 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse SVG with simple path"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
-        svg.figures.length
+        svg.figures.size
       .assert(_ == 1)
 
       test(m"Parse SVG with path and check ops"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
-        svg.figures.head
+        svg.figures.stdlib.head
       .assert:
           case Outline(ops, Unset, Unset, Nil) =>
             ops.reverse == List(Stroke.MoveTo(Point(0, 0)), Stroke.DrawTo(Point(1, 1)), Stroke.Close)
@@ -366,7 +365,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse path with relative h and v"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 h 2 v -2 Z"/></svg>""".read[Svg]
-        svg.figures.head
+        svg.figures.stdlib.head
       .assert:
           case Outline(ops, _, _, _) =>
             ops.reverse == List
@@ -378,7 +377,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse path with id"):
         val svg = t"""<svg width="10" height="10"><path id="x" d="M 0 0 Z"/></svg>""".read[Svg]
-        svg.figures.head
+        svg.figures.stdlib.head
       .assert:
           case Outline(_, _, id, _) => id == Svg.Id(t"x")
           case _                    => false
@@ -387,7 +386,7 @@ object Tests extends Suite(m"Savagery tests"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(5,10)"/></svg>"""
                 . read[Svg]
 
-        svg.figures.head
+        svg.figures.stdlib.head
       .assert:
           case Outline(_, _, _, transforms) =>
             transforms == List(Transform.Translate(Delta(5, 10)))
@@ -397,7 +396,7 @@ object Tests extends Suite(m"Savagery tests"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(1,2) rotate(45)"/></svg>"""
                 . read[Svg]
 
-        svg.figures.head
+        svg.figures.stdlib.head
       .assert:
           case Outline(_, _, _, transforms) =>
             transforms == List(Transform.Translate(Delta(1, 2)), Transform.Rotate(Angle.degrees(45)))
@@ -408,7 +407,7 @@ object Tests extends Suite(m"Savagery tests"):
           t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#ff0000"/></linearGradient></defs></svg>"""
         . read[Svg]
 
-        svg.defs.head
+        svg.defs.stdlib.head
       .assert:
           case lg: Svg.LinearGradient[?] =>
             lg.stops.length == 1 && lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
@@ -418,7 +417,7 @@ object Tests extends Suite(m"Savagery tests"):
           t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient></defs></svg>"""
         . read[Svg]
 
-        svg.defs.head
+        svg.defs.stdlib.head
       .assert:
           case lg: Svg.LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
@@ -427,7 +426,7 @@ object Tests extends Suite(m"Savagery tests"):
           t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0.5" stop-color="rgb(255,0,0)"/></linearGradient></defs></svg>"""
         . read[Svg]
 
-        svg.defs.head
+        svg.defs.stdlib.head
       .assert:
           case lg: Svg.LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
@@ -436,7 +435,7 @@ object Tests extends Suite(m"Savagery tests"):
           t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="red"/></linearGradient></defs></svg>"""
         . read[Svg]
 
-        svg.defs.head
+        svg.defs.stdlib.head
       .assert:
           case lg: Svg.LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
@@ -446,7 +445,7 @@ object Tests extends Suite(m"Savagery tests"):
 
         . read[Svg]
 
-        svg.defs.head
+        svg.defs.stdlib.head
       .assert:
           case lg: Svg.LinearGradient[?] => lg.id == Svg.Id(t"myGrad")
 
@@ -455,7 +454,7 @@ object Tests extends Suite(m"Savagery tests"):
           t"""<svg width="10" height="10"><text x="0" y="0">Hello</text><rect x="0" y="0" width="5" height="5"/></svg>"""
         . read[Svg]
 
-        svg.figures.length
+        svg.figures.size
       .assert(_ == 1)
 
       test(m"Flatten group"):
@@ -463,19 +462,19 @@ object Tests extends Suite(m"Savagery tests"):
           t"""<svg width="10" height="10"><g><rect x="0" y="0" width="5" height="5"/><circle cx="0" cy="0" r="3"/></g></svg>"""
         . read[Svg]
 
-        svg.figures.length
+        svg.figures.size
       .assert(_ == 2)
 
       test(m"Ignore unknown attributes"):
         val svg = t"""<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" foo="bar"/></svg>"""
                 . read[Svg]
 
-        svg.figures.head
+        svg.figures.stdlib.head
       .assert(_ == Rectangle(Point(0, 0), 5, 5))
 
       test(m"Default missing attributes to zero"):
         val svg = t"""<svg width="10" height="10"><rect width="5" height="5"/></svg>""".read[Svg]
-        svg.figures.head
+        svg.figures.stdlib.head
       .assert(_ == Rectangle(Point(0, 0), 5, 5))
 
       test(m"Round-trip: rectangle"):

@@ -36,13 +36,12 @@ import scala.collection.immutable as sci
 import scala.quoted.*
 import scala.reflect.ClassTag
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import gigantism.*
 import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object internal:
   inline def default[product, field](index: Int): Optional[field] =
@@ -72,7 +71,7 @@ object internal:
     import quotes.reflect.*
 
     val paths = specificOverridesRepr(TypeRepr.of[typeclass], TypeRepr.of[derivation]) match
-      case Some((_, keys)) => keys.toList
+      case Some((_, keys)) => keys.to[List]
       case None            => Nil
 
     '{List.of(${Expr.ofList(paths.stdlib.map { k => '{${Expr(k)}.tt} })})}
@@ -284,7 +283,7 @@ object internal:
   def isChoice[derivation: Type]: Macro[Boolean] =
     import quotes.reflect.*
     val children = TypeRepr.of[derivation].typeSymbol.children
-    val singleton = children.forall(variantType(_) <:< TypeRepr.of[scala.Singleton])
+    val singleton = children.all(variantType(_) <:< TypeRepr.of[scala.Singleton])
     Expr(children.nonEmpty && singleton)
 
   // The variant type intersected with the sum parent (`variant & derivation`): keeps a
@@ -465,7 +464,7 @@ object internal:
     val reentrant = TypeRepr.of[Reentrant].appliedTo(instance)
 
     val elementGivens =
-      extraGivens.zipWithIndex.map: (tpe, index) => syntheticGiven("$wisteriaGiven$"+index, tpe)
+      extraGivens.indexed.map: (tpe, ordinal) => syntheticGiven("$wisteriaGiven$"+ordinal.n0, tpe)
 
     val markers =
       syntheticGiven("$wisteriaReentrant", reentrant) ::
@@ -507,11 +506,11 @@ object internal:
     def instanceOf(tpe: TypeRepr): TypeRepr = typeclassConstructor.appliedTo(tpe)
 
     def codecFunction(tpe: TypeRepr, args: List[TypeRepr]): TypeRepr =
-      defn.FunctionClass(args.length, isContextual = true).typeRef
+      defn.FunctionClass(args.size, isContextual = true).typeRef
         . appliedTo(args.stdlib.map(instanceOf) :+ instanceOf(tpe))
 
     def isCodec(tpe: TypeRepr, args: List[TypeRepr]): Boolean =
-      args.nonEmpty &&
+      !args.nil &&
         (Implicits.searchIgnoring(codecFunction(tpe, args))(wrappers*) match
               case _: ImplicitSearchSuccess => true
               case _                        => false)
@@ -527,7 +526,7 @@ object internal:
     // the derivation's own wrappers. Used only in `visit` (never the root `.apply` branch, which
     // needs the contextual-function shape).
     def codecProbe(tpe: TypeRepr, args: List[TypeRepr]): Boolean =
-      args.nonEmpty && inferWith(instanceOf(tpe), args.map(instanceOf)).let: tree =>
+      !args.nil && inferWith(instanceOf(tpe), args.map(instanceOf)).let: tree =>
 
         !isSentinel(tree) && !wrappers.has(rootSymbol(tree))
 
@@ -640,7 +639,7 @@ object internal:
 
       val bindings: List[(String, TypeRepr, Symbol)] = List.of(bindings0)
 
-      val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.toMap
+      val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.to[Map]
 
       // Each body is built in the val's *own* nested `Quotes` (`symbol.asQuotes`), so the `field`
       // resolutions inside `derivedOne` resolve in that val's scope — where the sibling givens are.
@@ -658,7 +657,7 @@ object internal:
       def siblingSymbol(tpe: TypeRepr): Option[Symbol] =
         val dealiased = tpe.dealias
 
-        symbolByKey.get(dealiased.show).orElse:
+        symbolByKey.stdlib.get(dealiased.show).orElse:
           bindings.stdlib.collectFirst { case (_, tpe0, symbol) if tpe0 =:= dealiased => symbol }
 
       def elementInstance(tpe: TypeRepr): Term = siblingSymbol(tpe) match

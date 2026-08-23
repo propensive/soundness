@@ -32,8 +32,6 @@
                                                                                                   */
 package zeppelin
 
-import proscenium.compat.*
-
 import scala.math
 
 import java.io as ji
@@ -57,6 +55,7 @@ import spectacular.*
 import turbulence.*
 import zephyrine.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Zipfile:
   private val u32Max: Long = 0xffffffffL
@@ -72,7 +71,7 @@ object Zipfile:
     val out = ji.FileOutputStream(ji.File(path.generic.s))
 
     try
-      Zipfile(entries.to(List), Unset, prefix).serialize.sweep: region =>
+      Zipfile(entries.to(List), Unset, prefix).serialize.drain: region =>
         range =>
           val interval: Interval = range
           out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
@@ -137,7 +136,7 @@ object Zipfile:
   // can interoperate.
   private[zeppelin] class DataSource(data: Data) extends Expanse:
     def size: Long = data.length.toLong
-    def read(offset: Long, length: Int): Data = data.slice(offset.toInt, offset.toInt + length)
+    def read(offset: Long, length: Int): Data = data.segment((offset.toInt).z till (offset.toInt + length).z)
 
   // Re-opens the file for each read, so entries stay detached and reusable with no held handle.
   private class FileSource(filename: Text) extends Expanse:
@@ -209,7 +208,7 @@ object Zipfile:
     val commentLength = Zip.u16(window, i + 20)
 
     val comment: Optional[Text] =
-      if commentLength == 0 then Unset else decodeText(window.slice(i + 22, i + 22 + commentLength))
+      if commentLength == 0 then Unset else decodeText(window.segment((i + 22).z till (i + 22 + commentLength).z))
 
     // Follow the ZIP64 locator if any EOCD field is saturated.
     if entryCount == u16Max.toLong || cdSize == u32Max || cdOffset == u32Max then
@@ -270,14 +269,14 @@ object Zipfile:
       var localOffset = Zip.u32(central, p + 42)
 
       val nameStart = p + 46
-      val nameBytes = central.slice(nameStart, nameStart + nameLength)
+      val nameBytes = central.segment((nameStart).z till (nameStart + nameLength).z)
       val extraStart = nameStart + nameLength
-      val extra = central.slice(extraStart, extraStart + extraLength)
+      val extra = central.segment((extraStart).z till (extraStart + extraLength).z)
       val commentStart = extraStart + extraLength
 
       val entryComment: Optional[Text] =
         if entryCommentLength == 0 then Unset
-        else decodeText(central.slice(commentStart, commentStart + entryCommentLength))
+        else decodeText(central.segment((commentStart).z till (commentStart + entryCommentLength).z))
 
       // ZIP64 extended information overrides the saturated fixed fields, in a fixed order.
       var q = 0
@@ -424,9 +423,9 @@ object Zipfile:
         if needOffset then fields += localOffset
         val values = List.of(fields.result())
 
-        Data.build(4 + values.length*8): array =>
+        Data.build(4 + values.size*8): array =>
           Zip.putU16(array, 0, 1)
-          Zip.putU16(array, 2, values.length*8)
+          Zip.putU16(array, 2, values.size*8)
           var offset = 4
 
           values.foreach: value =>
@@ -507,7 +506,7 @@ object Zipfile:
 case class Zipfile
   ( entries: List[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset ):
   def entry(ref: Path on Zip): Zip.Entry raises Zip.Error =
-    entries.find(_.ref == ref).getOrElse(abort(Zip.Error(Zip.Error.Reason.NotFound(ref))))
+    entries.seek(_.ref == ref).or(abort(Zip.Error(Zip.Error.Reason.NotFound(ref))))
 
   def serialize: Stream[Data] over Credit =
     // Emit the prefix first; all subsequent offsets are absolute (they include the prefix), so
@@ -527,7 +526,7 @@ case class Zipfile
     val cdStart = offset
     val central = records.map: (entry, name, _, off) => Zipfile.centralHeader(entry, name, off)
     val cdSize = central.stdlib.foldLeft(0L)(_ + _.length)
-    val tail = Zipfile.endRecords(records.length.toLong, cdStart, cdSize, comment)
+    val tail = Zipfile.endRecords(records.size.toLong, cdStart, cdSize, comment)
 
     val prefixIterator: Iterator[Data] =
       if prefixBytes.length == 0 then Iterator.empty else Iterator(prefixBytes)
@@ -535,7 +534,7 @@ case class Zipfile
     // Each entry's payload stream is opened only when the serialization reaches
     // it, and drained in bounded chunks.
     val local: Iterator[Data] =
-      records.iterator.flatMap: (entry, _, header, _) =>
+      records.stdlib.iterator.flatMap: (entry, _, header, _) =>
         Iterator(header) ++ entry.storedBytes().chunks
 
-    (prefixIterator ++ local ++ central.iterator ++ tail.iterator).stream
+    (prefixIterator ++ local ++ central.stdlib.iterator ++ tail.stdlib.iterator).stream

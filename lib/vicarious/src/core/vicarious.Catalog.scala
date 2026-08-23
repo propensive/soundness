@@ -32,8 +32,6 @@
                                                                                                   */
 package vicarious
 
-import proscenium.compat.*
-
 import scala.language.dynamics
 
 import beneficence.*
@@ -50,7 +48,7 @@ object Catalog:
 
       Catalog(Array.tabulate(catalog.size): index =>
         partialFunction.applyOrElse
-          ( Proxy[key, value, index.type](index), _ => catalog.values(index) ))
+          ( Proxy[key, value, index.type](index), _ => catalog.values.readable(index) ))
 
 //case class Catalog[key, value](values: Map[Text, value]):
 case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findable:
@@ -60,7 +58,7 @@ case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findab
     values(accessor(using Proxy(0)).id.or(panic(m"the Proxy phantom always assigns an id")))
 
   def map[value2: ClassTag](lambda: value => value2): Catalog[key, value2] =
-    Catalog(values.map(lambda))
+    Catalog(Array.frozen(values.readable.map(lambda)))
 
 
   def tie[result](using proxy: Proxy[key, value, 0])
@@ -75,4 +73,4 @@ case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findab
   :   Catalog[key, result] =
 
     Catalog(Array.tabulate(values.length): index =>
-      lambda(values(index), right.values(index)))
+      lambda(values.readable(index), right.values.readable(index)))

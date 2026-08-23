@@ -32,14 +32,13 @@
                                                                                                   */
 package exoskeleton
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 import denominative.asymptotics.linearSizeComplexity
 
 package interpreters:
@@ -95,18 +94,18 @@ package interpreters:
 
       def push(): Commandline = current.lay(Commandline(List.of(arguments.stdlib.reverse))): current =>
         commandline.copy
-          ( parameters = commandline.parameters.updated(current, List.of(arguments.stdlib.reverse)) )
+          ( parameters = commandline.parameters.define(current, List.of(arguments.stdlib.reverse)) )
 
       def postprocess(commandline: Commandline): Commandline =
         val parameters2: Map[Argument, List[Argument]] =
-          commandline.parameters.toList.bind: (key, values) =>
+          commandline.parameters.to[List].bind: (key, values) =>
             val flag = key.value
 
             if flag.starts(t"--") && flag.contains(t"=")
             then
               val key2 = key.copy(format = Argument.Format.EqualityPrefix)
               val value = key.copy(format = Argument.Format.EqualitySuffix)
-              List(key2 -> (List(value) ::: values))
+              List(key2 -> (List(value) + values))
             else if flag.starts(t"-") && !flag.starts(t"--") && flag.length > 2
             then
               if clustering then
@@ -118,12 +117,12 @@ package interpreters:
               else
                 List:
                   key.copy(format = Argument.Format.CharFlag(Prim)) ->
-                    (List(key.copy(format = Argument.Format.FlagSuffix)) ::: values)
+                    (List(key.copy(format = Argument.Format.FlagSuffix)) + values)
 
             else
               List(key -> values)
 
-          . toMap
+          . to[Map]
 
         val focus2 = current.let: current =>
           val focusCursor: Ordinal = current.cursor.or(current.value.length).z

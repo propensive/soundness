@@ -37,7 +37,6 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*
-import proscenium.compat.*
 
 import Cbor.Error.{Primitive, Reason}
 

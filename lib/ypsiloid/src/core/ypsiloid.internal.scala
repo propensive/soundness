@@ -35,7 +35,10 @@ package ypsiloid
 import scala.collection.immutable.Seq
 import scala.collection.immutable.IndexedSeq
 
-import proscenium.compat.*
+
+// Residue: `head` and the frozen-array subscript `apply` are partial; both await the
+// partial-operations tranche.
+import proscenium.compat.{head, apply}
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -50,6 +53,8 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // `y"…"` interpolator and extractor macros.
 //
@@ -76,14 +81,14 @@ object internal:
   private def stripPad(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1) else arr
+    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.keep(n - 1) else arr
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
 
-    val cleaned: List[String] = parts.zipWithIndex.map: (part, idx) =>
-      if idx > 0 && part.startsWith("*") then
-        spreads = spreads + (idx - 1)
+    val cleaned: List[String] = parts.indexed.map: (part, idx) =>
+      if idx.n0 > 0 && part.startsWith("*") then
+        spreads = spreads :+ (idx.n0 - 1)
         part.substring(1).nn
       else
         part
@@ -111,7 +116,7 @@ object internal:
       case _ => 0
 
     val parts = recur[parts](Nil)
-    if parts.length != 1 then halt(m"a YAML path literal cannot have substitutions")
+    if parts.size != 1 then halt(m"a YAML path literal cannot have substitutions")
     val raw: String = parts.head
     val start: Int = firstOrigin[origins]
 
@@ -168,7 +173,7 @@ object internal:
       case Varargs(insertions) => insertions
 
     val (parts2, spreads) = preprocess(parts)
-    val source: String = parts2.mkString(MarkerString)
+    val source: String = parts2.stdlib.mkString(MarkerString)
 
     val sourceFile = Position.ofMacroExpansion.sourceFile
     val macroPos = Position.ofMacroExpansion
@@ -285,7 +290,7 @@ object internal:
           case '{$value: tpe} => Type.of[tpe] match
             case '[Map[Text, Yaml]] =>
               ' {
-                  $value.asInstanceOf[Map[Text, Yaml]].iterator.map: (key, yaml) =>
+                  $value.asInstanceOf[Map[Text, Yaml]].stdlib.iterator.map: (key, yaml) =>
                     (key.s, Yaml.unseal(yaml))
 
                   . toList
@@ -427,7 +432,7 @@ object internal:
 
     abortive:
       val (parts2, spreads) = preprocess(parts)
-      val source: String = parts2.mkString(MarkerString)
+      val source: String = parts2.stdlib.mkString(MarkerString)
 
       val ast: Yaml.Ast =
         given diagnostics: Diagnostics = Diagnostics.omit
@@ -628,10 +633,10 @@ object internal:
                     var k = 0
 
                     while k < n do
-                      keysSet += $scrutinee.objectKey(k)
+                      keysSet = keysSet :+ $scrutinee.objectKey(k)
                       k += 1
 
-                    ${Expr(literalKeys)}.forall(keysSet.has(_))
+                    ${Expr(literalKeys)}.all(keysSet.has(_))
                   }
               }
           else
@@ -645,10 +650,10 @@ object internal:
                       var k = 0
 
                       while k < n do
-                        keysSet += $scrutinee.objectKey(k)
+                        keysSet = keysSet :+ $scrutinee.objectKey(k)
                         k += 1
 
-                      ${Expr(literalKeys)}.forall(keysSet.has(_))
+                      ${Expr(literalKeys)}.all(keysSet.has(_))
                     }
                   }
               }
@@ -716,7 +721,7 @@ object internal:
         var c = 0
         var k = 0
 
-        while k < parts2.length - 1 do
+        while k < parts2.size - 1 do
           c += 1
           k += 1
 
@@ -738,7 +743,7 @@ object internal:
               }
           }
 
-      types.length match
+      types.size match
         case 0 =>
           '{$result.asInstanceOf[Boolean]}
 
@@ -748,7 +753,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
-          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.stdlib.reverse)
+          AppliedType(defn.TupleClass(types.size).info.typeSymbol.typeRef, types.stdlib.reverse)
           . asType
           . absolve match
             case '[type result <: Tuple; result] =>

@@ -32,8 +32,6 @@
                                                                                                   */
 package ultimatum
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import parasite.*
@@ -143,18 +141,18 @@ def border
   // The middle band: the child flanked by whichever vertical edges are requested.
   val middle =
     val edge = if left then List(verticalRule) else Nil
-    strip(((edge :+ child) ::: (if right then List(verticalRule) else Nil)).stdlib*)
+    strip(((edge :+ child) + (if right then List(verticalRule) else Nil)).stdlib*)
 
   // A horizontal band (the top or bottom): a rule flanked by whichever corners
   // are requested (a corner appears only where a vertical edge also meets it).
   def band(leftCorner: Text, rightCorner: Text): Pane =
     val start = if left then List(corner(leftCorner)) else Nil
     val end = if right then List(corner(rightCorner)) else Nil
-    strip(((start :+ horizontalRule) ::: end).stdlib*)
+    strip(((start :+ horizontalRule) + end).stdlib*)
 
   val head = if top then List(band(style.topLeft, style.topRight)) else Nil
   val foot = if bottom then List(band(style.bottomLeft, style.bottomRight)) else Nil
-  stack(((head :+ middle) ::: foot).stdlib*)
+  stack(((head :+ middle) + foot).stdlib*)
 
 // Drive an interactive layout, looping over terminal events until the user exits.
 // Used inside `interactive`. In `Fullscreen` mode the layout takes over the
@@ -230,7 +228,7 @@ def dirtyCells
 
     if dirty then moved += (index: Ordinal).n0
 
-  Set.of(moved.result()) ++ changed
+  Set.of(moved.result()) + changed
 
 // Solve `pane` against `root` once and paint each leaf's content into its
 // rectangle (no event loop). An `InlineRoot` is sized to the height its content

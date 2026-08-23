@@ -37,7 +37,6 @@ import anticipation.*
 import contingency.*
 import galilei.*
 import prepositional.*
-import proscenium.compat.*
 
 // These were anchored in `Pdf`'s companion so that `path.open[Pdf]()` and `data.open[Pdf]()`
 // resolved with no import. They live here now, with `PdfFile`, so that reading and writing PDF

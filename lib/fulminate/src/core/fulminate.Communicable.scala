@@ -32,8 +32,6 @@
                                                                                                   */
 package fulminate
 
-import proscenium.compat.*
-
 import scala.quoted.*
 
 import anticipation.*
@@ -59,7 +57,10 @@ object Communicable:
     Message(value.getClass.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt)
 
   given listMessage: List[Message] is Communicable =
-    messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
+    messages =>
+      // `.stdlib` rather than `+`: fulminate sits below symbolism, where `Concatenable` lives.
+      val bullets = List.fill(messages.stdlib.size)("\n - ".tt)
+      Message(List.of(bullets.stdlib ::: List("".tt).stdlib), messages)
 
 // A `Communicable` is a `Transcribable to Message`: converting a value to a `Message` is exactly
 // how a loggable event is transcribed onto the common carrier. This lets `Loggable.fanOut` resolve

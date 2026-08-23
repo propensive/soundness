@@ -33,7 +33,6 @@
 package aviation
 
 import anticipation.*
-import proscenium.compat.*
 import fulminate.*
 import rudiments.*
 import contingency.*
@@ -124,7 +123,7 @@ object Recurrence:
 
     sequence =>
       val all = Chain.iterate(sequence.start)(addable.add(_, sequence.period))
-      sequence.repetitions.lay(all)(all.take(_))
+      sequence.repetitions.lay(all) { n => Chain.of(all.stdlib.take(n)) }
 
   // RecurrenceError → Recurrence.Error
   case class Error(value: Text)(using Diagnostics)

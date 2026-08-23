@@ -36,15 +36,13 @@ import java.lang as jl
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.asymptotics.linearSizeComplexity
 
 case class DecodeIssues(items: List[(Int, CharDecoder.Error)] = Nil)(using Diagnostics)
-extends Error(m"${items.length} decoding issues"):
+extends Error(m"${items.size} decoding issues"):
   def +(position: Int, error: CharDecoder.Error): DecodeIssues =
     DecodeIssues(items :+ (position, error))
 
@@ -112,7 +110,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
         . protect:
             import textSanitizers.accrueSanitizer
             charDecoders.utf8Decoder.decoded(japaneseData)
-      . assert(_.items.length == 0)
+      . assert(_.items.size == 0)
 
       test(m"A single bad sequence accrues one error"):
         validate[CharDecoder.Focus](DecodeIssues()):
@@ -245,7 +243,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
           if trimmed.nonEmpty then
             val tokens: List[String] =
-              Array.unsafeFrozen(trimmed.split("\\s+").nn).toList.map(_.nn)
+              Array.unsafeFrozen(trimmed.split("\\s+").nn).to[List].map(_.nn)
             val sb = jl.StringBuilder()
             val expected = scala.collection.mutable.ArrayBuffer[Int]()
 

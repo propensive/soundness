@@ -39,13 +39,13 @@ import scala.util.control as suc
 import ambience.*
 import anticipation.*
 import contingency.*
+import denominative.*
 import digression.*
 import embarcadero.*
 import galilei.*
 import gossamer.*
 import parasite.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
@@ -62,7 +62,7 @@ object ociOptions:
   def author(name: Text): Toolchain.Setting = oci(_.copy(author = name))
 
   def annotation(key: Text, value: Text): Toolchain.Setting =
-    oci: config => config.copy(annotations = config.annotations.updated(key, value))
+    oci: config => config.copy(annotations = config.annotations.define(key, value))
 
 // The wrapping edge of a toolchain: the `wasip2` component to its OCI artifact, written as an
 // `oci-archive` tar. Linking the component is the preceding edge on the path
@@ -121,7 +121,7 @@ object ociEdges:
             target       = if exports.has(incomingHandler) then proxy else Unset,
             architecture = form.architecture,
             os           = form.os,
-            annotations  = if form.annotations.isEmpty then Unset else form.annotations )
+            annotations  = if form.annotations.nil then Unset else form.annotations )
 
       val archive = out / "image.tar"
       jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))

@@ -32,11 +32,11 @@
                                                                                                   */
 package metamorphose
 
-import proscenium.compat.*
-
 import scala.annotation.*
 
 import contingency.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Factoradic:
   def apply(sequence: List[Int]): Factoradic raises Permutation.Error =
@@ -48,9 +48,9 @@ object Factoradic:
           if head >= base
           then raise(Permutation.Error(Permutation.Error.Reason.BaseRange(head, base)))
 
-          recur(tail, bases.tail, result + bases.head*head, base - 1)
+          recur(tail, List.of(bases.stdlib.tail), result + bases.stdlib.head*head, base - 1)
 
-    val length = sequence.length
+    val length = sequence.size
     Factoradic(recur(sequence, Factorial.sequence(length), 0, length))
 
 case class Factoradic(number: BigInt):

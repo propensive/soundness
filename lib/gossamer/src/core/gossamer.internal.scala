@@ -32,9 +32,6 @@
                                                                                                   */
 package gossamer
 
-
-import proscenium.compat.*
-
 import scala.collection.immutable.Seq
 
 import scala.collection.immutable.{List, Nil, ::}
@@ -224,12 +221,12 @@ object internal:
     val origins = contextual.Interpolation.literalOrigins(context, literalParts.length)
 
     val staticParts: List[Expr[Ascii]] = literalParts.zip(origins.stdlib).map: (part, origin) =>
-      val bytes: Array[Expr[Byte]]^{} = part.tt.chars.zipWithIndex.map: (char, index) =>
+      val bytes: Array[Expr[Byte]]^{} = part.tt.chars.indexed.remap: (char, ordinal) =>
         if char >= 128 then
           val position =
             contextual.Interpolation.sourcePosition
               ( proscenium.List.of(scala.List(part)), proscenium.List.of(scala.List(origin)),
-                1, index )
+                1, ordinal.n0 )
 
           halt(824, m"$char is not a valid ASCII character", position)
 

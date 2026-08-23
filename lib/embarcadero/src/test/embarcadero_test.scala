@@ -34,8 +34,6 @@ package embarcadero
 
 import soundness.*
 
-import proscenium.compat.*
-
 import providers.javaStdlibProvider
 import alphabets.hexLowerCase
 import charEncoders.utf8Encoder
@@ -143,7 +141,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       val names      = entries.map(_.entryName)
       // Explicit result type and reasserting cast: the collect lambda re-freshens the
       // frozen chunk to an `any.rd` that leaks out of the partial function.
-      val layoutData = entries.collect[Data]:
+      val layoutData = entries.sweep[Data, List[Data]]:
         case file: Tar.Entry.File if file.entryName == t"oci-layout" =>
           file.data.memoize.asInstanceOf[Data]
 
@@ -194,15 +192,15 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.imageConfig)
 
       test(m"a layer's stored blob streams verbatim"):
-        archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.head).memoize.to[List] }
+        archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.stdlib.head).memoize.to[List] }
       . assert(_ == layer.blob.to[List])
 
       test(m"a layer decompresses to the original tar bytes"):
-        archiveData.open[Image]() { handle ?=> handle.layer(image.manifest.layers.head).memoize.to[List] }
+        archiveData.open[Image]() { handle ?=> handle.layer(image.manifest.layers.stdlib.head).memoize.to[List] }
       . assert(_ == layer.raw.to[List])
 
       test(m"verified gathers a blob and confirms its digest and size"):
-        archiveData.open[Image]() { handle ?=> handle.verified(image.manifest.layers.head).to[List] }
+        archiveData.open[Image]() { handle ?=> handle.verified(image.manifest.layers.stdlib.head).to[List] }
       . assert(_ == layer.blob.to[List])
 
       test(m"index JSON round-trips through jacinta"):
@@ -221,7 +219,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"a missing blob is reported by its digest"):
         val data = rebuilt(_.filter(_.entryName != layerBlobPath))
-        failure(data.open[Image]() { handle ?=> handle.verified(image.manifest.layers.head) })
+        failure(data.open[Image]() { handle ?=> handle.verified(image.manifest.layers.stdlib.head) })
       . assert(_ == Oci.Error.Reason.MissingBlob(layer.digest))
 
       test(m"a corrupted blob fails its digest check"):
@@ -254,7 +252,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
             target  = t"wasi:http/proxy@0.2.0" )
 
       val wasmConfig = artifact.wasmConfig.or(panic(m"the fixture artifact always has a wasm config"))
-      val wasmLayer  = artifact.layers.head
+      val wasmLayer  = artifact.layers.stdlib.head
 
       test(m"the artifact carries a wasm config, not an image config"):
         (artifact.wasmConfig.present, artifact.imageConfig.present)
@@ -315,7 +313,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"the component round-trips out of the archive unchanged"):
         val archived = artifact.archive.source[Data].memoize
-        archived.open[Image]() { handle ?=> handle.layer(artifact.manifest.layers.head).memoize.to[List] }
+        archived.open[Image]() { handle ?=> handle.layer(artifact.manifest.layers.stdlib.head).memoize.to[List] }
       . assert(_ == component.to[List])
 
       test(m"the wasm config round-trips, digest-verified"):
@@ -603,7 +601,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
                 case Frame.Headers(id, block, _, _) =>
                   val fields = hpack.decode(block)
-                  val path = fields.find(_.name == t":path").map(_.value).getOrElse(t"")
+                  val path = fields.seek(_.name == t":path").let(_.value).or(t"")
                   calls.synchronized(calls.append(path))
 
                   val status = hpack.encode(List(Hpack.Entry(t":status", t"200"),

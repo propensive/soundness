@@ -38,7 +38,6 @@ import scala.caps
 
 import java.nio.charset.StandardCharsets
 import fulminate.*
-import proscenium.compat.*
 
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions
@@ -204,7 +203,7 @@ trait Cbor2:
             val key: Text = renames(label).or(label)
 
             def decodeNow(): field =
-              values.get(key.s) match
+              values.stdlib.get(key.s) match
                 case Some(value) => context.decoded(new Cbor(value))
                 case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
 
@@ -888,7 +887,7 @@ object Cbor extends Cbor2, Dynamic:
           val key = root.key(index)
 
           if key.isTextString
-          then map = map.updated(key.string.tt.as, decodable.decoded(ast(root.value(index))))
+          then map = map.define(key.string.tt.as, decodable.decoded(ast(root.value(index))))
           else abort(Cbor.Error(Reason.NonStringKey))
 
           index += 1
@@ -900,7 +899,7 @@ object Cbor extends Cbor2, Dynamic:
   =>  Map[key, element] is Encodable in Cbor =
 
     map =>
-      val keys: List[key] = map.keys.to(List)
+      val keys: List[key] = map.keys.to[List]
       val values = Array.from[Any](keys.stdlib.map(map(_).encode.root))
       ast(Ast.map(Array.from(keys.stdlib.map{ k => k.encode.s }), values))
 

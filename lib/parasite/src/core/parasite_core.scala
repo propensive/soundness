@@ -47,7 +47,6 @@ import fulminate.*
 import nomenclature.*
 import prepositional.*
 import symbolism.*
-import proscenium.compat.*
 import vacuous.*
 
 import abstractables.durationAbstractable
@@ -185,7 +184,7 @@ extension [result](stream: Chain[result])
   :   (Tactic[Async.Error]^) ?->{monitor, probate} Chain[result] =
     // The task is created and awaited under the same monitor; there is no aliased writer.
     if scala.caps.unsafe.unsafeAssumeSeparate(async(stream.nil).await())
-    then Chain() else stream.head #:: stream.tail.concurrent
+    then Chain() else stream.stdlib.head #:: Chain.of(stream.stdlib.tail).concurrent
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)

@@ -37,8 +37,6 @@ import java.lang as jl
 import scala.math
 import scala.reflect
 
-import proscenium.compat.*
-
 import galilei.*
 import scala.quoted.*
 
@@ -65,6 +63,8 @@ import vacuous.*
 import systems.javaSystem
 import threading.platformThreading
 import workingDirectories.javaWorkingDirectory
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice) extends Rig:
   type Result[output] = output
@@ -291,7 +291,7 @@ object Bench:
 
       var index = 0
 
-      while index < values.length do
+      while index < values.size do
         val value = values.stdlib(index)
 
         val coordinates = List(axis.coordinate(value))
@@ -349,11 +349,11 @@ object Bench:
 
       var leftIndex = 0
 
-      while leftIndex < lefts.length do
+      while leftIndex < lefts.size do
         val left = lefts.stdlib(leftIndex)
         var rightIndex = 0
 
-        while rightIndex < rights.length do
+        while rightIndex < rights.size do
           val right = rights.stdlib(rightIndex)
 
           val coordinates = List(first.coordinate(left), second.coordinate(right))
@@ -374,18 +374,16 @@ object Bench:
         leftIndex += 1
 
       anchor.let: anchorValue =>
-        lefts.find(_ == anchorValue) match
-          case Some(value) =>
+        lefts.seek(_ == anchorValue).lay:
+          rights.seek(_ == anchorValue).let: value =>
             anchors.include
-              ( runner.report, testId, Nil, Anchor(first.spec, first.point(value), comparison) )
-
-          case None =>
-            rights.find(_ == anchorValue).foreach: value =>
-              anchors.include
-                ( runner.report,
-                  testId,
-                  Nil,
-                  Anchor(second.spec, second.point(value), comparison) )
+              ( runner.report,
+                testId,
+                Nil,
+                Anchor(second.spec, second.point(value), comparison) )
+        . apply: value =>
+          anchors.include
+            ( runner.report, testId, Nil, Anchor(first.spec, first.point(value), comparison) )
 
     inline def over[left <: reflect.Enum: Enumerable, right, report]
       ( first: { def values: scala.Array[left] }, second: Axis[right] )

@@ -33,7 +33,6 @@
 package caduceus
 
 import soundness.*
-import proscenium.compat.*
 
 import errorDiagnostics.stackTracesDiagnostics
 
@@ -181,35 +180,35 @@ object Tests extends Suite(m"Caduceus tests"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        courier.envelopes.head.subject
+        courier.envelopes.stdlib.head.subject
       . assert(_ == t"Greetings")
 
       test(m"Sending records the sender"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        courier.envelopes.head.from
+        courier.envelopes.stdlib.head.from
       . assert(_ == jack)
 
       test(m"Sending records a single recipient"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        courier.envelopes.head.to
+        courier.envelopes.stdlib.head.to
       . assert(_ == List(jill))
 
       test(m"Sending records several recipients"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = soundness.List(jill, jane).asInstanceOf[soundness.List[soundness.EmailAddress]])
-        courier.envelopes.head.to
+        courier.envelopes.stdlib.head.to
       . assert(_ == List(jill, jane))
 
       test(m"Copied and blind-copied recipients are recorded"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill, cc = jane, bcc = jack)
-        val envelope = courier.envelopes.head
+        val envelope = courier.envelopes.stdlib.head
         (envelope.cc, envelope.bcc)
       . assert(_ == (List(jane), List(jack)))
 
@@ -217,7 +216,7 @@ object Tests extends Suite(m"Caduceus tests"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        val envelope = courier.envelopes.head
+        val envelope = courier.envelopes.stdlib.head
         (envelope.cc, envelope.bcc, envelope.replyTo)
       . assert(_ == (Nil, Nil, Nil))
 
@@ -225,7 +224,7 @@ object Tests extends Suite(m"Caduceus tests"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        courier.emails.head.text
+        courier.emails.stdlib.head.text
       . assert(_ == t"hello")
 
     suite(m"Error message tests"):

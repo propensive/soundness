@@ -36,8 +36,6 @@ import java.nio as jn, jn.charset as jnc
 
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-import proscenium.compat.*
-
 import anticipation.*
 import fulminate.*
 
@@ -61,7 +59,7 @@ object Encoding:
           name.toLowerCase.nn.tt -> Encoding(name.tt, false)
 
   def unapply(name: Text): Option[Encoding] =
-    codecs.get(name.s.toLowerCase.nn.tt).orElse(decodeOnly.get(name.s.toLowerCase.nn.tt))
+    codecs.stdlib.get(name.s.toLowerCase.nn.tt).orElse(decodeOnly.stdlib.get(name.s.toLowerCase.nn.tt))
 
   def apply(name: Text, canEncode: Boolean): Encoding { type CanEncode = canEncode.type } =
     new Encoding(name) { type CanEncode = canEncode.type }

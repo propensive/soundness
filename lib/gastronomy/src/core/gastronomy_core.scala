@@ -156,7 +156,7 @@ extension [source: Streamable by Data over Credit](source: source)
   :   Digest in hash =
 
     val digester = Digester: digestion =>
-      source.source[Data].sweep: region =>
+      source.source[Data].drain: region =>
         range =>
           val interval: Interval = range
 

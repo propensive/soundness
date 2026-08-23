@@ -35,8 +35,7 @@ package ultimatum
 import java.io as ji
 
 import soundness.*
-
-import proscenium.compat.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Ultimatum Tests"):
   def run(): Unit =
@@ -862,7 +861,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
           Keypress.Escape)
 
         Form(root, Occupancy.Inline, stack(editor()), debounce = 50).run(events.iterator)
-        String(bytes.toByteArray.nn, "UTF-8").tt.cut(t"\e[2K").length - 1
+        String(bytes.toByteArray.nn, "UTF-8").tt.cut(t"\e[2K").size - 1
       . assert(_ == 1)
 
     suite(m"ScreenRoot present"):
@@ -1422,7 +1421,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == t"[####----]")
 
       test(m"a thermometer is a column of its own height"):
-        plain(meters.thermometerMeter)(Meter(1.0), 1).cut(t"\n").length
+        plain(meters.thermometerMeter)(Meter(1.0), 1).cut(t"\n").size
       . assert(_ == 5)
 
       test(m"a block sparkline draws one cell per sample"):
@@ -1481,7 +1480,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
            Step(t"publish", Standing.Pending) )
 
       test(m"a checklist is one row per step"):
-        plain(processions.checklistProcession)(steps, 12).cut(t"\n").length
+        plain(processions.checklistProcession)(steps, 12).cut(t"\n").size
       . assert(_ == 3)
 
       test(m"a checklist marks each step by its standing"):

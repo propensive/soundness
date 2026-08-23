@@ -32,8 +32,6 @@
                                                                                                   */
 package digression
 
-import proscenium.compat.*
-
 import anticipation.*
 import escapade.*
 import escritoire.*
@@ -45,6 +43,7 @@ import rudiments.*
 import spectacular.*
 import tessellate.*
 import vacuous.*
+import symbolism.*
 
 trait StackTracePalette extends iridescence.Palette:
   type Form = Srgb
@@ -102,7 +101,7 @@ package teletypeables:
 
         case head :: tail =>
           if seen.has(head) then dedup(tail, seen, done)
-          else dedup(tail, seen + head, head :: done)
+          else dedup(tail, seen :+ head, head :: done)
 
     val packages: Map[Text, Color in Srgb] =
       Map.from:
@@ -217,7 +216,7 @@ package teletypeables:
     import columnAttenuation.ignoreAttenuation
 
     val grid = scaffold.tabulate(rows).grid(200)
-    val dataOnly = grid.copy(sections = grid.sections.tail)
+    val dataOnly = grid.copy(sections = List.of(grid.sections.stdlib.tail))
     val tableLines = List.from(dataOnly.render.stdlib)
 
     val allLines = init :: (tableLines: List[Teletype])

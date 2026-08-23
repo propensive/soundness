@@ -35,13 +35,12 @@ package anticipation
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
-import proscenium.compat.*
 
 object Checkable:
   // The cast fixes the invariant element type only: `sameElements` compares via `equals`,
   // which is safe across element types.
   given iarray: [left, right] => (Array[left]^{}) is Checkable against (Array[right]^{}) =
-    (left, right) => left.sameElements(right.asInstanceOf[Array[left]^{}])
+    (left, right) => left.readable.sameElements(right.asInstanceOf[Array[left]^{}].readable)
 
   given stream: [left, right] => (left is Checkable against right)
   =>  Chain[left] is Checkable against Chain[right] =

@@ -34,8 +34,6 @@ package galilei
 
 import scala.caps
 
-import proscenium.compat.*
-
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -182,13 +180,13 @@ object Ram:
       ( block: (RamHandle & Granting[Grant.Read & Grant.Write]) ?=> result )
     :   result =
 
-      val size: Long = flags.collectFirst { case RamFlag.Size(bytes) => bytes }
-        . getOrElse(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))
+      val size: Long = flags.glean { case RamFlag.Size(bytes) => bytes }
+        . lay(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))(identity(_))
 
       if size <= 0 || size > Int.MaxValue
       then abort(Io.Error(value, Operation.Create, Reason.Unsupported))
 
-      val createFlags = flags.collect { case flag: CreateFlag => flag }
+      val createFlags = flags.sweep { case flag: CreateFlag => flag }
       Creation.ensure(value, createFlags)
       Creation.replace(value, createFlags)
 

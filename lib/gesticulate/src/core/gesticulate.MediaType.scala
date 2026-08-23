@@ -45,7 +45,6 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-import proscenium.compat.*
 import fulminate.*
 
 object MediaType:
@@ -103,7 +102,7 @@ object MediaType:
         case InvalidSuffix(s)  => txt"the suffix '$s' is not recognized"
 
         case InvalidGroup =>
-          val list = Array.unsafeFrozen(Media.Group.values).toList.map(_.name)
+          val list = Array.unsafeFrozen(Media.Group.values).readable.toList.map(_.name)
           txt"the type must be one of: ${list.join(t", ", t" or ")}"
 
   case class Error(value: Text, reason: MediaType.Error.Reason)(using Diagnostics)

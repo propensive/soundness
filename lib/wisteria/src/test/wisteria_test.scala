@@ -35,9 +35,9 @@ package wisteria
 import scala.{compiletime, math}
 
 import soundness.*
-import proscenium.compat.*
 
 import scala.language.dynamics
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Wisteria tests"):
 
@@ -78,15 +78,15 @@ object Tests extends Suite(m"Wisteria tests"):
     given boolean: Readable[Boolean] = _ == t"yes"
 
     inline def conjunction[derivation <: Product: ProductReflection]: Readable[derivation] = text =>
-      Array.unsafeFrozen(text.s.split(",").nn).toList.map(_.nn).pipe:
+      Array.unsafeFrozen(text.s.split(",").nn).to[List].map(_.nn).pipe:
         array =>
           build[derivation]:
             [field] =>
               readable =>
-                if index < array.length then readable.read(array.stdlib(index).tt) else default.or(???)
+                if index < array.size then readable.read(array.stdlib(index).tt) else default.or(???)
 
     inline def disjunction[derivation: SumReflection]: Readable[derivation] = text =>
-      Array.unsafeFrozen(text.s.split(":").nn).toList.map(_.nn.tt).absolve match
+      Array.unsafeFrozen(text.s.split(":").nn).to[List].map(_.nn.tt).absolve match
         case List(variant, text2) =>
           // Seal the variant-dispatch tactic inside the instance (the austronesian/jacinta
           // pattern): without it the derived instance captures the enclosing scope's

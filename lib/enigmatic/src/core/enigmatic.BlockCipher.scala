@@ -39,7 +39,6 @@ import contingency.*
 import denominative.*
 import gossamer.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*

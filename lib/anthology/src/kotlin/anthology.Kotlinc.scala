@@ -32,8 +32,6 @@
                                                                                                   */
 package anthology
 
-import proscenium.compat.*
-
 import java.nio.file as jnf
 
 import scala.util.control as suc
@@ -56,6 +54,7 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 
 object Kotlinc:
   type Versions = 1.9 | 2.0 | 2.1 | 2.2 | 2.3 | 2.4
@@ -136,9 +135,9 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
     // The Kotlin standard library is never implied: like every other classpath entry it is the
     // caller's to provide, which is what `-no-stdlib` makes so.
     val arguments: List[Text] =
-      List(t"-no-stdlib", t"-classpath", classpath(), t"-d", out.generic) :::
-        commandLineArguments :::
-        names.keys.to(List)
+      List(t"-no-stdlib", t"-classpath", classpath(), t"-d", out.generic) +
+        commandLineArguments +
+        names.keys.to[List]
 
     Log.info(CompileEvent.Running(t"kotlinc" :: arguments))
 

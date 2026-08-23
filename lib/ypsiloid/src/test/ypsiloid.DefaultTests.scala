@@ -34,7 +34,6 @@ package ypsiloid
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -49,7 +48,7 @@ enum DShape derives CanEqual:
   case Square(side: Int)
 
 case class Issues2(items: List[(Text, Yaml.Error)] = Nil)(using Diagnostics)
-extends Error(m"${items.length} validation issues"):
+extends Error(m"${items.size} validation issues"):
   def +(focus: Text, error: Yaml.Error): Issues2 = Issues2(items :+ (focus, error))
 
 object YProbe:
@@ -81,7 +80,7 @@ object DefaultShapeScope:
       case error: Yaml.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . protect(yaml.as[DShape])
-    (issues.items.map(_(0).s).to[Set], issues.items.length)
+    (issues.items.map(_(0).s).to[Set], issues.items.size)
 
 object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
 
@@ -121,12 +120,12 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
         // which the surrounding `validate` captures as one accrual
         // entry. No `Variant.Error` punches through.
         val yaml = t"type: Triangle\nfoo: bar\n".read[Yaml]
-        validateYaml(yaml)(_.as[DShape]).items.length
+        validateYaml(yaml)(_.as[DShape]).items.size
       . assert(_ == 1)
 
       test(m"Without Default[DShape], absent discriminator aborts cleanly"):
         val yaml = t"foo: bar\n".read[Yaml]
-        validateYaml(yaml)(_.as[DShape]).items.length
+        validateYaml(yaml)(_.as[DShape]).items.size
       . assert(_ == 1)
 
     suite(m"Gated construction"):
@@ -134,7 +133,7 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
         YProbe.constructions = 0
         val yaml = t"name: Zoe\n".read[Yaml]
         val issues = validateYaml(yaml)(_.as[YChecked])
-        (issues.items.length, YProbe.constructions)
+        (issues.items.size, YProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):

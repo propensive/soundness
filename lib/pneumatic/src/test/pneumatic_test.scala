@@ -34,6 +34,9 @@ package pneumatic
 
 import java.io as ji
 
+// Residue: these fixtures poke bytes by subscript, and `apply` is partial; it awaits the
+// partial-operations tranche.
+
 import soundness.*
 
 import charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
@@ -42,7 +45,6 @@ import strategies.throwUnsafely
 import probates.panicProbate
 import errorDiagnostics.emptyDiagnostics
 
-import proscenium.compat.*
 
 object Tests extends Suite(m"Pneumatic tests"):
   def run(): Unit =
@@ -64,7 +66,8 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       // The whole-value forms (`Duct.feed` over the format ducts) must
       // interoperate with the stream forms in both directions, per format.
-      val wholeData: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val wholeData: Data =
+        Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
 
       for format <- List(t"Gzip", t"Zlib", t"Deflate") do
         test(m"whole-value compress roundtrips through whole-value decompress ($format)"):
@@ -149,7 +152,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           out.write(buffer, 0, count)
 
         inflater.end()
-        Array.unsafeFrozen(out.toByteArray.nn).toList
+        Array.unsafeFrozen(out.toByteArray.nn).to[List]
 
       def jdkDeflate(data: Data, nowrap: Boolean): Data =
         val deflater = java.util.zip.Deflater(-1, nowrap)
@@ -196,7 +199,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
           position += length - inflater.getRemaining
 
-        Array.unsafeFrozen(out.toByteArray.nn).toList
+        Array.unsafeFrozen(out.toByteArray.nn).to[List]
 
       test(m"pure deflate output inflates with the JDK (raw)"):
         jdkInflate(pureDeflate(corpus, true), true)
@@ -300,7 +303,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       val brotliLong: Chain[Data] =
         proscenium.Chain.from(proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
-      val brotliWhole: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val brotliWhole: Data = Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
       val brotliVaried: Data =
         Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
@@ -403,7 +406,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         // byte asserts nothing.
         val buffer = Array[Byte](source.length)
         buffer.copyFrom(source, 0, 0, source.length)
-        buffer(36) = (buffer(36) ^ 0x55).toByte
+        buffer(36) = (source.readable(36) ^ 0x55).toByte
         val corrupted: Data = Array.freeze(buffer)
         try corrupted.decompress[Xz].to[List] != original.to[List]
         catch case _: Exception => true
@@ -425,7 +428,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         emptyXz.decompress[Xz].to[List]
       . assert(_ == Nil)
 
-      val xzWhole: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val xzWhole: Data = Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
       val xzLong: Chain[Data] =
         proscenium.Chain.from(proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
       val xzVaried: Data =
@@ -493,7 +496,7 @@ object Tests extends Suite(m"Pneumatic tests"):
             process.getOutputStream.nn.close()
             val decoded = process.getInputStream.nn.readAllBytes().nn
             process.waitFor()
-            Array.unsafeFrozen(decoded).toList == payload.readable.to(proscenium.List)
+            Array.unsafeFrozen(decoded).to[List] == payload.readable.to(proscenium.List)
           catch case _: ji.IOException => true
         roundtrips && byXz
       . assert(_ == true)
@@ -508,7 +511,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           stdin.close()
           val decoded = process.getInputStream.nn.readAllBytes().nn
           process.waitFor()
-          process.exitValue() == 0 && Array.unsafeFrozen(decoded).toList == data.readable.to(proscenium.List)
+          process.exitValue() == 0 && Array.unsafeFrozen(decoded).to[List] == data.readable.to(proscenium.List)
         catch case _: ji.IOException => true // xz binary unavailable; skip
 
       test(m"The xz binary decodes our output (repetitive)"):
@@ -520,7 +523,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == true)
 
     suite(m"LZMA2 tests"):
-      val lzma2Whole: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val lzma2Whole: Data = Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
       val lzma2Long: Chain[Data] =
         proscenium.Chain.from(proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
       val lzma2Varied: Data =
@@ -565,7 +568,9 @@ object Tests extends Suite(m"Pneumatic tests"):
 
     suite(m"Compression duct tests"):
       val mixed: Data =
-        Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).in[Data]
+        Array.frozen:
+          Data.fill(50000) { index => (index%251).toByte }.readable
+          ++ (t"repetition "*500).in[Data].readable
 
       test(m"gzip duct roundtrips a byte stream"):
         val gather = Gather2()
@@ -593,7 +598,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         summon[Data is Streamable by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
         val stream = scala.caps.unsafe.unsafeAssumeSeparate:
           java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gather.data)))
-        Array.unsafeFrozen(stream.readAllBytes().nn).toList
+        Array.unsafeFrozen(stream.readAllBytes().nn).to[List]
       . assert(_ == mixed.to[List])
 
       // JDK-produced gzip, delivered one byte per chunk: the header state
@@ -613,12 +618,12 @@ object Tests extends Suite(m"Pneumatic tests"):
       // The mirror image: compress fed one byte per chunk, so the CRC and size
       // accumulate over single-byte consumptions, validated by the JDK.
       test(m"gzip duct compresses correctly when fed one byte at a time"):
-        val chunks = mixed.to[List].iterator.map { byte => Data(byte) }
+        val chunks = mixed.to[List].stdlib.iterator.map { byte => Data(byte) }
         val gather = Gather2()
         Stream(chunks).compress[Gzip].pump(gather)
         val stream = scala.caps.unsafe.unsafeAssumeSeparate:
           java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gather.data)))
-        Array.unsafeFrozen(stream.readAllBytes().nn).toList
+        Array.unsafeFrozen(stream.readAllBytes().nn).to[List]
       . assert(_ == mixed.to[List])
 
       // Tiny demand: each refill grants a few bytes, so the inflater retains

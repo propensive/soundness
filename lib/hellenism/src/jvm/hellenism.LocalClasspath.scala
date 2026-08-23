@@ -32,8 +32,6 @@
                                                                                                   */
 package hellenism
 
-import proscenium.compat.*
-
 import ambience.*
 import anticipation.*
 import contingency.*

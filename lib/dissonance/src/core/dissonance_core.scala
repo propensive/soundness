@@ -32,15 +32,13 @@
                                                                                                   */
 package dissonance
 
-
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import fulminate.*
 import symbolism.*
 import vacuous.*
 import rudiments.*
+import denominative.asymptotics.linearSizeComplexity
 
 
 def evolve[element: ClassTag]
@@ -150,8 +148,8 @@ def diff[element]
   def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]^{}])
   :   Diff[element] & Retained =
 
-    val delPos = if deletes == 0 then 0 else count(rows.head.readable(deletes - 1) + 1, inserts - deletes)
-    val insPos = if inserts == 0 then 0 else count(rows.head.readable(deletes), inserts - deletes)
+    val delPos = if deletes == 0 then 0 else count(rows.stdlib.head.readable(deletes - 1) + 1, inserts - deletes)
+    val insPos = if inserts == 0 then 0 else count(rows.stdlib.head.readable(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 
     if best == left.length && (best - deletes + inserts) == right.length
@@ -161,22 +159,22 @@ def diff[element]
 
   @tailrec
   def backtrack(position: Int, deletes: Int, rows: List[Array[Int]^{}], edits: Edits): Edits =
-    val rightPosition = position + rows.length - deletes*2
-    lazy val ins = rows.head.readable(deletes) - 1
-    lazy val del = rows.head.readable(deletes - 1)
+    val rightPosition = position + rows.size - deletes*2
+    lazy val ins = rows.stdlib.head.readable(deletes) - 1
+    lazy val del = rows.stdlib.head.readable(deletes - 1)
 
-    if position == -1 && rightPosition == -1 then edits else if rows.isEmpty
+    if position == -1 && rightPosition == -1 then edits else if rows.nil
     then
       backtrack
         ( position - 1, deletes, rows,
           List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
 
-    else if deletes < rows.length && (deletes == 0 || ins >= del)
+    else if deletes < rows.size && (deletes == 0 || ins >= del)
     then
       if position == ins
       then
         backtrack
-          ( position, deletes, rows.tail,
+          ( position, deletes, List.of(rows.stdlib.tail),
             List.of(Ins(rightPosition, right(rightPosition)).retained :: edits.stdlib) )
       else
         backtrack
@@ -186,7 +184,7 @@ def diff[element]
       if position == del
       then
         backtrack
-          ( del - 1, deletes - 1, rows.tail,
+          ( del - 1, deletes - 1, List.of(rows.stdlib.tail),
             List.of(Del(position, left(position)).retained :: edits.stdlib) )
       else
         backtrack

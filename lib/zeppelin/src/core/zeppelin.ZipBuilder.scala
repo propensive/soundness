@@ -34,8 +34,6 @@ package zeppelin
 
 import scala.caps
 
-import proscenium.compat.*
-
 import java.io as ji
 import java.nio.file as jnf
 
@@ -161,7 +159,7 @@ object ZipBuilder:
         val out = ji.FileOutputStream(temporary.toFile)
 
         try
-          zipfile.serialize.sweep: region =>
+          zipfile.serialize.drain: region =>
             range =>
               val interval: Interval = range
               out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,

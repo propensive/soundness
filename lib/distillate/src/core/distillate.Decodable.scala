@@ -32,8 +32,6 @@
                                                                                                   */
 package distillate
 
-import proscenium.compat.*
-
 import scala.reflect
 
 import scala.caps

@@ -36,9 +36,8 @@ import scala.language.dynamics
 
 import soundness.*
 
-import proscenium.compat.*
-
 import ambience.systems.javaSystem
+import denominative.asymptotics.linearSizeComplexity
 
 // A `Dynamic` type with a `Completable` companion, exercising the dynamic-completions route: its
 // valid member names are not symbols, so only the companion can offer them. The companion is
@@ -62,9 +61,8 @@ object Tests extends Suite(m"Harlequin Tests"):
     val snippet = t"val xs = List(1, 2, 3)"
 
     def typeOf(tokens: List[Token], text: Text): Optional[Text] =
-      tokens.find(_.text == text) match
-        case Some(Token(_, _, meta, _, _)) => meta.let(_.tpe.qualified)
-        case _                          => Unset
+      tokens.seek(_.text == text).let: token =>
+        token.meta.let(_.tpe.qualified)
 
     test(m"tokenized highlighting attaches no type metadata"):
       Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).flatMap(_.meta.option)
@@ -132,7 +130,7 @@ object Tests extends Suite(m"Harlequin Tests"):
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
-      Scala.highlight(t"val n: Int = \"oops\"").diagnostics.length
+      Scala.highlight(t"val n: Int = \"oops\"").diagnostics.size
     .assert(_ > 0)
 
     test(m"no completions are computed without a caret"):
@@ -238,7 +236,7 @@ object Tests extends Suite(m"Harlequin Tests"):
       . assert(!_.has(t"val"))
 
       test(m"a fresh binding position suppresses all completions"):
-        Scala.highlight(t"val ", caret = t"val ".length.z).completions.let(_.items.length)
+        Scala.highlight(t"val ", caret = t"val ".size.z).completions.let(_.items.size)
       . assert(_ == 0)
 
       test(m"a new statement line offers statement keywords"):

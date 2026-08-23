@@ -119,6 +119,12 @@ extension [self](self: self)(using traversable: self is Traversable)
   def fold[state](initial: state)(lambda: (state, traversable.Operand) => state): state =
     traversable.traverse(self).foldLeft(initial)(lambda)
 
+  // A value-taking overload is deliberately omitted, like `where`'s: a path-dependent
+  // `traversable.Operand` makes it ambiguous with the predicate form for any lambda argument,
+  // so `count(_ == value)` is the idiom for counting a specific element.
+  inline def count(predicate: traversable.Operand => Boolean): Int =
+    traversable.traverse(self).count(predicate)
+
   // Flattens one level of nesting, rebuilding in the outer source's shape: the inner
   // values may be any `Traversable`, so a `List[Set[element]]` flattens to `List[element]`.
   def flat[element2, result]

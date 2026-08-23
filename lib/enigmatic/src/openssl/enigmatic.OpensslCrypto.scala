@@ -33,12 +33,12 @@
 package enigmatic
 
 import anticipation.*
+import rudiments.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
 import vacuous.*
 import xenophile.*
-import proscenium.compat.*
 
 // A `Crypto` provider backed by OpenSSL's `libcrypto`, called through xenophile's typed C
 // navigation: the prototypes in `/enigmatic/openssl.h` are parsed by `CHeader.Dialect` at compile
@@ -216,11 +216,11 @@ object OpensslCrypto extends Crypto:
 
     def encrypt(transformation: Text, key: Data, iv: Optional[Data], data: Data): Data =
       val body = oneShot(encrypting = true, transformation, key, iv, data)
-      iv.lay(body)(_ ++ body)
+      iv.lay(body)(prefix => Array.frozen(prefix.readable ++ body.readable))
 
     def decrypt(transformation: Text, key: Data, ivSize: Optional[Int], data: Data): Data =
       ivSize.lay(oneShot(encrypting = false, transformation, key, Unset, data)): size =>
-        oneShot(encrypting = false, transformation, key, data.take(size), data.drop(size))
+        oneShot(encrypting = false, transformation, key, data.keep(size), data.skip(size))
 
     def stream(transformation: Text, key: Data, iv: Optional[Data]): Cipher.Session =
       session(transformation, key, iv, encrypting = true)
@@ -255,5 +255,7 @@ object OpensslCrypto extends Crypto:
       initialise(context, transformation, key, iv, encrypting)
       val parts = transformation.cut(t"/").stdlib
       val block = if parts(0) == t"AES" then 16 else 8
-      update(context, data, block, encrypting) ++ finish(context, block, encrypting)
+      Array.frozen
+       ( update(context, data, block, encrypting).readable
+         ++ finish(context, block, encrypting).readable )
     finally freeContext(context)

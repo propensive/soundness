@@ -32,14 +32,15 @@
                                                                                                   */
 package bitumen
 
-import proscenium.compat.*
 
 import anticipation.*
+import denominative.*
 import contingency.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
 import rudiments.*
 import vacuous.*
+import symbolism.*
 
 object Pax:
   def record(key: Text, value: Text): Data =
@@ -49,7 +50,11 @@ object Pax:
     (total.toString+" "+key.s+"="+value.s+"\n").tt.in[Data]
 
   def records(pairs: Iterable[(Text, Text)]): Data =
-    pairs.foldLeft(Array.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
+    // Accumulate on the `IArray` side: a `Concatenable` result is fresh, and a fresh capture
+    // cannot instantiate `foldLeft`'s accumulator type.
+    Array.frozen:
+      pairs.foldLeft(scala.IArray.empty[Byte]): (acc, pair) =>
+        acc ++ record(pair(0), pair(1)).readable
 
   def parse(data: Data): Map[Text, Text] raises Tar.Error =
     val builder = scala.collection.immutable.Map.newBuilder[Text, Text]
@@ -71,7 +76,7 @@ object Pax:
         // The scanned slice is all ASCII digits, so the only way `toInt` can fail is an
         // overflowing run of digits; fall back to 0 so the `length < 1` check below rejects it.
         val length =
-          try data.slice(pos, lengthEnd).ascii.s.toInt
+          try data.segment((pos).z till (lengthEnd).z).ascii.s.toInt
           catch case _: NumberFormatException => 0
 
         if length < 1 || pos + length > data.length || data.readUnchecked(pos + length - 1) != '\n'.toByte
@@ -79,7 +84,7 @@ object Pax:
           raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
           pos = data.length
         else
-          val content: String = data.slice(lengthEnd + 1, pos + length - 1).utf8.s
+          val content: String = data.segment((lengthEnd + 1).z till (pos + length - 1).z).utf8.s
           val eqIdx: Int = content.indexOf('=')
 
           if eqIdx < 0 then

@@ -38,7 +38,6 @@ import java.io as ji
 import java.util.concurrent.atomic.AtomicLong
 
 import soundness.*
-import proscenium.compat.*
 
 import charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import threading.platformThreading
@@ -444,7 +443,7 @@ object Tests extends Suite(m"Turbulence tests"):
         relay.stop()
         var windows: Int = 0
 
-        relay.stream.sweep: _ =>
+        relay.stream.drain: _ =>
           _ => windows += 1
 
         windows
@@ -673,14 +672,14 @@ object Tests extends Suite(m"Turbulence tests"):
         val source = summon[ji.ByteArrayInputStream is Streamable by Data over Credit]
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         source.stream(input).pump(sink.intake(output))
-        Array.unsafeFrozen(output.toByteArray.nn).toList
+        Array.unsafeFrozen(output.toByteArray.nn).to[List]
       . assert(_ == payload.readable.to(List))
 
       test(m"in-memory data source flows to output stream sink"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(output))
-        Array.unsafeFrozen(output.toByteArray.nn).toList
+        Array.unsafeFrozen(output.toByteArray.nn).to[List]
       . assert(_ == payload.readable.to(List))
 
       val original = t"The quick brown fox jumps over the lazy dog"*100
@@ -847,12 +846,12 @@ object Tests extends Suite(m"Turbulence tests"):
 
           // Queue capacity is `depth.max(sources.length)` transfer blocks: four, plus
           // one snapshotted block in flight per parked pump.
-          val bounded = counters.map(_.get()).forall(_ <= 80L)
+          val bounded = counters.map(_.get()).all(_ <= 80L)
           val gather = Gather2()
           merged.pump(gather)
 
           ( bounded,
-            counters.map(_.get()).forall(_ == 4096L),
+            counters.map(_.get()).all(_ == 4096L),
             scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.length )
       . assert(_ == ((true, true, 16384)))
 

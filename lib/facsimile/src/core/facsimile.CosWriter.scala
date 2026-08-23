@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import hieroglyph.*

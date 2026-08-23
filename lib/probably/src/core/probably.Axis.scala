@@ -35,7 +35,6 @@ package probably
 import scala.deriving.*
 import scala.reflect
 
-import proscenium.compat.*
 
 import anticipation.*
 import distillate.*
@@ -100,8 +99,8 @@ object Axis:
     ( companion: { def values: scala.Array[enumeration] } )
   :   Axis[enumeration] =
 
-    val label = evidence.name.cut(t" ").head.cut(t".").last.lower
-    new Axis(label, evidence.values.toList)
+    val label = evidence.name.cut(t" ").stdlib.head.cut(t".").stdlib.last.lower
+    new Axis(label, List.of(evidence.values.readable.toList))
 
   def apply(label: Text)(range: scala.Range): Axis[Int] = new Axis(label, range.to(List))
 

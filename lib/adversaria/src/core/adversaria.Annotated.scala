@@ -32,8 +32,6 @@
                                                                                                   */
 package adversaria
 
-import proscenium.compat.*
-
 import scala.quoted.*
 
 import anticipation.*
@@ -72,7 +70,7 @@ object Annotated:
     type Unique = true
     type Topic = topic
     type Target = target
-    def field: Text = fields.keys.head
+    def field: Text = fields.keys.stdlib.head
     override def apply(): Set[operand] = fields(field).or(Set())
 
   trait Subtypes extends Annotated:

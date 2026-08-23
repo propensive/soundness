@@ -78,7 +78,7 @@ object Derivative:
 
     val out = java.io.ByteArrayOutputStream()
 
-    Zipfile(List.from(entries), Unset, Unset).serialize.sweep: region =>
+    Zipfile(List.from(entries), Unset, Unset).serialize.drain: region =>
       range =>
         val interval: Interval = range
         out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,

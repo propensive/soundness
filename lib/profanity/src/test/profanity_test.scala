@@ -36,8 +36,6 @@ import java.lang as jl
 
 import soundness.*
 
-import proscenium.compat.*
-
 import classloaders.systemClassloader
 import environments.javaEnvironment
 import systems.javaSystem
@@ -51,6 +49,7 @@ import backstops.silentBackstop
 import probates.cancelProbate
 
 import Shell.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Profanity Tests"):
   def run(): Unit =
@@ -208,7 +207,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 Tmux.enter('', '', '', '', '')
                 Tmux.enter('\r')
                 waitFor(t"RESULT:")
-                Tmux.screenshot().screen.toList.join
+                Tmux.screenshot().screen.to[List].join
           . assert(_.contains(t"RESULT:${t"X"*20}"))
 
           test(m"backspace clears characters wrapped onto the next visual line"):
@@ -228,7 +227,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 val mid = Tmux.screenshot()
                 Tmux.enter('\r')
                 waitFor(t"RESULT:")
-                mid.screen.toList.map(_.count(_ == 'X')).sum
+                mid.screen.to[List].map(_.count(_ == 'X')).total
           . assert(_ == 20)
 
           // SelectMenu wrap-aware redraw: an option longer than the terminal width must
@@ -411,35 +410,35 @@ object Tests extends Suite(m"Profanity Tests"):
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', ';', '2', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', ';', '2', 'u')).stdlib.head
       . assert:
           case Keypress.Shift(Keypress.Enter) => true
           case _                              => false
 
       test(m"plain Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', 'u')).stdlib.head
       . assert:
           case Keypress.Enter => true
           case _              => false
 
       test(m"Escape is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '2', '7', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '2', '7', 'u')).stdlib.head
       . assert:
           case Keypress.Escape => true
           case _               => false
 
       test(m"Ctrl+C is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '9', '9', ';', '5', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '9', '9', ';', '5', 'u')).stdlib.head
       . assert:
           case Keypress.Ctrl('C') => true
           case _                  => false
 
       test(m"a plain letter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '9', '7', 'u')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '9', '7', 'u')).stdlib.head
       . assert:
           case Keypress.CharKey('a') => true
           case _                     => false
@@ -448,7 +447,7 @@ object Tests extends Suite(m"Profanity Tests"):
       // it as an anchor reply when the resize trap queued one.
       test(m"a plain CPR decodes to a WindowSize"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '1', '2', ';', '3', '4', 'R')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '1', '2', ';', '3', '4', 'R')).stdlib.head
       . assert:
           case Terminal.Info.WindowSize(12, 34) => true
           case _                               => false
@@ -458,7 +457,7 @@ object Tests extends Suite(m"Profanity Tests"):
         supervise:
           Keyboard.Standard()
           . process(Chain('\u001B', '[', '?', '1', '2', ';', '3', '4', 'R'))
-          . head
+          . stdlib.head
       . assert:
           case Terminal.Info.CursorPosition(12, 34) => true
           case _                                   => false
@@ -468,14 +467,14 @@ object Tests extends Suite(m"Profanity Tests"):
         supervise:
           Keyboard.Standard()
           . process(Chain('\u001B', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
-          . head
+          . stdlib.head
       . assert:
           case Terminal.Info.CursorPosition(12, 34) => true
           case _                                   => false
 
       test(m"a malformed report is dropped and the stream continues"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '?', ';', 'R', 'z')).head
+          Keyboard.Standard().process(Chain('\u001B', '[', '?', ';', 'R', 'z')).stdlib.head
       . assert:
           case Keypress.CharKey('z') => true
           case _                     => false
@@ -525,10 +524,10 @@ object Tests extends Suite(m"Profanity Tests"):
         test(m"SIGSYS is 31") (Interrupt.Sys.id)   .assert(_ == 31)
 
         test(m"every signal id is positive"):
-          Array.unsafeFrozen(Interrupt.values).toList.map(_.id).forall(_ > 0)
+          Array.unsafeFrozen(Interrupt.values).readable.toList.map(_.id).all(_ > 0)
         . assert(identity(_))
 
         test(m"signal ids are distinct"):
-          val ids = Array.unsafeFrozen(Interrupt.values).toList.map(_.id)
-          ids.length == ids.distinct.length
+          val ids = Array.unsafeFrozen(Interrupt.values).readable.toList.map(_.id)
+          ids.size == ids.distinct.size
         . assert(identity(_))

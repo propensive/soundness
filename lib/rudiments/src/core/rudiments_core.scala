@@ -179,6 +179,15 @@ extension [self](self: self)(using traversable: self is Traversable)
       case Some(element) => element
       case None          => Unset
 
+  // The first element the partial function is defined at, transformed by it: the total
+  // counterpart of `collectFirst`, and the single-result sibling of `sweep`. A distinct name
+  // rather than a `seek` overload, because a case-literal closure matches both the predicate
+  // and the partial-function shapes, making every call site ambiguous.
+  def glean[element2](lambda: PartialFunction[traversable.Operand, element2]): Optional[element2] =
+    traversable.traverse(self).collectFirst(lambda) match
+      case Some(element) => element
+      case None          => Unset
+
   def where(predicate: traversable.Operand => Boolean): Optional[Ordinal] =
     traversable.traverse(self).zipWithIndex.find { (element, _) => predicate(element) } match
       case Some((_, index)) => index.z
@@ -258,17 +267,30 @@ extension [self](value: self)(using traversable: self is Traversable)
 extension [self <: Populated](value: self)(using traversable: self is Traversable)
   def head: traversable.Operand = traversable.traverse(value).next()
 
-  // Forces the whole traversal; on a `Populated` receiver that is the caller's stated intent.
-  def last: traversable.Operand =
-    val iterator = traversable.traverse(value)
-    var element = iterator.next()
-    while iterator.hasNext do element = iterator.next()
-    element
-
   def reduce(lambda: (traversable.Operand, traversable.Operand) => traversable.Operand)
   :   traversable.Operand =
 
     traversable.traverse(value).reduce(lambda)
+
+// The back end of a container: `last` is its final element and `lead` everything before it,
+// mirroring `head` and `tail`. Separate typeclasses from `Traversable` so each container
+// supplies its own implementation at its own cost — O(1) for an indexed shape, gated for a
+// linked or lazy one — rather than every receiver paying for a full traversal.
+//
+// `last` *adapts* to what the receiver's type proves: given a `Populated` receiver it is total
+// and yields the element, and otherwise it yields `Optional[element]`, checking emptiness once.
+// `transparent inline` narrows the declared `Optional[Operand]` to `Operand` in the proven
+// branch — the same technique as `total` above, whose result narrows when a `Zeroic` is found.
+extension [self](value: self)
+  (using terminable: self is Terminable, traversable: self is Traversable)
+
+  transparent inline def last: Optional[terminable.Operand] =
+    compiletime.summonFrom:
+      case _: (`self` <:< Populated) => terminable.last(value)
+      case _ => if traversable.traverse(value).hasNext then terminable.last(value) else Unset
+
+extension [self <: Populated, result](value: self)(using truncable: self is Truncable to result)
+  def lead: result = truncable.lead(value)
 
 // Conversion to a requested shape, which may be a proper type or an unapplied constructor:
 // `chars.to[List]`, `text.to[Set]`, `pairs.to[Map]`. `transparent inline` so the
@@ -539,6 +561,10 @@ extension [value: Segmentable as segmentable](inline value: value)
 extension [self](value: self)(using definable: self is Definable)
   def define(index: definable.Operand, result: definable.Result): self =
     definable.define(value, index, result)
+
+// Available only on key-addressed containers; see `Omissible`.
+extension [self, operand](value: self)(using omissible: self is Omissible by operand)
+  def omit(index: operand): self = omissible.omit(value, index)
 
 // The generic positional operations, over any value that can be segmented and counted: one
 // definition serves the collections and, through the instances `Textual` extends, every textual

@@ -34,7 +34,6 @@ package ypsiloid
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -46,7 +45,7 @@ case class AContact(person: APerson, company: Text) derives CanEqual
 object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
 
   case class Issues(items: List[(Text, Yaml.Error)] = Nil)(using Diagnostics)
-  extends Error(m"${items.length} validation issues"):
+  extends Error(m"${items.size} validation issues"):
     def +(focus: Text, error: Yaml.Error): Issues = Issues(items :+ (focus, error))
 
   // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
@@ -66,23 +65,23 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
     suite(m"Single-error decoding (sanity)"):
       test(m"Fully-valid object: no errors accrued"):
         val yaml = t"name: Alice\nage: 30\nemail: a@b.c\n".read[Yaml]
-        validateYaml(yaml)(_.as[APerson]).items.length
+        validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 0)
 
       test(m"Single missing field: one error"):
         val yaml = t"name: Alice\nage: 30\n".read[Yaml]
-        validateYaml(yaml)(_.as[APerson]).items.length
+        validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 1)
 
       test(m"Single wrong-type field: one error"):
         val yaml = t"name: Alice\nage: thirty\nemail: a@b\n".read[Yaml]
-        validateYaml(yaml)(_.as[APerson]).items.length
+        validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 1)
 
     suite(m"Multiple missing fields"):
       test(m"Two missing primitive fields accrue two errors"):
         val yaml = t"name: Alice\n".read[Yaml]
-        validateYaml(yaml)(_.as[APerson]).items.length
+        validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the missing fields"):
@@ -98,13 +97,13 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
 
       test(m"Three missing fields: three errors accrued"):
         val yaml = t"{}".read[Yaml]
-        validateYaml(yaml)(_.as[APerson]).items.length
+        validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 3)
 
     suite(m"Multiple wrong-type fields"):
       test(m"Two wrong types accrue two errors"):
         val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
-        validateYaml(yaml)(_.as[APerson]).items.length
+        validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the wrong-type fields"):

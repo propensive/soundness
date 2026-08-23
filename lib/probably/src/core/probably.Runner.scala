@@ -34,7 +34,6 @@ package probably
 
 import java.lang as jl
 
-import proscenium.compat.*
 
 import ambience.{System as _, *}, environments.javaEnvironment
 import anticipation.*
@@ -48,6 +47,8 @@ import vacuous.*
 import stdios.virtualMachineStdio
 import termcaps.environmentTermcap
 import beneficence.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Runner:
   private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()

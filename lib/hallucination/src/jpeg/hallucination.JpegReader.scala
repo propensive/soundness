@@ -33,7 +33,6 @@
 package hallucination
 
 import anticipation.*
-import proscenium.compat.*
 
 import scala.caps
 

@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -58,7 +56,7 @@ private[facsimile] object CharMap:
       var i = 0
 
       while i < bytes.length do
-        result = (result << 8) | (bytes(i) & 0xff)
+        result = (result << 8) | (bytes.readable(i) & 0xff)
         i += 1
 
       result

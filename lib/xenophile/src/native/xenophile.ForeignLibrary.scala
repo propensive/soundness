@@ -32,7 +32,6 @@
                                                                                                   */
 package xenophile
 
-import proscenium.compat.*
 
 import java.lang.foreign.*
 import java.lang.invoke.MethodHandle

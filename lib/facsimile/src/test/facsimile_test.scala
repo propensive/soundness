@@ -32,10 +32,10 @@
                                                                                                   */
 package facsimile
 
+import scala.annotation.targetName
 import scala.collection.immutable.Seq
 
 import soundness.*
-import proscenium.compat.*
 
 import charEncoders.utf8Encoder
 import errorDiagnostics.stackTracesDiagnostics
@@ -49,6 +49,15 @@ import _root_.java.util.zip as juz
 import _root_.javax.crypto as jc
 import _root_.javax.crypto.spec as jcs
 import pneumatic.*
+import proscenium.compat.head
+import denominative.asymptotics.linearSizeComplexity
+
+// These fixtures assemble PDF and font byte streams from many small pieces. A `Concatenable`
+// result is fresh, so joining two `Data` values means freezing once at the join; this keeps the
+// fixtures readable without reaching for `proscenium.compat`.
+extension (left: Data)
+  @targetName("concatData")
+  def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
 
 object Tests extends Suite(m"Facsimile tests"):
   val noParms: Map[Text, Cos] = Map()
@@ -389,7 +398,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val doc = document(t"<< /Type /Catalog /Next 2 0 R >>".in[Data], t"[1 0 R (x)]".in[Data])
 
         PdfFile(doc).open():
-          pdf.resolved(pdf(1, 0)(t"Next").or(Cos.Nil)).elements.let(_.length)
+          pdf.resolved(pdf(1, 0)(t"Next").or(Cos.Nil)).elements.let(_.size)
       . assert(_ == 2)
 
       test(m"a stream payload with no filter"):
@@ -488,7 +497,7 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(path).open(Read & Write): doc ?=>
           doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"edited".in[Data]))))
 
-        fileBytes(path).slice(0, editable.length).to[List]
+        fileBytes(path).segment((0).z till (editable.length).z).to[List]
       . assert(_ == editable.to[List])
 
       test(m"the incremental update chains /Prev to the original cross-reference"):
@@ -688,7 +697,7 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.setBookmarks(marks)
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.length))
+          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.size))
       . assert(_ == List((t"Chapter 1", 1), (t"Chapter 2", 0)))
 
       test(m"a bookmark destination targets a page"):
@@ -698,7 +707,7 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.setBookmarks(List(Bookmark(t"Start", Destination.Fit(Prim), Nil)))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.bookmarks.head.destination
+          pdf.bookmarks.stdlib.head.destination
       . assert(_ == Destination.Fit(Prim))
 
       test(m"adding a link annotation round-trips"):
@@ -716,7 +725,7 @@ object Tests extends Suite(m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addLink(doc.page(Prim), rect, uri = t"https://soundness.dev/"))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).annotations.head match
+          pdf.page(Prim).annotations.stdlib.head match
             case Annotation.Link(_, _, uri, _) => uri
             case _                             => Unset
       . assert(_ == t"https://soundness.dev/")
@@ -1554,7 +1563,7 @@ object Tests extends Suite(m"Facsimile tests"):
                 ++ Array.unsafeFrozen(streamCipher) ++ t"\nendstream".in[Data]) )
 
       test(m"RC4 matches its known-answer vector"):
-        Rc4(t"Key".in[Data], t"Plaintext".in[Data]).to[List].map(b => f"${b & 0xff}%02X").mkString.tt
+        Rc4(t"Key".in[Data], t"Plaintext".in[Data]).to[List].map(b => f"${b & 0xff}%02X".tt).join
       . assert(_ == t"BBF316E8D940AF0AD3")
 
       test(m"an encrypted document reports it"):
@@ -1784,7 +1793,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Title (Child) /Parent 6 0 R >>".in[Data] )
 
         PdfFile(doc).open():
-          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.length))
+          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.size))
       . assert(_ == List((t"One", 0), (t"Two", 1)))
 
       test(m"a bookmark destination lands on its page"):
@@ -1794,7 +1803,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Title (One) /Parent 4 0 R /Dest [3 0 R /Fit] >>".in[Data] )
 
         PdfFile(doc).open():
-          pdf.bookmarks.head.destination
+          pdf.bookmarks.stdlib.head.destination
       . assert(_ == Destination.Fit(Prim))
 
       test(m"a cyclic outline terminates"):
@@ -1804,7 +1813,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Title (Loop) /Parent 4 0 R /Next 5 0 R >>".in[Data] )
 
         PdfFile(doc).open():
-          pdf.bookmarks.length
+          pdf.bookmarks.size
       . assert(_ == 1)
 
     suite(m"Annotations, attachments and labels"):
@@ -1817,7 +1826,7 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).annotations.head match
+          pdf.page(Prim).annotations.stdlib.head match
             case Annotation.Link(rect, _, uri, _) => (rect.height, uri)
             case _                                => (Quantity[Points[1]](0.0), Unset)
       . assert(_ == (Quantity[Points[1]](20.0), t"https://x.com"))
@@ -1830,7 +1839,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Subtype /Text /Rect [0 0 5 5] /Contents (Remember) /Open true >>".in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).annotations.head match
+          pdf.page(Prim).annotations.stdlib.head match
             case Annotation.Note(_, contents, open, _) => (contents, open)
             case _                                     => (Unset, false)
       . assert(_ == (t"Remember", true))
@@ -1846,6 +1855,10 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
+          // The sole remaining `compat` use in facsimile. `Attachment`'s element type carries a
+          // capture refinement over `pdf`, and every replacement loses or trips on it: `.stdlib`
+          // drops the refinement, and `prim.let` is a separation failure on the lambda. That is a
+          // capture-checking question, not a drain one, so the `head` shim stays for now.
           val attachment = pdf.attachments.head
 
           ( attachment.name,

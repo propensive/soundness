@@ -31,8 +31,6 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package escapade
-
-import proscenium.compat.*
 import rudiments.*
 
 import anticipation.*
@@ -72,7 +70,7 @@ object Teletypeable:
 
   given throwable: Throwable is Teletypeable = throwable =>
     Teletype.styled[String]
-      (throwable.getClass.getName.nn.show.cut(t".").last.s)(_.copy(fg = Chroma(0xdc133b)))
+      (throwable.getClass.getName.nn.show.cut(t".").stdlib.last.s)(_.copy(fg = Chroma(0xdc133b)))
 
 trait Teletypeable extends Typeclass.Pure:
   def teletype(value: Self): Teletype

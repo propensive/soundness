@@ -35,11 +35,12 @@ package digression
 import anticipation.*
 import fulminate.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object StackTrace:
   case class Method(className: Text, method: Text):
@@ -306,8 +307,8 @@ object StackTrace:
                   current = char(index2)
 
                 val name2 =
-                  if arguments.length == 2 then "Σ("+arguments.last+" -> "+arguments.head+")"
-                  else arguments.tail.mkString("Σ((", ", ", ")")+" -> "+arguments.head+")"
+                  if arguments.size == 2 then "Σ("+arguments.stdlib.last+" -> "+arguments.stdlib.head+")"
+                  else arguments.stdlib.tail.mkString("Σ((", ", ", ")")+" -> "+arguments.stdlib.head+")"
 
                 val mc = name.substring(index, index + 3).nn
                 token(index, mc, name2)
@@ -360,13 +361,13 @@ object StackTrace:
           Text:
             val types2 = types.drop(index + 3).iterator.to(List).map(primitive)
 
-            if types2.length <= 2 then types2.mkString("(", " => ", ")")
-            else types2.init.mkString("((", ", ", s") => ${types2.last})")
+            if types2.size <= 2 then types2.stdlib.mkString("(", " => ", ")")
+            else types2.stdlib.init.mkString("((", ", ", s") => ${types2.stdlib.last})")
 
     else if rewritten.s.startsWith("scala.runtime.function.JProcedure")
     then
       val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
-      "("+(if n < 2 then s"Any" else List.fill(n)("Any").mkString("(", ", ", ")"))+" => Unit)"
+      "("+(if n < 2 then s"Any" else List.fill(n)("Any").stdlib.mkString("(", ", ", ")"))+" => Unit)"
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")
@@ -402,7 +403,7 @@ object StackTrace:
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
     val fullClass: List[Text] =
       List.from(fullClassName.s.split("\\.").nn.iterator.map { part => Text(part.nn) })
-    val className: Text = fullClass.last
+    val className: Text = fullClass.stdlib.last
 
     val component: Text =
       val length = fullClassName.s.length - className.s.length - 1
@@ -457,13 +458,13 @@ case class StackTrace
     cause:     Optional[StackTrace] ):
 
   def crop(cutClassName: Text, cutMethod: Text): StackTrace =
-    val frames2 = frames.takeWhile: f =>
+    val frames2 = frames.keep: f =>
       f.method.className != cutClassName || f.method.method != cutMethod
 
     StackTrace(component, className, message, frames2, cause)
 
   def drop(n: Int): StackTrace =
-    StackTrace(component, className, message, frames.drop(n), cause)
+    StackTrace(component, className, message, frames.skip(n), cause)
 
   def dropRight(n: Int): StackTrace =
-    StackTrace(component, className, message, frames.dropRight(n), cause)
+    StackTrace(component, className, message, frames.skip(n, Bidi.Rtl), cause)

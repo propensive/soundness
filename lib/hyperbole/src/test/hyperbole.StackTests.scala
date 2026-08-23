@@ -33,7 +33,6 @@
 package hyperbole
 
 import soundness.*
-import proscenium.compat.*
 
 import classloaders.threadContextClassloader
 import unsafeExceptions.canThrowAny
@@ -82,7 +81,7 @@ object StackTests extends Suite(m"Stack-trace resolution tests"):
     // The frames below the fixture belong to the test framework and the JDK, so every test looks
     // at the topmost frame in the fixture's own file.
     def frame(stackTrace: StackTrace): Optional[StackTrace.Frame] =
-      stackTrace.frames.find(_.jvmClass.starts(t"hyperbole.")).optional
+      stackTrace.frames.seek(_.jvmClass.starts(t"hyperbole."))
 
     suite(m"Resolving as a trace is captured"):
       test(m"An imported resolver resolves frames at capture time"):

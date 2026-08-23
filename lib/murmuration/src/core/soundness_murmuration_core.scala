@@ -35,4 +35,4 @@ package soundness
 export
   murmuration.{Traversable, Reshapable, Mappable, Reversible, Inclusive, Convertible, reverse,
       has, map, remap, subsumes, bind, flatMap, filter, withFilter, foreach, exists, fold, flat, trace, excerpt, group,
-      sort, distinct, batched, span, sweep}
+      sort, distinct, batched, span, sweep, Keyed, keys, values, count, Intersectable, intersect, except}

@@ -35,7 +35,6 @@ package hallucination
 import scala.caps
 
 import contingency.*
-import proscenium.compat.*
 
 import Raster.Error.Reason
 
@@ -124,7 +123,7 @@ private[hallucination] final class JpegUpsampler private
   private val lineBufferSize =
     var maximum = 0
     var index = 0
-    while index < count do { maximum = maximum.max(widths(index)); index += 1 }
+    while index < count do { maximum = maximum.max(widths.readable(index)); index += 1 }
     maximum*hMax
 
   // An `AnyRef` field + pure-view accessor: a nested-array field type is elaborated with
@@ -158,8 +157,8 @@ private[hallucination] final class JpegUpsampler private
 
     while index < count do
       upsampleRow
-        ( kinds(index), componentData(index), widths(index), heights(index), rowStrides(index),
-          hScales(index), vScales(index), row, lineBuffer(index) )
+        ( kinds.readable(index), componentData(index), widths.readable(index), heights.readable(index), rowStrides.readable(index),
+          hScales.readable(index), vScales.readable(index), row, lineBuffer(index) )
 
       index += 1
 

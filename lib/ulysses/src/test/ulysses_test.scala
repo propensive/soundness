@@ -33,7 +33,6 @@
 package ulysses
 
 import soundness.*
-import proscenium.compat.*
 
 import providers.soundnessProvider
 import Blake3.hash   // a concrete `Hash in Blake3` in scope, so BloomFilter infers BLAKE3

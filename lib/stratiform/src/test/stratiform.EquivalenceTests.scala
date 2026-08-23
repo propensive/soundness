@@ -34,8 +34,6 @@ package stratiform
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
@@ -50,7 +48,7 @@ import denominative.asymptotics.linearSizeComplexity
 object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence tests"):
 
   case class Issues(items: List[(Text, Tel.Error)] = Nil)(using Diagnostics)
-  extends Error(m"${items.length} validation issues"):
+  extends Error(m"${items.size} validation issues"):
     def +(focus: Text, error: Tel.Error): Issues = Issues(items :+ (focus, error))
 
   private def validateAssign(tel: Tel, schema: Tels): Issues =
@@ -98,10 +96,10 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
 
     document.read[Tel].as[value] == expected
     && document.read[value in Tel] == expected
-    && validateAssign(parsed, schema).items.length == 0
+    && validateAssign(parsed, schema).items.size == 0
     && scalars(Tel.Type.assign(parsed, schema)) == oracle
     && encoded.as[value] == expected
-    && validateAssign(encoded, schema).items.length == 0
+    && validateAssign(encoded, schema).items.size == 0
 
   def run(): Unit =
     suite(m"Codec/assign equivalence (positive)"):
@@ -134,7 +132,7 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
 
       test(m"the canonical form validates against the derived schema"):
         val doc = Tel.canonical(PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")))
-        validateAssign(doc, Tels.tels[PDelivery](t"delivery")).items.length
+        validateAssign(doc, Tels.tels[PDelivery](t"delivery")).items.size
       . assert(_ == 0)
 
       test(m"a source atom agrees across codecs and type assignment"):
@@ -162,18 +160,18 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
       // E311.
       test(m"a Boolean field's encoding validates and decodes back"):
         val encoded = PFlags(true, Unset).encode
-        val issues = validateAssign(encoded, Tels.tels[PFlags](t"flags")).items.length
+        val issues = validateAssign(encoded, Tels.tels[PFlags](t"flags")).items.size
         (encoded.as[PFlags], issues)
       . assert(_ == (PFlags(true, Unset), 0))
 
       test(m"a false Boolean's encoding validates against the derived schema"):
         val encoded = PFlags(false, false).encode
-        val issues = validateAssign(encoded, Tels.tels[PFlags](t"flags")).items.length
+        val issues = validateAssign(encoded, Tels.tels[PFlags](t"flags")).items.size
         (encoded.as[PFlags], issues)
       . assert(_ == (PFlags(false, false), 0))
 
       test(m"a record of scalars, collections and nested records validates"):
         val value = PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way"))
-        val issues = validateAssign(value.encode, Tels.tels[PDelivery](t"delivery")).items.length
+        val issues = validateAssign(value.encode, Tels.tels[PDelivery](t"delivery")).items.size
         (value.encode.as[PDelivery], issues)
       . assert(_ == (PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")), 0))

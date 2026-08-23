@@ -33,7 +33,6 @@
 package hallucination
 
 import java.io as ji
-import proscenium.compat.*
 
 import anticipation.*
 

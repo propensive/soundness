@@ -35,7 +35,7 @@ package cataclysm
 import soundness.*
 
 // Partial-op residue (the drain's debt register): `head`/`length` on possibly-empty lists.
-import proscenium.compat.{head, headOption, length, `:::`}
+import proscenium.compat.{head, headOption}
 
 
 import strategies.throwUnsafely
@@ -43,6 +43,7 @@ import errorDiagnostics.stackTracesDiagnostics
 
 import cataclysm.Css.Syntax
 import Css.Node.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Cataclysm Tests"):
   // ── CSS-structure helpers ───────────────────────────────────────────────
@@ -311,15 +312,15 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == Css.Error.Reason.UnknownProperty(t"colour"))
 
       test(m"errors from several declarations accumulate"):
-        capture[Css.Errors](t"a { colour: red; bogus: 1px }".read[Css]).errors.length
+        capture[Css.Errors](t"a { colour: red; bogus: 1px }".read[Css]).errors.size
       . assert(_ == 2)
 
       test(m"an invalid value is reported"):
-        capture[Css.Errors](t"a { width: notalength }".read[Css]).errors.length
+        capture[Css.Errors](t"a { width: notalength }".read[Css]).errors.size
       . assert(_ == 1)
 
       test(m"a var() value passes validation"):
-        t"a { width: var(--w) }".read[Css].rules.length
+        t"a { width: var(--w) }".read[Css].rules.size
       . assert(_ == 1)
 
       test(m"a custom property is accepted"):
@@ -408,14 +409,19 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == Css.Syntax.OneOf(List(Css.Syntax.Sequence(List(ty(t"a"), ty(t"b"))), ty(t"c"))))
 
       test(m"every property's value grammar parses"):
-        PropertyDef.list.map(_.grammar).length
+        PropertyDef.list.map(_.grammar).size
       . assert(_ == 663)
 
     suite(m"Value tokenizer"):
-      val rgbMid: List[ValueToken] = List(num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma, ws, num(3))
-      val rgbTokens: List[ValueToken] = ValueToken.Function(t"rgb") :: rgbMid ::: List(ValueToken.Close)
-      val calcMid: List[ValueToken] = List(dim(1, t"px"), ws, ValueToken.Delim('+'), ws, dim(2, t"px"))
-      val calcTokens: List[ValueToken] = ValueToken.Function(t"calc") :: calcMid ::: List(ValueToken.Close)
+      // Written out rather than concatenated: this file has two `List` aliases in scope
+      // (`soundness.*` and `proscenium.compat.*`), and a concatenation mixes them.
+      val rgbTokens: List[ValueToken] =
+        List( ValueToken.Function(t"rgb"), num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma,
+              ws, num(3), ValueToken.Close )
+
+      val calcTokens: List[ValueToken] =
+        List( ValueToken.Function(t"calc"), dim(1, t"px"), ws, ValueToken.Delim('+'), ws,
+              dim(2, t"px"), ValueToken.Close )
 
       test(m"an identifier"):
         vt(t"auto")

@@ -33,7 +33,6 @@
 package gastronomy
 
 import scala.{caps, math}
-import proscenium.compat.*
 
 import java.nio.charset.StandardCharsets
 
@@ -99,7 +98,7 @@ object Blake3:
     var i = 0
 
     while i < 16 do
-      out(i) = m(MsgPermutation(i))
+      out(i) = m(MsgPermutation.readable(i))
       i += 1
 
     System.arraycopy(out.raw, 0, m, 0, 16)
@@ -114,7 +113,7 @@ object Blake3:
 
     val state: scala.Array[Int]^ = new scala.Array[Int](16)
     System.arraycopy(chainingValue, 0, state, 0, 8)
-    state(8)  = Iv(0); state(9)  = Iv(1); state(10) = Iv(2); state(11) = Iv(3)
+    state(8)  = Iv.readable(0); state(9)  = Iv.readable(1); state(10) = Iv.readable(2); state(11) = Iv.readable(3)
     state(12) = counter.toInt
     state(13) = (counter >>> 32).toInt
     state(14) = blockLen

@@ -32,6 +32,10 @@
                                                                                                   */
 package escritoire
 
+// The frozen-Array `map` shim stays: `Reshapable` widens the (already frozen) element type
+// to `Array[text]^{any.rd}`, and the nested `Array[Array[text]^{}]^{}` result rejects that.
+// Pinning it with an ascription or freezing at each level does not help — the inner array is
+// still `fresh.rd`. A capture-checking question, not a drain one.
 import proscenium.compat.*
 
 import anticipation.*

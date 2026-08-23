@@ -33,7 +33,6 @@
 package telekinesis
 
 import scala.caps
-import proscenium.compat.*
 
 import anticipation.{Data as Bytes, *}
 import prepositional.*

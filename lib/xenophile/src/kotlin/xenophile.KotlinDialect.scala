@@ -32,7 +32,6 @@
                                                                                                   */
 package xenophile
 
-import proscenium.compat.*
 
 import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.*
@@ -43,6 +42,9 @@ import kotlin.metadata.*
 import kotlin.metadata.jvm.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import symbolism.*
+import denominative.asymptotics.linearSizeComplexity
 
 // The Kotlin grammar: self-resolving, per foreign type name, from the `@Metadata` annotation of
 // the identically-named class on the compile classpath (which the macro classloader sees),
@@ -147,7 +149,7 @@ object KotlinDialect extends Dialect:
 
               val declared = functions(typeName, kmClass.getFunctions.nn.asScala.to(List), false)
               val fields = properties(typeName, kmClass.getProperties.nn.asScala.to(List))
-              val entries = declared ::: fields ::: constructors(typeName, kmClass)
+              val entries = declared + fields + constructors(typeName, kmClass)
 
               val setters = propertySetters(typeName, kmClass.getProperties.nn.asScala.to(List))
 
@@ -215,7 +217,7 @@ object KotlinDialect extends Dialect:
           ( method.getName.nn.tt,
             JvmMember
               ( typeName, method.getName.nn.tt, descriptorOf(method), static, false, false,
-                parameters.length, Nil, Nil, method.isVarArgs ),
+                parameters.size, Nil, Nil, method.isVarArgs ),
             Prototype(parameters.map(javaType), javaType(method.getReturnType.nn)) )
 
       val fields = listOf(cls.getFields).filter(!_.isSynthetic)
@@ -233,11 +235,11 @@ object KotlinDialect extends Dialect:
         Entry
           ( t"<init>",
             JvmMember
-              ( typeName, t"<init>", t"", false, false, false, parameters.length, Nil, Nil,
+              ( typeName, t"<init>", t"", false, false, false, parameters.size, Nil, Nil,
                 constructor.isVarArgs ),
             Prototype(parameters.map(javaType), Foreign.Type.Named(typeName)) )
 
-      collate(entries ::: fieldEntries ::: constructorEntries, Map(), Nil, Unset, Nil)
+      collate(entries + fieldEntries + constructorEntries, Map(), Nil, Unset, Nil)
 
     catch case _: Throwable => Unset
 
@@ -297,7 +299,7 @@ object KotlinDialect extends Dialect:
               ( function.getName.nn.tt,
                 JvmMember
                   ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, static,
-                    false, false, parameters.length, defaults, names, vararg ),
+                    false, false, parameters.size, defaults, names, vararg ),
                 Prototype(types, foreignType(function.getReturnType.nn)) )
 
         . or(Nil)
@@ -360,7 +362,7 @@ object KotlinDialect extends Dialect:
             ( t"<init>",
               JvmMember
                 ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, false, false,
-                  false, parameters.length, defaults, names, vararg ),
+                  false, parameters.size, defaults, names, vararg ),
               Prototype(types, Foreign.Type.Named(owner)) )
 
       . or(Nil)
@@ -393,7 +395,7 @@ object KotlinDialect extends Dialect:
         val arguments = tpe.getArguments.nn.asScala.to(List).flatMap: projection =>
           Optional(projection.getType).let { tpe => List(foreignType(tpe)) }.or(Nil)
 
-        if arguments.isEmpty then Foreign.Type.Named(name)
+        if arguments.nil then Foreign.Type.Named(name)
         else Foreign.Type.Applied(name, arguments)
 
       case classifier: KmClassifier.TypeAlias =>

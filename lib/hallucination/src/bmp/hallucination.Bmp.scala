@@ -32,8 +32,6 @@
                                                                                                   */
 package hallucination
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import gesticulate.*
@@ -48,6 +46,6 @@ object Bmp:
 
     def decode(data: Data): Raster raises Raster.Error = BmpBackend.decode(this, data)
     def encode(raster: Raster): Data = BmpBackend.encode(this, raster)
-    def sniff(data: Data): Boolean = (data.length > 1 && data(0) == 0x42 && data(1) == 0x4d)
+    def sniff(data: Data): Boolean = (data.length > 1 && data.readable(0) == 0x42 && data.readable(1) == 0x4d)
 
 sealed trait Bmp

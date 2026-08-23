@@ -34,12 +34,14 @@ package probably
 
 import scala.math
 
-import proscenium.compat.*
 
 import anticipation.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import symbolism.*
+import denominative.asymptotics.linearSizeComplexity
 
 // The single structural pass over a report: builds the renderer-agnostic `Doc.Document`
 // consumed by both output modes. All decisions about WHAT appears in a report are made
@@ -102,7 +104,7 @@ private[probably] object Documenting:
           tests.list.stdlib.sortBy(_(0).timestamp).flatMap: (_, line) =>
             summaries(line, measurements).stdlib
 
-        if suite.absent || rest.isEmpty && !measurements then rest
+        if suite.absent || rest.nil && !measurements then rest
         else SummaryRow(Status.Suite, suite.option.get.id, 0, 0L, 0L, 0L) :: rest
 
       case ReportLine.Item(entry) => entry.kind match
@@ -156,13 +158,13 @@ private[probably] object Documenting:
         case _: ReportLine.Item      => Nil
 
     val here =
-      if entries.isEmpty then Nil else
+      if entries.nil then Nil else
         val (headline, detail) = blocks(kind, entries)
 
-        if headline.isEmpty && detail.isEmpty then Nil
+        if headline.nil && detail.nil then Nil
         else List(Group(line.suite, kind, headline, detail))
 
-    here ::: nested
+    here + nested
 
   // A kind's blocks, separated into those always rendered and those held back for verbose
   // output. Only stress groups currently distinguish the two.
@@ -174,7 +176,7 @@ private[probably] object Documenting:
 
       // Only axial unit tests need their own blocks (a table or grid of per-cell statuses);
       // ordinary tests are fully described by the results table.
-      case Entry.Kind.Check   => (entries.filter(_.axes.nonEmpty).map(axialCheck), Nil)
+      case Entry.Kind.Check   => (entries.filter(!_.axes.nil).map(axialCheck), Nil)
 
   // The first (usually only) run of a cell: measurements record one run per cell, and a
   // duplicated declaration keeps its first measurement, as it always has.
@@ -220,7 +222,7 @@ private[probably] object Documenting:
         Column(t"μ", numeric = true),
         Column(t"σ", numeric = true),
         Column(t"Confidence", numeric = true),
-        Column(t"Throughput", numeric = true) ) ::: sizes
+        Column(t"Throughput", numeric = true) ) + sizes
 
   private def rate(run: Run): Datum =
     val value = metric(run, Metric.Throughput).or(0.0).toLong
@@ -234,10 +236,11 @@ private[probably] object Documenting:
         Datum.Time(metric(run, Metric.Mean).or(0.0).toLong),
         Datum.Time(metric(run, Metric.Deviation).or(0.0).toLong),
         confidence(run),
-        rate(run) ) ::: sizes
+        rate(run) ) + sizes
 
   private def benchBlocks(entries: List[Entry]): List[Block] =
-    val (plain, axial) = entries.partition(_.axes.isEmpty)
+    val plain = entries.filter(_.axes.nil)
+    val axial = entries.filter(!_.axes.nil)
 
     val sized = entries.exists: entry =>
       entry.cells.stdlib.flatMap(_(1).runs.stdlib).exists: run0 =>
@@ -246,22 +249,22 @@ private[probably] object Documenting:
           case _                        => false
 
     val table =
-      if plain.isEmpty then Nil else
+      if plain.nil then Nil else
         val rows = List.of:
           plain.stdlib.flatMap: entry =>
             entry.cells.stdlib.take(1).flatMap: (_, cell) =>
               run(cell).option.map: run0 =>
                 val lead = List(Datum.Hash(entry.id.id), Datum.Title(entry.id.name, 0))
-                (metric(run0, Metric.Throughput).or(0.0), lead ::: benchMetricCells(run0, sized))
+                (metric(run0, Metric.Throughput).or(0.0), lead + benchMetricCells(run0, sized))
 
           . sortBy(-_(0)).map(x => (x(1)): List[Datum])
 
         List(Block.Table
           ( Unset,
-            List(Column(t"Hash"), Column(t"Test")) ::: benchMetricColumns(sized),
+            List(Column(t"Hash"), Column(t"Test")) + benchMetricColumns(sized),
             rows ))
 
-    table ::: axial.flatMap(axialBench(_, sized))
+    table + axial.flatMap(axialBench(_, sized))
 
   // The baseline-relative datum of one run against the anchor's run, following the
   // anchor's `Baseline` settings: the compared statistic (min/mean/max of the timing
@@ -313,11 +316,11 @@ private[probably] object Documenting:
               val comparison = anchored.lay(Nil): (anchor, anchorRun) =>
                 List(relative(anchor, anchorRun, run0))
 
-              (Datum.Str(value.text) :: benchMetricCells(run0, sized) ::: comparison): List[Datum]
+              (Datum.Str(value.text) :: benchMetricCells(run0, sized) + comparison): List[Datum]
 
       List(Block.Table
         ( entry.id,
-          Column(axis.label) :: benchMetricColumns(sized) ::: comparisonColumns,
+          Column(axis.label) :: benchMetricColumns(sized) + comparisonColumns,
           rows ))
 
     case first :: second :: Nil =>
@@ -424,11 +427,12 @@ private[probably] object Documenting:
     // Each stress entry's cells form its scaling curve: concurrency (the N axis) against
     // the strain measured there.
     val curves: List[(Entry, Map[Long, Run])] = entries.map: entry =>
-      val index = entry.axes.indexWhere(_.label == t"N")
+      val index = entry.axes.where(_.label == t"N")
 
       val points = entry.cells.stdlib.flatMap: (address, cell) =>
         run(cell).option.flatMap: run0 =>
-          if index < 0 then None else address.stdlib(index).numeric.option.map(_.toLong -> run0)
+          index.lay(None): ordinal =>
+            address.stdlib(ordinal.n0).numeric.option.map(_.toLong -> run0)
 
       entry -> Map.of(points.toMap)
 
@@ -442,15 +446,15 @@ private[probably] object Documenting:
       List.of((if shared.length > 1 then shared else all.distinct).sorted)
 
     val sparkline =
-      if steps.stdlib.length < 2 then Nil else
+      if steps.size < 2 then Nil else
         val peakRate =
           curves.stdlib.flatMap(_(1).stdlib.values).map(throughput(_).toLong)
           . maxOption.getOrElse(0L).max(1L)
 
         val sequence = curves.map: (entry, curve) =>
-          val sustained: Optional[(Long, Long)] = curve.find(_(1).sustained) match
-            case Some((n, run0)) => (n, throughput(run0).toLong)
-            case None            => Unset
+          val sustained: Optional[(Long, Long)] =
+            curve.seek(_(1).sustained).let: (n, run0) =>
+              (n, throughput(run0).toLong)
 
           val limit: Long = sustained.lay(Long.MaxValue)(_(0))
 
@@ -496,17 +500,17 @@ private[probably] object Documenting:
     val ranked = peaks.stdlib.length > 1 && best > 0.0
 
     val summary =
-      if peaks.isEmpty then Nil else
+      if peaks.nil then Nil else
         val summaryColumns =
           List
             ( Column(t"Hash"),
               Column(t"Test"),
               Column(t"N", numeric = true),
               Column(t"Throughput", numeric = true) )
-          ::: (if ranked then List(Column(t"×best", numeric = true)) else Nil)
-          ::: List(Column(t"Alloc·op¯¹", numeric = true))
-          ::: (if latencies then List(Column(t"p99", numeric = true)) else Nil)
-          ::: sloColumns
+          + (if ranked then List(Column(t"×best", numeric = true)) else Nil)
+          + List(Column(t"Alloc·op¯¹", numeric = true))
+          + (if latencies then List(Column(t"p99", numeric = true)) else Nil)
+          + sloColumns
 
         val summaryRows = List.of:
           peaks.stdlib.sortBy { point => -throughput(point(2)) }.map: point =>
@@ -523,7 +527,7 @@ private[probably] object Documenting:
             val alloc = List(Datum.Memory(metric(run0, Metric.Allocation).or(0.0).toLong))
             val latency = if latencies then List(optionalTime(run0, Metric.P99)) else Nil
 
-            (lead ::: ratio ::: alloc ::: latency ::: sloCells(run0)): List[Datum]
+            (lead + ratio + alloc + latency + sloCells(run0)): List[Datum]
 
         List(Block.Table(Unset, summaryColumns, summaryRows))
 
@@ -552,7 +556,7 @@ private[probably] object Documenting:
           Column(t"GC n", numeric = true),
           Column(t"GC t", numeric = true) )
 
-    val columns = leadColumns ::: latencyColumns ::: sloColumns ::: tailColumns
+    val columns = leadColumns + latencyColumns + sloColumns + tailColumns
 
     val rows = List.of:
       curves.stdlib.flatMap: (entry, curve) =>
@@ -582,13 +586,13 @@ private[probably] object Documenting:
                   Datum.Num(metric(run0, Metric.GcCount).or(0.0).toLong),
                   Datum.Time(metric(run0, Metric.GcTime).or(0.0).toLong) )
 
-            lead ::: latencyCells ::: sloCells(run0) ::: tail
+            lead + latencyCells + sloCells(run0) + tail
 
-    (sparkline ::: summary, List(Block.Table(Unset, columns, rows)))
+    (sparkline + summary, List(Block.Table(Unset, columns, rows)))
 
   private def histogram(entry: Entry): Block =
     val hotspots: Option[Hotspots] =
-      entry.cells.headOption.flatMap { (_, cell) => run(cell).option }.flatMap: run0 =>
+      entry.cells.prim.option.flatMap { (_, cell) => run(cell).option }.flatMap: run0 =>
         run0.payload.option.collect { case Run.Payload.Frames(hotspots) => hotspots }
 
     Block.Histogram

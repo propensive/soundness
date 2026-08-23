@@ -36,8 +36,6 @@ import scala.caps
 
 import soundness.*
 
-import proscenium.compat.*
-
 // Openable instances for testing: an in-memory "document" openable in two different forms
 // from the same target type (to exercise form selection and its ambiguity), and in a unique
 // form from another (to exercise form inference).

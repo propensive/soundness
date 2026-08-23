@@ -32,8 +32,6 @@
                                                                                                   */
 package gnossienne
 
-import proscenium.compat.*
-
 import scala.annotation.*
 
 import adversaria.*
@@ -58,7 +56,11 @@ object Resolvable:
         def deref(value: result): operand =
           dereference.select(value, annotated.asInstanceOf[Annotated.Field].field)
 
-        store.find(deref(_) == reference).getOrElse:
+        // `store` is by-name, and `.stdlib` is an erasure-identical cast: applied directly it
+        // casts the unforced thunk, so bind it first.
+        val entries: Set[result] = store
+
+        entries.stdlib.find(deref(_) == reference).getOrElse:
           abort(Reference.Error(reference.encode, Reference.Error.Reason.NotFound))
 
 

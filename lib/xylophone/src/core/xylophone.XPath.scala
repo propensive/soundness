@@ -32,7 +32,6 @@
                                                                                                   */
 package xylophone
 
-import proscenium.compat.*
 
 import anticipation.*
 import contextual.*
@@ -41,11 +40,10 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import murmuration.*
 import prepositional.*
 import vacuous.*
 import zephyrine.*
-import rudiments.`:+`
+import rudiments.*
 import denominative.asymptotics.linearSizeComplexity
 
 // `XPath` is a `Format`, so a malformed *expression* is a `Parse.Error` like any other
@@ -464,8 +462,8 @@ object XPath extends Format:
       t"${axis.keyword}::${renderTest(test)}${renderPredicates(predicates)}"
 
   private def renderSteps(steps: List[Step]): Text =
-    val length = steps.length
-    steps.zipWithIndex.map { (step, index) => renderStep(step, index == length - 1) }.join(t"/")
+    val length = steps.size
+    steps.indexed.map { (step, index) => renderStep(step, index.n0 == length - 1) }.join(t"/")
 
   private def renderRoute(origin: Origin, steps: List[Step]): Text = origin match
     case Origin.Root => steps match

@@ -34,8 +34,6 @@ package caesura
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import dsvFormats.csvWithHeaderFormat
@@ -55,7 +53,7 @@ case class CChecked(name: Text, age: Int) derives CanEqual:
 object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
 
   case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
-  extends Error(m"${items.length} decoding issues"):
+  extends Error(m"${items.size} decoding issues"):
     def +(focus: Text, error: Dsv.Error): Issues = Issues(items :+ (focus, error))
 
   private inline def validateDsv[result](dsv: Dsv)
@@ -67,25 +65,25 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
             accrual + (prior.let(_.column).or(t"#"), error) } )
     . protect(decode(dsv))
 
-  private def row(text: Text): Dsv = text.read[Sheet].rows.head
+  private def row(text: Text): Dsv = text.read[Sheet].rows.readable.head
 
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):
       test(m"Fully-valid row: no errors accrued"):
-        validateDsv(row(t"name,age,height\nAlice,30,170"))(_.as[ARecord]).items.length
+        validateDsv(row(t"name,age,height\nAlice,30,170"))(_.as[ARecord]).items.size
       . assert(_ == 0)
 
       test(m"Single unparseable cell: one error"):
-        validateDsv(row(t"name,age,height\nAlice,thirty,170"))(_.as[ARecord]).items.length
+        validateDsv(row(t"name,age,height\nAlice,thirty,170"))(_.as[ARecord]).items.size
       . assert(_ == 1)
 
       test(m"Single missing cell: one error"):
-        validateDsv(row(t"name,age,height\nAlice,30"))(_.as[ARecord]).items.length
+        validateDsv(row(t"name,age,height\nAlice,30"))(_.as[ARecord]).items.size
       . assert(_ == 1)
 
     suite(m"Multiple unparseable cells"):
       test(m"Two unparseable cells accrue two errors"):
-        validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord]).items.length
+        validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord]).items.size
       . assert(_ == 2)
 
       test(m"Columns identify the unparseable cells"):
@@ -104,7 +102,7 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
       test(m"Constructor does not run when any cell failed"):
         CProbe.constructions = 0
         val issues = validateDsv(row(t"name,age\nZoe,young"))(_.as[CChecked])
-        (issues.items.length, CProbe.constructions)
+        (issues.items.size, CProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all cells are clean"):
@@ -115,7 +113,7 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
 
     suite(m"Multiple missing cells"):
       test(m"Two missing cells accrue two errors"):
-        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.length
+        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.size
       . assert(_ == 2)
 
       test(m"Columns identify the missing cells"):
@@ -134,5 +132,5 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
 
     suite(m"Regression: does not abort on the first bad cell"):
       test(m"Both bad cells are reported, not just the first"):
-        validateDsv(row(t"name,age,height\nAlice,bad1,bad2"))(_.as[ARecord]).items.length
+        validateDsv(row(t"name,age,height\nAlice,bad1,bad2"))(_.as[ARecord]).items.size
       . assert(_ > 1)

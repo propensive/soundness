@@ -58,7 +58,6 @@ import gastronomy.*, providers.javaStdlibProvider
 import httpBackends.virtualMachineHttp
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
-import proscenium.compat.*
 
 import filesystemBackends.virtualMachineFilesystem
 import filesystemOptions.dereferenceSymlinks.enabled

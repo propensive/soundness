@@ -34,7 +34,6 @@ package honeycomb
 
 
 import scala.{caps, compiletime}
-import proscenium.compat.*
 
 import scala.language.dynamics
 
@@ -1861,7 +1860,7 @@ extends Node, Topical, Transportive, Dynamic:
   override def toString(): String = this.show.s
 
   override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
-    val children2 = children.collect:
+    val children2 = children.sweep:
       case element@Element(tag.label, _, _, _) => element.of[tag.Topic].in[tag.Form]
 
     // Cast-erased: the vararg splat wants an exclusive array of the refined
@@ -1872,7 +1871,7 @@ extends Node, Topical, Transportive, Dynamic:
     . in[tag.Form]
 
   def body: Fragment of Topic over Transport in Form =
-    Fragment[Topic](children.map(_.of[Topic]).asInstanceOf[Array[Node of Topic]^{}]*)
+    Fragment[Topic](children.remap(_.of[Topic]).asInstanceOf[Array[Node of Topic]^{}]*)
     . over[Transport].in[Form]
 
   def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
@@ -1880,7 +1879,7 @@ extends Node, Topical, Transportive, Dynamic:
       case fragment: Fragment =>
         Element
           ( label, attributes,
-            (Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}] ++ children)
+            Array.frozen(Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}].readable ++ children.readable)
             . asInstanceOf[Array[Node]^{}],
             foreign )
 

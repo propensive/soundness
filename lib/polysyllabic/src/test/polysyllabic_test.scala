@@ -35,7 +35,6 @@ package polysyllabic
 import scala.collection.immutable.Seq
 
 import soundness.*
-import proscenium.compat.*
 
 import hyphenations.englishHyphenation
 
@@ -158,7 +157,7 @@ object Tests extends Suite(m"Polysyllabic tests"):
       . assert(_ == t"the al-go-rithm runs")
 
       test(m"syllables breaks letter runs and keeps non-letters as segments"):
-        t"the algorithm".syllables.toSeq
+        t"the algorithm".syllables.stdlib.toSeq
 
       . assert(_ == Seq(t"the", t" ", t"al", t"go", t"rithm"))
 

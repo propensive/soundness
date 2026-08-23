@@ -32,8 +32,6 @@
                                                                                                   */
 package honeycomb
 
-import proscenium.compat.*
-
 
 import soundness.*
 
@@ -653,7 +651,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
           val parsed = t"""<svg><![CDATA[raw <text>]]></svg>""".read[Html of Flow]
           parsed match
             case Element(t"svg", _, children, true) if children.length == 1 =>
-              children(0) match
+              children.readUnchecked(0) match
                 case TextNode(text) => text == t"raw <text>"
                 case _              => false
             case _ => false
@@ -1062,7 +1060,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
               sample.read[Html of Flow]
               true
             catch case _: Throwable => false
-        . assert(_.forall(identity))
+        . assert(_.all(identity))
 
         test(m"permissive given wins when Tactic[Parse.Error] is also in scope"):
           // `throwUnsafely` (file-level import) provides Tactic[Parse.Error] via

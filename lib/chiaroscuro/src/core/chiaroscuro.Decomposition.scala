@@ -32,8 +32,6 @@
                                                                                                   */
 package chiaroscuro
 
-import proscenium.compat.*
-
 import scala.reflect.*
 
 import anticipation.*

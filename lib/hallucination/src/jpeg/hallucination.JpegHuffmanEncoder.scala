@@ -32,8 +32,6 @@
                                                                                                   */
 package hallucination
 
-import proscenium.compat.*
-
 // Huffman encoding tables, ported from jpeg-encoder's `huffman.rs` (Apache-2.0/MIT). A table maps
 // each byte symbol to a (bit-length, code) pair; the code-length list and value list are also
 // retained for writing the DHT segment. Both the standard Annex K tables and per-image optimized
@@ -51,7 +49,7 @@ private[hallucination] final class JpegEncodeTable
     while i < 16 do
       var count = 0
 
-      while count < lengths(i) do
+      while count < lengths.readable(i) do
         sizes(k) = i + 1
         k += 1
         count += 1
@@ -77,8 +75,8 @@ private[hallucination] final class JpegEncodeTable
     i = 0
 
     while i < values.length do
-      sizeOf0(values(i)) = sizes(i)
-      codeOf0(values(i)) = codes(i)
+      sizeOf0(values.readable(i)) = sizes(i)
+      codeOf0(values.readable(i)) = codes(i)
       i += 1
 
     (sizeOf0.asInstanceOf[Array[Int]^{}], codeOf0.asInstanceOf[Array[Int]^{}])

@@ -33,7 +33,6 @@
 package zephyrine
 
 import scala.caps
-import proscenium.compat.*
 
 import anticipation.*
 import denominative.*
@@ -200,7 +199,7 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
 extension [medium](consume stream: (Stream[medium] over Credit)^)
   // Drain the stream, applying `operation` to each successive region and its
   // branded readable interval; it must not retain the region beyond the call.
-  def sweep(operation: (region: Region[medium]) => (Interval in region.type) => Unit)
+  def drain(operation: (region: Region[medium]) => (Interval in region.type) => Unit)
     (using buffering: Buffering)
   :   Unit =
 
@@ -224,7 +223,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
     given stream.addressable.type = stream.addressable
     val target = stream.addressable.blank(buffering.capacity(stream.addressable.substrate))
 
-    sweep: region =>
+    drain: region =>
       range => region.cloneTo(range)(target)
 
     stream.addressable.build(target)
@@ -292,7 +291,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
         stream.close()
         Chain.empty
 
-    Chain.empty.lazyAppendedAll(recur())
+    Chain.defer(recur())
 
 extension [record](consume stream: (Stream[Array[record]^{}] over Credit)^)
   // Element-wise access to a stream of records: a single-consumer iterator over

@@ -37,7 +37,6 @@ import soundness.*
 // The `Json` lens and optic instances live in `jacinta.optics` now, outside `Json`'s implicit
 // scope, so they must be imported by name.
 import jacinta.optics.{jsonEachOptical, jsonFilterOptical, jsonLens, jsonOrdinalOptical}
-import proscenium.compat.*
 
 import scala.language.dynamics
 
@@ -47,6 +46,7 @@ import formatting.compactJsonFormatting
 
 import discriminables.jsonByKindDiscriminable
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 case class Foo(x: Int, y: Text) derives CanEqual
 
@@ -748,7 +748,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(!_)
 
       test(m"Decode an array as a list"):
-        t"[1, 2, 3]".read[Json].as[List[Int]].length
+        t"[1, 2, 3]".read[Json].as[List[Int]].size
       . assert(_ == 3)
 
       test(m"Decode an object as a map"):
@@ -756,11 +756,11 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == 2)
 
       test(m"Decode a map preserves keys"):
-        t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].keySet
+        t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].keys
       . assert(_ == Set(t"a", t"b"))
 
       test(m"Decode a map preserves values"):
-        Set.from(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].values)
+        t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].values.to[Set]
       . assert(_ == Set(1, 2))
 
       test(m"primitive of a string is String"):
@@ -1425,25 +1425,25 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Derived schema for a case class lists fields as properties"):
         JsonSchema.derived[Bar].schema() match
-          case obj: JsonSchema.Object => obj.properties.keySet
+          case obj: JsonSchema.Object => obj.properties.keys
           case _                      => Set.empty[Text]
       . assert(_ == Set(t"a", t"b"))
 
       test(m"Derived schema marks all fields required when none optional"):
         JsonSchema.derived[Bar].schema() match
-          case obj: JsonSchema.Object => obj.required.let(_.toSet).or(Set())
+          case obj: JsonSchema.Object => obj.required.let(_.to[Set]).or(Set())
           case _                      => Set()
       . assert(_ == Set(t"a", t"b"))
 
       test(m"Derived schema omits optional fields from required"):
         JsonSchema.derived[BarOpt].schema() match
-          case obj: JsonSchema.Object => obj.required.let(_.toSet).or(Set())
+          case obj: JsonSchema.Object => obj.required.let(_.to[Set]).or(Set())
           case _                      => Set()
       . assert(_ == Set(t"a"))
 
       test(m"Derived schema for sum type uses oneOf"):
         JsonSchema.derived[Choice].schema() match
-          case obj: JsonSchema.Object => obj.oneOf.let(_.length).or(0)
+          case obj: JsonSchema.Object => obj.oneOf.let(_.size).or(0)
           case _                      => 0
       . assert(_ == 2)
 

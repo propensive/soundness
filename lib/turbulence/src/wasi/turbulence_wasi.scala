@@ -33,7 +33,6 @@
 package turbulence
 
 import java.nio.charset.StandardCharsets
-import proscenium.compat.*
 
 import java.io as ji
 
@@ -102,7 +101,7 @@ package stdios:
             var index = 0
 
             while index < data.length do
-              array(offset + index) = data(index)
+              array(offset + index) = data.readUnchecked(index)
               index += 1
 
             if data.length == 0 then -1 else data.length

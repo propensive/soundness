@@ -34,7 +34,6 @@ package ypsiloid
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 
@@ -171,10 +170,10 @@ object PositionTests extends Suite(m"Ypsiloid position-index tests"):
           // The single entry's offset is at data(5), entry = [keyLine,
           // keyColumn, keyLength, <valueDescriptor>]. The value descriptor
           // starts at offset(0) + 3 from the root descriptor.
-          val firstEntryOff = data(5)
+          val firstEntryOff = data.readable(5)
           val valueDescOff = firstEntryOff + 3
-          val valueSize = data(valueDescOff)
-          val slice = data.slice(valueDescOff, valueDescOff + valueSize)
+          val valueSize = data.readable(valueDescOff)
+          val slice = data.segment((valueDescOff).z till (valueDescOff + valueSize).z)
           slice.length == valueSize
       . assert(_ == true)
 

@@ -54,6 +54,14 @@ object Concatenable:
   given set: [element] => Set[element] is Concatenable by Set[element] =
     (left, right) => Set.of(left.stdlib ++ right.stdlib)
 
+  // Right-biased, matching the stdlib's `concat`: keys in the right operand win. This is the
+  // same ruling as `Set`, where union is concatenation.
+  given map: [key, value] => Map[key, value] is Concatenable by Map[key, value] =
+    (left, right) => Map.of(left.stdlib.concat(right.stdlib))
+
+  given ledger: [key, value] => Ledger[key, value] is Concatenable by Ledger[key, value] =
+    (left, right) => Ledger.of(left.stdlib.concat(right.stdlib))
+
   given frozenArray: [element: ClassTag]
   =>  (Array[element]^{}) is Concatenable by (Array[element]^{}) =
     (left, right) => Array.frozen(left.readable ++ right.readable)

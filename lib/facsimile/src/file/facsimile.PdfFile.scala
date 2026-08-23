@@ -32,7 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
 
 import ambience.*
 import anticipation.*

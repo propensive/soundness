@@ -33,7 +33,6 @@
 package telekinesis
 
 import scala.caps
-import proscenium.compat.*
 
 import java.io as ji
 import java.net as jn
@@ -76,7 +75,7 @@ private[telekinesis] object Sessions:
       import Connect.Error.Reason.*
 
       pending.let: stream =>
-        try stream.asInstanceOf[(Stream[Data] over Credit)^].sweep { _ => _ => () } catch
+        try stream.asInstanceOf[(Stream[Data] over Credit)^].drain { _ => _ => () } catch
           case error: ji.IOException => abort(Connect.Error(Unknown))
 
       pending = Unset
@@ -161,7 +160,7 @@ private[telekinesis] object Sessions:
           case Http.Body.Empty => Http.Body.Empty
 
           case _ =>
-            if data.isEmpty then Http.Body.Empty else Http.Body.Fixed(data)
+            if data.length == 0 then Http.Body.Empty else Http.Body.Fixed(data)
 
         response.status(response.textHeaders, body)
 

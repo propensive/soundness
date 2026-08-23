@@ -33,8 +33,6 @@ package stratiform
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
@@ -56,7 +54,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
     catch case error: Tel.Error => error.reason.number
 
   case class Collected(codes: List[Int] = Nil)(using Diagnostics)
-  extends Error(m"${codes.length} collected codes"):
+  extends Error(m"${codes.size} collected codes"):
     def +(code: Int): Collected = Collected(codes :+ code)
 
   // Codes accrued type-assigning `document` under the composed `schema`.

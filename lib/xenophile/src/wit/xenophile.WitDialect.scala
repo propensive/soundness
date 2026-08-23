@@ -36,7 +36,6 @@ package xenophile
 // re-wraps as the opaque `Map` (erasure-identical cast).
 import scala.collection.immutable.Map
 
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

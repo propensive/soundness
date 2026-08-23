@@ -34,11 +34,11 @@ package stratiform
 
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
-import proscenium.compat.*
 
 import scala.language.unsafeNulls
 
 import anticipation.*
+import rudiments.*
 import contingency.*
 import denominative.*
 import fulminate.*
@@ -117,7 +117,7 @@ object Bintel:
       var i   = 0
 
       while i < total do
-        xor = xor ^ (signature(i) & 0xff)
+        xor = xor ^ (signature.readable(i) & 0xff)
         i += 1
 
       Cadence.unpack(xor.toByte).let(_.hashCount(total - 1)).present
@@ -156,7 +156,7 @@ object Bintel:
     var i = 0
 
     while i < magic.length do
-      if data(i) != magic(i) then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
+      if data.readable(i) != magic.readable(i) then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
       i += 1
 
     val sigLenDecoded =
@@ -267,7 +267,7 @@ object Bintel:
     var i = 0
 
     while i < magicSelfContained.length do
-      if data(i) != magicSelfContained(i) then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
+      if data.readable(i) != magicSelfContained.readable(i) then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
       i += 1
 
     def varint(at: Int) =
@@ -280,7 +280,7 @@ object Bintel:
     val sigStart  = sigLenD.next
     val sigEnd    = sigStart + sigLenD.value.toInt
     if sigEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
-    val signature = data.slice(sigStart, sigEnd)
+    val signature = data.segment((sigStart).z till (sigEnd).z)
 
     if !validSignatureLength(signature)
     then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
@@ -289,8 +289,8 @@ object Bintel:
     val schStart  = schLenD.next
     val schEnd    = schStart + schLenD.value.toInt
     if schEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
-    val schemaBody = data.slice(schStart, schEnd)
-    val docBody    = data.slice(schEnd, data.length)
+    val schemaBody = data.segment((schStart).z till (schEnd).z)
+    val docBody    = data.segment((schEnd).z till (data.length).z)
 
     val axiom = Tels.Axiom.tels
 
@@ -318,7 +318,7 @@ object Bintel:
       var equal = true
 
       while i < a.length && equal do
-        if a(i) != b(i) then equal = false
+        if a.readable(i) != b.readable(i) then equal = false
         i += 1
 
       equal
@@ -393,7 +393,7 @@ object Bintel:
 
     val kidx = readVarint(cursor)
     if kidx < 0 || kidx >= flat.length then abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))
-    val (_, memberType) = flat(kidx.toInt)
+    val (_, memberType) = flat.readable(kidx.toInt)
     val resolved = resolveType(memberType, schema)
 
     resolved match
@@ -412,7 +412,7 @@ object Bintel:
         var j = 0
 
         while j < len.toInt do
-          bytes(j) = cursor.data(cursor.offset + j)
+          bytes(j) = cursor.data.readable(cursor.offset + j)
           j += 1
 
         cursor.offset += len.toInt
@@ -477,16 +477,16 @@ object Bintel:
     var i = 0
 
     while i < struct.members.length do
-      struct.members(i) match
+      struct.members.readable(i) match
         case f: Tels.Field =>
           buf += ((f.keyword, f.fieldType))
 
         case s: Tels.SelectRef =>
-          schema.selects.find(_.name == s.reference).foreach: selectDef =>
+          schema.selects.seek(_.name == s.reference).let: selectDef =>
             var v = 0
 
             while v < selectDef.variants.length do
-              val variant = selectDef.variants(v)
+              val variant = selectDef.variants.readable(v)
               buf += ((variant.keyword, variant.variantType))
               v += 1
 
@@ -504,7 +504,7 @@ object Bintel:
   private def present(element: Tel.Element, schema: Tels): Tel = element match
     case Tel.Element.Node(_, struct: Tels.Struct, children) =>
       val flat = flattenKeywords(struct, schema)
-      val blk = blocks(children.map(presentCompound(_, flat, schema)))
+      val blk = blocks(children.remap(presentCompound(_, flat, schema)))
 
       Tel.make(Tel.Compound("", Array.empty, Unset, blk))
 
@@ -517,20 +517,20 @@ object Bintel:
 
     element match
       case Tel.Element.Value(kidx, _, text) =>
-        Tel.Compound(flat(kidx)._1, Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty)
+        Tel.Compound(flat.readable(kidx)._1, Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty)
 
       case Tel.Element.Node(kidx, struct: Tels.Struct, children) =>
-        val keyword   = kidx.let(flat(_)._1).or(Text(""))
+        val keyword   = kidx.let(flat.readable(_)._1).or(Text(""))
         val childFlat = flattenKeywords(struct, schema)
 
         Tel.Compound
           ( keyword,
             Array.empty,
             Unset,
-            blocks(children.map(presentCompound(_, childFlat, schema))) )
+            blocks(children.remap(presentCompound(_, childFlat, schema))) )
 
       case Tel.Element.Node(kidx, _, _) =>
-        Tel.Compound(kidx.let(flat(_)._1).or(Text("")), Array.empty, Unset, Array.empty)
+        Tel.Compound(kidx.let(flat.readable(_)._1).or(Text("")), Array.empty, Unset, Array.empty)
 
   private def blocks(compounds: Array[Tel.Compound]^{}): Array[Tel.Block]^{} =
     if compounds.nil then Array.empty
@@ -610,13 +610,11 @@ object Bintel:
 
   private def resolveType(t: Tels.Type, schema: Tels): Tels.Type = t match
     case Tels.Reference(name) =>
-      schema.records.find(_.name == name) match
-        case Some(rec) => Tels.Struct(rec.members, rec.validators)
-
-        case None =>
-          schema.scalars.find(_.name == name) match
-            case Some(sc) => Tels.Scalar(sc.validators, sc.encoding)
-            case None     => t
+      schema.records.seek(_.name == name).lay:
+        schema.scalars.seek(_.name == name).lay(t): sc =>
+          Tels.Scalar(sc.validators, sc.encoding)
+      . apply: rec =>
+        Tels.Struct(rec.members, rec.validators)
 
     case other => other
 
@@ -635,13 +633,13 @@ object Bintel:
         var i = 0
 
         while i < ordered.length do
-          encodeElement(out, ordered(i), schema, codecs)
+          encodeElement(out, ordered.readable(i), schema, codecs)
           i += 1
 
       case Tel.Element.Node(_, _, children) =>
         writeVarint(out, children.length.toLong)
         var i = 0
-        while i < children.length do { encodeElement(out, children(i), schema, codecs); i += 1 }
+        while i < children.length do { encodeElement(out, children.readable(i), schema, codecs); i += 1 }
 
       case _: Tel.Element.Value =>
         writeVarint(out, 1L)
@@ -673,7 +671,7 @@ object Bintel:
         var i = 0
 
         while i < ordered.length do
-          encodeElement(out, ordered(i), schema, codecs)
+          encodeElement(out, ordered.readable(i), schema, codecs)
           i += 1
 
       case Tels.Flag =>
@@ -743,13 +741,13 @@ object Bintel:
 
       def keyOf(e: Tel.Element): Int =
         val flat = kidxOf(e)
-        if flat >= 0 && flat < memberBase.length then memberBase(flat) else flat
+        if flat >= 0 && flat < memberBase.length then memberBase.readable(flat) else flat
 
       val arr = new scala.Array[Tel.Element](children.length)
       var i = 0
 
       while i < children.length do
-        arr(i) = children(i)
+        arr(i) = children.readable(i)
         i += 1
 
       // java.util.Arrays.sort with a Comparator is stable — preserves
@@ -772,15 +770,13 @@ object Bintel:
     var i = 0
 
     while i < parent.members.length do
-      parent.members(i) match
+      parent.members.readable(i) match
         case _: Tels.Field =>
           bases += flat
           flat += 1
 
         case s: Tels.SelectRef =>
-          val width = schema.selects.find(_.name == s.reference) match
-            case Some(sd) => sd.variants.length
-            case None     => 0
+          val width = schema.selects.seek(_.name == s.reference).lay(0)(_.variants.length)
 
           var j = 0
           while j < width do { bases += flat; j += 1 }

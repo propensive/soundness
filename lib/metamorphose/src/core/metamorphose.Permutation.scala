@@ -32,8 +32,6 @@
                                                                                                   */
 package metamorphose
 
-import proscenium.compat.*
-
 import scala.annotation.*
 import scala.collection.mutable.BitSet
 
@@ -43,6 +41,8 @@ import denominative.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
+import symbolism.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Permutation:
   def bySize(n: Int): Chain[Permutation] = Chain.range[BigInt](0, Factorial(n)).map: i =>
@@ -99,7 +99,7 @@ object Permutation:
 
 case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand
-  lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.length)))
+  lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.size)))
 
   def bytes: Data = unsafely(factoradic.number.toByteArray.immutable)
   def apply(n: Int): Int =
@@ -109,8 +109,8 @@ case class Permutation(factoradic: Factoradic):
     expansion(Ordinal.zerary(n)).or(n)
 
   def apply[element](sequence: List[element]): List[element] raises Permutation.Error =
-    if sequence.length < lehmer.length then
-      raise(Permutation.Error(Permutation.Error.Reason.TooShort(sequence.length, lehmer.length)))
+    if sequence.size < lehmer.size then
+      raise(Permutation.Error(Permutation.Error.Reason.TooShort(sequence.size, lehmer.size)))
 
 
     def recur
@@ -124,22 +124,22 @@ case class Permutation(factoradic: Factoradic):
       lehmer match
         case head :: tail =>
           if current == head
-          then recur(tail, prefix, list.tail, current, list.head :: result)
+          then recur(tail, prefix, List.of(list.stdlib.tail), current, list.stdlib.head :: result)
           else
             if current < head
-            then recur(lehmer, list.head :: prefix, list.tail, current + 1, result)
-            else recur(lehmer, prefix.tail, prefix.head :: list, current - 1, result)
+            then recur(lehmer, list.stdlib.head :: prefix, List.of(list.stdlib.tail), current + 1, result)
+            else recur(lehmer, List.of(prefix.stdlib.tail), prefix.stdlib.head :: list, current - 1, result)
 
         case Nil =>
           result.reverse
 
 
-    val prefix = sequence.length - lehmer.length
-    sequence.take(prefix) ::: recur(lehmer, Nil, sequence.drop(prefix), 0, Nil)
+    val prefix = sequence.size - lehmer.size
+    sequence.keep(prefix) + recur(lehmer, Nil, sequence.skip(prefix), 0, Nil)
 
   def inverse: Permutation = if lehmer.nil then this else
-    val length = lehmer.length
-    val array: scala.Array[Int]^ = new scala.Array(lehmer.length)
+    val length = lehmer.size
+    val array: scala.Array[Int]^ = new scala.Array(lehmer.size)
     var index = 0
     var sequence: List[Int] = expansion
 

@@ -32,8 +32,6 @@
                                                                                                   */
 package hyperbole
 
-import proscenium.compat.*
-
 import digression.*
 import hellenism.*
 import vacuous.*

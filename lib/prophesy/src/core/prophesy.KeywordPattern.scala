@@ -32,8 +32,6 @@
                                                                                                   */
 package prophesy
 
-import proscenium.compat.*
-
 import anticipation.*
 import rudiments.*
 import vacuous.*
@@ -111,6 +109,4 @@ case class KeywordPattern
       case Nil => current
 
       case lexeme :: more =>
-        branches.find(_(0).matches(lexeme)) match
-          case Some((_, deeper)) => deeper.lookup(more, current)
-          case scala.None        => current
+        branches.seek(_(0).matches(lexeme)).lay(current)(_(1).lookup(more, current))

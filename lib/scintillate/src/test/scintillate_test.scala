@@ -36,14 +36,13 @@ import scala.caps
 
 import soundness.*
 
-import proscenium.compat.*
-
 import logging.silentLogging
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 import webserverErrorPages.minimalErrorPage
 import threading.virtualThreading
 import probates.awaitProbate
+import denominative.asymptotics.linearSizeComplexity
 
 // A value served as a streaming `text/plain` body: `Servable` synthesises an
 // `Http.Body.Flowing` whose source runs the text stream through the char-encoder
@@ -56,7 +55,7 @@ object TextPage:
     extension (value: TextPage) def mediaType: MediaType = media"text/plain"(charset = "UTF-8")
 
   given streamable: (TextPage is Streamable by Text over Credit) =
-    value => Stream(value.lines.iterator)
+    value => Stream(value.lines.stdlib.iterator)
 
 object Tests extends Suite(m"Scintillate tests"):
   def run(): Unit =
@@ -262,7 +261,7 @@ object Tests extends Suite(m"Scintillate tests"):
           val server = SocketServer(port).handle(Http.Response(Http.NotFound)(t"nope"))
           val response = rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
           server.cancel()
-          response.cut(t"\r\n").head
+          response.cut(t"\r\n").stdlib.head
 
         . assert(_ == t"HTTP/1.1 404 Not Found")
 
@@ -319,7 +318,7 @@ object Tests extends Suite(m"Scintillate tests"):
                 t"GET /a HTTP/1.1\r\nHost: x\r\n\r\nGET /b HTTP/1.1\r\nHost: x\r\n\r\n" )
 
           server.cancel()
-          response.cut(t"HTTP/1.1 200 OK").length
+          response.cut(t"HTTP/1.1 200 OK").size
 
         . assert(_ == 3)
 
@@ -453,7 +452,7 @@ object Tests extends Suite(m"Scintillate tests"):
                 socket.shutdownOutput()
                 val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt
                 socket.close()
-                response.cut(t"HTTP/1.1 200 OK").length - 1
+                response.cut(t"HTTP/1.1 200 OK").size - 1
 
           val total = tasks.map(_.await()).foldLeft(0)(_ + _)
           val millis = (java.lang.System.nanoTime() - start)/1000000.0
@@ -648,7 +647,7 @@ object Tests extends Suite(m"Scintillate tests"):
 
       test(m"1000 pipelined requests produce 1000 responses"):
         val many = t"GET / HTTP/1.1\r\nHost: x\r\n\r\n"*1000
-        inProcess(Http.Response(Http.Ok)(t"ok"), many).cut(t"HTTP/1.1 200 OK").length
+        inProcess(Http.Response(Http.Ok)(t"ok"), many).cut(t"HTTP/1.1 200 OK").size
 
       . assert(_ == 1001)
 
@@ -723,6 +722,6 @@ object Tests extends Suite(m"Scintillate tests"):
           t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 70000\r\n\r\n${t"a"*70000}"
           + t"GET /second HTTP/1.1\r\nHost: x\r\n\r\n"
 
-        inProcess(Http.Response(Http.Ok)(t"ok"), request).cut(t"HTTP/1.1 200 OK").length - 1
+        inProcess(Http.Response(Http.Ok)(t"ok"), request).cut(t"HTTP/1.1 200 OK").size - 1
 
       . assert(_ == 1)

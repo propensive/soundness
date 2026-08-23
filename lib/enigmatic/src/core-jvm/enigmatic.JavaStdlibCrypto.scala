@@ -34,7 +34,6 @@ package enigmatic
 
 import java.security as js, js.spec as jss, js.interfaces as jsi
 import javax.crypto as jc, javax.crypto.spec.*
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -168,18 +167,14 @@ object JavaStdlibCrypto extends Crypto:
     decode(privateKey) match
       case Asn1.Sequence(List(_, algorithm, Asn1.OctetString(inner))) =>
         val bits = decode(inner) match
-          case Asn1.Sequence(elements) => elements.collectFirst:
+          case Asn1.Sequence(elements) => elements.glean:
             case Asn1.Tagged(1, true, bits: Asn1.BitString) => bits
 
-          case _ => None
+          case _ => Unset
 
-        bits match
-          case Some(bits) =>
-            val info: Asn1 = Asn1.Sequence(List(algorithm, bits))
-            info.in[Der].data
-
-          case None =>
-            panic(m"the EC private key carried no public key")
+        bits.lay(panic(m"the EC private key carried no public key")): bits =>
+          val info: Asn1 = Asn1.Sequence(List(algorithm, bits))
+          info.in[Der].data
 
       case _ => panic(m"the EC private key was not a PrivateKeyInfo")
 
@@ -259,16 +254,12 @@ object JavaStdlibCrypto extends Crypto:
   private def mlDsaExtract(privateKey: Data): Data =
     decode(privateKey) match
       case Asn1.Sequence(_ :: algorithm :: _ :: rest) =>
-        val bits = rest.collectFirst:
+        val bits = rest.glean:
           case Asn1.Tagged(1, _, bits: Asn1.BitString) => bits
 
-        bits match
-          case Some(bits) =>
-            val info: Asn1 = Asn1.Sequence(List(algorithm, bits))
-            info.in[Der].data
-
-          case None =>
-            panic(m"the ML-DSA private key carried no public key")
+        bits.lay(panic(m"the ML-DSA private key carried no public key")): bits =>
+          val info: Asn1 = Asn1.Sequence(List(algorithm, bits))
+          info.in[Der].data
 
       case _ =>
         panic(m"the ML-DSA private key was not a PrivateKeyInfo")

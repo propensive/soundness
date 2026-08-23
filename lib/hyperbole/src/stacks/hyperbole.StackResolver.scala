@@ -44,7 +44,6 @@ import hellenism.*
 import hieroglyph.*
 import mandible.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
@@ -114,7 +113,7 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
         val candidates = frame.line.lay(List[Tasty.Definition]())(tasty.covering(_))
 
         val definition =
-          candidates.find(StackResolver.matches(frame.jvmMethod, hint, _)).optional
+          candidates.seek(StackResolver.matches(frame.jvmMethod, hint, _))
           . or(candidates.prim)
 
         val kind = hint.or(definition.let(_.kind)).or(Kind.Synthetic)

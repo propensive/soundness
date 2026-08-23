@@ -35,13 +35,14 @@ package dissonance
 
 import anticipation.*
 import contingency.*
-import proscenium.compat.*
 import denominative.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import symbolism.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Diff:
   given aggregable: (tactic: Tactic[Diff.Error])
@@ -141,7 +142,7 @@ object Diff:
           if inss.size > 0 && dels.size > 0 then List(Text("---")) else List[Text]()
         val insSeq = inss.map: ins => Text("> "+ins.value)
 
-        List(command) ::: delSeq ::: sep ::: insSeq
+        List(command) + delSeq + sep + insSeq
 
   // DiffError → Diff.Error
   case class Error(lineNo: Int, line: Text)(using Diagnostics)
@@ -170,10 +171,10 @@ case class Diff[element](edits: Edit[element]*):
     def recur(todo: List[Edit[element]], sequence: List[element]): Chain[element] = todo match
       case Nil                   => sequence.stdlib.to(Chain)
       case Ins(_, value) :: tail => value #:: recur(tail, sequence)
-      case Del(_, _) :: tail     => recur(tail, sequence.tail)
+      case Del(_, _) :: tail     => recur(tail, List.of(sequence.stdlib.tail))
 
       case Par(_, _, value) :: tail =>
-        value.let(update(_, sequence.head)).or(sequence.head) #:: recur(tail, sequence.tail)
+        value.let(update(_, sequence.stdlib.head)).or(sequence.stdlib.head) #:: recur(tail, List.of(sequence.stdlib.tail))
 
     recur(edits.to(List), sequence)
 
@@ -185,7 +186,7 @@ case class Diff[element](edits: Edit[element]*):
       case Tract.Changed(Nil, inss) => (inss: List[Change[element]])
 
       case Tract.Changed(dels, inss) =>
-        if inss.length == dels.length && inss.length <= subSize
+        if inss.size == dels.size && inss.size <= subSize
         then
           val subs = dels.zip(inss).map: (del, ins) =>
             Sub(del.left, ins.right, del.value, ins.value)
@@ -219,12 +220,12 @@ case class Diff[element](edits: Edit[element]*):
 
     . map:
         case xs@(Par(_, _, _) :: _) =>
-          Tract.Unchanged(xs.collect { case par: Par[element] => par })
+          Tract.Unchanged(xs.sweep {  case par: Par[element] => par })
 
         case xs =>
           Tract.Changed
-            ( xs.collect { case del: Del[element] => del },
-              xs.collect { case ins: Ins[element] => ins } )
+            ( xs.sweep {  case del: Del[element] => del },
+              xs.sweep {  case ins: Ins[element] => ins } )
 
   def chunks: Chain[Chunk[element]] =
     def recur(todo: List[Edit[element]], position: Int, rightPosition: Int)
@@ -235,14 +236,14 @@ case class Diff[element](edits: Edit[element]*):
         case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)
 
         case _ =>
-          val dels = todo.takeWhile(_.typed[Del[element]]).collect:
+          val dels = todo.keep(_.typed[Del[element]]).sweep:
             case del: Del[element] => del
 
-          val inss = todo.drop(dels.length).takeWhile(_.typed[Ins[element]]).collect:
+          val inss = todo.skip(dels.size).keep(_.typed[Ins[element]]).sweep:
             case ins: Ins[element] => ins
 
           Chunk(position, rightPosition, dels, inss) #::
             recur
-              ( todo.drop(dels.size + inss.size), position + dels.length, position + inss.length )
+              ( todo.skip(dels.size + inss.size), position + dels.size, position + inss.size )
 
     recur(edits.to(List), 0, 0)

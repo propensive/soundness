@@ -32,14 +32,14 @@
                                                                                                   */
 package anthology
 
-import proscenium.compat.*
-
 import scala.collection.mutable as scm
 
 import anticipation.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // Android binary XML ("AXML"): the compact, chunked encoding Android's framework parses a
 // manifest from — a string pool, an optional resource-map chunk, then a flat stream of
@@ -191,7 +191,7 @@ object Axml:
       out.u32(strings.intern(element.name))
       out.u16(0x0014)                      // attribute record start
       out.u16(0x0014)                      // attribute record size
-      out.u16(element.attributes.length)
+      out.u16(element.attributes.size)
       out.u16(0)                           // id attribute index (none)
       out.u16(0)                           // class attribute index (none)
       out.u16(0)                           // style attribute index (none)
@@ -229,7 +229,7 @@ object Axml:
     out.u16(0x001c)
     val sizeAt = out.position
     out.u32(0)
-    out.u32(entries.length)
+    out.u32(entries.size)
     out.u32(0)                             // style count
     out.u32(0)                             // flags: 0 = UTF-16
     val stringsStartAt = out.position
@@ -256,8 +256,8 @@ object Axml:
     out.patchU32(sizeAt, (out.position - sizeAt + 4).toLong)
 
   private def writeResourceMap(out: Accumulator, ids: List[Int]): Unit =
-    if ids.nonEmpty then
+    if !ids.nil then
       out.u16(0x0180)
       out.u16(0x0008)
-      out.u32((8 + 4*ids.length).toLong)
+      out.u32((8 + 4*ids.size).toLong)
       for id <- ids do out.u32(id & 0xffffffffL)

@@ -32,8 +32,6 @@
                                                                                                   */
 package burdock
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import digression.*
@@ -57,6 +55,8 @@ import zeppelin.*
 import errorDiagnostics.emptyDiagnostics
 import parasite.probates.cancelProbate
 import parasite.threading.virtualThreading
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // The repackager. Reads the dependency hashes embedded by the compile-time macro
 // and partitions them: a hash that resolves to a public URL is externalized (a
@@ -123,7 +123,7 @@ object Repackager:
 
     val requirements = scala.collection.immutable.List.newBuilder[Requirement]
     val inlined = scala.collection.immutable.List.newBuilder[Zip.Entry]
-    val total: Int = hashes.length
+    val total: Int = hashes.size
     var completed: Int = 0
 
     // Classify a single hash. Pure (no shared mutable state), so many hashes can be classified
@@ -156,7 +156,7 @@ object Repackager:
               requirements ++= reqs.stdlib
               inlined ++= entries.stdlib
 
-            completed += group.length
+            completed += group.size
             progress(completed, total)
 
     (List.of(requirements.result()), List.of(inlined.result()))
@@ -266,8 +266,8 @@ object Repackager:
         Summary
           ( inputEntries       = inputCount,
             directoriesSkipped = directoriesSkipped,
-            ownKept            = keptEntries.length,
+            ownKept            = keptEntries.size,
             externalized       = requirements,
-            inlined            = inlined.length,
-            stripped           = ownEntries.length - keptEntries.length,
-            outputEntries      = entries.length + 1 )
+            inlined            = inlined.size,
+            stripped           = ownEntries.size - keptEntries.size,
+            outputEntries      = entries.size + 1 )

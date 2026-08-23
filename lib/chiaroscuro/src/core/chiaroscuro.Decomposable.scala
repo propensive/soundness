@@ -33,7 +33,6 @@
 package chiaroscuro
 
 import scala.caps
-import proscenium.compat.*
 
 import scala.compiletime.*
 import scala.reflect.*
@@ -88,7 +87,7 @@ object Decomposable extends Decomposable2:
     caps.unsafe.unsafeAssumePure: iarray =>
         Decomposition.Sequence
           ( t"Array",
-            iarray.toSeq.map(decomposable.decomposition(_)),
+            iarray.readable.toSeq.map(decomposable.decomposition(_)),
             iarray )
 
 trait Decomposable extends Typeclass:

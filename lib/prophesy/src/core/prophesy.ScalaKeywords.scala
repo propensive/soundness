@@ -32,9 +32,8 @@
                                                                                                   */
 package prophesy
 
-import proscenium.compat.*
-
 import anticipation.*
+import symbolism.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -70,10 +69,10 @@ object ScalaKeywords:
   private val definition: Set[Text] =
     Set(t"val", t"var", t"def", t"given", t"type", t"class", t"object", t"trait", t"enum",
         t"case", t"case class", t"case object", t"extension", t"import", t"export",
-        t"package") ++
+        t"package") +
       modifiers
 
-  private val statement: Set[Text] = definition ++ expression
+  private val statement: Set[Text] = definition + expression
 
   // Keywords continuing a completed expression or definition on the same line.
   private val continuation: Set[Text] =
@@ -108,16 +107,16 @@ object ScalaKeywords:
         List
          ( // Statement boundaries: everything that can begin a statement, plus the
            // continuations that may lawfully start a fresh line (`else`, `catch`, `end`…).
-           Element.Exact(Lexeme.Break) -> leaf(statement ++ continuation ++ Set(t"end", t"case")),
+           Element.Exact(Lexeme.Break) -> leaf(statement + continuation + Set(t"end", t"case")),
 
            Element.Exact(Lexeme.Start) -> leaf(statement),
            glyph(t";") -> leaf(statement),
-           Element.Exact(Lexeme.Open(Bracket.Brace)) -> leaf(statement ++ Set(t"case")),
+           Element.Exact(Lexeme.Open(Bracket.Brace)) -> leaf(statement + Set(t"case")),
 
            // A definition or lambda right-hand side; an indented block after `=`/`=>` also
            // reaches here, since a more deeply indented line is not a `Break`.
            glyph(t"=") -> leaf(statement),
-           glyph(t"=>") -> leaf(statement ++ Set(t"case")),
+           glyph(t"=>") -> leaf(statement + Set(t"case")),
            glyph(t"?=>") -> leaf(statement),
            glyph(t"<-") -> leaf(expression),
 
@@ -161,10 +160,10 @@ object ScalaKeywords:
            // modifier or fresh binding is expected instead.
            Element.Exact(Lexeme.Open(Bracket.Round)) ->
              KeywordPattern
-               ( Keywords(expression ++ Set(t"using", t"erased", t"inline")),
+               ( Keywords(expression + Set(t"using", t"erased", t"inline")),
                  List
                   ( Element.Exact(Lexeme.Term) ->
-                    KeywordPattern(Keywords(expression ++ Set(t"using")), parameterHeads),
+                    KeywordPattern(Keywords(expression + Set(t"using")), parameterHeads),
                     // A class/trait name lexes as a *type* identifier, so `class Foo(` finds
                     // its parameter position through a `Typal` branch.
                     Element.Exact(Lexeme.Typal) ->
@@ -176,7 +175,7 @@ object ScalaKeywords:
 
            glyph(t",") ->
              leaf
-               ( expression ++
+               ( expression +
                  Set(t"using", t"erased", t"inline", t"val", t"var", t"final", t"private",
                      t"protected", t"override", t"given") ),
 
@@ -193,16 +192,16 @@ object ScalaKeywords:
 
            Element.Exact(Lexeme.Typal) ->
              KeywordPattern
-               ( Keywords(continuation ++ Set(t"val", t"def", t"type", t"case", t"class",
+               ( Keywords(continuation + Set(t"val", t"def", t"type", t"case", t"class",
                    t"private", t"protected")),
                  // An annotation name lexes as a type: `@tailrec` is followed by the
                  // annotated definition, exactly as in the `Term` branch.
                  List(glyph(t"@") -> leaf(statement)) ),
 
            Element.Exact(Lexeme.Literal) -> leaf(continuation),
-           Element.Exact(Lexeme.Close(Bracket.Round)) -> leaf(continuation ++ definition),
-           Element.Exact(Lexeme.Close(Bracket.Square)) -> leaf(continuation ++ definition),
-           Element.Exact(Lexeme.Close(Bracket.Brace)) -> leaf(continuation ++ definition),
+           Element.Exact(Lexeme.Close(Bracket.Round)) -> leaf(continuation + definition),
+           Element.Exact(Lexeme.Close(Bracket.Square)) -> leaf(continuation + definition),
+           Element.Exact(Lexeme.Close(Bracket.Brace)) -> leaf(continuation + definition),
 
            // Modifier follow-sets, from the corpus with identifier noise pruned.
            word(t"private") ->

@@ -33,8 +33,6 @@ package stratiform
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
@@ -87,7 +85,7 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
         |""".stripMargin)
 
   case class Collected(codes: List[Int] = Nil)(using Diagnostics)
-  extends Error(m"${codes.length} collected codes"):
+  extends Error(m"${codes.size} collected codes"):
     def +(code: Int): Collected = Collected(codes :+ code)
 
   private def validationCodes(schemaText: Text, document: Text): List[Int] =

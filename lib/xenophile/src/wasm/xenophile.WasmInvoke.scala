@@ -34,7 +34,6 @@ package xenophile
 
 import scala.caps
 
-import proscenium.compat.*
 
 import scala.collection.immutable as sci
 import scala.collection.immutable.{List, Nil, ::}
@@ -47,6 +46,8 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // The terminal materializer for the WIT ecosystem: turns a fully-applied `Foreign` invocation into
 // a real Wasm Component Model import call (`scala.scalajs.wit.witImportCall`, lowered by the
@@ -79,7 +80,7 @@ object WasmInvoke extends Materializer:
     // other named types (variants, records), the referencing function's own module — WASI types
     // are used within the interface that declares them.
     def definingModule(name: Text): Optional[Text] =
-      allDefinitions(name).let(_.values.headOption.optional.let(_.module).or(Unset)).or(module)
+      allDefinitions(name).let(_.values.prim.let(_.module).or(Unset)).or(module)
 
     def facadeOf(name: Text): Symbol =
       facadeClass(definingModule(name).or(halt(m"xenophile: $name has no defining module")), name)
@@ -196,7 +197,7 @@ object WasmInvoke extends Materializer:
               '{  val outcome = $call
                   if !${isOk('outcome)} then ${raiseError('outcome)}  }
             else
-              val (_, payloadDecode) = decodeFor(arguments.head, scala)
+              val (_, payloadDecode) = decodeFor(arguments.stdlib.head, scala)
 
               call =>
                 '{  val outcome = $call
@@ -209,7 +210,7 @@ object WasmInvoke extends Materializer:
         // A `tuple<…>` (or a record, whose ABI it shares) with the matching Scala tuple type:
         // element-wise recursion, carried as the scala-wasm `TupleN` of the element carriers.
         case Foreign.Type.Applied(constructor, elements)
-        if constructor.s == "tuple" && isTuple(scala, elements.length) =>
+        if constructor.s == "tuple" && isTuple(scala, elements.size) =>
           val fields = scala.dealias.typeArgs
           // Macro-time only: mapping with a lambda would let the decoders' minted quote
           // capabilities leak into the closure's capture set, so the traversal is an
@@ -217,7 +218,7 @@ object WasmInvoke extends Materializer:
           // rep/DECISIONS.md).
           val derivedBuffer = List.newBuilder[(TypeRepr, Expr[Any] -> Expr[Any])]
 
-          val pairs = elements.zip(fields).iterator
+          val pairs = elements.zip(fields).stdlib.iterator
           while pairs.hasNext do
             val (element, field) = pairs.next()
             val (repr, decode) = decodeFor(element, field)
@@ -228,10 +229,10 @@ object WasmInvoke extends Materializer:
           val carriers = derived.map(_(0))
 
           val tupleClass =
-            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.length.toString)
+            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.size.toString)
 
           val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
-          val scalaTuple = defn.TupleClass(elements.length).companionModule
+          val scalaTuple = defn.TupleClass(elements.size).companionModule
 
           val decode: Expr[Any] => Expr[Any] = call =>
             val cast =
@@ -378,10 +379,10 @@ object WasmInvoke extends Materializer:
 
       case Foreign.Type.Applied(constructor, arguments) => constructor.s match
         case "list" =>
-          Apply(marker("witList"), List(descriptor(arguments.head)))
+          Apply(marker("witList"), List(descriptor(arguments.stdlib.head)))
 
         case "option" =>
-          Apply(marker("witOption"), List(descriptor(arguments.head)))
+          Apply(marker("witOption"), List(descriptor(arguments.stdlib.head)))
 
         case "tuple" =>
           val elements = Repeated(arguments.stdlib.map(descriptor), TypeTree.of[Any])
@@ -392,7 +393,7 @@ object WasmInvoke extends Materializer:
             case Foreign.Type.Named(name) if name.s == "_" => marker("witUnit")
             case other                                     => descriptor(other)
 
-          Apply(marker("witResult"), List(arm(arguments.head), arm(arguments.stdlib(1))))
+          Apply(marker("witResult"), List(arm(arguments.stdlib.head), arm(arguments.stdlib(1))))
 
         case other =>
           halt(m"xenophile: the WIT type constructor $other cannot cross a WIT boundary yet")
@@ -721,7 +722,7 @@ object WasmInvoke extends Materializer:
     val origin = TypeRepr.of[Wit]
     val definitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
 
-    val module = definitions(topic).let(_.values.headOption.optional.let(_.module).or(Unset)).or:
+    val module = definitions(topic).let(_.values.prim.let(_.module).or(Unset)).or:
       halt(m"xenophile: the WIT resource $topic has no known module")
 
     val facade = facadeClass(module, topic)

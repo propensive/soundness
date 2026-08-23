@@ -34,8 +34,6 @@ package mandible
 
 import rudiments.*
 
-import proscenium.compat.*
-
 import java.lang.classfile as jlc
 import java.lang.classfile.attribute as jlca
 import java.lang.classfile.instruction as jlci
@@ -56,6 +54,8 @@ import vacuous.*
 import columnAttenuation.ignoreAttenuation
 import tableStyles.minimalTableStyle
 import textMetrics.uniformMetric
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Bytecode:
   given teletypeable: (palette: BytecodePalette) => Bytecode is Teletypeable = bytecode =>
@@ -1481,7 +1481,7 @@ case class Bytecode
     val instructions2 = instructions.map: (instruction: Bytecode.Instruction) =>
       instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
 
-    copy(sourceFile = codepoint.source.cut(t"/").last, instructions = instructions2)
+    copy(sourceFile = codepoint.source.cut(t"/").stdlib.last, instructions = instructions2)
 
   def linearize
     ( resolver:        (Text, Text, Text) => Optional[Bytecode],
@@ -1499,7 +1499,7 @@ case class Bytecode
 
       // The budget counter is this walk's own local; no aliased writer.
       scala.caps.unsafe.unsafeAssumeSeparate:
-       bc.instructions.iterator.takeWhile(_ => budget > 0).each: instr =>
+       bc.instructions.stdlib.iterator.takeWhile(_ => budget > 0).each: instr =>
         budget -= 1
 
         val target: Optional[(Text, Text, Text)] = instr.opcode match
@@ -1527,7 +1527,7 @@ case class Bytecode
 
   private def effectivelyStaticCalls0: Set[Int] =
     import Bytecode.Opcode.*
-    val byOffset = instructions.iterator.map{ i => i.offset -> i }.toMap
+    val byOffset = instructions.stdlib.iterator.map{ i => i.offset -> i }.toMap
 
     val priorStacks: Map[Int, List[Bytecode.Frame]] =
       var prev: Optional[List[Bytecode.Frame]] = Nil
@@ -1539,18 +1539,18 @@ case class Bytecode
 
       Map.of(builder.result())
 
-    instructions.iterator.flatMap: instr =>
+    instructions.stdlib.iterator.flatMap: instr =>
       val (owner, descriptor) = instr.opcode match
         case Invokevirtual(owner, _, descriptor)        => (owner, descriptor)
         case Invokeinterface(owner, _, descriptor, _)   => (owner, descriptor)
         case _                                          => (t"", t"")
 
       if owner == t"" then None
-      else priorStacks.get(instr.offset).flatMap: pre =>
+      else priorStacks.stdlib.get(instr.offset).flatMap: pre =>
         val argCount = Bytecode.Descriptor.parse(descriptor).args.size
 
         if pre.size <= argCount then None
-        else pre.drop(argCount).head match
+        else pre.stdlib.drop(argCount).head match
           case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)
           case _                                       => None
 

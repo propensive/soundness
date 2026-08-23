@@ -33,7 +33,8 @@
 package facsimile
 
 import anticipation.*
-import proscenium.compat.*
+import denominative.*
+import rudiments.*
 
 // A random-access view of the bytes backing a PDF file, as zephyrine's shared `Expanse`. A
 // read past the end of the source yields fewer bytes than requested, never padding.
@@ -41,7 +42,7 @@ private[facsimile] trait ByteSource extends zephyrine.Expanse
 
 private[facsimile] class DataSource(data: Data) extends ByteSource:
   def size: Long = data.length.toLong
-  def read(offset: Long, length: Int): Data = data.slice(offset.toInt, offset.toInt + length)
+  def read(offset: Long, length: Int): Data = data.segment((offset.toInt).z till (offset.toInt + length).z)
 
 // Positional reads against another `Expanse` — galilei's memory-mapped `Ram`, held open for
 // the lifetime of a `Pdf` scope. A PDF is resolved through many small reads which all happen

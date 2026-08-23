@@ -37,7 +37,6 @@ package xenophile
 import scala.collection.immutable.List as SList
 import scala.collection.immutable.Map
 
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -133,7 +132,7 @@ object WebIdlDialect extends Dialect:
     def collect(name: Text, visiting: Set[Text]): Map[Text, Prototype] =
       if visiting.has(name) then types.getOrElse(name, empty)
       else
-        val visiting2 = visiting + name
+        val visiting2 = visiting :+ name
         val own = types.getOrElse(name, empty)
 
         val inherited = parents.get(name).optional.lay(empty): base =>

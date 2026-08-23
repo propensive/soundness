@@ -40,11 +40,10 @@ import scala.math
 
 import soundness.*
 
-import proscenium.compat.*
-
 
 import textMetrics.uniformMetric
 import caseSensitivity.caseSensitive
+import denominative.asymptotics.linearSizeComplexity
 
 case class Person(name: Text, age: Int)
 
@@ -1120,7 +1119,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == 0)
 
       test(m"empty Text has single sentinel boundary"):
-        Writing(t"").boundaries.toList
+        Writing(t"").boundaries.to[List]
       . assert(_ == List(0))
 
       test(m"ASCII text grapheme count equals char count"):
@@ -1128,11 +1127,11 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == 3)
 
       test(m"ASCII text boundaries are sentinels at every char"):
-        Writing(t"abc").boundaries.toList
+        Writing(t"abc").boundaries.to[List]
       . assert(_ == List(0, 1, 2, 3))
 
       test(m"CR LF stays one grapheme"):
-        Writing(t"a\r\nb").boundaries.toList
+        Writing(t"a\r\nb").boundaries.to[List]
       . assert(_ == List(0, 1, 3, 4))
 
       test(m"CR LF grapheme count"):
@@ -1208,6 +1207,19 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"regex extraction — pending extract-macro fix for opaque Chain"):
         ()
       . assert(_ == ())
+
+    // `last` is `transparent inline`, so its adaptivity has to survive the umbrella's export
+    // forwarder as well as the direct `rudiments` call: hence this suite here, under
+    // `import soundness.*`.
+    suite(m"Adaptive `last` through the umbrella"):
+      test(m"an unproven receiver yields Unset when empty"):
+        val xs: Sequence[Int] = Sequence()
+        xs.last
+      . assert(_ == Unset)
+
+      test(m"Text is Terminable, and adapts the same way"):
+        t"abc".last
+      . assert(_ == 'c')
 
     suite(m"Fuzzy match"):
       import proximities.normalizedLevenshteinProximity

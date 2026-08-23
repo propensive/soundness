@@ -41,8 +41,6 @@ import scala.collection.immutable.{Map, Set}
 
 import scala.collection.mutable.ListBuffer
 
-import proscenium.compat.*
-
 import anticipation.*
 import anticipation.*
 import contingency.*
@@ -52,6 +50,8 @@ import rudiments.*
 import vacuous.*
 
 import Mathml.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 // A parser for "ergo": a one-line shorthand for Presentation MathML that emits
 // `archimedes` nodes. The whole expression is delimited by a bracket pair; the
@@ -256,14 +256,17 @@ object Ergo:
 
   private def serializeTable(table: Mtable)(using Tactic[Ergo.Error]): Text =
     val rows: List[List[Text]] =
-      table.contents.collect:
-        case Mtr(cells, _) => cells.map(cellText)
+      // Not `sweep`: `cellText` captures the `Tactic`, so the synthesized partial function
+      // cannot be pure. The `.stdlib` partial function has no such requirement.
+      List.of:
+        table.contents.stdlib.collect:
+          case Mtr(cells, _) => cells.map(cellText)
 
-    if rows.length == 1 then
-      val row = rows.head.join
+    if rows.size == 1 then
+      val row = rows.stdlib.head.join
       t"${RowVec.toString.tt}($row)"
-    else if rows.forall(_.length == 1) then
-      val column = rows.map(_.head).join
+    else if rows.all(_.size == 1) then
+      val column = rows.map(_.stdlib.head).join
       t"${ColVec.toString.tt}($column)"
     else
       val body = rows.map { cells => group(cells.join) }.join

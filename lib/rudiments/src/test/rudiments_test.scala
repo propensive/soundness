@@ -33,8 +33,7 @@
 package rudiments
 
 import soundness.*
-
-import proscenium.compat.*
+import denominative.asymptotics.linearSizeComplexity
 
 case class Person(name: Text, age: Int)
 
@@ -147,10 +146,153 @@ object Tests extends Suite(m"Rudiments Tests"):
         xs.minimize(identity(_))
       . assert(_ == Unset)
 
-      test(m"last on an occupied chain"):
+      test(m"last on an occupied chain demands the unbounded acknowledgement"):
+        import denominative.asymptotics.unboundedSizeComplexity
         val xs: Chain[Int] = Chain(1, 2, 3)
-        xs.occupied.let(_.last)
+        xs.last
       . assert(_ == 3)
+
+    suite(m"Size and count tests"):
+      test(m"Set size is ungated"):
+        val xs: Set[Int] = Set(1, 2, 3)
+        xs.size
+      . assert(_ == 3)
+
+      test(m"List size demands the linear acknowledgement"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.size
+      . assert(_ == 3)
+
+      test(m"count by predicate"):
+        val xs: List[Int] = List(1, 2, 3, 4)
+        xs.count(_%2 == 0)
+      . assert(_ == 2)
+
+      test(m"count of a specific element is spelt with equality"):
+        val xs: List[Int] = List(1, 2, 2, 3)
+        xs.count(_ == 2)
+      . assert(_ == 2)
+
+    suite(m"last and lead tests"):
+      test(m"last of a sequence"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        xs.last
+      . assert(_ == 3)
+
+      test(m"lead is everything but the last"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        xs.occupied.lay(Sequence[Int]())(_.lead)
+      . assert(_ == Sequence(1, 2))
+
+      test(m"last of a list demands the linear acknowledgement"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.last
+      . assert(_ == 3)
+
+      test(m"lead of a list"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.occupied.lay(List[Int]())(_.lead)
+      . assert(_ == List(1, 2))
+
+      test(m"lead then last reconstitutes the whole"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.occupied.lay(List[Int]()) { xs => xs.lead :+ xs.last }
+      . assert(_ == List(1, 2, 3))
+
+      test(m"last adapts: an unproven receiver yields an Optional"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        val result: Optional[Int] = xs.last
+        result
+      . assert(_ == 3)
+
+      test(m"last of an empty unproven receiver is Unset"):
+        val xs: Sequence[Int] = Sequence()
+        xs.last
+      . assert(_ == Unset)
+
+      test(m"last adapts: a Populated receiver yields the element itself"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3)
+        // Typed as `Int`, not `Optional[Int]`: the ascription is the assertion.
+        xs.occupied.lay(0): xs =>
+          val total: Int = xs.last
+          total
+      . assert(_ == 3)
+
+      test(m"last of an unproven list still demands the linear acknowledgement"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.last
+      . assert(_ == 3)
+
+      test(m"the ordinal-prefix operation is now `prefix`"):
+        val xs: Sequence[Int] = Sequence(10, 20, 30)
+        val interval: Interval = xs.prefix(_ => true)
+        interval.limit.n0
+      . assert(_ == 3)
+
+    suite(m"glean and omit tests"):
+      test(m"glean transforms the first match"):
+        val xs: List[Int] = List(1, 2, 3, 4)
+        xs.glean { case n if n%2 == 0 => n*10 }
+      . assert(_ == 20)
+
+      test(m"glean without a match is Unset"):
+        val xs: List[Int] = List(1, 3)
+        xs.glean { case n if n%2 == 0 => n*10 }
+      . assert(_ == Unset)
+
+      test(m"omit removes a map key"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.omit(t"b")
+      . assert(_ == Map(t"a" -> 1))
+
+      test(m"omit of an absent key changes nothing"):
+        val m: Map[Text, Int] = Map(t"a" -> 1)
+        m.omit(t"z")
+      . assert(_ == Map(t"a" -> 1))
+
+      test(m"maps concatenate right-biased"):
+        val left: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        val right: Map[Text, Int] = Map(t"b" -> 20, t"c" -> 3)
+        left + right
+      . assert(_ == Map(t"a" -> 1, t"b" -> 20, t"c" -> 3))
+
+    suite(m"Set algebra tests"):
+      test(m"intersect keeps common elements"):
+        val xs: Set[Int] = Set(1, 2, 3)
+        xs.intersect(Set(2, 3, 4))
+      . assert(_ == Set(2, 3))
+
+      test(m"except removes the other set's elements"):
+        val xs: Set[Int] = Set(1, 2, 3)
+        xs.except(Set(2))
+      . assert(_ == Set(1, 3))
+
+      test(m"union is concatenation"):
+        val xs: Set[Int] = Set(1, 2)
+        val ys: Set[Int] = Set(2, 3)
+        xs + ys
+      . assert(_ == Set(1, 2, 3))
+
+    suite(m"Keyed tests"):
+      test(m"Map keys are a Set"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.keys
+      . assert(_ == Set(t"a", t"b"))
+
+      test(m"Map values are a List"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.values.to[Set]
+      . assert(_ == Set(1, 2))
+
+      test(m"Ledger keys are an insertion-ordered List"):
+        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        ledger.keys
+      . assert(_ == List(t"c", t"a", t"b"))
+
+      test(m"Ledger values preserve insertion order"):
+        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        ledger.values
+      . assert(_ == List(3, 1, 2))
 
     suite(m"Definable tests"):
       test(m"define replaces a sequence element positionally"):
@@ -172,6 +314,18 @@ object Tests extends Suite(m"Rudiments Tests"):
         val m: Map[Text, Int] = Map(t"a" -> 1)
         m.define(t"b", 2)
       . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+
+      test(m"define on a list demands the linear-access acknowledgement"):
+        import denominative.asymptotics.linearAccessComplexity
+        val xs: List[Int] = List(1, 2, 3)
+        xs.define(Sec, 20)
+      . assert(_ == List(1, 20, 3))
+
+      test(m"define outside a list returns it unchanged"):
+        import denominative.asymptotics.linearAccessComplexity
+        val xs: List[Int] = List(1, 2, 3)
+        xs.define(Quat, 40)
+      . assert(_ == List(1, 2, 3))
 
       test(m"define replaces a frozen array element"):
         val xs: Array[Int]^{} = Array.tabulate(3)(_ + 1)
@@ -232,7 +386,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"`iterate` over a branded sub-interval visits only that range"):
         var total = 0
-        array.iterate(array.lead(_ => true).capped(2)) { i => total += array.at(i) }
+        array.iterate(array.prefix(_ => true).capped(2)) { i => total += array.at(i) }
         total
       . assert(_ == 30)
 
@@ -245,12 +399,12 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Unset)
 
       test(m"`lead` spans the matching prefix and stops at the first mismatch"):
-        val interval: Interval = text.lead { i => text(i) != 'l' }
+        val interval: Interval = text.prefix { i => text(i) != 'l' }
         interval.size
       . assert(_ == 2)
 
       test(m"`lead` spans the whole extent when everything matches"):
-        val interval: Interval = text.lead { _ => true }
+        val interval: Interval = text.prefix { _ => true }
         interval.size
       . assert(_ == 5)
 
@@ -887,7 +1041,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"Result type of to[List] is inferred fully applied"):
         val list: List[Char] = "xy".tt.to[List]
-        list.length
+        list.size
       . assert(_ == 2)
 
     suite(m"Vacuiscible tests"):

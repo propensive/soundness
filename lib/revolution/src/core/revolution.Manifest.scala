@@ -34,7 +34,6 @@ package revolution
 
 import contingency.*
 import gossamer.*
-import proscenium.compat.*
 
 import java.io as ji
 import java.util.jar as juj
@@ -70,12 +69,12 @@ object Manifest:
     . pipe(Map.from(_))
 
   given addable: Manifest is Addable by Manifest.Entry to Manifest = Addable: (manifest, entry) =>
-    Manifest(manifest.entries.updated(entry.key, entry.value))
+    Manifest(manifest.entries.define(entry.key, entry.value))
 
   given subtractable: [key <: Label, attribute <: Manifest.Attribute[key]]
   =>  Manifest is Subtractable by attribute to Manifest =
 
-    Subtractable: (manifest, attribute) => Manifest(manifest.entries.removed(attribute.key))
+    Subtractable: (manifest, attribute) => Manifest(manifest.entries.omit(attribute.key))
 
   // ManifestAttribute → Manifest.Attribute
   abstract class Attribute[label <: Label: ValueOf]():

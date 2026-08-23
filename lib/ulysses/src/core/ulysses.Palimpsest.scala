@@ -32,24 +32,24 @@
                                                                                                   */
 package ulysses
 
-import proscenium.compat.*
-
 import anticipation.*
 import denominative.*
 import fulminate.*
+import rudiments.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Palimpsest:
   // §3 encoding. Build a body of length `cadence.bodyLength(n)`, XOR each
   // hash in at offset `cadence.offset(i)`, then append the trailing byte
   // adjusted so the XOR-fold of every output byte equals the cadence byte.
   def apply(hashes: Sequence[Data])(using cadence: Cadence): Palimpsest =
-    if hashes.isEmpty then panic(m"palimpsest requires at least one hash")
+    if hashes.nil then panic(m"palimpsest requires at least one hash")
 
-    if !hashes.forall(_.length == cadence.hashSize)
+    if !hashes.all { (hash: Data) => hash.length == cadence.hashSize }
     then panic(m"all hashes must have length ${cadence.hashSize}")
 
-    val n        = hashes.length
+    val n        = hashes.size
     val bodyLen  = cadence.bodyLength(n)
     val body     = Array[Byte](bodyLen)
     val hashSize = cadence.hashSize
@@ -62,7 +62,7 @@ object Palimpsest:
       var j    = 0
 
       while j < hashSize do
-        body(o + j) = (body(o + j) ^ hash(j)).toByte
+        body(o + j) = (body.readable(o + j) ^ hash.readable(j)).toByte
         j += 1
 
       i += 1
@@ -71,7 +71,7 @@ object Palimpsest:
     var k   = 0
 
     while k < bodyLen do
-      xor = xor ^ (body(k) & 0xff)
+      xor = xor ^ (body.readable(k) & 0xff)
       k += 1
 
     val out = Array[Byte](bodyLen + 1)
@@ -97,7 +97,7 @@ case class Palimpsest(data: Data, length: Int):
       var i   = 0
 
       while i < total do
-        xor = xor ^ (data(i) & 0xff)
+        xor = xor ^ (data.readable(i) & 0xff)
         i += 1
 
       Cadence.unpack(xor.toByte).let: cadence =>
@@ -114,7 +114,7 @@ case class Palimpsest(data: Data, length: Int):
               var j = 0
 
               while j < cadence.hashSize do
-                body(offset + j) = (body(offset + j) ^ hash(j)).toByte
+                body(offset + j) = (body(offset + j) ^ hash.readable(j)).toByte
                 j += 1
 
             def recur(body: scala.Array[Byte]^, item: Int, matched: List[Data]): Optional[List[Data]] =

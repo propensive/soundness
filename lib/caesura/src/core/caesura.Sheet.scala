@@ -34,8 +34,6 @@ package caesura
 
 import scala.caps
 
-import proscenium.compat.*
-
 import java.lang as jl
 import java.util as ju
 
@@ -78,7 +76,7 @@ object Sheet:
         val stream: (Stream[Data] over Credit)^ =
           dsv.source[Text].via(summon[CharEncoder]).asInstanceOf[(Stream[Data] over Credit)^]
 
-        (mediaType, HttpStreams.Body(stream.toProgression.iterator))
+        (mediaType, HttpStreams.Body(stream.toProgression.stdlib.iterator))
 
   given tabular: Sheet is Tabular[Text]:
     type Element = Dsv
@@ -107,7 +105,7 @@ object Sheet:
         type Self = Sheet
         type Operand = Text
 
-        def aggregate(text: Chain[Text]): Sheet = sheet(parseRows(Stream(text.iterator)))
+        def aggregate(text: Chain[Text]): Sheet = sheet(parseRows(Stream(text.stdlib.iterator)))
         override def accept(stream: (Stream[Text] over Credit)^): Sheet =
           // The non-consume `accept` crosses to the consuming parser as a
           // neutral reference; each accept delivers a single-use stream.
@@ -120,7 +118,7 @@ object Sheet:
 
   given showable: Dsv.Format => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
   given streamable: Dsv.Format => Sheet is Streamable by Text over Credit = sheet =>
-    Stream(sheet.rows.iterator.map(_.show+t"\n"))
+    Stream(sheet.rows.readable.iterator.map(_.show+t"\n"))
 
   // Parse rows from a pull endpoint as a single-consumer iterator, one
   // block-credit refill per chunk. Each call builds a fresh parser over the
@@ -401,9 +399,9 @@ case class Sheet
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case dsv: Sheet =>
-      dsv.rows.sameElements(rows) && dsv.format == format
+      dsv.rows.readable.sameElements(rows.readable) && dsv.format == format
       && columns.lay(dsv.columns == Unset): columns =>
-           dsv.columns.lay(false)(columns.sameElements(_))
+           dsv.columns.lay(false)(other => columns.readable.sameElements(other.readable))
 
     case _ =>
       false

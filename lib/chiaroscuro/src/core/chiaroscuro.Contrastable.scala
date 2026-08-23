@@ -32,8 +32,6 @@
                                                                                                   */
 package chiaroscuro
 
-import proscenium.compat.*
-
 import scala.compiletime.*
 import scala.reflect.*
 
@@ -44,6 +42,7 @@ import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import spectacular.*
 import vacuous.*
 import wisteria.*
@@ -102,14 +101,14 @@ object Contrastable:
           val rightOnly: Set[Text] = Set.of((right.stdlib -- left.stdlib).map(_.show))
 
           def describe(set: Set[Text]): Text =
-            ( if set.size > 5 then set.toList.take(4) :+ t"…${(set.size - 4).show.subscripts}"
-              else set.toList )
+            ( if set.size > 5 then set.to[List].keep(4) :+ t"…${(set.size - 4).show.subscripts}"
+              else set.to[List] )
 
             . join(t"{", t", ", t"}")
 
           val message =
-            if leftOnly.isEmpty then t"+${describe(rightOnly)}"
-            else if rightOnly.isEmpty then t"-${describe(leftOnly)}"
+            if leftOnly.nil then t"+${describe(rightOnly)}"
+            else if rightOnly.nil then t"-${describe(leftOnly)}"
             else t"-${describe(leftOnly)}╱+${describe(rightOnly)}"
 
           Juxtaposition.Different(left.show, right.show, message)
@@ -151,7 +150,7 @@ object Contrastable:
     given text: Text is Contrastable.Foundation =
       (left, right) =>
         if left == right then Juxtaposition.Same(left) else
-          def decompose(chars: Array[Char]^{}): Array[Decomposition]^{} = chars.map: char =>
+          def decompose(chars: Array[Char]^{}): Array[Decomposition]^{} = chars.remap: char =>
             Decomposition.Primitive(t"Char", char.show, char)
 
           comparison[Char](t"Text", decompose(left.chars), decompose(right.chars), left, right)
@@ -173,12 +172,12 @@ object Contrastable:
         // Products of different types may have differing field sets; a field absent on one
         // side is compared against a blank placeholder (as in the sum case below), so it
         // registers as a difference.
-        val keys = left.keys ++ right.keys
+        val keys = left.keys + right.keys
         val missing = Decomposition.Primitive(t"", t"", Unset)
 
         Juxtaposition.Collation
           ( name,
-            keys.to(List).map: key =>
+            keys.to[List].map: key =>
               key -> juxtaposition(t"", left(key).or(missing), right(key).or(missing)),
             leftName,
             rightName )
@@ -186,11 +185,11 @@ object Contrastable:
       case (Decomposition.Sum(lname0, left, _), Decomposition.Sum(rname0, right, _)) =>
         (left, right) match
           case (Decomposition.Product(lname, left, _), Decomposition.Product(rname, right, _)) =>
-            val keys = left.keys ++ right.keys
+            val keys = left.keys + right.keys
             val missing = Decomposition.Primitive(t"", t"", Unset)
 
             val entries =
-              keys.to(List).map: key =>
+              keys.to[List].map: key =>
                 key -> juxtaposition(t"", left(key).or(missing), right(key).or(missing))
 
             val name = if lname == rname then lname else t"$lname/$rname"

@@ -35,7 +35,6 @@ package xenophile
 import scala.quoted.*
 import scala.collection.immutable.Seq
 
-import proscenium.compat.*
 
 import anticipation.*
 import fulminate.*
@@ -44,6 +43,8 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Xenophile:
 
@@ -320,7 +321,7 @@ object Xenophile:
         ConstantType(StringConstant(name.s))
 
       case Foreign.Type.Union(members) =>
-        members.map(reprOf).reduce: (a, b) =>
+        members.map(reprOf).stdlib.reduce: (a, b) =>
           a.asType.absolve match
             case '[x] => b.asType.absolve match
               case '[y] => TypeRepr.of[x | y]
@@ -334,7 +335,7 @@ object Xenophile:
             single
 
           case reprs =>
-            reprs.foldRight(TypeRepr.of[EmptyTuple]): (head, tail) =>
+            reprs.stdlib.foldRight(TypeRepr.of[EmptyTuple]): (head, tail) =>
               head.asType.absolve match
                 case '[head] => tail.asType.absolve match
                   case '[type tail <: Tuple; tail] => TypeRepr.of[head *: tail]
@@ -437,7 +438,7 @@ object Xenophile:
     // as a nullary call — avoiding an empty-varargs application, which trips path-dependent type
     // avoidance when the navigation is re-inlined from an enclosing `inline` definition.
     signature.parameters.let: parameters =>
-      if !parameters.isEmpty
+      if !parameters.nil
       then halt(m"xenophile: $fieldName is a method of $topic and must be called with arguments")
 
     foreignType(signature.result, originRepr, locusRepr).asType.absolve match
@@ -507,8 +508,8 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: the arguments to $fieldName must be passed directly")
 
-    if args.length != parameters.length then
-      halt(m"xenophile: $fieldName expects ${parameters.length} arguments, not ${args.length}")
+    if args.size != parameters.size then
+      halt(m"xenophile: $fieldName expects ${parameters.size} arguments, not ${args.size}")
 
     val argTrees: List[Expr[Foreign.Expression]] = args.zip(parameters).map: (arg, paramType) =>
       argTree(arg, paramType, fieldName)

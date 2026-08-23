@@ -32,8 +32,6 @@
                                                                                                   */
 package polyvinyl
 
-import proscenium.compat.*
-
 import scala.quoted.*
 
 import anticipation.*
@@ -114,7 +112,7 @@ trait Specification extends Original:
 
                   val nested = '{$target.access(${Expr(name)}, $value)}
                   val recordTypeRepr = TypeRepr.of[Record]
-                  val (nestedType, nestedCaseDefs) = refine(nested, map.toList, recordTypeRepr)
+                  val (nestedType, nestedCaseDefs) = refine(nested, List.of(map.stdlib.toList), recordTypeRepr)
 
                   val matchFn: Expr[Text -> Origin -> Any] =
                     ' {
@@ -140,7 +138,7 @@ trait Specification extends Original:
                           caseDef :: caseDefs )
 
 
-    val (refined, caseDefs) = refine(value, fields.toList, TypeRepr.of[Record])
+    val (refined, caseDefs) = refine(value, List.of(fields.stdlib.toList), TypeRepr.of[Record])
 
     val matchFn: Expr[Text -> Origin -> Any] =
       '{(name: Text) => ${Match('name.asTerm, caseDefs.stdlib).asExprOf[Origin => Any]}}

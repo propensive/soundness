@@ -33,7 +33,6 @@
 package scintillate
 
 import java.io as ji
-import proscenium.compat.*
 
 import anticipation.*
 import coaxial.*
@@ -120,15 +119,15 @@ object Http2Serve:
                   sendTrailers()
 
                 case Http.Body.Fixed(data) =>
-                  val headEnd = data.isEmpty && !trailing
+                  val headEnd = data.nil && !trailing
                   connection0.sendHeaders(streamId, List.of(headEntries), endStream = headEnd)
-                  if !data.isEmpty then connection0.sendData(streamId, data, endStream = !trailing)
+                  if !data.nil then connection0.sendData(streamId, data, endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Flowing(source) =>
                   connection0.sendHeaders(streamId, List.of(headEntries), endStream = false)
 
-                  source().sweep: region =>
+                  source().drain: region =>
                     range =>
                       connection0.sendData(streamId, region.materialize(range), endStream = false)
 
@@ -214,7 +213,7 @@ extends Duplex:
   def source(using Buffering): (Stream[Data] over Credit)^ = Streamable.inputStream.stream(in)
 
   def send(consume data: (Stream[Data] over Credit)^): Unit =
-    data.sweep: region =>
+    data.drain: region =>
       range =>
         val interval: Interval = range
         out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,

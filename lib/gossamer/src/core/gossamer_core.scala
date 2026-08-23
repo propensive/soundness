@@ -32,8 +32,6 @@
                                                                                                   */
 package gossamer
 
-import proscenium.compat.*
-
 import scala.reflect
 
 import scala.compiletime
@@ -126,11 +124,11 @@ extension (bytes: Data)
 
   // Printable Unicode Encoding
   def pue: Text =
-    bytes.map: b =>
+    bytes.remap: b =>
       val i = b&0xff
       (if i%0x80 <= 0x20 || i == 0x7f then i + 0x100 else i).toChar
 
-    . mkString.tt
+    . readable.mkString.tt
 
 extension [textual](text: textual)
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
@@ -249,7 +247,14 @@ extension [textual: Textual as instance](text: textual)
     case Ltr => textual.indexOf(text, substring)
     case Rtl => if substring.nil then Unset else textual.lastIndexOf(text, substring)
 
-  def count(substring: Text): Int =
+  // Formerly `count(substring)`: as a generic-receiver extension it committed without falling
+  // through (the zeppelin-`zip` hazard), blocking the collections' `count` in any file
+  // importing gossamer, so the substring-occurrence counter takes its own name.
+  // Not `count`: extension ambiguity is decided from the receiver alone, before arguments are
+  // considered, so a generic-receiver `count` here blocks the collections' `count(predicate)` in
+  // every file importing gossamer — and no argument-side evidence (`CanEqual`, or even `<:<`,
+  // which cannot exist for a lambda) removes this candidate from the ambiguity.
+  def tally(substring: Text): Int =
     if substring.nil then 0 else
       def recur(start: Ordinal, total: Int): Int =
         textual.indexOf(text, substring, start).lay(total): found =>
@@ -338,12 +343,8 @@ extension [textual: Textual { type Result = Char } as instance](text: textual)
         if !set.contains(char) then append(char)
         char
 
-  inline def count(predicate: Char => Boolean): Int =
-    def recur(index: Ordinal, sum: Int): Int = if index >= text.limit then sum else
-      val increment = if predicate(textual.access(text, index)) then 1 else 0
-      recur(index + 1, sum + increment)
-
-    recur(Prim, 0)
+  // The predicate form of `count` now comes from the generic collections operation, which
+  // serves every `Traversable` textual type; only the substring form above is textual.
 
   def blank: Boolean = text.pinpoint(!_.isWhitespace).absent
 
@@ -466,26 +467,26 @@ package proximities:
       var j = 1
 
       while j <= n do
-        old(j) = old(j - 1) + 1
+        old(j) = old.readable(j - 1) + 1
         j += 1
 
       var i = 1
 
       while i <= m do
-        dist(0) = old(0) + 1
+        dist(0) = old.readable(0) + 1
         j = 1
 
         while j <= n do
           val c =
             if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
 
-          dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
+          dist(j) = (old.readable(j - 1) + c).min(old.readable(j) + 1).min(dist.readable(j - 1) + 1)
           j += 1
 
         old.copyFrom(dist, 0, 0, n + 1)
         i += 1
 
-      if m == 0 then n else dist(n)
+      if m == 0 then n else dist.readable(n)
 
   given normalizedLevenshteinProximity: CaseSensitivity => Proximity by Double =
     (left, right) =>

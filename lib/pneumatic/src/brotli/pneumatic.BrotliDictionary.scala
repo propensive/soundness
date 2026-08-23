@@ -32,7 +32,6 @@
                                                                                                   */
 package pneumatic
 
-import proscenium.compat.*
 import rudiments.*
 
 // Word transforms and static-dictionary geometry for Brotli, ported faithfully from Google's

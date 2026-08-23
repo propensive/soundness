@@ -32,8 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import proscenium.compat.*
-
 import scala.collection.mutable as scm
 
 import ambience.*
@@ -106,7 +104,7 @@ def helpTree
 :   Help =
 
   def probe(prefix: List[Text]): Probe =
-    val focus = prefix.length
+    val focus = prefix.size
     val textArguments = prefix :+ t""
     val synthesized = Cli.arguments(textArguments.stdlib, focus, Unset, Prim)
 
@@ -139,7 +137,7 @@ def helpTree
     Probe
       ( completion.cursorSuggestions,
         completion.flags.keySet.to(List),
-        completion.globalFlags.foldLeft(Set[Flag]())(_ + _),
+        completion.globalFlags.foldLeft(Set[Flag]())(_ :+ _),
         completion.operandNames,
         List.of(completion.statuses.to(scala.List)),
         List.of(variables.to(scala.List)) )
@@ -169,7 +167,7 @@ def helpTree
             globals.has(flag),
             operands.get(flag).optional )
 
-      val known = flags.stdlib.foldLeft(inherited)(_ + _)
+      val known = flags.stdlib.foldLeft(inherited)(_ :+ _)
 
       val children =
         List.of(suggestions.stdlib.distinctBy(_.core)).bind: suggestion =>
@@ -183,7 +181,7 @@ def helpTree
                     suggestion.core,
                     suggestion.description,
                     suggestion.group,
-                    seen + prefix,
+                    seen :+ prefix,
                     known ) )
 
       Help
@@ -226,7 +224,7 @@ package executives:
           val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
           val posInWord = cursor - wordStarts(wordIdx)
           val focus = (wordIdx - 1).max(0)
-          val restParts = if parts.length > 1 then parts.tail else List(t"")
+          val restParts = if parts.size > 1 then List.of(parts.stdlib.tail) else List(t"")
           val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
 
           Completion
@@ -255,7 +253,7 @@ package executives:
               case _             => Shell.Bash
 
             val focus1 =
-              if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
+              if shell == Shell.Bash && rest.last == t"=" then focus0 + 1 else focus0
 
             def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
               case Nil                                 => done.reverse

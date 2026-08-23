@@ -36,8 +36,6 @@ import scala.math
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.asymptotics.linearSizeComplexity
@@ -100,7 +98,7 @@ private def hexOf(bytes: Data): String =
   val sb = new StringBuilder
   var index = 0
   while index < bytes.length do
-    sb.append(f"${bytes(index) & 0xFF}%02x")
+    sb.append(f"${bytes.readable(index) & 0xFF}%02x")
     index += 1
   sb.toString
 
@@ -184,7 +182,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"Parse byte string [01 02 03 04]"):
         val bytes = Cbor.ast(Cbor.Ast.parse(hex("4401020304"))).as[Data]
-        bytes.toList
+        bytes.to[List]
       . assert(_ == List[Byte](1, 2, 3, 4))
 
     suite(m"Parsing arrays"):
@@ -301,7 +299,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val original = Person(t"Ada", 36)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         val half = bytes.length/2
-        proscenium.Chain(bytes.slice(0, half), bytes.slice(half, bytes.length)).read[Cbor].as[Person]
+        proscenium.Chain(bytes.segment((0).z till (half).z), bytes.segment((half).z till (bytes.length).z)).read[Cbor].as[Person]
       . assert(_ == Person(t"Ada", 36))
 
       test(m"Aggregate single-chunk Chain[Data] to Cbor.Ast"):
@@ -564,7 +562,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
     suite(m"Validation accrual"):
       case class CIssues(items: List[(Text, Cbor.Error)] = Nil)(using Diagnostics)
-      extends Error(m"${items.length} CBOR issues"):
+      extends Error(m"${items.size} CBOR issues"):
         def +(focus: Text, error: Cbor.Error): CIssues = CIssues(items :+ (focus, error))
 
       // Inline, with a directly-constructed `Validate`; see rep/DECISIONS.md.
@@ -584,14 +582,14 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Set("name", "age"))
 
       test(m"A fully-valid record accrues nothing"):
-        collectCbor(Person(t"Ada", 36).in[Cbor])(_.as[Person]).items.length
+        collectCbor(Person(t"Ada", 36).in[Cbor])(_.as[Person]).items.size
       . assert(_ == 0)
 
       test(m"Constructor does not run when any field failed"):
         val cbor = Point(1, 2).in[Cbor]
         BProbe.constructions = 0
         val issues = collectCbor(cbor)(_.as[BChecked])
-        (issues.items.length, BProbe.constructions)
+        (issues.items.size, BProbe.constructions)
       . assert(_ == (2, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):

@@ -34,7 +34,6 @@ package jacinta
 
 import soundness.*
 
-import proscenium.compat.*
 
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
@@ -179,10 +178,10 @@ object PositionTests extends Suite(m"Jacinta position-index tests"):
         val json = Json.parseTracked(t"""{"a":{"b":42}}""")
         json.positionIndex.let: index =>
           val data = index.ints
-          val firstEntryOff = data(5)
+          val firstEntryOff = data.readable(5)
           val valueDescOff = firstEntryOff + 3
-          val valueSize = data(valueDescOff)
-          val slice = data.slice(valueDescOff, valueDescOff + valueSize)
+          val valueSize = data.readable(valueDescOff)
+          val slice = data.segment((valueDescOff).z till (valueDescOff + valueSize).z)
           slice.length == valueSize
       . assert(_ == true)
 

@@ -33,7 +33,6 @@
 package galilei
 
 import contingency.*
-import proscenium.compat.*
 import rudiments.*
 import prepositional.*
 import serpentine.*

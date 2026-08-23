@@ -32,7 +32,6 @@
                                                                                                   */
 package xenophile
 
-import proscenium.compat.*
 
 import scala.collection.immutable.Seq
 import scala.collection.immutable.{List, Nil, ::}
@@ -40,10 +39,12 @@ import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 
 // The macro engine behind `Facade`: resolves member accesses against `KotlinDialect`'s
 // metadata, and materializes each access immediately as a direct JVM call on the unwrapped
@@ -915,9 +916,9 @@ object KotlinFacade:
 
     // With no member of this arity, a member whose omitted trailing parameters all declare
     // defaults is called through its synthetic `$default` bridge instead.
-    if candidates.isEmpty then
+    if candidates.nil then
       val defaulted = KotlinDialect.members(className, field).stdlib.filter: member =>
-        val trailing = member.defaults.drop(args.length).forall(identity)
+        val trailing = member.defaults.stdlib.drop(args.length).forall(identity)
         !member.property && member.arity > args.length && trailing
 
       defaulted match
@@ -991,7 +992,7 @@ object KotlinFacade:
                 val front = args.take(fixed.length).zip(fixed).forall: (argument, parameter) =>
                   satisfies(argument, parameter)
 
-                val rest = args.drop(fixed.length).forall(satisfies(_, element))
+                val rest = args.drop(fixed.length).all(satisfies(_, element))
                 val fits = args.length >= fixed.length && front && rest
 
                 if fits then List((method, types)) else Nil
@@ -1220,10 +1221,10 @@ object KotlinFacade:
     val jvmName: Text = KotlinDialect.setter(className, field).let(_.jvmName).or:
       val capital = capitalize(field)
 
-      val setter = KotlinDialect.members(className, t"set$capital").find: member =>
+      val setter = KotlinDialect.members(className, t"set$capital").seek: member =>
         !member.property && member.arity == 1
 
-      setter.map(_.jvmName.s.tt).getOrElse:
+      setter.let(_.jvmName.s.tt).or:
         halt(m"xenophile: $className has no mutable property $field")
 
     // A setter may be overloaded (`Paint.setColor(int)` and `setColor(long)`); choose the one
@@ -1320,14 +1321,14 @@ object KotlinFacade:
             val index = (0 until member.arity).find(!acc.stdlib.contains(_)).getOrElse:
               halt(m"xenophile: too many arguments for $className.$field")
 
-            assign(rest, next, acc.updated(index, term))
+            assign(rest, next, acc.define(index, term))
 
           case (key, term) :: rest =>
             val index = positions(key).or:
               val declared = member.parameters.join(t", ")
               halt(m"xenophile: $className.$field has no parameter $key; it declares: $declared")
 
-            assign(rest, next, acc.updated(index, term))
+            assign(rest, next, acc.define(index, term))
 
       assign(pairs, 0, Map())
 
@@ -1339,7 +1340,7 @@ object KotlinFacade:
       val undefaulted = absent.filter: index =>
         !member.defaults.stdlib.lift(index).getOrElse(false)
 
-      if undefaulted.nonEmpty then
+      if !undefaulted.nil then
         val names = undefaulted.map { index => member.parameters.stdlib(index) }.join(t", ")
         halt(m"xenophile: $className.$field requires arguments for: $names")
 
@@ -1358,7 +1359,7 @@ object KotlinFacade:
 
     val entries = KotlinDialect.enumEntries(className)
 
-    if entries.nonEmpty && !entries.stdlib.contains(entryName) then
+    if !entries.nil && !entries.stdlib.contains(entryName) then
       val listed = entries.join(t", ")
       halt(m"xenophile: $className has no entry $entryName; its entries are: $listed")
 

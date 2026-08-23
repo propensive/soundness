@@ -34,14 +34,13 @@ package escapade
 
 import scala.collection.immutable.Seq
 
-import proscenium.compat.*
-
 import soundness.*
 
 import strategies.throwUnsafely
 import textMetrics.uniformMetric
 
 import WebColors.{Red, Yellow, Green, Blue, Tan}
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Escapade tests"):
   def run(): Unit =
@@ -505,7 +504,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == 'h')
 
       test(m"chars"):
-        e"abc".chars.toSeq
+        e"abc".chars.readable.toSeq
       . assert(_ == Seq('a', 'b', 'c'))
 
     suite(m"Textual: slicing"):
@@ -604,7 +603,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == false)
 
       test(m"count text occurrences"):
-        e"abcabcabc".count(t"a")
+        e"abcabcabc".tally(t"a")
       . assert(_ == 3)
 
       test(m"count predicate"):
@@ -1016,7 +1015,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == List(true, true, true))
 
       test(m"an accented character is a single grapheme cell"):
-        cellList(t"é").length
+        cellList(t"é").size
       . assert(_ == 1)
 
       test(m"a styled Teletype carries its style per cell"):

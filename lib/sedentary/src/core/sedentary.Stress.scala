@@ -34,8 +34,6 @@ package sedentary
 
 import java.lang as jl
 
-import proscenium.compat.*
-
 import scala.quoted.*
 
 import ambience.*

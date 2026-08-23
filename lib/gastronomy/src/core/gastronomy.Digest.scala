@@ -33,7 +33,6 @@
 package gastronomy
 
 import java.util as ju
-import proscenium.compat.*
 
 import scala.compiletime.*
 
@@ -55,7 +54,7 @@ class Digest(val data: Data):
   type Form <: Algorithm
 
   override def equals(that: Any) = that.asMatchable match
-    case digest: Digest => data.sameElements(digest.data)
+    case digest: Digest => data.readable.sameElements(digest.data.readable)
     case _              => false
 
   override def hashCode: Int = ju.Arrays.hashCode(Array.unsafeJvm(data))

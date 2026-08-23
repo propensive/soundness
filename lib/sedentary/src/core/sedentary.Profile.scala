@@ -34,8 +34,6 @@ package sedentary
 
 import java.lang as jl
 
-import proscenium.compat.*
-
 import scala.quoted.*
 
 import ambience.*
@@ -52,6 +50,7 @@ import jacinta.*
 import parasite.*
 import prepositional.*
 import rudiments.*
+import denominative.asymptotics.linearSizeComplexity
 import probably.*
 import serpentine.*
 import superlunary.*
@@ -180,7 +179,7 @@ extends Rig:
       val hotspots =
         Hotspots
           ( results.prim.let(_.s.toLong).or(0L),
-            results.drop(1).map: line =>
+            results.skip(1).map: line =>
               line.cut(t"\t") match
                 case count :: className :: method :: Nil =>
                   Hotspots.Frame

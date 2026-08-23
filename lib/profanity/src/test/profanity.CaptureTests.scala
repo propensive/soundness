@@ -34,8 +34,6 @@ package profanity
 
 import soundness.*
 
-import proscenium.compat.*
-
 import classloaders.systemClassloader
 import environments.javaEnvironment
 import logging.silentLogging

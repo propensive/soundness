@@ -34,8 +34,6 @@ package hypotenuse
 
 import scala.math
 
-import proscenium.compat.*
-
 import scala.language.experimental.genericNumberLiterals
 import scala.language.experimental.into
 
@@ -50,6 +48,7 @@ import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
 
 export hypotenuse.internal.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
@@ -61,6 +60,34 @@ extension (inline context: StringContext)
 // collections answer to the same names; in this package (not `rudiments`) so the two receiver
 // families stay overloaded rather than split-name-clashing at the `soundness` umbrella.
 extension [self](self: self)(using traversable: self is Traversable)
+  inline def minimum
+    ( using commensurable: traversable.Operand is Commensurable against traversable.Operand )
+  :   Optional[traversable.Operand] =
+
+    val iterator = traversable.traverse(self)
+
+    if !iterator.hasNext then Unset else
+      var current = iterator.next()
+      while iterator.hasNext do
+        val element = iterator.next()
+        if element < current then current = element
+
+      current
+
+  inline def maximum
+    ( using commensurable: traversable.Operand is Commensurable against traversable.Operand )
+  :   Optional[traversable.Operand] =
+
+    val iterator = traversable.traverse(self)
+
+    if !iterator.hasNext then Unset else
+      var current = iterator.next()
+      while iterator.hasNext do
+        val element = iterator.next()
+        if element > current then current = element
+
+      current
+
   inline def minimize[key](lambda: traversable.Operand => key)
     ( using commensurable: key is Commensurable against key )
   :   Optional[traversable.Operand] =
@@ -160,14 +187,14 @@ extension [value](iterable: Iterable[value])
   :   Optional[addable.Result] =
 
     def recur(n: Int, items: List[value]): value =
-      val pivot = items.head
+      val pivot = items.stdlib.head
       var left: List[value] = Nil
       var right: List[value] = Nil
 
-      items.tail.each: item => if item < pivot then left ::= item else right ::= item
+      items.stdlib.tail.each: item => if item < pivot then left ::= item else right ::= item
 
-      if left.length == n then pivot
-      else if left.length < n then recur(n - left.length - 1, right)
+      if left.size == n then pivot
+      else if left.size < n then recur(n - left.size - 1, right)
       else recur(n, left)
 
     val size = iterable.size

@@ -37,9 +37,9 @@ import java.nio.charset as jnc
 import java.util as ju
 import javax.crypto as jc
 import javax.crypto.spec as jcs
-import proscenium.compat.*
 
 import anticipation.*
+import denominative.*
 import contingency.*
 import enigmatic.*
 import gastronomy.*
@@ -158,18 +158,20 @@ private[facsimile] object Guard:
       else Array.empty[Byte]
 
     var hash: Data =
-      md5(Array.unsafeFrozen(padded(password)) ++ owner.take(32.min(owner.length)) ++
-        permissionsBytes ++ id ++ metadataBytes)
+      md5:
+        Array.frozen
+         ( Array.unsafeFrozen(padded(password)).readable ++ owner.keep(32.min(owner.length)).readable
+           ++ permissionsBytes.readable ++ id.readable ++ metadataBytes.readable )
 
     // Revision 3+: 50 further MD5 rounds over the first `keyBytes` bytes.
     if revision >= 3 then
       var i = 0
 
       while i < 50 do
-        hash = md5(hash.take(keyBytes))
+        hash = md5(hash.keep(keyBytes))
         i += 1
 
-    hash.take(keyBytes)
+    hash.keep(keyBytes)
 
   // Algorithm 6: validate the user password by reconstructing `/U`.
   private def validate(fileKey: Data, user: Data, id: Data, revision: Int, keyBytes: Int)
@@ -177,19 +179,19 @@ private[facsimile] object Guard:
 
     if revision == 2 then Rc4(fileKey, padding).to[List] == user.to[List]
     else
-      var value: Data = md5(padding ++ id)
+      var value: Data = md5(Array.frozen(padding.readable ++ id.readable))
 
       value = Rc4(fileKey, value)
 
       var i = 1
 
       while i <= 19 do
-        val roundKey = fileKey.map(byte => (byte ^ i).toByte)
+        val roundKey = fileKey.remap(byte => (byte ^ i).toByte)
         value = Rc4(roundKey, value)
         i += 1
 
       // Only the first 16 bytes are meaningful; the rest of `/U` is arbitrary padding.
-      value.take(16).to[List] == user.take(16).to[List]
+      value.keep(16).to[List] == user.keep(16).to[List]
 
   // Algorithms 2.A/8 (revision 6): validate the user password against `/U`, then unwrap the
   // file key from `/UE` with the intermediate key, using AES-256-CBC with a zero IV and no
@@ -197,11 +199,11 @@ private[facsimile] object Guard:
   private def unwrap6(password: scala.Array[Char], user: Data, ue: Data): Optional[Data] =
     if user.length < 48 || ue.length < 32 then Unset else
       val passwordBytes = encoded(password, jnc.StandardCharsets.UTF_8.nn)
-      val salt = user.slice(32, 40)
-      val keySalt = user.slice(40, 48)
+      val salt = user.segment((32).z till (40).z)
+      val keySalt = user.segment((40).z till (48).z)
 
       try
-        if hash6(passwordBytes, salt, Array.empty[Byte]).to[List] != user.take(32).to[List]
+        if hash6(passwordBytes, salt, Array.empty[Byte]).to[List] != user.keep(32).to[List]
         then Unset
         else
           val intermediate = hash6(passwordBytes, keySalt, Array.empty[Byte])
@@ -218,7 +220,7 @@ private[facsimile] object Guard:
                 jcs.SecretKeySpec(Array.unsafeJvm(intermediate), "AES"),
                 jcs.IvParameterSpec(new scala.Array[Byte](16)))
 
-            Array.unsafeFrozen(cipher.doFinal(Array.unsafeJvm(ue.take(32))).nn)
+            Array.unsafeFrozen(cipher.doFinal(Array.unsafeJvm(ue.keep(32))).nn)
           catch case _: Exception => Unset
       finally ju.Arrays.fill(passwordBytes, 0.toByte)
 
@@ -229,7 +231,7 @@ private[facsimile] object Guard:
     // caller zeroes it -- but that happens strictly after this call returns, so a frozen view
     // is valid for this extent and spares every read below its own laundering.
     val pw = Array.unsafeFrozen(password)
-    var k: Data = sha(256, pw ++ salt ++ extra)
+    var k: Data = sha(256, Array.frozen(pw.readable ++ salt.readable ++ extra.readable))
 
     var round = 0
     var done = false
@@ -245,8 +247,8 @@ private[facsimile] object Guard:
         i += 1
 
       val input = block.result()
-      val key = Array.unsafeJvm(k.take(16))
-      val iv = Array.unsafeJvm(k.slice(16, 32))
+      val key = Array.unsafeJvm(k.keep(16))
+      val iv = Array.unsafeJvm(k.segment((16).z till (32).z))
 
       // AES-128-CBC with no padding on block-aligned input; on the JDK cipher for the same
       // capture-checking reason as `unwrap6`.
@@ -271,7 +273,7 @@ private[facsimile] object Guard:
 
       if round >= 64 && (e.readUnchecked(e.length - 1) & 0xff) <= round - 32 then done = true
 
-    k.take(32)
+    k.keep(32)
 
   // Encodes the password chars to a mutable byte array, zeroing the encoder's intermediate
   // buffer; callers zero the result once the derived key is computed.
@@ -307,7 +309,8 @@ private[facsimile] class Guard
       // the "sAlT" constant
       val salt: Data = if aes then Array.of[Byte](0x73, 0x41, 0x6c, 0x54) else Array.empty[Byte]
 
-      Guard.md5(fileKey ++ numbering ++ salt).take((fileKey.length + 5).min(16))
+      Guard.md5(Array.frozen(fileKey.readable ++ numbering.readable ++ salt.readable))
+      . keep((fileKey.length + 5).min(16))
 
   def string(bytes: Data, number: Int, generation: Int): Data =
     decrypt(bytes, number, generation, stringMethod)

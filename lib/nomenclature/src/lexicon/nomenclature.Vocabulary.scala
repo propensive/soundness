@@ -32,8 +32,6 @@
                                                                                                   */
 package nomenclature
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -44,6 +42,8 @@ import zephyrine.*
 
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Vocabulary:
   def apply[source: Streamable by Data over Credit, transport](adjectives: source, animals: source)
@@ -59,7 +59,7 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
 
   private val adjectiveArray: Array[Text]^{} = Array.from(adjectives.stdlib)
   private val animalArray:    Array[Text]^{} = Array.from(animals.stdlib)
-  private val animalCount:    Int          = animals.length
+  private val animalCount:    Int          = animals.size
   private val adjectiveIndex: Map[Text, Int] = Map.from(adjectives.stdlib.zipWithIndex)
   private val animalIndex:    Map[Text, Int] = Map.from(animals.stdlib.zipWithIndex)
 
@@ -68,15 +68,15 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   def name(ordinal: Int)(using Tactic[Moniker.Error]): Text =
     if ordinal < 0 || ordinal >= size
     then abort(Moniker.Error(Moniker.Error.Reason.OutOfRange(ordinal)))
-    else t"${adjectiveArray(ordinal/animalCount)}-${animalArray(ordinal%animalCount)}"
+    else t"${adjectiveArray.readable(ordinal/animalCount)}-${animalArray.readable(ordinal%animalCount)}"
 
   def number(moniker: Text)(using Tactic[Moniker.Error]): Int =
     moniker.cut(t"-") match
       case List(adjective, animal) =>
-        val first = adjectiveIndex.get(adjective).getOrElse:
+        val first = adjectiveIndex.stdlib.get(adjective).getOrElse:
           abort(Moniker.Error(Moniker.Error.Reason.UnknownWord(adjective)))
 
-        val second = animalIndex.get(animal).getOrElse:
+        val second = animalIndex.stdlib.get(animal).getOrElse:
           abort(Moniker.Error(Moniker.Error.Reason.UnknownWord(animal)))
 
         first*animalCount + second

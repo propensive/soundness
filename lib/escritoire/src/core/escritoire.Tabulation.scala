@@ -32,9 +32,6 @@
                                                                                                   */
 package escritoire
 
-
-import proscenium.compat.*
-
 import scala.collection.immutable.IndexedSeq
 
 import scala.language.experimental.pureFunctions
@@ -48,6 +45,8 @@ import hieroglyph.*
 import rudiments.*
 import tessellate.*
 import vacuous.*
+import denominative.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Tabulation:
   given printable: [text]
@@ -75,18 +74,18 @@ abstract class Tabulation[text: ClassTag]():
 
     // Every logical line each column will display, across both titles and data.
     val columnLines: IndexedSeq[Array[text]^{}] =
-      columns.indices.map: index =>
+      columns.readable.indices.map: index =>
         Array.from:
-          titles.stdlib.flatMap(_(index).readable) ++ rows.stdlib.flatMap(_(index).readable)
+          titles.stdlib.flatMap(_.readable(index).readable) ++ rows.stdlib.flatMap(_.readable(index).readable)
 
     val flexes: IndexedSeq[Flex] =
-      columns.indices.map: index =>
+      columns.readable.indices.map: index =>
         columns.readUnchecked(index).sizing.flex[text](columnLines(index), width)
 
     // A column that can never occupy any width (e.g. a `Paragraph` column whose every cell is
     // empty) vanishes entirely, as it would otherwise still cost padding and a rule.
     val visible: IndexedSeq[Int] =
-      columns.indices.filter: index =>
+      columns.readable.indices.filter: index =>
         flexes(index).metrics.min > 0 || flexes(index).max.or(flexes(index).metrics.natural) > 0
 
     // The chrome around k columns is k*columnCost + 1 = (k - 1) gaps of columnCost, plus one
@@ -112,10 +111,10 @@ abstract class Tabulation[text: ClassTag]():
         val tableCells = Array.from:
           survivors.map: (index, cellWidth) =>
             val column = columns.readUnchecked(index)
-            val lines = column.sizing.fit[text](cells(index), cellWidth, column.textAlign)
+            val lines = column.sizing.fit[text](cells.readable(index), cellWidth, column.textAlign)
 
             TableCell
-              ( cellWidth, 1, lines, lines.length, column.textAlign, column.verticalAlign )
+              ( cellWidth, 1, lines, lines.size, column.textAlign, column.verticalAlign )
 
         val height = tableCells.readable.maxBy(_.minHeight).minHeight
 

@@ -47,12 +47,14 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
 
 import IpAddress.Error.Reason, Reason.*
+import denominative.*
+import symbolism.*
+import denominative.asymptotics.linearSizeComplexity
 
 object internal:
   // Resolve `Ipv4` to the nested opaque type directly rather than via the
@@ -330,16 +332,16 @@ object internal:
 
     given showable: Ipv6 is Showable = ip =>
       def unpack(long: Long, groups: List[Int] = Nil): List[Int] =
-        if groups.length == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
+        if groups.size == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
 
       def hex(values: List[Int]): Text =
         values.map(_.hex).join(t":")
 
-      val groups = unpack(ip.highBits) ::: unpack(ip.lowBits)
-      val (middleIndex, middleLength) = groups.toSeq.longestTrain(_ == 0)
+      val groups = unpack(ip.highBits) + unpack(ip.lowBits)
+      val (middleIndex, middleLength) = groups.stdlib.longestTrain(_ == 0)
 
       if middleLength < 2 then hex(groups)
-      else t"${hex(groups.take(middleIndex))}::${hex(groups.drop(middleIndex + middleLength))}"
+      else t"${hex(groups.keep(middleIndex))}::${hex(groups.skip(middleIndex + middleLength))}"
 
     def apply(g0: Int, g1: Int, g2: Int, g3: Int, g4: Int, g5: Int, g6: Int, g7: Int): Ipv6 =
       Ipv6(pack(List(g0, g1, g2, g3)), pack(List(g4, g5, g6, g7)))
@@ -365,26 +367,26 @@ object internal:
           val leftGroups = left.cut(t":").filter(_ != t"")
           val rightGroups = right.cut(t":").filter(_ != t"")
 
-          if leftGroups.length + rightGroups.length > 7
+          if leftGroups.size + rightGroups.size > 7
           then
-            raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))
+            raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.size + rightGroups.size)))
 
-          leftGroups ::: List.fill(8 - leftGroups.length - rightGroups.length)(t"0") :::
+          leftGroups + List.fill(8 - leftGroups.size - rightGroups.size)(t"0") +
             rightGroups
 
         case List(whole) =>
           val groups = whole.cut(t":")
 
-          if groups.length != 8
-          then abort(IpAddress.Error(Ipv6WrongNumberOfGroups(groups.length)))
+          if groups.size != 8
+          then abort(IpAddress.Error(Ipv6WrongNumberOfGroups(groups.size)))
           else groups
 
         case _ =>
           abort(IpAddress.Error(Ipv6MultipleDoubleColons))
 
       Ipv6
-        ( pack(groups.take(4).map(parseGroup)),
-          pack(groups.drop(4).map(parseGroup)) )
+        ( pack(groups.keep(4).map(parseGroup)),
+          pack(groups.skip(4).map(parseGroup)) )
 
   case class Ipv6(highBits: Long, lowBits: Long)
 

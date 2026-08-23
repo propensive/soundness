@@ -170,7 +170,7 @@ object Assembler:
     // Measured from the file rather than taken as `patched.length`: on macOS `codesign` has just
     // rewritten the stub, adding a signature blob, so the prefix the JAR is about to sit behind is
     // longer than the bytes `patch` returned.
-    val prefixSize: Bytes = temporary.size()
+    val prefixSize: Bytes = temporary.filesize()
 
     // Two sequential opens rather than one nested inside the other's lambda (the inner
     // open's evidence would mint fresh roots inside the outer handle's loan that cannot

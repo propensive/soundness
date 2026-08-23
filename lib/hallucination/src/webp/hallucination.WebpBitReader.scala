@@ -34,7 +34,6 @@ package hallucination
 
 import anticipation.*
 import contingency.*
-import proscenium.compat.*
 
 import scala.caps
 
@@ -54,7 +53,7 @@ extends caps.Mutable:
 
   def nbits: Int = available
 
-  private inline def byte(index: Int): Long = (data(index)&0xff).toLong
+  private inline def byte(index: Int): Long = (data.readable(index)&0xff).toLong
 
   // Fills the buffer so it holds 64 bits or the input is exhausted.
   update def fill(): Unit =

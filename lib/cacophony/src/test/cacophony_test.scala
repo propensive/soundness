@@ -34,10 +34,9 @@ package cacophony
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Cacophony Tests"):
 
@@ -123,14 +122,14 @@ object Tests extends Suite(m"Cacophony Tests"):
     . assert(_ == 4L)
 
     test(m"Feed.list does not throw"):
-      Feed.list.length
+      Feed.list.size
     . assert(_ >= 0)
 
-    Feed.list.headOption.foreach: feed =>
+    Feed.list.prim.let: feed =>
       if feed.supports[Monaural](8000.0*Hertz, 16) then
         test(m"Recording from a feed produces audio chunks"):
           val recording = feed.record[Monaural](8000.0*Hertz, 16, chunkBytes = 1024)
-          val chunk: Audio across Monaural = recording.stream.head
+          val chunk: Audio across Monaural = recording.stream.stdlib.head
           recording.stop()
           chunk.channels
         . assert(_ == 1)
@@ -155,13 +154,13 @@ object Tests extends Suite(m"Cacophony Tests"):
       demilitarize:
         val feed: Feed = ???
         feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000)): input ?=>
-          input.stream.head
+          input.stream.stdlib.head
       . map(_.message)
     . assert(_ == Nil)
 
-    Feed.list.headOption.foreach: feed =>
+    Feed.list.prim.let: feed =>
       if feed.supports[Monaural](8000.0*Hertz, 16) then
         test(m"Scoped capture from a feed produces audio chunks"):
           feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000), PcmFlag.Chunk(1024)):
-            input ?=> input.stream.head.channels
+            input ?=> input.stream.stdlib.head.channels
         . assert(_ == 1)

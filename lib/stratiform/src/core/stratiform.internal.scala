@@ -33,7 +33,6 @@
 package stratiform
 
 import scala.collection.immutable.Seq
-import proscenium.compat.*
 
 import scala.{annotation, caps}
 
@@ -49,6 +48,7 @@ import prepositional.*
 import denominative.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 
 // Compile-time machinery for the `tel"…"` interpolator and extractor.
 // Mirrors jacinta.internal in shape: the static parts of a StringContext
@@ -698,7 +698,7 @@ object internal:
       // every occurrence, a non-repeatable one keeps its first and skips the
       // rest.
       val arms = List.range(0, arity).map: index =>
-        val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+        val keyText: Expr[Text] = '{ $keys.readable(${Expr(index)}).tt }
 
         def firstWins(read: Term): Term =
           If
@@ -776,7 +776,7 @@ object internal:
                     $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
                       ( Tel.Parsable.focusing($foci, $reader, $keyText):
                           Tel.Parsable.parseElement
-                            ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
+                            ( $instances.readable(${Expr(index)}).asInstanceOf[Tel.Parsing],
                               $reader,
                               $indent ) )
                   }.asTerm
@@ -784,12 +784,12 @@ object internal:
                 val read: Term =
                   '{
                     Tel.Parsable.focusing($foci, $reader, $keyText):
-                      $instances(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
+                      $instances.readable(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
                       . parse($reader, $indent)
                   }.asTerm
 
                 If
-                  ( '{ $repeatables(${Expr(index)}) }.asTerm,
+                  ( '{ $repeatables.readable(${Expr(index)}) }.asTerm,
                     Block(List(ensure, append), unit),
                     firstWins(read) )
 
@@ -809,7 +809,7 @@ object internal:
         val assignmentExpr = Ref(assignment).asExprOf[AnyRef]
 
         val deliveries: List[Statement] = List.range(0, arity).map: index =>
-          val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+          val keyText: Expr[Text] = '{ $keys.readable(${Expr(index)}).tt }
           val count: Expr[Int] = '{ Tel.Parsable.positionalCount($assignmentExpr, ${Expr(index)}) }
 
           val first: Expr[Text] =
@@ -878,7 +878,7 @@ object internal:
                         $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
                           ( Tel.Parsable.focusing($foci, $reader, $keyText):
                               Tel.Parsable.parseAtomElement
-                                ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
+                                ( $instances.readable(${Expr(index)}).asInstanceOf[Tel.Parsing],
                                   Tel.Parsable.positionalText
                                     ( $assignmentExpr, ${Expr(index)}, occurrence ) )
                                 ( using $tactic ) )
@@ -890,7 +890,7 @@ object internal:
                     fill:
                       '{
                         val instance =
-                          $instances(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
+                          $instances.readable(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
 
                         Tel.Parsable.focusing($foci, $reader, $keyText):
                           if instance.nature == Tel.Nature.Flag
@@ -899,7 +899,7 @@ object internal:
                       }.asTerm
 
                   If
-                    ( '{ $repeatables(${Expr(index)}) }.asTerm,
+                    ( '{ $repeatables.readable(${Expr(index)}) }.asTerm,
                       Block(List(ensure), gather),
                       single )
 
@@ -962,12 +962,12 @@ object internal:
       val absents: List[Term] = List.range(0, arity).map: index =>
         fieldTypes(index).asType match
           case '[fieldType] =>
-            val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+            val keyText: Expr[Text] = '{ $keys.readable(${Expr(index)}).tt }
 
             val onAbsent: Expr[fieldType] = kinds(index) match
               case InstanceK =>
                 '{
-                  $instances(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
+                  $instances.readable(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
                   . absent()(using $tactic)
                 }
 
@@ -983,7 +983,7 @@ object internal:
               Assign
                 ( Ref(slots(index)),
                   '{
-                    val declared = $fallbacks(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                    val declared = $fallbacks.readable(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                     if !declared.absent then declared.asInstanceOf[fieldType]
                     else Tel.Parsable.focusingUnlocated($foci, $keyText)($onAbsent)
@@ -1004,14 +1004,14 @@ object internal:
                       '{
                         Tel.Parsable.focusingUnlocated($foci, $keyText):
                           Tel.Parsable.gathered[fieldType]
-                            ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
+                            ( $instances.readable(${Expr(index)}).asInstanceOf[Tel.Parsing],
                               proscenium.List.of
                                 ( $bufferExpr match
                                     case null   => Nil
                                     case buffer => buffer.toList ) )
                       }.asTerm )
 
-                If('{ $repeatables(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
+                If('{ $repeatables.readable(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
 
               case _ =>
                 whenUnseen
@@ -1067,7 +1067,7 @@ object internal:
         lazy val instances: Array[Tel.Field | Null]^{} = Array.of(${Varargs(instanceExprs)}*)
 
         lazy val repeatables: Array[Boolean]^{} =
-          instances.map { instance => instance != null && Tel.Parsable.repeats(instance) }
+          instances.remap { instance => instance != null && Tel.Parsable.repeats(instance) }
 
         lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
 

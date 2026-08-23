@@ -33,8 +33,6 @@
 package apoplexy
 
 import soundness.*
-
-import proscenium.compat.*
 import apoplexy.OpenApi.*
 
 import errorDiagnostics.emptyDiagnostics
@@ -168,7 +166,7 @@ components:
     .assert(_ == t"listPets")
 
     test(m"the path parameter location is decoded as Path"):
-      fromJson.paths(t"/pets/{id}").let(_.get).let(_.parameters.head.in)
+      fromJson.paths(t"/pets/{id}").let(_.get).let(_.parameters.stdlib.head.in)
     .assert(_ == OpenApi.Parameter.In.Path)
 
     test(m"a reference property is kept lazy"):

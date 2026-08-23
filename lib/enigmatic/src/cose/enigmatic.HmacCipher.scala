@@ -36,7 +36,6 @@ import anticipation.*
 import enigmatic.*
 import gastronomy.*
 import prepositional.*
-import proscenium.compat.*
 
 // Adapter that exposes HMAC as a `Cipher & Signing & Symmetric`, so that
 // `SymmetricKey[HmacCipher[Sha2[256]]]` plugs into the existing
@@ -66,7 +65,7 @@ extends Cipher, Signing, Symmetric:
       var index = 0
 
       while index < a.length do
-        diff |= (a(index) ^ b(index)) & 0xFF
+        diff |= (a.readable(index) ^ b.readable(index)) & 0xFF
         index += 1
 
       diff == 0

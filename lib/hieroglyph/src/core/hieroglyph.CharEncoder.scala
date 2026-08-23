@@ -33,7 +33,6 @@
 package hieroglyph
 
 import fulminate.*
-import proscenium.compat.*
 
 import java.nio as jn, jn.charset as jnc
 
@@ -47,7 +46,7 @@ object CharEncoder:
   def system: CharEncoder = unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 
   def unapply(name: Text): Option[CharEncoder] =
-    Encoding.codecs.get(name.s.toLowerCase.nn.tt).map(CharEncoder(_))
+    Encoding.codecs.stdlib.get(name.s.toLowerCase.nn.tt).map(CharEncoder(_))
 
   // CharEncodeError → CharEncoder.Error
   case class Error(char: Char, encoding: Encoding)(using Diagnostics)
@@ -82,7 +81,7 @@ extends Encodable, Findable:
     def recur(todo: Chain[Text], offset: Int = 0): Chain[Data] =
       val count = in.remaining
 
-      if !todo.nil then in.put(todo.head.s, offset, offset + count.min(todo.head.s.length - offset))
+      if !todo.nil then in.put(todo.stdlib.head.s, offset, offset + count.min(todo.stdlib.head.s.length - offset))
 
       in.flip()
       val status = encoder.encode(in, out, todo.nil).nn
@@ -100,7 +99,7 @@ extends Encodable, Findable:
 
       def continue =
         if todo.nil && !status.isOverflow then Chain()
-        else if !todo.nil && count >= todo.head.s.length - offset then recur(todo.tail, 0)
+        else if !todo.nil && count >= todo.stdlib.head.s.length - offset then recur(Chain.of(todo.stdlib.tail), 0)
         else recur(todo, offset + count)
 
       if data.length == 0 then continue else data #:: continue

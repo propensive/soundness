@@ -33,7 +33,6 @@
 package hallucination
 
 import scala.math
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -105,15 +104,15 @@ private[hallucination] object BmpCodec:
         bitCount match
           case 1 =>
             val bit = (u8(data, row + x/8) >> (7 - x%8))&1
-            palette(bit).toLong
+            palette.readable(bit).toLong
 
           case 4 =>
             val pair = u8(data, row + x/2)
             val entry = if x%2 == 0 then pair >> 4 else pair&15
-            palette(entry).toLong
+            palette.readable(entry).toLong
 
           case 8 =>
-            palette(u8(data, row + x)).toLong
+            palette.readable(u8(data, row + x)).toLong
 
           case 16 =>
             val value = u16le(data, row + x*2)

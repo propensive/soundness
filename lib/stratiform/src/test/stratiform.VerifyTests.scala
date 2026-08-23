@@ -32,8 +32,6 @@
                                                                                                   */
 package stratiform
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import fulminate.*

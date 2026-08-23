@@ -32,7 +32,6 @@
                                                                                                   */
 package jacinta
 
-import proscenium.compat.*
 
 import scala.annotation.*
 

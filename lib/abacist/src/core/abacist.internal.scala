@@ -37,8 +37,6 @@ import scala.collection.immutable.Seq
 import scala.collection.immutable.*
 import scala.quoted.*
 
-import proscenium.compat.*
-
 import anticipation.*
 import fulminate.*
 import gigantism.*
@@ -138,7 +136,7 @@ object internal:
           recur
             ( tail,
               ' {
-                  ( $expr.updated
+                  ( $expr.define
                       ( ${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value ) )
                 } )
 

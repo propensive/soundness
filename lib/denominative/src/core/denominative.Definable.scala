@@ -74,6 +74,18 @@ object Definable:
         Array.unsafeFrozen(copy)
       else array
 
+  // Positional update on a linked list rebuilds its prefix, so — as with `Applicable.list` —
+  // the instance is gated behind the linear-access acknowledgement rather than withheld.
+  given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Definable:
+    type Self = List[element]
+    type Operand = Ordinal
+    type Result = element
+
+    def define(list: Self, index: Ordinal, value: element): Self =
+      if index.n0 >= 0 && index.n0 < list.stdlib.length
+      then List.of(list.stdlib.updated(index.n0, value))
+      else list
+
   given indexedSeq: [element] => IndexedSeq[element] is Definable:
     type Self = IndexedSeq[element]
     type Operand = Ordinal
@@ -101,3 +113,25 @@ object Definable:
 
 trait Definable extends Typeclass.Pure, Operable, Resultant:
   def define(value: Self, index: Operand, result: Result): Self
+
+// The inverse of `define`, and a separate typeclass rather than a method on `Definable`
+// because only key-addressed containers can implement it: deleting at an `Ordinal` would shift
+// every later index, so the positional containers have no instance at all, and `omit` is simply
+// unavailable on them.
+object Omissible:
+  given map: [key, value] => (Map[key, value] is Omissible { type Operand = key }) =
+    new Omissible:
+      type Self = Map[key, value]
+      type Operand = key
+
+      def omit(map: Self, index: key): Self = Map.of(map.stdlib.removed(index))
+
+  given ledger: [key, value] => (Ledger[key, value] is Omissible { type Operand = key }) =
+    new Omissible:
+      type Self = Ledger[key, value]
+      type Operand = key
+
+      def omit(ledger: Self, index: key): Self = Ledger.of(ledger.stdlib.removed(index))
+
+trait Omissible extends Typeclass.Pure, Operable:
+  def omit(value: Self, index: Operand): Self

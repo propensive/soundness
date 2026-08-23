@@ -33,8 +33,6 @@ package stratiform
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
@@ -63,7 +61,7 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
         301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 314 )
 
   case class Collected(codes: List[Int] = Nil)(using Diagnostics)
-  extends Error(m"${codes.length} collected codes"):
+  extends Error(m"${codes.size} collected codes"):
     def +(code: Int): Collected = Collected(codes :+ code)
 
   // The codes accrued type-assigning and validator-checking `tel` under

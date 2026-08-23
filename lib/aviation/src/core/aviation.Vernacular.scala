@@ -35,11 +35,12 @@ package aviation
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import proscenium.compat.*
 
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import symbolism.*
+import denominative.*
 
 // The time units a duration or frequency is built from, coarsest first.
 enum TimeUnit:
@@ -283,20 +284,20 @@ trait Vernacular:
     val cadence = everyUnit(rule.interval, Vernacular.unitOf(rule.frequency))
 
     val onClause: Optional[Text] =
-      if rule.byDay.nonEmpty then onDays(rule.byDay.map(dayEntry))
-      else if rule.byMonthDay.nonEmpty then onMonthDays(rule.byMonthDay)
+      if !rule.byDay.nil then onDays(rule.byDay.map(dayEntry))
+      else if !rule.byMonthDay.nil then onMonthDays(rule.byMonthDay)
       else Unset
 
     val monthClause: Optional[Text] =
-      if rule.byMonth.isEmpty then Unset else inMonths(rule.byMonth.map(monthName), onClause.present)
+      if rule.byMonth.nil then Unset else inMonths(rule.byMonth.map(monthName), onClause.present)
 
     val setPosClause: Optional[Text] =
-      if rule.bySetPos.isEmpty then Unset else takingPositions(rule.bySetPos)
+      if rule.bySetPos.nil then Unset else takingPositions(rule.bySetPos)
 
     val clauses =
       List(cadence)
-      ::: onClause.lay(List[Text]())(List(_))
-      ::: monthClause.lay(List[Text]())(List(_))
-      ::: setPosClause.lay(List[Text]())(List(_))
+      + onClause.lay(List[Text]())(List(_))
+      + monthClause.lay(List[Text]())(List(_))
+      + setPosClause.lay(List[Text]())(List(_))
 
     t"${clauses.join(t" ")}${rule.count.lay(t"")(times)}"

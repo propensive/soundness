@@ -37,7 +37,6 @@ import scala.collection.immutable.Vector
 
 import scala.caps
 
-import proscenium.compat.*
 
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions
@@ -245,7 +244,7 @@ trait Json2 extends Json3:
         type Operand = Data
 
         def aggregate(bytes: Chain[Data]): value in Json =
-          Json.readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
+          Json.readJson(bytes.stdlib.iterator).as[value].asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
           Json.readJson(stream).as[value].asInstanceOf[value in Json]
@@ -294,9 +293,9 @@ trait Json2 extends Json3:
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
+          . pipe { array => List.of(array.readable.toList) } // freshens the array
 
-        Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+        Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
         json =>
           decodeObject[derivation](json)
@@ -315,9 +314,8 @@ trait Json2 extends Json3:
         fallback: Optional[field] )
     :   field =
 
-      values.get(key.s) match
-        case Some(value) => context.decoded(new Json(value))
-        case None        => fallback.or(context.decoded(new Json(Json.Ast(Unset))))
+      values.at(key.s).lay(fallback.or(context.decoded(new Json(Json.Ast(Unset))))): value =>
+        context.decoded(new Json(value))
 
     // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
     // plain method: the argument buffer must not be allocated inside an inline expansion,
@@ -578,9 +576,9 @@ trait Json2 extends Json3:
       Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
+          . pipe { array => List.of(array.readable.toList) } // freshens the array
 
-        Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+        Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
         value =>
           provide[Foci[Json.Focus]]:
@@ -888,7 +886,7 @@ object Json extends Json2, Dynamic:
             var name: String | Null = reader.keyName()
 
             while name != null do
-              entries = entries.updated(name.nn.tt.as[key], field.parse(reader))
+              entries = entries.define(name.nn.tt.as[key], field.parse(reader))
               name = reader.keyName()
 
             entries
@@ -898,7 +896,7 @@ object Json extends Json2, Dynamic:
 
     // The wire keys of a product's fields, `@name` renames applied.
     def wireKeys(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
-      names.map { name => renames(name.tt).or(name.tt).s }
+      names.remap { name => renames(name.tt).or(name.tt).s }
 
     // A required field whose key was absent from the object.
     def missing[value]()(using Tactic[Json.Error]): value = abort(Json.Error(Reason.Absent))
@@ -989,16 +987,16 @@ object Json extends Json2, Dynamic:
         type Self = derivation
 
         private lazy val fields: Array[(String, Json.Parsing, Any)]^{} = fields0()
-        private lazy val keys: Array[String]^{} = fields.map(_(0))
+        private lazy val keys: Array[String]^{} = fields.remap(_(0))
         private lazy val table: Json.KeyTable = Json.KeyTable(keys)
-        private lazy val kinds: Array[Byte]^{} = fields.map { field => kindOf(field(1)) }
+        private lazy val kinds: Array[Byte]^{} = fields.remap { field => kindOf(field(1)) }
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            fields.map { (key, parser, _) => (key.tt, parser.shape()) }.to[List]
+            List.of(fields.readable.map { (key, parser, _) => (key.tt, parser.shape()) }.toList)
 
           Morphology.Obj
-            ( entries, entries.collect { case (key, shape) if !shape.optional => key } )
+            ( entries, entries.sweep { case (key, shape) if !shape.optional => key } )
 
         // Reference equality first: object keys of up to 16 bytes come out
         // of the tokenizer's per-thread intern cache, so a steady-state
@@ -1061,7 +1059,7 @@ object Json extends Json2, Dynamic:
           var failed = false
 
           while index < count do
-            if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
+            if values.readable(index).asInstanceOf[AnyRef] eq AbsentSlot then
               val fallback = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
               if fallback.present then values(index) = fallback
@@ -1178,7 +1176,7 @@ object Json extends Json2, Dynamic:
               val slot = (((lowsFrozen.readUnchecked(probeIndex)*KeyTable.Scramble) ^ highsFrozen.readUnchecked(probeIndex))
                 .toInt & (capacity - 1)).abs
 
-              if attempt(slot) == 0 then attempt(slot) = probeIndex + 1 else clash = true
+              if attempt.readable(slot) == 0 then attempt.raw(slot) = probeIndex + 1 else clash = true
 
             probeIndex += 1
 
@@ -1737,16 +1735,16 @@ object Json extends Json2, Dynamic:
           Json.Ast(smalls.readUnchecked(index))
 
         case _ =>
-          json.asInstanceOf[Array[Json.Ast]^{}](index)
+          json.asInstanceOf[Array[Json.Ast]^{}].readable(index)
 
       // The number of key/value pairs in an object node.
       inline def objectSize: Int = json.asInstanceOf[Array[Any]^{}].length/2
 
       inline def objectKey(index: Int): String =
-        json.asInstanceOf[Array[Any]^{}](index*2).asInstanceOf[String]
+        json.asInstanceOf[Array[Any]^{}].readable(index*2).asInstanceOf[String]
 
       inline def objectValue(index: Int): Json.Ast =
-        json.asInstanceOf[Array[Any]^{}](index*2 + 1).asInstanceOf[Json.Ast]
+        json.asInstanceOf[Array[Any]^{}].readable(index*2 + 1).asInstanceOf[Json.Ast]
 
       // Linear scan for a key. Returns the value index (in pair units) or -1.
       def objectIndexOf(key: String): Int =
@@ -2413,7 +2411,7 @@ object Json extends Json2, Dynamic:
 
         while i < n do
           acc =
-            acc.updated
+            acc.define
               ( root.objectKey(i).tt.as,
                 decodable.decoded(Json.ast(root.objectValue(i))) )
 
@@ -2431,7 +2429,7 @@ object Json extends Json2, Dynamic:
       caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, encodable.shape()))
 
     Json.Encodable(shape): map =>
-      val keys: List[key] = map.keys.to(List)
+      val keys: List[key] = map.keys.to[List]
       val values = Array.from(keys.stdlib.map(map(_).encode.root))
       val keysArr = Array.from(keys.stdlib.map(_.encode.s))
       Json.ast(Json.Ast.obj(keysArr.asInstanceOf[Array[String]^{}], values.asInstanceOf[Array[Any]^{}]))
@@ -2451,7 +2449,7 @@ object Json extends Json2, Dynamic:
         type Self = Json
         type Operand = Data
 
-        def aggregate(bytes: Chain[Data]): Json = readJson(bytes.iterator)
+        def aggregate(bytes: Chain[Data]): Json = readJson(bytes.stdlib.iterator)
         override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
   // Direct parsing: when the value knows how to consume JSON tokens itself,
@@ -2472,9 +2470,9 @@ object Json extends Json2, Dynamic:
         def aggregate(bytes: Chain[Data]): value in Json =
           // A single in-memory block — the common case — skips the iterator
           // plumbing entirely.
-          if !bytes.isEmpty && bytes.tail.isEmpty
-          then parseDirect(bytes.head, parsable).asInstanceOf[value in Json]
-          else parseDirect(bytes.iterator, parsable).asInstanceOf[value in Json]
+          if !bytes.nil && bytes.stdlib.tail.isEmpty
+          then parseDirect(bytes.stdlib.head, parsable).asInstanceOf[value in Json]
+          else parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
           parseDirect(stream, parsable).asInstanceOf[value in Json]
@@ -2891,7 +2889,7 @@ extends Dynamic, Topical, Original derives CanEqual:
           var i = 0
 
           while i < n do
-            acc = acc.updated(ast.objectKey(i), recur(ast.objectValue(i)))
+            acc = acc.define(ast.objectKey(i), recur(ast.objectValue(i)))
             i += 1
 
           acc.hashCode
@@ -2937,14 +2935,14 @@ extends Dynamic, Topical, Original derives CanEqual:
           var i = 0
 
           while i < ln do
-            leftMap = leftMap.updated(leftAst.objectKey(i), leftAst.objectValue(i))
+            leftMap = leftMap.define(leftAst.objectKey(i), leftAst.objectValue(i))
             i += 1
 
           var rightMap = Map.empty[String, Json.Ast]
           i = 0
 
           while i < rn do
-            rightMap = rightMap.updated(rightAst.objectKey(i), rightAst.objectValue(i))
+            rightMap = rightMap.define(rightAst.objectKey(i), rightAst.objectValue(i))
             i += 1
 
           leftMap.stdlib.size == rightMap.stdlib.size && leftMap.stdlib.forall: (key, leftValue) =>

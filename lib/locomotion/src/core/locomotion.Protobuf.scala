@@ -36,8 +36,6 @@ import scala.collection.immutable.Vector
 
 import scala.caps
 
-import proscenium.compat.*
-
 import scala.language.experimental.pureFunctions
 
 import java.lang as jl
@@ -64,6 +62,7 @@ import zephyrine.*
 
 import Protobuf.Error.Reason
 import fulminate.*
+import denominative.asymptotics.linearSizeComplexity
 
 trait Protobuf2:
   this: Protobuf.type =>
@@ -142,7 +141,7 @@ trait Protobuf2:
     // capability (every given that includes a tactic is a capability; Jon, 2026-07-12).
     values =>
       val occurrences = values.to(List).bind(encodable.encode(_).occurrences)
-      if occurrences.isEmpty then Protobuf.Absent else Protobuf.Repeated(occurrences)
+      if occurrences.nil then Protobuf.Absent else Protobuf.Repeated(occurrences)
 
   given listDecodable: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]] )
@@ -449,11 +448,11 @@ object Protobuf extends Protobuf2:
     values =>
       val list = values.to(List)
 
-      if list.isEmpty then Absent else
+      if list.nil then Absent else
         val bytes = printed: printer =>
-          var rest = list
+          var rest = list.stdlib
 
-          while rest.nonEmpty do
+          while !rest.isEmpty do
             printer.raw(encodable.encode(rest.head).payload)
             rest = rest.tail
 
@@ -532,8 +531,8 @@ object Protobuf extends Protobuf2:
   =>  ((Map[key, value] is Encodable in Protobuf)^{keyEncodable, valueEncodable}) =
 
     map =>
-      if map.isEmpty then Absent else
-        val entries = map.toList.map: (key, value) =>
+      if map.nil then Absent else
+        val entries = map.to[List].map: (key, value) =>
           val bytes = printed: printer =>
             printer.field(1, keyEncodable.encode(key))
             printer.field(2, valueEncodable.encode(value))
@@ -574,7 +573,7 @@ object Protobuf extends Protobuf2:
               // The number is computed exactly as `fieldNumbers` would, from this field's own
               // label and index — no map lookup whose totality would need asserting.
               printer.field
-                ( annotated(label).let(_.head.number).or(index + 1),
+                ( annotated(label).let(_.stdlib.head.number).or(index + 1),
                   contextual.encode(fieldValue) )
 
         Protobuf.Wire(WireType.Len, bytes)
@@ -606,7 +605,7 @@ object Protobuf extends Protobuf2:
 
           build[derivation]:
             [field0] => context =>
-              map(annotated(label).let(_.head.number).or(index + 1))
+              map(annotated(label).let(_.stdlib.head.number).or(index + 1))
               . lay(default.or(context.decoded(Protobuf.Absent))): values =>
                 context.decoded(Protobuf.Repeated(values)) }
 
@@ -619,8 +618,8 @@ object Protobuf extends Protobuf2:
             val labels = variantLabels
 
             var index = 0
-            while index < labels.length && !map.defines(index + 1) do index += 1
-            if index >= labels.length then abort(Protobuf.Error(Reason.MissingField(0)))
+            while index < labels.size && !map.defines(index + 1) do index += 1
+            if index >= labels.size then abort(Protobuf.Error(Reason.MissingField(0)))
 
             delegate(labels.stdlib(index)):
               [variant <: derivation] => context =>
@@ -668,7 +667,7 @@ enum Protobuf:
 
   // The most recent single wire value (protobuf's last-one-wins rule for scalars).
   def single: Protobuf = this match
-    case Repeated(values) => if values.isEmpty then Protobuf.Absent else values.last
+    case Repeated(values) => values.occupied.let(_.stdlib.last).or(Protobuf.Absent)
     case other            => other
 
   // Every wire value recorded for this field — used to decode `repeated` fields.

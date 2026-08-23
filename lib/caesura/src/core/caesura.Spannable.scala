@@ -37,11 +37,13 @@ import distillate.*
 import prepositional.*
 import vacuous.*
 import wisteria.*
-import proscenium.compat.*
 
 object Spannable extends ProductDerivable[Spannable]:
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Spannable =
-    () => contexts[derivation](): [field] => context => context.spans().sum
+    // Not `total`: the `Iterable` overload narrows to `Int` via `Zeroic` while the
+    // `Traversable` one yields `Optional[Int]`, and which is picked here depends on the
+    // expected type. The underlying array's `sum` is unambiguous.
+    () => contexts[derivation](): [field] => context => context.spans().readable.sum
 
   given decoder: [decodable] => ((decodable is Decodable in Text)^) => decodable is Spannable =
     () => Array.of(1)

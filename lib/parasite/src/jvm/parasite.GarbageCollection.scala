@@ -34,8 +34,6 @@ package parasite
 
 import scala.caps
 
-import proscenium.compat.*
-
 import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
@@ -149,6 +147,6 @@ case class GarbageCollection
     collector: GarbageCollection.Collector,
     cause:     GarbageCollection.Cause,
     bytes:     Map[Text, (before: Bytes, after: Bytes)] ):
-  def before: Bytes = bytes.toList.map(_._2.before).stdlib.total
-  def after: Bytes = bytes.toList.map(_._2.after).stdlib.total
+  def before: Bytes = bytes.stdlib.toList.map(_._2.before).total
+  def after: Bytes = bytes.stdlib.toList.map(_._2.after).total
   def reduction: Bytes = before - after

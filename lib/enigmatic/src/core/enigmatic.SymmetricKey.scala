@@ -33,7 +33,6 @@
 package enigmatic
 
 import scala.annotation.targetName
-import proscenium.compat.*
 
 import anticipation.*
 import gastronomy.ProcessingPermit

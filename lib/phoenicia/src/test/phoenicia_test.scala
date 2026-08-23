@@ -32,13 +32,19 @@
                                                                                                   */
 package phoenicia
 
+import scala.annotation.targetName
 import scala.collection.immutable.Seq
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
+
+// These fixtures assemble SFNT/TrueType tables from many small pieces. A `Concatenable`
+// result is fresh, so joining two `Data` values means freezing once at the join; the operator
+// is defined here rather than reaching for `proscenium.compat`.
+extension (left: Data)
+  @targetName("concatData")
+  def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
 
 object Tests extends Suite(m"Phoenicia Tests"):
 

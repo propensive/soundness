@@ -32,7 +32,6 @@
                                                                                                   */
 package probably
 
-import proscenium.compat.*
 
 import anticipation.*
 import rudiments.*

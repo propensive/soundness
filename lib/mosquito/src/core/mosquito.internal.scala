@@ -32,8 +32,6 @@
                                                                                                   */
 package mosquito
 
-import proscenium.compat.*
-
 import scala.annotation.targetName
 import scala.compiletime.*
 
@@ -212,7 +210,7 @@ object internal:
     def element(index: Int): left = left.data.readable(index).asInstanceOf[left]
 
     def apply(index: Int): left = left.data.readable(index).asInstanceOf[left]
-    def list: List[left] = left.data.toList.asInstanceOf[List[left]]
+    def list: List[left] = left.data.to[List].asInstanceOf[List[left]]
     def iarray(using scala.reflect.ClassTag[left]): Array[left]^{} =
       Array.frozen(left.data.readable.map(_.asInstanceOf[left]))
     def size(using ValueOf[size]): Int = valueOf[size]
@@ -282,7 +280,7 @@ object internal:
 
   class Vector[value, size <: Int](val data: Array[Any]^{}):
     override def equals(right: Any): Boolean = right.asMatchable match
-      case that: Vector[?, ?] => data.sameElements(that.data)
+      case that: Vector[?, ?] => data.readable.sameElements(that.data.readable)
       case _                  => false
 
     override def hashCode: Int =
@@ -297,4 +295,4 @@ object internal:
 
       scala.util.hashing.MurmurHash3.finalizeHash(hash, data.length)
 
-    override def toString: String = data.mkString("Vector(", ", ", ")")
+    override def toString: String = data.readable.mkString("Vector(", ", ", ")")

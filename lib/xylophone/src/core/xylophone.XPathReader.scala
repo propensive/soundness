@@ -32,7 +32,6 @@
                                                                                                   */
 package xylophone
 
-import proscenium.compat.*
 
 import scala.collection.mutable as scm
 
@@ -40,6 +39,7 @@ import anticipation.*
 import contingency.*
 import vacuous.*
 import zephyrine.*
+import denominative.*
 
 // A hand-written lexer and recursive-descent parser for the full XPath 1.0
 // grammar (one method per production of the W3C recommendation), reporting
@@ -549,7 +549,7 @@ private[xylophone] object XPathReader:
         val rest = parseRelative()
         val steps = if descend then List.of(descendantStep :: rest.stdlib) else rest
         Expression.Route(Origin.Filter(primary, predicates), steps)
-      else if predicates.isEmpty then primary
+      else if predicates.nil then primary
       else Expression.Route(Origin.Filter(primary, predicates), Nil)
 
     def parsePrimary(): Expression =

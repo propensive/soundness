@@ -32,8 +32,6 @@
                                                                                                   */
 package facsimile
 
-import proscenium.compat.*
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -50,7 +48,7 @@ private[facsimile] object ObjectStream:
 
     for _ <- 0 until count do (lexer.next(), lexer.next()) match
       case (CosToken.Integral(number), CosToken.Integral(offset)) =>
-        offsets = offsets.updated(number.toInt, offset.toInt)
+        offsets = offsets.define(number.toInt, offset.toInt)
 
       case _ =>
         abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ObjStm")))

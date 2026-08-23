@@ -34,9 +34,8 @@ package delicious
 
 import scala.collection.mutable
 
-import proscenium.compat.*
-
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -73,7 +72,7 @@ object Markup:
 
   private def typed(kind: Text, attrs: List[(Text, Text)], children: List[Markup]): Markup =
     def attr(name: Text): Optional[Text] =
-      attrs.find(_(0) == name).optional.let(_(1))
+      attrs.seek(_(0) == name).let(_(1))
 
     val rendition = Rendition(attr(t"style"))
 
@@ -122,7 +121,7 @@ object Markup:
           && !input.substring(index + 1, attrsEnd).nn.exists { char => char == Start || char == End }
 
         if !headerOk then index += 1 else
-          stack.head.flush()
+          stack.stdlib.head.flush()
 
           val attrs = input.substring(kindEnd + 1, attrsEnd).nn match
             case ""         => Nil
@@ -140,14 +139,14 @@ object Markup:
           // Do not destructure the parent here (`case top :: (parent :: _)`):
           // that binds two `Frame^`s drawn from the same stack, and the
           // separation checker cannot prove them distinct. Finish with `top`,
-          // then reach the parent through `rest.head`, so only one frame is
+          // then reach the parent through `rest.stdlib.head`, so only one frame is
           // ever live. Were the two to alias, the old shape mutated a frame
           // while reading it.
-          case top :: rest if rest.nonEmpty =>
+          case top :: rest if !rest.stdlib.isEmpty =>
             top.flush()
             val node = typed(top.kind, top.attrs, top.children.to(List))
             stack = rest
-            rest.head.children += node
+            rest.stdlib.head.children += node
 
           case _ => // stray End at top level
 
@@ -156,14 +155,14 @@ object Markup:
       else if char == AttrsSep || char == TextSep then index += 1
 
       else
-        stack.head.text.append(char)
+        stack.stdlib.head.text.append(char)
         index += 1
 
     // splice the children of any unterminated markers into their parents
-    while stack.tail.nonEmpty do
+    while !stack.stdlib.tail.isEmpty do
       stack match
-        // As above: one frame live at a time, parent reached via `rest.head`.
-        case top :: rest if rest.nonEmpty =>
+        // As above: one frame live at a time, parent reached via `rest.stdlib.head`.
+        case top :: rest if !rest.stdlib.isEmpty =>
           top.flush()
           // `toList` copies into a fresh immutable list sharing nothing with the
           // buffer, so the inferred `^{top.children}` is spurious; laundering it
@@ -171,7 +170,7 @@ object Markup:
           // they still captured `top.children` is what the checker refused.
           val orphans = scala.caps.unsafe.unsafeAssumePure(top.children.toList)
           stack = rest
-          rest.head.children ++= orphans
+          rest.stdlib.head.children ++= orphans
 
         case _ => ()
 

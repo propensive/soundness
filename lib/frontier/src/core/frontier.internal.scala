@@ -32,8 +32,6 @@
                                                                                                   */
 package frontier
 
-import proscenium.compat.*
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
@@ -46,6 +44,7 @@ import gossamer.*
 import proscenium.*
 import spectacular.*
 import vacuous.*
+import symbolism.*
 
 object internal:
   inline def explanation[target]: target = ${explain[target]}

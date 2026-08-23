@@ -47,7 +47,6 @@ import hieroglyph.*
 import hypotenuse.*
 import parasite.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -319,7 +318,7 @@ extension (stream: Chain[Data])
         // capture the enclosing context) could not escape it. `slice` rather than
         // `drop`: the sibling `drop` on `Chain[Data]` shadows `proscenium.compat`'s
         // array version here.
-        val head: Data = next.slice(count.long.toInt, next.length).asInstanceOf[Data]
+        val head: Data = next.segment((count.long.toInt).z till (next.length).z).asInstanceOf[Data]
         head #:: more
 
     recur(stream, bytes)
@@ -379,7 +378,7 @@ extension (stream: Chain[Data])
           head #:: recur(more, count - next.bytes)
         // `slice`, not `take`: the sibling `take` on `Chain[Data]` shadows
         // `proscenium.compat`'s array version here.
-        else Chain(next.slice(0, count.long.toInt).asInstanceOf[Data])
+        else Chain(next.segment((0).z till (count.long.toInt).z).asInstanceOf[Data])
 
     recur(stream, bytes)
 
@@ -395,8 +394,8 @@ extension (stream: Chain[Data])
       if diff > 0 then diff
       else if current.nil then 0
       else
-        focus = current.head
-        current = current.tail
+        focus = current.stdlib.head
+        current = Chain.of(current.stdlib.tail)
         offset = 0
         available()
 

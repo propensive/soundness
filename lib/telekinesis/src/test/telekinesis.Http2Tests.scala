@@ -34,7 +34,6 @@ package telekinesis
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import Http2.{Client, Connection, Endpoint, ErrorCode, Flags, Frame, FrameType, Setting,
@@ -46,7 +45,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
       Array.from(hex.s.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List))
 
     def hex(data: Data): Text =
-      data.to[List].map(b => String.format("%02x", java.lang.Integer.valueOf(b & 0xff)).nn).mkString.tt
+      data.to[List].map(b => String.format("%02x", java.lang.Integer.valueOf(b & 0xff)).nn).stdlib.mkString.tt
 
     def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
 
@@ -392,10 +391,10 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
 
           val (stream, response) = client.fetch(request, t"http", t"unix")
           val body = response.body.stream.memoize.utf8
-          val grpcStatus = stream.trailers.await().find(_.name == t"grpc-status").map(_.value)
+          val grpcStatus = stream.trailers.await().seek(_.name == t"grpc-status").let(_.value)
           client.close()
           server.close()
-          (body, grpcStatus.getOrElse(t"?"))
+          (body, grpcStatus.or(t"?"))
 
       . assert(_ == (t"body", t"0"))
 

@@ -33,11 +33,10 @@ package stratiform
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
+import denominative.asymptotics.linearSizeComplexity
 
 // TELP (the TEL Path companion specification): grammar and identity (§3),
 // resolution over the semantic model (§4), the all-digit shadowing rule
@@ -104,7 +103,7 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
   private def leaf(path: Text): Text = resolve(path).absolve match
     case Telp.Resolution.One(value: Tel.Element.Value) => value.text
     case Telp.Resolution.One(node: Tel.Element.Node)   => t"<node>"
-    case Telp.Resolution.Occurrences(elements)         => t"<${elements.length} occurrences>"
+    case Telp.Resolution.Occurrences(elements)         => t"<${elements.size} occurrences>"
 
   private def failure(path: Text): Telp.Error.Reason =
     given Tels = schema

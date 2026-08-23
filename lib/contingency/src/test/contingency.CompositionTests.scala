@@ -33,8 +33,6 @@
 package contingency
 
 import soundness.*
-
-import proscenium.compat.*
 import contingency.strategies.throwUnsafely
 
 import errorDiagnostics.stackTracesDiagnostics
@@ -44,10 +42,10 @@ case class CErrorA(value: Int)(using Diagnostics) extends Error(m"composition er
 case class CErrorB(value: Int)(using Diagnostics) extends Error(m"composition error b: $value")
 
 case class Tally(values: List[Int])(using Diagnostics)
-extends Error(m"tally of ${values.length} errors")
+extends Error(m"tally of ${values.size} errors")
 
 case class Located(items: List[(Text, Int)])(using Diagnostics)
-extends Error(m"${items.length} located errors")
+extends Error(m"${items.size} located errors")
 
 object CompositionTests extends Suite(m"Contingency composition"):
 
@@ -151,7 +149,7 @@ object CompositionTests extends Suite(m"Contingency composition"):
     suite(m"guard"):
       test(m"guard runs when the tactic is clean and yields the block's value"):
         recover:
-          case Tally(values) => values.sum
+          case Tally(values) => values.total
         . protect:
             track[Pointer](Tally(Nil)):
               case CErrorA(n) => Tally(accrual.values :+ n)

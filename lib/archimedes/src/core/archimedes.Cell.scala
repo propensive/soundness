@@ -35,8 +35,6 @@ package archimedes
 // Deliberate stdlib opt-out: internal typesetting tables are set-algebraic.
 import scala.collection.immutable.{Map, Set}
 
-import proscenium.compat.*
-
 import anticipation.*
 import gossamer.*
 import hieroglyph.Measurable
@@ -44,8 +42,10 @@ import hieroglyph.textMetrics.wideCharacterWidthMetric
 import denominative.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 
 import Mathml.*
+import denominative.asymptotics.linearSizeComplexity
 
 // A `Cell` is a rectangular block of monospaced character cells with a `baseline`
 // — the row index (from the top) of the mathematical axis that composition aligns
@@ -115,7 +115,7 @@ object Cell:
     val width = max(numerator.width, denominator.width) + 2
     val top = numerator.hcenter(width)
     val bottom = denominator.hcenter(width)
-    Cell((top.lines :+ repeat(Bar, width)) ::: bottom.lines, width, top.height)
+    Cell((top.lines :+ repeat(Bar, width)) + bottom.lines, width, top.height)
 
   // Unicode already provides ready-made superscript and subscript glyphs for the
   // digits, the sign and bracket operators, and much (but not all) of the Latin
@@ -247,16 +247,16 @@ object Cell:
 
   def overscript(base: Cell, over: Cell): Cell =
     val width = max(base.width, over.width)
-    Cell(over.hcenter(width).lines ::: base.hcenter(width).lines, width, over.height + base.baseline)
+    Cell(over.hcenter(width).lines + base.hcenter(width).lines, width, over.height + base.baseline)
 
   def underscript(base: Cell, under: Cell): Cell =
     val width = max(base.width, under.width)
-    Cell(base.hcenter(width).lines ::: under.hcenter(width).lines, width, base.baseline)
+    Cell(base.hcenter(width).lines + under.hcenter(width).lines, width, base.baseline)
 
   def underover(base: Cell, under: Cell, over: Cell): Cell =
     val width = max(max(base.width, under.width), over.width)
 
-    val lines = over.hcenter(width).lines ::: base.hcenter(width).lines ::: under.hcenter(width).lines
+    val lines = over.hcenter(width).lines + base.hcenter(width).lines + under.hcenter(width).lines
     Cell(lines, width, over.height + base.baseline)
 
   // A square root. Over a single line the compact `√` glyph suffices; over taller
@@ -273,11 +273,11 @@ object Cell:
 
     // Traversing `inner`'s own lines directly, the row content needs no index at all; the
     // index survives only to mark the last row with the radical's foot.
-    val body = inner.lines.zipWithIndex.map: (line, row) =>
-      val foot = if row == inner.height - 1 then Tick else ' '
+    val body = inner.lines.indexed.map: (line, ordinal) =>
+      val foot = if ordinal.n0 == inner.height - 1 then Tick else ' '
       Writing(t"$foot$Stem${line.text}")
 
-    Cell(Sequence(overline) ::: body, inner.width + 2, inner.baseline + 1)
+    Cell(Sequence(overline) + body, inner.width + 2, inner.baseline + 1)
 
   // An nth root always uses the tall sign so the `index` can sit one line above,
   // to the left of the corner.
@@ -286,8 +286,8 @@ object Cell:
 
     // The radicand's rows come from traversing its own lines, so they need no proof; the
     // (shorter) index cell is a checked lookup with a blank fallback — exactly `slice`.
-    val lines = radicand.lines.zipWithIndex.map: (line, row) =>
-      Writing(t"${slice(index, row)}${line.text}")
+    val lines = radicand.lines.indexed.map: (line, ordinal) =>
+      Writing(t"${slice(index, ordinal.n0)}${line.text}")
 
     Cell(lines, index.width + radicand.width, radicand.baseline)
 
@@ -462,7 +462,7 @@ object Cell:
       node.text.lay(row(node.contents))(line)
 
 case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
-  def height: Int = lines.length
+  def height: Int = lines.size
   def render: Text = lines.stdlib.map(_.text).join(t"\n")
 
   // Pad each line on the left and right with spaces, widening the block.
@@ -486,4 +486,4 @@ case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
     val above = Cell.max(ascent - baseline, 0)
     val below = Cell.max(descent - (height - 1 - baseline), 0)
     val blank = Cell.spaces(width)
-    Cell(Sequence.from(Iterator.fill(above)(blank)) ::: lines ::: Sequence.from(Iterator.fill(below)(blank)), width, ascent)
+    Cell(Sequence.from(Iterator.fill(above)(blank)) + lines + Sequence.from(Iterator.fill(below)(blank)), width, ascent)

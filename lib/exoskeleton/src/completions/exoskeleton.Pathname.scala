@@ -32,8 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import proscenium.compat.*
-
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -90,7 +88,7 @@ object Pathname:
               val directory = safely(path.entry() == galilei.Directory).or(false)
               suggest(if directory then path.name+t"/" else path.name)
 
-        listing ::: prior
+        listing + prior
 
       else if argument() == t".." then argument.suggest:
         val listing = List.of:
@@ -99,7 +97,7 @@ object Pathname:
               val directory = safely(path.entry() == galilei.Directory).or(false)
               suggest(if directory then path.name+t"/" else path.name)
 
-        listing ::: prior
+        listing + prior
 
       else if argument().nil then argument.suggest:
         val children0 = workingDirectory.children.stdlib.toList
@@ -112,7 +110,7 @@ object Pathname:
           val directory = safely(path.entry() == galilei.Directory).or(false)
           suggest(if directory then path.name+t"/" else path.name)
 
-        listing ::: prior
+        listing + prior
 
       else
         val tilde = home.present && (argument() == t"~" || argument().starts(t"~/"))
@@ -144,7 +142,7 @@ object Pathname:
               else if absolute then path.encode+slash
               else workingDirectory.toward(path).encode+slash
 
-          listing ::: prior
+          listing + prior
 
     scala.caps.unsafe.unsafeAssumeSeparate:
       safely(workingDirectory.resolve(expand(argument()))).option

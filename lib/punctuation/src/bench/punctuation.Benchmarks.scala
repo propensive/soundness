@@ -45,13 +45,14 @@ import prepositional.*
 import probably.*
 import spectacular.show
 import proscenium.*
-import proscenium.compat.*
 import quantitative.*
 import sedentary.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
+import denominative.asymptotics.linearSizeComplexity
+import denominative.*
 
 object Benchmarks extends Suite(m"Punctuation benchmarks"):
   sealed trait Information extends Dimension
@@ -79,7 +80,7 @@ object Benchmarks extends Suite(m"Punctuation benchmarks"):
   // cannot dead-code the call. `children.length` is cheap and structurally
   // exercises the entire parse — anything elided would zero this out.
 
-  def parseNative(text: Text): Int = Parser.parse(text).children.length
+  def parseNative(text: Text): Int = Parser.parse(text).children.size
 
   // Parsed once, outside the timed region, so the serialization rows measure
   // `.show` alone rather than a parse-and-show round trip.

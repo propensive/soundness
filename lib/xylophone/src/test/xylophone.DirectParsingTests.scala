@@ -34,7 +34,6 @@ package xylophone
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -67,7 +66,7 @@ case class PTree(value: Text, children: List[PTree]) derives CanEqual
 case class PTeam(name: Text, members: List[PWorker]) derives CanEqual
 
 case class PIssues(items: List[(Text, Xml.Error)] = Nil)(using Diagnostics)
-extends Error(m"${items.length} XML decoding issues"):
+extends Error(m"${items.size} XML decoding issues"):
   def +(focus: Text, error: Xml.Error): PIssues = PIssues(items :+ (focus, error))
 
 // Wrapped in an object so the `given Default[PWorker]` is in lexical scope at

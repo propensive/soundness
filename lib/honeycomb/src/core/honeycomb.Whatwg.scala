@@ -34,9 +34,6 @@ package honeycomb
 
 import scala.language.dynamics
 
-
-import proscenium.compat.*
-
 import adversaria.*
 import anticipation.*
 import fulminate.*
@@ -48,6 +45,7 @@ import rudiments.*
 import turbulence.*
 import typonym.*
 import vacuous.*
+import symbolism.*
 
 import charDecoders.utf8Decoder
 import classloaders.threadContextClassloader
@@ -675,25 +673,25 @@ class Whatwg() extends Dom:
   val Wbr = Tag.void["wbr", Whatwg]()
 
   val elements: Dictionary[Tag] =
-    Dictionary(this.membersOfType[Tag].bi.map(_.label -> _).toSeq*)
+    Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }.stdlib*)
 
   val entities: Dictionary[Text] =
     val html4 = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
-    . map(_.cut(t"\t")).collect:
+    . map(_.cut(t"\t")).sweep:
         case List(key, value) => (key, value)
 
     val extra = cp"/honeycomb/entities-extra.tsv".read[Text].cut(t"\n")
-    . map(_.cut(t"\t")).collect:
+    . map(_.cut(t"\t")).sweep:
         case List(key, value) => (key, value)
 
-    Dictionary((html4 ::: extra).stdlib*)
+    Dictionary((html4 + extra).stdlib*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =
       Whatwg.membersOfType[honeycomb.Attribute]
-      . foldLeft(proscenium.Map[Text, Attribute]()): (map, next) =>
-          map.updated(next.label, map.get(next.label).optional.let(_.merge(next)).or(next))
+      . fold(proscenium.Map[Text, Attribute]()): (map, next) =>
+          map.define(next.label, map.stdlib.get(next.label).optional.let(_.merge(next)).or(next))
 
-      . toList
+      . to[List]
 
     Dictionary(list*)

@@ -34,8 +34,6 @@ package stenography
 
 import scala.annotation
 
-import proscenium.compat.*
-
 private def sciList[element](elements: element*): scala.collection.immutable.List[element] =
   scala.collection.immutable.List(elements*)
 
@@ -190,7 +188,7 @@ object Syntax:
 
       val uppered = captureBound(upper).lay(Nil)(bound(" <: ", _))
 
-      Compound(Capturing(sub, Unset) :: (lowered ::: uppered))
+      Compound(Capturing(sub, Unset) :: (lowered + uppered))
 
 
   def typeBounds(using Quotes, Bindings)
@@ -324,7 +322,7 @@ object Syntax:
 
     method.absolve match
       case MethodType(names, types, result) =>
-        val unnamed = names.forall(_.startsWith("x$"))
+        val unnamed = names.all(_.startsWith("x$"))
 
         val parameters =
           if names.isEmpty then Sequence('(', Nil)
@@ -575,8 +573,8 @@ object Syntax:
 
             signature(name, member) match
               case signature@Declaration(method, _, _) =>
-                if method then refined.copy(terms = refined.terms.updated(name, signature))
-                else refined.copy(types = refined.types.updated(name, signature))
+                if method then refined.copy(terms = refined.terms.define(name, signature))
+                else refined.copy(types = refined.types.define(name, signature))
 
         case TypeBounds(lower, upper) =>
           typeBounds(Symbolic("?"), lower, upper)
@@ -706,17 +704,17 @@ enum Syntax:
     case Selection(left, right)  => s"${left.text}.${right}"
     case Prefix(prefix, base)    => s"$prefix ${base.text}".tt
     case Suffix(base, suffix)    => s"${base.text}$suffix".tt
-    case Sequence('(', elements) => s"(${elements.map(_.text).mkString(", ")})".tt
-    case Sequence('[', elements) => s"[${elements.map(_.text).mkString(", ")}]".tt
-    case Sequence('{', elements) => s"{${elements.map(_.text).mkString(", ")}}".tt
+    case Sequence('(', elements) => s"(${elements.map(_.text).stdlib.mkString(", ")})".tt
+    case Sequence('[', elements) => s"[${elements.map(_.text).stdlib.mkString(", ")}]".tt
+    case Sequence('{', elements) => s"{${elements.map(_.text).stdlib.mkString(", ")}}".tt
     case Value(designator)       => s"${designator.text}.type".tt
-    case Compound(syntaxes)      => syntaxes.map(_.text).mkString.tt
+    case Compound(syntaxes)      => syntaxes.map(_.text).stdlib.mkString.tt
 
     case Capturing(base, refs) =>
       val base2 = if base.precedence < precedence then Sequence('(', List(base)) else base
 
       refs.lay(s"${base2.text}^".tt): refs =>
-        s"${base2.text}^{${refs.map(_.text).mkString(", ")}}".tt
+        s"${base2.text}^{${refs.map(_.text).stdlib.mkString(", ")}}".tt
 
     case Function(parameters, contextual, impure, refs, result) =>
       // Function types are right-associative, so a function to the left of the arrow needs
@@ -724,26 +722,26 @@ enum Syntax:
       val wrap = parameters.precedence <= precedence
       val left = if wrap then Sequence('(', List(parameters)) else parameters
       val right = if result.precedence < precedence then Sequence('(', List(result)) else result
-      val set = if refs.nil then "" else refs.map(_.text).mkString("{", ", ", "}")
+      val set = if refs.nil then "" else refs.map(_.text).stdlib.mkString("{", ", ", "}")
       val arrow = s"${if contextual then "?" else ""}${if impure then "=>" else "->"}$set"
 
       s"${left.text} $arrow ${right.text}".tt
 
     case Match(scrutinee, cases) =>
-      s"${scrutinee.text} match { ${cases.map(_.text).mkString("; ")} }".tt
+      s"${scrutinee.text} match { ${cases.map(_.text).stdlib.mkString("; ")} }".tt
 
     case Declaration(method, syntaxes, result) =>
-      s"${syntaxes.map(_.text).mkString}${if method then ": " else ""}${result.text}".tt
+      s"${syntaxes.map(_.text).stdlib.mkString}${if method then ": " else ""}${result.text}".tt
 
     case Application(left, elements, infix) =>
       left match
         case Simple(Designator.Type(parent, name)) if infix && imports.has(parent) =>
           elements.stdlib match
             case scala.List(first, second) => Infix(first, name, second).text
-            case _ => left.text+elements.map(_.text).mkString("[", ", ", "]").tt
+            case _ => left.text+elements.map(_.text).stdlib.mkString("[", ", ", "]").tt
 
         case _ =>
-          left.text+elements.map(_.text).mkString("[", ", ", "]").tt
+          left.text+elements.map(_.text).stdlib.mkString("[", ", ", "]").tt
 
     case Structural(base, members, defs) =>
       val members2 = members.stdlib.map: (name, syntax) => s"type $name = ${syntax.text}".tt

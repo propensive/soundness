@@ -34,7 +34,6 @@ package hallucination
 
 import anticipation.*
 import contingency.*
-import proscenium.compat.*
 
 import scala.caps
 
@@ -312,8 +311,8 @@ private[hallucination] object Vp8Decoder:
           i += 1
 
     private update def readQuantizationIndices(): Unit =
-      def dcQuant(index: Int): Int = Vp8Tables.dcQuant(index.max(0).min(127))
-      def acQuant(index: Int): Int = Vp8Tables.acQuant(index.max(0).min(127))
+      def dcQuant(index: Int): Int = Vp8Tables.dcQuant.readable(index.max(0).min(127))
+      def acQuant(index: Int): Int = Vp8Tables.acQuant.readable(index.max(0).min(127))
 
       val yacAbs = bool.literal(7)
       val ydcDelta = bool.optionalSigned(4)

@@ -32,8 +32,6 @@
                                                                                                   */
 package digression
 
-import proscenium.compat.*
-
 import scala.caps
 
 import anticipation.*
@@ -71,7 +69,7 @@ object Fqcn:
       if part.head >= '0' && part.head <= '9'
       then raise(Fqcn.Error(name, Fqcn.Error.Reason.InvalidStart(part.head)))
 
-    new Fqcn(parts.map(_.tt))
+    new Fqcn(parts.remap(_.tt))
 
   given encodable: Fqcn is Encodable in Text = _.text
 
@@ -103,5 +101,5 @@ object Fqcn:
 
 class Fqcn(val parts: Array[Text]^{}):
   def text: Text = Fqcn.join(parts, parts.length)
-  def className: Text = parts.last
+  def className: Text = parts.readable.last
   def packageName: Text = Fqcn.join(parts, parts.length - 1)

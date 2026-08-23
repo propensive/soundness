@@ -34,12 +34,12 @@ package aviation
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import abstractables.instantAbstractable
 import chronometries.unix
+import denominative.asymptotics.linearSizeComplexity
 
 object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =
@@ -1945,7 +1945,7 @@ object Tests extends Suite(m"Aviation Tests"):
       import calendars.gregorianCalendar
 
       test(m"An evenly-divisible period splits into equal segments"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).length
+        (Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).size
       . assert(_ == 4)
 
       test(m"Segment boundaries are consecutive"):
@@ -1953,25 +1953,25 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == List(0L, 900_000L, 1_800_000L, 2_700_000L))
 
       test(m"A remainder is kept as a short final segment when partial is true"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = true).length
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = true).size
       . assert(_ == 3)
 
       test(m"A remainder is dropped when partial is false"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = false).length
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = false).size
       . assert(_ == 2)
 
       test(m"The final partial segment ends at the period's finish"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute).last.finish.long
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute).stdlib.last.finish.long
       . assert(_ == 3_600_000L)
 
       test(m"A period can be split by a Duration"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(Quantity[Seconds[1]](1200.0)).length
+        (Instant(0L) ~ Instant(3_600_000L)).segments(Quantity[Seconds[1]](1200.0)).size
       . assert(_ == 3)
 
       test(m"A Timestamp period splits by a Timespan"):
         val period = Period(Timestamp(2024-Jan-1, Clockface(0, 0, 0)),
             Timestamp(2024-Jan-2, Clockface(0, 0, 0)))
-        period.segments(6*Hour).length
+        period.segments(6*Hour).size
       . assert(_ == 4)
 
     suite(m"Point ranges"):
@@ -1990,7 +1990,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3, 2024-Jan-4))
 
       test(m"by is lazy, so a vast range can be sampled cheaply"):
-        Period(2024-Jan-1, 2030-Jan-1).by(1*Day).take(3).stdlib.to(List)
+        Period(2024-Jan-1, 2030-Jan-1).by(1*Day).stdlib.take(3).to(List)
       . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3))
 
     suite(m"Monotonic clock"):
@@ -2136,7 +2136,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == true)
 
       test(m"A parsed rrule generates the right occurrences"):
-        Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.take(2).stdlib.to(List)
+        Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.stdlib.take(2).to(List)
       . assert(_ == List(2024-Jan-26, 2024-Feb-23))
 
       test(m"An invalid rrule string raises Rrule.Error"):
@@ -2853,21 +2853,21 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"parses a single Rule line"):
         val lines = Chain(t"Rule\tUS\t2007\tmax\t-\tMar\tSun>=8\t2:00\t1:00\tD")
-        Tzdb.parse(t"inline", lines).headOption
+        Tzdb.parse(t"inline", lines).prim
       . matches:
-          case Some(_: Tzdb.Entry.Rule) =>
+          case _: Tzdb.Entry.Rule =>
 
       test(m"parses a single Link line"):
         val lines = Chain(t"Link\tEurope/London\tEurope/Belfast")
-        Tzdb.parse(t"inline", lines).headOption
+        Tzdb.parse(t"inline", lines).prim
       . matches:
-          case Some(_: Tzdb.Entry.Link) =>
+          case _: Tzdb.Entry.Link =>
 
       test(m"parses a leap line with normal-time"):
         val lines = Chain(t"Leap\t1972\tJun\t30\t23:59:59\t+\tS")
-        Tzdb.parse(t"inline", lines).headOption
+        Tzdb.parse(t"inline", lines).prim
       . matches:
-          case Some(_: Tzdb.Entry.Leap) =>
+          case _: Tzdb.Entry.Leap =>
 
       test(m"leap line with 60-second time raises Tzdb.Error"):
         val lines = Chain(t"Leap\t1972\tJun\t30\t23:59:60\t+\tS")

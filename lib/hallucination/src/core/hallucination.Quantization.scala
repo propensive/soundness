@@ -33,7 +33,6 @@
 package hallucination
 
 import scala.collection.mutable as scm
-import proscenium.compat.*
 
 // Median-cut colour quantization for GIF encoding: recursively splits the box with the largest
 // channel range at its weighted median until the palette fits, then represents each box by its
@@ -47,7 +46,7 @@ private[hallucination] object Quantization:
     if counts.size <= limit then
       val palette = Array.from(counts.keys)
 
-      palette.indices.foreach: index => assignment(palette(index)) = index
+      for index <- 0 until palette.length do assignment(palette.readable(index)) = index
 
       (palette, assignment)
     else

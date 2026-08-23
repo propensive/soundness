@@ -32,8 +32,6 @@
                                                                                                   */
 package hyperbole
 
-import proscenium.compat.*
-
 import scala.collection.mutable as scm
 import scala.quoted.*
 

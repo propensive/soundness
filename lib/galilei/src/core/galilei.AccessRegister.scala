@@ -32,7 +32,6 @@
                                                                                                   */
 package galilei
 
-import proscenium.compat.*
 
 import anticipation.*
 import aperture.*

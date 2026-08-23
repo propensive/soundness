@@ -33,7 +33,6 @@
 package phoenicia
 
 import java.nio.charset.StandardCharsets
-import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -148,8 +147,8 @@ object Sfnt:
 
       while position < end do
         val word =
-          ((buffer(position) & 0xffL) << 24) | ((buffer(position + 1) & 0xffL) << 16) |
-            ((buffer(position + 2) & 0xffL) << 8) | (buffer(position + 3) & 0xffL)
+          ((buffer.readable(position) & 0xffL) << 24) | ((buffer.readable(position + 1) & 0xffL) << 16) |
+            ((buffer.readable(position + 2) & 0xffL) << 8) | (buffer.readable(position + 3) & 0xffL)
 
         sum = (sum + word) & 0xffffffffL
         position += 4
@@ -407,7 +406,7 @@ trait Sfnt:
         case (1, 0)  => 4
         case _       => 5
 
-      if candidates.isEmpty then Unset else candidates.readable.minBy(rank).decode
+      if candidates.readable.isEmpty then Unset else candidates.readable.minBy(rank).decode
 
   case class CmapTable(offset: Int):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):
@@ -468,21 +467,21 @@ trait Sfnt:
       // the range offsets, addressed relative to the segment's own range-offset word.
       case class Format4(idRangeOffsetsStart: Int, segments: Array[Segment]^{}) extends Format:
         def glyph(char: Char): Glyph[sfnt.type] =
-          val index = segments.indexWhere(char <= _.end)
-
-          if index < 0 || char < segments.readUnchecked(index).start then Glyph(sfnt, 0) else
+          segments.where(char <= _.end).lay(Glyph(sfnt, 0)): ordinal =>
+            val index = ordinal.n0
             val segment = segments.readUnchecked(index)
 
-            val id =
-              if segment.rangeOffset == 0 then char + segment.delta
-              else
-                val position =
-                  idRangeOffsetsStart + index*2 + segment.rangeOffset + (char - segment.start)*2
+            if char < segment.start then Glyph(sfnt, 0) else
+              val id =
+                if segment.rangeOffset == 0 then char + segment.delta
+                else
+                  val position =
+                    idRangeOffsetsStart + index*2 + segment.rangeOffset + (char - segment.start)*2
 
-                val indirect = B16(data, position).u16.int
-                if indirect == 0 then 0 else indirect + segment.delta
+                  val indirect = B16(data, position).u16.int
+                  if indirect == 0 then 0 else indirect + segment.delta
 
-            Glyph(sfnt, id & 0xffff)
+              Glyph(sfnt, id & 0xffff)
 
       // A dense run of glyph ids for a contiguous range of character codes.
       case class Format6(first: Int, count: Int, start: Int) extends Format:
@@ -530,7 +529,7 @@ trait Sfnt:
         case (1, 0)          => 6
         case _               => 7
 
-      if glyphEncodings.isEmpty then Unset else glyphEncodings.minBy(rank)
+      glyphEncodings.minimize(rank)
 
     def glyph(char: Char): Glyph[sfnt.type] raises Font.Error =
       best.lest(Font.Error(Font.Error.Reason.MissingEncoding)).format.glyph(char)

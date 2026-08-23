@@ -34,7 +34,6 @@ package xylophone
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -49,7 +48,7 @@ enum DShape derives CanEqual:
   case Square(side: Int)
 
 case class XmlIssues(items: List[(Text, Xml.Error)] = Nil)(using Diagnostics)
-extends Error(m"${items.length} XML decoding issues"):
+extends Error(m"${items.size} XML decoding issues"):
   def +(focus: Text, error: Xml.Error): XmlIssues = XmlIssues(items :+ (focus, error))
 
 object XProbe:
@@ -93,7 +92,7 @@ object DefaultShapeScope:
       case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error)
     . protect(xml.as[DShape])
 
-    (accrued.items.map(_(0).s).to[Set], accrued.items.length)
+    (accrued.items.map(_(0).s).to[Set], accrued.items.size)
 
 
 object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
@@ -134,7 +133,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
       test(m"Constructor does not run when any field failed"):
         XProbe.constructions = 0
         val issues = validateXml(x"<root><name>Zoe</name></root>")(_.as[XChecked])
-        (issues.items.length, XProbe.constructions)
+        (issues.items.size, XProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):
@@ -160,12 +159,12 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
     suite(m"Validation accrual"):
       test(m"Fully-valid input accrues zero errors"):
         val xml = x"<root><name>Alice</name><age>30</age><email>a@b.c</email></root>"
-        validateXml(xml)(_.as[DPerson]).items.length
+        validateXml(xml)(_.as[DPerson]).items.size
       . assert(_ == 0)
 
       test(m"One missing field accrues one error"):
         val xml = x"<root><name>Alice</name><age>30</age></root>"
-        validateXml(xml)(_.as[DPerson]).items.length
+        validateXml(xml)(_.as[DPerson]).items.size
       . assert(_ == 1)
 
       test(m"Pointer identifies the missing field"):
@@ -175,7 +174,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
       test(m"Two missing primitive fields accrue two errors"):
         val xml = x"<root><name>Alice</name></root>"
-        validateXml(xml)(_.as[DPerson]).items.length
+        validateXml(xml)(_.as[DPerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify both missing primitive fields"):
@@ -185,7 +184,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
       test(m"Wrong-type primitive field accrues an error"):
         val xml = x"<root><name>Alice</name><age>oldish</age><email>a@b.c</email></root>"
-        validateXml(xml)(_.as[DPerson]).items.length
+        validateXml(xml)(_.as[DPerson]).items.size
       . assert(_ == 1)
 
       test(m"Wrong-type primitive field reports the field's path"):
@@ -240,7 +239,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         // which the surrounding `validate` captures and reports as one
         // accrual entry. No `Variant.Error` punches through.
         val xml = x"<UnknownVariant><foo>bar</foo></UnknownVariant>"
-        validateXml(xml)(_.as[DShape]).items.length
+        validateXml(xml)(_.as[DShape]).items.size
       . assert(_ == 1)
 
       test(m"Without Default[DPerson], a missing nested still expands"):
@@ -258,7 +257,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
     suite(m"Position-aware focus (tracked Xml)"):
       case class Tagged(items: List[(Text, Optional[Int], Optional[Int])] = Nil)
                        (using Diagnostics)
-      extends Error(m"${items.length} validation issues"):
+      extends Error(m"${items.size} validation issues"):
         def +(focus: Text, line: Optional[Int], column: Optional[Int]): Tagged =
           Tagged(items :+ (focus, line, column))
 
@@ -279,13 +278,13 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         val source = t"<root>\n  <name>Alice</name>\n  <age>30</age>\n</root>"
         val tracked = source.load[Xml]
         val results = validateWithPositions(tracked)(_.asTracked[DPerson])
-        results.find(_(0) == t"/email[1]").map(_(1))
-      . assert(_ == Some(Unset))
+        results.seek(_(0) == t"/email[1]").let(_(1))
+      . assert(_ == Unset)
 
       test(m"Non-tracked Xml has Unset positions"):
         val xml = x"<root><name>Alice</name></root>"
         case class Tagged(items: List[Optional[Int]] = Nil)(using Diagnostics)
-        extends Error(m"${items.length}"):
+        extends Error(m"${items.size}"):
           def +(line: Optional[Int]): Tagged = Tagged(items :+ line)
 
         val lines: List[Optional[Int]] =
@@ -294,5 +293,5 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
               accrual + prior.let(_.position).let(_.line.n1)
           . protect(xml.as[DPerson]).items
 
-        lines.forall(_ == Unset)
+        lines.all(_ == Unset)
       . assert(identity)

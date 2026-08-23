@@ -41,7 +41,6 @@ import anticipation.*
 import contingency.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 // The kernel `.stream` constructor is excluded from the wildcard so it does not
@@ -67,10 +66,10 @@ object Streamable:
   // Legacy views: a lazy list of chunks is a source, though its production is
   // beyond demand control; demand bounds only the exposure of each chunk.
   given lazyListData: Chain[Data] is Streamable by Data over Credit = value =>
-    Stream(value.iterator)
+    Stream(value.stdlib.iterator)
 
   given lazyListText: Chain[Text] is Streamable by Text over Credit = value =>
-    Stream(value.iterator)
+    Stream(value.stdlib.iterator)
 
   // The HTTP-body interchange protocol is itself a pull source, so a
   // request or response body can be `read` directly.

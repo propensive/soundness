@@ -38,7 +38,6 @@ import gossamer.*
 import java.lang.invoke as jli
 import java.util.concurrent as juc
 import prepositional.*
-import proscenium.compat.*
 import rudiments.*
 import scala.collection.immutable.Seq
 import scala.collection.immutable.{List, Nil, ::}

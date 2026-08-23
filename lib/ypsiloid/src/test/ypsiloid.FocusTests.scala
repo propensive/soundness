@@ -34,7 +34,6 @@ package ypsiloid
 
 import soundness.*
 
-import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -49,7 +48,7 @@ object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
   case class Captured
     ( items: List[(Text, Optional[Int], Optional[Int])] = Nil )
     ( using Diagnostics )
-  extends Error(m"${items.length} validation issues"):
+  extends Error(m"${items.size} validation issues"):
     def +(focus: Text, line: Optional[Int], column: Optional[Int]): Captured =
       Captured(items :+ (focus, line, column))
 
@@ -96,7 +95,7 @@ address:
 
       test(m"Untracked roots leave the focus position Unset"):
         val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).forall((_, line, _) => line == Unset)
+        captureFoci(yaml)(_.as[FPerson]).all((_, line, _) => line == Unset)
       . assert(identity)
 
     suite(m"Position-aware focus (tracked Yaml)"):

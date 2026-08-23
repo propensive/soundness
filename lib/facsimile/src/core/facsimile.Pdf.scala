@@ -46,16 +46,17 @@ import denominative.*
 import enigmatic.*
 import fulminate.*
 import gossamer.*
+import hypotenuse.maximize
 import hieroglyph.*
 import iridescence.*
 import phoenicia.*
 import pneumatic.*
 import prepositional.*
-import proscenium.compat.*
 import quantitative.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
+import denominative.asymptotics.linearSizeComplexity
 
 object Pdf:
   // A fresh, empty document: a catalog and an empty page tree, over which a creation scope's
@@ -453,7 +454,7 @@ object Pdf:
         val mapped: Optional[Text] = common.toUnicode.let(_(code)).or:
           common.differences(code).or:
             common.encoding.let: table =>
-              if code >= 0 && code < table.length then table(code).toString.tt else Unset
+              if code >= 0 && code < table.length then table.readable(code).toString.tt else Unset
 
         val fallback: Text =
           if !common.twoByte && code >= 32 && code <= 126 then code.toChar.toString.tt else t"�"
@@ -470,10 +471,10 @@ object Pdf:
       var entries = Map[Text, Cos]()
 
       def string(key: Text, value: Optional[Text]): Unit =
-        value.let { text => entries = entries.updated(key, Cos.Chars(Cos.encodeText(text))) }
+        value.let { text => entries = entries.define(key, Cos.Chars(Cos.encodeText(text))) }
 
       def date(key: Text, value: Optional[Timing]): Unit =
-        value.let { timing => entries = entries.updated(key, Cos.Chars(Cos.encodeText(formatDate(timing)))) }
+        value.let { timing => entries = entries.define(key, Cos.Chars(Cos.encodeText(formatDate(timing)))) }
 
       string(t"Title", info.title)
       string(t"Author", info.author)
@@ -897,7 +898,7 @@ object Pdf:
     :   Optional[Rect] =
 
       pdf.resolved(cos).elements.let: elements =>
-        if elements.length != 4 then Unset else
+        if elements.size != 4 then Unset else
           val values = elements.map(pdf.resolved(_).double.or(0.0)*scale)
 
           Rect
@@ -963,7 +964,7 @@ extends caps.ExclusiveCapability:
   // The next free object number, one past the largest the original file used.
   @scala.caps.unsafe.untrackedCaptures
   private[facsimile] var nextNumber: Int =
-    (xref.entries.keys.maxOption.getOrElse(0).max(trailer(t"Size").let(_.long).or(0L).toInt - 1)) + 1
+    (xref.entries.keys.most.or(0).max(trailer(t"Size").let(_.long).or(0L).toInt - 1)) + 1
 
   // Payloads for streams created during the write scope. A `Cos.Body` locates its bytes by a
   // file offset; a new stream has none, so it is given a negative sentinel `start` that keys
@@ -984,7 +985,7 @@ extends caps.ExclusiveCapability:
     val id = nextStreamId
     nextStreamId -= 1
     newStreams(id) = data
-    Cos.Body(entries.updated(t"Length", Cos.Integral(data.length.toLong)), id)
+    Cos.Body(entries.define(t"Length", Cos.Integral(data.length.toLong)), id)
 
   private[facsimile] def dirty: Boolean =
     overlay.nonEmpty || freed.nonEmpty || trailerOverrides.nonEmpty
@@ -1055,7 +1056,7 @@ extends caps.ExclusiveCapability:
           if visited.has(reference)
           then abort(Pdf.Error(Pdf.Error.Reason.CircularPageTree))
 
-          visited += reference
+          visited = visited :+ reference
           recur(resolved(node), reference, inherited)
 
         case Cos.Dictionary(entries) => entries(t"Type").let(_.name) match
@@ -1083,14 +1084,14 @@ extends caps.ExclusiveCapability:
     entries(ordinal).lay(abort(Pdf.Error(Pdf.Error.Reason.MissingPage(ordinal.n1)))): entry =>
       Page(this, ordinal, entry(0), entry(1), entry(2))
 
-  def pageCount(using Tactic[Pdf.Error]): Int = pageEntries.length
+  def pageCount(using Tactic[Pdf.Error]): Int = pageEntries.size
 
   // Leaf object numbers mapped to positions in the flattened page sequence, for resolving
   // destinations that refer to pages by reference.
   private[facsimile] def pageNumbers(using Tactic[Pdf.Error]): Map[Int, Ordinal] =
-    pageEntries.zipWithIndex.flatMap: (entry, index) =>
+    pageEntries.indexed.flatMap: (entry, index) =>
       entry(0).lay(Sequence()): number =>
-        Sequence(number -> index.z)
+        Sequence(number -> index)
 
     . pipe { sequence => Map.from(sequence.stdlib) }
 
@@ -1108,12 +1109,12 @@ extends caps.ExclusiveCapability:
     val pages = pageNumbers
     val raw = rawDestinations
 
-    raw.toList.bind: (name, value) =>
+    raw.to[List].bind: (name, value) =>
       Destination.read(value, pages, raw(_))(using this)
       . lay(List[(Text, Destination)]()): destination =>
           List(name -> destination)
 
-    . toMap
+    . to[Map]
 
   def bookmarks(using Tactic[Pdf.Error]): List[Bookmark] =
     val pages = pageNumbers
@@ -1130,7 +1131,7 @@ extends caps.ExclusiveCapability:
     def item(value: Cos)(using Tactic[Pdf.Error]): List[Bookmark] = value match
       case Cos.Ref(number, _) =>
         if visited.has(number) then List() else
-          visited += number
+          visited = visited :+ number
           item(resolved(value))
 
       case Cos.Dictionary(entries) =>
@@ -1172,8 +1173,8 @@ extends caps.ExclusiveCapability:
     catalog(t"PageLabels").lay(index.n1.toString.tt): tree =>
       val ranges = Trees.numbers(tree)(using this).filter(_(0) <= index.n0)
 
-      if ranges.isEmpty then index.n1.toString.tt else
-        val (start, value) = ranges.maxBy(_(0))
+      // `maximize` is `Unset` on an empty list, which is exactly the missing-range case.
+      ranges.maximize(_(0)).lay(index.n1.toString.tt): (start, value) =>
         val entries = resolved(value).dictionary.or(Map[Text, Cos]())
         val prefix = entries(t"P").let(resolved(_).text).or(t"")
         val first = entries(t"St").let(resolved(_).long).or(1L)
@@ -1346,7 +1347,7 @@ extends caps.ExclusiveCapability:
         // Both branches build the pipeline over this document's own single-owner data.
         scala.caps.unsafe.unsafeAssumeSeparate:
           decrypted.lay(pipeline(steps, Stream(ranges(start, end)))): data =>
-            pipeline(steps, Stream(List(data).iterator))
+            pipeline(steps, Stream(List(data).stdlib.iterator))
 
   // Interprets a streaming plan, minting each duct at its `via` call site.
   private def pipeline[plan^]
@@ -1419,8 +1420,8 @@ extends caps.ExclusiveCapability:
       val name = parms match
         case Cos.Dictionary(entries) => entries(t"Name").let(_.name)
         case Cos.Sequence(elements)  =>
-          elements.flatMap(_.dictionary.let(_(t"Name")).let(_.name).lay(List())(List(_))).headOption
-            . getOrElse(Unset)
+          elements.flatMap(_.dictionary.let(_(t"Name")).let(_.name).lay(List())(List(_))).prim
+            . or(Unset)
         case _                       => Unset
 
       if name == t"Identity" || name.absent then Guard.Method.Identity else Unset

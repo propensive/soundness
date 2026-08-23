@@ -34,8 +34,6 @@ package stratiform
 
 import soundness.*
 
-import proscenium.compat.*
-
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
@@ -170,7 +168,7 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
       test(m"a multi-line Text encodes as a source atom and reparses"):
         val value = PNote(t"line one\nline two")
         val sourceForm =
-          value.encode.childCompounds.readable.head.atoms(0).isInstanceOf[Tel.Atom.Source]
+          value.encode.childCompounds.readable.head.atoms.readable(0).isInstanceOf[Tel.Atom.Source]
 
         (value.encode.show.s.tt.read[Tel].as[PNote] == value, sourceForm)
       . assert(_ == (true, true))
@@ -178,7 +176,7 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
       test(m"an unsafe payload escalates to a literal atom and reparses"):
         val value = PNote(t"para one\n\npara two")
         val literalForm =
-          value.encode.childCompounds.readable.head.atoms(0).isInstanceOf[Tel.Atom.Literal]
+          value.encode.childCompounds.readable.head.atoms.readable(0).isInstanceOf[Tel.Atom.Literal]
 
         (value.encode.show.s.tt.read[Tel].as[PNote] == value, literalForm)
       . assert(_ == (true, true))

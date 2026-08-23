@@ -34,13 +34,12 @@ package eucalyptus
 
 import scala.caps
 
-import proscenium.compat.*
-
 import scala.language.experimental.pureFunctions
 
 import java.util.concurrent as juc
 
 import anticipation.*
+import denominative.*
 import digression.*
 import parasite.*
 import prepositional.*
@@ -127,7 +126,7 @@ extends LogSink[eventType, loggingType]:
   // With no categories configured, record everything (the level threshold is the only filter);
   // otherwise record only events whose runtime type mixes in one of the selected categories.
   override def admits(event: eventType): Boolean =
-    categories.isEmpty || categories.exists(_.reference.isInstance(event))
+    categories.nil || categories.exists(_.reference.isInstance(event))
 
   def submit(level: Level, timestamp: Long, message: loggingType): Unit =
     enqueue(message, level, timestamp)

@@ -34,8 +34,6 @@ package panopticon
 
 import soundness.*
 
-import proscenium.compat.*
-
 case class Organization(name: String, leader: Person)
 case class Person(name: String, age: Int, role: Role)
 case class Role(name: String, salary: Int)
@@ -127,7 +125,7 @@ object Tests extends Suite(m"Panopticon tests"):
       org.lens
         ( _.depts(Prim).lead.addr.city     = "Newville",
           _.depts(Prim).lead.addr.postcode = "ZZ9" )
-      . depts.head.lead.addr
+      . depts.stdlib.head.lead.addr
     . assert(_ == Address("1 Way", "Newville", "ZZ9"))
 
     test(m"4 updates sharing depth-2 prefix"):
@@ -136,7 +134,7 @@ object Tests extends Suite(m"Panopticon tests"):
           _.depts(Prim).lead.addr.postcode = "ZZ9",
           _.depts(Prim).lead.role.name     = "Lead",
           _.depts(Prim).lead.role.count    = 999 )
-      . depts.head.lead
+      . depts.stdlib.head.lead
     . assert: lead =>
         lead.addr == Address("1 Way", "Newville", "ZZ9") && lead.role == Role("Lead", 999)
 
@@ -146,7 +144,7 @@ object Tests extends Suite(m"Panopticon tests"):
          _.depts(Prim).lead.role.name = "Y",
          _.name                       = "Z",
          _.hq.city                    = "W" )
-      ( r.depts.head.lead.addr.city, r.depts.head.lead.role.name, r.name, r.hq.city )
+      ( r.depts.stdlib.head.lead.addr.city, r.depts.stdlib.head.lead.role.name, r.name, r.hq.city )
     . assert(_ == ("X", "Y", "Z", "W"))
 
     test(m"leaf collision: later write wins"):
@@ -172,7 +170,7 @@ object Tests extends Suite(m"Panopticon tests"):
       val r = org.lens
        ( _.depts(Prim).name      = "Renamed",
          _.depts(Prim).lead.name = "NewLead" )
-      ( r.depts.head.name, r.depts.head.lead.name )
+      ( r.depts.stdlib.head.name, r.depts.stdlib.head.lead.name )
     . assert(_ == ("Renamed", "NewLead"))
 
     test(m"prior used inside multi-update"):
@@ -209,7 +207,7 @@ object Tests extends Suite(m"Panopticon tests"):
       // foldLeft path. Result still correct.
       org.lens
        ( _.depts(Prim).members(Filter[Employee](_.age > 35)).age = 99 )
-      . depts.head.members.map(_.age)
+      . depts.stdlib.head.members.map(_.age)
     . assert(_ == List(30, 99))  // emp1 age 30, emp2 age 40 → only emp2 changed
 
     test(m"two Each updates after non-fusable, still correct"):
@@ -228,7 +226,7 @@ object Tests extends Suite(m"Panopticon tests"):
        ( _.depts(Prim).lead.name     = "Renamed",
          _.depts(Prim).lead.age      = 99,
          _.depts(Prim).lead.role.name = "Boss" )
-      ( r.depts.head.lead.name, r.depts.head.lead.age, r.depts.head.lead.role.name )
+      ( r.depts.stdlib.head.lead.name, r.depts.stdlib.head.lead.age, r.depts.stdlib.head.lead.role.name )
     . assert(_ == ("Renamed", 99, "Boss"))
 
     case class Bag(items: Sequence[Int])
