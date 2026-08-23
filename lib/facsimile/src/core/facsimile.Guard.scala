@@ -39,6 +39,7 @@ import javax.crypto as jc
 import javax.crypto.spec as jcs
 
 import anticipation.*
+import denominative.*
 import contingency.*
 import enigmatic.*
 import gastronomy.*
@@ -198,8 +199,8 @@ private[facsimile] object Guard:
   private def unwrap6(password: scala.Array[Char], user: Data, ue: Data): Optional[Data] =
     if user.length < 48 || ue.length < 32 then Unset else
       val passwordBytes = encoded(password, jnc.StandardCharsets.UTF_8.nn)
-      val salt = user.excerpt(32, 40)
-      val keySalt = user.excerpt(40, 48)
+      val salt = user.segment((32).z till (40).z)
+      val keySalt = user.segment((40).z till (48).z)
 
       try
         if hash6(passwordBytes, salt, Array.empty[Byte]).to[List] != user.keep(32).to[List]
@@ -247,7 +248,7 @@ private[facsimile] object Guard:
 
       val input = block.result()
       val key = Array.unsafeJvm(k.keep(16))
-      val iv = Array.unsafeJvm(k.excerpt(16, 32))
+      val iv = Array.unsafeJvm(k.segment((16).z till (32).z))
 
       // AES-128-CBC with no padding on block-aligned input; on the JDK cipher for the same
       // capture-checking reason as `unwrap6`.

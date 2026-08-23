@@ -38,6 +38,7 @@ package bitumen
 import proscenium.compat.apply
 
 import anticipation.*
+import denominative.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
@@ -53,22 +54,22 @@ object TarHeader:
     then raise(Tar.Error(Tar.Error.Reason.TruncatedStream(blockSize, block.length)))
 
     TarHeader
-      ( name     = block.excerpt(0, 100),
-        mode     = block.excerpt(100, 108),
-        uid      = block.excerpt(108, 116),
-        gid      = block.excerpt(116, 124),
-        size     = block.excerpt(124, 136),
-        mtime    = block.excerpt(136, 148),
-        checksum = block.excerpt(148, 156),
+      ( name     = block.segment((0).z till (100).z),
+        mode     = block.segment((100).z till (108).z),
+        uid      = block.segment((108).z till (116).z),
+        gid      = block.segment((116).z till (124).z),
+        size     = block.segment((124).z till (136).z),
+        mtime    = block.segment((136).z till (148).z),
+        checksum = block.segment((148).z till (156).z),
         typeFlag = block(156),
-        linkName = block.excerpt(157, 257),
-        magic    = block.excerpt(257, 263),
-        version  = block.excerpt(263, 265),
-        uname    = block.excerpt(265, 297),
-        gname    = block.excerpt(297, 329),
-        devMajor = block.excerpt(329, 337),
-        devMinor = block.excerpt(337, 345),
-        prefix   = block.excerpt(345, 500) )
+        linkName = block.segment((157).z till (257).z),
+        magic    = block.segment((257).z till (263).z),
+        version  = block.segment((263).z till (265).z),
+        uname    = block.segment((265).z till (297).z),
+        gname    = block.segment((297).z till (329).z),
+        devMajor = block.segment((329).z till (337).z),
+        devMinor = block.segment((337).z till (345).z),
+        prefix   = block.segment((345).z till (500).z) )
 
   def verifyChecksum(block: Data, recorded: U32): Unit raises Tar.Error =
     var sum: Long = 0L
@@ -112,7 +113,7 @@ object TarHeader:
   def decodeNulText(data: Data): Text =
     var i = 0
     while i < data.length && data(i) != 0 do i = i + 1
-    data.excerpt(0, i).utf8
+    data.segment((0).z till (i).z).utf8
 
   def isZeroBlock(block: Data): Boolean =
     var i = 0

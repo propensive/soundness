@@ -497,7 +497,7 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(path).open(Read & Write): doc ?=>
           doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"edited".in[Data]))))
 
-        fileBytes(path).excerpt(0, editable.length).to[List]
+        fileBytes(path).segment((0).z till (editable.length).z).to[List]
       . assert(_ == editable.to[List])
 
       test(m"the incremental update chains /Prev to the original cross-reference"):

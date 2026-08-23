@@ -173,7 +173,7 @@ object PositionTests extends Suite(m"Ypsiloid position-index tests"):
           val firstEntryOff = data.readable(5)
           val valueDescOff = firstEntryOff + 3
           val valueSize = data.readable(valueDescOff)
-          val slice = data.excerpt(valueDescOff, valueDescOff + valueSize)
+          val slice = data.segment((valueDescOff).z till (valueDescOff + valueSize).z)
           slice.length == valueSize
       . assert(_ == true)
 

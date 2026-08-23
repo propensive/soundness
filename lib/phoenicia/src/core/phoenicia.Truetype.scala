@@ -33,6 +33,7 @@
 package phoenicia
 
 import anticipation.*
+import denominative.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
@@ -105,7 +106,7 @@ case class Truetype(data: Data) extends Sfnt:
       newLoca(id*4 + 3) = offsets(id).toByte
 
     val headRef = tables(Sfnt.Table.Ttf.Head).lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
-    val headData = data.excerpt(headRef.offset, headRef.offset + headRef.length)
+    val headData = data.segment((headRef.offset).z till (headRef.offset + headRef.length).z)
     val newHead = Array[Byte](headData.length)
     newHead.copyFrom(headData, 0, 0, headData.length)
     (8 to 11).each { index => newHead(index) = 0 } // adjustment is recomputed on assembly
@@ -114,14 +115,14 @@ case class Truetype(data: Data) extends Sfnt:
 
     val carried = tables.values.bind: ref =>
       if ref.id == Sfnt.Table.Ttf.Glyf || ref.id == Sfnt.Table.Ttf.Loca || ref.id == Sfnt.Table.Ttf.Head then Nil
-      else List(ref.id.text -> data.excerpt(ref.offset, ref.offset + ref.length))
+      else List(ref.id.text -> data.segment((ref.offset).z till (ref.offset + ref.length).z))
 
     val entries =
       (t"glyf", Array.freeze(newGlyf)) ::
         (t"loca", Array.freeze(newLoca)) ::
         (t"head", Array.freeze(newHead)) :: (carried: List[(Text, Data)])
 
-    Truetype(Sfnt.assemble(data.excerpt(0, 4), entries))
+    Truetype(Sfnt.assemble(data.segment((0).z till (4).z), entries))
 
   def subset(text: Text): Truetype raises Font.Error = subset(Set.from(text.chars.readable))
 
@@ -157,7 +158,7 @@ case class Truetype(data: Data) extends Sfnt:
     // glyph has a negative contour count and a list of component glyphs.
     case class GlyphRecord(start: Int, length: Int):
       def empty: Boolean = length == 0
-      def bytes: Data = data.excerpt(start, start + length)
+      def bytes: Data = data.segment((start).z till (start + length).z)
       def contourCount: Int = if empty then 0 else B16(data, start).s16.int
       def composite: Boolean = !empty && contourCount < 0
 

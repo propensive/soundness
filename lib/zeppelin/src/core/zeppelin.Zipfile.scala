@@ -136,7 +136,7 @@ object Zipfile:
   // can interoperate.
   private[zeppelin] class DataSource(data: Data) extends Expanse:
     def size: Long = data.length.toLong
-    def read(offset: Long, length: Int): Data = data.excerpt(offset.toInt, offset.toInt + length)
+    def read(offset: Long, length: Int): Data = data.segment((offset.toInt).z till (offset.toInt + length).z)
 
   // Re-opens the file for each read, so entries stay detached and reusable with no held handle.
   private class FileSource(filename: Text) extends Expanse:
@@ -208,7 +208,7 @@ object Zipfile:
     val commentLength = Zip.u16(window, i + 20)
 
     val comment: Optional[Text] =
-      if commentLength == 0 then Unset else decodeText(window.excerpt(i + 22, i + 22 + commentLength))
+      if commentLength == 0 then Unset else decodeText(window.segment((i + 22).z till (i + 22 + commentLength).z))
 
     // Follow the ZIP64 locator if any EOCD field is saturated.
     if entryCount == u16Max.toLong || cdSize == u32Max || cdOffset == u32Max then
@@ -269,14 +269,14 @@ object Zipfile:
       var localOffset = Zip.u32(central, p + 42)
 
       val nameStart = p + 46
-      val nameBytes = central.excerpt(nameStart, nameStart + nameLength)
+      val nameBytes = central.segment((nameStart).z till (nameStart + nameLength).z)
       val extraStart = nameStart + nameLength
-      val extra = central.excerpt(extraStart, extraStart + extraLength)
+      val extra = central.segment((extraStart).z till (extraStart + extraLength).z)
       val commentStart = extraStart + extraLength
 
       val entryComment: Optional[Text] =
         if entryCommentLength == 0 then Unset
-        else decodeText(central.excerpt(commentStart, commentStart + entryCommentLength))
+        else decodeText(central.segment((commentStart).z till (commentStart + entryCommentLength).z))
 
       // ZIP64 extended information overrides the saturated fixed fields, in a fixed order.
       var q = 0

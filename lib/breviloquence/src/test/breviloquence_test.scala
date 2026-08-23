@@ -299,7 +299,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val original = Person(t"Ada", 36)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         val half = bytes.length/2
-        proscenium.Chain(bytes.excerpt(0, half), bytes.excerpt(half, bytes.length)).read[Cbor].as[Person]
+        proscenium.Chain(bytes.segment((0).z till (half).z), bytes.segment((half).z till (bytes.length).z)).read[Cbor].as[Person]
       . assert(_ == Person(t"Ada", 36))
 
       test(m"Aggregate single-chunk Chain[Data] to Cbor.Ast"):

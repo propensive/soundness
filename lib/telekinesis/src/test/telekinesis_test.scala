@@ -124,7 +124,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         def go(offset: Int): Chain[Data] =
           if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
-            data.excerpt(offset, end) #:: go(end)
+            data.segment((offset).z till (end).z) #:: go(end)
         go(0)
 
       def bodyText(response: Http.Response): Text =
@@ -332,7 +332,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         def go(offset: Int): Chain[Data] =
           if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
-            data.excerpt(offset, end) #:: go(end)
+            data.segment((offset).z till (end).z) #:: go(end)
         go(0)
 
       def bodyText(request: Http.Request^): Text = request.body().memoize.utf8
@@ -463,7 +463,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         def go(offset: Int): Chain[Data] =
           if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
-            data.excerpt(offset, end) #:: go(end)
+            data.segment((offset).z till (end).z) #:: go(end)
         go(0)
 
       def bodyText(response: Http.Response): Text = response.body.stream.memoize.utf8

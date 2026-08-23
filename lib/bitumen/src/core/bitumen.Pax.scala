@@ -34,6 +34,7 @@ package bitumen
 
 
 import anticipation.*
+import denominative.*
 import contingency.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
@@ -75,7 +76,7 @@ object Pax:
         // The scanned slice is all ASCII digits, so the only way `toInt` can fail is an
         // overflowing run of digits; fall back to 0 so the `length < 1` check below rejects it.
         val length =
-          try data.excerpt(pos, lengthEnd).ascii.s.toInt
+          try data.segment((pos).z till (lengthEnd).z).ascii.s.toInt
           catch case _: NumberFormatException => 0
 
         if length < 1 || pos + length > data.length || data.readUnchecked(pos + length - 1) != '\n'.toByte
@@ -83,7 +84,7 @@ object Pax:
           raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
           pos = data.length
         else
-          val content: String = data.excerpt(lengthEnd + 1, pos + length - 1).utf8.s
+          val content: String = data.segment((lengthEnd + 1).z till (pos + length - 1).z).utf8.s
           val eqIdx: Int = content.indexOf('=')
 
           if eqIdx < 0 then

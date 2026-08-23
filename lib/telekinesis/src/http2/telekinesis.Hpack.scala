@@ -36,6 +36,7 @@ import scala.collection.mutable as scm
 
 import java.nio.charset.StandardCharsets
 import anticipation.*
+import denominative.*
 import contingency.*
 import gossamer.*
 import rudiments.*
@@ -241,7 +242,7 @@ class Hpack(maxTableSize: Int = 4096):
     val huffman = (data.readUnchecked(offset) & 0x80) != 0
     val (length, start) = readInteger(data, offset, 7)
     if start + length > data.length then abort(Http2.Error(Reason.Truncated))
-    val raw: Data = data.excerpt(start, start + length)
+    val raw: Data = data.segment((start).z till (start + length).z)
     val decoded: Data = if huffman then Huffman.decode(raw) else raw
 
     (decoded.utf8, start + length)

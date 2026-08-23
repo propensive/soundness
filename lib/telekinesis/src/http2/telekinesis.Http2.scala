@@ -50,6 +50,7 @@ import vacuous.*
 
 import Http2.Error.Reason
 import anticipation.*
+import denominative.*
 import java.util.concurrent.atomic as juca
 import scala.collection.concurrent as scc
 import hieroglyph.*, charEncoders.asciiEncoder
@@ -173,7 +174,7 @@ object Http2:
       val end = start + length
 
       if end > data.length then abort(Http2.Error(Reason.Truncated))
-      val body: anticipation.Data = data.excerpt(start, end)
+      val body: anticipation.Data = data.segment((start).z till (end).z)
 
       // An unrecognised frame type — PRIORITY or PUSH_PROMISE (which this stack
       // does not model), or an extension frame — must be ignored, not treated as
@@ -191,7 +192,7 @@ object Http2:
           // the header block when the PRIORITY flag is set; skip it.
           val block: anticipation.Data =
             if Flags.set(flags, Flags.Priority)
-            then unpadded.excerpt(5, unpadded.length)
+            then unpadded.segment((5).z till (unpadded.length).z)
             else unpadded
 
           Frame.Headers
@@ -217,7 +218,7 @@ object Http2:
           Frame.GoAway
             ( lastStreamId,
               uint32(body, 4),
-              body.excerpt(8, body.length) )
+              body.segment((8).z till (body.length).z) )
 
         case FrameType.WindowUpdate =>
           Frame.WindowUpdate(streamId, (uint32(body, 0) & 0x7fffffffL).toInt)
@@ -231,7 +232,7 @@ object Http2:
         if payload.length < 1 then abort(Http2.Error(Reason.Truncated))
         val padLength = payload.readUnchecked(0) & 0xff
         if 1 + padLength > payload.length then abort(Http2.Error(Reason.Protocol(t"bad padding")))
-        payload.excerpt(1, payload.length - padLength)
+        payload.segment((1).z till (payload.length - padLength).z)
 
     private def decodeSettings(payload: Bytes): List[Setting] raises Http2.Error =
       if payload.length%6 != 0 then abort(Http2.Error(Reason.Protocol(t"bad SETTINGS length")))
@@ -893,7 +894,7 @@ object Http2:
         val streamChunk = streamWindow.acquire(connChunk)
         if streamChunk < connChunk then connWindow.release(connChunk - streamChunk)
 
-        val chunk: Bytes = payload.excerpt(offset, offset + streamChunk)
+        val chunk: Bytes = payload.segment((offset).z till (offset + streamChunk).z)
         val last: Boolean = endStream && offset + streamChunk == payload.length
         emit(Frame.Data(streamId, chunk, last))
         offset += streamChunk

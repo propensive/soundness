@@ -179,7 +179,7 @@ object Tests extends Suite(m"Zeppelin tests"):
     suite(m"Writing ZIP archives"):
       test(m"single-entry archive begins with the ZIP local-header magic"):
         bytesOf(writeZip(t"one.zip", entry(t"hello.txt", t"Hello world")))
-          .excerpt(0, 4).to[List].map(_.toInt & 0xff)
+          .segment((0).z till (4).z).to[List].map(_.toInt & 0xff)
       . assert(_ == List(0x50, 0x4b, 0x03, 0x04))
 
       test(m"single entry is visible to the JDK ZIP reader"):
@@ -503,7 +503,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       test(m"the prefix precedes the first local header"):
         val path = workDir/t"prefixed3.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha")))
-        bytesOf(path).excerpt(0, 64).to[List]
+        bytesOf(path).segment((0).z till (64).z).to[List]
       . assert(_ == prefix.to[List])
 
       test(m"the JDK reader reads a prefixed archive"):

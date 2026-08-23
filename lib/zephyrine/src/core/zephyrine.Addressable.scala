@@ -62,7 +62,7 @@ object Addressable:
 
     inline def length(bytes: Data): Int = bytes.length
     inline def address(bytes: Data, index: Ordinal): Byte = bytes.readUnchecked(index.n0)
-    inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data = bytes.excerpt(start.n0, end.n0)
+    inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data = bytes.segment((start.n0).z till (end.n0).z)
 
 
     inline def clone(source: Data, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
@@ -137,7 +137,7 @@ object Addressable:
     def address(block: Array[element]^{}, index: Ordinal): element = block.readUnchecked(index.n0)
 
     def grab(block: Array[element]^{}, start: Ordinal, end: Ordinal): Array[element]^{} =
-      block.excerpt(start.n0, end.n0)
+      block.segment((start.n0).z till (end.n0).z)
 
     def clone(source: Array[element]^{}, start: Ordinal, end: Ordinal)
       ( target: scm.ArrayBuffer[element] )
@@ -228,7 +228,7 @@ object Addressable:
     def address(block: Array[Text]^{}, index: Ordinal): Text = block.readUnchecked(index.n0)
 
     def grab(block: Array[Text]^{}, start: Ordinal, end: Ordinal): Array[Text]^{} =
-      block.excerpt(start.n0, end.n0)
+      block.segment((start.n0).z till (end.n0).z)
 
     def clone(source: Array[Text]^{}, start: Ordinal, end: Ordinal)
       ( target: scm.ArrayBuffer[Text] )

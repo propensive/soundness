@@ -280,7 +280,7 @@ object Bintel:
     val sigStart  = sigLenD.next
     val sigEnd    = sigStart + sigLenD.value.toInt
     if sigEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
-    val signature = data.excerpt(sigStart, sigEnd)
+    val signature = data.segment((sigStart).z till (sigEnd).z)
 
     if !validSignatureLength(signature)
     then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
@@ -289,8 +289,8 @@ object Bintel:
     val schStart  = schLenD.next
     val schEnd    = schStart + schLenD.value.toInt
     if schEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
-    val schemaBody = data.excerpt(schStart, schEnd)
-    val docBody    = data.excerpt(schEnd, data.length)
+    val schemaBody = data.segment((schStart).z till (schEnd).z)
+    val docBody    = data.segment((schEnd).z till (data.length).z)
 
     val axiom = Tels.Axiom.tels
 

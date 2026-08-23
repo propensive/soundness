@@ -706,4 +706,4 @@ case class SourceCode
     else fragment(startLine, (endLine + 1).min(lastLine), range)
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[Span] = Unset): SourceCode =
-    SourceCode(language, startLine, lines.excerpt(startLine - offset, endLine - offset + 1), focus)
+    SourceCode(language, startLine, lines.segment((startLine - offset).z till (endLine - offset + 1).z), focus)

@@ -39,6 +39,7 @@ import scala.collection.mutable as scm
 import scala.math
 
 import anticipation.*
+import denominative.*
 import contingency.*
 import pneumatic.*
 import rudiments.*
@@ -76,12 +77,12 @@ private[hallucination] object PngCodec:
       while !finished do
         val length = u32be(data, position)
         // `slice` yields a fresh array and `String`'s constructor copies it.
-        val chunkType = new String(Array.unsafeJvm(data.excerpt(position + 4, position + 8)))
-        val body = data.excerpt(position + 8, position + 8 + length)
+        val chunkType = new String(Array.unsafeJvm(data.segment((position + 4).z till (position + 8).z)))
+        val body = data.segment((position + 8).z till (position + 8 + length).z)
 
         val storedCrc = u32be(data, position + 8 + length)
 
-        if corpuscular.Crc32.checksum(data.excerpt(position + 4, position + 8), body) != storedCrc
+        if corpuscular.Crc32.checksum(data.segment((position + 4).z till (position + 8).z), body) != storedCrc
         then abort(Raster.Error(Png(), Reason.BadCrc))
 
         chunkType match

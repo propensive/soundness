@@ -34,6 +34,7 @@ package facsimile
 import rudiments.*
 
 import anticipation.*
+import denominative.*
 
 private[facsimile] object Scan:
   private val chunkSize: Int = 8192
@@ -89,7 +90,7 @@ private[facsimile] class Scan(source: ByteSource, start: Long):
   def read(length: Int): Data =
     if length <= 0 then Array.empty[Byte]
     else if cursor + length <= chunk.length then
-      val data = chunk.excerpt(cursor, cursor + length)
+      val data = chunk.segment((cursor).z till (cursor + length).z)
       cursor += length
       data
     else

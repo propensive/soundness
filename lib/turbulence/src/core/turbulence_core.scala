@@ -318,7 +318,7 @@ extension (stream: Chain[Data])
         // capture the enclosing context) could not escape it. `slice` rather than
         // `drop`: the sibling `drop` on `Chain[Data]` shadows `proscenium.compat`'s
         // array version here.
-        val head: Data = next.excerpt(count.long.toInt, next.length).asInstanceOf[Data]
+        val head: Data = next.segment((count.long.toInt).z till (next.length).z).asInstanceOf[Data]
         head #:: more
 
     recur(stream, bytes)
@@ -378,7 +378,7 @@ extension (stream: Chain[Data])
           head #:: recur(more, count - next.bytes)
         // `slice`, not `take`: the sibling `take` on `Chain[Data]` shadows
         // `proscenium.compat`'s array version here.
-        else Chain(next.excerpt(0, count.long.toInt).asInstanceOf[Data])
+        else Chain(next.segment((0).z till (count.long.toInt).z).asInstanceOf[Data])
 
     recur(stream, bytes)
 

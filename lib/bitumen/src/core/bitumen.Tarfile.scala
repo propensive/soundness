@@ -214,7 +214,7 @@ object Tarfile:
                     val isExtended: Boolean = head.readUnchecked(482) != 0.toByte
 
                     val realSize: Long =
-                      TarHeader.decodeOctal(head.excerpt(483, 495), t"realsize").long
+                      TarHeader.decodeOctal(head.segment((483).z till (495).z), t"realsize").long
 
                     val extSegments = readSparseExtensions(cursor, isExtended)
                     val data = takeData(cursor, size)
@@ -327,7 +327,7 @@ object Tarfile:
     val data = cursor.take(abort(Tar.Error(Tar.Error.Reason.TruncatedStream(padded,
         cursor.available))))(padded)
 
-    data.excerpt(0, size)
+    data.segment((0).z till (size).z)
 
   private def decodeSparseField(data: Data): Long raises Tar.Error =
     var allZero = true
@@ -345,8 +345,8 @@ object Tarfile:
     var i = 0
 
     while i < 4 do
-      val offset = decodeSparseField(headerBlock.excerpt(pos, pos + 12))
-      val length = decodeSparseField(headerBlock.excerpt(pos + 12, pos + 24))
+      val offset = decodeSparseField(headerBlock.segment((pos).z till (pos + 12).z))
+      val length = decodeSparseField(headerBlock.segment((pos + 12).z till (pos + 24).z))
 
       if length > 0 then builder += SparseSegment(offset, length)
       pos = pos + 24
@@ -369,8 +369,8 @@ object Tarfile:
         var i = 0
 
         while i < 21 do
-          val offset = decodeSparseField(head.excerpt(pos, pos + 12))
-          val length = decodeSparseField(head.excerpt(pos + 12, pos + 24))
+          val offset = decodeSparseField(head.segment((pos).z till (pos + 12).z))
+          val length = decodeSparseField(head.segment((pos + 12).z till (pos + 24).z))
 
           if length > 0 then builder += SparseSegment(offset, length)
           pos = pos + 24
