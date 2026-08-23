@@ -53,7 +53,7 @@ import denominative.asymptotics.linearSizeComplexity
 
 // These fixtures assemble PDF and font byte streams from many small pieces. A `Concatenable`
 // result is fresh, so joining two `Data` values means freezing once at the join; this keeps the
-// fixtures readable without reaching for `proscenium.compat`.
+// fixtures readable.
 extension (left: Data)
   @targetName("concatData")
   def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)

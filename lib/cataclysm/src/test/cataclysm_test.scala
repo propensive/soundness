@@ -414,8 +414,8 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == 663)
 
     suite(m"Value tokenizer"):
-      // Written out rather than concatenated: this file has two `List` aliases in scope
-      // (`soundness.*` and `proscenium.compat.*`), and a concatenation mixes them.
+      // Written out rather than concatenated: `List` here is the test module's stdlib
+      // alias, and a concatenation would mix it with the opaque prelude `List`.
       val rgbTokens: List[ValueToken] =
         List( ValueToken.Function(t"rgb"), num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma,
               ws, num(3), ValueToken.Close )

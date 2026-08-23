@@ -103,8 +103,8 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == false)
 
     suite(m"Mapping tests"):
-      // The `Map[…]`/`Set[…]` ascriptions are the established pattern for opaque-alias literals
-      // under `soundness.*` + `compat.*` (a bare literal in a receiver position mis-elaborates).
+      // The `Map[…]`/`Set[…]` ascriptions are the established pattern for opaque-alias
+      // literals (a bare literal in a receiver position mis-elaborates).
       test(m"List map preserves shape"):
         val xs: List[Int] = List(1, 2, 3)
         xs.map(_ + 1)
