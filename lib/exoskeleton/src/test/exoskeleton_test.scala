@@ -733,7 +733,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                t"    --wait <seconds>     delay the deletion",
                t"",
                t"  Common options:",
-               t"    --force <value>      do not ask for confirmation")
+               t"    --force <value>      do not ask for confirmation",
+               t"",
+               t"Exit statuses:",
+               t"  1                      the server could not be reached",
+               t"  2                      the configuration file was invalid")
 
       suite(m"Manpage tests"):
         val manual = Manual

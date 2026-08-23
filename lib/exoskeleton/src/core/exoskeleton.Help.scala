@@ -196,8 +196,20 @@ case class Help
             (scala.List(e"$Bold(Commands:)"),
              Help.compact(Help.commandRows(ungrouped, 1))) )
 
+    // Every status reachable anywhere in the tree, deduplicated by code and ordered by it. A
+    // status is recorded against the node whose dispatch branch can return it, but an exit code
+    // means the same thing wherever it comes from, so the reader wants the whole table in one
+    // place rather than scattered through the command listing.
+    def reachableStatuses(help: Help): scala.List[Status] =
+      help.statuses.stdlib.toList ::: help.subcommands.stdlib.toList.flatMap(reachableStatuses)
+
+    val statusRows: scala.List[Help.Row] =
+      reachableStatuses(this).distinctBy(_.code).sortBy(_.code).map: status =>
+        Help.Row.Item(1, t"${status.code}", false, status.description)
+
     val sections: scala.List[(scala.List[Teletype], scala.List[Help.Row])] =
       standard.filter(!_._2.isEmpty) ::: groupSections
+      ::: scala.List((scala.List(e"$Bold(Exit statuses:)"), statusRows)).filter(!_._2.isEmpty)
 
     // The column at which every description starts: two spaces after the widest label.
     val column: Int =
