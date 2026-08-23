@@ -38,7 +38,6 @@ import scala.collection.immutable.IndexedSeq
 
 // Residue: `head` and the frozen-array subscript `apply` are partial; both await the
 // partial-operations tranche.
-import proscenium.compat.{head, apply}
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -116,8 +115,9 @@ object internal:
       case _ => 0
 
     val parts = recur[parts](Nil)
-    if parts.size != 1 then halt(m"a YAML path literal cannot have substitutions")
-    val raw: String = parts.head
+
+    val raw: String =
+      parts.unique.or(halt(m"a YAML path literal cannot have substitutions"))
     val start: Int = firstOrigin[origins]
 
     try unsafely(raw.tt.as[YamlPath]) catch
@@ -588,7 +588,9 @@ object internal:
             var k = 0
 
             while k < pairs do
-              if arr(k*2) == MarkerString then c += 1 else c += countHolesIn(arr(k*2 + 1))
+              // In bounds: `pairs == arr.length/2`, so `k*2 + 1 <= arr.length - 1`.
+              if arr.readUnchecked(k*2) == MarkerString then c += 1
+              else c += countHolesIn(arr.readUnchecked(k*2 + 1))
 
               k += 1
 
@@ -743,12 +745,12 @@ object internal:
               }
           }
 
-      types.size match
-        case 0 =>
+      types match
+        case Nil =>
           '{$result.asInstanceOf[Boolean]}
 
-        case 1 =>
-          types.head.asType.absolve match
+        case only :: Nil =>
+          only.asType.absolve match
             case '[type result <: Yaml; result] =>
               '{$result.asInstanceOf[Option[result]]}
 

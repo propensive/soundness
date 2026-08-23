@@ -39,10 +39,6 @@ import scala.collection.immutable.IndexedSeq
 import scala.{annotation, caps}
 
 
-// Residue: `head` and the frozen-array subscript `apply` are partial, and `iterator` has no
-// blessed bridge; all three await the partial-operations tranche.
-import proscenium.compat.{head, iterator, apply}
-
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -86,8 +82,9 @@ object internal:
       case _ => 0
 
     val parts = recur[parts](Nil)
-    if parts.size != 1 then halt(m"a JSON pointer literal cannot have substitutions")
-    val raw: String = parts.head
+
+    val raw: String =
+      parts.unique.or(halt(m"a JSON pointer literal cannot have substitutions"))
     val start: Int = firstOrigin[origins]
 
     try unsafely(raw.tt.as[JsonPointer]) catch
@@ -495,7 +492,7 @@ object internal:
           case '{$value: tpe} => Type.of[tpe] match
             case '[Map[Text, Json]] =>
               ' {
-                  $value.asInstanceOf[Map[Text, Json]].iterator.map: (key, json) =>
+                  $value.asInstanceOf[Map[Text, Json]].stdlib.iterator.map: (key, json) =>
                     (key.s, json.root)
 
                   . toList
@@ -856,7 +853,9 @@ object internal:
             var k = 0
 
             while k < pairs do
-              if arr(k*2) == MarkerString then c += 1 else c += countHolesIn(arr(k*2 + 1))
+              // In bounds: `pairs == arr.length/2`, so `k*2 + 1 <= arr.length - 1`.
+              if arr.readUnchecked(k*2) == MarkerString then c += 1
+              else c += countHolesIn(arr.readUnchecked(k*2 + 1))
 
               k += 1
 
@@ -1007,12 +1006,12 @@ object internal:
               }
           }
 
-      types.size match
-        case 0 =>
+      types match
+        case Nil =>
           '{$result.asInstanceOf[Boolean]}
 
-        case 1 =>
-          types.head.asType.absolve match
+        case only :: Nil =>
+          only.asType.absolve match
             case '[type result <: Json; result] =>
               '{$result.asInstanceOf[Option[result]]}
 
@@ -1142,6 +1141,10 @@ object internal:
       ( reader:    Expr[Json.Reader],
         foci:      Expr[Foci[Json.Focus]],
         tactic:    Expr[Tactic[Json.Error]],
+        // The quoted table reads below are `readUnchecked`: each array is built with one
+        // entry per field and `index` ranges over the field indices, so the reads are in
+        // bounds by construction; a branded read cannot cross the quote boundary (a spliced
+        // frozen array would need a `val` whose reach capture the shared read cannot take).
         keys:      Expr[Array[String]^{}],
         table:     Expr[Json.KeyTable],
         instances: Expr[Array[Json.Field | Null]^{}],
@@ -1180,11 +1183,11 @@ object internal:
 
               case InstanceK =>
                 '{
-                  $instances(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
+                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
                   . parse($reader)
                 }
 
-            '{ Json.Parsable.focusing($foci, $keys(${Expr(index)}).tt)($raw) }.asTerm
+            '{ Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($raw) }.asTerm
 
         val rhs =
           Block
@@ -1271,7 +1274,7 @@ object internal:
             val onAbsent: Expr[fieldType] = kinds(index) match
               case InstanceK =>
                 '{
-                  $instances(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
+                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
                   . absent()(using $tactic)
                 }
 
@@ -1279,10 +1282,10 @@ object internal:
 
             val resolve: Term =
               '{
-                val declared = $fallbacks(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                 if !declared.absent then declared.asInstanceOf[fieldType]
-                else Json.Parsable.focusing($foci, $keys(${Expr(index)}).tt)($onAbsent)
+                else Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($onAbsent)
               }.asTerm
 
             If
@@ -1430,8 +1433,8 @@ object internal:
       else variantTypes(index).asType match
         case '[type variantType <: value; variantType] =>
           '{
-            if $wireVariants(${Expr(index)}) == $wireString then
-              $variants(${Expr(index)}).asInstanceOf[variantType is Json.Field].parse($reader)
+            if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
+              $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field].parse($reader)
             else ${ dispatch(index + 1, reader, wire, wireString, variants, wireVariants) }
           }
 
