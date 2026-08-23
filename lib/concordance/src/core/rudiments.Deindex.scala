@@ -51,6 +51,15 @@ import vacuous.*
 // shadowing every domain-specific `apply` extension. With the explicit clause, a receiver with
 // no `Applicable` instance discards this candidate silently and resolution proceeds as if it
 // did not exist.
+// The interval form of `attested`, for brand-taking bulk operations (`iterate(range)`): same
+// discipline, same soundness boundary. The receiver is the INTERVAL — `interval.attested(xs)`
+// reads as "this interval, attested for xs" — because a same-name overload on the collection
+// receiver merges into the `Applicable` group's overload set, where the path-dependent
+// `Operand` cannot be excluded before evidence resolution and the call reports ambiguity.
+extension (interval: Interval)
+  inline def attested[within](within: within)(using erased Unsafe): Interval in within.type =
+    interval.asInstanceOf[Interval in within.type]
+
 extension [self](value: self)(using applicable: Applicable { type Self = self })
   inline def defines(index: applicable.Operand): Boolean = applicable.contains(value, index)
 
@@ -63,6 +72,25 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   def confine(index: applicable.Operand): Optional[applicable.Operand in value.type] =
     if applicable.contains(value, index) then index.asInstanceOf[applicable.Operand in value.type]
     else Unset
+
+  // As `confine`, minus the check: mints `Operand in value.type` on the caller's word, gated by
+  // `Unsafe`, for the two places a proof cannot follow the program — the quote boundary and
+  // index arithmetic. Every call site carries a comment naming the construction that proves the
+  // bound: the comment is the proof, as `Retained`'s construction-site mint is in dissonance.
+  // The subsequent access (`value(index)`) is the EXISTING confined read: total, bare, no
+  // second check. Same soundness boundary as `confine`: immutable receivers on stable paths.
+  def attested(index: applicable.Operand)(using erased Unsafe)
+  :   applicable.Operand in value.type =
+    index.asInstanceOf[applicable.Operand in value.type]
+
+  // The block-scoped form: the attestation's extent is the lambda —
+  //     array.attested(ordinal): ordinal => array(ordinal)   // total inside
+  inline def attested[result](index: applicable.Operand)
+    (inline lambda: (applicable.Operand in value.type) => result)(using erased Unsafe)
+  :   result =
+    lambda(index.asInstanceOf[applicable.Operand in value.type])
+
+
 
   // A single `at` that dispatches at compile time on the index type: an index statically known to
   // be confined to *this* `value` (an `Operand in value.type`, hence in range) returns a bare

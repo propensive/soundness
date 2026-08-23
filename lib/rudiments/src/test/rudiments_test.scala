@@ -333,6 +333,48 @@ object Tests extends Suite(m"Rudiments Tests"):
             : proscenium.List[Int])
       . assert(_ == true)
 
+    suite(m"Attested tests"):
+      test(m"an attested ordinal reads bare, with no Optional"):
+        import denominative.asymptotics.linearAccessComplexity
+        val xs: proscenium.List[Int] = proscenium.List(10, 20, 30)
+
+        unsafely:
+          // In bounds by construction: the literal above has three elements.
+          val third: Int = xs(xs.attested(Ter))
+          third
+      . assert(_ == 30)
+
+      test(m"the block form scopes the attestation"):
+        val xs: Sequence[Int] = Sequence(1, 2, 4)
+
+        unsafely:
+          // In bounds by construction: the literal above has three elements.
+          xs.attested(Sec): ordinal =>
+            val value: Int = xs(ordinal)
+            value
+      . assert(_ == 2)
+
+      test(m"an attested map key reads bare"):
+        val map: Map[Text, Int] = Map(t"one" -> 1, t"two" -> 2)
+
+        unsafely:
+          // Defined by construction: the literal above binds the key.
+          val value: Int = map(map.attested(t"two"))
+          value
+      . assert(_ == 2)
+
+      test(m"an attested interval drives iterate"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3, 4)
+        var total = 0
+
+        unsafely:
+          // Valid by construction: [0, 2) lies within the four-element literal above.
+          xs.iterate(Interval.zerary(0, 2).attested(xs)): ordinal =>
+            total += xs(ordinal)
+
+        total
+      . assert(_ == 3)
+
     suite(m"Definable tests"):
       test(m"define replaces a sequence element positionally"):
         val xs: Sequence[Int] = Sequence(1, 2, 3)
