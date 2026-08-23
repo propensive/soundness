@@ -35,10 +35,6 @@ package xylophone
 
 import scala.language.dynamics
 
-// Residue: this tree walk indexes frozen arrays throughout, and the subscript `apply` is
-// partial; it awaits the partial-operations tranche.
-import proscenium.compat.apply
-
 import scala.annotation.*
 import scala.collection.mutable as scm
 
@@ -48,7 +44,7 @@ import denominative.*
 import panopticon.*
 import prepositional.*
 import rudiments.*
-import vacuous.Unset
+import vacuous.{Unset, or}
 
 export xylophone.internal.Attributes
 
@@ -69,7 +65,7 @@ private def xmlNodes(xml: Xml): Array[Node]^{} = xml match
 
 private def firstNode(xml: Xml, fallback: Node): Node =
   val nodes = xmlNodes(xml)
-  if nodes.nil then fallback else nodes(0)
+  nodes.prim.or(fallback)
 
 private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml match
   case Element(label, attributes, children) =>
@@ -77,18 +73,14 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml mat
     val buffer = scm.ArrayBuffer[Node]()
     var done = false
 
-    var i = 0
-
-    while i < children.length do
-      children(i) match
+    children.iterate: index =>
+      children.at(index) match
         case element: Element if !done && element.label == name.tt =>
           buffer ++= replacement.readable.toSeq
           done = true
 
         case other =>
           buffer += other
-
-      i += 1
 
     if !done then buffer ++= replacement.readable.toSeq
     Element(label, attributes, Array.from(buffer))

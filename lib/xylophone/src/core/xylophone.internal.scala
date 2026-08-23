@@ -44,10 +44,6 @@ import java.lang as jl
 
 import scala.collection.immutable.VectorMap
 import scala.collection.immutable.{List, Nil, ::}
-// Residue: the staged accessors index frozen arrays, and the subscript `apply` is partial;
-// it awaits the partial-operations tranche.
-import proscenium.compat.apply
-
 import scala.quoted.*
 
 import anticipation.*
@@ -1409,6 +1405,11 @@ object internal:
 
       Apply(applied, arguments)
 
+    // Every quoted table read below is `readUnchecked`: the arrays are constructed with
+    // exactly `arity` elements (one `Varargs` entry per field) and every `index` ranges over
+    // `List.range(0, arity)`, so the reads are in bounds by construction. The branded read
+    // cannot be used here because a spliced frozen array would need a `val` binding in the
+    // quote, whose reach capture (`*.rd`) cannot subsume into the shared read's receiver.
     def body
       ( reader:      Expr[Xml.Reader],
         keys:        Expr[Array[String]^{}],
@@ -1470,7 +1471,7 @@ object internal:
       val attributeSteps: List[Term] = List.range(0, arity).flatMap: index =>
         if !attrFlags(index) then None else fieldTypes(index).asType match
           case '[fieldType] =>
-            val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+            val keyText: Expr[Text] = '{ $keys.readUnchecked(${Expr(index)}).tt }
 
             // The generated code tests presence and names the value with a single
             // concrete-scrutinee match (the sanctioned check-then-extract shape),
@@ -1495,7 +1496,7 @@ object internal:
 
                 case InstanceK =>
                   '{
-                    $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                    $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
                     . attribute($value)(using $tactic, $foci)
                   }
 
@@ -1521,7 +1522,7 @@ object internal:
       // repeatable field gathers every occurrence, a non-repeatable one
       // keeps its first and skips the rest.
       val arms = List.range(0, arity).map: index =>
-        val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+        val keyText: Expr[Text] = '{ $keys.readUnchecked(${Expr(index)}).tt }
 
         def firstWins(read: Term): Term =
           If
@@ -1594,18 +1595,18 @@ object internal:
                     $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
                       ( Xml.Parsable.focusing($foci, $keyText):
                           Xml.Parsable.parseElement
-                            ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing], $reader ) )
+                            ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing], $reader ) )
                   }.asTerm
 
                 val read: Term =
                   '{
                     Xml.Parsable.focusing($foci, $keyText):
-                      $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                      $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
                       . parse($reader)
                   }.asTerm
 
                 If
-                  ( '{ $repeatables(${Expr(index)}) }.asTerm,
+                  ( '{ $repeatables.readUnchecked(${Expr(index)}) }.asTerm,
                     Block(List(ensure, append), unit),
                     firstWins(read) )
 
@@ -1667,12 +1668,12 @@ object internal:
       val absents: List[Term] = List.range(0, arity).map: index =>
         fieldTypes(index).asType match
           case '[fieldType] =>
-            val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+            val keyText: Expr[Text] = '{ $keys.readUnchecked(${Expr(index)}).tt }
 
             val onAbsent: Expr[fieldType] = kinds(index) match
               case InstanceK =>
                 '{
-                  $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
                   . absent()(using $tactic, $foci)
                 }
 
@@ -1695,7 +1696,7 @@ object internal:
               Assign
                 ( Ref(slots(index)),
                   '{
-                    val declared = $fallbacks(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                    val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                     if !declared.absent then declared.asInstanceOf[fieldType]
                     else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
@@ -1716,13 +1717,13 @@ object internal:
                       '{
                         Xml.Parsable.focusing($foci, $keyText):
                           Xml.Parsable.gathered[fieldType]
-                            ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing],
+                            ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing],
                               $bufferExpr match
                                 case null   => proscenium.Nil
                                 case buffer => proscenium.List.of(buffer.toList) )
                       }.asTerm )
 
-                If('{ $repeatables(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
+                If('{ $repeatables.readUnchecked(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
 
               case _ =>
                 whenUnseen
@@ -1749,12 +1750,12 @@ object internal:
       val arguments: List[Term] = List.range(0, arity).map: index =>
         fieldTypes(index).asType match
           case '[fieldType] =>
-            val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+            val keyText: Expr[Text] = '{ $keys.readUnchecked(${Expr(index)}).tt }
 
             val onAbsent: Expr[fieldType] = kinds(index) match
               case InstanceK =>
                 '{
-                  $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
                   . absent()(using $tactic, $foci)
                 }
 
@@ -1775,7 +1776,7 @@ object internal:
 
             val declared: Expr[fieldType] =
               '{
-                val declared = $fallbacks(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                 if !declared.absent then declared.asInstanceOf[fieldType]
                 else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
@@ -1784,10 +1785,10 @@ object internal:
             val argument: Expr[fieldType] = kinds(index) match
               case InstanceK =>
                 '{
-                  if $repeatables(${Expr(index)}) then
+                  if $repeatables.readUnchecked(${Expr(index)}) then
                     Xml.Parsable.focusing($foci, $keyText):
                       Xml.Parsable.gathered[fieldType]
-                        ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing], proscenium.Nil )
+                        ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing], proscenium.Nil )
                   else $declared
                 }
 
