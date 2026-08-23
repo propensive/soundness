@@ -43,6 +43,7 @@ object Textual:
   def apply[textual: Textual as instance](text: Text): textual = instance.apply(text)
 
   given concatenable: [textual: Textual] => textual is Concatenable:
+    type Result = textual
     type Operand = textual
     def concat(left: textual, right: textual): textual = textual.concat(left, right)
 
@@ -81,6 +82,7 @@ object Textual:
     def size(text: Self): Int = text.length
 
 trait Textual extends Typeclass.Pure, Countable, Segmentable, Zeroic, Applicable:
+  type Segment = Self
   type Operand = Ordinal
   type Result
   type Show[value]

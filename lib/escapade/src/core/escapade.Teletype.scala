@@ -62,6 +62,7 @@ object Teletype:
     inline def add(left: Teletype, right: Teletype): Teletype = left.append(right)
 
   given concatenable: Teletype is Concatenable:
+    type Result = Teletype
     type Operand = Teletype
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
 

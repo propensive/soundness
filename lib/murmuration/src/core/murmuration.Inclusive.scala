@@ -63,15 +63,15 @@ object Inclusive extends Inclusive.Fallback:
     (array, value) => array.readable.exists(_ == value)
 
   // Opaque `Sequence` is no longer an `Iterable` subtype, so it needs its own instance.
-  given sequence: [element] => Sequence[element] is Inclusive by element =
+  given sequence: [element, sequence <: Sequence[element]] => sequence is Inclusive by element =
     (sequence, value) => sequence.stdlib.exists(_ == value)
 
   // Opaque `Set` likewise.
-  given set: [element] => Set[element] is Inclusive by element =
+  given set: [element, set <: Set[element]] => set is Inclusive by element =
     (set, value) => set.stdlib.contains(value)
 
   // Opaque `List` likewise (membership is a single linear pass, so ungated).
-  given list: [element] => List[element] is Inclusive by element =
+  given list: [element, list <: List[element]] => list is Inclusive by element =
     (list, value) => list.stdlib.contains(value)
 
   given array: [element <: Matchable] => scala.Array[element] is Inclusive by element =

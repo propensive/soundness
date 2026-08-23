@@ -215,7 +215,8 @@ private[probably] object Documenting:
 
   private def benchMetricColumns(sized: Boolean): List[Column] =
     val sizes =
-      if sized then List(Column(t"Size", numeric = true), Column(t"Rate", numeric = true)) else Nil
+      if sized then List(Column(t"Size", numeric = true), Column(t"Rate", numeric = true))
+      else Nil: List[Column]
 
     List
       ( Column(t"n", numeric = true),
@@ -229,7 +230,7 @@ private[probably] object Documenting:
     if value == 0L then Datum.Blank else Datum.Rate(value)
 
   private def benchMetricCells(run: Run, sized: Boolean): List[Datum] =
-    val sizes = if sized then List(sizing(run)(0), sizing(run)(1)) else Nil
+    val sizes: List[Datum] = if sized then List(sizing(run)(0), sizing(run)(1)) else Nil
 
     List
       ( Datum.Num(metric(run, Metric.Iterations).or(0.0).toLong),
@@ -306,14 +307,14 @@ private[probably] object Documenting:
       val anchored: Optional[(Anchor, Run)] =
         entry.anchor.let: anchor => cells(List(anchor.value)).let(run(_)).let(anchor -> _)
 
-      val comparisonColumns = anchored.lay(Nil): (anchor, _) =>
+      val comparisonColumns: List[Column] = anchored.lay(Nil): (anchor, _) =>
         List(Column(t"×${anchor.value.text}", numeric = true))
 
       val rows = List.of:
         entry.values(axis).stdlib.flatMap: value =>
           cells(List(value)).option.flatMap: cell =>
             run(cell).option.map: run0 =>
-              val comparison = anchored.lay(Nil): (anchor, anchorRun) =>
+              val comparison: List[Datum] = anchored.lay(Nil): (anchor, anchorRun) =>
                 List(relative(anchor, anchorRun, run0))
 
               (Datum.Str(value.text) :: benchMetricCells(run0, sized) + comparison): List[Datum]
@@ -476,7 +477,7 @@ private[probably] object Documenting:
     def optionalTime(run0: Run, key: Metric): Datum =
       metric(run0, key).lay(Datum.Blank): value => Datum.Time(value.toLong)
 
-    val sloColumns = if slo then List(Column(t"SLO", numeric = true)) else Nil
+    val sloColumns: List[Column] = if slo then List(Column(t"SLO", numeric = true)) else Nil
 
     def sloCells(run0: Run): List[Datum] =
       if slo
@@ -507,9 +508,9 @@ private[probably] object Documenting:
               Column(t"Test"),
               Column(t"N", numeric = true),
               Column(t"Throughput", numeric = true) )
-          + (if ranked then List(Column(t"×best", numeric = true)) else Nil)
+          + (if ranked then List(Column(t"×best", numeric = true)) else Nil: List[Column])
           + List(Column(t"Alloc·op¯¹", numeric = true))
-          + (if latencies then List(Column(t"p99", numeric = true)) else Nil)
+          + (if latencies then List(Column(t"p99", numeric = true)) else Nil: List[Column])
           + sloColumns
 
         val summaryRows = List.of:
@@ -523,9 +524,9 @@ private[probably] object Documenting:
                   Datum.Num(n),
                   rate(run0) )
 
-            val ratio = if ranked then List(Datum.Ratio(throughput(run0)/best)) else Nil
+            val ratio: List[Datum] = if ranked then List(Datum.Ratio(throughput(run0)/best)) else Nil
             val alloc = List(Datum.Memory(metric(run0, Metric.Allocation).or(0.0).toLong))
-            val latency = if latencies then List(optionalTime(run0, Metric.P99)) else Nil
+            val latency: List[Datum] = if latencies then List(optionalTime(run0, Metric.P99)) else Nil
 
             (lead + ratio + alloc + latency + sloCells(run0)): List[Datum]
 

@@ -193,7 +193,7 @@ object Tests extends Suite(m"Spectacular Tests"):
       . assert(_ == t"(t\"Simon\" ╱ 72)")
 
       test(m"serialize list of strings"):
-        List(t"one", t"two", t"three").inspect
+        (List(t"one", t"two", t"three"): List[Text]).inspect
       . assert(_ == t"""[t"one", t"two", t"three"]""")
 
       test(m"serialize set of strings"):
@@ -310,7 +310,7 @@ object Tests extends Suite(m"Spectacular Tests"):
       . assert(_ == t"None")
 
       test(m"serialize nested options in list"):
-        List(Some(1), None).inspect
+        (List(Some(1), None): List[Option[Int]]).inspect
       . assert(_ == t"[Some(1), None]")
 
     suite(m"Optional tests"):

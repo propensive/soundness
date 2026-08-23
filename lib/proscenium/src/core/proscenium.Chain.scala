@@ -45,7 +45,13 @@ object Chain:
   def of[element](lazyList: sci.LazyList[element]): Chain[element] =
     lazyList.asInstanceOf[Chain[element]]
 
+  // Deliberately NOT the branded literal constructor `List` and `Sequence` have: `Chain` is the
+  // streaming collection, and the `transparent inline` expansion at capture-checked call sites
+  // (e.g. `Chain(data)` in turbulence) lets `any.rd` into the element's inference — the same
+  // hazard that keeps `of` non-`inline`. A `Chain` literal is therefore unbranded; prove
+  // non-emptiness with `occupied` or a `#::` match where it matters.
   def apply[element](elements: element*): Chain[element] = of(sci.LazyList(elements*))
+
   def empty[element]: Chain[element] = of(sci.LazyList.empty[element])
 
   def from[element](elements: IterableOnce[element]^): Chain[element] =
@@ -74,7 +80,7 @@ object Chain:
   // keeps the by-name suffix unforced — equivalent to (and cheaper than) the old
   // `(dummy #:: chain).tail`, and it sidesteps the captured-by-name cons under cc.
   def defer[element](chain: => Chain[element]): Chain[element] =
-    Chain().lazyAppendedAll(chain)
+    Chain.empty[element].lazyAppendedAll(chain)
 
   def unapplySeq[element](lazyList: Chain[element]): Option[Seq[element]] = Some(lazyList.stdlib)
 

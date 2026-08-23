@@ -49,6 +49,55 @@ object List:
     list.asInstanceOf[List[element]]
 
   def apply[element](elements: element*): List[element] = of(sci.List(elements*))
+
+  // The branded literal constructors: one fixed-arity overload per arity up to twelve, each
+  // returning `& Populated` — the arity of the call *is* the non-emptiness proof. Fixed
+  // arities rather than a `(head, tail*)` overload (ambiguous with `(elements*)` at every
+  // arity) or a `transparent inline` macro (each expansion is an implicit search under the
+  // caller's live type variables, the exact trigger of the mainline `wildApprox` crash,
+  // scala/scala3#24824). A thirteen-element literal falls back to the unbranded varargs form;
+  // `occupied` recovers the proof there.
+  def apply[element](e1: element): List[element] & Populated =
+    populated(sci.List(e1))
+
+  def apply[element](e1: element, e2: element): List[element] & Populated =
+    populated(sci.List(e1, e2))
+
+  def apply[element](e1: element, e2: element, e3: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3))
+
+  def apply[element](e1: element, e2: element, e3: element, e4: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3, e4))
+
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3, e4, e5))
+
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3, e4, e5, e6))
+
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3, e4, e5, e6, e7))
+
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8))
+
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8, e9))
+
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element, e10: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10))
+
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element, e10: element, e11: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11))
+
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element, e10: element, e11: element, e12: element): List[element] & Populated =
+    populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12))
+
+  // The branded cast behind the fixed-arity constructors: a plain method (not an inlined
+  // cast) for the same boxer reason as `of`; its callers' arity is the non-emptiness proof.
+  private def populated[element](list: sci.List[element]): List[element] & Populated =
+    list.asInstanceOf[List[element] & Populated]
+
   def empty[element]: List[element] = of(sci.List.empty[element])
 
   def from[element](elements: IterableOnce[element]^): List[element] =
@@ -85,10 +134,12 @@ val Nil: List[Nothing] = List.of(sci.Nil)
 // is the HEAD (the left operand). It cannot be a top-level extension (the name would clash
 // with the extractor object), so it rides on a given, whose extensions are candidates
 // wherever the given is visible — everywhere, via `-Yimports`.
-  given listIsSpreadable: [element] => (Spreadable[List[element]] { type Out = sci.List[element] }) =
-    new Spreadable[List[element]]:
+  // Subtype-parametric so branded lists (`List[T] & Populated`) splat too.
+  given listIsSpreadable: [element, list <: List[element]]
+  =>  (Spreadable[list] { type Out = sci.List[element] }) =
+    new Spreadable[list]:
       type Out = sci.List[element]
-      def spread(value: List[element]): sci.List[element] = value
+      def spread(value: list): sci.List[element] = value
 
 given consConstructor: Object with
   extension [element](head: element)

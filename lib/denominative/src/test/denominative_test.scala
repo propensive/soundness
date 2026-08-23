@@ -309,17 +309,17 @@ object Tests extends Suite(m"Denominative Tests"):
       import asymptotics.linearSizeComplexity
 
       test(m"a list's gamut spans all its elements"):
-        val list = List(1, 2, 3)
+        val list: List[Int] = List(1, 2, 3)
         list.gamut.size
       . assert(_ == 3)
 
       test(m"a list's gamut starts at Prim"):
-        val list = List(1, 2, 3)
+        val list: List[Int] = List(1, 2, 3)
         list.gamut.start
       . assert(_ == Prim)
 
       test(m"a list's gamut ends at its last ordinal"):
-        val list = List(1, 2, 3)
+        val list: List[Int] = List(1, 2, 3)
         list.gamut.end
       . assert(_ == Ter)
 
@@ -330,7 +330,7 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(identity(_))
 
       test(m"a non-empty list is not nil"):
-        val list = List(1)
+        val list: List[Int] = List(1)
         list.nil
       . assert(_ == false)
 

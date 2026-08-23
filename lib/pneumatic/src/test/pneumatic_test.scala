@@ -358,7 +358,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Single byte roundtrips (Brotli)"):
         Data(42).compress[Brotli].decompress[Brotli].to[List]
-      . assert(_ == List[Byte](42))
+      . assert(_ == List(42.toByte))
 
 
     suite(m"XZ tests"):
@@ -473,7 +473,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Single byte roundtrips (Xz)"):
         Data(42).compress[Xz].decompress[Xz].to[List]
-      . assert(_ == List[Byte](42))
+      . assert(_ == List(42.toByte))
 
       test(m"Roundtrip a large multi-chunk payload (Xz)"):
         val big =
@@ -559,7 +559,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Single byte roundtrips (LZMA2)"):
         Data(42).compress[Lzma2].decompress[Lzma2].to[List]
-      . assert(_ == List[Byte](42))
+      . assert(_ == List(42.toByte))
 
       test(m"Explicit preset and dictionary size roundtrip (LZMA2)"):
         Lzma2.decompress(Lzma2.compress(Chain(lzma2Varied), 1),

@@ -169,6 +169,7 @@ object internal:
         ascii => String(ascii.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII).nn.tt
 
       given concatenable: Ascii is Concatenable:
+        type Result = Ascii
         type Operand = Ascii
         def concat(left: Ascii, right: Ascii): Ascii = textual.concat(left, right)
 

@@ -40,6 +40,14 @@ import anticipation.*
 import prepositional.*
 
 object Countable:
+  // NOT subtype-parametric, unlike `Traversable`'s instances: several parametric instances in
+  // one companion let a Self-directed search select the wrong collection's candidate and fail
+  // hard inside an explicit evidence parameter (seen via `Vacuiscible.countable`), and a
+  // generic `self & Populated` bridge mis-unifies (`self` absorbs the brand) and diverges.
+  // Consequence: `Countable`-gated operations (`size`, `gamut`, `keep`…) see a branded value
+  // through an ascription to its unbranded type — a pre-existing edge, since branded
+  // receivers never had these operations.
+
   // The frozen array, `Array[element]^{}`, likewise: `length` is O(1) and reads are sound
   // through any reference, so the instance is ungated.
   given frozenArray: [element] => (Array[element]^{}) is Countable =

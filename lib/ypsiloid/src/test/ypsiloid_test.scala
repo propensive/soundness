@@ -739,7 +739,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == t"hello")
 
       test(m"Encode a List"):
-        List(1, 2, 3).in[Yaml].as[List[Int]]
+        (List(1, 2, 3): List[Int]).in[Yaml].as[List[Int]]
       . assert(_ == List(1, 2, 3))
 
       test(m"Encode a Map"):
@@ -763,7 +763,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == NamedOuter(t"x", Inner(7)))
 
       test(m"Round-trip a list of case classes"):
-        List(Person(t"A", 1), Person(t"B", 2)).in[Yaml].as[List[Person]]
+        (List(Person(t"A", 1), Person(t"B", 2)): List[Person]).in[Yaml].as[List[Person]]
       . assert(_ == List(Person(t"A", 1), Person(t"B", 2)))
 
       val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
@@ -783,7 +783,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == 2)
 
       test(m"Encoded list produces a Yaml.Ast.Sequence"):
-        List(1, 2, 3).in[Yaml].root match
+        (List(1, 2, 3): List[Int]).in[Yaml].root match
           case Yaml.Ast.Sequence(items) => items.length
           case _                       => -1
       . assert(_ == 3)
@@ -1198,11 +1198,11 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == t"- not a list")
 
       test(m"Roundtrip a list of integers"):
-        roundtrip(List(1, 2, 3))
+        roundtrip[List[Int]](List(1, 2, 3))
       . assert(_ == List(1, 2, 3))
 
       test(m"Roundtrip a list of strings"):
-        roundtrip(List(t"alice", t"bob"))
+        roundtrip[List[Text]](List(t"alice", t"bob"))
       . assert(_ == List(t"alice", t"bob"))
 
       test(m"Roundtrip an empty list"):
@@ -1222,11 +1222,11 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == NamedOuter(t"a", Inner(7)))
 
       test(m"Roundtrip a list of case classes"):
-        roundtrip(List(Person(t"a", 1), Person(t"b", 2)))
+        roundtrip[List[Person]](List(Person(t"a", 1), Person(t"b", 2)))
       . assert(_ == List(Person(t"a", 1), Person(t"b", 2)))
 
       test(m"Roundtrip a list of lists"):
-        roundtrip(List(List(1, 2), List(3, 4)))
+        roundtrip[List[List[Int]]](List(List(1, 2), List(3, 4)))
       . assert(_ == List(List(1, 2), List(3, 4)))
 
       test(m"AST stable: nested mapping"):

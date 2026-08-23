@@ -294,6 +294,45 @@ object Tests extends Suite(m"Rudiments Tests"):
         ledger.values
       . assert(_ == List(3, 1, 2))
 
+    suite(m"Branded literal tests"):
+      // Qualified throughout: in this test module the unqualified `List` resolves to Scala's,
+      // so an unqualified suite would test the wrong collection (discovered when the negative
+      // cases passed vacuously).
+      test(m"a non-empty List literal proves itself: head is bare"):
+        val first: Int = proscenium.List(1, 2, 3).head
+        first
+      . assert(_ == 1)
+
+      test(m"a singleton List literal is branded too"):
+        val sole: Int = proscenium.List(42).head
+        sole
+      . assert(_ == 42)
+
+      test(m"a non-empty Sequence literal proves itself"):
+        val first: Int = proscenium.Sequence(5, 6).head
+        first
+      . assert(_ == 5)
+
+      test(m"an empty List literal is not Populated"):
+        demilitarize:
+          val xs = proscenium.List[Int]()
+          xs.head
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+      test(m"a splatted sequence is not Populated"):
+        demilitarize:
+          val source: proscenium.List[Int] = proscenium.List(1, 2)
+          val xs = proscenium.List(source.stdlib*)
+          xs.head
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+      test(m"a branded literal compares with its unbranded self"):
+        proscenium.List(1, 2, 3) == (proscenium.List(1) + proscenium.List(2, 3)
+            : proscenium.List[Int])
+      . assert(_ == true)
+
     suite(m"Definable tests"):
       test(m"define replaces a sequence element positionally"):
         val xs: Sequence[Int] = Sequence(1, 2, 3)
@@ -837,11 +876,12 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Map(1 -> "one", 2 -> "two!"))
 
       test(m"Collation"):
-        val map1 = Map(1 -> List("one"), 2 -> List("two"))
-        val map2 = Map(2 -> List("deux"), 3 -> List("trois"))
+        val map1: Map[Int, List[String]] = Map(1 -> List("one"), 2 -> List("two"))
+        val map2: Map[Int, List[String]] = Map(2 -> List("deux"), 3 -> List("trois"))
         map1.collate(map2): (left, right) =>
-          left ::: right
-      . assert(_ == Map(1 -> List("one"), 2 -> List("two", "deux"), 3 -> List("trois")))
+          left + right
+      . assert(_ == (Map(1 -> List("one"), 2 -> List("two", "deux"), 3 -> List("trois"))
+            : Map[Int, List[String]]))
 
       test(m"runs"):
         List(1, 2, 2, 1, 1, 1, 4, 4).runs

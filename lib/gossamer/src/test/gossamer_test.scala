@@ -316,12 +316,12 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       test(m"from slices a List by ordinal"):
         import asymptotics.linearSizeComplexity
-        List(0, 1, 2, 3, 4).from(Ter)
+        (List(0, 1, 2, 3, 4): List[Int]).from(Ter)
       . assert(_ == List(2, 3, 4))
 
       test(m"after slices a List by ordinal"):
         import asymptotics.linearSizeComplexity
-        List(0, 1, 2, 3, 4).after(Ter)
+        (List(0, 1, 2, 3, 4): List[Int]).after(Ter)
       . assert(_ == List(3, 4))
 
       test(m"upto slices a frozen array by ordinal"):

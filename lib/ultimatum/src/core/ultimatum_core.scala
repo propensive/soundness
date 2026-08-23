@@ -140,18 +140,18 @@ def border
 
   // The middle band: the child flanked by whichever vertical edges are requested.
   val middle =
-    val edge = if left then List(verticalRule) else Nil
-    strip(((edge :+ child) + (if right then List(verticalRule) else Nil)).stdlib*)
+    val edge: List[Pane] = if left then List(verticalRule) else Nil
+    strip(((edge :+ child) + (if right then List(verticalRule) else Nil: List[Pane])).stdlib*)
 
   // A horizontal band (the top or bottom): a rule flanked by whichever corners
   // are requested (a corner appears only where a vertical edge also meets it).
   def band(leftCorner: Text, rightCorner: Text): Pane =
-    val start = if left then List(corner(leftCorner)) else Nil
-    val end = if right then List(corner(rightCorner)) else Nil
+    val start: List[Pane] = if left then List(corner(leftCorner)) else Nil
+    val end: List[Pane] = if right then List(corner(rightCorner)) else Nil
     strip(((start :+ horizontalRule) + end).stdlib*)
 
-  val head = if top then List(band(style.topLeft, style.topRight)) else Nil
-  val foot = if bottom then List(band(style.bottomLeft, style.bottomRight)) else Nil
+  val head: List[Pane] = if top then List(band(style.topLeft, style.topRight)) else Nil
+  val foot: List[Pane] = if bottom then List(band(style.bottomLeft, style.bottomRight)) else Nil
   stack(((head :+ middle) + foot).stdlib*)
 
 // Drive an interactive layout, looping over terminal events until the user exits.

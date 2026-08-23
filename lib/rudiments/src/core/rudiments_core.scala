@@ -114,6 +114,7 @@ extension [value](value: value)
 // A proof-carrying value compares as its unproven self: without this, strict equality rejects
 // comparing a `value & Populated` with a plain `value` (no `CanEqual` between them).
 given populatedEquality: [value] => CanEqual[value & Populated, value] = CanEqual.derived
+given populatedEquality2: [value] => CanEqual[value, value & Populated] = CanEqual.derived
 
 extension [input, result](inline lambda: (=> input) => result)
   inline def upon(inline value: => input): result = lambda(value)
@@ -553,7 +554,7 @@ extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(Array.unsafeJvm(bytes))
 
 extension [value: Segmentable as segmentable](inline value: value)
-  inline def segment(interval: Interval): value = segmentable.segment(value, interval)
+  inline def segment(interval: Interval): segmentable.Segment = segmentable.segment(value, interval)
 
 // The write-twin of `at`: a copy of the container in which `at(index)` yields `result` —
 // positionally for `Ordinal`-indexed containers, by key for maps. Total: an out-of-range
@@ -570,21 +571,21 @@ extension [self, operand](value: self)(using omissible: self is Omissible by ope
 // definition serves the collections and, through the instances `Textual` extends, every textual
 // type — shape-preservingly, since a segment of a styled text keeps its styling. (Moved here
 // from gossamer, which retains only the genuinely textual operations.)
-extension [value: {Segmentable, Countable}](value: value)
-  def before(ordinal: Ordinal): value = value.segment(Prim till ordinal)
-  def upto(ordinal: Ordinal): value = value.segment(Prim thru ordinal)
-  def from(ordinal: Ordinal): value = value.segment(ordinal thru value.limit)
-  def after(ordinal: Ordinal): value = value.segment((ordinal + 1) till value.limit)
+extension [value](value: value)(using segmentable: value is Segmentable, countable: value is Countable)
+  def before(ordinal: Ordinal): segmentable.Segment = value.segment(Prim till ordinal)
+  def upto(ordinal: Ordinal): segmentable.Segment = value.segment(Prim thru ordinal)
+  def from(ordinal: Ordinal): segmentable.Segment = value.segment(ordinal thru value.limit)
+  def after(ordinal: Ordinal): segmentable.Segment = value.segment((ordinal + 1) till value.limit)
 
-  def keep(count: Int, bidi: Bidi = Bidi.Ltr): value = bidi match
+  def keep(count: Int, bidi: Bidi = Bidi.Ltr): segmentable.Segment = bidi match
     case Bidi.Ltr => value.segment(Interval.initial(count))
     case Bidi.Rtl => value.segment(value.limit - count till value.limit)
 
-  def skip(count: Int, bidi: Bidi = Bidi.Ltr): value = bidi match
+  def skip(count: Int, bidi: Bidi = Bidi.Ltr): segmentable.Segment = bidi match
     case Bidi.Ltr => value.segment(count.z till value.limit)
     case Bidi.Rtl => value.segment(Prim till value.limit - count)
 
-  def snip(count: Int): (value, value) =
+  def snip(count: Int): (segmentable.Segment, segmentable.Segment) =
     (value.segment(Prim till count.z), value.segment(count.z till value.limit))
 
 // The predicate forms find the boundary of the leading (or trailing) run satisfying the
@@ -596,30 +597,34 @@ extension [value](value: value)
           segmentable: value is Segmentable,
           countable:   value is Countable )
 
-  def keep(predicate: traversable.Operand => Boolean): value = value.keep(predicate, Bidi.Ltr)
+  def keep(predicate: traversable.Operand => Boolean): segmentable.Segment =
+    value.keep(predicate, Bidi.Ltr)
 
-  def keep(predicate: traversable.Operand => Boolean, bidi: Bidi): value = bidi match
+  def keep(predicate: traversable.Operand => Boolean, bidi: Bidi): segmentable.Segment =
+    bidi match
     case Bidi.Ltr => value.segment(Interval.initial(leading(predicate)))
     case Bidi.Rtl => value.segment(value.limit - trailing(predicate) till value.limit)
 
-  def skip(predicate: traversable.Operand => Boolean): value = value.skip(predicate, Bidi.Ltr)
+  def skip(predicate: traversable.Operand => Boolean): segmentable.Segment =
+    value.skip(predicate, Bidi.Ltr)
 
-  def skip(predicate: traversable.Operand => Boolean, bidi: Bidi): value = bidi match
+  def skip(predicate: traversable.Operand => Boolean, bidi: Bidi): segmentable.Segment =
+    bidi match
     case Bidi.Ltr => value.segment(leading(predicate).z till value.limit)
     case Bidi.Rtl => value.segment(Prim till value.limit - trailing(predicate))
 
   // Everything strictly before (or up to and including) the first element satisfying
   // `predicate`; without a match, everything before (or up to) the last element.
-  def before(predicate: traversable.Operand => Boolean): value =
+  def before(predicate: traversable.Operand => Boolean): segmentable.Segment =
     value.before(locate(predicate, 0).lay(value.limit - 1)(_.z))
 
-  def upto(predicate: traversable.Operand => Boolean): value =
+  def upto(predicate: traversable.Operand => Boolean): segmentable.Segment =
     value.upto(locate(predicate, 0).lay(value.limit - 1)(_.z))
 
   // The two sides of the first element at or after `index` satisfying `predicate`, the
   // element itself starting the right side; `Unset` when nothing matches.
   def snip(predicate: traversable.Operand => Boolean, index: Ordinal = Prim)
-  :   Optional[(value, value)] =
+  :   Optional[(segmentable.Segment, segmentable.Segment)] =
 
     locate(predicate, index.n0).let(value.snip(_))
 

@@ -39,6 +39,8 @@ import prepositional.*
 // concatenation for an unordered unique shape, so `left + right` (symbolism's `Concatenable`)
 // already provides it.
 object Intersectable:
+  // NOT subtype-parametric: intersection can empty a non-empty receiver, so a branded `Self`
+  // must not survive (the same soundness rule as `Truncable`'s `Result`).
   given set: [element] => (Set[element] is Intersectable { type Operand = Set[element] }) =
     new Intersectable:
       type Self = Set[element]

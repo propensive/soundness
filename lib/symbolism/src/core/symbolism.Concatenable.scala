@@ -41,30 +41,37 @@ import prepositional.*
 // typeclass companion because proscenium sits below symbolism, so the collections' own
 // companions cannot host them.
 object Concatenable:
-  given list: [element] => List[element] is Concatenable by List[element] =
+  // `Self` AND `Operand` are subtype-parametric so branded values (`List[T] & Populated`, from
+  // `occupied` or a non-empty literal) match on either side; the declared `Result` is the
+  // PLAIN type, so no union or brand leaks downstream. (Only a branded left operand would
+  // prove the result non-empty; asserting that stays out of scope.)
+  given list: [element, list <: List[element], operand <: List[element]]
+  =>  list is Concatenable by operand to List[element] =
     (left, right) => List.of(left.stdlib ::: right.stdlib)
 
-  given sequence: [element] => Sequence[element] is Concatenable by Sequence[element] =
+  given sequence: [element, sequence <: Sequence[element], operand <: Sequence[element]]
+  =>  sequence is Concatenable by operand to Sequence[element] =
     (left, right) => Sequence.of(left.stdlib ++ right.stdlib)
 
   // Lazily: neither side is forced by the concatenation itself.
-  given chain: [element] => Chain[element] is Concatenable by Chain[element] =
+  given chain: [element] => Chain[element] is Concatenable by Chain[element] to Chain[element] =
     (left, right) => Chain.of(left.stdlib.lazyAppendedAll(right.stdlib))
 
-  given set: [element] => Set[element] is Concatenable by Set[element] =
+  given set: [element] => Set[element] is Concatenable by Set[element] to Set[element] =
     (left, right) => Set.of(left.stdlib ++ right.stdlib)
 
   // Right-biased, matching the stdlib's `concat`: keys in the right operand win. This is the
   // same ruling as `Set`, where union is concatenation.
-  given map: [key, value] => Map[key, value] is Concatenable by Map[key, value] =
+  given map: [key, value] => Map[key, value] is Concatenable by Map[key, value] to Map[key, value] =
     (left, right) => Map.of(left.stdlib.concat(right.stdlib))
 
-  given ledger: [key, value] => Ledger[key, value] is Concatenable by Ledger[key, value] =
+  given ledger: [key, value]
+  =>  Ledger[key, value] is Concatenable by Ledger[key, value] to Ledger[key, value] =
     (left, right) => Ledger.of(left.stdlib.concat(right.stdlib))
 
   given frozenArray: [element: ClassTag]
-  =>  (Array[element]^{}) is Concatenable by (Array[element]^{}) =
+  =>  (Array[element]^{}) is Concatenable by (Array[element]^{}) to (Array[element]^{}) =
     (left, right) => Array.frozen(left.readable ++ right.readable)
 
-trait Concatenable extends Typeclass.Pure, Operable:
-  def concat(left: Self, right: Operand): Self | Operand
+trait Concatenable extends Typeclass.Pure, Operable, Resultant:
+  def concat(left: Self, right: Operand): Result

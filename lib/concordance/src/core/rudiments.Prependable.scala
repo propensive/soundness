@@ -38,11 +38,11 @@ import prepositional.*
 // The prepending counterpart of `Appendable`: `element +: collection`. Prepending is O(1) for
 // `List` and `Chain`, so only the frozen array's full rebuild is complexity-gated.
 object Prependable:
-  given list: [element] => List[element] is Prependable by element =
-    (list, element) => List.of(element :: list.stdlib)
+  given list: [element, list <: List[element]] => list is Prependable by element =
+    (list, element) => List.of(element :: list.stdlib).asInstanceOf[list]
 
-  given sequence: [element] => Sequence[element] is Prependable by element =
-    (sequence, element) => Sequence.of(element +: sequence.stdlib)
+  given sequence: [element, sequence <: Sequence[element]] => sequence is Prependable by element =
+    (sequence, element) => Sequence.of(element +: sequence.stdlib).asInstanceOf[sequence]
 
   given chain: [element] => Chain[element] is Prependable by element =
     (chain, element) => Chain.of(element #:: chain.stdlib)

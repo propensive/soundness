@@ -184,7 +184,7 @@ object Gemini:
     case Llm.ToolChoice.Named(tool) =>
       Json.make
         ( mode                 = t"ANY".in[Json],
-          allowedFunctionNames = List(tool).in[Json] )
+          allowedFunctionNames = (List(tool): List[Text]).in[Json] )
 
   private def calling(choice: Optional[Llm.ToolChoice]): Json =
     choice.let { choice => Json.make(functionCallingConfig = mode(choice)) }.in[Json]
@@ -206,11 +206,11 @@ object Gemini:
           stopSequences   = (if stops.stdlib.isEmpty then Unset else stops).in[Json] )
 
     val instruction: Optional[Json] = turn.system.let: system =>
-      Json.make(parts = List(Json.make(text = system.in[Json])).in[Json])
+      Json.make(parts = (List(Json.make(text = system.in[Json])): List[Json]).in[Json])
 
     val tools: Optional[Json] =
       if turn.tools.stdlib.isEmpty then Unset
-      else List(Json.make(functionDeclarations = declarations.in[Json])).in[Json]
+      else (List(Json.make(functionDeclarations = declarations.in[Json])): List[Json]).in[Json]
 
     Json.make
       ( contents          = turn.history.map(content(_)).in[Json],

@@ -72,9 +72,9 @@ object Examples:
 
   def procession: Pane =
     val steps =
-      Sequence
+      (Sequence
         ( Step(t"resolve", Standing.Succeeded),
           Step(t"compile", Standing.Running),
-          Step(t"publish", Standing.Pending) )
+          Step(t"publish", Standing.Pending) ): Sequence[Step])
 
     gauge(Reading(steps))

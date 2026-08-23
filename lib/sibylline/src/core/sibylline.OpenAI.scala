@@ -521,7 +521,7 @@ private[sibylline] object ResponsesDialect:
             Json.make
               ( `type`  = t"message".in[Json],
                 role    = t"assistant".in[Json],
-                content = List(part).in[Json] )
+                content = (List(part): List[Json]).in[Json] )
 
       List.of(turn.stdlib ++ calls.stdlib)
 
