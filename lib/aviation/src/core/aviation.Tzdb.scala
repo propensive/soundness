@@ -34,7 +34,6 @@ package aviation
 
 // Residue: `head` and `tail` on a lazy `Chain` are partial; they await the
 // partial-operations tranche.
-import proscenium.compat.{head, tail}
 
 import scala.io.*
 
@@ -193,31 +192,35 @@ object Tzdb:
         zone:    Option[Tzdb.Entry.Zone] = None )
     :   List[Tzdb.Entry] =
 
-      if lines.nil then List.of(entries.stdlib ++ zone.toList) else
-        val line: Text = lines.head.upto(_ == '#')
+      lines match
+        case line0 #:: rest =>
+          val line: Text = line0.upto(_ == '#')
 
-        line.cut(unsafely(r"\s+")) match
-          case t"Rule" :: tail =>
-            recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
+          line.cut(unsafely(r"\s+")) match
+            case t"Rule" :: tail =>
+              recur(lineNo + 1, rest, parseRule(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
 
-          case t"Link" :: tail =>
-            recur(lineNo + 1, lines.tail, parseLink(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
+            case t"Link" :: tail =>
+              recur(lineNo + 1, rest, parseLink(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
 
-          case t"Zone" :: tail =>
-            recur(lineNo + 1, lines.tail, List.of(entries.stdlib ++ zone.toList), Some(parseZone(lineNo, tail)))
+            case t"Zone" :: tail =>
+              recur(lineNo + 1, rest, List.of(entries.stdlib ++ zone.toList), Some(parseZone(lineNo, tail)))
 
-          case t"Leap" :: tail =>
-            recur(lineNo + 1, lines.tail, parseLeap(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
+            case t"Leap" :: tail =>
+              recur(lineNo + 1, rest, parseLeap(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
 
-          case t"" :: Nil =>
-            recur(lineNo + 1, lines.tail, entries, zone)
+            case t"" :: Nil =>
+              recur(lineNo + 1, rest, entries, zone)
 
-          case t"" :: tail =>
-            recur(lineNo + 1, lines.tail, entries, Some(addToZone(lineNo, tail, zone.getOrElse:
-              abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedZoneInfo, lineNo)))))
+            case t"" :: tail =>
+              recur(lineNo + 1, rest, entries, Some(addToZone(lineNo, tail, zone.getOrElse:
+                abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedZoneInfo, lineNo)))))
 
-          case other =>
-            recur(lineNo + 1, lines.tail, entries, zone)
+            case other =>
+              recur(lineNo + 1, rest, entries, zone)
+
+        case _ =>
+          List.of(entries.stdlib ++ zone.toList)
 
     recur(1, lines)
 
