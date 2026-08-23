@@ -588,6 +588,11 @@ extension [value](value: value)(using segmentable: value is Segmentable, countab
   def snip(count: Int): (segmentable.Segment, segmentable.Segment) =
     (value.segment(Prim till count.z), value.segment(count.z till value.limit))
 
+  // Everything after the first element; empty stays empty, inheriting `skip`'s totality.
+  // Generalized here from gossamer (which kept only the genuinely textual operations), so the
+  // collections and every textual type answer to the same name.
+  inline def tail: segmentable.Segment = value.skip(1, Bidi.Ltr)
+
 // The predicate forms find the boundary of the leading (or trailing) run satisfying the
 // predicate by traversal, then rebuild by segmentation — never element-by-element, so styled
 // texts stay styled. The typeclass is bound at the extension so the lambda's parameter type is

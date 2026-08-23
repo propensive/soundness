@@ -479,6 +479,52 @@ object Tests extends Suite(m"Rudiments Tests"):
         text.spot { i => text(i) == 'z' }
       . assert(_ == Unset)
 
+      test(m"`tail` drops the first element of a collection"):
+        val list: proscenium.List[Int] =
+          (proscenium.List(1, 2, 3): proscenium.List[Int]).tail
+        list.stdlib
+      . assert(_ == scala.List(2, 3))
+
+      test(m"`tail` of an empty collection is empty"):
+        val list: proscenium.List[Int] = proscenium.List.empty[Int].tail
+        list.stdlib
+      . assert(_ == scala.Nil)
+
+      test(m"`tail` drops the first character of a text"):
+        text.tail
+      . assert(_ == "ello".tt)
+
+      test(m"`spot(after)` resumes the scan from the interval's limit"):
+        // text = "hello": first 'l' after the prefix of non-'l's... then scan again past it
+        val first = text.prefix { i => text(i) != 'l' }
+        text.spot(first) { i => text(i) == 'l' }.let { i => (i: Ordinal).n0 }
+      . assert(_ == 2)
+
+      test(m"`spot(after)` returns Unset when nothing matches beyond the interval"):
+        val all = text.prefix { _ => true }
+        text.spot(all) { _ => true }
+      . assert(_ == Unset)
+
+      test(m"`prefix(after)` extends the interval through the next run"):
+        val aitch = text.prefix { i => text(i) == 'h' }
+        val interval: Interval = text.prefix(aitch) { i => text(i) == 'e' }
+        ((interval: Interval).start.n0, interval.size)
+      . assert(_ == (0, 2))
+
+      test(m"`prefix(after)` with an empty run returns `after` unchanged"):
+        val all = text.prefix { _ => true }
+        val interval: Interval = text.prefix(all) { _ => true }
+        ((interval: Interval).start.n0, interval.size)
+      . assert(_ == (0, 5))
+
+      test(m"chained `prefix(after)` scans equal one combined scan"):
+        val digits = Array.of(1, 2, 0, 0, 7)
+        val zeros = digits.prefix { i => digits.at(i) != 0 }
+        val run = digits.prefix(zeros) { i => digits.at(i) == 0 }
+        val combined = digits.prefix { i => digits.at(i) != 7 }
+        (run: Interval) == (combined: Interval)
+      . assert(_ == true)
+
       test(m"`lead` spans the matching prefix and stops at the first mismatch"):
         val interval: Interval = text.prefix { i => text(i) != 'l' }
         interval.size

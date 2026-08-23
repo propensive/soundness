@@ -214,10 +214,9 @@ extension [textual: Textual as instance](text: textual)
     List.tabulate[textual]((length - 1)/size + 1): i =>
       text.segment((i*size).z thru ((i + 1)*size).min(length).u)
 
-  // `keep`, `skip` and `snip` are no longer defined here: the generic positional operations in
-  // `rudiments`, over `Segmentable` and `Countable`, serve every textual type through the
-  // instances `Textual` extends.
-  inline def tail: textual = text.skip(1, Ltr)
+  // `keep`, `skip`, `snip` and now `tail` are no longer defined here: the generic positional
+  // operations in `rudiments`, over `Segmentable` and `Countable`, serve every textual type
+  // through the instances `Textual` extends.
   inline def init: textual = text.skip(1, Rtl)
 
   def chars: Array[Char]^{} = Array.unsafeFrozen(textual.text(text).s.toCharArray.nn)

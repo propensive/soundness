@@ -101,6 +101,23 @@ extension [countable: Countable](value: countable)
 
     if found < 0 then Unset else Ordinal.zerary(found).asInstanceOf[Ordinal in value.type]
 
+  // As `spot`, scanning from the limit of an already-scanned branded interval: the resume
+  // point of a two-phase scan. A branded interval's limit is a safe scan START (the loop
+  // re-checks `index < size`), though not itself a safe index.
+  inline def spot(after: Interval in value.type)
+    (inline predicate: (Ordinal in value.type) => Boolean)
+  :   Optional[Ordinal in value.type] =
+
+    var index: Int = (after: Interval).limit.n0
+    val size: Int = countable.size(value)
+    var found: Int = -1
+
+    while found < 0 && index < size do
+      if predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type]) then found = index
+      else index += 1
+
+    if found < 0 then Unset else Ordinal.zerary(found).asInstanceOf[Ordinal in value.type]
+
   // The longest prefix whose every index satisfies the predicate, as a branded interval —
   // possibly empty, possibly the whole extent. Its `limit` is the stopping index, so
   // `value.prefix(...)` replaces `while i < size && p(i) do i += 1` loops whose callers then
@@ -118,6 +135,27 @@ extension [countable: Countable](value: countable)
     do index += 1
 
     Interval.zerary(0, index).asInstanceOf[Interval in value.type]
+
+  // As `prefix`, resuming from the limit of `after`: EXTENDS `after` by the longest run
+  // satisfying the predicate — the second and subsequent stages of a multi-stage scan
+  // (spaces, then digits, then a terminator). The result is cumulative, not just the new
+  // run, because `Interval` normalizes every empty interval to position zero: an empty run
+  // could not carry its anchor, and a chained scan would silently restart from the start.
+  // Cumulatively, the limit is ALWAYS the resume point (an empty run returns `after`
+  // unchanged), and each stage's own run is recoverable from consecutive limits.
+  inline def prefix(after: Interval in value.type)
+    (inline predicate: (Ordinal in value.type) => Boolean)
+  :   Interval in value.type =
+
+    val interval: Interval = after
+    var index: Int = interval.limit.n0
+    val size: Int = countable.size(value)
+
+    while index < size
+      && predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
+    do index += 1
+
+    Interval.zerary(interval.start.n0, index).asInstanceOf[Interval in value.type]
 
   // The interval remaining after dropping the longest suffix whose indexes satisfy the
   // predicate, never shrinking below `floor` elements: the trailing-trim shape
