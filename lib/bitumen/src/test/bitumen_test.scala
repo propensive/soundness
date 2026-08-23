@@ -32,8 +32,6 @@
                                                                                                   */
 package bitumen
 
-// Residue: `head` is partial; it awaits the partial-operations tranche.
-import proscenium.compat.head
 
 import soundness.*
 import filesystemBackends.virtualMachineFilesystem
@@ -365,7 +363,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: proscenium.List.of(good.stdlib.tail)
         collectTar { Tarfile.read(corrupted.stdlib.iterator.stream).toList; () }.reasons
       . assert: reasons =>
-          reasons.size == 1 && reasons.head.isInstanceOf[Tar.Error.Reason.BadChecksum]
+          reasons.size == 1 && reasons.prim.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
 
       test(m"an unknown type flag degrades to a file, never a directory"):
         val good: List[Data] = Tarfile(List(helloFile)).source[Data].toProgression.stdlib.toList.asInstanceOf[List[Data]]

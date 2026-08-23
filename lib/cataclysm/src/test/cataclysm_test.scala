@@ -34,8 +34,6 @@ package cataclysm
 
 import soundness.*
 
-// Partial-op residue (the drain's debt register): `head`/`length` on possibly-empty lists.
-import proscenium.compat.{head, headOption}
 
 
 import strategies.throwUnsafely
@@ -259,7 +257,10 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
     suite(m"An+B"):
       def nth(text: Text): PseudoArgument =
-        parse(text).selectors.head.head.parts.head match
+        // `Optional[Optional[T]]` collapses to `Optional[T]` (the union absorbs), so the
+        // chained `prim`s need no flattening, and `Unset` falls to the default arm. The
+        // middle `head` is `Selector`'s field, not a list operation.
+        parse(text).selectors.prim.let(_.head.parts.prim) match
           case Simple.PseudoClass(_, argument: PseudoArgument) => argument
           case _                                               => PseudoArgument.Raw(t"")
 
@@ -308,7 +309,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == List(rule(t"a", decl(t"color", t"red"))))
 
       test(m"an unknown property is rejected"):
-        capture[Css.Errors](t"a { colour: red }".read[Css]).errors.head.reason
+        capture[Css.Errors](t"a { colour: red }".read[Css]).errors.prim.let(_.reason)
       . assert(_ == Css.Error.Reason.UnknownProperty(t"colour"))
 
       test(m"errors from several declarations accumulate"):
@@ -595,15 +596,15 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
     suite(m"CSS errors"):
       test(m"an unterminated comment is reported"):
-        capture[Css.Errors](t"a { /* unterminated }".read[Css]).errors.head.reason
+        capture[Css.Errors](t"a { /* unterminated }".read[Css]).errors.prim.let(_.reason)
       . assert(_ == Css.Error.Reason.UnterminatedComment)
 
       test(m"an unterminated string is reported"):
-        capture[Css.Errors](t"""a { content: "x }""".read[Css]).errors.head.reason
+        capture[Css.Errors](t"""a { content: "x }""".read[Css]).errors.prim.let(_.reason)
       . assert(_ == Css.Error.Reason.UnterminatedString)
 
       test(m"a missing closing brace is reported"):
-        capture[Css.Errors](t"a { color: red;".read[Css]).errors.head.reason
+        capture[Css.Errors](t"a { color: red;".read[Css]).errors.prim.let(_.reason)
       . assert(_ == Css.Error.Reason.UnexpectedEnd)
 
     suite(m"CSS serialization"):

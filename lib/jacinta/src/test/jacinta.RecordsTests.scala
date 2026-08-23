@@ -32,8 +32,6 @@
                                                                                                   */
 package jacinta
 
-// Residue: `head` is partial; it awaits the partial-operations tranche.
-import proscenium.compat.head
 
 import soundness.*
 
@@ -76,16 +74,17 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
     . assert()
 
     test(m"Get the head of an array"):
-      record.children.head
+      record.children.prim
     . assert()
 
     test(m"Get a nested value"):
-      record.children.head.weight
+      record.children.prim.let(_.weight)
     . assert(_ == 0.8)
 
     test(m"A bad pattern-checked value throws an exception"):
       capture[JsonBlueprint.Error]:
-        record.children.head.color
+        // The blueprint error escapes `let`: the lambda runs eagerly on a present value.
+        record.children.prim.let(_.color)
     . assert
         ( _ == JsonBlueprint.Error
                   ( JsonBlueprint.Error.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )

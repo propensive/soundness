@@ -49,7 +49,6 @@ import _root_.java.util.zip as juz
 import _root_.javax.crypto as jc
 import _root_.javax.crypto.spec as jcs
 import pneumatic.*
-import proscenium.compat.head
 import denominative.asymptotics.linearSizeComplexity
 
 // These fixtures assemble PDF and font byte streams from many small pieces. A `Concatenable`
@@ -1855,16 +1854,18 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          // The sole remaining `compat` use in facsimile. `Attachment`'s element type carries a
-          // capture refinement over `pdf`, and every replacement loses or trips on it: `.stdlib`
-          // drops the refinement, and `prim.let` is a separation failure on the lambda. That is a
-          // capture-checking question, not a drain one, so the `head` shim stays for now.
-          val attachment = pdf.attachments.head
+          // `Attachment`'s element type carries a capture refinement over `pdf`, which a
+          // `prim.let` lambda trips on (separation) and `.stdlib` loses. The cons match binds
+          // the head with no lambda and no bridge, so the refinement survives.
+          pdf.attachments match
+            case attachment :: _ =>
+              ( attachment.name,
+                attachment.filename,
+                attachment.mediaType,
+                attachment.data.utf8 )
 
-          ( attachment.name,
-            attachment.filename,
-            attachment.mediaType,
-            attachment.data.utf8 )
+            case _ =>
+              (t"", t"", t"", t"")
       . assert(_ == (t"notes.txt", t"notes.txt", t"text/plain", t"hello"))
 
       test(m"page labels follow the number-tree ranges"):
