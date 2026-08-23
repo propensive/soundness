@@ -33,16 +33,13 @@
 package bitumen
 
 
-// Residue: this header parser is all byte subscripts, and the frozen-array `apply` is
-// partial; it awaits the partial-operations tranche.
-import proscenium.compat.apply
-
 import anticipation.*
 import denominative.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
 import rudiments.*
+import vacuous.*
 
 object TarHeader:
   val blockSize: Int = 512
@@ -61,7 +58,9 @@ object TarHeader:
         size     = block.segment((124).z till (136).z),
         mtime    = block.segment((136).z till (148).z),
         checksum = block.segment((148).z till (156).z),
-        typeFlag = block(156),
+        // Total: after a raised `TruncatedStream` the header is parsed best-effort, so a
+        // short block yields the default (regular-file) flag rather than an overrun.
+        typeFlag = block.at((156).z).or(0),
         linkName = block.segment((157).z till (257).z),
         magic    = block.segment((257).z till (263).z),
         version  = block.segment((263).z till (265).z),
@@ -73,53 +72,55 @@ object TarHeader:
 
   def verifyChecksum(block: Data, recorded: U32): Unit raises Tar.Error =
     var sum: Long = 0L
-    var i = 0
 
-    while i < blockSize do
+    // A short block sums fewer bytes and fails the comparison below, rather than overrunning.
+    block.iterate(block.extent.capped(blockSize)): index =>
+      val i: Int = (index: Ordinal).n0
+
       val byte: Int =
-        if i >= checksumOffset && i < checksumOffset + checksumLength then 0x20 else block(i) & 0xff
+        if i >= checksumOffset && i < checksumOffset + checksumLength then 0x20
+        else block.at(index) & 0xff
 
       sum = sum + byte
-      i = i + 1
 
     val actual: U32 = sum.toInt.bits.u32
 
     if actual != recorded then raise(Tar.Error(Tar.Error.Reason.BadChecksum(recorded, actual)))
 
   def decodeOctal(data: Data, field: Text): U32 raises Tar.Error =
-    var i = 0
-    while i < data.length && data(i) == ' '.toByte do i = i + 1
+    // Two-stage scan: leading spaces, then the octal digit run. `prefix(after)` is
+    // cumulative, so `digits` spans both stages and its limit is the digit run's end.
+    val spaces = data.prefix { index => data.at(index) == ' '.toByte }
 
-    var sawDigit = false
+    val digits = data.prefix(spaces): index =>
+      val byte: Byte = data.at(index)
+      byte >= '0'.toByte && byte <= '7'.toByte
+
+    if (digits: Interval).size == (spaces: Interval).size
+    then raise(Tar.Error(Tar.Error.Reason.BadOctal(field, data)))
+
+    // The one genuinely checked access: the terminator position is one past the digit run,
+    // which may be one past the end of the field, so `at` returning `Unset` means a run
+    // flush to the field's end — valid, with nothing to check.
+    data.at((digits: Interval).limit).let: byte =>
+      if byte != 0 && byte != ' '.toByte
+      then raise(Tar.Error(Tar.Error.Reason.BadOctal(field, data)))
+
     var n: Long = 0L
-    var done = false
 
-    while !done && i < data.length do
-      val byte: Byte = data(i)
-
-      if byte == 0 || byte == ' '.toByte then done = true
-      else if byte >= '0'.toByte && byte <= '7'.toByte then
-        n = n*8L + (byte - '0'.toByte).toLong
-        sawDigit = true
-        i = i + 1
-      else
-        raise(Tar.Error(Tar.Error.Reason.BadOctal(field, data)))
-        done = true
-
-    if !sawDigit then raise(Tar.Error(Tar.Error.Reason.BadOctal(field, data)))
+    // `digits` includes the leading spaces (cumulative), which are skipped by value.
+    data.iterate(digits): index =>
+      val byte: Byte = data.at(index)
+      if byte != ' '.toByte then n = n*8L + (byte - '0'.toByte).toLong
 
     n.toInt.bits.u32
 
   def decodeNulText(data: Data): Text =
-    var i = 0
-    while i < data.length && data(i) != 0 do i = i + 1
-    data.segment((0).z till (i).z).utf8
+    data.segment(data.prefix { index => data.at(index) != 0 }).utf8
 
   def isZeroBlock(block: Data): Boolean =
-    var i = 0
-    val n = block.length.min(blockSize)
-    while i < n && block(i) == 0.toByte do i = i + 1
-    i == n
+    (block.prefix { index => block.at(index) == 0.toByte }: Interval).size
+    >= block.length.min(blockSize)
 
 case class TarHeader
   ( name:     Data,
