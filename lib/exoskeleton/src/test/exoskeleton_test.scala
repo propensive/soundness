@@ -77,6 +77,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             val Tree = Subcommand("tree", e"path-segment completion", hidden = true)
             val Files = Subcommand("files", e"path completion", hidden = true)
             val Verify = Subcommand("verify", e"verify a file")
+            val Home = Subcommand("home", e"check a path against the home directory", hidden = true)
 
             class Hue(name: Text)
             class Segment(name: Text)
@@ -136,6 +137,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                   given WorkingDirectory = summon[Cli].workingDirectory
 
                   rest match
+                    // Issue #1807: a leading `~` must name the home directory, so the exit
+                    // status reports where the argument actually resolved to.
+                    case Home() :: Pathname(file) :: _ =>
+                      execute(if file.encode == Directories.homeText then Exit.Ok else Exit.Fail(2))
+
                     case Verify() :: Pathname(file) :: _ => execute(Exit.Ok)
                     case Pathname(file) :: Nil           => execute(Exit.Ok)
                     case _                               => execute(Exit.Fail(1))
@@ -497,6 +503,23 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             test(m"subcommands and paths at one position combine on bash"):
               sh"$tool '{completions}' bash 2 0 /dev/null -- abcd files ''".exec[Text]()
             .assert { out => out.contains(t"verify") && out.contains(t"one.txt") }
+
+            // Issue #1807: a leading `~` was resolved as an ordinary relative name, so it
+            // named a nonexistent `~` entry in the working directory instead of the home
+            // directory, and offered no completions beneath it.
+            test(m"a bare tilde resolves to the home directory"):
+              sh"$tool files home '~'".exec[Exit]()
+            .assert(_ == Exit.Ok)
+
+            test(m"a tilde with a trailing slash resolves to the home directory"):
+              sh"$tool files home '~/'".exec[Exit]()
+            .assert(_ == Exit.Ok)
+
+            test(m"tilde completions list the home directory and keep the tilde"):
+              sh"$tool '{completions}' fish 3 0 /dev/null -- abcd files verify '~/'".exec[Text]()
+            .assert: output =>
+                val lines = output.cut(t"\n").stdlib.filter(!_.nil)
+                lines.nonEmpty && lines.forall(_.starts(t"~/"))
 
             test(m"subcommands and paths at one position combine on zsh"):
               sh"$tool '{completions}' zsh 3 0 /dev/null -- abcd files ''".exec[Text]()
