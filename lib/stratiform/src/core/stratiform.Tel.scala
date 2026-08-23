@@ -4093,10 +4093,10 @@ object Tel extends Tel2:
 
       var index = 2
 
-      while index < parts.length do
+      while index < parts.size do
         val s = parts.stdlib(index)
         val column = offsets.stdlib(index) + 1
-        val isFinal = index == parts.length - 1
+        val isFinal = index == parts.size - 1
 
         if s.startsWith("+") then
           // Layer selection: `+` followed by a declared layer's

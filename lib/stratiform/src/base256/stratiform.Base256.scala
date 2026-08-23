@@ -83,7 +83,7 @@ object Base256:
   // Exact alphabet membership, used by the pragma parser to classify a
   // phrase as a schema signature by form (§8: length and membership are
   // checked at parse time; palimpsest decodability at resolution time).
-  def valid(char: Char): Boolean = membership(char.toInt)
+  def valid(char: Char): Boolean = membership.readable(char.toInt)
 
   // Self-check the alphabet's defining property — every implementation
   // MUST verify it per §4. We do it at module load so a transcription

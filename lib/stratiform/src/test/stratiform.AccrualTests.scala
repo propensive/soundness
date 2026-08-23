@@ -421,11 +421,11 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       // whole parse, silently dropping the rest of the document — the AST and
       // every subsequent diagnostic.
       test(m"A blank line before a deeper child is not itself an error (§9)"):
-        validateRead(t"parent\n\n  child\n").items.length
+        validateRead(t"parent\n\n  child\n").items.size
       . assert(_ == 0)
 
       test(m"A blank line before a deeper comment block is valid (§11.1)"):
-        validateRead(t"parent\n\n  # note\n  child\n").items.length
+        validateRead(t"parent\n\n  # note\n  child\n").items.size
       . assert(_ == 0)
 
       test(m"A defect after a blank-then-deeper line still accrues (#1834)"):
@@ -468,7 +468,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       CorpusLoader.positive.each: testcase =>
         test(m"accrues no diagnostics on ${testcase.stem}"):
-          validateRead(testcase.source.utf8).items.length
+          validateRead(testcase.source.utf8).items.size
         . assert(_ == 0)
 
     suite(m"Located schema-validation errors (LSP diagnostics)"):

@@ -232,7 +232,7 @@ object SchemaSignature:
       var ok = true
 
       while ok && i < a.length do
-        if a(i) != b(i) then ok = false
+        if a.readable(i) != b.readable(i) then ok = false
         i += 1
 
       ok

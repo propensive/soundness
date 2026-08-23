@@ -318,7 +318,7 @@ def cli[bus <: Matchable](using executive: Executive)
       if recorded == null then true else
         safely:
           import anticipation.instantiables.instantInstantiable
-          val size = script.size().long
+          val size = script.filesize().long
           val mtime = script.modified[Long]()
 
           if size != recorded.size then false
@@ -641,7 +641,7 @@ def cli[bus <: Matchable](using executive: Executive)
             safely:
               import anticipation.instantiables.instantInstantiable
               hashScript(script).let: hash =>
-                scriptIdentity.set(ScriptIdentity(script.size().long, script.modified[Long](), hash))
+                scriptIdentity.set(ScriptIdentity(script.filesize().long, script.modified[Long](), hash))
 
           // Record the launcher this daemon was started from as
           // `<buildId> <size> <mtimeMillis>`, so that the launcher's staleness
