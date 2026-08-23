@@ -34,7 +34,6 @@ package escritoire
 
 // As `Scaffold`: the frozen-Array `map` shim stays because `Reshapable` widens the element
 // type and the nested frozen result rejects it. Capture checking, not draining.
-import proscenium.compat.*
 
 import scala.compiletime
 

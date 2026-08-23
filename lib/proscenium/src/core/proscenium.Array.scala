@@ -32,6 +32,7 @@
                                                                                                   */
 package proscenium
 
+import scala.annotation.targetName
 import scala.caps
 import scala.reflect.ClassTag
 
@@ -167,6 +168,19 @@ object Array:
     // writers), so the compat shims delegate through the stdlib's immutable `IArray`
     // surface, which exposes no write operations.
     inline def readable: scala.IArray[element] = array.asInstanceOf[scala.IArray[element]]
+
+    // The one constructive frozen-array operation the generic collections API cannot serve:
+    // murmuration's `map` requires a `Mappable` instance, and the frozen array has none (its
+    // element type carries a `ClassTag` obligation no typeclass slot can express). Promoted
+    // from the compat shims, but NOT `inline`: expansion re-typechecks the body at the call
+    // site, and in this file — where the opaque alias is transparent — the receiver proxy
+    // dealiases to `scala.Array`, whose exclusive `{}` cannot subsume the read-only receiver.
+    // The explicit `element2` parameter is what stops a nested frozen array's fresh `any.rd`
+    // being re-minted at the application site.
+    @targetName("frozenMap")
+    def map[element2: scala.reflect.ClassTag](lambda: element => element2)
+    :   Array[element2]^{} =
+      Array.frozen(array.readable.map(lambda))
 
   given arrayIsSpreadable: [element] => (Spreadable[Array[element]^{}] { type Out = scala.Array[element]^{} }) =
     new Spreadable[Array[element]^{}]:
