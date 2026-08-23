@@ -54,6 +54,23 @@ import filesystemBackends.virtualMachineFilesystem
 
 object Pathname:
   def unapply(argument: Argument)(using WorkingDirectory, Cli, System): Option[Path on Local] =
+    // The property is read straight off the `System` capability rather than through
+    // `Directories.homeText`, which panics when it is unset. An unknown home leaves `~` alone,
+    // to resolve (and fail) like any other name.
+    val home: Optional[Text] = summon[System](t"user.home").let: text =>
+      if text.length > 1 && text.ends(t"/") then text.skip(1, Bidi.Rtl) else text
+
+    // A shell expands `~` before exec, but a quoted argument and every partial word handed to
+    // the completion script arrive with the tilde intact, so it is expanded here too.
+    def expand(text: Text): Text = home.lay(text): home =>
+      if text == t"~" then home else if text.starts(t"~/") then home+text.skip(1) else text
+
+    // The inverse, so a completion under a tilde stays short and keeps its tilde.
+    def abbreviate(text: Text): Text = home.lay(text): home =>
+      if text == home then t"~"
+      else if text.starts(home+t"/") then t"~"+text.skip(home.length)
+      else text
+
     safely:
       def suggest(path: Text): Suggestion =
         val point = path.s.lastIndexOf('/', path.length - 2) + 1
@@ -98,11 +115,14 @@ object Pathname:
         listing ::: prior
 
       else
+        val tilde = home.present && (argument() == t"~" || argument().starts(t"~/"))
         val absolute = argument().starts(t"/")
-        val directory = argument().ends(t"/")
+        // A bare `~` names the home directory itself, so it lists that directory's children,
+        // exactly as `~/` does; without this it would list the home directory's siblings.
+        val directory = argument().ends(t"/") || argument() == t"~"
         // Resolution runs under its own optional tactic; no aliased writer.
         val prototype = scala.caps.unsafe.unsafeAssumeSeparate:
-          workingDirectory.resolve(argument())
+          workingDirectory.resolve(expand(argument()))
         val showAll = argument.tab.or(Prim) > Prim || prototype.name.starts(t".")
         val base: Optional[Path on Local] = if directory then prototype else prototype.parent
         val children0 = base.let(base => List.of(base.children.stdlib.toList)).or(List[Path on Local]())
@@ -120,9 +140,11 @@ object Pathname:
             val slash = if directory then t"/" else t""
 
             suggest:
-              if absolute then path.encode+slash else workingDirectory.toward(path).encode+slash
+              if tilde then abbreviate(path.encode)+slash
+              else if absolute then path.encode+slash
+              else workingDirectory.toward(path).encode+slash
 
           listing ::: prior
 
     scala.caps.unsafe.unsafeAssumeSeparate:
-      safely(workingDirectory.resolve(argument())).option
+      safely(workingDirectory.resolve(expand(argument()))).option
