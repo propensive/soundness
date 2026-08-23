@@ -109,6 +109,9 @@ extends Topical:
       case List(value) => mapping(value())
       case _           => Unset
 
-    given suggestions: Topic is Discoverable = _ => options.map(suggestible.suggest(_))
+    // Marked as operand values, not subcommands: they are candidates for this flag's operand, so
+    // the help tree must not descend into them (see `Suggestion.operand`).
+    given suggestions: Topic is Discoverable =
+      _ => options.map(suggestible.suggest(_).copy(operand = true))
 
     this()

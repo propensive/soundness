@@ -50,10 +50,12 @@ object Suggestion:
       prefix:      Text                      = t"",
       suffix:      Text                      = t"",
       expanded:    Boolean                   = false,
-      group:       Optional[CommandGroup]    = Unset )
+      group:       Optional[CommandGroup]    = Unset,
+      operand:     Boolean                   = false )
   :   Suggestion =
 
-    new Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, expanded, group)
+    new Suggestion
+      (core, description, hidden, incomplete, aliases, prefix, suffix, expanded, group, operand)
 
 
 case class Suggestion
@@ -65,6 +67,12 @@ case class Suggestion
     prefix:      Text,
     suffix:      Text,
     expanded:    Boolean,
-    group:       Optional[CommandGroup] ):
+    group:       Optional[CommandGroup],
+    // A candidate *value* for an operand — a filename, or one of a `select`'s options — rather
+    // than a subcommand. Both are offered identically at the cursor, but only a subcommand is
+    // part of the command's interface, and the help tree is built by probing these same
+    // suggestions: without this distinction, `--help` enumerates the working directory (or
+    // whatever else the machine happens to hold) as though it were syntax.
+    operand:     Boolean = false ):
 
   def text: Text = prefix+core+suffix

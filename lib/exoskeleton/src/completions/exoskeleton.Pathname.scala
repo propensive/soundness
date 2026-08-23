@@ -75,8 +75,10 @@ object Pathname:
         val prefix = path.keep(point)
         val core = path.skip(point)
         // Only a directory leaves the completion mid-path; a file candidate is complete,
-        // and accepting it should advance to the next argument.
-        Suggestion(core, Unset, incomplete = path.ends(t"/"), prefix = prefix)
+        // and accepting it should advance to the next argument. Every candidate is an operand
+        // value rather than a subcommand, so the help tree does not enumerate the working
+        // directory as though it were syntax (see `Suggestion.operand`).
+        Suggestion(core, Unset, incomplete = path.ends(t"/"), prefix = prefix, operand = true)
 
       // Each branch adds to `prior` rather than replacing it: another extractor evaluated
       // against the same argument (typically a `Subcommand`) must keep its suggestions.

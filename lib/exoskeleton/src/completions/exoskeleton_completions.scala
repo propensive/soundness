@@ -173,7 +173,10 @@ def helpTree
         suggestions.stdlib.distinctBy(_.core).to(List).bind: suggestion =>
           val childPrefix = prefix :+ suggestion.core
 
-          if suggestion.hidden || suggestion.incomplete then Nil
+          // An operand *value* (a filename, a `select` option) is offered at the cursor exactly
+          // as a subcommand is, but it is not part of the command's interface: descending into
+          // it would document whatever the machine currently holds as though it were syntax.
+          if suggestion.hidden || suggestion.incomplete || suggestion.operand then Nil
           else
             List
               ( build
