@@ -51,7 +51,9 @@ object Molecule:
       else
         val carbon = PeriodicTable.C -> molecule.elements.stdlib(PeriodicTable.C)
 
-        val hydrogen =
+        // Ascribed: the branded literal constructor narrows the `else` branch to
+        // `... & Populated`, and the branch lub would otherwise be a union.
+        val hydrogen: List[(Chemical.Element, Int)] =
           if !molecule.elements.defines(PeriodicTable.H) then Nil else
             List(PeriodicTable.H -> molecule.elements.stdlib(PeriodicTable.H))
 

@@ -29,13 +29,9 @@ keywords:
 check-givens:
 	python3 etc/check-given-uniqueness.py
 
-check-compat:
-	python3 etc/check-compat-ratchet.py
-
 build:
 	./mill groupCheck.validate
 	python3 etc/check-given-uniqueness.py
-	python3 etc/check-compat-ratchet.py
 	./mill soundness.all
 	./mill benches.compile
 

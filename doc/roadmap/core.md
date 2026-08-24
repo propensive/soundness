@@ -11,9 +11,9 @@ The answer is already in place: proscenium is the opaque boundary. Its collectio
 standard library's data structures behind total APIs, its `Array` makes mutation
 separation-checked, and the `-Yimports:java.lang,proscenium` prelude makes the curated surface
 ambient while leaving everything else deliberately out of reach. What remains is the drain: the
-migration shims in `proscenium.compat` exist precisely so that call sites could compile
-unchanged on day one, and every one of them is an independently deletable forwarder. The drain
-loop is deprecate → fix call sites → delete. This track is complete when the standard library
+migration shims in `proscenium.compat` existed precisely so that call sites could compile
+unchanged on day one, and every one of them was an independently deletable forwarder. The
+drain loop was deprecate → fix call sites → delete; the compat file is now gone. This track is complete when the standard library
 is invisible — in signatures, in stack traces, in rendered values — everywhere but inside
 proscenium itself.
 
@@ -29,21 +29,14 @@ Done when:
 
     git grep -lE 'TreeMap|TreeSet|TrieMap|SortedMap|SortedSet' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
 
-## core-2: `proscenium.compat` is empty
+## core-2: `proscenium.compat` is empty — DONE (2026-08-24)
 
-Horizon: near → mid
-Needs: core-1
-Baseline: 475 importing files; the compat file is 551 lines (measured 2026-08-01)
-
-The compat file's own header states the contract: each shim is an independently deletable
-inline forwarder, and the file's emptiness is the completion signal. The importer count is the
-interim gauge.
-
-Done when:
-
-    git grep -l 'import proscenium.compat' -- lib | wc -l    # 0
-
-and `lib/proscenium/src/core/proscenium.compat.scala` contains no members.
+Baseline was 475 importing files and a 551-line compat file (measured 2026-08-01). The file
+and its ratchet (`etc/check-compat-ratchet.py`, `etc/compat-baseline.txt`) are deleted; the
+compiler is now the guard. The final sites carried their proofs through the type system
+(branded literals, `prim`/`unique`, branded scans) or, at the two places a proof cannot
+follow the program — quote boundaries and index arithmetic — through `attested` and
+`readUnchecked` with construction comments.
 
 ## core-3: no direct `scala.collection` imports
 

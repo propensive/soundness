@@ -34,10 +34,7 @@ package aviation
 
 import rudiments.*
 import denominative.*
-
-// Residue: `head` and `tail` on a lazy `Chain` are partial; they await the
-// partial-operations tranche.
-import proscenium.compat.{head, tail}
+import vacuous.*
 
 // An iCalendar recurrence set: the union of one or more recurrences' occurrence streams (`include`,
 // e.g. each `rrule.occurrences`) plus explicit extra dates (`rdates`, RFC 5545 `RDATE`), minus
@@ -51,26 +48,32 @@ object RecurrenceSet:
     set =>
       val excluded = set.exdates.stdlib.toSet
       val streams = List.of(set.include.stdlib :+ Chain.from(set.rdates.stdlib.sorted))
-      dedup(merge(streams)).filter(!excluded.contains(_))
+      dedup(streams.occupied.lay(Chain.empty[point])(_.reduce(merge))).filter(!excluded.contains(_))
 
-  // Lazily merge ascending streams into one ascending stream (repeatedly emit the least head).
-  private def merge[point](streams: List[Chain[point]])(using order: Ordering[point])
+  // Lazily merge two ascending streams into one ascending stream (emit the lesser head first).
+  // The `#::` matches prove non-emptiness structurally and force nothing beyond the two heads;
+  // the n-way merge is a `reduce` of this over the (proven non-empty) list of streams.
+  private def merge[point](left: Chain[point], right: Chain[point])(using order: Ordering[point])
   :   Chain[point] =
 
-    streams.stdlib.filter(!_.nil) match
-      case Nil => Chain.empty
+    left match
+      case leftHead #:: leftTail =>
+        right match
+          case rightHead #:: rightTail =>
+            if order.lteq(leftHead, rightHead) then leftHead #:: merge(leftTail, right)
+            else rightHead #:: merge(left, rightTail)
 
-      case nonEmpty =>
-        val index = nonEmpty.indices.minBy(nonEmpty(_).head)
-        val chosen = nonEmpty(index)
+          case _ =>
+            left
 
-        chosen.head #:: merge(List.of(nonEmpty.updated(index, chosen.tail)))
+      case _ =>
+        right
 
   // Drop duplicates from an ascending stream (equal values are adjacent).
   private def dedup[point](stream: Chain[point])(using order: Ordering[point]): Chain[point] =
     stream match
-      case head #:: tail => head #:: dedup(Chain.of(tail.stdlib.dropWhile(order.equiv(_, head))))
-      case _             => Chain.empty
+      case first #:: rest => first #:: dedup(Chain.of(rest.stdlib.dropWhile(order.equiv(_, first))))
+      case _              => Chain.empty
 
 case class RecurrenceSet[point]
   ( include: List[Chain[point]] = Nil,

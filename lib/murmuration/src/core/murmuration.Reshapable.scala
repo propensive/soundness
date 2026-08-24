@@ -56,11 +56,14 @@ object Reshapable extends Reshapable.Fallback:
   // rather than silently reordering.
   trait Stable extends Reshapable
 
-  given list: [element, element2]
-  =>  List[element] is Reshapable.Stable by element2 to List[element2] =
+  // `Self` is subtype-parametric (as `Traversable`'s instances are) so intersections like
+  // `List[T] & Populated` — from `occupied` or a branded literal — also match.
+  given list: [element, element2, list <: List[element]]
+  =>  list is Reshapable.Stable by element2 to List[element2] =
     List.from(_)
 
-  given set: [element, element2] => Set[element] is Reshapable by element2 to Set[element2] =
+  given set: [element, element2, set <: Set[element]]
+  =>  set is Reshapable by element2 to Set[element2] =
     Set.from(_)
 
   // `Text` rebuilds from its own characters, so the generic operations (`keep`, `skip`, `filter`,
@@ -69,8 +72,8 @@ object Reshapable extends Reshapable.Fallback:
   given text: [text <: Text] => text is Reshapable.Stable by Char to Text =
     chars => Text(String(chars.toArray))
 
-  given sequence: [element, element2]
-  =>  Sequence[element] is Reshapable.Stable by element2 to Sequence[element2] =
+  given sequence: [element, element2, sequence <: Sequence[element]]
+  =>  sequence is Reshapable.Stable by element2 to Sequence[element2] =
     Sequence.from(_)
 
   given indexedSeq: [element, element2]

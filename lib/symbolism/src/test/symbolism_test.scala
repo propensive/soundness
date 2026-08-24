@@ -61,7 +61,7 @@ object Vector2:
 case class Chunk(text: Text)
 
 object Chunk:
-  given concatenable: Chunk is Concatenable by Chunk =
+  given concatenable: Chunk is Concatenable by Chunk to Chunk =
     (left, right) => Chunk(left.text+right.text)
 
   given zeroic: Chunk is Zeroic:

@@ -163,7 +163,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           producer.put(Data.fill(5)(i => (i + 10).toByte))
           producer.finish()
           unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await())).flatMap(_.readable.to(List))
-        . assert(_ == List[Byte](0, 1, 2, 10, 11, 12, 13, 14))
+        . assert(_.map(_.toInt) == List(0, 1, 2, 10, 11, 12, 13, 14))
 
         test(m"Synchronous text collection joins puts"):
           Producer.collect[Text](4): producer =>
@@ -180,7 +180,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           Producer.collect[Data](): producer =>
             producer.put(Data.fill(3)(_.toByte))
             producer.put(Data.fill(5)(i => (i + 10).toByte))
-        . assert(_.to[List] == List[Byte](0, 1, 2, 10, 11, 12, 13, 14))
+        . assert(_.to[List].map(_.toInt) == List(0, 1, 2, 10, 11, 12, 13, 14))
 
         test(m"Push bytes one at a time (synchronous)"):
           Producer.collect[Data](): producer =>
@@ -188,7 +188,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             while i < 6 do
               producer.push((i*2).toByte)
               i += 1
-        . assert(_.to[List] == List[Byte](0, 2, 4, 6, 8, 10))
+        . assert(_.to[List].map(_.toInt) == List(0, 2, 4, 6, 8, 10))
 
         test(m"Push bytes across a block boundary (streaming)"):
           val producer = Producer[Data](4)
@@ -474,7 +474,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val cursor = Cursor[Data](blocks.iterator)
           cursor.remainder.stdlib.map(_.readable).flatten.to(List)
 
-        . assert(_ == List[Byte](1, 2, 3, 4, 5, 6, 7))
+        . assert(_.map(_.toInt) == List(1, 2, 3, 4, 5, 6, 7))
 
         test(m"Cursor[Data] remainder mid-block emits cross-block tail"):
           val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
@@ -482,7 +482,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           for i <- 0 until 3 do cursor.next()
           cursor.remainder.stdlib.map(_.readable).flatten.to(List)
 
-        . assert(_ == List[Byte](4, 5, 6, 7, 8))
+        . assert(_.map(_.toInt) == List(4, 5, 6, 7, 8))
 
         test(m"Cursor[Data] remainder inside hold still emits unconsumed tail"):
           val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
@@ -490,7 +490,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           for i <- 0 until 3 do cursor.next()
           cursor.hold(cursor.remainder.stdlib.map(_.readable).flatten.to(List))
 
-        . assert(_ == List[Byte](4, 5, 6, 7, 8))
+        . assert(_.map(_.toInt) == List(4, 5, 6, 7, 8))
 
       suite(m"Datum tests"):
         test(m"Datum from ASCII byte equals same Byte literal"):
@@ -679,7 +679,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
           Region.over[Data, Data](buffer, 2, 5): region =>
             range => region.materialize(range)
-        . assert(_.to[List] == List[Byte](2, 3, 4))
+        . assert(_.to[List].map(_.toInt) == List(2, 3, 4))
 
         test(m"transfer copies no more than the slate's space"):
           val source = sample(10)
@@ -716,7 +716,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val gather = Gather()
           Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](), Array.of[Byte](4, 5))).pump(gather)
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
-        . assert(_ == List[Byte](1, 2, 3, 4, 5))
+        . assert(_.to[List].map(_.toInt) == List(1, 2, 3, 4, 5))
 
         test(m"through doubles each byte"):
           val gather = Gather()
@@ -752,13 +752,13 @@ object Tests extends Suite(m"Zephyrine tests"):
           intake.put(Array.of[Byte](1, 2))
           intake.finish()
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.to(List)
-        . assert(_ == List[Byte](1, 2, 99))
+        . assert(_.map(_.toInt) == List(1, 2, 99))
 
         test(m"duct flush emits terminal state at end of a pulled stream"):
           val gather = Gather()
           Stream(Array.of[Byte](1, 2)).viaDuct(Trailer()).pump(gather)
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
-        . assert(_ == List[Byte](1, 2, 99))
+        . assert(_.map(_.toInt) == List(1, 2, 99))
 
         test(m"conduit transfers data across threads"):
           Conduit[Data]() match
@@ -973,11 +973,11 @@ object Tests extends Suite(m"Zephyrine tests"):
               range => region.visit(range) { index => collected = region(index) :: collected }
 
           collected.reverse
-        . assert(_ == List[Byte](1, 2, 3, 4, 5))
+        . assert(_.to[List].map(_.toInt) == List(1, 2, 3, 4, 5))
 
         test(m"memoize drains a byte stream into a single immutable value"):
           Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5))).memoize.to[List]
-        . assert(_ == List[Byte](1, 2, 3, 4, 5))
+        . assert(_.to[List].map(_.toInt) == List(1, 2, 3, 4, 5))
 
         test(m"memoize of an empty stream yields an empty value"):
           Iterator.empty[Data].stream.memoize.to[List]
@@ -993,12 +993,12 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"truncate limits a stream to its first elements"):
           small.stream.truncate(3).memoize.readable.to(List)
-        . assert(_ == List[Byte](1, 2, 3))
+        . assert(_.map(_.toInt) == List(1, 2, 3))
 
         test(m"truncate across chunk boundaries"):
           Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5, 6)))
           . truncate(4).memoize.to[List]
-        . assert(_ == List[Byte](1, 2, 3, 4))
+        . assert(_.to[List].map(_.toInt) == List(1, 2, 3, 4))
 
         test(m"truncate to more than the stream holds yields the whole stream"):
           small.stream.truncate(100).memoize.to[List]
@@ -1010,12 +1010,12 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"discard skips a stream's first elements"):
           small.stream.discard(2).memoize.to[List]
-        . assert(_ == List[Byte](3, 4, 5))
+        . assert(_.to[List].map(_.toInt) == List(3, 4, 5))
 
         test(m"discard across chunk boundaries"):
           Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5, 6)))
           . discard(4).memoize.to[List]
-        . assert(_ == List[Byte](5, 6))
+        . assert(_.to[List].map(_.toInt) == List(5, 6))
 
         test(m"discard of more than the stream holds yields an empty stream"):
           small.stream.discard(100).memoize.to[List]
@@ -1023,11 +1023,11 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"truncate and discard compose to a slice"):
           Stream(Data.fill(20)(_.toByte)).discard(5).truncate(5).memoize.to[List]
-        . assert(_ == List[Byte](5, 6, 7, 8, 9))
+        . assert(_.to[List].map(_.toInt) == List(5, 6, 7, 8, 9))
 
         test(m"truncate composes with a duct"):
           small.stream.truncate(3).viaDuct(Doubler()).memoize.to[List]
-        . assert(_ == List[Byte](1, 1, 2, 2, 3, 3))
+        . assert(_.to[List].map(_.toInt) == List(1, 1, 2, 2, 3, 3))
 
         test(m"gather reduces over regions without boxing"):
           bytes.stream.gather(0L): region =>
@@ -1040,7 +1040,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"toProgression yields the stream's chunks in order"):
           Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5))).toProgression.stdlib.to(List)
           . map(_.to[List])
-        . assert(_ == List(List[Byte](1, 2, 3), List[Byte](4, 5)))
+        . assert(_ == List(List(1, 2, 3).map(_.toByte), List(4, 5).map(_.toByte)))
 
         test(m"toProgression of an empty stream is empty"):
           Iterator.empty[Data].stream.toProgression.stdlib.to(List)
@@ -1087,30 +1087,30 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"streamOf lends a bounded sub-stream of a cursor"):
           val cursor = Cursor(Data.fill(10)(_.toByte))
           scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 4).memoize.to[List])
-        . assert(_ == List[Byte](0, 1, 2, 3))
+        . assert(_.to[List].map(_.toInt) == List(0, 1, 2, 3))
 
         test(m"the lent cursor resumes at the boundary"):
           val cursor = Cursor(Data.fill(10)(_.toByte))
           scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 4).memoize)
           cursor.remainder.stdlib.to(List).flatMap(_.readable.to(List))
-        . assert(_ == List[Byte](4, 5, 6, 7, 8, 9))
+        . assert(_.map(_.toInt) == List(4, 5, 6, 7, 8, 9))
 
         test(m"streamOf without a length lends the whole remainder"):
           val cursor = Cursor(Data.fill(6)(_.toByte))
           scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor).memoize.to[List])
-        . assert(_ == List[Byte](0, 1, 2, 3, 4, 5))
+        . assert(_.to[List].map(_.toInt) == List(0, 1, 2, 3, 4, 5))
 
         test(m"streamOf spans cursor refills"):
           val cursor = Cursor(Iterator(Array.of[Byte](0, 1, 2), Array.of[Byte](3, 4, 5), Array.of[Byte](6.toByte)))
           scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 5).memoize.to[List])
-        . assert(_ == List[Byte](0, 1, 2, 3, 4))
+        . assert(_.to[List].map(_.toInt) == List(0, 1, 2, 3, 4))
 
         test(m"a lent sub-stream and the resumed cursor partition the input"):
           val cursor = Cursor(Iterator(Array.of[Byte](0, 1, 2), Array.of[Byte](3, 4, 5), Array.of[Byte](6.toByte)))
           val lent = scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 5).memoize.to[List])
           val rest = cursor.remainder.stdlib.to(List).flatMap(_.readable.to(List))
           (lent, rest)
-        . assert(_ == (List[Byte](0, 1, 2, 3, 4), List[Byte](5, 6)))
+        . assert { v => (v(0).map(_.toInt), v(1).map(_.toInt)) == (List(0, 1, 2, 3, 4), List(5, 6)) }
 
         // The ring holds `Integer.highestOneBit(depth.max(2)*2 - 1)` blocks — two, at
         // depth 2 — so publishing exactly that many staging blocks single-threadedly

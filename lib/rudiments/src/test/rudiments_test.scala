@@ -103,8 +103,8 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == false)
 
     suite(m"Mapping tests"):
-      // The `Map[…]`/`Set[…]` ascriptions are the established pattern for opaque-alias literals
-      // under `soundness.*` + `compat.*` (a bare literal in a receiver position mis-elaborates).
+      // The `Map[…]`/`Set[…]` ascriptions are the established pattern for opaque-alias
+      // literals (a bare literal in a receiver position mis-elaborates).
       test(m"List map preserves shape"):
         val xs: List[Int] = List(1, 2, 3)
         xs.map(_ + 1)
@@ -294,6 +294,87 @@ object Tests extends Suite(m"Rudiments Tests"):
         ledger.values
       . assert(_ == List(3, 1, 2))
 
+    suite(m"Branded literal tests"):
+      // Qualified throughout: in this test module the unqualified `List` resolves to Scala's,
+      // so an unqualified suite would test the wrong collection (discovered when the negative
+      // cases passed vacuously).
+      test(m"a non-empty List literal proves itself: head is bare"):
+        val first: Int = proscenium.List(1, 2, 3).head
+        first
+      . assert(_ == 1)
+
+      test(m"a singleton List literal is branded too"):
+        val sole: Int = proscenium.List(42).head
+        sole
+      . assert(_ == 42)
+
+      test(m"a non-empty Sequence literal proves itself"):
+        val first: Int = proscenium.Sequence(5, 6).head
+        first
+      . assert(_ == 5)
+
+      test(m"an empty List literal is not Populated"):
+        demilitarize:
+          val xs = proscenium.List[Int]()
+          xs.head
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+      test(m"a splatted sequence is not Populated"):
+        demilitarize:
+          val source: proscenium.List[Int] = proscenium.List(1, 2)
+          val xs = proscenium.List(source.stdlib*)
+          xs.head
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+      test(m"a branded literal compares with its unbranded self"):
+        proscenium.List(1, 2, 3) == (proscenium.List(1) + proscenium.List(2, 3)
+            : proscenium.List[Int])
+      . assert(_ == true)
+
+    suite(m"Attested tests"):
+      test(m"an attested ordinal reads bare, with no Optional"):
+        import denominative.asymptotics.linearAccessComplexity
+        val xs: proscenium.List[Int] = proscenium.List(10, 20, 30)
+
+        unsafely:
+          // In bounds by construction: the literal above has three elements.
+          val third: Int = xs(xs.attested(Ter))
+          third
+      . assert(_ == 30)
+
+      test(m"the block form scopes the attestation"):
+        val xs: Sequence[Int] = Sequence(1, 2, 4)
+
+        unsafely:
+          // In bounds by construction: the literal above has three elements.
+          xs.attested(Sec): ordinal =>
+            val value: Int = xs(ordinal)
+            value
+      . assert(_ == 2)
+
+      test(m"an attested map key reads bare"):
+        val map: Map[Text, Int] = Map(t"one" -> 1, t"two" -> 2)
+
+        unsafely:
+          // Defined by construction: the literal above binds the key.
+          val value: Int = map(map.attested(t"two"))
+          value
+      . assert(_ == 2)
+
+      test(m"an attested interval drives iterate"):
+        val xs: Sequence[Int] = Sequence(1, 2, 3, 4)
+        var total = 0
+
+        unsafely:
+          // Valid by construction: [0, 2) lies within the four-element literal above.
+          xs.iterate(Interval.zerary(0, 2).attested(xs)): ordinal =>
+            total += xs(ordinal)
+
+        total
+      . assert(_ == 3)
+
     suite(m"Definable tests"):
       test(m"define replaces a sequence element positionally"):
         val xs: Sequence[Int] = Sequence(1, 2, 3)
@@ -397,6 +478,52 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"`spot` returns Unset when nothing matches"):
         text.spot { i => text(i) == 'z' }
       . assert(_ == Unset)
+
+      test(m"`tail` drops the first element of a collection"):
+        val list: proscenium.List[Int] =
+          (proscenium.List(1, 2, 3): proscenium.List[Int]).tail
+        list.stdlib
+      . assert(_ == scala.List(2, 3))
+
+      test(m"`tail` of an empty collection is empty"):
+        val list: proscenium.List[Int] = proscenium.List.empty[Int].tail
+        list.stdlib
+      . assert(_ == scala.Nil)
+
+      test(m"`tail` drops the first character of a text"):
+        text.tail
+      . assert(_ == "ello".tt)
+
+      test(m"`spot(after)` resumes the scan from the interval's limit"):
+        // text = "hello": first 'l' after the prefix of non-'l's... then scan again past it
+        val first = text.prefix { i => text(i) != 'l' }
+        text.spot(first) { i => text(i) == 'l' }.let { i => (i: Ordinal).n0 }
+      . assert(_ == 2)
+
+      test(m"`spot(after)` returns Unset when nothing matches beyond the interval"):
+        val all = text.prefix { _ => true }
+        text.spot(all) { _ => true }
+      . assert(_ == Unset)
+
+      test(m"`prefix(after)` extends the interval through the next run"):
+        val aitch = text.prefix { i => text(i) == 'h' }
+        val interval: Interval = text.prefix(aitch) { i => text(i) == 'e' }
+        ((interval: Interval).start.n0, interval.size)
+      . assert(_ == (0, 2))
+
+      test(m"`prefix(after)` with an empty run returns `after` unchanged"):
+        val all = text.prefix { _ => true }
+        val interval: Interval = text.prefix(all) { _ => true }
+        ((interval: Interval).start.n0, interval.size)
+      . assert(_ == (0, 5))
+
+      test(m"chained `prefix(after)` scans equal one combined scan"):
+        val digits = Array.of(1, 2, 0, 0, 7)
+        val zeros = digits.prefix { i => digits.at(i) != 0 }
+        val run = digits.prefix(zeros) { i => digits.at(i) == 0 }
+        val combined = digits.prefix { i => digits.at(i) != 7 }
+        (run: Interval) == (combined: Interval)
+      . assert(_ == true)
 
       test(m"`lead` spans the matching prefix and stops at the first mismatch"):
         val interval: Interval = text.prefix { i => text(i) != 'l' }
@@ -837,11 +964,12 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Map(1 -> "one", 2 -> "two!"))
 
       test(m"Collation"):
-        val map1 = Map(1 -> List("one"), 2 -> List("two"))
-        val map2 = Map(2 -> List("deux"), 3 -> List("trois"))
+        val map1: Map[Int, List[String]] = Map(1 -> List("one"), 2 -> List("two"))
+        val map2: Map[Int, List[String]] = Map(2 -> List("deux"), 3 -> List("trois"))
         map1.collate(map2): (left, right) =>
-          left ::: right
-      . assert(_ == Map(1 -> List("one"), 2 -> List("two", "deux"), 3 -> List("trois")))
+          left + right
+      . assert(_ == (Map(1 -> List("one"), 2 -> List("two", "deux"), 3 -> List("trois"))
+            : Map[Int, List[String]]))
 
       test(m"runs"):
         List(1, 2, 2, 1, 1, 1, 4, 4).runs

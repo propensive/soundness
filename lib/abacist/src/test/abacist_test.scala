@@ -207,9 +207,9 @@ object Tests extends Suite(m"Abacist Tests"):
 
       suite(m"Aggregate tests"):
         test(m"Total of several values"):
-          List[Weight](Quanta(10), Quanta(1, 6), Quanta(2, 4, 1)).total
+          List(Quanta(10): Weight, Quanta(1, 6), Quanta(2, 4, 1)).total
         . assert(_ == (Quanta(2, 6, 1): Weight))
 
         test(m"Mean of several values"):
-          List[Weight](Quanta(10), Quanta(1, 6), Quanta(2, 4, 1)).mean
+          List(Quanta(10): Weight, Quanta(1, 6), Quanta(2, 4, 1)).mean
         . assert(_ == (Quanta(11, 6): Weight))

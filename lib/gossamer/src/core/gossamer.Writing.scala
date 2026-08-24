@@ -55,6 +55,7 @@ object Writing:
   given showable: Writing is Showable = _.text
 
   given concatenable: Writing is Concatenable:
+    type Result = Writing
     type Operand = Writing
     def concat(left: Writing, right: Writing): Writing = textual.concat(left, right)
 

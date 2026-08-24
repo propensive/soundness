@@ -32,16 +32,7 @@
                                                                                                   */
 package rudiments
 
-// A phantom marker recording a *proof of non-emptiness* in a value's type: `occupied` casts a
-// value it has checked to be non-empty to `value & Populated`, and operations that are only total
-// on non-empty collections (`head`, `reduce`, …) demand a `Populated` receiver, so partiality is
-// discharged at compile time:
-//
-//     literal-constructed or statically-proven `Populated` values access `head` directly
-//
-// A *structural refinement*, not a trait: refinements are erasure-transparent, so
-// `Text & Populated` still erases to `String`. A nominal marker would erase intersections and
-// `self <: Populated` bounds to the marker's own class, inserting checkcasts that fail at
-// runtime — the underlying value never actually implements it. (The same technique as `Ordinal
-// in value.type`, denominative's index-confinement proof.)
-type Populated = Any { type Occupied = true }
+// The proof type moved to `proscenium` so the collection companions can brand their non-empty
+// literal constructors; this alias keeps every existing `rudiments.Populated` reference (and
+// the `soundness` export) unchanged.
+type Populated = proscenium.Populated

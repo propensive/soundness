@@ -65,7 +65,8 @@ object Multiplicable:
   given byte: Byte is Multiplicable by Byte to Byte = Multiplicable:
     (multiplicand, multiplier) => (multiplicand*multiplier).toByte
 
-  given concatenable: [textual: Concatenable by textual: Zeroic] => textual is Multiplicable:
+  given concatenable: [textual: Concatenable by textual to textual: Zeroic]
+  =>  textual is Multiplicable:
     type Self = textual
     type Operand = Int
     type Result = textual

@@ -41,20 +41,20 @@ import prepositional.*
 // collection are gated on the acknowledgement of that linear cost, like `Countable`.
 object Appendable:
   // Appending to a `List` copies all of it: O(n), so the instance demands the marker.
-  given list: [element] => (complexity: LinearSizeComplexity)
-  =>  List[element] is Appendable by element =
-    (list, element) => List.of(list.stdlib :+ element)
+  given list: [element, list <: List[element]] => (complexity: LinearSizeComplexity)
+  =>  list is Appendable by element =
+    (list, element) => List.of(list.stdlib :+ element).asInstanceOf[list]
 
-  given sequence: [element] => Sequence[element] is Appendable by element =
-    (sequence, element) => Sequence.of(sequence.stdlib :+ element)
+  given sequence: [element, sequence <: Sequence[element]] => sequence is Appendable by element =
+    (sequence, element) => Sequence.of(sequence.stdlib :+ element).asInstanceOf[sequence]
 
   // Lazily: nothing is forced by the append itself.
   given chain: [element] => Chain[element] is Appendable by element =
     (chain, element) => Chain.of(chain.stdlib.appended(element))
 
   // A `Set` has no ends, so `:+` is plain membership addition (the stdlib's `set + element`).
-  given set: [element] => Set[element] is Appendable by element =
-    (set, element) => Set.of(set.stdlib + element)
+  given set: [element, set <: Set[element]] => set is Appendable by element =
+    (set, element) => Set.of(set.stdlib + element).asInstanceOf[set]
 
   // The frozen array is rebuilt in full: O(n), so the instance demands the marker.
   given frozenArray: [element: scala.reflect.ClassTag] => (complexity: LinearSizeComplexity)

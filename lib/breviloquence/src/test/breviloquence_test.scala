@@ -183,7 +183,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       test(m"Parse byte string [01 02 03 04]"):
         val bytes = Cbor.ast(Cbor.Ast.parse(hex("4401020304"))).as[Data]
         bytes.to[List]
-      . assert(_ == List[Byte](1, 2, 3, 4))
+      . assert(_ == List(1.toByte, 2.toByte, 3.toByte, 4.toByte))
 
     suite(m"Parsing arrays"):
       test(m"Parse empty array"):
@@ -487,7 +487,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"a byte-string field reads in place"):
         encoded(Blob(hex("01020304"))).read[Blob in Cbor].data.to[List]
-      . assert(_ == List[Byte](1, 2, 3, 4))
+      . assert(_ == List(1.toByte, 2.toByte, 3.toByte, 4.toByte))
 
       test(m"an indefinite-length map parses to the same record"):
         hex("bf 6178 03 6179 04 ff").read[Point in Cbor]

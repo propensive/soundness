@@ -30,53 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package symbolism
+package proscenium
 
-import prepositional.*
-
-object Addable:
-  def apply[augend, addend, result](lambda: (augend, addend) -> result)
-  :   augend is Addable by addend to result =
-
-    new Addable:
-
-      type Self = augend
-      type Result = result
-      type Operand = addend
-
-      def add(augend: augend, addend: addend): result = lambda(augend, addend)
-
-
-  given double: Double is Addable by Double to Double = Addable:
-    (augend, addend) => augend + addend
-
-  given float: Float is Addable by Float to Float = Addable:
-    (augend, addend) => augend + addend
-
-  given long: Long is Addable by Long to Long = Addable:
-    (augend, addend) => augend + addend
-
-  given int: Int is Addable by Int to Int = Addable:
-    (augend, addend) => augend + addend
-
-  given int2: Int is Addable by Double to Double = Addable:
-    (augend, addend) => augend + addend
-
-  given int3: Double is Addable by Int to Double = Addable:
-    (augend, addend) => augend + addend
-
-  given short: Short is Addable by Short to Short = Addable:
-    (augend, addend) => (augend + addend).toShort
-
-  given byte: Byte is Addable by Byte to Byte = Addable:
-    (augend, addend) => (augend + addend).toByte
-
-  given concatenable: [left, right] => (concatenable: left is Concatenable by right)
-  =>  left is Addable by right to concatenable.Result =
-    (left, right) => concatenable.concat(left, right)
-
-trait Addable extends Typeclass, Operable, Resultant:
-  type Augend = Self
-  type Addend = Operand
-
-  def add(augend: Augend, addend: Addend): Result
+// A phantom marker recording a *proof of non-emptiness* in a value's type. The proof is minted
+// two ways: `occupied` casts a value it has checked to be non-empty to `value & Populated`, and
+// the collection companions' non-empty literal constructors (`List(1, 2, 3)`, whose first
+// element is a separate parameter) brand their result by construction. Operations that are only
+// total on non-empty collections (`head`, `reduce`, …) demand a `Populated` receiver, so
+// partiality is discharged at compile time: literal-constructed or `occupied`-proven values
+// access `head` directly.
+//
+// A *structural refinement*, not a trait: refinements are erasure-transparent, so
+// `Text & Populated` still erases to `String`. A nominal marker would erase intersections and
+// `self <: Populated` bounds to the marker's own class, inserting checkcasts that fail at
+// runtime — the underlying value never actually implements it. (The same technique as `Ordinal
+// in value.type`, denominative's index-confinement proof.)
+//
+// It lives in `proscenium` — below every collection — so the companions can brand their
+// literals; `rudiments.Populated` remains as an alias for existing references.
+type Populated = Any { type Occupied = true }

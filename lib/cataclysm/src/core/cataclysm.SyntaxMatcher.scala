@@ -152,7 +152,7 @@ object SyntaxMatcher:
         functionMatch(name, body, tokens)
 
       case Css.Syntax.Sequence(terms) =>
-        terms.fold(List(tokens)): (states, term) =>
+        terms.fold(List(tokens): List[List[ValueToken]]): (states, term) =>
           states.bind(consume(term, _))
 
       case Css.Syntax.OneOf(options) =>

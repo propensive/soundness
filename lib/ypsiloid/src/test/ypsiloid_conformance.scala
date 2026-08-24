@@ -47,9 +47,6 @@ package ypsiloid
 
 import java.io.IOException
 import java.nio.file.{Files, Path, Paths}
-// Residue: this conformance harness reads YAML fixtures through frozen-array subscripts,
-// and `apply` is partial; it awaits the partial-operations tranche.
-import proscenium.compat.apply
 
 import scala.jdk.CollectionConverters.*
 import scala.collection.immutable.{Map, Set}
@@ -367,7 +364,9 @@ object Conformance:
       // count is even). Objects are rendered with sorted keys so the
       // comparison is independent of source order, which JSON treats
       // as insignificant.
-      val arr = items.asInstanceOf[Array[Any]]
+      // The read-only stdlib view: `IArray`'s member subscript serves the parity-indexed
+      // reads below, which are bounded by `n` on both sides.
+      val arr = items.asInstanceOf[Array[Any]].readable
       val n = arr.length
       if (n & 1) == 0 then
         val pairs = (0 until n/2).map: i =>

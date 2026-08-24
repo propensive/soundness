@@ -34,8 +34,6 @@ package telekinesis
 
 import scala.math
 
-// Residue: `head` is partial; it awaits the partial-operations tranche.
-import proscenium.compat.head
 
 import soundness.*
 
@@ -215,7 +213,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         test(m"Long header value"):
           val long = t"a"*500
           val fixture = t"HTTP/1.1 200 OK\r\nX-Long: $long\r\n\r\n"
-          Http.Response.parse(chunks(fixture, 4096)).textHeaders.head.value
+          Http.Response.parse(chunks(fixture, 4096)).textHeaders.prim.let(_.value)
 
         . assert(_ == t"a"*500)
 
@@ -474,7 +472,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       val blockSizes = List(1, 2, 3, 7, 13, 4096)
 
       test(m"Status line carries code and reason phrase"):
-        wire(Http.Response(Http.NotFound)()).cut(t"\r\n").head
+        wire(Http.Response(Http.NotFound)()).cut(t"\r\n").prim
 
       . assert(_ == t"HTTP/1.1 404 Not Found")
 

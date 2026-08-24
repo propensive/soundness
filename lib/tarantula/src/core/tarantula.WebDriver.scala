@@ -443,10 +443,8 @@ object WebDriver:
     // be written in whatever unit reads best — `21.0*Centi(Metre)`, `8.5*Inch` — and the
     // centimetres the protocol wants are computed rather than assumed. The defaults are the
     // specification's own (A4, 1cm margins).
-    // A length given in centimetres. Defined here rather than writing `21.59*Centi(Metre)` in the
-    // defaults because that operator comes from `symbolism`, whose extensions collide with
-    // `proscenium.compat`'s at file scope. Callers importing `soundness.*` have both and may write
-    // whichever unit reads best.
+    // A length given in centimetres, rather than `21.59*Centi(Metre)` in the defaults: the
+    // named helper keeps the specification's own numbers legible in the table below.
     def cm(centimetres: Double): Quantity[Metres[1]] = Quantity(centimetres/100)
 
     case class Page

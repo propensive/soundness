@@ -241,4 +241,4 @@ trait JsonRpc extends Original:
 
   def stream: Chain[Sse] =
     Chain.from(channel.stream.records).map: json =>
-      Sse(data = List(json.encode))
+      Sse(data = List(json.encode: Text))

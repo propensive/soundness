@@ -44,7 +44,7 @@ export
       longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
       prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
-      before, upto, from, after, keep, skip, snip, Appendable, Prependable, `:+`, `+:`,
+      before, upto, from, after, keep, skip, snip, tail, Appendable, Prependable, `:+`, `+:`,
       indexed, least, most, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, glean, where,
@@ -56,6 +56,11 @@ export
 // `rudiments.Deindex`), and synthesized export forwarders cannot carry that shape. Each method
 // delegates to the `rudiments` original inline, so `summonFrom` dispatch and confined-index
 // narrowing behave identically.
+extension (interval: denominative.Interval)
+  inline def attested[within](within: within)(using erased vacuous.Unsafe)
+  :   prepositional.`in`[denominative.Interval, within.type] =
+    interval.asInstanceOf[prepositional.`in`[denominative.Interval, within.type]]
+
 extension [self](value: self)(using applicable: denominative.Applicable { type Self = self })
   // `defines` and `confine` duplicate the (one-line) `rudiments.Deindex` bodies rather than
   // delegate: inline-to-inline delegation leaves the evidence proxy's `Self` unreduced at
@@ -67,6 +72,19 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
     if applicable.contains(value, index)
     then index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
     else vacuous.Unset
+
+  // Re-declared like the rest of the group; see `rudiments.attested` for the discipline.
+  def attested(index: applicable.Operand)(using erased vacuous.Unsafe)
+  :   prepositional.`in`[applicable.Operand, value.type] =
+    index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
+
+  inline def attested[result](index: applicable.Operand)
+    (inline lambda: prepositional.`in`[applicable.Operand, value.type] => result)
+    (using erased vacuous.Unsafe)
+  :   result =
+    lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
+
+
 
   // The index parameter is typed directly as `applicable.Operand` (not a bounded type
   // parameter): a call with any other index type makes this candidate inapplicable by

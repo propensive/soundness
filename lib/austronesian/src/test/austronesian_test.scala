@@ -49,10 +49,11 @@ object Tests extends Suite(m"Austronesian tests"):
     test(m"Serialize a case class")(Person("John", 30).pojo)
     . assert(_ === Pojo(scala.Array("John", java.lang.Integer.valueOf(30).nn)))
 
-    test(m"Serialize a list of longs")(List(1L, 99L, 203L).pojo)
+    test(m"Serialize a list of longs")((List(1L, 99L, 203L): List[Long]).pojo)
     . assert(_ === Pojo(scala.Array[Object](java.lang.Long.valueOf(1L).nn, java.lang.Long.valueOf(99L).nn, java.lang.Long.valueOf(203L).nn)))
 
-    test(m"Serialize a list of case classes")(List(Person("John", 12), Person("Jane", 93)).pojo)
+    test(m"Serialize a list of case classes")
+      ((List(Person("John", 12), Person("Jane", 93)): List[Person]).pojo)
     . assert(_ === Pojo(scala.Array(scala.Array("John", java.lang.Integer.valueOf(12).nn), scala.Array("Jane", java.lang.Integer.valueOf(93).nn))))
 
     test(m"Serialize a nested case class structure"):

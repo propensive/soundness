@@ -43,7 +43,6 @@ import scala.collection.mutable as scm
 import anticipation.*
 import denominative.*
 import prepositional.*
-import proscenium.compat.{head, tail}
 import rudiments.*
 import vacuous.*
 import wisteria.*
@@ -137,8 +136,11 @@ object Inspectable extends Inspectable2:
       . stdlib.mkString("{", ", ", "}").tt
 
 
-  given sequence: [element] => (inspectable: => element is Inspectable)
-  =>  Sequence[element] is Inspectable =
+  // `Self` is subtype-parametric so branded literals (`Sequence(1, 2, 3)`, typed
+  // `Sequence[Int] & Populated`) match; rendering produces no collection, so no proof leaks.
+  given sequence: [element, sequence <: Sequence[element]]
+  =>  (inspectable: => element is Inspectable)
+  =>  sequence is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).stdlib.mkString("⟨ ", " ", " ⟩").tt
@@ -188,8 +190,9 @@ object Inspectable extends Inspectable2:
         // The opaque `Chain`'s runtime `toString` still comes from the underlying
         // `sci.LazyList`, so the un-forced marker is spelt `LazyList(<not computed>)`.
         else if stream.toString == "LazyList(<not computed>)" then "∿∿∿".tt
-        else if stream.nil then "⯁ ".tt
-        else (insp().text(stream.head).s+" ⋰ "+recur(stream.tail, todo - 1)).tt
+        else stream match
+          case first #:: rest => (insp().text(first).s+" ⋰ "+recur(rest, todo - 1)).tt
+          case _              => "⯁ ".tt
 
       recur(stream, 3)
 

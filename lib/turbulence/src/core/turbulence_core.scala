@@ -315,9 +315,7 @@ extension (stream: Chain[Data])
       then recur(more, count - next.bytes)
       else
         // hoisted: a fresh array built inside `#::`'s by-name operand (which would
-        // capture the enclosing context) could not escape it. `slice` rather than
-        // `drop`: the sibling `drop` on `Chain[Data]` shadows `proscenium.compat`'s
-        // array version here.
+        // capture the enclosing context) could not escape it.
         val head: Data = next.segment((count.long.toInt).z till (next.length).z).asInstanceOf[Data]
         head #:: more
 
@@ -376,8 +374,6 @@ extension (stream: Chain[Data])
         if next.bytes < count then
           val head: Data = next
           head #:: recur(more, count - next.bytes)
-        // `slice`, not `take`: the sibling `take` on `Chain[Data]` shadows
-        // `proscenium.compat`'s array version here.
         else Chain(next.segment((0).z till (count.long.toInt).z).asInstanceOf[Data])
 
     recur(stream, bytes)
