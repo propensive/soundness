@@ -78,88 +78,88 @@ object Tests extends Suite(m"Polaris Tests"):
 
     suite(m"Sextant tests"):
       test(m"A new buffer starts at the beginning"):
-        Sextant(Array.of[Byte](1, 2, 3)).offset
+        Sextant(Array[Byte](1, 2, 3)).offset
       . assert(_ == 0)
 
       test(m"A buffer can start at an offset"):
-        Sextant(Array.of[Byte](1, 2, 3), 2).offset
+        Sextant(Array[Byte](1, 2, 3), 2).offset
       . assert(_ == 2)
 
       test(m"Advancing a buffer moves its position"):
-        val buffer = Sextant(Array.of[Byte](1, 2, 3))
+        val buffer = Sextant(Array[Byte](1, 2, 3))
         buffer.advance(2)
         buffer.offset
       . assert(_ == 2)
 
       test(m"Reading from a buffer advances it by the value's width"):
-        Array.of[Byte](0, 0, 0, 1, 9).sextant:
+        Array[Byte](0, 0, 0, 1, 9).sextant:
           unpack[Int]
           summon[Sextant].offset
       . assert(_ == 4)
 
       test(m"Successive reads continue where the last left off"):
-        Array.of[Byte](0, 1, 0, 2).sextant:
+        Array[Byte](0, 1, 0, 2).sextant:
           (unpack[Short], unpack[Short])
       . assert(_ == (1.toShort, 2.toShort))
 
     suite(m"Primitive unpacking tests"):
       test(m"Unpack a Byte"):
-        Array.of[Byte](7.toByte).unpackFrom[Byte](0)
+        Array[Byte](7.toByte).unpackFrom[Byte](0)
       . assert(_ == 7.toByte)
 
       test(m"Unpack a negative Byte"):
-        Array.of[Byte]((-1).toByte).unpackFrom[Byte](0)
+        Array[Byte]((-1).toByte).unpackFrom[Byte](0)
       . assert(_ == (-1).toByte)
 
       test(m"Unpack a big-endian Short"):
-        Array.of[Byte](1, 2).unpackFrom[Short](0)
+        Array[Byte](1, 2).unpackFrom[Short](0)
       . assert(_ == 258.toShort)
 
       test(m"Unpack a negative Short"):
-        Array.of[Byte]((-1).toByte, (-1).toByte).unpackFrom[Short](0)
+        Array[Byte]((-1).toByte, (-1).toByte).unpackFrom[Short](0)
       . assert(_ == (-1).toShort)
 
       test(m"Unpack a big-endian Int"):
-        Array.of[Byte](0, 0, 1, 0).unpackFrom[Int](0)
+        Array[Byte](0, 0, 1, 0).unpackFrom[Int](0)
       . assert(_ == 256)
 
       test(m"Unpack a negative Int"):
-        Array.of[Byte]((-1).toByte, (-1).toByte, (-1).toByte, (-1).toByte).unpackFrom[Int](0)
+        Array[Byte]((-1).toByte, (-1).toByte, (-1).toByte, (-1).toByte).unpackFrom[Int](0)
       . assert(_ == -1)
 
       test(m"Unpack a big-endian Long"):
-        Array.of[Byte](0, 0, 0, 0, 0, 0, 1, 0).unpackFrom[Long](0)
+        Array[Byte](0, 0, 0, 0, 0, 0, 1, 0).unpackFrom[Long](0)
       . assert(_ == 256L)
 
       test(m"Unpack from a non-zero offset"):
-        Array.of[Byte](9, 9, 0, 0, 1, 0).unpackFrom[Int](2)
+        Array[Byte](9, 9, 0, 0, 1, 0).unpackFrom[Int](2)
       . assert(_ == 256)
 
       test(m"Unpacking past the end of the data fails"):
-        try Array.of[Byte](0, 0).unpackFrom[Int](0).toString.nn
+        try Array[Byte](0, 0).unpackFrom[Int](0).toString.nn
         catch case error: ArrayIndexOutOfBoundsException => "out of bounds"
       . assert(_ == "out of bounds")
 
     suite(m"Product unpacking tests"):
       test(m"Unpack a derived product"):
-        Array.of[Byte](0, 0, 1, 0, 0, 3, 7).unpackFrom[Header](0)
+        Array[Byte](0, 0, 1, 0, 0, 3, 7).unpackFrom[Header](0)
       . assert(_ == Header(256, 3.toShort, 7.toByte))
 
       test(m"Unpack a nested product"):
-        Array.of[Byte](0, 0, 1, 0, 0, 3, 7, 0, 1, 0, 2).unpackFrom[Nested](0)
+        Array[Byte](0, 0, 1, 0, 0, 3, 7, 0, 1, 0, 2).unpackFrom[Nested](0)
       . assert(_ == Nested(Header(256, 3.toShort, 7.toByte), Pair(1.toShort, 2.toShort)))
 
       test(m"Fields are read in declaration order"):
-        Array.of[Byte](0, 1, 0, 2).unpackFrom[Pair](0)
+        Array[Byte](0, 1, 0, 2).unpackFrom[Pair](0)
       . assert(_ == Pair(1.toShort, 2.toShort))
 
       test(m"Reading a product advances the buffer by its width"):
-        Array.of[Byte](0, 1, 0, 2, 0, 3, 0, 4).sextant:
+        Array[Byte](0, 1, 0, 2, 0, 3, 0, 4).sextant:
           (unpack[Pair], unpack[Pair])
       . assert(_ == (Pair(1.toShort, 2.toShort), Pair(3.toShort, 4.toShort)))
 
     suite(m"Array unpacking tests"):
-      val data = Array.of[Byte](0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)
+      val data = Array[Byte](0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)
 
       test(m"Unpack an array of Ints"):
         data.unpackFrom[Array[Int]](0)(3).to[List]
@@ -178,7 +178,7 @@ object Tests extends Suite(m"Polaris Tests"):
       . assert(_ == List(2, 3))
 
       test(m"Unpack an array of products"):
-        Array.of[Byte](0, 1, 0, 2, 0, 3, 0, 4).unpackFrom[Array[Pair]](0)(2).to[List]
+        Array[Byte](0, 1, 0, 2, 0, 3, 0, 4).unpackFrom[Array[Pair]](0)(2).to[List]
       . assert(_ == List(Pair(1.toShort, 2.toShort), Pair(3.toShort, 4.toShort)))
 
       test(m"An array continuation does not advance the caller's buffer"):

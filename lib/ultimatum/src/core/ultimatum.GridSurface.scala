@@ -337,7 +337,7 @@ extends Board:
 
   // A `Teletype` of `text` in one uniform style (sparse single-run form).
   private def styledCell(text: Text, style: StyleWord): Teletype =
-    Teletype(text, Array.of(style.raw, 0L), boundaries = Array.of(0))
+    Teletype(text, Array(style.raw, 0L), boundaries = Array(0))
 
   // A plain-text snapshot of the grid (rows joined by newlines), for testing and for
   // content-change detection.

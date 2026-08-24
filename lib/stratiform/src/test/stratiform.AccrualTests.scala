@@ -172,13 +172,13 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   private val twoRequiredSchema: Tels = Tels(
     name     = t"pair",
     document = Tels.Struct(
-      members = Array.of(
+      members = Array(
         Tels.Field
          ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-           t"name", Tels.Scalar(Array.of(t"string")), Unset ),
+           t"name", Tels.Scalar(Array(t"string")), Unset ),
         Tels.Field
          ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-           t"email", Tels.Scalar(Array.of(t"string")), Unset )),
+           t"email", Tels.Scalar(Array(t"string")), Unset )),
       validators = Array.empty),
     layers   = Array.empty,
     sigil    = Unset,
@@ -191,10 +191,10 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   private val optionalFieldSchema: Tels = Tels(
     name     = t"loose",
     document = Tels.Struct(
-      members = Array.of(
+      members = Array(
         Tels.Field
          ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-           t"name", Tels.Scalar(Array.of(t"string")), Unset )),
+           t"name", Tels.Scalar(Array(t"string")), Unset )),
       validators = Array.empty),
     layers   = Array.empty,
     sigil    = Unset,
@@ -208,21 +208,21 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   private val atomAccrualSchema: Tels = Tels(
     name     = t"atoms",
     document = Tels.Struct(
-      members = Array.of(
+      members = Array(
         Tels.Field
          ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
            t"item", Tels.Reference(t"Item"), Unset ),
         Tels.Field
          ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-           t"name", Tels.Scalar(Array.of(t"string")), Unset )),
+           t"name", Tels.Scalar(Array(t"string")), Unset )),
       validators = Array.empty),
     layers   = Array.empty,
     sigil    = Unset,
-    records  = Array.of(Tels.RecordDefinition(
+    records  = Array(Tels.RecordDefinition(
       t"Item",
-      Array.of(Tels.Field
+      Array(Tels.Field
        ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-         t"only", Tels.Scalar(Array.of(t"string")), Unset )),
+         t"only", Tels.Scalar(Array(t"string")), Unset )),
       Array.empty)),
     scalars  = Array.empty,
     selects  = Array.empty)
@@ -232,19 +232,19 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   private val flagAccrualSchema: Tels = Tels(
     name     = t"flags",
     document = Tels.Struct(
-      members = Array.of(
+      members = Array(
         Tels.Field
          ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
            t"item", Tels.Reference(t"Item"), Unset ),
         Tels.Field
          ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-           t"name", Tels.Scalar(Array.of(t"string")), Unset )),
+           t"name", Tels.Scalar(Array(t"string")), Unset )),
       validators = Array.empty),
     layers   = Array.empty,
     sigil    = Unset,
-    records  = Array.of(Tels.RecordDefinition(
+    records  = Array(Tels.RecordDefinition(
       t"Item",
-      Array.of(Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset)),
+      Array(Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset)),
       Array.empty)),
     scalars  = Array.empty,
     selects  = Array.empty)

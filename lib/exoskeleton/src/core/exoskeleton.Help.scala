@@ -139,7 +139,7 @@ case class Help
     // Wrap prose into `available` columns using escritoire's borderless paragraph layout, which
     // breaks at spaces and admissible hyphenation points. Below 20 columns, overrun instead.
     def wrap(teletype: Teletype, available: Int): scala.List[Teletype] =
-      columnar.Paragraph.fit(Array.of(teletype), available.max(20), TextAlignment.Left)
+      columnar.Paragraph.fit(Array(teletype), available.max(20), TextAlignment.Left)
       . stdlib.toList
 
     // Each section is a heading (one or more unaligned lines) plus its rows, which all

@@ -1054,7 +1054,7 @@ object Yaml extends Yaml2, Dynamic:
           if n == full.length then full
           else Array.tabulate(n)(full.readUnchecked(_))
         else
-          expected(Yaml.Primitive.Sequence) yet Array.of[Yaml.Ast]()
+          expected(Yaml.Primitive.Sequence) yet Array[Yaml.Ast]()
 
       def double(using Tactic[Yaml.Error]): Double = yaml.asInstanceOf[Matchable] match
         case value: Double                   => value

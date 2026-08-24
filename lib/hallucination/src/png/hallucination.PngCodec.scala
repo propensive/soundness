@@ -54,7 +54,7 @@ import Raster.Error.Reason
 // the raster's layout has it — choosing each scanline's filter by the minimum-sum-of-absolute-
 // differences heuristic.
 private[hallucination] object PngCodec:
-  private val signature: Array[Int]^{} = Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+  private val signature: Array[Int]^{} = Array(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
 
   def decode(data: Data): Raster raises Raster.Error =
     try
@@ -69,8 +69,8 @@ private[hallucination] object PngCodec:
       var depth = 0
       var colorType = 0
       var interlace = 0
-      var palette: Array[Int]^{} = Array.of()
-      var transparency: Array[Int]^{} = Array.of()
+      var palette: Array[Int]^{} = Array()
+      var transparency: Array[Int]^{} = Array()
       val idat = scm.ArrayBuilder.ofByte()
       var finished = false
 
@@ -374,7 +374,7 @@ private[hallucination] object PngCodec:
 
     chunk("IHDR", Array.freeze(header))
     chunk("IDAT", compressed)
-    chunk("IEND", Array.of[Byte]())
+    chunk("IEND", Array[Byte]())
     Array.unsafeFrozen(output.toByteArray.nn)
 
   private def pack(red: Int, green: Int, blue: Int, alpha: Int): Long =

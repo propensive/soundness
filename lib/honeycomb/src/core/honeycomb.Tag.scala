@@ -160,7 +160,7 @@ object Tag:
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, Array.of(), foreign)
+      new Element(label, Attributes.from(presets) ++ attributes, Array(), foreign)
       with Html.Vacuiscible()
       . of[Topic]
       . over[Transport]
@@ -208,7 +208,7 @@ object Tag:
 
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, Array.of(), foreign)
+      new Element(label, Attributes.from(presets) ++ attributes, Array(), foreign)
       with Html.Transparent()
       . of[Topic]
       . over[Transport]
@@ -221,7 +221,7 @@ object Tag:
     def node(attributes: Attributes): Result =
       new Element
         ( label, Attributes.from(presets) ++ attributes,
-          Array.of(), this.foreign )
+          Array(), this.foreign )
       . of[Topic]
       . in[Form]
 
@@ -236,9 +236,9 @@ abstract class Tag
     val void:        Boolean                   = false,
     val transparent: Boolean                   = false,
     val boundary:    Boolean                   = false )
-// The empty-children `Array.of()` is sealed: a fresh frozen array in the parent
+// The empty-children `Array()` is sealed: a fresh frozen array in the parent
 // constructor call would otherwise decorate `Tag`'s self type, which must stay
-extends Element(label, Attributes.from(presets), Array.of(), foreign),
+extends Element(label, Attributes.from(presets), Array(), foreign),
   Formal, Dynamic, caps.Pure:
   type Result <: Element
 

@@ -164,7 +164,7 @@ object PeriodicTable:
   val Og = Chemical.Element(118, t"Og", t"Oganesson")
 
   val elements: Array[Chemical.Element]^{} =
-    Array.of
+    Array
       ( H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar, K, Ca, Sc, Ti, V, Cr, Mn,
         Fe, Co, Ni, Cu, Zn, Ga, Ge, As, Se, Br, Kr, Rb, Sr, Y, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd,
         In, Sn, Sb, Te, I, Xe, Cs, Ba, La, Ce, Pr, Nd, Pm, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu,
@@ -180,7 +180,7 @@ object PeriodicTable:
   def apply(symbol: Text): Optional[Chemical.Element] = symbols(symbol).or(Unset)
 
   private val prefixes: Array[Text]^{} =
-    Array.of(t"nil", t"un", t"bi", t"tri", t"quad", t"pent", t"hex", t"sept", t"oct", t"enn")
+    Array(t"nil", t"un", t"bi", t"tri", t"quad", t"pent", t"hex", t"sept", t"oct", t"enn")
 
   def element(number: Int): Chemical.Element =
     def recur(name: Text, symbol: Text, digits: Int): Chemical.Element =

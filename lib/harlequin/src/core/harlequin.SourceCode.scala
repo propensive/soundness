@@ -252,7 +252,7 @@ object SourceCode:
         token.copy(span = Span.line(index, column.z, token.length))
 
     SourceCode
-      ( language, 1, Array.of(positioned.map(List.of(_))*), diagnostics = diagnostics,
+      ( language, 1, Array(positioned.map(List.of(_))*), diagnostics = diagnostics,
         completions = completions )
 
   // The accent (colour category) and role (binding vs usage) resolved for a token span

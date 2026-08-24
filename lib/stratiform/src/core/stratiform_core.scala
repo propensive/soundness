@@ -59,7 +59,7 @@ extension (inline context: StringContext)
 // both the text and binary formats decode it back to `Unset` via the field's `absent()` path.
 private[stratiform] def emptyDocument: Tel =
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
-      Array.of(Tel.Block(Array.empty, Unset, Array.empty, 0))))
+      Array(Tel.Block(Array.empty, Unset, Array.empty, 0))))
 
 // Encodes a collection by flattening each element's compound(s) into one document's children.
 private[stratiform] def collectionDocument[value]
@@ -75,7 +75,7 @@ private[stratiform] def collectionDocument[value]
           document.children.bind(_.compounds).readable.toSeq
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
-      Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))
+      Array(Tel.Block(Array.empty, Unset, compounds, 0))))
 
 // As `collectionDocument`, but embedding each element in its §22.2 canonical child form
 // (`constructed`), so nested records keep their inline runs under `Tel.canonical`.
@@ -92,7 +92,7 @@ private[stratiform] def constructedDocument[value]
           document.children.bind(_.compounds).readable.toSeq
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
-      Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))
+      Array(Tel.Block(Array.empty, Unset, compounds, 0))))
 
 // Re-keys a replacement compound to the original child's keyword (so a positional optic update
 // preserves field identity).

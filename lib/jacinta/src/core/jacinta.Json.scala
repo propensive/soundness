@@ -1784,7 +1784,7 @@ object Json extends Json2, Dynamic:
           else
             // hoisted: a fresh array built inside `yet`'s by-name operand (which
             // captures the ambient Tactic) could not escape it
-            val empty = Array.of[Json.Ast]().asInstanceOf[Array[Json.Ast]^{}]
+            val empty = Array[Json.Ast]().asInstanceOf[Array[Json.Ast]^{}]
             expected(Json.Primitive.Array) yet empty
 
       def double: Double raises Json.Error = json.asMatchable match
@@ -1834,7 +1834,7 @@ object Json extends Json2, Dynamic:
       def obj(using Tactic[Json.Error]): (Array[String]^{}, Array[Json.Ast]^{}) =
         if !isObject
         then
-          val empty = (Array.of[String](), Array.of[Json.Ast]()).asInstanceOf[(Array[String]^{}, Array[Json.Ast]^{})]
+          val empty = (Array[String](), Array[Json.Ast]()).asInstanceOf[(Array[String]^{}, Array[Json.Ast]^{})]
           expected(Json.Primitive.Object) yet empty
         else
           val arr = json.asInstanceOf[Array[Any]^{}]
@@ -2557,7 +2557,7 @@ object Json extends Json2, Dynamic:
     type Self = value
 
     def rewrite(kind: Text, json: Json): Json =
-      Json.ast(Json.Ast.obj(Array.of(kind.s), Array.of(json.root)))
+      Json.ast(Json.Ast.obj(Array(kind.s), Array(json.root)))
 
     def discriminate(json: Json): Optional[Text] =
       if json.root.isObject && json.root.objectSize == 1
@@ -2576,7 +2576,7 @@ object Json extends Json2, Dynamic:
     private[jacinta] def valueField: Text = valueLabel
 
     def rewrite(kind: Text, json: Json): Json =
-      Json.ast(Json.Ast.obj(Array.of(tagLabel.s, valueLabel.s), Array.of(kind.s, json.root)))
+      Json.ast(Json.Ast.obj(Array(tagLabel.s, valueLabel.s), Array(kind.s, json.root)))
 
     def discriminate(json: Json): Optional[Text] =
       safely(json.selectField(tagLabel.s).root.string)

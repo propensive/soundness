@@ -74,14 +74,14 @@ object Tag:
     type Result = Element & Xml.Vacuiscible of Topic over Transport in Form
 
     def node(attributes: Attributes): Result =
-      new Element(label, presets ++ attributes, Array.of()) with Xml.Vacuiscible()
+      new Element(label, presets ++ attributes, Array()) with Xml.Vacuiscible()
       . of[Topic]
       . over[Transport]
       . in[Form]
 
 sealed abstract class Tag
   ( label: Text, val presets: Attributes = Attributes.empty, val admissible:  Set[Text] = Set() )
-extends Element(label, presets, Array.of()), Formal, Dynamic:
+extends Element(label, presets, Array()), Formal, Dynamic:
   type Result <: Element
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =

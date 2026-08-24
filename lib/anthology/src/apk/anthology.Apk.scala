@@ -188,7 +188,7 @@ object Apk extends Format.Application:
     private val magic:             Text = t"APK Sig Block 42"
 
     private def u32(value: Long): Data =
-      Array.of((value & 0xff).toByte, ((value >> 8) & 0xff).toByte, ((value >> 16) & 0xff).toByte,
+      Array((value & 0xff).toByte, ((value >> 8) & 0xff).toByte, ((value >> 16) & 0xff).toByte,
           ((value >> 24) & 0xff).toByte)
 
     private def u64(value: Long): Data =
@@ -233,7 +233,7 @@ object Apk extends Format.Application:
         val length = end - offset
         val chunk = Array.allocate[Byte](length)
         chunk.copyFrom(data, offset, 0, length)
-        val prefixed = concat(Array.of(0xa5.toByte), u32(length.toLong), Array.freeze(chunk))
+        val prefixed = concat(Array(0xa5.toByte), u32(length.toLong), Array.freeze(chunk))
         builder += sha256(prefixed)
         offset = end
 
@@ -267,7 +267,7 @@ object Apk extends Format.Application:
           chunkDigests(unsigned, eocdOffset, unsigned.length)
 
       val count = digests.size
-      val topLevel = sha256(concat(Array.of(0x5a.toByte), u32(count.toLong), concat(digests*)))
+      val topLevel = sha256(concat(Array(0x5a.toByte), u32(count.toLong), concat(digests*)))
 
       // signed data: digests, certificates, additional attributes (none).
       val digestRecord = concat(u32(signAlgorithm), u32(topLevel.length.toLong), topLevel)

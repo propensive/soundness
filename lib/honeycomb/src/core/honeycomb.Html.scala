@@ -949,7 +949,7 @@ object Html extends Tag.Container
       // `read`'s `Token.Open` / `Token.Empty` arms don't have to repeat the
       // lookup against `dom.elements(content)`.
       var openTag: Tag = root
-      var fragment: Array[Node]^{} = Array.of()
+      var fragment: Array[Node]^{} = Array()
       var pendingAtDepth: Int = -1
       var inTableContent: Boolean = false
       var pendingFosterDescend: Boolean = false
@@ -1534,7 +1534,7 @@ object Html extends Tag.Container
                 current = Element(content, extra, state.array(count), parent.foreign)
 
               inline def empty(): Unit =
-                current = Element(content, extra, Array.of(), parent.foreign)
+                current = Element(content, extra, Array(), parent.foreign)
 
               inline def close(): Unit =
                 current = Element(parent.label, map, state.array(count), parent.foreign)
@@ -1748,19 +1748,19 @@ object Html extends Tag.Container
               val text = textual(begin(), parent.label, false)
 
               if text.nil
-              then Element(parent.label, parent.attributes, Array.of(), parent.foreign)
+              then Element(parent.label, parent.attributes, Array(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  Array.of(TextNode(text)), parent.foreign)
+                  Array(TextNode(text)), parent.foreign)
 
             case Mode.Rcdata =>
               val text = textual(begin(), parent.label, true)
 
               if text.nil
-              then Element(parent.label, parent.attributes, Array.of(), parent.foreign)
+              then Element(parent.label, parent.attributes, Array(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  Array.of(TextNode(text)), parent.foreign)
+                  Array(TextNode(text)), parent.foreign)
 
             case Mode.Normal =>
               val text = textual(begin(), Unset, true)

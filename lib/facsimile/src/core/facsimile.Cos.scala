@@ -41,10 +41,10 @@ object Cos:
   // The code points at which PDFDocEncoding (ISO 32000-2 Annex D.7) differs from Latin-1:
   // typographic accents at 0x18–0x1F and publishing characters at 0x80–0x9F, with the euro
   // sign at 0xA0.
-  private val docEncodingLow: Array[Char]^{} = Array.of
+  private val docEncodingLow: Array[Char]^{} = Array
     ( '˘', 'ˇ', 'ˆ', '˙', '˝', '˛', '˚', '˜' )
 
-  private val docEncodingHigh: Array[Char]^{} = Array.of
+  private val docEncodingHigh: Array[Char]^{} = Array
     ( '•', '†', '‡', '…', '—', '–', 'ƒ', '⁄',
       '‹', '›', '−', '‰', '„', '“', '”', '‘',
       '’', '‚', '™', 'ﬁ', 'ﬂ', 'Ł', 'Œ', 'Š',

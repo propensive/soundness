@@ -299,7 +299,7 @@ trait Tel2 extends Tel3:
               buffer +=
                 ( if ctx.nature == Tel.Nature.Flag
                   then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-                  else Tel.Compound(keyword, Array.of(atom), Unset, Array.empty) )
+                  else Tel.Compound(keyword, Array(atom), Unset, Array.empty) )
 
             telVal.childCompounds.each: compound =>
               if compound.keyword == keyword then buffer += compound
@@ -310,7 +310,7 @@ trait Tel2 extends Tel3:
           Tel.make
             ( Tel.Document
               ( Unset, Unset, Tel.LineEndings.Lf,
-               Array.of(Tel.Block(Array.empty, Unset, compounds, 0)) ) )
+               Array(Tel.Block(Array.empty, Unset, compounds, 0)) ) )
       else
         val match0 = telVal.field(keyword)
 
@@ -329,7 +329,7 @@ trait Tel2 extends Tel3:
               // it becomes a bare compound.
               if ctx.nature == Tel.Nature.Flag
               then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-              else Tel.Compound(keyword, Array.of(positional.head), Unset, Array.empty)
+              else Tel.Compound(keyword, Array(positional.head), Unset, Array.empty)
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Decodable =
@@ -615,7 +615,7 @@ trait Tel2 extends Tel3:
 
               contextual.encode(v).subtree match
                 case compound: Tel.Compound =>
-                  Tel.compound(t"", Array.empty, Array.of(compound.copy(keyword = keyword)))
+                  Tel.compound(t"", Array.empty, Array(compound.copy(keyword = keyword)))
 
                 case other =>
                   Tel.make(other)
@@ -629,7 +629,7 @@ trait Tel2 extends Tel3:
 
               contextual.constructed(v).subtree match
                 case compound: Tel.Compound =>
-                  Tel.compound(t"", Array.empty, Array.of(compound.copy(keyword = keyword)))
+                  Tel.compound(t"", Array.empty, Array(compound.copy(keyword = keyword)))
 
                 case other =>
                   Tel.make(other)
@@ -896,7 +896,7 @@ trait Tel2 extends Tel3:
         map.stdlib.map: (k, v) =>
           val keyChild   = reKey(key.encoded(k), t"key")
           val valueChild = reKey(value.encoded(v), t"value")
-          reKey(Tel.compound(t"", Array.empty, Array.of(keyChild, valueChild)), t"entries")
+          reKey(Tel.compound(t"", Array.empty, Array(keyChild, valueChild)), t"entries")
 
       Tel.compound(t"", Array.empty, entries)
 
@@ -927,7 +927,7 @@ trait Tel2 extends Tel3:
   // text stays an empty inline atom: presentationally it serializes as no
   // atom, but the value level distinguishes present-empty from absent.
   def scalar(text: Text): Tel =
-    Tel.make(Tel.Compound(t"", Array.of(Mutation.chooseAtomForm(text, '#')), Unset, Array.empty))
+    Tel.make(Tel.Compound(t"", Array(Mutation.chooseAtomForm(text, '#')), Unset, Array.empty))
 
   def compound
     ( keyword: Text, atoms: Array[Tel.Atom]^{}, compounds: Array[Tel.Compound]^{} )
@@ -935,7 +935,7 @@ trait Tel2 extends Tel3:
 
     val children =
       if compounds.nil then Array.empty[Tel.Block]
-      else Array.of(Tel.Block(Array.empty, Unset, compounds, 0))
+      else Array(Tel.Block(Array.empty, Unset, compounds, 0))
 
     Tel.make(Tel.Compound(keyword, atoms, Unset, children))
 

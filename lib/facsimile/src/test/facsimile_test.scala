@@ -1104,7 +1104,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert: ordinals =>
           ordinals == proscenium.List(Pdf.Operator.Save, Pdf.Operator.Concat(Pdf.Matrix.Identity),
               Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12), Pdf.Operator.Offset(72, 720),
-              Pdf.Operator.ShowText(Array.of[Byte]()), Pdf.Operator.EndText, Pdf.Operator.Restore)
+              Pdf.Operator.ShowText(Array[Byte]()), Pdf.Operator.EndText, Pdf.Operator.Restore)
             . map(_.ordinal)
 
       test(m"cm carries its matrix"):
@@ -1433,7 +1433,7 @@ object Tests extends Suite(m"Facsimile tests"):
             ++ new scala.Array[Byte](16)
 
         def objectKey(number: Int, generation: Int): scala.Array[Byte] =
-          md5(Array.unsafeFrozen(fileKey), Array.of((number & 0xff).toByte,
+          md5(Array.unsafeFrozen(fileKey), Array((number & 0xff).toByte,
               ((number >> 8) & 0xff).toByte, ((number >> 16) & 0xff).toByte,
               (generation & 0xff).toByte,
               ((generation >> 8) & 0xff).toByte))

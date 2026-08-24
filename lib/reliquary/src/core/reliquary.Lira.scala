@@ -913,7 +913,7 @@ object Lira:
       RecordDefinition(Text(name), Array.from(members), Array.empty[Text])
 
     private def scalar(name: String, validator: String): ScalarDefinition =
-      ScalarDefinition(Text(name), Array.of(Text(validator)))
+      ScalarDefinition(Text(name), Array(Text(validator)))
 
     private def select(name: String, variants: Variant*): SelectDefinition =
       SelectDefinition(Text(name), Array.from(variants), Array.empty[Text])
@@ -937,7 +937,7 @@ object Lira:
 
     // `Tels.Reconstructor.fromTel` prefixes every reconstructed schema's scalars with the TEL
     // built-ins, so the hand-encoded values carry them identically for structural equality.
-    private val builtins: Array[ScalarDefinition] = Array.of(
+    private val builtins: Array[ScalarDefinition] = Array(
       scalar("Identifier", "identifier"),
       scalar("TypeName", "type-name"),
       scalar("Sigil", "sigil"),
@@ -946,7 +946,7 @@ object Lira:
     val lira: Tels = Tels(
       name     = t"lira",
       document = Struct(
-        members = Array.of(
+        members = Array(
           field("module", moduleName),
           field("version", semver, required = Loose),
           field("tag", tagName, required = Loose, repeatable = Loose),
@@ -965,7 +965,7 @@ object Lira:
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Tool",
           field("name", identifier),
           field("version", string),
@@ -1023,7 +1023,7 @@ object Lira:
           field("algorithm", identifier),
           field("key", hash),
           field("value", string))),
-      scalars  = Array.frozen(builtins.readable ++ Array.of(
+      scalars  = Array.frozen(builtins.readable ++ Array(
         hashScalar,
         scalar("ModuleName", "module-name"),
         scalar("Namespace", "namespace"),
@@ -1034,7 +1034,7 @@ object Lira:
         scalar("ProfileId", "profile-id"),
         scalar("TreePath", "tree-path"),
         scalar("Guarantee", "guarantee")).readable),
-      selects  = Array.of(
+      selects  = Array(
         select("Realm",
           variant("jvm"),
           variant("sjsir"),
@@ -1049,33 +1049,33 @@ object Lira:
     val tree: Tels = Tels(
       name     = t"lira-tree",
       document = Struct(
-        members    = Array.of(field("entry", Reference(t"Entry"),
+        members    = Array(field("entry", Reference(t"Entry"),
             required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Entry",
           field("path", Reference(t"TreePath")),
           field("blob", hash))),
-      scalars  = Array.frozen(builtins.readable ++ Array.of(hashScalar, scalar("TreePath", "tree-path")).readable),
+      scalars  = Array.frozen(builtins.readable ++ Array(hashScalar, scalar("TreePath", "tree-path")).readable),
       selects  = Array.empty[SelectDefinition])
 
     val atoms: Tels = Tels(
       name     = t"lira-atoms",
       document = Struct(
-        members = Array.of(
+        members = Array(
           field("discipline", disciplineId),
           field("atom", Reference(t"Atom"), required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Atom",
           field("class", Reference(t"AtomClass")),
           field("hash", hash),
           field("key", string))),
-      scalars  = Array.frozen(builtins.readable ++ Array.of(
+      scalars  = Array.frozen(builtins.readable ++ Array(
         hashScalar,
         scalar("DisciplineId", "discipline-id"),
         scalar("AtomClass", "atom-class")).readable),
@@ -1084,30 +1084,30 @@ object Lira:
     val uses: Tels = Tels(
       name     = t"lira-uses",
       document = Struct(
-        members = Array.of(
+        members = Array(
           field("module", moduleName),
           field("atom", hash, required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
       records  = Array.empty[RecordDefinition],
-      scalars  = Array.frozen(builtins.readable ++ Array.of(hashScalar, scalar("ModuleName", "module-name")).readable),
+      scalars  = Array.frozen(builtins.readable ++ Array(hashScalar, scalar("ModuleName", "module-name")).readable),
       selects  = Array.empty[SelectDefinition])
 
     val delta: Tels = Tels(
       name     = t"lira-delta",
       document = Struct(
-        members = Array.of(
+        members = Array(
           field("add", hash, required = Loose, repeatable = Loose),
           field("replace", Reference(t"Replacement"), required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Replacement",
           field("old", hash),
           field("new", hash))),
-      scalars  = Array.frozen(builtins.readable ++ Array.of(hashScalar).readable),
+      scalars  = Array.frozen(builtins.readable ++ Array(hashScalar).readable),
       selects  = Array.empty[SelectDefinition])
 
     // The capability listing of a host contract with no formal carrier (hosts.md §5): the single
@@ -1116,12 +1116,12 @@ object Lira:
     val capabilities: Tels = Tels(
       name     = t"lira-capabilities",
       document = Struct(
-        members    = Array.of(field("capability", Reference(t"Capability"),
+        members    = Array(field("capability", Reference(t"Capability"),
             required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Capability",
           field("name", identifier),
           field("version", string, required = Loose),

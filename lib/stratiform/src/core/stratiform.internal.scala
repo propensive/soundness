@@ -1062,16 +1062,16 @@ object internal:
         val tactic: Tactic[Tel.Error] = $tacticExpr
 
         val keys: Array[String]^{} =
-          Tel.Parsable.wireKeywords(Array.of[String](${Varargs(nameExprs)}*), $renames)
+          Tel.Parsable.wireKeywords(Array[String](${Varargs(nameExprs)}*), $renames)
 
-        lazy val instances: Array[Tel.Field | Null]^{} = Array.of(${Varargs(instanceExprs)}*)
+        lazy val instances: Array[Tel.Field | Null]^{} = Array(${Varargs(instanceExprs)}*)
 
         lazy val repeatables: Array[Boolean]^{} =
           instances.remap { instance => instance != null && Tel.Parsable.repeats(instance) }
 
-        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
+        lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs(fallbackExprs)}*)
 
-        lazy val natures: Array[Tel.Nature]^{} = Array.of[Tel.Nature](${Varargs(natureExprs)}*)
+        lazy val natures: Array[Tel.Nature]^{} = Array[Tel.Nature](${Varargs(natureExprs)}*)
 
         // The §19.2 profile table: one per generated instance, built on
         // first use so recursive self-references stay deferred, like the

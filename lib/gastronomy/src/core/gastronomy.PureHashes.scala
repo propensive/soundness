@@ -291,7 +291,7 @@ private[gastronomy] object PureHashes:
       value = ~c
 
     update def digest(): Data =
-      Array.of[Byte]((value >>> 24).toByte, (value >>> 16).toByte, (value >>> 8).toByte, value.toByte)
+      Array[Byte]((value >>> 24).toByte, (value >>> 16).toByte, (value >>> 8).toByte, value.toByte)
 
   private def rotr(x: Int, n: Int): Int = (x >>> n) | (x << (32 - n))
   private def rotl(x: Int, n: Int): Int = (x << n) | (x >>> (32 - n))

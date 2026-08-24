@@ -48,10 +48,10 @@ object ContactSchemaFixture:
   val tels: Tels = Tels(
     name     = t"contact",
     document = Struct(
-      members = Array.of(
-        Field(Polarity.Implicit, Polarity.Implicit, t"name",  Scalar(Array.of(t"string")),     Unset),
-        Field(Polarity.Loose,    Polarity.Implicit, t"email", Scalar(Array.of(t"string")),     Unset),
-        Field(Polarity.Implicit, Polarity.Implicit, t"age",   Scalar(Array.of(t"identifier")), Unset)),
+      members = Array(
+        Field(Polarity.Implicit, Polarity.Implicit, t"name",  Scalar(Array(t"string")),     Unset),
+        Field(Polarity.Loose,    Polarity.Implicit, t"email", Scalar(Array(t"string")),     Unset),
+        Field(Polarity.Implicit, Polarity.Implicit, t"age",   Scalar(Array(t"identifier")), Unset)),
       validators = Array.empty),
     layers   = Array.empty,
     sigil    = Unset,
@@ -70,7 +70,7 @@ object FeatureSchemaFixture:
   val tels: Tels = Tels(
     name     = t"feature",
     document = Struct(
-      members    = Array.of
+      members    = Array
                     (Field(Polarity.Loose, Polarity.Implicit, t"enabled", Tels.Flag, Unset)),
       validators = Array.empty),
     layers   = Array.empty,

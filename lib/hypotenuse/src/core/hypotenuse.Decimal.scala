@@ -72,7 +72,7 @@ object decimalInternal:
     private val BaseDigits: Int = 9
 
     private val powers: Array[Int]^{} =
-      Array.of(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, Base)
+      Array(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, Base)
 
     val Zero: Decimal = scala.IArray(0, 0)
 

@@ -403,7 +403,7 @@ object Matrix:
       val dimension = matrix.rows
       val elements = matrix.elements
 
-      if dimension == 1 then new Matrix[element, n, n](1, 1, Array.of(unital.one))
+      if dimension == 1 then new Matrix[element, n, n](1, 1, Array(unital.one))
       else
         val fullMask: Long = (1L << dimension) - 1L
 
@@ -449,7 +449,7 @@ object Matrix:
       if determinantValue == zeroic.zero then Unset
       else if dimension == 1 then
         val one: element = elements.readUnchecked(0)/elements.readUnchecked(0)
-        new Matrix[element, n, n](1, 1, Array.of(one/elements.readUnchecked(0)))
+        new Matrix[element, n, n](1, 1, Array(one/elements.readUnchecked(0)))
       else
         val resultElements = Array.build[element](dimension*dimension): array =>
           var outputRow = 0

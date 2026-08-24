@@ -346,7 +346,7 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == 2)
 
       test(m"an immutable array's gamut spans all its elements"):
-        Array.of(1, 2, 3).gamut.size
+        Array(1, 2, 3).gamut.size
       . assert(_ == 3)
 
       test(m"a present option has a gamut of size one"):

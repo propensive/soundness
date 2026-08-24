@@ -120,7 +120,7 @@ object Teletype:
 
   // Empty Teletype: dense form with no chars and one trailing entry.
   val empty: Teletype =
-    new Teletype(t"", Array.of(0L), Map.empty, TreeMap.empty, Array.empty[Int])
+    new Teletype(t"", Array(0L), Map.empty, TreeMap.empty, Array.empty[Int])
 
   given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
   given printable: Teletype is Printable = _.render(_)
@@ -146,7 +146,7 @@ object Teletype:
 
   // Build a Teletype from text with no styling. Always sparse (1 run).
   def apply(text: Text): Teletype =
-    new Teletype(text, Array.of(0L, 0L), Map.empty, TreeMap.empty, Array.of(0))
+    new Teletype(text, Array(0L, 0L), Map.empty, TreeMap.empty, Array(0))
 
   // Build a Teletype with a single uniform style applied to all chars.
   def styled[value: Showable](value: value)(transform: Ansi.Transform): Teletype =
@@ -154,9 +154,9 @@ object Teletype:
     val styled: Long = transform(TextStyle()).styleWord
 
     if text.length == 0 then
-      new Teletype(t"", Array.of(styled, 0L), Map.empty, TreeMap.empty, Array.of(0))
+      new Teletype(t"", Array(styled, 0L), Map.empty, TreeMap.empty, Array(0))
     else
-      new Teletype(text, Array.of(styled, 0L), Map.empty, TreeMap.empty, Array.of(0))
+      new Teletype(text, Array(styled, 0L), Map.empty, TreeMap.empty, Array(0))
 
   // Compress a dense styles array into sparse form if it would benefit.
   // Returns the resulting (styles, boundaries) pair.
@@ -166,7 +166,7 @@ object Teletype:
     val n = plain.length
 
     if n == 0
-    then (Array.of(if denseStyles.length > 0 then denseStyles.readUnchecked(0) else 0L), Array.empty[Int])
+    then (Array(if denseStyles.length > 0 then denseStyles.readUnchecked(0) else 0L), Array.empty[Int])
     else
       // Count runs, tracking the previous style rather than reading `i - 1` again: the
       // confined scan visits each index once.
@@ -303,7 +303,7 @@ case class Teletype
   // For an already-sparse Teletype this is O(1); for a dense one it's O(plain.length).
   def asSparseArrays: (Array[Long]^{}, Array[Int]^{}) =
     if !isDense then (styles, boundaries)
-    else if plain.length == 0 then (Array.of(if styles.length > 0 then styles.readUnchecked(0) else 0L), Array.of(0))
+    else if plain.length == 0 then (Array(if styles.length > 0 then styles.readUnchecked(0) else 0L), Array(0))
     else
       val n = plain.length
       // Count runs, tracking the previous style; see `compressIfBeneficial`.

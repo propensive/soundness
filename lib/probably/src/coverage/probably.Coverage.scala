@@ -50,7 +50,7 @@ object Coverage:
     val hits = measurements(currentFile)
     val dirFile = File(dir.s)
 
-    if !dirFile.exists() then Coverage(dir, Array.of(), Set(), Set())
+    if !dirFile.exists() then Coverage(dir, Array(), Set(), Set())
     else
       // `listFiles` hands back a mutable array, which captures the root capability.
       // Wrapping it in an `Option` instantiates that type variable with a capturing

@@ -103,7 +103,7 @@ object Hpack:
 
   object Table:
     // The 61-entry static table (RFC 7541, Appendix A). Index 1 is element 0 here.
-    val static: Array[Entry]^{} = Array.of[Entry](
+    val static: Array[Entry]^{} = Array[Entry](
       Entry(t":authority", t""),
       Entry(t":method", t"GET"),
       Entry(t":method", t"POST"),

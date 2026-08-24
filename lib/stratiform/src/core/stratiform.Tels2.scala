@@ -109,13 +109,13 @@ object Tels2:
     case Morphology.Dict(key, value) =>
       val entry =
         Tels.Struct
-          ( Array.of
+          ( Array
               ( Tels.Field(Polarity.Tight, Polarity.Implicit, t"key", reify(key), Unset),
                 Tels.Field(Polarity.Tight, Polarity.Implicit, t"value", reify(value), Unset) ),
             Array.empty )
 
       Tels.Struct
-        ( Array.of(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
+        ( Array(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
           Array.empty )
 
     case Morphology.Obj(fields, required) =>
@@ -197,13 +197,13 @@ trait Tels2:
     () =>
       val entry =
         Tels.Struct
-          ( Array.of
+          ( Array
               ( Tels.Field(Polarity.Tight, Polarity.Implicit, t"key", key.schema(), Unset),
                 Tels.Field(Polarity.Tight, Polarity.Implicit, t"value", value.schema(), Unset) ),
             Array.empty )
 
       Tels.Struct
-        ( Array.of(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
+        ( Array(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
           Array.empty )
 
   inline given schematic: [value: Reflection] => value is TelSchematic over Tels.Type =
@@ -222,7 +222,7 @@ trait Tels2:
 
       case Tels.Reference(reference) =>
         val member = Tels.SelectRef(Polarity.Implicit, Polarity.Implicit, reference)
-        val root   = Tels.Struct(Array.of(member), Array.empty)
+        val root   = Tels.Struct(Array(member), Array.empty)
         Tels(name, root, Array.empty, Unset, Array.empty, Array.empty, selects)
 
 object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:

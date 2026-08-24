@@ -39,13 +39,13 @@ import rudiments.*
 
 object Compass:
   val points4: Array[CardinalWind]^{} =
-    Array.of(North, East, South, West)
+    Array(North, East, South, West)
 
   val points8: Array[CardinalWind | IntercardinalWind]^{} =
-    Array.of(North, Northeast, East, Southeast, South, Southwest, West, Northwest)
+    Array(North, Northeast, East, Southeast, South, Southwest, West, Northwest)
 
   val points16: Array[CardinalWind | IntercardinalWind | HalfWind]^{} =
-    Array.of
+    Array
       ( North, NorthNortheast, Northeast, EastNortheast, East, EastSoutheast, Southeast,
         SouthSoutheast, South, SouthSouthwest, Southwest, WestSouthwest, West, WestNorthwest,
         Northwest, NorthNorthwest )

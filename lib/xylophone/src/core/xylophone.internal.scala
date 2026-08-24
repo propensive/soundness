@@ -1819,16 +1819,16 @@ object internal:
       // deferred until the first parse.
       caps.unsafe.unsafeAssumePure:
         val keys: Array[String]^{} =
-          Xml.Parsable.wireNames(Array.of[String](${Varargs(nameExprs)}*), $renames)
+          Xml.Parsable.wireNames(Array[String](${Varargs(nameExprs)}*), $renames)
 
-        val attrs: Array[Boolean]^{} = Array.of[Boolean](${Varargs(attrExprs)}*)
+        val attrs: Array[Boolean]^{} = Array[Boolean](${Varargs(attrExprs)}*)
 
-        lazy val instances: Array[Xml.Field | Null]^{} = Array.of(${Varargs(instanceExprs)}*)
+        lazy val instances: Array[Xml.Field | Null]^{} = Array(${Varargs(instanceExprs)}*)
 
         lazy val repeatables: Array[Boolean]^{} =
           instances.remap { instance => instance != null && Xml.Parsable.repeats(instance) }
 
-        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
+        lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs(fallbackExprs)}*)
         val fallback: Optional[() => value] = $defaultExpr
 
         new Xml.Parsable:

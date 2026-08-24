@@ -684,7 +684,7 @@ object Xml extends Tag.Container
         Element(fieldName, Attributes.empty, Array.unsafeFrozen(nodes.toArray))
 
       case node: Node =>
-        Element(fieldName, Attributes.empty, Array.of(node))
+        Element(fieldName, Attributes.empty, Array(node))
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Xml =
@@ -3745,7 +3745,7 @@ object Xml extends Tag.Container
     // The current element's text content, consumed together with its close
     // tag: the text when the content is exactly one text run (or empty), or
     // `null` for any other shape — mirroring `textOf`, which accepts only
-    // `Element(_, _, Array.of(TextNode(text)))` and `Element(_, _, Array.of())`.
+    // `Element(_, _, Array(TextNode(text)))` and `Element(_, _, Array())`.
     // A CDATA section, a comment, a processing instruction or a child
     // element therefore makes a leaf wrong-shaped on both paths.
     private[xylophone] def directText()(using Tactic[Parse.Error]): Text | Null =
@@ -4273,7 +4273,7 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
 
   private def selfNodes: Array[Node]^{} = this match
     case Fragment(nodes*) => Array.from(nodes)
-    case node: Node       => Array.of(node)
+    case node: Node       => Array(node)
 
   private def childElements(name: String): Array[Node]^{} =
     val buffer = scm.ArrayBuffer[Node]()

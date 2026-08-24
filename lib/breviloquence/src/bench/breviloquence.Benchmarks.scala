@@ -76,20 +76,20 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
   // Roughly 30 bytes — exercises the head-byte fast path for short strings and
   // a small definite-length map.
   lazy val cborBytes1: Array[Byte]^{} =
-    val keys = Array.of[Any]("id", "name", "active")
-    val values = Array.of[Any](42L, "Alice", true)
+    val keys = Array[Any]("id", "name", "active")
+    val values = Array[Any](42L, "Alice", true)
     encode(Cbor.Ast.map(keys, values))
 
   // Corpus 2: 100 user records — typical "array of records" pattern with five
   // repeated keys per element.
   lazy val cborBytes2: Array[Byte]^{} =
     val records = (0 until 100).map: index =>
-      val keys = Array.of[Any]("id", "username", "email", "active", "role")
+      val keys = Array[Any]("id", "username", "email", "active", "role")
       val active = (index&1) == 0
       val role = if index%10 == 0 then "admin" else "user"
-      val values = Array.of[Any](index.toLong, s"user$index", s"user$index@example.com", active, role)
+      val values = Array[Any](index.toLong, s"user$index", s"user$index@example.com", active, role)
       Cbor.Ast.map(keys, values).asInstanceOf[Any]
-    encode(Cbor.Ast.map(Array.of[Any]("users"), Array.of[Any](Cbor.Ast.array(Array.from(records)))))
+    encode(Cbor.Ast.map(Array[Any]("users"), Array[Any](Cbor.Ast.array(Array.from(records)))))
 
   // Corpus 3: 500 log entries with six keys each — larger throughput target,
   // dominated by short-string parsing and small-integer head bytes.
@@ -97,14 +97,14 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     val levels = scala.Array("info", "debug", "warn", "error")
     val services = scala.Array("auth", "api", "db", "cache", "worker")
     val records = (0 until 500).map: index =>
-      val keys = Array.of[Any]("timestamp", "level", "service", "requestId", "userId", "message")
+      val keys = Array[Any]("timestamp", "level", "service", "requestId", "userId", "message")
       val ts = 1700000000L + index
       val level = levels(index & 3)
       val service = services(index % 5)
       val userId = 1000L + (index % 50)
-      val values = Array.of[Any](ts, level, service, s"req-$index", userId, s"event $index processed")
+      val values = Array[Any](ts, level, service, s"req-$index", userId, s"event $index processed")
       Cbor.Ast.map(keys, values).asInstanceOf[Any]
-    encode(Cbor.Ast.map(Array.of[Any]("logs"), Array.of[Any](Cbor.Ast.array(Array.from(records)))))
+    encode(Cbor.Ast.map(Array[Any]("logs"), Array[Any](Cbor.Ast.array(Array.from(records)))))
 
   // Corpus 4: 1000 small integers — exercises the integer head-byte hot path
   // without string or map overhead.
@@ -129,7 +129,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     var ast: Any = "deep"
     var index = 0
     while index < 10 do
-      ast = Cbor.Ast.map(Array.of[Any](s"level$index"), Array.of[Any](ast))
+      ast = Cbor.Ast.map(Array[Any](s"level$index"), Array[Any](ast))
       index += 1
     encode(ast.asInstanceOf[Cbor.Ast])
 

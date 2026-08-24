@@ -79,7 +79,7 @@ private[hallucination] object BmpCodec:
       val paletteOffset = 14 + headerSize + (if headerSize == 40 && compression == 3 then 12 else 0)
 
       val palette: Array[Int]^{} =
-        if bitCount > 8 then Array.of()
+        if bitCount > 8 then Array()
         else
           val size = if colorCount == 0 then 1 << bitCount else colorCount
 

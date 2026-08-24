@@ -950,7 +950,7 @@ object internal:
     inline def zeros: S32 = 16 - JInt.bitCount(bitmap.toInt)
 
     @targetName("bytesB16")
-    def bytes: Array[Byte]^{} = Array.of[Byte]((bitmap >> 8).toByte, bitmap.toByte)
+    def bytes: Array[Byte]^{} = Array[Byte]((bitmap >> 8).toByte, bitmap.toByte)
 
     @targetName("hexB16")
     inline def hex: Text = String.format("%04x", bitmap).nn.tt
@@ -1045,7 +1045,7 @@ object internal:
 
     @targetName("bytesB32")
     def bytes: Array[Byte]^{} =
-      Array.of[Byte]
+      Array[Byte]
         ( (bitmap >> 24).toByte, (bitmap >> 16).toByte, (bitmap >> 8).toByte, bitmap.toByte )
 
     @targetName("hexB32")
@@ -1141,7 +1141,7 @@ object internal:
 
     @targetName("bytesB64")
     def bytes: Array[Byte]^{} =
-      Array.of[Byte]
+      Array[Byte]
         ( (bitmap >> (8*7)).toByte,
           (bitmap >> (8*6)).toByte,
           (bitmap >> (8*5)).toByte,

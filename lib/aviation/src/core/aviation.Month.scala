@@ -40,7 +40,7 @@ import spectacular.*
 import symbolism.*
 
 object Month extends MonthRadix:
-  val all: Array[Month] = Array.of(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
+  val all: Array[Month] = Array(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
 
   given multiplicable: Int is Multiplicable by Month.type to (Timespan of Month.type) =
     Multiplicable: (n, _) => Timespan(Month, n)

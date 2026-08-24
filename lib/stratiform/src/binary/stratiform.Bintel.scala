@@ -517,7 +517,7 @@ object Bintel:
 
     element match
       case Tel.Element.Value(kidx, _, text) =>
-        Tel.Compound(flat.readable(kidx)._1, Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty)
+        Tel.Compound(flat.readable(kidx)._1, Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty)
 
       case Tel.Element.Node(kidx, struct: Tels.Struct, children) =>
         val keyword   = kidx.let(flat.readable(_)._1).or(Text(""))
@@ -534,7 +534,7 @@ object Bintel:
 
   private def blocks(compounds: Array[Tel.Compound]^{}): Array[Tel.Block]^{} =
     if compounds.nil then Array.empty
-    else Array.of(Tel.Block(Array.empty, Unset, compounds, 0))
+    else Array(Tel.Block(Array.empty, Unset, compounds, 0))
 
   object Parsable:
     // The base of generated parsers: generated code is capture-erased, so

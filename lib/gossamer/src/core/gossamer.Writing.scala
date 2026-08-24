@@ -50,7 +50,7 @@ import vacuous.*
 object Writing:
   def apply(text: Text): Writing = new Writing(text, GraphemeBreak.boundaries(text))
 
-  val empty: Writing = new Writing(Text(""), Array.of(0))
+  val empty: Writing = new Writing(Text(""), Array(0))
 
   given showable: Writing is Showable = _.text
 

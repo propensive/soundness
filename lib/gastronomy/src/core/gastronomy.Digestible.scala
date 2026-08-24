@@ -122,15 +122,15 @@ object Digestible extends Derivable[Digestible]:
   given float: Float is Digestible = int.contramap(jl.Float.floatToRawIntBits(_))
 
   given boolean: Boolean is Digestible =
-    (digestion, boolean) => digestion.append(Array.of(if boolean then 1.toByte else 0.toByte))
+    (digestion, boolean) => digestion.append(Array(if boolean then 1.toByte else 0.toByte))
 
-  given byte: Byte is Digestible = (digestion, byte) => digestion.append(Array.of(byte))
+  given byte: Byte is Digestible = (digestion, byte) => digestion.append(Array(byte))
 
   given short: Short is Digestible =
-    (digestion, short) => digestion.append(Array.of((short >> 8).toByte, short.toByte))
+    (digestion, short) => digestion.append(Array((short >> 8).toByte, short.toByte))
 
   given char: Char is Digestible =
-    (digestion, char) => digestion.append(Array.of((char >> 8).toByte, char.toByte))
+    (digestion, char) => digestion.append(Array((char >> 8).toByte, char.toByte))
 
   given text: [text <: Text] => text is Digestible =
     (digestion, text) => digestion.append(text.in[Data](using charEncoders.utf8Encoder))

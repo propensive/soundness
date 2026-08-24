@@ -395,7 +395,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(identity)
 
       test(m"Hand-built boxed array of Longs equals a parsed number array"):
-        val elements: Array[Any] = Array.of(Json.Ast(1L), Json.Ast(2L), Json.Ast(3L))
+        val elements: Array[Any] = Array(Json.Ast(1L), Json.Ast(2L), Json.Ast(3L))
         val handBuilt = Json.ast(Json.Ast.arr(elements))
         handBuilt == t"[1, 2, 3]".read[Json]
       . assert(identity)

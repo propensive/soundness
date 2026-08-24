@@ -160,7 +160,7 @@ object internal:
       val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
       val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
 
-      new Vector[addition.Result, 3](Array.of[Any](first, second, third))
+      new Vector[addition.Result, 3](Array[Any](first, second, third))
 
 
   extension [left](left: Vector[left, 7])
@@ -203,7 +203,7 @@ object internal:
       val c5 = combine(a6*b1, a1*b6, a0*b4, a4*b0, a2*b3, a3*b2)
       val c6 = combine(a0*b2, a2*b0, a1*b5, a5*b1, a3*b4, a4*b3)
 
-      new Vector[addition.Result, 7](Array.of[Any](c0, c1, c2, c3, c4, c5, c6))
+      new Vector[addition.Result, 7](Array[Any](c0, c1, c2, c3, c4, c5, c6))
 
 
   extension [size <: Int, left](left: Vector[left, size])

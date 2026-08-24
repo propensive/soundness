@@ -58,7 +58,7 @@ object Cose:
   :   Data =
 
     val sigStruct =
-      Cbor.Ast.array(Array.of[Any](context, bodyProtected, externalAad, payload))
+      Cbor.Ast.array(Array[Any](context, bodyProtected, externalAad, payload))
 
     CanonicalCbor.encode(sigStruct)
 
@@ -94,7 +94,7 @@ object Cose:
 
     val payload: Data  = source.read[Data]
     val algId          = auth.algId
-    val protectedAst   = Cbor.Ast.map(Array.of[Any](1L), Array.of[Any](algId))
+    val protectedAst   = Cbor.Ast.map(Array[Any](1L), Array[Any](algId))
     val protectedBstr  = CanonicalCbor.encode(protectedAst)
     val externalAad    = Array.empty[Byte]
     val tbs            = Cose.toBeSigned(auth.contextString, protectedBstr, externalAad, payload)
@@ -353,14 +353,14 @@ class Cose
     val envelope = cborTag match
       case Cose.Tag.Sign1 | Cose.Tag.Mac0 =>
         val auth = recipients.stdlib.head.authentication
-        Cbor.Ast.array(Array.of[Any](protectedHeader, unprotectedAst, payload, auth))
+        Cbor.Ast.array(Array[Any](protectedHeader, unprotectedAst, payload, auth))
 
       case _ =>
         val recipAst: Array[Any]^{} = Array.from(recipients.stdlib.map: r =>
-          Cbor.Ast.array(Array.of[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
+          Cbor.Ast.array(Array[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
             r.authentication)))
 
-        Cbor.Ast.array(Array.of[Any](protectedHeader, unprotectedAst, payload,
+        Cbor.Ast.array(Array[Any](protectedHeader, unprotectedAst, payload,
           Cbor.Ast.array(recipAst)))
 
     Cbor.Ast(Cbor.Tag(cborTag, envelope)).encode

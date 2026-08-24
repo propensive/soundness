@@ -120,7 +120,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
     test(m"Encode to Binary"):
       import alphabets.binaryStandard
-      Array.of[Byte](1, 2, 3, 4).serialize[Binary]
+      Array[Byte](1, 2, 3, 4).serialize[Binary]
     . assert(_ == t"00000001000000100000001100000100")
 
     test(m"Extract PEM message type"):
@@ -983,9 +983,9 @@ object Tests extends Suite(m"Enigmatic tests"):
           t"02020100"))
 
       test(m"Octet strings and bit strings encode their content"):
-        List(der(Asn1.OctetString(Array.of[Byte](1, 2, 3, 4, 5))),
-            der(Asn1.BitString(Array.of[Byte](0x6e, 0x5d, 0xc0.toByte), 6)),
-            der(Asn1.BitString(Array.of[Byte](), 0)))
+        List(der(Asn1.OctetString(Array[Byte](1, 2, 3, 4, 5))),
+            der(Asn1.BitString(Array[Byte](0x6e, 0x5d, 0xc0.toByte), 6)),
+            der(Asn1.BitString(Array[Byte](), 0)))
       . assert(_ == List(t"04050102030405", t"0304066E5DC0", t"030100"))
 
       test(m"Object identifiers combine their first two arcs"):
@@ -1004,8 +1004,8 @@ object Tests extends Suite(m"Enigmatic tests"):
           t"180F31393730303130313030303030305A"))
 
       test(m"A set's members are sorted by their encodings"):
-        val two = Asn1.OctetString(Array.of[Byte](2.toByte))
-        val one = Asn1.OctetString(Array.of[Byte](1.toByte))
+        val two = Asn1.OctetString(Array[Byte](2.toByte))
+        val one = Asn1.OctetString(Array[Byte](1.toByte))
 
         List(der(Asn1.Set(List(two, one))),
             der(Asn1.Set(List(Asn1.Integer(BigInt(256)), Asn1.Integer(BigInt(1))))))
@@ -1013,7 +1013,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"Context tags encode explicitly, implicitly and in high-tag form"):
         List(der(Asn1.Tagged(0, true, Asn1.Integer(BigInt(2)))),
-            der(Asn1.Tagged(0, false, Asn1.OctetString(Array.of[Byte](0xab.toByte)))),
+            der(Asn1.Tagged(0, false, Asn1.OctetString(Array[Byte](0xab.toByte)))),
             der(Asn1.Tagged(31, true, Asn1.Null)))
       . assert(_ == List(t"A003020102", t"8001AB", t"BF1F020500"))
 

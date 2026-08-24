@@ -272,7 +272,7 @@ object Grpc:
       val length = payload.length
 
       val header: Data =
-        Array.of
+        Array
           ( (if compress then 1 else 0).toByte,
             (length >>> 24).toByte,
             (length >>> 16).toByte,

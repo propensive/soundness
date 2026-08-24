@@ -53,9 +53,10 @@ object Array:
   def allocate[element: ClassTag](size: Int): Array[element]^ = new scala.Array[element](size)
 
   // The frozen literal: builds a fresh array no writer can ever alias, so the purity
-  // launder is discharged by construction -- the same argument as `freeze`. Not an `apply`
-  // overload: `apply(size)` would ambiguate single-`Int` literals.
-  def of[element: ClassTag](elements: element*): Array[element]^{} =
+  // launder is discharged by construction -- the same argument as `freeze`. It can be
+  // `apply` because allocation is `allocate`: a single-`Int` application unambiguously
+  // means the one-element array.
+  def apply[element: ClassTag](elements: element*): Array[element]^{} =
     caps.unsafe.unsafeAssumePure(elements.toArray)
 
   // Frozen constructors: each builds a fresh array no writer can ever alias, so the purity

@@ -70,7 +70,7 @@ object Tests extends Suite(m"Turbulence tests"):
         . assert(_ === data)
 
     suite(m"Streaming Unicode tests"):
-      val ascii = Array.of(t"", t"a", t"ab", t"abc", t"abcd")
+      val ascii = Array(t"", t"a", t"ab", t"abc", t"abcd")
 
       val strings = for
         asc0 <- List(t"", t"a", t"ab", t"abc") // 4 combinations

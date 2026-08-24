@@ -167,7 +167,7 @@ object Blake3:
       System.arraycopy(out, 0, cv, 0, 8)
       // `cv` is allocated three lines above and never escapes, so no writer can
       // alias it; capture checking cannot see that through `arraycopy`, so the
-      // freshness is asserted here, exactly as proscenium's `Array.of` does.
+      // freshness is asserted here, exactly as proscenium's `Array` does.
       scala.caps.unsafe.unsafeAssumePure(cv)
 
     def rootOutputBytes(outLen: Int): Array[Byte]^{} =

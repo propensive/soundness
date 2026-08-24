@@ -186,8 +186,8 @@ object Tests extends Suite(m"Caesura tests"):
           val columns =
             Map(t"Greeting" -> 0, t"Addressee" -> 1)
             . asInstanceOf[Optional[Map[Text, Int]]]
-          val expected = Sheet(Array.of(Dsv(Array.of(t"Hello", t"World"), columns)),
-              dsvFormats.tsvWithHeaderFormat, Array.of(t"Greeting", t"Addressee"))
+          val expected = Sheet(Array(Dsv(Array(t"Hello", t"World"), columns)),
+              dsvFormats.tsvWithHeaderFormat, Array(t"Greeting", t"Addressee"))
           sheet == expected
 
 
@@ -248,38 +248,38 @@ object Tests extends Suite(m"Caesura tests"):
 
     test(m"convert simple row to string"):
       import dsvFormats.csvFormat
-      Sheet(Array.of(Dsv(t"hello", t"world"))).show
+      Sheet(Array(Dsv(t"hello", t"world"))).show
     . assert(_ == t"""hello,world""")
 
     test(m"convert complex row to string"):
       import dsvFormats.csvFormat
-      Sheet(Array.of(Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
+      Sheet(Array(Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
     . assert(_ == t"""0.1,two,three,4,five,six""")
 
     test(m"convert row with escaped quote"):
       import dsvFormats.csvFormat
-      Sheet(Array.of(Dsv(t"hello\"world"))).show
+      Sheet(Array(Dsv(t"hello\"world"))).show
     . assert(_ == t""""hello""world"""")
 
     test(m"convert row with delimiter in cell"):
       import dsvFormats.csvFormat
-      Sheet(Array.of(Dsv(t"hello, world", t"test"))).show
+      Sheet(Array(Dsv(t"hello, world", t"test"))).show
     . assert(_ == t""""hello, world",test""")
 
     test(m"convert row with newline in cell"):
       import dsvFormats.csvFormat
-      Sheet(Array.of(Dsv(t"line1\nline2", t"test"))).show
+      Sheet(Array(Dsv(t"line1\nline2", t"test"))).show
     . assert(_ == t""""line1\nline2",test""")
 
     test(m"convert row with carriage return in cell"):
       import dsvFormats.csvFormat
-      Sheet(Array.of(Dsv(t"line1\rline2", t"test"))).show
+      Sheet(Array(Dsv(t"line1\rline2", t"test"))).show
     . assert(_ == t""""line1\rline2",test""")
 
     test(m"simple parse TSV"):
       import dsvFormats.tsvFormat
       t"hello\tworld".read[Sheet]
-    . assert(_ == Sheet(Array.of(Dsv(t"hello", t"world")), format = dsvFormats.tsvFormat))
+    . assert(_ == Sheet(Array(Dsv(t"hello", t"world")), format = dsvFormats.tsvFormat))
 
     test(m"decode case class from TSV"):
       import dsvFormats.tsvFormat
