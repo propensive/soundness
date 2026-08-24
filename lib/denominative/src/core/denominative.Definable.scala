@@ -76,7 +76,7 @@ object Definable:
 
   // Positional update on a linked list rebuilds its prefix, so — as with `Applicable.list` —
   // the instance is gated behind the linear-access acknowledgement rather than withheld.
-  given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Definable:
+  given list: [element] => (complexity: Dysasymptotic.LinearAccess) => List[element] is Definable:
     type Self = List[element]
     type Operand = Ordinal
     type Result = element

@@ -55,7 +55,7 @@ import columnAttenuation.ignoreAttenuation
 import tableStyles.minimalTableStyle
 import textMetrics.uniformMetric
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Bytecode:
   given teletypeable: (palette: BytecodePalette) => Bytecode is Teletypeable = bytecode =>

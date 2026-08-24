@@ -48,7 +48,7 @@ import stdios.virtualMachineStdio
 import termcaps.environmentTermcap
 import beneficence.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Runner:
   private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()

@@ -48,7 +48,7 @@ import praxinoscope.*
 import prepositional.*
 import vacuous.*
 
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object internal:
   transparent inline def expandRegexJvm(inline context: StringContext): Any =

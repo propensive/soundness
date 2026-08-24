@@ -35,7 +35,7 @@ package ultimatum
 import java.io as ji
 
 import soundness.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Ultimatum Tests"):
   def run(): Unit =

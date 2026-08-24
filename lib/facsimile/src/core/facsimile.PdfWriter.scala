@@ -43,7 +43,7 @@ import hieroglyph.*
 import rudiments.*
 import vacuous.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // Serialises a write overlay as a PDF incremental update (ISO 32000-2 §7.5.6): the changed
 // and new objects, a cross-reference section covering just them, and a trailer chaining

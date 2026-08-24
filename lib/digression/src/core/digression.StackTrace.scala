@@ -40,7 +40,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object StackTrace:
   case class Method(className: Text, method: Text):

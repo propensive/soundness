@@ -59,7 +59,7 @@ import filesystemOptions.deleteRecursively.enabled
 import gitCommands.environmentDefaultGitCommand
 
 import filesystemBackends.virtualMachineFilesystem
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Octogenarian Tests"):
   def run(): Unit =

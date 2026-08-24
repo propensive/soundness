@@ -52,7 +52,7 @@ import vacuous.*
 import StackTrace.Frame.Kind
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object StackResolver:
   // The compiled name cannot say which definition a frame came from, but it can say what kind of

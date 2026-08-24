@@ -49,7 +49,7 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // The block's `result` type is the union of the singleton types of every `Status` it can
 // return, accumulated through the contravariant `Status.Registry` capability and kept precise

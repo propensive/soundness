@@ -64,7 +64,7 @@ import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Conformance:
   // Tags whose test cases exercise YAML features outside the Ypsiloid

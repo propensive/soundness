@@ -41,7 +41,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import providers.javaStdlibProvider
 import crypto.permitDisallowedCrypto   // the suite deliberately exercises weak crypto
 import cloaks.cloakHeap
-import asymptotics.linearSizeComplexity
+import dysasymptotics.linearSize
 
 import alphabets.hexUpperCase
 

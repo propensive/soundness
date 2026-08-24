@@ -51,7 +51,7 @@ import vacuous.*
 
 import Mathml.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // A parser for "ergo": a one-line shorthand for Presentation MathML that emits
 // `archimedes` nodes. The whole expression is delimited by a bracket pair; the

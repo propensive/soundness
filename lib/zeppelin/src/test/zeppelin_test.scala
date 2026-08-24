@@ -50,7 +50,7 @@ import _root_.java.io as ji
 import _root_.java.util.zip as juz
 
 import filesystemBackends.virtualMachineFilesystem
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Zeppelin tests"):
   def run(): Unit =

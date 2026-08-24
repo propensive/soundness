@@ -36,7 +36,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // Scalar encodings (spec §21.7): the codec interface and its laws C1–C3,
 // the binding mechanism, validation-time E312/E313, and the BinTEL

@@ -54,7 +54,7 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistentParents.enabled
 
 import filesystemBackends.virtualMachineFilesystem
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object ParserTests extends Suite(m"Jacinta JSON parser tests"):
   def run(): Unit =

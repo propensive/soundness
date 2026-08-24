@@ -33,7 +33,7 @@
 package rudiments
 
 import soundness.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 case class Person(name: Text, age: Int)
 
@@ -147,7 +147,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Unset)
 
       test(m"last on an occupied chain demands the unbounded acknowledgement"):
-        import denominative.asymptotics.unboundedSizeComplexity
+        import denominative.dysasymptotics.unboundedSize
         val xs: Chain[Int] = Chain(1, 2, 3)
         xs.last
       . assert(_ == 3)
@@ -335,7 +335,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
     suite(m"Attested tests"):
       test(m"an attested ordinal reads bare, with no Optional"):
-        import denominative.asymptotics.linearAccessComplexity
+        import denominative.dysasymptotics.linearAccess
         val xs: proscenium.List[Int] = proscenium.List(10, 20, 30)
 
         unsafely:
@@ -397,13 +397,13 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Map(t"a" -> 1, t"b" -> 2))
 
       test(m"define on a list demands the linear-access acknowledgement"):
-        import denominative.asymptotics.linearAccessComplexity
+        import denominative.dysasymptotics.linearAccess
         val xs: List[Int] = List(1, 2, 3)
         xs.define(Sec, 20)
       . assert(_ == List(1, 20, 3))
 
       test(m"define outside a list returns it unchanged"):
-        import denominative.asymptotics.linearAccessComplexity
+        import denominative.dysasymptotics.linearAccess
         val xs: List[Int] = List(1, 2, 3)
         xs.define(Quat, 40)
       . assert(_ == List(1, 2, 3))

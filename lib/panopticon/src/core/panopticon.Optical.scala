@@ -40,7 +40,7 @@ import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import denominative.asymptotics.{linearSizeComplexity, linearAccessComplexity}
+import denominative.dysasymptotics.{linearSize, linearAccess}
 
 object Optical:
   given ordinalList: [element] => Ordinal is Optical from List[element] onto element =

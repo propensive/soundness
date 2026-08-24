@@ -49,7 +49,7 @@ import _root_.java.util.zip as juz
 import _root_.javax.crypto as jc
 import _root_.javax.crypto.spec as jcs
 import pneumatic.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // These fixtures assemble PDF and font byte streams from many small pieces. A `Concatenable`
 // result is fresh, so joining two `Data` values means freezing once at the join; this keeps the

@@ -37,7 +37,7 @@ import scala.{compiletime, math}
 import soundness.*
 
 import scala.language.dynamics
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Wisteria tests"):
 

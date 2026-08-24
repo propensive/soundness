@@ -40,7 +40,7 @@ import profanity.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Form:
   // One derived leaf of the live pane tree: the pane itself, the rectangle the last solve

@@ -49,7 +49,7 @@ import backstops.silentBackstop
 import probates.cancelProbate
 
 import Shell.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Profanity Tests"):
   def run(): Unit =

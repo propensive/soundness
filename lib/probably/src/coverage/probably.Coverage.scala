@@ -38,7 +38,7 @@ import scala.collection.mutable.BitSet
 import scala.io.*
 
 import anticipation.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import gossamer.*
 import rudiments.*

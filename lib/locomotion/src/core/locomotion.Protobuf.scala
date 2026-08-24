@@ -62,7 +62,7 @@ import zephyrine.*
 
 import Protobuf.Error.Reason
 import fulminate.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 trait Protobuf2:
   this: Protobuf.type =>

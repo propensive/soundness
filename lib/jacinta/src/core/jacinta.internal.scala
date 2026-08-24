@@ -57,7 +57,7 @@ import vacuous.*
 import wisteria.{Discriminable, Variant}
 import zephyrine.*
 import symbolism.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object internal:
 

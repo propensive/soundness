@@ -62,7 +62,7 @@ import turbulence.*
 import typonym.*
 import vacuous.*
 import zephyrine.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Html extends Tag.Container
   ( label       = "html",

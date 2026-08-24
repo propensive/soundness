@@ -41,7 +41,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 import symbolism.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Selection:
   enum Term:

@@ -41,7 +41,7 @@ import hieroglyph.textMetrics.wideCharacterWidthMetric
 import polysyllabic.*
 import prepositional.*
 import rudiments.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import symbolism.*
 import tessellate.*
 import vacuous.*

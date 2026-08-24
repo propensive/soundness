@@ -47,7 +47,7 @@ object Prependable:
   given chain: [element] => Chain[element] is Prependable by element =
     (chain, element) => Chain.of(element #:: chain.stdlib)
 
-  given frozenArray: [element: scala.reflect.ClassTag] => (complexity: LinearSizeComplexity)
+  given frozenArray: [element: scala.reflect.ClassTag] => (complexity: Dysasymptotic.LinearSize)
   =>  (Array[element]^{}) is Prependable by element =
     (array, element) => Array.frozen(array.readable.prepended(element))
 

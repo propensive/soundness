@@ -48,7 +48,7 @@ import serpentine.*
 import turbulence.*
 import zeppelin.*
 import rudiments.`:+`
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object apkOptions:
   private def apk(edit: Apk.Configuration => Apk.Configuration): Toolchain.Setting =

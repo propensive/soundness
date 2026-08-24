@@ -39,7 +39,7 @@ import gossamer.*
 import prepositional.*
 import vacuous.*
 import rudiments.`:+`
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // TELP, the TEL Path companion specification: a schema-aware textual path
 // over the semantic model. The first character of a path selects its

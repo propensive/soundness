@@ -42,7 +42,7 @@ import charEncoders.utf8Encoder
 import webserverErrorPages.minimalErrorPage
 import threading.virtualThreading
 import probates.awaitProbate
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // A value served as a streaming `text/plain` body: `Servable` synthesises an
 // `Http.Body.Flowing` whose source runs the text stream through the char-encoder

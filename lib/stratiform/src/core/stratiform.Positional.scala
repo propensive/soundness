@@ -35,7 +35,7 @@ package stratiform
 import anticipation.*
 import contingency.*
 import rudiments.`:+`
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // The schema-free §19.2/§20.2 atom phase shared by both derivation engines
 // (issue #1694). A derived product codec approximates the schema's member

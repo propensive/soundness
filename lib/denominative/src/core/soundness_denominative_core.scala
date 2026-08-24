@@ -36,11 +36,10 @@ export
   denominative
   . { aka, capped, Countable, Vacuiscible, Applicable, Definable, Omissible, Terminable, Truncable, size, gamut, Interval, extent, iterate, prefix, nil, Ordinal, pare, Prim,
       Quat, Quin, retrace, Sec, Sen, Sept, Span, spot, Ter, u, z, Zerary, limit, ult, ant, pen,
-      LinearSizeComplexity, LinearAccessComplexity, UnboundedSizeComplexity }
+      Dysasymptotic }
 
-package asymptotics:
-  export denominative.asymptotics.{linearSizeComplexity, linearAccessComplexity,
-      unboundedSizeComplexity}
+package dysasymptotics:
+  export denominative.dysasymptotics.{linearSize, linearAccess, unboundedSize}
 
 package ordinalTextualizables:
   export

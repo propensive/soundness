@@ -56,7 +56,7 @@ import errorDiagnostics.emptyDiagnostics
 import parasite.probates.cancelProbate
 import parasite.threading.virtualThreading
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // The repackager. Reads the dependency hashes embedded by the compile-time macro
 // and partitions them: a hash that resolves to a public URL is externalized (a

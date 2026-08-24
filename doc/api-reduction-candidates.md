@@ -342,7 +342,6 @@ ultimatum's is the likelier one to rename.
 | `Hebrew*` | aviation | 2 | `HebrewCalendar`, `HebrewMonth` |
 | `Indian*` | aviation | 2 | `IndianCalendar`, `IndianMonth` |
 | `Islamic*` | aviation | 2 | `IslamicCalendar`, `IslamicMonth` |
-| `Linear*` | denominative | 2 | `LinearAccessComplexity`, `LinearSizeComplexity` |
 | `Mac*` | galilei, urticose | 2 | `MacAddress`, `MacOs` |
 | `Map*` | proscenium | 2 | `MapHasAsJava`, `MapHasAsScala` |
 | `Metric*` | quantitative | 2 | `MetricPrefix`, `MetricUnit` |
@@ -395,7 +394,7 @@ ultimatum's is the likelier one to rename.
 `SyntaxMatcher`, `TeletypeFormattable`, `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`,
 `TestPalette`, `ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`,
 `TraversalOrder`, `TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`,
-`UnboundedSizeComplexity`, `UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnusedFeature`,
+`UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnusedFeature`,
 `UrlPalette`, `UsedSets`, `UsesBlob`, `ValueToken`, `VentureTactic`, `VersionResponse`,
 `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`,
 `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WritingBuilder`, `WsSessional`,

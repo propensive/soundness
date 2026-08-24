@@ -33,7 +33,7 @@
 package fulminate
 
 import soundness.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Fulminate Tests"):
   def run(): Unit =

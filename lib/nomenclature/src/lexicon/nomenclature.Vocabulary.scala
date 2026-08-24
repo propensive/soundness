@@ -43,7 +43,7 @@ import zephyrine.*
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Vocabulary:
   def apply[source: Streamable by Data over Credit, transport](adjectives: source, animals: source)

@@ -41,7 +41,7 @@ import prepositional.*
 // collection are gated on the acknowledgement of that linear cost, like `Countable`.
 object Appendable:
   // Appending to a `List` copies all of it: O(n), so the instance demands the marker.
-  given list: [element, list <: List[element]] => (complexity: LinearSizeComplexity)
+  given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearSize)
   =>  list is Appendable by element =
     (list, element) => List.of(list.stdlib :+ element).asInstanceOf[list]
 
@@ -57,7 +57,7 @@ object Appendable:
     (set, element) => Set.of(set.stdlib + element).asInstanceOf[set]
 
   // The frozen array is rebuilt in full: O(n), so the instance demands the marker.
-  given frozenArray: [element: scala.reflect.ClassTag] => (complexity: LinearSizeComplexity)
+  given frozenArray: [element: scala.reflect.ClassTag] => (complexity: Dysasymptotic.LinearSize)
   =>  (Array[element]^{}) is Appendable by element =
     (array, element) => Array.frozen(array.readable :+ element)
 

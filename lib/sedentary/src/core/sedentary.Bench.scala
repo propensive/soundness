@@ -64,7 +64,7 @@ import systems.javaSystem
 import threading.platformThreading
 import workingDirectories.javaWorkingDirectory
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice) extends Rig:
   type Result[output] = output

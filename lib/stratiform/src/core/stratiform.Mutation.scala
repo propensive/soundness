@@ -42,7 +42,7 @@ import vacuous.*
 import Mutation.Error.Reason
 import fulminate.*
 import rudiments.`:+`
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // Primitive presentation-preserving mutations per §22.2. Each op is a
 // local rewrite addressed by a Tel.Pointer; surrounding atoms, comments,

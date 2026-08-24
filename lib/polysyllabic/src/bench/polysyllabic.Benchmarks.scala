@@ -53,7 +53,7 @@ import turbulence.*
 import vacuous.*
 
 import hyphenations.englishHyphenation
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import denominative.*
 
 object Benchmarks extends Suite(m"Polysyllabic benchmarks"):

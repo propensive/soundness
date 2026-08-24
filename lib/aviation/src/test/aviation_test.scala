@@ -39,7 +39,7 @@ import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import abstractables.instantAbstractable
 import chronometries.unix
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =

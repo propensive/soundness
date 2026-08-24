@@ -47,7 +47,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // The terminal materializer for the WIT ecosystem: turns a fully-applied `Foreign` invocation into
 // a real Wasm Component Model import call (`scala.scalajs.wit.witImportCall`, lowered by the

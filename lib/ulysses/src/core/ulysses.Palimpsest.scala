@@ -37,7 +37,7 @@ import denominative.*
 import fulminate.*
 import rudiments.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Palimpsest:
   // §3 encoding. Build a body of length `cadence.bodyLength(n)`, XOR each

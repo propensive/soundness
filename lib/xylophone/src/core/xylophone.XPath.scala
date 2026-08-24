@@ -44,7 +44,7 @@ import prepositional.*
 import vacuous.*
 import zephyrine.*
 import rudiments.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // `XPath` is a `Format`, so a malformed *expression* is a `Parse.Error` like any other
 // parse failure, carrying the offset at which it was detected. `XPath.Error` is reserved

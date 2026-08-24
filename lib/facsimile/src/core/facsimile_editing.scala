@@ -41,7 +41,7 @@ import phoenicia.*
 import quantitative.*
 import rudiments.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // The low-level write surface. These operations are extension methods on the write-granted
 // handle — `(Pdf & Granting[Grant.Write])^`, as galilei gates its `write` — so they exist

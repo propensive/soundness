@@ -41,7 +41,7 @@ import denominative.*
 import gigantism.*
 import rudiments.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object internal:
   inline def default[product, field](index: Int): Optional[field] =

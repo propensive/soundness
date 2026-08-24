@@ -56,7 +56,7 @@ import quantitative.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Pdf:
   // A fresh, empty document: a catalog and an empty page tree, over which a creation scope's

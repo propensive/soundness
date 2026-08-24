@@ -55,7 +55,7 @@ import spectacular.*
 import turbulence.*
 import zephyrine.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Zipfile:
   private val u32Max: Long = 0xffffffffL

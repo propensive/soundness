@@ -46,7 +46,7 @@ import formatting.compactJsonFormatting
 
 import discriminables.jsonByKindDiscriminable
 import errorDiagnostics.stackTracesDiagnostics
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 case class Foo(x: Int, y: Text) derives CanEqual
 

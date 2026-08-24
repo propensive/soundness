@@ -44,7 +44,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Xenophile:
 

@@ -37,7 +37,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // Fixtures for the direct-parsing suite: a flat product, a nested product,
 // `@attribute` fields (plain and `@name`-renamed), `@name`-renamed elements,
