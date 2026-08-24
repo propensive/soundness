@@ -225,49 +225,49 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
       suite(m"Scanner patterns"):
         test(m"Simple capture"):
-          Regex.parse(List(t"foo", t"(bar)")).matchGroups(t"foobar")
+          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)")), t"foobar")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(t"bar")))
 
         test(m"Two captures"):
-          Regex.parse(List(t"foo", t"(bar)", t"(baz)")).matchGroups(t"foobarbaz")
+          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)")), t"foobarbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(t"bar", t"baz")))
 
         test(m"Two captures, one repeating"):
-          Regex.parse(List(t"foo", t"(bar)", t"(baz)*")).matchGroups(t"foobarbazbaz")
+          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)*")), t"foobarbazbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(t"bar", List(t"baz", t"baz"))))
 
         test(m"Two captures, both repeating"):
-          Regex.parse(List(t"foo", t"(bar){4}", t"(baz)*")).matchGroups(t"foobarbarbarbarbazbaz")
+          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar){4}", t"(baz)*")), t"foobarbarbarbarbazbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"bar", t"bar", t"bar", t"bar"), List(t"baz", t"baz"))))
 
         test(m"Two captures, one optional and absent, one repeating"):
-          Regex.parse(List(t"foo", t"(bar)+", t"(baz)?")).matchGroups(t"foobarbar")
+          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)+", t"(baz)?")), t"foobarbar")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"bar", t"bar"), Unset)))
 
         test(m"Two captures, one optional and present, one repeating"):
-          Regex.parse(List(t"foo", t"(b.r)+", t"(baz)?")).matchGroups(t"fooberbirbaz")
+          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(b.r)+", t"(baz)?")), t"fooberbirbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"ber", t"bir"), t"baz")))
 
         test(m"Nested captures, one optional and present, one repeating"):
-          Regex.parse(List(t"f(oo", t"(b.r)+", t"(baz)?)")).matchGroups(t"fooberbirbaz")
+          Jur.engine.matchGroups(Regex.parse(List(t"f(oo", t"(b.r)+", t"(baz)?)")), t"fooberbirbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
 
@@ -579,3 +579,168 @@ object Tests extends Suite(m"Kaleidoscope tests"):
           r"hello (world"
         . map(_.focus)
       . assert(_ == List("d"))
+
+    suite(m"Re2 backend"):
+      import regexBackends.re2
+
+      test(m"Boolean match"):
+        t"hello world" match
+          case r"hello world" => 1
+          case _              => 2
+
+      . assert(_ == 1)
+
+      test(m"Failed match"):
+        t"hello" match
+          case r"world" => 1
+          case _        => 2
+
+      . assert(_ == 2)
+
+      test(m"Extract one word"):
+        t"hello world".absolve match
+          case r"$first(hello) world" => first.show
+
+      . check(_ == t"hello")
+
+      test(m"Extract two words"):
+        t"hello world".absolve match
+          case r"$first(hello) $second(world)" => List(first, second)
+
+      . assert(_ == List(t"hello", t"world"))
+
+      test(m"Extract a character class"):
+        t"hello" match
+          case r"h$vowel[aeiou]llo" => vowel
+          case _                    => Nil
+
+      . assert(_ == 'e')
+
+      test(m"Extract an optional group"):
+        t"hello" match
+          case r"hell${vowel}([aeiou])?" => vowel
+          case _                         => Unset
+
+      . assert(_ == t"o")
+
+      test(m"Extract a missing optional group"):
+        t"hell" match
+          case r"hell${vowel}([aeiou])?" => vowel
+          case _                         => t"unmatched"
+
+      . assert(_ == Unset)
+
+      test(m"Extract a repeated group"):
+        t"ababab".absolve match
+          case r"$xs(ab)+" => xs
+
+      . assert(_ == List(t"ab", t"ab", t"ab"))
+
+      test(m"Extract repeated characters"):
+        t"aeiou" match
+          case r"$vowels[aeiou]*" => vowels
+          case _                  => Nil
+
+      . assert(_ == List('a', 'e', 'i', 'o', 'u'))
+
+      test(m"A literal in expression position is tagged Re2"):
+        val regex: Regex in Re2 = r"ab?c"
+        regex.matches(t"ac")
+
+      . assert(_ == true)
+
+      test(m"The static matcher handles astral codepoints"):
+        t"a🦆z" match
+          case r"a.z" => 1
+          case _      => 2
+
+      . assert(_ == 1)
+
+      test(m"The static matcher respects anchors"):
+        t"abc" match
+          case r"^a[b-d]c$$" => 1
+          case _             => 2
+
+      . assert(_ == 1)
+
+      test(m"The static matcher rejects non-matches"):
+        t"abd" match
+          case r"a[xy]?d" => 1
+          case _          => 2
+
+      . assert(_ == 2)
+
+      test(m"A glob uses the selected backend"):
+        t"file.txt" match
+          case g"*.txt" => 1
+          case _        => 2
+
+      . assert(_ == 1)
+
+      test(m"Subsumption of literals by a star"):
+        r"a*".subsumes(r"aa")
+      . assert(_ == true)
+
+      test(m"No subsumption of a star by literals"):
+        r"aa".subsumes(r"a*")
+      . assert(_ == false)
+
+      test(m"Intersection of overlapping patterns"):
+        r"[a-m]+".intersects(r"[k-z]+")
+      . assert(_ == true)
+
+      test(m"No intersection of disjoint patterns"):
+        r"[a-m]+".intersects(r"[n-z]+")
+      . assert(_ == false)
+
+    suite(m"Engine conformance"):
+      val patterns = List
+        ( t"a*b", t"(a|b)*c", t"[a-m]+", t"a{2,4}", t"(ab)+", t"a?b?c?", t"x[0-9]{2}y",
+          t"a(b|c)d", t"a+b+c+" )
+
+      val inputs = List
+        ( t"", t"a", t"b", t"ab", t"abc", t"aab", t"aaab", t"abab", t"abababc", t"aabb",
+          t"x42y", t"xyz", t"aaaa", t"abcd", t"abd", t"acd" )
+
+      test(m"Jur and Re2 engines agree on matches, seek and search"):
+        var failures: List[Text] = Nil
+
+        patterns.each: pattern =>
+          val jvmRegex = Regex.parse(List(pattern))
+          val re2Regex = jvmRegex.to[Re2]
+
+          inputs.each: input =>
+            given Scanner = Scanner(Unset)
+
+            if jvmRegex.matches(input) != re2Regex.matches(input)
+            || jvmRegex.seek(input) != re2Regex.seek(input)
+            || jvmRegex.search(input) != re2Regex.search(input)
+            then failures = (pattern.s+" on "+input.s).tt :: failures
+
+        failures
+
+      . assert(_ == Nil)
+
+      test(m"Jur and Re2 engines agree on capture groups"):
+        var failures: List[Text] = Nil
+
+        def strip(result: Option[Array[List[Text | Char] | Optional[Text | Char]]^{}])
+        :   Option[List[Any]] =
+          result.map: (groups: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
+            proscenium.List.of(groups.readable.toList)
+
+        patterns.each: pattern =>
+          val regex = Regex.parse(List(pattern))
+
+          inputs.each: input =>
+            val jvmResult = strip(Jur.engine.matchGroups(regex, input)(using Scanner(Unset)))
+
+            val re2Result =
+              strip(Regex.Engine.re2.matchGroups(regex, input)(using Scanner(Unset)))
+
+            if jvmResult != re2Result
+            then failures = (pattern.s+" on "+input.s).tt :: failures
+
+        failures
+
+      . assert(_ == Nil)

@@ -2368,7 +2368,8 @@ object jacinta extends Library:
     )
 
 object kaleidoscope extends Library:
-  object core extends Component(contingency.core, contextual.core):
+  object core
+  extends Component(contingency.core, contextual.core, praxinoscope.core, prepositional.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

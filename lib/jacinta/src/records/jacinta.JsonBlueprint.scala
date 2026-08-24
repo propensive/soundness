@@ -272,10 +272,11 @@ object JsonBlueprint:
     JsonBlueprint.intensional(_.as[Optional[JsonPointer]])
 
 
-  given regex: ("regex" is Intensional in JsonBlueprint from Json to Regex) =
+  given regex: ("regex" is Intensional in JsonBlueprint from Json to (Regex in Jur)) =
     JsonBlueprint.intensional: value => Regex(value.as[Text])
 
-  given optionalRegex: ("regex?" is Intensional in JsonBlueprint from Json to Optional[Regex]) =
+  given optionalRegex
+    :   ("regex?" is Intensional in JsonBlueprint from Json to Optional[Regex in Jur]) =
     JsonBlueprint.intensional(_.as[Optional[Text]].let(Regex(_)))
 
   given array: ("array" is Structural[List] in JsonBlueprint from Json) = _.as[List[Json]].map(_)
