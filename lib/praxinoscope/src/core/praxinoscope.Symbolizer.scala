@@ -30,145 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package praxinoscope
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    telekinesis.Http2Tests()
-    //cosmopolite.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    praxinoscope.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    sibylline.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    telekinesis.Tests()
-    tessellate.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    virility.Tests()
-    vivisection.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    // turbulence.Tests() - deadlock
-    ()
+object Symbolizer:
+  given text: Text is Symbolizer:
+    def length(input: Text): Int = input.s.length
+    def symbol(input: Text, index: Int): Int = input.s.codePointAt(index)
+    def next(input: Text, index: Int): Int = index + Character.charCount(symbol(input, index))
+    def before(input: Text, index: Int): Int = input.s.codePointBefore(index)
+    def find(input: Text, literal: Text, from: Int): Int = input.s.indexOf(literal.s, from)
+    def word(symbol: Int): Boolean = Ranges.word.contains(symbol)
+
+// The symbol domain over which a compiled program runs: how an input is decoded into successive
+// `Int`-encoded symbols. Unicode codepoints over `Text` are the only instance today, but the
+// program representation depends only on this interface, so a UTF-8 byte domain (for streamed or
+// native matching) can be added without changing `Program` or the Pike VM.
+trait Symbolizer:
+  type Self
+
+  def length(input: Self): Int
+  def symbol(input: Self, index: Int): Int
+  def next(input: Self, index: Int): Int
+  def before(input: Self, index: Int): Int
+  def word(symbol: Int): Boolean
+
+  // The index of the first occurrence of `literal` at or after `from`, or a negative number if
+  // there is none: the substrate for literal-prefix seek acceleration. `String.indexOf` is
+  // JIT-intrinsified on the JVM, so for `Text` this is a vectorized memchr-class scan.
+  def find(input: Self, literal: Text, from: Int): Int

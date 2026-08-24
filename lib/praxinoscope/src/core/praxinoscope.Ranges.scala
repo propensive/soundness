@@ -30,145 +30,72 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package praxinoscope
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    telekinesis.Http2Tests()
-    //cosmopolite.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    praxinoscope.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    sibylline.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    telekinesis.Tests()
-    tessellate.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    virility.Tests()
-    vivisection.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+object Ranges:
+  // The greatest symbol in the default (Unicode codepoint) domain. Other symbol domains (UTF-8
+  // bytes, say) are strictly smaller, so this is a safe universal bound for `negate`.
+  val maxSymbol: Int = 0x10ffff
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    // turbulence.Tests() - deadlock
-    ()
+  val empty: Ranges = new Ranges(Nil)
+  def apply(lo: Int, hi: Int): Ranges = new Ranges(lo :: hi :: Nil)
+  def point(symbol: Int): Ranges = new Ranges(symbol :: symbol :: Nil)
+
+  // The RE2 perl classes are ASCII-only.
+  val digit: Ranges = Ranges('0'.toInt, '9'.toInt)
+
+  val word: Ranges =
+    new Ranges
+      ( '0'.toInt :: '9'.toInt :: 'A'.toInt :: 'Z'.toInt :: '_'.toInt :: '_'.toInt ::
+        'a'.toInt :: 'z'.toInt :: Nil )
+
+  val space: Ranges = new Ranges('\t'.toInt :: '\r'.toInt :: ' '.toInt :: ' '.toInt :: Nil)
+  val any: Ranges = new Ranges(0 :: '\n'.toInt - 1 :: '\n'.toInt + 1 :: maxSymbol :: Nil)
+  val anySymbol: Ranges = new Ranges(0 :: maxSymbol :: Nil)
+
+// A set of symbols, represented as a sorted, disjoint, non-adjacent list of inclusive
+// `lo :: hi :: …` bounds. Symbols are `Int`-encoded members of an ordered alphabet: Unicode
+// codepoints today, though nothing here assumes more than an ordering and an upper bound. The
+// constructor is private because it admits unnormalized bounds; every public constructor and
+// operation preserves the invariant.
+case class Ranges private(spans: List[Int]):
+  def vacant: Boolean = spans == Ranges.empty.spans
+
+  def contains(symbol: Int): Boolean =
+    def recur(todo: List[Int]): Boolean = todo match
+      case lo :: hi :: tail => if symbol < lo then false else symbol <= hi || recur(tail)
+      case _                => false
+
+    recur(spans)
+
+  def union(that: Ranges): Ranges =
+    def interleave(left: List[Int], right: List[Int]): List[Int] = (left, right) match
+      case (Nil, _) => right
+      case (_, Nil) => left
+
+      case (lo1 :: hi1 :: tail1, lo2 :: hi2 :: tail2) =>
+        if lo1 <= lo2 then lo1 :: hi1 :: interleave(tail1, right)
+        else lo2 :: hi2 :: interleave(left, tail2)
+
+      case _ => Nil
+
+    def coalesce(todo: List[Int]): List[Int] = todo match
+      case lo1 :: hi1 :: lo2 :: hi2 :: tail =>
+        if lo2 <= hi1 + 1 then coalesce(lo1 :: Math.max(hi1, hi2) :: tail)
+        else lo1 :: hi1 :: coalesce(lo2 :: hi2 :: tail)
+
+      case other => other
+
+    new Ranges(coalesce(interleave(spans, that.spans)))
+
+  def negate(max: Int = Ranges.maxSymbol): Ranges =
+    def recur(todo: List[Int], from: Int): List[Int] = todo match
+      case lo :: hi :: tail =>
+        if from < lo then from :: (lo - 1) :: recur(tail, hi + 1) else recur(tail, hi + 1)
+
+      case _ =>
+        if from <= max then from :: max :: Nil else Nil
+
+    new Ranges(recur(spans, 0))
+
+  def intersect(that: Ranges): Ranges = negate().union(that.negate()).negate()
