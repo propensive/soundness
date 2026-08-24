@@ -42,7 +42,7 @@ import scala.collection.immutable as sci
 object Set:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
-  def of[element](set: sci.Set[element]): Set[element] =
+  private[proscenium] def of[element](set: sci.Set[element]): Set[element] =
     set.asInstanceOf[Set[element]]
 
   def apply[element](elements: element*): Set[element] = of(sci.Set(elements*))

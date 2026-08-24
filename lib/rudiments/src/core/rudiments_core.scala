@@ -550,7 +550,7 @@ extension [element](sequence: List[element])
         else recur(focus, todo.tail, sci.List(todo.head), run.reverse :: done)
 
     if stdlib.isEmpty then Nil
-    else (recur(lambda(stdlib.head), stdlib.tail, sci.List(stdlib.head), sci.Nil).map(List.of(_))).to(List)
+    else (recur(lambda(stdlib.head), stdlib.tail, sci.List(stdlib.head), sci.Nil).map(_.to(List))).to(List)
 
 extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(Array.unsafeJvm(bytes))

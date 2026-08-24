@@ -42,7 +42,7 @@ import scala.collection.immutable as sci
 object Map:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
-  def of[key, value](map: sci.Map[key, value]): Map[key, value] =
+  private[proscenium] def of[key, value](map: sci.Map[key, value]): Map[key, value] =
     map.asInstanceOf[Map[key, value]]
 
   def apply[key, value](pairs: (key, value)*): Map[key, value] = of(sci.Map(pairs*))

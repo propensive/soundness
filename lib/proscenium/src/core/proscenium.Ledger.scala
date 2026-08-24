@@ -45,7 +45,7 @@ import scala.collection.immutable as sci
 object Ledger:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
-  def of[key, value](map: sci.VectorMap[key, value]): Ledger[key, value] =
+  private[proscenium] def of[key, value](map: sci.VectorMap[key, value]): Ledger[key, value] =
     map.asInstanceOf[Ledger[key, value]]
 
   def apply[key, value](pairs: (key, value)*): Ledger[key, value] = of(sci.VectorMap(pairs*))
