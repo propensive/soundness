@@ -47,7 +47,6 @@ import locomotion.*
 import prepositional.*
 import probably.*
 import proscenium.*
-import proscenium.compat.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
