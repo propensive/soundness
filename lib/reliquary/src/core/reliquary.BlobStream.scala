@@ -57,7 +57,7 @@ object BlobStream:
     val sorted = distinct.values.toList.sortWith: (a, b) => Blob.compare(a.hash, b.hash) < 0
     val lengths = sorted.map: blob => Varint.encode(blob.data.length.toLong)
     val total = sorted.zip(lengths).map { (blob, length) => blob.data.length + length.length }.sum
-    val buffer = Array[Byte](total)
+    val buffer = Array.allocate[Byte](total)
     var offset = 0
 
     sorted.zip(lengths).foreach: (blob, length) =>
@@ -88,7 +88,7 @@ object BlobStream:
       if length > Int.MaxValue.toLong || decoded.next + length.toInt > data.length
       then abort(Lira.Error(Reason.MalformedPayload(t"a record overruns the end of the stream")))
 
-      val content = Array[Byte](length.toInt)
+      val content = Array.allocate[Byte](length.toInt)
       System.arraycopy(Array.unsafeJvm(data), decoded.next, content.raw, 0, length.toInt)
       val bytes = Array.freeze(content)
       val hash = Lira.Hash(Lira.Hash.Domain.Blob, bytes)

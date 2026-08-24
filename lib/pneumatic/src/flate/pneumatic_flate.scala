@@ -48,7 +48,7 @@ private def concatenate(stream: Chain[Data]): Data =
 
   chunks.each: chunk => total += chunk.length
 
-  val result = Array[Byte](total)
+  val result = Array.allocate[Byte](total)
   var offset = 0
 
   chunks.each: chunk =>

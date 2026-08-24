@@ -47,7 +47,7 @@ object Snapshot:
     hashes.foreach: hash => distinct.getOrElseUpdate(Lira.Hash.text(hash), hash)
 
     val sorted = distinct.values.toList.sortWith: (a, b) => Blob.compare(a, b) < 0
-    val buffer = Array[Byte](sorted.size * Lira.Hash.size)
+    val buffer = Array.allocate[Byte](sorted.size * Lira.Hash.size)
     var offset = 0
 
     sorted.foreach: hash =>

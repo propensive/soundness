@@ -54,7 +54,7 @@ object Cos:
   // character fits, otherwise UTF-16BE with a byte-order mark, matching `decodeText`.
   private[facsimile] def encodeText(text: Text): Data =
     if text.s.forall(_ < 0x100) then
-      val bytes = Array[Byte](text.s.length)
+      val bytes = Array.allocate[Byte](text.s.length)
       var i = 0
 
       while i < text.s.length do
@@ -64,7 +64,7 @@ object Cos:
       Array.freeze(bytes)
     else
       val body = charEncoders.utf16BeEncoder.encoded(text)
-      val bytes = Array[Byte](body.length + 2)
+      val bytes = Array.allocate[Byte](body.length + 2)
       bytes(0) = 0xfe.toByte
       bytes(1) = 0xff.toByte
       bytes.copyFrom(body, 0, 2, body.length)
@@ -79,7 +79,7 @@ object Cos:
             && (bytes.readable(0) & 0xff) == 0xef && (bytes.readable(1) & 0xff) == 0xbb && (bytes.readable(2) & 0xff) == 0xbf
     then charDecoders.utf8Decoder.decoded(bytes.skip(3))
     else
-      val chars = Array[Char](bytes.length)
+      val chars = Array.allocate[Char](bytes.length)
       var i = 0
 
       while i < bytes.length do

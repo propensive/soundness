@@ -77,7 +77,7 @@ private[pneumatic] trait LzwEngine extends caps.Mutable:
   // Everything not yet delivered, drained in one immutable piece: the whole-value
   // counterpart of `deliver`.
   update def gather(): Data =
-    val result = Array[Byte](pending.length - delivered)
+    val result = Array.allocate[Byte](pending.length - delivered)
     var i = 0
 
     while delivered < pending.length do

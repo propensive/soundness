@@ -50,7 +50,7 @@ object internal:
       new Vector(Array.frozen(tuple.toIArray))
 
     def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
-      val buffer = Array[Any](size)
+      val buffer = Array.allocate[Any](size)
       var i = 0
       var rest = list
 

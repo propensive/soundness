@@ -408,7 +408,7 @@ object Websocket:
     // `^{any}` rather than the read-only `^{}` the type carries.
     def unmask(bytes: Data, mask: Data): Data =
       if mask.length == 0 then bytes else
-        val out = Array[Byte](bytes.length)
+        val out = Array.allocate[Byte](bytes.length)
         var index = 0
 
         while index < bytes.length do

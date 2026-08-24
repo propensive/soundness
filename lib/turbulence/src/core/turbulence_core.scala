@@ -327,7 +327,7 @@ extension (stream: Chain[Data])
     // The size is drawn separately so that each fresh buffer can go straight into `recur`'s
     // `consume` parameter: binding it to a `val` first would alias the exclusive reference.
     def newSize(): Int = arbitrary[Double]().toInt.max(1)
-    def newArray(size: Int): Array[Byte]^ = Array[Byte](size)
+    def newArray(size: Int): Array[Byte]^ = Array.allocate[Byte](size)
 
     // The buffer is threaded through `consume`, so each chunk emitted downstream is frozen
     // by the one producer that could still have written to it.
@@ -361,7 +361,7 @@ extension (stream: Chain[Data])
         case _ =>
           if destPos == 0 then Chain()
           else
-            val out = Array[Byte](destPos)
+            val out = Array.allocate[Byte](destPos)
             out.copyFrom(Array.freeze(dest), 0, 0, destPos)
             Chain(Array.freeze(out).asInstanceOf[Data])
 

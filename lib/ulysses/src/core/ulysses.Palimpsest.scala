@@ -51,7 +51,7 @@ object Palimpsest:
 
     val n        = hashes.size
     val bodyLen  = cadence.bodyLength(n)
-    val body     = Array[Byte](bodyLen)
+    val body     = Array.allocate[Byte](bodyLen)
     val hashSize = cadence.hashSize
 
     var i = 0
@@ -74,7 +74,7 @@ object Palimpsest:
       xor = xor ^ (body.readable(k) & 0xff)
       k += 1
 
-    val out = Array[Byte](bodyLen + 1)
+    val out = Array.allocate[Byte](bodyLen + 1)
     out.copyFrom(body, 0, 0, bodyLen)
     out(bodyLen) = (xor ^ (cadence.byte & 0xff)).toByte
 
@@ -130,7 +130,7 @@ case class Palimpsest(data: Data, length: Int):
               else
                 val o         = cadence.offset(item)
                 val prefixLen = if item == 0 then cadence.initial else cadence.regular
-                val prefix    = Array[Byte](prefixLen)
+                val prefix    = Array.allocate[Byte](prefixLen)
                 System.arraycopy(body, o, prefix.raw, 0, prefixLen)
 
                 val candidates =

@@ -494,7 +494,7 @@ extension [element](array: scala.Array[element])
   inline def immutable(using erased unsafe: Unsafe): Array[element]^{} = array.asInstanceOf[Array[element]^{}]
 
   def snapshot(using ClassTag[element]): Array[element]^{} =
-    val newArray = Array[element](array.length)
+    val newArray = Array.allocate[element](array.length)
     System.arraycopy(array, 0, newArray.raw, 0, array.length)
     Array.freeze(newArray)
 

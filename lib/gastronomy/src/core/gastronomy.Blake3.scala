@@ -94,7 +94,7 @@ object Blake3:
     mix(state, 3, 4,  9, 14, m(14), m(15))
 
   private def permute(m: scala.Array[Int]^): Unit =
-    val out = Array[Int](16)
+    val out = Array.allocate[Int](16)
     var i = 0
 
     while i < 16 do
@@ -171,7 +171,7 @@ object Blake3:
       scala.caps.unsafe.unsafeAssumePure(cv)
 
     def rootOutputBytes(outLen: Int): Array[Byte]^{} =
-      val result = Array[Byte](outLen)
+      val result = Array.allocate[Byte](outLen)
       var blockCounter = 0L
       var pos = 0
 

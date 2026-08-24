@@ -215,7 +215,7 @@ object LiraAssembler:
           delta       = deltaBlob.let { data => Lira.Hash(Lira.Hash.Domain.Blob, data) },
           section     = List.from(builtSections.map(_(0))),
           payload     = Lira.Manifest.Payload(t"brotli", 0L, Lira.Hash(Lira.Hash.Domain.Blob,
-              Array.freeze(Array[Byte](0)))) )
+              Array.freeze(Array.allocate[Byte](0)))) )
 
     // The producer never emits a file a consumer would reject: L131/L133/L135 are decidable
     // from the manifest, so they are checked here rather than discovered at install time.

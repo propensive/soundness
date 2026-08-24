@@ -459,7 +459,7 @@ object Xml extends Tag.Container
 
       if failed then null.asInstanceOf[derivation]
       else
-        val arguments = Array[Any](slots.length)
+        val arguments = Array.allocate[Any](slots.length)
         slot = 0
 
         while slot < slots.length do
@@ -1085,7 +1085,7 @@ object Xml extends Tag.Container
           given tactic: Tactic[Xml.Error] = reader.errorTactic
           val entries = fields
           val count = entries.length
-          val values = Array[Any](count)
+          val values = Array.allocate[Any](count)
           var index = 0
 
           while index < count do
@@ -1203,7 +1203,7 @@ object Xml extends Tag.Container
 
           val entries = fields
           val count = entries.length
-          val values = Array[Any](count)
+          val values = Array.allocate[Any](count)
           val focused = foci.active
           var index = 0
 
@@ -1497,7 +1497,7 @@ object Xml extends Tag.Container
         case fragment: Fragment => count += fragment.nodes.length
         case _                  => count += 1
 
-      val array = Array[Node](count)
+      val array = Array.allocate[Node](count)
 
       var index = 0
 
@@ -2817,7 +2817,7 @@ object Xml extends Tag.Container
 
       if n == 0 then Attributes.empty
       else
-        val arr = Array[String](2*n)
+        val arr = Array.allocate[String](2*n)
         jl.System.arraycopy(attrBuf, 0, arr.raw, 0, 2*n)
         Attributes.fromInterleaved(Array.freeze(arr))
 
@@ -3124,7 +3124,7 @@ object Xml extends Tag.Container
       val result =
         if children.nil then Array.empty[Node]
         else
-          val arr = Array[Node](children.length)
+          val arr = Array.allocate[Node](children.length)
           var i = 0
 
           while i < children.length do
@@ -3377,7 +3377,7 @@ object Xml extends Tag.Container
 
       if n == 0 then Attributes.empty
       else
-        val arr = Array[String](2*n)
+        val arr = Array.allocate[String](2*n)
         jl.System.arraycopy(attrBuf, 0, arr.raw, 0, 2*n)
         Attributes.fromInterleaved(Array.freeze(arr))
 
@@ -3448,7 +3448,7 @@ object Xml extends Tag.Container
       val result =
         if children.nil then Array.empty[Node]
         else
-          val arr = Array[Node](children.length)
+          val arr = Array.allocate[Node](children.length)
           var i = 0
 
           while i < children.length do

@@ -62,7 +62,7 @@ object Flow:
   :   Array[Int]^{} =
 
     val clusters = boundaries.readable.length - 1
-    val buffer = Array[Int](clusters + 1)
+    val buffer = Array.allocate[Int](clusters + 1)
     var total = 0
     var i = 0
     buffer(0) = 0

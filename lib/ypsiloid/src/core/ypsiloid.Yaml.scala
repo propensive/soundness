@@ -149,7 +149,7 @@ trait Yaml2:
 
       if failed then null.asInstanceOf[derivation]
       else
-        val arguments = Array[Any](slots.length)
+        val arguments = Array.allocate[Any](slots.length)
         slot = 0
 
         while slot < slots.length do
@@ -778,7 +778,7 @@ object Yaml extends Yaml2, Dynamic:
 
       if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
-        val padded = Array[Any](n + 1)
+        val padded = Array.allocate[Any](n + 1)
         padded.copyFrom(items.asInstanceOf[Array[Any]^{}], 0, 0, n)
         padded(n) = arrayPad
         Array.freeze(padded).asInstanceOf[Yaml.Ast]
@@ -787,7 +787,7 @@ object Yaml extends Yaml2, Dynamic:
     // `[k0, v0, k1, v1, ...]`. The result has even length.
     def Mapping(entries: Array[(Yaml.Ast, Yaml.Ast)]^{}): Yaml.Ast =
       val n = entries.length
-      val arr = Array[Any](n*2)
+      val arr = Array.allocate[Any](n*2)
       var i = 0
 
       while i < n do
@@ -806,7 +806,7 @@ object Yaml extends Yaml2, Dynamic:
 
       if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
-        val padded = Array[Any](n + 1)
+        val padded = Array.allocate[Any](n + 1)
         padded.copyFrom(items, 0, 0, n)
         padded(n) = arrayPad
         Array.freeze(padded).asInstanceOf[Yaml.Ast]
@@ -888,7 +888,7 @@ object Yaml extends Yaml2, Dynamic:
           val n = xs.length
 
           if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq arrayPad) then
-            val out = Array[Any](n - 1)
+            val out = Array.allocate[Any](n - 1)
             out.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, n - 1)
             Some(Array.freeze(out).asInstanceOf[Array[Yaml.Ast]^{}])
           else
@@ -1186,7 +1186,7 @@ object Yaml extends Yaml2, Dynamic:
   // desugars to `applyDynamicNamed("make")(("name", …), ("age", …))`.
   // Mirrors `Json.applyDynamicNamed`.
   def applyDynamicNamed(methodName: "make")(elements: (String, Yaml)*): Yaml =
-    val arr = Array[Any](elements.length*2)
+    val arr = Array.allocate[Any](elements.length*2)
     var i = 0
 
     while i < elements.length do
@@ -1214,7 +1214,7 @@ object Yaml extends Yaml2, Dynamic:
         val n = origin.root.arrayLength
 
         if n <= ordinal.n0 then origin else Yaml.ast:
-          val updated = Array[Any](n)
+          val updated = Array.allocate[Any](n)
           var i = 0
 
           while i < n do
@@ -1237,7 +1237,7 @@ object Yaml extends Yaml2, Dynamic:
         val n = origin.root.arrayLength
 
         Yaml.ast:
-          val updated = Array[Any](n)
+          val updated = Array.allocate[Any](n)
           var i = 0
 
           while i < n do
@@ -1259,7 +1259,7 @@ object Yaml extends Yaml2, Dynamic:
         val n = origin.root.arrayLength
 
         Yaml.ast:
-          val updated = Array[Any](n)
+          val updated = Array.allocate[Any](n)
           var i = 0
 
           while i < n do
@@ -1513,7 +1513,7 @@ object Yaml extends Yaml2, Dynamic:
   =>  ( encodable: (element is Encodable in Yaml)^ )
   =>  ((Map[key, element] is Encodable in Yaml)^{encodable, caps.any}) = map =>
     val keys: List[key] = List.from(map.stdlib.keys)
-    val arr = Array[Any](keys.size*2)
+    val arr = Array.allocate[Any](keys.size*2)
     var i = 0
 
     keys.each: k =>
@@ -1571,12 +1571,12 @@ object Yaml extends Yaml2, Dynamic:
 
             val out =
               if existing >= 0 then
-                val arr = Array[Any](xs.length)
+                val arr = Array.allocate[Any](xs.length)
                 arr.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, xs.length)
                 arr(existing + 1) = Yaml.Ast.Str(kind).asInstanceOf[Any]
                 Array.freeze(arr)
               else
-                val arr = Array[Any](xs.length + 2)
+                val arr = Array.allocate[Any](xs.length + 2)
                 arr.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, xs.length)
                 arr(xs.length)     = Yaml.Ast.Str(label).asInstanceOf[Any]
                 arr(xs.length + 1) = Yaml.Ast.Str(kind).asInstanceOf[Any]
@@ -1586,7 +1586,7 @@ object Yaml extends Yaml2, Dynamic:
 
           case _ =>
             // Not a mapping — wrap in a one-entry mapping.
-            val arr = Array[Any](2)
+            val arr = Array.allocate[Any](2)
             arr(0) = Yaml.Ast.Str(label).asInstanceOf[Any]
             arr(1) = Yaml.Ast.Str(kind).asInstanceOf[Any]
             Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(arr)))
@@ -1606,7 +1606,7 @@ object Yaml extends Yaml2, Dynamic:
 
             if existing < 0 then yaml
             else
-              val arr = Array[Any](xs.length - 2)
+              val arr = Array.allocate[Any](xs.length - 2)
               arr.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, existing)
 
               arr.copyFrom
@@ -3828,11 +3828,11 @@ object Yaml extends Yaml2, Dynamic:
       val n = buf.length
 
       if (n & 1) == 1 then
-        val arr = Array[Any](n)
+        val arr = Array.allocate[Any](n)
         buf.copyToArray(arr.raw)
         Array.freeze(arr).asInstanceOf[Yaml.Ast]
       else
-        val arr = Array[Any](n + 1)
+        val arr = Array.allocate[Any](n + 1)
         buf.copyToArray(arr.raw)
         arr(n) = Yaml.Ast.arrayPad
         Array.freeze(arr).asInstanceOf[Yaml.Ast]
@@ -3841,7 +3841,7 @@ object Yaml extends Yaml2, Dynamic:
     // is already even; copy directly into a flat `Array[Any]`.
     private update def sealMapping(buf: ArrayBuffer[Any]): Yaml.Ast =
       val n = buf.length
-      val arr = Array[Any](n)
+      val arr = Array.allocate[Any](n)
       buf.copyToArray(arr.raw)
       Array.freeze(arr).asInstanceOf[Yaml.Ast]
 
@@ -6079,7 +6079,7 @@ extends Dynamic derives CanEqual:
       raise(Yaml.Error(Reason.NotType(Yaml.primitive(root), Yaml.Primitive.Sequence)))
 
     val n = root.arrayLength
-    val updated = Array[Any](n)
+    val updated = Array.allocate[Any](n)
     var i = 0
 
     while i < n do
@@ -6116,14 +6116,14 @@ extends Dynamic derives CanEqual:
 
       root.objectIndexOf(field) match
         case -1 =>
-          val out = Array[Any](len + 2)
+          val out = Array.allocate[Any](len + 2)
           out.copyFrom(arr, 0, 0, len)
           out(len)     = field
           out(len + 1) = value.root.asInstanceOf[Any]
           Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))
 
         case index =>
-          val out = Array[Any](len)
+          val out = Array.allocate[Any](len)
           out.copyFrom(arr, 0, 0, len)
           out(index*2 + 1) = value.root.asInstanceOf[Any]
           Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))
@@ -6140,7 +6140,7 @@ extends Dynamic derives CanEqual:
         case -1 => this
 
         case index =>
-          val out = Array[Any](len - 2)
+          val out = Array.allocate[Any](len - 2)
           out.copyFrom(arr, 0, 0, index*2)
           out.copyFrom(arr, index*2 + 2, index*2, len - index*2 - 2)
           Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))

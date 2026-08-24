@@ -476,7 +476,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"Verification fails after tampering the wire bytes"):
         val wire = Cose(payload, key).bytes
-        val tampered = Array[Byte](wire.length)
+        val tampered = Array.allocate[Byte](wire.length)
         tampered.copyFrom(wire, 0, 0, wire.length)
         // Flip a bit in the MAC tag near the end of the envelope.
         val index = wire.length - 5

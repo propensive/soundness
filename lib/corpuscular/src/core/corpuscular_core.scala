@@ -41,7 +41,7 @@ import anticipation.*
 // this is the one they all delegate to.
 object Crc32:
   val table: Array[Int]^{} =
-    val result = Array[Int](256)
+    val result = Array.allocate[Int](256)
     var n = 0
 
     while n < 256 do
@@ -92,7 +92,7 @@ final class Crc32 extends caps.Mutable:
 object Crc64:
   val table: Array[Long]^{} =
     val poly = 0xc96c5795d7870f42L
-    val result = Array[Long](256)
+    val result = Array.allocate[Long](256)
     var n = 0
 
     while n < 256 do

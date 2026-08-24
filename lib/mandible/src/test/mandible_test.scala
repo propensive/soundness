@@ -321,7 +321,7 @@ object Tests extends Suite(m"Mandible tests"):
     // first match, so a registry that lists it first leaves `classfile/1` nothing to atomize.
 
     test(m"the discipline claims classfiles and nothing else"):
-      val data = Array.freeze(Array[Byte](0))
+      val data = Array.freeze(Array.allocate[Byte](0))
 
       (ClassfileDiscipline.claims(TreePath(t"fixture/Base.class"), data),
        ClassfileDiscipline.claims(TreePath(t"fixture/Base.tasty"), data),
@@ -509,7 +509,7 @@ object Tests extends Suite(m"Mandible tests"):
     // --- jsig/1 and host contracts ------------------------------------------------------------
 
     test(m"jsig claims signature files and classfiles in both its realms"):
-      val data = Array.freeze(Array[Byte](0))
+      val data = Array.freeze(Array.allocate[Byte](0))
 
       (JsigDiscipline.claims(TreePath(t"java.base/java/lang/Object.sig"), data),
        JsigDiscipline.claims(TreePath(t"android/view/View.class"), data),

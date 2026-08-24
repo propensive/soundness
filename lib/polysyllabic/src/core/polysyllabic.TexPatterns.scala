@@ -61,7 +61,7 @@ private[polysyllabic] object TexPatterns:
       if !Character.isDigit(s.charAt(i)) then letterCount += 1
       i += 1
 
-    val scores = Array[Byte](letterCount + 1)
+    val scores = Array.allocate[Byte](letterCount + 1)
     val letters = new java.lang.StringBuilder(letterCount)
     var letterIndex = 0
     i = 0
@@ -84,7 +84,7 @@ private[polysyllabic] object TexPatterns:
     val s = raw.s
     val n = s.length
     val letters = new java.lang.StringBuilder(n)
-    val breaks = Array[Int](n)
+    val breaks = Array.allocate[Int](n)
     var count = 0
     var i = 0
 
@@ -98,7 +98,7 @@ private[polysyllabic] object TexPatterns:
 
       i += 1
 
-    val exact = Array[Int](count)
+    val exact = Array.allocate[Int](count)
     exact.copyFrom(breaks, 0, 0, count)
     (letters.toString.tt, Array.freeze(exact))
 

@@ -126,7 +126,7 @@ object Sfnt:
 
     val total = tablesStart + sorted.sumBy: entry => padded(entry(1).length)
 
-    val buffer = Array[Byte](total)
+    val buffer = Array.allocate[Byte](total)
 
     def putU16(position: Int, value: Int): Unit =
       buffer(position) = (value >> 8).toByte

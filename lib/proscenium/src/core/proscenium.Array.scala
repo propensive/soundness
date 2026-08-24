@@ -48,7 +48,9 @@ import scala.reflect.ClassTag
 // The total, `Optional`-returning read (`at`) lives in `vacuous`, which sits above this
 // module; it is built from `length` and the bounds-partial `readUnchecked` below.
 object Array:
-  def apply[element: ClassTag](size: Int): Array[element]^ = new scala.Array[element](size)
+  // Named `allocate`, not `apply`: the companion's `apply` is the frozen element-wise
+  // literal, and a single-`Int` application must mean the one-element array, never a size.
+  def allocate[element: ClassTag](size: Int): Array[element]^ = new scala.Array[element](size)
 
   // The frozen literal: builds a fresh array no writer can ever alias, so the purity
   // launder is discharged by construction -- the same argument as `freeze`. Not an `apply`

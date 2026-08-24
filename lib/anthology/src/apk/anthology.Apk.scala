@@ -197,7 +197,7 @@ object Apk extends Format.Application:
 
     private def concat(parts: Data*): Data =
       val total = parts.map(_.length).sum
-      val buffer = Array[Byte](total)
+      val buffer = Array.allocate[Byte](total)
       var offset = 0
 
       parts.foreach: part =>
@@ -231,7 +231,7 @@ object Apk extends Format.Application:
       while offset < until do
         val end = math.min(offset + chunkSize, until)
         val length = end - offset
-        val chunk = Array[Byte](length)
+        val chunk = Array.allocate[Byte](length)
         chunk.copyFrom(data, offset, 0, length)
         val prefixed = concat(Array.of(0xa5.toByte), u32(length.toLong), Array.freeze(chunk))
         builder += sha256(prefixed)
@@ -308,7 +308,7 @@ object Apk extends Format.Application:
 
       // The EOCD is copied out so its central-directory offset can be patched, so the buffer is
       // built exclusively here rather than laundered out of a frozen `slice`.
-      val eocd = Array[Byte](unsigned.length - eocdOffset)
+      val eocd = Array.allocate[Byte](unsigned.length - eocdOffset)
       eocd.copyFrom(unsigned, eocdOffset, 0, eocd.length)
       for i <- 0 until 4 do eocd(16 + i) = patch.readable(i)
 
@@ -316,6 +316,6 @@ object Apk extends Format.Application:
 
     private def slice(data: Data, from: Int, until: Int): Data =
       val length = until - from
-      val buffer = Array[Byte](length)
+      val buffer = Array.allocate[Byte](length)
       buffer.copyFrom(data, from, 0, length)
       Array.freeze(buffer)

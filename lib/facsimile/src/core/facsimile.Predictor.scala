@@ -56,7 +56,7 @@ private[facsimile] object Predictor:
       val rowLength = colors*columns
       // The row decorrelation is undone in place, so the working copy is built exclusively
       // and frozen once at the end rather than thawed out of `data`.
-      val out = Array[Byte](data.length)
+      val out = Array.allocate[Byte](data.length)
       out.copyFrom(data, 0, 0, data.length)
       var row = 0
 

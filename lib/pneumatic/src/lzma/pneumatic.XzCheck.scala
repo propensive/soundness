@@ -66,7 +66,7 @@ private[pneumatic] object XzCheck:
 
 private[pneumatic] object Crc64:
   val table: Array[Long]^{} =
-    val result = Array[Long](256)
+    val result = Array.allocate[Long](256)
     val poly = 0xc96c5795d7870f42L
     var n = 0
 

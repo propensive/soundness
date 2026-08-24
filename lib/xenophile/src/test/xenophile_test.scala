@@ -995,7 +995,7 @@ object Tests extends Suite(m"Xenophile tests"):
           |""".s.stripMargin.tt
 
     test(m"the discipline claims declaration files and nothing else"):
-      val data = Array.freeze(Array[Byte](0))
+      val data = Array.freeze(Array.allocate[Byte](0))
 
       (DtsDiscipline.claims(TreePath(t"types/index.d.ts"), data),
        DtsDiscipline.claims(TreePath(t"lib/index.js"), data),
@@ -1084,7 +1084,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
     test(m"the registry falls back to opaque for content the discipline does not claim"):
       val registry = Discipline.Registry(List(DtsDiscipline))
-      val js = List((TreePath(t"lib/index.js"), Array.freeze(Array[Byte](1))))
+      val js = List((TreePath(t"lib/index.js"), Array.freeze(Array.allocate[Byte](1))))
 
       registry.atomize(js, Discipline.Context(t"jvm")).stdlib.map(_.discipline)
     . assert(_ == scala.List(t"opaque/1"))
@@ -1119,7 +1119,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
     suite(m"The `webidl/1` discipline"):
       test(m"the discipline claims idl files in the host world and nothing else"):
-        val data = Array.freeze(Array[Byte](0))
+        val data = Array.freeze(Array.allocate[Byte](0))
 
         (WebIdlDiscipline.claims(TreePath(t"idl/dom.idl"), data),
          WebIdlDiscipline.claims(TreePath(t"lib/index.js"), data),
@@ -1246,7 +1246,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
     suite(m"The `wit/1` discipline"):
       test(m"the discipline claims wit files in its two worlds and nothing else"):
-        val data = Array.freeze(Array[Byte](0))
+        val data = Array.freeze(Array.allocate[Byte](0))
 
         (WitDiscipline.claims(TreePath(t"wit/world.wit"), data),
          WitDiscipline.claims(TreePath(t"lib/api.idl"), data),
@@ -1379,7 +1379,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
     suite(m"The `cheader/1` discipline"):
       test(m"the discipline claims headers in the host world and nothing else"):
-        val data = Array.freeze(Array[Byte](0))
+        val data = Array.freeze(Array.allocate[Byte](0))
 
         (CHeaderDiscipline.claims(TreePath(t"include/openssl.h"), data),
          CHeaderDiscipline.claims(TreePath(t"src/main.c"), data),

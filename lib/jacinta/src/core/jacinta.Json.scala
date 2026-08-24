@@ -338,7 +338,7 @@ trait Json2 extends Json3:
 
       if failed then null.asInstanceOf[derivation]
       else
-        val arguments = Array[Any](slots.length)
+        val arguments = Array.allocate[Any](slots.length)
         slot = 0
 
         while slot < slots.length do
@@ -1022,7 +1022,7 @@ object Json extends Json2, Dynamic:
         def parse(reader: Json.Reader^): derivation =
           val entries = fields
           val count = entries.length
-          val values = Array[Any](count)
+          val values = Array.allocate[Any](count)
           var index = 0
 
           while index < count do
@@ -1119,9 +1119,9 @@ object Json extends Json2, Dynamic:
 
     def apply(keys: Array[String]^{}): KeyTable =
       val count = keys.length
-      val lows = Array[Long](count)
-      val highs = Array[Long](count)
-      val packable = Array[Boolean](count)
+      val lows = Array.allocate[Long](count)
+      val highs = Array.allocate[Long](count)
+      val packable = Array.allocate[Boolean](count)
       var index = 0
 
       while index < count do
@@ -1167,7 +1167,7 @@ object Json extends Json2, Dynamic:
       // on success; recursion depth is the number of retries.
       def probe(capacity: Int): Optional[(Array[Int]^{}, Int)] =
         if capacity > count*16 then Unset else
-          val attempt = Array[Int](capacity)
+          val attempt = Array.allocate[Int](capacity)
           var clash = false
           var probeIndex = 0
 
@@ -1189,7 +1189,7 @@ object Json extends Json2, Dynamic:
           lowsFrozen,
           highsFrozen,
           packableFrozen,
-          table.lay(Array.freeze(Array[Int](0)))(_(0)),
+          table.lay(Array.freeze(Array.allocate[Int](0)))(_(0)),
           table.lay(0)(_(1)) )
 
   // Precomputed packed-byte forms of a fixed key set (a derived product's
@@ -1613,7 +1613,7 @@ object Json extends Json2, Dynamic:
     // at even indices and values at odd indices.
     def obj(keys: Array[String]^{}, values: Array[Any]^{}): Ast =
       val n = keys.length
-      val arr = Array[Any](n*2)
+      val arr = Array.allocate[Any](n*2)
       var i = 0
 
       while i < n do
@@ -1631,7 +1631,7 @@ object Json extends Json2, Dynamic:
 
       if (n & 1) == 1 then elements
       else
-        val padded = Array[Any](n + 1)
+        val padded = Array.allocate[Any](n + 1)
         padded.copyFrom(elements, 0, 0, n)
         padded(n) = arrayPad
         Array.freeze(padded)
@@ -1762,14 +1762,14 @@ object Json extends Json2, Dynamic:
         // that `arrayElement`'s raising result leaves on the elements.
         case bcds: (Array[Long]^{}) @unchecked =>
           val count = bcds.length
-          val out = Array[Json.Ast](count)
+          val out = Array.allocate[Json.Ast](count)
           var i = 0
           while i < count do { out(i) = json.arrayElement(i); i += 1 }
           Array.freeze(out).asInstanceOf[Array[Json.Ast]^{}]
 
         case smalls: (Array[Int]^{}) @unchecked =>
           val count = smalls.length
-          val out = Array[Json.Ast](count)
+          val out = Array.allocate[Json.Ast](count)
           var i = 0
           while i < count do { out(i) = json.arrayElement(i); i += 1 }
           Array.freeze(out).asInstanceOf[Array[Json.Ast]^{}]
@@ -1839,8 +1839,8 @@ object Json extends Json2, Dynamic:
         else
           val arr = json.asInstanceOf[Array[Any]^{}]
           val n = arr.length/2
-          val keys = Array[String](n)
-          val values = Array[Json.Ast](n)
+          val keys = Array.allocate[String](n)
+          val values = Array.allocate[Json.Ast](n)
           var i = 0
 
           while i < n do
@@ -2767,7 +2767,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
     if !root.isArray then raise(Json.Error(Reason.NotType(root.primitive, Json.Primitive.Array)))
     val n = root.arrayLength
-    val updated = Array[Any](n)
+    val updated = Array.allocate[Any](n)
     var i = 0
 
     while i < n do
@@ -2800,14 +2800,14 @@ extends Dynamic, Topical, Original derives CanEqual:
 
     root.objectIndexOf(field) match
       case -1 =>
-        val out = Array[Any](len + 2)
+        val out = Array.allocate[Any](len + 2)
         out.copyFrom(arr, 0, 0, len)
         out(len) = field
         out(len + 1) = value.root
         Json.ast(Json.Ast(Array.freeze(out)))
 
       case index =>
-        val out = Array[Any](len)
+        val out = Array.allocate[Any](len)
         out.copyFrom(arr, 0, 0, len)
         out(index*2 + 1) = value.root
         Json.ast(Json.Ast(Array.freeze(out)))
@@ -2821,7 +2821,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         Json.ast(root)
 
       case index =>
-        val out = Array[Any](len - 2)
+        val out = Array.allocate[Any](len - 2)
         out.copyFrom(arr, 0, 0, index*2)
         out.copyFrom(arr, index*2 + 2, index*2, len - index*2 - 2)
         Json.ast(Json.Ast(Array.freeze(out)))

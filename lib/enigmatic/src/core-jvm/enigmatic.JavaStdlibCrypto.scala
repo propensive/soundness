@@ -51,7 +51,7 @@ import denominative.dysasymptotics.linearSize
 object JavaStdlibCrypto extends Crypto:
   def random: Crypto.Random = new Crypto.Random:
     def bytes(size: Int): Data =
-      val output = Array[Byte](size)
+      val output = Array.allocate[Byte](size)
       js.SecureRandom().nextBytes(output.raw)
       Array.freeze(output)
 

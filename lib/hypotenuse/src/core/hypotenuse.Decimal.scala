@@ -86,7 +86,7 @@ object decimalInternal:
       if unscaled == 0L then Zero else
         val signum = if unscaled < 0 then -1 else 1
         var rest: Long = math.abs(unscaled)
-        val magnitude = Array[Int](3)
+        val magnitude = Array.allocate[Int](3)
         var count = 0
 
         while rest != 0L do
@@ -160,7 +160,7 @@ object decimalInternal:
           if digits.length - start == 1 && digits.charAt(start) == '0' then Zero else
             val significant = digits.length - start
             val count = (significant + BaseDigits - 1)/BaseDigits
-            val magnitude = Array[Int](count)
+            val magnitude = Array.allocate[Int](count)
             var limb = 0
             var position = digits.length
 
@@ -184,7 +184,7 @@ object decimalInternal:
     // input is copied into a fresh working array, which the strip loops then clobber.
     private[hypotenuse] def compose(signum: Int, magnitude0: scala.Array[Int], count0: Int, scale0: Int)
     :   Decimal =
-      val magnitude = Array[Int](count0)
+      val magnitude = Array.allocate[Int](count0)
       System.arraycopy(magnitude0, 0, magnitude.raw, 0, count0)
       var count = count0
       while count > 0 && magnitude.readable(count - 1) == 0 do count -= 1
@@ -209,7 +209,7 @@ object decimalInternal:
           if count > 1 && magnitude.readable(count - 1) == 0 then count -= 1
           scale -= 1
 
-        val result = Array[Int](count + 2)
+        val result = Array.allocate[Int](count + 2)
         result(0) = signum
         result(1) = scale
         result.copyFrom(magnitude, 0, 2, count)
@@ -540,7 +540,7 @@ object decimalInternal:
 
     def negation(value: Decimal): Decimal =
       if value(0) == 0 then value else
-        val result = Array[Int](value.length)
+        val result = Array.allocate[Int](value.length)
         result.copyFrom(Array.frozen(value), 0, 0, value.length)
         result(0) = -value(0)
         Array.freeze(result).readable

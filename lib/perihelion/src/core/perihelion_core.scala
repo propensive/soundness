@@ -212,7 +212,7 @@ given wsClient: ( online:            Online,
       // RFC 6455 §4.1: a fresh 16-byte nonce, Base64-encoded, is the `Sec-WebSocket-Key`;
       // the server's `Sec-WebSocket-Accept` must echo `base64(sha1(key ++ magic))`.
       val nonce: Data =
-        val bytes = Array[Byte](16)
+        val bytes = Array.allocate[Byte](16)
         SecureRandom().nextBytes(bytes.raw)
         Array.freeze(bytes)
 

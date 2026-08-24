@@ -167,7 +167,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(identity)
 
       test(m"the empty blob hash matches its pinned value"):
-        Lira.Hash.text(Lira.Hash(Lira.Hash.Domain.Blob, Array.freeze(Array[Byte](0))))
+        Lira.Hash.text(Lira.Hash(Lira.Hash.Domain.Blob, Array.freeze(Array.allocate[Byte](0))))
       . assert(_ == Lira.Hash.emptyBlob)
 
     suite(m"Validators"):
@@ -237,7 +237,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
     suite(m"Blob stream"):
       def concat(left: Data, right: Data): Data =
-        val buffer = Array[Byte](left.length + right.length)
+        val buffer = Array.allocate[Byte](left.length + right.length)
         System.arraycopy(Array.unsafeJvm(left), 0, buffer.raw, 0, left.length)
         System.arraycopy(Array.unsafeJvm(right), 0, buffer.raw, left.length, right.length)
         Array.freeze(buffer)
@@ -293,7 +293,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       test(m"a truncated stream is a malformed payload, not an L103 violation"):
         val stream = BlobStream.write(List(blobA, blobB))
-        val short = Array[Byte](stream.length - 1)
+        val short = Array.allocate[Byte](stream.length - 1)
         System.arraycopy(Array.unsafeJvm(stream), 0, short.raw, 0, stream.length - 1)
 
         capture[Lira.Error](BlobStream.read(Array.freeze(short))).reason match
@@ -969,7 +969,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         val lira = Lira.read(makeLira())
         val rendered = encode(lira.manifest.render)
         val tail = encode(t"##\n")
-        val buffer = Array[Byte](rendered.length + tail.length + lira.compressed.length)
+        val buffer = Array.allocate[Byte](rendered.length + tail.length + lira.compressed.length)
         System.arraycopy(Array.unsafeJvm(rendered), 0, buffer.raw, 0, rendered.length)
         System.arraycopy(Array.unsafeJvm(tail), 0, buffer.raw, rendered.length, tail.length)
 
@@ -1005,7 +1005,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       test(m"a missing separator is rejected"):
         // truncate the file to just the directive line, which contains no separator
         val data = makeLira()
-        val short = Array[Byte](20)
+        val short = Array.allocate[Byte](20)
         System.arraycopy(Array.unsafeJvm(data), 0, short.raw, 0, 20)
 
         capture[Lira.Error](Lira.read(Array.freeze(short))).reason match

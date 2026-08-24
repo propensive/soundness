@@ -105,7 +105,7 @@ object Html extends Tag.Container
         case fragment: Fragment => count += fragment.nodes.length
         case _                  => count += 1
 
-      val buffer = Array[Node](count)
+      val buffer = Array.allocate[Node](count)
 
       var index = 0
 
@@ -646,7 +646,7 @@ object Html extends Tag.Container
 
     // Snapshot the trailing `count` accumulated nodes into a frozen array and release them.
     update def array(count: Int): Array[Node]^{} =
-      val result = Array[Node](count)
+      val result = Array.allocate[Node](count)
       System.arraycopy(nodes, 0.max(index - count), result.raw, 0, count)
       index -= count
       Array.freeze(result)
@@ -1238,7 +1238,7 @@ object Html extends Tag.Container
 
         if n == 0 then Attributes.empty
         else
-          val arr = Array[String | Null](2*n)
+          val arr = Array.allocate[String | Null](2*n)
           jl.System.arraycopy(state.attrInterleaved, 0, arr.raw, 0, 2*n)
           Attributes.fromInterleaved(Array.freeze(arr))
 

@@ -937,7 +937,7 @@ object internal:
     def apply(pairs: (Text, Text)*): Attributes =
       if pairs.isEmpty then empty else
         val n = pairs.length
-        val buffer = Array[String](n*2)
+        val buffer = Array.allocate[String](n*2)
         var i = 0
 
         pairs.foreach: pair =>
@@ -951,7 +951,7 @@ object internal:
       val entries = map.stdlib
       if entries.isEmpty then empty else
         val n = entries.size
-        val buffer = Array[String](n*2)
+        val buffer = Array.allocate[String](n*2)
         var i = 0
 
         entries.foreach: (k, v) =>
@@ -1137,7 +1137,7 @@ object internal:
           i += 2
 
         if idx < 0 then attrs else
-          val nu = Array[String](n - 2)
+          val nu = Array.allocate[String](n - 2)
           if idx > 0 then nu.copyFrom(Array.frozen(attrs), 0, 0, idx)
           if idx < n - 2 then nu.copyFrom(Array.frozen(attrs), idx + 2, idx, n - 2 - idx)
           Array.freeze(nu).readable
@@ -1162,12 +1162,12 @@ object internal:
           i += 2
 
         if idx >= 0 then
-          val nu = Array[String](n)
+          val nu = Array.allocate[String](n)
           nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(idx + 1) = value.s
           Array.freeze(nu).readable
         else
-          val nu = Array[String](n + 2)
+          val nu = Array.allocate[String](n + 2)
           nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.s
@@ -1181,7 +1181,7 @@ object internal:
         else if a.length == 0 then other
         else
           val total = a.length + b.length
-          val nu = Array[String](total)
+          val nu = Array.allocate[String](total)
           var written = 0
           var i = 0
 
@@ -1220,7 +1220,7 @@ object internal:
           val frozen = Array.freeze(nu)
 
           if written == total then frozen.readable else
-            val tu = Array[String](written)
+            val tu = Array.allocate[String](written)
             tu.copyFrom(frozen, 0, 0, written)
             Array.freeze(tu).readable
 

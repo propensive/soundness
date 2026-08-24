@@ -248,7 +248,7 @@ object Sheet:
 
     private[caesura] def materialize(): Dsv =
       val n = cellsBuf.length
-      val arr = Array[Text](n)
+      val arr = Array.allocate[Text](n)
       cellsBuf.copyToArray(arr.raw)
       Dsv(Array.freeze(arr), headings)
 

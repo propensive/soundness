@@ -360,7 +360,7 @@ private[hallucination] object PngCodec:
       output.write(Array.unsafeJvm(body))
       writeInt(output, corpuscular.Crc32.checksum(Array.unsafeFrozen(typeBytes), body))
 
-    val header = Array[Byte](13)
+    val header = Array.allocate[Byte](13)
     header(0) = (width >> 24).toByte
     header(1) = (width >> 16).toByte
     header(2) = (width >> 8).toByte

@@ -327,9 +327,9 @@ object Tests extends Suite(m"Degustation Tests"):
       import reliquary.*
       val path = TreePath(t"fixture/Alpha.tasty")
 
-      (TastyDiscipline.claims(path, Array.freeze(Array[Byte](0))),
-       TastyDiscipline.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](0))),
-       TastyDiscipline.claims(TreePath(t"readme.md"), Array.freeze(Array[Byte](0))))
+      (TastyDiscipline.claims(path, Array.freeze(Array.allocate[Byte](0))),
+       TastyDiscipline.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array.allocate[Byte](0))),
+       TastyDiscipline.claims(TreePath(t"readme.md"), Array.freeze(Array.allocate[Byte](0))))
     . assert(_ == (true, true, false))
 
     test(m"a jvm-only lira assembles from a real compilation and verifies"):
@@ -418,7 +418,7 @@ object Tests extends Suite(m"Degustation Tests"):
         val data = Array.unsafeFrozen(Files.readAllBytes(Paths.get(file.s)).nn)
         (TreePath(t"fixture/$name"), data)
 
-      val binary = (TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](4)))
+      val binary = (TreePath(t"fixture/Alpha.class"), Array.freeze(Array.allocate[Byte](4)))
       val all = List.from(content.stdlib :+ binary)
       val context = Discipline.Context(t"jvm", classpath = List.from(libraryPaths))
       val atomization = TastyDiscipline.atomize(all, context)

@@ -75,6 +75,6 @@ extends caps.ExclusiveCapability, caps.Stateful:
     size0 += bytes.length
 
   def data: Bytes =
-    val out = Array[Byte](size0)
+    val out = Array.allocate[Byte](size0)
     System.arraycopy(storage, 0, out.raw, 0, size0)
     Array.freeze(out)

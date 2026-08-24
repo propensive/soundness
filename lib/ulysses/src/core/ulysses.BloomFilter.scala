@@ -66,7 +66,7 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
       else
         // A manual concatenation into a fresh exclusive array: `toArray` yields a read-only
         // array, which `BigInt`'s pure formal rejects.
-        val whole = Array[Byte](data.stdlib.map(_.length).sum)
+        val whole = Array.allocate[Byte](data.stdlib.map(_.length).sum)
         var offset = 0
         var rest = data.stdlib
 

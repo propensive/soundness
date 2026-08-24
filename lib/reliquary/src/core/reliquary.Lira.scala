@@ -75,7 +75,7 @@ object Lira:
     Unset
 
   private def slice(data: Data, from: Int, until: Int): Data =
-    val buffer = Array[Byte](until - from)
+    val buffer = Array.allocate[Byte](until - from)
     System.arraycopy(Array.unsafeJvm(data), from, buffer.raw, 0, until - from)
     Array.freeze(buffer)
 
@@ -135,7 +135,7 @@ object Lira:
 
     val text = manifest.copy(payload = payload).render
     val manifestData = charEncoders.utf8Encoder.encoded(text)
-    val buffer = Array[Byte](manifestData.length + 3 + compressed.length)
+    val buffer = Array.allocate[Byte](manifestData.length + 3 + compressed.length)
     System.arraycopy(Array.unsafeJvm(manifestData), 0, buffer.raw, 0, manifestData.length)
     buffer(manifestData.length) = '#'.toByte
     buffer(manifestData.length + 1) = '#'.toByte
@@ -396,7 +396,7 @@ object Lira:
 
     // The `0x00` byte separating the domain from the content; a fresh byte array is
     // zero-initialized, so freezing a unit array yields it directly.
-    private val separator: Data = Array.freeze(Array[Byte](1))
+    private val separator: Data = Array.freeze(Array.allocate[Byte](1))
 
     enum Domain:
       case Blob, Snapshot, Manifest, Key, Derivative
@@ -412,7 +412,7 @@ object Lira:
 
     def apply(domain: Domain, content: Data): Data =
       val prefix: Data = charEncoders.utf8Encoder.encoded(domain.text)
-      val buffer = Array[Byte](prefix.length + 1 + content.length)
+      val buffer = Array.allocate[Byte](prefix.length + 1 + content.length)
       System.arraycopy(Array.unsafeJvm(prefix), 0, buffer.raw, 0, prefix.length)
       System.arraycopy(Array.unsafeJvm(content), 0, buffer.raw, prefix.length + 1, content.length)
 

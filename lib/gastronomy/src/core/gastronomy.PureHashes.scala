@@ -88,7 +88,7 @@ private[gastronomy] object PureHashes:
       h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
     protected update def result(): Data =
-      val out = Array[Byte](outputBytes)
+      val out = Array.allocate[Byte](outputBytes)
       var i = 0
 
       while i < outputBytes do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
@@ -143,7 +143,7 @@ private[gastronomy] object PureHashes:
       h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
     protected update def result(): Data =
-      val out = Array[Byte](outputBytes)
+      val out = Array.allocate[Byte](outputBytes)
       var i = 0
 
       while i < outputBytes do { out(i) = (h(i/8) >>> ((7 - i%8)*8)).toByte; i += 1 }
@@ -194,7 +194,7 @@ private[gastronomy] object PureHashes:
 
     protected update def result(): Data =
       val h = scala.Array(h0, h1, h2, h3, h4)
-      val out = Array[Byte](20)
+      val out = Array.allocate[Byte](20)
       var i = 0
 
       while i < 20 do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
@@ -252,7 +252,7 @@ private[gastronomy] object PureHashes:
 
     protected update def result(): Data =
       val h = scala.Array(a0, b0, c0, d0)
-      val out = Array[Byte](16)
+      val out = Array.allocate[Byte](16)
       var i = 0
 
       while i < 16 do { out(i) = (h(i/4) >>> ((i%4)*8)).toByte; i += 1 }
@@ -261,7 +261,7 @@ private[gastronomy] object PureHashes:
 
   object Crc32:
     val table: Array[Int]^{} =
-      val result = Array[Int](256)
+      val result = Array.allocate[Int](256)
       var n = 0
 
       while n < 256 do

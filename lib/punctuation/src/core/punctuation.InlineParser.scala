@@ -55,7 +55,7 @@ private[punctuation] object InlineParser:
   // handled there must also be flagged here, otherwise it'll be silently
   // batched as plain text.
   private val Specials: Array[Boolean]^{} =
-    val arr = Array[Boolean](128)
+    val arr = Array.allocate[Boolean](128)
     val special = "\\&`<\n*_[!]"
     var i = 0
 
