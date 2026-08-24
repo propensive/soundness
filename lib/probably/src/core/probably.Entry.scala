@@ -38,7 +38,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import rudiments.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Entry:
   enum Kind:

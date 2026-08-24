@@ -52,8 +52,8 @@ extension [populable: Vacuiscible](value: populable)
   inline def nil: Boolean = populable.nil(value)
 
 extension [countable: Countable](value: countable)
-  // `Countable` carries the asymptotics gating, so `list.size` demands the
-  // `LinearSizeComplexity` acknowledgement and `chain.size` the `UnboundedSizeComplexity` one,
+  // `Countable` carries the dysasymptotic gating, so `list.size` demands the
+  // `Dysasymptotic.LinearSize` acknowledgement and `chain.size` the `Dysasymptotic.UnboundedSize` one,
   // exactly as `gamut` and `limit` already do.
   inline def size: Int = countable.size(value)
 

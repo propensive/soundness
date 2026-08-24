@@ -39,7 +39,7 @@ import soundness.*
 import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import errorDiagnostics.stackTracesDiagnostics
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 case class DecodeIssues(items: List[(Int, CharDecoder.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.size} decoding issues"):

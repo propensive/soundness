@@ -48,7 +48,7 @@ import kaleidoscope.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import serpentine.*
 import symbolism.*
 import turbulence.*

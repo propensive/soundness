@@ -38,7 +38,7 @@ import contingency.*
 import fulminate.*
 import rudiments.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // A `Regime` is the calendar in force as it changed through history: an ordered sequence of
 // segments, each handing over to the next at a Julian day number. Because the Julian day number is

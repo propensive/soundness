@@ -75,8 +75,8 @@ object Applicable:
 
     def access(sequence: Sequence[element], index: Ordinal): Result = sequence.stdlib(index.n0)
 
-  // Opaque `List`: positional access is O(n), so the instance is gated behind `LinearAccessComplexity`.
-  given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Applicable:
+  // Opaque `List`: positional access is O(n), so the instance is gated behind `Dysasymptotic.LinearAccess`.
+  given list: [element] => (complexity: Dysasymptotic.LinearAccess) => List[element] is Applicable:
     type Self = List[element]
     type Operand = Ordinal
     type Result = element

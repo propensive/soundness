@@ -42,7 +42,7 @@ import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import rudiments.*
 import spectacular.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object LineEditor:
   // Whether the editor is a single line (Enter submits) or accepts multiple lines.

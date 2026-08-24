@@ -42,7 +42,7 @@ import spectacular.*
 import symbolism.*
 import tessellate.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Dial:
   private val levels: Text = t"▁▂▃▄▅▆▇█"

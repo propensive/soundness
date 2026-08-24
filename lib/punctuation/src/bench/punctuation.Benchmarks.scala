@@ -51,7 +51,7 @@ import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import denominative.*
 
 object Benchmarks extends Suite(m"Punctuation benchmarks"):

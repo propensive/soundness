@@ -49,7 +49,7 @@ import denominative.*
 import gossamer.*
 import hellenism.*
 import rudiments.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import stenography.*
 import vacuous.*
 import symbolism.*

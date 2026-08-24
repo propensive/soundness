@@ -44,7 +44,7 @@ import rudiments.*
 import vacuous.*
 import denominative.*
 import symbolism.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // The Kotlin grammar: self-resolving, per foreign type name, from the `@Metadata` annotation of
 // the identically-named class on the compile classpath (which the macro classloader sees),

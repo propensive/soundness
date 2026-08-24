@@ -36,7 +36,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // Key fields (spec §20): the `key` flag on `Field`, its schema validity
 // constraints (E219–E221, §20.1), the monotone-OR layer merge (§20.3), the

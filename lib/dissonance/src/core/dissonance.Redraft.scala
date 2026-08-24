@@ -40,7 +40,7 @@ import rudiments.*
 import vacuous.*
 
 import Redraft.Error.Reason
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Redraft:
 

@@ -37,7 +37,7 @@ import denominative.*
 import gossamer.*
 import prophesy.*
 import rudiments.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import vacuous.*
 
 // Maps Harlequin's token stream onto Prophesy's `Lexeme` alphabet, and extracts the reversed

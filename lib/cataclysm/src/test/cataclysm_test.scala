@@ -41,7 +41,7 @@ import errorDiagnostics.stackTracesDiagnostics
 
 import cataclysm.Css.Syntax
 import Css.Node.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Cataclysm Tests"):
   // ── CSS-structure helpers ───────────────────────────────────────────────

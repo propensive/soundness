@@ -39,7 +39,7 @@ import chiaroscuro.*
 import distillate.*
 import vacuous.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // A test spread over the domain of one axis: its body runs once per axis value, and each
 // verdict is recorded at that value’s coordinate of a single named test. A partial body

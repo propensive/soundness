@@ -53,7 +53,7 @@ import rudiments.*
 import vacuous.*
 import zephyrine.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // `y"…"` interpolator and extractor macros.
 //

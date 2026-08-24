@@ -41,7 +41,7 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import turbulence.*
 import vacuous.*
 import zephyrine.*

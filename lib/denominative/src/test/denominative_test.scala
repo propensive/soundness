@@ -304,9 +304,9 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == 6)
 
     suite(m"Countable tests"):
-      // `List`'s `Countable` (hence `gamut`) is O(n), so it is gated behind `LinearSizeComplexity`,
+      // `List`'s `Countable` (hence `gamut`) is O(n), so it is gated behind `Dysasymptotic.LinearSize`,
       // enabled here for the whole suite by importing the acknowledgement.
-      import asymptotics.linearSizeComplexity
+      import dysasymptotics.linearSize
 
       test(m"a list's gamut spans all its elements"):
         val list: List[Int] = List(1, 2, 3)

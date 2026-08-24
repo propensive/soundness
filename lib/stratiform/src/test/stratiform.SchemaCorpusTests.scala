@@ -36,7 +36,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // Corpus-driven schema-validity (E2xx) and validation (E3xx) conformance:
 // the sibling of `stratiform_test.scala`'s "Negative corpus (E1xx parsing)"

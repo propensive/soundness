@@ -50,7 +50,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // A `Timestamp` is a zoneless point on the millisecond-since-JDN-epoch grid, packed into one
 // `Long` as `jdn*MillisPerDay + msOfDay`. Its precision is a phantom `Form` type member (set with

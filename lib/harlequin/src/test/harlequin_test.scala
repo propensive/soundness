@@ -37,7 +37,7 @@ import scala.language.dynamics
 import soundness.*
 
 import ambience.systems.javaSystem
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // A `Dynamic` type with a `Completable` companion, exercising the dynamic-completions route: its
 // valid member names are not symbols, so only the companion can offer them. The companion is

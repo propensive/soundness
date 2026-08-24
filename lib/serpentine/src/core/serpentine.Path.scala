@@ -45,7 +45,7 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import spectacular.*
 import symbolism.*
 import vacuous.*

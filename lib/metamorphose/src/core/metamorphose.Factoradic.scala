@@ -36,7 +36,7 @@ import scala.annotation.*
 
 import contingency.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Factoradic:
   def apply(sequence: List[Int]): Factoradic raises Permutation.Error =

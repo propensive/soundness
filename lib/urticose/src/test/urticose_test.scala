@@ -36,7 +36,7 @@ import soundness.*
 import fulminate.errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import urticose.teletypeables.urlTeletype
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Urticose tests"):
   given palette: UrlPalette = new Palette:

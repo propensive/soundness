@@ -56,13 +56,13 @@ object Terminable:
   given indexedSeq: [element] => IndexedSeq[element] is Terminable by element = _.last
 
   // Walking to the end of a strict linked structure is O(n).
-  given list: [element, list <: List[element]] => (complexity: LinearSizeComplexity)
+  given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearSize)
   =>  list is Terminable by element =
     _.stdlib.last
 
   // Forcing a lazy structure to its end diverges on an infinite one: unbounded, not merely
   // linear — the same gate `Chain.size` demands.
-  given lazyList: [element, chain <: Chain[element]] => (complexity: UnboundedSizeComplexity)
+  given lazyList: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
   =>  chain is Terminable by element =
     _.stdlib.last
 
@@ -84,17 +84,17 @@ object Truncable:
     _.init
 
   // Dropping the last element copies the whole spine.
-  given list: [element, list <: List[element]] => (complexity: LinearSizeComplexity)
+  given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearSize)
   =>  list is Truncable to List[element] =
     value => List.of(value.stdlib.init)
 
   // The rebuilt array is fresh, so freezing it is discharged by construction.
   given frozenArray: [element: scala.reflect.ClassTag, array <: (Array[element]^{})]
-  =>  (complexity: LinearSizeComplexity)
+  =>  (complexity: Dysasymptotic.LinearSize)
   =>  array is Truncable to (Array[element]^{}) =
     value => Array.frozen(value.readable.init)
 
-  given lazyList: [element, chain <: Chain[element]] => (complexity: UnboundedSizeComplexity)
+  given lazyList: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
   =>  chain is Truncable to Chain[element] =
     value => Chain.of(value.stdlib.init)
 

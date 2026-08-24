@@ -43,7 +43,7 @@ import soundness.*
 
 import textMetrics.uniformMetric
 import caseSensitivity.caseSensitive
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 case class Person(name: Text, age: Int)
 
@@ -315,12 +315,12 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"lo")
 
       test(m"from slices a List by ordinal"):
-        import asymptotics.linearSizeComplexity
+        import dysasymptotics.linearSize
         (List(0, 1, 2, 3, 4): List[Int]).from(Ter)
       . assert(_ == List(2, 3, 4))
 
       test(m"after slices a List by ordinal"):
-        import asymptotics.linearSizeComplexity
+        import dysasymptotics.linearSize
         (List(0, 1, 2, 3, 4): List[Int]).after(Ter)
       . assert(_ == List(3, 4))
 

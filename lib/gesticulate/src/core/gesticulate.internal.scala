@@ -48,7 +48,7 @@ import vacuous.*
 
 import caseSensitivity.caseInsensitive
 import proximities.levenshteinProximity
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object internal:
   // Validation runs at macro-expansion time, so it must not reflectively

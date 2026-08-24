@@ -37,7 +37,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 case class Person(name: Text, age: Int) derives CanEqual
 case class Inner(n: Int) derives CanEqual

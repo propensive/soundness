@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 case class QPerson(name: Text, email: Text) derives CanEqual
 case class QTeam(leader: QPerson, title: Text) derives CanEqual

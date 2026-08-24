@@ -54,7 +54,7 @@ import vacuous.*
 import IpAddress.Error.Reason, Reason.*
 import denominative.*
 import symbolism.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object internal:
   // Resolve `Ipv4` to the nested opaque type directly rather than via the

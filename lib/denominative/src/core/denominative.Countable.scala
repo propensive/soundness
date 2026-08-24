@@ -62,9 +62,9 @@ object Countable:
     def size(self: Option[element]): Int = if self == None then 0 else 1
     override def nil(self: Option[element]): Boolean = self.isEmpty
 
-  // `List#size` is O(n), so the `Countable` instance is gated behind `LinearSizeComplexity`; the O(1)
+  // `List#size` is O(n), so the `Countable` instance is gated behind `Dysasymptotic.LinearSize`; the O(1)
   // `nil`/`occupied` come from the ungated `Vacuiscible.list` instead.
-  given list: [element] => (complexity: LinearSizeComplexity) => List[element] is Countable:
+  given list: [element] => (complexity: Dysasymptotic.LinearSize) => List[element] is Countable:
     def size(self: List[element]): Int = self.stdlib.length
     override def nil(self: List[element]): Boolean = self.stdlib.isEmpty
 
@@ -90,9 +90,9 @@ object Countable:
     override def nil(self: HashMap[key, element]): Boolean = self.isEmpty
 
   // `Chain#length` forces the whole stream (and diverges on infinite ones), so the
-  // `Countable` instance is gated behind `UnboundedSizeComplexity`; the O(1) `nil` comes from the
+  // `Countable` instance is gated behind `Dysasymptotic.UnboundedSize`; the O(1) `nil` comes from the
   // ungated `Vacuiscible.lazyList` instead.
-  given lazyList: [element] => (complexity: UnboundedSizeComplexity) => Chain[element] is Countable:
+  given lazyList: [element] => (complexity: Dysasymptotic.UnboundedSize) => Chain[element] is Countable:
     def size(self: Chain[element]): Int = self.stdlib.length
     override def nil(self: Chain[element]): Boolean = self.stdlib.isEmpty
 

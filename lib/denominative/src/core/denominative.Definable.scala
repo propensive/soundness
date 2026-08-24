@@ -55,8 +55,12 @@ object Definable:
       else sequence
 
   // The rebuilt array is fresh, so freezing it is discharged by construction; the `ClassTag`
-  // is captured at the instance (as `Segmentable.iarray` does), not per call.
-  given frozenArray: [element: scala.reflect.ClassTag] => (Array[element]^{}) is Definable:
+  // is captured at the instance (as `Segmentable.iarray` does), not per call. A one-element
+  // update copies the whole array — dysasymptotic, like the frozen array's `Appendable`,
+  // `Prependable` and `Truncable` instances — so it is gated on the same acknowledgement.
+  given frozenArray: [element: scala.reflect.ClassTag]
+        => (complexity: Dysasymptotic.LinearSize)
+        => (Array[element]^{}) is Definable:
     type Self = Array[element]^{}
     type Operand = Ordinal
     type Result = element
@@ -76,7 +80,7 @@ object Definable:
 
   // Positional update on a linked list rebuilds its prefix, so — as with `Applicable.list` —
   // the instance is gated behind the linear-access acknowledgement rather than withheld.
-  given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Definable:
+  given list: [element] => (complexity: Dysasymptotic.LinearAccess) => List[element] is Definable:
     type Self = List[element]
     type Operand = Ordinal
     type Result = element

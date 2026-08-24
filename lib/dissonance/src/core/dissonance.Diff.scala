@@ -42,7 +42,7 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 import symbolism.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Diff:
   given aggregable: (tactic: Tactic[Diff.Error])

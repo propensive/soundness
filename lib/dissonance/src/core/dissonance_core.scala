@@ -38,7 +38,7 @@ import fulminate.*
 import symbolism.*
 import vacuous.*
 import rudiments.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 
 def evolve[element: ClassTag]

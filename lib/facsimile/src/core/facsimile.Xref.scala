@@ -38,7 +38,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 private[facsimile] object Xref:
   enum Entry:

@@ -35,8 +35,8 @@ package denominative
 import prepositional.*
 
 // Emptiness alone, split from `Countable`: `nil` is O(1) for every collection, including those
-// (like `List`) whose `size` is O(n) and gated behind `LinearSizeComplexity`, and those (like
-// `Chain`) whose `size` may diverge and is gated behind `UnboundedSizeComplexity`. Types whose
+// (like `List`) whose `size` is O(n) and gated behind `Dysasymptotic.LinearSize`, and those (like
+// `Chain`) whose `size` may diverge and is gated behind `Dysasymptotic.UnboundedSize`. Types whose
 // size is cheap implement `Countable`, which extends this trait; `nil`-only consumers should demand
 // only `Vacuiscible`.
 object Vacuiscible:
@@ -46,13 +46,13 @@ object Vacuiscible:
   given countable: [self] => (countable: self is Countable) => self is Vacuiscible = countable
 
   // `List`'s emptiness is O(1), so it gets an ungated instance here rather than relying on
-  // the `LinearSizeComplexity`-gated `Countable.list` through the `countable` bridge; being more
+  // the `Dysasymptotic.LinearSize`-gated `Countable.list` through the `countable` bridge; being more
   // specific, it wins whenever both are in scope.
   given list: [element] => List[element] is Vacuiscible:
     def nil(self: List[element]): Boolean = self.stdlib.isEmpty
 
   // `Chain`'s emptiness is O(1) — it forces only the first node — so, like `List`, it gets an
-  // ungated instance here rather than reaching the `UnboundedSizeComplexity`-gated `Countable.lazyList`.
+  // ungated instance here rather than reaching the `Dysasymptotic.UnboundedSize`-gated `Countable.lazyList`.
   given lazyList: [element] => Chain[element] is Vacuiscible:
     def nil(self: Chain[element]): Boolean = self.stdlib.isEmpty
 

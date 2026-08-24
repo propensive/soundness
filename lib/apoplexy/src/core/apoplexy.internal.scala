@@ -55,7 +55,7 @@ import xylophone.*
 
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Apoplexy:
   // --- compile-time spec access -------------------------------------------

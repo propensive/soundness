@@ -47,7 +47,7 @@ import vacuous.*
 import gastronomy.providers.javaStdlibProvider
 import denominative.*
 import symbolism.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // A complete, installable Android application package—dexed code, a binary manifest, aligned
 // and signed—bound to the Android runtime: the application node reached from `Classfile`

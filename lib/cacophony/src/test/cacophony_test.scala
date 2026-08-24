@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Cacophony Tests"):
 

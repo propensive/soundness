@@ -38,7 +38,7 @@ import strategies.throwUnsafely
 
 import doms.html.whatwg
 import classloaders.systemClassloader
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Punctuation tests"):
   def run(): Unit =

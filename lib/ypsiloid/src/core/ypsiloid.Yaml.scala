@@ -68,7 +68,7 @@ import beneficence.*
 import serpentine.*
 import symbolism.*
 import urticose.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // `Yaml2` is only ever mixed into the `Yaml` object; pinning its self type to `Yaml.type` makes
 // `this` a stable singleton, so the `provide`-wrapped decoder SAMs defined here do not capture an

@@ -42,7 +42,7 @@ import rudiments.*
 import vacuous.*
 import fulminate.*
 import symbolism.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Permutation:
   def bySize(n: Int): Chain[Permutation] = Chain.range[BigInt](0, Factorial(n)).map: i =>
@@ -105,7 +105,7 @@ case class Permutation(factoradic: Factoradic):
   def apply(n: Int): Int =
     // A permutation fixes every point outside its domain; `List` positional access is
     // O(n), accepted here explicitly through the asymptotic gate.
-    import denominative.asymptotics.linearAccessComplexity
+    import denominative.dysasymptotics.linearAccess
     expansion(Ordinal.zerary(n)).or(n)
 
   def apply[element](sequence: List[element]): List[element] raises Permutation.Error =

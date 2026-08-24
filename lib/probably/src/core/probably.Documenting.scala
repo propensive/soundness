@@ -41,7 +41,7 @@ import rudiments.*
 import vacuous.*
 import denominative.*
 import symbolism.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // The single structural pass over a report: builds the renderer-agnostic `Doc.Document`
 // consumed by both output modes. All decisions about WHAT appears in a report are made

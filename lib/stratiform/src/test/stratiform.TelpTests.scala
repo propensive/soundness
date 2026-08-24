@@ -36,7 +36,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // TELP (the TEL Path companion specification): grammar and identity (§3),
 // resolution over the semantic model (§4), the all-digit shadowing rule

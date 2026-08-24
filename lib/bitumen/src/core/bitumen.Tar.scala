@@ -54,7 +54,7 @@ import hypotenuse.*
 import scala.caps
 import aperture.*
 import pneumatic.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tar:
   // TarRef → Tar.Ref

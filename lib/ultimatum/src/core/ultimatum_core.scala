@@ -41,7 +41,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // Construct a leaf panel: a fractional weight and optional per-axis bounds,
 // plus deferred `content` that runs (with its `Extent` in context) once the

@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import dsvFormats.csvWithHeaderFormat
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 case class ARecord(name: Text, age: Int, height: Int) derives CanEqual
 

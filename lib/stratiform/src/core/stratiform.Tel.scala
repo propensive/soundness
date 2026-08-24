@@ -57,7 +57,7 @@ import wisteria.*
 import zephyrine.*
 import denominative.*
 import fulminate.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 // Presentation model from §17 of the TEL specification. The Scala AST is
 // structurally identical to the reference implementation's AST so that

@@ -46,7 +46,7 @@ import rudiments.*
 import tessellate.*
 import vacuous.*
 import denominative.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 
 object Tabulation:
   given printable: [text]

@@ -50,7 +50,7 @@ import jacinta.*
 import parasite.*
 import prepositional.*
 import rudiments.*
-import denominative.asymptotics.linearSizeComplexity
+import denominative.dysasymptotics.linearSize
 import probably.*
 import serpentine.*
 import superlunary.*
