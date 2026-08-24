@@ -92,7 +92,7 @@ object CorpusLoader:
   def expectedCodes(testcase: Case): List[Int] =
     val fromCheck = CheckFormat.parse(testcase.check).errors.map(_.code)
     val fromName = expectedCode(testcase.stem).lay(List.empty[Int])(List(_))
-    List.of(fromName.stdlib ::: fromCheck.stdlib).distinct
+    (fromName.stdlib ::: fromCheck.stdlib).to(List).distinct
 
   // The tail segment of a corpus pragma's schema URL, mirroring the Rust
   // The fixture convention for schema references: the built-in `tels`

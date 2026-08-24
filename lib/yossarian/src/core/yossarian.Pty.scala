@@ -111,6 +111,8 @@ object Pty:
 
 case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
   // The legacy view of the reply relay (the audited bridge).
+  // `Chain.from`, not `.to(Chain)`: the conversion route lets the live iterator's fresh
+  // capture contaminate the result, where `from`'s signature is pure.
   def stream: Chain[Text] = Chain.from(output.stream.records)
 
   def title: Text = state.title

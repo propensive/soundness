@@ -64,7 +64,7 @@ object Spinner:
       builder += string.substring(index, index + width).nn.tt
       index += width
 
-    Sequence.of(builder.result())
+    Sequence.from(builder.result())
 
 // A cyclic run of frames, shown one at a time. `columns` is how wide every frame is (they must
 // agree, or the row would shear as it animates), `repertoire` is the least adventurous character

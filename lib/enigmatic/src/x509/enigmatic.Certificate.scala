@@ -150,7 +150,7 @@ object Certificate:
           period,
           name,
           publicKey,
-          Asn1.Tagged(3, true, Asn1.Sequence(List.from(extensions.stdlib.compact))) )
+          Asn1.Tagged(3, true, Asn1.Sequence(extensions.stdlib.compact.to(List))) )
 
     val tbs: Asn1 = Asn1.Sequence(fields)
 

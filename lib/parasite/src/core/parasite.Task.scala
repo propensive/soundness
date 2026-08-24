@@ -109,7 +109,7 @@ object Task:
   extension [result](tasks: List[Task[result]])
     // Part of the pure façade (see `monad` above): the fresh handle is sealed once here.
     def sequence(using Monitor^, Probate^): Task[List[result]] emits Async.Error =
-      caps.unsafe.unsafeAssumePure(async(List.of(tasks.stdlib.map(_.join()))))
+      caps.unsafe.unsafeAssumePure(async((tasks.stdlib.map(_.join())).to(List)))
 
   extension [result](tasks: Iterable[Task[result]])
     def race()(using monitor: Monitor^, probate: Probate^)

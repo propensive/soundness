@@ -391,7 +391,7 @@ extension (stream: Chain[Data])
       else if current.nil then 0
       else
         focus = current.stdlib.head
-        current = Chain.of(current.stdlib.tail)
+        current = current.stdlib.tail.to(Chain)
         offset = 0
         available()
 

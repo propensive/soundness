@@ -226,7 +226,7 @@ object internal:
         if char >= 128 then
           val position =
             contextual.Interpolation.sourcePosition
-              ( proscenium.List.of(scala.List(part)), proscenium.List.of(scala.List(origin)),
+              ( scala.List(part).to(proscenium.List), scala.List(origin).to(proscenium.List),
                 1, ordinal.n0 )
 
           halt(824, m"$char is not a valid ASCII character", position)

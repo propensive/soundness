@@ -47,7 +47,7 @@ private[punctuation] object HtmlEntities:
     val builder = scala.collection.immutable.Map.newBuilder[String, String]
     loadInto(cp"/honeycomb/entities-html4.tsv".read[Text].s, builder)
     loadInto(cp"/honeycomb/entities-extra.tsv".read[Text].s, builder)
-    Map.of(builder.result())
+    builder.result().to(Map)
 
   private def loadInto
     ( tsv:     String,

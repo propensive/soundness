@@ -340,7 +340,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
             (label, schema2)
 
-        .pipe(iarr => Map.from(iarr.readable))
+        .pipe(iarr => iarr.readable.to(Map))
 
       val required: List[Text] =
         contexts[derivation]():

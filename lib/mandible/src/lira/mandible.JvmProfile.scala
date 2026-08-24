@@ -81,12 +81,12 @@ object JvmProfile extends EcosystemProfile:
 
         val outcome =
           ClassfileAtomizer.atomize
-            (Map.of(surfaces), section.classpath, ClassfileAtomizer.Fold.Linkage)
+            (surfaces.to(Map), section.classpath, ClassfileAtomizer.Fold.Linkage)
 
         outcome.unresolved.stdlib.headOption.foreach: name =>
           abort(Discipline.Error(id, Discipline.Error.Reason.Unresolved(name)))
 
-        Map.of(outcome.atoms.stdlib.map { atom => atom.key -> atom }.toMap)
+        (outcome.atoms.stdlib.map { atom => atom.key -> atom }.toMap).to(Map)
 
   def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
   :   List[EcosystemProfile.Violation] raises Discipline.Error =
@@ -123,7 +123,7 @@ object JvmProfile extends EcosystemProfile:
       if manifest.toolchain.stdlib.isEmpty
       then violate(t"the release records no toolchain, so TASTy readability cannot be checked")
 
-    List.from(violations.toList)
+    violations.toList.to(List)
 
   // D.2, predicate 3: `static final` constant values that javac may already have inlined into
   // consumers. These are *not* linkage violations — a changed constant leaves every descriptor
@@ -144,7 +144,7 @@ object JvmProfile extends EcosystemProfile:
 
         . map { _ => key }
 
-    List.from(changed.flatten.toList.sortBy(_.s))
+    changed.flatten.toList.sortBy(_.s).to(List)
 
   // §7's SHOULD: changed constants are surfaced through the audit's advisory channel, so a
   // publisher sees them without any bespoke call.
@@ -152,9 +152,10 @@ object JvmProfile extends EcosystemProfile:
     ( previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence )
   :   List[Text] raises Discipline.Error =
 
-    List.from:
+
       constants(previous, next).stdlib.map: key =>
         t"the constant $key changed value; consumers that inlined it are stale until recompiled"
+      . to(List)
 
   // §6's toolchain predicate, at the scope where it is stated: every release on a buildpath
   // must carry metadata a consuming compiler can read, and a release recording no toolchain at
@@ -163,6 +164,7 @@ object JvmProfile extends EcosystemProfile:
   // not the manifests', so the window comparison belongs to the consuming tool; what is
   // buildpath-decidable is that every release states what produced it.
   override def coherence(releases: List[Lira.Manifest]): List[Text] =
-    List.from:
+
       releases.stdlib.filter(_.toolchain.stdlib.isEmpty).map: manifest =>
         t"${manifest.module} records no toolchain, so TASTy readability cannot be checked"
+      . to(List)

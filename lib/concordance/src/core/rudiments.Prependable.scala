@@ -39,13 +39,13 @@ import prepositional.*
 // `List` and `Chain`, so only the frozen array's full rebuild is complexity-gated.
 object Prependable:
   given list: [element, list <: List[element]] => list is Prependable by element =
-    (list, element) => List.of(element :: list.stdlib).asInstanceOf[list]
+    (list, element) => (element :: list.stdlib).to(List).asInstanceOf[list]
 
   given sequence: [element, sequence <: Sequence[element]] => sequence is Prependable by element =
-    (sequence, element) => Sequence.of(element +: sequence.stdlib).asInstanceOf[sequence]
+    (sequence, element) => Sequence.from(element +: sequence.stdlib).asInstanceOf[sequence]
 
   given chain: [element] => Chain[element] is Prependable by element =
-    (chain, element) => Chain.of(element #:: chain.stdlib)
+    (chain, element) => (element #:: chain.stdlib).to(Chain)
 
   given frozenArray: [element: scala.reflect.ClassTag] => (complexity: Dysasymptotic.LinearSize)
   =>  (Array[element]^{}) is Prependable by element =

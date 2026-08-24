@@ -51,6 +51,17 @@ object Map:
   def from[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
     of(sci.Map.from(pairs))
 
+  // `.to(Map)` support (see `List`): the conversion is on `Map.type` only, so it cannot
+  // expose members of `Map` values.
+  given factory: [key, value] => Conversion[Map.type, scala.collection.Factory[(key, value), Map[key, value]]] =
+    _ =>
+      new scala.collection.Factory[(key, value), Map[key, value]]:
+        def fromSpecific(elements: IterableOnce[(key, value)]^): Map[key, value] =
+          Map.from(elements)
+
+        def newBuilder: scala.collection.mutable.Builder[(key, value), Map[key, value]] =
+          sci.Map.newBuilder[key, value].mapResult(of(_))
+
   extension [key, value](map: Map[key, value])
     inline def stdlib: sci.Map[key, value] = map.asInstanceOf[sci.Map[key, value]]
 

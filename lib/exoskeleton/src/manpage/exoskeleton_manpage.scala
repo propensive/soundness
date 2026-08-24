@@ -65,7 +65,7 @@ extension (help: Help)
       value.let { value => List(Inline.Plain(plain(value))) }.or(Nil)
 
     def section(title: Text, blocks: scala.List[Block]): scala.List[Block] =
-      if blocks.isEmpty then scala.List() else scala.List(Block.Section(title, List.of(blocks)))
+      if blocks.isEmpty then scala.List() else scala.List(Block.Section(title, blocks.to(List)))
 
     val name: Text =
       manual.synopsisName.or(help.description.let(plain(_))).lay(help.command): synopsis =>
@@ -100,7 +100,7 @@ extension (help: Help)
         val entry = Block.Tagged(List(Inline.bold(sub.command)), prose(sub.description))
 
         if nested.isEmpty then scala.List(entry)
-        else scala.List(entry, Block.Indented(List.of(nested)))
+        else scala.List(entry, Block.Indented(nested.to(List)))
 
     val commandSections: scala.List[Block] =
       if leaf then scala.List()
@@ -111,7 +111,7 @@ extension (help: Help)
               group.description.option.map { value => Block.Paragraph(prose(value)) }.toList
 
             val members = help.subcommands.stdlib.filter(_.group == group)
-            Block.Subsection(group.name, List.of(explanation ::: commandBlocks(members)))
+            Block.Subsection(group.name, (explanation ::: commandBlocks(members)).to(List))
 
         section(t"COMMANDS", commandBlocks(ungrouped) ::: grouped)
 
@@ -177,7 +177,7 @@ extension (help: Help)
 
       val referenceBlocks: scala.List[Block] =
         if references.isEmpty then scala.List()
-        else scala.List(Block.Paragraph(List.of(references)))
+        else scala.List(Block.Paragraph(references.to(List)))
 
       referenceBlocks ::: homepage
 
@@ -217,4 +217,4 @@ extension (help: Help)
         manual.date.let(_.show),
         manual.version.let { version => t"${help.command} ${version.show}" },
         manual.section.title,
-        List.of(blocks) )
+        blocks.to(List) )

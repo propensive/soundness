@@ -60,7 +60,7 @@ object SecureEndpoint:
     def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
       val context = tls.context.or(jns.SSLContext.getDefault.nn)
       val socket = context.getSocketFactory.nn.createSocket().nn.asInstanceOf[jns.SSLSocket]
-      configure(socket, List.of(options.values))
+      configure(socket, options.values.to(List))
 
       interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
         socket.bind(jn.InetSocketAddress(local, 0))

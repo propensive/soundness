@@ -175,4 +175,4 @@ private[facsimile] object TextExtractor:
       case _ =>
         ()
 
-    (List.of(runs.result()), text.toString.tt)
+    (runs.result().to(List), text.toString.tt)

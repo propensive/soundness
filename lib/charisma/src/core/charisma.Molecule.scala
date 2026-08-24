@@ -47,7 +47,7 @@ object Molecule:
   given showable: Molecule is Showable = molecule =>
     val orderedElements =
       if !molecule.elements.defines(PeriodicTable.C)
-      then List.of(molecule.elements.stdlib.toList).sort(_(0).symbol)
+      then molecule.elements.stdlib.toList.to(List).sort(_(0).symbol)
       else
         val carbon = PeriodicTable.C -> molecule.elements.stdlib(PeriodicTable.C)
 

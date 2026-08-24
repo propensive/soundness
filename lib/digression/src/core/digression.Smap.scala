@@ -200,7 +200,7 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
     if real(line) then Unset else
       @tailrec
       def recur(line: Int, seen: Set[Int], origins: sci.List[Smap.Origin]): Smap.Expansion =
-        if real(line) then Smap.Expansion(List.of(origins.reverse), line)
+        if real(line) then Smap.Expansion(origins.reverse.to(List), line)
         else
           val origins2 = stratum.let(_.origin(line)).lay(origins):
             case (file, input) =>
@@ -211,7 +211,7 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
             case (_, next: Int) if !seen.has(next) => recur(next, seen :+ next, origins2)
 
             case _ =>
-              Smap.Expansion(List.of(origins2.reverse), Unset)
+              Smap.Expansion(origins2.reverse.to(List), Unset)
 
       recur(line, Set(line), sci.List()) match
         case expansion if expansion.inlined.stdlib.isEmpty => Unset

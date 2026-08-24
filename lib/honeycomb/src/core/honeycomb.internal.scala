@@ -627,7 +627,7 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    val attrsExpr = '{Attributes.from(Map.of($presets.stdlib ++ ${Expr.ofList(attributes)}.compact.toMap))}
+    val attrsExpr = '{Attributes.from(($presets.stdlib ++ ${Expr.ofList(attributes)}.compact.toMap).to(Map))}
     '{$tag.node($attrsExpr)}.asExprOf[result]
 
   // Represented as the stdlib's immutable array, not the frozen `Array[String | Null]^{}`:
@@ -775,12 +775,12 @@ object internal:
 
         b.result()
 
-      def toMap: Map[Text, Optional[Text]] = Map.of:
+      def toMap: Map[Text, Optional[Text]] =
         val a = storage(attrs)
 
         // `VectorMap` (the `Ledger` substrate), so the wrapped `Map` still iterates its
         // attributes in document order.
-        if a.length == 0 then VectorMap.empty else
+        if a.length == 0 then Map.from(VectorMap.empty[Text, Optional[Text]]) else
           val b = VectorMap.newBuilder[Text, Optional[Text]]
           var i = 0
 
@@ -789,7 +789,7 @@ object internal:
             b += ((a(i).asInstanceOf[Text], if v == null then Unset else v.asInstanceOf[Text]))
             i += 2
 
-          b.result()
+          Map.from(b.result())
 
       def map[B](f: ((Text, Optional[Text])) => B): Iterable[B] =
         val a = storage(attrs)

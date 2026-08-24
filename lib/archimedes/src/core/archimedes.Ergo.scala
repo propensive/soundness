@@ -252,15 +252,16 @@ object Ergo:
       case _: Mo => true
       case _     => false
 
-    if accent then List.of(attributes.stdlib.filter { pair => pair != (name, t"true") }) else attributes
+    if accent then (attributes.stdlib.filter { pair => pair != (name, t"true") }).to(List) else attributes
 
   private def serializeTable(table: Mtable)(using Tactic[Ergo.Error]): Text =
     val rows: List[List[Text]] =
       // Not `sweep`: `cellText` captures the `Tactic`, so the synthesized partial function
       // cannot be pure. The `.stdlib` partial function has no such requirement.
-      List.of:
+
         table.contents.stdlib.collect:
           case Mtr(cells, _) => cells.map(cellText)
+        . to(List)
 
     if rows.size == 1 then
       val row = rows.stdlib.head.join
@@ -277,8 +278,8 @@ object Ergo:
     case other            => group(emit(other, false))
 
   private def directivesFor(attributes: List[(Text, Text)]): Text =
-    List.of(attributes.stdlib.map { case (name, value) => directiveText(name, value) }
-    . collect { case text: Text => text }).join
+    (attributes.stdlib.map { case (name, value) => directiveText(name, value) }
+    . collect { case text: Text => text }).to(List).join
 
   // Prefers a `Fixed` glyph matching both attribute and value (enums/booleans);
   // otherwise a `Param` glyph for the attribute, with the value in brackets.
@@ -397,7 +398,7 @@ object Ergo:
           val below = u.or(base)
           val above = o.or(base)
           Munderover(base, below, above,
-            List.of(accent(below, t"accentunder").stdlib ++ accent(above, t"accent").stdlib))
+            (accent(below, t"accentunder").stdlib ++ accent(above, t"accent").stdlib).to(List))
 
       (sub, sup) match
         case (Unset, Unset) => limited
@@ -445,20 +446,20 @@ object Ergo:
 
     private def applyAttributes(node: Mathml, extra: List[(Text, Text)]): Mathml =
       if extra.stdlib.isEmpty then node else node match
-        case n: Mi         => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Mn         => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Mo         => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Mrow       => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Mfrac      => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Msqrt      => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Mroot      => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Msub       => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Msup       => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Msubsup    => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Munder     => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Mover      => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Munderover => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
-        case n: Mtable     => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Mi         => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Mn         => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Mo         => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Mrow       => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Mfrac      => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Msqrt      => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Mroot      => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Msub       => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Msup       => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Msubsup    => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Munder     => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Mover      => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Munderover => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+        case n: Mtable     => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
         case other         => Mrow(List(other), extra)
 
     private def parseUnit(): Mathml =

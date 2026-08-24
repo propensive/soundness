@@ -124,7 +124,7 @@ extends Question[Text]:
   // The logical lines, their start offsets, and the index of the cursor's line.
   private def layout: (List[Text], List[Int], Int) =
     val lines  = value.cut(t"\n")
-    val starts = List.of(lines.stdlib.scanLeft(0)(_ + _.length + 1).init)
+    val starts = (lines.stdlib.scanLeft(0)(_ + _.length + 1).init).to(List)
     (lines, starts, starts.stdlib.lastIndexWhere(_ <= position).max(0))
 
   private def moveVertically(rows: Int): LineEditor =

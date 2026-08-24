@@ -275,7 +275,7 @@ object Gemini:
         val opened: List[Llm.Event] =
           if progress.open(0) then List(Llm.Event.Opened(0, Llm.Content.Textual(t""))) else List()
 
-        List.of(opened.stdlib :+ Llm.Event.Delta(0, Llm.Event.Increment.Textual(fragment)))
+        (opened.stdlib :+ Llm.Event.Delta(0, Llm.Event.Increment.Textual(fragment))).to(List)
 
       . or:
           safely(part.functionCall).let: call =>
@@ -290,7 +290,7 @@ object Gemini:
 
           . or(List())
 
-    List.of(started.stdlib ++ blocks.stdlib)
+    (started.stdlib ++ blocks.stdlib).to(List)
 
   // The Google error envelope, `{"error": {"code": …, "message": …, "status": …}}`.
   private[sibylline] def failure(status: Http.Status, json: Optional[Json])(using Diagnostics)

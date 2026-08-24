@@ -115,7 +115,7 @@ private[facsimile] object CharMap:
       . or:
           done = true
 
-    CharMap(Map.of(entries.result()), codeBytes)
+    CharMap(entries.result().to(Map), codeBytes)
 
 private[facsimile] case class CharMap(entries: Map[Int, Text], codeBytes: Int):
   def apply(code: Int): Optional[Text] = entries(code)

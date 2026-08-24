@@ -156,7 +156,7 @@ object Syntax:
 
     repr.absolve match
       case AnnotatedType(tpe, annotation) => annotation.tpe.typeSymbol.fullName match
-        case Retains    => List.of(retained(annotation.tpe).map(captureRef(_)))
+        case Retains    => (retained(annotation.tpe).map(captureRef(_))).to(List)
         case RetainsCap => Unset
         case _          => captureBound(tpe)
 
@@ -264,7 +264,7 @@ object Syntax:
 
               if valDef.symbol.flags.is(Flags.Inline) then Prefix("inline", syntax) else syntax
 
-        if !parens then items(0) else Sequence('(', List.of(items))
+        if !parens then items(0) else Sequence('(', items.to(List))
 
       case TypeParamClause(typeDefs) =>
         val items = typeDefs.map:
@@ -284,7 +284,7 @@ object Syntax:
 
             context(name.tt).lay(syntax)(Infix(syntax, ": ", _))
 
-        Sequence('[', List.of(items))
+        Sequence('[', items.to(List))
 
 
   def signature(using Quotes, Bindings)(name: Text, repr: quotes.reflect.TypeRepr): Declaration =
@@ -295,7 +295,7 @@ object Syntax:
         val params =
           arguments0.zip(types).map: (argument, tpe) => Named(false, argument, apply(tpe))
 
-        Declaration(true, List(Sequence('(', List.of(params))), apply(result))
+        Declaration(true, List(Sequence('(', params.to(List))), apply(result))
 
       case ByNameType(tpe) =>
         Declaration(true, List(), apply(tpe))
@@ -307,7 +307,7 @@ object Syntax:
         val arguments = arguments0.zip(bounds).map:
           case (argument, TypeBounds(lower, upper)) => typeBounds(symbolic(argument), lower, upper)
 
-        Declaration(false, List(Sequence('[', List.of(arguments))), apply(tpe))
+        Declaration(false, List(Sequence('[', arguments.to(List))), apply(tpe))
 
       case other =>
         Declaration(true, List(), apply(other))
@@ -327,13 +327,12 @@ object Syntax:
         val parameters =
           if names.isEmpty then Sequence('(', Nil)
           else if unnamed && names.length == 1 then apply(types.head)
-          else if unnamed then Sequence('(', List.of(types.map(apply(_))))
+          else if unnamed then Sequence('(', (types.map(apply(_))).to(List))
           else
-            Sequence
-              ( '(',
-                List.of:
-                  names.zip(types).map: (name, typ) =>
-                    Named(false, name, apply(typ)) )
+            val parameters2 = names.zip(types).map: (name, typ) =>
+              Named(false, name, apply(typ))
+
+            Sequence('(', parameters2.to(List))
 
         Function(parameters, method.isContextual, impure, refs, apply(result))
 
@@ -360,7 +359,7 @@ object Syntax:
       case typ@AppliedType(base, arguments) if typ.isFunctionType =>
         val parameters = arguments.init match
           case scala.List(one) => apply(one)
-          case many            => Sequence('(', List.of(many.map(apply(_))))
+          case many            => Sequence('(', (many.map(apply(_))).to(List))
 
         val result = apply(arguments.last)
 
@@ -474,7 +473,7 @@ object Syntax:
             // A capture set on a function type belongs in its arrow, and anywhere else it is
             // written after the type with a `^`.
             case Retains =>
-              val refs = List.of(retained(annotation.tpe).map(captureRef(_)))
+              val refs = (retained(annotation.tpe).map(captureRef(_))).to(List)
               functionSyntax(tpe, refs, false).or(Capturing(apply(tpe), refs))
 
             case RetainsCap =>
@@ -516,28 +515,27 @@ object Syntax:
             Suffix(apply(arguments0.head), " *")
           else if arguments0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
           then
-            Application(apply(base), List.of(arguments0.map(apply(_))), true)
+            Application(apply(base), (arguments0.map(apply(_))).to(List), true)
           else if defn.isTupleClass(base.typeSymbol)
           then
-            Sequence('(', List.of(arguments0.map(apply(_))))
+            Sequence('(', (arguments0.map(apply(_))).to(List))
           else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
           then
             arguments0(0).absolve match
               case AppliedType(_, names) => apply(arguments0(1)).absolve match
                 case Sequence(_, elements) =>
-                  Sequence
-                    ( '(',
-                      List.of:
-                        names.zip(elements.stdlib).map:
-                          _.absolve match
-                            case (ConstantType(StringConstant(name)), element) =>
-                              Named(false, name.tt, element) )
+                  val named = names.zip(elements.stdlib).map:
+                    _.absolve match
+                      case (ConstantType(StringConstant(name)), element) =>
+                        Named(false, name.tt, element)
+
+                  Sequence('(', named.to(List))
 
               case ref@TypeRef(prefix, name) =>
                 apply(ref)
 
           else
-            Application(apply(base), List.of(arguments0.map(apply(_))), false)
+            Application(apply(base), (arguments0.map(apply(_))).to(List), false)
 
         case ConstantType(constant) =>
           constant.absolve match
@@ -587,14 +585,14 @@ object Syntax:
             case (name, TypeBounds(lower, upper)) =>
               typeBounds(symbolic(name), lower, upper)
 
-          Infix(Sequence('[', List.of(arguments)), "=>", apply(result))
+          Infix(Sequence('[', arguments.to(List)), "=>", apply(result))
 
         case TypeLambda(arguments0, bounds, tpe) =>
           val arguments = arguments0.zip(bounds).map:
             case (argument, TypeBounds(lower, upper)) =>
               typeBounds(symbolic(argument), lower, upper)
 
-          Infix(Sequence('[', List.of(arguments)), "=>>", apply(tpe))
+          Infix(Sequence('[', arguments.to(List)), "=>>", apply(tpe))
 
         case ParamRef(binder, n) =>
           binder match
@@ -615,7 +613,7 @@ object Syntax:
             case TypeLambda(_, _, body) => renderCase(body)
             case other                  => apply(other)
 
-          Syntax.Match(apply(scrutinee), List.of(cases.map(renderCase)))
+          Syntax.Match(apply(scrutinee), cases.map(renderCase).to(List))
 
         case MatchCase(pattern, rhs) =>
           Prefix("case", Infix(apply(pattern), "=>", apply(rhs)))

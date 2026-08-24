@@ -119,7 +119,7 @@ object internal:
       val fields =
         params2.flatMap: param =>
           if param.annotations.isEmpty then Nil else
-            List(param.name -> '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.pipe(Set.from(_)))})
+            List(param.name -> '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.pipe(_.to(Set)))})
 
         . to(scala.collection.immutable.Map)
 
@@ -132,21 +132,21 @@ object internal:
           case ('[topic], '[type target <: Label; target]) =>
             ' {
                 Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
-                  ( $annotations.pipe(Set.from(_)), ${Expr.ofList(fields.values.to(List))}.pipe(Map.from(_)) )
+                  ( $annotations.pipe(_.to(Set)), ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
               }
       else
         ' {
             Annotated.AnnotatedFields[operand, self, plane, limit]
-              ( $annotations.pipe(Set.from(_)), ${Expr.ofList(fields.values.to(List))}.pipe(Map.from(_)) )
+              ( $annotations.pipe(_.to(Set)), ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
           }
 
     else
       val subtypes = limit.typeSymbol.children.map: subtype =>
-        '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.pipe(Set.from(_)))}
+        '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.pipe(_.to(Set)))}
 
       ' {
           Annotated.AnnotatedSubtypes[operand, self, plane, limit]
-            ( ${Expr.ofList(subtypes)}.pipe(Map.from(_)) )
+            ( ${Expr.ofList(subtypes)}.pipe(_.to(Map)) )
         }
 
 
@@ -175,6 +175,6 @@ object internal:
           type Result = value
           private val lambdas: scala.collection.immutable.Map[Text, Self => Result] =
             ${lambdaMap}.toMap
-          def names(entity: Self): proscenium.List[Text] = proscenium.List.of(${namesList})
+          def names(entity: Self): proscenium.List[Text] = (${namesList}).to(proscenium.List)
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
       }

@@ -934,7 +934,7 @@ object stagedInternal:
                           ( $instanceRef,
                             $bufferRef match
                               case null   => proscenium.Nil
-                              case buffer => proscenium.List.of(buffer.toList) )
+                              case buffer => buffer.toList.to(proscenium.List) )
                     }.asTerm )
 
               If

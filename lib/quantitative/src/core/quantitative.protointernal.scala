@@ -345,7 +345,7 @@ trait protointernal extends caps.Pure:
           unit.power(1).asType.absolve match
             case '[ref] =>
               val designation = Expr.summon[Designation[ref]].get
-              recur('{proscenium.Map.of($expr.stdlib.updated($designation.text, ${Expr(power)}))}, todo2)
+              recur('{($expr.stdlib.updated($designation.text, ${Expr(power)})).to(proscenium.Map)}, todo2)
 
     Expr.summon[Redesignation[units]].absolve match
       case Some('{$redesignation: Redesignation[?]}) =>

@@ -156,7 +156,7 @@ object Grpc:
           metadataHeaders
 
       val body: Spring[Data] = () => Stream(Framing.encode(message))
-      Http.Request(Http.Post, 2.0, host, method.path, List.of(headers), body)
+      Http.Request(Http.Post, 2.0, host, method.path, headers.to(List), body)
 
     // gRPC requires HTTP status 200; anything else is a transport-level failure.
     private def expectOk(response: Http.Response): Unit raises Error =

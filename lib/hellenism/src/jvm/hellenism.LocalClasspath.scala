@@ -59,14 +59,14 @@ object LocalClasspath:
           else if path.ends(t".jar") then Classpath.Entry.Jar(path)
           else Classpath.Entry.Directory(path)
 
-      new LocalClasspath(List.of(entries), Set.from(entries))
+      new LocalClasspath(entries.to(List), entries.to(Set))
 
 
   def apply
     ( entries: (Classpath.Entry.Directory | Classpath.Entry.Jar | Classpath.Entry.JavaRuntime.type)* )
   :   LocalClasspath =
 
-    new LocalClasspath(List.of(entries.toList), Set.from(entries))
+    new LocalClasspath(entries.toList.to(List), entries.to(Set))
 
 
   def apply[path: Abstractable across Paths to Text]
@@ -90,7 +90,7 @@ object LocalClasspath:
           case _         => Classpath.Entry.Jar(path.encode)
 
         if classpath.entrySet.has(entry) then classpath
-        else new LocalClasspath(entry :: classpath.entries, Set.of(classpath.entrySet.stdlib + entry))
+        else new LocalClasspath(entry :: classpath.entries, (classpath.entrySet.stdlib + entry).to(Set))
 
 class LocalClasspath private
   ( val entries

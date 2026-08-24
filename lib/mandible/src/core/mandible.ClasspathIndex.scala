@@ -66,7 +66,7 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
   // The classes carried by the release itself, which are the ones that get atomized. Held
   // separately from the cache so `local` is never shadowed by a same-named class that happens to
   // be earlier on the dependency classpath.
-  def own: List[Text] = List.from(local.stdlib.keys.toList.sortBy(_.s))
+  def own: List[Text] = local.stdlib.keys.toList.sortBy(_.s).to(List)
 
   def apply(name: Text): Optional[ClassSurface] =
     cache.getOrElseUpdate(name, resolve(name))
@@ -94,7 +94,7 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
         if seen.contains(next) || missing.contains(next) then recur(rest) else apply(next) match
           case surface: ClassSurface =>
             seen += next
-            recur(List.from(rest.stdlib ++ surface.supertypes.stdlib))
+            recur((rest.stdlib ++ surface.supertypes.stdlib).to(List))
 
           case _ =>
             missing += next
@@ -102,4 +102,4 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
 
     apply(name).let: surface => recur(surface.supertypes)
 
-    (List.from(seen.toList), List.from(missing.toList))
+    (seen.toList.to(List), missing.toList.to(List))

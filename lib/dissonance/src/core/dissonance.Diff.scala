@@ -171,10 +171,10 @@ case class Diff[element](edits: Edit[element]*):
     def recur(todo: List[Edit[element]], sequence: List[element]): Chain[element] = todo match
       case Nil                   => sequence.stdlib.to(Chain)
       case Ins(_, value) :: tail => value #:: recur(tail, sequence)
-      case Del(_, _) :: tail     => recur(tail, List.of(sequence.stdlib.tail))
+      case Del(_, _) :: tail     => recur(tail, sequence.stdlib.tail.to(List))
 
       case Par(_, _, value) :: tail =>
-        value.let(update(_, sequence.stdlib.head)).or(sequence.stdlib.head) #:: recur(tail, List.of(sequence.stdlib.tail))
+        value.let(update(_, sequence.stdlib.head)).or(sequence.stdlib.head) #:: recur(tail, sequence.stdlib.tail.to(List))
 
     recur(edits.to(List), sequence)
 
@@ -209,7 +209,7 @@ case class Diff[element](edits: Edit[element]*):
             case Par(left, right, _) =>
               Sub(dels.stdlib(left).left, inss.stdlib(right).right, dels.stdlib(left).value, inss.stdlib(right).value)
 
-          (List.of(subs): List[Change[element]])
+          (subs.to(List): List[Change[element]])
 
     RDiff(changes*)
 

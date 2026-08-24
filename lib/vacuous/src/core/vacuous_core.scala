@@ -69,7 +69,7 @@ extension [value](iterable: Iterable[Optional[value]])
   // absent. One presence sweep, recorded by the result's type.
   def entire: Optional[List[value]] =
     if iterable.exists(_.absent) then Unset
-    else List.from(iterable.map(_.or(panic(m"absence was excluded by the sweep above"))))
+    else (iterable.map(_.or(panic(m"absence was excluded by the sweep above")))).to(List)
 
 // As `compact` for a streaming source: absent elements are dropped as the iterator advances.
 extension [value](iterator: Iterator[Optional[value]])

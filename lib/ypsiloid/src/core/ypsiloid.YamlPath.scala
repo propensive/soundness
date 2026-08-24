@@ -119,7 +119,7 @@ object YamlPath extends Root(""):
       // (`#`) keeps the default empty root so it encodes back to `#`.
       if segments.nil then YamlPath()
       else
-        val descent = List.of(segments.stdlib.reverse.map(filesystem.unescape))
+        val descent = segments.stdlib.reverse.map(filesystem.unescape).to(List)
         YamlPath(Unset, Path[YamlPath, YamlPath.type, Tuple]("/", descent))
 
   given divisible: YamlPath is Divisible by Text to YamlPath =

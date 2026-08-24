@@ -188,7 +188,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // Corpus 5: a map with 50 string→string entries — exercises map-entry messages
   // (proto3 encodes maps as repeated key/value sub-messages).
   lazy val value5: Attributes =
-    Attributes(Map.from((0 until 50).map(index => t"key$index" -> t"value$index")))
+    Attributes(((0 until 50).map(index => t"key$index" -> t"value$index")).to(Map))
 
   // Corpus 6: a message nested five levels deep — stresses nested encode/decode.
   lazy val value6: Deep1 =

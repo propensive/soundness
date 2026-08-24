@@ -68,7 +68,7 @@ object TelCheckTree:
         List
          ( t"version"   -> CheckTree.Tuple(List(CheckTree.Num(major), CheckTree.Num(minor))),
            t"reference" -> ofOptional(p.reference)(r => CheckTree.Str(r.text)),
-           t"layers"    -> CheckTree.Sequence(List.of(p.layers.stdlib.map(l => CheckTree.Str(l)))),
+           t"layers"    -> CheckTree.Sequence((p.layers.stdlib.map(l => CheckTree.Str(l))).to(List)),
            t"signature" -> ofOptional(p.signature)(s => CheckTree.Str(s)),
            t"sigil"     -> ofOptional(p.sigil)(c => CheckTree.Str(Text(c.toString))) ) )
 
@@ -92,8 +92,8 @@ object TelCheckTree:
     CheckTree.Struct
       ( t"Tabulation",
         List
-         ( t"marker_offsets" -> CheckTree.Sequence(List.of(tabulation.markerOffsets.readable.toList.map(CheckTree.Num(_)))),
-           t"headings"       -> CheckTree.Sequence(List.of(tabulation.headings.readable.toList.map(h => CheckTree.Str(h)))) ) )
+         ( t"marker_offsets" -> CheckTree.Sequence((tabulation.markerOffsets.readable.toList.map(CheckTree.Num(_))).to(List)),
+           t"headings"       -> CheckTree.Sequence((tabulation.headings.readable.toList.map(h => CheckTree.Str(h))).to(List)) ) )
 
   private def ofCompound(compound: Tel.Compound): CheckTree =
     CheckTree.Struct
@@ -126,4 +126,4 @@ object TelCheckTree:
     opt.lay(CheckTree.Variant(t"None", Unset))(v => CheckTree.Variant(t"Some", f(v)))
 
   private def ofArray[value](items: Array[value])(f: value => CheckTree): CheckTree =
-    CheckTree.Sequence(List.of(items.readable.toList.map(f)))
+    CheckTree.Sequence(items.readable.toList.map(f).to(List))

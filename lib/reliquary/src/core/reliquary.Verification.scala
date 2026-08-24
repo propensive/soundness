@@ -125,8 +125,9 @@ object Verification:
 
     // Step 4's input: the declared atom listings must at least resolve and parse; comparing
     // them against re-atomized content is the publish-time extension.
-    val atomizations = List.from:
+    val atomizations =
       manifest.api.stdlib.map: api => AtomsBlob.decode(resolve(api.atoms))
+      . to(List)
 
     manifest.delta.let: hash => Lira.Delta.decode(resolve(hash))
 
@@ -157,13 +158,13 @@ object Verification:
     // Step 5: the snapshot recomputed from the atom listings must equal the last lineage entry.
     Lineage.check(manifest.lineage, Snapshot(atomizations))
 
-    val unreferenced = store.unreferenced(Set.from(referenced))
+    val unreferenced = store.unreferenced(referenced.to(Set))
 
     val advisories =
       if unreferenced.stdlib.isEmpty then List()
       else List(Lira.Advisory.UnreferencedBlobs(unreferenced))
 
-    Report(store, atomizations, List.from(materialized), advisories)
+    Report(store, atomizations, materialized.to(List), advisories)
 
   // Step 4 (publish-time): re-atomization of every materialized section under the *declared*
   // disciplines, in the manifest's `api`-record order — so the claiming order is the declared
@@ -189,7 +190,7 @@ object Verification:
       implementations.stdlib.find(_.id == id).getOrElse:
         abort(Lira.Error(Reason.UnimplementedClaim(id)))
 
-    val registry = Discipline.Registry(List.from(resolved), manifest.resource)
+    val registry = Discipline.Registry(resolved.to(List), manifest.resource)
     val universes = manifest.section.stdlib.map(_.realm).toSet
 
     resolved.foreach: discipline =>
@@ -249,4 +250,4 @@ object Verification:
         (section.realm, content, section.integration, classpath(section.realm,
             section.integration))
 
-    EcosystemProfile.Evidence(List.from(sections), manifest)
+    EcosystemProfile.Evidence(sections.to(List), manifest)

@@ -146,7 +146,7 @@ object TrafficFixture:
       Lsp.listen(t"Test", t"1.0", observer):
         hover(Hover(MarkupContent(value = document.text)))
 
-    List.from(log.synchronized(log.toList))
+    log.synchronized(log.toList).to(List)
 
 // Runs a real `Lsp.listen` server on its own task, joined to a client by a pair of pipes: an
 // exchange that crosses the framing and the codecs in both directions, exactly as it would between
@@ -158,7 +158,7 @@ object LoopbackFixture:
   // A listener that records what the server said unbidden.
   class Record() extends Lsp.Listener:
     private val log: scm.ArrayBuffer[Text] = scm.ArrayBuffer()
-    def notes: List[Text] = log.synchronized(List.from(log.toList))
+    def notes: List[Text] = log.synchronized(log.toList.to(List))
 
     override def diagnostics(uri: Text, version: Optional[Int], reports: List[Diagnostic]): Unit =
       val messages = reports.stdlib.map(_.message.s).mkString(",")

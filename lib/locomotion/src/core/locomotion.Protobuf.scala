@@ -554,7 +554,7 @@ object Protobuf extends Protobuf2:
         val value = valueDecodable.decoded(Repeated(fields(2).or(Nil)))
         (key, value)
 
-      Map.from(entries.stdlib)
+      entries.stdlib.to(Map)
 
   object EncodableDerivation extends Derivable[Encodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]

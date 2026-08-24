@@ -220,8 +220,8 @@ object WebDriver:
       requested: Optional[Json] = Unset ):
 
     def on(port: Int): Local = copy(port = port)
-    def headless: Local = copy(arguments = List.of(arguments.stdlib ++ driver.headless.stdlib))
-    def arguing(more: Text*): Local = copy(arguments = List.of(arguments.stdlib ++ more))
+    def headless: Local = copy(arguments = (arguments.stdlib ++ driver.headless.stdlib).to(List))
+    def arguing(more: Text*): Local = copy(arguments = (arguments.stdlib ++ more).to(List))
 
     // Replaces the generated capabilities wholesale, for the cases this type does not model:
     // proxies, timeouts, mobile emulation, a Selenium grid's own extensions.
@@ -595,7 +595,7 @@ object WebDriver:
             case ctrl: Keypress.Ctrl => steps(within(ctrl))
             case other               => inner(other).lay(Nil)(steps(_))
 
-          List.of(Action.KeyDown(held) +: nested.stdlib :+ Action.KeyUp(held))
+          (Action.KeyDown(held) +: nested.stdlib :+ Action.KeyUp(held)).to(List)
 
       // Written by hand rather than derived: the discriminator is a `type` field whose values are
       // the specification's camel-cased names, and each variant carries a different set of keys.
@@ -841,7 +841,7 @@ object WebDriver:
 
     private def handles(json: Json): List[Element] =
       val values = Session.list(json.value).stdlib
-      List.of(values.map { json => Element(Session.text(json(Wei))) })
+      (values.map { json => Element(Session.text(json(Wei))) }).to(List)
 
     // Navigation.
 
@@ -950,7 +950,7 @@ object WebDriver:
     // character — and this is for the chords and named keys that text entry cannot express.
     def press(keypresses: Keypress*): Unit =
       val steps = keypresses.flatMap(Session.Action.steps(_).stdlib).to(scala.List)
-      perform(Session.Action.Source.Key, List.of(steps))
+      perform(Session.Action.Source.Key, steps.to(List))
 
     // Releases every key and button an earlier `perform` left held, and clears the input state.
     def releaseActions(): Unit = drop(t"actions")

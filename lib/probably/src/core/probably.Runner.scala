@@ -112,7 +112,7 @@ extends Findable:
       val result: result = test.action(context)
       val ns: Long = System.nanoTime - ns0
 
-      Trial.Returns(result, ns, Map.of(context.captured.toMap)).also:
+      Trial.Returns(result, ns, context.captured.toMap.to(Map)).also:
         mutex:
           val size = active.size
           active = active.filter(_ != test.id)
@@ -125,7 +125,7 @@ extends Findable:
         given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
         throw error
 
-      Trial.Throws(lazyException, ns, Map.of(context.captured.toMap)).also:
+      Trial.Throws(lazyException, ns, context.captured.toMap.to(Map)).also:
         mutex:
           val size = active.size
           active = active.filter(_ != test.id)

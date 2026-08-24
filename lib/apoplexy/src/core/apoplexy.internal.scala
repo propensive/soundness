@@ -121,7 +121,7 @@ object Apoplexy:
   private def receiver(using quotes: Quotes)(self: Expr[Api]): (Text, Text, Wire) =
     import quotes.reflect.*
 
-    val members = Map.of(refinements(self.asTerm.tpe.widen))
+    val members = refinements(self.asTerm.tpe.widen).to(Map)
     val locus = members(t"Locus").lay(t"/")(stringOf(_))
     val source = members(t"Source").or(halt(m"apoplexy: the receiver has no spec `Source`"))
     val wire = members(t"Transport").lay(Wire.Json)(wireOfRepr(_))
@@ -363,7 +363,7 @@ object Apoplexy:
               $self.request.copy
                 ( method = $mExpr,
                   path   = $locusExpr.tt,
-                  query  = List.of($queryExpr),
+                  query  = ($queryExpr).to(List),
                   body   = $bodyExpr )
 
             Api.Response.make(request).asInstanceOf[result]
@@ -412,7 +412,7 @@ object Apoplexy:
   def root(resource: Expr[Resource]): Macro[Api] =
     import quotes.reflect.*
 
-    val members = Map.of(refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen))
+    val members = (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
 
     val source =
       members(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
@@ -634,7 +634,7 @@ object Apoplexy:
         valueRepr =:= TypeRepr.of[Unit]
 
     if !raw then
-      val members = Map.of(refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen))
+      val members = (refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen)).to(Map)
 
       val pointer =
         members(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))

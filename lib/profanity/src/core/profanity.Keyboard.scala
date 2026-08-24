@@ -175,17 +175,17 @@ object Keyboard:
 
               case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
                 val size = tail.stdlib.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~').stdlib)
-                val content = Chain.of(tail.stdlib.take(size)).map(_.show).join
-                Terminal.Info.Paste(content) #:: process(Chain.of(tail.stdlib.drop(size + 6)))
+                val content = tail.stdlib.take(size).to(Chain).map(_.show).join
+                Terminal.Info.Paste(content) #:: process(tail.stdlib.drop(size + 6).to(Chain))
 
               case other =>
-                val sequence = Chain.of(other.stdlib.takeWhile(!_.isLetter))
+                val sequence = other.stdlib.takeWhile(!_.isLetter).to(Chain)
 
-                Chain.of(other.stdlib.drop(sequence.stdlib.length)) match
+                other.stdlib.drop(sequence.stdlib.length).to(Chain) match
                   // CSI-u (kitty keyboard protocol): a key codepoint with optional
                   // sub-keys and modifiers, terminated by `u`.
                   case 'u' #:: tail =>
-                    Keyboard.csiu(List.from(sequence.stdlib)) #:: process(tail)
+                    Keyboard.csiu(sequence.stdlib.to(List)) #:: process(tail)
 
                   case 'R' #:: tail =>
                     // A cursor-position report. The plain form (`\e[<row>;<col>R`) is
@@ -231,7 +231,7 @@ object Keyboard:
 
             case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
               val content = rest.stdlib.takeWhile(_ != '\u001b').mkString.tt
-              val continuation = Chain.of(rest.stdlib.drop(content.length + 2))
+              val continuation = rest.stdlib.drop(content.length + 2).to(Chain)
 
               content.cut(t"/") match
                 case List(red, green, blue) =>

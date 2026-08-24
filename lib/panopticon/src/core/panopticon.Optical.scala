@@ -56,13 +56,13 @@ object Optical:
         val vector = origin.stdlib
 
         if vector.length > ordinal.n0
-        then Sequence.of(vector.updated(ordinal.n0, lambda(vector(ordinal.n0))))
+        then Sequence.from(vector.updated(ordinal.n0, lambda(vector(ordinal.n0))))
         else origin
 
   given at: [key, element] => key is Optical from Map[key, element] onto element =
     key =>
       Optic: (origin, lambda) =>
-        origin(key).let(lambda).lay(origin)(value => Map.of(origin.stdlib.updated(key, value)))
+        origin(key).let(lambda).lay(origin)(value => origin.stdlib.updated(key, value).to(Map))
 
   // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM pipeline —
   // rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.
@@ -72,7 +72,9 @@ object Optical:
       val predicate: key -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
       Optic: (origin, lambda) =>
-        Map.of:
+        // `Map.from`, not `.to(Map)`: the conversion route lets the (vacuous, strict-map)
+        // `lambda` capture contaminate the result, where `from`'s signature is pure.
+        Map.from:
           origin.stdlib.map: (key, value) =>
             if predicate(key) then (key, lambda(value)) else (key, value)
 

@@ -85,7 +85,7 @@ object CHeaderAtomizer:
       case Foreign.Type.Union(_) => () // not producible by `CHeader.Parser`
 
   def atomize(declarations: List[CHeader.Declaration]): List[Atom] =
-    List.from:
+
       declarations.stdlib.map:
         case CHeader.Declaration.Function(name, result, parameters, variadic) =>
           Atom(name, Atom.Class.Rigid, hash: out =>
@@ -124,3 +124,4 @@ object CHeaderAtomizer:
             cases.stdlib.foreach: (label, value) =>
               utf8(out, label)
               utf8(out, Text(value.toString)))
+      . to(List)

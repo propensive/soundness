@@ -398,13 +398,13 @@ object Mathml:
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(labelOf(other))))
 
     private def childElements(elem: Element): List[Element] =
-      List.of(elem.children.readable.toList.collect { case element: Element => element })
+      (elem.children.readable.toList.collect { case element: Element => element }).to(List)
 
     private def attributesOf(elem: Element): List[(Text, Text)] =
-      List.of(elem.attributes.keys.map { key => (key, elem.attributes(key).or(t"")) }.toList)
+      (elem.attributes.keys.map { key => (key, elem.attributes(key).or(t"")) }.toList).to(List)
 
     private def textOf(elem: Element): Text =
-      List.of(elem.children.readable.toList.collect { case TextNode(text) => text }).join
+      (elem.children.readable.toList.collect { case TextNode(text) => text }).to(List).join
 
     private def children(elem: Element)(using Tactic[Mathml.Error]): List[Mathml] =
       childElements(elem).map(decodeNode)

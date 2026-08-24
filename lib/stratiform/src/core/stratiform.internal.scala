@@ -98,7 +98,7 @@ object internal:
     val charEnd = String(bytes, 0, byteEnd, utf8).length
 
     contextual.Interpolation.sourcePosition
-      ( proscenium.List.of(parts), contextual.Interpolation.decodeOrigins[origins],
+      ( parts.to(proscenium.List), contextual.Interpolation.decodeOrigins[origins],
         1, charStart, (charEnd - charStart).max(1) )
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
@@ -272,7 +272,7 @@ object internal:
               '{Unset}
 
           val layersExpr: Expr[proscenium.List[Text]] =
-            '{proscenium.List.of(${Expr.ofList(p.layers.stdlib.map { layer => '{${Expr(layer.s)}.tt} })})}
+            '{(${Expr.ofList(p.layers.stdlib.map { layer => '{${Expr(layer.s)}.tt} })}).to(proscenium.List)}
 
           val signatureExpr: Expr[Optional[Text]] = p.signature match
             case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}

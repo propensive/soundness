@@ -371,7 +371,7 @@ object Sheet:
             mapBuilder += cellsBuf(i) -> i
             i += 1
 
-          headings = Map.of(mapBuilder.result())
+          headings = mapBuilder.result().to(Map)
           advanceData()
         else true
       else false

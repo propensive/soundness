@@ -68,4 +68,4 @@ object CHeaderDiscipline extends Discipline:
 
       . protect(CHeader.Parser.parse(source).stdlib)
 
-    Atomization.of(id, CHeaderAtomizer.atomize(List.from(declarations)))
+    Atomization.of(id, CHeaderAtomizer.atomize(declarations.to(List)))

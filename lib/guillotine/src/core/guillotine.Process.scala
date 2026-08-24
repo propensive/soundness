@@ -63,10 +63,10 @@ object Process:
       builder += new Process(remaining.head)
       remaining = remaining.tail
 
-    List.of(builder.result())
+    builder.result().to(List)
 
   def all: List[Process] = processes(allHandles)
-  def roots: List[Process] = processes(List.of(allHandles.stdlib.filter(!_.parent.nn.isPresent)))
+  def roots: List[Process] = processes(allHandles.stdlib.filter(!_.parent.nn.isPresent).to(List))
   def apply(): Process = new Process(ProcessHandle.current.nn)
 
   // ProcessInput → Process.Input

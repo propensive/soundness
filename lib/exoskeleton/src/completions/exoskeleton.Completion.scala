@@ -204,7 +204,7 @@ extends Cli:
 
             (List(mainLine): List[Command]) + duplicateLine
 
-        List.of(title.stdlib ++ itemLines.stdlib).map(_.arguments.join(t"\u0000"))
+        (title.stdlib ++ itemLines.stdlib).to(List).map(_.arguments.join(t"\u0000"))
 
       case Shell.Bash =>
         items.filter(!_.hidden).bind: suggestion =>
@@ -230,11 +230,12 @@ extends Cli:
                   case description: Text     => t"$text\t$description"
                   case description: Teletype => t"$text\t${description.plain}"
 
-              if !incomplete || !sole || suggestion.text.ends(t"/") then List.of(mainLines)
+              if !incomplete || !sole || suggestion.text.ends(t"/") then mainLines.to(List)
               else
-                List.of:
+
                   mainLines ++ (suggestion.text :: aliases.stdlib).map: text =>
                     t"$text "
+                  . to(List)
 
       case Shell.Powershell =>
         // PowerShell inserts a `CompletionResult` verbatim, so a trailing-space twin is
@@ -242,9 +243,10 @@ extends Cli:
         items.bind:
           case suggestion@Suggestion(core, description, hidden, _, aliases, _, _, _, _) =>
             if hidden then Nil else
-              List.of:
+
                 (suggestion.text :: aliases.stdlib).map: text =>
                   description.absolve match
                     case Unset                 => t"$text"
                     case description: Text     => t"$text\t$description"
                     case description: Teletype => t"$text\t${description.plain}"
+                . to(List)

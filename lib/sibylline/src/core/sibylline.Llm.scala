@@ -329,7 +329,7 @@ object Llm:
     // open is closed, deferred message-level state lands, and the message finishes.
     def finish(): List[Event] =
       val closes = opened.toList.map(Event.Closed(_))
-      List.of(closes :+ Event.Update(stop, usage) :+ Event.Finished)
+      (closes :+ Event.Update(stop, usage) :+ Event.Finished).to(List)
 
   private[sibylline] object Accumulator:
     // The in-progress form of one content block: the block as it was opened, the text it has
@@ -397,7 +397,7 @@ object Llm:
     def reply()(using Diagnostics): Reply raises Error =
       if !finished0 then abort(Error(Error.Reason.Interrupted, t"the stream ended early"))
 
-      val content: List[Content] = List.of:
+      val content: List[Content] =
         blocks.values.toList.map: block =>
           if block.open
           then abort(Error(Error.Reason.Interrupted, t"a content block was never closed"))
@@ -420,6 +420,7 @@ object Llm:
 
             case other =>
               other
+        . to(List)
 
       Reply(Message(Role.Assistant, content), stop0.or(Stop.Ended), usage0.or(Usage(0, 0)),
             model0, id0)
@@ -487,13 +488,13 @@ object Llm:
 
     private def exchange(message: Message, extra: List[Tool] = List()): Exchange =
       Exchange
-        ( system, List.of(history0.stdlib :+ message),
-          List.of(tools.stdlib ++ extra.stdlib), settings )
+        ( system, (history0.stdlib :+ message).to(List),
+          (tools.stdlib ++ extra.stdlib).to(List), settings )
 
     // Seed or amend the history without a round trip: replaying a transcript, or a tool loop
     // recording synthesized turns.
     update def record(message: Message): Unit =
-      history0 = List.of(history0.stdlib :+ message)
+      history0 = (history0.stdlib :+ message).to(List)
 
     update def ask(text: Text)(using toolkit: Toolkit^): Reply = ask(Message(Role.User, text))
 
@@ -547,7 +548,7 @@ object Llm:
     private[sibylline] update def forced(message: Message, answer: Tool): Reply =
       val turn =
         Exchange
-          ( system, List.of(history0.stdlib :+ message), List(answer),
+          ( system, (history0.stdlib :+ message).to(List), List(answer),
             settings.copy(toolChoice = ToolChoice.Named(answer.name)) )
 
       val reply = dialect.exchange(turn)
@@ -573,5 +574,5 @@ object Llm:
         Response(this, message, dialect.stream(exchange(message)))
 
     private[sibylline] update def commit(message: Message, reply: Reply): Unit =
-      history0 = List.of(history0.stdlib :+ message :+ reply.message)
+      history0 = (history0.stdlib :+ message :+ reply.message).to(List)
       usage0 = usage0 + reply.usage

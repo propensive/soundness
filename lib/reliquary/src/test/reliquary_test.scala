@@ -503,7 +503,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(identity)
 
       test(m"the registry partitions content between disciplines"):
-        val mixed = List.from(content.stdlib :+ item(t"c/Three.special", t"three"))
+        val mixed = (content.stdlib :+ item(t"c/Three.special", t"three")).to(List)
         val results = Discipline.Registry(List(Special)).atomize(mixed, context)
 
         results.map { atomization => (atomization.discipline, atomization.atoms.stdlib.size) }
@@ -584,7 +584,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         Atom(key, atomClass, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(content)))
 
       def release(atoms: Atom*): List[Atomization] =
-        List(Atomization.of(t"x/1", List.from(atoms)))
+        List(Atomization.of(t"x/1", atoms.to(List)))
 
       val base = release(atom(t"a", Atom.Class.Rigid, t"1"), atom(t"b", Atom.Class.Replaceable, t"2"))
 
@@ -1213,9 +1213,9 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       class MemoryReleases(releases: scala.List[Lira]) extends reliquary.SchemaDelegate.Releases:
         def apply(module: Text): List[Lira] =
-          List.from(releases.filter(_.manifest.module == module))
+          releases.filter(_.manifest.module == module).to(List)
 
-        def modules: List[Text] = List.from(releases.map(_.manifest.module).distinct)
+        def modules: List[Text] = releases.map(_.manifest.module).distinct.to(List)
 
       def resolver(releases: Lira*): reliquary.SchemaDelegate =
         reliquary.SchemaDelegate(MemoryReleases(releases.toList), keyring, schemes)
@@ -1285,7 +1285,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       test(m"a signature-form lookup finds the release serving it"):
         val release = schemaLira(revolution.Semver(0, 1, 0), List(), sign = true)
         val components = SchemaSignature.componentHashes(schemaBytes.read[Tel], Tels.Axiom.tels)
-        val composed = SchemaSignature.encode(List.of(components(0) :: components(1).stdlib))
+        val composed = SchemaSignature.encode((components(0) :: components(1).stdlib).to(List))
 
         resolver(release).bySignature(composed, Unset)
         . let(_.data.serialize[Hex]).or(t"")
@@ -1617,14 +1617,14 @@ object Tests extends Suite(m"Reliquary Tests"):
         val registry = Discipline.Registry(List())
         val apiItems = api.map { pair => (TreePath(pair(0)), encode(pair(1))) }
         val extraItems = extra.map { pair => (TreePath(pair(0)), encode(pair(1))) }
-        val atomizations = registry.atomize(List.from(apiItems), context)
+        val atomizations = registry.atomize(apiItems.to(List), context)
         val atomsData = AtomsBlob.encode(atomizations.stdlib.head)
         val snapshot = Snapshot(atomizations)
 
         val entries = (apiItems ++ extraItems).map: pair =>
           TreeEntry(pair(0), blob(pair(1)))
 
-        val tree = Lira.Tree.of(List.from(entries))
+        val tree = Lira.Tree.of(entries.to(List))
 
         val manifest = Lira.Manifest
           ( module    = t"assignee",
@@ -1635,7 +1635,7 @@ object Tests extends Suite(m"Reliquary Tests"):
             payload   = payloadStub(t"replaced") )
 
         val blobs = (apiItems ++ extraItems).map { pair => pair(1) }
-        Lira.assemble(manifest, List.from(blobs :+ tree.encode :+ atomsData))
+        Lira.assemble(manifest, (blobs :+ tree.encode :+ atomsData).to(List))
 
       val versionOne = scala.List((t"a/A.class", t"alpha one"))
 
@@ -1834,9 +1834,10 @@ object Tests extends Suite(m"Reliquary Tests"):
             List()
 
           override def coherence(releases: List[Lira.Manifest]): List[Text] =
-            List.from:
+
               releases.stdlib.filter(_.toolchain.stdlib.isEmpty).map: manifest =>
                 t"${manifest.module} records no toolchain"
+              . to(List)
 
         val registry = EcosystemProfile.Registry(List(Strict))
         val scala39 = List(Lira.Manifest.Tool(t"scala", t"3.9.0"))
@@ -1986,9 +1987,10 @@ object Tests extends Suite(m"Reliquary Tests"):
 
         val bogus = blob(encode(t"not the derivative"))
 
-        val tampered = lira.manifest.copy(section = List.from:
+        val tampered = lira.manifest.copy(section =
           lira.manifest.section.stdlib.map: section =>
             section.copy(derivative = bogus))
+          . to(List)
 
         capture[Lira.Error](Derivative.verify(tampered, report)).reason
       . assert(_ == Lira.Error.Reason.BadDerivative(t"jvm"))

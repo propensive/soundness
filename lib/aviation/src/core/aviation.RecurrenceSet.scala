@@ -47,7 +47,7 @@ object RecurrenceSet:
 
     set =>
       val excluded = set.exdates.stdlib.toSet
-      val streams = List.of(set.include.stdlib :+ Chain.from(set.rdates.stdlib.sorted))
+      val streams = (set.include.stdlib :+ set.rdates.stdlib.sorted.to(Chain)).to(List)
       dedup(streams.occupied.lay(Chain.empty[point])(_.reduce(merge))).filter(!excluded.contains(_))
 
   // Lazily merge two ascending streams into one ascending stream (emit the lesser head first).
@@ -72,7 +72,7 @@ object RecurrenceSet:
   // Drop duplicates from an ascending stream (equal values are adjacent).
   private def dedup[point](stream: Chain[point])(using order: Ordering[point]): Chain[point] =
     stream match
-      case first #:: rest => first #:: dedup(Chain.of(rest.stdlib.dropWhile(order.equiv(_, first))))
+      case first #:: rest => first #:: dedup((rest.stdlib.dropWhile(order.equiv(_, first))).to(Chain))
       case _              => Chain.empty
 
 case class RecurrenceSet[point]

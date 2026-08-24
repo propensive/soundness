@@ -99,7 +99,7 @@ extends Encodable, Findable:
 
       def continue =
         if todo.nil && !status.isOverflow then Chain()
-        else if !todo.nil && count >= todo.stdlib.head.s.length - offset then recur(Chain.of(todo.stdlib.tail), 0)
+        else if !todo.nil && count >= todo.stdlib.head.s.length - offset then recur(todo.stdlib.tail.to(Chain), 0)
         else recur(todo, offset + count)
 
       if data.length == 0 then continue else data #:: continue

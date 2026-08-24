@@ -184,7 +184,7 @@ trait Cbor2:
           val key = root.key(index)
           if key.isTextString then builder += key.string -> root.value(index)
           index += 1
-        Map.of(builder.result())
+        builder.result().to(Map)
 
       // `@name[Cbor]` / bare `@name` renames: field name -> map key, read
       // back the same way they are written.

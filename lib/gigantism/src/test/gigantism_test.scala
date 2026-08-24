@@ -62,12 +62,12 @@ object Tests extends Suite(m"Gigantism Tests"):
 
       test(m"Every mutually-ambiguous instance in scope is found"):
         import Colours.{red, green, blue}
-        Set.from(every[Colour].values.map(_.name))
+        every[Colour].values.map(_.name).to(Set)
       . assert(_ == Set(t"red", t"green", t"blue"))
 
       test(m"Only the imported instances are found"):
         import Colours.{red, blue}
-        Set.from(every[Colour].values.map(_.name))
+        every[Colour].values.map(_.name).to(Set)
       . assert(_ == Set(t"red", t"blue"))
 
       test(m"Instances are not found outside their import scope"):
@@ -82,10 +82,10 @@ object Tests extends Suite(m"Gigantism Tests"):
       test(m"Local and imported instances are both found"):
         import Shapes.square
         given local: Shape = Shape(t"triangle")
-        Set.from(every[Shape].values.map(_.name))
+        every[Shape].values.map(_.name).to(Set)
       . assert(_ == Set(t"square", t"triangle"))
 
       test(m"The default given collects every instance"):
         import Colours.{red, green}
-        Set.from(summon[Every[Colour]].values.map(_.name))
+        (summon[Every[Colour]].values.map(_.name)).to(Set)
       . assert(_ == Set(t"red", t"green"))

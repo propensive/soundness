@@ -134,6 +134,8 @@ private[polysyllabic] object TexPatterns:
       if bodyEnd < 0 then Array.empty[Text] else
         val body = content.substring(bodyStart, bodyEnd).nn
         val tokens = body.split("\\s+").nn.iterator.map(_.nn).filter(_.length > 0).map(_.tt)
+        // `Array.from`, not `Array.from()`: the conversion route mints a fresh `any.rd` which
+        // cannot meet the expected `^{}`; `from` is the capture-precise constructor.
         Array.from(tokens)
 
   // Look for `\directive=N` or `\directive N`, returning N if found.

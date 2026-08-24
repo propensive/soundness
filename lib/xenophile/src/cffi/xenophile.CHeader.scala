@@ -141,7 +141,7 @@ object CHeader:
       val functions: Map[Text, Prototype] =
         declarations.collect:
           case Declaration.Function(name, result, parameters, _) =>
-            name -> Prototype(List.from(parameters.stdlib.map(project(_))), project(result))
+            name -> Prototype((parameters.stdlib.map(project(_))).to(List), project(result))
 
         . toMap
 
@@ -252,7 +252,7 @@ object CHeader:
         declaration.let { value => declarations += value }
         tokens = rest
 
-      List.from(declarations.toList)
+      declarations.toList.to(List)
 
     private def fail(detail: Text, tokens: SList[String]): Nothing raises Error =
       val near = Text(tokens.take(6).mkString(" "))
@@ -368,9 +368,9 @@ object CHeader:
       :   (List[Foreign.Type], Boolean, SList[String]) raises Error =
 
         tokens match
-          case ")" :: rest   => (List.from(acc.reverse), false, rest)
+          case ")" :: rest   => (acc.reverse.to(List), false, rest)
           case "," :: rest   => recur(rest, acc)
-          case "..." :: ")" :: rest => (List.from(acc.reverse), true, rest)
+          case "..." :: ")" :: rest => (acc.reverse.to(List), true, rest)
 
           case _ =>
             val (typed, afterType) = typeOf(tokens)
@@ -402,7 +402,7 @@ object CHeader:
       :   (List[(Text, Foreign.Type)], SList[String]) raises Error =
 
         tokens match
-          case "}" :: rest => (List.from(acc.reverse), rest)
+          case "}" :: rest => (acc.reverse.to(List), rest)
 
           case _ =>
             val (typed, afterType) = typeOf(tokens)
@@ -426,7 +426,7 @@ object CHeader:
       :   (List[(Text, Long)], SList[String]) raises Error =
 
         tokens match
-          case "}" :: rest => (List.from(acc.reverse), rest)
+          case "}" :: rest => (acc.reverse.to(List), rest)
           case "," :: rest => recur(rest, next, acc)
 
           case name :: "=" :: value :: rest =>
@@ -502,7 +502,7 @@ object CHeader:
             // A function-pointer typedef: `typedef ret (*name)(params);`.
             case "(" :: "*" :: name :: ")" :: more =>
               val (params, variadic, after) = parameters(more)
-              val fn = Foreign.Type.Applied(t"fn", List.from(typed :: params.stdlib))
+              val fn = Foreign.Type.Applied(t"fn", (typed :: params.stdlib).to(List))
 
               after match
                 case ";" :: rest2 =>

@@ -100,7 +100,7 @@ object ManifestSigning:
 
     val value = Base256.encode(scheme.sign(input(manifest), privateKey))
     val record = Lira.Manifest.Signature(signer, algorithm, fingerprint(publicKey), value)
-    manifest.copy(signature = List.from(manifest.signature.stdlib :+ record))
+    manifest.copy(signature = (manifest.signature.stdlib :+ record).to(List))
 
   // Verification step 7 (§16): every signature present must verify; a signature whose algorithm
   // the verifier does not implement is rejected, never ignored (§15.1).

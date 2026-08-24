@@ -67,7 +67,7 @@ object Overlay:
     val kept = root.entries.filter: entry =>
       !deleted.contains(entry.path.text) && overlay.get(entry.path).absent
 
-    Lira.Tree.of(List.from(kept.stdlib ++ overlay.entries.stdlib))
+    Lira.Tree.of((kept.stdlib ++ overlay.entries.stdlib).to(List))
 
   // The producer inverse: the minimal `(tree, delete)` pair such that
   // `materialize(root, delete, tree) == target`.

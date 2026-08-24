@@ -167,7 +167,7 @@ object Xeq:
     val outputPath: Path on Linux = output.as[Path on Linux]
     val staging: Path on Linux = stagingDir.as[Path on Linux]
 
-    val children: List[Path on Linux] = List.from(staging.children.stdlib)
+    val children: List[Path on Linux] = staging.children.stdlib.to(List)
 
     val runnerPayloads: List[Payload] =
       children
@@ -194,7 +194,7 @@ object Xeq:
       else
         Unset
 
-    write(outputPath, installer(List.of(runnerPayloads.stdlib ++ dataPayload.option)))
+    write(outputPath, installer((runnerPayloads.stdlib ++ dataPayload.option).to(List)))
 
   private def downloaderMain(output: Text, url: Text, hash: Text): Unit = unsafely:
     write(output.as[Path on Linux], downloader(url, hash))
@@ -225,7 +225,7 @@ object Xeq:
 
 
   def main(args: scala.Array[String]): Unit =
-    List.of(args.iterator.toList) match
+    args.iterator.toList.to(List) match
       case "installer" :: output :: staging :: Nil =>
         installerMain(output.tt, staging.tt)
 

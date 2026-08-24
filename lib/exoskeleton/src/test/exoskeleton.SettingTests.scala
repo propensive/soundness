@@ -43,11 +43,11 @@ object SettingTests extends Suite(m"Setting tests"):
   given prefix: Configurator.Prefix = Configurator.Prefix(t"myapp")
 
   def fixedEnvironment(entries: (Text, Text)*): Environment =
-    val map = Map.from(entries)
+    val map = entries.to(Map)
     name => map.at(name)
 
   def fixedSystem(entries: (Text, Text)*): System =
-    val map = Map.from(entries)
+    val map = entries.to(Map)
     name => map.at(name)
 
   def invocation(arguments: Text*)(using environment: Environment): Invocation =

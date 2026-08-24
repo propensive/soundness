@@ -81,7 +81,7 @@ extends Sessional:
       val tcpPort: Tcp.Port = safely(Port[Tcp](port)).or(abort(Connect.Error(Unknown)))
 
       val duplex: Duplex =
-        try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, List.of(options.values)) catch
+        try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values.to(List)) catch
           case error: ji.IOException => abort(Connect.Error(Unknown))
 
       try lambda(using Sessions.Sequential(duplex)) finally duplex.close()

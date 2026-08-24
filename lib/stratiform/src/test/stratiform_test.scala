@@ -1263,7 +1263,7 @@ object Tests extends Suite(m"Stratiform Tests"):
             val values = children.readable.collect:
               case Tel.Element.Value(_, _, t) => t
 
-            Set.from(values.toSeq)
+            values.toSeq.to(Set)
 
           case _ => Set()
       . assert(_ == Set(t"Anonymous", t"30"))
@@ -1874,7 +1874,7 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"Tel.fields repeated-keyword accessor"):
       test(m"fields returns all matching children in order"):
         val tel = t"item 1\nitem 2\nitem 3\n".read[Tel]
-        List.of(tel.fields(t"item").readable.map(_.primaryAtom).toList)
+        tel.fields(t"item").readable.map(_.primaryAtom).toList.to(List)
       . assert(_ == List(t"1", t"2", t"3"))
 
       test(m"fields returns empty array when none match"):

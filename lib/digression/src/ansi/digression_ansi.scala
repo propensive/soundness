@@ -104,10 +104,11 @@ package teletypeables:
           else dedup(tail, seen :+ head, head :: done)
 
     val packages: Map[Text, Color in Srgb] =
-      Map.from:
+
         dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil).stdlib
         . zipWithIndex.map: (prefix, index) =>
             prefix -> accent(index)
+        . to(Map)
 
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${palette.message}($fullClass): ${stack.message}"
@@ -121,7 +122,7 @@ package teletypeables:
         inlined:   Optional[StackTrace.Frame.Inlined] = Unset )
 
     val rows: List[Row] =
-      List.of:
+
         stack.frames.fold((List.empty[Row].stdlib, t"", t"")):
           case ((acc, lastClass, lastFile), frame) =>
             val sameClass = frame.displayClass == lastClass
@@ -130,6 +131,7 @@ package teletypeables:
             (subRows ::: Row(frame, sameClass, sameFile) :: acc, frame.displayClass, frame.file)
 
         . _1.reverse
+        . to(List)
 
     // A frame the compiler generated—a bridge, a forwarder, an initializer—is rarely what the
     // reader is looking for, so it stays legible but recedes.
@@ -216,8 +218,8 @@ package teletypeables:
     import columnAttenuation.ignoreAttenuation
 
     val grid = scaffold.tabulate(rows).grid(200)
-    val dataOnly = grid.copy(sections = List.of(grid.sections.stdlib.tail))
-    val tableLines = List.from(dataOnly.render.stdlib)
+    val dataOnly = grid.copy(sections = grid.sections.stdlib.tail.to(List))
+    val tableLines = dataOnly.render.stdlib.to(List)
 
     val allLines = init :: (tableLines: List[Teletype])
     val root = allLines.stdlib.join(e"\n")

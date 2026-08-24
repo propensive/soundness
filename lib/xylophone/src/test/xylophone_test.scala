@@ -867,7 +867,7 @@ object Tests extends Suite(m"Xylophone tests"):
       test(m"emit indents a document and adds the header and trailing newlines"):
         import formatting.indentedXmlFormatting
         val document = Document[Xml](elem(t"a", elem(t"b")), Header(t"1.0", Unset, Unset))
-        supervise(List.from(Xml.emit(document)).mkString.tt)
+        supervise(Xml.emit(document).to(List).mkString.tt)
       . assert(_ == t"<?xml version=\"1.0\"?>\n<a>\n  <b/>\n</a>\n")
 
 

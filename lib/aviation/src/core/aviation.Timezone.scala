@@ -46,7 +46,7 @@ import fulminate.*
 
 object Timezone:
   private val ids: Set[Text] =
-    Set.from(ju.TimeZone.getAvailableIDs.nn.iterator.map(_.nn).map(Text(_)))
+    (ju.TimeZone.getAvailableIDs.nn.iterator.map(_.nn).map(Text(_))).to(Set)
 
   def apply(name: Text): Timezone raises Timezone.Error = name.as[Timezone]
 

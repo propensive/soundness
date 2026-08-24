@@ -253,7 +253,7 @@ object Teletype:
       Teletype
         ( plainText,
           newStyles,
-          Map.of(hyperlinks.toMap),
+          hyperlinks.toMap.to(Map),
           insertions.to(TreeMap),
           newBoundaries )
 
@@ -392,8 +392,8 @@ case class Teletype
       val combinedPlain = plain+that.plain
 
       val shiftedLinks = if that.hyperlinks.nil then hyperlinks else
-        Map.of:
-          hyperlinks.stdlib ++ that.hyperlinks.stdlib.map: (k, v) => (k + aN) -> v
+        val moved = that.hyperlinks.stdlib.map { (k, v) => (k + aN) -> v }
+        (hyperlinks.stdlib ++ moved).to(Map)
 
       val shiftedInsertions = if that.insertions.isEmpty then insertions else
         insertions ++ that.insertions.map: (k, v) => (k + aN) -> v
@@ -454,7 +454,7 @@ case class Teletype
       if keepLength <= 0 then Teletype.empty
       else if n <= 0 then this
       else
-        val newHyperlinks = Map.from(hyperlinks.stdlib.collect { case (k, v) if k >= n => (k - n) -> v })
+        val newHyperlinks = (hyperlinks.stdlib.collect { case (k, v) if k >= n => (k - n) -> v }).to(Map)
 
         val newInsertions =
           insertions.collect { case (k, v) if k >= n => (k - n) -> v }.to(TreeMap)
@@ -501,7 +501,7 @@ case class Teletype
       if n <= 0 then Teletype.empty
       else if n >= plain.length then this
       else
-        val newHyperlinks = Map.of(hyperlinks.stdlib.filter { (k, _) => k < n })
+        val newHyperlinks = (hyperlinks.stdlib.filter { (k, _) => k < n }).to(Map)
         val newInsertions = insertions.rangeUntil(n)
 
         if isDense then

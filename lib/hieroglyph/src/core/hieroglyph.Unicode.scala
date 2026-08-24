@@ -107,20 +107,21 @@ object Unicode:
       . or(remoteUnicodeData("UnicodeData.txt".tt))
       . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
 
-    Map.from:
-      scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
-        case hex :: name :: _ if !name.nn.startsWith("<") =>
-          val hexInt = Integer.parseInt(hex, 16)
+    scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
+      case hex :: name :: _ if !name.nn.startsWith("<") =>
+        val hexInt = Integer.parseInt(hex, 16)
 
-          if hexInt < 65536 then List((name.nn.tt, hexInt.toChar)).stdlib
-          else List((name.nn.tt, new String(Character.toChars(hexInt)).tt)).stdlib
+        if hexInt < 65536 then List((name.nn.tt, hexInt.toChar)).stdlib
+        else List((name.nn.tt, new String(Character.toChars(hexInt)).tt)).stdlib
 
-        case _ =>
-          Nil.stdlib
+      case _ =>
+        Nil.stdlib
+    . to(Map)
 
-  lazy val unicodeNames: Map[Char | Text, Text] = Map.from:
+  lazy val unicodeNames: Map[Char | Text, Text] =
     unicodeData.stdlib.map: (key, value) =>
       value -> key.s.split(" ").nn.iterator.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
+    . to(Map)
 
   lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
     extension (map: TreeMap[CharRange, EaWidth])

@@ -55,12 +55,9 @@ object Reflowable:
         val lines = Flow.wrap(content, width)
         val count = lines.stdlib.length
 
-        Sequence.of:
+        Sequence.from:
           lines.stdlib.zipWithIndex.map: (line, index) =>
             alignment.pad(line, width, index == count - 1)
-
-          . toVector
-
 // Content that negotiates with a rectangular layout: it reports the intrinsic widths it wants
 // (`metrics`), how tall it runs at a candidate width (`height`), and finally arranges itself
 // into lines of exactly the settled width (`flow`). `Line` is the rendered line type — for

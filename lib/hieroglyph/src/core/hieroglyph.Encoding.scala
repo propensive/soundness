@@ -44,19 +44,21 @@ object Encoding:
   given communicable: Encoding is Communicable = encoding => Message(encoding.name)
 
   private val allCharsets: Set[jnc.Charset] =
-    Set.of(jnc.Charset.availableCharsets.nn.asScala.toMap.values.toSet)
+    jnc.Charset.availableCharsets.nn.asScala.toMap.values.toSet.to(Set)
 
   private[hieroglyph] val codecs: Map[Text, Encoding { type CanEncode = true }] =
-    Map.from:
+
       allCharsets.stdlib.filter(_.canEncode).flatMap: charset =>
         (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
           name.toLowerCase.nn.tt -> Encoding(name.tt, true)
+      . to(Map)
 
   private[hieroglyph] val decodeOnly: Map[Text, Encoding { type CanEncode = false }] =
-    Map.from:
+
       allCharsets.stdlib.filter(!_.canEncode).flatMap: charset =>
         (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
           name.toLowerCase.nn.tt -> Encoding(name.tt, false)
+      . to(Map)
 
   def unapply(name: Text): Option[Encoding] =
     codecs.stdlib.get(name.s.toLowerCase.nn.tt).orElse(decodeOnly.stdlib.get(name.s.toLowerCase.nn.tt))

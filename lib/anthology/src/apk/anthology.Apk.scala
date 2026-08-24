@@ -120,12 +120,13 @@ object Apk extends Format.Application:
     :   Axml.Element =
 
       // Each requested runtime permission is a `<uses-permission android:name="…"/>` element.
-      val permissionElements: List[Axml.Element] = List.of:
+      val permissionElements: List[Axml.Element] =
         permissions.stdlib.map: permission =>
           Axml.Element
             ( t"uses-permission",
               List(android(t"name", nameAttr, Axml.Value.Str(permission))),
               Nil )
+        . to(List)
 
       val launcher =
         Axml.Element
@@ -237,7 +238,7 @@ object Apk extends Format.Application:
         builder += sha256(prefixed)
         offset = end
 
-      List.of(builder.result())
+      builder.result().to(List)
 
     // Signs the finished, unsigned APK bytes with the RSA key and certificate loaded from the
     // keystore, returning the signed APK.

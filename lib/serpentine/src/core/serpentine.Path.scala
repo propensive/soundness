@@ -68,7 +68,7 @@ object Path:
       val parts = text.skip(radical.length(text)).cut(filesystem.separator).stdlib
       val parts2 = if parts.last == t"" then parts.init else parts
 
-      Path(root, List.of(parts2.reverse.map(filesystem.unescape(_))))
+      Path(root, (parts2.reverse.map(filesystem.unescape(_))).to(List))
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
   =>  (tactic: Tactic[Path.Error])
@@ -79,7 +79,7 @@ object Path:
       val parts = text.skip(radical.length(text)).cut(filesystem.separator).stdlib
       val parts2 = if parts.last == t"" then parts.init else parts
 
-      Path(root, List.of(parts2.reverse.map(filesystem.unescape(_))))
+      Path(root, (parts2.reverse.map(filesystem.unescape(_))).to(List))
 
   given nominable: [filesystem] => (Path on filesystem) is Nominable = path =>
     path.descent.to(List).prim.or(path.root)
@@ -231,7 +231,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
       case _: (head *: tail) =>
         infer[head is Admissible on filesystem].check(path.stdlib.head)
-        check[tail, filesystem](List.of(path.stdlib.tail))
+        check[tail, filesystem](path.stdlib.tail.to(List))
 
       case _ =>
         path.each: element => infer[Text is Admissible on filesystem].check(element)
@@ -279,8 +279,8 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   private[serpentine] def calculate(right: Path): Path =
     val difference = depth - right.depth
-    val left0 = List.of(descent.drop(difference).toList)
-    val right0 = List.of(right.descent.drop(-difference).toList)
+    val left0 = descent.drop(difference).toList.to(List)
+    val right0 = right.descent.drop(-difference).toList.to(List)
 
 
     def recur(left: List[Text], right: List[Text], size: Int, count: Int)
@@ -288,8 +288,8 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
       if left.nil then Path(root, left0.skip(size - count))
       else if left.stdlib.head == right.stdlib.head
-      then recur(List.of(left.stdlib.tail), List.of(right.stdlib.tail), size + 1, count + 1)
-      else recur(List.of(left.stdlib.tail), List.of(right.stdlib.tail), size + 1, 0)
+      then recur(left.stdlib.tail.to(List), right.stdlib.tail.to(List), size + 1, count + 1)
+      else recur(left.stdlib.tail.to(List), right.stdlib.tail.to(List), size + 1, 0)
 
 
     recur(left0, right0, 0, 0)
@@ -342,4 +342,4 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     type Topic2 = Tuple.Concat[relative.Topic, Base]
 
     Path[Plane, Limit, Topic2]
-      ( root, List.of(relative.descent.stdlib ++ descent.drop(relative.ascent)) )
+      ( root, (relative.descent.stdlib ++ descent.drop(relative.ascent)).to(List) )

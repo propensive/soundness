@@ -96,7 +96,7 @@ object Tests extends Suite(m"Zeppelin tests"):
         val builder = scala.collection.immutable.List.newBuilder[Text]
         val iterator = zip.entries().nn
         while iterator.hasMoreElements do builder += iterator.nextElement().nn.getName.nn.tt
-        List.of(builder.result())
+        builder.result().to(List)
       finally zip.close()
 
     def jdkContent(path: Path on Linux, name: Text): Data =
@@ -317,7 +317,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"A JAR handle still lists entries like a Zip"):
         jarArchive.open[Jar]():
-          Set.from(zip.entries.stdlib.to(List).map(_.ref.encode))
+          zip.entries.stdlib.to(List).map(_.ref.encode).to(Set)
       . assert(_ == Set(t"META-INF/MANIFEST.MF", t"com/example/Main.class"))
 
       test(m"An archive without a manifest has no attributes"):

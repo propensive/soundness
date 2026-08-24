@@ -66,13 +66,14 @@ private[stratiform] def collectionDocument[value]
     (values: Iterable[value])(using encodable: value is Encodable in Tel)
 :   Tel =
 
-  val compounds: Array[Tel.Compound]^{} = Array.from:
-    values.flatMap: element =>
-      encodable.encoded(element).subtree match
-        case compound: Tel.Compound => List(compound).stdlib
+  val compounds: Array[Tel.Compound]^{} =
+    Array.from:
+      values.flatMap: element =>
+        encodable.encoded(element).subtree match
+          case compound: Tel.Compound => List(compound).stdlib
 
-        case document: Tel.Document =>
-          document.children.bind(_.compounds).readable.toSeq
+          case document: Tel.Document =>
+            document.children.bind(_.compounds).readable.toSeq
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array(Tel.Block(Array.empty, Unset, compounds, 0))))
@@ -83,13 +84,14 @@ private[stratiform] def constructedDocument[value]
     (values: Iterable[value])(using encodable: value is Tel.Encodable)
 :   Tel =
 
-  val compounds: Array[Tel.Compound]^{} = Array.from:
-    values.flatMap: element =>
-      encodable.constructed(element).subtree match
-        case compound: Tel.Compound => List(compound).stdlib
+  val compounds: Array[Tel.Compound]^{} =
+    Array.from:
+      values.flatMap: element =>
+        encodable.constructed(element).subtree match
+          case compound: Tel.Compound => List(compound).stdlib
 
-        case document: Tel.Document =>
-          document.children.bind(_.compounds).readable.toSeq
+          case document: Tel.Document =>
+            document.children.bind(_.compounds).readable.toSeq
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array(Tel.Block(Array.empty, Unset, compounds, 0))))

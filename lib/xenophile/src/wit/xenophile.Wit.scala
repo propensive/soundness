@@ -188,7 +188,7 @@ object Wit:
     // (the WASI subsets the backends carry do), and every interface and world belongs to the
     // package declared above it.
     def parse(source: Text): List[Document] raises Error =
-      List.from(documents(tokenize(source.s)))
+      (documents(tokenize(source.s))).to(List)
 
     private def fail(detail: Text, tokens: SList[String]): Nothing raises Error =
       val near = Text(tokens.take(5).mkString(" "))
@@ -275,7 +275,7 @@ object Wit:
               case _           => fail(t"a type argument must be followed by `,` or `>`", after)
 
           val (args, after) = arguments(rest, SList())
-          (Foreign.Type.Applied(name.tt, List.from(args)), after)
+          (Foreign.Type.Applied(name.tt, args.to(List)), after)
 
         case name :: rest if name.headOption.exists { char => char.isLetter || char == '%' } =>
           (Foreign.Type.Named(Text(name.stripPrefix("%").nn)), rest)
@@ -291,7 +291,7 @@ object Wit:
       :   (List[(Text, Foreign.Type)], SList[String]) raises Error =
 
         tokens match
-          case ")" :: rest => (List.from(acc.reverse), rest)
+          case ")" :: rest => (acc.reverse.to(List), rest)
           case "," :: rest => recur(rest, acc)
 
           case name :: ":" :: rest =>
@@ -337,7 +337,7 @@ object Wit:
       :   (List[(Text, Text)], SList[String]) raises Error =
 
         tokens match
-          case "}" :: rest => (List.from(acc.reverse), rest)
+          case "}" :: rest => (acc.reverse.to(List), rest)
           case "," :: rest => recur(rest, acc)
 
           case name :: "as" :: alias :: rest =>
@@ -357,7 +357,7 @@ object Wit:
       :   (List[(Text, Foreign.Type)], SList[String]) raises Error =
 
         gates(tokens) match
-          case "}" :: rest => (List.from(acc.reverse), rest)
+          case "}" :: rest => (acc.reverse.to(List), rest)
           case "," :: rest => recur(rest, acc)
 
           case name :: ":" :: rest =>
@@ -375,7 +375,7 @@ object Wit:
       :   (List[(Text, Optional[Foreign.Type])], SList[String]) raises Error =
 
         gates(tokens) match
-          case "}" :: rest => (List.from(acc.reverse), rest)
+          case "}" :: rest => (acc.reverse.to(List), rest)
           case "," :: rest => recur(rest, acc)
 
           case name :: "(" :: rest =>
@@ -397,7 +397,7 @@ object Wit:
       :   (List[Text], SList[String]) raises Error =
 
         gates(tokens) match
-          case "}" :: rest  => (List.from(acc.reverse), rest)
+          case "}" :: rest  => (acc.reverse.to(List), rest)
           case "," :: rest  => recur(rest, acc)
           case name :: rest => recur(rest, name.tt :: acc)
           case SNil         => fail(t"a name list is unterminated", tokens)
@@ -411,7 +411,7 @@ object Wit:
       :   (List[Function], SList[String]) raises Error =
 
         gates(tokens) match
-          case "}" :: rest => (List.from(acc.reverse), rest)
+          case "}" :: rest => (acc.reverse.to(List), rest)
 
           case "constructor" :: "(" :: rest =>
             val (params, afterParams) = parameters("(" :: rest)
@@ -441,7 +441,7 @@ object Wit:
       :   (List[Item], SList[String]) raises Error =
 
         gates(tokens) match
-          case "}" :: rest => (List.from(acc.reverse), rest)
+          case "}" :: rest => (acc.reverse.to(List), rest)
 
           case "use" :: from :: "." :: rest =>
             val (names, after) = nameList(rest)
@@ -523,10 +523,10 @@ object Wit:
             val world =
               WorldModel
                 ( name,
-                  List.from(imports.reverse),
-                  List.from(exports.reverse),
-                  List.from(inlineImports.reverse),
-                  List.from(inlineExports.reverse) )
+                  imports.reverse.to(List),
+                  exports.reverse.to(List),
+                  inlineImports.reverse.to(List),
+                  inlineExports.reverse.to(List) )
 
             (world, rest)
 
@@ -563,7 +563,7 @@ object Wit:
 
         if pkg.absent && interfaces.isEmpty && worlds.isEmpty then acc
         else
-          Document(pkg, version, List.from(interfaces.reverse), List.from(worlds.reverse))
+          Document(pkg, version, interfaces.reverse.to(List), worlds.reverse.to(List))
             :: acc
 
       def recur

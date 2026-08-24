@@ -49,4 +49,4 @@ trait Dereferenceable extends Typeclass, Resultant:
   def values(entity: Self): List[Result] = members(entity).values
 
   def members(entity: Self): Map[Text, Result] =
-    Map.of(names(entity).stdlib.map { member => member -> select(entity, member) }.toMap)
+    (names(entity).stdlib.map { member => member -> select(entity, member) }.toMap).to(Map)

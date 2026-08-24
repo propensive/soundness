@@ -157,7 +157,7 @@ object OpenApi:
 
       verbs
       . stdlib.collect { case (method, operation: Operation) => method -> operation }
-      . pipe(Map.from(_))
+      . pipe(_.to(Map))
 
   object Components:
     given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])

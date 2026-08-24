@@ -54,11 +54,14 @@ object Matrix:
       val textElements = matrix.elements.remap(_.show)
       val sizes = textElements.remap(_.length)
 
-      val columnWidths: Array[Int]^{} = Array.from:
-        (0 until matrix.columns).map: column =>
-          sizes.readUnchecked:
-            column + matrix.columns*(0 until matrix.rows).maxBy: row =>
-              sizes.readUnchecked(matrix.columns*row + column)
+      // `Array.from`, not `Array.from()`: the conversion route mints a fresh `any.rd` which
+      // cannot meet the declared `^{}`; `from` is the capture-precise constructor.
+      val columnWidths: Array[Int]^{} =
+        Array.from:
+          (0 until matrix.columns).map: column =>
+            sizes.readUnchecked:
+              column + matrix.columns*(0 until matrix.rows).maxBy: row =>
+                sizes.readUnchecked(matrix.columns*row + column)
 
       (0 until matrix.rows).map: row =>
         val before = if row == 0 then t"⎡ " else if row == matrix.rows - 1 then t"⎣ " else t"⎪ "

@@ -49,7 +49,7 @@ object Regime:
   case class Segment(from: Date, calendar: RomanCalendar)
 
   def apply(name: Text, segments: Segment*): Regime =
-    new Regime(name, List.of(segments.toList.sortBy(_.from.jdn)))
+    new Regime(name, segments.toList.sortBy(_.from.jdn).to(List))
 
 class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(name):
   import Regime.Segment
@@ -59,7 +59,7 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
   // one and the first day of the next share a Julian day number (Julian 1582-10-04 and Gregorian
   // 1582-10-15 are the same day), so that shared day is valid under both — the bound is inclusive.
   private val bounded: List[(Segment, Int)] =
-    List.of(segments.stdlib.zip(segments.stdlib.drop(1).map(_.from.jdn) :+ Int.MaxValue))
+    (segments.stdlib.zip(segments.stdlib.drop(1).map(_.from.jdn) :+ Int.MaxValue)).to(List)
 
   // The calendar governing a Julian day number: the latest segment to have taken effect by then.
   private def at(date: Date): RomanCalendar =

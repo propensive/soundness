@@ -70,4 +70,4 @@ class Random(private val generator: su.Random) extends Findable, caps.Unscoped:
   def apply[value: Randomizable](): value = value.randomize(this)
 
   transparent inline def shuffle[element](sequence: List[element]): List[element] =
-    List.of(generator.shuffle(sequence.stdlib))
+    generator.shuffle(sequence.stdlib).to(List)

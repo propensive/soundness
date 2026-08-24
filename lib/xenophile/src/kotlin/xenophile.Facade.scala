@@ -49,13 +49,13 @@ object Facade extends prophesy.Completable:
     ( receiver: quotes.reflect.TypeRepr, prefix: Text )
   :   List[prophesy.Completion] =
 
-    Map.of(Xenophile.refinements(receiver))(t"Transport").lay(Nil): transport =>
+    Xenophile.refinements(receiver).to(Map)(t"Transport").lay(Nil): transport =>
       val className =
         transport.dealias.classSymbol.map(_.fullName.replace("$.", ".").nn.tt)
 
       className.map: className =>
         KotlinDialect.resolve(className).lay(List[prophesy.Completion]()): members =>
-          List.of(members.stdlib.toList.sortBy(_(0).s)).map: (name, prototype) =>
+          (members.stdlib.toList.sortBy(_(0).s)).to(List).map: (name, prototype) =>
             val kind = prototype.parameters.lay(prophesy.Completion.Kind.Term): _ =>
               prophesy.Completion.Kind.Method
 

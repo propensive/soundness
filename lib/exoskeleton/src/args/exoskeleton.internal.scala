@@ -63,5 +63,5 @@ object internal:
     '{
         new Status.Admissible:
           type Self = result
-          def statuses: List[Status] = List.of(${Expr.ofList(values)})
+          def statuses: List[Status] = (${Expr.ofList(values)}).to(List)
      }

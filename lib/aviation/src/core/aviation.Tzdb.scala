@@ -182,7 +182,7 @@ object Tzdb:
       case _                 => abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedLink, lineNo))
 
     def addToZone(lineNo: Int, arguments: List[Text], zone: Tzdb.Entry.Zone): Tzdb.Entry.Zone =
-      zone.copy(info = Sequence.of(zone.info.stdlib :+ parseZoneInfo(lineNo, arguments)))
+      zone.copy(info = Sequence.from(zone.info.stdlib :+ parseZoneInfo(lineNo, arguments)))
 
     @tailrec
     def recur
@@ -198,16 +198,16 @@ object Tzdb:
 
           line.cut(unsafely(r"\s+")) match
             case t"Rule" :: tail =>
-              recur(lineNo + 1, rest, parseRule(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
+              recur(lineNo + 1, rest, parseRule(lineNo, tail) :: (zone.toList ++ entries.stdlib).to(List))
 
             case t"Link" :: tail =>
-              recur(lineNo + 1, rest, parseLink(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
+              recur(lineNo + 1, rest, parseLink(lineNo, tail) :: (zone.toList ++ entries.stdlib).to(List))
 
             case t"Zone" :: tail =>
-              recur(lineNo + 1, rest, List.of(entries.stdlib ++ zone.toList), Some(parseZone(lineNo, tail)))
+              recur(lineNo + 1, rest, (entries.stdlib ++ zone.toList).to(List), Some(parseZone(lineNo, tail)))
 
             case t"Leap" :: tail =>
-              recur(lineNo + 1, rest, parseLeap(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
+              recur(lineNo + 1, rest, parseLeap(lineNo, tail) :: (zone.toList ++ entries.stdlib).to(List))
 
             case t"" :: Nil =>
               recur(lineNo + 1, rest, entries, zone)
@@ -220,7 +220,7 @@ object Tzdb:
               recur(lineNo + 1, rest, entries, zone)
 
         case _ =>
-          List.of(entries.stdlib ++ zone.toList)
+          (entries.stdlib ++ zone.toList).to(List)
 
     recur(1, lines)
 

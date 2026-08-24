@@ -109,9 +109,10 @@ object SourceCode:
           val prefixLength = prefix.lay(0)(_.length)
           val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
 
-          val items = List.of:
+          val items =
             words.stdlib.toList.sortBy(_.s).map: word =>
               Completion(word, Completion.Kind.Keyword, Syntax.Symbolic(word))
+            . to(List)
 
           val binding =
             found.expectation == prophesy.KeywordPattern.Expectation.TermBinding ||
@@ -187,7 +188,7 @@ object SourceCode:
             . cut(t"\n").stdlib
             . to(Chain)
             . flatMap(untab(_).filter(_.length > 0))
-            . pipe { chain => Chain.of(chain.stdlib.init) }
+            . pipe { chain => chain.stdlib.init.to(Chain) }
 
         scanner.nextToken()
         val end = scanner.lastOffset max start
@@ -205,7 +206,7 @@ object SourceCode:
             text.segment(start.z thru end.u).cut(t"\n").stdlib.to(Chain).flatMap: line =>
               Chain(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
-            . pipe { chain => Chain.of(chain.stdlib.init) }
+            . pipe { chain => chain.stdlib.init.to(Chain) }
 
         unparsed #::: content #::: stream(end)
 
@@ -243,7 +244,7 @@ object SourceCode:
       case head :: tail =>
         coalesce(tail, head :: done)
 
-    val tokens: List[Token] = coalesce(List.from(soften(stream()).stdlib))
+    val tokens: List[Token] = coalesce((soften(stream()).stdlib).to(List))
 
     // Give each token a `Line`-mode `Span` with its 0-based line and column,
     // accumulating token widths along each assembled line.
@@ -252,7 +253,7 @@ object SourceCode:
         token.copy(span = Span.line(index, column.z, token.length))
 
     SourceCode
-      ( language, 1, Array(positioned.map(List.of(_))*), diagnostics = diagnostics,
+      ( language, 1, Array(positioned.map(_.to(List))*), diagnostics = diagnostics,
         completions = completions )
 
   // The accent (colour category) and role (binding vs usage) resolved for a token span
@@ -510,7 +511,7 @@ object SourceCode:
           Completion
             ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
 
-      if items.isEmpty then Unset else Completions(Span.offset(offset.z, 0), List.of(items))
+      if items.isEmpty then Unset else Completions(Span.offset(offset.z, 0), items.to(List))
 
     catch case scala.util.control.NonFatal(_) => Unset
 
@@ -533,7 +534,7 @@ object SourceCode:
         Completion
           ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
 
-    Completions(Span.offset(offset.z, 0), List.of(items))
+    Completions(Span.offset(offset.z, 0), items.to(List))
 
   // Members reached through a `Dynamic` receiver are not symbols, so the interactive engine
   // cannot offer them; but the receiver's refined type often determines them fully (Xenophile's
@@ -684,7 +685,7 @@ object SourceCode:
     run.units.each: unit =>
       traverser.traverse(unit.tpdTree)
 
-    Map.from(types)
+    types.to(Map)
 
 case class SourceCode
   ( language:    ProgrammingLanguage,

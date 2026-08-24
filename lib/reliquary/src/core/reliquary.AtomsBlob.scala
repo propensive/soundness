@@ -111,7 +111,7 @@ object AtomsBlob:
     mitigate:
       case Discipline.Error(_, reason) => badBlob(t"the listing is inconsistent: $reason")
 
-    . protect(Atomization.of(discipline, List.from(atoms)))
+    . protect(Atomization.of(discipline, atoms.to(List)))
 
   private def badBlob(detail: Text): Lira.Error =
     import errorDiagnostics.emptyDiagnostics

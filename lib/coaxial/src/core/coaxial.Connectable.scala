@@ -51,7 +51,7 @@ object Connectable:
   =>  DomainSocket is Connectable:
     // A Unix-domain socket has no network interface, so `interface` is not applicable here.
     def connect(domainSocket: DomainSocket, interface: Optional[MacAddress]): Duplex =
-      backend.duplexDomain(domainSocket, List.of(options.values))
+      backend.duplexDomain(domainSocket, options.values.to(List))
 
   // Honestly tracked: the instance is resolvable only with `Online` permission, so it is a
   // capability carrying that evidence in its capture set.
@@ -63,7 +63,7 @@ object Connectable:
       type Self = Endpoint[Tcp.Port]
 
       def connect(endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress]): Duplex =
-        backend.duplexTcp(endpoint, interface, List.of(options.values))
+        backend.duplexTcp(endpoint, interface, options.values.to(List))
 
 trait Connectable extends Typeclass:
   def connect(endpoint: Self, interface: Optional[MacAddress]): Duplex

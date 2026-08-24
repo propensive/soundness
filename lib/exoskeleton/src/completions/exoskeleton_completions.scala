@@ -139,8 +139,8 @@ def helpTree
         completion.flags.keySet.to(List),
         completion.globalFlags.foldLeft(Set[Flag]())(_ :+ _),
         completion.operandNames,
-        List.of(completion.statuses.to(scala.List)),
-        List.of(variables.to(scala.List)) )
+        completion.statuses.to(scala.List).to(List),
+        variables.to(scala.List).to(List) )
 
   def build
     ( prefix:      List[Text],
@@ -170,7 +170,7 @@ def helpTree
       val known = flags.stdlib.foldLeft(inherited)(_ :+ _)
 
       val children =
-        List.of(suggestions.stdlib.distinctBy(_.core)).bind: suggestion =>
+        suggestions.stdlib.distinctBy(_.core).to(List).bind: suggestion =>
           val childPrefix = prefix :+ suggestion.core
 
           if suggestion.hidden || suggestion.incomplete then Nil
@@ -211,7 +211,7 @@ package executives:
       ( using interpreter: Interpreter )
     :   Cli =
 
-      List.of(arguments.toList) match
+      arguments.toList.to(List) match
         case
           t"{completions}" :: t"powershell" :: As.Int(cursor) :: _ :: tty ::
             t"--" ::
@@ -224,7 +224,7 @@ package executives:
           val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
           val posInWord = cursor - wordStarts(wordIdx)
           val focus = (wordIdx - 1).max(0)
-          val restParts = if parts.size > 1 then List.of(parts.stdlib.tail) else List(t"")
+          val restParts = if parts.size > 1 then parts.stdlib.tail.to(List) else List(t"")
           val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
 
           Completion

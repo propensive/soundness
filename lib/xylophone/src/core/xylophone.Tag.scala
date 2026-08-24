@@ -57,7 +57,7 @@ object Tag:
     ( presets: Attributes = Attributes.empty )
   :   Container of label over children in schema =
 
-    val admissible: Set[Text] = Set.from(children.reification().stdlib.map(_.tt))
+    val admissible: Set[Text] = children.reification().stdlib.map(_.tt).to(Set)
 
     Container(valueOf[label].tt, presets, admissible)
     . of[label]

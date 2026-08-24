@@ -80,7 +80,7 @@ object Foreign extends prophesy.Completable:
 
     import quotes.reflect.*
 
-    val members = Map.of(Xenophile.refinements(receiver))
+    val members = Xenophile.refinements(receiver).to(Map)
 
     members(t"Topic").lay(Nil): topicRepr =>
       members(t"Origin").lay(Nil): originRepr =>
@@ -88,7 +88,7 @@ object Foreign extends prophesy.Completable:
           (topicRepr.dealias, locusRepr.dealias) match
             case (ConstantType(StringConstant(topic)), ConstantType(StringConstant(locus))) =>
               Xenophile.definitions(originRepr, locus.tt)(topic.tt).lay(Nil): prototypes =>
-                List.of(prototypes.stdlib.toList.sortBy(_(0).s)).map: (name, prototype) =>
+                (prototypes.stdlib.toList.sortBy(_(0).s)).to(List).map: (name, prototype) =>
                   val kind = prototype.parameters.lay(prophesy.Completion.Kind.Term): _ =>
                     prophesy.Completion.Kind.Method
 

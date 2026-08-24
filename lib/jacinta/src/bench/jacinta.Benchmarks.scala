@@ -155,7 +155,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
             val builder = scala.collection.immutable.List.newBuilder[BenchUser]
             reader.openArray()
             while reader.element() do builder += user()
-            users = List.of(builder.result())
+            users = builder.result().to(List)
           else reader.skipValue()
           true
       do ()
@@ -413,7 +413,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
                 elements = false
               else bail()
 
-          users = List.of(builder.result())
+          users = builder.result().to(List)
         else bail()
 
       if !usersSeen then bail()

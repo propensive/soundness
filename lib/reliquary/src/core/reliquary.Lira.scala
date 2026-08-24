@@ -182,8 +182,9 @@ object Lira:
       val beforeReplaceable = before.filter(_.atomClass == Atom.Class.Replaceable)
 
       val afterReplaceable =
-        scala.collection.immutable.Map.from:
+        scala.collection.immutable.
           after.filter(_.atomClass == Atom.Class.Replaceable).map: atom => (atom.key, atom)
+          . to(Map)
 
       val replaced = beforeReplaceable
         . flatMap: atom =>
@@ -196,7 +197,7 @@ object Lira:
 
         . sortWith: (a, b) => Blob.compare(a.old, b.old) < 0
 
-      Lira.Delta(List.from(added), List.from(replaced))
+      Lira.Delta(added.to(List), replaced.to(List))
 
     def decode(data: Data): Lira.Delta raises Lira.Error =
       import Tels.Decoder.validate
@@ -245,7 +246,7 @@ object Lira:
         if atoms.length != 2 then abort(bad(t"a replace row does not have exactly two atoms"))
         Replacement(hash(atoms(0)), hash(atoms(1)))
 
-      Lira.Delta(List.from(added), List.from(replaced))
+      Lira.Delta(added.to(List), replaced.to(List))
 
   case class Delta(add: List[Data], replace: List[Replacement]):
 
@@ -589,7 +590,7 @@ object Lira:
         Tool
           ( required(fields, t"name"),
             required(fields, t"version"),
-            List.from(repeated(fields, t"flag")) )
+            repeated(fields, t"flag").to(List) )
 
       val api = top.filter(_.keyword == t"api").map: compound =>
         val fields = children(compound)
@@ -603,11 +604,11 @@ object Lira:
             api         = hash(required(fields, t"api")),
             version     = field(fields, t"version").let(semver(_)),
             build       = field(fields, t"build").let(hash(_)),
-            universe    = List.from(repeated(fields, t"universe")),
+            universe    = repeated(fields, t"universe").to(List),
             serves      = field(fields, t"serves"),
-            integration = List.from(repeated(fields, t"integration")),
+            integration = repeated(fields, t"integration").to(List),
             uses        = field(fields, t"uses").let(hash(_)),
-            spans       = List.from(repeated(fields, t"spans").map(hash(_))) )
+            spans       = (repeated(fields, t"spans").map(hash(_))).to(List) )
 
       val resource = top.filter(_.keyword == t"resource").map: compound =>
         val mode = texts(compound) match
@@ -625,7 +626,7 @@ object Lira:
         val breaks = repeated(fields, t"breaks").map: keyword =>
           Guarantee.parse(keyword).or(abort(bad(t"$keyword is not a guarantee level")))
 
-        Profile(required(fields, t"id"), List.from(breaks))
+        Profile(required(fields, t"id"), breaks.to(List))
 
       val integration = top.filter(_.keyword == t"integration").map: compound =>
         val fields = children(compound)
@@ -657,9 +658,9 @@ object Lira:
           ( realm       = realm,
             integration = field(fields, t"integration"),
             tree        = hash(required(fields, t"tree")),
-            delete      = List.from(repeated(fields, t"delete").map(TreePath(_))),
+            delete      = (repeated(fields, t"delete").map(TreePath(_))).to(List),
             derivative  = field(fields, t"derivative").let(hash(_)),
-            requires    = List.from(requires) )
+            requires    = requires.to(List) )
 
       val payload = top.filter(_.keyword == t"payload").toList match
         case scala.List(compound) =>
@@ -684,19 +685,19 @@ object Lira:
       Lira.Manifest
         ( module      = required(top, t"module"),
           version     = field(top, t"version").let(semver(_)),
-          tag         = List.from(repeated(top, t"tag")),
-          lineage     = List.from(repeated(top, t"lineage").map(hash(_))),
-          toolchain   = List.from(toolchain),
-          owns        = List.from(repeated(top, t"owns")),
-          resource    = List.from(resource),
-          api         = List.from(api),
-          profile     = List.from(profile),
-          integration = List.from(integration),
-          dependency  = List.from(dependency),
+          tag         = repeated(top, t"tag").to(List),
+          lineage     = (repeated(top, t"lineage").map(hash(_))).to(List),
+          toolchain   = toolchain.to(List),
+          owns        = repeated(top, t"owns").to(List),
+          resource    = resource.to(List),
+          api         = api.to(List),
+          profile     = profile.to(List),
+          integration = integration.to(List),
+          dependency  = dependency.to(List),
           delta       = field(top, t"delta").let(hash(_)),
-          section     = List.from(section),
+          section     = section.to(List),
           payload     = payload,
-          signature   = List.from(signature) )
+          signature   = signature.to(List) )
 
   // The typed view of a `.lira` manifest (§14). Decoding always retains the parsed `Tel` alongside
   // (in `Lira`): signing and reserialization operate on the TEL semantic model; this class is the
@@ -1153,7 +1154,7 @@ object Lira:
         if a.path == b.path
         then abort(Lira.Error(Reason.InvalidTree(t"the path ${a.path.text} appears twice")))
 
-      Lira.Tree(List.from(sorted))
+      Lira.Tree(sorted.to(List))
 
     // Parses and checks a Tree metadata blob: a TEL document under the `lira-tree` schema, whose
     // pragma carries that schema's signature.
@@ -1209,13 +1210,14 @@ object Lira:
         if order >= 0 then abort(Lira.Error(Reason.InvalidTree(detail)))
         index += 1
 
-      Lira.Tree(List.from(entries))
+      Lira.Tree(entries.to(List))
 
   // A section's mapping from paths to blobs (§9.2), with rows in ascending bytewise path order.
   case class Tree private(entries: List[TreeEntry]):
     lazy val index: scala.collection.immutable.Map[Text, TreeEntry] =
-      scala.collection.immutable.Map.from:
+      scala.collection.immutable.
         entries.stdlib.map: entry => (entry.path.text, entry)
+        . to(Map)
 
     def get(path: TreePath): Optional[TreeEntry] = index.get(path.text).getOrElse(Unset)
 

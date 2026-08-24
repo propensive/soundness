@@ -91,7 +91,7 @@ private[cataclysm] object SyntaxParser:
         acc.append(anyOf())
         ws()
 
-      if acc.size == 1 then acc.head else Css.Syntax.OneOf(List.of(acc.toList))
+      if acc.size == 1 then acc.head else Css.Syntax.OneOf(acc.toList.to(List))
 
     private def anyOf(): Css.Syntax =
       val acc = scala.collection.mutable.ListBuffer[Css.Syntax](allOf())
@@ -104,7 +104,7 @@ private[cataclysm] object SyntaxParser:
         acc.append(allOf())
         ws()
 
-      if acc.size == 1 then acc.head else Css.Syntax.AnyOf(List.of(acc.toList))
+      if acc.size == 1 then acc.head else Css.Syntax.AnyOf(acc.toList.to(List))
 
     private def allOf(): Css.Syntax =
       val acc = scala.collection.mutable.ListBuffer[Css.Syntax](sequence())
@@ -117,7 +117,7 @@ private[cataclysm] object SyntaxParser:
         acc.append(sequence())
         ws()
 
-      if acc.size == 1 then acc.head else Css.Syntax.AllOf(List.of(acc.toList))
+      if acc.size == 1 then acc.head else Css.Syntax.AllOf(acc.toList.to(List))
 
     private def sequence(): Css.Syntax =
       val acc = scala.collection.mutable.ListBuffer[Css.Syntax]()
@@ -128,7 +128,7 @@ private[cataclysm] object SyntaxParser:
         ws()
 
       if acc.isEmpty then unexpected()
-      if acc.size == 1 then acc.head else Css.Syntax.Sequence(List.of(acc.toList))
+      if acc.size == 1 then acc.head else Css.Syntax.Sequence(acc.toList.to(List))
 
     // A `|` that is not the start of a `||`.
     private def pipePipe(): Boolean =

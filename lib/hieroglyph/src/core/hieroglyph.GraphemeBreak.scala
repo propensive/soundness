@@ -70,7 +70,7 @@ object GraphemeBreak:
     ( in: ji.InputStream, classify: Text => Optional[Int] )
   :   List[Entry] =
 
-    List.of:
+
      scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*$name([A-Za-z_]+).*" =>
@@ -81,6 +81,7 @@ object GraphemeBreak:
 
         case _ =>
           None
+     . to(List)
 
   private def gbpClassify(name: Text): Optional[Int] =
     name.s.match
@@ -108,7 +109,7 @@ object GraphemeBreak:
     val Linker: Int = 2
 
   private def parseIncbEntries(in: ji.InputStream): List[Entry] =
-    List.of:
+
      scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.$rest(.*)" => rest match
@@ -122,6 +123,7 @@ object GraphemeBreak:
 
         case _ =>
           None
+     . to(List)
 
   private def incbClassify(name: Text): Optional[Int] = name.s match
     case "Consonant" => IncbValue.Consonant

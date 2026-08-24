@@ -561,15 +561,15 @@ derives CanEqual:
 
       if stdlibSteps.isEmpty then origin match
         case XPath.Origin.Filter(filtered, predicates) =>
-          val amended = XPath.Origin.Filter(filtered, List.of(predicates.stdlib :+ predicate))
+          val amended = XPath.Origin.Filter(filtered, (predicates.stdlib :+ predicate).to(List))
           XPath(XPath.Expression.Route(amended, Nil))
 
         case _ =>
           XPath(XPath.Expression.Route(XPath.Origin.Filter(expression, List(predicate)), Nil))
       else
         val lastStep = stdlibSteps.last
-        val amended = lastStep.copy(predicates = List.of(lastStep.predicates.stdlib :+ predicate))
-        XPath(XPath.Expression.Route(origin, List.of(stdlibSteps.init :+ amended)))
+        val amended = lastStep.copy(predicates = (lastStep.predicates.stdlib :+ predicate).to(List))
+        XPath(XPath.Expression.Route(origin, (stdlibSteps.init :+ amended).to(List)))
 
     case other =>
       XPath(XPath.Expression.Route(XPath.Origin.Filter(other, List(predicate)), Nil))
@@ -601,7 +601,7 @@ derives CanEqual:
 
     expression match
       case XPath.Expression.Route(origin, steps) =>
-        XPath(XPath.Expression.Route(origin, List.of(step :: steps.stdlib)))
+        XPath(XPath.Expression.Route(origin, (step :: steps.stdlib).to(List)))
 
       case _ =>
         this

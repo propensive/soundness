@@ -161,7 +161,7 @@ object Bytecode:
       val result: Optional[Frame] =
         if s.charAt(cursor) == 'V' then Unset else Frame.parseOne(descriptor, cursor)._1
 
-      Descriptor(List.of(argsBuf.toList), result)
+      Descriptor(argsBuf.toList.to(List), result)
 
   case class Descriptor(args: List[Frame], result: Optional[Frame])
 
@@ -1304,7 +1304,7 @@ object Bytecode:
       case 3 => rgb"#b31250"
       case _ => rgb"#777777"
 
-    def transform(stack0: List[Frame]): List[Frame] = List.of(transform0(stack0.stdlib))
+    def transform(stack0: List[Frame]): List[Frame] = transform0(stack0.stdlib).to(List)
 
     // The stack simulation stays a stdlib-list interior behind the opaque
     // `transform` bridge: chained cons expressions (`a :: b :: a :: rest`)
@@ -1521,7 +1521,7 @@ case class Bytecode
         . or(results += Bytecode.Linearized(depth, source, instr))
 
     expand(this, 0, t"")
-    List.of(results.toList)
+    results.toList.to(List)
 
   def effectivelyStaticCalls: Set[Int] = effectivelyStaticCalls0
 
@@ -1537,7 +1537,7 @@ case class Bytecode
         prev.let(builder += instr.offset -> _)
         prev = instr.stack
 
-      Map.of(builder.result())
+      builder.result().to(Map)
 
     instructions.stdlib.iterator.flatMap: instr =>
       val (owner, descriptor) = instr.opcode match
@@ -1554,4 +1554,4 @@ case class Bytecode
           case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)
           case _                                       => None
 
-    . toSet.pipe(Set.of(_))
+    . toSet.pipe(_.to(Set))

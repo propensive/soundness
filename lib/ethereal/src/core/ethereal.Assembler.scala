@@ -177,8 +177,8 @@ object Assembler:
     // unify with it), and a direct append-mode open rather than `Eof` (whose two-evidence
     // dependent `Result` chain has the same root problem). The read is strict (`to(List)`)
     // so nothing reads the closed handle.
-    val chunks = jarFile.open[File]()(List.from(file.reader().stdlib))
-    temporary.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(Chain.from(chunks.stdlib)))
+    val chunks = jarFile.open[File]()(file.reader().stdlib.to(List))
+    temporary.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(chunks.stdlib.to(Chain)))
 
     // Appending the JAR to the stub shifts every byte of it by the stub's length. ZIP offsets are
     // relative, so a reader recovers that shift by itself — except for the ZIP64 locator's pointer,

@@ -201,7 +201,7 @@ object internal:
 
   def response(headers: Expr[Seq[Any]]): Macro[Http.Response.Protoresponse | Http.Response] =
     headers.absolve.match
-      case Varargs(exprs) => List.of(exprs.toList).only:
+      case Varargs(exprs) => exprs.toList.to(List).only:
         case '{$value: valueType} :: Nil =>
           Expr.summon[(? >: valueType) is Servable].map: servable => '{$servable.serve($value)}
           . optional
@@ -215,4 +215,4 @@ object internal:
               case Unset                   => '{Unset}
               case expr: Expr[Http.Status] => expr
 
-            '{Http.Response.Protoresponse($status2, List.of($headers2.toList))}
+            '{Http.Response.Protoresponse($status2, ($headers2.toList).to(List))}

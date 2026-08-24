@@ -589,8 +589,9 @@ object Xml extends Tag.Container
       // generic-equality lookups, per occurrence) — jacinta's map hoist.
       val labels: List[Text] = variantLabels
 
-      val variantNames: Map[Text, Text] = Map.from:
+      val variantNames: Map[Text, Text] =
         variantRelabelling[derivation, Xml].stdlib.map: (variant, wire) => wire -> variant
+        . to(Map)
 
       xml =>
         provide[Foci[Xml.Focus]]:
@@ -1163,7 +1164,7 @@ object Xml extends Tag.Container
                 // zero occurrences build the empty collection, exactly as
                 // the AST derivation decodes an empty synthetic fragment.
                 val elements: List[Any] = values.readable(index) match
-                  case buffer: scm.ListBuffer[?] => List.of(buffer.toList)
+                  case buffer: scm.ListBuffer[?] => buffer.toList.to(List)
                   case _                         => Nil
 
                 values(index) =

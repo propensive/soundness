@@ -180,7 +180,7 @@ object Http:
     // owned material -- but it is consumed here and now, into a `Map`, and nothing writes to
     // an enum's `values`.
     private lazy val all: Map[Int, Status] =
-      Map.from(Array.unsafeFrozen(values).readable.bi.map(_.code -> _))
+      Array.unsafeFrozen(values).readable.bi.map(_.code -> _).to(Map)
 
     def unapply(code: Int): Option[Status] = all.stdlib.get(code)
 
@@ -717,9 +717,10 @@ object Http:
 
     lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
-    lazy val textCookies: Map[Text, Text] = Map.from:
+    lazy val textCookies: Map[Text, Text] =
       headers.cookie.stdlib.flatMap: (cookie: List[Cookie.Value]) =>
         cookie.stdlib.map { value => value.name -> value.value }
+      . to(Map)
 
   // The swappable transport that physically sends a single request and returns
   // its response. The URL is fully resolved (passed as `Text`) so non-JVM
@@ -772,7 +773,7 @@ object Http:
         Response
           ( 1.1,
             status0.or(response.status),
-            List.of(headers.stdlib ++ derived),
+            (headers.stdlib ++ derived).to(List),
             // `serve` returns a pure `Response`, so its body is pure; the seal only
             // discharges the field's capture-polymorphic declared type.
             caps.unsafe.unsafeAssumePure(response.body) )
@@ -836,7 +837,7 @@ object Http:
             else (Nil, false)
 
       val headers: List[Header] =
-        if !upgrade then List.of(response.textHeaders.stdlib ++ extraHeaders.stdlib) else
+        if !upgrade then (response.textHeaders.stdlib ++ extraHeaders.stdlib).to(List) else
           response.textHeaders.filter: header =>
             val key = header.key.lower
             key != t"transfer-encoding" && key != t"content-length"

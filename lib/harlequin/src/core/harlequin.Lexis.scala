@@ -115,7 +115,7 @@ object Lexis:
         line.stdlib.foreach: token =>
           lexeme(token).let(builder += _)
 
-    List.of(builder.result())
+    builder.result().to(List)
 
   // The completion prefix at `caret` — the identifier fragment touching it, `Unset` when the
   // caret does not follow an identifier character — and the reversed lexeme context that

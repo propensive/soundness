@@ -106,4 +106,4 @@ object BlobStream:
       previous = hash
       offset = decoded.next + length.toInt
 
-    Blobstore(List.from(blobs))
+    Blobstore(blobs.to(List))

@@ -111,7 +111,7 @@ enum Checklist:
 
           pad(e"$glyph $name")
 
-        if lines.isEmpty then List(pad(e"")) else List.of(lines.toList)
+        if lines.isEmpty then List(pad(e"")) else lines.toList.to(List)
 
       case Numbered =>
         val name = current.lay(t"")(_.name)

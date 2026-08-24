@@ -1916,7 +1916,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Period.union of overlapping periods is one period"):
         val a = Instant(0L) ~ Instant(2000L)
         val b = Instant(1000L) ~ Instant(3000L)
-        Set.from(a.union(b).stdlib.map { p => (p.start.long, p.finish.long) })
+        (a.union(b).stdlib.map { p => (p.start.long, p.finish.long) }).to(Set)
       . assert(_ == Set((0L, 3000L)))
 
       test(m"Period.union of disjoint periods is two periods"):

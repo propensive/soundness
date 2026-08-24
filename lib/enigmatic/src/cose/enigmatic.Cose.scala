@@ -166,7 +166,7 @@ object Cose:
           builder += Cose.Recipient(rp, Cbor.ast(ru), ra)
           index += 1
 
-        List.of(builder.result())
+        builder.result().to(List)
 
     new Cose
       ( protectedHeader, Cbor.ast(unprotectedAst), payload, contextString, tagNumber, recipients ):

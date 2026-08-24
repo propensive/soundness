@@ -255,4 +255,4 @@ case class Help
     val body: scala.List[Teletype] =
       header ::: sections.flatMap: (heading, rows) => e"" :: (heading ::: rows.flatMap(render))
 
-    List.of(body).join(e"\n")
+    body.to(List).join(e"\n")

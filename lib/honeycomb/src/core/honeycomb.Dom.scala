@@ -53,4 +53,4 @@ trait Dom extends Findable:
 
   def doctype: Doctype
   def infer(parent: Tag, child: Tag): Optional[Tag]
-  def generic: Tag = Tag.root(Set.from(elements.iterator.map(_.label)))
+  def generic: Tag = Tag.root(elements.iterator.map(_.label).to(Set))

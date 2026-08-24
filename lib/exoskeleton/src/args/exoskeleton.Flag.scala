@@ -103,7 +103,7 @@ extends Topical:
   :   Optional[Topic] =
 
     val mapping: Map[Text, Topic] =
-      Map.from(options.map { option => (suggestible.suggest(option).text, option) })
+      (options.map { option => (suggestible.suggest(option).text, option) }).to(Map)
 
     given interpretable: Topic is Interpretable =
       case List(value) => mapping(value())

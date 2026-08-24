@@ -81,8 +81,8 @@ case class Email(headers: Map[Text, Text], message: Email.Message) extends Docum
 
   def html: Optional[Text] = message.content.body.html
   def text: Optional[Text] = message.content.body.text
-  def inlines: List[Email.Inline] = List.from(message.content.inlines)
+  def inlines: List[Email.Inline] = message.content.inlines.to(List)
   def attachments: List[Asset] = message.attachments
 
   def attach[attachable: Attachable](attachment: attachable): Email =
-    copy(message = message.copy(attachments = List.of(attachments.stdlib :+ attachable.attachment(attachment))))
+    copy(message = message.copy(attachments = (attachments.stdlib :+ attachable.attachment(attachment)).to(List)))

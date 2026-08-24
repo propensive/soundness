@@ -82,7 +82,7 @@ object CtSym:
         if slash > 0 then name.substring(0, slash).nn.foreach: char =>
           decode(char).let { release => found += release }
 
-      List.from(found.toList)
+      found.toList.to(List)
 
     finally zip.close()
 
@@ -107,9 +107,10 @@ object CtSym:
         grouped.getOrElseUpdate(module, scala.collection.mutable.ListBuffer())
           += ((TreePath(Text(inner)), data))
 
-    List.from:
+
       grouped.toList.sortBy(_(0)).map: (module, entries) =>
-        (Text(module), List.from(entries.toList))
+        (Text(module), entries.toList.to(List))
+      . to(List)
 
   // The signature surface of one release: every `.sig` entry present in it, with the release
   // codes stripped from the path, so the tree reads `java.base/java/lang/Object.sig`.
@@ -140,7 +141,7 @@ object CtSym:
             stream.close()
             entries += ((TreePath(Text(inner)), Array.unsafeFrozen(bytes)))
 
-      List.from(entries.toList)
+      entries.toList.to(List)
 
     finally zip.close()
 
@@ -167,6 +168,6 @@ object HostArchive:
           stream.close()
           entries += ((TreePath(Text(name)), Array.unsafeFrozen(bytes)))
 
-      List.from(entries.toList)
+      entries.toList.to(List)
 
     finally zip.close()

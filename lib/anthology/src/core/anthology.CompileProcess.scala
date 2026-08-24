@@ -105,4 +105,4 @@ class CompileProcess():
   // The diagnostics reported so far, oldest first: a strict snapshot for post-hoc
   // inspection, complete once `complete()` has returned. Live consumers should prefer
   // `updates`.
-  def notices: List[Notice] = List.of(noticeList.stdlib.reverse)
+  def notices: List[Notice] = noticeList.stdlib.reverse.to(List)

@@ -53,7 +53,7 @@ extension (stackTrace: StackTrace)
         ( stackTrace.component,
           stackTrace.className,
           stackTrace.message,
-          List.of(stackTrace.frames.stdlib.map(resolver.resolve)),
+          stackTrace.frames.stdlib.map(resolver.resolve).to(List),
           stackTrace.cause.let(recur) )
 
     recur(stackTrace)

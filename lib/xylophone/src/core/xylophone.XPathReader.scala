@@ -433,7 +433,7 @@ private[xylophone] object XPathReader:
 
         case Token.DoubleSlash =>
           advance()
-          Expression.Route(Origin.Root, List.of(descendantStep :: parseRelative().stdlib))
+          Expression.Route(Origin.Root, (descendantStep :: parseRelative().stdlib).to(List))
 
         case token if startsStep(token) =>
           Expression.Route(Origin.Here, parseRelative())
@@ -450,7 +450,7 @@ private[xylophone] object XPathReader:
         advance()
         steps += parseStep()
 
-      List.of(steps.toList)
+      steps.toList.to(List)
 
     def parseStep(): Step =
       if !more then abort(Parse.Error(XPath, XPath.Position.at(here), XPath.Issue.ExpectedNodeTest))
@@ -537,7 +537,7 @@ private[xylophone] object XPathReader:
         predicates += parseOr()
         expect(Token.CloseBracket, XPath.Issue.ExpectedCloseBracket)
 
-      List.of(predicates.toList)
+      predicates.toList.to(List)
 
     def parseFilter(): Expression =
       val primary = parsePrimary()
@@ -547,7 +547,7 @@ private[xylophone] object XPathReader:
         val descend = current == Token.DoubleSlash
         advance()
         val rest = parseRelative()
-        val steps = if descend then List.of(descendantStep :: rest.stdlib) else rest
+        val steps = if descend then (descendantStep :: rest.stdlib).to(List) else rest
         Expression.Route(Origin.Filter(primary, predicates), steps)
       else if predicates.nil then primary
       else Expression.Route(Origin.Filter(primary, predicates), Nil)
@@ -594,7 +594,7 @@ private[xylophone] object XPathReader:
               arguments += parseOr()
 
             expect(Token.CloseParen, XPath.Issue.ExpectedCloseParen)
-            Expression.Call(prefix, local, List.of(arguments.toList))
+            Expression.Call(prefix, local, arguments.toList.to(List))
 
         case _ =>
           abort(Parse.Error(XPath, XPath.Position.at(here), XPath.Issue.ExpectedExpression))

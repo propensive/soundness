@@ -43,18 +43,18 @@ object Appendable:
   // Appending to a `List` copies all of it: O(n), so the instance demands the marker.
   given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearSize)
   =>  list is Appendable by element =
-    (list, element) => List.of(list.stdlib :+ element).asInstanceOf[list]
+    (list, element) => (list.stdlib :+ element).to(List).asInstanceOf[list]
 
   given sequence: [element, sequence <: Sequence[element]] => sequence is Appendable by element =
-    (sequence, element) => Sequence.of(sequence.stdlib :+ element).asInstanceOf[sequence]
+    (sequence, element) => Sequence.from(sequence.stdlib :+ element).asInstanceOf[sequence]
 
   // Lazily: nothing is forced by the append itself.
   given chain: [element] => Chain[element] is Appendable by element =
-    (chain, element) => Chain.of(chain.stdlib.appended(element))
+    (chain, element) => chain.stdlib.appended(element).to(Chain)
 
   // A `Set` has no ends, so `:+` is plain membership addition (the stdlib's `set + element`).
   given set: [element, set <: Set[element]] => set is Appendable by element =
-    (set, element) => Set.of(set.stdlib + element).asInstanceOf[set]
+    (set, element) => (set.stdlib + element).to(Set).asInstanceOf[set]
 
   // The frozen array is rebuilt in full: O(n), so the instance demands the marker.
   given frozenArray: [element: scala.reflect.ClassTag] => (complexity: Dysasymptotic.LinearSize)

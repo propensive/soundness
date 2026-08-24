@@ -47,7 +47,7 @@ object Atomization:
       if !seen.add(atom.key)
       then abort(Discipline.Error(discipline, Discipline.Error.Reason.Duplicate(atom.key)))
 
-    Atomization(discipline, List.from(sorted))
+    Atomization(discipline, sorted.to(List))
 
 // One discipline's atomization of one body of content: the atom set, sorted by ascending value
 // hash. Union across disciplines is well-defined because value hashes are domain-separated by

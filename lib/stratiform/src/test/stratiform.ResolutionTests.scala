@@ -82,7 +82,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
     val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
     val names = layeredSchema.layers.readable.toList.map(_.name)
     val byName = names.zip(layerHashes.stdlib).toMap
-    SchemaSignature.encode(List.of(base :: selection.stdlib.map(byName(_))))
+    SchemaSignature.encode((base :: selection.stdlib.map(byName(_))).to(List))
 
   private def pragma
     ( reference: Optional[Tel.Pragma.Reference] = Unset,
@@ -171,7 +171,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
         val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
         val hashes = layeredSchema.layers.readable.toList.map(_.name).zip(layerHashes.stdlib).toMap
         val swapped =
-          SchemaSignature.encode(List.of(base :: scala.List(hashes(t"gamma"), hashes(t"alpha"))))
+          SchemaSignature.encode((base :: scala.List(hashes(t"gamma"), hashes(t"alpha"))).to(List))
 
         capture[Tels.Resolution.Error]:
           SchemaSignature.verifySelection
@@ -183,7 +183,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
         val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
         val hashes = layeredSchema.layers.readable.toList.map(_.name).zip(layerHashes.stdlib).toMap
         val wrongBase =
-          SchemaSignature.encode(List.of(hashes(t"gamma") :: scala.List(hashes(t"alpha"))))
+          SchemaSignature.encode((hashes(t"gamma") :: scala.List(hashes(t"alpha"))).to(List))
 
         capture[Tels.Resolution.Error]:
           SchemaSignature.verifySelection

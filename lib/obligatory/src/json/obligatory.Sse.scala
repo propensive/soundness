@@ -190,7 +190,7 @@ object Sse:
         if current - start - 1 > capacity then abort(Error(Error.Reason.CapacityExceeded)) else
           ((start + 1) until current).map: index => spool.put(buffer(index%capacity))
 
-      Chain.from(spool.stream.records)
+      spool.stream.records.to(Chain)
 
 case class Sse
   ( event: Text           = "message",

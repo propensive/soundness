@@ -155,7 +155,7 @@ object ClassfileAtomizer:
           if member.visible && inherited && seen.add(member.selector)
           then result += ((member, false))
 
-    List.from(result.toList)
+    result.toList.to(List)
 
   // --- atoms --------------------------------------------------------------------------------
 
@@ -212,11 +212,12 @@ object ClassfileAtomizer:
     // this class for every member of its presented set, so each key is the class's name with
     // the member's selector appended.
     val abstracts =
-      if surface.isFinal then Nil else List.from:
+      if surface.isFinal then Nil else
         members.stdlib.collect:
           case (member, _) if member.abstrakt => t"${surface.name}${member.selector}"
 
         . sortBy(_.s)
+        . to(List)
 
     val encoding = hash: out =>
       tag(out, 'K')
@@ -254,4 +255,4 @@ object ClassfileAtomizer:
           members.stdlib.foreach: (member, _) =>
             atoms += memberAtom(surface.name, member, fold)
 
-    Outcome(List.from(atoms.toList), List.from(unresolved.toList))
+    Outcome(atoms.toList.to(List), unresolved.toList.to(List))

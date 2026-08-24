@@ -59,9 +59,10 @@ object PropertyDef:
 
     val entries = cp"/cataclysm/properties.json".read[Json].as[Map[Text, Entry]]
 
-    List.of:
+
      entries.stdlib.toList.map: (name, entry) =>
        PropertyDef(name, entry.syntax)
+     . to(List)
 
   // The same properties keyed by name in a `Dictionary` for fast lookup.
   lazy val all: Dictionary[PropertyDef] =

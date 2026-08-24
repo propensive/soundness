@@ -212,9 +212,10 @@ object Redraft:
     // Promote any ambiguous primary `+`/`-` marker to the forced `>`/`<` spelling.
     def deambiguate(directives: List[Directive]): List[Directive] =
       val ambiguous =
-        Set.from:
+
           analyze(directives, original, _ == _)(1).stdlib.collect:
             case Anomaly(line, _, Reason.Ambiguous) => line
+          . to(Set)
 
       if ambiguous.nil then directives
       else deambiguate:
@@ -233,7 +234,7 @@ object Redraft:
       case Context.Fixed(k) => Redraft(trim(resolved, k)*)
 
       case Context.Minimal =>
-        Redraft(minimize(resolved, original, List.from(diff.patch(original.to[List]).stdlib))*)
+        Redraft(minimize(resolved, original, diff.patch(original.to[List]).stdlib.to(List))*)
 
   private def trim(directives: List[Directive], k: Int): List[Directive] =
     val keep = directives.stdlib.map { case Directive.Keep(_) => false; case _ => true }.to(scala.Array)
@@ -260,7 +261,7 @@ object Redraft:
 
     def valid(candidate: List[Directive]): Boolean =
       val (edits, anomalies) = analyze(candidate, original, _ == _)
-      anomalies.nil && List.from(Diff(edits*).patch(original.to[List]).stdlib) == target
+      anomalies.nil && Diff(edits*).patch(original.to[List]).stdlib.to(List) == target
 
     val changes = array.indices.filter(!array(_).isInstanceOf[Directive.Keep])
 

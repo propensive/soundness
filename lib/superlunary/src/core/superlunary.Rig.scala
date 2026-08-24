@@ -199,7 +199,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             }
 
         val target = stage(out)
-        cache = Map.of(cache.stdlib.updated(key, (target, function)))
+        cache = (cache.stdlib.updated(key, (target, function))).to(Map)
 
         (target, function)
 

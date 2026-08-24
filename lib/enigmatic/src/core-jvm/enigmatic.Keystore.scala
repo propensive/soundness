@@ -66,7 +66,7 @@ object Keystore:
       val enumeration = keystore.aliases.nn
       val builder = scala.collection.immutable.List.newBuilder[Text]
       while enumeration.hasMoreElements do builder += enumeration.nextElement.nn.tt
-      List.of(builder.result())
+      builder.result().to(List)
 
     // The DER-encoded (X.509) certificate stored under `alias`, if any.
     def certificate(alias: Text): Optional[Data] =

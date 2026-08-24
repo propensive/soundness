@@ -72,7 +72,7 @@ object Inspection:
     failure.let: detail => abort(Inspection.Error(Reason.Unencodable(detail)))
     if !ok then abort(Inspection.Error(Reason.InspectionFailed(t"the compiler reported errors")))
 
-    List.from(result)
+    result.to(List)
 
   // DegustationError → Inspection.Error
   object Error:

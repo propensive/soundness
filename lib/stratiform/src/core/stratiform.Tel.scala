@@ -973,7 +973,7 @@ object Tel extends Tel2:
 
             if parsing.repeatable then
               val elements: List[Any] = values(index) match
-                case buffer: scala.collection.mutable.ListBuffer[?] => List.of(buffer.toList)
+                case buffer: scala.collection.mutable.ListBuffer[?] => buffer.toList.to(List)
                 case _                                              => Nil
 
               parsing match
@@ -1230,7 +1230,7 @@ object Tel extends Tel2:
 
         idx += 1
 
-      Map.of(builder.toMap)
+      builder.toMap.to(Map)
 
     private def atomAssignable(member: Tels.Member, schema: Tels): Boolean raises Tel.Error =
       member match
@@ -4166,7 +4166,7 @@ object Tel extends Tel2:
         recoverAt(Reason.MisplacedPragmaPhrase, line, firstLayerColumn, firstLayerLength):
           layerBuffer.clear()
 
-      Tel.Pragma(version, reference, List.of(layerBuffer.toList), signatureText, pragmaSigil)
+      Tel.Pragma(version, reference, layerBuffer.toList.to(List), signatureText, pragmaSigil)
 
     // `column` is the 1-indexed column of the version phrase within the pragma
     // line, so a malformed version is spanned at the phrase itself.
@@ -4236,7 +4236,7 @@ object Tel extends Tel2:
         parts += builder.toString
         offsets += start
 
-      (List.of(parts.toList), List.of(offsets.toList))
+      (parts.toList.to(List), offsets.toList.to(List))
 
     // ── Margin determination ─────────────────────────────────────────────────
 

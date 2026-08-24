@@ -47,17 +47,17 @@ object Tests extends Suite(m"Cataclysm Tests"):
   // ── CSS-structure helpers ───────────────────────────────────────────────
   def decl(key: Text, value: Text): Css.Node = Declaration(key, value)
   def at(name: Text, prelude: Text, body: Css.Node*): Css.Node =
-    At(name, prelude, proscenium.List.of(body.toList))
+    At(name, prelude, body.toList.to(proscenium.List))
 
   def rule(selector: Text, body: Css.Node*): Css.Node =
-    Rule(SelectorParser.parse(selector), List.of(body.toList))
+    Rule(SelectorParser.parse(selector), body.toList.to(List))
 
   // ── selector helpers ────────────────────────────────────────────────────
   def parse(text: Text): SelectorList = SelectorParser.parse(text)
-  def sl(parts: Selector*): SelectorList = SelectorList(List.of(parts.toList))
-  def cx(head: Compound, rest: (Combinator, Compound)*): Selector = Selector(Unset, head, List.of(rest.toList))
+  def sl(parts: Selector*): SelectorList = SelectorList(parts.toList.to(List))
+  def cx(head: Compound, rest: (Combinator, Compound)*): Selector = Selector(Unset, head, rest.toList.to(List))
   def rel(lead: Combinator, head: Compound): Selector = Selector(lead, head, Nil)
-  def cpd(parts: Simple*): Compound = Compound(List.of(parts.toList))
+  def cpd(parts: Simple*): Compound = Compound(parts.toList.to(List))
   def typ(name: Text): Simple = Simple.Type(Unset, name)
   def cls(name: Text): Simple = Simple.Class(Name[CssClass](name))
   def hid(name: Text): Simple = Simple.Id(Name[DomId](name))
@@ -559,11 +559,11 @@ object Tests extends Suite(m"Cataclysm Tests"):
       val css = t".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css]
 
       test(m"class names are collected, including nested and inside :not()"):
-        Set.from(css.classes.stdlib.map(name => name: Text))
+        css.classes.stdlib.map(name => name: Text).to(Set)
       . assert(_ == Set(t"a", t"c", t"d"))
 
       test(m"id names are collected, including nested"):
-        Set.from(css.ids.stdlib.map(name => name: Text))
+        css.ids.stdlib.map(name => name: Text).to(Set)
       . assert(_ == Set(t"b", t"f"))
 
     suite(m"CSS-checked attributions"):

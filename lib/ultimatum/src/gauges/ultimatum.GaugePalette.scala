@@ -97,10 +97,10 @@ trait GaugePalette extends Palette:
 
   // One background per step, for a ribbon of stages.
   def steps(count: Int): Sequence[Color in Srgb] =
-    Sequence.from:
+
       (0 until count).map: index =>
         lengthwise(if count <= 1 then 0.0 else index.toDouble/(count - 1))
-
+      . pipe(Sequence.from(_))
   def colorOf(standing: Standing): Color in Srgb = standing match
     case Standing.Succeeded => success
     case Standing.Failed    => danger

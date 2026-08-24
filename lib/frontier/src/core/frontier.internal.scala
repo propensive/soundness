@@ -508,14 +508,14 @@ object internal:
         Diagnostic.Found(name, Unset, proscenium.Nil)
 
       case Available(name, requirements) =>
-        Diagnostic.Propose(name, Unset, proscenium.List.of(requirements.map(toDiagnostic)))
+        Diagnostic.Propose(name, Unset, requirements.map(toDiagnostic).to(proscenium.List))
 
       case Candidate(name, _, missing) =>
-        Diagnostic.Candidate(name, Unset, proscenium.List.of(missing.map(toDiagnostic)))
+        Diagnostic.Candidate(name, Unset, missing.map(toDiagnostic).to(proscenium.List))
 
       case Missing(name, available, candidates) =>
         val children = available.map(toDiagnostic) ++ candidates.map(toDiagnostic)
-        Diagnostic.Requires(name, Unset, proscenium.List.of(children))
+        Diagnostic.Requires(name, Unset, children.to(proscenium.List))
 
     // Build the diagnostic tree rooted at the type Frontier was asked to
     // resolve, with its tried candidates and proposed alternatives beneath it.
@@ -525,7 +525,7 @@ object internal:
     // root is that deepest type — Frontier reports the innermost cause.
     def buildDiagnostic(missing: Missing): Diagnostic =
       val children = missing.available.map(toDiagnostic) ++ missing.candidates.map(toDiagnostic)
-      Diagnostic.Resolving(missing.name, Unset, proscenium.List.of(children))
+      Diagnostic.Resolving(missing.name, Unset, children.to(proscenium.List))
 
     // The transparent catch-all cannot emit a terminal error from inside the
     // nested implicit search where it fires (Dotty buffers and shadows it).

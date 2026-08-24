@@ -159,7 +159,7 @@ object Repackager:
             completed += group.size
             progress(completed, total)
 
-    (List.of(requirements.result()), List.of(inlined.result()))
+    (requirements.result().to(List), inlined.result().to(List))
 
 
   // Rewrites `inputJar` into `outputJar`: keeps the application's own classes,
@@ -219,7 +219,7 @@ object Repackager:
           depsData.lest(RepackageError(m"the JAR has no $resource resource")).utf8
           . cut(t"\n").filter(_ != t"")
 
-        val ownEntries: List[Zip.Entry] = List.of(ownBuilder.result())
+        val ownEntries: List[Zip.Entry] = ownBuilder.result().to(List)
         val (requirements, inlined) = partition(hashes, resolve, cached, progress)
 
         // Published dependencies are downloaded and added to the classpath at runtime, so
@@ -258,7 +258,7 @@ object Repackager:
         // carries `burdock/Bootstrap.class`), and a bundled class over an inlined cache copy.
         // Without this, `Zipfile.write` rejects the duplicate entry.
         val entries: List[Zip.Entry] =
-          List.of((bootstrap :: keptEntries.stdlib ++ inlined.stdlib).distinctBy(_.ref.show))
+          ((bootstrap :: keptEntries.stdlib ++ inlined.stdlib).distinctBy(_.ref.show)).to(List)
 
         Zipfile.write(outputJar)((manifestEntry :: entries).stdlib)
 

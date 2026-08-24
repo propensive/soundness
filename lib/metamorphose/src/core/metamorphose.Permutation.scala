@@ -124,11 +124,11 @@ case class Permutation(factoradic: Factoradic):
       lehmer match
         case head :: tail =>
           if current == head
-          then recur(tail, prefix, List.of(list.stdlib.tail), current, list.stdlib.head :: result)
+          then recur(tail, prefix, list.stdlib.tail.to(List), current, list.stdlib.head :: result)
           else
             if current < head
-            then recur(lehmer, list.stdlib.head :: prefix, List.of(list.stdlib.tail), current + 1, result)
-            else recur(lehmer, List.of(prefix.stdlib.tail), prefix.stdlib.head :: list, current - 1, result)
+            then recur(lehmer, list.stdlib.head :: prefix, list.stdlib.tail.to(List), current + 1, result)
+            else recur(lehmer, prefix.stdlib.tail.to(List), prefix.stdlib.head :: list, current - 1, result)
 
         case Nil =>
           result.reverse

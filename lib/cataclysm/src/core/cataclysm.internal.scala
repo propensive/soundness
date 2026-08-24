@@ -112,7 +112,7 @@ object internal:
 
           val position =
             Interpolation.sourcePosition
-              (List.of(parts), Interpolation.decodeOrigins[origins], 1, offset)
+              (parts.to(List), Interpolation.decodeOrigins[origins], 1, offset)
 
           halt(cssError.message, position)
 
@@ -187,7 +187,7 @@ object internal:
         lift(value)
 
     def listExpr(nodes: List[Css.Node]): Expr[List[Css.Node]] =
-      '{List.of(${Expr.ofList(nodes.stdlib.map(nodeExpr))})}
+      '{(${Expr.ofList(nodes.stdlib.map(nodeExpr))}).to(List)}
 
     def nodeExpr(node: Css.Node): Expr[Css.Node] = node match
       case Css.Node.Rule(selector, body) =>
@@ -228,7 +228,7 @@ object internal:
     // is a stylesheet (`Css`). The `transparent inline` interpolator returns whichever.
     val result: Expr[Css | Css.Style] =
       if css.rules.stdlib.nonEmpty && css.rules.stdlib.forall(isDeclaration)
-      then '{Css.Style.of(List.of(${Expr.ofList(css.rules.stdlib.map(stylePair))}))}
+      then '{Css.Style.of((${Expr.ofList(css.rules.stdlib.map(stylePair))}).to(List))}
       else '{Css(${listExpr(css.rules)})}
 
     if holeIndex != insertions.length
@@ -259,7 +259,7 @@ object internal:
         scala.collection.immutable.Nil
 
     properties match
-      case Varargs(exprs) => '{Css.Style.of(List.of(${Expr.ofList(recur(exprs))}))}
+      case Varargs(exprs) => '{Css.Style.of((${Expr.ofList(recur(exprs))}).to(List))}
       case _              => '{Css.Style.of(Nil)}
 
   // The VDS type a `Css.Convertible` instance tags its values with (or "" if none).

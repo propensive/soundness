@@ -77,7 +77,7 @@ class Relay[record]():
       case Relay.Termination => Chain()
       case value             => value.asInstanceOf[record] #:: pull()
 
-    Chain.of(Chain().stdlib.lazyAppendedAll(pull().stdlib))
+    (Chain().stdlib.lazyAppendedAll(pull().stdlib)).to(Chain)
 
   // The pull endpoint over this relay's records: single-owner, drained by one
   // thread; create it once. Records arriving after `stop` are not delivered.

@@ -172,11 +172,11 @@ object Html extends Tag.Container
       type Operand = Text
 
       def aggregate(input: Chain[Text]): Html of content =
-        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
         HtmlParser.fromIterator(input.stdlib.iterator, permissive = false).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
-        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
         HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
   given strictAggregable2: (dom: Dom, tactic: Tactic[Parse.Error])
@@ -229,14 +229,14 @@ object Html extends Tag.Container
 
       def aggregate(input: Chain[Text]): Html of content =
         given Tactic[Parse.Error] = lenientTactic
-        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
 
         lenient(Fragment().of[content]):
           HtmlParser.fromIterator(input.stdlib.iterator, permissive = true).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
         given Tactic[Parse.Error] = lenientTactic
-        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
 
         lenient(Fragment().of[content]):
           HtmlParser.fromStream(stream, permissive = true).parseHtml(root).of[content]

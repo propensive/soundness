@@ -130,7 +130,7 @@ trait Decomposable2 extends Decomposable3:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
         val map =
-          Map.from((fields(value) { [field] => field => label -> contextual.decomposition(field) }).readable)
+          ((fields(value) { [field] => field => label -> contextual.decomposition(field) }).readable).to(Map)
 
         Decomposition.Product(typeName, map, value)
 

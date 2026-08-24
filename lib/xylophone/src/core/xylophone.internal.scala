@@ -1076,12 +1076,12 @@ object internal:
             i += 2
             pair
 
-      def toMap: Map[Text, Text] = Map.of:
+      def toMap: Map[Text, Text] =
         val a = storage(attrs)
 
         // `VectorMap` (the `Ledger` substrate), so the wrapped `Map` still iterates its
         // attributes in document order.
-        if a.length == 0 then VectorMap.empty else
+        if a.length == 0 then Map.from(VectorMap.empty[Text, Text]) else
           val b = VectorMap.newBuilder[Text, Text]
           var i = 0
 
@@ -1089,7 +1089,7 @@ object internal:
             b += ((a(i).asInstanceOf[Text], a(i + 1).asInstanceOf[Text]))
             i += 2
 
-          b.result()
+          Map.from(b.result())
 
       def toList: List[(Text, Text)] =
         val a = storage(attrs)
@@ -1720,7 +1720,7 @@ object internal:
                             ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing],
                               $bufferExpr match
                                 case null   => proscenium.Nil
-                                case buffer => proscenium.List.of(buffer.toList) )
+                                case buffer => buffer.toList.to(proscenium.List) )
                       }.asTerm )
 
                 If('{ $repeatables.readUnchecked(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)

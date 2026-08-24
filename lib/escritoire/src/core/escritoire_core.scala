@@ -106,9 +106,9 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[textual] =
 
-      Sequence.of:
-        lines.readable.to(IndexedSeq).bind(Flow.wrap(_, width).stdlib.to(List)).toVector
 
+        lines.readable.to(IndexedSeq).bind(Flow.wrap(_, width).stdlib.to(List)).toVector
+        . pipe(Sequence.from(_))
   object ParagraphOrBreak extends Columnar:
     // Elastic between a single cell and its natural width: the strategy prefers word
     // wrapping but will chop mid-word rather than overflow, so it has no min-content floor.
@@ -128,9 +128,9 @@ package columnar:
 
       if columnMetrics(lines).min < width then Paragraph.fit(lines, width, textAlign)
       else
-        Sequence.of:
-          lines.readable.to(IndexedSeq).bind(Flow.chop(_, width).stdlib.to(List)).toVector
 
+          lines.readable.to(IndexedSeq).bind(Flow.chop(_, width).stdlib.to(List)).toVector
+          . pipe(Sequence.from(_))
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def flex[text: Textual { type Result = Char }](lines: Array[text]^{}, maxWidth: Int)
       ( using Text is Measurable )
@@ -144,7 +144,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.of(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
+      Sequence.from(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     // Elastic between one cell and its natural width, truncating whatever exceeds the
@@ -163,7 +163,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.of(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
+      Sequence.from(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
 
   case class Collapsible(threshold: Double) extends Columnar:
     // Rigid at its natural width, but drops from the table entirely when space runs out;
@@ -181,4 +181,4 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.of(lines.readable.toVector)
+      Sequence.from(lines.readable.toVector)

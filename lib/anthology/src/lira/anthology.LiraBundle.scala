@@ -78,4 +78,4 @@ object LiraBundle:
 
       . sortBy(_(0).text.s)
 
-    LiraAssembler.SectionInput(universe, List.from(content))
+    LiraAssembler.SectionInput(universe, content.to(List))

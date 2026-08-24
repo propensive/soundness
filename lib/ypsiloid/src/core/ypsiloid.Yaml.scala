@@ -2423,7 +2423,7 @@ object Yaml extends Yaml2, Dynamic:
             lastDocEndedWithFooter = consumeOptionalDocumentEnd()
             firstDoc = false
 
-      List.of(docs.toList)
+      List.from(docs)
 
     // Tracked variant of `parseAll`: parses every document like `parseAll`
     // but also captures a per-document `PositionIndex` for the
@@ -2511,7 +2511,7 @@ object Yaml extends Yaml2, Dynamic:
               lastDocEndedWithFooter = consumeOptionalDocumentEnd()
               firstDoc = false
 
-        List.of(docs.toList)
+        List.from(docs)
 
     // Consume `---` if at the current position. Returns true if consumed.
     // Per spec the marker requires either a following line-boundary

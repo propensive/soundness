@@ -63,7 +63,7 @@ object Elicitable extends Elicitable2:
     def widget(id: Text, label: Text, value: Text): Combobox =
       Combobox
         ( id,
-          List.from(enumerable.values.readable.toSeq.map(enumerable.name(_))),
+          (enumerable.values.readable.toSeq.map(enumerable.name(_))).to(List),
           value )
 
   given reference: [entity <: Entity: {Listable, Showable, Referenceable}]

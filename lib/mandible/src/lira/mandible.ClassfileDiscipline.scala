@@ -84,7 +84,7 @@ object ClassfileDiscipline extends Discipline:
 
     . to(scala.collection.immutable.Map)
 
-    val outcome = ClassfileAtomizer.atomize(Map.of(classes), context.classpath)
+    val outcome = ClassfileAtomizer.atomize(classes.to(Map), context.classpath)
 
     // An unresolvable supertype is fatal, never skipped: its member set is unknown, so the
     // presented set of everything below it is understated, and an understated interface is a

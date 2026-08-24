@@ -75,10 +75,11 @@ private[probably] object Documenting:
       List(Entry.Kind.Check, Entry.Kind.Bench, Entry.Kind.Stress, Entry.Kind.Profile)
       . flatMap(suiteGroups(report.lines, _))
 
-    val failures = List.of:
+    val failures =
       report.details.toList.sortBy(_(0).timestamp).map:
         (pair: (Test.Id, scala.collection.mutable.ArrayBuffer[Verdict.Detail])) =>
           (pair(0), pair(1).to(List))
+      . to(List)
 
     Document
       ( results,
@@ -100,9 +101,10 @@ private[probably] object Documenting:
   private def summaries(line: ReportLine, measurements: Boolean): List[SummaryRow] =
     line match
       case ReportLine.Suite(suite, tests) =>
-        val rest: List[SummaryRow] = List.of:
+        val rest: List[SummaryRow] =
           tests.list.stdlib.sortBy(_(0).timestamp).flatMap: (_, line) =>
             summaries(line, measurements).stdlib
+          . to(List)
 
         if suite.absent || rest.nil && !measurements then rest
         else SummaryRow(Status.Suite, suite.option.get.id, 0, 0L, 0L, 0L) :: rest
@@ -118,7 +120,7 @@ private[probably] object Documenting:
           if verdicts.isEmpty then Nil else
             val durations = verdicts.map(_.duration)
             val avg = durations.sum/durations.length
-            val status = verdictStatus(List.of(verdicts))
+            val status = verdictStatus(verdicts.to(List))
 
             List
               ( SummaryRow
@@ -140,12 +142,12 @@ private[probably] object Documenting:
     else Status.Mixed
 
   private def cellStatus(cell: Tally): Status =
-    verdictStatus(List.of(cell.runs.stdlib.flatMap(_.verdict.option)))
+    verdictStatus(cell.runs.stdlib.flatMap(_.verdict.option).to(List))
 
   // Measurement entries group by their immediate suite, one `Group` per suite and kind, in
   // declaration order; nested suites follow their parents.
   private def suiteGroups(line: ReportLine.Suite, kind: Entry.Kind): List[Group] =
-    val children = List.of(line.tests.list.stdlib.sortBy(_(0).timestamp))
+    val children = (line.tests.list.stdlib.sortBy(_(0).timestamp)).to(List)
 
     val entries = children.flatMap: (_, child) =>
       child.absolve match
@@ -251,7 +253,7 @@ private[probably] object Documenting:
 
     val table =
       if plain.nil then Nil else
-        val rows = List.of:
+        val rows =
           plain.stdlib.flatMap: entry =>
             entry.cells.stdlib.take(1).flatMap: (_, cell) =>
               run(cell).option.map: run0 =>
@@ -259,6 +261,7 @@ private[probably] object Documenting:
                 (metric(run0, Metric.Throughput).or(0.0), lead + benchMetricCells(run0, sized))
 
           . sortBy(-_(0)).map(x => (x(1)): List[Datum])
+          . to(List)
 
         List(Block.Table
           ( Unset,
@@ -310,7 +313,7 @@ private[probably] object Documenting:
       val comparisonColumns: List[Column] = anchored.lay(Nil): (anchor, _) =>
         List(Column(t"×${anchor.value.text}", numeric = true))
 
-      val rows = List.of:
+      val rows =
         entry.values(axis).stdlib.flatMap: value =>
           cells(List(value)).option.flatMap: cell =>
             run(cell).option.map: run0 =>
@@ -318,6 +321,7 @@ private[probably] object Documenting:
                 List(relative(anchor, anchorRun, run0))
 
               (Datum.Str(value.text) :: benchMetricCells(run0, sized) + comparison): List[Datum]
+        . to(List)
 
       List(Block.Table
         ( entry.id,
@@ -342,7 +346,7 @@ private[probably] object Documenting:
     case axis :: Nil =>
       val cells = entry.cells.to[Map]
 
-      val rows = List.of:
+      val rows =
         entry.values(axis).stdlib.flatMap: value =>
           cells(List(value)).option.map: cell =>
             val durations = cell.runs.stdlib.flatMap(_.verdict.option).map(_.duration)
@@ -350,6 +354,7 @@ private[probably] object Documenting:
             val time = if avg == 0L then Datum.Blank else Datum.Time(avg)
 
             List(Datum.Str(value.text), Datum.Mark(cellStatus(cell)), time)
+        . to(List)
 
       Block.Table
         ( entry.id,
@@ -435,7 +440,7 @@ private[probably] object Documenting:
           index.lay(None): ordinal =>
             address.stdlib(ordinal.n0).numeric.option.map(_.toLong -> run0)
 
-      entry -> Map.of(points.toMap)
+      entry -> points.toMap.to(Map)
 
     val steps: List[Long] =
       val all = curves.stdlib.flatMap(_(1).stdlib.keys)
@@ -444,7 +449,7 @@ private[probably] object Documenting:
         if curves.stdlib.length < 2 then all.distinct
         else all.groupBy(identity).filter(_(1).length > 1).keys.toList
 
-      List.of((if shared.length > 1 then shared else all.distinct).sorted)
+      ((if shared.length > 1 then shared else all.distinct).sorted).to(List)
 
     val sparkline =
       if steps.size < 2 then Nil else
@@ -489,9 +494,10 @@ private[probably] object Documenting:
     // separate entry — so the implementations being compared are exactly the group's
     // entries, and the winner is the entry whose best throughput is highest. Each is shown
     // as a fraction of that throughput, which makes the winner's own ratio 1, rendered as ★.
-    val peaks: List[(Entry, Long, Run)] = List.of:
+    val peaks: List[(Entry, Long, Run)] =
       curves.stdlib.flatMap: (entry, curve) =>
         peak(curve).option.map { (n, run0) => (entry, n, run0) }
+      . to(List)
 
     val best: Double =
       peaks.stdlib.map { point => throughput(point(2)) }.maxOption.getOrElse(0.0)
@@ -513,7 +519,7 @@ private[probably] object Documenting:
           + (if latencies then List(Column(t"p99", numeric = true)) else Nil: List[Column])
           + sloColumns
 
-        val summaryRows = List.of:
+        val summaryRows =
           peaks.stdlib.sortBy { point => -throughput(point(2)) }.map: point =>
             val (entry, n, run0) = point
 
@@ -529,6 +535,7 @@ private[probably] object Documenting:
             val latency: List[Datum] = if latencies then List(optionalTime(run0, Metric.P99)) else Nil
 
             (lead + ratio + alloc + latency + sloCells(run0)): List[Datum]
+          . to(List)
 
         List(Block.Table(Unset, summaryColumns, summaryRows))
 
@@ -559,7 +566,7 @@ private[probably] object Documenting:
 
     val columns = leadColumns + latencyColumns + sloColumns + tailColumns
 
-    val rows = List.of:
+    val rows =
       curves.stdlib.flatMap: (entry, curve) =>
         curve.stdlib.toList.sortBy(_(0)).map: (n, run0) =>
             val latencyCells =
@@ -588,6 +595,7 @@ private[probably] object Documenting:
                   Datum.Time(metric(run0, Metric.GcTime).or(0.0).toLong) )
 
             lead + latencyCells + sloCells(run0) + tail
+      . to(List)
 
     (sparkline + summary, List(Block.Table(Unset, columns, rows)))
 

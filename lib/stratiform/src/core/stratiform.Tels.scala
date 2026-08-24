@@ -497,7 +497,7 @@ object Tels extends Tels2:
 
           if !found then abort(Tel.Error(Reason.LayerOrderMismatch))
 
-      List.of(chosen.toList)
+      chosen.toList.to(List)
 
     // Top-level entry: applies every layer in `schema.layers` to the
     // schema's base, returning a composed Schema with empty `layers`.

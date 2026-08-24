@@ -159,10 +159,10 @@ object Installer:
             // outer handle's; see `Assembler.assemble`). The read is strict, so nothing
             // reads the closed handle.
             val chunks = service.executable.open[File]():
-              source ?=> List.from(source.reader().stdlib)
+              source ?=> source.reader().stdlib.to(List)
 
             tempFile.open[File](Write, OpenFlag.Create): target ?=>
-              val stream = Chain.from(chunks.stdlib)
+              val stream = chunks.stdlib.to(Chain)
 
               if prefixSize > 0.b
               then target.write(stream.take(prefixSize) #::: stream.drop(fileSize - jarSize))

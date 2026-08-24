@@ -70,7 +70,7 @@ object SumDerivation:
     protected inline def variantLabels[derivation](using reflection: SumReflection[derivation])
     :   List[Text] =
 
-      List.of(constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt))
+      constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt).to(List)
 
 
     // A value-less fold over every variant of the sum — the sum analogue of `contexts` — yielding

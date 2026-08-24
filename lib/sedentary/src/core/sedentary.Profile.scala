@@ -168,9 +168,10 @@ extends Rig:
             . sortBy(-_(1))
             . take(${Expr(frames2)})
 
-          List.of:
+
             total.toString.tt :: sorted.map: (key, count) =>
               (count.toString + "\t" + key).tt
+            . to(List)
         }
 
     if !runner.skip(testId, Entry.Kind.Profile, Nil) then

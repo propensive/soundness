@@ -61,7 +61,7 @@ object internal:
   def mMacro[param: Type](context: Expr[StringContext], subs: Expr[param]): Macro[Message] =
     import quotes.reflect.*
 
-    val parts: List[String] = List.from(context.valueOrAbort.parts)
+    val parts: List[String] = context.valueOrAbort.parts.to(List)
 
     def parseUnicode(part: String, current: Int): Char =
       if current + 4 > part.length
@@ -105,12 +105,12 @@ object internal:
     then report.errorAndAbort("the m\"\" interpolator has an unmatched backtick")
 
     def toMessage(items: List[String | Expr[Message]]): Expr[Message] =
-      val texts: List[String] = List.of(items.stdlib.collect { case text: String => text })
-      val msgs:  List[Expr[Message]] = List.of(items.stdlib.collect { case expr: Expr[Message] @unchecked => expr })
+      val texts: List[String] = (items.stdlib.collect { case text: String => text }).to(List)
+      val msgs:  List[Expr[Message]] = (items.stdlib.collect { case expr: Expr[Message] @unchecked => expr }).to(List)
       val textsExpr: Expr[List[Text]] =
-        '{List.of(${Expr.ofList(texts.stdlib.map { text => '{${Expr(text)}.tt} })})}
+        '{(${Expr.ofList(texts.stdlib.map { text => '{${Expr(text)}.tt} })}).to(List)}
 
-      '{Message($textsExpr, List.of(${Expr.ofList(msgs.stdlib)}))}
+      '{Message($textsExpr, (${Expr.ofList(msgs.stdlib)}).to(List))}
 
 
     def sequence(group: String, startIndex: Int, subListRef: Expr[List[Message]])
@@ -118,13 +118,14 @@ object internal:
 
       val segments = group.split("\u0000", -1).nn.map(_.nn).iterator.to(List)
 
-      val items: List[String | Expr[Message]] = List.of:
+      val items: List[String | Expr[Message]] =
         segments.stdlib.zipWithIndex.flatMap: (segment, index) =>
           val text = decode(segment)
 
           if index < segments.stdlib.size - 1
           then List(text, '{$subListRef.stdlib(${Expr(startIndex + index)})}).stdlib
           else List(text).stdlib
+        . to(List)
 
       (items, startIndex + segments.stdlib.size - 1)
 
@@ -135,7 +136,7 @@ object internal:
           val (groups, nextIndex) = sequence(group, index, subListRef)
           val addition = if i % 2 == 0 then groups else List(toMessage(groups))
 
-          (List.of(accumulator.stdlib ::: addition.stdlib), nextIndex)
+          ((accumulator.stdlib ::: addition.stdlib).to(List), nextIndex)
 
       toMessage(items)
 

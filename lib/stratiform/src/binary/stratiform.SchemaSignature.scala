@@ -122,7 +122,7 @@ object SchemaSignature:
 
     val layerHashes: List[Data] =
       layerStruct.let: ls =>
-        val hashes = List.of(layerChildren.readable.toList).map: layer =>
+        val hashes = layerChildren.readable.toList.to(List).map: layer =>
           val layerChildren = layer.asInstanceOf[Tel.Element.Node].children
           val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
           Blake3.hashOf(layerRoot.bintel(axiom), cadence.hashSize)
@@ -223,8 +223,8 @@ object SchemaSignature:
     val hinted = layers.stdlib.filter { (name, _) => selection.stdlib.contains(name) }.map(_(1))
     val full = layers.stdlib.map(_(1))
 
-    safely(decode(signature, base :: List.of(hinted)))
-    . or(safely(decode(signature, base :: List.of(full))))
+    safely(decode(signature, base :: hinted.to(List)))
+    . or(safely(decode(signature, base :: full.to(List))))
 
   private def same(a: Data, b: Data): Boolean =
     a.length == b.length && {
@@ -264,7 +264,7 @@ object SchemaSignature:
     if foundCount != expectedCount
     then abort(Tels.Resolution.Error(Reason.ComponentCount(expectedCount, foundCount)))
 
-    val expected = encode(base :: List.of(chosen))
+    val expected = encode(base :: chosen.to(List))
 
     if !same(expected, signature) then
       // Decompose the claimed signature over the schema's full

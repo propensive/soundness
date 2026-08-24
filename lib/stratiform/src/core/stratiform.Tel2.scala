@@ -360,9 +360,10 @@ trait Tel2 extends Tel3:
         val fields: List[(Text, Morphology)] =
           // Not `to[List]`: inline re-elaboration freshens the array, so the conversion
           // goes through the underlying `IArray`.
-          List.of:
+
             contexts[derivation](): [field] => context => (label, context.shape())
             . readable.toList
+            . to(List)
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -438,8 +439,9 @@ trait Tel2 extends Tel3:
       // call, whose profile it dominated (map building plus generic-equality
       // lookups, per occurrence) — jacinta's map hoist.
       val labels: Map[Text, Text] =
-        Map.from:
+
           variantLabels.stdlib.map: label => Tel.camelToKebab(label.s) -> label
+          . to(Map)
 
       Tel.Decodable(() => Morphology.Any):
         telVal =>
@@ -481,9 +483,10 @@ trait Tel2 extends Tel3:
           val fields: List[(Text, Morphology)] =
             // See `shape` above: not `to[List]`, because inline re-elaboration freshens
             // the array.
-            List.of:
+
               contexts[derivation](): [field] => context => (label, context.shape())
               . readable.toList
+              . to(List)
 
           Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
 
@@ -563,7 +566,7 @@ trait Tel2 extends Tel3:
                             ( if child.atoms.length == 0 then t""
                               else Positional.text(child.atoms.readUnchecked(0)) )
 
-                        members += Mutation.Member.Value(keyword, List.of(texts.toList))
+                        members += Mutation.Member.Value(keyword, texts.toList.to(List))
 
                 case Tel.Nature.Struct =>
                   val encoded = contextual.constructed(fieldValue)
@@ -584,14 +587,14 @@ trait Tel2 extends Tel3:
         // The canonical child form: this record's compound with its §22.2
         // leading inline run, for embedding under a keyword.
         override def constructed(value: derivation^{}): Tel =
-          Tel.make(Mutation.construct(t"", List.of(membersOf(value)), '#'))
+          Tel.make(Mutation.construct(t"", membersOf(value).to(List), '#'))
 
         // The canonical document form: the root carries no atoms (§20.2),
         // so a leading `Break` suppresses the root's own run while nested
         // records keep theirs.
         override def canonicalized(value: derivation^{}): Tel =
           val compound =
-            Mutation.construct(t"", List.of(Mutation.Member.Break :: membersOf(value)), '#')
+            Mutation.construct(t"", (Mutation.Member.Break :: membersOf(value)).to(List), '#')
 
           Tel.make(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, compound.children))
 

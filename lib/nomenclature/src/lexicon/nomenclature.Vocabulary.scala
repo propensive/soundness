@@ -52,7 +52,7 @@ object Vocabulary:
     new Vocabulary(load(adjectives), load(animals)).asInstanceOf[Vocabulary over transport]
 
   private def load[source: Streamable by Data over Credit](resource: source): List[Text] =
-    List.of(resource.read[Text].cut(t"\n").stdlib.map(_.trim).filter(_ != t""))
+    resource.read[Text].cut(t"\n").stdlib.map(_.trim).filter(_ != t"").to(List)
 
 class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   type Transport
@@ -60,8 +60,8 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   private val adjectiveArray: Array[Text]^{} = Array.from(adjectives.stdlib)
   private val animalArray:    Array[Text]^{} = Array.from(animals.stdlib)
   private val animalCount:    Int          = animals.size
-  private val adjectiveIndex: Map[Text, Int] = Map.from(adjectives.stdlib.zipWithIndex)
-  private val animalIndex:    Map[Text, Int] = Map.from(animals.stdlib.zipWithIndex)
+  private val adjectiveIndex: Map[Text, Int] = adjectives.stdlib.zipWithIndex.to(Map)
+  private val animalIndex:    Map[Text, Int] = animals.stdlib.zipWithIndex.to(Map)
 
   def size: Int = adjectiveArray.length*animalCount
 

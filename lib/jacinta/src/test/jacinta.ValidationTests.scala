@@ -102,7 +102,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
       test(m"Pointers identify the missing fields"):
         val json = t"""{"name": "Alice"}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+        validateJson(json)(_.as[VPerson]).items.map(_(0).s).pipe(xs => xs.stdlib.to(Set))
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Each missing-field error has reason Absent"):
@@ -124,7 +124,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
       test(m"Pointers identify the wrong-type fields"):
         val json = t"""{"name": 42, "age": "thirty", "email": "x@y"}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+        validateJson(json)(_.as[VPerson]).items.map(_(0).s).pipe(xs => xs.stdlib.to(Set))
       . assert(_ == Set("#/name", "#/age"))
 
       test(m"Wrong-type errors have reason NotType"):
@@ -143,26 +143,26 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
     suite(m"Missing and wrong-type mixed"):
       test(m"One wrong-type + two missing: three errors at the right pointers"):
         val json = t"""{"name": 42}""".read[Json]
-        validateJson(json)(_.as[VPerson]).items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+        validateJson(json)(_.as[VPerson]).items.map(_(0).s).pipe(xs => xs.stdlib.to(Set))
       . assert(_ == Set("#/name", "#/age", "#/email"))
 
     suite(m"Nested case-class errors"):
       test(m"Nested object's missing field reports both segments"):
         val json = t"""{"person": {"name": "X", "age": 1, "email": "y@z"},
                         "address": {"street": "S"}}""".read[Json]
-        validateJson(json)(_.as[VContact]).items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+        validateJson(json)(_.as[VContact]).items.map(_(0).s).pipe(xs => xs.stdlib.to(Set))
       . assert(_ == Set("#/address/city", "#/address/zip"))
 
       test(m"Nested wrong-type field reports both segments"):
         val json = t"""{"person": {"name": "C", "age": 25, "email": "c@x"},
                         "address": {"street": "X", "city": 999, "zip": "Z"}}""".read[Json]
-        validateJson(json)(_.as[VContact]).items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+        validateJson(json)(_.as[VContact]).items.map(_(0).s).pipe(xs => xs.stdlib.to(Set))
       . assert(_ == Set("#/address/city"))
 
       test(m"Mixed errors at different depths accrue together"):
         val json = t"""{"person": {"name": "D"},
                         "address": {"street": "X", "city": "Y", "zip": "Z"}}""".read[Json]
-        validateJson(json)(_.as[VContact]).items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+        validateJson(json)(_.as[VContact]).items.map(_(0).s).pipe(xs => xs.stdlib.to(Set))
       . assert(_ == Set("#/person/age", "#/person/email"))
 
       test(m"Errors accumulate across both nested objects"):
@@ -207,7 +207,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
       test(m"The missing-discriminator error and its sibling report their pointers"):
         val json = t"""{"shape": {"radius": 3}, "name": 42}""".read[Json]
-        validateJson(json)(_.as[VMix]).items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+        validateJson(json)(_.as[VMix]).items.map(_(0).s).pipe(xs => xs.stdlib.to(Set))
       . assert(_ == Set("#/shape", "#/name"))
 
     suite(m"Streaming-parse accrual"):
@@ -228,7 +228,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
 
       test(m"Pointers identify both missing fields on the direct-parse path"):
         validateRead(t"""{"name": "Bob"}""")(_.read[VPerson in Json])
-        . items.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+        . items.map(_(0).s).pipe(xs => xs.stdlib.to(Set))
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Direct-parse construction is skipped when a field is missing"):
@@ -315,7 +315,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         val source = t"""{"name": "Alice"}"""
         val json = Json.parseTracked(source)
         val results = validateWithPositions(json)(_.as[VPerson])
-        results.map(_(0).s).pipe(xs => Set.from(xs.stdlib))
+        results.map(_(0).s).pipe(xs => xs.stdlib.to(Set))
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Wrong-type field reports the value's line/column"):

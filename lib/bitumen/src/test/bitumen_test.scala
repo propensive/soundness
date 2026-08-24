@@ -340,7 +340,7 @@ object Tests extends Suite(m"Bitumen Tests"):
 
       test(m"bad checksum is detected"):
         val good: List[Data] = Tarfile(List(helloFile)).source[Data].toProgression.stdlib.toList.asInstanceOf[List[Data]]
-        val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: proscenium.List.of(good.stdlib.tail)
+        val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
         capture[Tar.Error](Tarfile.read(corrupted.stdlib.iterator.stream).toList).reason
       . assert: r =>
           r.isInstanceOf[Tar.Error.Reason.BadChecksum]
@@ -360,7 +360,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         // A corrupt block cannot be trusted for anything, so nothing in it is parsed: no
         // BadName/BadOctal cascade follows the checksum failure.
         val good: List[Data] = Tarfile(List(helloFile)).source[Data].toProgression.stdlib.toList.asInstanceOf[List[Data]]
-        val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: proscenium.List.of(good.stdlib.tail)
+        val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
         collectTar { Tarfile.read(corrupted.stdlib.iterator.stream).toList; () }.reasons
       . assert: reasons =>
           reasons.size == 1 && reasons.prim.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
@@ -391,7 +391,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         patchedBlock = patchedBlock.updated(154, 0.toByte).updated(155, ' '.toByte)
 
         val patched: List[Data] =
-          Array.frozen(patchedBlock) :: proscenium.List.of(good.stdlib.tail)
+          Array.frozen(patchedBlock) :: good.stdlib.tail.to(proscenium.List)
 
         var entries: scala.collection.immutable.List[bitumen.Tar.Entry] = scala.Nil
         val issues = collectTar:
@@ -898,7 +898,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            group    = UnixGroup(0),
                            mtime    = 0.bits.u32,
                            realSize = 10000L,
-                           segments = proscenium.List.of(manySegments),
+                           segments = manySegments.to(proscenium.List),
                            data     = Tar.Body(Array.fill[Byte](500)('X'.toByte)) )
 
       val bytes = Tarfile(List(sparseEntry)).source[Data].toProgression

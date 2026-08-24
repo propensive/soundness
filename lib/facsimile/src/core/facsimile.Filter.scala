@@ -103,10 +103,11 @@ private[facsimile] object Filter:
       case _ =>
         abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
 
-    List.of:
+
       names.stdlib.zipWithIndex.map: (name, index) =>
         val id = Id.parse(name).or(abort(Pdf.Error(Pdf.Error.Reason.UnknownFilter(name))))
         (id, if index < parameters.stdlib.length then parameters.stdlib(index) else Map())
+      . to(List)
 
   // A streaming plan is plain data — closures at most — because ducts, being scoped
   // capabilities, may only be minted at the `via` call site (a lambda cannot return a fresh
@@ -124,7 +125,7 @@ private[facsimile] object Filter:
   :   List[Step^{tactic}] =
     // The steps capture `tactic`, and capture-carrying elements do not flow through the
     // opaque `List` combinators (boxing), so the interior stays stdlib inside one `List.of`.
-    List.of:
+
       chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
         val predicted = parms(t"Predictor").let(_.long).or(1L) > 1
 
@@ -145,6 +146,7 @@ private[facsimile] object Filter:
 
           case other =>
             scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
+      . to(List)
 
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.
   def decode(data: Data, chain: List[(Id, Map[Text, Cos])])(using Tactic[Pdf.Error]): Data =

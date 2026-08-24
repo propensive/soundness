@@ -197,7 +197,7 @@ object TarBuilder:
           val outcome = block(using builder)
           val tarfile = builder.tarfile(format)
 
-          commit(value.generic, List.of(createFlags), tarFlag match
+          commit(value.generic, createFlags.to(List), tarFlag match
             case Tar.Flag.Gzip    => tarfile.gzip
             case Tar.Flag.Zlib    => tarfile.zlib
             case Tar.Flag.Deflate => tarfile.deflate)

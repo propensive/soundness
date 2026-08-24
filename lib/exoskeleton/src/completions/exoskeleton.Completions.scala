@@ -158,7 +158,7 @@ object Completions:
 
                 . compact
 
-              install(Shell.Zsh, command, Name[Linux](t"_$command"), List.of(dirs))
+              install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs.to(List))
 
           val bash: Installation.InstallResult =
             if sh"sh -c 'command -v bash'".exec[Exit]() != Exit.Ok

@@ -51,6 +51,17 @@ object Set:
   def from[element](elements: IterableOnce[element]^): Set[element] =
     of(sci.Set.from(elements))
 
+  // `.to(Set)` support (see `List`): the conversion is on `Set.type` only, so it cannot
+  // expose members of `Set` values.
+  given factory: [element] => Conversion[Set.type, scala.collection.Factory[element, Set[element]]] =
+    _ =>
+      new scala.collection.Factory[element, Set[element]]:
+        def fromSpecific(elements: IterableOnce[element]^): Set[element] =
+          Set.from(elements)
+
+        def newBuilder: scala.collection.mutable.Builder[element, Set[element]] =
+          sci.Set.newBuilder[element].mapResult(of(_))
+
   extension [element](set: Set[element])
     inline def stdlib: sci.Set[element] = set.asInstanceOf[sci.Set[element]]
 

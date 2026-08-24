@@ -53,7 +53,7 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 :   Map[Text, Set[annotation]] =
 
   summonInline[self is Annotated by annotation] match
-    case annotated: Annotated.Fields => Map.of(annotated.fields.stdlib.filter(!_(1).nil))
+    case annotated: Annotated.Fields => (annotated.fields.stdlib.filter(!_(1).nil)).to(Map)
     case _                           => Map()
 
 // The serialization renames for `format`: a map from each `@name`-annotated
@@ -68,7 +68,7 @@ inline def relabelling[self, format]: Map[Text, Text] =
   val specific: Map[Text, Text] =
     fieldAnnotations[self, name[format]].remap { (field, set) => field -> set.stdlib.head.name }
 
-  Map.of(general.stdlib ++ specific.stdlib)
+  (general.stdlib ++ specific.stdlib).to(Map)
 
 // Like `fieldAnnotations`, but reads the `annotation`-typed annotations on the
 // subtypes (enum cases / sealed variants) of `self`, keyed by variant name,
@@ -77,7 +77,7 @@ inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
 :   Map[Text, Set[annotation]] =
 
   summonInline[Annotated by annotation under self] match
-    case annotated: Annotated.Subtypes => Map.of(annotated.subtypes.stdlib.filter(!_(1).nil))
+    case annotated: Annotated.Subtypes => (annotated.subtypes.stdlib.filter(!_(1).nil)).to(Map)
     case _                             => Map()
 
 // The serialization renames for the variants of a sum type `self`: exactly like
@@ -90,4 +90,4 @@ inline def variantRelabelling[self, format]: Map[Text, Text] =
   val specific: Map[Text, Text] =
     subtypeAnnotations[self, name[format]].remap { (variant, set) => variant -> set.stdlib.head.name }
 
-  Map.of(general.stdlib ++ specific.stdlib)
+  (general.stdlib ++ specific.stdlib).to(Map)

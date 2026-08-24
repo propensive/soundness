@@ -106,10 +106,11 @@ object LiraAssembler:
     // The same per-section view a discipline is given, for the profile predicates below. Built
     // here so that a profile checking structural invariants over a universe's content (§11.6,
     // clause 2) sees exactly what the disciplines saw, including the integration's classpath.
-    val profileSections = List.from:
+    val profileSections =
       inputs.map: input =>
         EcosystemProfile.Section
           (input.realm, input.content, input.integration, classpath(input))
+      . to(List)
 
     // L125: an `export` or `track` declaration must be effective — a declared path that resolves
     // to no item in any section, or that some other discipline claims, is an assembly-time
@@ -167,13 +168,14 @@ object LiraAssembler:
     val contentBlobs = inputs.flatMap: input => input.content.stdlib.map(_(1))
 
     val store = Blobstore:
-      List.from(contentBlobs.map { data => Blob(Lira.Hash(Lira.Hash.Domain.Blob, data), data) })
+      (contentBlobs.map { data => Blob(Lira.Hash(Lira.Hash.Domain.Blob, data), data) }).to(List)
 
     val atomsBlobs = rootAtoms.stdlib.map: atomization => AtomsBlob.encode(atomization)
 
-    val api = List.from:
+    val api =
       rootAtoms.stdlib.zip(atomsBlobs).map: pair =>
         Lira.Manifest.Api(pair(0).discipline, Lira.Hash(Lira.Hash.Domain.Blob, pair(1)))
+      . to(List)
 
     val rootTree = treeOf(inputs.head)
 
@@ -213,7 +215,7 @@ object LiraAssembler:
           integration = integration,
           dependency  = dependency,
           delta       = deltaBlob.let { data => Lira.Hash(Lira.Hash.Domain.Blob, data) },
-          section     = List.from(builtSections.map(_(0))),
+          section     = (builtSections.map(_(0))).to(List),
           payload     = Lira.Manifest.Payload(t"brotli", 0L, Lira.Hash(Lira.Hash.Domain.Blob,
               Array.freeze(Array.allocate[Byte](0)))) )
 
@@ -242,4 +244,4 @@ object LiraAssembler:
 
     val blobs = contentBlobs ++ builtSections.map(_(1)) ++ atomsBlobs ++ deltaBlob.option.toList
 
-    Lira.assemble(sign(manifest), List.from(blobs))
+    Lira.assemble(sign(manifest), blobs.to(List))

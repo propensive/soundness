@@ -293,7 +293,7 @@ trait Json2 extends Json3:
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => List.of(array.readable.toList) } // freshens the array
+          . pipe { array => array.readable.toList.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -378,7 +378,7 @@ trait Json2 extends Json3:
           builder += root.objectKey(i) -> root.objectValue(i)
           i += 1
 
-        Map.of(builder.result())
+        builder.result().to(Map)
 
       // `@name[Json]` / bare `@name` renames: field name -> JSON key, read
       // back the same way they are written.
@@ -435,8 +435,9 @@ trait Json2 extends Json3:
 
               // `@name[Json]` / bare `@name` variant renames: map the serialized
               // discriminator back to the variant name before delegating.
-              val variantNames: Map[Text, Text] = Map.from:
+              val variantNames: Map[Text, Text] =
                 variantRelabelling[derivation, Json].stdlib.map: (variant, wire) => wire -> variant
+                . to(Map)
 
               discriminable.discriminate(json).lay:
                 focus(prior.or(Json.Focus(JsonPointer()))):
@@ -498,9 +499,10 @@ trait Json2 extends Json3:
         // Wire tag → variant label, a per-derivation constant: built once
         // here rather than on every `parse` call, whose profile it dominated
         // (map building plus generic-equality lookups, per occurrence).
-        val variantNames: Map[Text, Text] = Map.from:
+        val variantNames: Map[Text, Text] =
           variantRelabelling[derivation, Json].stdlib.map: (variant, wire) =>
             wire -> variant
+          . to(Map)
 
         infer[derivation is Discriminable in Json] match
           case fielded: Json.DiscriminantField[?] =>
@@ -576,7 +578,7 @@ trait Json2 extends Json3:
       Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => List.of(array.readable.toList) } // freshens the array
+          . pipe { array => array.readable.toList.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -993,7 +995,7 @@ object Json extends Json2, Dynamic:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            List.of(fields.readable.map { (key, parser, _) => (key.tt, parser.shape()) }.toList)
+            (fields.readable.map { (key, parser, _) => (key.tt, parser.shape()) }.toList).to(List)
 
           Morphology.Obj
             ( entries, entries.sweep { case (key, shape) if !shape.optional => key } )

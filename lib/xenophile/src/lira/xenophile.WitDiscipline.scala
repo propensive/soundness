@@ -67,4 +67,4 @@ object WitDiscipline extends Discipline:
 
       . protect(Wit.Parser.parse(source).stdlib)
 
-    Atomization.of(id, WitAtomizer.atomize(List.from(documents)))
+    Atomization.of(id, WitAtomizer.atomize(documents.to(List)))

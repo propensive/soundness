@@ -94,7 +94,7 @@ object TypescriptDialect extends Dialect:
               prototype(member).lay(accumulated): value =>
                 accumulated.updated(member.name, value)
 
-    Map.of(byName.keys.toList.map { key => key -> Map.of(members(key, scala.collection.immutable.Set())) }.toMap)
+    (byName.keys.toList.map { key => key -> Map.of(members(key, scala.collection.immutable.Set())) }.toMap).to(Map)
 
   // Index, call and construct signatures have no name a `Foreign` member selection could use,
   // and a private member is not the consumer's to call.

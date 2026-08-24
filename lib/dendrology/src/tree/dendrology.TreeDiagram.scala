@@ -62,7 +62,7 @@ object TreeDiagram:
           recur((if index == last then Space else Extender) :: level, getChildren(item)))
         : Chain[(List[TreeTile], node)]
 
-    new TreeDiagram(recur(Nil, List.from(roots)))
+    new TreeDiagram(recur(Nil, roots.to(List)))
 
 case class TreeDiagram[node](lines: Chain[(List[TreeTile], node)]):
   def render[line](line: node => line)(using style: TreeStyle[line]): Chain[line] = map[line]:

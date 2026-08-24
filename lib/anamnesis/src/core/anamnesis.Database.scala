@@ -134,7 +134,7 @@ class Database(size: Int) extends Findable:
     val corelation = corelate[left, right]
 
     val relation2: Map[Ref, Set[Ref]] =
-      relation.define(left, relation(left).let(_.stdlib - right).let(Set.of(_)).or(Set()))
+      relation.define(left, relation(left).let(_.stdlib - right).let(_.to(Set)).or(Set()))
 
     val corelation2 = corelation.omit(right)
     relations(relationIndex) = relation2

@@ -104,4 +104,4 @@ extension (elements: List[WebDriver.Element])
   infix def / [focus: Focusable](value: focus)(using session: WebDriver.Session^)
   :   List[WebDriver.Element] =
 
-    List.of(elements.stdlib.flatMap(session.elements(_, value).stdlib))
+    (elements.stdlib.flatMap(session.elements(_, value).stdlib)).to(List)

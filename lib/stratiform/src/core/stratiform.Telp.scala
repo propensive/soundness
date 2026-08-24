@@ -118,7 +118,7 @@ object Telp:
 
         i += 1
 
-      Telp(List.from(components))
+      Telp(components.to(List))
 
   given decodable: (tactic: Tactic[Telp.Error])
   =>  ((Telp is Decodable in Text)^{tactic}) = text => parse(text)
@@ -245,11 +245,12 @@ object Telp:
     component.s.forall { ch => ch >= '0' && ch <= '9' }
 
   private def childrenAt(node: Tel.Element.Node, flatIndex: Int): List[Tel.Element] =
-    List.from:
+
       node.children.readable.filter: element =>
         element match
           case Tel.Element.Node(idx, _, _)  => idx.or(-1) == flatIndex
           case Tel.Element.Value(idx, _, _) => idx == flatIndex
+      . to(List)
 
 case class Telp(components: List[Text]) derives CanEqual:
   // Push a component onto the root (front) of the path. The product

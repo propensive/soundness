@@ -1462,9 +1462,10 @@ object Tests extends Suite(m"Xenophile tests"):
       Array.unsafeFrozen(bytes)
 
     def content(names: Text*): List[(TreePath, Data)] =
-      List.from:
+
         names.map: name =>
           (TreePath(t"${name.s.replace(".", "/").nn}.class"), classfile(name))
+        . to(List)
 
     def atomize(names: Text*): Atomization =
       KotlinMetadataDiscipline.atomize(content(names*), Discipline.Context(t"jvm"))

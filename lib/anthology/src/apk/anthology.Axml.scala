@@ -85,7 +85,7 @@ object Axml:
     private val indices: scm.LinkedHashMap[Text, Int] = scm.LinkedHashMap()
     def intern(string: Text): Int = indices.getOrElseUpdate(string, indices.size)
     def count: Int = indices.size
-    def ordered: List[Text] = List.of(indices.toList.sortBy(_(1)).map(_(0)))
+    def ordered: List[Text] = (indices.toList.sortBy(_(1)).map(_(0))).to(List)
 
   // A growable little-endian byte buffer with the back-patching the chunked format needs: chunk
   // sizes and the total file size are only known after their contents are written.
@@ -153,7 +153,7 @@ object Axml:
     out.u32(0)
 
     writeStringPool(out, strings.ordered)
-    writeResourceMap(out, List.of(resourceMap.values.toList))
+    writeResourceMap(out, resourceMap.values.toList.to(List))
 
     val android = strings.intern(androidUri)
     val prefix = strings.intern(androidPrefix)

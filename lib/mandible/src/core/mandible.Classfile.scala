@@ -105,7 +105,7 @@ class Classfile(data: scala.IArray[Byte]):
           case target: jlci.LabelTarget     => builder += target.label.nn -> offset
           case _                            => ()
 
-        Map.of(builder.result())
+        builder.result().to(Map)
 
       val stackMaps: Map[jlc.Label, List[Bytecode.Frame]] =
         val attr =
@@ -115,7 +115,7 @@ class Classfile(data: scala.IArray[Byte]):
         attr.fold(Map.empty[jlc.Label, List[Bytecode.Frame]]): smt =>
           smt.entries.nn.to[List].map: entry =>
             val frames =
-              List.of(entry.stack.nn.to[List].stdlib.map(Bytecode.Frame.fromVerificationType).reverse)
+              entry.stack.nn.to[List].stdlib.map(Bytecode.Frame.fromVerificationType).reverse.to(List)
 
             entry.target.nn -> frames
 

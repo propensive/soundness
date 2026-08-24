@@ -169,7 +169,7 @@ object internal:
   :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
 
     import quotes.reflect.*
-    val members = Map.of(refinements(self.asTerm.tpe.widen))
+    val members = refinements(self.asTerm.tpe.widen).to(Map)
 
     members.at(t"Topic").let: position => (position, members.at(t"Origin").or(position))
 
@@ -526,7 +526,7 @@ object internal:
 
         val indexed = elements.readable.zipWithIndex
 
-        val pieces = List.of(indexed.toList).map: (elem, idx) =>
+        val pieces = indexed.toList.to(List).map: (elem, idx) =>
             elem.asMatchable match
               case Unset =>
                 if spreads.has(holeIndex) then
@@ -1310,7 +1310,7 @@ object internal:
         // The element types differ (`ValDef` and `Statement`), and `Concatenable` is invariant
         // where `:::` widened, so the concatenation happens on the stdlib side.
         ( ('{ $reader.openObject() }.asTerm
-            :: List.of(slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib))
+            :: (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
           . stdlib,
           construct )
       . asExprOf[value]

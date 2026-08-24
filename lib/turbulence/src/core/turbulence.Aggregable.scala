@@ -81,7 +81,7 @@ object Aggregable:
           val bytes = source.stdlib.head
           array.place(bytes, index)
           index += bytes.length
-          source = Chain.of(source.stdlib.tail)
+          source = source.stdlib.tail.to(Chain)
 
   given bytesText: (decoder: CharDecoder) => ((Text is Aggregable by Data)) =
     bytesData.map(decoder.decoded)
@@ -103,7 +103,7 @@ object Aggregable:
 
       while !source.nil do
         builder.append(source.stdlib.head.s)
-        source = Chain.of(source.stdlib.tail)
+        source = source.stdlib.tail.to(Chain)
 
       builder.toString.tt
 

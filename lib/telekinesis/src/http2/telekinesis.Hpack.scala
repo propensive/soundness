@@ -290,7 +290,7 @@ class Hpack(maxTableSize: Int = 4096):
         builder += entry
         pos = next
 
-    List.of(builder.result())
+    builder.result().to(List)
 
   // ─── encode a header block ──────────────────────────────────────────────────
   //

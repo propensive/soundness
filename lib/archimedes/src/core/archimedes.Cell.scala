@@ -109,7 +109,7 @@ object Cell:
         . map { cell => cell.lines.stdlib.map(_.text) }
         . reduceLeft { (left, right) => left.zip(right).map { (l, r) => t"$l$r" } }
 
-      Cell(Sequence.of(rows.map(Writing(_))), cells.stdlib.map(_.width).reduceLeft(_ + _), ascent)
+      Cell(Sequence.from(rows.map(Writing(_))), cells.stdlib.map(_.width).reduceLeft(_ + _), ascent)
 
   def fraction(numerator: Cell, denominator: Cell): Cell =
     val width = max(numerator.width, denominator.width) + 2
@@ -187,19 +187,19 @@ object Cell:
   def superscript(base: Cell, script: Cell): Cell =
     val height = base.height + script.height
 
-    val lines = Sequence.from:
+    val lines =
       (0 until height).map: row =>
         Writing(t"${slice(base, row - script.height)}${slice(script, row)}")
-
+      . pipe(Sequence.from(_))
     Cell(lines, base.width + script.width, base.baseline + script.height)
 
   def subscript(base: Cell, script: Cell): Cell =
     val height = base.height + script.height
 
-    val lines = Sequence.from:
+    val lines =
       (0 until height).map: row =>
         Writing(t"${slice(base, row)}${slice(script, row - base.height)}")
-
+      . pipe(Sequence.from(_))
     Cell(lines, base.width + script.width, base.baseline)
 
   def subsup(base: Cell, subscript: Cell, superscript: Cell): Cell =
@@ -207,7 +207,7 @@ object Cell:
     val height = superscript.height + base.height + subscript.height
     val middle = superscript.height + base.height
 
-    val lines = Sequence.from:
+    val lines =
       (0 until height).map: row =>
         val left = slice(base, row - superscript.height)
 
@@ -224,7 +224,7 @@ object Cell:
         val scripts = fromSuperscript.or(fromSubscript.or(spaces(right).text))
 
         Writing(t"$left$scripts")
-
+      . pipe(Sequence.from(_))
     Cell(lines, base.width + right, superscript.height + base.baseline)
 
   // Each of the three script schemata prefers the same-line Unicode form, and falls
@@ -300,10 +300,10 @@ object Cell:
   // single-line cell it degrades to the literal bracket character.
   def bracket(char: Char, height: Int, baseline: Int, opening: Boolean): Cell =
     if height <= 1 then line(char.toString.tt) else
-      val glyphs = Sequence.from:
+      val glyphs =
         (0 until height).map: row =>
           Writing(bracketGlyph(char, row, height, baseline, opening).toString.tt)
-
+        . pipe(Sequence.from(_))
       Cell(glyphs, 1, baseline)
 
   private def bracketGlyph(char: Char, row: Int, height: Int, axis: Int, opening: Boolean): Char =
@@ -339,7 +339,7 @@ object Cell:
     if height <= 1 then line(char.toString.tt) else
       val (strokes, circle) = integralShape(char)
 
-      val lines = Sequence.from:
+      val lines =
         (0 until height).map: row =>
           val glyphs = (0 until strokes).map: column =>
             val glyph =
@@ -351,7 +351,7 @@ object Cell:
             glyph.toString.tt
 
           Writing(t"${glyphs.join} ")
-
+        . pipe(Sequence.from(_))
       Cell(lines, strokes + 1, axis)
 
   private def integralShape(char: Char): (Int, Boolean) = char match
@@ -379,7 +379,7 @@ object Cell:
     val depth = max((height - 3)/2, 0)
     val width = depth + 3
 
-    val lines = Sequence.from:
+    val lines =
       (0 until height).map: row =>
         if row == 0 then repeat('▁', width)
         else if row == height - 1 then repeat('▔', width) else
@@ -388,18 +388,18 @@ object Cell:
           val column = min(fromTop, fromBottom)
           val glyph = if fromTop <= fromBottom then Tick else '╱'
           Writing(t"${spaces(column).text}$glyph${spaces(width - column - 1).text}")
-
+      . pipe(Sequence.from(_))
     Cell(lines, width, height/2)
 
   // `∏`: a `┬──┬` lintel over two `│` legs.
   private def product(height: Int): Cell =
     val width = 4
 
-    val lines = Sequence.from:
+    val lines =
       (0 until height).map: row =>
         if row == 0 then Writing(t"┬${repeat(Bar, width - 2).text}┬")
         else Writing(t"$Stem${spaces(width - 2).text}$Stem")
-
+      . pipe(Sequence.from(_))
     Cell(lines, width, height/2)
 
   private def stretchyChar(node: Mathml): Optional[Char] = node match
@@ -437,7 +437,7 @@ object Cell:
         else
           bracket(char, height, ascent, opening(char))
 
-    beside(List.of(cells))
+    beside(cells.to(List))
 
   def of(node: Mathml): Cell = node match
     case Mo(value, _)              => line(operator(value))

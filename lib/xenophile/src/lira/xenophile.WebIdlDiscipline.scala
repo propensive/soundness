@@ -72,4 +72,4 @@ object WebIdlDiscipline extends Discipline:
 
     // Partial/mixin resolution spans the whole claimed set: a partial in one file completes an
     // interface in another, exactly as the platform's own IDL is distributed.
-    Atomization.of(id, WebIdlAtomizer.atomize(List.from(definitions)))
+    Atomization.of(id, WebIdlAtomizer.atomize(definitions.to(List)))

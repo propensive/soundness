@@ -243,8 +243,8 @@ private[punctuation] object EmphasisProcessor:
                     cursor = nx
 
                   val wrapper =
-                    if strong then InlineNode(StrongData(List.of(children.toList)))
-                    else InlineNode(EmphasisData(List.of(children.toList)))
+                    if strong then InlineNode(StrongData(children.toList.to(List)))
+                    else InlineNode(EmphasisData(children.toList.to(List)))
 
                   list.insertAfter(openerNode, wrapper)
 
@@ -291,7 +291,7 @@ private[punctuation] object EmphasisProcessor:
       appendProse(cur, builder)
       cur = cur.next
 
-    List.of(builder.toList)
+    builder.toList.to(List)
 
   private def appendProse(node: InlineNode, builder: mutable.ListBuffer[Prose]): Unit =
     node.data match
@@ -313,4 +313,4 @@ private[punctuation] object EmphasisProcessor:
   private def childProse(children: List[InlineNode]): List[Prose] =
     val builder = mutable.ListBuffer[Prose]()
     children.each(appendProse(_, builder))
-    List.of(builder.toList)
+    builder.toList.to(List)
