@@ -333,6 +333,29 @@ object Tests extends Suite(m"Rudiments Tests"):
             : proscenium.List[Int])
       . assert(_ == true)
 
+    suite(m"Bounded positional access tests"):
+      // No `linearAccess` acknowledgement in scope: `prim`/`sec`/`ter` walk at most three
+      // cells, so they are not dysasymptotic on `List` and stay ungated.
+      test(m"sec on a list is ungated"):
+        val xs: List[Int] = List(10, 20, 30)
+        xs.sec
+      . assert(_ == 20)
+
+      test(m"ter on a list is ungated"):
+        val xs: List[Int] = List(10, 20, 30)
+        xs.ter
+      . assert(_ == 30)
+
+      test(m"sec on a single-element list is unset"):
+        val xs: List[Int] = List(10)
+        xs.sec
+      . assert(_ == Unset)
+
+      test(m"ter on a two-element list is unset"):
+        val xs: List[Int] = List(10, 20)
+        xs.ter
+      . assert(_ == Unset)
+
     suite(m"Attested tests"):
       test(m"an attested ordinal reads bare, with no Optional"):
         import denominative.dysasymptotics.linearAccess
@@ -409,6 +432,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == List(1, 2, 3))
 
       test(m"define replaces a frozen array element"):
+        import denominative.dysasymptotics.linearSize
         val xs: Array[Int]^{} = Array.tabulate(3)(_ + 1)
         xs.define(Prim, 10).to[List]
       . assert(_ == List(10, 2, 3))

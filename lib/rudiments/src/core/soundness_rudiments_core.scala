@@ -114,11 +114,19 @@ extension [self](value: self)(using omissible: denominative.Omissible { type Sel
   def omit(index: omissible.Operand): self = omissible.omit(value, index)
 
 extension [element](sequence: proscenium.List[element])
-  // Mirrors the ungated `List` special case in `rudiments.Deindex` (same non-`inline`
-  // rationale); duplicated because `rudiments.prim` resolves to the `Applicable`-bound
+  // Mirrors the ungated `List` special cases in `rudiments.Deindex` (same non-`inline`
+  // rationale); duplicated because `rudiments.prim` (etc.) resolves to the `Applicable`-bound
   // overload when referenced qualified.
   def prim: vacuous.Optional[element] =
     if sequence.stdlib.isEmpty then vacuous.Unset else sequence.stdlib.head
+
+  def sec: vacuous.Optional[element] =
+    val rest = sequence.stdlib.drop(1)
+    if rest.isEmpty then vacuous.Unset else rest.head
+
+  def ter: vacuous.Optional[element] =
+    val rest = sequence.stdlib.drop(2)
+    if rest.isEmpty then vacuous.Unset else rest.head
 
 extension [self](inline value: self)
   (using applicable: denominative.Applicable { type Self = self; type Operand = denominative.Ordinal })

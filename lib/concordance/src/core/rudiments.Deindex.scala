@@ -142,6 +142,15 @@ extension [element](sequence: List[element])
   // expanded body's type at each call site, where capture checking stamps a fresh `^` capture
   // variable on the union — which is spurious (and an error) when `element` is a pure type such as
   // `Text`. A plain method keeps the declared `Optional[element]` result and stays capture-clean.
-  // Only `prim` gets this ungated `List` special case (O(1)); `sec`/`ter` go through the
-  // `Dysasymptotic.LinearAccess`-gated `Applicable` route like every other positional access on `List`.
+  // `prim`/`sec`/`ter` get these ungated `List` special cases because their walk is bounded (at
+  // most three cells), so they are not dysasymptotic; positional access at an arbitrary ordinal
+  // goes through the `Dysasymptotic.LinearAccess`-gated `Applicable` route.
   def prim: Optional[element] = if sequence.stdlib.isEmpty then Unset else sequence.stdlib.head
+
+  def sec: Optional[element] =
+    val rest = sequence.stdlib.drop(1)
+    if rest.isEmpty then Unset else rest.head
+
+  def ter: Optional[element] =
+    val rest = sequence.stdlib.drop(2)
+    if rest.isEmpty then Unset else rest.head
